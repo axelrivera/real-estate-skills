@@ -5,4 +5,4 @@ numpy==2.4.4
 beautifulsoup4==4.14.3
 pillow==12.1.1
 PyYAML==6.0.3
-playwright
+playwright==1.56.0

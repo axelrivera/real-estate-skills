@@ -5,7 +5,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 ## Requirements
 
 - Python 3.12 (`PYTHON=python3.x make setup` to use another; keep code 3.11-compatible)
-- [nvm](https://github.com/nvm-sh/nvm); the Node version comes from `.nvmrc`
+- [nvm](https://github.com/nvm-sh/nvm); the Node version comes from `.nvmrc` (pinned to the sandbox's 22.22.2)
 - Optional: LibreOffice (`brew install --cask libreoffice`) for deck checks and PPTX → PDF previews. The sandbox has it; decks are generated without it. The Makefile adds `/Applications/LibreOffice.app/Contents/MacOS` to `PATH`; override with `LO_BIN=...` if it's installed elsewhere. Shell aliases don't work here.
 
 ## Commands
@@ -17,6 +17,11 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
 | `make package` | Zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai, plus `dist/runtime-check.zip` |
 | `make clean` | Removes `out/` and `dist/` |
+
+## Troubleshooting
+
+- **`sharp` fails to install and tries to build from source:** a Homebrew `vips` is on the machine. `make setup` already sets `SHARP_IGNORE_GLOBAL_LIBVIPS=1`; use the same flag if you run `npm install` by hand.
+- **`npm audit` warns about `sharp` and `image-size`:** the versions are pinned to match the sandbox, which is what the skills actually run on. Don't upgrade them locally.
 
 ## Layout
 

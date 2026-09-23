@@ -21,12 +21,13 @@ help:
 	@echo "make package        Zip every skill (and runtime-check) into $(DIST)/"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
 
+# SHARP_IGNORE_GLOBAL_LIBVIPS: use sharp's bundled binaries even when Homebrew vips is installed.
 setup:
 	$(PYTHON) -m venv $(VENV)
 	$(PY) -m pip install -q --upgrade pip
 	$(PY) -m pip install -q -r dev/requirements.txt
 	$(PY) -m playwright install chromium
-	. "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm install && cd dev && npm install --silent
+	. "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm install && cd dev && SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --silent
 
 runtime-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py

@@ -15,16 +15,17 @@ Produced by the diagnostic skill in `dev/runtime-check/` (never shipped). Checke
 | beautifulsoup4 | 4.14.3 | 4.14.3 |
 | PyYAML | 6.0.3 | 6.0.3 |
 | Pillow | 12.1.1 | 12.2.0 |
-| Playwright → PDF | Yes | Yes |
+| Playwright → PDF | 1.56.0 | Yes |
 | Node / npm | 22.22.2 / 10.9.7 | 22.22.2 / 10.9.7 |
-| pptxgenjs, react, react-dom, react-icons, sharp | Yes | Yes |
+| pptxgenjs / react / react-dom | 4.0.1 / 19.2.5 / 19.2.5 | Yes |
+| react-icons / sharp | 5.6.0 / 0.34.5 | Yes |
 | pdftotext | 24.02.0 | 24.02.0 |
 | LibreOffice | 24.2.7 | 24.2.7 |
 | PyPI / npm reachable | Yes | Yes |
 | `/mnt/user-data/outputs` | Yes | Yes |
 | Web fetch / search tools | Yes | Yes |
 
-The Playwright and Node module versions were added to the check after this run. Re-run it in the sandbox to record them, then pin `dev/requirements.txt` and `dev/package.json` to match.
+Versions for Playwright and the Node modules come from a second claude.ai run on 2026-09-23. Cowork showed the same tools in the first run; its exact versions for these weren't recorded. `dev/requirements.txt`, `dev/package.json` and `.nvmrc` are pinned to the claude.ai versions.
 
 Notes:
 - In claude.ai the working directory is the skill's own folder (`/mnt/skills/plugins/...`). Never write outputs there. Use `/mnt/user-data/outputs/`, per the [output location](architecture.md#output-location) rule.
