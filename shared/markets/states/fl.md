@@ -37,9 +37,80 @@ property_tax:
     - {amount: 25000, levies: all}
     - {amount: 25000, levies: non_school}
   exemption_filing_deadline: March 1 of the year after closing
-  millage:                            # per $1,000 of taxable value; verify every year
-    - {district: Seminole County (unincorporated), year: 2025, school: 5.2490, total: 13.6790}
-    - {district: City of Altamonte Springs, year: 2025, school: 5.2490, total: 17.5683}
+  millage:                            # 2025 final (bills mailed Nov 2025), per $1,000 of taxable value; verify every year
+                                      # total = all ad valorem levies for a typical parcel; excludes non-ad valorem assessments
+    # Orange
+    - {county: Orange, district: "Orange County (unincorporated, St. Johns WMD)", code: "11", year: 2025, school: 6.4490, total: 16.0858}
+    - {county: Orange, district: "Orange County (unincorporated, South Florida WMD)", code: "10", year: 2025, school: 6.4490, total: 16.1366}
+    - {county: Orange, district: "Orlando (St. Johns WMD)", code: "8/28/71/78", year: 2025, school: 6.4490, total: 18.0878}
+    - {county: Orange, district: "Orlando (South Florida WMD)", code: "22/25/26/27/36/95", year: 2025, school: 6.4490, total: 18.1386}
+    - {county: Orange, district: "Winter Park", code: "2/4/6", year: 2025, school: 6.4490, total: 15.3615}
+    - {county: Orange, district: "Apopka", code: "5/11/65", year: 2025, school: 6.4490, total: 15.8754}
+    - {county: Orange, district: "Ocoee", code: "65", year: 2025, school: 6.4490, total: 16.3878}
+    - {county: Orange, district: "Winter Garden", code: "11/63/64/65", year: 2025, school: 6.4490, total: 16.2943}
+    - {county: Orange, district: "Maitland", code: "6", year: 2025, school: 6.4490, total: 16.3055}
+    - {county: Orange, district: "Windermere", code: "35", year: 2025, school: 6.4490, total: 15.2311}
+    # Seminole
+    - {county: Seminole, district: "Seminole County (unincorporated)", code: "01,02", year: 2025, school: 5.2490, total: 13.6790}
+    - {county: Seminole, district: "Altamonte Springs", code: "A1", year: 2025, school: 5.2490, total: 17.5683}
+    - {county: Seminole, district: "Casselberry", code: "C1,C2", year: 2025, school: 5.2490, total: 18.1808}
+    - {county: Seminole, district: "Lake Mary", code: "M1", year: 2025, school: 5.2490, total: 14.3929}
+    - {county: Seminole, district: "Longwood", code: "L1", year: 2025, school: 5.2490, total: 16.3034}
+    - {county: Seminole, district: "Oviedo", code: "V1,V2,V5", year: 2025, school: 5.2490, total: 16.7784}
+    - {county: Seminole, district: "Sanford", code: "S1,S3", year: 2025, school: 5.2490, total: 18.1284}
+    - {county: Seminole, district: "Winter Springs", code: "W1,W2", year: 2025, school: 5.2490, total: 16.1883}
+    # Osceola
+    - {county: Osceola, district: "Osceola County (unincorporated)", code: "300", year: 2025, school: 5.3060, total: 13.8543}
+    - {county: Osceola, district: "Kissimmee", code: "200", year: 2025, school: 5.3060, total: 17.4114}
+    - {county: Osceola, district: "St. Cloud", code: "100", year: 2025, school: 5.3060, total: 17.8989}
+    # Lake
+    - {county: Lake, district: "Lake County (unincorporated, north)", code: "0001", year: 2025, school: 6.0850, total: 13.4482}
+    - {county: Lake, district: "Lake County (unincorporated, south)", code: "0004", year: 2025, school: 6.0850, total: 13.0661}
+    - {county: Lake, district: "Clermont", code: "000C", year: 2025, school: 6.0850, total: 16.6766}
+    - {county: Lake, district: "Clermont (Wellness Way)", code: "WW0C", year: 2025, school: 6.0850, total: 17.1351}
+    - {county: Lake, district: "Leesburg", code: "000L", year: 2025, school: 6.0850, total: 15.9477}
+    - {county: Lake, district: "Eustis", code: "000E", year: 2025, school: 6.0850, total: 19.8623}
+    - {county: Lake, district: "Tavares", code: "000T", year: 2025, school: 6.0850, total: 19.3042}
+    - {county: Lake, district: "Mount Dora", code: "00MD", year: 2025, school: 6.0850, total: 18.7725}
+    - {county: Lake, district: "Groveland", code: "00GR", year: 2025, school: 6.0850, total: 17.7866}
+    - {county: Lake, district: "Minneola", code: "00MI", year: 2025, school: 6.0850, total: 17.5866}
+    # Volusia
+    - {county: Volusia, district: "Volusia County (unincorporated, west)", code: "100", year: 2025, school: 5.2790, total: 17.3640}
+    - {county: Volusia, district: "Volusia County (unincorporated, northeast)", code: "200", year: 2025, school: 5.2790, total: 17.2995}
+    - {county: Volusia, district: "Volusia County (unincorporated, southeast)", code: "600", year: 2025, school: 5.2790, total: 16.9077}
+    - {county: Volusia, district: "Deltona", code: "016", year: 2025, school: 5.2790, total: 18.7448}
+    - {county: Volusia, district: "DeLand", code: "012", year: 2025, school: 5.2790, total: 18.2289}
+    - {county: Volusia, district: "Daytona Beach", code: "204", year: 2025, school: 5.2790, total: 18.0498}
+    - {county: Volusia, district: "Ormond Beach", code: "201", year: 2025, school: 5.2790, total: 16.3635}
+    - {county: Volusia, district: "Port Orange (Halifax hospital district)", code: "402", year: 2025, school: 5.2790, total: 17.1176}
+    - {county: Volusia, district: "Port Orange (Southeast hospital district)", code: "602", year: 2025, school: 5.2790, total: 16.7258}
+    - {county: Volusia, district: "New Smyrna Beach", code: "601", year: 2025, school: 5.2790, total: 16.3370}
+    - {county: Volusia, district: "DeBary", code: "015", year: 2025, school: 5.2790, total: 15.6948}
+    - {county: Volusia, district: "Orange City", code: "014", year: 2025, school: 5.2790, total: 19.2835}
+    # Polk
+    - {county: Polk, district: "Polk County (unincorporated)", code: "90", year: 2025, school: 5.2900, total: 12.9291}
+    - {county: Polk, district: "Lakeland (in transit district)", code: "91510", year: 2025, school: 5.2900, total: 18.0402}
+    - {county: Polk, district: "Lakeland (outside transit district)", code: "90510", year: 2025, school: 5.2900, total: 17.5402}
+    - {county: Polk, district: "Winter Haven", code: "90410", year: 2025, school: 5.2900, total: 18.6979}
+    - {county: Polk, district: "Haines City", code: "90420", year: 2025, school: 5.2900, total: 19.4474}
+    - {county: Polk, district: "Davenport", code: "90430", year: 2025, school: 5.2900, total: 19.3579}
+    - {county: Polk, district: "Bartow", code: "90310", year: 2025, school: 5.2900, total: 18.2159}
+    - {county: Polk, district: "Auburndale", code: "90330", year: 2025, school: 5.2900, total: 16.3594}
+    - {county: Polk, district: "Lake Wales", code: "90320", year: 2025, school: 5.2900, total: 20.1541}
+    # Sumter
+    - {county: Sumter, district: "The Villages (unincorporated Sumter)", year: 2025, school: 4.9120, total: 10.0315, note: "summed from published rates"}
+    - {county: Sumter, district: "The Villages (inside Wildwood)", code: "2002V", year: 2025, school: 4.9120, total: 12.8602}
+    - {county: Sumter, district: "Sumter County (unincorporated)", year: 2025, school: 4.9120, total: 10.8422}
+    - {county: Sumter, district: "Wildwood (outside The Villages)", code: "2002", year: 2025, school: 4.9120, total: 13.6709, note: "summed from published rates"}
+    - {county: Sumter, district: "Bushnell", code: "6006", year: 2025, school: 4.9120, total: 14.1483, note: "summed from published rates"}
+  millage_sources:                    # property appraiser final millage sheets
+    Orange: "https://ocpaimages.ocpafl.org/api/Content/GetContentDynamicFile?contentFileID=416846"
+    Seminole: "https://files.scpafl.org/files/Public/MILLAGERATES/SeminoleCoMillageRates.pdf"
+    Osceola: "https://www.property-appraiser.org/wp-content/uploads/2025/10/2025-Final-Millage-Rates.pdf"
+    Lake: "https://www.lakecopropappr.com/pdfs/2025/Tax%20Roll/2025MillageSheet%20-%20ADA.pdf"
+    Volusia: "https://vcpa.vcgov.org/files/historical/2025/final/finalmillagerates2025final.pdf"
+    Polk: "https://www.polkflpa.gov/downloads/Files/finalmillage.pdf"
+    Sumter: "https://www.sumterpa.com/tax-and-exemptions/tax-rates/"
 
 holding_costs:
   insurance_rate: 0.007               # annual homeowner's insurance as share of price, for holding-cost estimates
@@ -92,6 +163,7 @@ Built-in state defaults. Skills use them only for Florida properties. For any ot
 - Seller title fee defaults (2026) are midpoints of ranges published by Florida title companies and closing cost guides; the title company's quote always wins.
 - Brokerage defaults total 5% (2.5% each side). Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split; use the actual agreement and offer terms whenever they're known.
 - Who pays the owner's title policy varies by county. Seller in most of Florida, buyer in parts of South and Southwest Florida. Confirm with the title company for counties not listed.
+- Millage (2025 final) covers the unincorporated area and main cities of Orange, Seminole, Osceola, Lake, Volusia, Polk and Sumter. Rates vary within a city and within unincorporated areas (water management district, fire, transit, hospital and special districts), so the right number comes from the parcel's tax district code on the property appraiser record. Orange's school rate (6.449) is from the school board's adoption, not the appraiser sheet. Sumter's Villages, Wildwood and Bushnell totals marked "summed" add up the published rates; there's no official aggregate. The Villages' CDD charges are non-ad valorem and can add over $2,000 a year.
 - Property tax for the buyer is based on the purchase price, not the seller's bill. The estimate assumes the appraiser values the home at the purchase price, so it often runs high. Non-ad valorem assessments are excluded. Warn about the first-year escrow jump.
 - HOA estoppel fees are capped by statute; associations with delinquencies can charge more.
 - FIRPTA is not computed. If the seller is a foreign person, flag 15% withholding and refer to the title company or a CPA.

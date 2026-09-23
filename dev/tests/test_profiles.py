@@ -187,6 +187,19 @@ class Market(unittest.TestCase):
         self.assertIsNone(mlss["stellar"].get("closing_costs"))
 
 
+class Millage(unittest.TestCase):
+    def test_entries_are_complete_and_sourced(self):
+        m = p.load_market(state="FL")
+        rows, sources = m.get("property_tax.millage"), m.get("property_tax.millage_sources")
+        self.assertGreater(len(rows), 50)
+        for r in rows:
+            self.assertTrue({"county", "district", "year", "school", "total"} <= set(r), r)
+            self.assertLess(r["school"], r["total"], r)
+            self.assertTrue(8 < r["total"] < 25, r)  # plausible Florida aggregate millage
+            self.assertIn(r["county"], sources, r)
+        self.assertEqual(len({(r["county"], r["district"]) for r in rows}), len(rows))
+
+
 class Find(unittest.TestCase):
     def test_finds_by_kind_one_level_deep(self):
         with tempfile.TemporaryDirectory() as tmp:
