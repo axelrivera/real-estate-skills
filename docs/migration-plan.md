@@ -65,7 +65,7 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 | `agent-profile` | Built per skill guidelines (template, reference, check script), tests and evals; needs a run in claude.ai and Cowork |
 | `market-profile` | Built per skill guidelines (template, fields reference, check script), tests and evals; needs a run in claude.ai and Cowork |
 | `contract-timeline` | Built per skill guidelines: engine matches the prototype sample exactly; FR/BAR and other contracts; branded PDF; 3 fixtures, tests, evals; needs a run in claude.ai and Cowork |
-| `buyer-cma` | Not started |
+| `buyer-cma` | Built per skill guidelines: numbers match the prototype sample exactly; branded PDF, English/Spanish labels, markdown template, cma-handoff v1; fixture, tests, evals; needs a run in claude.ai and Cowork |
 | `seller-cma` | Not started |
 | `seller-offer-review` | Not started |
 | `buyer-offer-strategy` | Not started |

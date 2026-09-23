@@ -5,10 +5,10 @@ import tempfile
 import unittest
 
 SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "plugins", "core", "skills", "agent-profile", "scripts")
-sys.path.insert(0, os.path.abspath(SCRIPTS))
-import check_profile  # noqa: E402
-import extract_colors as ec  # noqa: E402
-from _shared import profiles  # noqa: E402
+sys.path.insert(0, os.path.dirname(__file__))
+from skill_import import load  # noqa: E402
+
+check_profile, ec, profiles = load("agent-profile", "check_profile", "extract_colors", "_shared.profiles")
 from PIL import Image  # noqa: E402
 
 TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "agent-profile-template.md")

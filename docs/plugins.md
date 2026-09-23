@@ -15,7 +15,7 @@ Deal work from pricing through closing. Every skill has a markdown mode and a fi
 
 | Skill | Side | File mode output |
 |---|---|---|
-| `buyer-cma` | Buyer | CMA PDF |
+| `buyer-cma` | Buyer | CMA PDF (English or Spanish) + `.cma.json` handoff |
 | `seller-cma` | Listing | CMA PDF + listing presentation (PPTX) |
 | `buyer-offer-strategy` | Buyer | Offer Options PDF + Offer Package Worksheet PDF |
 | `seller-offer-review` | Listing | Single- or multi-offer review PDF |

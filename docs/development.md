@@ -39,7 +39,7 @@ dev/                     # dev tooling, never shipped
   runtime-check/         # diagnostic skill
   hooks/pre-commit       # runs check-sync
   sync_shared.py         # make sync / make check-sync
-  tests/                 # unit tests for shared/ and dev tools (make test)
+  tests/                 # unit tests (make test); skill_import.py loads each skill's scripts without name clashes
   preview_design.py      # palette preview (make preview-design)
   fixtures/<skill>/      # data files for make outputs (file-mode skills)
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
@@ -57,6 +57,10 @@ dev/                     # dev tooling, never shipped
 | `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--agent`, `--market`, `--sample`) |
 | `shared/report.css` | Base PDF styles (header, section bars, tables, hero, notes) on the theme variables |
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
+| `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
+| `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` or a fenced markdown block |
+| `shared/mls.py` | MLS export reader (columns from the market profile) and market statistics, trend line |
+| `shared/cma.py`, `shared/cma.css` | CMA report pieces: labels, tables, scatterplot, dot plot, keep-together groups, pagination |
 
 After editing `shared/`, run `make test` and `make sync`, and commit the updated copies with the change.
 

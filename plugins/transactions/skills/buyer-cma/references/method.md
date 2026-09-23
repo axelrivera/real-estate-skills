@@ -1,0 +1,42 @@
+# Method: history, comps, adjustments, chart
+
+## The subject
+
+Pull the ten facts for the fact grid (see `report-data.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
+
+## The listing history
+
+The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. The status codes and what they mean are in the market profile (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
+
+- A new MLS number resets days on market. Look for older numbers below it and report the true timeline: first list date, total active days across all listings, every price change.
+- A pending followed by anything other than a sale means a contract failed. That's a question for the listing agent, not an assumption about the house.
+- Repeated off/back-on-market pairs usually mean a seller managing showings or pausing to reset.
+- A price increase after a failed contract is a signal worth naming.
+
+Search the address: earlier syndicated remarks sometimes claim things (a "brand-new roof") that later vanish from the listing. That's a watch item.
+
+## Choosing comps
+
+From `stats.py`'s `sold_candidates`, pick 3–6 sales:
+
+- same subdivision first, then an immediately comparable neighborhood within about a mile;
+- within about 20% of the subject's size, same pool status, similar age and construction, closed within about 6 months.
+
+Include the sales that hurt a low offer. The buyer will find them anyway, and a report that hides them loses its credibility.
+
+## Adjusting
+
+Judge each comp's condition from its remarks (renovated, partially updated, maintained, needs work), and say that condition adjustments are judgment calls based on listing text.
+
+Default rates come from the market profile (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the subject can't match, –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, use the agent's profile values, or ask the agent for local norms before adjusting. Explain any departure in `method_note`.
+
+- Subtract seller-paid buyer costs from the sale price, dollar for dollar.
+- Apply a time adjustment only when the data shows the market has shifted since the sale.
+- Compute adjusted values with Python, not in your head.
+- Write each adjustment as a sentence with its dollar amount: "It sold in April, when rates were lower and homes were moving faster: minus about $10,000." Not "Time adj –2%."
+
+The supported range is a judgment around the median adjusted value, typically about $25,000 wide (`cma.typical_range_width`). Lean toward the best condition matches and the most recent sales, say which way you leaned and why, and widen the range when comps disagree.
+
+## The scatterplot
+
+From the export's remarks, list in `scatter.renovated` the sold private-pool homes that are genuinely renovated. Be conservative: "upgraded" or "well maintained" alone doesn't count. Pick 1–3 callouts, usually the top-selling comp and the strongest active competitor. The script draws everything else, computes the size-only trend line and lists homes left off the chart.

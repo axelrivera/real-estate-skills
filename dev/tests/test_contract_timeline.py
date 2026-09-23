@@ -10,9 +10,10 @@ from datetime import date
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 SCRIPTS = os.path.join(ROOT, "plugins", "transactions", "skills", "contract-timeline", "scripts")
 FIXTURES = os.path.join(ROOT, "dev", "fixtures", "contract-timeline")
-sys.path.insert(0, os.path.abspath(SCRIPTS))
-import timeline  # noqa: E402
-from _shared import dates  # noqa: E402
+sys.path.insert(0, os.path.dirname(__file__))
+from skill_import import load  # noqa: E402
+
+timeline, timeline_render, dates = load("contract-timeline", "timeline", "render", "_shared.dates")
 
 
 def fixture(name):
@@ -147,7 +148,6 @@ class Required(unittest.TestCase):
 
 class Pdf(unittest.TestCase):
     def test_render_uses_brand_and_side(self):
-        import render as timeline_render
         agent = {"name": "Jane Doe", "brokerage": "Sunshine Realty", "team": None, "license": None,
                  "brand": {"primary": "#0B6E4F"}}
         t = timeline.analyze(fixture("seller-amended.json"))

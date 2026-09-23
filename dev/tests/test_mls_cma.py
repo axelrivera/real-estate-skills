@@ -1,0 +1,100 @@
+"""Tests for shared/mls.py and shared/cma.py."""
+import csv
+import os
+import sys
+import tempfile
+import unittest
+
+ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
+sys.path.insert(0, ROOT)
+from shared import cma, mls, profiles  # noqa: E402
+
+EXPORT = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-spring-oaks.csv")
+FL = profiles.load_market(state="FL", county="Seminole")
+SUBJECT = {"address": "517 HICKORYWOOD AVE", "living_area": 1849, "private_pool": True, "subdivision": "SPRING OAKS UNIT 2"}
+
+
+class Load(unittest.TestCase):
+    def test_stellar_export(self):
+        homes = mls.load(EXPORT, FL)
+        self.assertEqual(len(homes), 51)
+        h = next(h for h in homes if h["address"] == "622 SPRING OAKS BLVD")
+        self.assertEqual((h["status"], h["close_price"], h["living_area"], h["private_pool"]), ("SOLD", 505500.0, 1824.0, True))
+        self.assertEqual(str(h["close_date"]), "2026-04-24")
+        self.assertEqual({h["status"] for h in homes}, {"SOLD", "ACTIVE", "PENDING", "EXPIRED"})
+
+    def test_missing_columns_and_unknown_mls(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "x.csv")
+            with open(path, "w", newline="") as f:
+                csv.writer(f).writerows([["Address", "Status"], ["1 A ST", "SLD"]])
+            with self.assertRaises(mls.ExportError):
+                mls.load(path, FL)
+        with self.assertRaises(mls.ExportError):
+            mls.load(EXPORT, profiles.load_market(state="TX"))
+
+    def test_other_mls_column_names(self):
+        tx_cols = {"address": "Street", "status": "St", "living_area": "SqFt", "close_price": "Sold $", "current_price": "List $",
+                   "close_date": "Closed", "original_list_price": "Orig $"}
+        with tempfile.TemporaryDirectory() as tmp:
+            prof = os.path.join(tmp, "tx.md")
+            with open(prof, "w") as f:
+                f.write("---\nprofile: market\nstate: TX\nmls: ACTRIS\nmls_format:\n  cma_export_columns:\n" +
+                        "".join(f'    {k}: "{v}"\n' for k, v in tx_cols.items()) + "---\n")
+            path = os.path.join(tmp, "e.csv")
+            with open(path, "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["Street", "St", "SqFt", "Sold $", "List $", "Closed", "Orig $"])
+                w.writerow(["1 Elm", "Closed", "2,000", "$500,000", "$510,000", "2026-08-01", "$510,000"])
+            homes = mls.load(path, profiles.load_market(prof))
+        self.assertEqual((homes[0]["status"], homes[0]["close_price"], homes[0]["living_area"]), ("SOLD", 500000.0, 2000.0))
+
+
+class Stats(unittest.TestCase):
+    def setUp(self):
+        self.homes = mls.load(EXPORT, FL)
+
+    def test_market_stats(self):
+        s = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01")
+        self.assertEqual(s["sold_early"]["n"] + s["sold_recent"]["n"], s["sold_all"]["n"])
+        self.assertEqual(s["active_count"], 14)  # subject excluded
+        self.assertLess(s["sold_recent"]["median_sale_to_original_list"], s["sold_early"]["median_sale_to_original_list"])
+        self.assertEqual(s["subdivision"]["name_match"], "SPRING OAKS")
+        top = [c["address"] for c in s["sold_candidates"][:5]]
+        self.assertIn("602 MOCKINGBIRD LN", top)
+        self.assertNotIn("517 HICKORYWOOD AVE", [c["address"] for c in s["competition"]])
+
+    def test_exclude_address_drops_subject_rows(self):
+        s = mls.market_stats(self.homes, SUBJECT, exclude_address="517 hickorywood ave")
+        self.assertEqual(s["status_counts"]["ACTIVE"], 14)
+
+    def test_trend(self):
+        fit = mls.trend(self.homes, 1849, exclude_address="517 HICKORYWOOD AVE")
+        self.assertGreater(fit["slope"], 0)
+        self.assertTrue(0 <= fit["r2"] <= 1)
+        self.assertEqual(mls.r2_key(0.1), "r2_small")
+        self.assertEqual(mls.r2_key(0.83), "r2_most")
+        self.assertIsNone(mls.trend(self.homes[:2], 1849))
+
+
+class Blocks(unittest.TestCase):
+    def test_groups_heading_intro_and_figure(self):
+        els = ['<h2>A</h2>', '<p>intro</p>', '<div class="tbl"><table></table></div>', '<p class="note">n</p>',
+               '<p>loose</p>', '<h2>B</h2>', '<p>method</p>', '<footer>agent</footer>']
+        out = cma.group_blocks(els)
+        self.assertTrue(out.startswith('<div class="kg sec"><h2>A</h2><p>intro</p><div class="tbl">'))
+        self.assertIn('<p class="note">n</p></div><p>loose</p>', out)
+        self.assertIn('<div class="kg sec"><h2>B</h2><p>method</p><footer>agent</footer></div>', out)
+
+    def test_lone_h2_gets_section_class(self):
+        self.assertEqual(cma.group_blocks(["<h2>Only</h2>"]), '<h2 class="sec">Only</h2>')
+
+    def test_dotplot_marks(self):
+        cards = [{"address": "1 A St", "adjusted": 450000}, {"address": "2 B St", "adjusted": 470000}]
+        svg = cma.dotplot(cards, 455000, 480000, 474900, "Asking $474,900", (455000, "Offer"))
+        self.assertIn("Asking $474,900", svg)
+        self.assertEqual(svg.count('class="dp-dot"'), 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -6,8 +6,10 @@ import textwrap
 import unittest
 
 SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "plugins", "core", "skills", "market-profile", "scripts")
-sys.path.insert(0, os.path.abspath(SCRIPTS))
-import check_market  # noqa: E402
+sys.path.insert(0, os.path.dirname(__file__))
+from skill_import import load  # noqa: E402
+
+(check_market,) = load("market-profile", "check_market")
 
 TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "market-profile-template.md")
 

@@ -8,3 +8,6 @@ sources/
 dist/
 .venv/
 out/
+
+# Agent worktrees (local only)
+.claude/worktrees/
