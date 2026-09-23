@@ -104,23 +104,45 @@ class Agent(unittest.TestCase):
 
 
 class Market(unittest.TestCase):
-    def test_builtin_for_florida(self):
-        m = p.load_market(state="Florida")
+    def test_florida_gets_state_layer(self):
+        m = p.load_market(state="Florida", county="Seminole")
         self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.007)
-        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "builtin")
-        self.assertEqual(m.notes, [])
+        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "state")
+        self.assertEqual(m.state, "FL")
 
-    def test_unknown_state_assumes_builtin_and_says_so(self):
+    def test_mls_assumed_only_inside_coverage(self):
+        m = p.load_market(state="FL", county="Seminole County")
+        self.assertEqual(m.mls, "Stellar")
+        self.assertEqual(m.source("mls_format.cma_export_columns"), "mls")
+        self.assertTrue(any("Stellar MLS was assumed" in n for n in m.notes))
+        m = p.load_market(state="FL", county="Miami-Dade")
+        self.assertIsNone(m.mls)
+        self.assertIsNone(m.get("mls_format"))
+        self.assertTrue(any("MLS wasn't given" in n for n in m.notes))
+
+    def test_puerto_rico_gets_stellar_but_no_florida_costs(self):
+        m = p.load_market(state="PR")
+        self.assertEqual(m.mls, "Stellar")
+        self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
+        self.assertIsNone(m.get("county_overrides"))
+
+    def test_mls_alias_and_explicit_mls(self):
+        self.assertEqual(p.load_market(state="FL", county="Miami-Dade", mls="My Florida Regional MLS").mls, "Stellar")
+        m = p.load_market(state="FL", mls="Beaches MLS")
+        self.assertIsNone(m.get("mls_format"))
+        self.assertTrue(any("isn't built in" in n for n in m.notes))
+
+    def test_unknown_state_assumes_florida_and_says_so(self):
         m = p.load_market()
         self.assertEqual(m.state, "FL")
-        self.assertEqual(len(m.notes), 1)
+        self.assertTrue(any("Florida was assumed" in n for n in m.notes))
 
     def test_no_florida_defaults_for_other_states(self):
         m = p.load_market(state="TX")
         self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
         self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "missing")
         self.assertEqual(m.missing(["closing_costs.settlement_fee", "state"]), ["closing_costs.settlement_fee"])
-        self.assertTrue(m.notes)
+        self.assertTrue(any("No market profile for Texas" in n for n in m.notes))
 
     def test_other_state_profile_is_not_filled_from_florida(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -129,15 +151,16 @@ class Market(unittest.TestCase):
         self.assertEqual(m.source("closing_costs.settlement_fee"), "profile")
         self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
         self.assertIsNone(m.get("cma.adjustments.pool"))
+        self.assertEqual(m.state, "TX")
 
-    def test_florida_profile_overrides_builtin(self):
+    def test_florida_profile_overrides_state_layer(self):
         with tempfile.TemporaryDirectory() as tmp:
             m = p.load_market(write(tmp, "fl.md", FL_USER))
         self.assertEqual(m.get("closing_costs.settlement_fee"), 800)
         self.assertEqual(m.source("closing_costs.settlement_fee"), "profile")
         self.assertEqual(m.get("closing_costs.owner_title.payer"), "buyer")
-        self.assertEqual(len(m.get("closing_costs.owner_title.rate_tiers")), 5)  # sibling kept from builtin
-        self.assertEqual(m.source("closing_costs.owner_title.rate_tiers"), "builtin")
+        self.assertEqual(len(m.get("closing_costs.owner_title.rate_tiers")), 5)  # sibling kept from the layer
+        self.assertEqual(m.source("closing_costs.owner_title.rate_tiers"), "state")
         self.assertEqual(m.source("closing_costs.owner_title"), "mixed")
 
     def test_county_override(self):
@@ -154,10 +177,14 @@ class Market(unittest.TestCase):
         with self.assertRaises(p.ProfileError):
             p.load_market(state="Atlantis")
 
-    def test_builtin_is_valid_market_profile(self):
-        data, sections = p.read(p.BUILTIN_MARKET)
-        self.assertEqual((data["profile"], data["schema"], data["state"]), ("market", 1, "FL"))
-        self.assertIn("notes", sections)
+    def test_builtin_layers_are_valid(self):
+        states, mlss = p._layers("state"), p._layers("mls")
+        self.assertEqual(set(states), {"FL"})
+        self.assertEqual(states["FL"]["layer"], "state")
+        self.assertIsNone(states["FL"].get("mls_format"))
+        self.assertEqual({l["mls"] for l in mlss.values()}, {"Stellar"})
+        self.assertEqual(set(mlss["stellar"]["coverage"]), {"FL", "PR"})
+        self.assertIsNone(mlss["stellar"].get("closing_costs"))
 
 
 class Find(unittest.TestCase):

@@ -68,15 +68,19 @@ Format: a YAML front block with the values scripts need, followed by readable pr
 ---
 profile: market
 schema: 1
+name: Seminole County
 state: FL
 mls: Stellar
-doc_stamps_deed_per_100: 0.70
+closing_costs:
+  settlement_fee: 800
 ...
 ---
 
-# Market profile — Central Florida (Stellar MLS)
+# Market profile: Seminole County
 ...
 ```
+
+A user's market profile only needs `state`. Everything else is optional and overrides the built-in layers.
 
 ### Agent profile fields
 
@@ -142,7 +146,20 @@ How the color reaches every output:
 - **Party coding.** Documents that show both parties (the timeline's Buyer / Seller / Both markers) use the resolved buyer and seller colors. If the two are the same or too close, the second party gets a clearly different shade, and parties are always labeled in text, never by color alone.
 - **Side labels.** Default blue and orange keep buyer and seller documents easy to tell apart. With a single brand color that signal is gone, so every file-mode output shows its side (Buyer / Seller) in the header on every page.
 
-Florida and Stellar ship as built-in defaults in `shared/markets/`. For any other state or MLS, the profile is built from what the user provides in chat or project files.
+### Built-in market layers
+
+Market values come in layers, merged in this order (later wins):
+
+| Layer | File | Holds | Applies to |
+|---|---|---|---|
+| State | `shared/markets/states/fl.md` | Closing costs, title, property tax, contract rules, CMA adjustments, county overrides | Florida properties only |
+| MLS | `shared/markets/mls/stellar.md` | History codes, CMA export columns, coverage | Stellar, in any state it serves (Florida and Puerto Rico) |
+| User profile | the agent's market profile | Anything | Its state |
+| County override | `county_overrides` in any layer | Local exceptions (Miami-Dade stamps, who pays title) | That county |
+
+State and MLS are separate because an MLS can span states (Stellar serves Puerto Rico) and a state can have several MLSs (Miami-Dade isn't Stellar). Without a profile or a stated MLS, an MLS is assumed only when exactly one built-in MLS covers the property's county, and the skill says so. Every value carries its source, so a skill can tell a built-in default from the agent's own number.
+
+For any other state or MLS, the profile is built from what the user provides in chat or project files.
 
 ## Skills never require other skills
 

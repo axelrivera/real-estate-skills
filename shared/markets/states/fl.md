@@ -1,10 +1,9 @@
 ---
 profile: market
 schema: 1
-name: Central Florida (Stellar MLS)
+layer: state                          # built-in layer: used for Florida properties only
+name: Florida
 state: FL
-area: Orange, Seminole, Osceola, Lake, Volusia
-mls: Stellar
 as_of: 2025
 
 closing_costs:
@@ -50,7 +49,7 @@ contract:
   holidays: us_federal
   inspection_credit_reserve_pct: 0.007  # typical post-inspection renegotiation on AS IS contracts
 
-cma:
+cma:                                  # calibrated on Central Florida (Seminole County) sales
   radius_miles: 1
   lookback_months: 6
   typical_range_width: 25000
@@ -62,40 +61,6 @@ cma:
     documented_recent_systems: -5000
     lot_or_water_premium: [-10000, -5000]
     market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last ~6 weeks
-
-mls_format:
-  history_codes:
-    NEW: New listing
-    DECR: Price decrease
-    INCR: Price increase
-    TOM: Temporarily off market
-    BOM: Back on market
-    PNC: Pending (under contract)
-    SLD: Sold
-    CANC: Canceled
-    EXP: Expired
-    WDN: Withdrawn
-  cma_export_columns:
-    distance: Distance
-    mls_number: ML Number
-    status: Status
-    address: Address
-    subdivision: Legal Subdivision Name
-    living_area: Heated Area
-    current_price: Current Price
-    close_price: Close Price
-    close_date: Close Date
-    original_list_price: Original List Price
-    contract_date: Contract Date
-    beds: Beds
-    full_baths: Full Baths
-    year_built: Year Built
-    pool: Pool
-    days_on_market: CDOM
-    seller_paid_buyer_costs: Seller Paid Buyer Costs
-    lot_acres: Lot Size Acres
-    sale_terms: Sold Terms
-    remarks: Public Remarks
 
 county_overrides:
   Miami-Dade:
@@ -110,9 +75,9 @@ county_overrides:
       owner_title: {payer: buyer}
 ---
 
-# Market profile: Central Florida (Stellar MLS)
+# Market profile layer: Florida
 
-Built-in defaults for Florida and Stellar MLS. Skills use these only for Florida properties. For any other state, values come from the user's own market profile or are asked for.
+Built-in state defaults. Skills use them only for Florida properties. For any other state, values come from the user's own market profile or are asked for. MLS formats are a separate layer (`../mls/`), because an MLS can span states and a state can have several MLSs.
 
 ## Notes
 
@@ -121,5 +86,6 @@ Built-in defaults for Florida and Stellar MLS. Skills use these only for Florida
 - Property tax for the buyer is based on the purchase price, not the seller's bill. The estimate assumes the appraiser values the home at the purchase price, so it often runs high. Non-ad valorem assessments are excluded. Warn about the first-year escrow jump.
 - HOA estoppel fees are capped by statute; associations with delinquencies can charge more.
 - FIRPTA is not computed. If the seller is a foreign person, flag 15% withholding and refer to the title company or a CPA.
+- CMA adjustment defaults were calibrated on Central Florida sales. Other Florida areas should set their own in a market profile.
 - Contract dates follow the FR/BAR definitions. Verify against the form version on the executed contract.
 - Insurance: don't quote premiums. Name the drivers (roof age, wiring and plumbing era, wind mitigation, pool, flood zone) and tell the buyer to get a quote after the 4-point and wind-mitigation inspections.

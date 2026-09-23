@@ -51,7 +51,8 @@ dev/                     # dev tooling, never shipped
 |---|---|
 | `shared/design.py` | Brand palette from the agent's colors ([architecture](architecture.md#brand-colors)) |
 | `shared/profiles.py` | Reads agent and market profiles; merges market values with the source of each |
-| `shared/markets/fl-stellar.md` | Built-in Florida / Stellar MLS market profile, used only for Florida |
+| `shared/markets/states/fl.md` | Built-in Florida state layer (costs, taxes, contract rules) |
+| `shared/markets/mls/stellar.md` | Built-in Stellar MLS layer (formats, coverage), for Florida and Puerto Rico |
 | `shared/render.py` | Output location, file names, HTML → PDF, and the `render.py` command line |
 
 After editing `shared/`, run `make test` and `make sync`, and commit the updated copies with the change.

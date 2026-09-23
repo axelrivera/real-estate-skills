@@ -2,9 +2,9 @@
 
     from _shared import profiles
     agent = profiles.load_agent(path)                     # path may be None
-    market = profiles.load_market(path, state="FL", county="Seminole")
+    market = profiles.load_market(path, state="FL", county="Seminole", mls=None)
     rate = market.get("closing_costs.deed_transfer_tax_rate")
-    market.source("closing_costs.deed_transfer_tax_rate")  # 'profile' | 'builtin' | 'county'
+    market.source("closing_costs.deed_transfer_tax_rate")  # 'profile' | 'state' | 'mls' | 'county'
     market.missing(["closing_costs.settlement_fee", ...])  # paths the skill still has to ask for
 
 Skills never require a profile. When one is only in the conversation (not a file), Claude writes
@@ -19,7 +19,7 @@ import yaml
 from . import design
 
 SCHEMA = 1
-BUILTIN_MARKET = os.path.join(os.path.dirname(os.path.abspath(__file__)), "markets", "fl-stellar.md")
+MARKETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "markets")
 AGENT_REQUIRED = ("name", "brokerage")
 AGENT_FIELDS = ("name", "team", "brokerage", "license", "phone", "email", "website")  # display order
 
@@ -171,9 +171,9 @@ def _merge(base, over, sources, source, prefix=""):
 class Market:
     """Merged market values with the source of each one.
 
-    Sources: 'profile' (user's market profile), 'builtin' (Florida/Stellar defaults, Florida only),
-    'county' (county override). A path with no value is missing: ask for it, or use a labeled
-    assumption and mark the output Preliminary.
+    Sources: 'profile' (user's market profile), 'state' (built-in state layer, that state only),
+    'mls' (built-in MLS layer, that MLS only), 'county' (county override), 'input' (given by the skill).
+    A path with no value is missing: ask for it, or use a labeled assumption and mark the output Preliminary.
     """
 
     def __init__(self, data, sources, notes):
@@ -182,6 +182,10 @@ class Market:
     @property
     def state(self):
         return state_code(self.data.get("state"))
+
+    @property
+    def mls(self):
+        return self.data.get("mls")
 
     def get(self, path, default=None):
         node = self.data
@@ -201,48 +205,103 @@ class Market:
         return [p for p in paths if self.get(p) is None]
 
 
-def load_market(path=None, state=None, county=None):
-    """Market values for a property.
+def _layers(kind):
+    """Built-in layers: {'FL': data} for states, {'stellar': data} (name and aliases) for MLSs."""
+    out = {}
+    for path in sorted(glob.glob(os.path.join(MARKETS, "states" if kind == "state" else "mls", "*.md"))):
+        data, _ = read(path)
+        if kind == "state":
+            out[state_code(data["state"])] = data
+        else:
+            for name in [data["mls"], *data.get("aliases", [])]:
+                out[_mls_key(name)] = data
+    return out
 
-    - With a user profile: its values win. Built-in Florida values fill gaps only when the
-      profile's state is Florida.
-    - Without one: built-in Florida values for Florida properties. For any other state nothing is
-      filled in, and `notes` says so.
-    - `county` applies that county's overrides from the merged profile.
+
+def _mls_key(name):
+    return " ".join(str(name).lower().replace("mls", " ").split())
+
+
+def _covers(layer, state, county):
+    """True when the MLS layer covers the state, and the county too when one is given."""
+    area = (layer.get("coverage") or {}).get(state)
+    if not area:
+        return False
+    if area == "all" or not county:
+        return True
+    return _county_key(county) in {_county_key(c) for c in area}
+
+
+def _county_key(county):
+    return county.strip().lower().removesuffix(" county")
+
+
+def _strip_layer_keys(layer):
+    return {k: v for k, v in layer.items() if k not in ("layer", "name", "aliases", "as_of", "schema", "profile")}
+
+
+def load_market(path=None, state=None, county=None, mls=None):
+    """Market values for a property, merged from built-in layers, the user's profile and county overrides.
+
+    - State layer (costs, taxes, contract rules): only when the property's state has one (Florida).
+    - MLS layer (export formats, coverage): only for that MLS, in any state it serves. Without a
+      profile or an `mls`, an MLS is assumed only when exactly one built-in MLS covers the county.
+    - The user's profile wins over both. `county` then applies that county's overrides.
+    Nothing from another state is ever filled in; `notes` explains every assumption in plain language.
     """
-    builtin, _ = read(BUILTIN_MARKET)
-    builtin_state = state_code(builtin["state"])
     want = state_code(state)
     if state and not want:
-        raise ProfileError(f"{state!r} isn't a US state.")
+        raise ProfileError(f"{state!r} isn't a US state or territory.")
 
-    data, sources, notes = {}, {}, []
+    user = {}
     if path:
         user, _ = read(path)
         if user.get("profile") != "market":
             raise ProfileError("This file isn't a market profile.")
-        if user.get("schema", SCHEMA) > SCHEMA:
-            notes.append("This market profile was made by a newer version; some settings may be ignored.")
         user_state = state_code(user.get("state"))
         if not user_state:
             raise ProfileError("The market profile needs a state (for example FL or Texas).")
         if want and want != user_state:
             raise ProfileError(f"The market profile is for {STATES[user_state]}, but the property is in {STATES[want]}.")
-        if user_state == builtin_state:
-            _merge(data, builtin, sources, "builtin")
-        _merge(data, user, sources, "profile")
-    elif want in (None, builtin_state):
-        _merge(data, builtin, sources, "builtin")
-        if want is None:
-            notes.append(f"The property's state wasn't given, so {STATES[builtin_state]} defaults were assumed.")
-    else:
-        data["state"] = want
-        sources["state"] = "input"
+        want = user_state
+
+    data, sources, notes = {}, {}, []
+    if user.get("schema", SCHEMA) > SCHEMA:
+        notes.append("This market profile was made by a newer version; some settings may be ignored.")
+    states, mlss = _layers("state"), _layers("mls")
+    if want is None:
+        want = "FL"
+        notes.append("The property's state wasn't given, so Florida was assumed.")
+
+    if want in states:
+        _merge(data, _strip_layer_keys(states[want]), sources, "state")
+    elif not path:
         notes.append(f"No market profile for {STATES[want]}: local costs and rules have to be provided.")
 
+    mls_name = user.get("mls") or mls
+    layer = None
+    if mls_name:
+        layer = mlss.get(_mls_key(mls_name))
+        if not layer:
+            notes.append(f"{mls_name} isn't built in: its export columns and history codes have to be provided.")
+    else:
+        candidates = {id(l): l for l in mlss.values() if _covers(l, want, county)}
+        if len(candidates) == 1:
+            layer = next(iter(candidates.values()))
+            notes.append(f"The MLS wasn't given, so {layer['name']} was assumed"
+                         f"{' for ' + county if county else ''}.")
+        else:
+            notes.append(f"The MLS wasn't given{' for ' + county if county else ''}: "
+                         "its export columns and history codes have to be provided if an MLS file is used.")
+    if layer:
+        _merge(data, _strip_layer_keys(layer), sources, "mls")
+
+    _merge(data, {k: v for k, v in user.items() if k not in ("profile", "schema")}, sources, "profile")
+    data["state"] = want
+    sources["state"] = "profile" if path else "state" if want in states else "input"
+
     if county:
-        key = county.strip().removesuffix(" County").lower()
-        overrides = {k.lower(): v for k, v in (data.get("county_overrides") or {}).items()}
-        if key in overrides:
-            _merge(data, overrides[key], sources, "county")
+        overrides = {_county_key(k): v for k, v in (data.get("county_overrides") or {}).items()}
+        if _county_key(county) in overrides:
+            _merge(data, overrides[_county_key(county)], sources, "county")
     return Market(data, sources, notes)
