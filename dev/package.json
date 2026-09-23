@@ -1,0 +1,15 @@
+{
+  "name": "real-estate-marketplace-dev",
+  "private": true,
+  "description": "Local dev environment mirroring the Node modules available in the claude.ai / Cowork sandbox.",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1",
+    "react": "*",
+    "react-dom": "*",
+    "react-icons": "*",
+    "sharp": "*"
+  }
+}

@@ -1,14 +1,11 @@
 # Real Estate Marketplace
 
-A Claude plugin marketplace for real estate agents. Skills run in Claude Code, claude.ai and Cowork.
+A Claude plugin marketplace for real estate agents. Skills run in the Claude desktop app and cloud (claude.ai and Cowork).
 
 ## Install
 
-```
-/plugin marketplace add <repo URL or local path>
-/plugin install core@real-estate-marketplace
-/plugin install transactions@real-estate-marketplace
-```
+- **Cowork:** add this repository as a plugin marketplace, then install `core` and `transactions`.
+- **claude.ai:** run `make package` and upload each zip in `dist/` as a skill.
 
 ## Plugins
 
@@ -25,3 +22,4 @@ Details in [docs/plugins.md](docs/plugins.md).
 - [docs/migration-plan.md](docs/migration-plan.md): rebuilding the prototypes as final skills
 - [docs/plugins.md](docs/plugins.md): plugin and skill catalog
 - [docs/runtime-support.md](docs/runtime-support.md): what each runtime can run
+- [docs/development.md](docs/development.md): local setup and generating outputs

@@ -6,3 +6,5 @@ node_modules/
 # Prototype reference material (local only)
 sources/
 dist/
+.venv/
+out/

@@ -4,10 +4,10 @@ Decisions that apply to every plugin and skill in this marketplace.
 
 ## Runtimes
 
-Every skill must run in **Claude Code, claude.ai and Cowork**. That rules out anything only one runtime provides:
+Skills run in the Claude **desktop app and cloud**: claude.ai chat and Cowork. Claude Code is not a supported runtime. Both runtimes run skills in the same Linux sandbox; see [runtime-support.md](runtime-support.md).
 
-- No `${CLAUDE_PLUGIN_ROOT}` (Claude Code only). A skill refers to its own files by paths relative to its skill directory (`scripts/render_pdf.py`).
-- No paths outside the skill directory (`../../shared/`). Plugins are copied into a cache on install, and claude.ai uploads each skill on its own.
+- A skill refers to its own files by paths relative to its skill directory (`scripts/render.py`).
+- No paths outside the skill directory (`../../shared/`). Cowork installs plugins from the marketplace, and claude.ai uploads each skill on its own.
 - No `/mnt/...` paths hard-coded in instructions. See [Output location](#output-location).
 - Skill `description` must stay under 1,024 characters (claude.ai limit).
 
@@ -18,11 +18,9 @@ Each skill directory is complete on its own. Code used by several skills is edit
 ```
 shared/                         # edit shared code here
 plugins/<plugin>/skills/<skill>/
-  scripts/_shared/              # copy made by tools/sync_shared.py — never edit by hand
-tools/
-  sync_shared.py                # copies shared/ into every skill that uses it
-  check_sync.py                 # fails if any _shared/ copy has drifted (CI + pre-commit)
-  package.py                    # one zip per skill for claude.ai / Cowork upload
+  scripts/_shared/              # copy made by the sync tool — never edit by hand
+dev/                            # sync and drift-check tools (planned), runtime check
+Makefile                        # make package: one zip per skill for claude.ai upload
 ```
 
 The `_shared/` copies are **committed**. Adding the marketplace by URL clones the repo, so every installed skill already has its code. Use copies, not symlinks.
@@ -40,11 +38,18 @@ analysis → <skill>.json → render_md.py    → markdown in chat   (markdown m
 - The math always runs in scripts. Markdown mode renders from the same JSON, so numbers in chat match the files.
 - Default: **file mode** when the user asks for something to print, send, present, or "the report/deck"; **markdown mode** for quick questions. The user can switch by asking, and the skill offers the other mode in one line.
 - Markdown mode mirrors the file's page-1 executive summary; detail tables on request.
-- If a file dependency (Playwright, pptxgenjs) is unavailable, say so plainly and fall back to markdown mode.
+- Every skill with outputs has one entry point, `scripts/render.py DATA.json --format md|pdf|pptx|all --out DIR`. See [development.md](development.md#skill-render-contract).
+- If rendering a file fails, say so plainly and fall back to markdown mode.
 
 ### Output location
 
-Save files to `/mnt/user-data/outputs/` when that directory exists, otherwise to the current working directory. This rule lives in `shared/` and is not repeated per skill.
+Save files to the first of:
+
+1. `OUTPUT_DIR` environment variable (local development only)
+2. `/mnt/user-data/outputs/` (sandbox)
+3. The current working directory
+
+Never write into the skill's own folder, which is the working directory in claude.ai. This rule lives in `shared/` and is not repeated per skill.
 
 ## Profiles (core plugin)
 

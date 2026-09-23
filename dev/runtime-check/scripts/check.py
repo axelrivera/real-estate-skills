@@ -4,6 +4,7 @@ Every check is real: modules are imported, Chromium prints a PDF, pptxgenjs
 writes a deck. Nothing is installed permanently; install checks use a temp dir.
 """
 import importlib
+import importlib.metadata
 import os
 import platform
 import shutil
@@ -28,10 +29,11 @@ def run(cmd, timeout=60, cwd=None):
 
 
 # Python packages
-for mod in ["pandas", "numpy", "bs4", "PIL", "playwright", "yaml"]:
+for mod, dist in [("pandas", "pandas"), ("numpy", "numpy"), ("bs4", "beautifulsoup4"),
+                  ("PIL", "pillow"), ("playwright", "playwright"), ("yaml", "PyYAML")]:
     try:
-        m = importlib.import_module(mod)
-        add("python", mod, True, getattr(m, "__version__", ""))
+        importlib.import_module(mod)
+        add("python", dist, True, importlib.metadata.version(dist))
     except Exception as e:  # noqa: BLE001
         add("python", mod, False, str(e))
 
@@ -63,13 +65,17 @@ for tool, args in [("node", ["--version"]), ("npm", ["--version"]), ("pdftotext"
 # Node modules: resolvable from the default global paths, then a real deck
 if shutil.which("node"):
     for mod in ["pptxgenjs", "react", "react-dom", "react-icons", "sharp"]:
-        ok, out = run(["node", "-e", f"require.resolve('{mod}');console.log('ok')"])
-        if not ok:  # fall back to global node_modules
-            gp = run(["npm", "root", "-g"])[1] if shutil.which("npm") else ""
-            ok, out = run(["node", "-e", f"require.resolve('{mod}',{{paths:['{gp}']}});console.log('ok')"])
-        add("node", mod, ok, "" if ok else "not resolvable")
-    gp = run(["npm", "root", "-g"])[1] if shutil.which("npm") else ""
-    js = (f"const p=require(require.resolve('pptxgenjs',{{paths:[process.cwd(),'{gp}']}}));"
+        gp = run(["npm", "root", "-g"])[1] if shutil.which("npm") else ""
+        # Resolve the entry point, then walk up to the package's own package.json
+        # (packages with an "exports" map block requiring package.json directly).
+        js = (f"const fs=require('fs'),path=require('path');"
+              f"let d=path.dirname(require.resolve('{mod}',{{paths:[...module.paths,...(process.env.NODE_PATH||'').split(':'),'{gp}']}}));"
+              f"while(true){{const f=path.join(d,'package.json');"
+              f"if(fs.existsSync(f)&&JSON.parse(fs.readFileSync(f)).name==='{mod}'){{console.log(JSON.parse(fs.readFileSync(f)).version);break}}"
+              f"if(d===path.dirname(d))throw new Error('no package.json');d=path.dirname(d)}}")
+        ok, out = run(["node", "-e", js])
+        add("node", mod, ok, out if ok else "not resolvable")
+    js = (f"const p=require(require.resolve('pptxgenjs',{{paths:[...module.paths,...(process.env.NODE_PATH||'').split(':'),'{gp}']}}));"
           "const d=new p();d.addSlide().addText('Runtime check',{x:1,y:1});"
           f"d.writeFile({{fileName:'{TMP}/test.pptx'}}).then(()=>console.log('ok'))")
     ok, out = run(["node", "-e", js])

@@ -1,0 +1,8 @@
+# Local dev environment mirroring the claude.ai / Cowork sandbox.
+# Pin to the versions reported by `make runtime-check` in the sandbox (docs/runtime-support.md).
+pandas==3.0.2
+numpy==2.4.4
+beautifulsoup4==4.14.3
+pillow==12.1.1
+PyYAML==6.0.3
+playwright

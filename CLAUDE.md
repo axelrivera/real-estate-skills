@@ -10,7 +10,8 @@ plugins/<plugin>/
   .claude-plugin/plugin.json        # plugin manifest
   skills/<skill>/SKILL.md           # one directory per skill
 shared/                             # shared code, copied into skills (planned)
-tools/                              # dev tooling (runtime-check now; sync, check, package planned)
+dev/                                # dev tooling and fixtures, never shipped
+Makefile                            # make setup | runtime-check | outputs | package | clean
 docs/                               # all documentation
 sources/                            # prototype skills, local only, git-ignored
 ```
@@ -19,8 +20,9 @@ sources/                            # prototype skills, local only, git-ignored
 
 - **Documentation goes in `docs/`.** The root README stays short and links there. No README files inside plugins.
 - **`sources/` is reference only.** Rebuild skills from it; never copy a prototype into `plugins/`, and never edit or ship anything from it.
-- **Every skill runs in Claude Code, claude.ai and Cowork.** Script paths are relative to the skill directory. Do not use `${CLAUDE_PLUGIN_ROOT}`, `/mnt/...` paths, or paths outside the skill directory. Skill descriptions stay under 1,024 characters.
-- **Dependencies:** Python 3.11+, standard library only for data work (no pandas, numpy, bs4, PyYAML). Heavy dependencies are limited to Playwright/Chromium (PDF), pptxgenjs (PPTX) and Pillow (`agent-profile`). See [docs/runtime-support.md](docs/runtime-support.md).
+- **Skills run in claude.ai and Cowork only** (desktop app and cloud), not Claude Code. Script paths are relative to the skill directory. Do not use `/mnt/...` paths or paths outside the skill directory. Skill descriptions stay under 1,024 characters.
+- **Dependencies:** use only what the sandbox has ([docs/runtime-support.md](docs/runtime-support.md)). Python code must be 3.11-compatible. Never install packages at run time.
+- **Local dev:** run `make setup` once; generate outputs with `make outputs`. Use `.venv/bin/python` and the Node version in `.nvmrc`. See [docs/development.md](docs/development.md).
 - **Shared code is edited in `shared/` only.** `scripts/_shared/` inside a skill is a committed copy made by the sync tool; never edit it by hand.
 - **Every skill has a markdown mode and a file mode**, both rendered by scripts from the same data JSON. The core profile skills are markdown only.
 - **Skills never require other skills.** Read profiles and handoffs as files when present; otherwise collect what's needed inline.
