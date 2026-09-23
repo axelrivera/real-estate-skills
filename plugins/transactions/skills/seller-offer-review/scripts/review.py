@@ -139,7 +139,8 @@ def single_view(R, o):
             s.append("It's priced above the value range without enough appraisal gap coverage.")
         if o["sale_contingency_days"]:
             s.append("It depends on the sale of the buyer's home.")
-        s.append(f"The counter below lifts the net by {money(cn - ao)} and cuts the risk." if cn >= ao
+        risk = "and cuts the risk" if o["counter_score"] > o["score"]["total"] else "at about the same certainty"
+        s.append(f"The counter below lifts the net by {money(cn - ao)} {risk}." if cn >= ao
                  else f"The counter below protects the price: it nets {signed(cn - dn)} vs. the downside case.")
         why = " ".join(s)
     elif act == "ACCEPT":

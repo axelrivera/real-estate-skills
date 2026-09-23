@@ -44,9 +44,14 @@ class Analysis(unittest.TestCase):
     def test_multi_plan(self):
         out = review.result(review.analyze(fixture("four-offers.json")))
         s = out["summary"]
-        self.assertEqual(s["headline"], "COUNTER OFFER B")
+        self.assertEqual(s["headline"], "ACCEPT OFFER B")  # the seller wants certainty: B (86) isn't risked for a 0.7% gain
         self.assertEqual([(p["offer"], p["action"]) for p in s["plan"]],
-                         [("B", "Counter"), ("C", "Hold as backup"), ("A", "Decline"), ("D", "Decline")])
+                         [("B", "Accept"), ("C", "Hold as backup"), ("A", "Decline"), ("D", "Decline")])
+        self.assertIn("nothing is declined until the seller approves", s["plan_note"])
+        data = fixture("four-offers.json")
+        data["seller"]["priority"] = "balanced"
+        s = review.result(review.analyze(data))["summary"]
+        self.assertEqual(s["headline"], "COUNTER OFFER B")
         self.assertIn("Only one counter goes out at a time", s["plan_note"])
         self.assertIsNone(s["preliminary"])
 

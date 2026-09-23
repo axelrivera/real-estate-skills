@@ -105,15 +105,16 @@ def given(obj, key, default, A, scope, why, impact="med"):
 
 # --- market ------------------------------------------------------------------
 
-_STATE_IN_ADDRESS = re.compile(r",\s*([A-Z]{2})\s+\d{5}")
+_STATE_IN_ADDRESS = re.compile(r",\s*([A-Z]{2})(?:\s+\d{5}(?:-\d{4})?)?\s*(?:,\s*USA?)?\s*$|,\s*([A-Z]{2})\s+\d{5}")
 
 
 def state_of(listing):
     """The property's state: `state`, else the 'FL 32750' part of the address."""
     if listing.get("state"):
         return listing["state"]
-    m = _STATE_IN_ADDRESS.search(listing.get("address") or "")
-    return m.group(1) if m and m.group(1) in profiles.STATES else None
+    m = _STATE_IN_ADDRESS.search((listing.get("address") or "").strip())  # "…, FL 32708" or "…, Winter Springs, FL"
+    st = m and (m.group(1) or m.group(2))
+    return st if st in profiles.STATES else None
 
 
 # Deal-specific cost overrides in the listing file's `costs` block, mapped to market paths.
@@ -230,7 +231,9 @@ def prepare_listing(data, A, costs):
                   f"Tax bill not provided: estimated at {tax['basis'].removeprefix('about ')} ({costs.described('property_tax.fallback_rate')})", "low")
         else:
             L["annual_tax"] = None
-            A.add("listing", "annual_tax", "not included", "No tax bill and no tax rate for this market: the tax proration is left out of the net", "med")
+            arrears = costs.get("property_tax.paid") != "advance"
+            A.add("listing", "annual_tax", "not included", "No tax bill and no tax rate for this market: the tax proration is left out of the net"
+                  + (" (paid in arrears, so the seller's credit to the buyer can be large)" if arrears else ""), "high" if arrears else "med")
     paid = costs.get("property_tax.paid")
     L["tax_in_arrears"] = paid != "advance"
     if paid is None and L["annual_tax"]:
@@ -241,6 +244,7 @@ def prepare_listing(data, A, costs):
         A.add("listing", "title_payer", "unknown", "Who customarily pays the owner's title policy wasn't given: left out of the net", "med")
     L["contract_form_default"] = "as_is" if "FR/BAR AS IS" in (costs.get("contract.forms") or []) else None
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
+    L["deposit_norm"] = costs.get("contract.typical_deposit_pct") or 0.01  # a strong deposit here, share of price
 
     S["payoff_known"] = S.get("payoff") is not None
     if not S["payoff_known"]:
@@ -296,6 +300,8 @@ def cost_notes(costs, L):
     if rate:
         payer = costs.get("closing_costs.deed_transfer_tax_payer") or "seller"
         notes.append(f"{name} {rate * 100:.2f}%, {payer} pays ({costs.described('closing_costs.deed_transfer_tax_rate')})")
+    elif rate == 0:
+        notes.append(f"No deed transfer tax in this market ({costs.described('closing_costs.deed_transfer_tax_rate')})")
     else:
         notes.append("Deed transfer tax: not known for this market, left out")
     payer = L["title_customary_payer"]
@@ -349,6 +355,7 @@ def prepare_offer(o, L, S, A):
         o["buyer_broker_pct"] = o["buyer_broker_amount"] / o["price"]
     o["home_warranty"] = o.get("home_warranty") or 0
     o["contract_form"] = o.get("contract_form") or L["contract_form_default"]
+    o["inspection_assumed"] = o.get("inspection_days") in (None, "")
     o["inspection_days"] = given(o, "inspection_days", 10, A, sc, "Inspection period not provided: assumed 10 days", "med")
     o["loan_approval_days"] = 0 if not o["financed"] else given(
         o, "loan_approval_days", 30, A, sc, "Loan approval period not provided: assumed 30 days", "low")
@@ -516,7 +523,7 @@ def auto_scores(o, L, S):
             notes.append(f"flood zone {fz}")
         if o.get("insurance_quote"):
             v += 1
-            notes.append("buyer has insurance quote")
+            notes.append("insurance quote before submitting" if o["insurance_quote"] == "planned" else "buyer has insurance quote")
         s["property"] = max(1, min(5, v))
         why["property"] = "; ".join(notes) or "No known condition or insurance issues"
 
@@ -577,12 +584,16 @@ def flags_for(o, L, S):
             "Require a full pre-approval within 3 days.")
     if o["financed"] and not o.get("lender_called"):
         add("Med", "Lender not yet called to confirm approval and closing capacity.", "Call the loan officer before responding.")
-    if o["deposit"] is not None and o["deposit"] / o["price"] < .015:
-        add("Med", f"Deposit is {o['deposit'] / o['price']:.1%} of price.", "Counter for 3% or a larger additional deposit.")
+    if o["deposit"] is not None and o["deposit"] / o["price"] < L["deposit_norm"] / 2:
+        add("Med", f"Deposit is {o['deposit'] / o['price']:.1%} of price.", f"Counter for {pct(L['deposit_norm'])} or a larger additional deposit.")
     roof = L.get("roof_year")
     if o["financed"] and roof and L["analysis_date"].year - roof >= 14:
-        add("Med", f"{L['analysis_date'].year - roof}-yr roof: buyer's insurer may require roof work or decline coverage.",
-            f"Provide a roof certification and the {L['reports']} up front.")
+        if o.get("insurance_quote") is True:
+            add("Low", f"{L['analysis_date'].year - roof}-yr roof: the buyer has a quote; confirm it covers the roof as is.",
+                "Ask the buyer's agent for the quote's roof conditions.")
+        else:
+            add("Med", f"{L['analysis_date'].year - roof}-yr roof: buyer's insurer may require roof work or decline coverage.",
+                f"Provide a roof certification and the {L['reports']} up front.")
     fz = (L.get("flood_zone") or "").upper()
     if o["financed"] and fz[:1] in ("A", "V"):
         add("Med", f"Flood zone {fz}: lender will require flood insurance.", "Confirm the buyer has a flood quote.")
@@ -639,12 +650,14 @@ def propose_counter(o, L, S):
     if ob is not None and o["buyer_broker_pct"] > ob + 1e-9:
         t["buyer_broker_pct"] = ob
         rows.append(("Buyer-broker compensation", f"{o['buyer_broker_pct']:.1%}", f"{ob:.1%}", "Matches what the seller agreed to offer"))
-    if o["deposit"] is not None and o["deposit"] / o["price"] < .03:
-        t["deposit"] = rnd(.03 * t["price"], 1000, "up") if o["financed"] else max(o["deposit"], rnd(.05 * t["price"], 1000, "up"))
+    if o["deposit"] is not None and o["deposit"] / o["price"] < L["deposit_norm"] - 1e-9:
+        norm = L["deposit_norm"] if o["financed"] else max(L["deposit_norm"], 0.05)
+        t["deposit"] = max(o["deposit"], rnd(norm * t["price"], 1000, "up"))
         rows.append(("Escrow deposit", money(o["deposit"]), money(t["deposit"]), "More buyer commitment once contingencies expire"))
     if o["inspection_days"] > 7:
         t["inspection_days"] = 7
-        rows.append(("Inspection period", f"{o['inspection_days']} days", "7 days", f"Shorter walk-away window; seller shares the {L['reports']}"))
+        rows.append(("Inspection period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""), "7 days",
+                     f"Shorter walk-away window; seller shares the {L['reports']}"))
     if o["sale_contingency_days"]:
         t["sale_contingency_days"] = min(21, o["sale_contingency_days"])
         rows.append(("Sale-of-home contingency", f"{o['sale_contingency_days']} days" + (" + kick-out" if o["kickout"] else ""),
@@ -733,12 +746,13 @@ def target_net(L, S, costs, close):
     return net_sheet(L["list_price"], 0, bb, 0, close, L, S, costs)
 
 
-def single_recommendation(o, tgt):
+def single_recommendation(o, tgt, priority="balanced"):
     if o.get("recommendation"):
         return o["recommendation"].upper()
     tol = 0.01 * o["price"]
     gain = o["ns_counter"]["net_adj"] - o["ns"]["net_adj"]
-    if o["score"]["total"] >= 80 and (o["ns"]["net_adj"] >= tgt["net_adj"] - tol or gain < 0.005 * o["price"]):
+    small = {"certainty": 0.01, "price": 0.0025}.get(priority, 0.005)  # a seller who wants certainty won't risk it for less
+    if o["score"]["total"] >= 80 and (o["ns"]["net_adj"] >= tgt["net_adj"] - tol or gain < small * o["price"]):
         return "ACCEPT"  # strong offer: don't risk it over a small gain
     if not o["counter_rows"]:
         return "ACCEPT"
@@ -789,7 +803,8 @@ def analyze(data, market=None, cma=None):
     _missing_market(costs, offers[0]["ns"], A)
     active = [o for o in offers if o["status"] in ACTIVE]
     res = {"listing": L, "seller": S, "offers": offers, "active": active, "costs": costs,
-           "market_notes": list(costs.notes), "sample": bool(data.get("sample"))}
+           "market_notes": [n for n in costs.notes if "MLS" not in n],  # offers don't use MLS files
+           "sample": bool(data.get("sample"))}
     close_ref = max((o["close"] for o in active), default=L["analysis_date"] + timedelta(days=30))
     res["target"] = target_net(L, S, costs, min(close_ref, S["deadline"] or close_ref))
     for o in offers:
@@ -802,11 +817,11 @@ def analyze(data, market=None, cma=None):
     res["mode"] = "multi" if len(active) >= 2 else "single"
     if res["mode"] == "single":
         for o in active:
-            o["action"] = single_recommendation(o, o["target"])
+            o["action"] = single_recommendation(o, o["target"], S["priority"])
             o["action_reason"] = ""
     else:
         top = ranked[0]
-        top["action"] = single_recommendation(top, top["target"])
+        top["action"] = single_recommendation(top, top["target"], S["priority"])
         top["action_reason"] = "Best risk-adjusted net"
         for i, o in enumerate(ranked[1:], start=2):
             if i == 2 and o["score"]["total"] >= 60:

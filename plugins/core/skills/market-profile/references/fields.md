@@ -24,7 +24,7 @@ For the owner's title policy the most exact source wins: a promulgated `rate_tie
 | `owner_title.rate_tiers` | Promulgated rate table: list of `{up_to, per_1000}`, last `up_to: null` |
 | `owner_title.quote` | `{price, premium}`: one title company quote, e.g. `{price: 400000, premium: 2400}`. Used as a share of price at other prices |
 | `owner_title.estimate_pct` | A rough share of price, when there's no table or quote |
-| `seller_title_fees` | Seller's title company charges by name, e.g. `settlement_fee`, `title_search`, `municipal_lien_search`, `recording`. Names are free-form; every amount is added up. For a split escrow or settlement fee, store the seller's share |
+| `seller_title_fees` | Seller's title company charges by name, e.g. `settlement_fee`, `title_search`, `municipal_lien_search`, `recording`. Names are free-form; every amount is added up. Fees merge one by one with the built-in ones (source `mixed`): a quote naming only the settlement fee keeps the built-in search, lien search and recording. Set a built-in fee to `0` to drop it (an all-inclusive quote). For a split escrow or settlement fee, store the seller's share |
 | `hoa_estoppel_fee` | HOA or condo status letter fee |
 | `buyer_closing_cost_pct` | Buyer's closing costs when no estimate is given, share of price |
 
@@ -32,8 +32,8 @@ For the owner's title policy the most exact source wins: a promulgated `rate_tie
 
 | Field | Meaning |
 |---|---|
-| `listing_fee_pct` | Seller's listing brokerage default |
-| `buyer_broker_fee_pct` | Buyer's brokerage default (negotiated per deal) |
+| `listing_fee_pct` | Seller's listing brokerage default: the listing side only |
+| `buyer_broker_fee_pct` | Buyer's brokerage default (negotiated per deal), added on top of the listing fee in net sheets |
 
 ## property_tax
 
@@ -74,6 +74,7 @@ Holding and buyer insurance are optional: without them the offer skills use a na
 | `before_closing_rollover` | For dates counted back from closing: `previous_business_day` or `none` |
 | `holidays` | `us_federal` or a list of dates |
 | `inspection_credit_reserve_pct` | Typical post-inspection credit, share of price |
+| `typical_deposit_pct` | A strong earnest money / escrow deposit on a financed offer, share of price (Florida 0.03). Offer reviews counter below it; without it, 1% |
 
 ## cma
 

@@ -130,6 +130,7 @@ contract:
   before_closing_rollover: previous_business_day
   holidays: us_federal
   inspection_credit_reserve_pct: 0.007  # typical post-inspection renegotiation on AS IS contracts
+  typical_deposit_pct: 0.03           # a strong escrow deposit on a financed offer, share of price
 
 cma:                                  # calibrated on Central Florida (Seminole County) sales
   radius_miles: 1

@@ -234,7 +234,7 @@ def checklist(o):
               "Yes" if o.get("lender_called") or (not fin and o["approval"] == "pof_verified") else "No"),
              ("deposit", "Deposit amount, due date & escrow agent confirmed", "Pending"),
              ("riders", "All riders attached and consistent", "Pending"),
-             ("insurance", "Buyer has insurance quote on this address", "N/A" if not fin else ("Yes" if o.get("insurance_quote") else "No")),
+             ("insurance", "Buyer has insurance quote on this address", "N/A" if not fin else ({True: "Yes", False: "No"}.get(o.get("insurance_quote"), "Unknown"))),
              ("bb", "Buyer-broker compensation request reviewed with seller", "Pending"),
              ("net", "Seller's net sheet reviewed with seller", "Pending")]
     out = []
@@ -436,7 +436,7 @@ def scatter(R):
         svg.append(f'<text x="{xs(x)}" y="{H - B + 12}" text-anchor="middle" class="ax">{x}</text>')
     svg.append(f'<text x="{(Lm + W - Rm) / 2}" y="{H - 3}" text-anchor="middle" class="ax">Certainty score →</text>')
     svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
-               f'<text x="{Lm + 3}" y="{ys(tgt) - 3}" class="ax" style="fill:var(--good-strong)">target {money(tgt)}</text>')
+               f'<text x="{Lm + 3}" y="{ys(tgt) - 3}" class="ax" style="fill:var(--good-strong)">target {money(tgt)} (clean offer at list)</text>')
     for o in offs:
         c = col[o["action"]]
         x, a, b = xs(o["score"]["total"]), ys(o["ns"]["net_adj"]), ys(o["ns_down"]["net_adj"])

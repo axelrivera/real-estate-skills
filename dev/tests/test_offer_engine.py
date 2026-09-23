@@ -41,7 +41,8 @@ class MatchesPrototype(unittest.TestCase):
         got = {o["id"]: (o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"], o["score"]["total"],
                          o["counter_score"], o["action"]) for o in R["ranked"]}
         self.assertEqual(got, {
-            "B": (145677, 142677, 148476, 86, 82, "COUNTER"),
+            # The prototype countered B; this seller wants certainty, so a strong offer isn't risked for a 0.7% gain.
+            "B": (145677, 142677, 148476, 86, 82, "ACCEPT"),
             "C": (134560, 131560, 153320, 100, 98, "BACKUP"),
             "A": (142901, 130105, 145813, 54, 66, "DECLINE"),
             "D": (154293, 134126, 146150, 42, 62, "DECLINE"),
@@ -166,6 +167,23 @@ class Rules(unittest.TestCase):
         data["seller"] = {**(data.get("seller") or {}), "listing_fee_pct": 3}
         with self.assertRaisesRegex(oe.OfferError, "seller.listing_fee_pct is 3: write it as a fraction, 0.03"):
             oe.analyze(data)
+
+    def test_state_from_address_without_zip(self):
+        self.assertEqual(oe.state_of({"address": "1207 Palmetto Way, Winter Springs, FL"}), "FL")
+        self.assertEqual(oe.state_of({"address": "8104 Shoal Creek Blvd, Austin, TX 78757"}), "TX")
+        self.assertIsNone(oe.state_of({"address": "12 Main St"}))
+
+    def test_no_transfer_tax_reads_as_none(self):
+        class M:
+            state, notes = "TX", []
+
+            def get(self, path, default=None):
+                return {"closing_costs.deed_transfer_tax_rate": 0}.get(path, default)
+
+            def source(self, path):
+                return "profile"
+        notes = oe.cost_notes(oe.Costs(M()), {"title_customary_payer": None})
+        self.assertTrue(notes[0].startswith("No deed transfer tax"))
 
     def test_required_inputs(self):
         with self.assertRaises(oe.OfferError):

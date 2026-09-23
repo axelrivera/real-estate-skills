@@ -82,6 +82,26 @@ class MissingData(unittest.TestCase):
             strategy.analyze({"property": {"address": "x"}})
 
 
+class EvalFindings(unittest.TestCase):
+    def test_stronger_is_recommended_when_it_lifts_the_outlook_inside_limits(self):
+        B = {"analysis_date": "2026-09-23", "property": {"address": "2716 Gatlin Ave, Orlando, FL", "list_price": 429000},
+             "buyer": {"cash_available": 38000}}
+        r = strategy.analyze(B)
+        lvl = r["B"]["competition"]["level"]
+        self.assertEqual(r["promoted"], "stronger")
+        self.assertEqual(r["bands"]["recommended"][lvl][0], "strong")
+        self.assertEqual(r["R"]["listing"]["state"], "FL")  # read from "Orlando, FL" without a ZIP
+        self.assertEqual(r["why"]["inspection_days"], "Room for a full inspection + 4-point (year built unknown)")
+        self.assertIn("insurance quote before submitting", r["O"]["recommended"]["score"]["why"]["property"])
+        self.assertIn("get the insurance quote", strategy.summary(r)["next_step"])
+
+    def test_rate_written_as_fraction_is_refused(self):
+        B = {"analysis_date": "2026-09-23", "property": {"address": "1 Main St, Orlando, FL", "list_price": 400000},
+             "buyer": {"cash_available": 40000}, "costs": {"rate": 0.064}}
+        with self.assertRaisesRegex(strategy.oe.OfferError, "percent"):
+            strategy.analyze(B)
+
+
 class HandoffAndOtherStates(unittest.TestCase):
     def test_handoff_fills_value_market_and_subject(self):
         r = analyze("texas-cma-escalation.json")

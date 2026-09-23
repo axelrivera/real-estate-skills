@@ -47,7 +47,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## costs (buyer's payment)
 
-`rate` (default 6.5%), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged).
+`rate` (interest rate as a **percent**: `6.5` for 6.5%, like lenders quote it; default 6.5), `tax_rate` (optional: annual tax as a share of price, `0.0198`, when you have a plain rate rather than millage), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged).
 
 ## buyer
 
@@ -62,8 +62,9 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 | `reserve_floor` | $2,000 | med |
 | `max_payment` | none | — |
 | `closing_cost_pct` | market buyer closing costs + 0.5% prepaids (Florida 3.5%); cash: half the market figure; no market: 3.5% / 1.5% | low |
-| `approval` | `preapproval` (`pof_verified` for cash) | — |
-| `lender_called`, `insurance_quote` | false | — |
+| `approval` | `preapproval` (`pof_verified` for cash). Values: `none`, `prequal`, `preapproval`, `full_uw` (DU/LP or underwriter approval), `pof_verified` (cash) | — |
+| `lender_called` | false. True only when the agent says they talked to the lender: it prints "lender confirmed" on the worksheet | — |
+| `insurance_quote` | false. True when the buyer already has a quote for this address | — |
 | `lender_min_close_days` | 35 financed / 21 cash | — |
 | `agent_track` | `average`: how a listing agent would rate the buyer's agent | — |
 | `buyer_broker_agreement_pct` | market default | — |

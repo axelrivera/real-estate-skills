@@ -19,6 +19,7 @@ The worksheet lists the same entries by name with no paragraph numbers, because 
 | Walk-away window | Option period and option fee (TX), due-diligence period and fee (NC, GA), inspection contingency (most others) |
 | Financing, loan approval | Financing addendum or loan contingency section |
 | Title | "Title policy": who furnishes it varies by state and county |
+| Texas (TREC) | Option fee and option period in Para. 5; financing on the Third Party Financing Addendum (loan approval, appraisal as a condition there), not a separate appraisal rider; earnest money due within 3 days. TREC has no escalation addendum: write escalation in Special Provisions only if the listing agent accepts it |
 
 Rider names are generic outside Florida ("Appraisal contingency addendum"); map them to the state's forms. Ask the agent before adding anything their form set doesn't have.
 
@@ -44,4 +45,4 @@ Only when they apply: seller-paid closing costs (unused amounts aren't paid to t
 
 ## Package checklist
 
-Printed with empty checkboxes and blank Date / Notes columns: contract completed and initialed; riders attached and signed; additional terms reviewed by the broker; pre-approval letter at the offer price (or proof of funds for cash); proof of funds for deposit, closing costs and gap; insurance quote; agency disclosure (Florida: brokerage relationship disclosure); buyer-broker agreement matching the compensation request; wire-fraud advisory; lead-based paint disclosure for pre-1978 homes; inspector booked inside the inspection period; lender confirms the closing timeline. **Never include** personal letters, photos or buyer background (fair housing).
+Printed with blank Date / Notes columns; a box is checked when the buyer file's `checklist` says `Yes` or `Done`: contract completed and initialed; riders attached and signed; additional terms reviewed by the broker; pre-approval letter at the offer price (or proof of funds for cash); proof of funds for deposit, closing costs and gap; insurance quote; agency disclosure (Florida: brokerage relationship disclosure); buyer-broker agreement matching the compensation request; wire-fraud advisory; lead-based paint disclosure for pre-1978 homes; inspector booked inside the inspection period; lender confirms the closing timeline. **Never include** personal letters, photos or buyer background (fair housing).

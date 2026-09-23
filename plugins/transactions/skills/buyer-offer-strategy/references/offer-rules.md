@@ -23,10 +23,11 @@ From the listing agent's statement when available; otherwise inferred from marke
 | Closing | The lender's fastest reliable close (+10 days with no competition) |
 | Home warranty | Not requested from the seller |
 | Buyer-broker pay | What the seller offers; otherwise the buyer-broker agreement %, flagged to confirm |
-| Escalation | Only with heavy competition and 10%+ down or cash. The cap stays within CMA high + gap coverage, the max price, the payment limit, and a cash level that keeps the reserve at the cap. Never for low-down FHA/VA/USDA: price above value gets cut back by the appraisal |
+| Escalation | Only with heavy competition and 10%+ down or cash. The cap stays within CMA high + gap coverage, the max price, the payment limit, and a cash level that keeps the reserve at the cap. Never for low-down FHA/VA/USDA: price above value gets cut back by the appraisal. In a **highest-and-best** round, many listing agents want one flat number: ask the listing agent first, and if escalation isn't welcome, offer the cap as a flat price (it's inside every limit by construction) |
 
 ## Alternatives
 
+- **Which one is recommended:** the rule-built offer, unless the stronger option reaches a better outlook against the expected competition while staying inside every limit (price, payment, reserve, program cap). Then the stronger terms become the recommendation. A cheaper option in the same band stays an alternative: the bands can't see above Strong.
 - **Stronger:** adds gap coverage (~0.55% of price) and a 3% deposit, never beyond the buyer's actual cash. If it only helps by dipping below the reserve floor, it's labeled the buyer's call; if it doesn't change the outlook, the report says the extra cash isn't worth it. Not offered when the buyer can't afford the recommended offer.
 - **Lower-cost:** the same rules one competition level lower, without escalation: what the buyer saves and what happens to the outlook. Dropped when it would be "Unlikely" against the expected competition (level 2+); not offered when competition is already "only offer".
 

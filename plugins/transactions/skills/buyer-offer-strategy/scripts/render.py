@@ -147,7 +147,7 @@ def details(r, res):
     ns += '<tr class="total2"><td>Net as the listing agent sees it</td>' + "".join(
         f'<td class="n {"best" if c["net_adj"] >= tgt["net_adj"] else ("worst" if c["net_adj"] < tgt["net_adj"] - 5000 else "")}">{acct(c["net_adj"])}</td>'
         for _, c in cols) + "</tr>"
-    ns += '<tr class="alt"><td>If the appraisal lands at value midpoint</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
+    ns += '<tr class="alt"><td>If the appraisal and inspection go badly (value midpoint, typical repair credit)</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
     sc = ""
     for key, label, w in oe.CRITERIA:
         sc += f'<tr><td>{label}</td><td class="n">{w}%</td>' + "".join(f'<td class="c s{O[k]["score"]["scores"][key]}">{O[k]["score"]["scores"][key]}</td>' for k in K) \
@@ -233,7 +233,8 @@ def worksheet_html(r, agent, sample, variant=None):
     def hint(note):
         return f'<span class="hint">{esc(note)}</span>' if note else ""
 
-    pk = "".join(f'<tr><td class="c"><span class="cb"></span></td><td class="src">{esc(x["group"])}</td><td>{esc(x["item"])}{hint(x["note"])}</td>'
+    done = ("yes", "done", "true", "✓")
+    pk = "".join(f'<tr><td class="c"><span class="cb{" on" if str(x["status"]).lower() in done else ""}"></span></td><td class="src">{esc(x["group"])}</td><td>{esc(x["item"])}{hint(x["note"])}</td>'
                  '<td class="write"></td><td class="write"></td></tr>' for x in W["package"])
     verify = ("verify every paragraph and rider against the current FR/BAR form version" if W["frbar"]
               else "match each entry to your contract by name (paragraph numbers vary by form)")
