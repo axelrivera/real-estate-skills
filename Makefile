@@ -5,7 +5,8 @@ PYTHON   ?= python3.12
 VENV     := .venv
 PY       := $(VENV)/bin/python
 NVM      := . "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm use --silent >/dev/null &&
-NODE_ENV := NODE_PATH="$(CURDIR)/dev/node_modules"
+LO_BIN   ?= /Applications/LibreOffice.app/Contents/MacOS
+DEV_ENV := NODE_PATH="$(CURDIR)/dev/node_modules" PATH="$(CURDIR)/$(VENV)/bin:$(LO_BIN):$$PATH"
 OUT      := out
 DIST     := dist
 
@@ -28,7 +29,7 @@ setup:
 	. "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm install && cd dev && npm install --silent
 
 runtime-check:
-	@$(NVM) $(NODE_ENV) PATH="$(CURDIR)/$(VENV)/bin:$$PATH" $(PY) dev/runtime-check/scripts/check.py
+	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py
 
 # Each skill exposes scripts/render.py DATA.json --format all --out DIR.
 # Fixtures live in dev/fixtures/<skill>/*.json and are never shipped.
@@ -37,7 +38,7 @@ outputs:
 		skill=$$(basename $$(dirname $$f)); name=$$(basename $$f .json); \
 		dir=$$(dirname $$(ls plugins/*/skills/$$skill/SKILL.md)); \
 		echo "$$skill: $$name"; \
-		$(NVM) $(NODE_ENV) OUTPUT_DIR="$(OUT)/$$skill/$$name" \
+		$(NVM) $(DEV_ENV) OUTPUT_DIR="$(OUT)/$$skill/$$name" \
 			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" || exit 1; \
 	done
 

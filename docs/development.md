@@ -6,7 +6,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 
 - Python 3.12 (`PYTHON=python3.x make setup` to use another; keep code 3.11-compatible)
 - [nvm](https://github.com/nvm-sh/nvm); the Node version comes from `.nvmrc`
-- Optional: LibreOffice (`brew install --cask libreoffice`) for deck checks and PPTX → PDF previews. The sandbox has it; decks are generated without it.
+- Optional: LibreOffice (`brew install --cask libreoffice`) for deck checks and PPTX → PDF previews. The sandbox has it; decks are generated without it. The Makefile adds `/Applications/LibreOffice.app/Contents/MacOS` to `PATH`; override with `LO_BIN=...` if it's installed elsewhere. Shell aliases don't work here.
 
 ## Commands
 
