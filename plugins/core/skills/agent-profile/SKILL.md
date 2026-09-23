@@ -11,7 +11,7 @@ The agent is usually not technical. Keep YAML, JSON and color codes out of repli
 
 ## 1. Find an existing profile
 
-Look in the conversation, Project files and uploads for a file that starts with `profile: agent`. If there is one, this is an update: read it, change only what the agent asks, and keep the rest.
+Look in the conversation, Project files and uploads for a file that starts with `profile: agent`. If there is one, this is an update: edit that file in place, change only what the agent asks, keep the rest (and their formatting, such as how they write their phone), then go to step 4's check. A move to a new brokerage often changes the team name, email, website and disclaimers too: ask about those in one line instead of changing them.
 
 ## 2. Ask for what's missing
 
@@ -23,6 +23,8 @@ Only **name** and **brokerage** are required. Ask for everything missing in one 
 Don't ask about brokerage or compliance rules; that's the agent's call. Don't fill in anything they skipped, because a guessed license number or phone ends up on client documents.
 
 If they already sent a logo, website or color codes, read the colors first (step 3) and put the color confirmation in this same message, so the agent answers once. Skip the colors question when they already named their colors.
+
+Once name and brokerage are known, write the file in this same turn (steps 4 and 5) rather than waiting: the optional details and a color confirmation go in the hand-over message, and the file is updated when the agent replies. A profile they can use now beats a questionnaire.
 
 ## 3. Brand colors (optional)
 
@@ -52,4 +54,4 @@ Present the file with a short summary in plain words (who, which details are sav
 
 - **claude.ai inside a Project** (the conversation has Project files or instructions): "Add this file to your Project files so every chat can use it."
 - **Cowork** (you're working in a folder on the agent's computer): save it in that working folder and say where.
-- **Otherwise** (a plain claude.ai chat): "Keep this file and share it at the start of a chat when you want your details used."
+- **Otherwise** (a plain claude.ai chat, or you can't tell): "Keep this file and share it at the start of a chat when you want your details used. If you use a Project, add it to the Project files."

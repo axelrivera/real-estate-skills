@@ -15,6 +15,8 @@ Look in the conversation, Project files and uploads for files that start with `p
 
 ## 2. Where do they work?
 
+Skip this for an update: the existing profile already says.
+
 Ask for the state, the county or area, and the MLS if they know it. Then see what's already known:
 
 ```
@@ -25,6 +27,7 @@ For each group of settings it shows the values, where they come from (`state` or
 
 ## 3. Fill the gaps, or confirm the built-ins
 
+- **The agent named the values** ("3% listing, 2% to buyer agents"): save exactly those, then offer the summary below in one line. Commission wording is ambiguous: "3% listing" usually means the listing side only, with the buyer's agent paid on top. If it could mean a 3% total that includes the buyer's agent, say how you read it in the hand-over.
 - **Built-in market (Florida, Stellar):** summarize the defaults the agent is most likely to have opinions on, in plain words: commission split, title fees, who pays title in their county, and whether their city has millage. Ask what they'd like to change. Most agents change one or two things or nothing.
 - **Anything else:** go through the `missing` groups in the order the agent's work needs them. Closing costs and brokerage matter for net sheets, contract dates for timelines, CMA for pricing. Ask in plain words, a group at a time.
 - **Documents help most.** A net sheet, a title company quote or a closing cost worksheet answers most closing cost questions at once. Read it and confirm what you took from it.
@@ -50,7 +53,7 @@ Save it as `market-profile-<area>.md` (for example `market-profile-seminole.md`)
 python3 scripts/check_market.py <path> --county <county>
 ```
 
-Fix anything under `problems`, then confirm the values show `profile` as their source.
+Fix anything under `problems`, then check `from_profile`: it lists every setting the profile changes, and each should be one the agent gave you. A `mixed` source means a group of values (title fees) where some come from the profile and the rest are built in.
 
 ## 5. Hand it over
 

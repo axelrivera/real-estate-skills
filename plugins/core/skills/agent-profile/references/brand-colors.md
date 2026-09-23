@@ -22,7 +22,7 @@ If the website can't be opened (some sites block automated visits), ask for an i
 
 ## Confirming
 
-Always confirm by name before saving, because a wrong guess ends up on every report:
+Always confirm by name, because a wrong guess ends up on every report. When you write the file before the agent answers (SKILL.md step 2), save `suggestion.primary` for all reports, say so, and change it when they reply:
 
 - One color: "Your logo is mostly Navy. Use Navy for all your reports?"
 - With a `split`: "Your logo has Navy and Gold. Use Navy for everything, or Navy for buyer reports and Gold for seller reports?"
@@ -31,6 +31,10 @@ Always confirm by name before saving, because a wrong guess ends up on every rep
 - A split where one color is light: offer the single color too, since a light seller color makes seller reports paler: "Your logo has Navy and Gold. Gold is light, so seller reports would use a darker gold for text. Use Navy for everything, or Navy for buyers and Gold for sellers?"
 
 Only ask about separate buyer and seller colors when there's a `split` or the agent brings it up.
+
+When the agent asks about a specific document ("my listing presentations"), say which color that document would get under each choice, using the side table below: with Navy for buyers and Gold for sellers, a listing presentation comes out gold.
+
+**Names:** when the agent names a color ("navy #1B2A4A"), use their word in the file and in replies, even if the scripts call it something else ("Midnight Blue"). It's their brand.
 
 Which documents are which side, if the agent asks:
 

@@ -86,11 +86,13 @@ def check(path=None, state=None, county=None, mls=None):
     if county:
         key = county.strip().lower().removesuffix(" county")
         millage = [m for m in millage if str(m.get("county", "")).lower() == key]
+    changed = sorted({p for g in groups.values() for p, v in g["values"].items() if v["source"] in ("profile", "mixed")})
     return {
         "ok": not problems,
         "state": market.state,
         "mls": market.mls,
         "notes": market.notes,
+        "from_profile": changed,
         "groups": groups,
         "millage_districts": [m.get("district") for m in millage],
         "problems": problems,
