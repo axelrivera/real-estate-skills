@@ -25,6 +25,7 @@ def fill(values, brand=None):
         lines = f.read().splitlines()
     out, skip_section = [], False
     for line in lines:
+        raw = line
         if line.startswith("## "):
             section = line[3:].lower()
             skip_section = (section == "brand colors" and not brand) or \
@@ -46,8 +47,10 @@ def fill(values, brand=None):
                     line = None
                     break
                 line = line.replace("{{" + ph + "}}", values[field].replace('"', '\\"') if ":" in line else values[field])
+        if line is None and "{{team name}} · {{brokerage}}" in raw and "brokerage" in values:
+            line = values["brokerage"]  # SKILL.md step 4: without a team, just the brokerage
         if line is not None:
-            out.append(line.replace(" · ", "") if line.startswith(" · ") else line)
+            out.append(line)
     return "\n".join(out) + "\n"
 
 
@@ -91,6 +94,13 @@ class Images(unittest.TestCase):
         self.assertEqual([c["name"] for c in r["colors"][:2]], ["Navy", "Gold"])
         self.assertIn("split", r["suggestion"])
         self.assertTrue(any("Gold is too light" in n for n in r["notes"]))
+        self.assertTrue(any("Navy for all reports is also a good choice" in n for n in r["notes"]))
+
+    def test_exact_logo_colors_not_bucket_centers(self):
+        """Report the logo's real colors (#1F3A5F, #D4AF37), not the rounded bucket centers."""
+        with tempfile.TemporaryDirectory() as tmp:
+            r = ec.from_image(image(tmp, [((31, 58, 95), 0.4), ((29, 60, 92), 0.05), ((212, 175, 55), 0.3)]))
+        self.assertEqual([c["hex"] for c in r["colors"][:2]], ["#1F3A5F", "#D4AF37"])
 
     def test_small_accent_does_not_offer_split(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -159,7 +169,9 @@ class Template(unittest.TestCase):
 
     def test_minimal_profile_passes_check(self):
         with tempfile.TemporaryDirectory() as tmp:
-            r = check_profile.check(write_profile(tmp, fill({"name": "Sam", "brokerage": "Coastal Homes"})))
+            text = fill({"name": "Sam", "brokerage": "Coastal Homes"})
+            r = check_profile.check(write_profile(tmp, text))
+        self.assertIn("\nCoastal Homes\n", text)
         self.assertTrue(r["ok"], r)
         self.assertEqual(r["fields"], ["name", "brokerage"])
         self.assertTrue(r["colors"]["buyer"]["default"])

@@ -28,8 +28,17 @@ Always confirm by name before saving, because a wrong guess ends up on every rep
 - With a `split`: "Your logo has Navy and Gold. Use Navy for everything, or Navy for buyer reports and Gold for seller reports?"
 - Black-and-white logo: "Your logo is black and white. Charcoal or Navy work well on reports. Which do you prefer, or would you rather keep the default colors?"
 - Too light (`light: true`): "Gold is light, so reports use a darker gold for text and Gold for accents." It's information, not a question.
+- A split where one color is light: offer the single color too, since a light seller color makes seller reports paler: "Your logo has Navy and Gold. Gold is light, so seller reports would use a darker gold for text. Use Navy for everything, or Navy for buyers and Gold for sellers?"
 
 Only ask about separate buyer and seller colors when there's a `split` or the agent brings it up.
+
+Which documents are which side, if the agent asks:
+
+| Side | Documents |
+|---|---|
+| Buyer | Buyer CMA, buyer offer strategy (offer options, offer package) |
+| Seller | Seller CMA and listing presentation, seller offer review |
+| Either | Contract timeline: the color of the side it's prepared for |
 
 ## Saving
 

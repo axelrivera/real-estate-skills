@@ -22,15 +22,18 @@ Only **name** and **brokerage** are required. Ask for everything missing in one 
 
 Don't ask about brokerage or compliance rules; that's the agent's call. Don't fill in anything they skipped, because a guessed license number or phone ends up on client documents.
 
+If they already sent a logo, website or color codes, read the colors first (step 3) and put the color confirmation in this same message, so the agent answers once. Skip the colors question when they already named their colors.
+
 ## 3. Brand colors (optional)
 
-Read `references/brand-colors.md` before this step. In short: take color codes, a website or an image; run `scripts/extract_colors.py` for websites and images; confirm the result by name before saving.
+Read `references/brand-colors.md` before this step. In short: take color codes, a website or an image; run `scripts/extract_colors.py` for websites and images; confirm the result by name before saving. Confirming colors and asking for the optional details in one message is preferred.
 
 ## 4. Write the file
 
 Fill in `assets/agent-profile-template.md`:
 
 - Leave out every line and section the agent didn't give (team, license, contact, brand, voice, disclaimers). Missing fields are skipped on documents, never shown empty.
+- The line under the heading is `Team · Brokerage`; without a team it's just the brokerage.
 - In `brand`, keep either `primary` (one color) or `buyer_primary` and `seller_primary` (two), with the color name as the comment.
 - Keep values in double quotes; write a double quote inside a value as `\"`.
 - The "Brand colors" line says it in words: "Navy for all reports." or "Navy for buyer reports, Gold for seller reports."
@@ -45,8 +48,8 @@ Fix anything under `problems` and check again. Pass on `warnings` in plain words
 
 ## 5. Hand it over
 
-Present the file with a short summary in plain words (who, which details are saved, which colors). Then one line on keeping it:
+Present the file with a short summary in plain words (who, which details are saved, which colors). Then one line on keeping it, depending on where you're running:
 
-- claude.ai Projects: "Add this file to your Project files so every chat can use it."
-- Cowork: save it in their working folder.
-- Otherwise: "Keep this file and share it at the start of a chat when you want your details used."
+- **claude.ai inside a Project** (the conversation has Project files or instructions): "Add this file to your Project files so every chat can use it."
+- **Cowork** (you're working in a folder on the agent's computer): save it in that working folder and say where.
+- **Otherwise** (a plain claude.ai chat): "Keep this file and share it at the start of a chat when you want your details used."

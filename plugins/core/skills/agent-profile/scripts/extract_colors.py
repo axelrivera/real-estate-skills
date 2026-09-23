@@ -28,17 +28,21 @@ _VAR_RE = re.compile(r"--[\w-]*(primary|brand|accent|main|theme|secondary)[\w-]*
 
 # --- shared ranking ---------------------------------------------------------
 
-def _merge(weighted):
-    """[(hex, weight)] -> [(hex, weight)] with near-identical colors merged, heaviest first."""
+def _merge(weighted, members=False):
+    """[(hex, weight)] -> [(hex, weight)] with near-identical colors merged, heaviest first.
+
+    With `members`, each group also lists the hex values merged into it: [(hex, weight, [hex, ...])].
+    """
     groups = []
     for hx, w in sorted(weighted, key=lambda x: -x[1]):
         for g in groups:
             if design.distance(g[0], hx) < MERGE_DISTANCE:
                 g[1] += w
+                g[2].append(hx)
                 break
         else:
-            groups.append([hx, w])
-    return [(hx, w) for hx, w in groups]
+            groups.append([hx, w, [hx]])
+    return [tuple(g) if members else (g[0], g[1]) for g in groups]
 
 
 def _describe(hx, share=None, evidence=None):
@@ -67,6 +71,10 @@ def summarize(candidates, neutral_share=0.0):
         strong = second.get("share", 1.0) >= SPLIT_MIN_SHARE
         if strong and design.distance(primary["hex"], second["hex"]) >= design.PARTY_MIN_DISTANCE:
             suggestion["split"] = {"buyer_primary": primary["hex"], "seller_primary": second["hex"]}
+            light = next((c for c in (primary, second) if c["light"]), None)
+            if light:
+                other = second if light is primary else primary
+                notes.append(f"{light['name']} is light, so {other['name']} for all reports is also a good choice.")
     for c in colors[:2]:
         if c["light"]:
             notes.append(f"{c['name']} is too light to read as text, so reports would use a darker shade"
@@ -83,18 +91,26 @@ def from_image(path):
 
     with Image.open(path) as im:
         im = im.convert("RGBA")
-        im.thumbnail((200, 200))
+        im.thumbnail((200, 200), Image.NEAREST)  # nearest keeps the logo's real colors (no blended edge pixels)
         raw = im.tobytes()  # RGBA bytes; works across Pillow versions
     pixels = [tuple(raw[i:i + 3]) for i in range(0, len(raw), 4) if raw[i + 3] >= 128]  # skip transparent
     if not pixels:
         return summarize([])
-    counts = Counter("#%02X%02X%02X" % tuple(c // 8 * 8 + 4 for c in p) for p in pixels)  # bucket to 32 levels
+    counts, inside = Counter(), {}
+    for rgb, n in Counter(pixels).items():  # bucket to 32 levels to group shades, but remember the real pixels
+        bucket = "#%02X%02X%02X" % tuple(c // 8 * 8 + 4 for c in rgb)
+        counts[bucket] += n
+        inside.setdefault(bucket, Counter())["#%02X%02X%02X" % rgb] += n
     total = sum(counts.values())
     chromatic = [(hx, n) for hx, n in counts.items() if not design.is_neutral(hx)]
     neutral_share = 1 - sum(n for _, n in chromatic) / total
     colored = sum(n for _, n in chromatic) or 1
-    merged = _merge(chromatic)
-    ranked = [(hx, n / colored, "image") for hx, n in merged if n / colored >= 0.02]
+    ranked = []
+    for _, n, buckets in _merge(chromatic, members=True):
+        if n / colored < 0.02:
+            continue
+        real = sum((inside[b] for b in buckets), Counter()).most_common(1)[0][0]  # the most common real pixel
+        ranked.append((real, n / colored, "image"))
     result = summarize(ranked, neutral_share)
     result["source"] = os.path.basename(path)
     return result
