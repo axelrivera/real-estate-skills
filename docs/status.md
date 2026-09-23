@@ -35,6 +35,20 @@ git -C .claude/worktrees/<name> status --short
 - Then: `make sync && make test && make check-sync && make outputs`, review outputs, commit, and `git worktree remove` the worktrees.
 - If a worktree is empty or unusable, rebuild that skill yourself following the `buyer-cma` pattern.
 
+## Eval findings to fix
+
+From the agent-profile eval 2 run (logo → colors), before handoff:
+
+1. **`extract_colors.py` returns rounded colors** (#1C3C5C instead of the logo's real #1F3A5F; #D4AC34 instead of #D4AF37) because it reports the 32-level bucket center. Fix: report the most common real pixel within each merged group. Add a test with exact pixel values.
+2. SKILL.md steps 2 and 3 should say it's fine (preferred) to confirm colors and ask for optional fields in the same message, and to skip the colors question when colors were already given.
+3. `references/brand-colors.md`: add which documents are buyer vs. seller side (listing presentation and seller CMA = seller; buyer CMA and offer strategy = buyer; contract timeline follows the view).
+4. When a split color is light (e.g., Gold for seller), suggest the single-color option too, not only the information note.
+5. Template: say what the `{{team name}} · {{brokerage}}` line becomes without a team (just the brokerage), and drop the "Keep this file in your Project files" line from the template body (the hand-over message already says it).
+6. SKILL.md step 5: explain how to tell claude.ai Projects vs. Cowork vs. other.
+7. Clean stale `scripts/__pycache__` before packaging (`make package` already excludes it from zips; delete locally).
+
+Contract-timeline and market-profile eval runs were still running at handoff; re-run them.
+
 ## Remaining work, in order
 
 1. **Recover/finish the offer skills** (`seller-offer-review`, `buyer-offer-strategy`) and `shared/offer_engine.py`. Requirements: prototype engine ported once (shared), Florida hard-coding replaced by market profile + `shared/finance`, never-block-on-missing-data with Preliminary labels, CMA handoff consumed via `shared/handoff`, buyer side themed "buyer" (prototype wrongly used orange), analysis script prints formatted JSON, markdown via `assets/*-template.md`, PDFs via `render.py`, Offer Package Worksheet for buyer side. Prototypes: `sources/Prototype Skills/offer-analysis-pdf/`, `buyer-offer-builder/`, sample PDFs `Test1_*.pdf`, `Test2_*.pdf`, `Test3_*.pdf`, `Offer_Package_Worksheet_Sample.pdf`.
