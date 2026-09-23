@@ -17,6 +17,7 @@ Every setting the skills read, what it means, and the format. Rates are decimals
 |---|---|
 | `deed_transfer_tax_rate` | State or local tax on the deed, share of price. FL: 0.007 |
 | `deed_transfer_tax_payer` | `seller`, `buyer` or `split` by custom |
+| `deed_transfer_tax_label` | Local name for the tax ("Documentary stamp tax on the deed") |
 | `owner_title.payer` | Who customarily pays the owner's title policy: `seller` or `buyer` |
 | `owner_title.rate_tiers` | Promulgated rate table: list of `{up_to, per_1000}`, last `up_to: null` |
 | `owner_title.estimate_pct` | Use instead of `rate_tiers` where rates aren't promulgated: share of price |

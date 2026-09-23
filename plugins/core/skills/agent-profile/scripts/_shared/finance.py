@@ -137,11 +137,17 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
                has_hoa=False, other_costs=0):
     """Seller's estimated net at `price`, itemized, with the source of every assumption.
 
-    Returns {'items': [(label, amount)], 'total_costs', 'net_before_payoff', 'net', 'missing', 'assumed'}.
+    Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
+    'net_before_payoff', 'net', 'missing', 'assumed'}. `lines` carries stable keys (listing_fee, buyer_broker_fee,
+    transfer_tax, owner_title, title_fees, estoppel, credit, other) so reports can use their own wording.
     `missing` lists market values that weren't available (the output should be marked Preliminary);
     `assumed` lists defaults taken from the market profile rather than the agent.
     """
-    items, missing, assumed = [], [], []
+    items, lines, missing, assumed = [], [], [], []
+
+    def add(key, label, amount, rate=None):
+        items.append((label, amount))
+        lines.append({"key": key, "label": label, "amount": amount, "rate": rate})
 
     def market_value(path, label):
         v = market.get(path) if market is not None else None
@@ -156,44 +162,45 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     if buyer_broker_fee_pct is None and bf is not None:
         assumed.append(f"buyer's agent fee {bf * 100:g}%")
     if lf:
-        items.append((f"Listing brokerage ({lf * 100:g}%)", price * lf))
+        add("listing_fee", f"Listing brokerage ({lf * 100:g}%)", price * lf, lf)
     if bf:
-        items.append((f"Buyer's agent ({bf * 100:g}%)", price * bf))
+        add("buyer_broker_fee", f"Buyer's agent ({bf * 100:g}%)", price * bf, bf)
 
     rate = market_value("closing_costs.deed_transfer_tax_rate", "deed transfer tax")
     payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
+    tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed transfer tax"
     if rate and payer in (None, "seller"):
-        items.append(("Deed transfer tax", price * rate))
+        add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
     elif rate and payer == "split":
-        items.append(("Deed transfer tax (half)", price * rate / 2))
+        add("transfer_tax", f"{tax_label} (half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
 
     title_payer = market_value("closing_costs.owner_title.payer", "who pays owner's title")
     if title_payer == "seller":
         tiers = market.get("closing_costs.owner_title.rate_tiers")
         pct = market.get("closing_costs.owner_title.estimate_pct")
         if tiers:
-            items.append(("Owner's title insurance", title_premium(price, tiers)))
+            add("owner_title", "Owner's title insurance", title_premium(price, tiers))
         elif pct:
-            items.append(("Owner's title insurance (estimate)", price * pct))
+            add("owner_title", "Owner's title insurance (estimate)", price * pct, pct)
         else:
             missing.append("owner's title rate")
 
     fees = market.get("closing_costs.seller_title_fees") if market is not None else None
     if fees:
-        items.append(("Title company fees", sum(fees.values())))
+        add("title_fees", "Title company fees", sum(fees.values()))
     else:
         missing.append("title company fees")
     if has_hoa:
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
-            items.append(("HOA estoppel letter", estoppel))
+            add("estoppel", "HOA estoppel letter", estoppel)
     if credit:
-        items.append(("Seller credit to buyer", credit))
+        add("credit", "Seller credit to buyer", credit)
     if other_costs:
-        items.append(("Other costs", other_costs))
+        add("other", "Other costs", other_costs)
 
     total = sum(a for _, a in items)
     net_before = price - total
-    return {"items": items, "total_costs": total, "net_before_payoff": net_before,
+    return {"items": items, "lines": lines, "total_costs": total, "net_before_payoff": net_before,
             "net": None if payoff is None else net_before - payoff,
             "missing": missing, "assumed": assumed}

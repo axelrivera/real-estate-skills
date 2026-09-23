@@ -68,7 +68,10 @@ class SellerSide(unittest.TestCase):
     def test_seller_net_florida(self):
         n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True)
         labels = [a for a, _ in n["items"]]
-        self.assertIn("Deed transfer tax", labels)
+        self.assertIn("Documentary stamp tax on the deed (0.70%)", labels)
+        self.assertEqual([x["key"] for x in n["lines"]],
+                         ["listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees", "estoppel", "credit"])
+        self.assertAlmostEqual(sum(x["amount"] for x in n["lines"]), n["total_costs"])
         self.assertIn("Owner's title insurance", labels)
         self.assertIn("HOA estoppel letter", labels)
         self.assertEqual(n["missing"], [])
