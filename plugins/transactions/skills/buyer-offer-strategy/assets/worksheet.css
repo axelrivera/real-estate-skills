@@ -1,0 +1,12 @@
+/* Offer package worksheet: styles on top of the shared report.css. Theme variables only. */
+.ws td{font-size:8.6pt;vertical-align:top} .ws td.ent{font-weight:700;color:var(--brand-ink)} .ws td.src{font-size:7.4pt;color:var(--muted)}
+.fill{color:var(--risk-strong);font-weight:700}
+.goal{margin-top:4px;background:var(--brand-callout);border-left:3px solid var(--brand);padding:4px 8px;border-radius:3px;font-size:8.2pt}
+.clause{border:1px solid var(--brand-rule);border-left:4px solid var(--brand);border-radius:4px;padding:5px 9px;margin:4px 0;font-size:8.6pt;break-inside:avoid;background:#fff}
+.clause b.t{display:block;color:var(--brand-ink);font-size:8.4pt;margin-bottom:2px}
+.draftbar{background:var(--brand-deep);color:var(--on-brand);font-size:8pt;padding:4px 10px;border-radius:4px;margin:0 0 6px}
+/* offer package checklist: printed and checked off with a pen */
+.pk td{height:22px;vertical-align:middle;background:#fff!important;border-top:1px solid var(--grey-light)}
+.pk td.write{border-left:1px dashed var(--grey)}
+.pk .hint{display:block;font-size:6.8pt;color:var(--muted);margin-top:1px}
+.cb{display:inline-block;width:11px;height:11px;border:1.3px solid var(--text);border-radius:1px;vertical-align:-1px;background:#fff}

@@ -1,0 +1,25 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "property": {"dom": 4, "roof_year": 2018},
+  "cma": {
+    "handoff": "cma", "version": 1, "side": "buyer", "as_of": "2026-09-22", "source": "buyer-cma",
+    "subject": {"address": "8104 Shoal Creek Blvd, Austin, TX 78757", "state": "TX", "county": "Travis",
+                "list_price": 610000, "beds": 3, "baths": 2, "sqft": 1780, "year_built": 1962, "hoa_monthly": 0},
+    "value": {"low": 598000, "high": 632000, "midpoint": 615000, "median_adjusted": 618500},
+    "comps": [{"address": "7902 Shoal Creek Blvd", "sold_price": 624000, "close_date": "2026-08-14", "sqft": 1810, "seller_paid": 0, "adjusted": 619800}],
+    "market": {"sale_to_original_list_recent": 0.992, "median_days_recent": 11, "months_supply": 2.4},
+    "offer_plan": {"opening": 610000, "target_low": 615000, "target_high": 625000, "walk_away": 632000},
+    "recommended_list_price": null,
+    "market_profile": {"state": "TX"}
+  },
+  "competition": {"level": 3, "note": "Listing agent: 6 offers in, highest and best by Friday", "deadline": "Fri Sep 25 · 6 PM"},
+  "listing_side": {"buyer_broker_offered_pct": 0.025, "listing_fee_pct": 0.03},
+  "costs": {"rate": 6.4, "insurance_annual": 3900, "total_mills": 19.8},
+  "buyer": {
+    "name": "Sample Buyer",
+    "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true, "lender_min_close_days": 30,
+    "max_price": 640000, "cash_available": 170000, "reserve_floor": 15000, "insurance_quote": true, "agent_track": "strong"
+  },
+  "worksheet": {"buyer_names": "Sample Buyer", "contract_name": "TREC One to Four Family Residential Contract (Resale)"}
+}

@@ -1,0 +1,18 @@
+{
+  "handoff": "cma",
+  "version": 1,
+  "side": "buyer",
+  "as_of": "2026-09-22",
+  "source": "buyer-cma",
+  "subject": {"address": "1532 Cypress Bend Dr, Casselberry, FL 32707", "state": "FL", "county": "Seminole", "list_price": 365000,
+              "beds": 3, "baths": 2, "sqft": 1512, "year_built": 1994, "roof_year": 2011, "hoa_monthly": 0, "flood_zone": "X", "dom": 9},
+  "value": {"low": 355000, "high": 372000, "midpoint": 363500, "median_adjusted": 364200},
+  "comps": [
+    {"address": "1488 Cypress Bend Dr", "sold_price": 362000, "close_date": "2026-08-12", "sqft": 1498, "seller_paid": 6000, "adjusted": 363100},
+    {"address": "1610 Willow Oak Ln", "sold_price": 369500, "close_date": "2026-07-02", "sqft": 1540, "seller_paid": 0, "adjusted": 365300}
+  ],
+  "market": {"sale_to_original_list_recent": 0.981, "median_days_recent": 34, "months_supply": 3.8},
+  "offer_plan": {"opening": 360000, "target_low": 362000, "target_high": 366000, "walk_away": 372000},
+  "recommended_list_price": null,
+  "market_profile": {"state": "FL", "mls": "Stellar"}
+}

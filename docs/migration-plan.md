@@ -67,5 +67,5 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 | `contract-timeline` | Built per skill guidelines: engine matches the prototype sample exactly; FR/BAR and other contracts; branded PDF; 3 fixtures, tests, evals; needs a run in claude.ai and Cowork |
 | `buyer-cma` | Built per skill guidelines: numbers match the prototype sample exactly; branded PDF, English/Spanish labels, markdown template, cma-handoff v1; fixture, tests, evals; needs a run in claude.ai and Cowork |
 | `seller-cma` | Not started |
-| `seller-offer-review` | Not started |
-| `buyer-offer-strategy` | Not started |
+| `seller-offer-review` | Built per skill guidelines on the new `shared/offer_engine.py`: numbers match the prototype samples exactly when given the prototype's costs; costs now from the market profile (Florida 2.5% + 2.5% brokerage, itemized $1,145 title fees; other states left out and marked Preliminary); consumes `cma-handoff v1`; single and multi-offer PDF in seller colors; 4 fixtures (incl. Texas), tests, evals; needs a run in claude.ai and Cowork |
+| `buyer-offer-strategy` | Built per skill guidelines on `shared/offer_engine.py` and `shared/finance`: options, scores, cash and payments match the prototype sample; buyer blue (prototype used orange); consumes `cma-handoff v1` (range, median adjusted, market stats); Offer Options + Offer Package Worksheet PDFs (FR/BAR, or entries by name elsewhere); 3 fixtures (incl. Texas), tests, evals; outcome log not ported; needs a run in claude.ai and Cowork |

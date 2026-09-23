@@ -1,0 +1,32 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "property": {
+    "address": "1532 Cypress Bend Dr, Casselberry, FL 32707",
+    "state": "FL",
+    "county": "Seminole",
+    "list_price": 365000,
+    "dom": 9,
+    "price_cuts": 0,
+    "beds": 3, "baths": 2, "sqft": 1512, "year_built": 1994, "roof_year": 2011,
+    "hoa_monthly": 0, "flood_zone": "X", "annual_tax": 4600
+  },
+  "value": {"cma_low": 355000, "cma_high": 372000, "source": "buyer CMA"},
+  "market": {"sale_to_list": 0.981, "months_supply": 3.8, "median_dom": 34, "share_with_seller_costs": "44%", "typical_seller_paid": "$6,500"},
+  "competition": {"level": 2, "note": "Listing agent: 2 other offers expected", "deadline": "Fri Sep 25 · 5 PM"},
+  "listing_side": {"buyer_broker_offered_pct": 0.025},
+  "costs": {"rate": 6.5, "insurance_annual": 3400, "total_mills": 16.35, "school_mills": 5.249, "homestead": true},
+  "buyer": {
+    "name": "Sample Buyer",
+    "financing": "fha", "down_pct": 0.035, "approval": "du_approved", "lender_called": true, "lender_min_close_days": 35,
+    "max_price": 375000, "cash_available": 26000, "reserve_floor": 2000, "max_payment": 3200,
+    "insurance_quote": false, "agent_track": "strong"
+  },
+  "worksheet": {
+    "buyer_names": "Sample Buyer",
+    "escrow_agent": "Sample Title Co., Casselberry FL · (407) 555-0100",
+    "personal_property": "Range, refrigerator, dishwasher, microwave, washer, dryer, window treatments"
+  },
+  "chosen_option": "recommended",
+  "overrides": {}
+}

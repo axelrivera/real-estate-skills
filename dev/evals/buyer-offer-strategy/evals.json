@@ -1,0 +1,23 @@
+{
+  "skill_name": "buyer-offer-strategy",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Here's the CMA for Cypress Bend. Listing agent says 2 other offers are coming, due Friday 5pm. My buyer is FHA 3.5% down (DU approved, I talked to the lender), has $26k cash total, wants to keep at least $2k, max $375k and max payment $3,200. What should we offer? Make me the offer options report and the worksheet.",
+      "expected_output": "Reads the CMA handoff file (value range, median adjusted comp, market stats); recommends $365,000 with about $2,000 seller concessions, $11,000 deposit, 10-day inspection, no appraisal gap and no escalation (FHA); outlook Competitive vs. 2–3 competing; Stronger costs about $2,000 more with the same outlook and dips below the reserve floor; Lower-cost saves cash but drops to At risk; both PDFs in buyer blue with 'Buyer side' in the header; the worksheet shows FR/BAR entries and the FHA/VA rider and never the buyer's max price, cash or payment limit",
+      "files": ["dev/evals/buyer-offer-strategy/files/1532-Cypress-Bend-Dr.cma.json"]
+    },
+    {
+      "id": 2,
+      "prompt": "my buyer likes 2716 Gatlin Ave in Orlando, listed at 429k. they have about 38k saved. what should we offer??",
+      "expected_output": "Runs with just list price and cash (no questionnaire first); assumes conventional 5% down and says to confirm with the lender; infers the competition level and says so; recommends around list with modest seller concessions and a 2% deposit; marks the answer Preliminary (no value range, loan type, max price assumed); asks one short question, leading with the loan type and the listing agent's read on competition; offers the report and a buyer CMA tip in one line",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Highest and best on 8104 Shoal Creek in Austin, 6 offers in, due Friday 6pm. Buyer is conventional 20% down, full underwriting, $170k cash, wants to keep $15k, won't go over $640k. CMA handoff attached. Should we escalate? Rate is 6.4%, insurance quote $3,900/yr, tax rate about 1.98%.",
+      "expected_output": "Uses the Texas handoff (range $598k–$632k); recommends top of range ($632,000) with an appraisal gap and an escalation clause capped at $634,000 that keeps the $15k reserve; explains why the cap stops there; outlook Strong; does not use Florida doc stamps, FR/BAR paragraphs or Form Simplicity; the worksheet lists entries by name with no paragraph numbers and generic addendum names, and the seller net notes that Texas closing costs weren't provided unless a market profile is given",
+      "files": ["dev/evals/buyer-offer-strategy/files/8104-Shoal-Creek-Blvd.cma.json"]
+    }
+  ]
+}

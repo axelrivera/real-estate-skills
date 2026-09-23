@@ -1,0 +1,15 @@
+{
+  "handoff": "cma",
+  "version": 1,
+  "side": "buyer",
+  "as_of": "2026-09-22",
+  "source": "buyer-cma",
+  "subject": {"address": "8104 Shoal Creek Blvd, Austin, TX 78757", "state": "TX", "county": "Travis", "list_price": 610000,
+              "beds": 3, "baths": 2, "sqft": 1780, "year_built": 1962, "hoa_monthly": 0, "dom": 4},
+  "value": {"low": 598000, "high": 632000, "midpoint": 615000, "median_adjusted": 618500},
+  "comps": [{"address": "7902 Shoal Creek Blvd", "sold_price": 624000, "close_date": "2026-08-14", "sqft": 1810, "seller_paid": 0, "adjusted": 619800}],
+  "market": {"sale_to_original_list_recent": 0.992, "median_days_recent": 11, "months_supply": 2.4},
+  "offer_plan": {"opening": 610000, "target_low": 615000, "target_high": 625000, "walk_away": 632000},
+  "recommended_list_price": null,
+  "market_profile": {"state": "TX"}
+}
