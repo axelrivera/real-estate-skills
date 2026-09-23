@@ -20,6 +20,7 @@ sources/                            # prototype skills, local only, git-ignored
 - **Documentation goes in `docs/`.** The root README stays short and links there. No README files inside plugins.
 - **`sources/` is reference only.** Rebuild skills from it; never copy a prototype into `plugins/`, and never edit or ship anything from it.
 - **Every skill runs in Claude Code, claude.ai and Cowork.** Script paths are relative to the skill directory. Do not use `${CLAUDE_PLUGIN_ROOT}`, `/mnt/...` paths, or paths outside the skill directory. Skill descriptions stay under 1,024 characters.
+- **Dependencies:** Python 3.11+, standard library only for data work (no pandas, numpy, bs4, PyYAML). Heavy dependencies are limited to Playwright/Chromium (PDF), pptxgenjs (PPTX) and Pillow (`agent-profile`). See [docs/runtime-support.md](docs/runtime-support.md).
 - **Shared code is edited in `shared/` only.** `scripts/_shared/` inside a skill is a committed copy made by the sync tool; never edit it by hand.
 - **Every skill has a markdown mode and a file mode**, both rendered by scripts from the same data JSON. The core profile skills are markdown only.
 - **Skills never require other skills.** Read profiles and handoffs as files when present; otherwise collect what's needed inline.
