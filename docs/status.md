@@ -47,7 +47,18 @@ From the agent-profile eval 2 run (logo → colors), before handoff:
 6. SKILL.md step 5: explain how to tell claude.ai Projects vs. Cowork vs. other.
 7. Clean stale `scripts/__pycache__` before packaging (`make package` already excludes it from zips; delete locally).
 
-Contract-timeline and market-profile eval runs were still running at handoff; re-run them.
+From the contract-timeline eval 1 run (dates all correct, PDF produced):
+
+1. `flags` print on the client PDF as "Check:" lines. Separate agent-only notes (chat only) from client-facing checks, e.g. `flags` (on PDF) vs. `agent_notes` (not printed), and say so in SKILL.md and deal-file.md.
+2. Document the script's own flag (loan approval within 5 days of closing) and the market note ("Stellar was assumed"), and tell Claude not to pass MLS notes to the agent for a timeline (irrelevant there).
+3. frbar.md: a blank 2(b) amount means no additional deposit (the 10-day default applies only when an amount is written).
+4. frbar.md: list the rider keywords the script matches (appraisal, fha, va, insurance, association, condominium, sale of buyer).
+5. SKILL.md: when delivering the PDF, say whether to also include a short table in chat (recommend: key dates only, not the full template).
+6. frbar.md: closing time field (`closing_time`, default 10:00) and flag it when the contract doesn't state one.
+7. SKILL.md: mention `OUTPUT_DIR` only in development.md (not needed in the sandbox) — fine as is; no change.
+8. PDF strip: labels crowd when several deadlines share a date (Oct 23) and cover axis tick labels; group same-day deadlines into one label and keep labels off the tick row.
+
+The market-profile eval run was still running at handoff; re-run it.
 
 ## Remaining work, in order
 
