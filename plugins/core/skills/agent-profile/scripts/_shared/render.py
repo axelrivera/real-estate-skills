@@ -1,14 +1,18 @@
 """Output helpers shared by every skill's scripts/render.py.
 
     from _shared import render
-    def build(data, fmt, out_dir): ...          # returns the paths it wrote
+    def build(data, fmt, out_dir, ctx): ...     # returns the paths it wrote
     if __name__ == "__main__":
-        render.main(build, formats=("md", "pdf"))
+        render.main(build, formats=("pdf",))
+
+ctx carries the agent profile (always a dict, empty fields when there's none), the market profile
+path, and whether this is sample data.
 
 Implements the render contract (docs/development.md#skill-render-contract) and the output
 location rule (docs/architecture.md#output-location).
 """
 import argparse
+import html
 import json
 import os
 import re
@@ -45,28 +49,49 @@ def filename(*parts, ext):
     return f"{slug or 'output'}.{ext.lstrip('.')}"
 
 
-def page(body, css="", title="", theme_css=""):
-    """A complete HTML document for the PDF renderer. `theme_css` is design.css_vars(theme)."""
-    return (f"<!doctype html><html><head><meta charset='utf-8'><title>{title}</title>"
-            f"<style>{theme_css}{css}</style></head><body>{body}</body></html>")
+REPORT_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "report.css")
 
 
-def html_to_pdf(html, path, margins="0.3in", fmt="Letter", before_print=None):
-    """Print HTML to PDF with Chromium. `before_print(page)` can run layout JS (pagination) first."""
+def page(body, css="", title="", theme_css="", body_class=""):
+    """A complete HTML document: shared report.css, then the theme's color variables, then skill CSS.
+
+    `theme_css` is design.css_vars(theme).
+    """
+    with open(REPORT_CSS, encoding="utf-8") as f:
+        base = f.read()
+    return (f"<!doctype html><html><head><meta charset='utf-8'><title>{html.escape(title)}</title>"
+            f"<style>{base}{theme_css}{css}</style></head><body class='{body_class}'>{body}</body></html>")
+
+
+def footer(left, right_pages=True):
+    """Chromium footer template: `left` text and 'Page X of Y'."""
+    pages = 'Page <span class="pageNumber"></span> of <span class="totalPages"></span>' if right_pages else ""
+    return ('<div style="font-size:7pt;color:#5A6672;width:100%;padding:0 0.3in;display:flex;'
+            'justify-content:space-between;font-family:Helvetica,Arial,sans-serif">'
+            f"<span>{html.escape(left)}</span><span>{pages}</span></div>")
+
+
+def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_print=None):
+    """Print HTML to PDF with Chromium (print media, backgrounds on).
+
+    `before_print(page)` can measure or adjust layout first; its return value is returned.
+    """
     from playwright.sync_api import sync_playwright
 
+    margins = margins or {"top": "0.3in", "right": "0.3in", "bottom": "0.4in", "left": "0.3in"}
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
-            pg = browser.new_page()
-            pg.set_content(html, wait_until="load")
-            if before_print:
-                before_print(pg)
-            pg.pdf(path=path, format=fmt, print_background=True,
-                   margin={side: margins for side in ("top", "right", "bottom", "left")})
+            pg = browser.new_page(viewport={"width": 758, "height": 1000})  # 8.5in minus margins, at 96 dpi
+            pg.set_content(doc, wait_until="load")
+            pg.emulate_media(media="print")
+            info = before_print(pg) if before_print else None
+            pg.pdf(path=path, format=fmt, print_background=True, margin=margins,
+                   display_header_footer=bool(footer_html), header_template="<span></span>",
+                   footer_template=footer_html or "<span></span>")
         finally:
             browser.close()
-    return path
+    return info
 
 
 def write_text(text, path):
@@ -76,23 +101,29 @@ def write_text(text, path):
 
 
 def main(build, formats, argv=None):
-    """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR.
+    """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--agent] [--market] [--sample].
 
-    `build(data, fmt, out_dir)` renders one format and returns the list of paths written.
+    `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
     Prints each path, one per line, so Claude can present them.
     """
-    ap = argparse.ArgumentParser(description="Render this skill's outputs from its data file.")
+    from . import profiles
+
+    ap = argparse.ArgumentParser(description="Render this skill's files from its data file.")
     ap.add_argument("data", help="the skill's data JSON")
     ap.add_argument("--format", default="all", choices=[*formats, "all"])
     ap.add_argument("--out", help="output folder (default: sandbox outputs, or OUTPUT_DIR locally)")
+    ap.add_argument("--agent", help="agent profile (name, brokerage, brand colors on the report)")
+    ap.add_argument("--market", help="market profile")
+    ap.add_argument("--sample", action="store_true", help="label the report SAMPLE DATA")
     args = ap.parse_args(argv)
 
     with open(args.data, encoding="utf-8") as f:
         data = json.load(f)
+    ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample}
     out_dir = output_dir(args.out)
     written = []
     for fmt in formats if args.format == "all" else [args.format]:
-        written += build(data, fmt, out_dir)
+        written += build(data, fmt, out_dir, ctx)
     for path in written:
         print(path)
     return written

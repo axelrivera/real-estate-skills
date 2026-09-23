@@ -40,7 +40,8 @@ class Main(unittest.TestCase):
     def test_contract(self):
         calls = []
 
-        def build(data, fmt, out_dir):
+        def build(data, fmt, out_dir, ctx):
+            self.assertEqual(ctx["agent"]["errors"], ["name", "brokerage"])  # no --agent: empty profile
             calls.append(fmt)
             return [render.write_text(data["title"], os.path.join(out_dir, render.filename(data["title"], ext=fmt)))]
 
@@ -64,10 +65,13 @@ class Main(unittest.TestCase):
 class Pdf(unittest.TestCase):
     def test_html_to_pdf(self):
         theme = design.theme(None, "seller")
-        html = render.page("<h1 style='color:var(--brand-strong)'>Hello</h1>", theme_css=design.css_vars(theme))
+        doc = render.page("<header><div class='t1'>Hello</div></header>", theme_css=design.css_vars(theme))
+        self.assertIn("--brand-rule", doc)
         with tempfile.TemporaryDirectory() as tmp:
-            path = render.html_to_pdf(html, os.path.join(tmp, "t.pdf"),
-                                      before_print=lambda pg: pg.evaluate("document.title = 'x'"))
+            path = os.path.join(tmp, "t.pdf")
+            h = render.html_to_pdf(doc, path, footer_html=render.footer("Test"),
+                                   before_print=lambda pg: pg.evaluate("document.querySelector('.t1').offsetHeight"))
+            self.assertGreater(h, 0)
             with open(path, "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
 

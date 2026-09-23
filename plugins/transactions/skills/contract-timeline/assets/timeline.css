@@ -1,0 +1,13 @@
+/* Contract timeline: styles on top of the shared report.css. Colors are theme variables only. */
+.strip{width:100%;display:block}
+.strip .tk{font-size:8px;fill:var(--muted)}
+.strip .lbl{font-size:8.6px;font-weight:700}
+.kd td{vertical-align:middle;padding:3px 6px}
+tr.mine td{background:var(--brand-callout)!important}
+tr.mine td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+.det td{font-size:7.9pt;vertical-align:top;padding:2px 5px;line-height:1.22}
+.meth td{padding:1.5px 6px;font-size:8pt}
+.meth td:first-child{width:24%}
+.compact .kd td{padding:2px 6px;font-size:8.2pt}
+.compact .hero .why{font-size:8.4pt}
+.compact .hero .big{font-size:16pt}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "contract-timeline",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "just got this one fully executed!! can you give me a timeline for my buyer with all the deadlines? i want to send it to them",
+      "expected_output": "Effective Date Sep 25 2026 (seller's initials on counter #1); FR/BAR deal file; deposit Wed Sep 30, inspection Mon Oct 5, appraisal Oct 16, loan approval Mon Oct 26 5 PM, closing Oct 30; buyer-view PDF; chat summary names the first deadline, when contingencies end, closing, and flags (loan approval within 5 days of closing)",
+      "files": ["dev/evals/contract-timeline/files/executed-contract-cypress-bend.md"]
+    },
+    {
+      "id": 2,
+      "prompt": "We signed an extension on Cypress Bend, here's the amendment. What moved?",
+      "expected_output": "Adds the amendment to the existing deal file (doesn't rebuild), re-runs, says closing moved Oct 30 → Nov 6 and loan approval moved to Nov 1 → rolled to Mon Nov 2 5 PM; before-closing dates move; offers the updated PDF",
+      "files": ["dev/evals/contract-timeline/files/deal-cypress-bend.json", "dev/evals/contract-timeline/files/amendment-1.md"]
+    },
+    {
+      "id": 3,
+      "prompt": "Quick one: TREC contract in Austin, effective 11/20/2026, 7 day option period. When exactly does the option end?",
+      "expected_output": "Doesn't apply Florida rules; uses the TREC rule that the option period ends at 5:00 PM local time (asks or states the assumption), computes Friday Nov 27 2026 5:00 PM with the script, answers in a sentence or two",
+      "files": []
+    }
+  ]
+}

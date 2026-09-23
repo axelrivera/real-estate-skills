@@ -1,0 +1,37 @@
+{
+  "side": "seller",
+  "sample": true,
+  "state": "FL",
+  "county": "Orange",
+  "client": "Sample Seller",
+  "contract": {
+    "form_family": "frbar",
+    "contract_form": "as_is",
+    "property": "517 Hickorywood Dr, Winter Park, FL 32792",
+    "buyer": "Sample Buyer",
+    "seller": "Sample Seller",
+    "price": 469000,
+    "financing": "conventional",
+    "effective_date": "2026-11-02",
+    "effective_date_source": "Buyer's initials on Counteroffer #2, 11/2/2026 9:40 AM",
+    "closing_date": "2026-12-11",
+    "escrow_agent": "Sample Title Co.",
+    "deposit_amount_str": "$10,000",
+    "additional_deposit_amount_str": "$15,000",
+    "additional_deposit_days": 10,
+    "inspection_days": 10,
+    "appraisal_days": 20,
+    "riders": ["Appraisal Contingency", "Homeowners' Association"],
+    "hoa": true,
+    "year_built": 1972
+  },
+  "amendments": [
+    {
+      "date": "2026-11-20",
+      "description": "Extend closing after appraisal delay",
+      "changes": {"closing_date": "2026-12-18", "loan_approval_days": 38},
+      "date_overrides": {"appraisal": "2026-11-25 17:00"}
+    }
+  ],
+  "flags": ["Loan application period blank on the contract: used the 5-day form default"]
+}

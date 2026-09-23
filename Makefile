@@ -56,12 +56,13 @@ runtime-check:
 # Each skill exposes scripts/render.py DATA.json --format all --out DIR.
 # Fixtures live in dev/fixtures/<skill>/*.json and are never shipped.
 outputs:
-	@for f in $(wildcard dev/fixtures/*/*.json); do \
+	@for f in $(filter-out dev/fixtures/_profiles/%,$(wildcard dev/fixtures/*/*.json)); do \
 		skill=$$(basename $$(dirname $$f)); name=$$(basename $$f .json); \
 		dir=$$(dirname $$(ls plugins/*/skills/$$skill/SKILL.md)); \
 		echo "$$skill: $$name"; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="$(OUT)/$$skill/$$name" \
-			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" || exit 1; \
+			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" \
+			$(if $(wildcard dev/fixtures/_profiles/agent-profile.md),--agent dev/fixtures/_profiles/agent-profile.md) || exit 1; \
 	done
 
 package: check-sync

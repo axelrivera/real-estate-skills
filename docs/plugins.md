@@ -19,7 +19,7 @@ Deal work from pricing through closing. Every skill has a markdown mode and a fi
 | `seller-cma` | Listing | CMA PDF + listing presentation (PPTX) |
 | `buyer-offer-strategy` | Buyer | Offer Options PDF + Offer Package Worksheet PDF |
 | `seller-offer-review` | Listing | Single- or multi-offer review PDF |
-| `contract-timeline` | Both | Contract timeline PDF |
+| `contract-timeline` | Both | Contract timeline PDF (FR/BAR built in; other contracts from their own dates and rules) |
 
 ## Planned
 
