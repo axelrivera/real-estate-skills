@@ -13,6 +13,9 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | Command | What it does |
 |---|---|
 | `make setup` | Creates `.venv` from `dev/requirements.txt`, installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json` |
+| `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too) |
+| `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
+| `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package` and on every commit |
 | `make test` | Runs the unit tests in `dev/tests/` |
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
@@ -34,13 +37,24 @@ dev/                     # dev tooling, never shipped
   requirements.txt       # Python packages, pinned to sandbox versions
   package.json           # Node modules, pinned to sandbox versions
   runtime-check/         # diagnostic skill
-  tests/                 # unit tests for shared/ (make test)
+  hooks/pre-commit       # runs check-sync
+  sync_shared.py         # make sync / make check-sync
+  tests/                 # unit tests for shared/ and dev tools (make test)
   preview_design.py      # palette preview (make preview-design)
   fixtures/<skill>/      # test inputs for make outputs
 .venv/  out/  dist/      # git-ignored
 ```
 
 ## Shared code
+
+| Module | What it does |
+|---|---|
+| `shared/design.py` | Brand palette from the agent's colors ([architecture](architecture.md#brand-colors)) |
+| `shared/profiles.py` | Reads agent and market profiles; merges market values with the source of each |
+| `shared/markets/fl-stellar.md` | Built-in Florida / Stellar MLS market profile, used only for Florida |
+| `shared/render.py` | Output location, file names, HTML → PDF, and the `render.py` command line |
+
+After editing `shared/`, run `make test` and `make sync`, and commit the updated copies with the change.
 
 `shared/` is a Python package. In a skill it's copied to `scripts/_shared/` and imported as `from _shared import design`. Tests and dev scripts import it from the repo root as `from shared import design`. Modules inside `shared/` import each other relatively (`from . import design`) so both work.
 

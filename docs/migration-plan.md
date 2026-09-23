@@ -31,7 +31,7 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 
 | Phase | Work |
 |---|---|
-| **1. Foundation** | `shared/` modules (offer engine, market stats, costs, design system with palette derived from the agent's brand colors, render helpers, output location); market profile schema with Florida/Stellar defaults; `cma-handoff v1` schema; sync and drift-check tools in `dev/`; regression fixtures in `dev/fixtures/` from prototype examples and sample PDFs |
+| **1. Foundation** | `shared/` modules every skill needs: design system, profile reader with the Florida/Stellar market profile, render helpers; sync and drift-check tools in `dev/`. Modules only some skills use (offer engine, market stats, lending rules, holidays, `cma-handoff v1`) and each skill's regression fixtures move into `shared/` and `dev/fixtures/` when the first skill that needs them is rebuilt |
 | **2. Core** | `agent-profile`, `market-profile` |
 | **3. Pilot** | `contract-timeline` — smallest, standalone, both sides. Sets the conventions. Includes a non-Florida contract test and a run in claude.ai and Cowork |
 | **4. CMAs** | `buyer-cma`, then `seller-cma` (deck without `/mnt/skills`) |
@@ -56,9 +56,9 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 | Shared module | Status |
 |---|---|
 | `shared/design` | Done: palette, legibility, status separation, party colors; tests and preview |
-| Profile reader | Not started |
-| Render helpers (output location, HTML → PDF) | Not started |
-| Sync and drift check | Not started |
+| `shared/profiles` + `markets/fl-stellar.md` | Done: agent and market profiles, Florida-only fallback, county overrides, value sources |
+| `shared/render` | Done: output location, file names, HTML → PDF, render command line |
+| Sync and drift check | Done: `make sync`, `make check-sync`, pre-commit hook |
 
 | Skill | Status |
 |---|---|

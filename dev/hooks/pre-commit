@@ -1,0 +1,3 @@
+#!/bin/sh
+# Block commits where a skill's scripts/_shared/ copy doesn't match shared/.
+python3 dev/sync_shared.py --check || exit 1

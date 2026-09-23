@@ -19,7 +19,7 @@ Each skill directory is complete on its own. Code used by several skills is edit
 shared/                         # edit shared code here
 plugins/<plugin>/skills/<skill>/
   scripts/_shared/              # copy made by the sync tool — never edit by hand
-dev/                            # sync and drift-check tools (planned), runtime check
+dev/sync_shared.py              # make sync / make check-sync (also a pre-commit hook)
 Makefile                        # make package: one zip per skill for claude.ai upload
 ```
 

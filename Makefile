@@ -12,11 +12,14 @@ DIST     := dist
 
 SKILLS := $(patsubst %/SKILL.md,%,$(wildcard plugins/*/skills/*/SKILL.md))
 
-.PHONY: help setup test runtime-check preview-design outputs package clean
+.PHONY: help setup hooks test sync check-sync runtime-check preview-design outputs package clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
+	@echo "make hooks          Install the git pre-commit hook (shared/ copies must be in sync)"
 	@echo "make test           Run unit tests in dev/tests/"
+	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
+	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
@@ -30,12 +33,22 @@ setup:
 	$(PY) -m pip install -q -r dev/requirements.txt
 	$(PY) -m playwright install chromium
 	. "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm install && cd dev && SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --silent
+	git config core.hooksPath dev/hooks
+
+hooks:
+	git config core.hooksPath dev/hooks
 
 test:
 	@$(PY) -m unittest discover -s dev/tests
 
 preview-design:
 	@$(PY) dev/preview_design.py
+
+sync:
+	@python3 dev/sync_shared.py
+
+check-sync:
+	@python3 dev/sync_shared.py --check
 
 runtime-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py
@@ -51,7 +64,7 @@ outputs:
 			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" || exit 1; \
 	done
 
-package:
+package: check-sync
 	@mkdir -p $(DIST)
 	@for s in $(SKILLS); do \
 		plugin=$$(echo $$s | cut -d/ -f2); name=$$(basename $$s); \
