@@ -1,0 +1,160 @@
+{
+ "title": "Pricing 517 Hickorywood Ave",
+ "subtitle": "Listing presentation · Altamonte Springs, Spring Oaks",
+ "recommendation_why": "It sits at the middle of what recent sales support and gives you the strongest launch, when buyer attention is highest.",
+ "value_drivers": [
+  [
+   "Renovated kitchen and baths",
+   "The single biggest reason your home sells near the top of the neighborhood."
+  ],
+  [
+   "Private pool",
+   "Worth about $25,000 against similar homes without one."
+  ],
+  [
+   "Four bedrooms, no HOA or CDD",
+   "Flexible space and no monthly association costs."
+  ],
+  [
+   "Flood zone X",
+   "Flood insurance isn't required, which keeps buyers' costs down."
+  ]
+ ],
+ "document_items": [
+  [
+   "The roof",
+   "Permit and date. Roof age decides whether a buyer can insure the home."
+  ],
+  [
+   "The permits",
+   "Kitchen, bath, electrical, and plumbing work. Undocumented upgrades count for less."
+  ]
+ ],
+ "comp_lines": {
+  "622 Spring Oaks Blvd": "Renovated pool home; April, before rates rose",
+  "516 Oakwood Ct": "Same year and size; systems documented",
+  "745 Little Wekiva Cir": "Most recent pool sale; not renovated",
+  "602 Mockingbird Ln": "Same floor plan; partly updated",
+  "621 Little Wekiva Rd": "Renovated; bigger canal lot"
+ },
+ "comps_takeaway": "The two highest sold in the spring. The recent sales point to the middle of the range.",
+ "scatter_takeaway": "Renovated pool homes sell well above the neighborhood trend. At {list_price}, yours sits among them without testing the ceiling.",
+ "market_title": "The market shifted since spring",
+ "market_periods": [
+  "April–June",
+  "July–mid-September"
+ ],
+ "market_period_labels": [
+  "Spring",
+  "Now"
+ ],
+ "market_stats": [
+  [
+   "Sale vs. original price",
+   "100%",
+   "96.5%"
+  ],
+  [
+   "Days to contract",
+   "9",
+   "18"
+  ],
+  [
+   "Sales with seller credits",
+   "56%",
+   "80%"
+  ],
+  [
+   "30-year mortgage rate",
+   "~6.3%",
+   "6.95%"
+  ]
+ ],
+ "market_takeaway": "Buyers are negotiating again. Price for the market we have now, not the one from April.",
+ "competition": [
+  [
+   "644 Peachwood Dr",
+   "For sale · 91 days",
+   "Renovated, same size, no pool. The value alternative buyers will tour."
+  ],
+  [
+   "412 Majorca Ave",
+   "Under contract in 9 days",
+   "Renovated pool home. Priced right, it sold fast."
+  ],
+  [
+   "394 Barberry Ln",
+   "For sale · 57 days",
+   "Updated pool home. Priced above the market, and sitting."
+  ]
+ ],
+ "competition_takeaway": "Well-priced renovated pool homes are moving. Overpriced ones sit.",
+ "strategy_takeaway": "All three net within a few thousand dollars. The real choice is time and risk.",
+ "payment_takeaway": "Buyers shop by payment. Every $10,000 is about {per_10k} a month to them.",
+ "launch_plan": [
+  [
+   "Document the roof",
+   "Permit and date, ready to share"
+  ],
+  [
+   "Pre-listing inspection",
+   "Plus 4-point and wind-mitigation reports"
+  ],
+  [
+   "Gather permits",
+   "Kitchen, baths, electrical, plumbing"
+  ],
+  [
+   "Easy showings",
+   "Lockbox access with short notice"
+  ],
+  [
+   "Seller-credit budget",
+   "Decide it now, before offers arrive"
+  ],
+  [
+   "3-week review",
+   "Steady showings but no offer? Revisit the price"
+  ]
+ ],
+ "needs_short": [
+  "Roof permit and date, plus any 4-point or wind-mitigation report",
+  "Ages of AC, water heater, and pool equipment",
+  "Renovation permits",
+  "Anything known about leaks, claims, or repairs",
+  "Your estimated mortgage payoff and target closing date"
+ ],
+ "timeline": [
+  [
+   "This week",
+   "Sign listing agreement; order inspections"
+  ],
+  [
+   "Week 2",
+   "Photos, documents, and pricing review"
+  ],
+  [
+   "Week 3",
+   "Go live at {list_price}"
+  ],
+  [
+   "Week 6",
+   "Price review if no offer"
+  ]
+ ],
+ "adjustments_summary": "Adjustments: about $75 per sq ft of size difference; $30,000–$45,000 for renovation level; $5,000–$10,000 for larger or better lots; 1–2% for market change since the sale; seller-paid costs subtracted.",
+ "notes": {
+  "recommendation": "Lead with the answer. The rest of the presentation shows how we got here.",
+  "method": "35 sales within a mile since April; we kept the 5 closest in size, pool, age and neighborhood, adjusted each for differences from your home, and the median adjusted value is about $469,800.",
+  "drivers": "These are the features the adjustments credit your home for. The roof and permits need paperwork before buyers and appraisers will pay for them.",
+  "comps": "Each bar is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
+  "scatter": "Every sale and listing within a mile. The dotted line is size alone; renovation and pool push homes above it.",
+  "market": "Spring = April to June sales; summer = July to mid-September. Rates are the Freddie Mac 30-year average.",
+  "competition": "These are the homes a buyer will likely tour alongside yours.",
+  "strategies": "Expected sale prices and timelines are estimates from recent sales. The $459,900 option assumes competing offers reduce the seller credit to $5,000.",
+  "nets": "Before mortgage payoff. Brokerage is a 2.5% + 2.5% placeholder until we finalize the listing agreement.",
+  "payments": "Conventional loan, 5% down, 6.95%, city taxes with homestead, $3,600 insurance, 0.5% PMI.",
+  "launch": "Low-cost steps that remove the questions that cost sellers money at the negotiating table.",
+  "next": "Confirm the documents and the launch date."
+ }
+}
