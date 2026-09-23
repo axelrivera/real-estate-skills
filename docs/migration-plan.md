@@ -56,7 +56,7 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 | Shared module | Status |
 |---|---|
 | `shared/design` | Done: palette, legibility, status separation, party colors; tests and preview |
-| `shared/profiles` + `markets/` | Done: agent and market profiles, Florida state layer, Stellar MLS layer (Florida and Puerto Rico), county overrides, value sources |
+| `shared/profiles` + `markets/` | Done (Florida seller title fees and 2.5% + 2.5% brokerage defaults researched 2026-09): agent and market profiles, Florida state layer, Stellar MLS layer (Florida and Puerto Rico), county overrides, value sources |
 | `shared/render` | Done: output location, file names, HTML → PDF, render command line |
 | Sync and drift check | Done: `make sync`, `make check-sync`, pre-commit hook |
 

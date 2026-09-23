@@ -4,7 +4,7 @@ schema: 1
 layer: state                          # built-in layer: used for Florida properties only
 name: Florida
 state: FL
-as_of: 2025
+as_of: 2026
 
 closing_costs:
   deed_transfer_tax_rate: 0.007       # documentary stamp tax on the deed, share of price
@@ -17,10 +17,17 @@ closing_costs:
       - {up_to: 5000000, per_1000: 2.50}
       - {up_to: 10000000, per_1000: 2.25}
       - {up_to: null, per_1000: 2.00}
-  settlement_fee: 645                 # title settlement and search; replace with the title company's quote
+  seller_title_fees:                  # seller's title company charges; replace with the title company's quote
+    settlement_fee: 700               # running the closing; commonly $450–$950, higher in Central Florida
+    title_search: 250                 # $150–$500
+    municipal_lien_search: 125        # $100–$125
+    recording: 70                     # seller-side recording (e.g. mortgage release)
   hoa_estoppel_fee: 299               # when the property has an HOA or condo association
   buyer_closing_cost_pct: 0.03        # buyer's closing costs when no estimate is given
-  listing_fee_pct: 0.03               # listing brokerage fee when the seller's agreement isn't given
+
+brokerage:                            # defaults when the listing agreement or offer doesn't say
+  listing_fee_pct: 0.025              # seller's listing brokerage
+  buyer_broker_fee_pct: 0.025         # buyer's brokerage; negotiated per deal, may be paid by seller or buyer
 
 property_tax:
   paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing
@@ -82,6 +89,8 @@ Built-in state defaults. Skills use them only for Florida properties. For any ot
 ## Notes
 
 - Closing costs are estimates for comparing options, not a settlement statement.
+- Seller title fee defaults (2026) are midpoints of ranges published by Florida title companies and closing cost guides; the title company's quote always wins.
+- Brokerage defaults total 5% (2.5% each side). Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split; use the actual agreement and offer terms whenever they're known.
 - Who pays the owner's title policy varies by county. Seller in most of Florida, buyer in parts of South and Southwest Florida. Confirm with the title company for counties not listed.
 - Property tax for the buyer is based on the purchase price, not the seller's bill. The estimate assumes the appraiser values the home at the purchase price, so it often runs high. Non-ad valorem assessments are excluded. Warn about the first-year escrow jump.
 - HOA estoppel fees are capped by statute; associations with delinquencies can charge more.
