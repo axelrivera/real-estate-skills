@@ -13,7 +13,7 @@ Two views of the same dates: the **buyer view** highlights the buyer's actions a
 
 Read the whole package: contract, every rider and addendum, and every counteroffer (`pdftotext -layout`, or read scanned pages directly). Record the terms in a deal file: read `references/deal-file.md` for the format.
 
-- **Effective Date** is the last signature or initial on the final counteroffer or acceptance, not the offer date. Write down the evidence. If it's ambiguous, stop and ask: every deadline depends on it.
+- **Effective Date** is the last signature or initial on the final counteroffer or acceptance, not the offer date. Write down the evidence. If it's ambiguous, or later than today for a contract the agent calls executed, stop and ask: every deadline depends on it.
 - **Later documents win:** counteroffers override the offer; initialed handwritten changes override typed text. If something is illegible or two documents disagree, add it to `flags` instead of guessing.
 - **FR/BAR contracts (Florida):** read `references/frbar.md` for where each date lives and the form defaults for blanks. List every default you used in `agent_notes` so the agent can confirm it.
 - **Two kinds of notes.** `flags` print on the report as "Check:" lines, so use them for what the client should also see (a date two documents disagree on, a tight loan approval). `agent_notes` stay in chat: defaults used for blanks, readings to confirm, anything that would confuse a client.
@@ -33,7 +33,7 @@ The script adds its own notes: a `flags` line when loan approval falls within 5 
 
 ## 3. Deliver
 
-**Quick question** ("when does the inspection end?", "what's due this week?"): answer from the output in a sentence or two. **Full timeline in chat:** fill in `assets/timeline-template.md` with the output's values. **A report to send or print:**
+**Quick question** ("when does the inspection end?", "what's due this week?"): answer from the output in a sentence or two. A deal file with just the Effective Date, the time rules and the one deadline is enough; leave the closing date out if you don't have it (dates counted back from closing then wait for it). **Full timeline in chat:** fill in `assets/timeline-template.md` with the output's values. **A report to send or print:**
 
 ```
 python3 scripts/render.py deal.json [--agent agent-profile.md] [--market market-profile.md]
@@ -45,7 +45,7 @@ With the PDF, keep the chat reply short: a small table of the key dates only (fi
 
 ## Amendments and extensions
 
-Don't rebuild the deal file. Add the amendment to `amendments` in signing order (format in `references/deal-file.md`), re-run, and say in one line what moved. The report compares the original contract with the current one and shows moved dates as "was".
+Don't rebuild the deal file. Add the amendment to `amendments` in signing order (format in `references/deal-file.md`), re-run, and answer with the output's `moved` list: one line per moved deadline, "Closing: Fri Nov 6 · 10:00 AM (was Fri Oct 30)", then anything the move made tight (flags). The report compares the original contract with the current one and shows moved dates as "was". Save the updated deal file to the outputs folder (uploads are read-only) and hand it back for next time.
 
 ## Limits
 

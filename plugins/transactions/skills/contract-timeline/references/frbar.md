@@ -23,7 +23,7 @@ For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "fr
 | `hoa`, `condo`, `hoa_docs_received`, `condo_docs_received`, `doc_review_days` | HOA / Condominium riders | 3 days after receipt |
 | `insurance_bound_days_before`, `cd_days_before` | Lender, not the contract | 7 days, 3 business days |
 
-Every blank you fill with a default goes in `agent_notes` ("Inspection period blank: used the 15-day form default"), not in `flags`, which print on the client's report.
+A term the contract leaves blank takes the form default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every blank you fill with a default goes in `agent_notes` ("Inspection period blank: used the 15-day form default"), not in `flags`, which print on the client's report.
 
 ## Checks before running
 

@@ -145,9 +145,26 @@ class Required(unittest.TestCase):
         with self.assertRaises(timeline.DealError):
             timeline.analyze(deal)
 
-    def test_cli_reports_problems_as_json(self):
+    def test_quick_question_without_closing_date(self):
         deal = fixture("buyer-fha.json")
         del deal["contract"]["closing_date"]
+        r = timeline.analyze(deal)
+        self.assertIsNone(r["closing"])
+        self.assertIn("walkthrough", {x["key"] for x in r["pending"]})  # counted back from closing: waits for the date
+        self.assertIn("deposit", {x["key"] for x in r["rows"]})
+
+    def test_per_deadline_time_and_no_rollover(self):
+        deal = fixture("texas-trec.json")
+        deal["contract"]["effective_date"] = "2026-11-21"
+        deal["deadlines"] = [{"key": "option", "label": "Option period ends", "basis": "after", "days": 7, "party": "Buyer",
+                              "time": "17:00", "rollover": False}]
+        deal["contract"].pop("date_overrides", None)
+        row = by_key(timeline.analyze(deal))["option"]
+        self.assertEqual(row["when"], "2026-11-28 17:00")  # a Saturday: this deadline isn't extended
+
+    def test_cli_reports_problems_as_json(self):
+        deal = fixture("buyer-fha.json")
+        del deal["contract"]["effective_date"]
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "deal.json")
             with open(path, "w") as f:

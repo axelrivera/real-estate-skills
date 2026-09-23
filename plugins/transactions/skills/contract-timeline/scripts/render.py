@@ -54,7 +54,7 @@ def strip(t, colors):
     placed = {}
     slots = [(side, lv) for lv in range(LV) for side in ("up", "down")]
     for i, rows in enumerate(groups.values()):
-        row = next((r for r in rows if r["key"] == "closing"), rows[0])
+        row = next((r for r in rows if r["key"] == "closing"), None) or next((r for r in rows if r["critical"]), rows[0])
         when = _when(row)
         x = X(when)
         parties = {r["party"] for r in rows}
@@ -199,6 +199,8 @@ def fit_page_one(pg):
 
 def build(deal, fmt, out_dir, ctx):
     t = timeline.analyze(deal, ctx.get("market"))
+    if not t["closing"]:
+        raise timeline.DealError("The report needs the closing date: add contract.closing_date and re-run.")
     doc = build_html(t, ctx["agent"], ctx.get("sample") or t["sample"])
     name = render.filename(t["property"].split(",")[0], "Contract Timeline", t["side"], ext="pdf")
     path = os.path.join(out_dir, name)

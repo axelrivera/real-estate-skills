@@ -29,7 +29,7 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 | `form` | Form name as printed, for other contracts ("TREC One to Four Family Residential Contract") |
 | `effective_date` | **Required.** `YYYY-MM-DD`. Last signature or initial on the final counter or acceptance |
 | `effective_date_source` | The evidence ("Seller's initials on Counteroffer #1, 9/25 4:12 PM") |
-| `closing_date`, `closing_time` | **Required** date; time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so |
+| `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so |
 | `property`, `buyer`, `seller`, `price`, `escrow_agent` | For the report |
 | `financing` | `cash`, `conventional`, `fha`, `va`, `usda` |
 | `possession_date`, `possession_time`, `possession_note` | Only if possession differs from closing |
@@ -55,6 +55,8 @@ Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry
 | `basis` | `after` (days after the Effective Date), `before` (days before closing), `date` (with `"date": "YYYY-MM-DD HH:MM"`), `event` (runs from `received`, when recorded) |
 | `days` | For `after`, `before` and `event` |
 | `business` | `true` when the contract counts this period in business days |
+| `time` | When this deadline ends, `"17:00"`, when it differs from the contract's end of day (a TREC option period ends at 5:00 PM) |
+| `rollover` | `false` when this deadline isn't extended past a weekend or holiday even though others are (read the paragraph's own words) |
 | `party` | `Buyer`, `Seller` or `Both` |
 | `critical` | Missing it can cost a contract right or put the deposit at risk |
 | `contingency` | It's a buyer protection that ends on this date (drives "your contingencies end") |

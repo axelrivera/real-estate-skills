@@ -72,8 +72,11 @@ def load_rules(deal, market_path=None):
 
 # --- period math --------------------------------------------------------------
 
-def forward(start, days, rules, business=False):
-    """Deadline `days` after `start`. Returns (datetime, note)."""
+def forward(start, days, rules, business=False, end_time=None, rollover=True):
+    """Deadline `days` after `start`. Returns (datetime, note).
+
+    `end_time` and `rollover=False` are per-deadline exceptions (a TREC option period ends at 5:00 PM and
+    isn't extended past a weekend or holiday)."""
     extra = rules["_extra_holidays"]
     notes = []
     if business or rules["day_count"] == "business" or days <= int(rules["short_period_days"]):
@@ -84,13 +87,13 @@ def forward(start, days, rules, business=False):
             notes.append("business days")
     else:
         d = start + timedelta(days=days)
-    if not dates.is_business_day(d, extra) and rules["weekend_holiday_rollover"] == "next_business_day":
+    if rollover and not dates.is_business_day(d, extra) and rules["weekend_holiday_rollover"] == "next_business_day":
         why = dates.holiday_name(d, extra) or d.strftime("%A")
         d = dates.next_business_day(d, extra)
         rt = _t(rules["rollover_time"])
         notes.append(f"ends on a {why}: extended to {rt:%-I:%M %p} {d:%a %b %-d}")
         return datetime.combine(d, rt), "; ".join(notes)
-    return datetime.combine(d, _t(rules["end_time"])), "; ".join(notes)
+    return datetime.combine(d, _t(end_time or rules["end_time"])), "; ".join(notes)
 
 
 def backward(closing, days, rules, business=False):
@@ -226,22 +229,25 @@ def apply_amendments(contract, amendments):
 
 
 def compute(c, extra_deadlines, rules, frbar):
-    eff, closing = _d(c["effective_date"]), _d(c["closing_date"])
+    eff, closing = _d(c["effective_date"]), _d(c.get("closing_date"))
     items = (frbar_deadlines(c) if frbar else []) + [dict(x, contingency=x.get("contingency", False)) for x in extra_deadlines]
-    items += closing_rows(c, frbar)
+    if closing:
+        items += closing_rows(c, frbar)
     extra = rules["_extra_holidays"]
     rows = []
     for x in items:
         r = dict(x)
         basis, days = x["basis"], x.get("days")
         if basis == "after":
-            r["when"], r["note"] = forward(eff, int(days), rules, x.get("business", False))
+            r["when"], r["note"] = forward(eff, int(days), rules, x.get("business", False), x.get("time"), x.get("rollover", True))
             r["rule"] = f"{_plural(int(days), 'day')} after Effective Date" + (" (business days)" if x.get("business") else "")
+        elif basis == "before" and not closing:
+            r["when"], r["rule"], r["note"] = None, f"{_plural(int(days), 'day')} before Closing", "Add the closing date and re-run"
         elif basis == "before":
             r["when"], r["note"] = backward(closing, int(days), rules, x.get("business", False))
             r["rule"] = f"{_plural(int(days), 'day')} before Closing" + (" (business days)" if x.get("business") else "")
         elif basis == "date":
-            r["when"], r["rule"], r["note"] = _dt(x["date"], _t(rules["end_time"])), "Specific date in contract", ""
+            r["when"], r["rule"], r["note"] = _dt(x["date"], _t(x.get("time") or rules["end_time"])), "Specific date in contract", ""
         elif basis == "closing":
             r["when"] = datetime.combine(closing, _t(c.get("closing_time") or rules["closing_time"]))
             r["rule"], r["note"] = "Closing date in contract", ""
@@ -280,10 +286,9 @@ def _fmt(dt, rules, with_time=True):
 def analyze(deal, market_path=None, side=None):
     """Everything the markdown template and the PDF need, as plain JSON-ready data."""
     contract = deal.get("contract") or {}
-    for field in ("effective_date", "closing_date"):
-        if not contract.get(field):
-            raise DealError(f"contract.{field} is required. The Effective Date is the date of the last signature "
-                            "or initial on the final counteroffer or acceptance.")
+    if not contract.get("effective_date"):
+        raise DealError("contract.effective_date is required. The Effective Date is the date of the last signature "
+                        "or initial on the final counteroffer or acceptance.")
     frbar = contract.get("form_family", "frbar" if contract.get("contract_form") else "other") == "frbar"
     if not frbar and not deal.get("deadlines"):
         raise DealError("This contract isn't FR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
@@ -311,7 +316,7 @@ def analyze(deal, market_path=None, side=None):
 
     side = (side or deal.get("side") or "buyer").lower()
     dated = [r for r in rows if r["when"]]
-    closing_row = next(r for r in rows if r["key"] == "closing")
+    closing_row = next((r for r in rows if r["key"] == "closing"), None)  # None: a quick question without a closing date
     contingent = [r for r in dated if r["contingency"]]
     firm = max(contingent, key=lambda r: r["when"]) if contingent else None
     first = next((r for r in dated if r["party"] != "Both"), None)
@@ -319,12 +324,14 @@ def analyze(deal, market_path=None, side=None):
     # flags print on the report as "Check:" lines; agent_notes stay in chat (defaults used, assumptions to confirm)
     flags = list(deal.get("flags") or [])
     agent_notes = list(deal.get("agent_notes") or [])
-    if closing_row["note"]:
+    if closing_row and closing_row["note"]:
         flags.append(closing_row["note"])
     approval = next((r for r in dated if r["key"] == "loan_approval"), None)
-    if approval and _d(approval["when"]) > _d(closing_row["when"]) - timedelta(days=5):
+    if closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]) - timedelta(days=5):
         flags.append("Loan approval deadline is within 5 days of closing: little room if financing slips")
-    if not current_contract.get("closing_time"):
+    if not closing_row:
+        agent_notes.append("No closing date given: dates counted back from closing are left out")
+    elif not current_contract.get("closing_time"):
         agent_notes.append(f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
     agent_notes += [n for n in market.notes if "MLS" not in n  # MLS assumptions don't matter for a timeline
                     and not (deal.get("rules") and n.startswith("No market profile"))]  # the contract's rules are given
@@ -344,8 +351,10 @@ def analyze(deal, market_path=None, side=None):
         "effective": {"date": str(eff), "display": f"{eff:%b %-d, %Y}", "short": f"{eff:%b %-d}",
                       "source": contract.get("effective_date_source") or ""},
         "closing": {"date": closing_row["when"][:10], "display": closing_row["display"], "day": closing_row["day"],
-                    "long": f"{_d(closing_row['when']):%b %-d, %Y}", "short": f"{_d(closing_row['when']):%b %-d}"},
-        "length_days": closing_row["day"],
+                    "long": f"{_d(closing_row['when']):%b %-d, %Y}", "short": f"{_d(closing_row['when']):%b %-d}"}
+        if closing_row else None,
+        "length_days": closing_row["day"] if closing_row else None,
+        "moved": [{"label": r["label"], "now": r["display"], "was": r["was"]} for r in rows if r["was"]],
         "contingencies_end": firm,
         "first_deadline": first,
         "rows": dated,
