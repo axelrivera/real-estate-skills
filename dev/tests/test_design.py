@@ -116,6 +116,17 @@ class Parties(unittest.TestCase):
         self.assertDistinct(p)
 
 
+class Names(unittest.TestCase):
+    def test_every_named_color_names_itself(self):
+        for name, hx in d.NAMED.items():
+            self.assertEqual(d.color_name(hx), name)
+
+    def test_common_brand_colors(self):
+        for hx, name in (("#1A74AD", "Blue"), ("#C2410C", "Burnt Orange"), ("#003366", "Navy"),
+                         ("#D4AF37", "Gold"), ("#8C1D40", "Burgundy"), ("#111111", "Black"), ("#008080", "Teal")):
+            self.assertEqual(d.color_name(hx), name, hx)
+
+
 class Formats(unittest.TestCase):
     def test_theme_is_json_serialisable(self):
         json.dumps(d.theme({"primary": "#0B6E4F"}, "seller"))

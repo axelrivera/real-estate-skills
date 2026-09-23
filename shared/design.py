@@ -189,6 +189,29 @@ def hue_name(hex_):
     return "red"
 
 
+# Names a non-technical user would recognise, for confirming colors in plain words.
+NAMED = {
+    "Black": "#111111", "Charcoal": "#36454F", "Slate Gray": "#5A6672", "Gray": "#8A8F96",
+    "Silver": "#C0C4C8", "White": "#FFFFFF", "Ivory": "#F8F4E6", "Cream": "#F3E9D2",
+    "Beige": "#D9C7A7", "Tan": "#C19A6B", "Brown": "#6B4A3A", "Chocolate": "#4A2C20",
+    "Navy": "#1F3A5F", "Midnight Blue": "#172554", "Royal Blue": "#2451B7", "Cobalt": "#0047AB",
+    "Blue": "#1A74AD", "Steel Blue": "#4682B4", "Sky Blue": "#7FB8E6", "Light Blue": "#BCD9F0",
+    "Teal": "#0F766E", "Turquoise": "#2EC4B6", "Aqua": "#7FDBDA", "Mint": "#A8E6CF",
+    "Forest Green": "#1E5631", "Dark Green": "#0B6E4F", "Emerald": "#0B8457", "Green": "#2E7D32",
+    "Sage": "#9CAF88", "Olive": "#6B6B2A", "Lime": "#9BCB3B", "Gold": "#D4AF37",
+    "Mustard": "#B8860B", "Yellow": "#F2C94C", "Champagne": "#E8D7B0", "Orange": "#E8751A",
+    "Burnt Orange": "#C2410C", "Rust": "#A0461F", "Terracotta": "#C8634A", "Coral": "#F2765F",
+    "Peach": "#F6B99A", "Red": "#C62828", "Crimson": "#A51C30", "Brick Red": "#8E2B1F",
+    "Burgundy": "#8C1D40", "Maroon": "#6D1A2A", "Pink": "#E88AA8", "Blush": "#F2C4CE",
+    "Magenta": "#C2185B", "Plum": "#6A2C5E", "Purple": "#6B21A8", "Lavender": "#B8A6D9",
+}
+
+
+def color_name(hex_):
+    """Closest plain-language name ('Navy', 'Burnt Orange') for confirming a color with the user."""
+    return min(NAMED, key=lambda name: distance(hex_, NAMED[name]))
+
+
 # --- brand resolution -------------------------------------------------------
 
 def resolve(brand, side):
