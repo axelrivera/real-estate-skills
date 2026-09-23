@@ -1,0 +1,50 @@
+<!-- Fill from scripts/review.py output. Values come from the JSON as printed; never recompute them. Use the single or the multi block, not both. -->
+
+## Offer review: {{property}} (list {{list_price}})
+
+<!-- single mode -->
+**{{summary.headline}}{{" Offer " + summary.offer}}.** {{summary.why}}
+
+{{when summary.counter:}}
+**Our counter** ({{summary.counter.summary}}):
+
+| Term | Buyer offered | We counter | Why |
+|---|---|---|---|
+| {{row.term}} | {{row.offered}} | **{{row.counter}}** | {{row.why}} |
+
+{{summary.fallback, when present}}
+
+| | |
+|---|---|
+| {{each kpi: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}) |
+| Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}}; buyer can walk away until {{summary.certainty.walk_away_until}}; biggest threat: {{summary.certainty.threat}} |
+
+**Top risks:** {{each summary.risks: risk.issue}}
+
+<!-- multi mode -->
+**{{summary.headline}}.** {{summary.why}}
+
+**The plan** ({{summary.plan_summary}}):
+
+| Offer | Action | Terms / reason |
+|---|---|---|
+| {{plan.offer}} | {{plan.action}} | {{plan.terms}} |
+
+{{summary.plan_note}}
+
+| # | Offer | Price | Net | Downside | Certainty | Buyer can walk | Close |
+|---|---|---|---|---|---|---|---|
+| {{r.rank}} | {{r.offer}} ({{r.financing}}) | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days}} days | {{r.close}} |
+
+<!-- both modes -->
+**Options:** {{each summary.options: "**" + option + "**" + (" (recommended)" when recommended) + ": " + net + " · " + certainty + " · " + what}}
+
+{{summary.preliminary, when present}}
+
+**Next step:** {{summary.next_step}}
+
+**To sharpen this:** {{to_confirm, as one short question; skip when empty}}
+
+<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = if the appraisal and inspection go badly. Estimates only; the title company's settlement statement governs. Not legal advice.</sub>
+
+<!-- On request only ("show me the net sheet"): one table per offer from offers[].net_sheet, columns net_sheet.columns, rows net_sheet.rows. Then list assumptions[] as "impact · where · what". -->

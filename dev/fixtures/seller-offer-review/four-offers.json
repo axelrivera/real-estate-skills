@@ -1,0 +1,45 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "listing": {
+    "address": "418 Heron Lake Dr, Longwood, FL 32750",
+    "state": "FL",
+    "county": "Seminole",
+    "list_price": 425000,
+    "beds": 3, "baths": 2, "sqft": 1684, "year_built": 1988, "roof_year": 2012,
+    "hoa_monthly": 85, "hoa_approval_required": false, "flood_zone": "X",
+    "cma_low": 415000, "cma_high": 428000, "annual_tax": 5400
+  },
+  "seller": {
+    "name": "Sample Seller", "payoff": 238400, "listing_fee_pct": 0.03, "offered_buyer_broker_pct": 0.025,
+    "holding_monthly": 2400, "deadline": "2026-11-15", "priority": "certainty",
+    "priority_note": "Close by Nov 15; wants certainty over top dollar"
+  },
+  "offers": [
+    {"id": "A", "status": "active", "received": "2026-09-22", "expires": "2026-09-25 17:00",
+     "buyer": "Buyer A", "buyer_agent": "J. Morales · Keller Williams",
+     "price": 432000, "financing": "fha", "down_pct": 0.035, "lender": "Guild Mortgage",
+     "approval": "du_approved", "lender_called": true, "deposit": 5000,
+     "seller_concessions": 12000, "buyer_broker_pct": 0.025, "home_warranty": 550,
+     "inspection_days": 10, "loan_approval_days": 30, "appraisal_contingency": 21, "appraisal_gap": 0,
+     "closing_date": "2026-11-07", "contract_form": "as_is", "riders": ["FHA/VA Financing", "HOA"],
+     "title_by": "buyer", "personal_property": "Refrigerator, washer, dryer",
+     "insurance_quote": false, "agent_track": "average", "agent_note": "Responsive; 2 closings in last 12 months"},
+    {"id": "B", "status": "active", "buyer": "Buyer B", "buyer_agent": "L. Park · Coldwell Banker",
+     "price": 420000, "financing": "conventional", "down_pct": 0.20, "lender": "Chase",
+     "approval": "full_uw", "lender_called": true, "deposit": 15000, "seller_concessions": 0,
+     "buyer_broker_pct": 0.025, "inspection_days": 7, "loan_approval_days": 21, "appraisal_contingency": 21,
+     "appraisal_gap": 10000, "closing_days": 30, "riders": ["Appraisal", "HOA"],
+     "insurance_quote": true, "agent_track": "strong"},
+    {"id": "C", "status": "active", "buyer": "Sunshine Holdings LLC", "buyer_agent": "R. Díaz · eXp Realty",
+     "price": 405000, "financing": "cash", "approval": "pof_verified", "deposit": 40500,
+     "seller_concessions": 0, "buyer_broker_pct": 0.02, "inspection_days": 5, "closing_days": 21,
+     "riders": ["HOA"], "agent_track": "strong", "other_terms": "Will accept 30-day rent-back at $0"},
+    {"id": "D", "status": "active", "buyer": "Buyer D", "buyer_agent": "M. Lee · Independent",
+     "price": 440000, "financing": "conventional", "down_pct": 0.10, "lender": "Local credit union",
+     "approval": "prequal", "lender_called": false, "deposit": 10000, "seller_concessions": 5000,
+     "buyer_broker_pct": 0.03, "inspection_days": 15, "loan_approval_days": 40, "appraisal_contingency": 21,
+     "appraisal_gap": 0, "sale_contingency_days": 45, "kickout": true, "closing_days": 60,
+     "riders": ["Sale of Buyer's Property", "Appraisal", "HOA"], "agent_track": "average"}
+  ]
+}

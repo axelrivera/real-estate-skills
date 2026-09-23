@@ -1,0 +1,23 @@
+{
+  "skill_name": "seller-offer-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "got an offer on 1207 Palmetto Way in Winter Springs. list is 389k, they offered 382k FHA, want to close in 35 days. thats all I have right now. what should my seller do?",
+      "expected_output": "Runs the review with only list price, offer price, financing and closing (no questionnaire first); recommends COUNTER at $386,000 with a 7-day inspection; net as offered about $349,817 before payoff with Florida defaults (2.5% + 2.5% brokerage, $1,145 title fees, doc stamps); certainty 66/100; says it's Preliminary and asks in one short question for the top missing inputs (CMA range, payoff, listing fee, concessions, buyer-broker pay); offers the PDF in one line",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We have 4 offers on Heron Lake, details attached along with my CMA. Seller needs to close by Nov 15 and wants certainty. Which one do we go with? I need something to show the seller tonight.",
+      "expected_output": "Uses the CMA handoff block for the value range ($415,000–$428,000, midpoint $421,500); builds one listing file with offers A–D; multi-offer PDF in seller colors: counter Offer B (price $423,000), hold C as backup, decline A (nets less once risk counted) and D (sale contingency, pre-qual, closes past Nov 15); says only one counter goes out at a time; leaves out buyer personal details; hands back the listing file",
+      "files": ["dev/evals/seller-offer-review/files/heron-lake-offers.md", "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"]
+    },
+    {
+      "id": 3,
+      "prompt": "Quick net sheet please: offer on my Austin listing, 8104 Shoal Creek Blvd, list 610k. Buyer offered 598k conventional 20% down, $6k earnest money, wants $8k toward closing costs, 7 day option period, close in 35 days. Payoff is about 214k. My market profile is attached.",
+      "expected_output": "Uses the Austin market profile (no deed transfer tax, seller-paid owner's title estimate, $740 title fees, 3% + 2.5% brokerage) and never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window; answers in chat with the net after payoff and the likely counter (price partway to list, larger earnest money); mentions that the net sheet is an estimate and offers the PDF",
+      "files": ["dev/evals/seller-offer-review/files/market-profile-austin.md"]
+    }
+  ]
+}

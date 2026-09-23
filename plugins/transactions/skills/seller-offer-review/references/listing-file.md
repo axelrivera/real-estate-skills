@@ -1,0 +1,112 @@
+# Listing file
+
+One JSON file per property, with every offer in it. `scripts/review.py` analyzes it and `scripts/render.py` builds the PDF. Only `listing.list_price` and, per offer, `price` and `financing` are needed. Anything else that's missing gets the default below and is recorded as an assumption:
+
+- **high:** can change the recommendation or move the net by thousands (the answer is marked Preliminary)
+- **med:** changes a score or a line item
+- **low:** minor
+
+```json
+{
+  "analysis_date": "2026-09-23",
+  "listing": {"address": "418 Heron Lake Dr, Longwood, FL 32750", "list_price": 425000, "cma_low": 415000, "cma_high": 428000},
+  "seller": {"name": "Pat Seller", "payoff": 238400, "listing_fee_pct": 0.03, "offered_buyer_broker_pct": 0.025},
+  "offers": [{"id": "A", "price": 432000, "financing": "fha", "down_pct": 0.035, "seller_concessions": 12000}]
+}
+```
+
+## Top level
+
+| Field | Default |
+|---|---|
+| `analysis_date` | today (also the assumed acceptance date for timelines) |
+| `listing`, `offers` | required |
+| `seller` | `{}` |
+| `cma` | optional: a `cma-handoff v1` record pasted in, instead of passing `--cma` |
+| `sample` | `true` only for demo data (prints SAMPLE DATA) |
+
+The agent's name, brokerage and brand colors come from the agent profile (`--agent`), not from this file.
+
+## listing
+
+| Field | Default if missing | Impact |
+|---|---|---|
+| `address` | — | — |
+| `state`, `county` | state read from the address ("…, FL 32750"); neither → Florida assumed | high |
+| `list_price` | **required** | — |
+| `beds`, `baths`, `sqft`, `year_built` | shown as "—" | — |
+| `roof_year` | no roof penalty in scoring | med (insurance) |
+| `hoa_monthly` | unknown → HOA estoppel still charged; `0` = no HOA | low |
+| `hoa_approval_required` | false | low |
+| `flood_zone` | not scored | low |
+| `cma_low`, `cma_high` (`cma_mid` optional) | from `--cma`; else both = list price, appraisal risk measured vs. list | **high** |
+| `annual_tax` | market fallback rate × list price (Florida 1.8%); no rate → proration left out | low / med |
+| `costs` | market profile values; see below | — |
+
+### costs (this deal's own numbers, optional)
+
+Use when the agent has a title company quote or the county differs from the market default. Each one wins over the market profile.
+
+| Field | Meaning |
+|---|---|
+| `title_fees` | seller's title company charges: a number (a quote) or `{"settlement_fee": 700, ...}` |
+| `transfer_tax_rate`, `transfer_tax_payer` | deed transfer tax as a share of price; `seller`, `buyer` or `split` |
+| `title_payer` | who customarily pays the owner's title policy: `seller` or `buyer` |
+| `title_estimate_pct` | owner's title premium as a share of price, when there's no rate table |
+| `hoa_estoppel_fee` | HOA / condo estoppel letter |
+| `tax_paid` | `arrears` (seller credits the buyer from Jan 1) or `advance` |
+| `insurance_rate`, `utilities_monthly` | for the holding-cost estimate |
+| `inspection_credit_reserve_pct` | typical post-inspection credit, for the downside case |
+
+## seller
+
+| Field | Default if missing | Impact |
+|---|---|---|
+| `name` | "Seller" | — |
+| `payoff` | 0; nets labeled **before payoff** | **high** |
+| `listing_fee_pct` | market default (Florida 2.5%); none → left out | **high** |
+| `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say use the market default (Florida 2.5%) | high |
+| `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
+| `deadline` | none; timeline scored on speed | med |
+| `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty) | med |
+| `priority_note` | shown instead of the priority word | — |
+
+## offers[]
+
+| Field | Values | Default if missing | Impact |
+|---|---|---|---|
+| `id` | "A", "B", … | "A" | — |
+| `status` | `active` `backup` `declined` `expired` `accepted` | `active` | — |
+| `received`, `expires` | `YYYY-MM-DD HH:MM` | — | — |
+| `buyer`, `buyer_agent`, `lender` | text | "Buyer X" | — |
+| `price` | number | **required** | — |
+| `financing` | `cash` `conventional` `fha` `va` `usda` | conventional | high |
+| `down_pct` | 0–1 | FHA .035, VA/USDA 0, conventional .10 | med |
+| `approval` | `pof_verified` `full_uw` `du_approved` `preapproval` `prequal` `none` | preapproval (financed) | med |
+| `lender_called` | bool | false → approval score capped at 3 | — |
+| `deposit` | total escrow $ | unknown → scored 3 | med |
+| `seller_concessions` | $ | 0 | **high** |
+| `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else market default | **high** |
+| `home_warranty` | $ seller pays | 0 | — |
+| `contract_form` | `as_is` `standard` | `as_is` in Florida | — |
+| `inspection_days` | days | 10 | med |
+| `loan_approval_days` | days | 30 (financed) | low |
+| `appraisal_contingency` | days, `true` or `false` | 21 days if financed | med |
+| `appraisal_gap` | $ the buyer covers | 0 | — |
+| `sale_contingency_days`, `kickout` | days, bool | 0, false | — |
+| `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
+| `title_by` | `seller` / `buyer` | the local custom | — |
+| `riders` | list of names | — | — |
+| `escalation` | `{cap, increment}` | none | — |
+| `personal_property`, `occupancy`, `other_terms` | text | — | — |
+| `insurance_quote` | bool | unknown | — |
+| `agent_track` | `strong` `average` `weak` | scored 3 | — |
+| `agent_note` | text for the scorecard | — | — |
+
+### Agent overrides (per offer)
+
+- `scores`: `{"appraisal": {"score": 2, "why": "Appraisers here run low"}, "agent": 5}`. Keys: `financing` `approval` `appraisal` `contingency` `deposit` `timeline` `property` `agent`. Marked "agent" in the report.
+- `counter`: any computed term (`price`, `seller_concessions`, `appraisal_gap`, `deposit`, `inspection_days`, `home_warranty`, `buyer_broker_pct`, `closing_date`), or the whole table as `rows: [[term, offered, counter, why], …]`. The counter net and certainty recompute from the terms, so keep rows and terms consistent.
+- `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE`.
+- `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`. Values `Yes` `No` `Pending` `N/A`.
+- `flags`: extra flags `[{"sev": "High", "issue": "…", "fix": "…"}]`.

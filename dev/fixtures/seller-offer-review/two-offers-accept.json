@@ -1,0 +1,26 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "listing": {
+    "address": "2250 Oak Hollow Ct, Oviedo, FL 32765",
+    "state": "FL",
+    "county": "Seminole",
+    "list_price": 515000,
+    "beds": 4, "baths": 3, "sqft": 2310, "year_built": 2004, "roof_year": 2019,
+    "hoa_monthly": 60, "cma_low": 500000, "cma_high": 525000, "annual_tax": 6900
+  },
+  "seller": {
+    "name": "Sample Seller", "payoff": 301000, "listing_fee_pct": 0.025,
+    "deadline": "2026-11-20", "priority": "price"
+  },
+  "offers": [
+    {"id": "B", "buyer": "Buyer B", "expires": "2026-09-24 20:00",
+     "price": 512000, "financing": "conventional", "down_pct": 0.25, "approval": "full_uw", "lender_called": true,
+     "deposit": 20000, "seller_concessions": 0, "buyer_broker_pct": 0.025, "inspection_days": 7,
+     "loan_approval_days": 21, "appraisal_contingency": 21, "appraisal_gap": 15000, "closing_date": "2026-10-30",
+     "insurance_quote": true, "agent_track": "strong"},
+    {"id": "C", "buyer": "Buyer C", "expires": "2026-09-25 12:00",
+     "price": 519000, "financing": "va", "approval": "preapproval", "deposit": 2500,
+     "seller_concessions": 10000, "inspection_days": 15, "closing_date": "2026-11-12"}
+  ]
+}
