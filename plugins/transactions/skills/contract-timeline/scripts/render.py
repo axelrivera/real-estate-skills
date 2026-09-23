@@ -35,12 +35,15 @@ def strip(t, colors):
     end = max(_when(x) for x in dated) + timedelta(days=1)
     W, L, R, LV, STEP = 740, 30, 40, 3, 15
     mid = 18 + LV * STEP + 6
-    H = mid + 18 + LV * STEP + 14
+    H = mid + 24 + LV * STEP + 14
     span = (end - eff).total_seconds()
 
     def X(dt):
         return L + (dt - eff).total_seconds() / span * (W - L - R)
 
+    groups = {}  # deadlines on the same day share one marker and one label
+    for row in dated:
+        groups.setdefault(_when(row).date(), []).append(row)
     s = [f'<svg viewBox="0 0 {W} {H}" class="strip"><line x1="{L}" x2="{W - R}" y1="{mid}" y2="{mid}" stroke="var(--grey-light)" stroke-width="3"/>']
     d = eff
     while d <= end:
@@ -50,11 +53,15 @@ def strip(t, colors):
         d += timedelta(days=7)
     placed = {}
     slots = [(side, lv) for lv in range(LV) for side in ("up", "down")]
-    for i, row in enumerate(dated):
+    for i, rows in enumerate(groups.values()):
+        row = next((r for r in rows if r["key"] == "closing"), rows[0])
         when = _when(row)
         x = X(when)
-        col = colors.get(row["party"], colors["Both"])
-        text = f'{row["short"]} · {when:%-m/%-d}'
+        parties = {r["party"] for r in rows}
+        col = colors.get(parties.pop(), colors["Both"]) if len(parties) == 1 else colors["Both"]
+        names = row["short"] if len(rows) == 1 else f'{row["short"]} +{len(rows) - 1}' if len(rows) > 2 else \
+            " / ".join(r["short"] for r in rows)
+        text = f'{names} · {when:%-m/%-d}'
         w = len(text) * 4.75 + 8
         x0 = min(max(x - w / 2, 2), W - 2 - w)
         x1 = x0 + w
@@ -62,10 +69,11 @@ def strip(t, colors):
         slot = next((sl for sl in pref if all(x1 < a or x0 > b for a, b in placed.get(sl, []))), pref[-1])
         placed.setdefault(slot, []).append((x0, x1))
         side, lv = slot
-        y = mid - 12 - lv * STEP if side == "up" else mid + 26 + lv * STEP
+        y = mid - 12 - lv * STEP if side == "up" else mid + 32 + lv * STEP  # below the tick labels (mid + 13)
         r = 6 if row["key"] == "closing" else 4.2
+        critical = any(r_["critical"] for r_ in rows)
         s.append(f'<g><line x1="{x:.1f}" x2="{x:.1f}" y1="{mid}" y2="{y + (3 if side == "up" else -9)}" stroke="{col}" stroke-width=".7"/>'
-                 f'<circle cx="{x:.1f}" cy="{mid}" r="{r}" fill="{col if row["critical"] else "#fff"}" stroke="{col}" stroke-width="1.6"/>'
+                 f'<circle cx="{x:.1f}" cy="{mid}" r="{r}" fill="{col if critical else "#fff"}" stroke="{col}" stroke-width="1.6"/>'
                  f'<text x="{x0 + w / 2:.1f}" y="{y}" class="lbl" text-anchor="middle" style="fill:{col}">{esc(text)}</text></g>')
     s.append("</svg>")
     return "".join(s)
@@ -199,7 +207,9 @@ def build(deal, fmt, out_dir, ctx):
     if top > PAGE1_LIMIT:
         print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; the key-dates table continues on page 2.", file=sys.stderr)
     for flag in t["flags"]:
-        print(f"Check: {flag}", file=sys.stderr)
+        print(f"Check (on the report): {flag}", file=sys.stderr)
+    for note in t["agent_notes"]:
+        print(f"For the agent (not printed): {note}", file=sys.stderr)
     return [path]
 
 

@@ -11,12 +11,15 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
   "contract": { },
   "deadlines": [ ],
   "amendments": [ ],
-  "flags": ["things the agent should confirm"],
+  "flags": ["checks the client should see too; printed on the report"],
+  "agent_notes": ["for the agent only: defaults used, readings to confirm; never printed"],
   "rules": { }
 }
 ```
 
 `state` and `county` pick the market's time rules (built in for Florida). `rules` overrides them for this contract (see below).
+
+`flags` print on the PDF as "Check:" lines; `agent_notes` go only to the agent in chat. When in doubt, it's an agent note: a client reading "used the 5-day form default" worries without being able to act on it.
 
 ## contract
 
@@ -26,7 +29,7 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 | `form` | Form name as printed, for other contracts ("TREC One to Four Family Residential Contract") |
 | `effective_date` | **Required.** `YYYY-MM-DD`. Last signature or initial on the final counter or acceptance |
 | `effective_date_source` | The evidence ("Seller's initials on Counteroffer #1, 9/25 4:12 PM") |
-| `closing_date`, `closing_time` | **Required** date; time `HH:MM`, default 10:00 |
+| `closing_date`, `closing_time` | **Required** date; time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so |
 | `property`, `buyer`, `seller`, `price`, `escrow_agent` | For the report |
 | `financing` | `cash`, `conventional`, `fha`, `va`, `usda` |
 | `possession_date`, `possession_time`, `possession_note` | Only if possession differs from closing |

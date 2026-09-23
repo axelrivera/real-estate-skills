@@ -8,9 +8,9 @@ For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "fr
 |---|---|---|
 | `effective_date` | Signature blocks and the last initials or date on the final counteroffer | — (ask) |
 | `deposit_days`, `deposit_amount_str` | Para. 2(a) | 3 days |
-| `additional_deposit_days`, `additional_deposit_amount_str` | Para. 2(b) | 10 days |
+| `additional_deposit_days`, `additional_deposit_amount_str` | Para. 2(b). A blank amount means no additional deposit: leave both out | 10 days, only when an amount is written |
 | `financing`, `loan_application_days`, `loan_approval_days` | Para. 8 | 5 days, 30 days |
-| `closing_date` | Para. 4 (extensions in Para. 5) | — |
+| `closing_date`, `closing_time` | Para. 4 (extensions in Para. 5). The form has no closing time; use the one the parties or title company set | — ; time 10:00 AM (agent note) |
 | `possession_*` | Para. 6 | at closing |
 | `title_by`, `title_evidence_days_before`, `survey_days_before` | Para. 9 | seller, 5 days, 5 days |
 | `inspection_days` | Para. 12 | 15 days |
@@ -23,13 +23,13 @@ For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "fr
 | `hoa`, `condo`, `hoa_docs_received`, `condo_docs_received`, `doc_review_days` | HOA / Condominium riders | 3 days after receipt |
 | `insurance_bound_days_before`, `cd_days_before` | Lender, not the contract | 7 days, 3 business days |
 
-Every blank you fill with a default goes in `flags` ("Inspection period blank: used the 15-day form default").
+Every blank you fill with a default goes in `agent_notes` ("Inspection period blank: used the 15-day form default"), not in `flags`, which print on the client's report.
 
 ## Checks before running
 
 - Handwritten changes are initialed by both parties.
 - No two documents disagree on a date. If they do, use the latest executed one and flag it.
-- Riders: the names in `riders` decide which rider deadlines appear (appraisal, insurance, HOA, condo, sale of buyer's property).
+- Riders: the names in `riders` decide which rider deadlines appear. The script matches these words anywhere in a rider's name (any case): `appraisal`, `fha` or `va` (appraisal deadline), `insurance` (insurance rider), `association` (HOA), `condominium` (condo), `sale of buyer` (sale contingency). Write the rider names as printed, e.g. "Homeowners' Association", "FHA/VA Financing".
 
 ## Time rules (built in for Florida)
 

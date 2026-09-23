@@ -56,6 +56,21 @@ class FrbarMatchesPrototype(unittest.TestCase):
         self.assertIn("Loan approval deadline is within 5 days of closing", r["flags"][0])
         self.assertEqual(rows["closing"]["source"], "Para. 4 · possession Para. 6")
 
+    def test_rider_words_and_agent_notes(self):
+        deal = fixture("buyer-fha.json")
+        c = deal["contract"]
+        c.pop("appraisal_days", None)
+        c["riders"] = ["Private Well and Septic", "Vacant Land"]
+        c["financing"] = "conventional"
+        c.pop("closing_time", None)
+        r = timeline.analyze(deal)
+        self.assertNotIn("appraisal", by_key(r))  # "va" is a whole word, not part of "private"
+        self.assertTrue(any("Closing time isn't stated" in n for n in r["agent_notes"]))
+        self.assertFalse(any("Closing time" in f for f in r["flags"]))
+        self.assertFalse(any("MLS" in n for n in r["agent_notes"]))
+        c["riders"] = ["FHA/VA Financing"]
+        self.assertIn("appraisal", by_key(timeline.analyze(deal)))
+
     def test_cash_drops_loan_deadlines(self):
         deal = fixture("buyer-fha.json")
         deal["contract"]["financing"] = "cash"

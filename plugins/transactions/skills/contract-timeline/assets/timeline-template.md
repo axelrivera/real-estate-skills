@@ -10,5 +10,6 @@
 
 **Check before relying on these dates:**
 - {{each flag, in plain words}}
+- {{each agent note, in plain words (chat only; they are not on the PDF)}}
 
 ⚠ = missing it can cost a contract right or put the deposit at risk. Effective Date {{effective.display}} ({{effective.source}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.

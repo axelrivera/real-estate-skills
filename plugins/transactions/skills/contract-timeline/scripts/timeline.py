@@ -14,6 +14,7 @@ import argparse
 import copy
 import json
 import os
+import re
 import sys
 from datetime import date, datetime, time, timedelta
 
@@ -111,7 +112,7 @@ def frbar_deadlines(c):
     """Deadlines for an FR/BAR AS IS or Standard contract, from its fields (blank = form default)."""
     financed = c.get("financing", "conventional") != "cash"
     riders = [r.lower() for r in c.get("riders", [])]
-    has = lambda word: any(word in r for r in riders)  # noqa: E731
+    has = lambda words: any(re.search(rf"\b{words}\b", r) for r in riders)  # noqa: E731  whole words: "va" isn't "private"
     as_is = c.get("contract_form", "as_is") == "as_is"
     out = []
 
@@ -315,12 +316,18 @@ def analyze(deal, market_path=None, side=None):
     firm = max(contingent, key=lambda r: r["when"]) if contingent else None
     first = next((r for r in dated if r["party"] != "Both"), None)
 
+    # flags print on the report as "Check:" lines; agent_notes stay in chat (defaults used, assumptions to confirm)
     flags = list(deal.get("flags") or [])
+    agent_notes = list(deal.get("agent_notes") or [])
     if closing_row["note"]:
         flags.append(closing_row["note"])
     approval = next((r for r in dated if r["key"] == "loan_approval"), None)
     if approval and _d(approval["when"]) > _d(closing_row["when"]) - timedelta(days=5):
         flags.append("Loan approval deadline is within 5 days of closing: little room if financing slips")
+    if not current_contract.get("closing_time"):
+        agent_notes.append(f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
+    agent_notes += [n for n in market.notes if "MLS" not in n  # MLS assumptions don't matter for a timeline
+                    and not (deal.get("rules") and n.startswith("No market profile"))]  # the contract's rules are given
 
     return {
         "ok": True,
@@ -348,11 +355,11 @@ def analyze(deal, market_path=None, side=None):
              for k, v in h["changes"].items()] +
             [f"{k.replace('_', ' ')} → {v}" for k, v in h["date_overrides"].items()])} for h in history],
         "flags": flags,
+        "agent_notes": agent_notes,
         "rules": {
             "family": "FR/BAR contract definitions" if frbar else "the contract's definitions",
             "lines": rules_text(rules, eff),
         },
-        "market_notes": market.notes,
     }
 
 

@@ -33,5 +33,6 @@
       "date_overrides": {"appraisal": "2026-11-25 17:00"}
     }
   ],
-  "flags": ["Loan application period blank on the contract: used the 5-day form default"]
+  "flags": [],
+  "agent_notes": ["Loan application period blank on the contract: used the 5-day form default"]
 }
