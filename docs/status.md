@@ -58,7 +58,18 @@ From the contract-timeline eval 1 run (dates all correct, PDF produced):
 7. SKILL.md: mention `OUTPUT_DIR` only in development.md (not needed in the sandbox) — fine as is; no change.
 8. PDF strip: labels crowd when several deadlines share a date (Oct 23) and cover axis tick labels; group same-day deadlines into one label and keep labels off the tick row.
 
-The market-profile eval run was still running at handoff; re-run it.
+From the market-profile eval 2 run (Austin TX; no Florida leakage, check ok):
+
+1. A zero transfer tax still reports `deed_transfer_tax_payer` missing: treat rate 0 as complete (payer not needed); say so in fields.md.
+2. Exemptions can't express Texas: extend `primary_residence_exemptions` with `levies: school` and percentage exemptions (`{percent: 0.20, levies: ...}`), and support them in `finance.property_tax`.
+3. Millage per $1,000 vs. Texas rates per $100: document conversion (per $100 × 10), and say millage is optional outside built-in markets (fallback_rate is enough).
+4. Promulgated title without a table: allow a single quote (`owner_title.quote: {price, premium}`) or `estimate_pct` derived from it; say which wins (the title company's table/quote).
+5. `seller_title_fees` keys are free-form and all summed: say so. Split escrow fee: store the seller's share.
+6. Multi-county areas: one profile with `area`, county differences in `county_overrides`; the county question mainly matters for built-in markets.
+7. Clarify which rules Claude may look up (published rates yes; contract time rules only from the contract or the agent).
+8. `check_market.py --mls X` without a profile should echo the MLS given.
+9. Add `holding_costs` to check_market groups (used by the offer engine) or say it's optional.
+10. `profiles.load_market` assumes Florida when state is missing; fine for no-profile calls (noted), but profiles require a state (already enforced).
 
 ## Remaining work, in order
 
