@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Claude plugin marketplace for real estate agents. Read [docs/architecture.md](docs/architecture.md) before building or changing a skill.
+Claude plugin marketplace for real estate agents. Read [docs/status.md](docs/status.md) for current progress and [docs/architecture.md](docs/architecture.md) before building or changing a skill.
 
 ## Layout
 

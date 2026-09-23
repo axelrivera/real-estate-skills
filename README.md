@@ -24,3 +24,4 @@ Details in [docs/plugins.md](docs/plugins.md).
 - [docs/plugins.md](docs/plugins.md): plugin and skill catalog
 - [docs/runtime-support.md](docs/runtime-support.md): what each runtime can run
 - [docs/development.md](docs/development.md): local setup and generating outputs
+- [docs/status.md](docs/status.md): where the work stands and what's next
