@@ -18,18 +18,38 @@ To re-run: `python3 tools/runtime-check/scripts/check.py` in Claude Code. For cl
 
 ## Results
 
+Checked 2026-09-23.
+
 | Item | Claude Code (macOS, dev machine) | claude.ai | Cowork |
 |---|---|---|---|
-| pandas / numpy | No | Pending | Pending |
-| bs4 | No | Pending | Pending |
-| PyYAML | No | Pending | Pending |
-| Pillow | Yes (12.3) | Pending | Pending |
-| Playwright → PDF | Yes | Pending | Pending |
-| Node / npm | Yes (26.5 / 11.17) | Pending | Pending |
-| pptxgenjs + deck modules | No | Pending | Pending |
-| pdftotext | Yes | Pending | Pending |
-| LibreOffice | No | Pending | Pending |
-| PyPI / npm reachable | Yes / Yes | Pending | Pending |
-| `/mnt/user-data/outputs` | No | Pending | Pending |
+| Python | 3.12 | 3.12 | **3.11** |
+| pandas / numpy | No | Yes | Yes |
+| bs4 | No | Yes | Yes |
+| PyYAML | No | Yes | Yes |
+| Pillow | Yes | Yes | Yes |
+| Playwright → PDF | Yes | Yes | Yes |
+| Node / npm | Yes (26.5) | Yes (22.22) | Yes (22.22) |
+| pptxgenjs + deck modules | No | Yes | Yes |
+| pdftotext | Yes | Yes | Yes |
+| LibreOffice | No | Yes | Yes |
+| PyPI / npm reachable | Yes / Yes | Yes / Yes | Yes / Yes |
+| `/mnt/user-data/outputs` | No | Yes | Yes |
+| Web fetch / search tools | Yes | Yes | Yes |
 
-Claude Code runs on the user's own machine, so results there vary by user. This dev machine is a best case. A typical agent's machine is likely to have less installed.
+Notes:
+- claude.ai and Cowork have everything the prototypes use. Both run on Linux in a sandbox.
+- In claude.ai the working directory is the skill's own folder (`/mnt/skills/plugins/...`). Never write outputs there. Use `/mnt/user-data/outputs/`, per the output location rule.
+- Claude Code runs on the user's own machine, so results vary by user. This dev machine is a best case. A typical agent's machine is likely to have less installed.
+
+## Dependency policy
+
+Based on these results:
+
+1. **Python 3.11 is the minimum.** Cowork runs 3.11, so no 3.12-only syntax.
+2. **Data work uses the Python standard library only.** No pandas, numpy, bs4 or PyYAML in skill scripts. The prototypes use them for CSV parsing, simple statistics and HTML, which `csv`, `statistics` and `html.parser` cover. Profile YAML is parsed by a small reader in `shared/` that supports the profile format only.
+3. **Only two heavy dependencies, both for file mode:**
+   - **Chromium through Playwright** for PDFs.
+   - **pptxgenjs** for decks. Whether react, react-icons and sharp are needed (icons in the prototype deck) is decided when `seller-cma` is rebuilt.
+4. **Pillow** only in `agent-profile`, for reading colors from images.
+5. **Missing dependency (mostly Claude Code):** the skill says what's missing in plain words and offers the exact install command. It runs the command only with the user's approval. Otherwise it falls back to markdown mode. It never fails silently.
+6. **pdftotext and LibreOffice are optional.** If `pdftotext` is missing, Claude reads the PDF directly. LibreOffice is used only for deck quality checks, which are skipped when it isn't installed.
