@@ -13,6 +13,8 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | Command | What it does |
 |---|---|
 | `make setup` | Creates `.venv` from `dev/requirements.txt`, installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json` |
+| `make test` | Runs the unit tests in `dev/tests/` |
+| `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
 | `make package` | Zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai, plus `dist/runtime-check.zip` |
@@ -32,9 +34,15 @@ dev/                     # dev tooling, never shipped
   requirements.txt       # Python packages, pinned to sandbox versions
   package.json           # Node modules, pinned to sandbox versions
   runtime-check/         # diagnostic skill
+  tests/                 # unit tests for shared/ (make test)
+  preview_design.py      # palette preview (make preview-design)
   fixtures/<skill>/      # test inputs for make outputs
 .venv/  out/  dist/      # git-ignored
 ```
+
+## Shared code
+
+`shared/` is a Python package. In a skill it's copied to `scripts/_shared/` and imported as `from _shared import design`. Tests and dev scripts import it from the repo root as `from shared import design`. Modules inside `shared/` import each other relatively (`from . import design`) so both work.
 
 ## Skill render contract
 

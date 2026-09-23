@@ -22,7 +22,7 @@ sources/                            # prototype skills, local only, git-ignored
 - **`sources/` is reference only.** Rebuild skills from it; never copy a prototype into `plugins/`, and never edit or ship anything from it.
 - **Skills run in claude.ai and Cowork only** (desktop app and cloud), not Claude Code. Script paths are relative to the skill directory. Do not use `/mnt/...` paths or paths outside the skill directory. Skill descriptions stay under 1,024 characters.
 - **Dependencies:** use only what the sandbox has ([docs/runtime-support.md](docs/runtime-support.md)). Python code must be 3.11-compatible. Never install packages at run time.
-- **Local dev:** run `make setup` once; generate outputs with `make outputs`. Use `.venv/bin/python` and the Node version in `.nvmrc`. See [docs/development.md](docs/development.md).
+- **Local dev:** run `make setup` once; `make test` after changing `shared/`; generate outputs with `make outputs`. Use `.venv/bin/python` and the Node version in `.nvmrc`. See [docs/development.md](docs/development.md).
 - **Shared code is edited in `shared/` only.** `scripts/_shared/` inside a skill is a committed copy made by the sync tool; never edit it by hand.
 - **Every skill has a markdown mode and a file mode**, both rendered by scripts from the same data JSON. The core profile skills are markdown only.
 - **Skills never require other skills.** Read profiles and handoffs as files when present; otherwise collect what's needed inline.

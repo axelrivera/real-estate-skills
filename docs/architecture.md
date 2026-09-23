@@ -136,7 +136,7 @@ A skill that serves both sides (`contract-timeline`) uses the side of the view b
 
 How the color reaches every output:
 
-- **One input, full palette.** `shared/design` derives the rest from the primary color: dark shade for headings and emphasis, light tints for panels, callouts and rules, and chart accents. Skills never hard-code brand hex values in CSS, renderers or the deck builder. They take tokens from `shared/design`.
+- **One input, full palette.** `shared/design.py` derives the rest from the primary color: dark shade for headings and emphasis, light tints for panels, callouts and rules, and chart accents. Skills never hard-code brand hex values in CSS, renderers or the deck builder. They take tokens from `shared/design`.
 - **Status colors stay fixed.** Good / caution / risk (green `#2E7D5B`, amber `#B7791F`, red `#B3261E`) are not branded, so a meaning never changes color. If the brand color is close to one of them, the palette shifts that status color slightly so it still reads differently.
 - **Legibility.** If the primary color doesn't reach WCAG AA contrast on white, a darkened version is used for text, and the original is used only for fills and accents. `agent-profile` mentions this in plain words when the color is saved.
 - **Party coding.** Documents that show both parties (the timeline's Buyer / Seller / Both markers) use the resolved buyer and seller colors. If the two are the same or too close, the second party gets a clearly different shade, and parties are always labeled in text, never by color alone.

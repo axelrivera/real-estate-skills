@@ -25,7 +25,7 @@ Produced by the diagnostic skill in `dev/runtime-check/` (never shipped). Checke
 | `/mnt/user-data/outputs` | Yes | Yes |
 | Web fetch / search tools | Yes | Yes |
 
-Versions for Playwright and the Node modules come from a second claude.ai run on 2026-09-23. Cowork showed the same tools in the first run; its exact versions for these weren't recorded. `dev/requirements.txt`, `dev/package.json` and `.nvmrc` are pinned to the claude.ai versions.
+Versions for Playwright and the Node modules come from a second claude.ai run on 2026-09-23. Cowork's exact versions for these weren't recorded; they are assumed to match claude.ai, since every version that was recorded in both runtimes matched (except a Pillow patch release). `dev/requirements.txt`, `dev/package.json` and `.nvmrc` are pinned to the claude.ai versions.
 
 Notes:
 - In claude.ai the working directory is the skill's own folder (`/mnt/skills/plugins/...`). Never write outputs there. Use `/mnt/user-data/outputs/`, per the [output location](architecture.md#output-location) rule.

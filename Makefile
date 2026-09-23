@@ -12,11 +12,13 @@ DIST     := dist
 
 SKILLS := $(patsubst %/SKILL.md,%,$(wildcard plugins/*/skills/*/SKILL.md))
 
-.PHONY: help setup runtime-check outputs package clean
+.PHONY: help setup test runtime-check preview-design outputs package clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
+	@echo "make test           Run unit tests in dev/tests/"
 	@echo "make runtime-check  Run the runtime check against the local environment"
+	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
 	@echo "make package        Zip every skill (and runtime-check) into $(DIST)/"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
@@ -28,6 +30,12 @@ setup:
 	$(PY) -m pip install -q -r dev/requirements.txt
 	$(PY) -m playwright install chromium
 	. "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm install && cd dev && SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --silent
+
+test:
+	@$(PY) -m unittest discover -s dev/tests
+
+preview-design:
+	@$(PY) dev/preview_design.py
 
 runtime-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py

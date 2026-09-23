@@ -53,6 +53,13 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 
 ## Status
 
+| Shared module | Status |
+|---|---|
+| `shared/design` | Done: palette, legibility, status separation, party colors; tests and preview |
+| Profile reader | Not started |
+| Render helpers (output location, HTML → PDF) | Not started |
+| Sync and drift check | Not started |
+
 | Skill | Status |
 |---|---|
 | `agent-profile` | Not started |
