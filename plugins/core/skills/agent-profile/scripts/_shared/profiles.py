@@ -297,6 +297,8 @@ def load_market(path=None, state=None, county=None, mls=None):
         _merge(data, _strip_layer_keys(layer), sources, "mls")
 
     _merge(data, {k: v for k, v in user.items() if k not in ("profile", "schema")}, sources, "profile")
+    if mls_name and not data.get("mls"):
+        data["mls"], sources["mls"] = mls_name, "input"  # an MLS that isn't built in is still the one in use
     data["state"] = want
     sources["state"] = "profile" if path else "state" if want in states else "input"
 

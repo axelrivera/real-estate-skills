@@ -102,23 +102,26 @@ def buydown_2_1(loan, rate_pct):
 def property_tax(value, market=None, school_mills=None, total_mills=None, homestead=True):
     """Annual tax for a buyer at `value`: {'annual', 'basis', 'estimated'}.
 
-    With millage, exemptions come from the market profile (`levies: all` lowers every levy,
-    `non_school` lowers all but school). Without millage, the market's fallback rate is used and
-    marked `estimated`. With neither, `annual` is None.
+    With millage, exemptions come from the market profile: each is an `amount` or a `percent` of value
+    (0.20 = 20%), and `levies` says what it lowers: `all`, `non_school` (all but school) or `school` (school
+    only, as in Texas). Without millage, the market's fallback rate is used and marked `estimated`.
+    With neither, `annual` is None.
     """
     if total_mills is not None:
         school = school_mills or 0.0
-        all_ex = non_school_ex = 0.0
+        off = {"school": 0.0, "other": 0.0}
         if homestead and market is not None:
             for ex in market.get("property_tax.primary_residence_exemptions") or []:
-                if ex.get("levies") == "all":
-                    all_ex += ex["amount"]
-                elif ex.get("levies") == "non_school":
-                    non_school_ex += ex["amount"]
-        school_taxable = max(value - all_ex, 0)
-        other_taxable = max(value - all_ex - non_school_ex, 0)
+                amount = ex["amount"] if ex.get("amount") is not None else value * (ex.get("percent") or 0)
+                levies = ex.get("levies", "all")
+                if levies in ("all", "school"):
+                    off["school"] += amount
+                if levies in ("all", "non_school"):
+                    off["other"] += amount
+        school_taxable = max(value - off["school"], 0)
+        other_taxable = max(value - off["other"], 0)
         annual = (school_taxable * school + other_taxable * (total_mills - school)) / 1000
-        basis = f"{total_mills:.4f} mills" + (", with homestead" if homestead and (all_ex or non_school_ex) else "")
+        basis = f"{total_mills:.4f} mills" + (", with homestead" if homestead and any(off.values()) else "")
         return {"annual": annual, "basis": basis, "estimated": False}
     rate = market.get("property_tax.fallback_rate") if market is not None else None
     if rate:
@@ -197,7 +200,10 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     if title_payer == "seller":
         tiers = market.get("closing_costs.owner_title.rate_tiers")
         pct = market.get("closing_costs.owner_title.estimate_pct")
-        if tiers:
+        quote = market.get("closing_costs.owner_title.quote")  # {price, premium} from a title company
+        if quote and quote.get("price") and quote.get("premium"):
+            pct = quote["premium"] / quote["price"]  # a real quote beats a rough share of price
+        if tiers:  # the published rate table is exact
             add("owner_title", "Owner's title insurance", title_premium(price, tiers))
         elif pct:
             add("owner_title", "Owner's title insurance (estimate)", price * pct, pct)

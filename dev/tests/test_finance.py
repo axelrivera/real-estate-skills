@@ -61,6 +61,34 @@ class Taxes(unittest.TestCase):
         tx = profiles.load_market(state="TX")
         self.assertIsNone(f.property_tax(400000, tx)["annual"])
 
+    def test_texas_style_exemptions(self):
+        class M:
+            def __init__(self, d):
+                self.d = d
+
+            def get(self, path, default=None):
+                return self.d.get(path, default)
+
+        tx = M({"property_tax.primary_residence_exemptions": [{"amount": 100000, "levies": "school"},
+                                                              {"percent": 0.20, "levies": "non_school"}]})
+        # rate per $100 of 2.0 total, 1.0 school -> 20 and 10 mills
+        t = f.property_tax(400000, tx, school_mills=10, total_mills=20)["annual"]
+        self.assertAlmostEqual(t, (300000 * 10 + 320000 * 10) / 1000)
+
+    def test_owner_title_quote(self):
+        class M(dict):
+            def get(self, path, default=None):
+                return dict.get(self, path, default)
+
+            def source(self, path):
+                return "profile"
+
+        m = M({"closing_costs.owner_title.payer": "seller",
+               "closing_costs.owner_title.quote": {"price": 400000, "premium": 2400},
+               "closing_costs.owner_title.estimate_pct": 0.01})
+        n = f.seller_net(500000, m, listing_fee_pct=0, buyer_broker_fee_pct=0)
+        self.assertEqual(next(x["amount"] for x in n["lines"] if x["key"] == "owner_title"), 3000)  # quote wins
+
     def test_millage_lookup(self):
         self.assertEqual(f.millage(FL, county="Seminole County", district="Altamonte")[0]["total"], 17.5683)
 

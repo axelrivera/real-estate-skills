@@ -38,7 +38,7 @@ county_overrides:
 
 {{one line: state, area and MLS}}
 
-Used as context by the real estate skills. Keep this file in your Project files so every chat can use it. Anything not listed here uses the built-in defaults for {{state}}, where there are any.
+Used as context by the real estate skills. Anything not listed here uses the built-in defaults for {{state}}, where there are any.
 
 ## What's customized
 

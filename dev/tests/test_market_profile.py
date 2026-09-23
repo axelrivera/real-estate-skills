@@ -82,8 +82,11 @@ class Builtin(unittest.TestCase):
         r = check_market.check(state="TX")
         self.assertTrue(r["ok"])  # nothing wrong, just nothing known
         self.assertFalse(any(g["complete"] for g in r["groups"].values()))
-        self.assertIn("closing_costs.owner_title.rate_tiers or closing_costs.owner_title.estimate_pct",
+        self.assertIn("closing_costs.owner_title.rate_tiers or closing_costs.owner_title.quote or closing_costs.owner_title.estimate_pct",
                       r["groups"]["closing costs"]["missing"])
+
+    def test_unknown_mls_is_echoed(self):
+        self.assertEqual(check_market.check(state="TX", mls="ACTRIS")["mls"], "ACTRIS")
 
     def test_county_exception_source(self):
         r = check_market.check(state="FL", county="Miami-Dade")
@@ -100,7 +103,7 @@ class AgentProfiles(unittest.TestCase):
         cc = r["groups"]["closing costs"]
         self.assertEqual(cc["values"]["closing_costs.owner_title.estimate_pct"]["source"], "profile")
         self.assertEqual(cc["values"]["closing_costs.deed_transfer_tax_rate"]["value"], 0)  # zero is a value
-        self.assertEqual(cc["missing"], ["closing_costs.hoa_estoppel_fee"])
+        self.assertEqual(cc["missing"], ["closing_costs.hoa_estoppel_fee"])  # no transfer tax: its payer isn't needed
         self.assertTrue(r["groups"]["brokerage"]["complete"])
         self.assertFalse(r["groups"]["contract dates"]["complete"])
 

@@ -22,7 +22,7 @@ GROUPS = {
         "closing_costs.deed_transfer_tax_rate",
         "closing_costs.deed_transfer_tax_payer",
         "closing_costs.owner_title.payer",
-        ("closing_costs.owner_title.rate_tiers", "closing_costs.owner_title.estimate_pct"),
+        ("closing_costs.owner_title.rate_tiers", "closing_costs.owner_title.quote", "closing_costs.owner_title.estimate_pct"),
         "closing_costs.seller_title_fees",
         "closing_costs.hoa_estoppel_fee",
         "closing_costs.buyer_closing_cost_pct",
@@ -62,10 +62,18 @@ def check(path=None, state=None, county=None, mls=None):
     except profiles.ProfileError as e:
         return {"ok": False, "problems": problems + [str(e)]}
 
+    # Settings that don't apply: no transfer tax means nobody pays it; a buyer-paid owner's policy needs no seller rate.
+    skip = set()
+    if market.get("closing_costs.deed_transfer_tax_rate") == 0:
+        skip.add("closing_costs.deed_transfer_tax_payer")
+    if market.get("closing_costs.owner_title.payer") == "buyer":
+        skip.add(("closing_costs.owner_title.rate_tiers", "closing_costs.owner_title.quote", "closing_costs.owner_title.estimate_pct"))
     groups = {}
     for group, paths in GROUPS.items():
         values, missing = {}, []
         for p in paths:
+            if p in skip:
+                continue
             options = p if isinstance(p, tuple) else (p,)
             found = next((o for o in options if market.get(o) is not None), None)
             if found:

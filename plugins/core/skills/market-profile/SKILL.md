@@ -28,7 +28,9 @@ For each group of settings it shows the values, where they come from (`state` or
 - **Built-in market (Florida, Stellar):** summarize the defaults the agent is most likely to have opinions on, in plain words: commission split, title fees, who pays title in their county, and whether their city has millage. Ask what they'd like to change. Most agents change one or two things or nothing.
 - **Anything else:** go through the `missing` groups in the order the agent's work needs them. Closing costs and brokerage matter for net sheets, contract dates for timelines, CMA for pricing. Ask in plain words, a group at a time.
 - **Documents help most.** A net sheet, a title company quote or a closing cost worksheet answers most closing cost questions at once. Read it and confirm what you took from it.
-- **Published figures** (a state's transfer tax, a county's millage) can be looked up when web search is available. Cite the source in the profile's notes and confirm with the agent.
+- **Published figures** (a state's transfer tax, a county's tax rates, a promulgated title rate table) can be looked up when web search is available. Cite the source in the profile's notes and confirm with the agent.
+- **Contract time rules** (how days count, when a day ends, weekend rollover) come only from the agent's contract form or the agent, never from a web search: forms differ and a wrong rule moves every deadline.
+- **Several counties:** one profile with `area` listing them, and what differs by county in `county_overrides`. Asking for the county mostly matters in built-in markets, where county exceptions and millage exist.
 - **Unknown stays unknown.** Leave out anything the agent doesn't know. Skills will ask at the time or mark the output Preliminary, which is better than a wrong number on a seller's net sheet.
 
 Read `references/fields.md` when you need the exact meaning or format of a setting.
@@ -54,6 +56,6 @@ Fix anything under `problems`, then confirm the values show `profile` as their s
 
 Present the file with a short plain summary: which market, what's customized, and anything still missing that some skills will ask about later. Then one line on keeping it:
 
-- claude.ai Projects: "Add this file to your Project files so every chat can use it."
-- Cowork: save it in their working folder.
-- Otherwise: "Keep this file and share it at the start of a chat when you want these numbers used."
+- **claude.ai inside a Project** (the conversation has Project files or instructions): "Add this file to your Project files so every chat can use it."
+- **Cowork** (you're working in a folder on the agent's computer): save it in that working folder and say where.
+- **Otherwise** (a plain claude.ai chat): "Keep this file and share it at the start of a chat when you want these numbers used."
