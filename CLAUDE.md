@@ -10,7 +10,7 @@ plugins/<plugin>/
   .claude-plugin/plugin.json        # plugin manifest
   skills/<skill>/SKILL.md           # one directory per skill
 shared/                             # shared code, copied into skills (planned)
-tools/                              # sync, check, package scripts (planned)
+tools/                              # dev tooling (runtime-check now; sync, check, package planned)
 docs/                               # all documentation
 sources/                            # prototype skills, local only, git-ignored
 ```

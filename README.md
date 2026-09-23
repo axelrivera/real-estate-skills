@@ -24,3 +24,4 @@ Details in [docs/plugins.md](docs/plugins.md).
 - [docs/architecture.md](docs/architecture.md): rules every skill follows
 - [docs/migration-plan.md](docs/migration-plan.md): rebuilding the prototypes as final skills
 - [docs/plugins.md](docs/plugins.md): plugin and skill catalog
+- [docs/runtime-support.md](docs/runtime-support.md): what each runtime can run
