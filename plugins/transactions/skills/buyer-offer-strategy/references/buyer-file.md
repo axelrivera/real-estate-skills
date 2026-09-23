@@ -47,7 +47,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## costs (buyer's payment)
 
-`rate` (default 6.5%), `insurance_annual` (default: market insurance rate × price, at least $2,500; Florida 0.7%), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged).
+`rate` (default 6.5%), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged).
 
 ## buyer
 

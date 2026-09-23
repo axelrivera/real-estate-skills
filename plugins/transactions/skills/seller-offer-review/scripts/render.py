@@ -8,7 +8,6 @@ numbers, certainty and the seller's options). The pages after it hold the net sh
 timeline, terms review, scorecard, risk flags, checklist, questions and assumptions.
 Colors follow the agent's seller-side brand color.
 """
-import argparse
 import html
 import math
 import os
@@ -583,9 +582,9 @@ def fit_page_one(pg):
     return top
 
 
-def build(data, fmt, out_dir, ctx, cma=None, mode="auto", offer_id=None):
-    R = review.analyze(data, ctx.get("market"), review.load_cma(data, cma))
-    doc, mode, o = build_html(R, ctx["agent"], ctx.get("sample") or R["sample"], mode, offer_id)
+def build(data, fmt, out_dir, ctx):
+    R = review.analyze(data, ctx.get("market"), review.load_cma(data, ctx.get("cma")))
+    doc, mode, o = build_html(R, ctx["agent"], ctx.get("sample") or R["sample"], ctx.get("mode") or "auto", ctx.get("offer"))
     street = (R["listing"].get("address") or "Listing").split(",")[0]
     name = render.filename(street, f"Offer {o['id']} Review" if mode == "single" else "Multiple Offer Review", ext="pdf")
     path = os.path.join(out_dir, name)
@@ -598,16 +597,14 @@ def build(data, fmt, out_dir, ctx, cma=None, mode="auto", offer_id=None):
     return [path]
 
 
+def options(ap):
+    ap.add_argument("--cma", help="cma-handoff v1 file (.cma.json or markdown with the block)")
+    ap.add_argument("--mode", choices=["auto", "single", "multi"], default="auto")
+    ap.add_argument("--offer", help="offer id for a single review while others are active")
+
+
 def main(argv=None):
-    extra = argparse.ArgumentParser(add_help=False)
-    extra.add_argument("--cma")
-    extra.add_argument("--mode", choices=["auto", "single", "multi"], default="auto")
-    extra.add_argument("--offer")
-    known, rest = extra.parse_known_args(argv)
-    try:
-        return render.main(lambda d, f, o, c: build(d, f, o, c, known.cma, known.mode, known.offer), formats=("pdf",), argv=rest)
-    except (oe.OfferError, handoff.HandoffError, profiles.ProfileError) as e:
-        sys.exit(str(e))
+    return render.main(build, formats=("pdf",), argv=argv, extra_args=options, errors=(oe.OfferError, handoff.HandoffError))
 
 
 if __name__ == "__main__":

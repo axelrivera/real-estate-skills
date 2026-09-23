@@ -146,8 +146,8 @@ def prepare(B, A, market=None):
     BU.setdefault("agent_track", "average")
     K["rate"] = oe.given(K, "rate", DEFAULT_RATE, A, "costs", f"Interest rate not provided: assumed {DEFAULT_RATE}% (use the lender's quote)", "low")
     if K.get("insurance_annual") is None:
-        rate = costs.get("holding_costs.insurance_rate")
-        src = costs.described("holding_costs.insurance_rate") if rate is not None else "national planning estimate"
+        rate = costs.get("buyer_costs.insurance_rate")
+        src = costs.described("buyer_costs.insurance_rate") if rate is not None else "national planning estimate"
         K["insurance_annual"] = round(max(2500, (rate if rate is not None else NATIONAL_INSURANCE_RATE) * lp), -2)
         A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: estimated at {money(K['insurance_annual'])}/yr ({src})", "low")
     P["hoa_monthly"] = P.get("hoa_monthly") or 0

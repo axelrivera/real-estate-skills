@@ -9,7 +9,6 @@ Worksheet: contract entries, riders with suggested inputs, draft additional term
 for the chosen option. It prints offer terms only, never the buyer's max, cash or reserve.
 Colors follow the agent's buyer-side brand color.
 """
-import argparse
 import html
 import os
 import re
@@ -269,8 +268,9 @@ def fit_page_one(pg):
     return top
 
 
-def build(data, fmt, out_dir, ctx, cma=None, option=None):
-    r = ST.analyze(data, ctx.get("market"), ST.load_cma(data, cma))
+def build(data, fmt, out_dir, ctx):
+    r = ST.analyze(data, ctx.get("market"), ST.load_cma(data, ctx.get("cma")))
+    option = ctx.get("option")
     sample = ctx.get("sample") or r["sample"]
     street = (r["B"]["property"].get("address") or "Property").split(",")[0]
     if fmt == "options":
@@ -288,15 +288,14 @@ def build(data, fmt, out_dir, ctx, cma=None, option=None):
     return [path]
 
 
+def options(ap):
+    ap.add_argument("--cma", help="cma-handoff v1 file (.cma.json or markdown with the block)")
+    ap.add_argument("--option", choices=list(ST.OPTION_LABEL), help="option for the worksheet (default: the file's chosen_option)")
+
+
 def main(argv=None):
-    extra = argparse.ArgumentParser(add_help=False)
-    extra.add_argument("--cma")
-    extra.add_argument("--option", choices=list(ST.OPTION_LABEL))
-    known, rest = extra.parse_known_args(argv)
-    try:
-        return render.main(lambda d, f, o, c: build(d, f, o, c, known.cma, known.option), formats=("options", "worksheet"), argv=rest)
-    except (oe.OfferError, handoff.HandoffError, profiles.ProfileError) as e:
-        sys.exit(str(e))
+    return render.main(build, formats=("options", "worksheet"), argv=argv, extra_args=options,
+                       errors=(oe.OfferError, handoff.HandoffError))
 
 
 if __name__ == "__main__":

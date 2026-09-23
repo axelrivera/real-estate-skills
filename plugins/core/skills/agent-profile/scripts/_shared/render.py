@@ -100,10 +100,15 @@ def write_text(text, path):
     return path
 
 
-def main(build, formats, argv=None):
+def main(build, formats, argv=None, extra_args=None, errors=()):
     """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--agent] [--market] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
+    `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
+    `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once.
+    `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
+    With several formats, one that fails doesn't stop the others: the files that were made are printed,
+    then the run exits with a message naming what wasn't built.
     Prints each path, one per line, so Claude can present them.
     """
     from . import profiles
@@ -115,17 +120,33 @@ def main(build, formats, argv=None):
     ap.add_argument("--agent", help="agent profile (name, brokerage, brand colors on the report)")
     ap.add_argument("--market", help="market profile")
     ap.add_argument("--sample", action="store_true", help="label the report SAMPLE DATA")
+    base = {a.dest for a in ap._actions}
+    if extra_args:
+        extra_args(ap)
     args = ap.parse_args(argv)
+    todo = list(formats) if args.format == "all" else [args.format]
+    errors = (profiles.ProfileError, *errors)
 
-    with open(args.data, encoding="utf-8") as f:
-        data = json.load(f)
-    ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample}
+    try:
+        with open(args.data, encoding="utf-8") as f:
+            data = json.load(f)
+        ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample, "formats": todo,
+               **{k: v for k, v in vars(args).items() if k not in base}}
+    except (OSError, ValueError, *errors) as e:
+        sys.exit(str(e))
     out_dir = output_dir(args.out)
-    written = []
-    for fmt in formats if args.format == "all" else [args.format]:
-        written += build(data, fmt, out_dir, ctx)
+    written, failed = [], []
+    for fmt in todo:
+        try:
+            written += [p for p in build(data, fmt, out_dir, ctx) if p not in written]
+        except errors as e:
+            failed.append((fmt, str(e)))
     for path in written:
         print(path)
+    if failed:
+        if not written or len(todo) == 1:
+            sys.exit(failed[0][1])
+        sys.exit("\n".join(f"The {fmt} file wasn't built: {msg}" for fmt, msg in failed))
     return written
 
 

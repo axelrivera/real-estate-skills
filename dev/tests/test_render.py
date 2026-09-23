@@ -61,6 +61,35 @@ class Main(unittest.TestCase):
                     render.main(build, ("md",), [src, "--format", "pdf"])
             self.assertIn("Test-Doc.md", quiet.getvalue())
 
+    def test_extra_args_and_partial_success(self):
+        class BadInput(Exception):
+            pass
+
+        seen = {}
+
+        def build(data, fmt, out_dir, ctx):
+            seen.update(ctx)
+            if fmt == "b":
+                raise BadInput("no deck without Node")
+            return [render.write_text("x", os.path.join(out_dir, f"doc.{fmt}"))]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "data.json")
+            with open(src, "w") as f:
+                json.dump({}, f)
+            out, quiet = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(quiet):
+                with self.assertRaises(SystemExit) as stop:
+                    render.main(build, ("a", "b"), [src, "--out", tmp, "--mode", "multi"], errors=(BadInput,),
+                                extra_args=lambda ap: ap.add_argument("--mode"))
+            self.assertEqual(seen["mode"], "multi")
+            self.assertEqual(seen["formats"], ["a", "b"])
+            self.assertIn("doc.a", out.getvalue())  # the file that worked is still listed
+            self.assertIn("The b file wasn't built: no deck without Node", str(stop.exception.code))
+            with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stop:
+                render.main(build, ("a", "b"), [src, "--out", tmp, "--format", "b"], errors=(BadInput,))
+            self.assertEqual(stop.exception.code, "no deck without Node")
+
 
 class Pdf(unittest.TestCase):
     def test_html_to_pdf(self):

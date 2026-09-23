@@ -47,8 +47,16 @@ Every setting the skills read, what it means, and the format. Rates are decimals
 
 | Field | Meaning |
 |---|---|
-| `insurance_rate` | Annual homeowner's insurance, share of price, for holding-cost estimates |
+| `insurance_rate` | Seller's annual homeowner's insurance, share of price, for holding-cost estimates (offer reviews) |
 | `utilities_monthly` | Monthly utilities while listed |
+
+## buyer_costs
+
+| Field | Meaning |
+|---|---|
+| `insurance_rate` | A buyer's new homeowner's policy, share of price per year, for payment estimates when there's no quote |
+
+Holding and buyer insurance are optional: without them the offer skills use a national planning estimate and say so.
 
 ## contract
 

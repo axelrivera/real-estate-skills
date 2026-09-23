@@ -4,7 +4,7 @@
     python3 scripts/check_market.py market-profile.md [--county Seminole]  # with the agent's profile
 
 Prints JSON: state and MLS, plain-language notes, and for each group of settings the skills use
-(closing costs, brokerage, property tax, contract dates, CMA, MLS files) the values with their source
+(closing costs, brokerage, holding and insurance, property tax, contract dates, CMA, MLS files) the values with their source
 ('profile' = the agent's, 'state'/'mls' = built in, 'county' = county exception) and what's missing.
 """
 import argparse
@@ -28,6 +28,7 @@ GROUPS = {
         "closing_costs.buyer_closing_cost_pct",
     ],
     "brokerage": ["brokerage.listing_fee_pct", "brokerage.buyer_broker_fee_pct"],
+    "holding and insurance": ["holding_costs.insurance_rate", "holding_costs.utilities_monthly", "buyer_costs.insurance_rate"],
     "property tax": [
         "property_tax.paid",
         "property_tax.fallback_rate",

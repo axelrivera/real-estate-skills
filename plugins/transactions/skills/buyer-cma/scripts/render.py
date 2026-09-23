@@ -14,7 +14,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compute  # noqa: E402
-from _shared import cma, design, finance, handoff, profiles, render  # noqa: E402
+from _shared import cma, design, finance, handoff, render  # noqa: E402
 
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
@@ -272,6 +272,6 @@ def build(R, fmt, out_dir, ctx):
 
 if __name__ == "__main__":
     try:
-        render.main(build, formats=("pdf",))
-    except (compute.ReportError, profiles.ProfileError, compute.mls.ExportError, KeyError) as e:
-        sys.exit(str(e) if not isinstance(e, KeyError) else f"report.json is missing {e}")
+        render.main(build, formats=("pdf",), errors=(compute.ReportError, compute.mls.ExportError))
+    except KeyError as e:
+        sys.exit(f"report.json is missing {e}")

@@ -114,8 +114,11 @@ property_tax:
     Sumter: "https://www.sumterpa.com/tax-and-exemptions/tax-rates/"
 
 holding_costs:
-  insurance_rate: 0.007               # annual homeowner's insurance as share of price, for holding-cost estimates
+  insurance_rate: 0.007               # seller's annual homeowner's insurance as share of price, for holding-cost estimates
   utilities_monthly: 250
+
+buyer_costs:
+  insurance_rate: 0.009               # a buyer's new homeowner's policy, share of price, for payment estimates; a quote replaces it
 
 contract:
   forms: [FR/BAR AS IS, FR/BAR Standard]

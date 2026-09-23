@@ -44,6 +44,7 @@ def concession_cap(name, down):
         return 0.04  # concessions; normal closing costs are allowed on top
     if key == "cash":
         return None
+    # Conventional limits go by LTV: over 90% → 3%, 75.01–90% → 6%, 75% or less → 9% (so exactly 25% down is 9%).
     return 0.03 if down < 0.10 else 0.06 if down < 0.25 else 0.09
 
 

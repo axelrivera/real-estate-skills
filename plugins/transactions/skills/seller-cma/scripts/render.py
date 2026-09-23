@@ -18,13 +18,11 @@ from datetime import date
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compute  # noqa: E402
 import deck  # noqa: E402
-from _shared import cma, design, finance, handoff, profiles, render  # noqa: E402
+from _shared import cma, design, finance, handoff, render  # noqa: E402
 
 ASSETS = compute.ASSETS
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
 esc = html.escape
-_HANDOFFS, _WARNED = set(), set()  # --format all builds twice: list the handoff and each warning once
-_DECK_FAILED = []
 SUBJECT_BG_TINT = 0.88  # share of white in the subject row's background (same as the brand rule tint)
 
 
@@ -208,13 +206,27 @@ def footer_label(R, C, agent, L, doc_label, sample):
 
 
 def build(R, fmt, out_dir, ctx):
+    try:
+        return _build(R, fmt, out_dir, ctx)
+    except KeyError as e:
+        raise compute.ReportError(f"report.json is missing {e}") from e
+
+
+def _build(R, fmt, out_dir, ctx):
     market, homes = compute.load_inputs(R, ctx.get("market"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))
     agent, sample = ctx["agent"], ctx.get("sample") or R.get("sample")
     L = cma.Labels(ASSETS, R.get("language", "en"), R.get("labels"))
+    first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: write the handoff and warn once
     written = []
+    if first:
+        hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"]))
+        with open(hpath, "w", encoding="utf-8") as f:
+            json.dump(C["handoff"], f, indent=2)
+        for w in C["warnings"]:
+            print(f"Check: {w}", file=sys.stderr)
     if fmt == "pdf":
         doc, L = build_html(R, C, homes, agent)
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Seller CMA", ext="pdf"))
@@ -228,41 +240,15 @@ def build(R, fmt, out_dir, ctx):
     elif fmt == "pptx":
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Listing Presentation", ext="pptx"))
         D = deck.deck_data(R, C, homes, agent, L, footer_label(R, C, agent, L, "", sample))
-        try:
-            deck.build_pptx(D, path)
-            written.append(path)
-        except deck.DeckError as e:
-            if not ctx.get("keep_going"):
-                raise
-            _DECK_FAILED.append(str(e))  # --format all: keep the PDF, report the deck at the end
-    hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"]))
-    with open(hpath, "w", encoding="utf-8") as f:
-        json.dump(C["handoff"], f, indent=2)
-    if hpath not in _HANDOFFS:  # --format all renders twice; list the handoff once
-        _HANDOFFS.add(hpath)
-        written.append(hpath)
-    for w in C["warnings"]:
-        if w not in _WARNED:
-            _WARNED.add(w)
-            print(f"Check: {w}", file=sys.stderr)
-    return written
+        deck.build_pptx(D, path)  # a DeckError keeps the PDF and names the problem (render.main)
+        written.append(path)
+    return written + ([hpath] if first else [])
 
 
 def main(argv=None):
-    argv = sys.argv[1:] if argv is None else argv
-    every = "--format" not in argv or argv[argv.index("--format") + 1:argv.index("--format") + 2] == ["all"]
-
-    def build_all(R, fmt, out_dir, ctx):
-        return build(R, fmt, out_dir, {**ctx, "keep_going": every})
-
-    try:
-        render.main(build_all, formats=("pdf", "pptx"), argv=argv)
-    except (compute.ReportError, deck.DeckError, profiles.ProfileError, compute.mls.ExportError, KeyError) as e:
-        return str(e) if not isinstance(e, KeyError) else f"report.json is missing {e}"
-    if _DECK_FAILED:
-        return "The PDF is ready, but the listing presentation wasn't built: " + _DECK_FAILED[0]
-    return 0
+    return render.main(build, formats=("pdf", "pptx"), argv=argv,
+                       errors=(compute.ReportError, deck.DeckError, compute.mls.ExportError))
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

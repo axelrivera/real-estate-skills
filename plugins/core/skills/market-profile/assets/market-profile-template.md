@@ -18,6 +18,9 @@ property_tax:
 holding_costs:
   {{holding cost settings}}
 
+buyer_costs:
+  {{buyer cost settings}}
+
 contract:
   {{contract settings}}
 

@@ -13,7 +13,7 @@ from datetime import datetime, time, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import timeline  # noqa: E402
-from _shared import design, profiles, render  # noqa: E402
+from _shared import design, render  # noqa: E402
 
 esc = html.escape
 CSS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "timeline.css")
@@ -204,7 +204,4 @@ def build(deal, fmt, out_dir, ctx):
 
 
 if __name__ == "__main__":
-    try:
-        render.main(build, formats=("pdf",))
-    except (timeline.DealError, profiles.ProfileError) as e:
-        sys.exit(str(e))
+    render.main(build, formats=("pdf",), errors=(timeline.DealError,))
