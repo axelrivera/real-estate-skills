@@ -35,6 +35,22 @@ def money(v, round_to=1):
     return ("−" if v < 0 else "") + f"${abs(v):,.0f}"
 
 
+def fraction(value, name, default=None):
+    """A share of price from a data file, as a fraction: 0.025 means 2.5%.
+
+    Every `*_pct` field in the skills' data files is a fraction (like the market profile). A value of 1 or more
+    is almost always a percent written the other way (2.5 for 2.5%), so it's refused with a plain message
+    instead of silently becoming 250%.
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        raise ValueError(f"{name} should be a share of price like 0.025 (for 2.5%).")
+    if value >= 1:
+        raise ValueError(f"{name} is {value:g}: write it as a fraction, {value / 100:g} for {value:g}%.")
+    return value
+
+
 def concession_cap(name, down):
     """Most a seller may contribute, as a share of price. `down` is a fraction (0.05 = 5%)."""
     key = program(name)
@@ -135,14 +151,16 @@ def title_premium(price, tiers):
 
 
 def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,
-               has_hoa=False, other_costs=0):
+               has_hoa=False, other_costs=0, title_fees=None):
     """Seller's estimated net at `price`, itemized, with the source of every assumption.
 
     Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
     'net_before_payoff', 'net', 'missing', 'assumed'}. `lines` carries stable keys (listing_fee, buyer_broker_fee,
     transfer_tax, owner_title, title_fees, estoppel, credit, other) so reports can use their own wording.
     `missing` lists market values that weren't available (the output should be marked Preliminary);
-    `assumed` lists defaults taken from the market profile rather than the agent.
+    `assumed` lists defaults taken from the market profile rather than the agent, as
+    {'key', 'value', 'text'} (key: listing_fee, buyer_broker_fee, title_fees).
+    `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
     """
     items, lines, missing, assumed = [], [], [], []
 
@@ -159,9 +177,9 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     lf = listing_fee_pct if listing_fee_pct is not None else market_value("brokerage.listing_fee_pct", "listing fee")
     bf = buyer_broker_fee_pct if buyer_broker_fee_pct is not None else market_value("brokerage.buyer_broker_fee_pct", "buyer's agent fee")
     if listing_fee_pct is None and lf is not None:
-        assumed.append(f"listing fee {lf * 100:g}%")
+        assumed.append({"key": "listing_fee", "value": lf, "text": f"listing fee {lf * 100:g}%"})
     if buyer_broker_fee_pct is None and bf is not None:
-        assumed.append(f"buyer's agent fee {bf * 100:g}%")
+        assumed.append({"key": "buyer_broker_fee", "value": bf, "text": f"buyer's agent fee {bf * 100:g}%"})
     if lf:
         add("listing_fee", f"Listing brokerage ({lf * 100:g}%)", price * lf, lf)
     if bf:
@@ -186,11 +204,16 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         else:
             missing.append("owner's title rate")
 
-    fees = market.get("closing_costs.seller_title_fees") if market is not None else None
-    if fees:
-        add("title_fees", "Title company fees", sum(fees.values()))
+    if title_fees is not None:
+        add("title_fees", "Title company fees", sum(title_fees.values()) if isinstance(title_fees, dict) else title_fees)
     else:
-        missing.append("title company fees")
+        fees = market.get("closing_costs.seller_title_fees") if market is not None else None
+        if fees:
+            add("title_fees", "Title company fees", sum(fees.values()))
+            if market.source("closing_costs.seller_title_fees") not in ("profile", "deal"):  # a built-in default
+                assumed.append({"key": "title_fees", "value": sum(fees.values()), "text": "typical title company fees"})
+        else:
+            missing.append("title company fees")
     if has_hoa:
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:

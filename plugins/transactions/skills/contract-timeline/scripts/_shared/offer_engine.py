@@ -332,7 +332,7 @@ def prepare_offer(o, L, S, A):
     o["buyer"] = o.get("buyer") or f"Buyer {k}"
     dflt_down = {"cash": 1.0, "fha": 0.035, "va": 0.0, "usda": 0.0, "conventional": 0.10}[fin]
     o["down_pct"] = 1.0 if fin == "cash" else given(
-        o, "down_pct", dflt_down, A, sc, f"Down payment not provided: assumed {dflt_down:.1%} for {FIN_LABEL[fin]}", "med")
+        o, "down_pct", dflt_down, A, sc, f"Down payment not provided: assumed {dflt_down * 100:g}% for {FIN_LABEL[fin]}", "med")
     o["approval"] = given(o, "approval", "preapproval" if o["financed"] else "none", A, sc, "Approval level not provided", "med")
     o["deposit"] = o.get("deposit")
     if o["deposit"] is None:
@@ -757,8 +757,23 @@ def _missing_market(costs, sheet, A):
               impact.get(label, "med"))
 
 
+def check_fractions(node, where="file"):
+    """Every `*_pct` value in a listing or buyer file is a fraction (0.025 = 2.5%); refuse percents written as 2.5."""
+    items = node.items() if isinstance(node, dict) else enumerate(node) if isinstance(node, list) else ()
+    for key, value in items:
+        here = f"{where}.{key}" if isinstance(key, str) else f"{where}[{key}]"
+        if isinstance(key, str) and key.endswith("_pct") and value is not None:
+            try:
+                finance.fraction(value, here)
+            except ValueError as e:
+                raise OfferError(str(e)) from e
+        else:
+            check_fractions(value, here)
+
+
 def analyze(data, market=None, cma=None):
     """Full analysis of a listing file (see the skills' listing-file / buyer-file references)."""
+    check_fractions(data)
     if cma:
         data = apply_cma(data, cma)
     costs = load_costs(data.get("listing") or {}, market)

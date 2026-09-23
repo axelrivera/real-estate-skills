@@ -459,24 +459,24 @@
     {
      "label": "Conventional, 5% down",
      "type": "conventional",
-     "down_pct": 5
+     "down_pct": 0.05
     },
     {
      "label": "FHA, 3.5% down",
      "type": "fha",
-     "down_pct": 3.5
+     "down_pct": 0.035
     },
     {
      "label": "Conventional, 20% down",
      "type": "conventional",
-     "down_pct": 20
+     "down_pct": 0.2
     }
    ]
   },
   "credit_scenarios": {
    "intro": "The seller cares about what they net; you may care more about the cash you need at closing. These three offers leave the seller with about the same amount but split it differently between price and a credit toward your closing costs.",
    "loan_type": "conventional",
-   "down_pct": 5,
+   "down_pct": 0.05,
    "closing_cost_pct": 0.03,
    "scenarios": [
     {

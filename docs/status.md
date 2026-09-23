@@ -18,9 +18,18 @@ Where the work stands, what's in flight, and what's left. Last updated 2026-09-2
 
 Offer skills (`seller-offer-review`, `buyer-offer-strategy`, `shared/offer_engine.py`) and `seller-cma` copied from the worktrees into `main`, reviewed (PDFs and deck rendered and checked), committed per skill; worktrees removed. Changes on the way in: the offer engine reads `finance.seller_net` `lines` only (label matching removed); a missing transfer tax asks for "the local transfer tax (or confirm there is none)"; seller-cma fixture prose matches the synthetic export (33 sales, 95.2%).
 
-## Proposed shared changes (step 2, pending)
+## Step 2 done: shared changes decided (2026-09-23)
 
-From the worktree agents: `render.main` extra args + partial formats; `finance.concession_cap` at exactly 25% down → 6%; buyer insurance estimate (`buyer_costs.insurance_rate`); `design` party tints + light neutral; `cma.scatter` subject label `above`; `seller_net` structured assumptions + title-fee override; percent vs. fraction consistency (`costs.listing_fee_pct` in seller report.json is a percent); docs: `offer_engine.py` in development.md, per-deal `listing.costs` overrides in architecture.md.
+| Proposal | Decision |
+|---|---|
+| `render.main` extra args + partial formats | Done: `extra_args` (values in `ctx`), `errors` (plain messages), `ctx["formats"]`, other formats still saved when one fails. Offer skills and seller-cma use it; buyer-cma and contract-timeline pass `errors` |
+| Concession cap at exactly 25% down | **Kept 9%**: Fannie Mae goes by LTV (≤75% LTV → 9%), so 25% down is 9%; the prototype's 6% was wrong. Comment in `finance`, wording fixed in buyer-cma's offer-plan.md |
+| Buyer insurance estimate | Done: `buyer_costs.insurance_rate` (Florida 0.9%) for buyer payments; `holding_costs.insurance_rate` 0.7% stays for the seller's holding cost. In fields.md, template, check_market |
+| Design party tints / light neutral | Party tints done (`party_tints` → `--party-both-bg`, `party_both_soft`); seller-cma render and deck use them. Light neutral not needed (hollow markers are white on the chart) |
+| Scatter label `above` | Done: subject label and callouts take `left`/`right`/`above`/`below` |
+| `seller_net` structured assumptions + title-fee override | Done: `assumed` is `[{key, value, text}]` incl. built-in title fees; `title_fees=` override (seller-cma `costs.title_fees`); deal-level costs count as the agent's |
+| Percent vs. fraction | Done: every `*_pct` is a fraction everywhere (CMAs converted: `down_pct`, brokerage); `finance.fraction` refuses 1+ with a plain message; offer files checked too. Interest `rate` stays a percent. Rule in architecture.md |
+| Docs | `offer_engine.py` in development.md; per-deal costs and the fraction rule in architecture.md |
 
 ## Eval findings to fix
 

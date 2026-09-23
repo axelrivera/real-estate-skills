@@ -126,9 +126,7 @@ def deck_data(R, C, homes, agent, L, footer):
         cards.append([c[0], money(price), c[1], c[2]])
 
     theme = design.theme(agent.get("brand"), "seller")
-    colors = design.pptx_colors(theme)
-    both = theme["party"]["both"]
-    colors.update(party_both_soft=design.mix_white(both, 0.8).lstrip("#"), party_both_bg=design.mix_white(both, 0.88).lstrip("#"))
+    colors = design.pptx_colors(theme)  # includes party_both_soft / party_both_bg tints
 
     window = C.get("window") or {}
     if content.get("sold_line"):
@@ -185,7 +183,7 @@ def deck_data(R, C, homes, agent, L, footer):
                         "time": x["time"], "expected_display": x["expected_sale_display"], "credit_display": x["seller_credit_display"],
                         "note": x["note"], "net": round(x["net"]), "net_display": x["net_display"],
                         "payment_display": L("deck_per_month", amount=x["payment_display"]),
-                        "down_display": L("deck_down", amount=x["down_display"], pct=f'{pay["down_pct"]:g}')} for x in C["strategies"]],
+                        "down_display": L("deck_down", amount=x["down_display"], pct=f'{pay["down_pct"] * 100:g}')} for x in C["strategies"]],
         "recommended_index": C["recommended_index"],
         "net_sub": L("deck_cash_sub" if cash else "deck_net_sub"),
         "net_spread_display": C["net_spread_display"],

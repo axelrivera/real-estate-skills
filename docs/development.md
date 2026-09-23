@@ -54,11 +54,12 @@ dev/                     # dev tooling, never shipped
 | `shared/profiles.py` | Reads agent and market profiles; merges market values with the source of each |
 | `shared/markets/states/fl.md` | Built-in Florida state layer (costs, taxes, contract rules) |
 | `shared/markets/mls/stellar.md` | Built-in Stellar MLS layer (formats, coverage), for Florida and Puerto Rico |
-| `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--agent`, `--market`, `--sample`) |
+| `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--agent`, `--market`, `--sample`, plus each skill's own options through `extra_args`) |
 | `shared/report.css` | Base PDF styles (header, section bars, tables, hero, notes) on the theme variables |
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
 | `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` or a fenced markdown block |
+| `shared/offer_engine.py` | Offer analysis for both offer skills: listing and offer defaults with ranked assumptions, seller net sheet (via `finance.seller_net`), appraisal downside, certainty score, risk flags, counters, multi-offer ranking |
 | `shared/mls.py` | MLS export reader (columns from the market profile) and market statistics, trend line |
 | `shared/cma.py`, `shared/cma.css` | CMA report pieces: labels, tables, scatterplot, dot plot, keep-together groups, pagination |
 
@@ -76,4 +77,4 @@ python scripts/render.py DATA.json --format pdf|pptx|all --out DIR
 
 Markdown output comes from templates in the skill's `assets/`, filled in by Claude, so it's checked through the evals in `dev/evals/<skill>/`, not `make outputs`.
 
-`--format` accepts only the formats that skill supports. `all` renders every one of them.
+`--format` accepts only the formats that skill supports. `all` renders every one of them; if one fails (for example the deck without Node), the others are still saved and listed, and the run ends with a message naming what wasn't built. Skill options (`--cma`, `--mode`, `--option`) are added with `render.main(..., extra_args=...)` and arrive in `ctx`; input errors listed in `errors=` end the run with their plain message.

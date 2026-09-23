@@ -24,6 +24,12 @@ class Payments(unittest.TestCase):
         p = f.monthly_payment(400000, "fha", 0.035, 6.5, 6000, 3000)
         self.assertAlmostEqual(p["loan"], 400000 * 0.965 * 1.0175)
 
+    def test_fraction(self):
+        self.assertEqual(f.fraction(0.025, "x"), 0.025)
+        self.assertEqual(f.fraction(None, "x", 0.05), 0.05)
+        with self.assertRaisesRegex(ValueError, "0.025 for 2.5%"):
+            f.fraction(2.5, "listing_fee_pct")
+
     def test_concession_caps(self):
         self.assertEqual(f.concession_cap("conv", 0.05), 0.03)
         self.assertEqual(f.concession_cap("conventional", 0.10), 0.06)
@@ -75,7 +81,10 @@ class SellerSide(unittest.TestCase):
         self.assertIn("Owner's title insurance", labels)
         self.assertIn("HOA estoppel letter", labels)
         self.assertEqual(n["missing"], [])
-        self.assertEqual(len(n["assumed"]), 2)  # brokerage defaults came from the profile
+        self.assertEqual([a["key"] for a in n["assumed"]], ["listing_fee", "buyer_broker_fee", "title_fees"])  # built-in defaults
+        quoted = f.seller_net(465000, FL, title_fees=900)
+        self.assertEqual(next(x["amount"] for x in quoted["lines"] if x["key"] == "title_fees"), 900)
+        self.assertNotIn("title_fees", [a["key"] for a in quoted["assumed"]])
         self.assertAlmostEqual(n["net"], n["net_before_payoff"] - 200000)
 
     def test_buyer_pays_title_county(self):

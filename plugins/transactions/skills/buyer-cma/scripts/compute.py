@@ -24,6 +24,14 @@ class ReportError(ValueError):
     """Something report.json needs; the message is written for the agent."""
 
 
+def _frac(block, key, where, default=None):
+    """A `*_pct` value from report.json as a fraction (0.05 = 5%), or `default` when not given."""
+    try:
+        return finance.fraction(block.get(key), f"{where}.{key}", default)
+    except ValueError as e:
+        raise ReportError(str(e)) from e
+
+
 def _require(R, *paths):
     for path in paths:
         node = R
@@ -61,12 +69,13 @@ def payments(R, market, tax_rows):
         return est["annual"] or 0
 
     rows = []
-    for sc in pay["scenarios"]:
-        r = finance.monthly_payment(price, sc["type"], sc["down_pct"] / 100, pay["rate"], tax_at(price),
+    for i, sc in enumerate(pay["scenarios"]):
+        sc["down_pct"] = _frac(sc, "down_pct", f"costs.payment.scenarios[{i}]")
+        r = finance.monthly_payment(price, sc["type"], sc["down_pct"], pay["rate"], tax_at(price),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
         rows.append({"label": sc["label"], **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"])})
     first = pay["scenarios"][0]
-    lower = finance.monthly_payment(price - 10000, first["type"], first["down_pct"] / 100, pay["rate"], tax_at(price - 10000),
+    lower = finance.monthly_payment(price - 10000, first["type"], first["down_pct"], pay["rate"], tax_at(price - 10000),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
@@ -82,7 +91,8 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     pay = R["costs"]["payment"]
     ji = pay.get("tax_jurisdiction_index", 0)
     program = finance.program(cs.get("loan_type", "conventional"))
-    down = cs.get("down_pct", 5) / 100
+    down = _frac(cs, "down_pct", "costs.credit_scenarios", 0.05)
+    closing_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios", 0.03)
     cap = finance.concession_cap(program, down)
     cols, base = [], None
     for x in cs["scenarios"]:
@@ -90,7 +100,7 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         j = tax_rows[ji]
         tax = finance.property_tax(price, market, j["school_mills"], j["total_mills"], R["costs"]["taxes"].get("homestead", True))["annual"] or 0
         p = finance.monthly_payment(price, program, down, pay["rate"], tax, pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
-        cc = cs["closing_costs"] if cs.get("closing_costs") else price * cs.get("closing_cost_pct", 0.03)
+        cc = cs["closing_costs"] if cs.get("closing_costs") else price * closing_pct
         col = {"price": price, "credit": credit, "net": price - credit, "loan": p["loan"],
                "cash": p["cash_down"] + cc - min(credit, cc), "payment": p["total"], "pi": p["pi"],
                "cap": price * cap if cap is not None else None,
@@ -101,8 +111,8 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         saved = base["cash"] - col["cash"]
         col["payback_years"] = saved / (col["extra"] * 12) if col["extra"] > 0 and saved > 0 else None
         cols.append(col)
-    out = {"program": program, "down_pct": cs.get("down_pct", 5), "columns": cols,
-           "closing_costs_given": bool(cs.get("closing_costs")), "closing_cost_pct": cs.get("closing_cost_pct", 0.03)}
+    out = {"program": program, "down_pct": down, "columns": cols,
+           "closing_costs_given": bool(cs.get("closing_costs")), "closing_cost_pct": closing_pct}
     bd = cs.get("buydown")
     if bd:
         col = next((c for c in cols if c["price"] == bd.get("price")), cols[-1])

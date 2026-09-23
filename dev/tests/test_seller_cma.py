@@ -117,7 +117,7 @@ class Handoff(unittest.TestCase):
 class Costs(unittest.TestCase):
     def test_agent_terms_replace_placeholders(self):
         R = report()
-        R["costs"] = {"listing_fee_pct": 3, "buyer_broker_fee_pct": 2}
+        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.02}
         C, _ = run(R)
         self.assertEqual(row(C, "listing_fee")["label"], "Listing brokerage (3%)")
         self.assertEqual(row(C, "listing_fee")["amounts"][0], -13890)
@@ -127,13 +127,20 @@ class Costs(unittest.TestCase):
 
     def test_no_buyer_agent_fee(self):
         R = report()
-        R["costs"] = {"listing_fee_pct": 2.5, "buyer_broker_fee_pct": 0}
+        R["costs"] = {"listing_fee_pct": 0.025, "buyer_broker_fee_pct": 0}
         C, _ = run(R)
         self.assertFalse(any(r["key"] == "buyer_broker_fee" for r in C["net"]["rows"]))
 
-    def test_fraction_is_rejected(self):
+    def test_title_company_quote_replaces_built_in_fees(self):
         R = report()
-        R["costs"] = {"listing_fee_pct": 0.025}
+        R["costs"] = {"title_fees": {"settlement_fee": 850, "title_search": 200}}
+        C, _ = run(R)
+        self.assertEqual(row(C, "title_fees")["amounts"][0], -1050)
+        self.assertFalse(any("Title company fees are the built-in" in a for a in C["assumptions"]))
+
+    def test_percent_is_rejected(self):
+        R = report()
+        R["costs"] = {"listing_fee_pct": 2.5}  # *_pct fields are fractions everywhere (0.025)
         with self.assertRaises(compute.ReportError):
             run(R)
 
@@ -183,7 +190,7 @@ class OtherMarkets(unittest.TestCase):
 
     def test_texas_with_agent_terms_still_preliminary(self):
         R = texas(report())
-        R["costs"] = {"listing_fee_pct": 3, "buyer_broker_fee_pct": 2.5}
+        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         C, _ = run(R)
         self.assertTrue(C["preliminary"])
         self.assertNotIn("listing fee", C["net"]["missing"])
@@ -217,7 +224,8 @@ class Brand(unittest.TestCase):
         self.assertIn('<span class="side">Seller</span>', doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("License", doc)
-        self.assertIn("--subject:#1F3A5F", doc)  # the subject is the palette's 'both' color, never the brand
+        self.assertIn("--party-both:#1F3A5F", doc)  # the subject is the palette's 'both' color, never the brand
+        self.assertIn("--subject:var(--party-both)", doc)
         self.assertNotIn("side prelim", doc)
 
     def test_default_seller_orange(self):

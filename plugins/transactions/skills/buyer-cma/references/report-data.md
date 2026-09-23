@@ -60,7 +60,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## scatter (standard)
 
-`heading`, `intro` (may use `{trend_at_subject}`), `renovated` (export addresses of sold, renovated private-pool homes), `subject_label`, `subject_label_pos` (`left`/`right`), `callouts` (1–3 `{address, label, side}`), `after_paragraph` (may use `{trend_at_subject}` and `{r2_share}`, which reads like "most" or "only about a third"), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (defaults 0.6/1.4/1.6).
+`heading`, `intro` (may use `{trend_at_subject}`), `renovated` (export addresses of sold, renovated private-pool homes), `subject_label`, `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), `after_paragraph` (may use `{trend_at_subject}` and `{r2_share}`, which reads like "most" or "only about a third"), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (defaults 0.6/1.4/1.6).
 
 ## competition
 
@@ -74,8 +74,8 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 - `taxes`: `heading`, `intro`, `current_bill`, `current_year`, `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`), `note`, `after_paragraph` (escrow warning).
 - `insurance`: `paragraph`.
-- `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`), optional `hoa_cdd_monthly`, optional `note`.
-- `credit_scenarios`: `intro`, `loan_type`, `down_pct`, `closing_costs` or `closing_cost_pct`, `scenarios` (2–4 `{price, credit}`), `after_paragraph`, optional `buydown` `{price, credit}`. See `offer-plan.md`.
+- `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`, `down_pct` a fraction: 0.05 for 5%), optional `hoa_cdd_monthly`, optional `note`.
+- `credit_scenarios`: `intro`, `loan_type`, `down_pct` (fraction), `closing_costs` or `closing_cost_pct` (fraction), `scenarios` (2–4 `{price, credit}`), `after_paragraph`, optional `buydown` `{price, credit}`. See `offer-plan.md`.
 
 ## watch
 

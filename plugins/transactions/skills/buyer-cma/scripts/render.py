@@ -51,7 +51,7 @@ def summary_page(R, C, agent, L):
     first = pay["rows"][0]
     sc0 = R["costs"]["payment"]["scenarios"][0]
     stats = list(sp["key_stats"])[:3] + [[money(first["total"]),
-                                           L("sum_payment_tile", price=money(pay["price"]), down=f"{sc0['down_pct']:g}")]]
+                                           L("sum_payment_tile", price=money(pay["price"]), down=f"{sc0['down_pct'] * 100:g}")]]
     tgt = k(op["target_low"]) + (f"–{k(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
     left, contact = agent_block(agent, L)
     o = ['<div class="onepage">',
@@ -103,7 +103,7 @@ def credit_section(R, C, L):
         [L("cr_pmt")] + [money(c["payment"]) for c in cols],
         [L("cr_extra")] + [("+" + money(c["extra"])) if c["extra"] > 0.5 else L("cr_none") for c in cols],
         [L("cr_payback")] + [L("cr_years", n=f"{c['payback_years']:.0f}") if c["payback_years"] else L("cr_none") for c in cols],
-        [L("cr_cap", program=prog, down=f'{cr["down_pct"]:g}')] + [money(c["cap"]) if c["cap"] is not None else L("cr_none") for c in cols],
+        [L("cr_cap", program=prog, down=f'{cr["down_pct"] * 100:g}')] + [money(c["cap"]) if c["cap"] is not None else L("cr_none") for c in cols],
         [L("cr_appr", median=money(C["median_adjusted"]))] + [money(c["appraisal_room"]) for c in cols],
     ]
     head = [L("cr_head")] + [money(c["price"]) + (" + " + money(c["credit"]) if c["credit"] else "") for c in cols]

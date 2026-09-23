@@ -134,7 +134,7 @@ class Formats(unittest.TestCase):
     def test_css_and_pptx(self):
         t = d.theme(None, "buyer")
         css = d.css_vars(t)
-        for var in ("--brand:#1A74AD", "--brand-ink:", "--good-bg:#E6F4EC", "--party-both:#1F3A5F", "--text:#1A1A1A"):
+        for var in ("--brand:#1A74AD", "--brand-ink:", "--good-bg:#E6F4EC", "--party-both:#1F3A5F", "--party-both-bg:", "--party-seller-soft:", "--text:#1A1A1A"):
             self.assertIn(var, css)
         px = d.pptx_colors(t)
         self.assertEqual(px["brand"], "1A74AD")

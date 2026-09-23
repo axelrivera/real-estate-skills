@@ -6,10 +6,10 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 
 | Line | Where it comes from |
 |---|---|
-| Listing brokerage, buyer's agent compensation | `costs.listing_fee_pct` / `costs.buyer_broker_fee_pct` in report.json when the agent gave terms (percentages: `2.5` means 2.5%; `0` when the seller won't offer buyer's agent compensation). Otherwise the market's `brokerage` defaults, labeled "placeholder" on the line (Florida: 2.5% + 2.5%) |
+| Listing brokerage, buyer's agent compensation | `costs.listing_fee_pct` / `costs.buyer_broker_fee_pct` in report.json when the agent gave terms (fractions of price: `0.025` means 2.5%; `0` when the seller won't offer buyer's agent compensation). Otherwise the market's `brokerage` defaults, labeled "placeholder" on the line (Florida: 2.5% + 2.5%) |
 | Deed transfer tax | The market's rate, payer and name (Florida: documentary stamp tax on the deed, 0.70%, seller pays; Miami-Dade single-family 0.60% by county override) |
 | Owner's title insurance | Only where the seller customarily pays. Florida: the promulgated rate tiers; the buyer pays in Miami-Dade, Broward, Sarasota and some others (county overrides) |
-| Title company fees | The market's itemized seller fees (Florida: settlement $700, title search $250, municipal lien search $125, recording $70 = $1,145). The note names them; the title company's quote replaces them in the agent's market profile |
+| Title company fees | The market's itemized seller fees (Florida: settlement $700, title search $250, municipal lien search $125, recording $70 = $1,145). The note names them. A title company quote for this sale goes in `costs.title_fees`; a standing quote belongs in the agent's market profile |
 | HOA estoppel letter | When `costs.hoa` (or `subject.hoa`) is true: the market's fee (Florida $299) |
 | Seller credit | Each strategy's `seller_credit` |
 | Other | `costs.other`: `[{label, amount}]` (survey, repairs already agreed, a home warranty) |
@@ -24,6 +24,6 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 The table shows the seller how each list price turns into a typical buyer's monthly payment, and the effect of every $10,000.
 
 - `buyer_payment.rate`: the latest Freddie Mac weekly 30-year average; say which week in `note`.
-- `loan_type` (default conventional) and `down_pct` (default 5): mortgage insurance comes from the shared lending estimates.
+- `loan_type` (default conventional) and `down_pct` (fraction, default 0.05): mortgage insurance comes from the shared lending estimates.
 - Taxes are estimated at each list price: name the taxing `district` and compute.py finds the millage in the market profile (built in for seven Central Florida counties), or give `school_mills` and `total_mills`. `homestead` (default true) applies the market's primary-residence exemptions (Florida: $25,000 off all levies plus $25,000 off non-school levies). Without millage, the market's fallback rate is used and flagged; without either, there's no payment table and compute.py says what's missing.
 - `insurance_annual` is a placeholder; say so in `note`.

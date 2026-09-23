@@ -161,6 +161,12 @@ class Rules(unittest.TestCase):
         self.assertIn("fallback_terms", a)
         self.assertEqual(a["fallback_terms"]["appraisal_gap"], 0)
 
+    def test_percent_written_as_whole_number_is_refused(self):
+        data = fixture("minimal-single.json")
+        data["seller"] = {**(data.get("seller") or {}), "listing_fee_pct": 3}
+        with self.assertRaisesRegex(oe.OfferError, "seller.listing_fee_pct is 3: write it as a fraction, 0.03"):
+            oe.analyze(data)
+
     def test_required_inputs(self):
         with self.assertRaises(oe.OfferError):
             oe.analyze({"listing": {}, "offers": [{"price": 1}]})

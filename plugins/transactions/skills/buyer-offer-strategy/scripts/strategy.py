@@ -363,6 +363,7 @@ def lower_cost(B, costs, rec):
 # --- top level -----------------------------------------------------------------
 
 def analyze(B_in, market=None, cma=None):
+    oe.check_fractions(B_in)
     B0 = apply_cma(B_in, cma) if cma else copy.deepcopy(B_in)
     A = oe.Assume()
     B, costs = prepare(B0, A, market)

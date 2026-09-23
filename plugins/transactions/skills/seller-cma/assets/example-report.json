@@ -379,7 +379,7 @@
  "buyer_payment": {
   "rate": 6.95,
   "loan_type": "conventional",
-  "down_pct": 5,
+  "down_pct": 0.05,
   "insurance_annual": 3600,
   "district": "Altamonte Springs",
   "homestead": true,

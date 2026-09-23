@@ -170,6 +170,10 @@ Users can turn any skill off. Skills share **files**, not invocations:
 
 Outside the built-in market, a missing value is **never** filled with a Florida default. Ask, or use a labeled assumption and mark the report **Preliminary**.
 
+**Per-deal costs.** A number that belongs to one deal (a title company quote, a transfer tax the agent confirmed for this county) goes in that deal's data file (`listing.costs` in the offer skills, `costs.title_fees` in the seller CMA), on top of the market layers, and is reported as "this listing". Numbers the agent uses on every deal belong in the market profile.
+
+**Shares of price.** Every `*_pct` field in data files and profiles is a fraction: `0.025` means 2.5%. Interest `rate` is the exception, written as a percent (`6.95`) the way lenders quote it. Scripts refuse a `*_pct` of 1 or more with a message instead of guessing.
+
 ## Handoffs between skills
 
 A skill whose output feeds another has a small, **versioned handoff schema**, separate from its full internal JSON.

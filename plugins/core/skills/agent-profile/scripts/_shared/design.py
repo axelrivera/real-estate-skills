@@ -34,6 +34,9 @@ STATUS = {
 # Share of white mixed into the brand color for each tint (calibrated on the prototype buyer theme).
 TINTS = {"accent": 0.44, "soft": 0.76, "rule": 0.88, "callout": 0.93, "panel": 0.96}
 
+# Share of white mixed into each party color: soft for text on dark party fills, bg for row and panel backgrounds.
+PARTY_TINTS = {"soft": 0.80, "bg": 0.88}
+
 # WCAG contrast targets against white.
 AA, AAA, DEEP = 4.5, 7.0, 10.0
 
@@ -276,6 +279,7 @@ def theme(brand=None, side="buyer"):
         "warnings": warnings,
         "adjustments": adjustments,
     }
+    tokens["party_tints"] = {p: {k: mix_white(c, t) for k, t in PARTY_TINTS.items()} for p, c in tokens["party"].items()}
     if tokens["brand_ink"] != primary:
         warnings.append(
             f"This {hue_name(primary)} is too light to read as text, "
@@ -306,11 +310,14 @@ def party_colors(brand=None):
 # --- output formats ---------------------------------------------------------
 
 def flat(tokens):
-    """Flatten nested tokens to {name: hex}: status.good.bg -> good_bg, party.buyer -> party_buyer."""
+    """Flatten nested tokens to {name: hex}: status.good.bg -> good_bg, party.buyer -> party_buyer,
+    party_tints.both.bg -> party_both_bg."""
     out = {k: v for k, v in tokens.items() if isinstance(v, str) and v.startswith("#")}
     for name, group in tokens["status"].items():
         out.update({f"{name}_{k}": v for k, v in group.items()})
     out.update({f"party_{k}": v for k, v in tokens["party"].items()})
+    for party, tints in tokens.get("party_tints", {}).items():
+        out.update({f"party_{party}_{k}": v for k, v in tints.items()})
     return out
 
 

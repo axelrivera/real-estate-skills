@@ -69,7 +69,8 @@ def k(v):
 def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
     """Price vs. size for sold and active homes near the subject's size, with the supported range band.
 
-    `sc`: {renovated: [addresses], callouts: [{address, label, side}], subject_label, min/max/fit_size_ratio}.
+    `sc`: {renovated: [addresses], callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
+    Label sides: left, right, above or below.
     Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind)], n_sold, n_active.
     """
     renovated = {" ".join(a.upper().split()) for a in sc.get("renovated", [])}
@@ -135,9 +136,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
-    left = sc.get("subject_label_pos", "left") == "left"
-    o.append(f'<text x="{sx - 14 if left else sx + 14:.1f}" y="{sy + 4:.1f}" text-anchor="{"end" if left else "start"}" '
-             f'class="lbl-subj">{esc(sc.get("subject_label", subject_address.title()))}</text>')
+    o.append(_label(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()), "lbl-subj", 14))
     points = {}
     for h in sold:
         points[" ".join(h["address"].upper().split())] = (h["living_area"], h["close_price"])
@@ -147,15 +146,21 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
         p = points.get(" ".join(co["address"].upper().split()))
         if not p:
             continue
-        px, py = x(p[0]), y(p[1])
-        if co.get("side", "right") == "left":
-            o.append(f'<text x="{px - 10:.1f}" y="{py + 4:.1f}" text-anchor="end" class="lbl">{esc(co["label"])}</text>')
-        else:
-            o.append(f'<text x="{px + 10:.1f}" y="{py + 4:.1f}" class="lbl">{esc(co["label"])}</text>')
+        o.append(_label(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10))
     o.append("</svg>")
     info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
             "excluded": excluded, "n_sold": len(sold), "n_active": len(act)}
     return "\n".join(o), info
+
+
+def _label(px, py, side, text, cls, gap):
+    """A chart label beside a point: side is left, right, above or below."""
+    if side in ("above", "below"):
+        ty = py - gap - 2 if side == "above" else py + gap + 10
+        return f'<text x="{px:.1f}" y="{ty:.1f}" text-anchor="middle" class="{cls}">{esc(text)}</text>'
+    left = side == "left"
+    return (f'<text x="{px - gap if left else px + gap:.1f}" y="{py + 4:.1f}" text-anchor="{"end" if left else "start"}" '
+            f'class="{cls}">{esc(text)}</text>')
 
 
 def scatter_legend(L, subject):

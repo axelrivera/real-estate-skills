@@ -36,16 +36,12 @@ def _require(R, *paths):
             node = node[part]
 
 
-def _pct(costs, key):
-    """A brokerage percentage from report.json (2.5 means 2.5%) as a fraction, or None when not given."""
-    v = costs.get(key)
-    if v is None:
-        return None
-    if not isinstance(v, (int, float)) or v < 0:
-        raise ReportError(f"costs.{key} should be a percentage like 2.5.")
-    if 0 < v < 0.2:
-        raise ReportError(f"costs.{key} is {v}: write percentages as 2.5 for 2.5%, not as a fraction.")
-    return v / 100
+def _frac(block, key, where, default=None):
+    """A `*_pct` value from report.json as a fraction (0.025 = 2.5%), or `default` when not given."""
+    try:
+        return finance.fraction(block.get(key), f"{where}.{key}", default)
+    except ValueError as e:
+        raise ReportError(str(e)) from e
 
 
 def pct_text(fraction):
@@ -58,18 +54,19 @@ def net_sheet(R, market, L):
     """Seller net for each strategy (at its expected sale price) via finance.seller_net, plus table rows."""
     costs, s = R.get("costs") or {}, R["subject"]
     strategies = R["pricing"]["strategies"]
-    lf, bf = _pct(costs, "listing_fee_pct"), _pct(costs, "buyer_broker_fee_pct")
+    lf, bf = _frac(costs, "listing_fee_pct", "costs"), _frac(costs, "buyer_broker_fee_pct", "costs")
     others = costs.get("other") or []
     payoff = costs.get("mortgage_payoff")
     has_hoa = bool(costs.get("hoa", s.get("hoa", False)))
+    title_fees = costs.get("title_fees")  # the title company's quote: a total or {name: amount}
     cols = []
     for x in strategies:
         n = finance.seller_net(x["expected_sale"], market, credit=x.get("seller_credit", 0) or 0, payoff=payoff,
                                listing_fee_pct=lf, buyer_broker_fee_pct=bf, has_hoa=has_hoa,
-                               other_costs=sum(o["amount"] for o in others))
+                               other_costs=sum(o["amount"] for o in others), title_fees=title_fees)
         cols.append(n)
     first = cols[0]
-    assumed_keys = {("listing_fee" if a.startswith("listing") else "buyer_broker_fee") for a in first["assumed"]}
+    assumed_keys = {a["key"] for a in first["assumed"]}
 
     def label(line):
         key, rate = line["key"], line["rate"]
@@ -96,11 +93,11 @@ def net_sheet(R, market, L):
         r["display"] = [money(a) for a in r["amounts"]]
 
     notes = []
-    if assumed_keys:
+    if assumed_keys & {"listing_fee", "buyer_broker_fee"}:
         total_pct = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
         notes.append(L("net_placeholder_note", pct=pct_text(total_pct)))
     fees = market.get("closing_costs.seller_title_fees")
-    if fees and market.source("closing_costs.seller_title_fees") != "profile":
+    if "title_fees" in assumed_keys:
         items = ", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())
         notes.append(L("net_title_fees_note", items=items))
     if first["missing"]:
@@ -127,7 +124,7 @@ def payments(R, market):
     bp = R["buyer_payment"]
     school, total, homestead = buyer_tax_rates(R, market)
     loan_type = finance.program(bp.get("loan_type", "conventional"))
-    down = bp.get("down_pct", 5) / 100
+    down = _frac(bp, "down_pct", "buyer_payment", 0.05)
 
     def at(price):
         tax = finance.property_tax(price, market, school, total, homestead)
@@ -148,7 +145,7 @@ def payments(R, market):
     per_10k = at(rec)[0]["total"] - at(rec - 10000)[0]["total"]
     return {"rows": rows, "per_10k": per_10k, "per_10k_display": money(per_10k, 5),
             "down_per_10k": 10000 * down, "down_per_10k_display": money(10000 * down),
-            "loan_type": loan_type, "down_pct": bp.get("down_pct", 5), "rate": bp["rate"],
+            "loan_type": loan_type, "down_pct": down, "rate": bp["rate"],
             "insurance_annual": bp["insurance_annual"], "school_mills": school, "total_mills": total,
             "homestead": homestead, "tax_basis": tax_info["basis"], "tax_estimated": tax_info["estimated"]}, tax_info
 
@@ -187,10 +184,11 @@ def compute(R, market, homes):
     if net["missing"]:
         warnings.append("Preliminary: the market has no value for " + ", ".join(net["missing"]) +
                         ". Ask the agent (or use their market profile) and re-run; the report is marked Preliminary until then.")
-    if net["assumed"]:
-        assumptions.append("Brokerage uses the market default (" + ", ".join(net["assumed"]) +
+    brokerage = [a["text"] for a in net["assumed"] if a["key"] in ("listing_fee", "buyer_broker_fee")]
+    if brokerage:
+        assumptions.append("Brokerage uses the market default (" + ", ".join(brokerage) +
                            "), labeled a placeholder. Replace it with the listing agreement's terms when the agent gives them.")
-    if market.get("closing_costs.seller_title_fees") and market.source("closing_costs.seller_title_fees") != "profile":
+    if any(a["key"] == "title_fees" for a in net["assumed"]):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
 
     pay, tax_info = payments(R, market)

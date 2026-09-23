@@ -23,7 +23,6 @@ from _shared import cma, design, finance, handoff, render  # noqa: E402
 ASSETS = compute.ASSETS
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
 esc = html.escape
-SUBJECT_BG_TINT = 0.88  # share of white in the subject row's background (same as the brand rule tint)
 
 
 def agent_block(agent, L):
@@ -108,14 +107,14 @@ def pricing_section(R, C, L):
 def payments_section(R, C, L):
     pay, bp = C["payments"], R["buyer_payment"]
     mi_rate = finance.LOAN_PROGRAMS[pay["loan_type"]]["annual_mi"]
-    mi = L("pay_note_mi", mi=f"{mi_rate * 100:g}") if mi_rate and not (pay["loan_type"] == "conventional" and pay["down_pct"] >= 20) else ""
-    note = bp.get("note") or L("pay_note", program=L("prog_" + pay["loan_type"]), down=f'{pay["down_pct"]:g}', rate=f'{pay["rate"]:.2f}',
+    mi = L("pay_note_mi", mi=f"{mi_rate * 100:g}") if mi_rate and not (pay["loan_type"] == "conventional" and pay["down_pct"] >= 0.20) else ""
+    note = bp.get("note") or L("pay_note", program=L("prog_" + pay["loan_type"]), down=f'{pay["down_pct"] * 100:g}', rate=f'{pay["rate"]:.2f}',
                                basis=pay["tax_basis"], ins=money(pay["insurance_annual"]), mi=mi)
     if pay["tax_estimated"]:
         note += " " + L("tax_estimated", basis=pay["tax_basis"])
     return [f'<h3>{L("h_payments")}</h3>',
             f'<p>{L("pay_intro", per10k=pay["per_10k_display"], down10k=pay["down_per_10k_display"])}</p>',
-            table([L("th_list_price"), L("th_down", down=f'{pay["down_pct"]:g}'), L("th_payment")],
+            table([L("th_list_price"), L("th_down", down=f'{pay["down_pct"] * 100:g}'), L("th_payment")],
                   [[r["list_price_display"], r["down_display"], r["payment_display"]] for r in pay["rows"]], num_cols=(0, 1, 2),
                   row_classes={C["recommended_index"]: "total"}),
             f'<p class="note">{note}</p>']
@@ -178,8 +177,7 @@ def body(R, C, homes, agent, L):
 def theme_css(agent):
     """Seller palette from the agent's brand; the subject home uses the palette's neutral 'both' party color, never the brand."""
     t = design.theme(agent.get("brand"), "seller")
-    subject = t["party"]["both"]
-    extra = (f":root{{--subject:{subject};--subject-bg:{design.mix_white(subject, SUBJECT_BG_TINT)}}}"
+    extra = (":root{--subject:var(--party-both);--subject-bg:var(--party-both-bg)}"
              ".prep .side.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}")
     return design.css_vars(t) + extra, t
 

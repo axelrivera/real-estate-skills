@@ -53,7 +53,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## scatter
 
-`heading`, `intro` (may use `{trend_at_subject}`), `renovated` (export addresses), `subject_label` (default "Your home"), `subject_label_pos` (`right` or `left`), `callouts` (1–3 `{address, label, side}`), optional `after_paragraph` (may use `{trend_at_subject}`, `{r2_share}`), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (0.6/1.4/1.6).
+`heading`, `intro` (may use `{trend_at_subject}`), `renovated` (export addresses), `subject_label` (default "Your home"), `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), optional `after_paragraph` (may use `{trend_at_subject}`, `{r2_share}`), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (0.6/1.4/1.6).
 
 ## competition
 
@@ -76,11 +76,11 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## costs
 
-All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (percentages: `2.5`), `mortgage_payoff` (*number*), `hoa` (true/false), `other` (`[{label, amount}]`).
+All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%), `mortgage_payoff` (*number*), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `other` (`[{label, amount}]`).
 
 ## buyer_payment
 
-`rate` (percent), `loan_type` (default `conventional`), `down_pct` (default 5), `insurance_annual` (placeholder), `district` (looked up in the market profile) or `school_mills` + `total_mills`, `homestead` (default true), optional `hoa_monthly`, optional `note` (assumptions and the rate's week; a default is written when it's missing).
+`rate` (percent), `loan_type` (default `conventional`), `down_pct` (fraction, default 0.05), `insurance_annual` (placeholder), `district` (looked up in the market profile) or `school_mills` + `total_mills`, `homestead` (default true), optional `hoa_monthly`, optional `note` (assumptions and the rate's week; a default is written when it's missing).
 
 ## prep, needs, method
 
