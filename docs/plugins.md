@@ -6,7 +6,7 @@ Profiles every other plugin reads as context. Markdown output only. Other plugin
 
 | Skill | Produces |
 |---|---|
-| `agent-profile` | Agent profile: name and brokerage (required); team, license, contact, voice, disclaimers, brand colors (optional) |
+| `agent-profile` | `agent-profile.md`: name and brokerage (required); team, license, contact, voice, disclaimers, brand colors from hex codes, a website or an image (optional) |
 | `market-profile` | Market profile: state, MLS, costs, contract rules, MLS export format |
 
 ## transactions

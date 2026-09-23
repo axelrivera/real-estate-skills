@@ -62,7 +62,7 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 
 | Skill | Status |
 |---|---|
-| `agent-profile` | Not started |
+| `agent-profile` | Built and tested locally (63 tests, fixtures render); needs a run in claude.ai and Cowork |
 | `market-profile` | Not started |
 | `contract-timeline` | Not started |
 | `buyer-cma` | Not started |

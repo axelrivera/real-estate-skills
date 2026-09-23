@@ -1,0 +1,12 @@
+{
+  "name": "Jane Doe",
+  "team": "The Doe Group",
+  "brokerage": "Sunshine Realty",
+  "license": "SL1234567",
+  "phone": "(407) 555-0100",
+  "email": "jane@example.com",
+  "website": "https://example.com",
+  "brand": {"buyer_primary": "#1F3A5F", "seller_primary": "#D4AF37"},
+  "voice": "Warm, direct and plain-spoken. Short sentences, no jargon.",
+  "disclaimers": "Information deemed reliable but not guaranteed."
+}
