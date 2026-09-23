@@ -30,15 +30,14 @@ The `_shared/` copies are **committed**. Adding the marketplace by URL clones th
 Every skill has two modes built from one data file:
 
 ```
-analysis → <skill>.json → render_md.py    → markdown in chat   (markdown mode)
-                        → render_pdf.py   → PDF                (file mode)
-                        → render_deck.js  → PPTX               (file mode, where applicable)
+analysis scripts → <skill>.json → assets/<name>-template.md, filled by Claude → markdown in chat  (markdown mode)
+                                → scripts/render.py --format pdf|pptx         → PDF / PPTX         (file mode)
 ```
 
-- The math always runs in scripts. Markdown mode renders from the same JSON, so numbers in chat match the files.
+- The math always runs in scripts. Markdown mode takes its numbers from the same JSON and its layout from a template, so chat and files agree without a script writing markdown. See [skill-guidelines.md](skill-guidelines.md#scripts-vs-templates).
 - Default: **file mode** when the user asks for something to print, send, present, or "the report/deck"; **markdown mode** for quick questions. The user can switch by asking, and the skill offers the other mode in one line.
 - Markdown mode mirrors the file's page-1 executive summary; detail tables on request.
-- Every skill with outputs has one entry point, `scripts/render.py DATA.json --format md|pdf|pptx|all --out DIR`. See [development.md](development.md#skill-render-contract).
+- Every skill with file outputs has one entry point, `scripts/render.py DATA.json --format pdf|pptx|all --out DIR`. See [development.md](development.md#skill-render-contract).
 - If rendering a file fails, say so plainly and fall back to markdown mode.
 
 ### Output location

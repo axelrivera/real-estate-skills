@@ -41,7 +41,8 @@ dev/                     # dev tooling, never shipped
   sync_shared.py         # make sync / make check-sync
   tests/                 # unit tests for shared/ and dev tools (make test)
   preview_design.py      # palette preview (make preview-design)
-  fixtures/<skill>/      # test inputs for make outputs
+  fixtures/<skill>/      # data files for make outputs (file-mode skills)
+  evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
 .venv/  out/  dist/      # git-ignored
 ```
 
@@ -61,10 +62,12 @@ After editing `shared/`, run `make test` and `make sync`, and commit the updated
 
 ## Skill render contract
 
-Every skill with outputs exposes one entry point, so `make outputs` works the same way for all of them:
+Every skill with file outputs exposes one entry point, so `make outputs` works the same way for all of them:
 
 ```
-python scripts/render.py DATA.json --format md|pdf|pptx|all --out DIR
+python scripts/render.py DATA.json --format pdf|pptx|all --out DIR
 ```
+
+Markdown output comes from templates in the skill's `assets/`, filled in by Claude, so it's checked through the evals in `dev/evals/<skill>/`, not `make outputs`.
 
 `--format` accepts only the formats that skill supports. `all` renders every one of them.

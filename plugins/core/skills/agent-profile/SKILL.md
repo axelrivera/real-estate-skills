@@ -1,64 +1,52 @@
 ---
 name: agent-profile
-description: Creates or updates the real estate agent's profile, a short markdown file the other real estate skills read for the agent's name, team, brokerage, license, contact details, writing voice, disclaimers and brand colors. Use it when the agent says "set up my profile", "save my info", "use my brand colors", "update my phone number / license / brokerage", "change my report colors", shares a logo or website for their branding, or when another skill needs the agent's name or brokerage and no profile exists. Brand colors can come from hex codes, a website, or an image (logo, business card, flyer). Markdown output only.
+description: Creates or updates the real estate agent's profile, a short markdown file the other real estate skills read for the agent's name, team, brokerage, license, contact details, writing voice, disclaimers and brand colors. Use it whenever the agent says "set up my profile", "save my info", "use my brand colors", "update my phone / license / brokerage", "change my report colors", shares a logo or website for their branding, or another skill needs their name or brokerage and no profile exists. Brand colors can come from color codes, a website, or an image (logo, business card, flyer).
 ---
 
 # Agent profile
 
-Writes `agent-profile.md`: who the agent is and how their documents should look. Every other skill reads it when it's available and works without it, so this skill is a convenience, never a requirement.
+Writes `agent-profile.md`: who the agent is and how their documents should look. Other skills read it when it's available and still work without it, so this is a convenience, never a gate.
 
-The agent is usually not technical. Never show YAML, JSON or hex codes unless they ask. Talk about colors by name ("Navy").
+The agent is usually not technical. Keep YAML, JSON and color codes out of replies unless they ask, and talk about colors by name ("Navy").
 
-Paths below are relative to this skill's folder.
+## 1. Find an existing profile
 
-## 1. Look for an existing profile
+Look in the conversation, Project files and uploads for a file that starts with `profile: agent`. If there is one, this is an update: read it, change only what the agent asks, and keep the rest.
 
-Check the conversation, the Project files and uploads for a file starting with `profile: agent`. If there is one, this is an update:
+## 2. Ask for what's missing
 
-```
-python3 scripts/read_profile.py <path>
-```
+Only **name** and **brokerage** are required. Ask for everything missing in one message and make clear the rest is optional:
 
-Save the profile to a file first if it's only in the conversation. Change only what the agent asks to change and keep everything else.
+- Required: name as it should appear on documents; brokerage.
+- Optional: team name, license number, phone, email, website; writing voice (a sentence, or a sample of their writing); disclaimers for documents; brand colors.
 
-## 2. Ask for the details
-
-Only **name** and **brokerage** are required. Ask for everything that's missing in one message, and make clear the rest is optional:
-
-- Required: full name as it should appear on documents, brokerage.
-- Optional: team name, license number, phone, email, website.
-- Optional: writing voice (a sentence or two, or a sample of their writing) and any disclaimers they want on documents.
-- Optional: brand colors (step 3).
-
-Don't ask about brokerage or compliance rules. Don't invent anything, and don't fill optional fields they skipped.
+Don't ask about brokerage or compliance rules; that's the agent's call. Don't fill in anything they skipped, because a guessed license number or phone ends up on client documents.
 
 ## 3. Brand colors (optional)
 
-Offer three ways, in plain words: "If you want your reports in your brand colors, send your logo or another image, your website, or the color codes if you know them. Or skip this and reports use blue for buyers and orange for sellers."
+Read `references/brand-colors.md` before this step. In short: take color codes, a website or an image; run `scripts/extract_colors.py` for websites and images; confirm the result by name before saving.
 
-- **Hex codes:** use them as given.
-- **Website or image:**
-  ```
-  python3 scripts/extract_colors.py <image path or website>
-  ```
-  It returns the main colors by name, a suggested primary, a suggested buyer/seller split when there are two strong colors, and notes. If the website can't be opened, ask for an image instead.
+## 4. Write the file
 
-Confirm in words before saving, for example: "Your logo is mostly Navy with Gold accents. Use Navy for all your reports?" Ask about separate buyer and seller colors only when the result has a `split`. Pass on its notes (a color too light for text, a mostly black logo) in plain words. The image is only used to read colors: it's not saved and doesn't go on reports.
+Fill in `assets/agent-profile-template.md`:
 
-## 4. Write the profile
+- Leave out every line and section the agent didn't give (team, license, contact, brand, voice, disclaimers). Missing fields are skipped on documents, never shown empty.
+- In `brand`, keep either `primary` (one color) or `buyer_primary` and `seller_primary` (two), with the color name as the comment.
+- Keep values in double quotes; write a double quote inside a value as `\"`.
+- The "Brand colors" line says it in words: "Navy for all reports." or "Navy for buyer reports, Gold for seller reports."
 
-Write the data to a JSON file (fields as in `scripts/render.py`), then:
+Save it as `agent-profile.md` in the outputs folder (`/mnt/user-data/outputs/` when it exists), then check it:
 
 ```
-python3 scripts/render.py profile.json
+python3 scripts/check_profile.py <path to agent-profile.md>
 ```
 
-It saves `agent-profile.md` to the outputs folder, checks it with the same reader every skill uses, and prints any warnings. Fix and re-run if it reports an error.
+Fix anything under `problems` and check again. Pass on `warnings` in plain words.
 
 ## 5. Hand it over
 
-Present the file and give a short summary of what's in it, by name and in plain words. Then tell them how to keep it, in one line:
+Present the file with a short summary in plain words (who, which details are saved, which colors). Then one line on keeping it:
 
-- **claude.ai Projects:** "Add this file to your Project files so every chat can use it."
-- **Cowork:** save it in their working folder.
-- **Otherwise:** "Keep this file and share it at the start of a chat when you want your details used."
+- claude.ai Projects: "Add this file to your Project files so every chat can use it."
+- Cowork: save it in their working folder.
+- Otherwise: "Keep this file and share it at the start of a chat when you want your details used."

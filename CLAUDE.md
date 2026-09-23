@@ -18,13 +18,14 @@ sources/                            # prototype skills, local only, git-ignored
 
 ## Rules
 
+- **Build skills per [docs/skill-guidelines.md](docs/skill-guidelines.md):** lean SKILL.md, domain detail in `references/`, markdown output from templates in `assets/`, scripts only for deterministic work (math, parsing, validation, PDF/PPTX). Never write a script to produce markdown.
 - **Documentation goes in `docs/`.** The root README stays short and links there. No README files inside plugins.
 - **`sources/` is reference only.** Rebuild skills from it; never copy a prototype into `plugins/`, and never edit or ship anything from it.
 - **Skills run in claude.ai and Cowork only** (desktop app and cloud), not Claude Code. Script paths are relative to the skill directory. Do not use `/mnt/...` paths or paths outside the skill directory. Skill descriptions stay under 1,024 characters.
 - **Dependencies:** use only what the sandbox has ([docs/runtime-support.md](docs/runtime-support.md)). Python code must be 3.11-compatible. Never install packages at run time.
 - **Local dev:** run `make setup` once; `make test` after changing `shared/`; generate outputs with `make outputs`. Use `.venv/bin/python` and the Node version in `.nvmrc`. See [docs/development.md](docs/development.md).
 - **Shared code is edited in `shared/` only.** `scripts/_shared/` inside a skill is a committed copy; never edit it by hand. After changing `shared/`: `make test`, `make sync`, commit the copies with the change. The pre-commit hook blocks commits with stale copies.
-- **Every skill has a markdown mode and a file mode**, both rendered by scripts from the same data JSON. The core profile skills are markdown only.
+- **Every skill has a markdown mode and a file mode** from the same data JSON: markdown via an `assets/` template, files via `scripts/render.py`. The core profile skills are markdown only.
 - **Skills never require other skills.** Read profiles and handoffs as files when present; otherwise collect what's needed inline.
 - **No hard-coded brand colors.** File outputs get their palette from `shared/design`, starting from the agent profile's colors (buyer blue / seller orange by default). Status colors (good / caution / risk) are fixed.
 - **No silent Florida defaults** outside the built-in Florida/Stellar market. Ask, or label the assumption and mark the output Preliminary.

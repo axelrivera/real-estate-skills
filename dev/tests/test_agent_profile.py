@@ -1,6 +1,4 @@
 """Tests for plugins/core/skills/agent-profile/scripts (run against the synced _shared copy)."""
-import contextlib
-import io
 import os
 import sys
 import tempfile
@@ -8,16 +6,61 @@ import unittest
 
 SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "plugins", "core", "skills", "agent-profile", "scripts")
 sys.path.insert(0, os.path.abspath(SCRIPTS))
+import check_profile  # noqa: E402
 import extract_colors as ec  # noqa: E402
-import read_profile  # noqa: E402
-import render as agent_render  # noqa: E402
 from _shared import profiles  # noqa: E402
 from PIL import Image  # noqa: E402
+
+TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "agent-profile-template.md")
+PLACEHOLDERS = {
+    "full name": "name", "team name": "team", "brokerage": "brokerage", "license number": "license",
+    "phone": "phone", "email": "email", "website": "website",
+    "how the agent writes": "voice", "disclaimers for documents": "disclaimers",
+}
+
+
+def fill(values, brand=None):
+    """Fill the template the way SKILL.md step 4 describes: drop lines and sections not given."""
+    with open(TEMPLATE) as f:
+        lines = f.read().splitlines()
+    out, skip_section = [], False
+    for line in lines:
+        if line.startswith("## "):
+            section = line[3:].lower()
+            skip_section = (section == "brand colors" and not brand) or \
+                           (section in ("voice", "disclaimers") and section not in values)
+        if skip_section:
+            continue
+        if line.startswith("brand:") and not brand:
+            continue
+        key = line.strip().split(":")[0]
+        if key in ("primary", "buyer_primary", "seller_primary"):
+            if not brand or key not in brand:
+                continue
+            line = f'  {key}: "{brand[key]}"  # Color'
+        elif "{{color name}} for all reports" in line:
+            line = "Color for all reports."
+        for ph, field in PLACEHOLDERS.items():
+            if "{{" + ph + "}}" in line:
+                if field not in values:
+                    line = None
+                    break
+                line = line.replace("{{" + ph + "}}", values[field].replace('"', '\\"') if ":" in line else values[field])
+        if line is not None:
+            out.append(line.replace(" · ", "") if line.startswith(" · ") else line)
+    return "\n".join(out) + "\n"
+
+
+def write_profile(tmp, text):
+    path = os.path.join(tmp, "agent-profile.md")
+    with open(path, "w") as f:
+        f.write(text)
+    return path
+
 
 FULL = {
     "name": "Jane Doe", "team": "The Doe Group", "brokerage": "Sunshine Realty", "license": "SL1234567",
     "phone": "(407) 555-0100", "email": "jane@example.com", "website": "https://example.com",
-    "brand": {"buyer_primary": "#1f3a5f", "seller_primary": "#D4AF37"},
     "voice": "Warm and direct.", "disclaimers": "Information deemed reliable but not guaranteed.",
 }
 
@@ -101,40 +144,53 @@ class Websites(unittest.TestCase):
         self.assertIn("image", r["notes"][0])
 
 
-class Render(unittest.TestCase):
-    def test_round_trip(self):
-        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(io.StringIO()) as err:
-            path = agent_render.build(FULL, "md", tmp)[0]
-            self.assertEqual(os.path.basename(path), "agent-profile.md")
-            back = read_profile.read(path)
-        self.assertIn("Gold is too light", err.getvalue())
-        self.assertEqual(back["missing_required"], [])
-        self.assertEqual(back["data"]["brand"], {"buyer_primary": "#1F3A5F", "seller_primary": "#D4AF37"})
-        self.assertEqual(back["colors"]["buyer_primary"]["name"], "Navy")
-        for key in ("name", "team", "brokerage", "license", "phone", "email", "website", "voice", "disclaimers"):
-            self.assertEqual(back["data"][key], FULL[key], key)
+class Template(unittest.TestCase):
+    def test_full_profile_passes_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_profile(tmp, fill(FULL, {"buyer_primary": "#1F3A5F", "seller_primary": "#D4AF37"}))
+            r = check_profile.check(path)
+            agent = profiles.load_agent(path)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["colors"]["buyer"]["name"], "Navy")
+        self.assertEqual(r["colors"]["seller"]["name"], "Gold")
+        self.assertTrue(any("Gold is too light" in w for w in r["warnings"]))
+        for key, value in FULL.items():
+            self.assertEqual(agent[key], value, key)
 
-    def test_minimal_profile_has_no_empty_fields(self):
-        text = agent_render.to_markdown({"name": "Sam", "brokerage": "Coastal", "team": " ", "brand": {}})
-        data, sections = profiles.parse(text)
-        self.assertEqual(set(data), {"profile", "schema", "name", "brokerage"})
-        self.assertNotIn("brand colors", sections)
+    def test_minimal_profile_passes_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = check_profile.check(write_profile(tmp, fill({"name": "Sam", "brokerage": "Coastal Homes"})))
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["fields"], ["name", "brokerage"])
+        self.assertTrue(r["colors"]["buyer"]["default"])
 
-    def test_quotes_and_special_characters_survive(self):
-        tricky = {"name": 'Ana "AJ" Peña: Broker', "brokerage": "#1 Realty, LLC", "phone": "+1 (787) 555-0100"}
-        data, _ = profiles.parse(agent_render.to_markdown(tricky))
-        for k, v in tricky.items():
-            self.assertEqual(data[k], v)
+    def test_quotes_survive(self):
+        values = {"name": 'Ana "AJ" Peña', "brokerage": "#1 Realty, LLC"}
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = profiles.load_agent(write_profile(tmp, fill(values)))
+        self.assertEqual((agent["name"], agent["brokerage"]), (values["name"], values["brokerage"]))
 
-    def test_required_fields_and_bad_colors(self):
-        with self.assertRaises(ValueError):
-            agent_render.to_markdown({"name": "Sam"})
-        with self.assertRaises(ValueError):
-            agent_render.to_markdown({"name": "Sam", "brokerage": "B", "brand": {"primary": "navy"}})
 
-    def test_single_color_summary(self):
-        _, sections = profiles.parse(agent_render.to_markdown({"name": "S", "brokerage": "B", "brand": {"primary": "#1F3A5F"}}))
-        self.assertEqual(sections["brand colors"], "Navy for all reports.")
+class Check(unittest.TestCase):
+    def check_text(self, text):
+        with tempfile.TemporaryDirectory() as tmp:
+            return check_profile.check(write_profile(tmp, text))
+
+    def test_leftover_placeholders(self):
+        with open(TEMPLATE) as f:
+            r = self.check_text(f.read())
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("placeholders" in p for p in r["problems"]))
+
+    def test_missing_brokerage_and_bad_color(self):
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrand: {primary: "navy"}\n---\n')
+        self.assertFalse(r["ok"])
+        self.assertIn("Missing brokerage.", r["problems"])
+        self.assertTrue(any("navy" in p for p in r["problems"]))
+
+    def test_unreadable_file(self):
+        r = self.check_text("no settings block")
+        self.assertFalse(r["ok"])
 
 
 if __name__ == "__main__":
