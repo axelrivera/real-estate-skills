@@ -7,7 +7,7 @@ Profiles every other plugin reads as context. Markdown output only. Other plugin
 | Skill | Produces |
 |---|---|
 | `agent-profile` | `agent-profile.md`: name and brokerage (required); team, license, contact, voice, disclaimers, brand colors from hex codes, a website or an image (optional) |
-| `market-profile` | Market profile: state, MLS, costs, contract rules, MLS export format |
+| `market-profile` | `market-profile-<area>.md`: only the agent's own values (closing costs, commission, taxes, contract rules, CMA, MLS format); everything else from the built-in Florida and Stellar layers |
 
 ## transactions
 

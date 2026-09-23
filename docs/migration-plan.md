@@ -62,8 +62,8 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 
 | Skill | Status |
 |---|---|
-| `agent-profile` | Built and tested locally (63 tests, fixtures render); needs a run in claude.ai and Cowork |
-| `market-profile` | Not started |
+| `agent-profile` | Built per skill guidelines (template, reference, check script), tests and evals; needs a run in claude.ai and Cowork |
+| `market-profile` | Built per skill guidelines (template, fields reference, check script), tests and evals; needs a run in claude.ai and Cowork |
 | `contract-timeline` | Not started |
 | `buyer-cma` | Not started |
 | `seller-cma` | Not started |

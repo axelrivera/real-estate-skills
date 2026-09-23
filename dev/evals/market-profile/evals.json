@@ -1,0 +1,23 @@
+{
+  "skill_name": "market-profile",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I sell mostly in Seminole County, Stellar MLS. Our office does 3% listing and we usually offer 2% to buyer agents. Can you save that so my net sheets use it?",
+      "expected_output": "Runs check_market for FL/Seminole, confirms the built-ins briefly, writes market-profile-seminole.md with state FL, area, mls Stellar and only the brokerage values 0.03 / 0.02; check shows those as source 'profile' and everything else built in",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I'm moving my business to Austin TX (ACTRIS MLS). Here's a seller net sheet from my title company, can you set up my market from it?",
+      "expected_output": "Reads the net sheet, extracts title/escrow fees and owner's title estimate, notes Texas has no deed transfer tax, asks about missing groups (contract dates, CMA) or leaves them missing, never fills Florida values; writes market-profile-austin.md; check ok",
+      "files": ["dev/evals/market-profile/files/austin-net-sheet.md"]
+    },
+    {
+      "id": 3,
+      "prompt": "my title company in Orlando just quoted $850 settlement and $300 for the search, update my market profile",
+      "expected_output": "Finds the existing profile, updates only seller_title_fees.settlement_fee and title_search, keeps other values, check ok",
+      "files": ["dev/evals/market-profile/files/market-profile-orange.md"]
+    }
+  ]
+}
