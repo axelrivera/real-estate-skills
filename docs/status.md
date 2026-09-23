@@ -31,41 +31,9 @@ Offer skills (`seller-offer-review`, `buyer-offer-strategy`, `shared/offer_engin
 | Percent vs. fraction | Done: every `*_pct` is a fraction everywhere (CMAs converted: `down_pct`, brokerage); `finance.fraction` refuses 1+ with a plain message; offer files checked too. Interest `rate` stays a percent. Rule in architecture.md |
 | Docs | `offer_engine.py` in development.md; per-deal costs and the fraction rule in architecture.md |
 
-## Eval findings to fix
+## Step 3 done: earlier eval findings fixed (2026-09-23)
 
-From the agent-profile eval 2 run (logo → colors), before handoff:
-
-1. **`extract_colors.py` returns rounded colors** (#1C3C5C instead of the logo's real #1F3A5F; #D4AC34 instead of #D4AF37) because it reports the 32-level bucket center. Fix: report the most common real pixel within each merged group. Add a test with exact pixel values.
-2. SKILL.md steps 2 and 3 should say it's fine (preferred) to confirm colors and ask for optional fields in the same message, and to skip the colors question when colors were already given.
-3. `references/brand-colors.md`: add which documents are buyer vs. seller side (listing presentation and seller CMA = seller; buyer CMA and offer strategy = buyer; contract timeline follows the view).
-4. When a split color is light (e.g., Gold for seller), suggest the single-color option too, not only the information note.
-5. Template: say what the `{{team name}} · {{brokerage}}` line becomes without a team (just the brokerage), and drop the "Keep this file in your Project files" line from the template body (the hand-over message already says it).
-6. SKILL.md step 5: explain how to tell claude.ai Projects vs. Cowork vs. other.
-7. Clean stale `scripts/__pycache__` before packaging (`make package` already excludes it from zips; delete locally).
-
-From the contract-timeline eval 1 run (dates all correct, PDF produced):
-
-1. `flags` print on the client PDF as "Check:" lines. Separate agent-only notes (chat only) from client-facing checks, e.g. `flags` (on PDF) vs. `agent_notes` (not printed), and say so in SKILL.md and deal-file.md.
-2. Document the script's own flag (loan approval within 5 days of closing) and the market note ("Stellar was assumed"), and tell Claude not to pass MLS notes to the agent for a timeline (irrelevant there).
-3. frbar.md: a blank 2(b) amount means no additional deposit (the 10-day default applies only when an amount is written).
-4. frbar.md: list the rider keywords the script matches (appraisal, fha, va, insurance, association, condominium, sale of buyer).
-5. SKILL.md: when delivering the PDF, say whether to also include a short table in chat (recommend: key dates only, not the full template).
-6. frbar.md: closing time field (`closing_time`, default 10:00) and flag it when the contract doesn't state one.
-7. SKILL.md: mention `OUTPUT_DIR` only in development.md (not needed in the sandbox) — fine as is; no change.
-8. PDF strip: labels crowd when several deadlines share a date (Oct 23) and cover axis tick labels; group same-day deadlines into one label and keep labels off the tick row.
-
-From the market-profile eval 2 run (Austin TX; no Florida leakage, check ok):
-
-1. A zero transfer tax still reports `deed_transfer_tax_payer` missing: treat rate 0 as complete (payer not needed); say so in fields.md.
-2. Exemptions can't express Texas: extend `primary_residence_exemptions` with `levies: school` and percentage exemptions (`{percent: 0.20, levies: ...}`), and support them in `finance.property_tax`.
-3. Millage per $1,000 vs. Texas rates per $100: document conversion (per $100 × 10), and say millage is optional outside built-in markets (fallback_rate is enough).
-4. Promulgated title without a table: allow a single quote (`owner_title.quote: {price, premium}`) or `estimate_pct` derived from it; say which wins (the title company's table/quote).
-5. `seller_title_fees` keys are free-form and all summed: say so. Split escrow fee: store the seller's share.
-6. Multi-county areas: one profile with `area`, county differences in `county_overrides`; the county question mainly matters for built-in markets.
-7. Clarify which rules Claude may look up (published rates yes; contract time rules only from the contract or the agent).
-8. `check_market.py --mls X` without a profile should echo the MLS given.
-9. Add `holding_costs` to check_market groups (used by the offer engine) or say it's optional.
-10. `profiles.load_market` assumes Florida when state is missing; fine for no-profile calls (noted), but profiles require a state (already enforced).
+All findings from the agent-profile, contract-timeline and market-profile smoke runs are fixed (commits "agent-profile / contract-timeline / market-profile: fix eval findings"). Also found and fixed: contract-timeline rider matching treated "va" inside words like "private" as a VA rider.
 
 ## Remaining work, in order
 
