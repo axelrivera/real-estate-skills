@@ -24,10 +24,11 @@ def main(argv=None):
     ap.add_argument("--state")
     ap.add_argument("--county")
     ap.add_argument("--market", help="market profile (MLS column names); Stellar is built in")
+    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     a = ap.parse_args(argv)
     try:
-        market = profiles.load_market(a.market, state=a.state, county=a.county)
+        market = profiles.load_market(a.market, state=a.state, county=a.county, mls=a.mls)
         homes = mls.load(a.export, market)
         row = next((h for h in homes if mls.same_address(h["address"], a.address)), None)
         subject = {"address": a.address}

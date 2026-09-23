@@ -67,7 +67,7 @@
   "headline": "Priced at the middle of what recent sales support, for the strongest first weeks on the market.",
   "key_stats": [
    [
-    "$469,800",
+    "{median_adjusted}",
     "Median of the five closest sales, adjusted to your home"
    ],
    [
@@ -279,7 +279,7 @@
     1458,
     "Yes",
     9,
-    "Investor bought it for $305,000 in June, renovated, and went under contract in 9 days. A renovated pool home priced in the $450s moves fast."
+    "Renovated and went under contract in 9 days. A renovated pool home priced in the $450s moves fast."
    ],
    [
     "400 W Orange St",

@@ -26,7 +26,7 @@ REQUIRED = {"title": str, "subtitle": str, "recommendation_why": str, "value_dri
             "comp_lines": dict, "comps_takeaway": str, "scatter_takeaway": str, "market_stats": list, "market_takeaway": str,
             "competition": list, "competition_takeaway": str, "strategy_takeaway": str, "payment_takeaway": str,
             "launch_plan": list, "needs_short": list, "timeline": list}
-COUNTS = {"value_drivers": 4, "document_items": 2, "market_stats": 4, "competition": 3, "launch_plan": 6, "timeline": 4}
+COUNTS = {"value_drivers": 4, "document_items": 2, "market_stats": 4, "launch_plan": 6, "timeline": 4}
 NOTE_KEYS = ("recommendation", "method", "drivers", "comps", "scatter", "market", "competition", "strategies", "nets",
              "payments", "launch", "next")
 
@@ -45,7 +45,10 @@ def load_content(R):
             c = json.load(f)
     if not isinstance(c, dict):
         raise DeckError("report.json needs `deck` with the listing presentation's wording (see references/deck-content.md).")
-    problems = [f"deck.{key} is missing" for key, typ in REQUIRED.items() if not isinstance(c.get(key), typ)]
+    required = {k: t for k, t in REQUIRED.items() if k != "scatter_takeaway" or R.get("export")}  # no export: no scatter slide
+    problems = [f"deck.{key} is missing" for key, typ in required.items() if not isinstance(c.get(key), typ)]
+    if isinstance(c.get("competition"), list) and not 1 <= len(c["competition"]) <= 3:
+        problems.append("deck.competition needs 1 to 3 cards")
     problems += [f"deck.{key} needs exactly {n} items" for key, n in COUNTS.items()
                  if isinstance(c.get(key), list) and len(c[key]) != n]
     if len(c.get("needs_short") or []) > 5:

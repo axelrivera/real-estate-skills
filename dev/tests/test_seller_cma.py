@@ -183,9 +183,11 @@ class OtherMarkets(unittest.TestCase):
         self.assertTrue(C["preliminary"])
         keys = {r["key"] for r in C["net"]["rows"]}
         self.assertEqual(keys, {"sale", "credit", "total"})  # no brokerage, stamps, title or fees borrowed from Florida
-        for missing in ("listing fee", "deed transfer tax", "title company fees"):
+        for missing in ("listing brokerage fee", "transfer tax (or confirmation there is none)", "title company fees"):
             self.assertIn(missing, C["net"]["missing"])
+        self.assertTrue(C["net"]["incomplete"])  # no commission: render.py refuses rather than overstate the net
         self.assertTrue(any(w.startswith("Preliminary") for w in C["warnings"]))
+        self.assertTrue(any(w.startswith("No brokerage terms") for w in C["warnings"]))
         self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 19.0 / 1000 / 12)  # no homestead in Texas
 
     def test_texas_with_agent_terms_still_preliminary(self):
@@ -193,7 +195,8 @@ class OtherMarkets(unittest.TestCase):
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         C, _ = run(R)
         self.assertTrue(C["preliminary"])
-        self.assertNotIn("listing fee", C["net"]["missing"])
+        self.assertNotIn("listing brokerage fee", C["net"]["missing"])
+        self.assertFalse(C["net"]["incomplete"])
 
     def test_texas_without_tax_rate_has_no_payments(self):
         R = texas(report())
@@ -204,10 +207,11 @@ class OtherMarkets(unittest.TestCase):
 
     def test_preliminary_shows_in_pdf_html(self):
         R = texas(report())
+        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         C, homes = run(R)
         doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
         self.assertIn("side prelim", doc)
-        self.assertIn("no local figure for listing fee", doc)
+        self.assertIn("no local figure for transfer tax (or confirmation there is none)", doc)
         self.assertNotIn("Documentary stamp", doc)
 
 
@@ -321,6 +325,13 @@ class Files(unittest.TestCase):
         if not node_ready():
             self.skipTest("Node with pptxgenjs, react-icons and sharp isn't resolvable here.")
         R = texas(report())
+        with self.assertRaises(compute.ReportError):  # no brokerage terms: no files
+            seller_render.build(R, "pptx", ".", {"agent": profiles.load_agent(None), "market": None, "sample": True})
+        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
+        if isinstance(R["deck"], str):
+            with open(R["deck"]) as f:
+                R["deck"] = json.load(f)
+        R["deck"].pop("scatter_takeaway", None)  # no export, no scatter slide: not required
         with tempfile.TemporaryDirectory() as tmp:
             with contextlib.redirect_stderr(io.StringIO()):
                 paths = seller_render.build(R, "pptx", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})

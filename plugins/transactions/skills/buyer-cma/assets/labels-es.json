@@ -134,5 +134,7 @@
  "wordmark_sub": "Agente de bienes raíces",
  "lic": "Lic.",
  "preliminary": "Preliminar",
- "tax_estimated": "Estimado en {basis}: aún no hay tasas de millaje para esta zona. Confírmelo con el tasador de la propiedad."
+ "tax_estimated": "Estimado en {basis}: aún no hay tasas de millaje para esta zona. Confírmelo con el tasador de la propiedad.",
+ "per_year": "/año",
+ "per_month": "/mes"
 }

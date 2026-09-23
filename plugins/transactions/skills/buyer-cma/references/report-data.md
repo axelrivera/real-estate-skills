@@ -68,7 +68,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## market
 
-`intro`, `columns`, `rows` (strings from stats.py), `bullets` (3–5, each a `<strong>` finding plus what it means for the offer).
+`intro`, `columns`, `rows` (strings you format from stats.py's numbers: "95.2%", "22 days"), `bullets` (3–5, each a `<strong>` finding plus what it means for the offer).
 
 ## costs
 

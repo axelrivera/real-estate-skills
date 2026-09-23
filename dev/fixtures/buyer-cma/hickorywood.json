@@ -65,7 +65,7 @@
   "headline": "Open at the bottom of what recent sales support. The home has been for sale since January, which gives you room to negotiate.",
   "key_stats": [
    [
-    "$469,800",
+    "{median_adjusted}",
     "Median of the five closest sales, adjusted to this home"
    ],
    [
@@ -356,7 +356,7 @@
     1458,
     "Yes",
     9,
-    "Investor bought it for $305,000 in June, renovated, and went under contract in 9 days. A renovated pool home priced in the $450s moves fast."
+    "Renovated and went under contract in 9 days. A renovated pool home priced in the $450s moves fast."
    ],
    [
     "400 W Orange St",
@@ -503,9 +503,9 @@
   "items": [
    "<strong>The roof.</strong> The first version of this listing described a brand-new roof. The current listing doesn't mention the roof at all. Roof age is the biggest factor in insuring a Florida home, so we want the permit and date in writing.",
    "<strong>Why the April contract fell apart.</strong> If a previous buyer walked away over an inspection or appraisal problem, we want to know what it was.",
-   "<strong>Wiring and plumbing from 1972.</strong> Homes of this age in Spring Oaks often have aluminum branch wiring and original cast-iron drains. A nearby house of the same age was just fully replumbed and had its aluminum wiring connections remediated in 2026. Insurers ask about both. Add a sewer-line camera inspection to the general inspection.",
+   "<strong>Wiring and plumbing from 1972.</strong> Homes of this age in Spring Oaks often have aluminum branch wiring and original cast-iron drains. Insurers ask about both. Add a sewer-line camera inspection to the general inspection.",
    "<strong>Permits for the renovation.</strong> Confirm the kitchen, bath, and any electrical or plumbing work was permitted. Unpermitted work can cause problems with insurance and future resale.",
-   "<strong>The fourth bedroom.</strong> One public-records-based site lists this home as three bedrooms. Check the property appraiser's record, and if a room was converted, confirm it was permitted.",
+   "<strong>The fourth bedroom.</strong> Check that the property appraiser's record shows four bedrooms, and if a room was converted, confirm it was permitted.",
    "<strong>AC age and pool equipment.</strong> Neither is listed. Also confirm the pool has a compliant safety barrier.",
    "<strong>\"As-Is\" doesn't mean no inspection.</strong> The As-Is contract still gives you an inspection period in which you can cancel for any reason. It only means the seller isn't committing to repairs."
   ],

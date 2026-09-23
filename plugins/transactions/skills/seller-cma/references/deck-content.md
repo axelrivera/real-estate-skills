@@ -13,7 +13,7 @@ The deck is the conversation piece for the appointment; the PDF is the leave-beh
 | 5 | Comparable sales (dot plot, range band, price line) | comp cards' adjusted values | `comp_lines`, `comps_takeaway` |
 | 6 | Where your home fits (native scatter; left out when there's no MLS export) | export + `scatter.renovated` | `scatter_takeaway` |
 | 7 | The market | — | `market_title`, `market_periods`, `market_period_labels`, `market_stats`, `market_takeaway` |
-| 8 | Your competition (3 cards) | prices from the report's competition table | `competition`, `competition_takeaway` |
+| 8 | Your competition (1–3 cards; fewer when there are fewer real competitors) | prices from the report's competition table | `competition`, `competition_takeaway` |
 | 9 | Three ways to price it | strategies | `strategy_takeaway` |
 | 10 | What you walk away with (native column chart) | computed nets | `strategy_takeaway` |
 | 11 | How buyers see your price | computed payments | `payment_takeaway` |

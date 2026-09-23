@@ -50,6 +50,12 @@ def pct_text(fraction):
 
 # --- net sheet ---------------------------------------------------------------
 
+# Plain words for costs the market doesn't have, in a note a homeowner reads (not every state has each one).
+MISSING_WORDS = {"deed transfer tax": "transfer tax (or confirmation there is none)", "HOA estoppel fee": "HOA status letter fee",
+                 "who pays owner's title": "who customarily pays the owner's title policy", "listing fee": "listing brokerage fee",
+                 "buyer's agent fee": "buyer's agent compensation"}
+
+
 def net_sheet(R, market, L):
     """Seller net for each strategy (at its expected sale price) via finance.seller_net, plus table rows."""
     costs, s = R.get("costs") or {}, R["subject"]
@@ -100,10 +106,12 @@ def net_sheet(R, market, L):
     if "title_fees" in assumed_keys:
         items = ", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())
         notes.append(L("net_title_fees_note", items=items))
+    shown = [MISSING_WORDS.get(m, m) for m in first["missing"]]
     if first["missing"]:
-        notes.append(L("net_missing", items=", ".join(first["missing"])))
+        notes.append(L("net_missing", items=", ".join(shown)))
     return {"columns": [{"net_before_payoff": c["net_before_payoff"], "net": c["net"], "total_costs": c["total_costs"]} for c in cols],
-            "totals": totals, "rows": rows, "notes": notes, "missing": first["missing"], "assumed": first["assumed"],
+            "totals": totals, "rows": rows, "notes": notes, "missing": shown, "assumed": first["assumed"],
+            "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
             "payoff": payoff, "cash_at_closing": bool(payoff)}
 
 
@@ -181,6 +189,10 @@ def compute(R, market, homes):
                             "an appraisal risk to explain, or lower it.")
 
     net = net_sheet(R, market, L)
+    if net["incomplete"]:
+        warnings.append("No brokerage terms: the nets leave out the commission, so they'd overstate what the seller walks away with. "
+                        "Ask the agent for the listing fee and buyer's agent compensation (0 is fine) in costs, then re-run. "
+                        "render.py won't build the files until then.")
     if net["missing"]:
         warnings.append("Preliminary: the market has no value for " + ", ".join(net["missing"]) +
                         ". Ask the agent (or use their market profile) and re-run; the report is marked Preliminary until then.")

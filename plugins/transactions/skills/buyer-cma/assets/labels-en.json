@@ -134,5 +134,7 @@
  "wordmark_sub": "Real estate agent",
  "lic": "Lic.",
  "preliminary": "Preliminary",
- "tax_estimated": "Estimated at {basis}: no millage for this area yet. Confirm with the property appraiser."
+ "tax_estimated": "Estimated at {basis}: no millage for this area yet. Confirm with the property appraiser.",
+ "per_year": "/yr",
+ "per_month": "/mo"
 }

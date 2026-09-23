@@ -19,13 +19,15 @@ You need three things. If one is missing, ask for it and say why it matters:
 
 In the same message, ask the buyer questions the offer depends on: when they need to move (lease ending, home to sell), how they're financing (loan type, down payment, cash for closing), and how much they want this house. Don't block on them; without answers, plan for a typical first-time buyer and say so in the conditions.
 
-Use the agent's market profile when there is one (Project files, uploads). Florida and Stellar MLS are built in.
+Use the agent's market profile when there is one (Project files, uploads). Florida and Stellar MLS are built in. For a PDF, the agent's name and brokerage go on it: use their agent profile, or ask for the two in the same message.
+
+**Quick gut check** ("is it priced right? just tell me"): run stats.py, pick and adjust the comps, and still run compute.py for the median and range (the payment and tax blocks can be short). Answer in a few sentences plus the handoff block; skip the full template unless asked.
 
 ## 2. Read the subject and the market
 
 - Rebuild the full history from the screenshot and run the numbers:
   ```
-  python3 scripts/stats.py export.csv --address "<address as in the export>" --state <ST> --county <county> [--market market-profile.md] [--split-date YYYY-MM-DD]
+  python3 scripts/stats.py export.csv --address "<address as in the export>" --state <ST> --county <county> [--mls <MLS>] [--market market-profile.md] [--split-date YYYY-MM-DD]
   ```
   Pick a split date so "recent" is roughly the last 2–3 months.
 - Search quickly: the address itself (claims that disappeared from the listing), the current 30-year mortgage rate (Freddie Mac weekly survey), and, when the market profile has no millage for the area, the county's current millage.
@@ -34,7 +36,7 @@ Read `references/method.md` for reading the history, choosing and adjusting comp
 
 ## 3. Write report.json
 
-Copy `assets/example-report.json` (an approved report) and replace every value; its length and tone are the target. Read `references/report-data.md` for every field, `references/offer-plan.md` before setting the offer plan and credit scenarios, `references/costs.md` for taxes, insurance and payments, and `references/writing.md` for how each section reads. Write `summary_page` last. For Spanish, set `"language": "es"` and write every field in Spanish.
+Copy `assets/example-report.json` (an approved report) and replace every value; its length and tone are the target. It describes a sample home with illustrative details: take its structure and tone, never a fact (a sale price, a repair, a record) into a real report. Read `references/report-data.md` for every field, `references/offer-plan.md` before setting the offer plan and credit scenarios, `references/costs.md` for taxes, insurance and payments, and `references/writing.md` for how each section reads. Write `summary_page` last; write `{median_adjusted}` where page 1 quotes the median adjusted value and the script fills it in. For Spanish, set `"language": "es"` and write every field in Spanish.
 
 Then compute:
 

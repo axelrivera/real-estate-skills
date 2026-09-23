@@ -15,7 +15,7 @@
 | `as_of` | `YYYY-MM-DD` for the handoff. Default: today |
 | `export` | Path to the MLS export CSV (chart, trend line, deck method step, handoff market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
-| `deck` | The listing presentation's wording (object), or a path to a JSON file with it. See `deck-content.md` |
+| `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, relative to where you run the scripts). See `deck-content.md`; `competition` takes 1–3 cards, `scatter_takeaway` only when there is an export |
 | `preliminary` | Optional `true` to mark the report Preliminary yourself (compute.py also sets it when a local cost is missing) |
 | `labels` | Optional overrides of fixed wording |
 
@@ -61,7 +61,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## market
 
-`intro`, `columns`, `rows` (strings from stats.py), `bullets` (3–5, each tied to price or timing).
+`intro`, `columns`, `rows` (strings you format from stats.py's numbers: "95.2%", "22 days"; without an export, from the sales you were given), `bullets` (3–5, each tied to price or timing).
 
 ## pricing
 

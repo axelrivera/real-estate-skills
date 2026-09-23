@@ -50,7 +50,8 @@ def footer_block(agent, R, L):
 
 
 def summary_page(R, C, agent, L):
-    s, rec, sp = R["subject"], R["recommendation"], R["summary_page"]
+    s, rec = R["subject"], R["recommendation"]
+    sp = cma.fill(R["summary_page"], cma.page_one_values(C))
     strats, ri = C["strategies"], C["recommended_index"]
     cash = C["net"]["cash_at_closing"]
     tile = L("sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
@@ -215,6 +216,9 @@ def _build(R, fmt, out_dir, ctx):
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))
+    if C["net"]["incomplete"]:
+        raise compute.ReportError("The net sheet needs brokerage terms: ask the agent for the listing fee and the buyer's agent "
+                                  "compensation (0 is fine) and put them in costs. Without them every net overstates the seller's proceeds.")
     agent, sample = ctx["agent"], ctx.get("sample") or R.get("sample")
     L = cma.Labels(ASSETS, R.get("language", "en"), R.get("labels"))
     first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: write the handoff and warn once
@@ -234,7 +238,7 @@ def _build(R, fmt, out_dir, ctx):
         if not info["summary_page"]["fits"]:
             print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
         if info["moved"]:
-            print("Moved to a new page: " + "; ".join(info["moved"]), file=sys.stderr)
+            print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
     elif fmt == "pptx":
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Listing Presentation", ext="pptx"))
         D = deck.deck_data(R, C, homes, agent, L, footer_label(R, C, agent, L, "", sample))

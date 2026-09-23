@@ -64,6 +64,23 @@ def k(v):
     return money(v / 1000) + "K"
 
 
+def fill(value, values):
+    """Replace {median_adjusted}-style placeholders in every string of `value` (report wording), so numbers the
+    scripts compute aren't typed by hand. Unknown names are left as written."""
+    if isinstance(value, str):
+        return re.sub(r"\{(\w+)\}", lambda m: values.get(m.group(1), m.group(0)), value)
+    if isinstance(value, list):
+        return [fill(v, values) for v in value]
+    if isinstance(value, dict):
+        return {key: fill(v, values) for key, v in value.items()}
+    return value
+
+
+def page_one_values(C):
+    """Placeholders every CMA page 1 can use."""
+    return {"median_adjusted": C["median_adjusted_display"]}
+
+
 # --- scatterplot ---------------------------------------------------------------
 
 def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):

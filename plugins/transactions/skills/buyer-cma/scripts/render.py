@@ -46,7 +46,8 @@ def footer_block(agent, R, L):
 
 
 def summary_page(R, C, agent, L):
-    s, bl, sp, op = R["subject"], R["bottom_line"], R["summary_page"], R["offer_plan"]
+    s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
+    sp = cma.fill(R["summary_page"], cma.page_one_values(C))
     pay = C["payments"]
     first = pay["rows"][0]
     sc0 = R["costs"]["payment"]["scenarios"][0]
@@ -69,9 +70,9 @@ def summary_page(R, C, agent, L):
                                              L("dot_asking", price=money(s["list_price"])),
                                              (op["opening"], L("dot_offer", price=money(op["opening"])))) + "</div>"]
     tax = C["taxes"][pay["tax_index"]]
-    rows = [[L("sum_tax_now"), money(R["costs"]["taxes"]["current_bill"]) + "/yr"],
-            [L("sum_tax_yours"), "≈ " + money(tax["annual"], 100) + "/yr"],
-            [L("sum_pay_row", label=sc0["label"]), money(first["total"]) + "/mo"],
+    rows = [[L("sum_tax_now"), money(R["costs"]["taxes"]["current_bill"]) + L("per_year")],
+            [L("sum_tax_yours"), "≈ " + money(tax["annual"], 100) + L("per_year")],
+            [L("sum_pay_row", label=sc0["label"]), money(first["total"]) + L("per_month")],
             [L("sum_cash_row", label=sc0["label"]), money(first["cash_down"])]]
     trs = "".join(f'<tr class="{"rec" if i == 1 else ""}"><td>{a}</td><td class="n">{v}</td></tr>' for i, (a, v) in enumerate(rows))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
@@ -257,14 +258,14 @@ def build(R, fmt, out_dir, ctx):
     if ctx.get("sample") or R.get("sample"):
         label = "SAMPLE DATA · " + label
     path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Buyer CMA", ext="pdf"))
-    info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label), before_print=cma.paginate)
+    info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label, page=L("page"), of=L("of")), before_print=cma.paginate)
     hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"]))
     with open(hpath, "w", encoding="utf-8") as f:
         json.dump(C["handoff"], f, indent=2)
     if not info["summary_page"]["fits"]:
         print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
     if info["moved"]:
-        print("Moved to a new page: " + "; ".join(info["moved"]), file=sys.stderr)
+        print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
     for w in C["warnings"]:
         print(f"Check: {w}", file=sys.stderr)
     return [path, hpath]

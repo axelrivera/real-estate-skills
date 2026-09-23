@@ -47,7 +47,7 @@ Default rates come from the market profile (`cma.adjustments`; built in for Flor
 2. **Recommended:** the middle of the range, with room for the negotiating the data shows.
 3. **Competing-offer price:** just below the middle; fast, possibly with a smaller seller credit, and only if competing offers actually show up. Say so.
 
-Base each option's expected sale, time to contract and assumed seller credit on stats.py's recent sale-to-original-list ratio, days on market, and the share and size of seller-paid costs. Label them estimates. If one option comes out ahead only because of an assumption (a smaller credit), say that in `pricing.note`; the table shouldn't suggest precision it doesn't have.
+Base each option's expected sale on the adjusted comps first (they already reflect what similar homes sold for, net of credits), then check it against stats.py's recent sale-to-original-list ratio: that ratio includes overpriced listings, so applied to a well-priced home it runs low. The recommended option usually expects about 97–99% of its list price in a balanced market; the top-of-range option less. Time to contract and the assumed seller credit come from recent days on market and the share and size of seller-paid costs. Label them estimates. If one option comes out ahead only because of an assumption (a smaller credit), say that in `pricing.note`; the table shouldn't suggest precision it doesn't have.
 
 ## The scatterplot
 

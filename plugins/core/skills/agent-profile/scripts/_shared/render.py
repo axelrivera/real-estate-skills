@@ -63,9 +63,10 @@ def page(body, css="", title="", theme_css="", body_class=""):
             f"<style>{base}{theme_css}{css}</style></head><body class='{body_class}'>{body}</body></html>")
 
 
-def footer(left, right_pages=True):
-    """Chromium footer template: `left` text and 'Page X of Y'."""
-    pages = 'Page <span class="pageNumber"></span> of <span class="totalPages"></span>' if right_pages else ""
+def footer(left, right_pages=True, page="Page", of="of"):
+    """Chromium footer template: `left` text and 'Page X of Y' (pass the words for other languages)."""
+    pages = (f'{html.escape(page)} <span class="pageNumber"></span> {html.escape(of)} <span class="totalPages"></span>'
+             if right_pages else "")
     return ('<div style="font-size:7pt;color:#5A6672;width:100%;padding:0 0.3in;display:flex;'
             'justify-content:space-between;font-family:Helvetica,Arial,sans-serif">'
             f"<span>{html.escape(left)}</span><span>{pages}</span></div>")

@@ -30,17 +30,20 @@ def main(argv=None):
     ap.add_argument("--state")
     ap.add_argument("--county")
     ap.add_argument("--market", help="market profile (MLS column names); Stellar is built in")
+    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     a = ap.parse_args(argv)
     try:
-        market = profiles.load_market(a.market, state=a.state, county=a.county)
+        market = profiles.load_market(a.market, state=a.state, county=a.county, mls=a.mls)
         homes = mls.load(a.export, market)
         own = [h for h in homes if mls.same_address(h["address"], a.address)]
         subject = {"address": a.address, "living_area": a.sqft, "private_pool": a.pool, "subdivision": a.subdivision}
         out = mls.market_stats(homes, subject, split_date=a.split_date, exclude_address=a.address)
         out["market_notes"] = list(market.notes)
+        out["subject_rows"] = [mls._summary(h) for h in own]  # the home's own history: a current listing needs a word with the agent
         if own:
-            out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address: the report treats the home as a new listing.")
+            out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address (see subject_rows): "
+                                       "the report treats the home as a new listing.")
         out["ok"] = True
     except (profiles.ProfileError, mls.ExportError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}
