@@ -50,6 +50,7 @@
  "th_yearly": "Yearly",
  "th_monthly": "Monthly",
  "seller_bill": "Seller's Current Bill ({year})",
+ "seller_bill_no_year": "Seller's Current Bill",
  "your_bill": "Your Bill if the Home Is {label}",
  "h_insurance": "Insurance",
  "h_payment": "Estimated Monthly Payment",
@@ -133,5 +134,6 @@
  "preliminary": "Preliminary",
  "tax_estimated": "Estimated at {basis}: no millage for this area yet. Confirm with the property appraiser.",
  "per_year": "/yr",
+ "not_available": "Not available",
  "per_month": "/mo"
 }

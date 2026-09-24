@@ -909,7 +909,7 @@ def check_fractions(node, where="file"):
         here = f"{where}.{key}" if isinstance(key, str) else f"{where}[{key}]"
         if isinstance(key, str) and key.endswith("_pct") and value is not None:
             try:
-                finance.fraction(value, here)
+                finance.fraction(value, here, whole=key == "down_pct")
             except ValueError as e:
                 raise OfferError(str(e)) from e
         else:

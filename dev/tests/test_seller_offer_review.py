@@ -41,6 +41,15 @@ class Analysis(unittest.TestCase):
         self.assertTrue(out["to_confirm"])
         self.assertEqual(out["offers"][0]["net_sheet"]["columns"], ["As Offered", "Downside", "Counter"])
 
+    def test_no_active_offers_stops(self):
+        """OFR-22: only declined or expired offers is a plain stop, not a recommendation."""
+        d = fixture("minimal-single.json")
+        d["offers"][0]["status"] = "declined"
+        with self.assertRaisesRegex(review.oe.OfferError, "No active offers"):
+            review.result(review.analyze(d))
+        shown = review.result(review.analyze(d), offer_id="A")
+        self.assertEqual(shown["summary"]["action"], "DECLINE")
+
     def test_multi_plan(self):
         out = review.result(review.analyze(fixture("four-offers.json")))
         s = out["summary"]

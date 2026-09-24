@@ -19,6 +19,9 @@ from datetime import date
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
 
+# The order finance.seller_net adds its lines in.
+NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees", "estoppel", "credit", "other")
+
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money = finance.money
 
@@ -84,13 +87,18 @@ def net_sheet(R, market, L):
             return L("net_owner_title_est" if rate else "net_owner_title")
         return L(f"net_{key}") if f"net_{key}" in L.text else line["label"]
 
+    # Rows by line key, not position: a line such as the seller credit exists only in the options that have one.
+    keys = [k for k in NET_LINE_ORDER if any(l["key"] == k for c in cols for l in c["lines"])]
+    keys += [l["key"] for c in cols for l in c["lines"] if l["key"] not in keys and l["key"] not in NET_LINE_ORDER]
     rows = [{"key": "sale", "label": L("net_sale"), "amounts": [x["expected_sale"] for x in strategies]}]
-    for i, line in enumerate(first["lines"]):
-        if line["key"] == "other":
+    for key in dict.fromkeys(keys):
+        if key == "other":
             for o in others:
                 rows.append({"key": "other", "label": o["label"], "amounts": [-o["amount"] for _ in cols]})
             continue
-        rows.append({"key": line["key"], "label": label(line), "amounts": [-c["lines"][i]["amount"] for c in cols]})
+        line = next(l for c in cols for l in c["lines"] if l["key"] == key)
+        rows.append({"key": key, "label": label(line),
+                     "amounts": [-next((l["amount"] for l in c["lines"] if l["key"] == key), 0) for c in cols]})
     if payoff:
         rows.append({"key": "payoff", "label": L("net_payoff"), "amounts": [-payoff for _ in cols]})
     totals = [c["net"] if payoff else c["net_before_payoff"] for c in cols]
@@ -175,8 +183,14 @@ def compute(R, market, homes):
     ri = p.get("recommended_index", 1)
     if not 0 <= ri < len(strategies):
         raise ReportError("pricing.recommended_index doesn't point at a strategy.")
+    if not R["comps"]["cards"]:
+        raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     warnings, assumptions = [], []
+    n = len(R["comps"]["cards"])
+    if n < 3:
+        warnings.append(f"Only {n} comp{'s' if n > 1 else ''}: the range rests on thin support. Widen the search if you can, "
+                        "and say so in the report.")
 
     if not rec["low"] <= rec["list_price"] <= rec["high"]:
         warnings.append(f"The recommended list price {money(rec['list_price'])} is outside the supported range "

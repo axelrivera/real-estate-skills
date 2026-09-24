@@ -1,0 +1,25 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "property": {
+    "address": "418 Lake Howell Rd, Maitland, FL 32751",
+    "state": "FL",
+    "county": "Seminole",
+    "list_price": 410000,
+    "dom": 21,
+    "price_cuts": 1,
+    "beds": 3, "baths": 2, "sqft": 1640, "year_built": 1988, "roof_year": 2019,
+    "hoa_monthly": 0, "flood_zone": "X", "annual_tax": 5200
+  },
+  "value": {"cma_low": 392000, "cma_high": 412000, "source": "buyer CMA"},
+  "competition": {"level": 1, "note": "One other showing request this week"},
+  "listing_side": {"buyer_broker_offered_pct": 0.025},
+  "costs": {"insurance_annual": 3600, "total_mills": 16.35, "school_mills": 5.249, "homestead": true},
+  "buyer": {
+    "name": "Sample Buyer",
+    "financing": "cash", "proof_of_funds": true,
+    "max_price": 415000, "cash_available": 450000, "reserve_floor": 20000
+  },
+  "chosen_option": "recommended",
+  "overrides": {}
+}

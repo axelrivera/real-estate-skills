@@ -85,6 +85,32 @@ class Warnings(unittest.TestCase):
             compute.compute(R, market, homes)
 
 
+    def test_input_checks(self):
+        """CMA-19, CMA-21: formatted numbers, no comps and a scenario without down_pct are plain errors."""
+        for change in (lambda R: R["competition"]["rows"][0].__setitem__(2, "$474,500"),
+                       lambda R: R["comps"].__setitem__("cards", []),
+                       lambda R: R["costs"]["payment"]["scenarios"][0].pop("down_pct")):
+            R = report()
+            change(R)
+            market, homes = compute.load_inputs(R)
+            with self.assertRaises(compute.ReportError):
+                compute.compute(R, market, homes)
+
+    def test_thin_comps_warn(self):
+        R = report()
+        R["comps"]["cards"] = R["comps"]["cards"][:2]
+        market, homes = compute.load_inputs(R)
+        self.assertTrue(any("Only 2 comps" in w for w in compute.compute(R, market, homes)["warnings"]))
+
+    def test_no_current_bill(self):
+        """CMA-13: new construction has no tax bill; the report renders "Not available"."""
+        R = report()
+        del R["costs"]["taxes"]["current_bill"]
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, homes, {"name": None, "brokerage": None, "brand": {}})
+        self.assertIn("Not available", doc)
+
 class OtherMarkets(unittest.TestCase):
     def test_texas_without_millage_has_no_payment_table(self):
         R = report()

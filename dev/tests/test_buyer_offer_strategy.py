@@ -77,6 +77,21 @@ class MissingData(unittest.TestCase):
         self.assertTrue(r["constraints"][0].startswith("Not enough cash"))
         self.assertNotIn("stronger", r["O"])
 
+    def test_cash_buyer(self):
+        """OFR-1: a cash buyer's 100% down passes the fraction check; no lender wording."""
+        r = analyze("cash.json")
+        self.assertEqual(r["B"]["buyer"]["down_pct"], 1.0)
+        rec = r["O"]["recommended"]
+        self.assertFalse(rec["financed"])
+        self.assertEqual(rec["loan_approval_days"], 0)
+        self.assertEqual(strategy.summary(r)["financing"], "Cash")
+
+    def test_percent_down_still_refused(self):
+        d = fixture("fha-competitive.json")
+        d["buyer"]["down_pct"] = 3.5
+        with self.assertRaises(strategy.oe.OfferError):
+            strategy.analyze(d)
+
     def test_required(self):
         with self.assertRaises(strategy.oe.OfferError):
             strategy.analyze({"property": {"address": "x"}})

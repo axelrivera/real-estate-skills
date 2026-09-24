@@ -69,7 +69,8 @@ def summary_page(R, C, agent, L):
                                              L("dot_asking", price=money(s["list_price"])),
                                              (op["opening"], L("dot_offer", price=money(op["opening"])))) + "</div>"]
     tax = C["taxes"][pay["tax_index"]]
-    rows = [[L("sum_tax_now"), money(R["costs"]["taxes"]["current_bill"]) + L("per_year")],
+    bill = R["costs"]["taxes"].get("current_bill")
+    rows = [[L("sum_tax_now"), money(bill) + L("per_year") if bill else L("not_available")],
             [L("sum_tax_yours"), "≈ " + money(tax["annual"], 100) + L("per_year")],
             [L("sum_pay_row", label=sc0["label"]), money(first["total"]) + L("per_month")],
             [L("sum_cash_row", label=sc0["label"]), money(first["cash_down"])]]
@@ -182,7 +183,9 @@ def body(R, C, homes, agent, L):
     if t.get("heading"):
         b.append(f'<h3>{t["heading"]}</h3>')
     b.append(f'<p>{t["intro"]}</p>')
-    trows = [[L("seller_bill", year=t["current_year"]), money(t["current_bill"]), money(t["current_bill"] / 12)]]
+    bill = t.get("current_bill")  # optional: new construction and land-only bills have none
+    seller_row = L("seller_bill", year=t["current_year"]) if t.get("current_year") else L("seller_bill_no_year")
+    trows = [[seller_row, money(bill), money(bill / 12)] if bill else [seller_row, L("not_available"), "—"]]
     trows += [[L("your_bill", label=j["label"]), "≈ " + money(j["annual"], 100), "≈ " + money(j["annual"] / 12)] for j in C["taxes"]]
     homestead = L("with_homestead") if t.get("homestead", True) else L("no_homestead")
     b.append(table([L("tax_header", price=money(t["purchase_price"]), homestead=homestead), L("th_yearly"), L("th_monthly")],

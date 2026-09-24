@@ -70,6 +70,8 @@ def payments(R, market, tax_rows):
 
     rows = []
     for i, sc in enumerate(pay["scenarios"]):
+        if sc.get("type") is None or sc.get("down_pct") is None:
+            raise ReportError(f"costs.payment.scenarios[{i}] needs a type and a down_pct (0.05 for 5%).")
         sc["down_pct"] = _frac(sc, "down_pct", f"costs.payment.scenarios[{i}]")
         r = finance.monthly_payment(price, sc["type"], sc["down_pct"], pay["rate"], tax_at(price),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
@@ -124,14 +126,26 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     return out
 
 
+def comp_count_warnings(cards):
+    """No comps is an error; fewer than 3 is thin support and a warning."""
+    if not cards:
+        raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
+    return [f"Only {len(cards)} comp{'s' if len(cards) > 1 else ''}: the range rests on thin support. Widen the search if you can, "
+            "and say so in the report."] if len(cards) < 3 else []
+
+
 def compute(R, market, homes):
     _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
              "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
+    warnings = comp_count_warnings(R["comps"]["cards"])
+    for i, r in enumerate((R.get("competition") or {}).get("rows", [])):
+        if len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool) for j in (2, 3)):
+            raise ReportError(f"competition.rows[{i}] should be [address, status, price, sqft, pool, days, notes], "
+                              "with price and sqft as plain numbers (474500, not \"$474,500\").")
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     tax_rows = taxes(R, market)
-    warnings = []
     for j in tax_rows:
         if j["annual"] is None:
             warnings.append(f"No millage or tax rate for {j['label']}: add school_mills and total_mills.")

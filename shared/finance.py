@@ -35,17 +35,19 @@ def money(v, round_to=1):
     return ("−" if v < 0 else "") + f"${abs(v):,.0f}"
 
 
-def fraction(value, name, default=None):
+def fraction(value, name, default=None, whole=False):
     """A share of price from a data file, as a fraction: 0.025 means 2.5%.
 
     Every `*_pct` field in the skills' data files is a fraction (like the market profile). A value of 1 or more
     is almost always a percent written the other way (2.5 for 2.5%), so it's refused with a plain message
-    instead of silently becoming 250%.
+    instead of silently becoming 250%. `whole=True` also accepts exactly 1 (a cash buyer's 100% down).
     """
     if value is None:
         return default
     if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
         raise ValueError(f"{name} should be a share of price like 0.025 (for 2.5%).")
+    if whole and value == 1:
+        return value
     if value >= 1:
         raise ValueError(f"{name} is {value:g}: write it as a fraction, {value / 100:g} for {value:g}%.")
     return value

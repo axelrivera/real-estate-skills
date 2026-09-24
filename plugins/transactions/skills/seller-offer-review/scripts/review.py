@@ -52,8 +52,11 @@ def pick(R, mode="auto", offer_id=None):
         o = next((x for x in R["offers"] if x["id"] == offer_id), None)
         if o is None:
             raise oe.OfferError(f"There's no offer with id {offer_id!r} in the listing file.")
+    elif R["ranked"] or R["incomplete"]:
+        o = (R["ranked"] or R["incomplete"])[0]
     else:
-        o = (R["ranked"] or R["incomplete"] or R["offers"])[0]
+        raise oe.OfferError("No active offers to review: every offer in the file is declined, expired or withdrawn. "
+                            "To show one anyway, name it with --offer.")
     if "action" not in o:  # declined / expired offer shown on request
         o["action"], o["action_reason"] = "DECLINE", f"Offer status: {o['status']}"
     return "single", o

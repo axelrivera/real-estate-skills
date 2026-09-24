@@ -144,6 +144,17 @@ class Costs(unittest.TestCase):
         with self.assertRaises(compute.ReportError):
             run(R)
 
+    def test_credit_rows_by_key(self):
+        """CMA-1: a credit in only some options keeps its row, in either order, and totals still add up."""
+        for credits in ((0, 10000, 0), (10000, 0, 0), (0, 0, 5000)):
+            R = report()
+            for x, c in zip(R["pricing"]["strategies"], credits):
+                x["seller_credit"] = c
+            C, _ = run(R)
+            self.assertEqual(row(C, "credit")["amounts"], [-c for c in credits])
+            for i, total in enumerate(C["net"]["totals"]):
+                self.assertAlmostEqual(sum(r["amounts"][i] for r in C["net"]["rows"] if r["key"] != "total"), total, places=2)
+
     def test_payoff_hoa_and_other(self):
         R = report()
         R["costs"] = {"mortgage_payoff": 210000, "hoa": True, "other": [{"label": "Survey", "amount": 450}]}

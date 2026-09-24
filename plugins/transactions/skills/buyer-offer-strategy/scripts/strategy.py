@@ -319,7 +319,8 @@ def build_offer(B, costs):
     t["closing_days"] = BU["lender_min_close_days"] + (0 if lvl >= 1 else 10)
     while (B["analysis_date"] + timedelta(days=t["closing_days"])).weekday() >= 5:
         t["closing_days"] += 1  # close on a business day, never earlier than the lender's minimum
-    why["closing_days"] = "Fastest your lender can reliably close" if lvl >= 1 else "Comfortable timeline"
+    why["closing_days"] = ("Quick close; no lender to wait on" if fin == "cash" else "Fastest your lender can reliably close") \
+        if lvl >= 1 else "Comfortable timeline"
     t["home_warranty"] = 0
     why["home_warranty"] = "Not asked of the seller; keeps the net clean"
     if LS["buyer_broker_offered_pct"] is not None:
@@ -549,7 +550,9 @@ def diff_text(r, k):
 
 def fin_line(B):
     BU, f = B["buyer"], B["buyer"]["financing"]
-    txt = "Cash" if f == "cash" else f"{oe.FIN_LABEL[f]} · {oe.pct(BU['down_pct'])} down"
+    if f == "cash":
+        return "Cash"
+    txt = f"{oe.FIN_LABEL[f]} · {oe.pct(BU['down_pct'])} down"
     return txt + (" (assumed; confirm with lender)" if BU.get("financing_source") == "assumed" else " (per buyer and lender)")
 
 
@@ -651,7 +654,7 @@ def next_step(B, deadline):
     todo = []
     if not BU.get("insurance_quote"):
         todo.append("get the insurance quote")
-    todo.append("get proof of funds" if BU["financing"] == "cash" else
+    todo.append("have a current proof-of-funds statement ready" if BU["financing"] == "cash" else
                 "get a pre-approval letter at the offer price (not your max, so it doesn't reveal your ceiling)")
     return f"pick an option, {' and '.join(todo)}, and I'll prepare the offer package{deadline}."
 

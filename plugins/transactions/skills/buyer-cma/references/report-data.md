@@ -63,7 +63,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## competition
 
-`intro`, `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), days, notes]`.
+`intro`, `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), days, notes]`. `price` and `sqft` are plain numbers (474500, 1850), not formatted text.
 
 ## market
 
@@ -71,7 +71,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## costs
 
-- `taxes`: `heading`, `intro`, `current_bill`, `current_year`, `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes the row name "Your Bill if the Home Is …" and `short` fills "If … Instead", so write them in Title Case: "in Unincorporated Seminole County", "City"), `note`, `after_paragraph` (escrow warning).
+- `taxes`: `heading`, `intro`, `current_bill` and `current_year` (optional: leave out when there's no bill for the home, as with new construction or a land-only bill), `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes the row name "Your Bill if the Home Is …" and `short` fills "If … Instead", so write them in Title Case: "in Unincorporated Seminole County", "City"), `note`, `after_paragraph` (escrow warning).
 - `insurance`: `paragraph`.
 - `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`, `label` a Title Case column header like "Conventional, 5% Down", `down_pct` a fraction: 0.05 for 5%), optional `hoa_cdd_monthly`, optional `note`.
 - `credit_scenarios`: `intro`, `loan_type`, `down_pct` (fraction), `closing_costs` or `closing_cost_pct` (fraction), `scenarios` (2–4 `{price, credit}`), `after_paragraph`, optional `buydown` `{price, credit}`. See `offer-plan.md`.
