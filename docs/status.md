@@ -1,15 +1,15 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.5.0: audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.6.0: one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | Marketplace (`core`, `transactions`) at 0.5.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
-| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`). See [development.md](development.md#shared-code) |
-| `core` | `agent-profile`, `market-profile` (markdown only) |
-| `transactions` | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.6.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
+| Profiles | `agent-profile`, `market-profile` (markdown only); saved in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`) |
+| Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
 | Tests | `make test` (369 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
@@ -90,7 +90,7 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.5.0: a
 
 Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21, CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 (and Collier from CORE-7), CMA-2, CORE-3, CORE-4, CMA-16, FH-6, FH-1, FH-2, FH-3, CMA-5, CMA-6, OFR-26, CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning only; the tiered model is on the roadmap), CORE-20, CORE-21, CMA-7 to CMA-12, CMA-14, CMA-15, CMA-17, CMA-20, CMA-22, OFR-7 to OFR-12, OFR-18, OFR-25, OFR-30, OFR-15, OFR-16, OFR-20, OFR-24, OFR-28, OFR-19, TL-15, TL-24, TL-14, TL-16, TL-17, TL-19, TL-21, TL-22 (page 3 is now one appendix block), TL-25, FH-4, FH-5, DS-1 to DS-4, CORE-22, CORE-23, CORE-25 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20, DOC-1 to DOC-12, DOC-14.
 
-DOC-13: MIT license (LICENSE, `license` in every manifest); repository https://github.com/axelrivera/real-estate-marketplace in the manifests and the README.
+DOC-13: MIT license (LICENSE, `license` in every manifest); repository in the manifests (now https://github.com/axelrivera/real-estate-skills) and the README.
 
 CORE-5 note: who pays the buyer's broker is expressed by the percentages rather than a separate `buyer_broker_paid_by` field: the seller side models what the seller pays (0 when the buyer pays), and the buyer side counts the rest of the buyer's agreement as a "Buyer's Broker Fee (Not Paid by Seller)" line.
 
@@ -103,7 +103,7 @@ Won't fix: (none yet).
 ## Remaining work, in order
 
 1. **Audit fixes**, phases 1 to 4 above.
-2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/*.zip` (claude.ai) or add the marketplace (Cowork). The user will give feedback after this pass.
+2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/real-estate-<version>.plugin` (desktop app), `make package-skills` → upload `dist/skills/*.zip` (claude.ai), or add the marketplace `axelrivera/real-estate-skills` (Cowork). Check that all 7 skills appear as `real-estate:*`. Check saved files in Cowork: with a working folder, `agent-profile` writes `.claude/real-estate/agent-profile.md` and a new session's `seller-cma` uses it without an upload; with no folder, and in claude.ai, the hand-over line appears instead. The user will give feedback after this pass.
 3. **Evals iteration 2** after the user's feedback (the audit's phase 4 covers the changed skills): re-run the changed skills with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md), compare with iteration 1 (`--previous-workspace`).
 4. **Yearly refreshes:** Florida millage when the year's rates are final (October); loan limits in `shared/markets/loan-limits.md` when FHFA and HUD publish the next year's (late November); the indexed homestead exemption in `fl.md` (January).
 5. **Later / optional:** New skills and scope extensions (more state and MLS layers, the offer outcome log, trigger-description optimization) are in [roadmap.md](roadmap.md).

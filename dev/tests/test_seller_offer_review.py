@@ -1,4 +1,4 @@
-"""Tests for plugins/transactions/skills/seller-offer-review/scripts."""
+"""Tests for skills/seller-offer-review/scripts."""
 import contextlib
 import io
 import json

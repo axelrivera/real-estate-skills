@@ -52,7 +52,7 @@ def lint(path):
 
 
 def main():
-    problems = [p for path in sorted(glob.glob(os.path.join(ROOT, "plugins", "*", "skills", "*", "SKILL.md"))) for p in lint(path)]
+    problems = [p for path in sorted(glob.glob(os.path.join(ROOT, "skills", "*", "SKILL.md"))) for p in lint(path)]
     print("\n".join(problems) if problems else "lint-skills: OK")
     return 1 if problems else 0
 

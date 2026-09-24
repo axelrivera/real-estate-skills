@@ -4,15 +4,15 @@ The prototypes in `sources/Prototype Skills/` (local only, git-ignored) are **re
 
 ## Name mapping
 
-| Prototype | Final skill | Plugin |
-|---|---|---|
-| — | `agent-profile` (markdown only) | core |
-| — | `market-profile` (markdown only) | core |
-| `contract-timeline` | `contract-timeline` | transactions |
-| `buyer-cma-pdf` | `buyer-cma` | transactions |
-| `seller-cma-pdf` | `seller-cma` | transactions |
-| `offer-analysis-pdf` | `seller-offer-review` | transactions |
-| `buyer-offer-builder` | `buyer-offer-strategy` | transactions |
+| Prototype | Final skill |
+|---|---|
+| — | `agent-profile` (markdown only) |
+| — | `market-profile` (markdown only) |
+| `contract-timeline` | `contract-timeline` |
+| `buyer-cma-pdf` | `buyer-cma` |
+| `seller-cma-pdf` | `seller-cma` |
+| `offer-analysis-pdf` | `seller-offer-review` |
+| `buyer-offer-builder` | `buyer-offer-strategy` |
 
 Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `seller-`) when a skill serves one side.
 
@@ -51,7 +51,7 @@ Copy this list into a skill's notes when building or rebuilding it; the status t
 - [ ] Non-Florida test case
 - [ ] Trigger tests: should fire / should route to a sibling skill
 - [ ] Packaged and run in claude.ai and Cowork
-- [ ] `_shared/` in sync; plugin version bumped; [plugins.md](plugins.md) updated
+- [ ] `_shared/` in sync; plugin version bumped; [skills.md](skills.md) updated
 
 ## Status
 

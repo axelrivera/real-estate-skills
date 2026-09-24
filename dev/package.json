@@ -1,5 +1,5 @@
 {
-  "name": "real-estate-marketplace-dev",
+  "name": "real-estate-skills-dev",
   "private": true,
   "description": "Local dev environment mirroring the Node modules available in the claude.ai / Cowork sandbox.",
   "engines": {

@@ -1,11 +1,11 @@
-"""Tests for plugins/core/skills/market-profile/scripts (run against the synced _shared copy)."""
+"""Tests for skills/market-profile/scripts (run against the synced _shared copy)."""
 import os
 import sys
 import tempfile
 import textwrap
 import unittest
 
-SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "plugins", "core", "skills", "market-profile", "scripts")
+SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "skills", "market-profile", "scripts")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 

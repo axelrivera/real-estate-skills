@@ -1,13 +1,25 @@
 # Architecture
 
-Decisions that apply to every plugin and skill in this marketplace.
+Decisions that apply to every skill in the `real-estate` plugin.
+
+## Packaging
+
+One plugin, and the repo root is the plugin: `.claude-plugin/plugin.json` (name `real-estate`, the only place the version lives) and `skills/<skill>/`. The same folder holds `.claude-plugin/marketplace.json`, a one-plugin marketplace named `real-estate-skills` whose entry points back at the root (`"source": "."`), so the repo can be added by URL. With 10 to 15 skills planned, one install beats splitting skills across plugins: there's no install order and one file to upload. New skills go in `skills/`; don't add plugins.
+
+Three ways in, all from the same `skills/` folder:
+
+| Route | Built By | Contains |
+|---|---|---|
+| Marketplace (Cowork, desktop app) | Adding `axelrivera/real-estate-skills` | The repo; only `skills/` loads |
+| `real-estate-<version>.plugin` (desktop app upload) | `make package` | `.claude-plugin/plugin.json`, `skills/`, `LICENSE` |
+| One zip per skill (claude.ai) | `make package-skills` | That skill's folder |
 
 ## Runtimes
 
 Skills run in the Claude **desktop app and cloud**: claude.ai chat and Cowork. Claude Code is not a supported runtime. Both runtimes run skills in the same Linux sandbox; see [runtime-support.md](runtime-support.md).
 
 - A skill refers to its own files by paths relative to its skill directory (`scripts/render.py`).
-- No paths outside the skill directory (`../../shared/`). Cowork installs plugins from the marketplace, and claude.ai uploads each skill on its own.
+- No paths outside the skill directory (`../../shared/`). claude.ai uploads each skill on its own, so a skill can't reach the repo's `shared/`.
 - No `/mnt/...` paths hard-coded in instructions. See [Output location](#output-location).
 - Skill `description` must stay under 1,024 characters (claude.ai limit).
 
@@ -17,12 +29,12 @@ Each skill directory is complete on its own. Code used by several skills is edit
 
 ```
 shared/                         # edit shared code here
-shared/references/              # shared reference files (fair-housing.md), not code
-plugins/<plugin>/skills/<skill>/
+shared/references/              # shared reference files (fair-housing.md, saved-files.md), not code
+skills/<skill>/
   scripts/_shared/              # copy made by the sync tool, never edit by hand
   references/fair-housing.md    # copy, only in skills whose SKILL.md points to it
 dev/sync_shared.py              # make sync / make check-sync (also a pre-commit hook)
-Makefile                        # make package: one zip per skill for claude.ai upload
+Makefile                        # make package: one .plugin; make package-skills: one zip per skill
 ```
 
 A shared reference file is copied into a skill's `references/` only when its SKILL.md mentions `references/<name>.md`, so a skill opts in by pointing to it.
@@ -67,7 +79,7 @@ Save files to the first of:
 
 Never write into the skill's own folder, which is the working directory in claude.ai. This rule lives in `shared/` and is not repeated per skill.
 
-## Profiles (core plugin)
+## Profiles
 
 Two markdown documents, used as context by every other skill:
 
@@ -77,6 +89,12 @@ Two markdown documents, used as context by every other skill:
 | **Market profile** | *Where* | State, MLS, closing costs, transfer taxes, who pays title, contract forms and deadline rules, MLS export columns |
 
 An agent can have one agent profile and several market profiles.
+
+### Saved Files
+
+In Cowork with a working folder selected, profiles are saved in `.claude/real-estate/` inside that folder (`agent-profile.md`, `market-profile-<area>.md`), the way brand-voice keeps its guidelines in `.claude/`. Every later session finds them there without an upload. Skills resolve the path from the agent's working folder, never the current directory (Cowork runs skills from a plugin folder). Without a working folder, and in claude.ai, profiles go to the outputs folder with one line on keeping them (Project files, or share at the start of a chat). Scripts never search for profiles: the model finds the file and passes `--agent` or `--market`.
+
+The rules live in `shared/references/saved-files.md`, copied into every skill that reads or writes a profile or a CMA handoff.
 
 Format: a YAML front block with the values scripts need, followed by readable prose.
 
@@ -187,7 +205,7 @@ For any other state or MLS, the profile is built from what the user provides in 
 
 Users can turn any skill off. Skills share **files**, not invocations:
 
-1. A consumer looks for its input (profile, CMA handoff) in the chat, then project files, then the working directory.
+1. A consumer looks for its input (profile, CMA handoff) in the chat, then Project files, then the saved folder (profiles) or the outputs and working folder (handoffs), per [Saved files](#saved-files).
 2. If it's missing, the consumer collects what *its own task* needs (it carries the schema and defaults via `_shared/`), then offers to save the result as a file.
 3. It may mention the producing skill in one line ("Tip: `market-profile` saves this so you're not asked again"). It never says a skill must be enabled.
 

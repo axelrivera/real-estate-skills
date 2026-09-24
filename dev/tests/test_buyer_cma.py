@@ -1,4 +1,4 @@
-"""Tests for plugins/transactions/skills/buyer-cma/scripts."""
+"""Tests for skills/buyer-cma/scripts."""
 import copy
 import json
 import os
@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
-SKILL = os.path.join(ROOT, "plugins", "transactions", "skills", "buyer-cma")
+SKILL = os.path.join(ROOT, "skills", "buyer-cma")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 

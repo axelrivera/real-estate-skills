@@ -10,23 +10,22 @@ import os
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-PLUGINS = os.path.join(ROOT, "plugins")
+SKILLS = os.path.join(ROOT, "skills")
 
 
 def scripts_dir(skill):
-    for plugin in os.listdir(PLUGINS):
-        path = os.path.join(PLUGINS, plugin, "skills", skill, "scripts")
-        if os.path.isdir(path):
-            return path
-    raise FileNotFoundError(skill)
+    path = os.path.join(SKILLS, skill, "scripts")
+    if not os.path.isdir(path):
+        raise FileNotFoundError(skill)
+    return path
 
 
 def load(skill, *names):
     path = scripts_dir(skill)
     for name, mod in list(sys.modules.items()):
         f = getattr(mod, "__file__", None) or ""
-        if f.startswith(PLUGINS) and os.sep + "scripts" + os.sep in f:
+        if f.startswith(SKILLS) and os.sep + "scripts" + os.sep in f:
             del sys.modules[name]
-    sys.path[:] = [p for p in sys.path if not (os.path.abspath(p).startswith(PLUGINS) and p.rstrip(os.sep).endswith("scripts"))]
+    sys.path[:] = [p for p in sys.path if not (os.path.abspath(p).startswith(SKILLS) and p.rstrip(os.sep).endswith("scripts"))]
     sys.path.insert(0, path)
     return tuple(importlib.import_module(n) for n in names)

@@ -91,7 +91,7 @@ def render_fixtures(skills, tmp):
     out = []
     for f in fixtures:
         skill, name = os.path.basename(os.path.dirname(f)), os.path.basename(f)[:-5]
-        scripts = glob.glob(os.path.join(ROOT, "plugins", "*", "skills", skill, "scripts"))[0]
+        scripts = os.path.join(ROOT, "skills", skill, "scripts")
         cap, dest = os.path.join(tmp, skill, name, "html"), os.path.join(tmp, skill, name, "out")
         os.makedirs(cap)
         os.makedirs(dest)
@@ -119,9 +119,10 @@ def heading_errors(text):
 
 def main(argv):
     findings = []
-    shipped = [p for p in glob.glob(os.path.join(ROOT, "plugins", "**", "*"), recursive=True)
+    shipped = [p for p in glob.glob(os.path.join(ROOT, "skills", "**", "*"), recursive=True)
                if os.path.isfile(p) and "_shared" not in p and "__pycache__" not in p
                and p.endswith((".md", ".json", ".py", ".js", ".css"))]
+    shipped += glob.glob(os.path.join(ROOT, ".claude-plugin", "*.json"))
     shipped += glob.glob(os.path.join(ROOT, "shared", "**", "*.md"), recursive=True)  # DOC-12: markets and references ship
     for p in shipped:
         in_code = False
@@ -140,7 +141,7 @@ def main(argv):
                 m = HEADING.match(line)
                 if m and (p.endswith("SKILL.md") or "/references/" in p or "/assets/" in p) and heading_errors(m.group(2).strip()):
                     findings.append(f"label    {os.path.relpath(p, ROOT)}:{i}: heading {m.group(2).strip()!r}")
-    for p in glob.glob(os.path.join(ROOT, "plugins", "*", "skills", "*", "assets", "labels.json")):
+    for p in glob.glob(os.path.join(ROOT, "skills", "*", "assets", "labels.json")):
         with open(p, encoding="utf-8") as f:
             labels = json.load(f)
         prose = set(labels.pop("_prose", []))  # CMA-26: sentences and table values that happen to share a label prefix

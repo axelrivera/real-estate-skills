@@ -1,10 +1,10 @@
-"""Tests for plugins/core/skills/agent-profile/scripts (run against the synced _shared copy)."""
+"""Tests for skills/agent-profile/scripts (run against the synced _shared copy)."""
 import os
 import sys
 import tempfile
 import unittest
 
-SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "plugins", "core", "skills", "agent-profile", "scripts")
+SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "..", "skills", "agent-profile", "scripts")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 

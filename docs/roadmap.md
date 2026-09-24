@@ -1,24 +1,24 @@
 # Roadmap
 
-New skills and scope decisions that aren't defects. Defects go in an audit and are tracked in [status.md](status.md). Each item keeps its ID from the audit that raised it, so history stays traceable. Build any new skill per [skill-guidelines.md](skill-guidelines.md) and [architecture.md](architecture.md), and add it to [plugins.md](plugins.md) and the marketplace catalog.
+New skills and scope decisions that aren't defects. Defects go in an audit and are tracked in [status.md](status.md). Each item keeps its ID from the audit that raised it, so history stays traceable. Build any new skill per [skill-guidelines.md](skill-guidelines.md) and [architecture.md](architecture.md), and add it to [skills.md](skills.md). Every skill ships in the one `real-estate` plugin.
 
 ## New Skills
 
-| ID | Priority | Skill | Plugin | Builds On |
-|---|---|---|---|---|
-| GAP-1 | High | `listing-copy`: MLS remarks, social posts, flyer copy | `content` (planned) or a new `marketing` | agent profile `voice`, `shared/prose.py`, `fair-housing.md`, MLS layer character limits |
-| GAP-2 | High | `buyer-consultation`: plain-language buyer-broker agreement summary and fee conversation guide | `transactions` | agent profile, market profile brokerage terms |
-| GAP-3 | Medium | `repair-negotiation`: inspection repair request and response | `transactions` | contract-timeline's inspection deadline, FR/BAR AS IS and Standard repair rules |
-| GAP-4 | Medium | `seller-net-sheet` and `buyer-cash-to-close`: standalone, no CMA or offer needed | `transactions` | `shared/finance.py` (`seller_net`, payments, proration) |
-| GAP-5 | Medium | Transaction checklist and weekly client update emails | `transactions` | contract-timeline's data JSON |
-| GAP-6 | Low | Active listing performance and price reduction review; seller disclosure prep | `transactions` | seller-cma, `shared/mls.py`; after the CMA and offer skills are stable |
+| ID | Priority | Skill | Builds On |
+|---|---|---|---|
+| GAP-1 | High | `listing-copy`: MLS remarks, social posts, flyer copy | agent profile `voice`, `shared/prose.py`, `fair-housing.md`, MLS layer character limits |
+| GAP-2 | High | `buyer-consultation`: plain-language buyer-broker agreement summary and fee conversation guide | agent profile, market profile brokerage terms |
+| GAP-3 | Medium | `repair-negotiation`: inspection repair request and response | contract-timeline's inspection deadline, FR/BAR AS IS and Standard repair rules |
+| GAP-4 | Medium | `seller-net-sheet` and `buyer-cash-to-close`: standalone, no CMA or offer needed | `shared/finance.py` (`seller_net`, payments, proration) |
+| GAP-5 | Medium | Transaction checklist and weekly client update emails | contract-timeline's data JSON |
+| GAP-6 | Low | Active listing performance and price reduction review; seller disclosure prep | seller-cma, `shared/mls.py`; after the CMA and offer skills are stable |
 
 ### GAP-1: Listing Copy
 
 The highest-volume writing task agents have, and the riskiest for fair housing. Writes MLS public remarks, social posts and flyer copy from the listing's facts, in the agent's voice, and runs every piece through the `prose.py` check before it's returned.
 
 - **Enforces** the MLS layer's character limits (public remarks, private remarks), and never puts showing or commission terms in public remarks.
-- **Open questions:** Should it live in the planned `content` plugin or a new `marketing` plugin? Should it also write alt text for listing photos? Which MLS limits beyond Stellar need a layer?
+- **Open questions:** Should it also write alt text for listing photos? Which MLS limits beyond Stellar need a layer?
 
 ### GAP-2: Buyer Consultation
 

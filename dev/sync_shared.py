@@ -85,12 +85,10 @@ def source_files(src):
 
 
 def skills(root, need_scripts=True):
-    base = os.path.join(root, "plugins")
+    base = os.path.join(root, "skills")
     return sorted(
-        os.path.join(base, plugin, "skills", name)
-        for plugin in os.listdir(base) if os.path.isdir(os.path.join(base, plugin, "skills"))
-        for name in os.listdir(os.path.join(base, plugin, "skills"))
-        if os.path.isdir(os.path.join(base, plugin, "skills", name, "scripts" if need_scripts else ""))
+        os.path.join(base, name) for name in os.listdir(base)
+        if os.path.isdir(os.path.join(base, name, "scripts" if need_scripts else ""))
     ) if os.path.isdir(base) else []
 
 

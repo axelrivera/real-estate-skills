@@ -1,4 +1,4 @@
-"""Tests for plugins/transactions/skills/contract-timeline/scripts."""
+"""Tests for skills/contract-timeline/scripts."""
 import copy
 import json
 import os
@@ -8,7 +8,7 @@ import unittest
 from datetime import date
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
-SCRIPTS = os.path.join(ROOT, "plugins", "transactions", "skills", "contract-timeline", "scripts")
+SCRIPTS = os.path.join(ROOT, "skills", "contract-timeline", "scripts")
 FIXTURES = os.path.join(ROOT, "dev", "fixtures", "contract-timeline")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402

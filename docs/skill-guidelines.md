@@ -1,6 +1,6 @@
 # Skill guidelines
 
-How every skill in this marketplace is built. Based on the skill-creator best practices.
+How every skill in this plugin is built. Based on the skill-creator best practices.
 
 ## Anatomy
 

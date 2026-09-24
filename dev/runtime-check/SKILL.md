@@ -1,6 +1,6 @@
 ---
 name: runtime-check
-description: Development-only diagnostic for the real-estate-marketplace skills. Checks which Python packages, Node modules, command-line tools and install paths are available in the current runtime, and actually renders a test PDF and PPTX. Use only when the user asks to "run the runtime check" or "check the runtime".
+description: Development-only diagnostic for the real-estate skills. Checks which Python packages, Node modules, command-line tools and install paths are available in the current runtime, and actually renders a test PDF and PPTX. Use only when the user asks to "run the runtime check" or "check the runtime".
 ---
 
 # Runtime check

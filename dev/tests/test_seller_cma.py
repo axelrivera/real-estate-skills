@@ -1,4 +1,4 @@
-"""Tests for plugins/transactions/skills/seller-cma/scripts.
+"""Tests for skills/seller-cma/scripts.
 
 The fixture is the prototype's approved 517 Hickorywood report. Two inputs changed on purpose, so
 the nets differ from the prototype's printed figures by exactly $355 per option:
@@ -22,7 +22,7 @@ import unittest
 import zipfile
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
-SKILL = os.path.join(ROOT, "plugins", "transactions", "skills", "seller-cma")
+SKILL = os.path.join(ROOT, "skills", "seller-cma")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 

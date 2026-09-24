@@ -20,7 +20,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 def files():
     out = glob.glob(os.path.join(ROOT, "shared", "**", "*.py"), recursive=True)
-    out += glob.glob(os.path.join(ROOT, "plugins", "*", "skills", "*", "scripts", "*.py"))
+    out += glob.glob(os.path.join(ROOT, "skills", "*", "scripts", "*.py"))
     return sorted(p for p in out if "__pycache__" not in p)
 
 

@@ -1,4 +1,4 @@
-"""Tests for plugins/transactions/skills/buyer-offer-strategy/scripts."""
+"""Tests for skills/buyer-offer-strategy/scripts."""
 import contextlib
 import copy
 import io

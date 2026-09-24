@@ -19,8 +19,8 @@ class Sync(unittest.TestCase):
             with open(os.path.join(self.root, "shared", rel), "w") as f:
                 f.write(text)
         os.makedirs(os.path.join(self.root, "shared", "__pycache__"))
-        self.with_scripts = os.path.join(self.root, "plugins", "core", "skills", "a", "scripts")
-        self.without = os.path.join(self.root, "plugins", "core", "skills", "b")
+        self.with_scripts = os.path.join(self.root, "skills", "a", "scripts")
+        self.without = os.path.join(self.root, "skills", "b")
         os.makedirs(self.with_scripts)
         os.makedirs(self.without)
         with open(os.path.join(self.with_scripts, "check.py"), "w") as f:
@@ -105,7 +105,7 @@ class Sync(unittest.TestCase):
 class SkillPaths(unittest.TestCase):
     def test_no_sandbox_paths_in_skills(self):
         """CORE-21: skills say "the outputs folder" and let the runtime decide; no /mnt paths."""
-        root = os.path.join(os.path.dirname(__file__), "..", "..", "plugins")
+        root = os.path.join(os.path.dirname(__file__), "..", "..", "skills")
         for dirpath, dirnames, files in os.walk(root):
             dirnames[:] = [d for d in dirnames if d not in ("_shared", "__pycache__")]
             for name in files:

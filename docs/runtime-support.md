@@ -30,7 +30,7 @@ Versions for Playwright and the Node modules come from a second claude.ai run on
 Notes:
 - In claude.ai the working directory is the skill's own folder (`/mnt/skills/plugins/...`). Never write outputs there. Use `/mnt/user-data/outputs/`, per the [output location](architecture.md#output-location) rule.
 
-To re-run: `make package`, upload `dist/runtime-check.zip` as a skill, and ask "run the runtime check".
+To re-run: `make package-skills`, upload `dist/dev/runtime-check.zip` as a skill, and ask "run the runtime check".
 
 ## Dependency policy
 

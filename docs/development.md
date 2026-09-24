@@ -24,7 +24,8 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
 | `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
-| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai; the runtime check goes to `dist/dev/` (don't upload it) |
+| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out |
+| `make package-skills` | Runs the same checks, then zips every skill into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
 
 ## Evals
@@ -46,6 +47,9 @@ Baselines (the same prompts without the skill) are optional here: the skills are
 ## Layout
 
 ```
+.claude-plugin/          # plugin.json (the real-estate plugin) + marketplace.json (one entry, source ".")
+skills/<skill>/          # every skill; the only folder the plugin loads
+shared/                  # shared code and references, copied into skills by make sync
 Makefile
 .nvmrc
 dev/                     # dev tooling, never shipped
@@ -56,6 +60,7 @@ dev/                     # dev tooling, never shipped
   sync_shared.py         # make sync / make check-sync
   tests/                 # unit tests (make test); skill_import.py loads each skill's scripts without name clashes
   preview_design.py      # palette preview (make preview-design)
+  package.py             # make package (one .plugin) / make package-skills
   fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
 .venv/  out/  dist/      # git-ignored

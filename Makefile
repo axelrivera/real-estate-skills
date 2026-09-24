@@ -10,9 +10,7 @@ DEV_ENV := NODE_PATH="$(CURDIR)/dev/node_modules" PATH="$(CURDIR)/$(VENV)/bin:$(
 OUT      := out
 DIST     := dist
 
-SKILLS := $(patsubst %/SKILL.md,%,$(wildcard plugins/*/skills/*/SKILL.md))
-
-.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs package clean
+.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs package package-skills clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
@@ -26,7 +24,8 @@ help:
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
-	@echo "make package        Run every check, then zip every skill into $(DIST)/ (runtime-check into $(DIST)/dev/)"
+	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin"
+	@echo "make package-skills Run every check, then zip every skill into $(DIST)/skills/ (runtime-check into $(DIST)/dev/)"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
 
 # SHARP_IGNORE_GLOBAL_LIBVIPS: use sharp's bundled binaries even when Homebrew vips is installed.
@@ -70,7 +69,7 @@ runtime-check:
 outputs:
 	@for f in $(filter-out dev/fixtures/_profiles/%,$(wildcard dev/fixtures/*/*.json)); do \
 		skill=$$(basename $$(dirname $$f)); name=$$(basename $$f .json); \
-		dir=$$(dirname $$(ls plugins/*/skills/$$skill/SKILL.md)); \
+		dir=skills/$$skill; \
 		echo "$$skill: $$name"; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="$(OUT)/$$skill/$$name" \
 			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" \
@@ -78,16 +77,10 @@ outputs:
 	done
 
 package: check-sync test lint-skills py311 style-check
-	@mkdir -p $(DIST) $(DIST)/dev
-	@for s in $(SKILLS); do \
-		plugin=$$(echo $$s | cut -d/ -f2); name=$$(basename $$s); \
-		rm -f $(DIST)/$$plugin-$$name.zip; \
-		(cd $$(dirname $$s) && zip -qr $(CURDIR)/$(DIST)/$$plugin-$$name.zip $$name -x '*.DS_Store' '*__pycache__*'); \
-		echo "$(DIST)/$$plugin-$$name.zip"; \
-	done
-	@rm -f $(DIST)/runtime-check.zip $(DIST)/dev/runtime-check.zip
-	@cd dev && zip -qr $(CURDIR)/$(DIST)/dev/runtime-check.zip runtime-check -x '*.DS_Store' '*__pycache__*'
-	@echo "$(DIST)/dev/runtime-check.zip (a diagnostic: don't upload it with the skills)"
+	@$(PY) dev/package.py plugin
+
+package-skills: check-sync test lint-skills py311 style-check
+	@$(PY) dev/package.py skills
 
 clean:
 	rm -rf $(OUT) $(DIST)
