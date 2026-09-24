@@ -14,14 +14,16 @@
       "source": "./plugins/core",
       "description": "Agent and market profiles that every other plugin in this marketplace reads as context.",
       "version": "0.5.0",
-      "category": "real-estate"
+      "category": "real-estate",
+      "license": "MIT"
     },
     {
       "name": "transactions",
       "source": "./plugins/transactions",
       "description": "Core deal work: buyer and seller CMAs, offer strategy and review, and contract timelines.",
       "version": "0.5.0",
-      "category": "real-estate"
+      "category": "real-estate",
+      "license": "MIT"
     }
   ]
 }

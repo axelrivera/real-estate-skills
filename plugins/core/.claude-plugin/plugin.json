@@ -6,5 +6,6 @@
     "name": "Axel Rivera",
     "email": "axel@axelrivera.me"
   },
+  "license": "MIT",
   "keywords": ["real-estate", "agent-profile", "market-profile", "context"]
 }

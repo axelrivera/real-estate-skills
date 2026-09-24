@@ -25,3 +25,7 @@ Details in [docs/plugins.md](docs/plugins.md).
 - [docs/runtime-support.md](docs/runtime-support.md): what each runtime can run
 - [docs/development.md](docs/development.md): local setup and generating outputs
 - [docs/status.md](docs/status.md): where the work stands and what's next
+
+## License
+
+[MIT](LICENSE)

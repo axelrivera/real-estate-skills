@@ -6,5 +6,6 @@
     "name": "Axel Rivera",
     "email": "axel@axelrivera.me"
   },
+  "license": "MIT",
   "keywords": ["real-estate", "cma", "offers", "contracts", "stellar-mls"]
 }
