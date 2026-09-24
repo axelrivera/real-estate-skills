@@ -300,6 +300,35 @@ class AuditPricing(unittest.TestCase):
         r = strategy.analyze(d)
         self.assertTrue(any("FHA floor ($541,287)" in a["why"] for a in r["assumptions"]))
 
+
+class TrecWorksheet(unittest.TestCase):
+    """OFR-19 (TREC 20-19 and 49-1, verified): option fee and period, the financing addendum and 49-1."""
+
+    def test_trec_rows_and_riders(self):
+        d = fixture("texas-cma-escalation.json")
+        d.setdefault("worksheet", {})["option_fee"] = 300
+        w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
+        fields = [r["field"] for r in w["rows"]]
+        self.assertIn("Option Fee", fields)
+        self.assertIn("Option Period", fields)
+        self.assertNotIn("Inspection Period", fields)
+        self.assertIn("Earnest Money", fields)
+        riders = [r["rider"] for r in w["riders"]]
+        self.assertIn("Third Party Financing Addendum", riders)
+        self.assertIn("Addendum Concerning Right to Terminate Due to Lender's Appraisal (TREC 49-1)", riders)
+
+    def test_fha_on_trec_has_no_49_1(self):
+        d = fixture("texas-cma-escalation.json")
+        d["buyer"].update(financing="fha", down_pct=0.035)
+        w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
+        riders = [r["rider"] for r in w["riders"]]
+        self.assertFalse(any("49-1" in x for x in riders))
+        self.assertIn("Third Party Financing Addendum (FHA/VA Section)", riders)
+
+    def test_florida_keeps_its_inspection_period(self):
+        w = strategy.worksheet(analyze("fha-competitive.json"))
+        self.assertIn("Inspection Period", [r["field"] for r in w["rows"]])
+
 if __name__ == "__main__":
     unittest.main()
 

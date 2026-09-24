@@ -57,6 +57,7 @@ Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry
 | `business` | `true` when the contract counts this period in business days |
 | `time` | When this deadline ends, `"17:00"`, when it differs from the contract's end of day (a TREC option period ends at 5:00 PM) |
 | `rollover` | `false` when this deadline isn't extended past a weekend or holiday even though others are (read the paragraph's own words) |
+| `receipt_date`, `what` | For an `after` period that runs from someone's receipt rather than the Effective Date (TREC Para. 6B: 20 days after the title company receives the contract): the receipt date and what was received ("title company's receipt of the contract"). Without the date, ask for it |
 | `party` | `Buyer`, `Seller` or `Both` |
 | `critical` | Missing it can cost a contract right or put the deposit at risk |
 | `contingency` | It's a buyer protection that ends on this date (drives "your contingencies end") |
@@ -74,7 +75,7 @@ Only when the contract's time rules differ from the market's (or the market has 
 | `weekend_holiday_rollover` | `next_business_day` or `none` |
 | `rollover_time` | Time on the next business day, default `"17:00"` |
 | `before_closing_rollover` | `previous_business_day` or `none` |
-| `holidays` | `us_federal`, or a list of extra holiday dates from the contract |
+| `holidays` | `us_federal`; `tx_state` for TREC forms (Texas legal holidays: no Columbus Day, adds June 19 and the Friday after Thanksgiving, no observed days); or a list of extra holiday dates from the contract |
 
 ## amendments
 

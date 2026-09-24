@@ -79,20 +79,23 @@ def load_rules(deal, market_path=None, frbar=True):
         raise DealError("The contract's time rules are missing: " + ", ".join(missing) +
                         ". Read them from the contract's definitions (how days are counted, when a day ends, "
                         "what happens on weekends and holidays) and add them to the deal file's rules.")
-    extra = {}
-    if isinstance(rules["holidays"], list):
-        extra = {_d(x): "Holiday (contract)" for x in rules["holidays"]}
+    hol = rules["holidays"]
+    try:  # a preset (us_federal, tx_state), or the contract's own list of dates on top of the federal holidays
+        extra = dates.Holidays({_d(x): "Holiday (contract)" for x in hol}) if isinstance(hol, list) else dates.Holidays(base=hol)
+    except ValueError as e:
+        raise DealError(str(e)) from None
     rules["_extra_holidays"] = extra
     return rules, market
 
 
 # --- period math --------------------------------------------------------------
 
-def forward(start, days, rules, business=False, end_time=None, rollover=True):
+def forward(start, days, rules, business=False, end_time=None, rollover=None):
     """Deadline `days` after `start`. Returns (datetime, note).
 
-    `end_time` and `rollover=False` are per-deadline exceptions (a TREC option period ends at 5:00 PM and
-    isn't extended past a weekend or holiday)."""
+    `end_time` and `rollover` are per-deadline exceptions to the contract's rules: `False` never extends (a TREC
+    option period ends at 5:00 PM on its last day), `True` extends past a weekend or holiday even when the contract's
+    general rule doesn't (TREC 20-19 extends only the earnest money date, Para. 5A); None follows the rules."""
     extra = rules["_extra_holidays"]
     notes = []
     short = int(rules["short_period_days"])
@@ -104,7 +107,8 @@ def forward(start, days, rules, business=False, end_time=None, rollover=True):
             notes.append("business days")
     else:
         d = start + timedelta(days=days)
-    if rollover and not dates.is_business_day(d, extra) and rules["weekend_holiday_rollover"] == "next_business_day":
+    rolls = rollover if rollover is not None else rules["weekend_holiday_rollover"] == "next_business_day"
+    if rolls and not dates.is_business_day(d, extra):
         why = dates.holiday_name(d, extra) or d.strftime("%A")
         d = dates.next_business_day(d, extra)
         rt = _t(rules["rollover_time"])
@@ -389,11 +393,13 @@ def compute(c, extra_deadlines, rules, frbar):
             if not ref or not ref["when"]:
                 continue
             r["when"], r["note"] = forward(ref["when"].date(), int(days), rules, x.get("business", False), x.get("time"),
-                                           x.get("rollover", True))
+                                           x.get("rollover"))
             r["rule"] = f"{_plural(int(days), 'day')} after {ref['short']}"
         elif basis == "after":
-            r["when"], r["note"] = forward(eff, int(days), rules, x.get("business", False), x.get("time"), x.get("rollover", True))
-            r["rule"] = f"{_plural(int(days), 'day')} after Effective Date" + (" (business days)" if x.get("business") else "")
+            start = _d(x.get("receipt_date")) or eff  # TL-15: a period that runs from someone's receipt (TREC title)
+            r["when"], r["note"] = forward(start, int(days), rules, x.get("business", False), x.get("time"), x.get("rollover"))
+            r["rule"] = (f"{_plural(int(days), 'day')} after " + (f"{x.get('what', 'receipt')} ({start:%b %-d})" if x.get("receipt_date")
+                         else "Effective Date") + (" (business days)" if x.get("business") else ""))
         elif basis == "before" and not closing:
             r["when"], r["rule"], r["note"] = None, f"{_plural(int(days), 'day')} before Closing", "Add the closing date and re-run"
         elif basis == "before":

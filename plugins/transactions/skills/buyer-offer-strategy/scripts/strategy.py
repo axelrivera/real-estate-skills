@@ -780,6 +780,16 @@ GENERIC_RIDERS = {"fha_va": "FHA/VA Financing Addendum", "appraisal": "Appraisal
                   "sale": "Sale of Buyer's Property Addendum", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract Addendum",
                   "escalation": "Escalation Clause (Special Provisions, if Your Forms and the Listing Agent Allow It)",
                   "cdd": "Special District / Assessment Disclosure", "short_sale": "Short Sale Addendum"}
+# OFR-19: TREC forms (Texas). Financing, and FHA/VA's appraisal terms, are on the Third Party Financing Addendum; the right
+# to terminate over a low appraisal is TREC 49-1 (not for FHA or VA). Verified against TREC 20-19 and 49-1.
+TREC_RIDERS = {**GENERIC_RIDERS, "fha_va": "Third Party Financing Addendum (FHA/VA Section)",
+               "appraisal": "Addendum Concerning Right to Terminate Due to Lender's Appraisal (TREC 49-1)",
+               "financing": "Third Party Financing Addendum", "hoa": "Addendum for Property Subject to Mandatory Membership in a "
+               "Property Owners Association", "lead": "Addendum for Seller's Disclosure of Information on Lead-Based Paint (Federal)"}
+
+
+def is_trec(form_name, state):
+    return "TREC" in str(form_name or "").upper() or (state == "TX" and not form_name)
 
 
 def blank(x):
@@ -815,6 +825,9 @@ def worksheet(r, variant=None):
         form_name = W.get("contract_name") or "Your state's standard residential purchase contract"
         form_why = "Paragraph numbers vary by form, so find each entry by its name and confirm the form version."
     deadline = W.get("acceptance_deadline") or C.get("deadline")
+    trec = not frbar and is_trec(W.get("contract_name"), P.get("state"))
+    if trec and not W.get("contract_name"):
+        form_name = "TREC One to Four Family Residential Contract (Resale), 20-19"
     para = (lambda p: p) if frbar else (lambda p: "")
     title_payer = costs.get("closing_costs.owner_title.payer")
     title_src = costs.described("closing_costs.owner_title.payer")
@@ -827,8 +840,9 @@ def worksheet(r, variant=None):
         (para("1"), "Personal Property Included", W.get("personal_property") or blank("items in MLS (range, refrigerator, washer/dryer…)"),
          "List anything the buyer expects to stay"),
         (para("2"), "Purchase Price", f"**{money(price)}**", ""),
-        (para("2(a)"), "Initial Deposit", f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar else f"**{money(t['deposit'])}**",
-         "" if frbar else "Due date per the contract"),
+        (para("2(a)"), "Earnest Money" if trec else "Initial Deposit",
+         f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar or trec else f"**{money(t['deposit'])}**",
+         "Para. 5A: to the end of day 3; extends past a weekend or legal holiday" if trec else "" if frbar else "Due date per the contract"),
         (para("2(a)"), "Escrow Agent", W.get("escrow_agent") or blank("title company name, address, phone"), ""),
         (para("2(b)"), "Additional Deposit", "None", "Keep the full deposit up front: it scores better"),
     ]
@@ -857,21 +871,33 @@ def worksheet(r, variant=None):
          if t.get("seller_concessions") else "None", "Use the form's seller-contribution line if present, else Additional Terms"),
         (para("9"), "Home Warranty", "None (buyer may purchase separately)" if not t.get("home_warranty") else f"Seller pays up to {money(t['home_warranty'])}", ""),
         (para("9"), "Survey", "Buyer's expense (recommended)", "Lender may require"),
-        (para("12"), "Inspection Period", f"**{t['inspection_days']} days**", f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"),
     ]
+    if trec:  # OFR-19: the walk-away is the option period, bought with the option fee (Para. 5B)
+        rows += [("", "Option Fee", f"**{money(W['option_fee'])}**" if W.get("option_fee") else blank("amount, delivered with the earnest money"),
+                  "Credited to the buyer at closing; kept by the seller if the buyer terminates"),
+                 ("", "Option Period", f"**{t['inspection_days']} days**", "Notices by 5:00 PM on the last day; not extended "
+                  "for weekends or holidays. Book the inspector before submitting")]
+    else:
+        rows.append((para("12"), "Inspection Period", f"**{t['inspection_days']} days**",
+                     f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"))
     if form == cf.STANDARD:
         lim = cf.repair_limits(price, {"repair_limits": B.get("repair_limits")})
         rows.append((para("9"), "Repair Limits", f"General **{money(lim['general'])}** · WDO **{money(lim['wdo'])}** · "
                      f"Permits **{money(lim['permit'])}**", "Para. 9(a); 1.5% of price each when left blank"))
 
-    names = FRBAR_RIDERS if frbar else GENERIC_RIDERS
+    names = FRBAR_RIDERS if frbar else TREC_RIDERS if trec else GENERIC_RIDERS
     riders = []  # (name, inputs, why)
+    if trec and fin in ("conventional", "usda"):
+        riders.append((names["financing"], f"Loan: {oe.FIN_LABEL[fin]} {money(loan)} · buyer approval: **{t.get('loan_approval_days', 21)} days**",
+                       "Required for financed offers on TREC forms"))
     yb, roof, fz = P.get("year_built"), P.get("roof_year"), (P.get("flood_zone") or "").upper()
     if fin in ("fha", "va"):
         riders.append((names["fha_va"], f"Loan type: {fin.upper()} · appraised-value threshold: **{money(price)}**",
                        "Required with FHA/VA loans (amendatory / escape clause)"))
     if fin in ("conventional", "usda"):
-        riders.append((names["appraisal"], f"Value threshold: **{money(price)}** · appraisal period: **{t.get('appraisal_days', 21)} days**",
+        riders.append((names["appraisal"], (f"Waiver: none, or the amount of the gap the buyer covers ({money(t['appraisal_gap'])})"
+                                            if trec and t.get("appraisal_gap") else "Waiver: none" if trec else
+                                            f"Value threshold: **{money(price)}** · appraisal period: **{t.get('appraisal_days', 21)} days**"),
                        "Protects the buyer if the appraisal is low" + ("; pair with gap language below" if t.get("appraisal_gap") else "")))
     if (P.get("hoa_monthly") or 0) > 0 or W.get("hoa_name"):
         riders.append((names["hoa"], f"Association: {W.get('hoa_name') or blank('name')} · dues: {money(P['hoa_monthly'])}/mo · "

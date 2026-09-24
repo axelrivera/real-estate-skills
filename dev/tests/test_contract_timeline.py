@@ -202,8 +202,12 @@ class OtherContracts(unittest.TestCase):
     def test_texas_uses_its_own_rules_and_deadlines(self):
         r = timeline.analyze(fixture("texas-trec.json"))
         rows = by_key(r)
-        self.assertEqual(rows["option_period"]["when"], "2026-11-27 17:00")  # 7 calendar days, 5 PM
-        self.assertEqual(rows["earnest_money"]["when"], "2026-11-23 17:00")  # 3 calendar days: Mon (no short-period rule)
+        # TL-15 (TREC 20-19, verified): the option period ends at 5 PM on day 7 even on the Friday after Thanksgiving (a
+        # Texas legal holiday), and the earnest money date runs to the end of its day, not 5 PM.
+        self.assertEqual(rows["option_period"]["when"], "2026-11-27 17:00")
+        self.assertEqual(rows["earnest_money"]["when"], "2026-11-23 23:59")  # 3 calendar days: Mon
+        self.assertEqual(rows["title_commitment"]["when"], "2026-12-10 23:59")  # 20 days after the title company's receipt
+        self.assertIn("title company's receipt", rows["title_commitment"]["rule"])
         self.assertEqual(r["contingencies_end"]["key"], "financing")
         self.assertNotIn("deposit", rows)  # no FR/BAR deadlines
         self.assertEqual(r["rules"]["family"], "the contract's definitions")
@@ -302,6 +306,33 @@ class Pdf(unittest.TestCase):
         self.assertNotIn("Lic.", doc)  # no license in the profile: nothing printed
         self.assertIn("was Fri Dec 11", doc)
 
+
+
+class TexasRules(unittest.TestCase):
+    """TL-15, TL-24 (TREC 20-19 and Tex. Gov't Code 662.003, verified 2026-09-24)."""
+
+    def test_texas_legal_holidays(self):
+        from datetime import date
+        d = timeline.dates
+        tx = d.Holidays(base="tx_state")
+        self.assertIsNone(d.holiday_name(date(2026, 10, 12), tx))  # Columbus Day isn't a Texas legal holiday
+        self.assertEqual(d.holiday_name(date(2026, 11, 27), tx), "Day after Thanksgiving")
+        self.assertEqual(d.holiday_name(date(2026, 6, 19), tx), "Emancipation Day")
+        self.assertIsNone(d.holiday_name(date(2026, 7, 3), tx))  # no observed Friday for a Saturday July 4
+        self.assertEqual(d.holiday_name(date(2026, 10, 12)), "Columbus Day")  # the federal list still has it
+
+    def test_earnest_money_rolls_past_a_texas_holiday(self):
+        deal = fixture("texas-trec.json")
+        deal["contract"]["effective_date"] = "2026-11-24"  # + 3 days = the Friday after Thanksgiving
+        rows = by_key(timeline.analyze(deal))
+        self.assertEqual(rows["earnest_money"]["when"], "2026-11-30 23:59")  # past the holiday and the weekend (5A)
+        self.assertEqual(rows["option_period"]["when"], "2026-12-01 17:00")
+
+    def test_unknown_calendar(self):
+        deal = fixture("texas-trec.json")
+        deal["rules"]["holidays"] = "tx"
+        with self.assertRaisesRegex(timeline.DealError, "tx_state"):
+            timeline.analyze(deal)
 
 if __name__ == "__main__":
     unittest.main()

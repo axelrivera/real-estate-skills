@@ -19,7 +19,7 @@ The worksheet lists the same entries by name with no paragraph numbers, because 
 | Walk-Away Window | Option period and option fee (TX), due-diligence period and fee (NC, GA), inspection contingency (most others) |
 | Financing, Loan Approval | Financing addendum or loan contingency section |
 | Title | "Title policy": who furnishes it varies by state and county |
-| Texas (TREC) | Option fee and option period in Para. 5; financing on the Third Party Financing Addendum (loan approval, appraisal as a condition there), not a separate appraisal rider; earnest money due within 3 days. TREC has no escalation addendum: write escalation in Special Provisions only if the listing agent accepts it |
+| Texas (TREC 20-19) | The worksheet prints Option Fee and Option Period (Para. 5B: notices by 5:00 PM on the last day, never extended) in place of an inspection period, and Earnest Money (Para. 5A: 3 days, to the end of the day, extended past a weekend or legal holiday). Financing goes on the Third Party Financing Addendum; the right to terminate over a low appraisal is TREC 49-1 (not for FHA or VA, whose terms are in the financing addendum). TREC has no escalation addendum: write escalation in Special Provisions only if the listing agent accepts it. Set `worksheet.option_fee` |
 
 Rider names are generic outside Florida ("Appraisal Contingency Addendum"); map them to the state's forms. Ask the agent before adding anything their form set doesn't have.
 

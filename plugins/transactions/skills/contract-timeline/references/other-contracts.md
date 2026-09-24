@@ -9,7 +9,7 @@ Find the contract's definitions of time (usually a "Time", "Computation of time"
 - Are days calendar or business days? Does it say periods of a few days or less skip weekends?
 - When does a day end (5:00 PM, 11:59 PM, "local time")?
 - What happens when a period ends on a weekend or holiday?
-- Does it name holidays beyond the federal ones?
+- Does it name holidays beyond the federal ones? Texas forms use Texas legal holidays: set `holidays: tx_state`.
 
 If the agent's market profile has `contract` rules and they match, nothing more is needed. Otherwise put what the contract says in the deal file's `rules` (format in `deal-file.md`). If the contract is silent on something, ask the agent rather than assume Florida's rules; that's what would otherwise quietly move a deadline by a day.
 
@@ -28,7 +28,18 @@ Set `"form_family": "other"` and `"form"` to the form name. Then add one `deadli
 | Title commitment, survey, objections | after or before closing |
 | Closing and possession | the contract's dates |
 
-Use the contract's own words for `label` (in Title Case), `action` and `if_missed`, and its paragraph numbers for `source`. When one deadline has its own time or weekend rule (a Texas option period ends at 5:00 PM and isn't extended; the earnest money date is), set `time` and `rollover` on that deadline. Contract time rules come from the contract or the agent: a web search can find a form's text, but confirm with the agent which version they signed. Mark `contingency: true` only on buyer protections that end on that date. That's what drives "your contingencies end" on page 1.
+Use the contract's own words for `label` (in Title Case), `action` and `if_missed`, and its paragraph numbers for `source`. When one deadline has its own time or weekend rule, set `time` and `rollover` on that deadline. A period that runs from someone's receipt rather than the Effective Date gets `receipt_date` and `what`.
+
+**Texas (TREC 20-19, required since July 1, 2026; it replaced 20-18).** Verified against the form:
+
+| Deadline | Rule | Deal File |
+|---|---|---|
+| Earnest money and option fee (Para. 5A) | 3 days after the Effective Date, to the end of the day; a last day on a weekend or Texas legal holiday extends to the next day that isn't one. The only extension in the form | `days: 3`, `rollover: true` |
+| Option period (Para. 5B) | Notice by 5:00 PM local time on the last day; never extended | `time: "17:00"`, `rollover: false` |
+| Title commitment (Para. 6B) | 20 days after the title company receives the contract; extended automatically up to 15 days or 3 days before closing, whichever is earlier | `receipt_date`, `days: 20` |
+| Appraisal termination | TREC 49-1 addendum (not for FHA or VA, which have their own amendatory clause) | its own days |
+
+Rules for 20-19: `end_time: "23:59"`, `weekend_holiday_rollover: none`, `rollover_time: "23:59"`, `before_closing_rollover: none`, `holidays: tx_state`. Texas legal holidays (Tex. Gov't Code 662.003) don't include Columbus Day, add June 19 and the Friday after Thanksgiving, and aren't moved when they fall on a weekend. The fixture `texas-trec.json` in the repo is a worked example. Contract time rules come from the contract or the agent: a web search can find a form's text, but confirm with the agent which version they signed. Mark `contingency: true` only on buyer protections that end on that date. That's what drives "your contingencies end" on page 1.
 
 ## 3. Confirm
 

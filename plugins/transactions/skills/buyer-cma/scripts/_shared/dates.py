@@ -47,9 +47,35 @@ def federal_holidays(year):
     return out
 
 
+def texas_holidays(year):
+    """TREC's "Legal Holiday" (TL-24): Tex. Gov't Code 662.003(a), plus Emancipation Day (June 19) and the Friday after
+    Thanksgiving. Not Columbus Day, and no observed days: a holiday on a weekend isn't moved."""
+    thanksgiving = _nth(year, 11, 3, 4)
+    return {date(year, 1, 1): "New Year's Day", _nth(year, 1, 0, 3): "Martin Luther King Jr. Day",
+            _nth(year, 2, 0, 3): "Presidents' Day", _last(year, 5, 0): "Memorial Day",
+            date(year, 6, 19): "Emancipation Day", date(year, 7, 4): "Independence Day",
+            _nth(year, 9, 0, 1): "Labor Day", date(year, 11, 11): "Veterans Day", thanksgiving: "Thanksgiving Day",
+            thanksgiving + timedelta(days=1): "Day after Thanksgiving", date(year, 12, 25): "Christmas Day"}
+
+
+CALENDARS = {"us_federal": federal_holidays, "tx_state": texas_holidays}
+
+
+class Holidays(dict):
+    """Extra holiday dates ({date: name}) on top of a base calendar ("us_federal" or "tx_state")."""
+
+    def __init__(self, extra=None, base="us_federal"):
+        super().__init__(extra or {})
+        if base not in CALENDARS:
+            raise ValueError(f"Unknown holiday calendar {base!r}: use us_federal or tx_state, or list the dates.")
+        self.base = base
+
+
 def holiday_name(d, extra=None):
-    """Name of the holiday on `d`, from the federal list or `extra` ({date: name}), else None."""
-    return (extra or {}).get(d) or federal_holidays(d.year).get(d)
+    """Name of the holiday on `d`, from `extra` ({date: name}, or a Holidays with its own base calendar), else the
+    federal list."""
+    base = CALENDARS[getattr(extra, "base", "us_federal")]
+    return (extra or {}).get(d) or base(d.year).get(d)
 
 
 def is_business_day(d, extra=None):
