@@ -11,7 +11,7 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 | `core` | `agent-profile`, `market-profile` (markdown only) |
 | `transactions` | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
 | Tests | `make test`: 203 passing. Every fixture renders with `make outputs` (16 PDFs and decks) |
-| Evals | Iteration 1 run for all 7 skills (21 prompts), fixes applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+| Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
 ## This pass (2026-09-23)
 
@@ -29,7 +29,7 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
    | Percent vs. fraction | Done: every `*_pct` is a fraction, checked everywhere; interest `rate` stays a percent |
 
 3. **Earlier eval findings** for agent-profile, contract-timeline and market-profile: all fixed.
-4. **Evals, iteration 1:** results in `out/evals/iteration-1/` (git-ignored; review page `out/evals/iteration-1/review.html`). Main fixes, by skill:
+4. **Evals, iteration 1:** results in `out/evals/iteration-1/` (git-ignored; review pages `out/evals/iteration-1/review.html` and `out/evals/iteration-2/review.html`, each run with `grading.json`, `response.md` and `friction.md`). Main fixes, by skill:
    - agent-profile: write the file once name and brokerage are known; keep the agent's color name; updates in place.
    - market-profile: named values saved first; listing fee = listing side only; title fees merge fee by fee; `from_profile` in the check.
    - contract-timeline: per-deadline `time` / `rollover` (TREC option period), closing date optional for quick questions, `moved` list for amendments, rider words matched whole ("va" in "private" was read as a VA rider).
@@ -48,6 +48,11 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 - **Texas title rates** below $100k are a lookup table; the per-$1,000 tier format approximates them.
 - **State holidays** (Texas) aren't in the built-in holiday list; add them to a deal's `rules.holidays`.
 - **Chat templates** are English only (buyer-cma's PDF is bilingual); Claude translates the chat reply.
+- **Files blocked without commission:** outside Florida, seller-cma won't build the PDF or deck until the agent gives brokerage terms (by design; the chat summary says "pending brokerage terms"). Confirm this is the behavior you want.
+- **Escalation cap vs. the CMA's walk-away:** buyer-offer-strategy can set a cap above a buyer CMA's walk-away price without comment; it should say so.
+- **Unknown seller credit** on a comp is recorded as 0 in the handoff.
+- **Deck slide 6** (market stats): long values can overlap their period label; keep values short.
+- **Eval set:** buyer-cma eval 3 ("same analysis in Spanish") should include the English report.json in its inputs; the grader's expectations could be copied into `evals.json` as assertions for iteration 2.
 - **Rounding:** seller-cma display rounds a few half-dollar amounts differently line to line (cosmetic).
 
 ## Remaining work, in order
