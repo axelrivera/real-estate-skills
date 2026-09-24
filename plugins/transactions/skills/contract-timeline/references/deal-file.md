@@ -17,7 +17,7 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 }
 ```
 
-`state` (required: ask for it, never assume Florida) and `county` pick the market's time rules (built in for Florida). Those rules cover only the market's own forms (in Florida, FR/BAR AS IS and Standard); any other contract, such as a builder's form, takes its time rules from its own definitions in `rules`. `rules` also overrides the market's rules for this contract (see below).
+`time_zone` (optional: `CT`, `ET`...; Florida's western Panhandle counties are Central time and print "CT" after each time; Gulf County is split, so set it there). `state` (required: ask for it, never assume Florida) and `county` pick the market's time rules (built in for Florida). Those rules cover only the market's own forms (in Florida, FR/BAR AS IS and Standard); any other contract, such as a builder's form, takes its time rules from its own definitions in `rules`. `rules` also overrides the market's rules for this contract (see below).
 
 `flags` print on the PDF as "Check:" lines; `agent_notes` go only to the agent in chat. When in doubt, it's an agent note: a client reading "used the 5-day form default" worries without being able to act on it.
 

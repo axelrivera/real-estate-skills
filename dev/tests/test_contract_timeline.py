@@ -188,7 +188,9 @@ class Amendments(unittest.TestCase):
         self.assertEqual(rows["closing"]["was"], "Fri Dec 11 · 10:00 AM")
         self.assertEqual(rows["appraisal"]["when"], "2026-11-25 17:00")
         self.assertIsNone(rows["deposit"]["was"])
-        self.assertIn("loan approval days: blank → 38", r["history"][0]["summary"])
+        # TL-21: a blank the form fills reads as its value, and dates read as dates
+        self.assertIn("loan approval days: 30 (form default) → 38", r["history"][0]["summary"])
+        self.assertIn("closing date: Dec 11, 2026 → Dec 18, 2026", r["history"][0]["summary"])
         self.assertIsNone(rows["hoa_docs"]["when"])  # on event until received
         self.assertIn("lead_paint", rows)  # built 1972
 
@@ -333,6 +335,50 @@ class TexasRules(unittest.TestCase):
         deal["rules"]["holidays"] = "tx"
         with self.assertRaisesRegex(timeline.DealError, "tx_state"):
             timeline.analyze(deal)
+
+
+class AuditWording(unittest.TestCase):
+    """TL-14 (rights that stay open), TL-17 (TRID business days), TL-25 (insurance is a lender target)."""
+
+    def test_closing_disclosure_counts_saturdays(self):
+        deal = fixture("buyer-fha.json")
+        deal["contract"]["closing_date"] = "2026-11-02"  # a Monday: 3 TRID days back are Sat, Fri, Thu
+        row = by_key(timeline.analyze(deal))["clear_to_close"]
+        self.assertEqual(row["when"][:10], "2026-10-29")  # Mon-Fri counting would give Wed Oct 28
+        self.assertIn("TRID business days", row["rule"])
+
+    def test_insurance_bound_is_a_target(self):
+        row = by_key(timeline.analyze(fixture("buyer-fha.json")))["insurance_bound"]
+        self.assertFalse(row["critical"])
+        self.assertIn("Lender Target", row["label"])
+
+    def test_open_rights_after_contingencies(self):
+        r = timeline.analyze(fixture("buyer-fha.json"))  # FHA: the appraisal clause runs to closing
+        self.assertIn("FHA/VA appraisal clause (to closing)", r["open_rights"])
+        self.assertIn("Title Defects", r["open_rights"])
+        html = timeline_render.build_html(r, {}, False)
+        self.assertIn("These rights stay open after that", html)
+        seller = timeline.analyze(fixture("buyer-fha.json"), side="seller")
+        self.assertNotIn("After that the deal is firm", timeline_render.build_html(seller, {}, False))
+
+
+class TimeZones(unittest.TestCase):
+    """TL-19: FR/BAR times are local to the property."""
+
+    def test_panhandle_prints_central(self):
+        deal = fixture("buyer-fha.json")
+        deal["county"] = "Escambia"
+        rows = by_key(timeline.analyze(deal))
+        self.assertTrue(rows["deposit"]["display"].endswith(" CT"))
+        self.assertFalse(by_key(timeline.analyze(fixture("buyer-fha.json")))["deposit"]["display"].endswith("T"))
+
+    def test_split_county_is_flagged(self):
+        deal = fixture("buyer-fha.json")
+        deal["county"] = "Gulf"
+        r = timeline.analyze(deal)
+        self.assertTrue(any("spans two time zones" in f for f in r["flags"]))
+        deal["time_zone"] = "CT"
+        self.assertFalse(any("spans two time zones" in f for f in timeline.analyze(deal)["flags"]))
 
 if __name__ == "__main__":
     unittest.main()

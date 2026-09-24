@@ -153,6 +153,10 @@ contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked
   before_closing_time: "23:59"
   closing_rollover: true              # a Closing Date on a weekend or holiday extends to the next business day
   holidays: us_federal
+  time_zone: ET                       # TL-19: FR/BAR times are "where the Property is located"
+  time_zone_counties:                 # the western Panhandle is Central time; Gulf County is split (ask)
+    CT: [Bay, Calhoun, Escambia, Holmes, Jackson, Okaloosa, Santa Rosa, Walton, Washington]
+    ask: [Gulf]
   inspection_credit_reserve_pct: 0.007  # typical post-inspection renegotiation on AS IS contracts
   typical_deposit_pct: 0.03           # a strong escrow deposit on a financed offer, share of price
 

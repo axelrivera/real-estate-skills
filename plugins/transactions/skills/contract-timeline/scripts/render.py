@@ -20,6 +20,16 @@ CSS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "asset
 PAGE1_LIMIT = 989  # px available on page 1 at the print viewport
 
 
+
+def sentence_case(label):
+    """'HOA Disclosure' -> 'HOA disclosure': lower-case the words, keep acronyms (HOA, FHA/VA)."""
+    return " ".join(w if w.isupper() else w.lower() for w in label.split())
+
+
+def join_words(items):
+    """['a', 'b', 'c'] -> 'a, b and c'."""
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1] if items else ""
+
 def _when(row):
     return datetime.strptime(row["when"], "%Y-%m-%d %H:%M")
 
@@ -109,15 +119,19 @@ def build_html(t, agent, sample):
     snap_html = ('<div class="divrow factrow"><div>' + "".join(f"<span>{esc(str(x))}</span>" for x in terms if x) + "</div></div>")
 
     firm, first = t["contingencies_end"], t["first_deadline"]
+    still = t.get("open_rights") or []
+    open_txt = (" These rights stay open after that: " + esc(join_words([sentence_case(x) for x in still])) + ".") if still else ""
     if side == "buyer":
         firm_label = "Your Contingencies End"
-        lead = (f'Your protections run through <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}). '
-                "After that the deposit is at risk." if firm else "No buyer contingencies: the deposit is at risk from the start.")
+        lead = (f'Your main protections run through <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}).'
+                + open_txt + (" Otherwise the deposit is at risk after that." if still else " After that the deposit is at risk.")
+                if firm else "No buyer contingencies: the deposit is at risk from the start." + open_txt)
     else:
         firm_label = "Buyer Can Cancel Until"
-        lead = (f'The buyer can cancel under a contingency until <b>{esc(firm["display"])}</b> ({day_label(firm)}, '
-                f'{esc(firm["short"].lower())}). After that the deal is firm unless the buyer defaults.'
-                if firm else "No buyer contingencies: the deal is firm once the deposit is in.")
+        lead = (f'The buyer\'s main contingencies end <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}).'
+                + open_txt + (" Otherwise the deal is firm unless the buyer defaults." if still else
+                              " After that the deal is firm unless the buyer defaults.")
+                if firm else "No buyer contingencies: the deal is firm once the deposit is in." + open_txt)
     if first:
         lead += f' {esc(first["short"])} due {esc(first["date_display"])} ({day_label(first)}).'
     hero = (f'<div class="hero"><div class="hl"><span class="k">Effective Date → Closing</span>'
@@ -157,7 +171,7 @@ def build_html(t, agent, sample):
         f'<td>{esc(r["party"])}</td><td class="sm">{esc(r["rule"])}{("<br><i>" + esc(r["note"]) + "</i>") if r["note"] else ""}</td>'
         f'<td class="sm">{esc(r["action"])}</td><td class="sm">{esc(r["if_missed"])}</td></tr>' for r in t["rows"] + t["pending"])
     if t["history"]:
-        hist = "".join(f'<tr><td class="c"><b>#{i}</b></td><td>{esc(str(h["date"] or "—"))}</td><td>{esc(h["description"])}</td>'
+        hist = "".join(f'<tr><td class="c"><b>#{i}</b></td><td>{esc(h.get("date_display") or "—")}</td><td>{esc(h["description"])}</td>'
                        f'<td class="sm">{esc(h["summary"])}</td></tr>' for i, h in enumerate(t["history"], 1))
         hist_html = ('<h2>Amendment History <span class="h2s">moved dates show the original as "was"</span></h2>'
                      '<div class="tbl"><table><colgroup><col style="width:5%"><col style="width:12%"><col style="width:33%"></colgroup>'
@@ -174,9 +188,10 @@ def build_html(t, agent, sample):
 <div class="sm" style="margin-bottom:4px"><span class="crit">★</span> Critical = missing it can cost a contract right or put the deposit at risk.</div>
 <div class="tbl"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
 <thead><tr><th class="n">Date</th><th>Deadline · Source</th><th>Who</th><th>Rule</th><th>Action</th><th>If Missed</th></tr></thead><tbody>{detail_rows}</tbody></table></div>
+<div class="appx"><div class="dh" style="margin-top:10px">Appendix: Amendments and Date Rules</div>
 {hist_html}
 <h2>How the Dates Were Computed</h2>{method}
-<div class="fine">Computed from the executed contract, riders and counteroffers as recorded in the deal file. Verify every date against the documents and with the escrow or title agent; the form version and any handwritten changes control. Time rules follow {esc(t["rules"]["family"])}. Lender dates are estimates. Not legal advice.</div>'''
+<div class="fine">Computed from the executed contract, riders and counteroffers as recorded in the deal file. Verify every date against the documents and with the escrow or title agent; the form version and any handwritten changes control. Time rules follow {esc(t["rules"]["family"])}. Lender dates are estimates. Not legal advice.</div></div>'''
 
     title = (f'Contract Timeline <span class="viewtag">{Side} View</span>'
              f'{"<span class=sample>SAMPLE DATA</span>" if sample else ""}')

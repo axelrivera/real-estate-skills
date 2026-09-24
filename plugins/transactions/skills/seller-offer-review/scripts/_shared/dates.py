@@ -96,6 +96,28 @@ def previous_business_day(d, extra=None):
     return d
 
 
+def is_trid_business_day(d):
+    """Reg Z's precise business day (12 CFR 1026.2(a)(6)) for the Closing Disclosure: every day but Sundays and the
+    legal public holidays in 5 U.S.C. 6103(a), on their actual dates (TL-17). Saturdays count."""
+    return d.weekday() != 6 and not _actual_holiday(d)
+
+
+def _actual_holiday(d):
+    name = federal_holidays(d.year).get(d)
+    return bool(name) and not name.endswith("(observed)")
+
+
+def add_trid_days(d, n):
+    """Count n TRID business days back (n < 0) or forward from d, not counting d."""
+    step = 1 if n >= 0 else -1
+    remaining = abs(n)
+    while remaining:
+        d += timedelta(days=step)
+        if is_trid_business_day(d):
+            remaining -= 1
+    return d
+
+
 def add_business_days(d, n, extra=None):
     """Count n business days forward (n > 0) or back (n < 0) from d, not counting d."""
     step = 1 if n >= 0 else -1

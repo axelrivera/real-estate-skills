@@ -85,7 +85,23 @@ def load_rules(deal, market_path=None, frbar=True):
     except ValueError as e:
         raise DealError(str(e)) from None
     rules["_extra_holidays"] = extra
+    rules["_tz"], rules["_tz_note"] = time_zone(deal, rules)
     return rules, market
+
+
+def time_zone(deal, rules):
+    """(zone, note): the deal's `time_zone`, else the market's for the county (TL-19). Times print with the zone when it
+    isn't the market's usual one ("5:00 PM CT" in the western Panhandle)."""
+    if deal.get("time_zone"):
+        return deal["time_zone"], None
+    county = str(deal.get("county") or "").lower().removesuffix(" county")
+    for zone, names in (rules.get("time_zone_counties") or {}).items():
+        if county and county in {str(n).lower() for n in names}:
+            if zone == "ask":
+                return None, (f"{deal.get('county')} County spans two time zones: confirm the property's (set time_zone "
+                              "in the deal file) before relying on a time of day.")
+            return zone, None
+    return rules.get("time_zone"), None
 
 
 # --- period math --------------------------------------------------------------
@@ -120,6 +136,8 @@ def forward(start, days, rules, business=False, end_time=None, rollover=None):
 def backward(closing, days, rules, business=False):
     extra = rules["_extra_holidays"]
     t = _t(rules["before_closing_time"])
+    if business == "trid":  # TL-17: Reg Z business days (Saturdays count; Sundays and federal holidays don't)
+        return datetime.combine(dates.add_trid_days(closing, -days), t), "TRID business days (Saturdays count)"
     if business:
         return datetime.combine(dates.add_business_days(closing, -days, extra), t), "business days (weekends and holidays skipped)"
     d = closing - timedelta(days=days)
@@ -290,11 +308,12 @@ def frbar_deadlines(c):
         action="Send the seller written notice of any encroachment or violation, with a copy of the survey",
         if_missed="Survey matters can't be raised as a title defect")
     if financed:
-        add(key="insurance_bound", label="Homeowners Insurance Bound", short="Insurance Bound", basis="before",
-            days=c.get("insurance_bound_days_before", 7), source="Lender requirement", party="Buyer", critical=True,
-            action="Bind the policy and send the declarations page to the lender", if_missed="Loan can't fund")
+        add(key="insurance_bound", label="Homeowners Insurance Bound (Lender Target)", short="Insurance Bound", basis="before",
+            days=c.get("insurance_bound_days_before", 7), source="Lender's usual target, not a contract date", party="Buyer",
+            critical=False, action="Bind the policy and send the declarations page to the lender",
+            if_missed="The lender may not be ready to fund on time")  # TL-25
         add(key="clear_to_close", label="Clear to Close / Closing Disclosure", short="Closing Disclosure", basis="before",
-            days=c.get("cd_days_before", 3), business=True, source="Lender (TRID 3-business-day rule)", party="Buyer",
+            days=c.get("cd_days_before", 3), business="trid", source="Lender (TRID 3-business-day rule)", party="Buyer",
             critical=True, action="Buyer receives and signs the Closing Disclosure at least 3 business days before closing",
             if_missed="Closing must move")
     add(key="walkthrough", label="Final Walk-Through", short="Walk-Through", basis="before", days=c.get("walkthrough_days_before", 1),
@@ -329,6 +348,32 @@ def apply_amendments(contract, amendments):
         history.append({"date": a.get("date"), "description": a.get("description", ""),
                         "changes": a.get("changes", {}), "before": before, "date_overrides": a.get("date_overrides", {})})
     return c, history
+
+
+OPEN_RIGHT_KEYS = ("hoa_docs", "condo_docs", "title_exam", "survey_notice")
+FORM_DEFAULTS = {"inspection_days": 15, "loan_approval_days": 30, "deposit_days": 3, "additional_deposit_days": 10,
+                 "appraisal_days": 21, "loan_application_days": 5, "sale_contingency_days": 30, "lead_paint_days": 10,
+                 "flood_elevation_days": 20, "walkthrough_days_before": 1, "survey_days_before": 5}  # FR/BAR blanks
+
+
+def _date_text(v):
+    """'2026-11-24' -> 'Nov 24, 2026'; anything else as written."""
+    try:
+        d = _d(v)
+    except ValueError:
+        return str(v)
+    return f"{d:%b %-d, %Y}" if d else ""
+
+
+def _value_text(v):
+    return _date_text(v) if isinstance(v, str) and re.match(r"^\d{4}-\d{2}-\d{2}", v) else str(v)
+
+
+def _was(key, before, frbar):
+    """TL-21: a blank that the form filled in reads as its value ("30 (form default)"), not "blank"."""
+    if before is None:
+        return f"{FORM_DEFAULTS[key]} (form default)" if frbar and key in FORM_DEFAULTS else "not set"
+    return _value_text(before)
 
 
 def _override(value, rules):
@@ -404,7 +449,8 @@ def compute(c, extra_deadlines, rules, frbar):
             r["when"], r["rule"], r["note"] = None, f"{_plural(int(days), 'day')} before Closing", "Add the closing date and re-run"
         elif basis == "before":
             r["when"], r["note"] = backward(closing, int(days), rules, x.get("business", False))
-            r["rule"] = f"{_plural(int(days), 'day')} before Closing" + (" (business days)" if x.get("business") else "")
+            r["rule"] = f"{_plural(int(days), 'day')} before Closing" + (" (TRID business days)" if x.get("business") == "trid"
+                                                                       else " (business days)" if x.get("business") else "")
         elif basis == "date":
             r["when"], r["rule"], r["note"] = _dt(x["date"], _t(x.get("time") or rules["end_time"])), "Specific date in contract", ""
         elif basis == "closing":
@@ -446,7 +492,9 @@ def _fmt(dt, rules, with_time=True):
     if not with_time:
         return f"{dt:%a %b %-d}"
     t = "11:59 PM" if dt.time() == time(23, 59) else f"{dt:%-I:%M %p}"
-    return f"{dt:%a %b %-d} · {t}"
+    zone = rules.get("_tz")
+    suffix = f" {zone}" if zone and zone != rules.get("time_zone", zone) else ""  # only when it differs from the usual
+    return f"{dt:%a %b %-d} · {t}{suffix}"
 
 
 def analyze(deal, market_path=None, side=None):
@@ -495,11 +543,19 @@ def analyze(deal, market_path=None, side=None):
     closing_row = next((r for r in rows if r["key"] == "closing"), None)  # None: a quick question without a closing date
     contingent = [r for r in dated if r["contingency"]]
     firm = max(contingent, key=lambda r: r["when"]) if contingent else None
+    names = {r["key"]: r["label"] for r in rows}
+    # TL-14: rights that outlast the main contingencies (association documents, title and survey notices, FHA/VA)
+    open_rights = [r["short"] for r in rows if r["key"] in OPEN_RIGHT_KEYS
+                   and (r["when"] is None or not firm or r["when"] > firm["when"])]
+    if current_contract.get("financing") in ("fha", "va"):
+        open_rights.append("FHA/VA appraisal clause (to closing)")
     first = next((r for r in dated if r["party"] != "Both"), None)
 
     # flags print on the report as "Check:" lines; agent_notes stay in chat (defaults used, assumptions to confirm)
     flags = list(deal.get("flags") or [])
     agent_notes = list(deal.get("agent_notes") or [])
+    if rules.get("_tz_note"):
+        flags.append(rules["_tz_note"])
     if closing_row and closing_row["note"]:
         flags.append(closing_row["note"][:1].upper() + closing_row["note"][1:])
     riders = " ".join(current_contract.get("riders") or []).lower()
@@ -544,13 +600,14 @@ def analyze(deal, market_path=None, side=None):
         "length_days": closing_row["day"] if closing_row else None,
         "moved": [{"label": r["label"], "now": r["display"], "was": r["was"]} for r in rows if r["was"]],
         "contingencies_end": firm,
+        "open_rights": open_rights,
         "first_deadline": first,
         "rows": dated,
         "pending": [r for r in rows if not r["when"]],
-        "history": [{**h, "summary": "; ".join(
-            [f"{k.replace('_', ' ')}: {'blank' if h['before'].get(k) is None else h['before'].get(k)} → {v}"
-             for k, v in h["changes"].items()] +
-            [f"{k.replace('_', ' ')} → {v}" for k, v in h["date_overrides"].items()])} for h in history],
+        "history": [{**h, "date_display": _date_text(h.get("date")), "summary": "; ".join(
+            [f"{k.replace('_', ' ')}: {_was(k, h['before'].get(k), frbar)} → {_value_text(v)}" for k, v in h["changes"].items()] +
+            [f"{names.get(k, k.replace('_', ' '))} → {_value_text(v)}" for k, v in h["date_overrides"].items()])}
+            for h in history],
         "flags": flags,
         "agent_notes": agent_notes,
         "rules": {

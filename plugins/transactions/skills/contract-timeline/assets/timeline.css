@@ -11,3 +11,6 @@ tr.mine td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .compact .kd td{padding:2px 6px;font-size:8.2pt}
 .compact .hero .why{font-size:8.4pt}
 .compact .hero .big{font-size:16pt}
+
+/* TL-22: the amendments and date rules stay together as one appendix block */
+.appx{break-inside:avoid}
