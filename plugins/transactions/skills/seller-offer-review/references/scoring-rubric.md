@@ -21,7 +21,7 @@ The price if the appraisal lands at the CMA high, the top of the supported range
 
 Risk-adjusted value = downside net − (100 − score)/100 × penalty × list price. Penalty by the seller's priority: price 5%, balanced 10%, speed 12%, certainty 15%.
 
-- The top offer gets Accept or Counter. **Accept** when the score is 80+ and either the net is within 1% of the seller's target (a clean offer at list) or the counter would gain less than 0.5% of price: a strong offer isn't worth risking over a small gain. Same test in single mode.
+- The top offer gets Accept or Counter. **Accept** when the score is 80+ and either the net is within 1% of the seller's target (a clean offer at list) or the counter would gain less than a small share of price: a strong offer isn't worth risking over a small gain. The share follows the seller's priority: certainty 1%, balanced and speed 0.5%, price 0.25%. An offer below 80 is also accepted when no counter rule applies; the report then says so without calling it strong. Same test in single mode.
 - The second becomes **Backup** if its score is 60+.
 - The rest are **Decline**, with a reason.
 

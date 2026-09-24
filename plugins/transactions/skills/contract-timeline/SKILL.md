@@ -45,10 +45,10 @@ The script adds its own notes: `flags` lines when loan approval falls within 5 d
 **Quick question** ("when does the inspection end?", "what's due this week?"): answer from the output in a sentence or two, plus at most one line on the rule used or what to confirm. A deal file with just the Effective Date, the time rules and the one deadline is enough; leave the closing date out if you don't have it (dates counted back from closing then wait for it). **Full timeline in chat:** fill in `assets/timeline-template.md` with the output's values. **A report to send or print:**
 
 ```
-python3 scripts/render.py deal.json [--agent agent-profile.md] [--market market-profile.md]
+python3 scripts/render.py deal.json [--format pdf|ics|all] [--agent agent-profile.md] [--market market-profile.md]
 ```
 
-It saves the PDF to the outputs folder in the agent's brand colors, when their profile is available. If it can't render, say so and give the markdown timeline instead.
+`all` (the default) saves the PDF and a closing calendar (`.ics`: one event per dated deadline, a reminder the day before each critical one) that the agent or client can import into any calendar app. It saves the PDF to the outputs folder in the agent's brand colors, when their profile is available. If it can't render, say so and give the markdown timeline instead.
 
 With the PDF, keep the chat reply short: a small table of the key dates only (first deadline, when the contingencies end, closing), not the full template, since the PDF has everything. Always tell the agent, in plain words: the first deadline and who owes it, when the contingencies end, the closing date, every flag, and every agent note to confirm. Offer the other format in one line. Keep the deal file with the deliverable: it's the record for re-runs.
 

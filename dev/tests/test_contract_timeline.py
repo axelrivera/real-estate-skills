@@ -380,5 +380,32 @@ class TimeZones(unittest.TestCase):
         deal["time_zone"] = "CT"
         self.assertFalse(any("spans two time zones" in f for f in timeline.analyze(deal)["flags"]))
 
+
+class Calendar(unittest.TestCase):
+    """TL-20: the closing calendar the description promises."""
+
+    def test_ics(self):
+        t = timeline.analyze(fixture("buyer-fha.json"))
+        text = timeline_render.ics(t)
+        self.assertTrue(text.startswith("BEGIN:VCALENDAR\r\n") and text.endswith("END:VCALENDAR\r\n"))
+        self.assertEqual(text.count("BEGIN:VEVENT"), len(t["rows"]))
+        self.assertIn("DTSTART;VALUE=DATE:", text)  # end-of-day deadlines are all-day events
+        self.assertEqual(text.count("BEGIN:VALARM"), sum(r["critical"] for r in t["rows"]))
+        self.assertTrue(all(len(line.encode()) <= 75 for line in text.split("\r\n")))
+        self.assertEqual(text.split("UID:")[1][:40], timeline_render.ics(t).split("UID:")[1][:40])  # stable across runs
+
+    def test_render_writes_both(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "deal.json")
+            with open(src, "w") as f:
+                json.dump(fixture("buyer-fha.json"), f)
+            import contextlib
+            import io
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                timeline_render.render.main(timeline_render.build, formats=("pdf", "ics"),
+                                            argv=[src, "--format", "ics", "--out", tmp])
+            self.assertTrue(out.getvalue().strip().endswith(".ics"))
+
 if __name__ == "__main__":
     unittest.main()

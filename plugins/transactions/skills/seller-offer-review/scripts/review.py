@@ -199,7 +199,10 @@ def single_view(R, o):
                  else f"The counter below protects the price: it nets {signed(cn - dn)} vs. the downside case.")
         why = " ".join(s)
     elif act == "ACCEPT":
-        why = f"Strong offer: nets {money(ao)} with {o['score']['total']}/100 certainty. Nothing in the terms is worth risking the deal over."
+        sc = o["score"]["total"]  # OFR-23: the wording follows the score band
+        why = (f"Strong offer: nets {money(ao)} with {sc}/100 certainty. Nothing in the terms is worth risking the deal over."
+               if sc >= 80 else f"Nets {money(ao)} with {sc}/100 certainty. No counter would improve it, so accept it with its risks "
+               "in view (see the risk flags).")
     else:
         why = f"{o.get('action_reason', '')}. {cap(top['ref'])} is the recommended offer; see the comparison below."
 

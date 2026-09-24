@@ -6,6 +6,7 @@ Page 1: the contract period, when the contingencies end, a timeline strip and ev
 Page 2: every deadline with its source, rule, action and consequence; amendment history; how the
 dates were computed. Colors follow the agent's brand (buyer or seller side).
 """
+import hashlib
 import html
 import os
 import sys
@@ -216,8 +217,55 @@ def fit_page_one(pg):
     return top
 
 
+def _ics_text(s):
+    return str(s).replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+
+def _fold(line):
+    """RFC 5545 line folding at 75 octets."""
+    out, raw = [], line.encode("utf-8")
+    while len(raw) > 75:
+        cut = 75 if not out else 74
+        while cut and (raw[cut] & 0xC0) == 0x80:  # don't split a UTF-8 character
+            cut -= 1
+        out.append(raw[:cut].decode("utf-8"))
+        raw = b" " + raw[cut:]
+    out.append(raw.decode("utf-8"))
+    return "\r\n".join(out)
+
+
+def ics(t):
+    """TL-20: the closing calendar as an .ics file. End-of-day deadlines are all-day events; the rest are timed in the
+    property's local time; critical ones get a reminder the day before."""
+    now = datetime.now().strftime("%Y%m%dT%H%M%S")
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//real-estate-skills//contract-timeline//EN", "CALSCALE:GREGORIAN",
+             f"X-WR-CALNAME:{_ics_text('Contract Timeline: ' + t['property'])}"]
+    for r in t["rows"]:
+        when = datetime.strptime(r["when"], "%Y-%m-%d %H:%M")
+        all_day = when.strftime("%H:%M") == "23:59"
+        start = f"DTSTART;VALUE=DATE:{when:%Y%m%d}" if all_day else f"DTSTART:{when:%Y%m%dT%H%M%S}"
+        end = (f"DTEND;VALUE=DATE:{(when + timedelta(days=1)):%Y%m%d}" if all_day
+               else f"DTEND:{(when + timedelta(minutes=30)):%Y%m%dT%H%M%S}")
+        desc = " ".join(x for x in (f"Who: {r['party']}.", r["action"] and f"{r['action']}.", r["if_missed"] and
+                                    f"If missed: {r['if_missed']}.", r["rule"] and f"Rule: {r['rule']}.",
+                                    r["source"] and f"Source: {r['source']}.", "Ends at 11:59 PM." if all_day else "") if x)
+        lines += ["BEGIN:VEVENT", f"UID:{r['key']}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline",
+                  f"DTSTAMP:{now}", start, end, f"SUMMARY:{_ics_text(r['label'] + (' ★' if r['critical'] else ''))}",
+                  f"DESCRIPTION:{_ics_text(desc)}"]
+        if r["critical"]:
+            lines += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_ics_text(r['label'])}", "TRIGGER:-P1D", "END:VALARM"]
+        lines.append("END:VEVENT")
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(_fold(x) for x in lines) + "\r\n"
+
+
 def build(deal, fmt, out_dir, ctx):
     t = timeline.analyze(deal, ctx.get("market"))
+    if fmt == "ics":
+        path = os.path.join(out_dir, render.filename(t["property"].split(",")[0], "Contract Timeline", t["side"], ext="ics"))
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write(ics(t))
+        return [path]
     if not t["closing"]:
         raise timeline.DealError("The report needs the closing date: add contract.closing_date and re-run.")
     doc = build_html(t, ctx["agent"], ctx.get("sample") or t["sample"])
@@ -235,4 +283,4 @@ def build(deal, fmt, out_dir, ctx):
 
 
 if __name__ == "__main__":
-    render.main(build, formats=("pdf",), errors=(timeline.DealError,))
+    render.main(build, formats=("pdf", "ics"), errors=(timeline.DealError,))

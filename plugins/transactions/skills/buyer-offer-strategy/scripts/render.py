@@ -295,7 +295,8 @@ def build(data, fmt, out_dir, ctx):
     if fmt == "options":
         path = os.path.join(out_dir, render.filename(street, "Offer Options", ext="pdf"))
         top = render.html_to_pdf(options_html(r, ctx["agent"], sample), path, before_print=fit_page_one,
-                                 footer_html=render.footer(f"Offer Options · Buyer Side · {street}"))
+                                 footer_html=render.footer(f"Offer Options · Prepared for {r['B']['buyer'].get('name') or 'the Buyer'} · "
+                                                           f"Not for the Listing Side · {street}"))  # OFR-32
         if top > PAGE1_LIMIT:
             print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten override notes.", file=sys.stderr)
     else:

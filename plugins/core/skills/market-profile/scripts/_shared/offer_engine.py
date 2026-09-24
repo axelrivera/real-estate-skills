@@ -259,7 +259,8 @@ def prepare_listing(data, A, costs):
     L["hoa_monthly"] = L.get("hoa_monthly")
     L["title_customary_payer"] = costs.get("closing_costs.owner_title.payer")
     if L["title_customary_payer"] is None:
-        A.add("listing", "title_payer", "unknown", "Who customarily pays the owner's title policy wasn't given: left out of the net", "med")
+        A.add("listing", "title_payer", "unknown", "Who customarily pays the owner's title policy wasn't given: left out of the net "
+              "(often about 0.5% of price)", "high")
     for w in finance.seller_net(lp, costs)["warnings"]:  # CORE-9: a title quote below the published rate
         A.add("listing", "owner_title.quote", "check", w, "med")
     L["loan_limits"] = profiles.loan_limits()
@@ -1073,7 +1074,7 @@ def single_recommendation(o, tgt, priority="balanced"):
 
 def _missing_market(costs, sheet, A):
     """Market values seller_net couldn't find, as assumptions (once)."""
-    impact = {"deed transfer tax": "high", "who pays owner's title": "med", "owner's title rate": "med",
+    impact = {"deed transfer tax": "high", "who pays owner's title": "high", "owner's title rate": "high",  # OFR-31: ~0.5% of price
               "title company fees": "med", "HOA estoppel fee": "low"}
     for label in sheet["missing"]:
         if label == "who pays owner's title":

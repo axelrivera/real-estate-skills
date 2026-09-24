@@ -84,11 +84,11 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.4.0: a
 | | | TREC and other forms (TREC 20-19, current since July 1, 2026) | OFR-19, TL-15, TL-24 | Done |
 | | | Timeline wording and outputs | TL-14, TL-16, TL-17, TL-19, TL-21, TL-22, TL-25 | Done |
 | | | Fair housing and design | FH-4, FH-5, DS-1 to DS-4 | Done |
-| 3. Low, docs, tooling | 0.5.0 | Skills | CORE-22 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20 | Open |
+| 3. Low, docs, tooling | 0.5.0 | Skills | CORE-22 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20 | Done |
 | | | Docs and tooling | DOC-1 to DOC-14 (DOC-13 needs a license and remote) | Open |
 | 4. Evals | | Iteration 2 on the new fixtures, plus the fair-housing evals | | Open |
 
-Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21, CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 (and Collier from CORE-7), CMA-2, CORE-3, CORE-4, CMA-16, FH-6, FH-1, FH-2, FH-3, CMA-5, CMA-6, OFR-26, CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning only; the tiered model is on the roadmap), CORE-20, CORE-21, CMA-7 to CMA-12, CMA-14, CMA-15, CMA-17, CMA-20, CMA-22, OFR-7 to OFR-12, OFR-18, OFR-25, OFR-30, OFR-15, OFR-16, OFR-20, OFR-24, OFR-28, OFR-19, TL-15, TL-24, TL-14, TL-16, TL-17, TL-19, TL-21, TL-22 (page 3 is now one appendix block), TL-25, FH-4, FH-5, DS-1 to DS-4.
+Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21, CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 (and Collier from CORE-7), CMA-2, CORE-3, CORE-4, CMA-16, FH-6, FH-1, FH-2, FH-3, CMA-5, CMA-6, OFR-26, CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning only; the tiered model is on the roadmap), CORE-20, CORE-21, CMA-7 to CMA-12, CMA-14, CMA-15, CMA-17, CMA-20, CMA-22, OFR-7 to OFR-12, OFR-18, OFR-25, OFR-30, OFR-15, OFR-16, OFR-20, OFR-24, OFR-28, OFR-19, TL-15, TL-24, TL-14, TL-16, TL-17, TL-19, TL-21, TL-22 (page 3 is now one appendix block), TL-25, FH-4, FH-5, DS-1 to DS-4, CORE-22, CORE-23, CORE-25 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20.
 
 CORE-5 note: who pays the buyer's broker is expressed by the percentages rather than a separate `buyer_broker_paid_by` field: the seller side models what the seller pays (0 when the buyer pays), and the buyer side counts the rest of the buyer's agreement as a "Buyer's Broker Fee (Not Paid by Seller)" line.
 
