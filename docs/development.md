@@ -23,6 +23,17 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make package` | Zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai, plus `dist/runtime-check.zip` |
 | `make clean` | Removes `out/` and `dist/` |
 
+## Evals
+
+Each skill's test prompts live in `dev/evals/<skill>/evals.json` with their input files. To run them (Claude Code, from the repo root):
+
+1. For each eval, make `out/evals/iteration-N/<skill>/eval-<id>/` with `task.md` (the prompt only), `inputs/` (its files) and `with_skill/outputs/`. Keep `expected_output` out of the runner's view.
+2. Start one subagent per eval with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md) (replace `<repo>` with the repo path): it simulates the sandbox (skill folder only, `OUTPUT_DIR`, the pinned Python and Node) and saves the reply (`response.md`), every file, and `friction.md`, an honest list of where the skill made it stumble.
+3. Grade each run against `expected_output` into `with_skill/grading.json`, and review with the skill-creator's `eval-viewer/generate_review.py out/evals/iteration-N --static out/evals/iteration-N/review.html`.
+4. Fix what `friction.md` and the grades reveal (skill text, references, scripts), add a test for each script fix, and re-run the evals that changed.
+
+Baselines (the same prompts without the skill) are optional here: the skills are rebuilds with known-good outputs, so the with-skill runs and their friction notes carry most of the signal.
+
 ## Troubleshooting
 
 - **`sharp` fails to install and tries to build from source:** a Homebrew `vips` is on the machine. `make setup` already sets `SHARP_IGNORE_GLOBAL_LIBVIPS=1`; use the same flag if you run `npm install` by hand.

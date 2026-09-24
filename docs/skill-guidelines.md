@@ -43,4 +43,4 @@ Markdown mode takes its numbers from the same data JSON the scripts produce, so 
 
 ## Evals
 
-Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): 2–4 realistic prompts with the expected result, plus input files when needed. They're run with and without the skill, following the skill-creator loop, before a skill is marked done.
+Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): 2–4 realistic prompts with the expected result, plus input files when needed. They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.

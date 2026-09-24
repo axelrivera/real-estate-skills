@@ -53,19 +53,23 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 
 ## Status
 
+All phases are built (version 0.2.0). Every skill has run through the eval loop once (iteration 1, 2026-09-23: 21 prompts, with-skill runs by sandbox-simulating subagents) and the fixes from those runs are in. What's left for every skill is a run in claude.ai and Cowork by the user.
+
 | Shared module | Status |
 |---|---|
-| `shared/design` | Done: palette, legibility, status separation, party colors; tests and preview |
-| `shared/profiles` + `markets/` | Done (Florida seller title fees and 2.5% + 2.5% brokerage defaults researched 2026-09): agent and market profiles, Florida state layer, Stellar MLS layer (Florida and Puerto Rico), county overrides, value sources, 2025 millage for 7 Central Florida counties (57 districts) |
-| `shared/render` | Done: output location, file names, HTML → PDF, render command line |
+| `shared/design` | Done: palette, legibility, status separation, party colors and tints; tests and preview |
+| `shared/profiles` + `markets/` | Done (Florida seller title fees and 2.5% + 2.5% brokerage defaults researched 2026-09): agent and market profiles, Florida state layer (incl. buyer insurance, typical deposit), Stellar MLS layer (Florida and Puerto Rico), county overrides, value sources, 2025 millage for 7 Central Florida counties (57 districts) |
+| `shared/render` | Done: output location, file names, HTML → PDF, render command line with skill options and partial formats |
+| `shared/finance`, `dates`, `handoff`, `mls`, `cma` | Done: payments, program caps, property tax (incl. school-only and percent exemptions), title (table, quote, estimate), seller net with keyed lines and structured assumptions; business days; cma-handoff v1; MLS export reader and stats; CMA report pieces |
+| `shared/offer_engine` | Done: one port of the prototype engine for both offer skills |
 | Sync and drift check | Done: `make sync`, `make check-sync`, pre-commit hook |
 
 | Skill | Status |
 |---|---|
-| `agent-profile` | Built per skill guidelines (template, reference, check script), tests and evals; needs a run in claude.ai and Cowork |
-| `market-profile` | Built per skill guidelines (template, fields reference, check script), tests and evals; needs a run in claude.ai and Cowork |
-| `contract-timeline` | Built per skill guidelines: engine matches the prototype sample exactly; FR/BAR and other contracts; branded PDF; 3 fixtures, tests, evals; needs a run in claude.ai and Cowork |
-| `buyer-cma` | Built per skill guidelines: numbers match the prototype sample exactly; branded PDF, English/Spanish labels, markdown template, cma-handoff v1; fixture, tests, evals; needs a run in claude.ai and Cowork |
-| `seller-cma` | Built per skill guidelines: report PDF and 15-slide listing presentation (pptxgenjs, no `/mnt/skills`) from one report.json; nets from the market profile (match the prototype after its two input changes: 2.5% + 2.5% brokerage placeholder, $1,145 itemized title fees), buyer payments match exactly; branded PDF and deck (subject in the palette's "both" color), Preliminary outside built-in markets, markdown template, cma-handoff v1 (seller); fixture, tests, evals; needs a run in claude.ai and Cowork |
-| `seller-offer-review` | Built per skill guidelines on the new `shared/offer_engine.py`: numbers match the prototype samples exactly when given the prototype's costs; costs now from the market profile (Florida 2.5% + 2.5% brokerage, itemized $1,145 title fees; other states left out and marked Preliminary); consumes `cma-handoff v1`; single and multi-offer PDF in seller colors; 4 fixtures (incl. Texas), tests, evals; needs a run in claude.ai and Cowork |
-| `buyer-offer-strategy` | Built per skill guidelines on `shared/offer_engine.py` and `shared/finance`: options, scores, cash and payments match the prototype sample; buyer blue (prototype used orange); consumes `cma-handoff v1` (range, median adjusted, market stats); Offer Options + Offer Package Worksheet PDFs (FR/BAR, or entries by name elsewhere); 3 fixtures (incl. Texas), tests, evals; outcome log not ported; needs a run in claude.ai and Cowork |
+| `agent-profile` | Built; evals run and fixed (exact logo colors, one-message intake, updates in place); needs a run in claude.ai and Cowork |
+| `market-profile` | Built; evals run and fixed (Texas exemptions, title quotes, zero transfer tax, `from_profile` check); needs a run in claude.ai and Cowork |
+| `contract-timeline` | Built: engine matches the prototype sample; FR/BAR and other contracts (per-deadline time and rollover for TREC); client flags vs. agent notes; evals run and fixed; needs a run in claude.ai and Cowork |
+| `buyer-cma` | Built: numbers match the prototype sample; English/Spanish; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
+| `seller-cma` | Built: report PDF and 15-slide deck from one report.json; nets from the market profile, refuses to render nets without brokerage terms; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
+| `seller-offer-review` | Built on `shared/offer_engine.py`: prototype numbers reproduced with the prototype's costs; market costs, Preliminary outside built-in markets; single and multi-offer PDF; evals run and fixed (certainty-priority sellers aren't countered for a small gain); needs a run in claude.ai and Cowork |
+| `buyer-offer-strategy` | Built on `shared/offer_engine.py` and `shared/finance`: Offer Options + Offer Package Worksheet; evals run and fixed (stronger option recommended when it lifts the outlook inside every limit, honest reasons); outcome log not ported; needs a run in claude.ai and Cowork |
