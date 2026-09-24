@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "real-estate",
-      "source": ".",
+      "source": "./",
       "description": "Skills for real estate agents: agent and market profiles, buyer and seller CMAs, offer strategy and review, and contract timelines."
     }
   ]

@@ -6,7 +6,7 @@ One Claude plugin (`real-estate`) of skills for real estate agents; the repo roo
 
 ```
 .claude-plugin/plugin.json          # the plugin manifest (name "real-estate"); the only place the version lives
-.claude-plugin/marketplace.json     # one-plugin marketplace, source "."; lets users add the repo by URL
+.claude-plugin/marketplace.json     # one-plugin marketplace, source "./"; lets users add the repo by URL
 skills/<skill>/SKILL.md             # one directory per skill
 shared/                             # shared code and references, copied into skills by make sync
 dev/                                # dev tooling and fixtures, never shipped
