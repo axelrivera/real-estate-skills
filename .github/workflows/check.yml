@@ -1,5 +1,5 @@
-# The server-side counterpart of dev/hooks/pre-commit: the same checks as `make package`,
-# minus style-check (it needs Node and LibreOffice). Seller CMA deck tests skip without Node.
+# The server-side counterpart of dev/hooks/pre-commit: fails when a skill's scripts/_shared/ copy
+# doesn't match shared/. Tests and the other checks run locally (make package).
 name: Check
 
 on:
@@ -8,28 +8,8 @@ on:
   pull_request:
 
 jobs:
-  check:
+  check-sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # 3.11 is the Cowork runtime (py311 runs compileall with it); 3.12 matches the Makefile's .venv.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: |
-            3.11
-            3.12
-          cache: pip
-          cache-dependency-path: dev/requirements.txt
-
-      - name: Create .venv
-        run: |
-          python3.12 -m venv .venv
-          .venv/bin/python -m pip install -q --upgrade pip
-          .venv/bin/python -m pip install -q -r dev/requirements.txt
-          .venv/bin/python -m playwright install --with-deps chromium
-
       - run: make check-sync
-      - run: make test
-      - run: make lint-skills
-      - run: make py311
