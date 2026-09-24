@@ -44,8 +44,10 @@ class MatchesPrototype(unittest.TestCase):
             # The prototype countered B; this seller wants certainty, so a strong offer isn't risked for a 0.7% gain.
             "B": (145677, 142677, 148476, 86, 82, "ACCEPT"),
             "C": (134560, 131560, 153320, 100, 98, "BACKUP"),
-            "A": (142901, 130105, 145813, 54, 66, "DECLINE"),
-            "D": (154293, 134126, 146150, 42, 62, "DECLINE"),
+            # Audit 2026-09-23: the downside is measured from the CMA high (OFR-4), and A's FHA appraisal protection runs
+            # to closing, so its counter asks for no gap coverage it couldn't enforce (OFR-3, OFR-17).
+            "A": (142901, 136169, 145813, 55, 63, "DECLINE"),
+            "D": (154293, 140157, 146150, 42, 62, "DECLINE"),
         })
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
         self.assertEqual(R["mode"], "multi")
@@ -54,7 +56,7 @@ class MatchesPrototype(unittest.TestCase):
         R = oe.analyze(prototype_costs(fixture("minimal-single.json")))
         o = R["offers"][0]
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (348407, 345907, 352139))
-        self.assertEqual((o["score"]["total"], o["action"]), (66, "COUNTER"))
+        self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))  # FHA: appraisal protected to closing
         self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period"])
         self.assertEqual(R["seller"]["holding_monthly"], 1050)
 
@@ -157,11 +159,11 @@ class Rules(unittest.TestCase):
         self.assertEqual((o["score"]["scores"]["agent"], o["score"]["src"]["agent"]), (5, "agent"))
         self.assertEqual(o["action"], "ACCEPT")
 
-    def test_fallback_counter_for_low_down_buyer(self):
-        R = oe.analyze(fixture("four-offers.json"))
-        a = by_id(R)["A"]  # FHA 3.5%, over the value range, no gap
-        self.assertIn("fallback_terms", a)
-        self.assertEqual(a["fallback_terms"]["appraisal_gap"], 0)
+    def test_counter_never_asks_fha_va_for_gap_money(self):
+        """OFR-3, OFR-17: an FHA/VA gap clause doesn't bind the buyer; a price over the range is countered to its top."""
+        fha = by_id(oe.analyze(fixture("four-offers.json")))["A"]
+        self.assertFalse(any(r[0] == "Appraisal Gap Coverage" for r in fha["counter_rows"]))
+        self.assertEqual(fha["counter_terms"]["price"], 428000)
 
     def test_percent_written_as_whole_number_is_refused(self):
         data = fixture("minimal-single.json")
@@ -202,3 +204,52 @@ class Rules(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditAppraisalAndEscalation(unittest.TestCase):
+    """Audit 2026-09-23: OFR-2, OFR-3, OFR-4, OFR-17."""
+
+    def test_escalation_ranks_on_effective_price(self):
+        """OFR-2: A ($400k, +$1k to $425k) reaches $406k over B's flat $405k and ranks first."""
+        R = oe.analyze(fixture("escalation.json"))
+        a, b = by_id(R)["A"], by_id(R)["B"]
+        self.assertEqual((a["price_base"], a["price"], a["escalated"]), (400000, 406000, True))
+        self.assertEqual(a["escalation_note"], "Escalates to $406,000 from $400,000 (cap $425,000)")
+        self.assertEqual(R["ranked"][0]["id"], "A")
+        self.assertGreater(a["ns"]["net_adj"], b["ns"]["net_adj"])
+
+    def test_escalation_terms_are_checked(self):
+        data = fixture("escalation.json")
+        data["offers"][0]["escalation"] = {"increment": 1000}
+        issues = [f["issue"] for f in by_id(oe.analyze(data))["A"]["flags"]]
+        self.assertTrue(any("no cap" in i for i in issues))
+        self.assertTrue(any("doesn't say how a competing offer is proven" in i for i in issues))
+
+    def test_fha_waiver_is_ignored(self):
+        """OFR-3, OFR-17: an FHA appraisal waiver and gap clause don't bind the buyer."""
+        R = oe.analyze(fixture("escalation.json"))
+        c = by_id(R)["C"]
+        self.assertTrue(c["appraisal_protected"])
+        self.assertEqual((c["gap_cover"], c["appraisal_days"]), (0, c["close_days"]))
+        self.assertNotEqual(c["score"]["why"]["appraisal"], "No appraisal contingency")
+        self.assertTrue(any("intent only" in f["issue"] for f in c["flags"]))
+        self.assertTrue(any(a["field"] == "appraisal_contingency" for a in R["assumptions"]))
+
+    def test_financed_waiver_counts_only_documented_funds(self):
+        data = fixture("escalation.json")
+        b = data["offers"][1]
+        b.update(price=420000, appraisal_contingency=False, appraisal_gap=0)
+        o = by_id(oe.analyze(data))["B"]
+        self.assertTrue(o["appraisal_waived"])
+        self.assertEqual(o["downside_price"], 410000)  # no documented funds: covered only to the CMA high
+        self.assertLess(o["score"]["scores"]["appraisal"], 5)
+        b["gap_funds"] = 10000
+        self.assertEqual(by_id(oe.analyze(data))["B"]["downside_price"], 420000)
+
+    def test_price_above_midpoint_isnt_penalized(self):
+        """OFR-4: $405k nets more than $400k inside a $390k-$410k range and ranks above it."""
+        data = fixture("escalation.json")
+        data["offers"] = [dict(data["offers"][1], id="A", price=400000), dict(data["offers"][1], id="B")]
+        R = oe.analyze(data)
+        self.assertEqual([o["id"] for o in R["ranked"]], ["B", "A"])
+        self.assertEqual(by_id(R)["B"]["downside_price"], 405000)

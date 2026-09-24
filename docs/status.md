@@ -69,7 +69,7 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 | 1. High and contract rules | 0.3.0 | Crashes | OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22 | Done |
 | | | Profile merge, no silent Florida | CORE-1, CORE-2, CORE-8, TL-4, CORE-10, CORE-24 | Done |
 | | | FR/BAR dates | TL-1, TL-2, TL-3, TL-5 to TL-13, TL-18, TL-23 | Done |
-| | | Escalation and appraisal | OFR-2 to OFR-5, OFR-17, OFR-27 | Open |
+| | | Escalation and appraisal | OFR-2 to OFR-5, OFR-17, OFR-27 | Done |
 | | | Contract form routing (AS IS vs. Standard never mix) | OFR-33 (new) | Done |
 | | | Offer plan wording | OFR-6, OFR-21 | Open |
 | | | Money lines | CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 | Open |
@@ -88,7 +88,9 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 | | | Docs and tooling | DOC-1 to DOC-14 (DOC-13 needs a license and remote) | Open |
 | 4. Evals | | Iteration 2 on the new fixtures, plus the fair-housing evals | | Open |
 
-Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33.
+Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27.
+
+Removed with OFR-4: the seller review's "fallback counter" for cash-short buyers. With appraisal risk measured from the CMA high, the main counter already prices at the top of the range with no gap request, so the fallback could no longer trigger.
 
 Found while verifying (not in the audit): the FR/BAR forms set no time of day, so a rolled deadline runs to the end of the next business day, not 5:00 PM (fixed with TL-1); Brevard is Space Coast MLS, not Stellar; Lee and Charlotte are seller-pay counties; Texas legal holidays exclude Columbus Day (Phase 2); the FR/BAR Standard form has no inspection cancel right and seller repair limits, so the timeline now models its repair windows and OFR-33 tracks the offer engine's missing repair reserve.
 

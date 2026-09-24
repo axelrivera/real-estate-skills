@@ -34,15 +34,16 @@ class MatchesPrototype(unittest.TestCase):
         r = analyze("fha-competitive.json")
         got = {k: (o["price"], o["score"]["total"], r["cash"][k]["worst"], r["cash"][k]["reserve"], r["payment"][k],
                    round(r["ci"][k], 1), r["bands"][k][2][1]) for k, o in r["O"].items()}
+        # Audit 2026-09-23 (OFR-3, OFR-4, OFR-17): FHA appraisal protection runs to closing and a gap clause earns no
+        # listing-side credit, so there's no "stronger" option built on gap money; scores move by a point or three.
         self.assertEqual(got, {
-            "recommended": (365000, 64, 23550, 2450, 3150, 61.3, "Competitive"),
-            "stronger": (365000, 68, 25550, 450, 3150, 65.3, "Competitive"),
-            "lower_cost": (364000, 66, 19980, 6020, 3142, 55.8, "At Risk"),
+            "recommended": (365000, 65, 23550, 2450, 3150, 62.3, "Competitive"),
+            "lower_cost": (364000, 63, 18980, 7020, 3142, 52.8, "At Risk"),
         })
         t = r["terms"]["recommended"]
         self.assertEqual((t["seller_concessions"], t["deposit"], t["appraisal_gap"]), (2000, 11000, 0))
         self.assertNotIn("escalation", t)  # FHA 3.5% never escalates
-        self.assertEqual(r["limits"]["stronger"], ["reserve $450 below $2,000 floor"])
+        self.assertNotIn("stronger", r["O"])
 
     def test_seller_net_with_prototype_costs(self):
         d = fixture("fha-competitive.json")
@@ -126,7 +127,9 @@ class HandoffAndOtherStates(unittest.TestCase):
         self.assertEqual((B["market"]["sale_to_list"], B["market"]["median_dom"]), (0.992, 11))
         self.assertEqual((B["property"]["list_price"], B["property"]["state"]), (610000, "TX"))
         self.assertEqual(B["competition"]["heat"], "hot")
-        self.assertEqual(r["terms"]["recommended"]["escalation"], {"increment": 1000, "cap": 634000})
+        # OFR-5: the offer is already at the CMA's $632,000 walk-away, so no escalation cap above it
+        self.assertNotIn("escalation", r["terms"]["recommended"])
+        self.assertIn("walk-away", r["why"]["escalation"])
         self.assertNotIn("cma_low / cma_high", [a["field"] for a in r["missing"]])
 
     def test_handoff_file_via_cli(self):
@@ -199,3 +202,27 @@ class Pdf(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditEscalationCap(unittest.TestCase):
+    """Audit 2026-09-23: OFR-5 (cap vs. walk-away and the appraisal line), OFR-27 (letters at the cap)."""
+
+    def setUp(self):
+        d = fixture("texas-cma-escalation.json")
+        d["cma"]["offer_plan"]["walk_away"] = 650000
+        self.r = strategy.analyze(d, cma=strategy.load_cma(d))
+
+    def test_cap_is_funded_from_the_same_risk_line(self):
+        e = self.r["terms"]["recommended"]["escalation"]
+        self.assertLessEqual(e["cap"], 650000)
+        self.assertEqual(e["gap_at_cap"], e["cap"] - 632000)  # above the CMA high, the listing side's risk line
+        cc = self.r["cash_at_cap"]
+        self.assertEqual(cc["gap"], e["gap_at_cap"])
+        self.assertGreaterEqual(cc["reserve"], 15000)
+        self.assertIn("above the value range", self.r["why"]["escalation"])
+        self.assertNotIn("appraisal can support", self.r["why"]["escalation"])
+
+    def test_letters_cover_the_cap(self):
+        text = json.dumps(strategy.worksheet(self.r))
+        self.assertIn("Letter at up to $637,000, the escalation cap", text)
+        self.assertIn("(at the escalation cap)", text)

@@ -13,7 +13,6 @@
 |---|---|---|---|
 | {{row.term}} | {{row.offered}} | **{{row.counter}}** | {{row.why}} |
 
-{{summary.fallback, when present}}
 
 | | |
 |---|---|

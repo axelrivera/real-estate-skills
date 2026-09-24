@@ -98,13 +98,14 @@ Use when the agent has a title company quote or the county differs from the mark
 | `inspection_days` | days | 10 | med |
 | `loan_approval_days` | days | 30 (financed) | low |
 | `appraisal_contingency` | days, `true` or `false` | 21 days if financed | med |
-| `appraisal_gap` | $ the buyer covers | 0 | — |
+| `appraisal_gap` | $ the buyer covers (FHA/VA: recorded, credited 0) | 0 | — |
+| `gap_funds` | financed waiver only: $ documented beyond down payment and closing costs | 0 when waived | med |
 | `sale_contingency_days`, `kickout` | days, bool | 0, false | — |
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
 | `title_by` | `seller` / `buyer` | the local custom | — |
 | `riders` | list of names, as attached | none; rider checks run only when listed | — |
 | `loan_amount` | $ from the financing paragraph | none; checked against the down payment when given | — |
-| `escalation` | `{cap, increment}` | none | — |
+| `escalation` | `{cap, increment, proof}`; the offer is scored at the price it reaches against the other offers | none | — |
 | `personal_property`, `occupancy`, `other_terms` | text | — | — |
 | `insurance_quote` | bool | unknown | — |
 | `agent_track` | `strong` `average` `weak` | scored 3 | — |

@@ -4,7 +4,7 @@
     R = oe.analyze(listing_file)              # dict: listing, seller, offers, ranked, mode, assumptions, ...
     R = oe.analyze(listing_file, market=path_or_Market, cma=handoff_dict)
 
-For every offer: seller net sheet (as offered, downside, counter, fallback), certainty score, risk flags,
+For every offer: seller net sheet (as offered, downside, counter), certainty score, risk flags,
 proposed counter; with 2+ active offers, a ranking and a response plan.
 
 Rule: the engine never stops on missing data. Every missing input gets a conservative default and is
@@ -344,6 +344,43 @@ def short_price(v):
     return f"${k:,.0f}K" if k == int(k) else f"${k:,.1f}K"
 
 
+def apply_escalations(offers, L):
+    """Price each escalating offer at what it would actually reach (OFR-2): the lower of its cap and the best competing
+    active offer's base price plus its increment, never below its own base. Escalations don't chain: competing prices
+    are the other offers' base prices. Everything after this (net, score, rank, counter) uses the effective price."""
+    live = [o for o in offers if o["status"] in ACTIVE]
+    base = {id(o): o["price"] for o in live}
+    for o in live:
+        e = o.get("escalation")
+        if not e:
+            continue
+        inc, cap, issues = e.get("increment"), e.get("cap"), []
+        if not cap:
+            issues.append(("High", "Escalation clause with no cap.", "Ask for the cap in writing before relying on the clause."))
+        if not inc:
+            issues.append(("Med", "Escalation clause with no increment.", "Ask for the increment over a competing offer."))
+        if e.get("proof") is None:
+            issues.append(("Med", "The escalation clause doesn't say how a competing offer is proven.",
+                           "Require a redacted copy of the competing offer's signature page and price terms."))
+        others = [base[id(x)] for x in live if x is not o]
+        o["price_base"] = p0 = o["price"]
+        eff = p0
+        if cap and inc and others and max(others) + inc > p0:
+            eff = min(cap, max(others) + inc)
+        o["price"], o["escalated"] = eff, eff > p0
+        o["escalation_note"] = (f"Escalates to {money(eff)} from {money(p0)} (cap {money(cap)})" if eff > p0 else
+                                f"Escalation to {money(cap)} not triggered by the other offers" if cap else "Escalation clause")
+        if o.get("buyer_broker_amount"):
+            o["buyer_broker_pct"] = o["buyer_broker_amount"] / eff
+        if o["contract_form"] == cf.STANDARD:
+            o["repair_limits"] = cf.repair_limits(eff, o)
+        if cap and o["appraisal_risk"] and cap > appraisal_line(L) + o["gap_cover"]:
+            issues.append(("Med", f"The cap ({money(cap)}) is above what the value range and gap coverage support "
+                                  f"({money(appraisal_line(L) + o['gap_cover'])}).",
+                           "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling."))
+        o["escalation_issues"] = issues
+
+
 def label_offers(offers):
     """Set label ('Morales · Keller Williams'), ref ('the Morales (Keller Williams) offer') and key ('A') on each offer.
 
@@ -441,11 +478,30 @@ def prepare_offer(o, L, S, A):
     if ac is None and o["financed"]:
         A.add(sc, "appraisal_contingency", "21 days", "Appraisal terms not provided: assumed a 21-day contingency (conservative)", "med")
         ac = 21
+    # FHA and VA: the amendatory clause / escape clause can't be waived; the buyer may walk if the appraisal is low
+    # up to closing, so a waiver is ignored and a gap clause is stated intent only (OFR-3, OFR-17).
+    o["appraisal_protected"] = o["financed"] and o["financing"] in ("fha", "va")
+    if o["appraisal_protected"] and ac is False:
+        A.add(sc, "appraisal_contingency", "protected to closing",
+              f"{FIN_LABEL[o['financing']]} appraisal protection can't be waived (amendatory clause): treated as protected to closing",
+              "med")
+    o["appraisal_waived"] = o["financed"] and not o["appraisal_protected"] and ac is False
     if not ac or not o["financed"]:
         o["appraisal_days"] = 0
     else:
         o["appraisal_days"] = ac if isinstance(ac, int) and ac is not True else 21
     o["appraisal_gap"] = o.get("appraisal_gap") or 0
+    if o["appraisal_protected"]:
+        o["gap_cover"] = 0
+    elif o["appraisal_waived"]:  # credited only up to the buyer's documented cash beyond down payment and closing costs
+        funds = o.get("gap_funds")
+        if funds is None:
+            funds = A.add(sc, "gap_funds", 0, "Appraisal waived on a financed offer, but the buyer's cash beyond the down payment "
+                          "and closing costs isn't documented: the waiver covers a low appraisal only up to documented funds",
+                          "med")
+        o["gap_cover"] = funds
+    else:
+        o["gap_cover"] = o["appraisal_gap"]
     o["sale_contingency_days"] = o.get("sale_contingency_days") or 0
     o["kickout"] = bool(o.get("kickout"))
     eff = L["analysis_date"]
@@ -456,6 +512,9 @@ def prepare_offer(o, L, S, A):
         o["close"] = eff + timedelta(days=days)
     o["close_days"] = (o["close"] - eff).days
     o["title_by"] = o.get("title_by") or L["title_customary_payer"]
+    if o["appraisal_protected"]:
+        o["appraisal_days"] = o["close_days"]  # protection runs to closing
+    o["appraisal_risk"] = o["financed"] and bool(o["appraisal_days"] or o["appraisal_waived"])
     o["risk_days"] = risk_days(o)
     o["firm_date"] = eff + timedelta(days=o["risk_days"])
     return o
@@ -532,11 +591,17 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
             "missing": base["missing"]}
 
 
+def appraisal_line(L):
+    """Where appraisal risk starts: the top of the supported value range (OFR-4). A price at or under it is expected
+    to appraise; above it, the part the buyer doesn't cover is at risk. Both offer skills use this one line."""
+    return L["cma_high"]
+
+
 def downside_price(o, L):
-    """Price the deal realistically closes at if the appraisal lands at the CMA midpoint."""
-    if not o["financed"] or not o["appraisal_days"]:
+    """Price the deal realistically closes at if the appraisal lands at the top of the value range."""
+    if not o["appraisal_risk"]:
         return o["price"]
-    return min(o["price"], rnd(L["cma_mid"] + o["appraisal_gap"], 500, "down"))
+    return min(o["price"], rnd(appraisal_line(L) + o["gap_cover"], 500, "down"))
 
 
 # --- scoring -----------------------------------------------------------------
@@ -563,11 +628,11 @@ def auto_scores(o, L, S):
     elif o.get("lender_called"):
         why["approval"] += "; confirmed with lender"
 
-    if not o["financed"] or not o["appraisal_days"]:
+    if not o["appraisal_risk"]:
         s["appraisal"], why["appraisal"] = 5, "No appraisal contingency"
     else:
-        exposure = o["price"] - (L["cma_mid"] + o["appraisal_gap"])
-        over_hi = o["price"] - L["cma_high"]
+        exposure = o["price"] - (appraisal_line(L) + o["gap_cover"])
+        over_hi = o["price"] - appraisal_line(L)
         if o["price"] <= L["cma_mid"]:
             s["appraisal"] = 5
         elif exposure <= 0:
@@ -579,7 +644,12 @@ def auto_scores(o, L, S):
         else:
             s["appraisal"] = 1
         ref = "CMA high" if L["cma_provided"] else "list price"
-        gap = f"{money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else "no gap coverage"
+        if o["appraisal_protected"]:
+            gap = "protected to closing; gap clause is intent only" if o["appraisal_gap"] else "protected to closing"
+        elif o["appraisal_waived"]:
+            gap = f"waived, {money(o['gap_cover'])} documented to cover a low appraisal"
+        else:
+            gap = f"{money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else "no gap coverage"
         why["appraisal"] = f"{money(over_hi)} over {ref}, {gap}" if over_hi > 0 else f"At/under {ref}, {gap}"
 
     rd = o["risk_days"]
@@ -743,13 +813,20 @@ def flags_for(o, L, S):
         F.append({"sev": sev, "issue": issue, "fix": fix})
 
     ref = "CMA high" if L["cma_provided"] else "list price"
-    if o["financed"] and o["appraisal_days"]:
-        exp = o["price"] - (L["cma_mid"] + o["appraisal_gap"])
-        if o["price"] > L["cma_high"] and exp > 0:
-            cover = "only " + money(o["appraisal_gap"]) if o["appraisal_gap"] else "no"
+    if o["appraisal_risk"]:
+        exp = o["price"] - (appraisal_line(L) + o["gap_cover"])
+        if exp > 0:
+            cover = "only " + money(o["gap_cover"]) if o["gap_cover"] else "no"
+            what = ("documented cash behind the appraisal waiver" if o["appraisal_waived"] else
+                    "appraisal gap coverage the buyer is bound to" if o["appraisal_protected"] else "appraisal gap coverage")
             add("High" if exp > .01 * o["price"] else "Med",
-                f"Price is {money(o['price'] - L['cma_high'])} over {ref} with {cover} appraisal gap coverage.",
-                "Counter with an appraisal gap clause, or treat the appraised value as the real price.")
+                f"Price is {money(o['price'] - appraisal_line(L))} over {ref} with {cover} {what}.",
+                "Counter with an appraisal gap clause, or treat the appraised value as the real price." if not o["appraisal_protected"]
+                else "Treat the appraised value as the real price: the FHA/VA rider lets the buyer walk if it comes in low.")
+    if o["appraisal_protected"] and o["appraisal_gap"]:
+        add("Med", f"{FIN_LABEL[o['financing']]} appraisal gap clause ({money(o['appraisal_gap'])}): the buyer can still cancel "
+                   "if the appraisal is low (amendatory clause), so it shows intent only.",
+            "Ask for proof of funds for the gap; don't count it in the net.")
     extras = o["seller_concessions"] + o["home_warranty"]
     if o["price"] > L["list_price"] and extras >= (o["price"] - L["list_price"]):
         add("Med", f"Concessions + warranty ({money(extras)}) cancel out the {money(o['price'] - L['list_price'])} over list.",
@@ -791,7 +868,9 @@ def flags_for(o, L, S):
     if any(t in o["buyer"].upper() for t in (" LLC", " INC", " TRUST", " CORP")):
         add("Low", "Entity buyer.", "Confirm signer authority and that funds are in the entity's name.")
     if o.get("escalation"):
-        add("Med", "Escalation clause.", "Verify the cap, increment and proof-of-competing-offer terms; pair with gap coverage.")
+        for sev, issue, fix in o.get("escalation_issues") or []:
+            add(sev, issue, fix)
+        add("Low", o["escalation_note"] + ".", "Confirm the competing offer's price terms before signing.")
     if L.get("hoa_approval_required"):
         add("Low", "HOA approval required.", "Confirm the association's approval timeline fits the closing date.")
     if o["financed"] and o.get("insurance_quote") is False:
@@ -812,19 +891,19 @@ def propose_counter(o, L, S):
          "close": o["close"], "buyer_broker_pct": o["buyer_broker_pct"], "sale_contingency_days": o["sale_contingency_days"]}
     rows = []
     lp, hi, mid = L["list_price"], L["cma_high"], L["cma_mid"]
-    if o["financed"] and o["appraisal_days"] and o["price"] > hi and o["appraisal_gap"] < o["price"] - hi:
+    if o["appraisal_risk"] and o["price"] > hi and o["gap_cover"] < o["price"] - hi:
         t["price"] = rnd(hi, 1000, "down")
         rows.append(("Price", money(o["price"]), money(t["price"]), "Top of the value range, so the appraisal can support it"))
     elif o["price"] < lp:
         low_ball = L["cma_provided"] and o["price"] < L["cma_low"]
         t["price"] = lp if low_ball else rnd((o["price"] + lp) / 2, 1000, "up")
         rows.append(("Price", money(o["price"]), money(t["price"]), "Under the value range: counter at list" if low_ball else "Below list: meet partway"))
-    if o["financed"] and o["appraisal_days"]:
-        need = t["price"] - mid
-        if need > o["appraisal_gap"] and need > 0:
+    if o["appraisal_risk"] and not o["appraisal_protected"]:  # an FHA/VA gap clause wouldn't bind the buyer
+        need = t["price"] - hi
+        if need > o["gap_cover"] and need > 0:
             t["appraisal_gap"] = rnd(need, 1000, "up")
             rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None", money(t["appraisal_gap"]),
-                         f"Deal holds if the appraisal lands near {money(rnd(mid, 1000))}"))
+                         f"Deal holds if the appraisal lands at {money(rnd(hi, 1000))}"))
     if o["seller_concessions"] > .015 * o["price"]:
         t["seller_concessions"] = rnd(o["seller_concessions"] / 2, 500)
         rows.append(("Seller Concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Biggest controllable drain on net"))
@@ -871,23 +950,6 @@ def propose_counter(o, L, S):
     return t, rows
 
 
-def fallback_counter(o, main, L):
-    """Cash-constrained buyer version: no gap request, price at value, keep more of their concessions."""
-    if not o["financed"] or not (o["financing"] in ("fha", "va", "usda") or o["down_pct"] < .10):
-        return None
-    if main["appraisal_gap"] <= o["appraisal_gap"]:
-        return None
-    t = dict(main)
-    t["price"] = min(main["price"], rnd(L["cma_mid"], 1000, "up"))
-    t["appraisal_gap"] = o["appraisal_gap"]
-    t["seller_concessions"] = rnd((o["seller_concessions"] + main["seller_concessions"]) / 2, 500)
-    rows = [("Price", money(o["price"]), money(t["price"]), "At the value midpoint, so no gap is needed"),
-            ("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
-             money(t["appraisal_gap"]) if t["appraisal_gap"] else "None", "Buyer likely can't fund a gap"),
-            ("Seller Concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Keeps closing-cost help this buyer needs")]
-    return t, rows
-
-
 # --- per-offer and listing-level analysis ------------------------------------
 
 def _sheet(t, L, S, costs, repair=0):
@@ -907,11 +969,9 @@ def analyze_offer(o, L, S, costs):
     ct, rows = propose_counter(o, L, S)
     o["counter_terms"], o["counter_rows"] = ct, rows
     o["ns_counter"] = _sheet(ct, L, S, costs)
-    fb = fallback_counter(o, ct, L)
-    if fb:
-        o["fallback_terms"], o["fallback_rows"] = fb
-        o["ns_fallback"] = _sheet(fb[0], L, S, costs)
     oc = dict(o)
+    if not (o["appraisal_protected"] or o["appraisal_waived"]):
+        oc["gap_cover"] = ct["appraisal_gap"]
     oc.update(price=ct["price"], appraisal_gap=ct["appraisal_gap"], deposit=ct["deposit"], inspection_days=ct["inspection_days"],
               sale_contingency_days=ct["sale_contingency_days"], close=ct["close"])
     oc["risk_days"] = risk_days(oc)
@@ -980,6 +1040,7 @@ def analyze(data, market=None, cma=None):
     offers = [prepare_offer(o, L, S, A) for o in data.get("offers") or []]
     if not offers:
         raise OfferError("There are no offers in the listing file.")
+    apply_escalations(offers, L)
     label_offers(offers)
     for o in offers:
         analyze_offer(o, L, S, costs)

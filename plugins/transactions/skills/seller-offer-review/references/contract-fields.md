@@ -19,9 +19,10 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 | `inspection_days`, `contract_form` | Read the form's title: "AS IS Residential Contract for Sale and Purchase" is `as_is` (Para. 12: the buyer may cancel for any reason); "Residential Contract for Sale and Purchase" is `standard` (no walk-away; the seller pays repairs up to the repair limits). Never guess: the two run different math |
 | `repair_limits` | Standard only, Para. 9(a): the General Repair, WDO and Permit Limits (1.5% of price each if blank) |
 | `buyer_broker_pct` | Additional terms, a compensation addendum, or the buyer-broker agreement. Ask if it's not in the offer |
-| `appraisal_days`, `appraisal_gap` | Appraisal Contingency rider; FHA/VA rider (amendatory clause = appraisal contingency); additional terms for gap language |
+| `appraisal_days`, `appraisal_gap` | Appraisal Contingency rider; FHA/VA rider (amendatory clause: protection to closing, can't be waived, a gap clause is intent only); additional terms for gap language |
+| `gap_funds` | Financed offer that waives the appraisal: the buyer's documented cash beyond the down payment and closing costs (proof of funds). The waiver is credited only up to it |
 | `sale_contingency_days`, `kickout` | Sale of Buyer's Property rider and kick-out clause |
-| `escalation` | Escalation addendum or additional terms (cap and increment) |
+| `escalation` | Escalation addendum or additional terms: `cap`, `increment`, and `proof` (how a competing offer is proven, e.g. "redacted copy") |
 | `riders` | Rider checklist near the end |
 | `approval`, `lender` | The separate pre-approval letter or proof of funds: "DU Approve/Eligible", "LP Accept", "conditionally approved", "underwritten" |
 

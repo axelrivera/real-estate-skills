@@ -156,9 +156,12 @@ def term_rows(o, R):
     L, S = R["listing"], R["seller"]
     rows = []
     ref = f"CMA {money(L['cma_low'])}–{money(L['cma_high'])}" if L["cma_provided"] else f"List {money(L['list_price'])}"
-    exposed = o["financed"] and o["appraisal_days"] and o["price"] - (L["cma_mid"] + o["appraisal_gap"]) > 0
+    exposed = o["appraisal_risk"] and o["price"] - (oe.appraisal_line(L) + o["gap_cover"]) > 0  # same line as the engine
     st = "risk" if o["price"] < L["cma_low"] else ("caution" if exposed or o["price"] < L["list_price"] else "good")
-    rows.append(("Price", money(o["price"]), ref, st, "Above value range; appraisal may cut it" if exposed and o["price"] > L["cma_high"] else ""))
+    notes = [o["escalation_note"]] if o.get("escalation") else []
+    if exposed:
+        notes.append("Above value range; appraisal may cut it")
+    rows.append(("Price", money(o["price"]), ref, st, "; ".join(notes)))
     f = o["financing"]
     st = "good" if f == "cash" or (f == "conventional" and o["down_pct"] >= .20) else ("caution" if f in ("conventional", "va") else "risk")
     rows.append(("Financing", review.fin_str(o), "Cash or conv. ≥20% down", st, ""))
@@ -378,10 +381,9 @@ def single_html(R, o, v):
     if v["counter"]:
         ck = "".join(f'<tr><td><b>{esc(r["term"])}</b></td><td class="was">{esc(r["offered"])}</td><td class="arr">→</td>'
                      f'<td class="now">{esc(r["counter"])}</td><td class="why2">{esc(r["why"])}</td></tr>' for r in v["counter"]["rows"])
-        fb = f'<div class="note">{md(v["fallback"])}</div>' if v["fallback"] else ""
         box = (f'<div class="ctr"><div class="ctrh"><span>OUR COUNTER</span><em>{md(v["counter"]["summary"])}</em></div>'
                '<table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%"><col style="width:17%"><col></colgroup>'
-               f'<thead><tr><th>Term</th><th>Buyer Offered</th><th></th><th>We Counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table>{fb}</div>')
+               f'<thead><tr><th>Term</th><th>Buyer Offered</th><th></th><th>We Counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table></div>')
     elif act == "INCOMPLETE":
         rows = "".join(f'<tr><td class="c"><span class="cb"></span></td><td><span class="pill {f["sev"].lower()}">{f["sev"]}</span> '
                        f'<b>{esc(f["issue"])}</b></td><td class="why2">{esc(f["fix"])}</td></tr>' for f in v["fixes"])
@@ -413,8 +415,6 @@ def single_html(R, o, v):
     cols = [("As Offered", o["ns"]), ("Downside Case", o["ns_down"])]
     if o["counter_rows"]:
         cols.append(("Proposed Counter", o["ns_counter"]))
-    if o.get("fallback_rows"):
-        cols.append(("Fallback Counter", o["ns_fallback"]))
     target_label = "Seller's Target"
     cols.append((target_label, o["target"]))
     ns = netsheet_body(cols)

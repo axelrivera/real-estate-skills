@@ -303,20 +303,24 @@ def build_offer(B, costs):
     if need > cap:
         why["seller_concessions"] += f" (program cap {money(round(cap))} reached)"
     spare_after = BU["cash_available"] - BU["reserve_floor"] - (down + cc - min(conc, cc))
+    line = V["cma_high"]  # appraisal risk starts at the top of the value range, as on the listing side (oe.appraisal_line)
     gap = 0
-    if fin != "cash" and price > V["mid"]:
-        gap = min(rnd(price - V["mid"], 1000, "up"), max(0, rnd(spare_after, 500, "down")))
+    if fin != "cash" and price > line:
+        gap = min(rnd(price - line, 1000, "up"), max(0, rnd(spare_after, 500, "down")))
     t["appraisal_gap"] = gap
     if fin == "cash":
         why["appraisal_gap"] = "Cash: no appraisal contingency"
-    elif price <= V["mid"]:
-        why["appraisal_gap"] = "Not needed: price is at or below value midpoint"
-    elif gap >= price - V["mid"]:
-        why["appraisal_gap"] = "Covers the price above value midpoint"
+    elif price <= line:
+        why["appraisal_gap"] = "Not needed: price is inside the value range"
+    elif gap >= price - line:
+        why["appraisal_gap"] = "Covers the price above the value range"
     elif gap:
         why["appraisal_gap"] = "As much as your reserve allows"
     else:
         why["appraisal_gap"] = f"No room: your cash after the {money(BU['reserve_floor'])} reserve is fully used"
+    if gap and fin in ("fha", "va"):
+        why["appraisal_gap"] += ("; the FHA/VA rider still lets you walk if the appraisal is low, so the clause shows intent: "
+                                 "send proof of funds with it")
     dep_pct = {0: 0.01, 1: 0.02, 2: 0.03, 3: 0.03}[lvl] if fin != "cash" else {0: 0.03, 1: 0.05, 2: 0.10, 3: 0.10}[lvl]
     t["deposit"] = int(min(rnd(price * dep_pct, 500, "up"), max(1000, down + cc - conc)))
     why["deposit"] = f"{dep_pct:.0%} shows commitment; refundable during inspection; counts toward cash to close"
@@ -354,15 +358,29 @@ def build_offer(B, costs):
     why["insurance_quote"] = ("Quote in hand: include it with the offer" if BU.get("insurance_quote") else
                               "Get the quote before submitting; listing agents weigh it on older roofs")
     if lvl >= 2 and fin in ("cash", "conventional") and BU["down_pct"] >= 0.10:
-        capv = min(BU["max_price"], rnd(V["cma_high"] + (gap if fin != "cash" else 0), 1000, "down"))
+        # Cap = the lowest of the buyer's max, the CMA's walk-away, and the price whose appraisal gap (above the same
+        # risk line the listing side uses) the buyer can still fund with the reserve intact (OFR-5).
+        walk = (B.get("cma_offer_plan") or {}).get("walk_away")
+        capv = rnd(min(BU["max_price"], walk or BU["max_price"]), 1000, "down")
+        by_walk = bool(walk) and walk < BU["max_price"]
+
+        def gap_at(p):
+            return max(gap, rnd(p - line, 1000, "up")) if fin != "cash" and p > line else gap
+
         if BU.get("max_payment"):
             while capv > price and monthly_payment(B, costs, capv) > BU["max_payment"]:
-                capv -= 1000
-        while capv > price and buyer_cash(B, {"price": capv, "seller_concessions": conc, "appraisal_gap": gap})["reserve"] < BU["reserve_floor"]:
-            capv -= 1000
+                capv, by_walk = capv - 1000, False
+        while capv > price and buyer_cash(B, {"price": capv, "seller_concessions": conc,
+                                              "appraisal_gap": gap_at(capv)})["reserve"] < BU["reserve_floor"]:
+            capv, by_walk = capv - 1000, False
         if capv > price:
-            t["escalation"] = {"increment": 1000, "cap": capv}
-            why["escalation"] = f"+$1,000 over the best offer, cap {money(capv)}: the appraisal can support it and your reserve holds"
+            t["escalation"] = {"increment": 1000, "cap": capv, "gap_at_cap": gap_at(capv)}
+            support = ("inside the value range, so the appraisal can support it" if capv <= line or fin == "cash" else
+                       f"{money(capv - line)} above the value range: the gap clause rises with the price, and your cash covers it")
+            why["escalation"] = (f"+$1,000 over the best offer, cap {money(capv)}: {support}; your reserve holds"
+                                 + (" (held at your CMA's walk-away price)" if by_walk else ""))
+        elif by_walk:
+            why["escalation"] = f"Not used: the offer is already at your CMA's walk-away price ({money(walk)})"
         else:
             why["escalation"] = "Not used: no room in your cash or payment to go higher"
     elif lvl >= 2:
@@ -371,14 +389,16 @@ def build_offer(B, costs):
 
 
 def stronger(B, t):
-    """Next step up: more gap coverage and a 3% deposit, never beyond the buyer's actual cash (may dip below the reserve)."""
+    """Next step up: a 3% deposit, plus gap coverage where the listing side credits it (never beyond the buyer's actual cash;
+    may dip below the reserve)."""
     s = dict(t)
     if buyer_cash(B, t)["reserve"] < 0:
         return None  # can't afford the base offer: a stronger one is meaningless
-    if B["buyer"]["financing"] != "cash":
+    uncovered = t["price"] - B["value"]["cma_high"] - t.get("appraisal_gap", 0)  # above the listing side's risk line
+    if B["buyer"]["financing"] not in ("cash", "fha", "va") and uncovered > 0:  # an FHA/VA gap clause earns no credit
         c = buyer_cash(B, t)
         room = max(0, rnd(B["buyer"]["cash_available"] - c["worst"], 500, "down"))
-        s["appraisal_gap"] = t.get("appraisal_gap", 0) + min(rnd(0.0055 * t["price"], 1000, "up"), room)
+        s["appraisal_gap"] = t.get("appraisal_gap", 0) + min(rnd(uncovered, 1000, "up"), room)
     s["deposit"] = max(t.get("deposit", 0), rnd(0.03 * t["price"], 500, "up"))
     return None if s == t else s
 
@@ -477,7 +497,8 @@ def analyze(B_in, market=None, cma=None):
     res["cash"] = {k: buyer_cash(B, t) for k, t in variants}
     res["payment"] = {k: monthly_payment(B, costs, t["price"]) for k, t in variants}
     esc_ = rec.get("escalation")
-    res["cash_at_cap"] = buyer_cash(B, dict(rec, price=esc_["cap"])) if esc_ else None
+    res["cash_at_cap"] = buyer_cash(B, dict(rec, price=esc_["cap"], appraisal_gap=esc_.get("gap_at_cap", rec.get("appraisal_gap", 0)))) \
+        if esc_ else None
     res["ci"] = {k: ci(O[k], tgt, lp) for k, _ in variants}
     res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
     if "lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl":
@@ -801,8 +822,12 @@ def worksheet(r, variant=None):
         riders.append((names["backup"], "—", "Seller already has an accepted contract"))
     if t.get("escalation"):
         e = t["escalation"]
-        riders.append((names["escalation"], f"Increment: **{money(e['increment'])}** · cap: **{money(e['cap'])}** · proof of competing offer required",
-                       "Only because the appraisal can support the cap and the buyer's reserve holds"))
+        gap_note = (f" · appraisal gap coverage rises with the price, up to **{money(e['gap_at_cap'])}** at the cap"
+                    if e.get("gap_at_cap", 0) > (t.get("appraisal_gap") or 0) else "")
+        riders.append((names["escalation"], f"Increment: **{money(e['increment'])}** · cap: **{money(e['cap'])}** · "
+                       f"proof of competing offer required{gap_note}",
+                       "The cap is inside the value range, so the appraisal can support it" if e["cap"] <= B["value"]["cma_high"]
+                       else "Above the value range: the buyer's cash covers the gap at the cap with the reserve intact"))
     if P.get("cdd"):
         riders.append((names["cdd"], f"Annual amount: {blank('amount')} · outstanding debt: {blank('amount')}", "Property is in a special district"))
     if P.get("short_sale"):
@@ -837,6 +862,9 @@ def worksheet(r, variant=None):
         docs.append("Special district information")
 
     CK = BU.get("checklist") or {}
+    esc = t.get("escalation")  # letters and proof of funds cover the price the offer can reach (OFR-27)
+    worst = (buyer_cash(B, dict(t, price=esc["cap"], appraisal_gap=esc.get("gap_at_cap", t.get("appraisal_gap", 0))))["worst"]
+             if esc else r["cash"][variant]["worst"])
     fl = costs.state == "FL"
     rider_list = ", ".join(x[0].split(" (")[0] for x in riders) or "none"
     package = [  # (group, item, status, note)
@@ -844,9 +872,11 @@ def worksheet(r, variant=None):
         ("Contract", f"Riders attached and signed: {rider_list}", CK.get("riders", "Pending"), ""),
         ("Contract", "Additional terms reviewed by broker", CK.get("terms", "Pending"), ""),
         ("Buyer Docs", "Pre-approval letter at the offer price, not the max" if financed else "Proof of funds (recent statement in the buyer's name)",
-         CK.get("pre_approval", "Pending"), f"Letter at {money(price)}" if financed else ""),
+         CK.get("pre_approval", "Pending"), (f"Letter at up to {money(esc['cap'])}, the escalation cap" if esc else
+                                             f"Letter at {money(price)}") if financed else ""),
         ("Buyer Docs", "Proof of funds for deposit, closing costs and appraisal gap" if financed else "Source-of-funds note if the account is new",
-         CK.get("funds", "Pending"), f"At least {money(r['cash'][variant]['worst'])} available" if financed else ""),
+         CK.get("funds", "Pending"), f"At least {money(worst)} available" + (" (at the escalation cap)" if esc else "")
+         if financed else ""),
         ("Buyer Docs", "Homeowners insurance quote for this address", CK.get("insurance", "Yes" if BU.get("insurance_quote") else "Pending"), "Before submitting"),
         ("Disclosures", "Brokerage relationship disclosure signed (transaction broker / single agent)" if fl else "Agency disclosure signed",
          CK.get("agency", "Pending"), "Florida requirement" if fl else "Per your state's rules"),

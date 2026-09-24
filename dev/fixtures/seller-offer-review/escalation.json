@@ -1,0 +1,32 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "listing": {
+    "address": "1419 Brantley Cir, Longwood, FL 32750",
+    "state": "FL",
+    "county": "Seminole",
+    "list_price": 399000,
+    "beds": 3, "baths": 2, "sqft": 1690, "year_built": 1998, "roof_year": 2020,
+    "hoa_monthly": 0, "cma_low": 390000, "cma_high": 410000, "annual_tax": 5100
+  },
+  "seller": {
+    "name": "Sample Seller", "payoff": 188000, "listing_fee_pct": 0.025, "priority": "price"
+  },
+  "offers": [
+    {"id": "A", "contract_form": "as_is", "buyer": "Sample Buyer", "price": 400000,
+     "escalation": {"increment": 1000, "cap": 425000, "proof": "redacted copy of the competing offer"},
+     "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
+     "deposit": 12000, "seller_concessions": 0, "buyer_broker_pct": 0.025, "inspection_days": 10,
+     "loan_approval_days": 30, "appraisal_contingency": 21, "appraisal_gap": 5000, "closing_date": "2026-10-30",
+     "insurance_quote": true, "agent_track": "strong"},
+    {"id": "B", "contract_form": "as_is", "buyer": "Sample Buyer", "price": 405000,
+     "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
+     "deposit": 12000, "seller_concessions": 0, "buyer_broker_pct": 0.025, "inspection_days": 10,
+     "loan_approval_days": 30, "appraisal_contingency": 21, "appraisal_gap": 5000, "closing_date": "2026-10-30",
+     "insurance_quote": true, "agent_track": "strong"},
+    {"id": "C", "contract_form": "as_is", "buyer": "Sample Buyer", "price": 395000,
+     "financing": "fha", "down_pct": 0.035, "approval": "preapproval", "appraisal_contingency": false, "appraisal_gap": 10000,
+     "deposit": 5000, "seller_concessions": 6000, "buyer_broker_pct": 0.025, "inspection_days": 10,
+     "loan_approval_days": 30, "closing_date": "2026-11-06"}
+  ]
+}

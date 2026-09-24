@@ -64,6 +64,11 @@ def pick(R, mode="auto", offer_id=None):
 
 # --- shared pieces -----------------------------------------------------------
 
+def price_note(o):
+    """Financing, plus how an escalating offer reached its price."""
+    return fin_str(o) + (f" · {o['escalation_note']}" if o.get("escalation") else "")
+
+
 def fin_str(o):
     return oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.1f}% down")
 
@@ -146,8 +151,8 @@ def incomplete_view(R, o):
         "respond_by": o.get("expires") or "See contract", "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
         "fixes": [{"sev": f["sev"], "issue": f["issue"], "fix": f["fix"]} for f in fixes],
-        "counter": None, "fallback": None, "compare": None,
-        "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": fin_str(o), "tone": "brand"},
+        "counter": None, "compare": None,
+        "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
                  {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
                  {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": "if appraisal & inspection go badly", "tone": "risk"},
                  {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": "list price, clean terms", "tone": ""}],
@@ -196,13 +201,6 @@ def single_view(R, o):
         counter = {"rows": [row(*r) for r in o["counter_rows"]],
                    "summary": f"{len(o['counter_rows'])} change{'s' if len(o['counter_rows']) != 1 else ''} · net after holding "
                               f"{money(ao)} → **{money(cn)}** ({signed(cn - ao)} vs. as offered{tail})"}
-    fallback = None
-    if o.get("fallback_rows"):
-        ft = o["fallback_terms"]
-        gap = "no appraisal gap" if not ft["appraisal_gap"] else money(ft["appraisal_gap"]) + " gap"
-        fallback = (f"**Fallback if the buyer is cash-constrained:** {money(ft['price'])} · {gap} · "
-                    f"{money(ft['seller_concessions'])} concessions · other terms as above → net {money(o['ns_fallback']['net_adj'])}. "
-                    "Priced at value, so the number is more likely to hold.")
     compare = None
     if act in ("BACKUP", "DECLINE") and top is not o:
         compare = {"this": o["label"], "vs": top["label"], "rows": [
@@ -213,7 +211,7 @@ def single_view(R, o):
             ["Closing", f"{o['close']:%b %-d}", f"{top['close']:%b %-d}"]]}
 
     pre = "" if S["payoff_known"] else " (Pre-Payoff)"
-    kpis = [{"label": "Offer Price", "value": money(o["price"]), "note": fin_str(o), "tone": "brand"},
+    kpis = [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
             {"label": f"Net as Offered{pre}", "value": money(ao), "note": f"{signed(ao - tgt)} vs. target",
              "tone": "risk" if ao < tgt else "good"},
             {"label": "Downside Net", "value": money(dn), "note": "if appraisal & inspection go badly", "tone": "risk"}]
@@ -232,9 +230,6 @@ def single_view(R, o):
                      "status": "good" if act == "COUNTER" else "caution", "recommended": act == "COUNTER",
                      "what": "Better net and lower walk-away risk" if act == "COUNTER"
                      else f"Only {signed(cn - ao)}, and it risks losing a strong offer"})
-    if o.get("fallback_rows"):
-        opts.append({"option": "Fallback Counter", "net": money(o["ns_fallback"]["net_adj"]), "certainty": "—", "status": "caution",
-                     "what": "If the buyer can't fund an appraisal gap", "recommended": False})
     opts.append({"option": "Decline", "net": "—", "certainty": "—", "status": "caution", "recommended": act == "DECLINE",
                  "what": f"Stay on market; each extra month costs about {money(S['holding_monthly'])} in holding costs"})
     if act == "BACKUP":
@@ -252,7 +247,7 @@ def single_view(R, o):
         "offers_active": len(R["active"]) if multi_ctx else 1,
         "respond_by": o.get("expires") or "See contract", "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
-        "counter": counter, "fallback": fallback, "compare": compare, "kpis": kpis,
+        "counter": counter, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S),
         "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"][:3]],
         "options": opts,
@@ -317,7 +312,7 @@ def multi_view(R):
 
     ranked = [{"rank": i + 1, "offer": o["label"],
                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
-               "price": money(o["price"]), "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]),
+               "price": money(o["price"]) + (" (escalated)" if o.get("escalated") else ""), "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]),
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
                "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
                "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],

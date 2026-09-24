@@ -52,7 +52,7 @@ python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-pr
 It prints every value already formatted: the page-1 summary, each offer's net sheet, and the assumptions ranked by impact. Read it critically before answering; the rules are a first draft and the agent's judgment wins.
 
 - **Scores** follow `references/scoring-rubric.md`. When the agent knows something the contract can't show (the lender call went badly, the buyer's agent is unreliable), set `scores.<criterion>` with a `why`.
-- **Counters** follow `references/counter-rules.md`. Check the counter is realistic for this buyer: a 3.5%-down FHA buyer who asked for concessions probably can't also fund an appraisal gap. The engine adds a fallback counter for that case; mention it.
+- **Counters** follow `references/counter-rules.md`. Check the counter is realistic for this buyer: the engine counters a price above the value range back to its top instead of asking for gap money, and never asks an FHA or VA buyer for gap coverage (it wouldn't bind them).
 - **Overrides:** `counter`, `recommendation` or `status` in the offer when the agent decides differently. Never change a number to make the recommendation look better.
 
 ## 3. Deliver
@@ -65,7 +65,7 @@ python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|mult
 
 It saves the PDF to the outputs folder in the agent's seller-side brand colors. Page 1 fits on one page; if it can't render, say so and give the markdown review instead. When the agent asks for every offer's report, the full set or the packet, add `--packet`: the comparison plus a single review of each active offer, in rank order, one PDF each. Otherwise render only what was asked.
 
-In chat, keep it short: the recommendation with the net and certainty; the counter (and fallback) or the plan per offer; then the top missing inputs as one question, skipped when nothing high or medium is assumed. Offer the other format in one line. Always hand back the updated listing file: the sandbox resets between conversations, so say once "upload this with the next offer and I'll add it to the comparison."
+In chat, keep it short: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs as one question, skipped when nothing high or medium is assumed. Offer the other format in one line. Always hand back the updated listing file: the sandbox resets between conversations, so say once "upload this with the next offer and I'll add it to the comparison."
 
 ## Offers Over Time
 

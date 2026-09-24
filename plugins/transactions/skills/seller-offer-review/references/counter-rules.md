@@ -4,7 +4,7 @@ The engine drafts a counter from the rules below. Each rule adds a row (term, of
 
 1. **Price above value with an unfunded appraisal gap** (financed, price > CMA high, gap < price − CMA high) → counter at CMA high. A price the appraisal won't support is a renegotiation waiting to happen. This can lower the paper net, so the report compares the counter with both the as-offered and the downside net; the honest comparison is the downside.
 2. **Price below list** → meet partway (rounded up to $1,000). With a CMA and a price under the CMA low, counter at list.
-3. **Appraisal gap:** financed, and the counter price is above the CMA midpoint → ask the buyer to cover the difference, rounded up to $1,000.
+3. **Appraisal gap:** financed (not FHA or VA), and the counter price is above the CMA high → ask the buyer to cover the difference, rounded up to $1,000.
 4. **Concessions above 1.5% of price** → counter at half.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
 6. **Deposit under 3%** → 3% of the counter price for financed offers, 5% for cash.
@@ -15,9 +15,9 @@ The engine drafts a counter from the rules below. Each rule adds a row (term, of
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company.
 
-## Fallback Counter (Cash-Constrained Buyers)
+## Appraisal Terms
 
-Added when the buyer is FHA, VA or USDA, or putting down less than 10%, and the main counter asks for new gap money. The fallback prices at the CMA midpoint (no gap needed), drops the gap request and splits the difference on concessions. It usually nets less on paper but is more likely to close at that number. Present it as "if the buyer can't fund a gap."
+Appraisal risk starts at the top of the CMA range. A price above it is countered back to it rather than asking for gap money the buyer may not have. FHA and VA offers are never asked for gap coverage: the rider lets the buyer walk if the appraisal is low, so a gap clause shows intent only. A financed offer that waives the appraisal is credited only up to the buyer's documented cash beyond the down payment and closing costs (`gap_funds`).
 
 ## Multiple Offers
 
