@@ -246,7 +246,7 @@ def worksheet_html(r, agent, sample, variant=None):
     riders = "".join(f'<tr><td><b>{esc(x["rider"])}</b></td><td>{md(x["inputs"])}</td><td class="src">{esc(x["why"])}</td></tr>' for x in W["riders"]) \
         or '<tr><td colspan="3">No riders needed.</td></tr>'
     clauses = "".join(f'<div class="clause"><b class="t">{esc(x["title"])}</b>{esc(x["text"])}</div>' for x in W["clauses"])
-    docs = "".join(f"<tr><td>☐ {esc(d)}</td></tr>" for d in W["docs"])
+    docs = "".join(f'<tr><td><span class="cb"></span> {esc(d)}</td></tr>' for d in W["docs"])  # same box as the checklist
     def hint(note):
         return f'<span class="hint">{esc(note)}</span>' if note else ""
 
@@ -270,7 +270,7 @@ def worksheet_html(r, agent, sample, variant=None):
 <h2>4 · Offer Package Checklist</h2>
 <div class="tbl pk"><table class="ws"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:48%"><col style="width:12%"></colgroup>
 <thead><tr><th class="c">✓</th><th>Group</th><th>Item</th><th>Date</th><th>Notes</th></tr></thead><tbody>{pk}</tbody></table></div>
-<h2>5 · Request from the Seller After Acceptance</h2><div class="tbl"><table><tbody>{docs}</tbody></table></div>
+<h2>5 · Request from the Seller After Acceptance</h2><div class="tbl"><table class="docs"><tbody>{docs}</tbody></table></div>
 <div class="fine">Generated from the same analysis as the Offer Options report. {"Paragraph numbers follow the FR/BAR AS IS contract and may differ by form version. " if W["frbar"] else ""}Rider availability depends on your form set. Draft clause language must be reviewed by the agent and broker; consult a real estate attorney for legal questions.</div>'''
     theme = design.theme(agent.get("brand"), "buyer")
     return render.page(body + render.notices(agent), css=css("worksheet"), title="Offer Package Worksheet",

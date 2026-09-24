@@ -11,3 +11,4 @@
 .pk .hint{display:block;font-size:6.8pt;color:var(--muted);margin-top:1px}
 .cb{display:inline-block;width:11px;height:11px;border:1.3px solid var(--text);border-radius:1px;vertical-align:-1px;background:#fff}
 .cb.on{background:var(--text)} .cb.on::after{content:"✓";color:#fff;font-size:9px;line-height:11px;display:block;text-align:center}
+.docs .cb{margin:0 8px 0 4px}
