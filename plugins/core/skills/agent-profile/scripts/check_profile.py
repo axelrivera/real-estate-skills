@@ -28,12 +28,14 @@ def check(path):
     problems += [f"Missing {f}." for f in agent["errors"]]
     problems += agent["warnings"]  # invalid color codes
     colors, warnings = {}, []
+    # CORE-27: the agent's own word for a color ("Gold"), from the comment beside it in the profile
+    own = {m.group(1).upper(): m.group(2).strip() for m in re.finditer(r'"(#[0-9A-Fa-f]{6})"\s*#\s*([^\n]+)', text)}
     for side in ("buyer", "seller"):
         hx, source, _ = design.resolve(agent["brand"], side)
-        colors[side] = {"hex": hx, "name": design.color_name(hx), "default": source == "default"}
+        name = own.get(str(hx).upper()) or design.color_name(hx)
+        colors[side] = {"hex": hx, "name": name, "default": source == "default"}
         if source != "default" and design.is_light(hx):
-            warnings.append(f"{design.color_name(hx)} is too light to read as text, so reports use a darker "
-                            f"shade for text and {design.color_name(hx)} for accents.")
+            warnings.append(f"{name} is too light to read as text, so reports use a darker shade for text and {name} for accents.")
     return {
         "ok": not problems,
         "fields": [f for f, _ in profiles.agent_lines(agent)],

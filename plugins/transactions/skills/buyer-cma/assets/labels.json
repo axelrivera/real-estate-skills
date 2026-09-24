@@ -58,7 +58,7 @@
  "pay_cash": "Cash for Down Payment",
  "pay_pi": "Principal and Interest",
  "pay_tax": "Property Taxes ({short}, {homestead})",
- "pay_ins": "Homeowners Insurance (Placeholder)",
+ "pay_ins": "Homeowners Insurance (Estimate: Get a Quote)",
  "pay_flood": "Flood Insurance",
  "pay_flood_quote": "Get a Quote",
  "pay_mi": "Mortgage Insurance",

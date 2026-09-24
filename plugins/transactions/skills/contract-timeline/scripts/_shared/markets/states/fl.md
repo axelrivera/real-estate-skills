@@ -121,6 +121,7 @@ holding_costs:
 
 buyer_costs:
   insurance_rate: 0.009               # a buyer's new homeowner's policy, share of price, for payment estimates; a quote replaces it
+  insurance_min_annual: 3500          # CORE-29: floor for the estimate (older and coastal homes run higher; always get a quote)
   loan_taxes:                         # on the loan amount, paid by the buyer when the purchase is financed (CORE-16)
     - {label: Documentary Stamp Tax on the Note, rate: 0.0035}   # s. 201.08: $0.35 per $100
     - {label: Intangible Tax on the Mortgage, rate: 0.002}       # s. 199.133: 2 mills
@@ -223,7 +224,7 @@ county_overrides:
       owner_title: {payer: ask}
 ---
 
-# Market profile layer: Florida
+# Market Profile Layer: Florida
 
 Built-in state defaults. Skills use them only for Florida properties. For any other state, values come from the user's own market profile or are asked for. MLS formats are a separate layer (`../mls/`), because an MLS can span states and a state can have several MLSs.
 

@@ -155,8 +155,12 @@ def prepare(B, A, market=None):
     if K.get("insurance_annual") is None:
         rate = costs.get("buyer_costs.insurance_rate")
         src = costs.described("buyer_costs.insurance_rate") if rate is not None else "national planning estimate"
-        K["insurance_annual"] = round(max(2500, (rate if rate is not None else NATIONAL_INSURANCE_RATE) * lp), -2)
-        A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: estimated at {money(K['insurance_annual'])}/yr ({src})", "low")
+        yb = P.get("year_built")
+        age = 1.5 if yb and yb < 1980 else 1.25 if yb and yb < 2002 else 1.0  # CORE-29: older homes cost more to insure
+        floor = costs.get("buyer_costs.insurance_min_annual") or 2500
+        K["insurance_annual"] = round(max(floor, (rate if rate is not None else NATIONAL_INSURANCE_RATE) * lp * age), -2)
+        A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: estimated at {money(K['insurance_annual'])}/yr "
+              f"({src}" + (f", x{age:g} for a {yb} home" if age > 1 else "") + "). Estimate only: get a quote", "low")
     P["hoa_monthly"] = P.get("hoa_monthly") or 0
     # OFR-26, CMA-6: flood insurance and CDD assessments are payment lines; a missing amount is left out and flagged, never 0
     B["flood"] = finance.flood_insurance(P.get("flood_zone"), K.get("flood_insurance_annual"), costs, today,

@@ -119,7 +119,7 @@
  "th_list_price": "List Price",
  "th_down": "Buyer's Down Payment ({down}%)",
  "th_payment": "Buyer's Estimated Monthly Payment",
- "pay_note": "{program} loan, {down}% down, {rate}% 30-year fixed, property taxes at {basis}, {ins} a year insurance (placeholder){mi}. Estimates, not loan quotes.",
+ "pay_note": "{program} loan, {down}% down, {rate}% 30-year fixed, property taxes at {basis}, {ins} a year insurance (an estimate: get a quote){mi}. Estimates, not loan quotes.",
  "pay_note_mi": ", and {mi}% a year mortgage insurance",
  "prog_conventional": "Conventional",
  "prog_fha": "FHA",

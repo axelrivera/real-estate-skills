@@ -2,7 +2,7 @@
 
 Every setting the skills read, what it means, and the format.
 
-For the owner's title policy the agent's own number wins: the title company's `quote`, then a promulgated `rate_tiers` table, then `estimate_pct`. Where the table is promulgated (Florida), it's also the legal premium, so a quote below it gets a warning to check the quote. Rates are decimals (0.007 = 0.7%). Money is whole dollars. The built-in Florida values are in `scripts/_shared/markets/states/fl.md` and are good worked examples.
+For the owner's title policy the agent's own number wins: the title company's `quote`, then a promulgated `rate_tiers` table, then `estimate_pct`. Where the table is promulgated (Florida), it's also the legal premium, so a quote below it gets a warning to check the quote. Rates are decimals (0.007 = 0.7%). Money is whole dollars. The built-in Florida values are good worked examples: they're in this skill's folder at `scripts/_shared/markets/states/fl.md` (read-only; the agent's profile overrides them).
 
 ## Identity
 

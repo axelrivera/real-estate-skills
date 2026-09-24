@@ -1,6 +1,6 @@
 ---
 name: market-profile
-description: Creates or updates a real estate market profile, a markdown file the other real estate skills read for local closing costs, transfer taxes, who pays title, commission defaults, property tax rules and millage, contract deadline rules, CMA adjustments and MLS export formats. Florida and Stellar MLS are built in; any other state or MLS is set up from what the agent provides. Use it whenever the agent says "set up my market", "I work in Texas / Puerto Rico / Miami-Dade", "my title company charges…", "our commission split is…", "use these closing costs", uploads a net sheet or closing cost worksheet to save, or a skill reports missing local costs or rules.
+description: Creates or updates a real estate market profile, a markdown file the other real estate skills read for local closing costs, transfer taxes, who pays title, commission defaults, property tax rules and millage, contract deadline rules, CMA adjustments and MLS export formats. Florida and Stellar MLS are built in; any other state or MLS is set up from what the agent provides. Use it whenever the agent says "set up my market", "I work in Texas / Puerto Rico / Miami-Dade", "my title company charges…", "our listing and buyer-side fees are…", "use these closing costs", uploads a net sheet or closing cost worksheet to save, or a skill reports missing local costs or rules.
 ---
 
 # Market Profile

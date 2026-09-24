@@ -227,8 +227,13 @@ def main(argv):
     if len(argv) != 1:
         sys.exit(__doc__)
     target = argv[0]
-    result = from_url(target) if re.match(r"^(https?://|www\.)|^[\w-]+(\.[\w-]+)+(/|$)", target) \
-        and not os.path.exists(target) else from_image(target)
+    looks_like_file = re.search(r"\.(png|jpe?g|gif|webp|svg|bmp|tiff?|heic|pdf)$", target, re.I)
+    if looks_like_file and not os.path.exists(target):  # CORE-26: a missing file, not a website
+        result = {"ok": False, "colors": [], "suggestion": {}, "source": target,
+                  "notes": [f"File not found: {target}. Check the name, or send the image again."]}
+    else:
+        result = from_url(target) if re.match(r"^(https?://|www\.)|^[\w-]+(\.[\w-]+)+(/|$)", target) \
+            and not os.path.exists(target) else from_image(target)
     print(json.dumps(result, indent=2))
 
 

@@ -78,29 +78,6 @@ def read(path):
     return data, sections
 
 
-def search_dirs():
-    """Where profiles are looked for, in order."""
-    dirs = [os.environ.get("OUTPUT_DIR"), "/mnt/user-data/uploads", "/mnt/user-data/outputs", os.getcwd()]
-    return [d for d in dict.fromkeys(dirs) if d and os.path.isdir(d)]
-
-
-def find(kind, dirs=None):
-    """Paths of profile files of `kind` ('agent' or 'market') in the search dirs (and one level below)."""
-    found = []
-    for d in dirs or search_dirs():
-        for path in sorted(glob.glob(os.path.join(d, "*.md")) + glob.glob(os.path.join(d, "*", "*.md"))):
-            try:
-                with open(path, encoding="utf-8") as f:
-                    head = f.read(2000)
-                if head.lstrip("﻿").startswith("---") and read(path)[0].get("profile") == kind:
-                    found.append(path)
-            except (OSError, ProfileError, UnicodeDecodeError):
-                continue
-    return found
-
-
-# --- agent ------------------------------------------------------------------
-
 def load_agent(path=None):
     """Agent profile as a dict with 'errors' (missing required fields) and 'warnings' (plain language).
 

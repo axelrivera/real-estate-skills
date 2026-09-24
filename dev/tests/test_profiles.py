@@ -247,19 +247,6 @@ class Millage(unittest.TestCase):
         self.assertEqual(len({(r["county"], r["district"]) for r in rows}), len(rows))
 
 
-class Find(unittest.TestCase):
-    def test_finds_by_kind_one_level_deep(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            os.makedirs(os.path.join(tmp, "sub"))
-            write(tmp, "agent-profile.md", AGENT)
-            write(tmp, "sub/tx.md", TEXAS)
-            write(tmp, "notes.md", "# just notes\n")
-            write(tmp, "broken.md", "---\nprofile: [\n---\n")
-            self.assertEqual([os.path.basename(x) for x in p.find("agent", [tmp])], ["agent-profile.md"])
-            self.assertEqual([os.path.basename(x) for x in p.find("market", [tmp])], ["tx.md"])
-
-
-
 class AuditMarketData(unittest.TestCase):
     """CORE-7 (verified: docs/audits/2026-09-23-verification.md)."""
 
@@ -280,6 +267,7 @@ class AuditMarketData(unittest.TestCase):
         self.assertIsNone(m.get("closing_costs.owner_title.payer"))  # varies by area: ask
         self.assertTrue(any("owner_title.payer varies by area" in n for n in m.notes))
         self.assertFalse(any("varies by area" in n for n in p.load_market(state="FL", county="Seminole").notes))
+
 
 if __name__ == "__main__":
     unittest.main()

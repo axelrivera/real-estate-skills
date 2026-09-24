@@ -329,6 +329,20 @@ class TrecWorksheet(unittest.TestCase):
         w = strategy.worksheet(analyze("fha-competitive.json"))
         self.assertIn("Inspection Period", [r["field"] for r in w["rows"]])
 
+
+class InsuranceEstimate(unittest.TestCase):
+    def test_older_home_estimate_and_floor(self):
+        """CORE-29: the estimate scales with age, has Florida's floor, and says to get a quote."""
+        B = {"analysis_date": "2026-09-23", "property": {"address": "1 Main St, Orlando, FL", "list_price": 300000, "year_built": 1972},
+             "buyer": {"cash_available": 40000}}
+        r = strategy.analyze(B)
+        self.assertEqual(r["B"]["costs"]["insurance_annual"], 4000)  # 0.9% x $300,000 x 1.5 = $4,050, to the $100
+        B["property"]["year_built"] = 2015
+        r = strategy.analyze(B)
+        self.assertEqual(r["B"]["costs"]["insurance_annual"], 3500)  # $2,700 is under the Florida floor
+        why = next(a["why"] for a in r["assumptions"] if a["field"] == "insurance_annual")
+        self.assertIn("get a quote", why)
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -38,7 +38,7 @@ def fill(values, brand=None):
         if key in ("primary", "buyer_primary", "seller_primary"):
             if not brand or key not in brand:
                 continue
-            line = f'  {key}: "{brand[key]}"  # Color'
+            line = f'  {key}: "{brand[key]}"'
         elif "{{color name}} for all reports" in line:
             line = "Color for all reports."
         for ph, field in PLACEHOLDERS.items():
@@ -251,6 +251,29 @@ class AuditProfileFields(unittest.TestCase):
             r = ec.from_image(path)
         self.assertFalse(r["ok"])
         self.assertIn("PNG or JPG", r["notes"][0])
+
+
+class AuditSmallFixes(unittest.TestCase):
+    def test_agents_own_color_name(self):
+        """CORE-27: warnings use the agent's word for the color."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_profile(tmp, '---\nprofile: agent\nname: Jane Doe\nbrokerage: Sample Realty\nbrand:\n'
+                                      '  primary: "#D4AF37"  # Gold\n---\n')
+            r = check_profile.check(path)
+        self.assertEqual(r["colors"]["buyer"]["name"], "Gold")
+        self.assertTrue(r["warnings"][0].startswith("Gold is too light"))
+
+    def test_missing_logo_file(self):
+        """CORE-26: a missing file is reported as a missing file, not a website."""
+        import contextlib
+        import io
+        import json as _json
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            ec.main(["no-such-logo.png"])
+        r = _json.loads(out.getvalue())
+        self.assertFalse(r["ok"])
+        self.assertIn("File not found", r["notes"][0])
 
 if __name__ == "__main__":
     unittest.main()
