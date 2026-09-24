@@ -22,7 +22,7 @@ Start with `agent-profile`. In Cowork, select a working folder: profiles are sav
 | `seller-offer-review` | Nets, certainty and counters for offers on a listing |
 | `contract-timeline` | Every deadline in an executed contract, plus a closing calendar |
 
-Details in [docs/skills.md](docs/skills.md).
+Details in [docs/skills.md](docs/skills.md). Sample output from each skill, made from mock data, is in [samples/](samples/).
 
 ## Documentation
 

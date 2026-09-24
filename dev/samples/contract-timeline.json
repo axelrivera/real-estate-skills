@@ -1,0 +1,32 @@
+{
+  "side": "buyer",
+  "sample": true,
+  "state": "FL",
+  "county": "Seminole",
+  "client": "Sample Buyer",
+  "contract": {
+    "form_family": "frbar",
+    "contract_form": "as_is",
+    "property": "1532 Cypress Bend Dr, Harrow Springs, FL 32700",
+    "buyer": "Sample Buyer",
+    "seller": "Sample Seller",
+    "price": 365000,
+    "financing": "fha",
+    "effective_date": "2026-09-25",
+    "effective_date_source": "Seller's initials on Counteroffer #1, 9/25/2026 4:12 PM",
+    "closing_date": "2026-10-30",
+    "closing_time": "10:00",
+    "escrow_agent": "Sample Title Co.",
+    "deposit_amount_str": "$11,000",
+    "deposit_days": 3,
+    "loan_application_days": 5,
+    "loan_approval_days": 30,
+    "inspection_days": 10,
+    "riders": ["FHA/VA Financing", "Homeowners'/Flood Insurance"],
+    "insurance_days": 10,
+    "year_built": 1994,
+    "title_by": "seller"
+  },
+  "amendments": [],
+  "flags": []
+}

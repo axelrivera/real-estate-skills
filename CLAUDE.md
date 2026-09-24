@@ -10,8 +10,9 @@ One Claude plugin (`real-estate`) of skills for real estate agents; the repo roo
 skills/<skill>/SKILL.md             # one directory per skill
 shared/                             # shared code and references, copied into skills by make sync
 dev/                                # dev tooling and fixtures, never shipped
-Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | package | package-skills | clean
+Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | samples | package | package-skills | clean
 docs/                               # all documentation
+samples/                            # committed preview files (PDF, PPTX, ICS), one happy path per skill (make samples), never shipped
 sources/                            # prototype skills, local only, git-ignored
 ```
 
@@ -22,7 +23,7 @@ sources/                            # prototype skills, local only, git-ignored
 - **`sources/` is reference only.** Rebuild skills from it; never copy a prototype into `skills/`, and never edit or ship anything from it.
 - **Skills run in claude.ai and Cowork only** (desktop app and cloud), not Claude Code. Script paths are relative to the skill directory. Do not use `/mnt/...` paths or paths outside the skill directory. Skill descriptions stay under 1,024 characters.
 - **Dependencies:** use only what the sandbox has ([docs/runtime-support.md](docs/runtime-support.md)). Python code must be 3.11-compatible. Never install packages at run time.
-- **Local dev:** run `make setup` once; `make test` after changing `shared/`; generate outputs with `make outputs`. Use `.venv/bin/python` and the Node version in `.nvmrc`. See [docs/development.md](docs/development.md).
+- **Local dev:** run `make setup` once; `make test` after changing `shared/`; generate outputs with `make outputs`. `samples/` is regenerated with `make samples` from the fully mocked inputs in `dev/samples/`; never put real people, brokerages, addresses or MLS numbers there. Use `.venv/bin/python` and the Node version in `.nvmrc`. See [docs/development.md](docs/development.md).
 - **Shared code is edited in `shared/` only.** `scripts/_shared/` inside a skill is a committed copy; never edit it by hand. After changing `shared/`: `make test`, `make sync`, commit the copies with the change. The pre-commit hook blocks commits with stale copies.
 - **Every skill has a markdown mode and a file mode** from the same data JSON: markdown via an `assets/` template, files via `scripts/render.py`. The core profile skills are markdown only.
 - **One plugin.** Every skill goes in `skills/`; never add a second plugin or a marketplace entry. Packaging and install routes are in [docs/architecture.md](docs/architecture.md#packaging).

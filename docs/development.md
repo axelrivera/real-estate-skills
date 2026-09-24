@@ -21,6 +21,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
+| `make samples` | Regenerates `samples/<skill>/`, the committed preview files (PDF, PPTX and ICS; handoff JSON is dropped): one happy path per file-mode skill, rendered from `dev/samples/<skill>.json` with the mock agent in `dev/samples/agent-profile.md`. Every name, brokerage, address and MLS number in `dev/samples/` is fictional (the county and public data sources are real because the tax rules need them). It then writes `samples/README.md` from `dev/samples/readme-template.md` (`dev/samples_readme.py`): each `{{pattern}}` there becomes a link to the matching file with its page, slide or event count; edit the text in the template. Run it by hand when you want fresh previews, and commit the result |
 | `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
 | `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
@@ -64,6 +65,9 @@ dev/                     # dev tooling, never shipped
   package/README.md      # install instructions shipped in the release zip
   fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
+  samples/               # fully mocked inputs for make samples: <skill>.json, mls-export.csv, seller-cma-deck.json, agent-profile.md, readme-template.md
+  samples_readme.py      # make samples: writes samples/README.md from the template
+samples/<skill>/         # committed preview files from make samples
 .venv/  out/  dist/      # git-ignored
 ```
 

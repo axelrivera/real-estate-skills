@@ -10,7 +10,7 @@ DEV_ENV := NODE_PATH="$(CURDIR)/dev/node_modules" PATH="$(CURDIR)/$(VENV)/bin:$(
 OUT      := out
 DIST     := dist
 
-.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs package package-skills clean
+.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs samples package package-skills clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
@@ -24,6 +24,7 @@ help:
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
+	@echo "make samples        Regenerate the committed preview files and samples/README.md from the mock data in dev/samples/"
 	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README)"
 	@echo "make package-skills Run every check, then zip every skill into $(DIST)/skills/ (runtime-check into $(DIST)/dev/)"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
@@ -75,6 +76,17 @@ outputs:
 			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" \
 			$(if $(wildcard dev/fixtures/_profiles/agent-profile.md),--agent dev/fixtures/_profiles/agent-profile.md) || exit 1; \
 	done
+
+# One happy-path sample per skill for previews, committed. Inputs in dev/samples/ are fully mocked.
+samples:
+	@for skill in buyer-cma seller-cma buyer-offer-strategy contract-timeline seller-offer-review; do \
+		echo "$$skill"; rm -rf samples/$$skill; \
+		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/$$skill" \
+			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
+			--agent dev/samples/agent-profile.md || exit 1; \
+		rm -f samples/$$skill/*.json; \
+	done
+	@$(PY) dev/samples_readme.py
 
 package: check-sync test lint-skills py311 style-check
 	@$(PY) dev/package.py plugin

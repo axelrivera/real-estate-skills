@@ -1,0 +1,166 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//real-estate-skills//contract-timeline//EN
+CALSCALE:GREGORIAN
+X-WR-CALNAME:Contract Timeline: 1532 Cypress Bend Dr\, Harrow Springs\, FL 
+ 32700
+BEGIN:VEVENT
+UID:deposit-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20260928
+DTEND;VALUE=DATE:20260929
+SUMMARY:Initial Escrow Deposit Due ★
+DESCRIPTION:Who: Buyer. Deliver $11\,000 to Sample Title Co.\; get a receip
+ t. If missed: Buyer in default\; seller may cancel. Rule: 3 days after Ef
+ fective Date. Source: Para. 2(a). Ends at 11:59 PM.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Initial Escrow Deposit Due
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:loan_app-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261001
+SUMMARY:Loan Application
+DESCRIPTION:Who: Buyer. Apply for the loan and provide the lender's written
+  confirmation if requested. If missed: Buyer may lose financing protectio
+ ns. Rule: 5 days after Effective Date. Source: Para. 8(b). Ends at 11:59 
+ PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:inspection-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261005
+DTEND;VALUE=DATE:20261006
+SUMMARY:Inspection Period Ends (Right to Cancel) ★
+DESCRIPTION:Who: Buyer. Complete inspections (including 4-point and wind mi
+ tigation)\; deliver written cancellation notice before the deadline if no
+ t proceeding. If missed: Right to cancel for inspection ends\; deposit at
+  risk. Rule: 10 days after Effective Date. Source: Para. 12(a). Ends at 1
+ 1:59 PM.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Inspection Period Ends (Right to Cancel)
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:insurance-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261005
+DTEND;VALUE=DATE:20261006
+SUMMARY:Insurance Contingency Ends ★
+DESCRIPTION:Who: Buyer. Bind coverage or cancel per the rider. If missed: I
+ nsurance protection ends. Rule: 10 days after Effective Date. Source: Hom
+ eowners' / Flood Insurance rider. Ends at 11:59 PM.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Insurance Contingency Ends
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:title-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261015
+DTEND;VALUE=DATE:20261016
+SUMMARY:Title Evidence Delivered
+DESCRIPTION:Who: Seller. Title commitment delivered to the buyer. If missed
+ : Buyer may extend closing to review it. Rule: 15 days before Closing. So
+ urce: Para. 9(c). Ends at 11:59 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:insurance_bound-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261023
+DTEND;VALUE=DATE:20261024
+SUMMARY:Homeowners Insurance Bound (Lender Target)
+DESCRIPTION:Who: Buyer. Bind the policy and send the declarations page to t
+ he lender. If missed: The lender may not be ready to fund on time. Rule: 
+ 7 days before Closing. Source: Lender's usual target\, not a contract dat
+ e. Ends at 11:59 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:loan_approval-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261026
+DTEND;VALUE=DATE:20261027
+SUMMARY:Loan Approval Period Ends ★
+DESCRIPTION:Who: Buyer. Deliver written loan approval\, or written notice t
+ o cancel or proceed\, before the deadline. If missed: Buyer's right to ca
+ ncel for financing ends\; deposit at risk. Rule: 30 days after Effective 
+ Date. Source: Para. 8(b). Ends at 11:59 PM.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Loan Approval Period Ends
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:survey-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261026
+DTEND;VALUE=DATE:20261027
+SUMMARY:Survey Deadline
+DESCRIPTION:Who: Buyer. If the buyer wants a survey\, have it done by this 
+ date. If missed: Survey issues can't be raised in time. Rule: 5 days befo
+ re Closing. Source: Para. 9(d). Ends at 11:59 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:clear_to_close-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261027
+DTEND;VALUE=DATE:20261028
+SUMMARY:Clear to Close / Closing Disclosure ★
+DESCRIPTION:Who: Buyer. Buyer receives and signs the Closing Disclosure at 
+ least 3 business days before closing. If missed: Closing must move. Rule:
+  3 days before Closing (TRID business days). Source: Lender (TRID 3-busin
+ ess-day rule). Ends at 11:59 PM.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Clear to Close / Closing Disclosure
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:seller_terminate-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261029
+DTEND;VALUE=DATE:20261030
+SUMMARY:Seller's Right to Terminate (No Loan Notice)
+DESCRIPTION:Who: Seller. If the buyer sent no loan approval or loan notice 
+ by the Loan Approval deadline\, the seller may terminate in writing withi
+ n 3 days after it. If missed: Seller's right ends\; the buyer proceeds wi
+ thout the financing contingency. Rule: 3 days after Loan Approval. Source
+ : Para. 8(b)(v). Ends at 11:59 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:walkthrough-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART;VALUE=DATE:20261029
+DTEND;VALUE=DATE:20261030
+SUMMARY:Final Walk-Through
+DESCRIPTION:Who: Buyer. Walk the property the day before closing or on clos
+ ing day\; confirm condition\, repairs and included items. If missed: Buye
+ r loses the chance to verify condition. Rule: 1 day before Closing. Sourc
+ e: Para. 12(b). Ends at 11:59 PM.
+END:VEVENT
+BEGIN:VEVENT
+UID:closing-165b093ec5@contract-timeline
+DTSTAMP:20260924T110601
+DTSTART:20261030T100000
+DTEND:20261030T103000
+SUMMARY:Closing ★
+DESCRIPTION:Who: Both. Sign\, fund and record\; keys and possession deliver
+ ed. If missed: Default unless extended in writing. Rule: Closing date in 
+ contract. Source: Para. 4 · possession Para. 6.
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Closing
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+END:VCALENDAR
