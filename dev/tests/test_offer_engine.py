@@ -266,6 +266,31 @@ class AuditSellerSideLimits(unittest.TestCase):
         in_hand = by_id(oe.analyze(d))["B"]["score"]["scores"]["property"]
         self.assertEqual(in_hand - planned, 1)
 
+
+class AuditReviewBenchmarks(unittest.TestCase):
+    """OFR-15 (market offer norms, the same in review and counter), OFR-24 (handoff side and nulls)."""
+
+    def test_norms_from_market_or_national(self):
+        R = oe.analyze(fixture("two-offers-accept.json"))
+        self.assertEqual(R["listing"]["norms"], {"deposit_pct": 0.03, "concessions_pct": 0.015, "inspection_days": 7,
+                                                 "loan_approval_days": 21})
+        T = oe.analyze(fixture("texas-single.json"))
+        self.assertEqual(T["listing"]["norms_source"], "national")
+        self.assertTrue(any(a["field"] == "offer_norms" for a in T["assumptions"]))
+        o = T["offers"][0]
+        weak_deposit = o["deposit"] is not None and o["deposit"] / o["price"] < T["listing"]["norms"]["deposit_pct"]
+        self.assertEqual(weak_deposit, any(r[0] == "Escrow Deposit" for r in o["counter_rows"]))
+
+    def test_handoff_side_and_nulls(self):
+        d = fixture("two-offers-accept.json")
+        d["listing"]["cma_low"] = None
+        h = {"kind": "cma", "version": 1, "side": "buyer", "source": "buyer-cma",
+             "value": {"low": 495000, "high": 520000, "midpoint": 507500}}
+        R = oe.analyze(d, cma=h)
+        self.assertEqual(R["listing"]["cma_low"], 495000)  # an explicit null is filled
+        self.assertEqual(R["listing"]["cma_high"], 525000)  # the file's own value wins
+        self.assertTrue(any("from the buyer side" in a["why"] for a in R["assumptions"]))
+
 if __name__ == "__main__":
     unittest.main()
 

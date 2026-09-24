@@ -37,7 +37,7 @@ One JSON file per property: read `references/listing-file.md` for the fields. If
 Record only what the documents or the agent say. Leave a field out rather than guess: the engine's default is labeled, a guess isn't. Buyer letters, photos and personal details never go in the file or the report (fair housing).
 
 **Value range (for appraisal risk):** use the CMA, in this order:
-1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a seller CMA): pass it with `--cma`. Its low, high and midpoint become the appraisal range.
+1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a seller CMA): pass it with `--cma`. Its low, high and midpoint become the appraisal range. A buyer-side CMA is flagged: its range was built for the other party.
 2. Any other CMA (another tool's PDF, notes, a pasted range): read the low and high, confirm them with the agent in one line, and put them in `listing.cma_low` / `cma_high`.
 3. Nothing: leave them out. Appraisal risk is measured against list price and the answer is Preliminary.
 

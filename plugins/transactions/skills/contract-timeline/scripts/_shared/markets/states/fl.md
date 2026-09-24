@@ -156,6 +156,12 @@ contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked
   inspection_credit_reserve_pct: 0.007  # typical post-inspection renegotiation on AS IS contracts
   typical_deposit_pct: 0.03           # a strong escrow deposit on a financed offer, share of price
 
+offer_norms:                          # OFR-15: what a clean offer looks like here; the review and the counter both use it
+  deposit_pct: 0.03                   # financed; cash offers are held to at least 5%
+  concessions_pct: 0.015              # seller-paid costs above this are a drain worth countering
+  inspection_days: 7
+  loan_approval_days: 21
+
 cma:                                  # calibrated on Central Florida (Seminole County) sales
   calibrated_for:                     # CMA-10: flat dollar rates fit these counties and prices; elsewhere the CMA warns
     counties: [Seminole, Orange, Osceola, Lake, Volusia]

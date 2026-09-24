@@ -183,6 +183,15 @@ def load_costs(listing, market=None):
 
 # --- CMA handoff -------------------------------------------------------------
 
+def side_note(h, want):
+    """OFR-24: a sentence when a handoff was made for the other side (a buyer CMA in a listing review), else None."""
+    side = h.get("side")
+    if side and side != want:
+        return (f"The CMA handoff is from the {side} side ({h.get('source') or 'CMA'}), not the {want} side: its value range "
+                "was built for the other party. Confirm it before relying on it, or use a CMA for this side")
+    return None
+
+
 def apply_cma(data, h):
     """Fill the listing from a cma-handoff v1 record (value range as the appraisal range; subject facts).
 
@@ -191,10 +200,11 @@ def apply_cma(data, h):
     data = copy.deepcopy(data)
     L = data.setdefault("listing", {})
     v, s = h["value"], h.get("subject") or {}
-    L.setdefault("cma_low", v["low"])
-    L.setdefault("cma_high", v["high"])
-    L.setdefault("cma_mid", v["midpoint"])
-    L.setdefault("cma_source", f"{h.get('source') or 'CMA'} {h.get('as_of') or ''}".strip())
+    for key, val in (("cma_low", v["low"]), ("cma_high", v["high"]), ("cma_mid", v["midpoint"]),
+                     ("cma_source", f"{h.get('source') or 'CMA'} {h.get('as_of') or ''}".strip())):
+        if L.get(key) is None:  # OFR-24: an explicit null in the file counts as missing
+            L[key] = val
+    data["_cma_side_note"] = side_note(h, "seller")
     for key in ("address", "state", "county", "beds", "baths", "sqft", "year_built", "roof_year", "hoa_monthly",
                 "flood_zone", "list_price", "annual_tax"):
         if s.get(key) not in (None, "") and L.get(key) in (None, ""):
@@ -206,6 +216,9 @@ def apply_cma(data, h):
 
 
 # --- listing / seller ----------------------------------------------------------
+
+NATIONAL_NORMS = {"deposit_pct": 0.01, "concessions_pct": 0.03, "inspection_days": 10, "loan_approval_days": 30}
+
 
 def prepare_listing(data, A, costs):
     L, S = dict(data.get("listing") or {}), dict(data.get("seller") or {})
@@ -252,7 +265,16 @@ def prepare_listing(data, A, costs):
     L["loan_limits"] = profiles.loan_limits()
     L["frbar_market"] = cf.frbar_market(costs.get("contract.forms"))
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
-    L["deposit_norm"] = costs.get("contract.typical_deposit_pct") or 0.01  # a strong deposit here, share of price
+    # OFR-15: one set of benchmarks for the review and the counter, from the market; national planning norms otherwise
+    L["norms"] = {**NATIONAL_NORMS, **{k: v for k, v in (costs.get("offer_norms") or {}).items() if v is not None}}
+    if costs.get("offer_norms.deposit_pct") is None and costs.get("contract.typical_deposit_pct") is not None:
+        L["norms"]["deposit_pct"] = costs.get("contract.typical_deposit_pct")
+    L["norms_source"] = "market" if costs.get("offer_norms") else "national"
+    if L["norms_source"] == "national":
+        A.add("listing", "offer_norms", "national estimates", "No offer benchmarks for this market: deposit, concessions, "
+              "inspection and loan approval are compared with national planning norms (1% deposit, 3% concessions, 10 and "
+              "30 days). Add the local norms to the market profile", "med")
+    L["deposit_norm"] = L["norms"]["deposit_pct"]
 
     S["payoff_known"] = S.get("payoff") is not None
     if not S["payoff_known"]:
@@ -948,7 +970,8 @@ def propose_counter(o, L, S):
             t["appraisal_gap"] = rnd(need, 1000, "up")
             rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None", money(t["appraisal_gap"]),
                          f"Deal holds if the appraisal lands at {money(rnd(hi, 1000))}"))
-    if o["seller_concessions"] > .015 * o["price"]:
+    N = L["norms"]
+    if o["seller_concessions"] > N["concessions_pct"] * o["price"] + 1:
         t["seller_concessions"] = rnd(o["seller_concessions"] / 2, 500)
         rows.append(("Seller Concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Biggest controllable drain on net"))
     ob = S["offered_buyer_broker_pct"]
@@ -959,9 +982,10 @@ def propose_counter(o, L, S):
         norm = L["deposit_norm"] if o["financed"] else max(L["deposit_norm"], 0.05)
         t["deposit"] = max(o["deposit"], rnd(norm * t["price"], 1000, "up"))
         rows.append(("Escrow Deposit", money(o["deposit"]), money(t["deposit"]), "More buyer commitment once contingencies expire"))
-    if o["inspection_days"] > 7:
-        t["inspection_days"] = 7
-        rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""), "7 days",
+    if o["inspection_days"] > N["inspection_days"]:
+        t["inspection_days"] = N["inspection_days"]
+        rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""),
+                     f"{N['inspection_days']} days",
                      (f"Shorter walk-away window; seller shares the {L['reports']}" if o["inspection_walkaway"] else
                       f"Repair notices sooner; seller shares the {L['reports']}")))
     if o["sale_contingency_days"]:
@@ -1080,6 +1104,8 @@ def analyze(data, market=None, cma=None):
         data = apply_cma(data, cma)
     costs = load_costs(data.get("listing") or {}, market)
     A = Assume()
+    if data.get("_cma_side_note"):
+        A.add("listing", "cma side", "other side", data["_cma_side_note"], "high")
     if market is None and not state_of(data.get("listing") or {}):
         A.add("listing", "state", costs.state, "Property's state not given: Florida costs assumed", "high")
     L, S = prepare_listing(data, A, costs)

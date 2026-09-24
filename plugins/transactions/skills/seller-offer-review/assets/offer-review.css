@@ -7,7 +7,7 @@
 .legend.okey{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:7.4pt} .legend.okey span{margin:0}
 .legend.okey b{color:var(--brand-ink);margin-right:3px}
 .rank th:nth-child(n+3),.rank td:nth-child(n+3){padding-left:3px;padding-right:3px}
-.rank td.why2{font-size:7.6pt;color:var(--text)}
+.rank td.why2{font-size:7.6pt;color:var(--text)} .rank td.nw{white-space:nowrap}
 .kt td{font-size:7.8pt;vertical-align:top} .kt th{font-size:7pt}
 .hero .hl.decline{border-left-color:var(--risk-base)} .hero .hl.decline .big{color:var(--risk-strong)}
 .hero .hl.backup{border-left-color:var(--brand-deep)} .hero .hl.backup .big{color:var(--brand-deep)}
@@ -83,10 +83,11 @@ td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow
 .sm2{font-size:6.8pt;font-weight:400;opacity:.9}
 
 /* compact page 1 when it would spill onto page 2 */
-.compact .hero .big{font-size:20pt} .compact .hero .who{font-size:11pt} .compact .hero .why{font-size:8.3pt} .compact .hero .hl,.compact .hero .hr{padding:6px 10px}
+.compact .hero .big{font-size:20pt} .compact .hero .who{font-size:11pt} .compact .hero .why{font-size:8pt} .compact .hero .hl,.compact .hero .hr{padding:6px 10px}
 .compact .ctr td{padding:1.5px 7px;font-size:8.3pt} .compact .ctr td.now{font-size:8.8pt} .compact .ctr td.why2{font-size:7.4pt}
 .compact .kpis b{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
-.compact .p1 td{padding-top:1.8px;padding-bottom:1.8px} .compact h2{margin:6px 0 3px} .compact .prelim{padding:3px 8px;font-size:7.8pt;margin-top:4px}
+.compact .p1 td{padding-top:1.4px;padding-bottom:1.4px} .compact .rank td{font-size:8.2pt} .compact .rank td.rk{font-size:11pt}
+.compact .ctr .note{padding:3px 10px;font-size:7.4pt} .compact .legend.okey{font-size:7pt} .compact h2{margin:5px 0 2px} .compact .prelim{padding:3px 8px;font-size:7.8pt;margin-top:4px}
 
 /* the comparison prints landscape */
 .wide .snap div b{white-space:nowrap} .wide .rank .pill,.wide .rank td:nth-child(3){white-space:nowrap} .wide .legend.okey{grid-template-columns:1fr 1fr 1fr}

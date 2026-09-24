@@ -165,6 +165,14 @@ def incomplete_view(R, o):
     }
 
 
+def counter_what(vs_offer, vs_downside, certainty, act):
+    """OFR-16: the Counter row says what actually changes: net up or down, certainty up or down."""
+    net = (f"{signed(vs_offer)} net vs. as offered" if vs_offer >= 0 else
+           f"{signed(vs_offer)} on paper, {signed(vs_downside)} vs. the realistic downside")
+    sure = ("more certain to close" if certainty > 0 else "less certain to close" if certainty < 0 else "same certainty")
+    text = f"{net}; {sure} ({certainty:+d} points)" if certainty else f"{net}; {sure}"
+    return text if act == "COUNTER" else text + ", and it risks losing a strong offer"
+
 def single_view(R, o):
     if o["action"] == "INCOMPLETE":
         return incomplete_view(R, o)
@@ -228,8 +236,7 @@ def single_view(R, o):
     if o["counter_rows"]:
         opts.append({"option": "Counter", "net": money(cn), "certainty": f"≈{o['counter_score']}/100 if accepted",
                      "status": "good" if act == "COUNTER" else "caution", "recommended": act == "COUNTER",
-                     "what": "Better net and lower walk-away risk" if act == "COUNTER"
-                     else f"Only {signed(cn - ao)}, and it risks losing a strong offer"})
+                     "what": counter_what(cn - ao, cn - dn, o["counter_score"] - score, act)})
     opts.append({"option": "Decline", "net": "—", "certainty": "—", "status": "caution", "recommended": act == "DECLINE",
                  "what": f"Stay on market; each extra month costs about {money(S['holding_monthly'])} in holding costs"})
     if act == "BACKUP":
@@ -313,14 +320,14 @@ def multi_view(R):
              f"{'responding to' if act == 'COUNTER' else 'moving forward with'} another offer (NAR Standard of Practice 1-15); "
              "nothing is declined until the seller approves.")
 
-    ranked = [{"rank": i + 1, "offer": o["label"],
+    ranked = [{"rank": i + 1, "offer": o["label"], "key": o["key"],
                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                "price": money(o["price"]) + (" (escalated)" if o.get("escalated") else ""), "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]),
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
                "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
                "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],
                "terms": terms[o["id"]]} for i, o in enumerate(rk)]
-    ranked += [{"rank": "—", "offer": o["label"],
+    ranked += [{"rank": "—", "offer": o["label"], "key": o["key"],
                 "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                 "price": money(o["price"]), "net": "—", "downside": "—", "score": "—", "band_class": "na", "risk_days": "—",
                 "close": f"{o['close']:%b %-d}", "action": "Incomplete", "status": "risk",

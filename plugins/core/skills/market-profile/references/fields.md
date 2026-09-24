@@ -100,6 +100,17 @@ Only needed when the agent's MLS isn't built in and they'll upload MLS files.
 |---|---|
 | `extra_protected_classes` | State and local protected classes beyond the federal list, as a list ("age", "marital status", "source of income", "military status"). Every skill avoids wording about them, like the federal classes. Only what the agent confirms or a cited law or ordinance says; Florida and Texas state law add none, but cities and counties can. Can go in `county_overrides` when one county differs |
 
+## offer_norms
+
+What a clean offer looks like locally. The seller's offer review rates each offer against these and drafts its counter from the same numbers; without them it uses national planning norms and says so.
+
+| Field | Meaning |
+|---|---|
+| `deposit_pct` | A strong escrow deposit on a financed offer, share of price (Florida 0.03; Texas earnest money is often 0.01). Cash offers are held to at least 0.05 |
+| `concessions_pct` | Seller-paid costs above this share of price are worth countering (Florida 0.015) |
+| `inspection_days` | A competitive inspection or option period (Florida 7) |
+| `loan_approval_days` | A competitive loan approval period (Florida 21) |
+
 ## flood and condo
 
 Built in for Florida; set them for another state only from a cited statute or program rule.

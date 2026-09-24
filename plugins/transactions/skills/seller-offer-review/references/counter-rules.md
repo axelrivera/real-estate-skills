@@ -1,14 +1,14 @@
 # How Counters Are Proposed
 
-The engine drafts a counter from the rules below. Each rule adds a row (term, offered, counter, why) only when it applies. The goal is a better net **and** less risk, not simply a higher price. Review the draft for realism before answering.
+The engine drafts a counter from the rules below. The benchmarks (deposit, concessions, inspection, loan approval) are the market profile's `offer_norms`, the same ones the Terms Review shows (Florida: 3%, 1.5%, 7 days, 21 days); without them, national planning norms are used (1%, 3%, 10 days, 30 days) and flagged. Each rule adds a row (term, offered, counter, why) only when it applies. The goal is a better net **and** less risk, not simply a higher price. Review the draft for realism before answering.
 
 1. **Price above value with an unfunded appraisal gap** (financed, price > CMA high, gap < price − CMA high) → counter at CMA high. A price the appraisal won't support is a renegotiation waiting to happen. This can lower the paper net, so the report compares the counter with both the as-offered and the downside net; the honest comparison is the downside.
 2. **Price below list** → meet partway (rounded up to $1,000). With a CMA and a price under the CMA low, counter at list.
 3. **Appraisal gap:** financed (not FHA or VA), and the counter price is above the CMA high → ask the buyer to cover the difference, rounded up to $1,000.
-4. **Concessions above 1.5% of price** → counter at half.
+4. **Concessions above the norm** (Florida 1.5% of price) → counter at half.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
-6. **Deposit under 3%** → 3% of the counter price for financed offers, 5% for cash.
-7. **Inspection period over 7 days** → 7 days, paired with the seller sharing the insurance inspection reports up front (Florida: 4-point and wind-mitigation).
+6. **Deposit under the norm** (Florida 3%) → the norm on the counter price for financed offers, at least 5% for cash.
+7. **Inspection period over the norm** (Florida 7 days) → the norm, paired with the seller sharing the insurance inspection reports up front (Florida: 4-point and wind-mitigation).
 8. **Sale-of-home contingency** → cap at 21 days with a 72-hour kick-out.
 9. **Pre-qual or no approval** → full pre-approval within 3 days.
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.

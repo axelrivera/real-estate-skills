@@ -89,7 +89,7 @@ def fine(R):
     L, S = R["listing"], R["seller"]
     costs = "; ".join(L["cost_notes"])
     tax = f"tax proration assumes {money(L['annual_tax'])}/yr paid in arrears" if L["annual_tax"] else "no tax proration included"
-    ref = "CMA midpoint" if L["cma_provided"] else "list price"
+    ref = "top of the value range (CMA high)" if L["cma_provided"] else "list price"  # OFR-4: appraisal_line
     credit = (f" and an inspection credit of about {L['repair_reserve_pct'] * 100:.1f}% of price when the buyer has an inspection period"
               if L["repair_reserve_pct"] else "")
     return (f'<div class="fine">All figures are estimates for discussion only. {esc(costs)}. The {tax}; holding costs assume '
@@ -145,8 +145,12 @@ def hero(v):
 
 
 def key_legend(offs):
-    """Key for the places that show an offer's short key instead of its label (chart, timeline, flags)."""
-    return ('<div class="legend okey">' + "".join(f'<span><b>{esc(o["key"])}</b> {esc(o["label"])}</span>' for o in offs) + "</div>")
+    """Key for the places that show an offer's short key instead of its label (chart, timeline, flags). OFR-28: with
+    several offers, the key carries the rank too ("B (#1)")."""
+    rank = {o["id"]: i + 1 for i, o in enumerate(offs)} if len(offs) > 1 else {}
+    return ('<div class="legend okey">' + "".join(
+        f'<span><b>{esc(o["key"])}{f" (#{rank[o["id"]]})" if o["id"] in rank else ""}</b> {esc(o["label"])}</span>' for o in offs)
+        + "</div>")
 
 
 # --- detail tables -------------------------------------------------------------
@@ -173,15 +177,17 @@ def term_rows(o, R):
     else:
         ok = o["approval"] == "pof_verified"
         rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
+    N, est = L["norms"], "" if L["norms_source"] == "market" else " (national est.)"  # OFR-15: same norms as the counter
+    dep = N["deposit_pct"] if o["financed"] else max(N["deposit_pct"], 0.05)
     if o["deposit"] is None:
-        rows.append(("Escrow Deposit", "Not provided", "≥3% of price", "caution", "Confirm amount and due date"))
+        rows.append(("Escrow Deposit", "Not provided", f"≥{pctx(dep)} of price{est}", "caution", "Confirm amount and due date"))
     else:
         p = o["deposit"] / o["price"]
-        rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥3% ({money(round(.03 * o['price']))})",
-                     "good" if p >= .03 else ("caution" if p >= .015 else "risk"), ""))
-    c = o["seller_concessions"]
-    rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", "≤1.5% of price",
-                 "good" if not c else ("caution" if c <= .015 * o["price"] else "risk"), ""))
+        rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥{pctx(dep)} ({money(round(dep * o['price']))}){est}",
+                     "good" if p >= dep - 1e-9 else ("caution" if p >= dep / 2 else "risk"), ""))
+    c, cn = o["seller_concessions"], N["concessions_pct"]
+    rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", f"≤{pctx(cn)} of price{est}",
+                 "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
     ob = S["offered_buyer_broker_pct"]
     rows.append(("Buyer-Broker Comp.", f"{oe.pct(o['buyer_broker_pct'], 2)} ({money(round(o['price'] * o['buyer_broker_pct']))})",
                  f"{oe.pct(ob)} per listing agmt." if ob is not None else "Not set",
@@ -189,13 +195,14 @@ def term_rows(o, R):
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
     form = {"as_is": " (AS IS)", "standard": " (Standard)"}.get(o["contract_form"], "")
-    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}", "≤7 days",
-                 "good" if o["inspection_days"] <= 7 else ("caution" if o["inspection_days"] <= 14 else "risk"),
+    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}", f"≤{N['inspection_days']} days{est}",
+                 "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
                  "Buyer may cancel for any reason" if o["inspection_walkaway"] else "Repair notices only; seller pays repairs up to the limits"
                  if o["contract_form"] == "standard" else ""))
     if o["financed"]:
-        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", "≤21 days",
-                     "good" if o["loan_approval_days"] <= 21 else ("caution" if o["loan_approval_days"] <= 30 else "risk"), ""))
+        la = N["loan_approval_days"]
+        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", f"≤{la} days{est}",
+                     "good" if o["loan_approval_days"] <= la else ("caution" if o["loan_approval_days"] <= max(30, la) else "risk"), ""))
         if o["appraisal_days"]:
             rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
                          "Covers price above value", "risk" if exposed else "good", ""))
@@ -422,7 +429,7 @@ def single_html(R, o, v):
         f'<td class="n {"best" if c["net_adj"] >= tgt else ("worst" if c["net_adj"] < tgt - 5000 else "")}">{acct(c["net_adj"])}</td>' for _, c in cols) + "</tr>"
     ns += "<tr class=\"alt\"><td>vs. Seller's Target Net</td>" + "".join(
         f'<td class="n">{"—" if n == target_label else signed(c["net_adj"] - tgt)}</td>' for n, c in cols) + "</tr>"
-    ref = f"the CMA midpoint ({money(round(L['cma_mid']))})" if L["cma_provided"] else "list price"
+    ref = f"the top of the value range ({money(round(oe.appraisal_line(L)))})" if L["cma_provided"] else "list price"
     who = " · ".join(esc(x) for x in (o["buyer"], o.get("buyer_agent")) if x)
     tr = (f'<tr><td>Buyer / Agent</td><td colspan="4">{who}</td></tr>' if who else "") + "".join(
         f'<tr><td>{t}</td><td class="{st}">{val}</td><td>{b}</td><td class="c"><span class="pill {PILL[st]}">{RATING[st]}</span></td>'
@@ -495,21 +502,23 @@ def scatter(R, W=300, H=230):
     svg.append(f'<text x="{(Lm + W - Rm) / 2}" y="{H - 3}" text-anchor="middle" class="ax">Certainty Score →</text>')
     svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
                f'<text x="{Lm + 3}" y="{ys(tgt) - 3}" class="ax" style="fill:var(--good-strong)">Target {money(tgt)} (Clean Offer at List)</text>')
+    rank = {r["id"]: i + 1 for i, r in enumerate(R["ranked"])}
     for o in offs:
         c = col[o["action"]]
         x, a, b = xs(o["score"]["total"]), ys(o["ns"]["net_adj"]), ys(o["ns_down"]["net_adj"])
         right = o["score"]["total"] > 90
         svg.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
                    f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
-                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{c}">{esc(o["key"])}</text>')
+                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{c}">{esc(o["key"])} #{rank.get(o["id"], "")}</text>')
     svg.append("</svg>")
     return "".join(svg)
 
 
+STATUS_WORD = {"caution": "Watch", "risk": "Weak"}
 CHART_MAX = 6  # past this many offers the chart crowds; the decision table stands alone
 KEY_TERMS = [("Financing", ("Financing",)), ("Approval / Funds", ("Approval", "Proof of Funds")), ("Deposit", ("Escrow Deposit",)),
              ("Concessions", ("Seller Concessions",)), ("Inspection", ("Inspection Period",)),
-             ("Appraisal", ("Appraisal Gap Coverage", "Appraisal Contingency")), ("Sale of Home", ("Sale-of-Home Contingency",)),
+             ("Appraisal Gap", ("Appraisal Gap Coverage", "Appraisal Contingency")), ("Sale of Home", ("Sale-of-Home Contingency",)),
              ("Closing", ("Closing Date",))]
 
 
@@ -521,13 +530,13 @@ def multi_html(R, v):
     band = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
     pill = {"Accept": "rec", "Counter": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
     rows = "".join(
-        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td><b>{esc(r["offer"])}</b></td>'
+        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b></td>'
         f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
         f'<td class="n">{r["price"]}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
         f'<td class="c {band[r["band_class"]]}"><b>{r["score"]}</b></td><td class="n">{r["risk_days"]}{"" if r["risk_days"] == "—" else " d"}</td><td class="n">{r["close"]}</td>'
         f'<td class="why2">{esc(r["terms"])}</td></tr>' for r in v["ranked"])
     decision = f'''<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
- <table class="rank"><colgroup><col style="width:3%"><col style="width:15%"><col style="width:11%"><col style="width:9%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
+ <table class="rank"><colgroup><col style="width:3%"><col style="width:19%"><col style="width:10%"><col style="width:9%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
  <thead><tr><th></th><th>Offer</th><th>Financing</th><th class="c">Action</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Walk</th><th class="n">Close</th><th>Terms / Reason</th></tr></thead><tbody>{rows}</tbody></table>
  <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away. {esc(v["plan_note"])}</div></div>'''
     if len(R["active"]) <= CHART_MAX:
@@ -546,10 +555,11 @@ def multi_html(R, v):
         cells = ""
         for _, keys in KEY_TERMS:
             hit = next((t[k] for k in keys if k in t), None)
-            cells += f'<td class="{hit[3]}">{hit[1]}</td>' if hit else "<td>—</td>"
+            word = STATUS_WORD.get(hit[3], "") if hit else ""  # OFR-28: the status in words, not only by color
+            cells += (f'<td class="{hit[3]}">{hit[1]}' + (f' <span class="sm">({word})</span>' if word else "") + "</td>") if hit else "<td>—</td>"
         risk = o["flags"][0] if o["flags"] else None
         risk = (f'<span class="pill {risk["sev"].lower()}">{risk["sev"]}</span> {esc(risk["issue"])}' if risk else "None major")
-        body += f'<tr><td><b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
+        body += f'<tr><td><b>{esc(o["key"])}</b> · <b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
     ctr = ""
     if v["action"] == "COUNTER" and top["counter_rows"]:
         ctr = (f'<h2>Counter to {esc(top["label"])} <span class="h2s">Full Terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
@@ -558,7 +568,7 @@ def multi_html(R, v):
                + "</tbody></table></div>")
     details = f'''<div class="pb"></div><div class="dh">Key Terms Side by Side</div>
 {snapshot(R)}
-<h2>Key Terms <span class="h2s">Green = Favorable · Amber = Watch · Red = Weak</span></h2>
+<h2>Key Terms <span class="h2s">Favorable · Watch · Weak</span></h2>
 <div class="tbl"><table class="kt"><colgroup><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:9%"></colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
 <div class="legend"><span>Each offer's single review has its full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
 {ctr}

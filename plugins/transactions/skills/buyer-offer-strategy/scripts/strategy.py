@@ -56,12 +56,11 @@ def apply_cma(B, h):
             P[key] = s[key]
     if (h.get("market_profile") or {}).get("state") and not P.get("state"):
         P["state"] = h["market_profile"]["state"]
-    V.setdefault("cma_low", v["low"])
-    V.setdefault("cma_high", v["high"])
-    V.setdefault("midpoint", v["midpoint"])
-    if v.get("median_adjusted") is not None:
-        V.setdefault("median_adjusted", v["median_adjusted"])
-    V.setdefault("source", f"buyer CMA {h.get('as_of') or ''}".strip())
+    for key, val in (("cma_low", v["low"]), ("cma_high", v["high"]), ("midpoint", v["midpoint"]),
+                     ("median_adjusted", v.get("median_adjusted")), ("source", f"{h.get('side') or 'buyer'} CMA {h.get('as_of') or ''}".strip())):
+        if V.get(key) is None and val is not None:  # OFR-24: an explicit null in the file counts as missing
+            V[key] = val
+    B["_cma_side_note"] = oe.side_note(h, "buyer")
     for ours, theirs in (("sale_to_list", ("sale_to_list", "sale_to_list_recent", "sale_to_original_list_recent")),
                          ("median_dom", ("median_dom", "median_days_recent", "median_days")),
                          ("months_supply", ("months_supply",)),
@@ -527,6 +526,8 @@ def analyze(B_in, market=None, cma=None):
     oe.check_fractions(B_in)
     B0 = apply_cma(B_in, cma) if cma else copy.deepcopy(B_in)
     A = oe.Assume()
+    if B0.get("_cma_side_note"):
+        A.add("value", "cma side", "other side", B0["_cma_side_note"], "high")
     B, costs = prepare(B0, A, market)
     lvl = B["competition"]["level"]
     rec, why = build_offer(B, costs)

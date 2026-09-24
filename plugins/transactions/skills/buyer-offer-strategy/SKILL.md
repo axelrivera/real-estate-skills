@@ -34,7 +34,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 One JSON file per property the buyer is pursuing: read `references/buyer-file.md` for the fields. For a condo (`property.type: condo`), also read `references/condo.md` for lender approval, association questions and the buyer's rescission rights.
 
 - **Value range and market stats:** use the CMA, in this order:
-  1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a buyer CMA): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats.
+  1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a buyer CMA): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats. A seller-side CMA is flagged: its range was built for the other party.
   2. Any other CMA (another tool's PDF, notes): read the low, high and any market stats, confirm them with the agent in one line, and put them in `value` and `market`.
   3. Nothing: list price stands in for value and the answer is Preliminary.
 - **Buyer:** loan type and down payment, first-time buyer or not, max price, cash available, reserve floor, max payment.

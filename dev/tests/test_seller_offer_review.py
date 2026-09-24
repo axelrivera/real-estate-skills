@@ -159,7 +159,8 @@ class Pdf(unittest.TestCase):
         doc, mode, o = review_render.build_html(R, AGENT, sample=True)
         self.assertEqual((mode, o), ("multi", None))
         self.assertIn('<div class="big">ACCEPT</div><div class="who">$512K Conventional</div>', doc)
-        self.assertIn('<span><b>B</b> $512K Conventional</span>', doc)  # letters only with their key
+        self.assertIn('<span><b>B (#1)</b> $512K Conventional</span>', doc)  # letters only with their key (OFR-28: and rank)
+        self.assertNotIn("CMA midpoint", doc)  # OFR-4: the downside appraisal is at the CMA high
         self.assertIn("--brand:#0B6E4F", doc)
         self.assertIn("Seller Side", doc)
         self.assertIn("SAMPLE DATA", doc)
@@ -227,6 +228,16 @@ class Pdf(unittest.TestCase):
             with open(paths[0], "rb") as f:
                 self.assertEqual(f.read(4), b"%PDF")
 
+
+
+class CounterWording(unittest.TestCase):
+    def test_counter_says_what_changes(self):
+        """OFR-16: net and certainty in the Counter row come from the actual deltas."""
+        self.assertEqual(review.counter_what(2500, 6000, -2, "COUNTER"),
+                         "+$2,500 net vs. as offered; less certain to close (-2 points)")
+        self.assertEqual(review.counter_what(-3000, 4000, 5, "COUNTER"),
+                         "−$3,000 on paper, +$4,000 vs. the realistic downside; more certain to close (+5 points)")
+        self.assertTrue(review.counter_what(800, 800, 0, "ACCEPT").endswith("risks losing a strong offer"))
 
 if __name__ == "__main__":
     unittest.main()
