@@ -338,8 +338,10 @@ class Files(unittest.TestCase):
         if not node_ready():
             self.skipTest("Node with pptxgenjs, react-icons and sharp isn't resolvable here.")
         R = texas(report())
-        with self.assertRaises(compute.ReportError):  # no brokerage terms: no files
-            seller_render.build(R, "pptx", ".", {"agent": profiles.load_agent(None), "market": None, "sample": True})
+        with tempfile.TemporaryDirectory() as tmp:  # never the working directory: a failed build must leave nothing behind
+            with self.assertRaises(compute.ReportError):  # no brokerage terms: no files
+                seller_render.build(R, "pptx", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})
+            self.assertEqual(os.listdir(tmp), [])
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         if isinstance(R["deck"], str):
             with open(R["deck"]) as f:

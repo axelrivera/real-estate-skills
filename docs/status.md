@@ -42,7 +42,6 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.3.0: a
 
 ## Open items (judgment calls and smaller gaps from the evals)
 
-- **Test output leak:** a test or compute run writes `517-Hickorywood-Ave.cma.json` and `517-Hickorywood-Ave-Listing-Presentation.pptx` to the repo root (the working directory). Find the test that doesn't pass `--out` or `OUTPUT_DIR`, point it at a temp folder, and delete the two files.
 
 - **Broker review of `shared/references/fair-housing.md`** before release: it applies HUD's rules as the skills understand them and is not legal advice.
 - **Fair-housing evals** (the new id in each of the five skills above) haven't been run; include them in iteration 2.
