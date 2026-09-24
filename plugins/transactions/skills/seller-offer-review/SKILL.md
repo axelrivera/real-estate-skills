@@ -41,7 +41,7 @@ Record only what the documents or the agent say. Leave a field out rather than g
 2. Any other CMA (another tool's PDF, notes, a pasted range): read the low and high, confirm them with the agent in one line, and put them in `listing.cma_low` / `cma_high`.
 3. Nothing: leave them out. Appraisal risk is measured against list price and the answer is Preliminary.
 
-**Market costs:** Florida closing costs, title rates, brokerage defaults and tax proration are built in. Include the agent's market profile when there is one (project files, uploads). Outside Florida without a profile, nothing is filled in from Florida: missing costs are left out and flagged. Read `references/seller-costs.md` when the agent asks where a cost comes from or has a title company quote.
+**Market costs:** Florida closing costs, title rates and tax proration are built in; commissions never are (they come from the listing file or the agent's market profile). Include the agent's market profile when there is one (project files, uploads). Outside Florida without a profile, nothing is filled in from Florida: missing costs are left out and flagged. Read `references/seller-costs.md` when the agent asks where a cost comes from or has a title company quote.
 
 ## 2. Run and Review
 

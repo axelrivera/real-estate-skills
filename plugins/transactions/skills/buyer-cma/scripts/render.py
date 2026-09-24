@@ -99,6 +99,7 @@ def credit_section(R, C, L):
         [L("cr_credit")] + [(money(c["credit"]) if c["credit"] else L("cr_none")) + flag(c) for c in cols],
         [L("cr_net")] + [money(c["net"]) for c in cols],
         [L("cr_loan")] + [money(c["loan"]) for c in cols],
+        *([[L("cr_bb_short")] + [money(c["bb_short"]) for c in cols]] if any(c["bb_short"] for c in cols) else []),
         [f'<strong>{L("cr_cash")}</strong>'] + [f'<strong>{money(c["cash"])}</strong>' for c in cols],
         [L("cr_pmt")] + [money(c["payment"]) for c in cols],
         [L("cr_extra")] + [("+" + money(c["extra"])) if c["extra"] > 0.5 else L("cr_none") for c in cols],

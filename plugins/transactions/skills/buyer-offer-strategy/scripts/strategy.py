@@ -190,6 +190,10 @@ def prepare(B, A, market=None):
             if cf.frbar_market(costs.get("contract.forms")) else cf.OTHER
     B["contract_form"] = form
     B["repair_limits"] = W.get("repair_limits") or BU.get("repair_limits")
+    if BU.get("buyer_broker_agreement_pct") is None:
+        A.add("buyer", "buyer_broker_agreement_pct", "not given",
+              "Buyer-broker agreement not given: cash to close leaves out any fee the seller doesn't pay. Enter the "
+              "agreement's rate so the shortfall is counted", "med")
     return B, costs
 
 
@@ -200,10 +204,12 @@ def buyer_cash(B, t):
     down = round(t["price"] * BU["down_pct"])
     cc = round(t["price"] * BU["closing_cost_pct"])
     conc = min(t.get("seller_concessions", 0), cc)
-    to_close = down + cc - conc
+    # CMA-4: what the buyer's own broker agreement charges beyond what the seller pays is the buyer's cost
+    bb_short = finance.buyer_broker_shortfall(t["price"], BU.get("buyer_broker_agreement_pct"), t.get("buyer_broker_pct")) or 0
+    to_close = down + cc - conc + bb_short
     gap = t.get("appraisal_gap", 0) if fin != "cash" else 0
     worst = to_close + gap
-    return {"down": down, "cc": cc, "conc": -conc, "to_close": to_close, "gap": gap, "worst": worst,
+    return {"down": down, "cc": cc, "conc": -conc, "bb_short": bb_short, "to_close": to_close, "gap": gap, "worst": worst,
             "reserve": BU["cash_available"] - worst, "wasted_conc": max(0, t.get("seller_concessions", 0) - cc)}
 
 

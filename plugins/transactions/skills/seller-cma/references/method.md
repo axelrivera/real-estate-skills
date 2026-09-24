@@ -16,7 +16,7 @@ Ask for what's missing in one message; use tappable choices for occupancy, timel
 
 **From the agent**
 9. The MLS CMA export (CSV) of single-family homes nearby: sales from about the last 6 months, plus active, pending, expired and canceled listings. For Stellar the columns are built in; another MLS needs its columns mapped in the market profile.
-10. Brokerage terms (listing fee and buyer's agent compensation, if the seller will offer it). Without them the market's default is used and labeled a placeholder (Florida: 2.5% + 2.5%). Outside the built-in market, ask; never borrow Florida's.
+10. Brokerage terms (listing fee and buyer's agent compensation, if the seller will offer it). Without them the agent's standard terms from their market profile are used and marked; with neither, ask (nothing is built in, in any state).
 11. Flood zone, if known. Otherwise write "to confirm".
 
 If the seller knows only some dates, go ahead and list the rest under "What We Need from You". Never guess a roof date, a permit, or a tax amount.

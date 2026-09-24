@@ -374,7 +374,7 @@
   "net_intro": "What each option is likely to leave you after the costs a Florida seller typically pays at closing.",
   "net_note": "Not included: your mortgage payoff, your share of this year's property taxes (about $228 for each month of the year before closing, credited to the buyer), and any repairs agreed after inspection. While the home is on the market you keep paying the mortgage, taxes, insurance, and utilities, which is the real cost of a slower strategy."
  },
- "costs": {},
+ "costs": {"listing_fee_pct": 0.025, "buyer_broker_fee_pct": 0.025},
  "buyer_payment": {
   "rate": 6.95,
   "loan_type": "conventional",

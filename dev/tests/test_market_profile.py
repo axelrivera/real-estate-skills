@@ -74,8 +74,8 @@ class Builtin(unittest.TestCase):
         r = check_market.check(state="FL", county="Seminole")
         self.assertTrue(r["ok"])
         self.assertEqual(r["mls"], "Stellar")
-        self.assertTrue(all(g["complete"] for g in r["groups"].values()), r["groups"])
-        self.assertEqual(r["groups"]["brokerage"]["values"]["brokerage.listing_fee_pct"]["source"], "state")
+        self.assertTrue(all(g["complete"] for k, g in r["groups"].items() if k != "brokerage"), r["groups"])
+        self.assertFalse(r["groups"]["brokerage"]["complete"])  # CORE-5: commissions come from the agent, never built in
         self.assertIn("Sanford", r["millage_districts"])
 
     def test_other_state_lists_every_gap(self):

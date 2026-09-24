@@ -35,7 +35,7 @@ class Analysis(unittest.TestCase):
         s = out["summary"]
         self.assertEqual((out["mode"], s["action"], s["offer_label"]), ("single", "COUNTER", "$382K FHA"))
         self.assertIn("**Preliminary", s["preliminary"])
-        self.assertEqual(s["kpis"][1]["value"], "$349,817")
+        self.assertEqual(s["kpis"][1]["value"], "$369,789")  # no listing fee given and none built in (CORE-5): flagged high
         self.assertEqual([r["counter"] for r in s["counter"]["rows"]], ["$386,000", "7 days"])
         self.assertEqual(out["value_range"], "not provided")
         self.assertTrue(out["to_confirm"])

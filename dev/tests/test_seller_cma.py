@@ -52,6 +52,7 @@ def row(C, key):
 
 
 def texas(R):
+    R["costs"] = {}  # no agent terms: nothing is borrowed from Florida
     R["subject"].update(state="TX", county="Travis", city="Austin")
     R.pop("export")
     R["buyer_payment"].pop("district")
@@ -75,7 +76,7 @@ class MatchesPrototype(unittest.TestCase):
         self.assertEqual(row(self.C, "owner_title")["amounts"], [-2390, -2385, -2375])
         self.assertEqual(row(self.C, "title_fees")["amounts"], [-1145] * 3)
         self.assertEqual(row(self.C, "credit")["amounts"], [-10000, -10000, -5000])
-        self.assertIn("Placeholder", row(self.C, "listing_fee")["label"])
+        self.assertEqual(row(self.C, "listing_fee")["label"], "Listing Brokerage (2.5%)")  # the listing agreement's terms
         self.assertEqual(row(self.C, "transfer_tax")["label"], "Documentary Stamp Tax on the Deed (0.70%)")
         self.assertFalse(self.C["preliminary"])
 
@@ -87,7 +88,8 @@ class MatchesPrototype(unittest.TestCase):
 
     def test_no_warnings_but_assumptions(self):
         self.assertEqual(self.C["warnings"], [])
-        self.assertTrue(any("Brokerage" in a for a in self.C["assumptions"]))
+        self.assertTrue(any("Title company fees" in a for a in self.C["assumptions"]))
+        self.assertFalse(any("Brokerage" in a for a in self.C["assumptions"]))  # the agreement's terms are in costs
 
 
 class Handoff(unittest.TestCase):
@@ -157,7 +159,7 @@ class Costs(unittest.TestCase):
 
     def test_payoff_hoa_and_other(self):
         R = report()
-        R["costs"] = {"mortgage_payoff": 210000, "hoa": True, "other": [{"label": "Survey", "amount": 450}]}
+        R["costs"].update({"mortgage_payoff": 210000, "hoa": True, "other": [{"label": "Survey", "amount": 450}]})
         C, _ = run(R)
         self.assertTrue(C["net"]["cash_at_closing"])
         self.assertEqual(row(C, "estoppel")["amounts"][0], -299)
@@ -357,3 +359,44 @@ class Files(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditMoneyLines(unittest.TestCase):
+    """CORE-5, CMA-18 (standard terms marked everywhere), CMA-3 (proration), CORE-6 (surtax)."""
+
+    def test_standard_terms_from_the_market_profile_are_marked(self):
+        R = report()
+        R["costs"] = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "market.md")
+            with open(path, "w") as f:
+                f.write("---\nprofile: market\nstate: FL\nbrokerage:\n  listing_fee_pct: 0.03\n  buyer_broker_fee_pct: 0.02\n---\n")
+            C, homes = run(R, path)
+        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (3%, Standard Terms)")
+        self.assertTrue(C["net"]["standard_terms"])
+        self.assertIn("Commissions are negotiable and not set by law.", C["net"]["notes"])
+        doc = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)[0]
+        self.assertIn("Standard Brokerage Terms", doc)  # page 1 net tile
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer")
+        self.assertIn("standard brokerage terms", D["net_sub"])  # the deck's net slide
+
+    def test_no_terms_anywhere_blocks_the_files(self):
+        R = report()
+        R["costs"] = {}
+        C, _ = run(R)
+        self.assertTrue(C["net"]["incomplete"])  # Florida too: nothing built in (CORE-5)
+
+    def test_tax_proration_and_surtax(self):
+        R = report()
+        R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-01")
+        C, _ = run(R)
+        tax = row(C, "tax_proration")
+        self.assertEqual(tax["amounts"][0], -round(6000 * 0.96 * 334 / 365))
+        R["costs"]["current_tax_bill_paid"] = True
+        C, _ = run(R)
+        self.assertEqual(row(C, "tax_proration")["amounts"][0], round(6000 * 0.96 * 31 / 365))
+        R = report()
+        R["costs"]["annual_tax"] = 6000
+        self.assertTrue(any("expected_closing_date" in w for w in run(R)[0]["warnings"]))
+        self.assertIn("Not included: this year's property tax proration", " ".join(run(report())[0]["net"]["notes"]))
+

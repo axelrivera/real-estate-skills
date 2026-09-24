@@ -10,6 +10,10 @@ market profile (shared/profiles.load_market). Lending rules are national estimat
 numbers always win.
 """
 import math
+from datetime import date
+
+COMMISSION_NOTE = "Commissions are negotiable and not set by law."
+SINGLE_FAMILY = "single_family"
 
 # Agency guidelines as planning estimates (confirm limits, fees and overlays with the lender).
 LOAN_PROGRAMS = {
@@ -27,6 +31,50 @@ def program(name):
     if key not in LOAN_PROGRAMS:
         raise ValueError(f"Unknown loan program {name!r} (use conventional, fha, va, usda or cash).")
     return key
+
+
+def property_type(value):
+    """'single_family', 'condo', 'townhouse', 'multifamily', 'land' or 'other' from a data file; None when not given."""
+    if value in (None, ""):
+        return None
+    v = " ".join(str(value).lower().replace("_", " ").replace("-", " ").split())
+    for key, words in (("condo", ("condo", "condominium")), ("townhouse", ("townhouse", "townhome", "villa")),
+                       ("multifamily", ("duplex", "triplex", "fourplex", "multi", "multifamily")),
+                       ("land", ("land", "lot", "vacant")), (SINGLE_FAMILY, ("single family", "sfr", "house", "detached"))):
+        if any(w in v for w in words):
+            return key
+    return "other"
+
+
+def tax_proration(annual_tax, closing, market=None, bill_paid=None):
+    """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis'}, or None.
+
+    FR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
+    (`property_tax.early_payment_discount`, Florida 4%). Taxes paid in arrears (`property_tax.paid`): while the current
+    bill is unpaid, the seller credits the buyer from Jan 1 (a cost); once the seller has paid it (Florida bills go out
+    in November), the buyer credits the seller from closing to Dec 31 (`amount` negative, a credit to the seller).
+    """
+    if not annual_tax or not closing:
+        return None
+    if market is not None and market.get("property_tax.paid") == "advance":
+        return None
+    discount = (market.get("property_tax.early_payment_discount") if market is not None else None) or 0
+    year_days = (date(closing.year + 1, 1, 1) - date(closing.year, 1, 1)).days
+    seller_days = (closing - date(closing.year, 1, 1)).days  # Jan 1 through the day before closing
+    base = annual_tax * (1 - discount)
+    basis = f"{money(annual_tax)} bill" + (f" less the {discount * 100:g}% early-payment discount" if discount else "")
+    if bill_paid:
+        return {"amount": -round(base * (year_days - seller_days) / year_days),
+                "label": "Property Tax Proration (Credit, Closing to Dec 31)", "basis": basis}
+    return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis}
+
+
+def buyer_broker_shortfall(price, agreement_pct, seller_pays_pct):
+    """What the buyer owes their own broker when the seller pays less than the buyer-broker agreement (after the 2024
+    NAR settlement): (agreement − seller-paid) × price, never below 0. None when the agreement isn't known."""
+    if agreement_pct is None:
+        return None
+    return max(0, round((agreement_pct - (seller_pays_pct or 0)) * price))
 
 
 def money(v, round_to=1):
@@ -156,7 +204,8 @@ def title_premium(price, tiers):
 
 
 def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,
-               has_hoa=False, other_costs=0, title_fees=None):
+               has_hoa=False, other_costs=0, title_fees=None, annual_tax=None, closing=None, bill_paid=None,
+               prop_type=None):
     """Seller's estimated net at `price`, itemized, with the source of every assumption.
 
     Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
@@ -166,6 +215,9 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     `assumed` lists defaults taken from the market profile rather than the agent, as
     {'key', 'value', 'text'} (key: listing_fee, buyer_broker_fee, title_fees).
     `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
+    `annual_tax` with `closing` (a date) adds the tax proration (see tax_proration; `bill_paid` once the seller paid
+    this year's bill). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
+    but single-family homes); without it, that surtax is missing.
     """
     items, lines, missing, assumed = [], [], [], []
 
@@ -197,6 +249,14 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
     elif rate and payer == "split":
         add("transfer_tax", f"{tax_label} (Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+    surtax = market.get("closing_costs.deed_transfer_surtax") if market is not None else None
+    if surtax and surtax.get("rate") and payer in (None, "seller"):
+        kind = property_type(prop_type)
+        if kind is None:
+            missing.append("property type (for the " + (surtax.get("label") or "deed surtax") + ")")
+        elif kind != surtax.get("applies_unless"):
+            add("transfer_surtax", f"{surtax.get('label') or 'Deed Surtax'} ({surtax['rate'] * 100:.2f}%)",
+                price * surtax["rate"], surtax["rate"])
 
     title_payer = market_value("closing_costs.owner_title.payer", "who pays owner's title")
     if title_payer == "seller":
@@ -230,6 +290,9 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         add("credit", "Seller Credit to Buyer", credit)
     if other_costs:
         add("other", "Other Costs", other_costs)
+    pr = tax_proration(annual_tax, closing, market, bill_paid)
+    if pr:
+        add("tax_proration", pr["label"], pr["amount"])
 
     total = sum(a for _, a in items)
     net_before = price - total

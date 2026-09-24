@@ -50,12 +50,14 @@ class MatchesPrototype(unittest.TestCase):
         d["listing_side"]["listing_fee_pct"] = 0.03
         d["property"]["costs"] = {"title_fees": 645}
         r = strategy.analyze(d)
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333052)
-        self.assertEqual(r["target"], 335052)
+        # Audit: 4% early-payment discount in the proration (OFR-14), no tax in holding costs (OFR-13)
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333670)
+        self.assertEqual(r["target"], 335670)
 
     def test_market_defaults(self):
         r = analyze("fha-competitive.json")
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 334377)  # 2.5% listing fee, $1,145 title fees
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 344120)  # no built-in listing fee (CORE-5), $1,145 title fees
+        self.assertTrue(any(a["field"] == "listing_fee_pct" for a in r["R"]["assumptions"]))
         self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.035)     # Florida 3% + 0.5% prepaids
 
 
@@ -226,3 +228,18 @@ class AuditEscalationCap(unittest.TestCase):
         text = json.dumps(strategy.worksheet(self.r))
         self.assertIn("Letter at up to $637,000, the escalation cap", text)
         self.assertIn("(at the escalation cap)", text)
+
+
+class AuditBuyerBrokerShortfall(unittest.TestCase):
+    def test_shortfall_in_cash_to_close(self):
+        """CMA-4: a 3% agreement with the seller paying 2.5% leaves 0.5% for the buyer, counted in the limits."""
+        d = fixture("fha-competitive.json")
+        d["buyer"]["buyer_broker_agreement_pct"] = 0.03
+        r = strategy.analyze(d)
+        c = r["cash"]["recommended"]
+        self.assertEqual(c["bb_short"], 1825)
+        self.assertEqual(c["to_close"], c["down"] + c["cc"] + c["conc"] + 1825)
+        doc = buyer_render.options_html(r, {"name": None, "brokerage": None, "brand": {}}, False)
+        self.assertIn("Broker Fee (Not Paid by Seller)", doc)
+        self.assertFalse(any(a["field"] == "buyer_broker_agreement_pct" for a in r["missing"]))
+

@@ -238,6 +238,8 @@ def prepare_listing(data, A, costs):
     L["tax_in_arrears"] = paid != "advance"
     if paid is None and L["annual_tax"]:
         A.add("listing", "tax_paid", "arrears", "How property tax is paid here wasn't given: assumed in arrears (seller credits the buyer from Jan 1)", "low")
+    L["bill_paid"] = L.get("current_tax_bill_paid")  # this year's bill already paid by the seller (Florida: from November)
+    L["property_type"] = L.get("property_type")
     L["hoa_monthly"] = L.get("hoa_monthly")
     L["title_customary_payer"] = costs.get("closing_costs.owner_title.payer")
     if L["title_customary_payer"] is None:
@@ -254,16 +256,17 @@ def prepare_listing(data, A, costs):
         lf = costs.get("brokerage.listing_fee_pct")
         if lf is None:
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", 0,
-                                         "Listing brokerage fee not provided and no market default: left out of the net", "high")
+                                         "Listing brokerage fee not provided (nothing is built in; commissions are negotiable): "
+                                         "left out of the net. Ask for the listing agreement's fee", "high")
         else:
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", lf,
-                                         f"Listing brokerage fee not provided: assumed {pct(lf)} ({costs.described('brokerage.listing_fee_pct')})", "high")
+                                         f"Listing brokerage fee not provided: assumed {pct(lf)}, the agent's standard terms ({costs.described('brokerage.listing_fee_pct')})", "high")
     S["offered_buyer_broker_pct"] = S.get("offered_buyer_broker_pct")
     S["default_buyer_broker_pct"] = (S["offered_buyer_broker_pct"] if S["offered_buyer_broker_pct"] is not None
-                                     else costs.get("brokerage.buyer_broker_fee_pct"))
+                                     else costs.get("brokerage.buyer_broker_fee_pct"))  # the agent's own terms; none built in
     if S.get("holding_monthly") is None:
         ins_rate, utilities = costs.get("holding_costs.insurance_rate"), costs.get("holding_costs.utilities_monthly")
-        parts = [(L["annual_tax"] or 0) / 12, (L["hoa_monthly"] or 0), S["payoff"] * PAYOFF_INTEREST / 12]
+        parts = [(L["hoa_monthly"] or 0), S["payoff"] * PAYOFF_INTEREST / 12]  # tax is in the proration already (OFR-13)
         left_out = []
         if ins_rate is None:
             left_out.append("insurance")
@@ -274,9 +277,9 @@ def prepare_listing(data, A, costs):
         else:
             parts.append(utilities)
         S["holding_monthly"] = rnd(sum(parts), 50)
-        note = "Holding cost estimated from tax, insurance, HOA, utilities and loan interest"
+        note = "Holding cost estimated from insurance, HOA, utilities and loan interest (tax is in the proration)"
         if left_out:
-            note = f"Holding cost estimated from tax, HOA and loan interest ({' and '.join(left_out)} unknown for this market)"
+            note = f"Holding cost estimated from HOA and loan interest ({' and '.join(left_out)} unknown for this market; tax is in the proration)"
         A.add("seller", "holding_monthly", f"{money(S['holding_monthly'])}/mo", note, "low")
     S["deadline"] = _d(S.get("deadline"))
     if not S["deadline"]:
@@ -448,13 +451,18 @@ def prepare_offer(o, L, S, A):
     o["seller_concessions"] = given(o, "seller_concessions", 0, A, sc, "Seller concessions not provided: assumed $0", "high")
     if o.get("buyer_broker_pct") is None and o.get("buyer_broker_amount") is None:
         bb = S["default_buyer_broker_pct"]
+        o["bb_tag"] = "Assumed"
         if bb is None:
             o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", 0,
-                                          "Buyer-broker compensation not stated and no market default: left out of the net", "high")
+                                          "Buyer-broker compensation not stated, and nothing offered by the seller or set in the "
+                                          "agent's market profile: left out of the net. Commissions are negotiable: ask", "high")
         else:
-            o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: assumed {pct(bb)}", "high")
-    elif o.get("buyer_broker_pct") is None:
-        o["buyer_broker_pct"] = o["buyer_broker_amount"] / o["price"]
+            src = "what the seller offered" if S["offered_buyer_broker_pct"] is not None else "the agent's standard terms"
+            o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: assumed {pct(bb)} ({src})", "high")
+    else:
+        o["bb_tag"] = "Requested"
+        if o.get("buyer_broker_pct") is None:
+            o["buyer_broker_pct"] = o["buyer_broker_amount"] / o["price"]
     o["home_warranty"] = o.get("home_warranty") or 0
     # One form per offer, and only that form's rules (contract_forms): AS IS and Standard math never mix.
     form = cf.normalize(o.get("contract_form"))
@@ -553,14 +561,16 @@ def repair_reserve(o, L):
 
 # --- money -------------------------------------------------------------------
 
-_LINE_KEYS = {"listing_fee": "listing", "buyer_broker_fee": "bb", "transfer_tax": "transfer", "owner_title": "title",
-              "title_fees": "settle", "estoppel": "estoppel"}
+_LINE_KEYS = {"listing_fee": "listing", "buyer_broker_fee": "bb", "transfer_tax": "transfer", "transfer_surtax": "surtax",
+              "owner_title": "title", "title_fees": "settle", "estoppel": "estoppel"}
 
 
-def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repair_label=None):
-    """Seller net at `price`, itemized with stable keys. Market costs come from finance.seller_net."""
+def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repair_label=None, bb_tag=None):
+    """Seller net at `price`, itemized with stable keys. Market costs and the tax proration come from finance."""
     has_hoa = L["hoa_monthly"] is None or L["hoa_monthly"] > 0  # unknown HOA: charge the estoppel (conservative)
-    base = finance.seller_net(price, costs, listing_fee_pct=S["listing_fee_pct"], buyer_broker_fee_pct=bb_pct, has_hoa=has_hoa)
+    base = finance.seller_net(price, costs, listing_fee_pct=S["listing_fee_pct"], buyer_broker_fee_pct=bb_pct, has_hoa=has_hoa,
+                              annual_tax=L["annual_tax"] if L["tax_in_arrears"] else None, closing=close,
+                              bill_paid=L["bill_paid"], prop_type=L["property_type"])
     found = {}
     for ln in base["lines"]:
         key = _LINE_KEYS.get(ln["key"])
@@ -569,20 +579,23 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     transfer = found.get("transfer", ("",))[0] or "Deed Transfer Tax"  # the market's own name (e.g. documentary stamp tax)
     labels = {
         "listing": f"Listing Brokerage ({pct(S['listing_fee_pct'])})" if S["listing_fee_pct"] else "Listing Brokerage (Not Provided)",
-        "bb": f"Buyer-Broker Compensation ({pct(bb_pct, 2)})" if bb_pct else "Buyer-Broker Compensation",
+        "bb": (f"Buyer-Broker Compensation ({pct(bb_pct, 2)}" + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
+              else "Buyer-Broker Compensation",
         "transfer": transfer,
         "title": "Owner's Title Policy" + (" (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
         "settle": "Title Company Fees",
         "estoppel": "HOA Estoppel",
     }
-    days = (close - date(close.year, 1, 1)).days
-    tax = round(L["annual_tax"] * days / 365) if L["annual_tax"] and L["tax_in_arrears"] else 0
+    tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
+    tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
     lines = [("price", "Offer Price", price), ("conc", "Seller-Paid Closing Costs / Concessions", -conc),
              ("repair", repair_label or "Post-Inspection Repair Credit (Est.)", -repair)]
-    for key in ("listing", "bb", "transfer", "title", "settle", "estoppel"):
-        lines.append((key, labels[key], -found.get(key, ("", 0))[1]))
+    for key in ("listing", "bb", "transfer", "surtax", "title", "settle", "estoppel"):
+        if key == "surtax" and key not in found:
+            continue
+        lines.append((key, labels.get(key) or found[key][0], -found.get(key, ("", 0))[1]))
     lines += [("warranty", "Home Warranty", -warranty),
-              ("tax", "Property-Tax Proration (Jan 1 → Closing)", -tax),
+              ("tax", tax_label, -tax),
               ("payoff", "Mortgage Payoff (Est.)", -S["payoff"])]
     net = sum(v for _, _, v in lines)
     months = max(0, (close - L["analysis_date"]).days) / 30
@@ -952,23 +965,25 @@ def propose_counter(o, L, S):
 
 # --- per-offer and listing-level analysis ------------------------------------
 
-def _sheet(t, L, S, costs, repair=0):
-    return net_sheet(t["price"], t["seller_concessions"], t["buyer_broker_pct"], t["home_warranty"], t["close"], L, S, costs, repair)
+def _sheet(t, L, S, costs, repair=0, bb_tag=None):
+    return net_sheet(t["price"], t["seller_concessions"], t["buyer_broker_pct"], t["home_warranty"], t["close"], L, S, costs, repair,
+                     bb_tag=bb_tag)
 
 
 def analyze_offer(o, L, S, costs):
-    o["ns"] = net_sheet(o["price"], o["seller_concessions"], o["buyer_broker_pct"], o["home_warranty"], o["close"], L, S, costs)
+    o["ns"] = net_sheet(o["price"], o["seller_concessions"], o["buyer_broker_pct"], o["home_warranty"], o["close"], L, S, costs,
+                        bb_tag=o.get("bb_tag"))
     o["downside_price"] = downside_price(o, L)
     repair, repair_label = repair_reserve(o, L)
     o["repair_reserve"] = repair
     o["ns_down"] = net_sheet(o["downside_price"], o["seller_concessions"], o["buyer_broker_pct"], o["home_warranty"],
-                             o["close"], L, S, costs, repair, repair_label)
+                             o["close"], L, S, costs, repair, repair_label, o.get("bb_tag"))
     o["score"] = score_offer(o, L, S)
     o["flags"] = flags_for(o, L, S)
     o["blocking"] = [f for f in o["flags"] if f["sev"] == "Blocking"]
     ct, rows = propose_counter(o, L, S)
     o["counter_terms"], o["counter_rows"] = ct, rows
-    o["ns_counter"] = _sheet(ct, L, S, costs)
+    o["ns_counter"] = _sheet(ct, L, S, costs, bb_tag=o.get("bb_tag"))
     oc = dict(o)
     if not (o["appraisal_protected"] or o["appraisal_waived"]):
         oc["gap_cover"] = ct["appraisal_gap"]
@@ -1044,6 +1059,11 @@ def analyze(data, market=None, cma=None):
     label_offers(offers)
     for o in offers:
         analyze_offer(o, L, S, costs)
+    if L["bill_paid"] is None and L["annual_tax"] and L["tax_in_arrears"] \
+            and any(o["close"].month >= 11 for o in offers if o["status"] in ACTIVE):
+        A.add("listing", "current_tax_bill_paid", False,
+              "Closing in November or December: whether the seller has paid this year's tax bill wasn't given. Assumed not "
+              "paid (the seller credits the buyer from Jan 1); if it's paid, the buyer credits the seller instead", "med")
     _missing_market(costs, offers[0]["ns"], A)
     live_offers = [o for o in offers if o["status"] in ACTIVE]
     active = [o for o in live_offers if not o["blocking"]]

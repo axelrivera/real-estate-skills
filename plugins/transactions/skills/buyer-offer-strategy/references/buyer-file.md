@@ -43,7 +43,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## listing_side
 
-`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the market default, flagged), `listing_fee_pct` (for the seller net sheet; default: market, Florida 2.5%).
+`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the agent's standard terms from their market profile, else none, flagged; nothing is built in), `listing_fee_pct` (for the seller net sheet; default: market, Florida 2.5%).
 
 ## costs (Buyer's Payment)
 
@@ -67,7 +67,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 | `insurance_quote` | false. True when the buyer already has a quote for this address | — |
 | `lender_min_close_days` | 35 financed / 21 cash | — |
 | `agent_track` | `average`: how a listing agent would rate the buyer's agent | — |
-| `buyer_broker_agreement_pct` | market default | — |
+| `buyer_broker_agreement_pct` | none (flagged): the rate in the buyer's own broker agreement. When the seller pays less, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" line in cash to close and counts in every limit | med |
 | `needs_sale` | false (adds the sale-of-buyer's-property rider) | — |
 | `checklist` | package checklist statuses: `contract` `riders` `terms` `pre_approval` `funds` `insurance` `agency` `bb` `wire` `lead` `inspector` `lender_close` | Pending |
 

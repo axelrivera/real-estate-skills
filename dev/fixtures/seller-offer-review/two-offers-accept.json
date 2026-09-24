@@ -10,7 +10,7 @@
     "hoa_monthly": 60, "cma_low": 500000, "cma_high": 525000, "annual_tax": 6900
   },
   "seller": {
-    "name": "Sample Seller", "payoff": 301000, "listing_fee_pct": 0.025,
+    "name": "Sample Seller", "payoff": 301000, "listing_fee_pct": 0.025, "offered_buyer_broker_pct": 0.025,
     "deadline": "2026-11-20", "priority": "price"
   },
   "offers": [

@@ -54,6 +54,8 @@ def summary_page(R, C, agent, L):
     strats, ri = C["strategies"], C["recommended_index"]
     cash = C["net"]["cash_at_closing"]
     tile = L("sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
+    if C["net"]["standard_terms"]:  # CMA-18: every place a net shows says the brokerage isn't the listing agreement's yet
+        tile += f" ({L('sum_standard_terms')})"
     stats = list(sp["key_stats"])[:3] + [[C["recommended_net_display"], tile]]
     left = agent_block(agent, L)
     tags = f'<span class="tag prelim">{L("preliminary")}</span><br>' if C["preliminary"] else ""

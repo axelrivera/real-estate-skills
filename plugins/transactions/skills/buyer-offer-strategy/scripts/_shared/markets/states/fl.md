@@ -27,12 +27,12 @@ closing_costs:
   hoa_estoppel_fee: 299               # when the property has an HOA or condo association
   buyer_closing_cost_pct: 0.03        # buyer's closing costs when no estimate is given
 
-brokerage:                            # defaults when the listing agreement or offer doesn't say
-  listing_fee_pct: 0.025              # seller's listing brokerage
-  buyer_broker_fee_pct: 0.025         # buyer's brokerage; negotiated per deal, may be paid by seller or buyer
+# brokerage: none built in. Commissions are negotiable and not set by law: they come from the agent's own market
+# profile (their standard terms) or the listing agreement and offer for each deal.
 
 property_tax:
-  paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing
+  paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing (until the seller pays the bill in Nov)
+  early_payment_discount: 0.04        # 4% for November payment; FR/BAR Standard K prorates allowing the maximum discount
   reassessed_on_sale: true            # capped assessments reset for the buyer
   fallback_rate: 0.018                # annual tax as share of price when no bill is available
   primary_residence_exemptions:       # Florida homestead
@@ -149,16 +149,24 @@ cma:                                  # calibrated on Central Florida (Seminole 
     market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last ~6 weeks
 
 county_overrides:
-  Miami-Dade:
-    closing_costs:
-      deed_transfer_tax_rate: 0.006   # single-family homes
+  Miami-Dade:                          # FR/BAR 9(c)(iii) regional provision: buyer pays the owner's policy; the seller
+    closing_costs:                    # pays the title search (up to $200 if blank), tax search and municipal lien search
+      deed_transfer_tax_rate: 0.006
+      deed_transfer_surtax: {rate: 0.0045, applies_unless: single_family, label: Miami-Dade Documentary Surtax}
       owner_title: {payer: buyer}
-  Broward:
+      seller_title_fees: {title_search: 200}
+  Broward:                            # 9(c)(iii), as Miami-Dade
     closing_costs:
       owner_title: {payer: buyer}
-  Sarasota:
+      seller_title_fees: {title_search: 200}
+  Sarasota:                           # 9(c)(ii): the buyer pays the owner's policy and Charges (title search) and the lien search
     closing_costs:
       owner_title: {payer: buyer}
+      seller_title_fees: {title_search: 0, municipal_lien_search: 0}
+  Collier:                            # 9(c)(ii), as Sarasota (verified 2026-09-24; see docs/audits/2026-09-23-verification.md)
+    closing_costs:
+      owner_title: {payer: buyer}
+      seller_title_fees: {title_search: 0, municipal_lien_search: 0}
 ---
 
 # Market profile layer: Florida
@@ -169,7 +177,7 @@ Built-in state defaults. Skills use them only for Florida properties. For any ot
 
 - Closing costs are estimates for comparing options, not a settlement statement.
 - Seller title fee defaults (2026) are midpoints of ranges published by Florida title companies and closing cost guides; the title company's quote always wins.
-- Brokerage defaults total 5% (2.5% each side). Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split; use the actual agreement and offer terms whenever they're known.
+- No brokerage defaults: commissions are negotiable and not set by law. Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split. Use the listing agreement and offer terms, or the agent's standard terms from their market profile.
 - Who pays the owner's title policy varies by county. Seller in most of Florida, buyer in parts of South and Southwest Florida. Confirm with the title company for counties not listed.
 - Millage (2025 final) covers the unincorporated area and main cities of Orange, Seminole, Osceola, Lake, Volusia, Polk and Sumter. Rates vary within a city and within unincorporated areas (water management district, fire, transit, hospital and special districts), so the right number comes from the parcel's tax district code on the property appraiser record. Orange's school rate (6.449) is from the school board's adoption, not the appraiser sheet. Sumter's Villages, Wildwood and Bushnell totals marked "summed" add up the published rates; there's no official aggregate. The Villages' CDD charges are non-ad valorem and can add over $2,000 a year.
 - Property tax for the buyer is based on the purchase price, not the seller's bill. The estimate assumes the appraiser values the home at the purchase price, so it often runs high. Non-ad valorem assessments are excluded. Warn about the first-year escrow jump.

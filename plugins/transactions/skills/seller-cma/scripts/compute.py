@@ -20,7 +20,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
 
 # The order finance.seller_net adds its lines in.
-NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees", "estoppel", "credit", "other")
+NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_surtax", "owner_title", "title_fees", "estoppel",
+                  "credit", "other", "tax_proration")
 
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money = finance.money
@@ -28,6 +29,16 @@ money = finance.money
 
 class ReportError(ValueError):
     """Something report.json needs; the message is written for the agent."""
+
+
+def _date(v, name):
+    """A YYYY-MM-DD date from report.json, or None."""
+    if v in (None, ""):
+        return None
+    try:
+        return date.fromisoformat(str(v)[:10])
+    except ValueError:
+        raise ReportError(f"{name} should be a date like 2026-11-20, not {v!r}.") from None
 
 
 def _require(R, *paths):
@@ -68,11 +79,14 @@ def net_sheet(R, market, L):
     payoff = costs.get("mortgage_payoff")
     has_hoa = bool(costs.get("hoa", s.get("hoa", False)))
     title_fees = costs.get("title_fees")  # the title company's quote: a total or {name: amount}
+    annual_tax, bill_paid = costs.get("annual_tax"), costs.get("current_tax_bill_paid")
     cols = []
     for x in strategies:
+        closing = _date(x.get("closing_date") or costs.get("expected_closing_date"), "expected_closing_date")
         n = finance.seller_net(x["expected_sale"], market, credit=x.get("seller_credit", 0) or 0, payoff=payoff,
                                listing_fee_pct=lf, buyer_broker_fee_pct=bf, has_hoa=has_hoa,
-                               other_costs=sum(o["amount"] for o in others), title_fees=title_fees)
+                               other_costs=sum(o["amount"] for o in others), title_fees=title_fees,
+                               annual_tax=annual_tax, closing=closing, bill_paid=bill_paid, prop_type=s.get("property_type"))
         cols.append(n)
     first = cols[0]
     assumed_keys = {a["key"] for a in first["assumed"]}
@@ -107,9 +121,15 @@ def net_sheet(R, market, L):
         r["display"] = [money(a) for a in r["amounts"]]
 
     notes = []
-    if assumed_keys & {"listing_fee", "buyer_broker_fee"}:
+    standard_terms = bool(assumed_keys & {"listing_fee", "buyer_broker_fee"})
+    if standard_terms:
         total_pct = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
         notes.append(L("net_placeholder_note", pct=pct_text(total_pct)))
+    if any(l["key"] in ("listing_fee", "buyer_broker_fee") for c in cols for l in c["lines"]):
+        notes.append(finance.COMMISSION_NOTE)
+    has_tax = any(l["key"] == "tax_proration" for c in cols for l in c["lines"])
+    if not has_tax and market.get("property_tax.paid") == "arrears":
+        notes.append(L("net_tax_note"))
     fees = market.get("closing_costs.seller_title_fees")
     if "title_fees" in assumed_keys:
         items = ", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())
@@ -120,7 +140,7 @@ def net_sheet(R, market, L):
     return {"columns": [{"net_before_payoff": c["net_before_payoff"], "net": c["net"], "total_costs": c["total_costs"]} for c in cols],
             "totals": totals, "rows": rows, "notes": notes, "missing": shown, "assumed": first["assumed"],
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
-            "payoff": payoff, "cash_at_closing": bool(payoff)}
+            "payoff": payoff, "cash_at_closing": bool(payoff), "standard_terms": standard_terms, "has_tax": has_tax}
 
 
 # --- buyer payments ----------------------------------------------------------
@@ -212,8 +232,13 @@ def compute(R, market, homes):
                         ". Ask the agent (or use their market profile) and re-run; the report is marked Preliminary until then.")
     brokerage = [a["text"] for a in net["assumed"] if a["key"] in ("listing_fee", "buyer_broker_fee")]
     if brokerage:
-        assumptions.append("Brokerage uses the market default (" + ", ".join(brokerage) +
-                           "), labeled a placeholder. Replace it with the listing agreement's terms when the agent gives them.")
+        assumptions.append("Brokerage uses your standard terms from the market profile (" + ", ".join(brokerage) +
+                           "), marked on every page and slide that shows a net. Replace them with this listing agreement's "
+                           "terms when the agent gives them.")
+    costs_in = R.get("costs") or {}
+    if costs_in.get("annual_tax") and not net["has_tax"]:
+        warnings.append("costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
+                        "closing_date per pricing option) to include the tax proration.")
     if any(a["key"] == "title_fees" for a in net["assumed"]):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
 

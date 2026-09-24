@@ -96,6 +96,8 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     down = _frac(cs, "down_pct", "costs.credit_scenarios", 0.05)
     closing_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios", 0.03)
     cap = finance.concession_cap(program, down)
+    agreement = _frac(cs, "buyer_broker_agreement_pct", "costs.credit_scenarios")  # CMA-4: the buyer's own agreement
+    seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
     cols, base = [], None
     for x in cs["scenarios"]:
         price, credit = x["price"], x["credit"]
@@ -103,8 +105,9 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         tax = finance.property_tax(price, market, j["school_mills"], j["total_mills"], R["costs"]["taxes"].get("homestead", True))["annual"] or 0
         p = finance.monthly_payment(price, program, down, pay["rate"], tax, pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
         cc = cs["closing_costs"] if cs.get("closing_costs") else price * closing_pct
-        col = {"price": price, "credit": credit, "net": price - credit, "loan": p["loan"],
-               "cash": p["cash_down"] + cc - min(credit, cc), "payment": p["total"], "pi": p["pi"],
+        bb_short = finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
+        col = {"price": price, "credit": credit, "net": price - credit, "loan": p["loan"], "bb_short": bb_short,
+               "cash": p["cash_down"] + cc - min(credit, cc) + bb_short, "payment": p["total"], "pi": p["pi"],
                "cap": price * cap if cap is not None else None,
                "over_cap": cap is not None and credit > price * cap + 1, "over_costs": credit > cc + 1,
                "appraisal_room": median_adjusted - price, "closing_costs": cc}

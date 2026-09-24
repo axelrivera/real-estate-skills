@@ -25,6 +25,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 | Field | Notes |
 |---|---|
 | `address` | Display form ("517 Hickorywood Ave") |
+| `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. Needed in Miami-Dade, where every type but single-family owes the 0.45% deed surtax |
 | `mls_address` | Exactly as in the export's address column. Every row with it is left out of stats, chart and deck |
 | `city`, `state`, `county` | `state` and `county` pick the market's closing costs, tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet. Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
@@ -71,11 +72,11 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 | `recommended_index` | The recommended row (usually 1); its `list_price` must equal `recommendation.list_price` |
 | `note` | The assumption behind any difference between options (shown after "*Before paying off any mortgage.") |
 | `net_intro` | Optional sentence above the net sheet |
-| `net_note` | What the net sheet leaves out: tax proration, repairs, carrying costs. The placeholder and title-fee notes are added automatically |
+| `net_note` | What the net sheet leaves out: repairs, carrying costs. The standard-terms, commission, tax and title-fee notes are added automatically |
 
 ## costs
 
-All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%), `mortgage_payoff` (*number*), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `other` (`[{label, amount}]`).
+All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; needed unless the market profile has the agent's standard terms), `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `other` (`[{label, amount}]`).
 
 ## buyer_payment
 

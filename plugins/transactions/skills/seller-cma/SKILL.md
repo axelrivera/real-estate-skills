@@ -23,7 +23,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 Ask for everything missing in one message. Skip what's already in the chat, project files or the agent profile. Read `references/method.md` for the full checklist and why each item matters. In short:
 
 - **From the seller:** address; beds, baths, heated sq ft, lot, year built, construction; pool, garage, HOA/CDD; updates with dates and permits (roof first); the current tax bill; known issues or claims; timeline and occupancy; optional mortgage payoff (turns the net sheet into cash at closing).
-- **From the agent:** the MLS CMA export (CSV) of nearby sales from about the last 6 months plus active, pending, expired and canceled listings; the brokerage terms to model (without them, the market default is used and labeled a placeholder); flood zone if known.
+- **From the agent:** the MLS CMA export (CSV) of nearby sales from about the last 6 months plus active, pending, expired and canceled listings; the brokerage terms to model (nothing is built in: without them, the agent's standard terms from their market profile, marked on every page and slide that shows a net; with neither, no files); the tax bill and expected closing date for the proration; the property type (Miami-Dade surtax); flood zone if known.
 
 Treat the home as a first-time listing: the scripts drop every export row with its address, and its facts come from the seller. stats.py lists those rows in `subject_rows`: if the home is **listed right now** (active or pending), say so first. It may be the agent's own listing being repriced, an expired listing, or a home listed with another brokerage, which the agent must not solicit; ask which before going further. A failed current price is the most important pricing fact, so with the agent's go-ahead, address it. For an old relist, ask before adding the history.
 
@@ -31,7 +31,7 @@ For a PDF or deck, the agent's name and brokerage go on it: use their agent prof
 
 **No MLS export** (the agent typed a few comps): skip stats.py, write the comps and competition from what you were given, and build the market table and key stats from those sales and the rate; say in the method that the market numbers come from a short list. The scatter slide is left out on its own.
 
-Use the agent's market profile when there is one. Florida and Stellar MLS are built in. Outside them, closing costs and commission come from the agent or their market profile; a missing value is never filled with Florida's, and the report is marked Preliminary until it's supplied.
+Use the agent's market profile when there is one. Florida and Stellar MLS are built in. Commission always comes from the agent or their market profile, in Florida too (commissions are negotiable and not set by law). Outside Florida, closing costs do too; a missing value is never filled with Florida's, and the report is marked Preliminary until it's supplied.
 
 ## 2. Read the market
 
@@ -55,7 +55,7 @@ Then compute:
 python3 scripts/compute.py report.json [--market market-profile.md]
 ```
 
-Fix every item in `warnings` (a recommended price outside the range, a missing tax rate, a missing local cost) and re-run. Without brokerage terms outside Florida the nets would leave out the commission, so render.py refuses to build the files until `costs` has them (0 is fine): ask the agent. For a chat-only answer, compute.py needs `subject`, `recommendation`, `comps.cards`, `pricing.strategies`, `costs` and `buyer_payment`; the prose sections and `deck` can stay short. Tell the agent about each item in `assumptions` (placeholder brokerage, built-in title fees). It also saves `<address>.cma.json`, the handoff seller-offer-review reads.
+Fix every item in `warnings` (a recommended price outside the range, a missing tax rate, a missing local cost) and re-run. Without brokerage terms (in any state) the nets would leave out the commission, so render.py refuses to build the files until `costs` or the market profile has them (0 is fine): ask the agent. For a chat-only answer, compute.py needs `subject`, `recommendation`, `comps.cards`, `pricing.strategies`, `costs` and `buyer_payment`; the prose sections and `deck` can stay short. Tell the agent about each item in `assumptions` (standard brokerage terms, built-in title fees). It also saves `<address>.cma.json`, the handoff seller-offer-review reads.
 
 ## 4. Deliver
 

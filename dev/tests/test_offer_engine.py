@@ -18,10 +18,12 @@ def fixture(name):
 
 
 def prototype_costs(data):
-    """The prototype's cost assumptions: 3% listing fee (when not given) and a flat $645 title settlement."""
+    """The prototype's cost assumptions: 3% listing fee and 2.5% buyer-broker pay offered (when not given) and a flat
+    $645 title settlement. Nothing about brokerage is built in any more (CORE-5), so the test states it."""
     d = copy.deepcopy(data)
     d["listing"]["costs"] = {"title_fees": 645}
     d.setdefault("seller", {}).setdefault("listing_fee_pct", 0.03)
+    d["seller"].setdefault("offered_buyer_broker_pct", 0.025)
     return d
 
 
@@ -42,12 +44,13 @@ class MatchesPrototype(unittest.TestCase):
                          o["counter_score"], o["action"]) for o in R["ranked"]}
         self.assertEqual(got, {
             # The prototype countered B; this seller wants certainty, so a strong offer isn't risked for a 0.7% gain.
-            "B": (145677, 142677, 148476, 86, 82, "ACCEPT"),
-            "C": (134560, 131560, 153320, 100, 98, "BACKUP"),
+            "B": (145851, 142851, 148650, 86, 82, "ACCEPT"),
+            "C": (134729, 131729, 153489, 100, 98, "BACKUP"),
             # Audit 2026-09-23: the downside is measured from the CMA high (OFR-4), and A's FHA appraisal protection runs
             # to closing, so its counter asks for no gap coverage it couldn't enforce (OFR-3, OFR-17).
-            "A": (142901, 136169, 145813, 55, 63, "DECLINE"),
-            "D": (154293, 140157, 146150, 42, 62, "DECLINE"),
+            # The tax proration allows Florida's 4% early-payment discount (FR/BAR Standard K; OFR-14).
+            "A": (143084, 136352, 145996, 55, 63, "DECLINE"),
+            "D": (154485, 140349, 146337, 42, 62, "DECLINE"),
         })
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
         self.assertEqual(R["mode"], "multi")
@@ -55,31 +58,41 @@ class MatchesPrototype(unittest.TestCase):
     def test_minimal_single(self):
         R = oe.analyze(prototype_costs(fixture("minimal-single.json")))
         o = R["offers"][0]
-        self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (348407, 345907, 352139))
+        # Audit: 4% early-payment discount in the proration (OFR-14) and no tax in holding costs (OFR-13)
+        self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349279, 346779, 353011))
         self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))  # FHA: appraisal protected to closing
         self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period"])
-        self.assertEqual(R["seller"]["holding_monthly"], 1050)
+        self.assertEqual(R["seller"]["holding_monthly"], 500)  # HOA and loan interest; tax is in the proration (OFR-13)
 
     def test_two_offers_accept(self):
         R = oe.analyze(prototype_costs(fixture("two-offers-accept.json")))
         b = by_id(R)["B"]
-        self.assertEqual((b["ns"]["net_adj"], b["ns_down"]["net_adj"], b["ns_counter"]["net_adj"]), (169691, 166191, 171567))
+        self.assertEqual((b["ns"]["net_adj"], b["ns_down"]["net_adj"], b["ns_counter"]["net_adj"]), (170598, 167098, 172474))
         self.assertEqual((b["score"]["total"], b["counter_score"], b["action"]), (88, 84, "ACCEPT"))
         self.assertEqual(by_id(R)["C"]["action"], "DECLINE")
 
 
 class FloridaMarketDefaults(unittest.TestCase):
-    def test_brokerage_and_itemized_title_fees(self):
+    def test_no_built_in_brokerage(self):
+        """CORE-5: no commission defaults; a missing listing fee is left out and flagged high."""
         R = oe.analyze(fixture("minimal-single.json"))
         o = R["offers"][0]
+        self.assertEqual(line(o["ns"], "listing"), 0)
+        self.assertEqual(line(o["ns"], "bb"), 0)
+        fee = next(a for a in R["assumptions"] if a["field"] == "listing_fee_pct")
+        self.assertEqual((fee["impact"], fee["value"]), ("high", 0))
+        self.assertTrue(oe.preliminary_inputs(R))
+
+    def test_itemized_title_fees_and_stated_brokerage(self):
+        d = fixture("minimal-single.json")
+        d["seller"] = {"listing_fee_pct": 0.025, "offered_buyer_broker_pct": 0.02}
+        o = oe.analyze(d)["offers"][0]
         self.assertEqual(line(o["ns"], "listing"), -9550)       # 2.5% of 382,000
+        self.assertEqual(line(o["ns"], "bb"), -7640)            # the seller's 2% offer, assumed for this offer
+        self.assertIn("Assumed", next(lab for k, lab, _ in o["ns"]["lines"] if k == "bb"))
         self.assertEqual(line(o["ns"], "settle"), -1145)        # 700 + 250 + 125 + 70
         self.assertEqual(line(o["ns"], "transfer"), -2674)      # 0.70%
-        self.assertEqual(o["ns"]["net_adj"], 349817)
-        fee = next(a for a in R["assumptions"] if a["field"] == "listing_fee_pct")
-        self.assertEqual((fee["impact"], fee["value"]), ("high", 0.025))
-        self.assertIn("Florida default", fee["why"])
-        self.assertEqual(R["listing"]["state"], "FL")  # read from the address
+        self.assertEqual(oe.analyze(d)["listing"]["state"], "FL")  # read from the address
 
     def test_deal_quote_and_county_override(self):
         d = fixture("minimal-single.json")
@@ -197,7 +210,6 @@ class Rules(unittest.TestCase):
     def test_net_sheet_uses_finance_lines(self):
         """The engine reads finance.seller_net's keyed lines and keeps the market's own name for the transfer tax."""
         o = oe.analyze(fixture("minimal-single.json"))["offers"][0]
-        self.assertEqual(o["ns"]["net_adj"], 349817)
         label = next(lab for k, lab, _ in o["ns"]["lines"] if k == "transfer")
         self.assertTrue(label.startswith("Documentary Stamp Tax"))
 

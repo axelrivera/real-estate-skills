@@ -100,7 +100,7 @@ class SellerSide(unittest.TestCase):
         self.assertEqual(f.title_premium(80000, tiers), 460)
 
     def test_seller_net_florida(self):
-        n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True)
+        n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True, listing_fee_pct=0.025, buyer_broker_fee_pct=0.025)
         labels = [a for a, _ in n["items"]]
         self.assertIn("Documentary Stamp Tax on the Deed (0.70%)", labels)
         self.assertEqual([x["key"] for x in n["lines"]],
@@ -109,7 +109,8 @@ class SellerSide(unittest.TestCase):
         self.assertIn("Owner's Title Insurance", labels)
         self.assertIn("HOA Estoppel Letter", labels)
         self.assertEqual(n["missing"], [])
-        self.assertEqual([a["key"] for a in n["assumed"]], ["listing_fee", "buyer_broker_fee", "title_fees"])  # built-in defaults
+        self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in title fees; no built-in brokerage
+        self.assertEqual(f.seller_net(465000, FL)["missing"], ["listing fee", "buyer's agent fee"])  # CORE-5
         quoted = f.seller_net(465000, FL, title_fees=900)
         self.assertEqual(next(x["amount"] for x in quoted["lines"] if x["key"] == "title_fees"), 900)
         self.assertNotIn("title_fees", [a["key"] for a in quoted["assumed"]])
@@ -128,3 +129,44 @@ class SellerSide(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditMoneyLines(unittest.TestCase):
+    """CMA-3, OFR-14 (proration), CORE-6 (Miami-Dade surtax), CORE-18 (search fees), CMA-4 (buyer-broker shortfall)."""
+
+    def test_proration_arrears_with_discount(self):
+        from datetime import date
+        p = f.tax_proration(6000, date(2026, 10, 1), FL)
+        self.assertEqual(p["amount"], round(6000 * 0.96 * 273 / 365))  # Jan 1 through Sep 30, 4% discount allowed
+        self.assertIn("Jan 1 to Closing", p["label"])
+        paid = f.tax_proration(6000, date(2026, 12, 1), FL, bill_paid=True)
+        self.assertEqual(paid["amount"], -round(6000 * 0.96 * 31 / 365))  # buyer credits the seller for December
+        self.assertIsNone(f.tax_proration(None, date(2026, 12, 1), FL))
+        n = f.seller_net(400000, FL, listing_fee_pct=0.025, buyer_broker_fee_pct=0, annual_tax=6000, closing=date(2026, 10, 1))
+        self.assertEqual(next(x["amount"] for x in n["lines"] if x["key"] == "tax_proration"), p["amount"])
+
+    def test_miami_dade_surtax_by_property_type(self):
+        md = profiles.load_market(state="FL", county="Miami-Dade")
+        keys = lambda **k: {x["key"]: x["amount"] for x in f.seller_net(600000, md, listing_fee_pct=0, buyer_broker_fee_pct=0, **k)["lines"]}  # noqa: E731
+        self.assertEqual(round(keys(prop_type="Condo")["transfer_surtax"]), 2700)
+        self.assertNotIn("transfer_surtax", keys(prop_type="single family"))
+        self.assertIn("property type", " ".join(f.seller_net(600000, md, listing_fee_pct=0, buyer_broker_fee_pct=0)["missing"]))
+        seminole = profiles.load_market(state="FL", county="Seminole")
+        self.assertNotIn("transfer_surtax", {x["key"] for x in f.seller_net(600000, seminole, listing_fee_pct=0,
+                                                                              buyer_broker_fee_pct=0, prop_type="condo")["lines"]})
+
+    def test_buyer_pays_counties_move_the_search_fees(self):
+        self.assertEqual(profiles.load_market(state="FL", county="Sarasota").get("closing_costs.seller_title_fees"),
+                         {"settlement_fee": 700, "title_search": 0, "municipal_lien_search": 0, "recording": 70})
+        self.assertEqual(profiles.load_market(state="FL", county="Broward").get("closing_costs.seller_title_fees.title_search"), 200)
+        self.assertEqual(profiles.load_market(state="FL", county="Collier").get("closing_costs.owner_title.payer"), "buyer")
+
+    def test_buyer_broker_shortfall(self):
+        self.assertEqual(f.buyer_broker_shortfall(400000, 0.025, 0), 10000)
+        self.assertEqual(f.buyer_broker_shortfall(400000, 0.025, 0.03), 0)
+        self.assertIsNone(f.buyer_broker_shortfall(400000, None, 0.02))
+
+    def test_property_type(self):
+        self.assertEqual([f.property_type(v) for v in ("Single Family Residence", "Condominium", "Townhome", None)],
+                         ["single_family", "condo", "townhouse", None])
+

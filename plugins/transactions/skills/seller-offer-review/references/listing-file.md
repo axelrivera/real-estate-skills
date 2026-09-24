@@ -65,8 +65,10 @@ Use when the agent has a title company quote or the county differs from the mark
 |---|---|---|
 | `name` | "Seller" | — |
 | `payoff` | 0; nets labeled **before payoff** | **high** |
-| `listing_fee_pct` | market default (Florida 2.5%); none → left out | **high** |
-| `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say use the market default (Florida 2.5%) | high |
+| `listing.property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land` | none: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
+| `listing.current_tax_bill_paid` | `true` once the seller paid this year's bill | false; asked for Nov and Dec closings | med |
+| `listing_fee_pct` | the agent's standard terms from their market profile; none → left out (nothing built in) | **high** |
+| `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say use the agent's standard terms, else nothing | high |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
 | `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty) | med |
@@ -90,7 +92,7 @@ Use when the agent has a title company quote or the county differs from the mark
 | `lender_called` | bool | false → approval score capped at 3 | — |
 | `deposit` | total escrow $ | unknown → scored 3 | med |
 | `seller_concessions` | $ | 0 | **high** |
-| `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else market default | **high** |
+| `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else the agent's standard terms, else none | **high** |
 | `home_warranty` | $ seller pays | 0 | — |
 | `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
 | `repair_limits` | Standard only: `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |

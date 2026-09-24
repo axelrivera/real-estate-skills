@@ -188,7 +188,7 @@ def deck_data(R, C, homes, agent, L, footer):
                         "payment_display": L("deck_per_month", amount=x["payment_display"]),
                         "down_display": L("deck_down", amount=x["down_display"], pct=f'{pay["down_pct"] * 100:g}')} for x in C["strategies"]],
         "recommended_index": C["recommended_index"],
-        "net_sub": L("deck_cash_sub" if cash else "deck_net_sub"),
+        "net_sub": L("deck_cash_sub" if cash else "deck_net_sub") + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else ""),
         "net_spread_display": C["net_spread_display"],
         "net_rows": [[r["label"]] + r["display"] for r in net["rows"]],
         "net_note": app_note,

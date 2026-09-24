@@ -32,8 +32,8 @@ For the owner's title policy the most exact source wins: a promulgated `rate_tie
 
 | Field | Meaning |
 |---|---|
-| `listing_fee_pct` | Seller's listing brokerage default: the listing side only |
-| `buyer_broker_fee_pct` | Buyer's brokerage default (negotiated per deal), added on top of the listing fee in net sheets |
+| `listing_fee_pct` | The agent's standard listing brokerage fee: the listing side only. Nothing is built in; skills mark it "Standard Terms" until a listing agreement replaces it |
+| `buyer_broker_fee_pct` | The buyer's brokerage pay the agent's sellers usually offer (negotiated per deal), added on top of the listing fee in net sheets |
 
 ## property_tax
 

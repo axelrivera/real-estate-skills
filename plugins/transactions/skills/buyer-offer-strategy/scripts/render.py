@@ -170,7 +170,8 @@ def details(r, res):
     sc += '<tr class="total"><td>Strength Score</td><td class="n">100%</td>' + "".join(
         f'<td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[O[k]["score"]["band"][0]]}"><b>{O[k]["score"]["total"]}</b></td>' for k in K) + "<td></td></tr>"
     cr = ""
-    for label, key in [("Down Payment", "down"), ("Closing Costs & Prepaids (Est.)", "cc"), ("Seller Concessions Credit", "conc"),
+    bb_row = [("Buyer's Broker Fee (Not Paid by Seller)", "bb_short")] if any(r["cash"][k]["bb_short"] for k in K) else []
+    for label, key in [("Down Payment", "down"), ("Closing Costs & Prepaids (Est.)", "cc"), *bb_row, ("Seller Concessions Credit", "conc"),
                        ("Cash to Close (Deposit Counts Toward This)", "to_close"), ("Appraisal Gap if the Appraisal Is Low", "gap"), ("Worst-Case Cash Needed", "worst")]:
         cr += f'<tr{" class=total" if key in ("to_close", "worst") else ""}><td>{label}</td>' + "".join(f'<td class="n">{acct(r["cash"][k][key])}</td>' for k in K) + "</tr>"
     floor = B["buyer"]["reserve_floor"]

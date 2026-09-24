@@ -72,7 +72,7 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 | | | Escalation and appraisal | OFR-2 to OFR-5, OFR-17, OFR-27 | Done |
 | | | Contract form routing (AS IS vs. Standard never mix) | OFR-33 (new) | Done |
 | | | Offer plan wording | OFR-6, OFR-21 | Done |
-| | | Money lines | CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 | Open |
+| | | Money lines | CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 | Done |
 | | | Computed comp adjustments | CMA-2 | Open |
 | | | Disclaimers, brokerage, EHO | CORE-3, CORE-4, CMA-16, FH-6 | Open |
 | | | Fair-housing check | FH-1, FH-2, FH-3 | Open |
@@ -88,7 +88,9 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 | | | Docs and tooling | DOC-1 to DOC-14 (DOC-13 needs a license and remote) | Open |
 | 4. Evals | | Iteration 2 on the new fixtures, plus the fair-housing evals | | Open |
 
-Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21.
+Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21, CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 (and Collier from CORE-7).
+
+CORE-5 note: who pays the buyer's broker is expressed by the percentages rather than a separate `buyer_broker_paid_by` field: the seller side models what the seller pays (0 when the buyer pays), and the buyer side counts the rest of the buyer's agreement as a "Buyer's Broker Fee (Not Paid by Seller)" line.
 
 Removed with OFR-4: the seller review's "fallback counter" for cash-short buyers. With appraisal risk measured from the CMA high, the main counter already prices at the top of the range with no gap request, so the fallback could no longer trigger.
 
@@ -113,4 +115,4 @@ Won't fix: (none yet).
 - Market data in layers: state (FL) and MLS (Stellar, FL + PR) are separate; never fill Florida values for other states; each value carries its source. Per-deal costs go in the deal's data file.
 - Every `*_pct` is a fraction (0.025 = 2.5%); interest `rate` is a percent.
 - Offer skills consume `cma-handoff v1` (JSON file, or fenced markdown block, else extract and confirm).
-- A seller-facing net is never shown without the commission: seller-cma refuses to render without brokerage terms.
+- No commissions are built in (negotiable, not set by law): they come from the deal or the agent's market profile (marked "Standard Terms"). A seller-facing net is never shown without them: seller-cma refuses to render without brokerage terms.

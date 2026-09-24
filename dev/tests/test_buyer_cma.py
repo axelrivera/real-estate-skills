@@ -164,3 +164,19 @@ class Pdf(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditBuyerBrokerShortfall(unittest.TestCase):
+    def test_shortfall_row_and_cash(self):
+        """CMA-4: a 2.5% agreement with the seller paying 0 adds the full fee to cash to close."""
+        R = report()
+        market, homes = compute.load_inputs(R)
+        base = compute.compute(R, market, homes)["credit"]["columns"]
+        R["costs"]["credit_scenarios"].update(buyer_broker_agreement_pct=0.025, seller_pays_buyer_broker_pct=0)
+        cols = compute.compute(R, market, homes)["credit"]["columns"]
+        for b, c in zip(base, cols):
+            self.assertEqual(c["bb_short"], round(0.025 * c["price"]))
+            self.assertEqual(round(c["cash"] - b["cash"]), c["bb_short"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), compute.compute(R, market, homes), homes,
+                                         {"name": None, "brokerage": None, "brand": {}})
+        self.assertIn("Broker Fee (Not Paid by Seller)", doc)
