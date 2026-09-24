@@ -1,6 +1,6 @@
-# Costs: taxes, insurance, payments
+# Costs: Taxes, Insurance, Payments
 
-## Property taxes
+## Property Taxes
 
 The buyer's bill is based on the purchase price, not the seller's bill: in Florida a capped assessment (Save Our Homes, the 10% non-homestead cap) resets on sale. Other states differ; the market profile's `property_tax.reassessed_on_sale` says which.
 

@@ -1,6 +1,6 @@
-# Method: intake, comps, range, pricing strategies
+# Method: Intake, Comps, Range, Pricing Strategies
 
-## Intake checklist
+## Intake Checklist
 
 Ask for what's missing in one message; use tappable choices for occupancy, timeline and pool when the runtime offers them.
 
@@ -42,13 +42,13 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 - List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
 - Write each adjustment as a sentence with its dollar amount, to the seller: "It sold in April, when rates were lower: minus about $10,000."
 
-## Range and recommended price
+## Range and Recommended Price
 
 - **Supported range:** a judgment around the median adjusted value, typically about $25,000 wide (`cma.typical_range_width`). Widen it when comps disagree.
 - **Recommended list price:** near the middle of the range. Mind portal search brackets: buyers filter in steps ($25,000 under $1M, $50,000 to $100,000 above), so $469,900 drops out of a "$470,000 and up" search and $475,000 drops out of "up to $470,000". Pick the side of the bracket where the likely buyers search; just under a round number ($469,900) is the usual choice. The first two to three weeks bring the most showings: a price buyers see as fair turns them into offers, an ambitious one turns into a later cut from a weaker position. compute.py warns when it falls outside the range.
 - **Appraisal ceiling:** name the highest similar sale. A contract well above it invites a low appraisal.
 
-## The three pricing strategies
+## The Three Pricing Strategies
 
 1. **Top of the range:** longer to contract, a likely price cut, and an expected sale near the middle anyway.
 2. **Recommended:** the middle of the range, with room for the negotiating the data shows.
@@ -56,6 +56,6 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 
 Base each option's expected sale on the adjusted comps first (they already reflect what similar homes sold for, net of credits), then check it against stats.py's recent sale-to-original-list ratio: that ratio includes overpriced listings, so applied to a well-priced home it runs low. The recommended option usually expects about 97–99% of its list price in a balanced market; the top-of-range option less. Time to contract and the assumed seller credit come from recent days on market and the share and size of seller-paid costs. Write `time` as a range with its unit ("3–6 weeks"), or give `months_to_contract`: compute.py turns it into holding costs (loan interest, HOA, insurance, utilities) and shows the net after holding, so a slower, higher price is compared fairly. Label them estimates. If one option comes out ahead only because of an assumption (a smaller credit), say that in `pricing.note`; the table shouldn't suggest precision it doesn't have.
 
-## The scatterplot
+## The Scatterplot
 
 List in `scatter.renovated` the sold private-pool homes that are genuinely renovated (be conservative: "well maintained" doesn't count). Pick 1–3 callouts, usually the top comp and the strongest active competitor. The subject is plotted at the recommended list price; the script draws the rest, the size-only trend line, and lists homes left off the chart.

@@ -1,10 +1,10 @@
-# Method: history, comps, adjustments, chart
+# Method: History, Comps, Adjustments, Chart
 
-## The subject
+## The Subject
 
 Pull the ten facts for the fact grid (see `report-data.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
 
-## The listing history
+## The Listing History
 
 The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. The status codes and what they mean are in the market profile (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
 
@@ -15,7 +15,7 @@ The MLS history grid lists every change across MLS numbers, newest first: read i
 
 Search the address: earlier syndicated remarks sometimes claim things (a "brand-new roof") that later vanish from the listing. That's a watch item.
 
-## Choosing comps
+## Choosing Comps
 
 For a condo, choose and adjust comps by `condo.md` instead of the rules below.
 
@@ -43,6 +43,6 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 
 The supported range is a judgment around the median adjusted value, typically about $25,000 wide (`cma.typical_range_width`). Lean toward the best condition matches and the most recent sales, say which way you leaned and why, and widen the range when comps disagree.
 
-## The scatterplot
+## The Scatterplot
 
 From the export's remarks, list in `scatter.renovated` the sold private-pool homes that are genuinely renovated. Be conservative: "upgraded" or "well maintained" alone doesn't count. Pick 1–3 callouts, usually the top-selling comp and the strongest active competitor. The script draws everything else, computes the size-only trend line and lists homes left off the chart.

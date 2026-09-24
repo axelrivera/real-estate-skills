@@ -37,7 +37,9 @@ Naming rules: no output format in names (`-pdf`); side prefix (`buyer-` / `selle
 | **4. CMAs** | `buyer-cma`, then `seller-cma` (deck without `/mnt/skills`) |
 | **5. Offers** | `seller-offer-review`, then `buyer-offer-strategy` (it simulates the listing-side view) |
 
-## Per-skill checklist
+## Per-skill checklist (template)
+
+Copy this list into a skill's notes when building or rebuilding it; the status table above tracks which skills are done.
 
 - [ ] Final name; description rewritten for triggering, under 1,024 characters, no references to prototype names
 - [ ] Relative script paths only; no `/mnt/...`

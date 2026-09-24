@@ -4,8 +4,11 @@ Renders every fixture in dev/fixtures/ (like `make outputs`), capturing each rep
 is printed, then checks:
   - em dashes used in prose (touching a word) in report HTML, written text files (md, json, txt) or
     shipped files: always an error (exit 1). A lone em dash for an empty value is fine;
+  - `--` or a spaced en dash between words used as a dash, in shipped markdown (number ranges are fine);
   - labels (headings, table headers, tiles, legends) that aren't Title Case: listed for review, since
-    sentence-style finding headings and fragments are accepted exceptions.
+    sentence-style finding headings and fragments are accepted exceptions;
+  - markdown headings in SKILL.md, references and templates that aren't Title Case (file names, field keys and
+    `code` keep their own spelling).
 
 Usage: .venv/bin/python dev/style_check.py [skill ...]
 """
@@ -103,16 +106,40 @@ def render_fixtures(skills, tmp):
     return out
 
 
+WORD_DASH = re.compile(r"[A-Za-z,)] (?:--|\u2013) [A-Za-z(]")  # DOC-12: "--" or a spaced en dash between words
+HEADING = re.compile(r"^(#{1,4})\s+(.*)$")
+
+
+def heading_errors(text):
+    """Title Case errors in a markdown heading, ignoring `code`, file names and field-key headings (`## listing`)."""
+    if re.match(r"^[a-z_]+(\[\])?(,|\s|$)", text) or "{{" in text:
+        return []
+    return title_case_errors(re.sub(r"`[^`]*`|\b[\w-]+\.(?:json|md|py|csv|js|ics)\b", "X", text))
+
+
 def main(argv):
     findings = []
     shipped = [p for p in glob.glob(os.path.join(ROOT, "plugins", "**", "*"), recursive=True)
                if os.path.isfile(p) and "_shared" not in p and "__pycache__" not in p
                and p.endswith((".md", ".json", ".py", ".js", ".css"))]
+    shipped += glob.glob(os.path.join(ROOT, "shared", "**", "*.md"), recursive=True)  # DOC-12: markets and references ship
     for p in shipped:
+        in_code = False
         with open(p, encoding="utf-8") as f:
             for i, line in enumerate(f, 1):
                 if PROSE_DASH.search(line):
                     findings.append(f"em dash  {os.path.relpath(p, ROOT)}:{i}: {line.strip()[:120]}")
+                if not p.endswith(".md"):
+                    continue
+                if line.startswith("```"):
+                    in_code = not in_code
+                if in_code:
+                    continue
+                if WORD_DASH.search(line):
+                    findings.append(f"em dash  {os.path.relpath(p, ROOT)}:{i}: '--' or spaced en dash: {line.strip()[:100]}")
+                m = HEADING.match(line)
+                if m and (p.endswith("SKILL.md") or "/references/" in p or "/assets/" in p) and heading_errors(m.group(2).strip()):
+                    findings.append(f"label    {os.path.relpath(p, ROOT)}:{i}: heading {m.group(2).strip()!r}")
     for p in glob.glob(os.path.join(ROOT, "plugins", "*", "skills", "*", "assets", "labels.json")):
         with open(p, encoding="utf-8") as f:
             labels = json.load(f)

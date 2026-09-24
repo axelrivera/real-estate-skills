@@ -1,4 +1,4 @@
-# Deal file
+# Deal File
 
 The JSON record of an executed contract. `scripts/timeline.py` computes the dates from it and `scripts/render.py` builds the PDF. Keep it with the deliverable: amendments are added to it, never rebuilt.
 

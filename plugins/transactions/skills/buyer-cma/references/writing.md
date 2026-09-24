@@ -1,4 +1,4 @@
-# Writing the report
+# Writing the Report
 
 ## Voice
 
@@ -8,7 +8,7 @@ Every number gets a sentence saying what it means for this buyer. Short sentence
 
 **Style and fair housing:** follow the Guardrails in SKILL.md: no em dashes, labels in Title Case, and describe the home and the numbers, never people (`references/fair-housing.md`).
 
-## Sections (the order is fixed by the script)
+## Sections (the Order Is Fixed by the Script)
 
 Page 1 summary → the home → bottom line (+ history, offer plan, negotiating points) → comps → scatterplot → competition → market → costs (taxes, insurance, payment, price vs. credit) → watch items and questions → method.
 
@@ -20,13 +20,13 @@ Page 1 summary → the home → bottom line (+ history, offer plan, negotiating 
 - **Watch items:** roof first when unknown or unproven, then era-specific systems, permits, bedroom-count discrepancies, a failed prior contract, and what As-Is really means. Questions for the listing agent: 5–7, specific and answerable.
 - **Method:** sources with dates, then, once, that this is a broker's opinion of value and not an appraisal, and the report's shelf life.
 
-## Page 1 (write it last)
+## Page 1 (Write It Last)
 
 The flyer for buyers who won't read the report. Someone who reads only page 1 knows the opening offer with target and walk-away, the range and where asking sits, the key numbers, the comps at a glance, what the home really costs them, the three things to check, and the next step.
 
 Exactly three `key_stats`, three `why` bullets (under ~25 words each), three `check_first` items; a headline under ~25 words. The dot plot, tax and payment figures and the payment tile are computed, so never type those numbers into `summary_page`.
 
-## After rendering
+## After Rendering
 
 Look at every page. A chart label overlapping a marker: flip that callout's `side`. A heading alone at the bottom of a page or a split table shouldn't happen; if it does, shorten the intro. A mostly empty page is fine when a section moved to a fresh page. Change the content, never the HTML.
 

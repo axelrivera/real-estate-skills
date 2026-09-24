@@ -12,19 +12,21 @@ DIST     := dist
 
 SKILLS := $(patsubst %/SKILL.md,%,$(wildcard plugins/*/skills/*/SKILL.md))
 
-.PHONY: help setup hooks test style-check sync check-sync runtime-check preview-design outputs package clean
+.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs package clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
 	@echo "make hooks          Install the git pre-commit hook (shared/ copies must be in sync)"
 	@echo "make test           Run unit tests in dev/tests/"
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
+	@echo "make lint-skills    Check every SKILL.md: frontmatter, description length, Guardrails first, paths"
+	@echo "make py311          Check shipped Python for 3.11 (the Cowork runtime)"
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
-	@echo "make package        Zip every skill (and runtime-check) into $(DIST)/"
+	@echo "make package        Run every check, then zip every skill into $(DIST)/ (runtime-check into $(DIST)/dev/)"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
 
 # SHARP_IGNORE_GLOBAL_LIBVIPS: use sharp's bundled binaries even when Homebrew vips is installed.
@@ -44,6 +46,12 @@ style-check:
 
 test:
 	@$(PY) -m unittest discover -s dev/tests
+
+lint-skills:
+	@$(PY) dev/lint_skills.py
+
+py311:
+	@$(PY) dev/py311_check.py
 
 preview-design:
 	@$(PY) dev/preview_design.py
@@ -69,17 +77,17 @@ outputs:
 			$(if $(wildcard dev/fixtures/_profiles/agent-profile.md),--agent dev/fixtures/_profiles/agent-profile.md) || exit 1; \
 	done
 
-package: check-sync
-	@mkdir -p $(DIST)
+package: check-sync test lint-skills py311 style-check
+	@mkdir -p $(DIST) $(DIST)/dev
 	@for s in $(SKILLS); do \
 		plugin=$$(echo $$s | cut -d/ -f2); name=$$(basename $$s); \
 		rm -f $(DIST)/$$plugin-$$name.zip; \
 		(cd $$(dirname $$s) && zip -qr $(CURDIR)/$(DIST)/$$plugin-$$name.zip $$name -x '*.DS_Store' '*__pycache__*'); \
 		echo "$(DIST)/$$plugin-$$name.zip"; \
 	done
-	@rm -f $(DIST)/runtime-check.zip
-	@cd dev && zip -qr $(CURDIR)/$(DIST)/runtime-check.zip runtime-check -x '*.DS_Store' '*__pycache__*'
-	@echo "$(DIST)/runtime-check.zip"
+	@rm -f $(DIST)/runtime-check.zip $(DIST)/dev/runtime-check.zip
+	@cd dev && zip -qr $(CURDIR)/$(DIST)/dev/runtime-check.zip runtime-check -x '*.DS_Store' '*__pycache__*'
+	@echo "$(DIST)/dev/runtime-check.zip (a diagnostic: don't upload it with the skills)"
 
 clean:
 	rm -rf $(OUT) $(DIST)

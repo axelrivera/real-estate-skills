@@ -1,6 +1,6 @@
-# Offer plan, negotiating points, price vs. credit
+# Offer Plan, Negotiating Points, Price vs. Credit
 
-## The offer plan
+## The Offer Plan
 
 One opening offer, a target and a walk-away. They're a negotiating plan for this buyer, not a value opinion, so keep them separate from the supported range.
 
@@ -10,11 +10,11 @@ One opening offer, a target and a walk-away. They're a negotiating plan for this
 - **Credit alternative:** when the buyer is cash-tight, a price-plus-credit option with about the same price minus credit as the opening offer. It must match one of the credit scenarios.
 - **Conditions:** what the plan assumes (the roof, a failed contract's cause, no competing offers…), so the buyer knows which answers would change it.
 
-## Negotiating points
+## Negotiating Points
 
 2–4 bullets after the ladder, each opening with a bold finding: room to negotiate, credits vs. price, appraisal risk. Frame them as analysis, not orders, and don't repeat the offer numbers.
 
-## Price vs. seller credit
+## Price vs. Seller Credit
 
 2–4 offers with about the same price minus credit, split differently between price and a credit toward the buyer's closing costs. They don't leave the seller exactly the same net: a higher price also raises the seller's percentage costs (listing fee, buyer-broker pay, transfer tax), and the report says so, so never write "the seller nets the same". Usually the opening offer with no credit, then +$5,000 and +$10,000 of price with the same added credit.
 

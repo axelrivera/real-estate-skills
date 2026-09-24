@@ -6,7 +6,7 @@
 
 - Top level · subject · summary_page · bottom_line · history · offer_plan · offer · comps · scatter · competition · market · costs · watch · method
 
-## Top level
+## Top Level
 
 | Field | Notes |
 |---|---|

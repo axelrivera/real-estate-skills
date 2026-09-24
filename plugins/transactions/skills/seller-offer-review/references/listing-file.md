@@ -16,6 +16,13 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
 }
 ```
 
+## Contents
+
+- Top Level
+- listing (and its costs)
+- seller
+- offers[] (Offer Names, Agent Overrides)
+
 ## Top Level
 
 | Field | Default |

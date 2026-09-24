@@ -18,7 +18,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
-## 1. Gather the inputs
+## 1. Gather the Inputs
 
 Ask for everything missing in one message. Skip what's already in the chat, project files or the agent profile. Read `references/method.md` for the full checklist and why each item matters. In short:
 
@@ -33,7 +33,7 @@ For a PDF or deck, the agent's name and brokerage go on it: use their agent prof
 
 Use the agent's market profile when there is one. Florida and Stellar MLS are built in. Commission always comes from the agent or their market profile, in Florida too (commissions are negotiable and not set by law). Outside Florida, closing costs do too; a missing value is never filled with Florida's, and the report is marked Preliminary until it's supplied.
 
-## 2. Read the market
+## 2. Read the Market
 
 ```
 python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" --state <ST> --county <county> [--mls <MLS>] [--market market-profile.md] [--split-date YYYY-MM-DD]

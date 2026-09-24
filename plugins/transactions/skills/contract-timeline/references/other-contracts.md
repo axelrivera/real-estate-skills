@@ -1,8 +1,8 @@
-# Other contracts (outside FR/BAR)
+# Other Contracts (Outside FR/BAR)
 
 For any contract that isn't an FR/BAR form: another state's promulgated form, a builder contract, a custom addendum-heavy deal. The script doesn't know these forms, so you read the deadlines from the contract and the agent confirms them. That's the safe split: the script does the date math, you do the reading, the agent checks your reading.
 
-## 1. Time rules
+## 1. Time Rules
 
 Find the contract's definitions of time (usually a "Time", "Computation of time" or "Definitions" paragraph):
 

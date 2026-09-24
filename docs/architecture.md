@@ -60,9 +60,10 @@ analysis scripts → <skill>.json → assets/<name>-template.md, filled by Claud
 
 Save files to the first of:
 
-1. `OUTPUT_DIR` environment variable (local development only)
-2. `/mnt/user-data/outputs/` (sandbox)
-3. The current working directory
+1. `--out` on the command line
+2. `OUTPUT_DIR` environment variable (local development only)
+3. The sandbox's outputs folder, when it exists
+4. The current working directory
 
 Never write into the skill's own folder, which is the working directory in claude.ai. This rule lives in `shared/` and is not repeated per skill.
 

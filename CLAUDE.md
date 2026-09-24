@@ -9,9 +9,9 @@ Claude plugin marketplace for real estate agents. Read [docs/status.md](docs/sta
 plugins/<plugin>/
   .claude-plugin/plugin.json        # plugin manifest
   skills/<skill>/SKILL.md           # one directory per skill
-shared/                             # shared code, copied into skills (planned)
+shared/                             # shared code and references, copied into skills by make sync
 dev/                                # dev tooling and fixtures, never shipped
-Makefile                            # make setup | runtime-check | outputs | package | clean
+Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | package | clean
 docs/                               # all documentation
 sources/                            # prototype skills, local only, git-ignored
 ```

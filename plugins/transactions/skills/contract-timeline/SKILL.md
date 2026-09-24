@@ -3,7 +3,7 @@ name: contract-timeline
 description: Reads an executed real estate purchase contract (with riders, addenda and counteroffers) and lays out every deadline, from the Effective Date and deposits through inspection, appraisal, loan approval, title, walk-through and closing, from the buyer's or the seller's side, with who owes each one, the action and what happens if it's missed. Florida FR/BAR contracts are built in; other states' contracts work from the contract's own dates and time rules. Use it whenever an agent has an accepted or executed contract and asks for key dates, deadlines, a contract timeline or closing calendar, "when does the inspection period end", "what's due next", a deadline summary for a client, or when an amendment or extension is signed and the dates need to be re-run. Not for writing or analyzing offers before acceptance.
 ---
 
-# Contract timeline
+# Contract Timeline
 
 Turns an executed contract into a timeline of every deadline. The dates come from a script, never mental math, because one wrong day can cost a client their deposit.
 
@@ -18,7 +18,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
-## 1. Read the executed documents
+## 1. Read the Executed Documents
 
 Read the whole package: contract, every rider and addendum, and every counteroffer (`pdftotext -layout`, or read scanned pages directly). Record the terms in a deal file: read `references/deal-file.md` for the format.
 
@@ -52,7 +52,7 @@ python3 scripts/render.py deal.json [--format pdf|ics|all] [--agent agent-profil
 
 With the PDF, keep the chat reply short: a small table of the key dates only (first deadline, when the contingencies end, closing), not the full template, since the PDF has everything. Always tell the agent, in plain words: the first deadline and who owes it, when the contingencies end, the closing date, every flag, and every agent note to confirm. Offer the other format in one line. Keep the deal file with the deliverable: it's the record for re-runs.
 
-## Amendments and extensions
+## Amendments and Extensions
 
 Don't rebuild the deal file. Add the amendment to `amendments` in signing order (format in `references/deal-file.md`), re-run, and answer with the output's `moved` list: one line per moved deadline, "Closing: Fri Nov 6 · 10:00 AM (was Fri Oct 30)", then anything the move made tight (flags). The report compares the original contract with the current one and shows moved dates as "was". Save the updated deal file to the outputs folder (uploads are read-only) and hand it back for next time.
 

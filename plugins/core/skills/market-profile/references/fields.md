@@ -4,6 +4,16 @@ Every setting the skills read, what it means, and the format.
 
 For the owner's title policy the agent's own number wins: the title company's `quote`, then a promulgated `rate_tiers` table, then `estimate_pct`. Where the table is promulgated (Florida), it's also the legal premium, so a quote below it gets a warning to check the quote. Rates are decimals (0.007 = 0.7%). Money is whole dollars. The built-in Florida values are good worked examples: they're in this skill's folder at `scripts/_shared/markets/states/fl.md` (read-only; the agent's profile overrides them).
 
+## Contents
+
+- Identity
+- closing_costs, brokerage
+- property_tax, holding_costs, buyer_costs
+- contract, cma, mls_format
+- fair_housing, offer_norms
+- flood, condo
+- county_overrides
+
 ## Identity
 
 | Field | Meaning |
@@ -111,7 +121,7 @@ What a clean offer looks like locally. The seller's offer review rates each offe
 | `inspection_days` | A competitive inspection or option period (Florida 7) |
 | `loan_approval_days` | A competitive loan approval period (Florida 21) |
 
-## flood and condo
+## flood, condo
 
 Built in for Florida; set them for another state only from a cited statute or program rule.
 

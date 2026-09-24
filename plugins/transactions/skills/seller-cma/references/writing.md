@@ -1,4 +1,4 @@
-# Writing the report
+# Writing the Report
 
 ## Voice
 
@@ -8,7 +8,7 @@ Write to the homeowner ("your home"), in plain language. Every number gets a sen
 
 **Style and fair housing:** follow the Guardrails in SKILL.md: no em dashes, labels in Title Case, and describe the home and the numbers, never people (`references/fair-housing.md`).
 
-## Sections (the order is fixed by the script)
+## Sections (the Order Is Fixed by the Script)
 
 Page 1 summary → the home → the bottom line and what it means → comparable sales (cards, table, scatterplot) → competition → market → choosing a list price → estimated net proceeds → what your price means to buyers → before we list → what we need from you → how this was prepared.
 
@@ -22,11 +22,11 @@ Page 1 summary → the home → the bottom line and what it means → comparable
 - **What we need from you:** specific, answerable requests.
 - **Method:** sources with dates, then, once, that this is a broker's opinion of value and not an appraisal, that nets are estimates the closing agent will finalize, and the report's shelf life.
 
-## Page 1 (write it last)
+## Page 1 (Write It Last)
 
 The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. Exactly three `key_stats`, three `why` bullets, three `first_steps`. Anything page 1 says must be supported later in the report.
 
-## After rendering
+## After Rendering
 
 Look at every page and slide. A chart label overlapping a marker: flip that callout's `side` or `subject_label_pos`. A heading alone at the bottom of a page or a split table shouldn't happen; if it does, shorten the intro. Change the content, never the HTML or the .pptx.
 

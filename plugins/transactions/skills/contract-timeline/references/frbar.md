@@ -1,8 +1,8 @@
-# FR/BAR contracts (Florida)
+# FR/BAR Contracts (Florida)
 
 For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "frbar"` and `"contract_form": "as_is"` or `"standard"`; the script builds the deadline list from the fields below. Rules and paragraph numbers follow ASIS-7x Rev. 2/26, the Standard form (FloridaRealtors/FloridaBar-7x Rev. 2/26) and the CR-7 riders (condominium rider CR-7x Rev. 05/2026). Both forms share the time rules, title default and paragraph numbers except Para. 12 (inspection and repair) and 9(a) (repair limits, Standard only). Numbers can shift between versions, so confirm against the form footer.
 
-## Where the dates are
+## Where the Dates Are
 
 | Field | Where to look | Blank = form default |
 |---|---|---|
@@ -32,13 +32,13 @@ For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "fr
 
 A term the contract leaves blank takes the form default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every blank you fill with a default goes in `agent_notes` ("Inspection period blank: used the 15-day form default"), not in `flags`, which print on the client's report.
 
-## Checks before running
+## Checks Before Running
 
 - Handwritten changes are initialed by both parties.
 - No two documents disagree on a date. If they do, use the latest executed one and flag it.
 - Riders: the names in `riders` decide which rider deadlines appear. The script matches these words anywhere in a rider's name (any case): `appraisal` (Appraisal Contingency rider), `fha` or `va` (the FHA/VA appraisal note), `insurance` (insurance rider), `association` (HOA), `condominium` (condo), `sale of buyer` (sale contingency). Write the rider names as printed, e.g. "Homeowners' Association", "FHA/VA Financing".
 
-## Time rules (built in for Florida)
+## Time Rules (Built in for Florida)
 
 - Calendar days, where the property is located; Day 1 is the day after the Effective Date. There is no short-period rule: a 3-day deposit period counts weekends (Standard F).
 - The form sets no time of day: a period runs to the end of its last day.

@@ -23,7 +23,7 @@ Only add a folder when the skill needs it.
 - **Plain language for the agent.** Users are not technical: no JSON, YAML or hex codes in replies unless asked.
 - **Guardrails first.** Right after the intro, a `## Guardrails` section: fair housing, no em dashes in prose, Title Case labels, and (for skills with `render.py`) that the render check stops on either. A skill that writes prose a client reads points to `references/fair-housing.md` and names its own risky spots (findings, value drivers, offer reasons). Copy the wording from an existing skill at the same level ([architecture](architecture.md#guardrails)).
 - **No em dashes in prose** in reports, chat replies, templates, examples or references: use a comma, colon, parentheses or a new sentence. A lone em dash standing for an empty value (a table cell with nothing in it) is fine. Claude copies the style of what it reads, so references follow the rule too.
-- **Labels in Title Case:** document and section titles, column headers, row names, tiles, legend entries, card and slide titles, pills, and template headings and bold field labels. Sentences, notes, table values, fragments spliced into a sentence, and sentence-style finding headings stay sentence case. ALL-CAPS labels stay as they are. The SKILL.md **Guardrails** section states both, so chat replies follow them too.
+- **Labels in Title Case:** document and section titles, column headers, row names, tiles, legend entries, card and slide titles, pills, and template headings and bold field labels. Sentences, notes, table values, fragments spliced into a sentence, and sentence-style finding headings stay sentence case. ALL-CAPS labels stay as they are. The SKILL.md **Guardrails** section states both, so chat replies follow them too. Markdown headings in SKILL.md, references and templates are Title Case too, even though they're instructions to Claude, so one rule covers every heading; file names (`report.json`), field keys (`## listing`) and `code` keep their own spelling. `make style-check` checks them, along with `--` or a spaced en dash used as a dash in shipped markdown. In labels.json, list real sentences and table values that share a label prefix under `_prose` so the check skips them.
 - **Paths** are relative to the skill folder (`scripts/extract_colors.py`, `assets/template.md`). References are one level deep: SKILL.md points to them; they don't chain.
 
 ## Scripts vs templates
@@ -49,7 +49,7 @@ Markdown mode takes its numbers from the same data JSON the scripts produce, so 
 
 - One topic per file, named for what it answers (`references/brand-colors.md`, `references/florida-costs.md`).
 - SKILL.md says when to read each one ("Read `references/x.md` before step 3").
-- Files over ~300 lines start with a table of contents.
+- Reference files over about 100 lines start with a short table of contents (Anthropic's skill guidance), so Claude can jump to the part it needs.
 
 ## Evals
 

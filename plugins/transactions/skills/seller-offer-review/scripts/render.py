@@ -147,10 +147,9 @@ def hero(v):
 def key_legend(offs):
     """Key for the places that show an offer's short key instead of its label (chart, timeline, flags). OFR-28: with
     several offers, the key carries the rank too ("B (#1)")."""
-    rank = {o["id"]: i + 1 for i, o in enumerate(offs)} if len(offs) > 1 else {}
+    rank = {o["id"]: f" (#{i + 1})" for i, o in enumerate(offs)} if len(offs) > 1 else {}
     return ('<div class="legend okey">' + "".join(
-        f'<span><b>{esc(o["key"])}{f" (#{rank[o["id"]]})" if o["id"] in rank else ""}</b> {esc(o["label"])}</span>' for o in offs)
-        + "</div>")
+        f'<span><b>{esc(o["key"])}{rank.get(o["id"], "")}</b> {esc(o["label"])}</span>' for o in offs) + "</div>")
 
 
 # --- detail tables -------------------------------------------------------------

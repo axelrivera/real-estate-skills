@@ -1,8 +1,8 @@
-# Listing presentation: slides and `deck` wording
+# Listing Presentation: Slides and `deck` Wording
 
 The deck is the conversation piece for the appointment; the PDF is the leave-behind. It shows only the findings that drive the price, in the order a seller follows the logic. Every number on a slide comes from compute.py (the same numbers as the PDF), and every color from the agent's brand palette. `deck` in report.json holds only condensed wording and speaker notes; start from `assets/example-deck-content.json`.
 
-## Slide map (fixed order)
+## Slide Map (Fixed Order)
 
 | # | Slide | Numbers from | Wording from `deck` |
 |---|---|---|---|
@@ -48,7 +48,7 @@ The deck is the conversation piece for the appointment; the PDF is the leave-beh
 
 Keep every line short: the builder uses fixed boxes, and long text overflows. Cut words rather than shrink fonts.
 
-## Checking the deck
+## Checking the Deck
 
 The deck is built with pptxgenjs (native, editable charts; speaker notes on every content slide). When LibreOffice is available, convert and look at every slide:
 

@@ -231,7 +231,8 @@ class AuditProfileFields(unittest.TestCase):
             agent = profiles.load_agent(write_profile(tmp, text))
         self.assertEqual(agent["brokerage"], "Sample Realty LLC")
         self.assertEqual(agent["license"], "FL sales associate SL123; NY salesperson 10401")
-        from _shared import render  # the skill's synced copy
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from shared import render  # the footer lives in the report skills' render, not in agent-profile's copy
         lines = render.notice_lines(agent)
         self.assertIn("Sample Realty LLC, Lic. CQ1234, 1 Main St, Orlando, FL, 407-555-0100.", lines)
 

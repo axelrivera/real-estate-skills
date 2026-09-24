@@ -1,3 +1,4 @@
 #!/bin/sh
-# Block commits where a skill's scripts/_shared/ copy doesn't match shared/.
-python3 dev/sync_shared.py --check || exit 1
+# Block commits where a skill's scripts/_shared/ copy doesn't match shared/: in the working tree, and in what's
+# staged (a stale copy can't slip into a commit when only shared/ was staged).
+python3 dev/sync_shared.py --check --staged || exit 1

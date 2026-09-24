@@ -5,7 +5,7 @@ A Claude plugin marketplace for real estate agents. Skills run in the Claude des
 ## Install
 
 - **Cowork:** add this repository as a plugin marketplace, then install `core` and `transactions`.
-- **claude.ai:** run `make package` and upload each zip in `dist/` as a skill.
+- **claude.ai:** run `make package` and upload each zip in `dist/` as a skill (not `dist/dev/`, which holds a diagnostic).
 
 ## Plugins
 

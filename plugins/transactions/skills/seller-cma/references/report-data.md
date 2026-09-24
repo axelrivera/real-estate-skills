@@ -6,7 +6,7 @@
 
 - Top level · subject · summary_page · recommendation · means · comps · scatter · competition · market · pricing · costs · buyer_payment · prep, needs, method · deck
 
-## Top level
+## Top Level
 
 | Field | Notes |
 |---|---|

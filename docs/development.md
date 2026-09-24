@@ -15,13 +15,16 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make setup` | Creates `.venv` from `dev/requirements.txt`, installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json` |
 | `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too) |
 | `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
-| `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package` and on every commit |
+| `make sync` copies only what each skill imports | Each skill's `scripts/_shared/` holds the shared modules its scripts import, what those import, and the data they read (markets for `profiles`, CSS for `render` and `cma`) |
+| `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package`; the pre-commit hook also compares what's staged |
 | `make test` | Runs the unit tests in `dev/tests/` |
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
-| `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs and shipped files; a lone em dash for an empty value is fine) and labels not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
-| `make package` | Zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai, plus `dist/runtime-check.zip` |
+| `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
+| `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
+| `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
+| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
 
 ## Evals
@@ -67,7 +70,7 @@ dev/                     # dev tooling, never shipped
 | `shared/markets/states/fl.md` | Built-in Florida state layer (costs, taxes, contract rules) |
 | `shared/markets/mls/stellar.md` | Built-in Stellar MLS layer (formats, coverage), for Florida and Puerto Rico |
 | `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--agent`, `--market`, `--sample`, plus each skill's own options through `extra_args`) |
-| `shared/report.css` | Base PDF styles (header, section bars, tables, hero, notes) on the theme variables |
+| `shared/report.css` | Base PDF styles on the theme variables, print-light: header rule, tables with rules, outlined hero, notes |
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
 | `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` or a fenced markdown block |

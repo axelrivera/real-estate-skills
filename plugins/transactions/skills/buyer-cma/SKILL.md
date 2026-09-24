@@ -18,7 +18,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
-## 1. Gather the inputs
+## 1. Gather the Inputs
 
 You need three things. If one is missing, ask for it and say why it matters:
 
@@ -32,7 +32,7 @@ Use the agent's market profile when there is one (Project files, uploads). Flori
 
 **Quick gut check** ("is it priced right? just tell me"): run stats.py, pick and adjust the comps, and still run compute.py for the median and range (the payment and tax blocks can be short). Answer in a few sentences plus the handoff block; skip the full template unless asked.
 
-## 2. Read the subject and the market
+## 2. Read the Subject and the Market
 
 - Rebuild the full history from the screenshot and run the numbers:
   ```

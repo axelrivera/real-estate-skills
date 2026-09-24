@@ -1,6 +1,6 @@
-# Costs: the net sheet and buyer payments
+# Costs: The Net Sheet and Buyer Payments
 
-## Net sheet
+## Net Sheet
 
 compute.py runs each strategy's expected sale price through the shared seller-net calculator. Every local value comes from the market profile (the built-in Florida layer and its county customs, then the agent's own market profile, which always wins), so the same report works in any state.
 
@@ -21,7 +21,7 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 
 **Not in the table** (write them in `pricing.net_note`): repairs after inspection, and carrying costs while the home is listed. If the seller is a foreign person, flag FIRPTA withholding and refer them to the title company or a CPA; it isn't computed.
 
-## Buyer payments
+## Buyer Payments
 
 The table shows the seller how each list price turns into a typical buyer's monthly payment, and the effect of every $10,000.
 
