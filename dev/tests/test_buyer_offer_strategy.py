@@ -202,6 +202,36 @@ class Pdf(unittest.TestCase):
                     self.assertEqual(f.read(4), b"%PDF")
 
 
+
+class FloodCddCondo(unittest.TestCase):
+    """OFR-26, CMA-6, CMA-5: flood insurance and CDD are payment lines; condos get their documents and checks."""
+
+    def test_flood_and_cdd_in_payment(self):
+        r = analyze("condo-flood.json")
+        d = fixture("condo-flood.json")
+        d["costs"].pop("flood_insurance_annual")
+        d["property"].pop("cdd_annual")
+        bare = strategy.analyze(d, cma=strategy.load_cma(d))
+        for k in r["payment"]:
+            self.assertEqual(r["payment"][k] - bare["payment"][k], 250)  # $1,800/yr flood + $1,200/yr CDD
+        fields = {a["field"]: a["impact"] for a in bare["assumptions"]}
+        self.assertEqual(fields["flood_insurance_annual"], "med")  # zone AE: the lender requires it
+        self.assertEqual(fields["cdd_annual"], "med")
+        self.assertNotIn("flood_insurance_annual", {a["field"] for a in r["assumptions"]})
+
+    def test_payment_label_without_quote(self):
+        d = fixture("condo-flood.json")
+        d["costs"].pop("flood_insurance_annual")
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        html = buyer_render.details(r, strategy.result(r))
+        self.assertIn("Est. Monthly Payment (Before Flood Insurance)", html)
+
+    def test_condo_documents_and_flood_disclosure(self):
+        res = strategy.result(analyze("condo-flood.json"))
+        text = json.dumps(res)
+        self.assertIn("milestone inspection summary and SIRS", text)
+        self.assertIn("s. 689.302", text)
+
 if __name__ == "__main__":
     unittest.main()
 

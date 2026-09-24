@@ -161,13 +161,17 @@ def payments(R, market):
     school, total, homestead = buyer_tax_rates(R, market)
     loan_type = finance.program(bp.get("loan_type", "conventional"))
     down = _frac(bp, "down_pct", "buyer_payment", 0.05)
+    s = R["subject"]
+    zone = bp.get("flood_zone") or next((v for lbl, v in s.get("facts") or [] if str(lbl).lower() == "flood zone"), None)
+    flood = finance.flood_insurance(zone, bp.get("flood_insurance_annual"), market,  # CMA-6: a quote, or "get a quote"
+                                    _date(R.get("as_of"), "as_of"), condo_unit=finance.property_type(s.get("property_type")) == "condo")
 
     def at(price):
         tax = finance.property_tax(price, market, school, total, homestead)
         if tax["annual"] is None:
             return None, tax
         return finance.monthly_payment(price, loan_type, down, bp["rate"], tax["annual"], bp["insurance_annual"],
-                                       bp.get("hoa_monthly", 0)), tax
+                                       bp.get("hoa_monthly", 0), flood_annual=flood["annual"]), tax
 
     rows, tax_info = [], None
     for x in R["pricing"]["strategies"]:
@@ -182,7 +186,7 @@ def payments(R, market):
     return {"rows": rows, "per_10k": per_10k, "per_10k_display": money(per_10k, 5),
             "down_per_10k": 10000 * down, "down_per_10k_display": money(10000 * down),
             "loan_type": loan_type, "down_pct": down, "rate": bp["rate"],
-            "insurance_annual": bp["insurance_annual"], "school_mills": school, "total_mills": total,
+            "insurance_annual": bp["insurance_annual"], "flood": flood, "school_mills": school, "total_mills": total,
             "homestead": homestead, "tax_basis": tax_info["basis"], "tax_estimated": tax_info["estimated"]}, tax_info
 
 

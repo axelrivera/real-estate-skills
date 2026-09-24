@@ -113,6 +113,7 @@ def payments_section(R, C, L):
                                basis=pay["tax_basis"], ins=money(pay["insurance_annual"]), mi=mi)
     if pay["tax_estimated"]:
         note += " " + L("tax_estimated", basis=pay["tax_basis"])
+    note += " " + pay["flood"]["note"]
     return [f'<h3>{L("h_payments")}</h3>',
             f'<p>{L("pay_intro", per10k=pay["per_10k_display"], down10k=pay["down_per_10k_display"])}</p>',
             table([L("th_list_price"), L("th_down", down=f'{pay["down_pct"] * 100:g}'), L("th_payment")],

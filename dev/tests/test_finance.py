@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from datetime import date
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from shared import finance as f, profiles  # noqa: E402
@@ -127,6 +128,45 @@ class SellerSide(unittest.TestCase):
         self.assertIsNone(n["net"])
 
 
+
+class FloodInsurance(unittest.TestCase):
+    """CMA-6 (verified: s. 627.351(6)(aa) Citizens schedule; see docs/audits/2026-09-23-verification.md)."""
+
+    FL = profiles.load_market(state="FL")
+
+    def test_special_flood_hazard_area(self):
+        for zone in ("AE", "VE", "A", "AO", "Zone AE"):
+            r = f.flood_insurance(zone, None, self.FL, date(2026, 9, 24))
+            self.assertEqual((r["sfha"], r["required"], r["annual"]), (True, "lender", None), zone)
+            self.assertIn("lender will require", r["note"])
+
+    def test_citizens_phase_in(self):
+        r = f.flood_insurance("X (lower risk)", None, self.FL, date(2026, 9, 24))
+        self.assertEqual(r["required"], "citizens_value")
+        self.assertIn("$400,000", r["note"])
+        self.assertIn("January 1, 2027", r["note"])
+        self.assertNotIn("isn't required", r["note"])
+        self.assertIn("$500,000", f.flood_insurance("X", None, self.FL, date(2025, 6, 1))["note"])
+        self.assertEqual(f.flood_insurance("X", None, self.FL, date(2027, 1, 1))["required"], "citizens")
+
+    def test_condo_unit_policy_is_exempt(self):
+        r = f.flood_insurance("X", None, self.FL, date(2026, 9, 24), condo_unit=True)
+        self.assertIsNone(r["required"])
+        self.assertIn("HO-6", r["note"])
+
+    def test_no_florida_rule_elsewhere(self):
+        r = f.flood_insurance("X", None, None, date(2026, 9, 24))
+        self.assertIsNone(r["required"])
+        self.assertNotIn("Citizens", r["note"])
+
+    def test_quote_is_counted_and_never_zero(self):
+        self.assertIsNone(f.flood_insurance("AE", 0, self.FL)["annual"])  # 0 is not a quote
+        self.assertIn("Get a quote", f.flood_insurance("AE", None, self.FL)["note"])
+        base = f.monthly_payment(400000, "conventional", 0.2, 6.5, 6000, 3000)
+        quoted = f.monthly_payment(400000, "conventional", 0.2, 6.5, 6000, 3000, flood_annual=1200)
+        self.assertIsNone(base["flood"])
+        self.assertAlmostEqual(quoted["total"] - base["total"], 100)
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -135,7 +175,6 @@ class AuditMoneyLines(unittest.TestCase):
     """CMA-3, OFR-14 (proration), CORE-6 (Miami-Dade surtax), CORE-18 (search fees), CMA-4 (buyer-broker shortfall)."""
 
     def test_proration_arrears_with_discount(self):
-        from datetime import date
         p = f.tax_proration(6000, date(2026, 10, 1), FL)
         self.assertEqual(p["amount"], round(6000 * 0.96 * 273 / 365))  # Jan 1 through Sep 30, 4% discount allowed
         self.assertIn("Jan 1 to Closing", p["label"])

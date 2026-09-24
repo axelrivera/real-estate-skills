@@ -154,6 +154,16 @@ def prepare(B, A, market=None):
         K["insurance_annual"] = round(max(2500, (rate if rate is not None else NATIONAL_INSURANCE_RATE) * lp), -2)
         A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: estimated at {money(K['insurance_annual'])}/yr ({src})", "low")
     P["hoa_monthly"] = P.get("hoa_monthly") or 0
+    # OFR-26, CMA-6: flood insurance and CDD assessments are payment lines; a missing amount is left out and flagged, never 0
+    B["flood"] = finance.flood_insurance(P.get("flood_zone"), K.get("flood_insurance_annual"), costs, today,
+                                         condo_unit=finance.property_type(P.get("type")) == "condo")
+    if B["flood"]["annual"] is None:
+        A.add("costs", "flood_insurance_annual", "not included", "No flood insurance quote: the payment leaves it out. "
+              + B["flood"]["note"].replace(" Get a quote; the total leaves it out until then.", ""),
+              "med" if B["flood"]["required"] in ("lender", "citizens") else "low")
+    if P.get("cdd") and P.get("cdd_annual") is None:
+        A.add("property", "cdd_annual", "not included", "The property is in a CDD but the yearly assessment wasn't given: the "
+              "payment leaves it out (it's on the tax bill as a non-ad valorem assessment)", "med")
     tax = property_tax(B, costs, lp)
     if tax["annual"] is None:
         A.add("costs", "property_tax", "not included", "No millage or tax rate for this market: the payment leaves out property tax",
@@ -225,7 +235,8 @@ def property_tax(B, costs, price):
 def monthly_payment(B, costs, price):
     BU, K, P = B["buyer"], B["costs"], B["property"]
     tax = property_tax(B, costs, price)["annual"] or 0
-    p = finance.monthly_payment(price, BU["financing"], BU["down_pct"], K["rate"], tax, K["insurance_annual"], P["hoa_monthly"])
+    p = finance.monthly_payment(price, BU["financing"], BU["down_pct"], K["rate"], tax, K["insurance_annual"],
+                                P["hoa_monthly"] + (P.get("cdd_annual") or 0) / 12, flood_annual=B["flood"]["annual"])
     return round(p["total"])
 
 
@@ -239,6 +250,7 @@ def engine_data(B, variants):
     P, V, LS, BU = B["property"], B["value"], B["listing_side"], B["buyer"]
     listing = {k: P.get(k) for k in ("address", "state", "county", "list_price", "beds", "baths", "sqft", "year_built", "roof_year",
                                      "hoa_monthly", "flood_zone", "annual_tax", "costs")}
+    listing["property_type"] = P.get("type")  # CMA-5: the engine's condo checks
     if not V.get("assumed"):  # without a value range the engine measures appraisal risk against list price
         listing.update(cma_low=V["cma_low"], cma_high=V["cma_high"], cma_mid=V["mid"])
     seller = {"listing_fee_pct": LS["listing_fee_pct"], "offered_buyer_broker_pct": LS["buyer_broker_offered_pct"]}
@@ -861,7 +873,13 @@ def worksheet(r, variant=None):
 
     docs = ["Seller's property disclosure", "Permits and open-permit search", f"Existing inspection{', 4-point and wind-mit' if costs.state == 'FL' else ''} reports",
             "Survey, if available"]
-    if (P.get("hoa_monthly") or 0) > 0:
+    fd = costs.get("flood.seller_disclosure")
+    if fd:  # CMA-6: given at or before signing
+        docs.insert(1, f"Seller's flood disclosure ({fd.get('statute', 'state form')}) and any flood claims")
+    if finance.property_type(P.get("type")) == "condo":  # CMA-5
+        docs.insert(1, "Condo documents: declaration, budget, financials, milestone inspection summary and SIRS, and "
+                       "any special assessments")
+    elif (P.get("hoa_monthly") or 0) > 0:
         docs.insert(1, "HOA documents, rules and estoppel")
     if yb and yb < 1978:
         docs.append("Lead-based paint records")

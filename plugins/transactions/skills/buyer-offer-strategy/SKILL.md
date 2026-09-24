@@ -31,7 +31,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 
 ## 1. Build the Buyer File
 
-One JSON file per property the buyer is pursuing: read `references/buyer-file.md` for the fields.
+One JSON file per property the buyer is pursuing: read `references/buyer-file.md` for the fields. For a condo (`property.type: condo`), also read `references/condo.md` for lender approval, association questions and the buyer's rescission rights.
 
 - **Value range and market stats:** use the CMA, in this order:
   1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a buyer CMA): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats.

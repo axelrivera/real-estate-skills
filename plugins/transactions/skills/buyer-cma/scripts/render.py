@@ -205,17 +205,19 @@ def body(R, C, homes, agent, L):
             [L("pay_pi")] + [money(r["pi"]) for r in rows_p],
             [L("pay_tax", short=short)] + [money(r["tax"]) for r in rows_p],
             [L("pay_ins")] + [money(r["ins"]) for r in rows_p],
+            [L("pay_flood")] + [money(r["flood"]) if r["flood"] is not None else L("pay_flood_quote") for r in rows_p],
             [L("pay_mi")] + [money(r["mi"]) for r in rows_p],
             [L("pay_hoa")] + [money(r["hoa"]) for r in rows_p],
             [L("pay_total")] + [money(r["total"]) for r in rows_p]]
-    classes = {6: "total"}
+    classes = {len(prow) - 1: "total"}
     if pay["alt_jurisdiction"]:
         prow.append([L("pay_if", short=pay["alt_jurisdiction"]["short"])] + [money(r["total"] + pay["alt_jurisdiction"]["delta_monthly"]) for r in rows_p])
-        classes[7] = "alt"
+        classes[len(prow) - 1] = "alt"
     progs = finance.LOAN_PROGRAMS
     pay_note = R["costs"]["payment"].get("note") or L(
         "pay_note", rate=f'{pay["rate"]:.2f}', ins=money(pay["insurance_annual"]), pmi=f'{progs["conventional"]["annual_mi"] * 100:.1f}',
         mip=f'{progs["fha"]["annual_mi"] * 100:.2f}', ufmip=f'{progs["fha"]["upfront_fee"] * 100:.2f}', per10k=money(pay["per_10k"], 5))
+    pay_note += " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one
     b += [f'<h3>{L("h_payment")}</h3>', f'<p>{R["costs"]["payment"]["intro"]}</p>',
           table([L("pay_header", price=money(pay["price"]))] + [r["label"] for r in rows_p], prow,
                 num_cols=tuple(range(1, len(rows_p) + 1)), row_classes=classes),

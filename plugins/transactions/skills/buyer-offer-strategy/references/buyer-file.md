@@ -15,7 +15,7 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 
 ## property
 
-`address`, `state`, `county` (state read from the address; neither → Florida assumed, flagged high), `list_price` (required), `dom`, `price_cuts`, `beds`, `baths`, `sqft`, `year_built`, `roof_year`, `hoa_monthly`, `flood_zone`, `annual_tax` (seller's bill, for the seller net sheet), `seller_deadline` (if the listing agent shared one), `type` (`condo`), `cdd`, `short_sale`, `costs` (deal cost overrides, same keys as the listing side: `title_fees`, `transfer_tax_rate`, `title_payer`…).
+`address`, `state`, `county` (state read from the address; neither → Florida assumed, flagged high), `list_price` (required), `dom`, `price_cuts`, `beds`, `baths`, `sqft`, `year_built`, `roof_year`, `hoa_monthly`, `flood_zone`, `annual_tax` (seller's bill, for the seller net sheet), `seller_deadline` (if the listing agent shared one), `type` (`condo`: the engine adds the condo rider, FHA/VA project approval and rescission checks; see `condo.md`), `cdd` (true when in a CDD or special district) and `cdd_annual` (the yearly assessment from the tax bill; added to the payment, flagged when missing), `short_sale`, `costs` (deal cost overrides, same keys as the listing side: `title_fees`, `transfer_tax_rate`, `title_payer`…).
 
 ## value
 
@@ -43,11 +43,11 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## listing_side
 
-`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the agent's standard terms from their market profile, else none, flagged; nothing is built in), `listing_fee_pct` (for the seller net sheet; default: market, Florida 2.5%).
+`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the agent's standard terms from their market profile, else none, flagged; nothing is built in), `listing_fee_pct` (for the seller net sheet; unknown → the agent's standard terms from their market profile, else left out and flagged; nothing is built in).
 
 ## costs (Buyer's Payment)
 
-`rate` (interest rate as a **percent**: `6.5` for 6.5%, like lenders quote it; default 6.5), `tax_rate` (optional: annual tax as a share of price, `0.0198`, when you have a plain rate rather than millage), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged).
+`rate` (interest rate as a **percent**: `6.5` for 6.5%, like lenders quote it; default 6.5), `tax_rate` (optional: annual tax as a share of price, `0.0198`, when you have a plain rate rather than millage), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged), `flood_insurance_annual` (a quote; without one the payment leaves flood out, labeled "Before Flood Insurance", and the assumptions say whether a lender or Citizens requires it: never 0).
 
 ## buyer
 

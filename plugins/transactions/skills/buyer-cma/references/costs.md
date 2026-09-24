@@ -14,6 +14,8 @@ The buyer's bill is based on the purchase price, not the seller's bill: in Flori
 
 Don't quote a premium. Name the drivers for this house (roof age, wiring and plumbing era, wind mitigation, pool, flood zone), use a clearly labeled placeholder in the payment table, and tell the buyer to get a quote during the inspection period (in Florida, after the 4-point and wind-mitigation inspections).
 
+**Flood.** The payment table always has a Flood Insurance row: the quote when the buyer has one (`flood_insurance_annual`), otherwise "Get a Quote", left out of the total and never $0. compute.py adds the rule to the payment note: a lender requires flood insurance in zones A and V, and the market profile's `flood.citizens_requirement` (Florida, s. 627.351(6)(aa)) requires it on Citizens policies above a replacement cost that drops each year, and on every Citizens policy from January 1, 2027. Never write that flood insurance "isn't required" because of the zone. Ask the listing agent for the seller's flood disclosure (Florida: s. 689.302) and past flood claims.
+
 Era flags worth raising when the year fits: 1965–1973 aluminum branch wiring; before about 1975 cast-iron drains (sewer camera inspection); 1978–1995 polybutylene supply lines; Federal Pacific or Zinsco panels in any year. A roof over about 15 years old makes insuring hard; if its age is unknown, or a claimed new roof disappears from later remarks, make it the first watch item.
 
 ## Payments

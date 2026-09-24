@@ -65,7 +65,8 @@ Use when the agent has a title company quote or the county differs from the mark
 |---|---|---|
 | `name` | "Seller" | — |
 | `payoff` | 0; nets labeled **before payoff** | **high** |
-| `listing.property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land` | none: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
+| `listing.property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`) | none: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
+| `listing.flood_disclosure` | true once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer | not given: flagged for the listing side where the market requires it | — |
 | `listing.current_tax_bill_paid` | `true` once the seller paid this year's bill | false; asked for Nov and Dec closings | med |
 | `listing_fee_pct` | the agent's standard terms from their market profile; none → left out (nothing built in) | **high** |
 | `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say use the agent's standard terms, else nothing | high |

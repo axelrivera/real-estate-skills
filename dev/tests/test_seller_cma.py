@@ -357,6 +357,24 @@ class Files(unittest.TestCase):
                 self.assertNotIn("placeholder", text)
 
 
+
+class Flood(unittest.TestCase):
+    """CMA-6: the buyer payment shown to the seller counts a flood quote and otherwise says to get one."""
+
+    def test_flood_line(self):
+        C, _ = run(report())
+        self.assertIsNone(C["payments"]["flood"]["annual"])
+        self.assertIn("Get a quote", C["payments"]["flood"]["note"])
+        R = report()
+        R["buyer_payment"]["flood_insurance_annual"] = 1200
+        Q, _ = run(R)
+        for a, b in zip(C["payments"]["rows"], Q["payments"]["rows"]):
+            self.assertAlmostEqual(b["payment"] - a["payment"], 100)
+
+    def test_no_citizens_rule_outside_florida(self):
+        C, _ = run(texas(report()))
+        self.assertNotIn("Citizens", C["payments"]["flood"]["note"])
+
 if __name__ == "__main__":
     unittest.main()
 

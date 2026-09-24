@@ -41,7 +41,7 @@ Use the agent's market profile when there is one (Project files, uploads). Flori
   Pick a split date so "recent" is roughly the last 2–3 months.
 - Search quickly: the address itself (claims that disappeared from the listing), the current 30-year mortgage rate (Freddie Mac weekly survey), and, when the market profile has no millage for the area, the county's current millage.
 
-Read `references/method.md` for reading the history, choosing and adjusting comps, and classifying homes for the chart.
+Read `references/method.md` for reading the history, choosing and adjusting comps, and classifying homes for the chart. For a condo, also read `references/condo.md` (comps, adjustments, association and lending questions).
 
 ## 3. Write report.json
 

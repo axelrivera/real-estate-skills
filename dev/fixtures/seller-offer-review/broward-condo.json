@@ -1,0 +1,30 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "listing": {
+    "address": "3000 N Ocean Dr Unit 1204, Fort Lauderdale, FL 33308",
+    "state": "FL",
+    "county": "Broward",
+    "property_type": "condo",
+    "list_price": 489000,
+    "beds": 2, "baths": 2, "sqft": 1240, "year_built": 1999,
+    "hoa_monthly": 925, "flood_zone": "AE", "cma_low": 470000, "cma_high": 495000, "annual_tax": 8200
+  },
+  "seller": {
+    "name": "Sample Seller", "payoff": 188000, "listing_fee_pct": 0.025, "offered_buyer_broker_pct": 0.025,
+    "deadline": "2026-11-30", "priority": "certainty"
+  },
+  "offers": [
+    {"id": "A", "buyer_agent": "Sample Agent A", "buyer_brokerage": "Sample Realty", "contract_form": "as_is",
+     "buyer": "Sample Buyer", "expires": "2026-09-24 20:00",
+     "price": 485000, "financing": "fha", "down_pct": 0.035, "approval": "du_approved", "lender_called": true,
+     "deposit": 10000, "seller_concessions": 6000, "buyer_broker_pct": 0.025, "inspection_days": 10,
+     "loan_approval_days": 30, "closing_date": "2026-11-06", "riders": ["FHA/VA Financing"]},
+    {"id": "B", "buyer_agent": "Sample Agent B", "buyer_brokerage": "Sample Homes", "contract_form": "as_is",
+     "buyer": "Sample Buyer", "expires": "2026-09-25 12:00",
+     "price": 480000, "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
+     "deposit": 25000, "seller_concessions": 0, "buyer_broker_pct": 0.025, "inspection_days": 7,
+     "loan_approval_days": 21, "closing_date": "2026-10-30", "riders": ["Condominium", "Coastal Construction Control Line"],
+     "insurance_quote": true}
+  ]
+}

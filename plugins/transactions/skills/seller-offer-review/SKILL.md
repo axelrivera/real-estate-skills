@@ -30,7 +30,7 @@ The engine fills anything missing with a conservative default and records it as 
 
 One JSON file per property: read `references/listing-file.md` for the fields. If the agent uploads a listing file from an earlier session, add the new offer to it (next letter as `id`) rather than starting over. Record `buyer_agent` and `buyer_brokerage` from the contract: reports name each offer by them ("Morales · Keller Williams"), never by the buyer, and never by the letter; see Offer Names in `references/listing-file.md`. In chat, use the same names; when the agent says "Offer B", match it to the id.
 
-- **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). For FR/BAR forms, and for how to read other states' contracts, read `references/contract-fields.md`. Then check the contract is complete with `references/contract-check.md` and record problems in `contract_issues`.
+- **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). For FR/BAR forms, and for how to read other states' contracts, read `references/contract-fields.md`. Then check the contract is complete with `references/contract-check.md` and record problems in `contract_issues`. For a condo (`listing.property_type: condo`), also read `references/condo.md`: FHA/VA project approval and the buyer's rescission windows decide when the deal is firm.
 - **Pre-approval letter or proof of funds:** set `approval` and `lender`.
 - **Offer described in chat:** take what's given.
 

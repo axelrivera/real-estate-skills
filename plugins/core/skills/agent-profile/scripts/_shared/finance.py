@@ -10,6 +10,7 @@ market profile (shared/profiles.load_market). Lending rules are national estimat
 numbers always win.
 """
 import math
+import re
 from datetime import date
 
 COMMISSION_NOTE = "Commissions are negotiable and not set by law."
@@ -128,8 +129,12 @@ def loan_amount(price, name, down):
     return price * (1 - down) * (1 + LOAN_PROGRAMS[key]["upfront_fee"])
 
 
-def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, hoa_monthly=0.0, mi_rate=None):
-    """Monthly payment breakdown. Conventional mortgage insurance only below 20% down."""
+def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, hoa_monthly=0.0, mi_rate=None,
+                    flood_annual=None):
+    """Monthly payment breakdown. Conventional mortgage insurance only below 20% down.
+
+    `flood_annual` is a flood insurance quote; without one `flood` is None and the total leaves it out (the report
+    says "get a quote", never $0: see flood_insurance)."""
     key = program(name)
     base = price * (1 - down)
     loan = loan_amount(price, key, down)
@@ -137,8 +142,53 @@ def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, h
     mi = 0.0 if key == "cash" or (key == "conventional" and down >= 0.20) else base * rate_mi / 12
     pi = 0.0 if key == "cash" else pi_payment(loan, rate_pct)
     tax, ins = tax_annual / 12, insurance_annual / 12
+    flood = flood_annual / 12 if flood_annual is not None else None
     return {"cash_down": price * down if key != "cash" else price, "loan": loan, "pi": pi, "tax": tax,
-            "ins": ins, "mi": mi, "hoa": hoa_monthly, "total": pi + tax + ins + mi + hoa_monthly}
+            "ins": ins, "mi": mi, "hoa": hoa_monthly, "flood": flood, "total": pi + tax + ins + mi + hoa_monthly + (flood or 0)}
+
+
+SFHA = ("A", "V")  # FEMA Special Flood Hazard Areas: A, AE, AH, AO, AR, A99, V, VE
+
+
+def flood_insurance(zone, quote=None, market=None, as_of=None, condo_unit=False):
+    """The flood insurance line of a buyer's payment: {"annual", "sfha", "required", "note"}.
+
+    `annual` is the quote or None (never 0: a missing quote reads "get a quote"). `required` is "lender" in a
+    Special Flood Hazard Area, "citizens" when the market's Citizens rule reaches every policy on `as_of`, "citizens_value"
+    when it applies above a replacement cost, else None. The note is one or two sentences for the report."""
+    m = re.match(r"(?:ZONE\s+)?([A-Z]{1,2}\d{0,3})\b", str(zone or "").strip().upper())  # "X (lower risk)" -> X
+    z = m.group(1) if m else ""
+    known = bool(z) and z not in ("TBD", "D", "UNK")  # D: undetermined risk
+    sfha = known and z[:1] in SFHA
+    annual = quote if quote not in (None, "", 0) else None
+    tail = "" if annual is not None else " Get a quote; the total leaves it out until then."
+    if sfha:
+        return {"annual": annual, "sfha": True, "required": "lender",
+                "note": f"Flood zone {z} is a Special Flood Hazard Area: the lender will require flood insurance.{tail}"}
+    rule = (market.get("flood.citizens_requirement") if market is not None else None) or {}
+    day = (as_of or date.today()).isoformat()
+    tiers = [t for t in rule.get("schedule") or [] if str(t.get("from")) <= day]
+    tier = max(tiers, key=lambda t: str(t["from"])) if tiers else None
+    where = f"Flood zone {z}" if known else "The flood zone isn't confirmed (check the FEMA flood map)"
+    if tier is None or condo_unit:
+        extra = " A condo unit (HO-6) policy is exempt from the Citizens flood requirement." if tier and condo_unit else ""
+        return {"annual": annual, "sfha": False, "required": None,
+                "note": f"{where}: a lender doesn't require flood insurance{' here' if known else ' outside a high-risk zone'}.{extra}{tail}"}
+    cite = rule.get("statute", "state law")
+    if not tier.get("min_replacement_cost"):
+        need, required = "every Citizens policy must carry flood insurance", "citizens"
+    else:
+        later = [t for t in rule["schedule"] if str(t.get("from")) > day and not t.get("min_replacement_cost")]
+        need = (f"a Citizens policy on a home with a dwelling replacement cost of {money(tier['min_replacement_cost'])} or "
+                f"more must carry flood insurance" + (f", and every Citizens policy from {_long_date(later[0]['from'])}" if later else ""))
+        required = "citizens_value"
+    return {"annual": annual, "sfha": False, "required": required,
+            "note": f"{where}: a lender may not require flood insurance, but {need} ({cite}).{tail}"}
+
+
+def _long_date(iso):
+    d = date.fromisoformat(str(iso))
+    return f"{d:%B} {d.day}, {d.year}"
 
 
 def buydown_2_1(loan, rate_pct):

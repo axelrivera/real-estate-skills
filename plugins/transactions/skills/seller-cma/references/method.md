@@ -7,21 +7,24 @@ Ask for what's missing in one message; use tappable choices for occupancy, timel
 **From the seller (about the home)**
 1. Address.
 2. Beds, full and half baths, heated square feet, lot size, year built, construction (block or frame).
-3. Pool (private or none), garage spaces, HOA and CDD (amounts, or none). An HOA adds an estoppel letter to the net sheet.
+3. Pool (private or none), garage spaces, HOA and CDD (amounts, or none). An HOA adds an estoppel letter to the net sheet. A condo also gets the association questions in `condo.md` (milestone inspection and SIRS status, special assessments, reserves, lender approval).
 4. Updates with approximate dates: roof, AC, water heater, kitchen, baths, flooring, windows, electrical, plumbing, pool surface and equipment, and whether permits were pulled. Documented updates are worth money; claims aren't.
 5. The current annual tax bill.
 6. Known issues or past insurance claims. Most states require sellers to disclose known material defects, and they affect the price.
-7. Timeline to close, and whether the home will be occupied or vacant for showings.
-8. Mortgage payoff (optional): with it, the net sheet ends in estimated cash at closing.
+7. Flood history: any flood damage while they've owned it, flood insurance claims (including NFIP), and flood assistance (including FEMA). Where the market profile has `flood.seller_disclosure` (Florida: s. 689.302), the seller signs that disclosure at or before the contract, so collect the answers now and list the form under "What We Need from You".
+8. Timeline to close, and whether the home will be occupied or vacant for showings.
+9. Mortgage payoff (optional): with it, the net sheet ends in estimated cash at closing.
 
 **From the agent**
-9. The MLS CMA export (CSV) of single-family homes nearby: sales from about the last 6 months, plus active, pending, expired and canceled listings. For Stellar the columns are built in; another MLS needs its columns mapped in the market profile.
-10. Brokerage terms (listing fee and buyer's agent compensation, if the seller will offer it). Without them the agent's standard terms from their market profile are used and marked; with neither, ask (nothing is built in, in any state).
-11. Flood zone, if known. Otherwise write "to confirm".
+10. The MLS CMA export (CSV) of single-family homes nearby: sales from about the last 6 months, plus active, pending, expired and canceled listings. For Stellar the columns are built in; another MLS needs its columns mapped in the market profile.
+11. Brokerage terms (listing fee and buyer's agent compensation, if the seller will offer it). Without them the agent's standard terms from their market profile are used and marked; with neither, ask (nothing is built in, in any state).
+12. Flood zone, if known. Otherwise write "to confirm". Never tell the seller that buyers won't need flood insurance: lenders require it in zones A and V, and in Florida Citizens requires it on many policies outside them (see the market profile's `flood` notes).
 
 If the seller knows only some dates, go ahead and list the rest under "What We Need from You". Never guess a roof date, a permit, or a tax amount.
 
 ## Comps
+
+For a condo, choose and adjust comps by `condo.md` instead of the rules below.
 
 From `stats.py`'s `sold_candidates`, choose 3–6 sales: same subdivision first, then a comparable neighborhood within about a mile; within about 20% of the size, same pool status, similar age and construction, closed within about 6 months. Include the sales that argue for a lower price; the seller's next agent will show them anyway.
 

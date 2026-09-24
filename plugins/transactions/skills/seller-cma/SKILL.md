@@ -41,7 +41,7 @@ python3 scripts/stats.py export.csv --address "<address as in the export>" --sqf
 
 Pick a split date so "recent" is roughly the last 2–3 months. Search the web for the latest Freddie Mac 30-year rate and, when the market profile has no millage for the home's taxing district, the county's current millage. Cite both in your reply.
 
-Read `references/method.md` for choosing and adjusting comps, setting the range and the recommended price, and the three pricing strategies.
+Read `references/method.md` for choosing and adjusting comps, setting the range and the recommended price, and the three pricing strategies. For a condo, also read `references/condo.md` (comps, adjustments, association and lending questions).
 
 ## 3. Write report.json
 

@@ -147,7 +147,8 @@ def details(r, res):
     for row in res["side_by_side"]:
         vals = row["values"]
         side += f"<tr><td>{esc(row['term'])}</td>" + "".join(f'<td class="{"" if i == 0 or v == vals[0] else "caution"}">{esc(v)}</td>' for i, v in enumerate(vals)) + "</tr>"
-    side += "<tr><td>Est. Monthly Payment</td>" + "".join(f'<td>${r["payment"][k]:,}</td>' for k in K) + "</tr>"
+    pay_label = "Est. Monthly Payment" + (" (Before Flood Insurance)" if B["flood"]["annual"] is None else "")
+    side += f"<tr><td>{pay_label}</td>" + "".join(f'<td>${r["payment"][k]:,}</td>' for k in K) + "</tr>"
     cols = [(ST.OPTION_LABEL[k], O[k]["ns"]) for k in K] + [("Clean Offer at List", tgt)]
     ns = ""
     for i, (key, label, _) in enumerate(cols[0][1]["lines"]):

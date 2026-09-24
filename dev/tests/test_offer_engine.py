@@ -214,6 +214,38 @@ class Rules(unittest.TestCase):
         self.assertTrue(label.startswith("Documentary Stamp Tax"))
 
 
+
+class CondoAndFlood(unittest.TestCase):
+    """CMA-5 (condo rider, FHA/VA project approval, rescission) and CMA-6 (seller flood disclosure, s. 689.302)."""
+
+    def flags(self, R, oid):
+        return [x["issue"] for x in by_id(R)[oid]["flags"]]
+
+    def test_broward_condo(self):
+        R = oe.analyze(fixture("broward-condo.json"))
+        a, b = self.flags(R, "A"), self.flags(R, "B")
+        self.assertIn("The property is a condo but no condo rider is attached.", a)
+        self.assertIn("FHA loan on a condo: the project must be FHA-approved.", a)
+        self.assertFalse(any("no condo rider" in x for x in b))  # B attached the rider
+        self.assertFalse(any("-approved" in x for x in b))
+        for issues in (a, b):
+            self.assertTrue(any(x.startswith("Condo: the buyer may cancel within 7 days") for x in issues))
+            self.assertTrue(any("flood disclosure (s. 689.302)" in x for x in issues))
+        req = [x.get("request") for x in by_id(R)["A"]["flags"] if "FHA-approved" in x["issue"]]
+        self.assertTrue(req and "FHA approval" in req[0])
+
+    def test_disclosure_given(self):
+        d = fixture("broward-condo.json")
+        d["listing"]["flood_disclosure"] = True
+        R = oe.analyze(d)
+        self.assertFalse(any("flood disclosure" in x for x in self.flags(R, "A")))
+
+    def test_not_florida(self):
+        R = oe.analyze(fixture("texas-single.json"))
+        text = json.dumps([o["flags"] for o in R["offers"]])
+        self.assertNotIn("689.302", text)
+        self.assertNotIn("718.503", text)
+
 if __name__ == "__main__":
     unittest.main()
 

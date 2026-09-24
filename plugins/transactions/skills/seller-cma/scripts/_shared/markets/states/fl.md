@@ -121,6 +121,23 @@ holding_costs:
 buyer_costs:
   insurance_rate: 0.009               # a buyer's new homeowner's policy, share of price, for payment estimates; a quote replaces it
 
+flood:                                # verified 2026-09-24 (docs/audits/2026-09-23-verification.md, CMA-6)
+  citizens_requirement:               # s. 627.351(6)(aa): Citizens personal residential policies must carry flood coverage,
+    statute: "s. 627.351(6)(aa)"      # by dwelling replacement cost; HO-6 unit policies and policies without wind are exempt
+    schedule:
+      - {from: "2024-01-01", min_replacement_cost: 600000}
+      - {from: "2025-01-01", min_replacement_cost: 500000}
+      - {from: "2026-01-01", min_replacement_cost: 400000}
+      - {from: "2027-01-01", min_replacement_cost: 0}
+  seller_disclosure:                  # given at or before the contract is signed, residential sales
+    statute: "s. 689.302"
+    asks: "known flood damage during ownership, flood insurance claims (including NFIP), and federal flood assistance (including FEMA)"
+
+condo:                                # FR/BAR CR-7x; ss. 718.503, 720.401 (verified 2026-09-24, TL-11)
+  rescission: "the buyer may cancel within 7 days, excluding weekends and legal holidays, after the later of signing and receiving the association documents; the right ends at closing (s. 718.503)"
+  sirs_milestone: "a separate 7-business-day right to void after receiving the milestone inspection summary and the structural integrity reserve study (SIRS)"
+  hoa_rescission: "without the HOA disclosure summary before signing, the buyer may cancel within 3 days after receiving it; the right ends at closing (s. 720.401)"
+
 contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked against ASIS-7x Rev. 2/26)
   forms: [FR/BAR AS IS, FR/BAR Standard]
   day_count: calendar                 # Day 1 is the day after the Effective Date
@@ -185,4 +202,6 @@ Built-in state defaults. Skills use them only for Florida properties. For any ot
 - FIRPTA is not computed. If the seller is a foreign person, flag 15% withholding and refer to the title company or a CPA.
 - CMA adjustment defaults were calibrated on Central Florida sales. Other Florida areas should set their own in a market profile.
 - Contract dates follow the FR/BAR definitions. Verify against the form version on the executed contract.
+- Flood: a lender requires flood insurance in a Special Flood Hazard Area (zones A and V). Outside one, Citizens still requires it on a policy at or above the replacement cost in `flood.citizens_requirement` for its year, and on every Citizens policy from January 1, 2027, so never write that flood insurance "isn't required". The seller gives the s. 689.302 flood disclosure at or before signing.
+- Condos: the rescission and SIRS rights in `condo` are the buyer's; deliver the association documents early so the clock starts.
 - Insurance: don't quote premiums. Name the drivers (roof age, wiring and plumbing era, wind mitigation, pool, flood zone) and tell the buyer to get a quote after the 4-point and wind-mitigation inspections.

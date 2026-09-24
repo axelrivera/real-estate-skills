@@ -1,0 +1,28 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "property": {
+    "address": "3000 N Ocean Dr Unit 1204, Fort Lauderdale, FL 33308",
+    "state": "FL",
+    "county": "Broward",
+    "type": "condo",
+    "list_price": 489000,
+    "dom": 41,
+    "beds": 2, "baths": 2, "sqft": 1240, "year_built": 1999,
+    "hoa_monthly": 925, "flood_zone": "AE", "cdd": true, "cdd_annual": 1200, "annual_tax": 8200
+  },
+  "value": {"cma_low": 470000, "cma_high": 495000, "source": "buyer CMA"},
+  "market": {"sale_to_list": 0.965, "months_supply": 7.5, "median_dom": 58},
+  "competition": {"level": 0, "note": "No other offers reported"},
+  "listing_side": {"buyer_broker_offered_pct": 0.025},
+  "costs": {"rate": 6.5, "insurance_annual": 2100, "flood_insurance_annual": 1800, "total_mills": 19.2, "school_mills": 5.5, "homestead": true},
+  "buyer": {
+    "name": "Sample Buyer",
+    "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
+    "max_price": 490000, "cash_available": 120000, "reserve_floor": 10000,
+    "buyer_broker_agreement_pct": 0.025, "insurance_quote": true, "agent_track": "average"
+  },
+  "worksheet": {"buyer_names": "Sample Buyer", "contract_form": "as_is"},
+  "chosen_option": "recommended",
+  "overrides": {}
+}

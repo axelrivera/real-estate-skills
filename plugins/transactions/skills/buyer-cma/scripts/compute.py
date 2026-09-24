@@ -68,22 +68,34 @@ def payments(R, market, tax_rows):
         est = finance.property_tax(p, market, j["school_mills"], j["total_mills"], R["costs"]["taxes"].get("homestead", True))
         return est["annual"] or 0
 
+    flood = flood_line(R, market)
     rows = []
     for i, sc in enumerate(pay["scenarios"]):
         if sc.get("type") is None or sc.get("down_pct") is None:
             raise ReportError(f"costs.payment.scenarios[{i}] needs a type and a down_pct (0.05 for 5%).")
         sc["down_pct"] = _frac(sc, "down_pct", f"costs.payment.scenarios[{i}]")
         r = finance.monthly_payment(price, sc["type"], sc["down_pct"], pay["rate"], tax_at(price),
-                                    pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
+                                    pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
         rows.append({"label": sc["label"], **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"])})
     first = pay["scenarios"][0]
     lower = finance.monthly_payment(price - 10000, first["type"], first["down_pct"], pay["rate"], tax_at(price - 10000),
-                                    pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
+                                    pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
         alt = {"short": tax_rows[1 - ji]["short"], "delta_monthly": (tax_at(price, 1 - ji) - tax_at(price)) / 12}
-    return {"price": price, "rate": pay["rate"], "insurance_annual": pay["insurance_annual"], "rows": rows,
+    return {"price": price, "rate": pay["rate"], "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood,
             "per_10k": rows[0]["total"] - lower["total"], "alt_jurisdiction": alt, "tax_index": ji}
+
+
+def flood_line(R, market):
+    """CMA-6: the payment's flood insurance line. A quote (`costs.payment.flood_insurance_annual`) is counted; without
+    one the row reads "get a quote" and the total leaves it out, never $0. The zone is `costs.payment.flood_zone`,
+    else the Flood Zone fact."""
+    pay, s = R["costs"]["payment"], R["subject"]
+    zone = pay.get("flood_zone") or next((v for lbl, v in s.get("facts") or [] if str(lbl).lower() == "flood zone"), None)
+    return finance.flood_insurance(zone, pay.get("flood_insurance_annual"), market,
+                                   date.fromisoformat(R["as_of"]) if R.get("as_of") else None,
+                                   condo_unit=finance.property_type(s.get("property_type")) == "condo")
 
 
 def credit_scenarios(R, market, tax_rows, median_adjusted):
@@ -103,7 +115,8 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         price, credit = x["price"], x["credit"]
         j = tax_rows[ji]
         tax = finance.property_tax(price, market, j["school_mills"], j["total_mills"], R["costs"]["taxes"].get("homestead", True))["annual"] or 0
-        p = finance.monthly_payment(price, program, down, pay["rate"], tax, pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0))
+        p = finance.monthly_payment(price, program, down, pay["rate"], tax, pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0),
+                                    flood_annual=flood_line(R, market)["annual"])
         cc = cs["closing_costs"] if cs.get("closing_costs") else price * closing_pct
         bb_short = finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
         col = {"price": price, "credit": credit, "net": price - credit, "loan": p["loan"], "bb_short": bb_short,

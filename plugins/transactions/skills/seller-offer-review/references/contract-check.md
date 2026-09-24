@@ -25,7 +25,8 @@ This is a completeness check, not a legal opinion. Never tell the agent a contra
 
 - Blank lines that the form doesn't default: deposit amount, escrow agent, additional deposit due date, loan amount or type, closing date.
 - A rider the terms call for isn't attached: FHA/VA financing, sale of the buyer's property, appraisal terms, HOA or condo.
-- A required disclosure is missing: lead-based paint for homes built before 1978 (federal). In Florida, the HOA disclosure summary; without it the buyer may cancel within 3 days.
+- A required disclosure is missing: lead-based paint for homes built before 1978 (federal). In Florida, the HOA disclosure summary (without it the buyer may cancel within 3 days after receiving it) and the seller's flood disclosure (s. 689.302, at or before signing; set `listing.flood_disclosure` once it's given).
+- A condo: the condo rider, and for an FHA or VA offer the project's approval. The buyer's rescission windows start when they receive the association documents, the milestone summary and the SIRS, so deliver them right away (`condo.md`).
 - The rider checklist and the attached riders disagree.
 
 Some of these are the listing side's job (the seller's HOA and lead-paint disclosures): write the fix for the agent, and leave `request` out so it doesn't go to the buyer's agent.

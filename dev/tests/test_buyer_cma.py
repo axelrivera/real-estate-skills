@@ -162,6 +162,38 @@ class Pdf(unittest.TestCase):
             self.assertEqual(handoff.load(paths[1])["side"], "buyer")
 
 
+
+class Flood(unittest.TestCase):
+    """CMA-6: the payment has a flood line, a quote or "Get a Quote", never $0."""
+
+    def run_(self, **payment):
+        R = report()
+        R["costs"]["payment"].update(payment)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def test_get_a_quote(self):
+        R, C = self.run_()
+        pay = C["payments"]
+        self.assertIsNone(pay["flood"]["annual"])
+        self.assertTrue(all(r["flood"] is None for r in pay["rows"]))
+        self.assertIn("Citizens", pay["flood"]["note"])  # zone X from the facts, Florida, 2026
+        html, _ = buyer_render.build_html(R, C, [], {})
+        self.assertIn("Flood Insurance", html)
+        self.assertIn("Get a Quote", html)
+        self.assertNotIn("isn't required", html)
+
+    def test_quote_counts(self):
+        _, base = self.run_()
+        _, C = self.run_(flood_insurance_annual=1800)
+        for a, b in zip(base["payments"]["rows"], C["payments"]["rows"]):
+            self.assertAlmostEqual(b["total"] - a["total"], 150)
+        self.assertNotIn("Get a quote", C["payments"]["flood"]["note"])
+
+    def test_zone_override(self):
+        _, C = self.run_(flood_zone="AE")
+        self.assertEqual(C["payments"]["flood"]["required"], "lender")
+
 if __name__ == "__main__":
     unittest.main()
 

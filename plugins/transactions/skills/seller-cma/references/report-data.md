@@ -80,7 +80,7 @@ All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractio
 
 ## buyer_payment
 
-`rate` (percent), `loan_type` (default `conventional`), `down_pct` (fraction, default 0.05), `insurance_annual` (placeholder), `district` (looked up in the market profile) or `school_mills` + `total_mills`, `homestead` (default true), optional `hoa_monthly`, optional `note` (assumptions and the rate's week; a default is written when it's missing).
+`rate` (percent), `loan_type` (default `conventional`), `down_pct` (fraction, default 0.05), `insurance_annual` (placeholder), `district` (looked up in the market profile) or `school_mills` + `total_mills`, `homestead` (default true), optional `hoa_monthly`, optional `flood_zone` (else the Flood Zone fact), optional `flood_insurance_annual` (a quote; without one the payment leaves flood out and the note says to get a quote, never $0), optional `note` (assumptions and the rate's week; a default is written when it's missing; the flood rule is added to it).
 
 ## prep, needs, method
 

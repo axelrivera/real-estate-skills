@@ -59,6 +59,8 @@
  "pay_pi": "Principal and Interest",
  "pay_tax": "Property Taxes ({short}, with Homestead)",
  "pay_ins": "Homeowners Insurance (Placeholder)",
+ "pay_flood": "Flood Insurance",
+ "pay_flood_quote": "Get a Quote",
  "pay_mi": "Mortgage Insurance",
  "pay_hoa": "HOA / CDD",
  "pay_total": "Estimated Monthly Total",

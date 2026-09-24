@@ -240,6 +240,10 @@ def prepare_listing(data, A, costs):
         A.add("listing", "tax_paid", "arrears", "How property tax is paid here wasn't given: assumed in arrears (seller credits the buyer from Jan 1)", "low")
     L["bill_paid"] = L.get("current_tax_bill_paid")  # this year's bill already paid by the seller (Florida: from November)
     L["property_type"] = L.get("property_type")
+    L["condo"] = finance.property_type(L["property_type"]) == "condo"  # CMA-5: condo rider, project approval, rescission
+    L["condo_rules"] = costs.get("condo") or {}
+    L["flood_disclosure_rule"] = costs.get("flood.seller_disclosure")  # CMA-6: Florida s. 689.302
+    L["flood_disclosure"] = L.get("flood_disclosure")  # true once the seller's disclosure has been given to the buyer
     L["hoa_monthly"] = L.get("hoa_monthly")
     L["title_customary_payer"] = costs.get("closing_costs.owner_title.payer")
     if L["title_customary_payer"] is None:
@@ -798,13 +802,22 @@ def contract_checks(o, L):
                 and not _has_rider(riders, "apprais"):
             add("Med", "Appraisal period stated without an appraisal rider.", "Ask which appraisal terms apply, and for the rider.", "riders",
                 "Which appraisal terms apply? Please send the appraisal rider.")
-        if L.get("hoa_monthly") and not _has_rider(riders, "hoa", "homeowner", "condo", "community"):
+        if L["condo"] and not _has_rider(riders, "condo"):
+            add("High", "The property is a condo but no condo rider is attached.",
+                "Ask for the signed condo rider, and deliver the association documents as soon as it's signed.", "riders",
+                "Please attach the signed condominium rider.")
+        elif L.get("hoa_monthly") and not _has_rider(riders, "hoa", "homeowner", "condo", "community"):
             add("High", "The property has an HOA but no HOA or condo rider is attached.",
                 "Add the HOA or condo rider, and give the buyer the required HOA disclosure, before accepting.", "riders")
         yb = L.get("year_built")
         if yb and yb < 1978 and not _has_rider(riders, "lead"):
             add("High", f"Built {yb}: no lead-based paint disclosure attached (federally required before 1978).",
                 "Complete the lead-based paint disclosure with the seller and have the buyer sign it before accepting.", "riders")
+    if L["condo"] and o["financing"] in ("fha", "va"):
+        fin = FIN_LABEL[o["financing"]]
+        add("High", f"{fin} loan on a condo: the project must be {fin}-approved.",
+            "Confirm the project's approval before accepting; an unapproved project can't close with this loan.", "terms",
+            f"Please confirm the lender has verified the condo project's {fin} approval.")
     loan = o.get("loan_amount")
     if loan and o["financed"] and abs(loan - o["price"] * (1 - o["down_pct"])) > max(1000, .01 * o["price"]):
         add("Med", f"Loan amount {money(loan)} doesn't match {pct(o['down_pct'])} down on {money(o['price'])}.",
@@ -866,6 +879,16 @@ def flags_for(o, L, S):
     fz = (L.get("flood_zone") or "").upper()
     if o["financed"] and fz[:1] in ("A", "V"):
         add("Med", f"Flood zone {fz}: lender will require flood insurance.", "Confirm the buyer has a flood quote.")
+    rule = L["flood_disclosure_rule"]
+    if rule and L["flood_disclosure"] is not True:  # the listing side's job: no request to the buyer's agent
+        add("Med", f"The seller's flood disclosure ({rule.get('statute', 'state law')}) isn't confirmed as given.",
+            "Have the seller complete it (" + rule.get("asks", "flood history") + ") and give it to the buyer at or before signing.")
+    if L["condo"]:
+        cr = L["condo_rules"]
+        if cr.get("rescission"):
+            add("Med", "Condo: " + cr["rescission"].rstrip(".") + ".",
+                "Deliver the association documents" + (", the milestone summary and the SIRS" if cr.get("sirs_milestone") else "")
+                + " right after acceptance: the deal isn't firm until the buyer's windows pass.")
     if S["deadline"] and o["close"] > S["deadline"]:
         add("High", f"Closing {o['close']:%b %-d} is after the seller's {S['deadline']:%b %-d} deadline.", "Counter the closing date.")
     if o["close"].weekday() >= 5:

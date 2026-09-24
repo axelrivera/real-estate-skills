@@ -17,6 +17,8 @@ Search the address: earlier syndicated remarks sometimes claim things (a "brand-
 
 ## Choosing comps
 
+For a condo, choose and adjust comps by `condo.md` instead of the rules below.
+
 From `stats.py`'s `sold_candidates`, pick 3–6 sales:
 
 - same subdivision first, then an immediately comparable neighborhood within about a mile;
