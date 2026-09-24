@@ -14,7 +14,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import profiles  # noqa: E402
+from _shared import dates, finance, profiles  # noqa: E402
 
 # What the skills read, grouped the way the agent thinks about it. A tuple means "any one of these".
 GROUPS = {
@@ -34,13 +34,7 @@ GROUPS = {
         "property_tax.fallback_rate",
         "property_tax.primary_residence_exemptions",
     ],
-    "contract dates": [
-        "contract.day_count",
-        "contract.short_period_days",
-        "contract.end_time",
-        "contract.weekend_holiday_rollover",
-        "contract.holidays",
-    ],
+    "contract dates": [f"contract.{k}" for k in dates.RULE_KEYS],  # the same list contract-timeline requires
     "cma": ["cma.radius_miles", "cma.lookback_months", "cma.adjustments"],
     "mls files": ["mls_format.cma_export_columns", "mls_format.history_codes"],
 }
@@ -49,6 +43,22 @@ GROUPS = {
 def _entry(market, path):
     value = market.get(path)
     return {"value": value, "source": market.source(path)}
+
+
+def pct_problems(data, path=""):
+    """CORE-11: every `*_pct` is a fraction (0.03 for 3%); a value of 1 or more is a percent written the other way."""
+    out = []
+    items = data.items() if isinstance(data, dict) else enumerate(data) if isinstance(data, list) else ()
+    for k, v in items:
+        where = f"{path}.{k}" if path and isinstance(k, str) else f"{path}[{k}]" if path else str(k)
+        if isinstance(k, str) and k.endswith("_pct") and not isinstance(v, (dict, list)):
+            try:
+                finance.fraction(v, where)
+            except ValueError as e:
+                out.append(str(e))
+        else:
+            out += pct_problems(v, where)
+    return out
 
 
 def check(path=None, state=None, county=None, mls=None):
@@ -86,12 +96,16 @@ def check(path=None, state=None, county=None, mls=None):
     if county:
         key = county.strip().lower().removesuffix(" county")
         millage = [m for m in millage if str(m.get("county", "")).lower() == key]
-    changed = sorted({p for g in groups.values() for p, v in g["values"].items() if v["source"] in ("profile", "mixed")})
+    # CORE-13: every setting the profile changed, not only the grouped ones (millage, fair housing, forms, county_overrides...)
+    changed = sorted(p for p, src in market.sources.items() if src == "profile")
+    problems += pct_problems(market.data)
+    tiered = finance.transfer_tax_warning(market)  # CORE-19
+    notes = market.notes + ([tiered] if tiered else [])
     return {
         "ok": not problems,
         "state": market.state,
         "mls": market.mls,
-        "notes": market.notes,
+        "notes": notes,
         "from_profile": changed,
         "groups": groups,
         "millage_districts": [m.get("district") for m in millage],

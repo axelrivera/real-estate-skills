@@ -128,5 +128,29 @@ class AgentProfiles(unittest.TestCase):
         self.assertIn("Texas", r["problems"][0])
 
 
+
+class AuditChecks(unittest.TestCase):
+    """CORE-11, CORE-12, CORE-13."""
+
+    def test_percent_written_as_percent_is_a_problem(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = check_market.check(write(tmp, "---\nprofile: market\nstate: TX\nbrokerage:\n  listing_fee_pct: 3\n---\n"))
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("0.03 for 3%" in x for x in r["problems"]))
+
+    def test_contract_group_matches_the_timeline(self):
+        r = check_market.check(state="TX")
+        self.assertIn("contract.before_closing_rollover", r["groups"]["contract dates"]["missing"])
+
+    def test_from_profile_lists_every_change(self):
+        text = ("---\nprofile: market\nstate: FL\nfair_housing:\n  extra_protected_classes: [source of income]\n"
+                "contract:\n  rollover_time: \"17:00\"\ncounty_overrides:\n  Seminole:\n    closing_costs:\n"
+                "      hoa_estoppel_fee: 250\n---\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            r = check_market.check(write(tmp, text), county="Seminole")
+        for path in ("fair_housing.extra_protected_classes", "contract.rollover_time",
+                     "county_overrides.Seminole.closing_costs.hoa_estoppel_fee"):
+            self.assertIn(path, r["from_profile"])
+
 if __name__ == "__main__":
     unittest.main()

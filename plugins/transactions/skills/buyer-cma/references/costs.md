@@ -5,7 +5,8 @@
 The buyer's bill is based on the purchase price, not the seller's bill: in Florida a capped assessment (Save Our Homes, the 10% non-homestead cap) resets on sale. Other states differ; the market profile's `property_tax.reassessed_on_sale` says which.
 
 - **Millage:** the market profile lists final rates by county and district (built in for seven Central Florida counties). In each `jurisdictions` entry, name the `district` and compute.py looks it up, or give `school_mills` and `total_mills` yourself from the county property appraiser. When you can't confirm whether the parcel is inside city limits, show both jurisdictions and ask the agent to check the parcel's taxing district.
-- **Exemptions** come from the market profile (Florida homestead: the first $25,000 off every levy, the second $25,000 off non-school levies). The file-by date goes in the note.
+- **Exemptions** come from the market profile (Florida homestead: the first $25,000 off every levy, and an indexed second exemption, $26,411 for 2026, off non-school levies on value from $50,000 up). The file-by date goes in the note.
+- **Portability:** where the market profile has `property_tax.portability` (Florida), ask whether the buyer is leaving a homestead in the state. Carrying the Save Our Homes difference can cut the first bills a lot; the estimate doesn't include it, so say so and point to the property appraiser's portability application.
 - **Without millage**, compute.py estimates from the market's fallback rate and warns. Say it's an estimate, and find the real rates if you can.
 - The estimate assumes the appraiser values the home at the purchase price. It often values it lower, so the estimate runs high: say so. Flat non-ad valorem assessments are excluded: say that too.
 - Always include the first-year escrow warning: lenders often escrow on the seller's lower bill, then the payment jumps.

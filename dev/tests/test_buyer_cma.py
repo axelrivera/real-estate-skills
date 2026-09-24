@@ -38,14 +38,14 @@ class MatchesPrototype(unittest.TestCase):
 
     def test_payments(self):
         rows = self.C["payments"]["rows"]
-        self.assertEqual([round(r["total"]) for r in rows], [4107, 4230, 3448])
+        self.assertEqual([round(r["total"]) for r in rows], [4106, 4228, 3446])  # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
         self.assertEqual([round(r["cash_down"]) for r in rows], [23745, 16622, 94980])
         self.assertEqual(round(self.C["payments"]["per_10k"] / 5) * 5, 80)
 
     def test_credit_scenarios(self):
         cols = self.C["credit"]["columns"]
         self.assertEqual([round(c["cash"], -2) for c in cols], [36400, 31800, 27200])
-        self.assertEqual([round(c["payment"]) for c in cols], [3945, 3986, 4027])
+        self.assertEqual([round(c["payment"]) for c in cols], [3944, 3985, 4025])  # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
         self.assertEqual([round(c["payback_years"]) if c["payback_years"] else None for c in cols], [None, 9, 9])
         self.assertFalse(any(c["over_cap"] or c["over_costs"] for c in cols))
         self.assertFalse(self.C["credit"]["buydown"]["covered"])
@@ -193,6 +193,26 @@ class Flood(unittest.TestCase):
     def test_zone_override(self):
         _, C = self.run_(flood_zone="AE")
         self.assertEqual(C["payments"]["flood"]["required"], "lender")
+
+
+class LoanTaxes(unittest.TestCase):
+    """CORE-16: without a lender figure, the credit scenarios add Florida's loan taxes on the loan amount."""
+
+    def test_itemized_without_a_lender_figure(self):
+        R = report()
+        R["costs"]["credit_scenarios"].pop("closing_cost_pct")
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        col = C["credit"]["columns"][0]
+        loan = col["loan"]
+        self.assertEqual(col["loan_taxes"], round(loan * 0.0035) + round(loan * 0.002))
+        self.assertAlmostEqual(col["closing_costs"], col["price"] * 0.025 + col["loan_taxes"])
+
+    def test_lender_figure_is_left_alone(self):
+        R = report()  # the fixture gives closing_cost_pct 0.03: the lender's, taxes included
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        self.assertEqual(C["credit"]["columns"][0]["loan_taxes"], 0)
 
 if __name__ == "__main__":
     unittest.main()

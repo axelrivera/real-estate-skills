@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 import unittest
 from datetime import date
 
@@ -49,7 +50,8 @@ class Payments(unittest.TestCase):
 class Taxes(unittest.TestCase):
     def test_florida_homestead_matches_prototype(self):
         t = f.property_tax(474900, FL, school_mills=5.249, total_mills=17.5683)
-        expected = (449900 * 5.249 + 424900 * (17.5683 - 5.249)) / 1000  # first $25k all levies, second non-school
+        # First $25k off all levies; CORE-17: the second, indexed to $26,411 for 2026, off non-school levies
+        expected = (449900 * 5.249 + (474900 - 25000 - 26411) * (17.5683 - 5.249)) / 1000
         self.assertAlmostEqual(t["annual"], expected)
         self.assertFalse(t["estimated"])
 
@@ -166,6 +168,37 @@ class FloodInsurance(unittest.TestCase):
         quoted = f.monthly_payment(400000, "conventional", 0.2, 6.5, 6000, 3000, flood_annual=1200)
         self.assertIsNone(base["flood"])
         self.assertAlmostEqual(quoted["total"] - base["total"], 100)
+
+
+class AuditMarketMoney(unittest.TestCase):
+    """CORE-9, CORE-16, CORE-17, CORE-19."""
+
+    def test_quote_beats_promulgated_table_and_warns_below_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "m.md")
+            with open(path, "w") as fh:
+                fh.write("---\nprofile: market\nstate: FL\nclosing_costs:\n  owner_title:\n"
+                         "    quote: {price: 400000, premium: 2000}\n---\n")
+            m = profiles.load_market(path, county="Seminole")
+        n = f.seller_net(400000, m, listing_fee_pct=0, buyer_broker_fee_pct=0)
+        line = next(x for x in n["lines"] if x["key"] == "owner_title")
+        self.assertEqual((line["label"], line["amount"]), ("Owner's Title Insurance (Quote)", 2000))
+        self.assertTrue(any("below the published rate ($2,075)" in w for w in n["warnings"]))
+
+    def test_loan_taxes(self):
+        self.assertEqual([t["amount"] for t in f.loan_taxes(300000, FL)], [1050, 600])  # 0.35% and 0.2% of the loan
+        self.assertEqual(f.loan_taxes(0, FL), [])
+        self.assertEqual(f.loan_taxes(300000, None), [])
+
+    def test_second_homestead_exemption_starts_above_50000(self):
+        low = f.property_tax(60000, FL, school_mills=5, total_mills=15)
+        self.assertAlmostEqual(low["annual"], (35000 * 5 + (60000 - 25000 - 10000) * 10) / 1000)  # only $10,000 of it
+
+    def test_layered_transfer_tax_warning(self):
+        ny = profiles.load_market(state="NY")
+        self.assertIn("mansion tax", f.transfer_tax_warning(ny))
+        self.assertIsNone(f.transfer_tax_warning(FL))
+        self.assertTrue(f.seller_net(900000, ny)["warnings"])
 
 if __name__ == "__main__":
     unittest.main()

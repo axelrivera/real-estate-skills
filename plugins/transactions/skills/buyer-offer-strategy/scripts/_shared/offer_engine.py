@@ -248,6 +248,8 @@ def prepare_listing(data, A, costs):
     L["title_customary_payer"] = costs.get("closing_costs.owner_title.payer")
     if L["title_customary_payer"] is None:
         A.add("listing", "title_payer", "unknown", "Who customarily pays the owner's title policy wasn't given: left out of the net", "med")
+    for w in finance.seller_net(lp, costs)["warnings"]:  # CORE-9: a title quote below the published rate
+        A.add("listing", "owner_title.quote", "check", w, "med")
     L["frbar_market"] = cf.frbar_market(costs.get("contract.forms"))
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
     L["deposit_norm"] = costs.get("contract.typical_deposit_pct") or 0.01  # a strong deposit here, share of price
@@ -586,7 +588,8 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         "bb": (f"Buyer-Broker Compensation ({pct(bb_pct, 2)}" + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
               else "Buyer-Broker Compensation",
         "transfer": transfer,
-        "title": "Owner's Title Policy" + (" (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
+        "title": "Owner's Title Policy" + (" (Quote)" if "(Quote)" in found.get("title", ("",))[0] else
+                                           " (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
         "settle": "Title Company Fees",
         "estoppel": "HOA Estoppel",
     }

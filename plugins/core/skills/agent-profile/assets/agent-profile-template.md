@@ -5,6 +5,11 @@ name: "{{full name}}"
 team: "{{team name}}"
 brokerage: "{{brokerage}}"
 license: "{{license number}}"
+licenses:  # only when licensed in more than one state, or the type matters; otherwise use license
+  - {state: "{{ST}}", type: "{{sales associate, broker associate or broker}}", number: "{{license number}}"}
+brokerage_license: "{{brokerage license number}}"
+brokerage_address: "{{brokerage office address}}"
+brokerage_phone: "{{brokerage office phone}}"
 phone: "{{phone}}"
 email: "{{email}}"
 website: "{{website}}"

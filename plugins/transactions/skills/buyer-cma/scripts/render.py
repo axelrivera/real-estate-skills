@@ -109,6 +109,9 @@ def credit_section(R, C, L):
     ]
     head = [L("cr_head")] + [money(c["price"]) + (" + " + money(c["credit"]) if c["credit"] else "") for c in cols]
     cc = L("cr_cc_est", amt=money(cs["closing_costs"])) if cr["closing_costs_given"] else L("cr_cc_pct", pct=f'{cr["closing_cost_pct"] * 100:g}')
+    if cr["loan_tax_labels"]:  # CORE-16
+        cc += L("cr_cc_taxes", amt=money(cols[0]["loan_taxes"]), price=money(cols[0]["price"]),
+                names=" and ".join(x.lower() for x in cr["loan_tax_labels"]))
     out = [f'<h3>{L("h_credit")}</h3>', f'<p>{cs["intro"]}</p>',
            table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"}),
            f'<p class="note">{L("cr_note", cc=cc)}</p>']

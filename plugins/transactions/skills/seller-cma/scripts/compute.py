@@ -140,7 +140,8 @@ def net_sheet(R, market, L):
     return {"columns": [{"net_before_payoff": c["net_before_payoff"], "net": c["net"], "total_costs": c["total_costs"]} for c in cols],
             "totals": totals, "rows": rows, "notes": notes, "missing": shown, "assumed": first["assumed"],
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
-            "payoff": payoff, "cash_at_closing": bool(payoff), "standard_terms": standard_terms, "has_tax": has_tax}
+            "payoff": payoff, "cash_at_closing": bool(payoff), "standard_terms": standard_terms, "has_tax": has_tax,
+            "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
 
 
 # --- buyer payments ----------------------------------------------------------
@@ -230,6 +231,7 @@ def compute(R, market, homes):
                             "an appraisal risk to explain, or lower it.")
 
     net = net_sheet(R, market, L)
+    warnings += net["warnings"]  # CORE-9: a title quote below the published rate
     if net["incomplete"]:
         warnings.append("No brokerage terms: the nets leave out the commission, so they'd overstate what the seller walks away with. "
                         "Ask the agent for the listing fee and buyer's agent compensation (0 is fine) in costs, then re-run. "

@@ -176,7 +176,7 @@ Market values come in layers, merged in this order (later wins):
 
 The agent always wins: a built-in county custom never overrides a value the agent set. A heading with nothing under it (`closing_costs:`) sets nothing. County names match loosely ("Miami Dade", "St. Johns" or "Saint Johns"); a Florida county that isn't one of the 67 gets a note. With no state, nothing built in applies: the skill asks for the state and never assumes Florida.
 
-State and MLS are separate because an MLS can span states (Stellar serves Puerto Rico) and a state can have several MLSs (Miami-Dade isn't Stellar). Without a profile or a stated MLS, an MLS is assumed only when exactly one built-in MLS covers the property's county, and the skill says so. Every value carries its source, so a skill can tell a built-in default from the agent's own number.
+State and MLS are separate because an MLS can span states (Stellar serves Puerto Rico) and a state can have several MLSs (Miami-Dade isn't Stellar). Without a profile or a stated MLS, an MLS is assumed only when exactly one built-in MLS covers the property's county (never from the state alone), and the skill says so. Every value carries its source, so a skill can tell a built-in default from the agent's own number.
 
 For any other state or MLS, the profile is built from what the user provides in chat or project files.
 

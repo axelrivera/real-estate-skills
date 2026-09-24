@@ -12,7 +12,9 @@ as_of: 2026
 # a county missing here only means the MLS isn't assumed without asking.
 coverage:
   FL: [Alachua, Charlotte, Citrus, DeSoto, Flagler, Hernando, Hillsborough, Lake, Manatee, Marion,
-       Orange, Osceola, Pasco, Polk, Sarasota, Seminole, Sumter, Volusia]
+       Orange, Osceola, Pasco, Pinellas, Polk, Sarasota, Seminole, Sumter, Volusia]
+  # Pinellas: Suncoast Tampa (STAR) is a shareholder (verified 2026-09-24). Not Stellar: Brevard (Space Coast MLS),
+  # Miami-Dade, Broward and Palm Beach (MIAMI MLS / BeachesMLS). Without a county, no MLS is assumed.
   PR: all
 associations:
   shareholders:

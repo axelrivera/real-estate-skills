@@ -28,8 +28,9 @@ Only **name** and **brokerage** are required. Ask for everything missing in one 
 - Required: name as it should appear on documents; brokerage.
 - Optional: team name, license number, phone, email, website; writing voice (a sentence, or a sample of their writing); disclaimers for documents (what the brokerage requires, such as "Each office independently owned and operated" or "Equal Housing Opportunity"): every file the skills make prints them verbatim at the end; brand colors.
 - **Brokerage:** ask for the brokerage's licensed name (as on the license), not a trade name or team name. Client files refuse to print the agent's name without it (Florida rule 61J2-10.025 and most states).
+- **Licenses and brokerage details** (optional): an agent licensed in more than one state, or in a state that wants more on client materials (a license number, the broker's office address and phone), lists them as `licenses` and `brokerage_license`, `brokerage_address`, `brokerage_phone`. Read `references/licensing.md` when the agent works outside Florida or asks what their documents must show.
 
-Don't ask about brokerage or compliance rules; that's the agent's call. Don't fill in anything they skipped, because a guessed license number or phone ends up on client documents.
+Don't ask about brokerage or compliance rules; that's the agent's call. Don't fill in anything they skipped, because a guessed license number or phone ends up on client documents. Write every number (license, phone) in quotes: unquoted, `0123456` would be read as a different number, and the check refuses it.
 
 If they already sent a logo, website or color codes, read the colors first (step 3) and put the color confirmation in this same message, so the agent answers once. Skip the colors question when they already named their colors.
 
@@ -50,7 +51,7 @@ Fill in `assets/agent-profile-template.md`:
 - Keep the template's headings as written (Title Case); the other skills find the sections by heading.
 - The "Brand Colors" section says it in words: "Navy for all reports." or "Navy for buyer reports, Gold for seller reports."
 
-Save it as `agent-profile.md` in the outputs folder (`/mnt/user-data/outputs/` when it exists), then check it:
+Save it as `agent-profile.md` in the outputs folder (the runtime provides it; never the skill's own folder), then check it:
 
 ```
 python3 scripts/check_profile.py <path to agent-profile.md>

@@ -42,7 +42,6 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.3.0: a
 
 ## Open items (judgment calls and smaller gaps from the evals)
 
-
 - **Broker review of `shared/references/fair-housing.md`** before release: it applies HUD's rules as the skills understand them and is not legal advice.
 - **Fair-housing evals** (the new id in each of the five skills above) haven't been run; include them in iteration 2.
 
@@ -89,7 +88,7 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.3.0: a
 | | | Docs and tooling | DOC-1 to DOC-14 (DOC-13 needs a license and remote) | Open |
 | 4. Evals | | Iteration 2 on the new fixtures, plus the fair-housing evals | | Open |
 
-Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21, CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 (and Collier from CORE-7), CMA-2, CORE-3, CORE-4, CMA-16, FH-6, FH-1, FH-2, FH-3, CMA-5, CMA-6, OFR-26.
+Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23, OFR-33, OFR-2 to OFR-5, OFR-17, OFR-27, OFR-6, OFR-21, CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 (and Collier from CORE-7), CMA-2, CORE-3, CORE-4, CMA-16, FH-6, FH-1, FH-2, FH-3, CMA-5, CMA-6, OFR-26, CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning only; the tiered model is on the roadmap), CORE-20, CORE-21.
 
 CORE-5 note: who pays the buyer's broker is expressed by the percentages rather than a separate `buyer_broker_paid_by` field: the seller side models what the seller pays (0 when the buyer pays), and the buyer side counts the rest of the buyer's agreement as a "Buyer's Broker Fee (Not Paid by Seller)" line.
 

@@ -58,11 +58,16 @@ NOT_ADVICE = "Estimates only, not legal, lending or tax advice."
 
 def notice_lines(agent, lines=(), marketing=False):
     """Closing notices for a client-facing file (CORE-3, FH-6): the skill's fixed lines, then the agent's
-    disclaimers from their profile, verbatim, one paragraph each. Marketing pieces (a listing presentation) add
+    disclaimers from their profile, verbatim, one paragraph each, then the brokerage's details when the profile has them. Marketing pieces (a listing presentation) add
     the Equal Housing Opportunity statement unless the agent's disclaimers already carry it."""
     disc = str((agent or {}).get("disclaimers") or "")
     paras = [" ".join(p.split()) for p in disc.replace("\r", "").split("\n\n") if p.strip()]
     out = [x for x in lines if x] + paras
+    a = agent or {}
+    extra = [f"Lic. {a['brokerage_license']}" if a.get("brokerage_license") else "", a.get("brokerage_address") or "",
+             a.get("brokerage_phone") or ""]
+    if a.get("brokerage") and any(extra):  # CORE-15: the brokerage's license, office and phone where a state requires them
+        out.append(", ".join(str(x) for x in [a["brokerage"], *extra] if x) + ".")
     if marketing and "equal housing" not in disc.lower():
         out.append(EHO)
     return out

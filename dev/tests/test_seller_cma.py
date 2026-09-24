@@ -81,7 +81,7 @@ class MatchesPrototype(unittest.TestCase):
         self.assertFalse(self.C["preliminary"])
 
     def test_buyer_payments(self):
-        self.assertEqual([round(x["payment"]) for x in self.C["strategies"]], [4148, 4067, 3985])
+        self.assertEqual([round(x["payment"]) for x in self.C["strategies"]], [4147, 4065, 3984])  # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
         self.assertEqual([round(x["down"]) for x in self.C["strategies"]], [23995, 23495, 22995])
         self.assertEqual(self.C["payments"]["per_10k_display"], "$80")
         self.assertEqual(self.C["payments"]["down_per_10k_display"], "$500")

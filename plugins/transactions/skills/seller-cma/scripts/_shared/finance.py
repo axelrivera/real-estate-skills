@@ -70,6 +70,32 @@ def tax_proration(annual_tax, closing, market=None, bill_paid=None):
     return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis}
 
 
+# CORE-19: states where one flat deed transfer rate can be wrong (graduated rates, mansion taxes, city or county
+# layers on top of the state's). A full tiered model is on the roadmap; until then the net warns.
+LAYERED_TRANSFER_TAX = {"CA": "city transfer taxes (Los Angeles Measure ULA, San Francisco tiers)",
+                        "CT": "a tiered state conveyance tax", "DC": "graduated rates",
+                        "HI": "a graduated conveyance tax", "IL": "state, county and city layers (Chicago)",
+                        "MD": "state and county layers", "NJ": "a graduated realty transfer fee and mansion tax",
+                        "NY": "the mansion tax and New York City's rates", "PA": "state and local layers (Philadelphia)",
+                        "VT": "graduated rates for a primary residence", "WA": "graduated REET tiers"}
+
+
+def transfer_tax_warning(market):
+    """A sentence when the market's state has tiered or layered transfer taxes, else None."""
+    st = getattr(market, "state", None)
+    if st in LAYERED_TRANSFER_TAX:
+        return (f"Transfer taxes here can be tiered or layered ({LAYERED_TRANSFER_TAX[st]}), and the net uses one flat "
+                "rate: confirm the amount with the title or escrow company for this price.")
+    return None
+
+
+def loan_taxes(loan, market):
+    """Taxes on a buyer's loan from the market layer (`buyer_costs.loan_taxes`: [{label, rate}] on the loan amount;
+    Florida: note stamps 0.35% and intangible tax 0.2%). [] for a cash purchase or a market without them."""
+    rows = (market.get("buyer_costs.loan_taxes") if market is not None else None) or []
+    return [{"label": r["label"], "rate": r["rate"], "amount": round(loan * r["rate"])} for r in rows if loan and r.get("rate")]
+
+
 def buyer_broker_shortfall(price, agreement_pct, seller_pays_pct):
     """What the buyer owes their own broker when the seller pays less than the buyer-broker agreement (after the 2024
     NAR settlement): (agreement − seller-paid) × price, never below 0. None when the agreement isn't known."""
@@ -203,7 +229,7 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
     """Annual tax for a buyer at `value`: {'annual', 'basis', 'estimated'}.
 
     With millage, exemptions come from the market profile: each is an `amount` or a `percent` of value
-    (0.20 = 20%), and `levies` says what it lowers: `all`, `non_school` (all but school) or `school` (school
+    (0.20 = 20%), optionally only on value `above` a threshold, and `levies` says what it lowers: `all`, `non_school` (all but school) or `school` (school
     only, as in Texas). Without millage, the market's fallback rate is used and marked `estimated`.
     With neither, `annual` is None.
     """
@@ -213,6 +239,8 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
         if homestead and market is not None:
             for ex in market.get("property_tax.primary_residence_exemptions") or []:
                 amount = ex["amount"] if ex.get("amount") is not None else value * (ex.get("percent") or 0)
+                if ex.get("above"):  # applies only to value above a threshold (Florida's second $25,000, indexed)
+                    amount = min(amount, max(0, value - ex["above"]))
                 levies = ex.get("levies", "all")
                 if levies in ("all", "school"):
                     off["school"] += amount
@@ -263,13 +291,15 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     transfer_tax, owner_title, title_fees, estoppel, credit, other) so reports can use their own wording.
     `missing` lists market values that weren't available (the output should be marked Preliminary);
     `assumed` lists defaults taken from the market profile rather than the agent, as
-    {'key', 'value', 'text'} (key: listing_fee, buyer_broker_fee, title_fees).
+    {'key', 'value', 'text'} (key: listing_fee, buyer_broker_fee, title_fees). `warnings` are sentences to show the
+    agent (a title quote below the published rate).
+    A saved owner's title quote (`closing_costs.owner_title.quote`: {price, premium}) wins over the rate table.
     `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
     `annual_tax` with `closing` (a date) adds the tax proration (see tax_proration; `bill_paid` once the seller paid
     this year's bill). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
     but single-family homes); without it, that surtax is missing.
     """
-    items, lines, missing, assumed = [], [], [], []
+    items, lines, missing, assumed, warnings = [], [], [], [], []
 
     def add(key, label, amount, rate=None):
         items.append((label, amount))
@@ -293,6 +323,8 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         add("buyer_broker_fee", f"Buyer's Agent ({bf * 100:g}%)", price * bf, bf)
 
     rate = market_value("closing_costs.deed_transfer_tax_rate", "deed transfer tax")
+    if transfer_tax_warning(market):
+        warnings.append(transfer_tax_warning(market))
     payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
     tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed Transfer Tax"
     if rate and payer in (None, "seller"):
@@ -313,9 +345,14 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         tiers = market.get("closing_costs.owner_title.rate_tiers")
         pct = market.get("closing_costs.owner_title.estimate_pct")
         quote = market.get("closing_costs.owner_title.quote")  # {price, premium} from a title company
-        if quote and quote.get("price") and quote.get("premium"):
-            pct = quote["premium"] / quote["price"]  # a real quote beats a rough share of price
-        if tiers:  # the published rate table is exact
+        if quote and quote.get("price") and quote.get("premium"):  # CORE-9: a quote wins over the table
+            amount = round(quote["premium"] * price / quote["price"]) if quote["price"] != price else quote["premium"]
+            add("owner_title", "Owner's Title Insurance (Quote)", amount)
+            floor = title_premium(price, tiers) if tiers else None
+            if floor and amount < floor - 1:  # a promulgated rate is the legal premium: a lower quote is a misread
+                warnings.append(f"The owner's title quote ({money(amount)} at this price) is below the published rate "
+                                f"({money(floor)}): check the quote with the title company.")
+        elif tiers:  # the published rate table
             add("owner_title", "Owner's Title Insurance", title_premium(price, tiers))
         elif pct:
             add("owner_title", "Owner's Title Insurance (Estimate)", price * pct, pct)
@@ -348,4 +385,4 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     net_before = price - total
     return {"items": items, "lines": lines, "total_costs": total, "net_before_payoff": net_before,
             "net": None if payoff is None else net_before - payoff,
-            "missing": missing, "assumed": assumed}
+            "missing": missing, "assumed": assumed, "warnings": warnings}

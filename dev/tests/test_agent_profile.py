@@ -49,6 +49,10 @@ def fill(values, brand=None):
                 line = line.replace("{{" + ph + "}}", values[field].replace('"', '\\"') if ":" in line else values[field])
         if line is None and "{{team name}} · {{brokerage}}" in raw and "brokerage" in values:
             line = values["brokerage"]  # SKILL.md step 4: without a team, just the brokerage
+        if line is not None and "{{" in line and line.lstrip().startswith(("- {state", "brokerage_")):
+            line = None  # CORE-15's optional license and brokerage lines, left out when not given
+        if line is not None and line.startswith("licenses:"):
+            line = None
         if line is not None:
             out.append(line)
     return "\n".join(out) + "\n"
@@ -123,21 +127,24 @@ class Images(unittest.TestCase):
 class Websites(unittest.TestCase):
     HTML = """<html><head>
       <meta name="theme-color" content="#1F3A5F">
-      <link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="https://fonts.example.net/f.css">
+      <link rel="stylesheet" href="/site.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=X">
+      <link rel="stylesheet" href="https://www.jane.example.com/theme.css"><link rel="stylesheet" href="https://cdn.builder.net/b.css">
       <style>body{color:#333;background:#fff} a{color:#1F3A5F}</style></head>
       <body style="border-color: rgb(212, 175, 55)"></body></html>"""
     CSS = ":root{--brand-accent:#D4AF37;--gray:#777} .btn{background:#d4af37} .x{color:#C62828}"
 
     def fetch(self, url):
         self.fetched.append(url)
-        return self.CSS
+        return self.CSS if url.endswith("/site.css") else ".noop{color:#777}"
 
     def setUp(self):
         self.fetched = []
 
-    def test_theme_color_first_and_same_site_css_only(self):
+    def test_theme_color_first_and_site_css(self):
+        """CORE-20: www. and the bare domain are one site, and a CDN or site builder's CSS is read; font CSS isn't."""
         r = ec.from_html(self.HTML, "https://jane.example.com/", fetch=self.fetch)
-        self.assertEqual(self.fetched, ["https://jane.example.com/site.css"])
+        self.assertEqual(self.fetched, ["https://jane.example.com/site.css", "https://www.jane.example.com/theme.css",
+                                        "https://cdn.builder.net/b.css"])
         self.assertEqual(r["colors"][0]["name"], "Navy")
         self.assertEqual(r["colors"][0]["evidence"], "site theme color")
         self.assertEqual(r["colors"][1]["name"], "Gold")
@@ -204,6 +211,46 @@ class Check(unittest.TestCase):
         r = self.check_text("no settings block")
         self.assertFalse(r["ok"])
 
+
+
+class AuditProfileFields(unittest.TestCase):
+    """CORE-14 (numbers in quotes), CORE-15 (licenses and brokerage details), CORE-20 (SVG, unreadable files)."""
+
+    def test_unquoted_number_is_a_problem(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_profile(tmp, "---\nprofile: agent\nname: Jane Doe\nbrokerage: Sample Realty\nlicense: 0123456\n---\n")
+            r = check_profile.check(path)
+        self.assertFalse(r["ok"])
+        self.assertTrue(any("license is written as a number" in x for x in r["problems"]))
+
+    def test_licenses_and_brokerage_block(self):
+        text = ("---\nprofile: agent\nname: Jane Doe\nbrokerage:\n  name: Sample Realty LLC\n  license: \"CQ1234\"\n"
+                "  address: 1 Main St, Orlando, FL\n  phone: \"407-555-0100\"\nlicenses:\n"
+                "  - {state: FL, type: sales associate, number: \"SL123\"}\n  - {state: NY, type: salesperson, number: \"10401\"}\n---\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = profiles.load_agent(write_profile(tmp, text))
+        self.assertEqual(agent["brokerage"], "Sample Realty LLC")
+        self.assertEqual(agent["license"], "FL sales associate SL123; NY salesperson 10401")
+        from _shared import render  # the skill's synced copy
+        lines = render.notice_lines(agent)
+        self.assertIn("Sample Realty LLC, Lic. CQ1234, 1 Main St, Orlando, FL, 407-555-0100.", lines)
+
+    def test_svg_logo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "logo.svg")
+            with open(path, "w") as fh:
+                fh.write('<svg><rect fill="#1F3A5F"/><path fill="#1F3A5F"/><circle stroke="#D4AF37"/><g fill="#fff"/></svg>')
+            r = ec.from_image(path)
+        self.assertEqual([c["name"] for c in r["colors"]][:2], ["Navy", "Gold"])
+
+    def test_unreadable_file_says_so(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "card.heic")
+            with open(path, "wb") as fh:
+                fh.write(b"not an image")
+            r = ec.from_image(path)
+        self.assertFalse(r["ok"])
+        self.assertIn("PNG or JPG", r["notes"][0])
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,7 +25,7 @@ closing_costs:
     municipal_lien_search: 125        # $100–$125
     recording: 70                     # seller-side recording (e.g. mortgage release)
   hoa_estoppel_fee: 299               # when the property has an HOA or condo association
-  buyer_closing_cost_pct: 0.03        # buyer's closing costs when no estimate is given
+  buyer_closing_cost_pct: 0.025       # buyer's closing costs when no estimate is given, before the loan taxes in buyer_costs
 
 # brokerage: none built in. Commissions are negotiable and not set by law: they come from the agent's own market
 # profile (their standard terms) or the listing agreement and offer for each deal.
@@ -35,9 +35,10 @@ property_tax:
   early_payment_discount: 0.04        # 4% for November payment; FR/BAR Standard K prorates allowing the maximum discount
   reassessed_on_sale: true            # capped assessments reset for the buyer
   fallback_rate: 0.018                # annual tax as share of price when no bill is available
-  primary_residence_exemptions:       # Florida homestead
+  primary_residence_exemptions:       # Florida homestead (s. 196.031; verified 2026-09-24, CORE-17)
     - {amount: 25000, levies: all}
-    - {amount: 25000, levies: non_school}
+    - {amount: 26411, above: 50000, levies: non_school, year: 2026}  # CPI-indexed each Jan 1; covers $50,000 to $76,411
+  portability: true                   # a buyer leaving a Florida homestead can carry up to $500,000 of the capped difference
   exemption_filing_deadline: March 1 of the year after closing
   millage:                            # 2025 final (bills mailed Nov 2025), per $1,000 of taxable value; verify every year
                                       # total = all ad valorem levies for a typical parcel; excludes non-ad valorem assessments
@@ -120,6 +121,9 @@ holding_costs:
 
 buyer_costs:
   insurance_rate: 0.009               # a buyer's new homeowner's policy, share of price, for payment estimates; a quote replaces it
+  loan_taxes:                         # on the loan amount, paid by the buyer when the purchase is financed (CORE-16)
+    - {label: Documentary Stamp Tax on the Note, rate: 0.0035}   # s. 201.08: $0.35 per $100
+    - {label: Intangible Tax on the Mortgage, rate: 0.002}       # s. 199.133: 2 mills
 
 flood:                                # verified 2026-09-24 (docs/audits/2026-09-23-verification.md, CMA-6)
   citizens_requirement:               # s. 627.351(6)(aa): Citizens personal residential policies must carry flood coverage,
@@ -184,6 +188,9 @@ county_overrides:
     closing_costs:
       owner_title: {payer: buyer}
       seller_title_fees: {title_search: 0, municipal_lien_search: 0}
+  Monroe:                             # split by area (Upper Keys buyer, Middle Keys seller, Lower Keys mixed): ask
+    closing_costs:
+      owner_title: {payer: ask}
 ---
 
 # Market profile layer: Florida
@@ -195,7 +202,7 @@ Built-in state defaults. Skills use them only for Florida properties. For any ot
 - Closing costs are estimates for comparing options, not a settlement statement.
 - Seller title fee defaults (2026) are midpoints of ranges published by Florida title companies and closing cost guides; the title company's quote always wins.
 - No brokerage defaults: commissions are negotiable and not set by law. Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split. Use the listing agreement and offer terms, or the agent's standard terms from their market profile.
-- Who pays the owner's title policy varies by county. Seller in most of Florida, buyer in parts of South and Southwest Florida. Confirm with the title company for counties not listed.
+- Who pays the owner's title policy varies by county (custom, not law). Seller in most of Florida; buyer in Miami-Dade, Broward, Sarasota and Collier; seller in Lee and Charlotte; Monroe varies by area, so the skills ask. Confirm with the title company for counties not listed.
 - Millage (2025 final) covers the unincorporated area and main cities of Orange, Seminole, Osceola, Lake, Volusia, Polk and Sumter. Rates vary within a city and within unincorporated areas (water management district, fire, transit, hospital and special districts), so the right number comes from the parcel's tax district code on the property appraiser record. Orange's school rate (6.449) is from the school board's adoption, not the appraiser sheet. Sumter's Villages, Wildwood and Bushnell totals marked "summed" add up the published rates; there's no official aggregate. The Villages' CDD charges are non-ad valorem and can add over $2,000 a year.
 - Property tax for the buyer is based on the purchase price, not the seller's bill. The estimate assumes the appraiser values the home at the purchase price, so it often runs high. Non-ad valorem assessments are excluded. Warn about the first-year escrow jump.
 - HOA estoppel fees are capped by statute; associations with delinquencies can charge more.

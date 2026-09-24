@@ -120,6 +120,7 @@
  "cr_note": "Closing costs estimated at {cc}. A seller credit can only pay actual closing costs, prepaid items, and escrows; any part above those costs is lost, and it can never be taken as cash. Seller-contribution limits: conventional 3% of price below 10% down, 6% at 10–25% down, 9% at 25% or more; FHA 6%; VA 4% in concessions plus normal closing costs. Confirm with your lender.",
  "cr_cc_est": "your lender's estimate of {amt}",
  "cr_cc_pct": "about {pct}% of the price (a placeholder until your lender's estimate)",
+ "cr_cc_taxes": ", plus the {names} on the loan ({amt} at {price})",
  "cr_buydown": "<strong>Or use the credit to lower your payment instead.</strong> A {credit} credit put toward a temporary 2-1 rate buydown at {price} (which costs about {cost}) would make your payment about {y1} in year one and {y2} in year two, then {full} after that. That trades cash-at-closing help for two years of lower payments.",
  "cr_buydown_short": "<strong>Or use the credit to lower your payment instead.</strong> A 2-1 rate buydown at {price} would cost about {cost}, more than the {credit} credit, so the seller would need to contribute more or you would cover the difference.",
  "prog_conv": "Conventional",

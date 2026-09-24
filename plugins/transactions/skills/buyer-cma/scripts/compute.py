@@ -106,7 +106,11 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     ji = pay.get("tax_jurisdiction_index", 0)
     program = finance.program(cs.get("loan_type", "conventional"))
     down = _frac(cs, "down_pct", "costs.credit_scenarios", 0.05)
-    closing_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios", 0.03)
+    closing_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
+    # CORE-16: with no lender figure, the market's share of price plus its loan taxes, itemized on the loan amount
+    itemize = closing_pct is None and not cs.get("closing_costs") and program != "cash"
+    if closing_pct is None:
+        closing_pct = market.get("closing_costs.buyer_closing_cost_pct") or 0.03
     cap = finance.concession_cap(program, down)
     agreement = _frac(cs, "buyer_broker_agreement_pct", "costs.credit_scenarios")  # CMA-4: the buyer's own agreement
     seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
@@ -117,20 +121,22 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         tax = finance.property_tax(price, market, j["school_mills"], j["total_mills"], R["costs"]["taxes"].get("homestead", True))["annual"] or 0
         p = finance.monthly_payment(price, program, down, pay["rate"], tax, pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0),
                                     flood_annual=flood_line(R, market)["annual"])
-        cc = cs["closing_costs"] if cs.get("closing_costs") else price * closing_pct
+        taxes = finance.loan_taxes(p["loan"], market) if itemize else []
+        cc = cs["closing_costs"] if cs.get("closing_costs") else price * closing_pct + sum(t["amount"] for t in taxes)
         bb_short = finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
         col = {"price": price, "credit": credit, "net": price - credit, "loan": p["loan"], "bb_short": bb_short,
                "cash": p["cash_down"] + cc - min(credit, cc) + bb_short, "payment": p["total"], "pi": p["pi"],
                "cap": price * cap if cap is not None else None,
                "over_cap": cap is not None and credit > price * cap + 1, "over_costs": credit > cc + 1,
-               "appraisal_room": median_adjusted - price, "closing_costs": cc}
+               "appraisal_room": median_adjusted - price, "closing_costs": cc, "loan_taxes": sum(t["amount"] for t in taxes)}
         base = base or col
         col["extra"] = col["payment"] - base["payment"]
         saved = base["cash"] - col["cash"]
         col["payback_years"] = saved / (col["extra"] * 12) if col["extra"] > 0 and saved > 0 else None
         cols.append(col)
     out = {"program": program, "down_pct": down, "columns": cols,
-           "closing_costs_given": bool(cs.get("closing_costs")), "closing_cost_pct": closing_pct}
+           "closing_costs_given": bool(cs.get("closing_costs")), "closing_cost_pct": closing_pct,
+           "loan_tax_labels": [t["label"] for t in finance.loan_taxes(1, market)] if itemize else []}
     bd = cs.get("buydown")
     if bd:
         col = next((c for c in cols if c["price"] == bd.get("price")), cols[-1])

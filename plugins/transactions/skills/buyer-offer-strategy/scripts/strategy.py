@@ -136,7 +136,12 @@ def prepare(B, A, market=None):
         kind = "cash" if fin == "cash" else "financed"
         if mpct is not None:
             BU["closing_cost_pct"] = round(mpct / 2 if fin == "cash" else mpct + PREPAIDS_PCT, 4)
+            # CORE-16: the market's loan taxes (rates on the loan) are itemized on top of its share
+            B["loan_taxes"] = finance.loan_taxes(1, costs) if fin != "cash" else []
             src = f"{costs.described('closing_costs.buyer_closing_cost_pct')}" + ("" if fin == "cash" else " plus prepaids")
+            taxes = B["loan_taxes"]
+            if taxes:
+                src += ", plus " + " and ".join(f"{t['label'].lower()} ({t['rate'] * 100:g}% of the loan)" for t in taxes)
         else:
             BU["closing_cost_pct"] = NATIONAL_CLOSING_PCT[kind]
             src = "national planning estimate"
@@ -209,10 +214,21 @@ def prepare(B, A, market=None):
 
 # --- money for the buyer -----------------------------------------------------
 
+def closing_costs(B, price):
+    """The buyer's closing costs at `price`: the share of price, plus the market's loan taxes when that share is the
+    market's own (a lender's figure already includes them)."""
+    BU = B["buyer"]
+    cc = price * BU["closing_cost_pct"]
+    if B.get("loan_taxes"):
+        loan = finance.loan_amount(price, BU["financing"], BU["down_pct"])
+        cc += sum(round(loan * t["rate"]) for t in B["loan_taxes"])
+    return round(cc)
+
+
 def buyer_cash(B, t):
     BU, fin = B["buyer"], B["buyer"]["financing"]
     down = round(t["price"] * BU["down_pct"])
-    cc = round(t["price"] * BU["closing_cost_pct"])
+    cc = closing_costs(B, t["price"])
     conc = min(t.get("seller_concessions", 0), cc)
     # CMA-4: what the buyer's own broker agreement charges beyond what the seller pays is the buyer's cost
     bb_short = finance.buyer_broker_shortfall(t["price"], BU.get("buyer_broker_agreement_pct"), t.get("buyer_broker_pct")) or 0
@@ -307,7 +323,7 @@ def build_offer(B, costs):
             price -= 1000
         why["price"] = f"Capped so the payment stays under ${BU['max_payment']:,}/mo" + (" (below the value range)" if price < V["cma_low"] else "")
     t = {"price": price}
-    cc = round(price * BU["closing_cost_pct"])
+    cc = closing_costs(B, price)
     down = round(price * BU["down_pct"])
     spare = BU["cash_available"] - BU["reserve_floor"] - down - cc
     cap = concession_cap(B, price)

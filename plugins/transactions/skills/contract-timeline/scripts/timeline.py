@@ -21,7 +21,7 @@ from datetime import date, datetime, time, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import contract_forms as cf, dates, profiles  # noqa: E402
 
-RULE_KEYS = ("day_count", "short_period_days", "end_time", "weekend_holiday_rollover", "before_closing_rollover", "holidays")
+RULE_KEYS = dates.RULE_KEYS
 RULE_DEFAULTS = {"rollover_time": "17:00", "before_closing_time": "17:00", "closing_time": "10:00"}
 FINANCING = {"cash": "Cash", "conventional": "Conventional", "fha": "FHA", "va": "VA", "usda": "USDA"}
 

@@ -37,8 +37,10 @@ class MatchesPrototype(unittest.TestCase):
         # Audit 2026-09-23 (OFR-3, OFR-4, OFR-17): FHA appraisal protection runs to closing and a gap clause earns no
         # listing-side credit, so there's no "stronger" option built on gap money; scores move by a point or three.
         self.assertEqual(got, {
-            "recommended": (365000, 65, 23550, 2450, 3150, 62.3, "Competitive"),
-            "lower_cost": (364000, 63, 18980, 7020, 3142, 52.8, "At Risk"),
+            # CORE-16: the loan taxes are itemized (0.55% of the FHA loan) and the lump share drops 0.5 points: about +$146 cash.
+            # CORE-17: the 2026 indexed homestead exemption lowers the payment $1.
+            "recommended": (365000, 65, 23696, 2304, 3149, 62.3, "Competitive"),
+            "lower_cost": (364000, 63, 19126, 6874, 3141, 52.8, "At Risk"),
         })
         t = r["terms"]["recommended"]
         self.assertEqual((t["seller_concessions"], t["deposit"], t["appraisal_gap"]), (2000, 11000, 0))
@@ -58,7 +60,11 @@ class MatchesPrototype(unittest.TestCase):
         r = analyze("fha-competitive.json")
         self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 344120)  # no built-in listing fee (CORE-5), $1,145 title fees
         self.assertTrue(any(a["field"] == "listing_fee_pct" for a in r["R"]["assumptions"]))
-        self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.035)     # Florida 3% + 0.5% prepaids
+        # CORE-16: Florida 2.5% + 0.5% prepaids, with the loan's note stamps (0.35%) and intangible tax (0.2%) itemized
+        self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.03)
+        self.assertEqual([t["rate"] for t in r["B"]["loan_taxes"]], [0.0035, 0.002])
+        loan = 365000 * 0.965 * 1.0175  # FHA: the upfront premium is financed, so it's taxed too
+        self.assertEqual(strategy.closing_costs(r["B"], 365000), round(365000 * 0.03 + round(loan * 0.0035) + round(loan * 0.002)))
 
 
 class MissingData(unittest.TestCase):

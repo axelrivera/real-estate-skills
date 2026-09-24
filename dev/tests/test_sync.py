@@ -75,5 +75,17 @@ class Sync(unittest.TestCase):
         self.assertIn("references/rules.md: edited", out)
 
 
+
+class SkillPaths(unittest.TestCase):
+    def test_no_sandbox_paths_in_skills(self):
+        """CORE-21: skills say "the outputs folder" and let the runtime decide; no /mnt paths."""
+        root = os.path.join(os.path.dirname(__file__), "..", "..", "plugins")
+        for dirpath, dirnames, files in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in ("_shared", "__pycache__")]
+            for name in files:
+                if name.endswith(".md"):
+                    with open(os.path.join(dirpath, name), encoding="utf-8") as f:
+                        self.assertNotIn("/mnt/", f.read(), os.path.join(dirpath, name))
+
 if __name__ == "__main__":
     unittest.main()

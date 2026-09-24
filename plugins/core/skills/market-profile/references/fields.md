@@ -2,7 +2,7 @@
 
 Every setting the skills read, what it means, and the format.
 
-For the owner's title policy the most exact source wins: a promulgated `rate_tiers` table, then the title company's `quote`, then `estimate_pct`. Rates are decimals (0.007 = 0.7%). Money is whole dollars. The built-in Florida values are in `scripts/_shared/markets/states/fl.md` and are good worked examples.
+For the owner's title policy the agent's own number wins: the title company's `quote`, then a promulgated `rate_tiers` table, then `estimate_pct`. Where the table is promulgated (Florida), it's also the legal premium, so a quote below it gets a warning to check the quote. Rates are decimals (0.007 = 0.7%). Money is whole dollars. The built-in Florida values are in `scripts/_shared/markets/states/fl.md` and are good worked examples.
 
 ## Identity
 
@@ -42,7 +42,7 @@ For the owner's title policy the most exact source wins: a promulgated `rate_tie
 | `paid` | `arrears` (seller credits buyer for the year so far) or `advance` |
 | `reassessed_on_sale` | `true` when the buyer's bill resets to the price |
 | `fallback_rate` | Annual tax as share of price when there's no bill or millage. Outside built-in markets this is enough; millage is optional |
-| `primary_residence_exemptions` | List of `{amount, levies}` or `{percent, levies}` (percent of value, `0.20` = 20%). `levies`: `all`, `non_school` (all but school) or `school` (school only). Example for Texas (confirm the current amount): `{amount: 140000, levies: school}` plus any local `{percent: 0.20, levies: non_school}` |
+| `primary_residence_exemptions` | List of `{amount, levies}` or `{percent, levies}`, optionally with `above` (the exemption covers only value above that amount; Florida's indexed second exemption starts at $50,000) and `year` (percent of value, `0.20` = 20%). `levies`: `all`, `non_school` (all but school) or `school` (school only). Example for Texas (confirm the current amount): `{amount: 140000, levies: school}` plus any local `{percent: 0.20, levies: non_school}` |
 | `millage` | List of `{county, district, code, year, school, total}` per $1,000 of taxable value. Rates quoted per $100 (Texas) × 10 = mills: $2.10 per $100 is 21 mills |
 | `millage_sources` | `{county: url}` for the millage figures |
 
@@ -58,6 +58,7 @@ For the owner's title policy the most exact source wins: a promulgated `rate_tie
 | Field | Meaning |
 |---|---|
 | `insurance_rate` | A buyer's new homeowner's policy, share of price per year, for payment estimates when there's no quote |
+| `loan_taxes` | Taxes on a financed buyer's loan, `[{label, rate}]` on the loan amount (Florida: note stamps 0.0035, intangible tax 0.002). Added on top of `buyer_closing_cost_pct`, so set that share without them |
 
 Holding and buyer insurance are optional: without them the offer skills use a national planning estimate and say so.
 
@@ -99,6 +100,16 @@ Only needed when the agent's MLS isn't built in and they'll upload MLS files.
 |---|---|
 | `extra_protected_classes` | State and local protected classes beyond the federal list, as a list ("age", "marital status", "source of income", "military status"). Every skill avoids wording about them, like the federal classes. Only what the agent confirms or a cited law or ordinance says; Florida and Texas state law add none, but cities and counties can. Can go in `county_overrides` when one county differs |
 
+## flood and condo
+
+Built in for Florida; set them for another state only from a cited statute or program rule.
+
+| Field | Meaning |
+|---|---|
+| `flood.citizens_requirement` | `{statute, schedule: [{from, min_replacement_cost}]}`: a state insurer's flood requirement by date and dwelling replacement cost (0 = every policy). Buyer payments cite it instead of saying flood insurance "isn't required" |
+| `flood.seller_disclosure` | `{statute, asks}`: a seller flood disclosure due at or before the contract. Offer reviews flag it until it's given |
+| `condo.rescission`, `condo.sirs_milestone`, `condo.hoa_rescission` | One sentence each on the buyer's cancellation rights; offer reviews quote them for a condo |
+
 ## county_overrides
 
-`{County name: {any of the sections above}}` for local exceptions, e.g. a county where the buyer pays for title. The agent's values, general or per county, always win over the built-in county customs.
+`{County name: {any of the sections above}}` for local exceptions, e.g. a county where the buyer pays for title. A value of `ask` means the custom varies within the county (Monroe's title payer): the skills treat it as unknown and ask. The agent's values, general or per county, always win over the built-in county customs.

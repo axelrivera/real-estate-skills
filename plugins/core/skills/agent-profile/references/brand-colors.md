@@ -18,7 +18,7 @@ Offer the three ways in plain words, and make skipping easy:
   - `suggestion.alternatives`: present when the image is only black, white or grey
   - `notes`: things to tell the agent, already in plain words
 
-If the website can't be opened (some sites block automated visits), ask for an image of the logo or a business card instead.
+If the website can't be opened (some sites block automated visits), ask for an image of the logo or a business card instead. PNG, JPG, GIF, WebP and SVG logos work; for a PDF or an iPhone HEIC photo the script returns `ok: false` with a note, so ask for a PNG or JPG (a screenshot is fine).
 
 ## Confirming
 

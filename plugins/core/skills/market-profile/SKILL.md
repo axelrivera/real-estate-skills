@@ -39,7 +39,7 @@ For each group of settings it shows the values, where they come from (`state` or
 - **Built-in market (Florida, Stellar):** summarize the defaults the agent is most likely to have opinions on, in plain words: title fees, who pays title in their county, and whether their city has millage. Commissions aren't built in (they're negotiable and not set by law): ask for the agent's standard listing and buyer-side terms if they want nets without typing them each time. Ask what they'd like to change. Most agents change one or two things or nothing.
 - **Anything else:** go through the `missing` groups in the order the agent's work needs them. Closing costs and brokerage matter for net sheets, contract dates for timelines, CMA for pricing. Ask in plain words, a group at a time.
 - **Documents help most.** A net sheet, a title company quote or a closing cost worksheet answers most closing cost questions at once. Read it and confirm what you took from it.
-- **Published figures** (a state's transfer tax, a county's tax rates, a promulgated title rate table) can be looked up when web search is available. Cite the source in the profile's notes and confirm with the agent. A rate table replaces the agent's own title quote in every net sheet, so when they gave a quote, save the quote and offer the table rather than adding it silently.
+- **Published figures** (a state's transfer tax, a county's tax rates, a promulgated title rate table) can be looked up when web search is available. Cite the source in the profile's notes and confirm with the agent. A saved title quote wins over a rate table in every net sheet, so save the quote the agent gives; add a table as well only when they want it for other prices.
 - **Contract time rules** (how days count, when a day ends, weekend rollover) come only from the agent's contract form or the agent, never from a web search: forms differ and a wrong rule moves every deadline.
 - **Several counties:** one profile with `area` listing them, and what differs by county in `county_overrides`. Asking for the county mostly matters in built-in markets, where county exceptions and millage exist.
 - **Local protected classes.** Once per profile, ask whether their state, county or city protects anyone beyond the federal fair housing list (for example age, marital status or source of income). Save what they confirm to `fair_housing.extra_protected_classes`; skip it when they don't know.
@@ -57,7 +57,7 @@ Fill in `assets/market-profile-template.md`:
 - "What's Customized" lists the agent's values in plain words. "Notes" holds sources and dates. Keep the template's headings as written (Title Case).
 - A cost name the agent gives (a transfer tax name saved as `deed_transfer_tax_label`, for example) shows as a row name on net sheets, so save it in Title Case: "Documentary Stamp Tax on the Deed", not "documentary stamp tax on the deed".
 
-Save it as `market-profile-<area>.md` (for example `market-profile-seminole.md`) in the outputs folder (`/mnt/user-data/outputs/` when it exists), then check it:
+Save it as `market-profile-<area>.md` (for example `market-profile-seminole.md`) in the outputs folder (the runtime provides it; never the skill's own folder), then check it:
 
 ```
 python3 scripts/check_market.py <path> --county <county>

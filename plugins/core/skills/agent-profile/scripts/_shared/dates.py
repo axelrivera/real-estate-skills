@@ -6,6 +6,10 @@
 """
 from datetime import date, timedelta
 
+# The contract-date rules a market must set (market profile `contract.*`); the timeline and the market check both
+# use this list (CORE-12).
+RULE_KEYS = ("day_count", "short_period_days", "end_time", "weekend_holiday_rollover", "before_closing_rollover", "holidays")
+
 _CACHE = {}
 
 

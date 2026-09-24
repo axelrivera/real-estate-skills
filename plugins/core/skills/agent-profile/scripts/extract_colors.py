@@ -1,6 +1,6 @@
 """Find brand colors in an image (logo, business card, flyer) or on a website.
 
-    python3 scripts/extract_colors.py logo.png
+    python3 scripts/extract_colors.py logo.png          # PNG, JPG, GIF, WebP or SVG
     python3 scripts/extract_colors.py https://janedoerealty.com
 
 Prints JSON: the candidate colors (hex, plain name, how light), a suggested primary, a suggested
@@ -86,13 +86,34 @@ def summarize(candidates, neutral_share=0.0):
 
 # --- images -----------------------------------------------------------------
 
-def from_image(path):
-    from PIL import Image
+def from_svg(path):
+    """CORE-20: an SVG logo, read as text: its fill, stroke and stop colors, weighted by how often each is used."""
+    with open(path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+    counts = Counter(hx for hx in _colors_in(text) if not design.is_neutral(hx))
+    total = sum(counts.values())
+    ranked = [(hx, w / total, "logo (SVG)") for hx, w in _merge(list(counts.items()))] if total else []
+    result = summarize(ranked)
+    if not ranked:
+        result["notes"].append("No brand colors written as color codes in this SVG. A PNG or JPG of the logo works instead.")
+    result["source"] = os.path.basename(path)
+    return result
 
-    with Image.open(path) as im:
-        im = im.convert("RGBA")
-        im.thumbnail((200, 200), Image.NEAREST)  # nearest keeps the logo's real colors (no blended edge pixels)
-        raw = im.tobytes()  # RGBA bytes; works across Pillow versions
+
+def from_image(path):
+    if path.lower().endswith(".svg"):
+        return from_svg(path)
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        with Image.open(path) as im:
+            im = im.convert("RGBA")
+            im.thumbnail((200, 200), Image.NEAREST)  # nearest keeps the logo's real colors (no blended edge pixels)
+            raw = im.tobytes()  # RGBA bytes; works across Pillow versions
+    except (UnidentifiedImageError, OSError) as e:  # PDF, HEIC, a corrupt file: say so instead of a traceback
+        return {"ok": False, "colors": [], "suggestion": {}, "source": os.path.basename(path),
+                "notes": [f"Can't read this file as an image ({e.__class__.__name__}). Send a PNG or JPG "
+                          "(a screenshot of the logo works), or the website address."]}
     pixels = [tuple(raw[i:i + 3]) for i in range(0, len(raw), 4) if raw[i + 3] >= 128]  # skip transparent
     if not pixels:
         return summarize([])
@@ -117,6 +138,14 @@ def from_image(path):
 
 
 # --- websites ---------------------------------------------------------------
+
+FONT_HOSTS = ("fonts.googleapis.com", "use.typekit.net", "fonts.bunny.net", "use.fontawesome.com")
+
+
+def _site(url):
+    """'https://www.janedoe.com/a.css' -> 'janedoe.com'."""
+    return urllib.parse.urlparse(url).netloc.lower().removeprefix("www.")
+
 
 def _colors_in(text):
     for m in _HEX_RE.finditer(text):
@@ -152,15 +181,13 @@ def from_html(html, base_url, fetch=_fetch):
 
     css = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html, re.I | re.S))
     css += "\n".join(re.findall(r'style=["\']([^"\']+)["\']', html, re.I))
-    host = urllib.parse.urlparse(base_url).netloc
+    host = _site(base_url)
     sheets = re.findall(r'<link[^>]+rel=["\']stylesheet["\'][^>]*>', html, re.I)
-    for tag in sheets[:6]:
-        href = re.search(r'href=["\']([^"\']+)', tag, re.I)
-        if not href:
-            continue
-        url = urllib.parse.urljoin(base_url, href.group(1))
-        if urllib.parse.urlparse(url).netloc != host:
-            continue  # skip third-party CSS (fonts, widgets)
+    urls = [urllib.parse.urljoin(base_url, h.group(1)) for h in
+            (re.search(r'href=["\']([^"\']+)', tag, re.I) for tag in sheets) if h]
+    own = [u for u in urls if _site(u) == host][:6]  # www. and the bare domain are the same site
+    other = [u for u in urls if _site(u) != host and not any(f in u for f in FONT_HOSTS)][:3]  # a CDN or site builder
+    for url in own + other:
         try:
             css += "\n" + fetch(url)
         except Exception:  # noqa: BLE001 - a missing stylesheet shouldn't stop the check

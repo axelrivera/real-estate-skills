@@ -259,5 +259,27 @@ class Find(unittest.TestCase):
             self.assertEqual([os.path.basename(x) for x in p.find("market", [tmp])], ["tx.md"])
 
 
+
+class AuditMarketData(unittest.TestCase):
+    """CORE-7 (verified: docs/audits/2026-09-23-verification.md)."""
+
+    def test_no_mls_without_a_county(self):
+        m = p.load_market(state="FL")
+        self.assertIsNone(m.mls)  # Florida has several MLSs: ask
+        self.assertTrue(any("MLS wasn't given" in n for n in m.notes))
+
+    def test_pinellas_is_stellar_brevard_is_not(self):
+        self.assertEqual(p.load_market(state="FL", county="Pinellas").mls, "Stellar")
+        self.assertIsNone(p.load_market(state="FL", county="Brevard").mls)
+
+    def test_title_payer_by_county(self):
+        payer = lambda c: p.load_market(state="FL", county=c).get("closing_costs.owner_title.payer")  # noqa: E731
+        self.assertEqual([payer(c) for c in ("Collier", "Broward", "Lee", "Charlotte", "Seminole")],
+                         ["buyer", "buyer", "seller", "seller", "seller"])
+        m = p.load_market(state="FL", county="Monroe")
+        self.assertIsNone(m.get("closing_costs.owner_title.payer"))  # varies by area: ask
+        self.assertTrue(any("owner_title.payer varies by area" in n for n in m.notes))
+        self.assertFalse(any("varies by area" in n for n in p.load_market(state="FL", county="Seminole").notes))
+
 if __name__ == "__main__":
     unittest.main()

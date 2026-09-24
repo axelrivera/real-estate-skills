@@ -23,6 +23,7 @@ SCHEMA = 1
 MARKETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "markets")
 AGENT_REQUIRED = ("name", "brokerage")
 AGENT_FIELDS = ("name", "team", "brokerage", "license", "phone", "email", "website")  # display order
+BROKERAGE_FIELDS = ("brokerage_license", "brokerage_address", "brokerage_phone")  # printed in the notices when set
 
 STATES = {
     "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado",
@@ -109,8 +110,26 @@ def load_agent(path=None):
     data, sections = read(path) if path else ({}, {})
     if path and data.get("profile") != "agent":
         raise ProfileError("This file isn't an agent profile.")
-    errors = [f for f in AGENT_REQUIRED if not str(data.get(f) or "").strip()]
     warnings = []
+    b = data.get("brokerage")
+    if isinstance(b, dict):  # CORE-15: brokerage: {name, license, address, phone}
+        data = {**data, "brokerage": b.get("name"), **{f"brokerage_{k}": b.get(k) for k in ("license", "address", "phone")
+                                                          if b.get(k) not in (None, "") and not data.get(f"brokerage_{k}")}}
+    licenses = data.get("licenses") or []
+    if not isinstance(licenses, list) or not all(isinstance(x, dict) for x in licenses):
+        warnings.append("List licenses as `licenses:` entries with state, type and number.")
+        licenses = []
+    for f in (*AGENT_FIELDS, *BROKERAGE_FIELDS):  # CORE-14: YAML reads 0123456 as octal and a phone as a number
+        v = data.get(f)
+        if v not in (None, "") and not isinstance(v, str):
+            warnings.append(f"{f} is written as a number ({v}): wrap it in quotes so it's kept exactly as written.")
+    for i, x in enumerate(licenses):
+        if x.get("number") not in (None, "") and not isinstance(x.get("number"), str):
+            warnings.append(f"licenses[{i}].number is written as a number: wrap it in quotes so it's kept exactly.")
+    if not data.get("license") and licenses:
+        data = {**data, "license": "; ".join(" ".join(str(x[k]) for k in ("state", "type", "number") if x.get(k))
+                                             for x in licenses)}
+    errors = [f for f in AGENT_REQUIRED if not str(data.get(f) or "").strip()]
     brand = data.get("brand")
     if brand is not None and not isinstance(brand, dict):
         warnings.append("Brand colors should be listed under 'brand' as primary, buyer_primary or seller_primary.")
@@ -121,6 +140,8 @@ def load_agent(path=None):
                 warnings.append(w)
     return {
         **{f: data.get(f) for f in AGENT_FIELDS},
+        **{f: data.get(f) for f in BROKERAGE_FIELDS},
+        "licenses": licenses,
         "brand": brand or {},
         "voice": sections.get("voice", ""),
         "disclaimers": sections.get("disclaimers", ""),
@@ -175,6 +196,9 @@ def _merge(base, over, sources, source, prefix=""):
                 sources[path] = source
 
 
+ASK = "ask"  # a built-in value that varies locally (Monroe's title custom): treated as missing, with a note
+
+
 class Market:
     """Merged market values with the source of each one.
 
@@ -195,12 +219,13 @@ class Market:
         return self.data.get("mls")
 
     def get(self, path, default=None):
+        """The value at a dotted path. ASK ("ask": the custom varies, confirm it locally) reads as missing."""
         node = self.data
         for part in path.split("."):
             if not isinstance(node, dict) or part not in node:
                 return default
             node = node[part]
-        return node
+        return default if node == ASK else node
 
     def source(self, path):
         if path in self.sources:
@@ -234,8 +259,10 @@ def _covers(layer, state, county):
     area = (layer.get("coverage") or {}).get(state)
     if not area:
         return False
-    if area == "all" or not county:
+    if area == "all":
         return True
+    if not county:  # CORE-7: a state can have several MLSs (Miami-Dade and Palm Beach aren't Stellar): ask
+        return False
     return _county_key(county) in {_county_key(c) for c in area}
 
 
@@ -328,6 +355,10 @@ def load_market(path=None, state=None, county=None, mls=None):
         _merge(data, own, sources, "profile")
     if mls_name and not data.get("mls"):
         data["mls"], sources["mls"] = mls_name, "input"  # an MLS that isn't built in is still the one in use
+    for leaf, value in _leaves(data):
+        if value == ASK and not leaf.startswith("county_overrides."):
+            notes.append(f"{leaf} varies by area here{' in ' + county if county else ''}: confirm it with the title company "
+                         "or the agent, then save it to the market profile.")
     data["state"] = want
     sources["state"] = "profile" if path else "state" if want in states else "input" if want else "missing"
     return Market(data, sources, notes)
