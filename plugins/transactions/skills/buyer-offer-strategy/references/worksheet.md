@@ -7,7 +7,7 @@ The worksheet turns the chosen option into what the agent types into the contrac
 The worksheet follows the FR/BAR **AS IS** contract's paragraphs (1 parties and property, 2 price and deposits, 3 time for acceptance, 4 closing, 6 occupancy, 8 financing, 9 closing costs and title, 12 inspection). Paragraph numbers and rider titles change between revisions: verify against the current form in Form Simplicity.
 
 - **AS IS** (default): the buyer can cancel for any reason during the inspection period; no seller repairs. The usual choice for competitive offers.
-- **Standard:** seller repair obligations up to a repair limit. Only when the buyer asks (a well-kept home, soft market, no competition). Set `worksheet.contract_form: "standard"`.
+- **Standard:** no inspection walk-away; the seller pays repairs up to the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank; set others in `worksheet.repair_limits`). Only when the buyer asks (a well-kept home, soft market, no competition). Set `worksheet.contract_form: "standard"` **before** running: the options are scored on the same form the worksheet prints, so a changed form means a re-run.
 
 ## Other States
 

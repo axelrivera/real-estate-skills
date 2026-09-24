@@ -113,7 +113,8 @@ class OtherStates(unittest.TestCase):
         self.assertTrue(any("transfer tax" in n for n in oe.preliminary_inputs(R)))
         text = json.dumps(R["assumptions"]) + json.dumps(R["listing"]["cost_notes"])
         self.assertNotIn("Florida", text)
-        self.assertIsNone(o["contract_form"])  # no FR/BAR AS IS default outside Florida
+        self.assertEqual(o["contract_form"], "other")  # no FR/BAR form (or its math) outside Florida
+        self.assertTrue(o["inspection_walkaway"])
 
     def test_market_profile_fills_the_gaps(self):
         import tempfile

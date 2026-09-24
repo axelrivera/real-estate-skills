@@ -92,7 +92,9 @@ Use when the agent has a title company quote or the county differs from the mark
 | `seller_concessions` | $ | 0 | **high** |
 | `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else market default | **high** |
 | `home_warranty` | $ seller pays | 0 | — |
-| `contract_form` | `as_is` `standard` | `as_is` in Florida | — |
+| `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
+| `repair_limits` | Standard only: `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |
+| `inspection_walkaway` | Other contracts only: `false` when the buyer can cancel just for listed defects | `true` (an option or due-diligence period) | — |
 | `inspection_days` | days | 10 | med |
 | `loan_approval_days` | days | 30 (financed) | low |
 | `appraisal_contingency` | days, `true` or `false` | 21 days if financed | med |

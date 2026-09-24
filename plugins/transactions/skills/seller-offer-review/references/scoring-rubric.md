@@ -7,7 +7,7 @@ The score estimates how likely an offer is to close on its terms. Eight criteria
 | Financing Type & Down Payment | 20 | cash 5 · conv ≥20% 4 · conv ≥5% 3 · conv <5% 2 · VA 3 · FHA/USDA 2 |
 | Approval / Funds Verified | 10 | POF verified or full UW 5 · DU/LP approved 4 · pre-approval 3 · pre-qual 2 · none 1. Financed and lender not called → capped at 3 |
 | Appraisal Risk | 20 | cash or waived 5. Otherwise exposure = price − (CMA mid + gap): price ≤ mid 5 · exposure ≤ 0 4 · ≤1% of price 3 · ≤2.5% 2 · more 1 |
-| Contingency Exposure | 15 | sale-of-home contingency 1. Otherwise the lower of: days until firm ≤7 5 · ≤14 4 · ≤30 3 · ≤45 2 · more 1; inspection period (the walk-away-for-any-reason window) ≤7 5 · ≤10 4 · ≤14 3 · more 2 |
+| Contingency Exposure | 15 | sale-of-home contingency 1. Otherwise the lower of: days until firm ≤7 5 · ≤14 4 · ≤30 3 · ≤45 2 · more 1; inspection period (the walk-away-for-any-reason window; AS IS and other contracts' option periods only) ≤7 5 · ≤10 4 · ≤14 3 · more 2. Days until firm count the inspection period only when it's a walk-away; on the FR/BAR Standard they run through the repair election (inspection + 10 + 5 days), since either party may terminate when repairs exceed a limit |
 | Deposit Strength | 10 | ≥10% 5 · ≥3% 4 · ≥2% 3 · ≥1% 2 · less 1 · unknown 3 |
 | Fit with Seller's Timeline | 10 | with a deadline: ≥7 days early 5 · on time 4 · ≤7 days late 2 · later 1. Without: ≤30 days 5 · ≤45 4 · ≤60 3 · more 2 |
 | Property-Condition / Insurance Risk | 10 | cash 5. Financed: start at 4; roof ≥14 yrs −1 (≥20 yrs −2); FHA/VA/USDA −1; flood zone A/V −1; buyer has an insurance quote +1 (range 1–5) |
@@ -15,7 +15,7 @@ The score estimates how likely an offer is to close on its terms. Eight criteria
 
 ## Downside Case
 
-The price if the appraisal lands at the CMA midpoint (plus any gap the buyer covers), minus the market's typical post-inspection credit (Florida: about 0.7% of price on contracts with an inspection period). Cash and waived-appraisal offers keep their price. Outside a market with a credit figure, the downside leaves the credit out and says so.
+The price if the appraisal lands at the CMA midpoint (plus any gap the buyer covers), minus the seller's repair cost for the contract's form: on FR/BAR AS IS, the market's typical post-inspection credit (Florida: about 0.7% of price); on the FR/BAR Standard, the General Repair Limit the seller owes (1.5% of price if blank); on another contract, the market's credit only when the agent's market profile sets one for their own contract (never Florida's AS IS figure). Cash and waived-appraisal offers keep their price. Without a figure, the downside leaves repairs out and says so.
 
 ## Ranking (Multiple Offers)
 

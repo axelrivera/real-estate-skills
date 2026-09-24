@@ -71,6 +71,7 @@ dev/                     # dev tooling, never shipped
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
 | `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` or a fenced markdown block |
+| `shared/contract_forms.py` | Which contract rules apply to which form: FR/BAR AS IS (inspection walk-away, post-inspection credit) vs. Standard (repair notices, repair limits) vs. any other contract. The offer engine, buyer-offer-strategy and contract-timeline route through it, so the forms' math never mixes |
 | `shared/offer_engine.py` | Offer analysis for both offer skills: listing and offer defaults with ranked assumptions, seller net sheet (via `finance.seller_net`), appraisal downside, certainty score, risk flags, counters, multi-offer ranking |
 | `shared/mls.py` | MLS export reader (columns from the market profile) and market statistics, trend line |
 | `shared/prose.py` | The render check: em dashes in prose and clear fair-housing phrases in the data file stop the render, naming each field |

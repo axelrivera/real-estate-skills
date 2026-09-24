@@ -16,7 +16,7 @@ import sys
 from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import finance, handoff, offer_engine as oe, profiles  # noqa: E402
+from _shared import contract_forms as cf, finance, handoff, offer_engine as oe, profiles  # noqa: E402
 
 money, rnd = oe.money, oe.rnd
 COMP_LABEL = {0: "Only Offer", 1: "1 Competing Offer", 2: "2–3 Competing", 3: "Cash or 4+ Competing"}
@@ -85,7 +85,8 @@ def prepare(B, A, market=None):
         raise oe.OfferError("The list price is needed (property.list_price).")
     costs = oe.load_costs(P, market)
     if market is None and not oe.state_of(P):
-        A.add("property", "state", costs.state, "Property's state not given: Florida costs assumed", "high")
+        A.add("property", "state", None, "Property's state not given: no built-in costs or contract rules were used. "
+              "Ask for the state", "high")
     lp = P["list_price"]
     if not (V.get("cma_low") and V.get("cma_high")):
         A.add("value", "cma_low / cma_high", "list price", "No value range: run the buyer CMA or enter one; list price used as value", "high")
@@ -178,6 +179,17 @@ def prepare(B, A, market=None):
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
     LS["listing_fee_pct"] = LS.get("listing_fee_pct")
     B["analysis_date"] = today
+    # One contract form for the options, the listing-side scoring and the worksheet: AS IS and Standard math never mix.
+    W = B.get("worksheet") or {}
+    form = cf.normalize(W.get("contract_form") or BU.get("contract_form"))
+    if form is None:
+        form = A.add("buyer", "contract_form", cf.AS_IS,
+                     "Contract form not chosen: planned on the FR/BAR AS IS, the usual form for a competitive offer. If the "
+                     "buyer uses the Standard form, set worksheet.contract_form to standard and re-run: its repair limits "
+                     "and inspection rules change the numbers", "med") \
+            if cf.frbar_market(costs.get("contract.forms")) else cf.OTHER
+    B["contract_form"] = form
+    B["repair_limits"] = W.get("repair_limits") or BU.get("repair_limits")
     return B, costs
 
 
@@ -235,6 +247,8 @@ def engine_data(B, variants):
                   "appraisal_gap", "closing_days", "sale_contingency_days", "kickout", "escalation", "contract_form"):
             if t.get(k) is not None:
                 o[k] = t[k]
+        if B.get("repair_limits"):
+            o["repair_limits"] = B["repair_limits"]
         if BU["financing"] != "cash":
             o["appraisal_contingency"] = t.get("appraisal_days", 21)
         offers.append(o)
@@ -335,7 +349,7 @@ def build_offer(B, costs):
         else:
             t["buyer_broker_pct"] = 0
             why["buyer_broker_pct"] = "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
-    t["contract_form"] = "as_is" if "FR/BAR AS IS" in (costs.get("contract.forms") or []) else None
+    t["contract_form"] = B["contract_form"]
     t["insurance_quote"] = True if BU.get("insurance_quote") else "planned"  # scored as submitted with a quote
     why["insurance_quote"] = ("Quote in hand: include it with the offer" if BU.get("insurance_quote") else
                               "Get the quote before submitting; listing agents weigh it on older roofs")
@@ -688,18 +702,19 @@ def worksheet(r, variant=None):
     B, costs = r["B"], r["costs"]
     P, BU, C, W = B["property"], B["buyer"], B["competition"], B.get("worksheet") or {}
     t, o = r["terms"][variant], r["O"][variant]
-    frbar = "FR/BAR AS IS" in (costs.get("contract.forms") or [])
+    form = B["contract_form"]  # resolved once in prepare(), the same form the options were scored on
+    frbar = form in cf.FRBAR
     fin = BU["financing"]
     financed = fin != "cash"
     price = t["price"]
     loan = round(price * (1 - BU["down_pct"])) if financed else 0
     close = oe.prior_weekday(B["analysis_date"] + timedelta(days=t["closing_days"]) if t.get("closing_days") else o["close"])
-    form = W.get("contract_form") or t.get("contract_form") or ("as_is" if frbar else None)
     if frbar:
         form_name = ("FR/BAR AS IS Residential Contract for Sale and Purchase" if form == "as_is"
                      else "FR/BAR Residential Contract for Sale and Purchase (Standard)")
         form_why = ("Buyer may cancel for any reason during the inspection period; no seller repair obligation. Usual choice for competitive offers."
-                    if form == "as_is" else "Seller repair obligations up to a repair limit; set the limit per the form version.")
+                    if form == cf.AS_IS else "No inspection walk-away; the seller pays repairs up to the General Repair, WDO and "
+                    "Permit Limits (Para. 9(a), 1.5% of price each if blank).")
     else:
         form_name = W.get("contract_name") or "Your state's standard residential purchase contract"
         form_why = "Paragraph numbers vary by form, so find each entry by its name and confirm the form version."
@@ -748,6 +763,10 @@ def worksheet(r, variant=None):
         (para("9"), "Survey", "Buyer's expense (recommended)", "Lender may require"),
         (para("12"), "Inspection Period", f"**{t['inspection_days']} days**", f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"),
     ]
+    if form == cf.STANDARD:
+        lim = cf.repair_limits(price, {"repair_limits": B.get("repair_limits")})
+        rows.append((para("9"), "Repair Limits", f"General **{money(lim['general'])}** · WDO **{money(lim['wdo'])}** · "
+                     f"Permits **{money(lim['permit'])}**", "Para. 9(a); 1.5% of price each when left blank"))
 
     names = FRBAR_RIDERS if frbar else GENERIC_RIDERS
     riders = []  # (name, inputs, why)

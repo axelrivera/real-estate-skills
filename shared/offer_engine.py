@@ -18,7 +18,7 @@ import math
 import re
 from datetime import date, datetime, timedelta
 
-from . import finance, profiles
+from . import contract_forms as cf, finance, profiles
 
 FIN_LABEL = {k: v["label"] for k, v in finance.LOAN_PROGRAMS.items()}
 APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full underwritten approval",
@@ -242,7 +242,7 @@ def prepare_listing(data, A, costs):
     L["title_customary_payer"] = costs.get("closing_costs.owner_title.payer")
     if L["title_customary_payer"] is None:
         A.add("listing", "title_payer", "unknown", "Who customarily pays the owner's title policy wasn't given: left out of the net", "med")
-    L["contract_form_default"] = "as_is" if "FR/BAR AS IS" in (costs.get("contract.forms") or []) else None
+    L["frbar_market"] = cf.frbar_market(costs.get("contract.forms"))
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
     L["deposit_norm"] = costs.get("contract.typical_deposit_pct") or 0.01  # a strong deposit here, share of price
 
@@ -419,7 +419,20 @@ def prepare_offer(o, L, S, A):
     elif o.get("buyer_broker_pct") is None:
         o["buyer_broker_pct"] = o["buyer_broker_amount"] / o["price"]
     o["home_warranty"] = o.get("home_warranty") or 0
-    o["contract_form"] = o.get("contract_form") or L["contract_form_default"]
+    # One form per offer, and only that form's rules (contract_forms): AS IS and Standard math never mix.
+    form = cf.normalize(o.get("contract_form"))
+    if form is None:
+        form = A.add(sc, "contract_form", cf.AS_IS,
+                     "Contract form not given: assumed FR/BAR AS IS. The Standard form has no inspection walk-away and makes "
+                     "the seller pay repairs up to its repair limits, so confirm which form was used", "high") \
+            if L["frbar_market"] else cf.OTHER
+    o["contract_form"] = form
+    o["inspection_walkaway"] = cf.inspection_walkaway(form, o)
+    if form == cf.STANDARD:
+        try:
+            o["repair_limits"] = cf.repair_limits(o["price"], o)
+        except cf.FormError as e:
+            raise OfferError(f"Offer {o.get('id', '?')}: {e}") from e
     o["inspection_assumed"] = o.get("inspection_days") in (None, "")
     o["inspection_days"] = given(o, "inspection_days", 10, A, sc, "Inspection period not provided: assumed 10 days", "med")
     o["loan_approval_days"] = 0 if not o["financed"] else given(
@@ -443,9 +456,40 @@ def prepare_offer(o, L, S, A):
         o["close"] = eff + timedelta(days=days)
     o["close_days"] = (o["close"] - eff).days
     o["title_by"] = o.get("title_by") or L["title_customary_payer"]
-    o["risk_days"] = max(o["inspection_days"], o["loan_approval_days"], o["appraisal_days"], o["sale_contingency_days"])
+    o["risk_days"] = risk_days(o)
     o["firm_date"] = eff + timedelta(days=o["risk_days"])
     return o
+
+
+def risk_days(o):
+    """Days until the buyer can no longer get the deposit back under a contingency.
+
+    An inspection walk-away (AS IS, an option period) counts in full. The Standard form has none, but either party
+    may terminate when repairs exceed a limit, which runs at least to the repair election (notice + 10 + 5 days).
+    Another contract without a walk-away doesn't count the inspection period."""
+    if o["inspection_walkaway"]:
+        insp = o["inspection_days"]
+    elif o["contract_form"] == cf.STANDARD and o["inspection_days"]:
+        insp = o["inspection_days"] + cf.STANDARD_REPAIR_WINDOW_DAYS
+    else:
+        insp = 0
+    return max(insp, o["loan_approval_days"], o["appraisal_days"], o["sale_contingency_days"])
+
+
+def repair_reserve(o, L):
+    """The downside case's repair cost to the seller, by form.
+
+    AS IS: the market's typical post-inspection credit. Standard: the General Repair Limit the seller owes. Another
+    contract: the market's figure only when the market's rules aren't FR/BAR (the agent's own number for their
+    contract); a Florida AS IS figure never applies to a Standard or another form."""
+    if not o["inspection_days"]:
+        return 0, None
+    if o["contract_form"] == cf.STANDARD:
+        return rnd(o["repair_limits"]["general"], 500), "Repairs up to the General Repair Limit (Standard)"
+    if o["contract_form"] == cf.AS_IS or not L["frbar_market"]:
+        if L["repair_reserve_pct"]:
+            return rnd(L["repair_reserve_pct"] * o["price"], 500), "Post-Inspection Repair Credit (Est.)"
+    return 0, None
 
 
 # --- money -------------------------------------------------------------------
@@ -454,7 +498,7 @@ _LINE_KEYS = {"listing_fee": "listing", "buyer_broker_fee": "bb", "transfer_tax"
               "title_fees": "settle", "estoppel": "estoppel"}
 
 
-def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0):
+def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repair_label=None):
     """Seller net at `price`, itemized with stable keys. Market costs come from finance.seller_net."""
     has_hoa = L["hoa_monthly"] is None or L["hoa_monthly"] > 0  # unknown HOA: charge the estoppel (conservative)
     base = finance.seller_net(price, costs, listing_fee_pct=S["listing_fee_pct"], buyer_broker_fee_pct=bb_pct, has_hoa=has_hoa)
@@ -475,7 +519,7 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0):
     days = (close - date(close.year, 1, 1)).days
     tax = round(L["annual_tax"] * days / 365) if L["annual_tax"] and L["tax_in_arrears"] else 0
     lines = [("price", "Offer Price", price), ("conc", "Seller-Paid Closing Costs / Concessions", -conc),
-             ("repair", "Post-Inspection Repair Credit (Est.)", -repair)]
+             ("repair", repair_label or "Post-Inspection Repair Credit (Est.)", -repair)]
     for key in ("listing", "bb", "transfer", "title", "settle", "estoppel"):
         lines.append((key, labels[key], -found.get(key, ("", 0))[1]))
     lines += [("warranty", "Home Warranty", -warranty),
@@ -544,9 +588,13 @@ def auto_scores(o, L, S):
     else:
         by_days = 5 if rd <= 7 else 4 if rd <= 14 else 3 if rd <= 30 else 2 if rd <= 45 else 1
         ins = o["inspection_days"]
-        by_insp = 5 if ins <= 7 else 4 if ins <= 10 else 3 if ins <= 14 else 2  # walk-away-for-any-reason window weighs most
-        s["contingency"] = min(by_days, by_insp)
-        why["contingency"] = f"{rd} days until firm; {ins}-day inspection"
+        if o["inspection_walkaway"]:
+            by_insp = 5 if ins <= 7 else 4 if ins <= 10 else 3 if ins <= 14 else 2  # walk-away-for-any-reason window weighs most
+            s["contingency"] = min(by_days, by_insp)
+            why["contingency"] = f"{rd} days until firm; {ins}-day inspection"
+        else:  # repair notices only (Standard): risk_days already runs through the repair election
+            s["contingency"] = by_days
+            why["contingency"] = f"{rd} days until firm; {ins}-day repair-notice period, no walk-away"
 
     if o["deposit"] is None:
         s["deposit"], why["deposit"] = 3, "Deposit not provided (assumed average)"
@@ -732,6 +780,10 @@ def flags_for(o, L, S):
         add("Low", f"{o['close']:%b %-d} is a {o['close']:%A}.", "Move closing to the prior Friday.")
     if o["inspection_days"] >= 15:
         add("Med", f"{o['inspection_days']}-day inspection period.", "Counter to 7–10 days.")
+    if o["contract_form"] == cf.STANDARD:
+        lim = o["repair_limits"]
+        add("Med", f"Standard contract: the seller pays repairs up to {money(lim['general'])} general, {money(lim['wdo'])} WDO "
+                   f"and {money(lim['permit'])} permits (Para. 9(a)).", "Price that in, or counter on the AS IS form.")
     ob = S["offered_buyer_broker_pct"]
     if ob is not None and o["buyer_broker_pct"] > ob + 1e-9:
         add("Med", f"Buyer-broker request ({o['buyer_broker_pct']:.1%}) exceeds the {ob:.1%} the seller agreed to offer.",
@@ -787,7 +839,8 @@ def propose_counter(o, L, S):
     if o["inspection_days"] > 7:
         t["inspection_days"] = 7
         rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""), "7 days",
-                     f"Shorter walk-away window; seller shares the {L['reports']}"))
+                     (f"Shorter walk-away window; seller shares the {L['reports']}" if o["inspection_walkaway"] else
+                      f"Repair notices sooner; seller shares the {L['reports']}")))
     if o["sale_contingency_days"]:
         t["sale_contingency_days"] = min(21, o["sale_contingency_days"])
         rows.append(("Sale-of-Home Contingency", f"{o['sale_contingency_days']} days" + (" + kick-out" if o["kickout"] else ""),
@@ -844,12 +897,10 @@ def _sheet(t, L, S, costs, repair=0):
 def analyze_offer(o, L, S, costs):
     o["ns"] = net_sheet(o["price"], o["seller_concessions"], o["buyer_broker_pct"], o["home_warranty"], o["close"], L, S, costs)
     o["downside_price"] = downside_price(o, L)
-    repair = 0
-    if o["contract_form"] != "standard" and o["inspection_days"] and L["repair_reserve_pct"]:
-        repair = rnd(L["repair_reserve_pct"] * o["price"], 500)
+    repair, repair_label = repair_reserve(o, L)
     o["repair_reserve"] = repair
     o["ns_down"] = net_sheet(o["downside_price"], o["seller_concessions"], o["buyer_broker_pct"], o["home_warranty"],
-                             o["close"], L, S, costs, repair)
+                             o["close"], L, S, costs, repair, repair_label)
     o["score"] = score_offer(o, L, S)
     o["flags"] = flags_for(o, L, S)
     o["blocking"] = [f for f in o["flags"] if f["sev"] == "Blocking"]
@@ -863,7 +914,7 @@ def analyze_offer(o, L, S, costs):
     oc = dict(o)
     oc.update(price=ct["price"], appraisal_gap=ct["appraisal_gap"], deposit=ct["deposit"], inspection_days=ct["inspection_days"],
               sale_contingency_days=ct["sale_contingency_days"], close=ct["close"])
-    oc["risk_days"] = max(oc["inspection_days"], oc["loan_approval_days"], oc["appraisal_days"], oc["sale_contingency_days"])
+    oc["risk_days"] = risk_days(oc)
     oc["close_days"] = (oc["close"] - L["analysis_date"]).days
     if o["financed"] and o["approval"] in ("prequal", "none"):
         oc["approval"] = "preapproval"

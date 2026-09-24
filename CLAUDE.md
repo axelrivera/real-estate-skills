@@ -34,6 +34,7 @@ sources/                            # prototype skills, local only, git-ignored
 - **Labels are Title Case** (headings, column headers, row names, tiles, legends, card and slide titles). Sentences, notes and table values stay sentence case. See [docs/skill-guidelines.md](docs/skill-guidelines.md#skillmd). Check with `make style-check`.
 - **English only.** No Spanish or other-language modes, label files or templates, even where a prototype in `sources/` has them.
 - **No silent Florida defaults** outside the built-in Florida/Stellar market. Ask, or label the assumption and mark the output Preliminary.
+- **Contract forms never mix.** FR/BAR AS IS and Standard rules (inspection walk-away, repair reserve vs. repair limits, deadlines) are routed only through `shared/contract_forms.py`; never branch on the form name elsewhere, never run one form's math on the other, and never default a missing form silently (ask, or record a high-impact assumption).
 - **Skill names** carry no output format (`-pdf`), and use a `buyer-` / `seller-` prefix when a skill serves one side.
 
 ## Workflow

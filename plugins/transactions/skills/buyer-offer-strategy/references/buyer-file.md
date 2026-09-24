@@ -81,4 +81,4 @@ The agent's call on any recommended term: `price`, `seller_concessions`, `deposi
 
 ## worksheet
 
-`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id`, `hoa_name`, `personal_property`, `acceptance_deadline`, `contract_form` (`as_is` / `standard`, Florida), `contract_name` (the form's name outside Florida). Missing names print as red blanks.
+`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id`, `hoa_name`, `personal_property`, `acceptance_deadline`, `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name outside Florida). Missing names print as red blanks.

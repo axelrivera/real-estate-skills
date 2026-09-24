@@ -16,7 +16,8 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 | `occupancy` | Para. 6 |
 | `personal_property` | Para. 1 (items included / excluded) |
 | `seller_concessions`, `home_warranty`, `title_by` | Para. 9 and additional terms. Seller-paid closing costs are often a dollar amount or % in additional terms |
-| `inspection_days`, `contract_form` | AS IS: Para. 12 inspection period and the buyer's right to cancel. Standard: inspection and repair provisions with a repair limit |
+| `inspection_days`, `contract_form` | Read the form's title: "AS IS Residential Contract for Sale and Purchase" is `as_is` (Para. 12: the buyer may cancel for any reason); "Residential Contract for Sale and Purchase" is `standard` (no walk-away; the seller pays repairs up to the repair limits). Never guess: the two run different math |
+| `repair_limits` | Standard only, Para. 9(a): the General Repair, WDO and Permit Limits (1.5% of price each if blank) |
 | `buyer_broker_pct` | Additional terms, a compensation addendum, or the buyer-broker agreement. Ask if it's not in the offer |
 | `appraisal_days`, `appraisal_gap` | Appraisal Contingency rider; FHA/VA rider (amendatory clause = appraisal contingency); additional terms for gap language |
 | `sale_contingency_days`, `kickout` | Sale of Buyer's Property rider and kick-out clause |
@@ -41,7 +42,7 @@ The fields are the same everywhere; only where they sit changes. Read the contra
 
 Two cautions outside Florida:
 
-- **Walk-away windows differ.** A Texas option period or North Carolina due-diligence period lets the buyer walk for any reason, like an AS IS inspection period. Put its length in `inspection_days` (it's the walk-away window the timeline and certainty use, not the loan or appraisal dates); set `contract_form` to `standard` only when the buyer can cancel just for listed defects.
+- **Walk-away windows differ.** A Texas option period or North Carolina due-diligence period lets the buyer walk for any reason, like an AS IS inspection period. Put its length in `inspection_days` (it's the walk-away window the timeline and certainty use, not the loan or appraisal dates); leave `contract_form` as the form's name (not `standard`, which means the FR/BAR Standard and its repair limits), and set `inspection_walkaway: false` only when the buyer can cancel just for listed defects.
 - **Costs and customs aren't built in.** Transfer tax, who pays title and typical fees come from the agent's market profile (`--market`). Without one the net leaves them out and the answer is Preliminary; ask the agent for a recent settlement statement or the title company's quote.
 
 ## Extraction Tips

@@ -19,7 +19,7 @@ import sys
 from datetime import date, datetime, time, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import dates, profiles  # noqa: E402
+from _shared import contract_forms as cf, dates, profiles  # noqa: E402
 
 RULE_KEYS = ("day_count", "short_period_days", "end_time", "weekend_holiday_rollover", "before_closing_rollover", "holidays")
 RULE_DEFAULTS = {"rollover_time": "17:00", "before_closing_time": "17:00", "closing_time": "10:00"}
@@ -147,7 +147,7 @@ def frbar_deadlines(c):
     riders = [r.lower() for r in c.get("riders", [])]
     has = lambda words: any(re.search(rf"\b{words}\b", r) for r in riders)  # noqa: E731  whole words: "va" isn't "private"
     fha_va = has("fha") or has("va")
-    as_is = c.get("contract_form", "as_is") == "as_is"
+    as_is = c["contract_form"] == cf.AS_IS  # set by analyze(); never defaulted, so AS IS and Standard rows never mix
     out = []
 
     def add(**k):
@@ -449,13 +449,23 @@ def analyze(deal, market_path=None, side=None):
     if not contract.get("effective_date"):
         raise DealError("contract.effective_date is required. The Effective Date is the date the last party signed or "
                         "initialed and delivered the final counteroffer or acceptance.")
-    frbar = contract.get("form_family", "frbar" if contract.get("contract_form") else "other") == "frbar"
+    form = cf.normalize(contract.get("contract_form"))
+    family = contract.get("form_family")
+    frbar = family == "frbar" or (family is None and form in cf.FRBAR)
+    if frbar and form not in cf.FRBAR:
+        raise DealError("An FR/BAR contract needs contract_form: as_is or standard. Read the form's title (\"AS IS Residential "
+                        "Contract for Sale and Purchase\" or \"Residential Contract for Sale and Purchase\"): the two have "
+                        "different inspection and repair deadlines.")
+    contract = {**contract, "contract_form": form}
     if not frbar and not deal.get("deadlines"):
         raise DealError("This contract isn't FR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
     rules, market = load_rules(deal, market_path, frbar)
 
     original = compute(copy.deepcopy(contract), deal.get("deadlines") or [], rules, frbar)
     current_contract, history = apply_amendments(contract, deal.get("amendments"))
+    current_contract["contract_form"] = cf.normalize(current_contract.get("contract_form"))
+    if frbar and current_contract["contract_form"] not in cf.FRBAR:
+        raise DealError("An amendment changes contract_form: use as_is or standard.")
     current = compute(current_contract, deal.get("deadlines") or [], rules, frbar)
     was = {r["key"]: r["when"] for r in original}
     eff = _d(current_contract["effective_date"])
@@ -517,7 +527,7 @@ def analyze(deal, market_path=None, side=None):
         "buyer": contract.get("buyer", ""), "seller": contract.get("seller", ""),
         "price": f"${contract['price']:,.0f}" if contract.get("price") else None,
         "financing": FINANCING.get(contract.get("financing", ""), contract.get("financing") or None),
-        "contract_label": (("AS IS" if contract.get("contract_form", "as_is") == "as_is" else "Standard") if frbar
+        "contract_label": (("AS IS" if contract["contract_form"] == cf.AS_IS else "Standard") if frbar
                            else contract.get("form") or "Contract"),
         "escrow_agent": contract.get("escrow_agent"),
         "effective": {"date": str(eff), "display": f"{eff:%b %-d, %Y}", "short": f"{eff:%b %-d}",

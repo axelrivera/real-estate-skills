@@ -14,12 +14,12 @@
     "deadline": "2026-11-20", "priority": "price"
   },
   "offers": [
-    {"id": "B", "buyer": "Sample Buyer", "expires": "2026-09-24 20:00",
+    {"id": "B", "contract_form": "as_is", "buyer": "Sample Buyer", "expires": "2026-09-24 20:00",
      "price": 512000, "financing": "conventional", "down_pct": 0.25, "approval": "full_uw", "lender_called": true,
      "deposit": 20000, "seller_concessions": 0, "buyer_broker_pct": 0.025, "inspection_days": 7,
      "loan_approval_days": 21, "appraisal_contingency": 21, "appraisal_gap": 15000, "closing_date": "2026-10-30",
      "insurance_quote": true, "agent_track": "strong"},
-    {"id": "C", "buyer": "Sample Buyer", "expires": "2026-09-25 12:00",
+    {"id": "C", "contract_form": "as_is", "buyer": "Sample Buyer", "expires": "2026-09-25 12:00",
      "price": 519000, "financing": "va", "approval": "preapproval", "deposit": 2500,
      "seller_concessions": 10000, "inspection_days": 15, "closing_date": "2026-11-12"}
   ]

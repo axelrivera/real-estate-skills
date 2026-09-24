@@ -185,10 +185,11 @@ def term_rows(o, R):
                  "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    as_is = o["contract_form"] == "as_is"
-    rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (AS IS)" if as_is else ""), "≤7 days",
+    form = {"as_is": " (AS IS)", "standard": " (Standard)"}.get(o["contract_form"], "")
+    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}", "≤7 days",
                  "good" if o["inspection_days"] <= 7 else ("caution" if o["inspection_days"] <= 14 else "risk"),
-                 "Buyer may cancel for any reason" if as_is else ""))
+                 "Buyer may cancel for any reason" if o["inspection_walkaway"] else "Repair notices only; seller pays repairs up to the limits"
+                 if o["contract_form"] == "standard" else ""))
     if o["financed"]:
         rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", "≤21 days",
                      "good" if o["loan_approval_days"] <= 21 else ("caution" if o["loan_approval_days"] <= 30 else "risk"), ""))
@@ -328,7 +329,8 @@ def gantt(o, R):
         cells = "".join(f'<td class="gantt {gx(i)} {"on-" + kind if i * step < d else ""}"><div></div></td>' for i in range(ncell))
         return f'<tr><td>{name}</td><td class="n">{d}</td><td class="n">{(L["analysis_date"] + timedelta(days=d)):%b %-d}</td>{cells}</tr>'
 
-    body = line("Inspection (Right to Cancel)" if o["contract_form"] == "as_is" else "Inspection", o["inspection_days"], "hot")
+    body = line("Inspection (Right to Cancel)" if o["inspection_walkaway"] else "Inspection (Repair Notices)", o["inspection_days"],
+                "hot" if o["inspection_walkaway"] else "warm")
     if o["financed"]:
         body += line("Appraisal", o["appraisal_days"], "warm") + line("Loan Approval", o["loan_approval_days"], "warm")
     body += line("Sale of Buyer's Home", o["sale_contingency_days"], "hot")
