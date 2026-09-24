@@ -252,7 +252,7 @@ class Brand(unittest.TestCase):
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("License", doc)
         self.assertIn("--party-both:#1F3A5F", doc)  # the subject is the palette's 'both' color, never the brand
-        self.assertIn("--subject:var(--party-both)", doc)
+        self.assertIn("--subject:var(--party-both-ink)", doc)  # DS-1: darkened where it's text
         self.assertNotIn("tag prelim", doc)
 
     def test_default_seller_orange(self):

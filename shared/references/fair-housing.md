@@ -22,7 +22,7 @@ Describe the property, the numbers and the terms. Never describe people: not who
 
 - **Federal (Fair Housing Act):** race, color, religion, sex, disability, familial status (children under 18, pregnancy, custody), national origin.
 - **Always treated as protected:** sexual orientation and gender identity. The REALTOR Code of Ethics (Article 10) and many state and local laws protect them explicitly.
-- **State and local:** many places add more (age, marital status, source of income, military or veteran status, and others). Florida and Texas state law match the federal list; cities and counties can add to it. Apply every class listed in the market profile's `fair_housing.extra_protected_classes` as well. When the agent mentions a local class that isn't there, apply it and suggest saving it to the market profile.
+- **State and local:** many places add more (age, marital status, source of income, military or veteran status, and others). Florida and Texas state law match the federal list; cities and counties can add to it. Apply every class listed in the market profile's `fair_housing.extra_protected_classes` as well. Built in for Florida counties (from each county's code, checked September 2026, with the source in `fair_housing.source`): Miami-Dade, Orange, Hillsborough and Pinellas, which add classes such as age, marital status, sexual orientation, gender identity and, in Miami-Dade and Orange, source of income. Cities (Orlando, Tampa, St. Petersburg and others) have their own ordinances that aren't built in: ask the agent, and for any other county or state nothing is built in. When the agent mentions a local class that isn't there, apply it and suggest saving it to the market profile.
 
 ## Wording
 

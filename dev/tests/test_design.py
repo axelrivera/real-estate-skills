@@ -96,6 +96,21 @@ class StatusSeparation(unittest.TestCase):
             self.assertGreaterEqual(d.distance(t["brand"], t["status"][name]["base"]), d.STATUS_MIN_DISTANCE, name)
             self.assertTrue(t["adjustments"], name)
 
+    def test_named_brands_move_status_far_enough(self):
+        """DS-2: a Green, Red or Crimson brand never sits within 0.1 (OKLab) of a status color."""
+        for brand in ("#2E8B57", "#008000", "#FF0000", "#DC143C", "#B22222", "#2E7D5B", "#B3261E"):
+            t = d.theme({"primary": brand}, "buyer")
+            for name in d.STATUS:
+                self.assertGreaterEqual(d.distance(t["brand"], t["status"][name]["base"]), 0.10 - 1e-9, (brand, name))
+
+    def test_party_ink_is_readable(self):
+        """DS-1: a pale brand's party color is darkened for text; the raw color stays for borders and fills."""
+        t = d.theme({"primary": "#F2C94C"}, "buyer")
+        self.assertLess(d.contrast(t["party"]["buyer"]), d.AA)
+        for party, ink in t["party_ink"].items():
+            self.assertGreaterEqual(d.contrast(ink), d.AA - 0.01, party)
+        self.assertIn("--party-buyer-ink:", d.css_vars(t))
+
     def test_unrelated_status_untouched(self):
         t = d.theme({"primary": d.STATUS["good"]["base"]}, "buyer")
         self.assertEqual(t["status"]["risk"], d.STATUS["risk"])

@@ -179,7 +179,7 @@ def body(R, C, homes, agent, L):
 def theme_css(agent):
     """Seller palette from the agent's brand; the subject home uses the palette's neutral 'both' party color, never the brand."""
     t = design.theme(agent.get("brand"), "seller")
-    extra = (":root{--subject:var(--party-both);--subject-bg:var(--party-both-bg)}"
+    extra = (":root{--subject:var(--party-both-ink);--subject-bg:var(--party-both-bg)}"
              ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}")
     return design.css_vars(t) + extra, t
 

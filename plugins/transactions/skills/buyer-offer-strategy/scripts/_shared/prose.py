@@ -37,13 +37,23 @@ _PEOPLE = r"(?:neighborhoods?|areas?|communit(?:y|ies)|famil(?:y|ies)|buyers?|se
 FAIR_HOUSING = [
     (rf"\b(?:perfect|ideal|great|made|suited|best|wonderful)\s+for\s+(?:a\s+|the\s+)?(?:growing\s+|young\s+|large\s+|small\s+)?{_WHO}\b",
      "says who the home suits (familial status); describe the space instead: bedrooms, yard, layout"),
+    (rf"\b(?:areas?|neighborhoods?|communit(?:y|ies)|streets?|homes?|house)\s+for\s+(?:a\s+|the\s+)?(?:growing\s+|young\s+)?{_WHO}\b",
+     "says who the area or home suits (familial status, age); describe the features instead"),
     (r"\b(?:family|kid|child)[- ]friendly\b", "familial status; describe the features instead"),
     (r"\b(?:no|without)\s+(?:kids|children)\b|\badults?[- ]only\b", "limits familial status"),
     (rf"\b(?:young|older|mature|retired)\s+(?:couples?|professionals|buyers?|famil(?:y|ies)|residents|neighbors)\b",
      "describes the buyer or neighbors by age or family status"),
-    (r"\b(?:un)?safe\s+(?:neighborhood|area|community|street|part of town)\b|\b(?:low|high)[- ]crime\b|\bcrime[- ]free\b"
-     r"|\b(?:bad|good|rough|better|best)\s+(?:neighborhood|area|part of town)\b(?!\s+rugs?)|\bdangerous\s+(?:area|neighborhood)\b",
+    (r"\b(?:un)?safe\s+(?:neighborhoods?|areas?|communit(?:y|ies)|streets?|part of town)\b|\b(?:low|high)[- ]crime\b"
+     r"|\bcrime[- ]free\b|\b(?:dangerous|rough)\s+(?:areas?|neighborhoods?|part of town)\b",
      "safety and crime claims about an area can steer; point the client to official sources instead"),
+    # FH-5: judging an area (not a safety claim). "a good area rug" and "a good area for a garden" describe things, not places
+    (r"\b(?:bad|good|great|better|best|desirable|undesirable)\s+(?:neighborhoods?|areas?|part of town)\b(?!\s+(?:rugs?|for)\b)",
+     "judging an area's quality can steer; describe the property and the market numbers instead"),
+    (r"(?<!single[- ])\bfamily[- ](?:oriented|neighborhoods?|communit(?:y|ies)|areas?)\b|\badult\s+communit(?:y|ies)\b"
+     r"|\bbachelor(?:ette)?\s+pads?\b",
+     "describes who the area or home suits (familial status, sex); describe the features, or 55+ only when it qualifies"),
+    (r"\bno\s+(?:section\s*8|(?:housing\s+)?vouchers?|government\s+assistance)\b|\bsection\s*8\s+not\s+accepted\b",
+     "source of income is protected in several places (Miami-Dade and Orange County among them); describe terms, not buyers"),
     (r"\b(?:good|great|excellent|top[- ]rated|best|bad|poor|failing|[a-f][- ]rated)\s+schools?\b",
      "school quality claims can steer; name the assigned school only if asked, and point to the district"),
     (r"\b(?:up[- ]and[- ]coming|transitional|changing)\s+(?:neighborhood|area|community)\b|\bexclusive\s+(?:neighborhood|area|community)\b"
@@ -52,7 +62,8 @@ FAIR_HOUSING = [
     (rf"\b(?:white|black|hispanic|latino|latina|latinx|asian|african[- ]american|caucasian|immigrant|foreign)\s+{_PEOPLE}\b",
      "race, color or national origin"),
     (rf"\b(?:christian|jewish|muslim|catholic|hindu|buddhist|mormon|protestant)\s+{_PEOPLE}\b", "religion"),
-    (r"\benglish[- ](?:speaking|only)\b", "national origin"),
+    (r"\b(?:english|spanish|french|creole|haitian|portuguese|chinese|mandarin|cantonese|korean|vietnamese|russian|arabic|hindi"
+     r"|tagalog|german|italian|japanese|polish|hebrew)[- ](?:speaking|only)\b", "national origin"),
     (r"\bno\s+(?:wheelchairs?|disabled|handicapped)\b|\bable[- ]bodied\b|\bmentally ill\b",
      "disability; describe the home's features, not what a person must be able to do"),
     (r"\b(?:man|woman|lady|gentleman)'?s\s+(?:home|house)\b|\bgay[- ]friendly\b|\bstraight\s+(?:couples?|buyers?)\b",

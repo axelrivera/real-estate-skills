@@ -189,6 +189,23 @@ county_overrides:
       deed_transfer_surtax: {rate: 0.0045, applies_unless: single_family, label: Miami-Dade Documentary Surtax}
       owner_title: {payer: buyer}
       seller_title_fees: {title_search: 200}
+    fair_housing:                     # FH-4: county ordinances, checked 2026-09-24 (cities may add more)
+      extra_protected_classes: [ancestry, age, pregnancy, marital status, sexual orientation, gender identity,
+                                gender expression, source of income, "status as a victim of domestic violence, dating violence or stalking"]
+      source: "Miami-Dade County Code s. 11A-12(1), checked 2026-09-24"
+  Orange:
+    fair_housing:
+      extra_protected_classes: [age, marital status, lawful source of income (including housing vouchers), sexual orientation,
+                                gender identity or expression, status as a victim of domestic violence]
+      source: "Orange County Code ch. 22, art. IV, checked 2026-09-24; Orlando has its own ordinance"
+  Hillsborough:
+    fair_housing:
+      extra_protected_classes: [age, marital status, sexual orientation, gender identity or expression]
+      source: "Hillsborough County Code s. 30-24(a), checked 2026-09-24; Tampa has its own ordinance"
+  Pinellas:
+    fair_housing:
+      extra_protected_classes: [sexual orientation, gender identity or expression]
+      source: "Pinellas County Code s. 70-176, checked 2026-09-24; St. Petersburg has its own ordinance"
   Broward:                            # 9(c)(iii), as Miami-Dade
     closing_costs:
       owner_title: {payer: buyer}

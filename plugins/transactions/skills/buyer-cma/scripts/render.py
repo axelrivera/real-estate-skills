@@ -252,9 +252,10 @@ def body(R, C, homes, agent, L):
 
 
 def theme_css(agent):
+    """Buyer palette from the agent's brand; the subject home uses the neutral 'both' party color (as seller-cma does),
+    never a status color (DS-3), darkened where it's text."""
     t = design.theme(agent.get("brand"), "buyer")
-    subject = t["status"]["risk"]
-    return design.css_vars(t) + f":root{{--subject:{subject['base']};--subject-bg:{subject['bg']}}}", t
+    return design.css_vars(t) + ":root{--subject:var(--party-both-ink);--subject-bg:var(--party-both-bg)}", t
 
 
 def build_html(R, C, homes, agent):

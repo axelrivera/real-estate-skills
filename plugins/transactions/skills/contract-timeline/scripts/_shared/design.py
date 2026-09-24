@@ -40,7 +40,8 @@ PARTY_TINTS = {"soft": 0.80, "bg": 0.88}
 # WCAG contrast targets against white.
 AA, AAA, DEEP = 4.5, 7.0, 10.0
 
-STATUS_MIN_DISTANCE = 0.05  # OKLab distance below which a status color is shifted away from the brand
+STATUS_MIN_DISTANCE = 0.10  # OKLab distance below which a status color is shifted away from the brand (DS-2: 0.1+ reads
+                            # as a different color)
 PARTY_MIN_DISTANCE = 0.12  # OKLab distance below which two party colors count as "the same"
 
 _HEX = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
@@ -248,7 +249,7 @@ def _shift_status(brand_hex):
         s_hue = to_oklch(tokens["base"])[2]
         direction = 1 if ((s_hue - b_hue + 540) % 360 - 180) >= 0 else -1
         step = 0
-        while step < 40 and distance(brand_hex, rotate(tokens["base"], direction * step)) < STATUS_MIN_DISTANCE:
+        while step < 90 and distance(brand_hex, rotate(tokens["base"], direction * step)) < STATUS_MIN_DISTANCE:
             step += 5
         out[name] = {k: rotate(v, direction * step) for k, v in tokens.items()}
         notes.append(f"{name} shifted {direction * step} degrees away from the brand color")
@@ -263,7 +264,8 @@ def theme(brand=None, side="buyer"):
     (for agent-profile to relay) plus `adjustments` (internal notes, for debugging).
     """
     primary, source, warnings = resolve(brand, side)
-    status, adjustments = _shift_status(primary)
+    # The default blue and orange are a designed pair checked against the fixed status colors; only an agent's brand shifts them
+    status, adjustments = ({k: dict(v) for k, v in STATUS.items()}, []) if source == "default" else _shift_status(primary)
     tokens = {
         "side": side,
         "source": source,
@@ -280,6 +282,7 @@ def theme(brand=None, side="buyer"):
         "adjustments": adjustments,
     }
     tokens["party_tints"] = {p: {k: mix_white(c, t) for k, t in PARTY_TINTS.items()} for p, c in tokens["party"].items()}
+    tokens["party_ink"] = {p: darken_to(c, AA) for p, c in tokens["party"].items()}  # DS-1: party colors as text
     if tokens["brand_ink"] != primary:
         warnings.append(
             f"This {hue_name(primary)} is too light to read as text, "
@@ -316,6 +319,7 @@ def flat(tokens):
     for name, group in tokens["status"].items():
         out.update({f"{name}_{k}": v for k, v in group.items()})
     out.update({f"party_{k}": v for k, v in tokens["party"].items()})
+    out.update({f"party_{k}_ink": v for k, v in tokens.get("party_ink", {}).items()})
     for party, tints in tokens.get("party_tints", {}).items():
         out.update({f"party_{party}_{k}": v for k, v in tints.items()})
     return out

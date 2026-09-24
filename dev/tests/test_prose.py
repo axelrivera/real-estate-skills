@@ -56,6 +56,21 @@ class Phrases(unittest.TestCase):
         for text, bad in table:
             self.assertEqual(bool(flagged(text)), bad, text)
 
+    def test_phrase_table_fh5(self):
+        """FH-5: (text, flagged?). Plurals and new phrases are caught; things that aren't places or people aren't."""
+        table = [
+            ("best neighborhoods in town", True), ("a great neighborhood", True), ("desirable area", True),
+            ("family neighborhood", True), ("a family-oriented community", True), ("adult community", True),
+            ("great area for families", True), ("no Section 8", True), ("no vouchers", True),
+            ("Spanish-speaking neighbors", True), ("bachelor pad", True), ("unsafe streets", True),
+            ("a good area for a garden", False), ("a good area rug", False), ("single-family neighborhood", False),
+            ("55+ community", False), ("the family room opens to the patio", False), ("speaking of the roof, it's 2019", False),
+            ("public-speaking room", False),
+        ]
+        for text, bad in table:
+            self.assertEqual(bool(flagged(text)), bad, text)
+        self.assertIn("judging an area", flagged("a good area")[0])  # not called a crime claim
+
     def test_offer_reasons_describe_terms(self):
         """FH-2: the engine's own score reasons pass the check for every loan type."""
         with open(os.path.join(FIXTURES, "seller-offer-review", "four-offers.json")) as f:

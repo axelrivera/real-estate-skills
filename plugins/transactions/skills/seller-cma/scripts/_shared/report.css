@@ -14,7 +14,7 @@ header{display:flex;justify-content:space-between;align-items:flex-end;border-bo
 .prep{text-align:right;font-size:7.8pt;color:var(--muted)} .prep b{color:var(--text)}
 .viewtag{display:inline-block;font-size:8pt;font-weight:700;color:var(--brand-ink);border:1.5px solid var(--brand-ink);border-radius:4px;
  padding:0 6px;margin-left:6px;vertical-align:middle;letter-spacing:.04em;text-transform:uppercase}
-.sample{display:inline-block;color:var(--party-both);border:1.2px solid var(--party-both);font-size:6.8pt;font-weight:700;letter-spacing:.12em;
+.sample{display:inline-block;color:var(--party-both-ink);border:1.2px solid var(--party-both);font-size:6.8pt;font-weight:700;letter-spacing:.12em;
  padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle}
 
 /* section bars and page-2 headings */

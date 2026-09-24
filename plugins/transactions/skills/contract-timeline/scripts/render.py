@@ -89,9 +89,11 @@ def strip(t, colors):
     return "".join(s)
 
 
-def party_pill(party, colors):
+def party_pill(party, colors, ink=None):
+    """DS-1: the raw party color for the border, a darkened one (4.5:1 on white) for the text."""
     col = colors.get(party, colors["Both"])
-    return f'<span class="party" style="border-color:{col};color:{col}">{esc(party)}</span>'
+    text = (ink or colors).get(party, col)
+    return f'<span class="party" style="border-color:{col};color:{text}">{esc(party)}</span>'
 
 
 def prepared_block(t, agent):
@@ -111,6 +113,7 @@ def build_html(t, agent, sample):
     theme = design.theme(agent.get("brand"), side)
     p = theme["party"]
     colors = {"Buyer": p["buyer"], "Seller": p["seller"], "Both": p["both"]}
+    ink = {k.title(): v for k, v in theme["party_ink"].items()}
 
     # the dates live in the hero; the contract terms run in one divider row, and missing ones drop out
     n = len(t["history"])
@@ -146,7 +149,7 @@ def build_html(t, agent, sample):
         f'<tr class="{"mine" if r["party"] == Side else ""}"><td class="n"><b>{esc(r["display"])}</b></td><td class="n">{day_label(r)}</td>'
         f'<td>{esc(r["label"])}{"&nbsp;<span class=crit>★</span>" if r["critical"] else ""}'
         f'{(" <span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}</td>'
-        f'<td>{party_pill(r["party"], colors)}</td></tr>' for r in t["rows"])
+        f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["rows"])
     pending = "".join(f'<div class="note-caution"><b>{esc(r["label"])}:</b> {esc(r["rule"])}. {esc(r["action"])}.</div>'
                       for r in t["pending"])
     flags = "".join(f'<div class="note-caution"><b>Check:</b> {esc(f)}</div>' for f in t["flags"])

@@ -162,6 +162,8 @@ How the color reaches every output:
 - **Side labels.** Default blue and orange keep buyer and seller documents easy to tell apart. With a single brand color that signal is gone, so every file-mode output shows its side (Buyer / Seller) in the header on every page.
 - **Print-light PDFs.** Agents print these reports, so color goes into type, rules and thin accent bars, not background fills. Section headings are colored text with no rule under them (most sit on a boxed table or panel, and a rule on a box doubles the line); table headers are bold colored text over a rule, with no zebra rows; the page-1 answer, plans and callouts are outlined or carry a left bar; highlighted rows and status cells get a thin left mark and bold or colored text. A fill is allowed only where it is the data itself: chart bands and marks, timeline bars, meters, small status pills. Shared rules live in `shared/report.css` and `shared/cma.css`.
 
+**Status colors and color vision (DS-4).** Good and risk look alike under deuteranopia (both read olive-brown), and the caution base (`#B7791F`) is only 3.6:1 on white. So status is never shown by color alone: every colored cell, pill or bar has a word or icon with it (Favorable / Watch / Weak, a pill label, a legend). The `*-base` status colors are for fills, borders and chart marks; text uses `*-strong`. Party colors follow the same split: the raw color for borders and fills, `party_*_ink` (darkened to 4.5:1) for text (DS-1). A brand color within 0.10 (OKLab) of a status color rotates that status away from it; the default blue and orange are a checked pair and never shift (DS-2).
+
 ### Built-in market layers
 
 Market values come in layers, merged in this order (later wins):

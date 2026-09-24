@@ -150,7 +150,7 @@ class Pdf(unittest.TestCase):
         self.assertNotIn('class="tag', doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
-        self.assertIn("--subject:#B3261E", doc)  # subject accent stays the fixed risk red, not the brand
+        self.assertIn("--subject:var(--party-both-ink)", doc)  # DS-3: the neutral subject accent, never a status color
 
     def test_full_pdf(self):
         R = report()

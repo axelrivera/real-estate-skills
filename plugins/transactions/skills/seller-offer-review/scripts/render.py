@@ -489,6 +489,7 @@ def scatter(R, W=300, H=230):
 
     tgt = R["target"]["net_adj"]
     col = {"ACCEPT": "var(--good-base)", "COUNTER": "var(--good-base)", "BACKUP": "var(--caution-base)", "DECLINE": "var(--risk-base)"}
+    ink = {k: v.replace("-base)", "-strong)") for k, v in col.items()}  # DS-4: the base colors are for marks, never text
     svg = [f'<svg viewBox="0 0 {W} {H}" class="scat">',
            f'<rect x="{xs(70)}" y="{ys(y1)}" width="{xs(100) - xs(70)}" height="{max(0, ys(tgt - (y1 - y0) * .1) - ys(y1))}" fill="var(--good-base)" opacity=".07"/>',
            f'<text x="{xs(99)}" y="{ys(y1) + 10}" text-anchor="end" class="q">Sweet Spot</text>']
@@ -509,7 +510,7 @@ def scatter(R, W=300, H=230):
         right = o["score"]["total"] > 90
         svg.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
                    f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
-                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{c}">{esc(o["key"])} #{rank.get(o["id"], "")}</text>')
+                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{ink[o["action"]]}">{esc(o["key"])} #{rank.get(o["id"], "")}</text>')
     svg.append("</svg>")
     return "".join(svg)
 
