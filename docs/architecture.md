@@ -4,7 +4,7 @@ Decisions that apply to every skill in the `real-estate` plugin.
 
 ## Packaging
 
-One plugin, and the repo root is the plugin: `.claude-plugin/plugin.json` (name `real-estate`, the only place the version lives) and `skills/<skill>/`. The same folder holds `.claude-plugin/marketplace.json`, a one-plugin marketplace named `real-estate-skills` whose entry points back at the root (`"source": "."`), so the repo can be added by URL. With 10 to 15 skills planned, one install beats splitting skills across plugins: there's no install order and one file to upload. New skills go in `skills/`; don't add plugins.
+One plugin, and the repo root is the plugin: `.claude-plugin/plugin.json` (name `real-estate`, the only place the version lives) and `skills/<skill>/`. The same folder holds `.claude-plugin/marketplace.json`, a one-plugin marketplace named `real-estate-skills` whose entry points back at the root (`"source": "./"`), so the repo can be added by URL. With 10 to 15 skills planned, one install beats splitting skills across plugins: there's no install order and one file to upload. New skills go in `skills/`; don't add plugins.
 
 Three ways in, all from the same `skills/` folder:
 

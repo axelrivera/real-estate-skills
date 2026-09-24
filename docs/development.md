@@ -55,7 +55,7 @@ Baselines (the same prompts without the skill) are optional here: the skills are
 ## Layout
 
 ```
-.claude-plugin/          # plugin.json (the real-estate plugin) + marketplace.json (one entry, source ".")
+.claude-plugin/          # plugin.json (the real-estate plugin) + marketplace.json (one entry, source "./")
 skills/<skill>/          # every skill; the only folder the plugin loads
 shared/                  # shared code and references, copied into skills by make sync
 Makefile
