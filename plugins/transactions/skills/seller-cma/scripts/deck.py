@@ -73,6 +73,32 @@ def _norm(address):
     return " ".join(str(address).upper().replace(".", "").split())
 
 
+def adjustment_words(cards):
+    """'size, larger corner lot, seller credits and market since the sale': the adjustments actually made (CMA-26)."""
+    seen = []
+    for c in cards:
+        for a in c.get("adjustments") or []:
+            word = str(a.get("label", "")).strip()
+            word = " ".join(w if w.isupper() else w.lower() for w in word.split())
+            if word and word not in seen:
+                seen.append(word)
+    if any(c.get("seller_concessions") for c in cards):
+        seen.append("seller credits")
+    if not seen:
+        return "none: the comps needed no adjustment"
+    return seen[0] if len(seen) == 1 else ", ".join(seen[:-1]) + " and " + seen[-1]
+
+
+def period_labels(window):
+    """CMA-25: labels from the actual bounds. A split on the 1st reads as whole months ("April–June", "July–September");
+    a mid-month split shows the day, so no days are dropped ("April–July 14", "July 15–September")."""
+    split = datetime.strptime(window["split_date"], "%Y-%m-%d")
+    before = split - timedelta(days=1)
+    if split.day == 1:
+        return [f'{_month(window["first_close"])}–{before:%B}', f'{split:%B}–{_month(window["last_close"])}']
+    return [f'{_month(window["first_close"])}–{before:%B} {before.day}', f'{split:%B} {split.day}–{_month(window["last_close"])}']
+
+
 def _month(iso):
     return datetime.strptime(iso, "%Y-%m-%d").strftime("%B")
 
@@ -80,19 +106,9 @@ def _month(iso):
 def scatter_data(homes, R, C, L):
     """Points by category (same rules as the PDF chart), the size-only trend line, and the subject at the list price."""
     s, sc = R["subject"], R.get("scatter") or {}
-    address = s.get("mls_address", s["address"])
-    others = [h for h in homes if not mls.same_address(h["address"], address)]
-    lo, hi = s["sqft"] * sc.get("min_size_ratio", 0.6), s["sqft"] * sc.get("max_size_ratio", 1.4)
-    renovated = {_norm(a) for a in sc.get("renovated", [])}
-    pts = {"ren": [], "pool": [], "nop": [], "active": []}
-    for h in others:
-        if not h.get("living_area") or not lo <= h["living_area"] <= hi:
-            continue
-        if h["status"] == "SOLD" and h.get("close_price"):
-            kind = ("ren" if _norm(h["address"]) in renovated else "pool") if h["private_pool"] else "nop"
-            pts[kind].append([h["living_area"], h["close_price"]])
-        elif h["status"] == "ACTIVE" and h.get("current_price"):
-            pts["active"].append([h["living_area"], h["current_price"]])
+    homes_by_kind, _, others = cma.scatter_points(homes, sc, s["sqft"], s.get("mls_address", s["address"]))  # CMA-24
+    pts = {kind: [[h["living_area"], h["close_price"] if kind != "active" else h["current_price"]] for h in hs]
+           for kind, hs in homes_by_kind.items()}
     fit = mls.trend(others, s["sqft"], sc.get("fit_size_ratio", 1.6))
     xs = [p[0] for v in pts.values() for p in v] + [s["sqft"]]
     trend = []
@@ -146,11 +162,10 @@ def deck_data(R, C, homes, agent, L, footer):
         sold_line = L("deck_sold_reviewed")
     periods = content.get("market_periods")
     if not periods and window:
-        split = datetime.strptime(window["split_date"], "%Y-%m-%d")
-        before = (split.replace(day=1) - timedelta(days=1)).strftime("%Y-%m-%d")
-        periods = [f'{_month(window["first_close"])}–{_month(before)}', f'{_month(window["split_date"])}–{_month(window["last_close"])}']
+        periods = period_labels(window)
 
     L_deck = {key: v for key, v in L.text.items() if key.startswith("deck_")}
+    L_deck["deck_method_note"] = L("deck_method_note", items=adjustment_words(R["comps"]["cards"]))  # CMA-26
     org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
     if agent.get("license"):
         org = " · ".join(x for x in (org, f'{L("lic")} {agent["license"]}') if x)

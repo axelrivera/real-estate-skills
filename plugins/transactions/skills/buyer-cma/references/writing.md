@@ -13,7 +13,7 @@ Every number gets a sentence saying what it means for this buyer. Short sentence
 Page 1 summary → the home → bottom line (+ history, offer plan, negotiating points) → comps → scatterplot → competition → market → costs (taxes, insurance, payment, price vs. credit) → watch items and questions → method.
 
 - **Bottom line:** the range, then where asking sits within it and why, in 3–4 sentences. The section the buyer reads first.
-- **History:** a finding as the heading ("This home has been for sale since January"), the table, then what it adds up to and the question it raises.
+- **History:** a finding as the heading ("On the Market Since January"), the table, then what it adds up to and the question it raises.
 - **Competition:** 5–9 rows: actives, pendings, and any expired or canceled listing that shows what the market rejected. The notes column says why each one matters to this buyer.
 - **Market:** the table from stats.py, then 3–5 bullets that each tie a number to the offer.
 - **Costs:** the seller's bill against the buyer's estimate, the escrow warning, insurance drivers, the payment table, price vs. credit.
@@ -29,3 +29,5 @@ Exactly three `key_stats`, three `why` bullets (under ~25 words each), three `ch
 ## After rendering
 
 Look at every page. A chart label overlapping a marker: flip that callout's `side`. A heading alone at the bottom of a page or a split table shouldn't happen; if it does, shorten the intro. A mostly empty page is fine when a section moved to a fresh page. Change the content, never the HTML.
+
+**Other listings' remarks.** Describe each comp and competing listing in your own words from the data fields (beds, baths, size, pool, updates the remarks name). Never quote or closely paraphrase another agent's public remarks in a client report: MLS rules often limit reproducing them, and they're the listing agent's marketing, not facts.

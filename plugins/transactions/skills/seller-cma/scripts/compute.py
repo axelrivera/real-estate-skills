@@ -23,6 +23,7 @@ from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
 NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_surtax", "owner_title", "title_fees", "estoppel",
                   "credit", "other", "tax_proration")
 
+PAYOFF_CUSHION = 500  # payoff and recording fees on top of a statement balance (an estimate; the payoff letter governs)
 CONTRACT_TO_CLOSE_MONTHS = 1  # a typical financed contract-to-close period, added to each option's time to contract
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money = finance.money
@@ -77,7 +78,10 @@ def net_sheet(R, market, L):
     strategies = R["pricing"]["strategies"]
     lf, bf = _frac(costs, "listing_fee_pct", "costs"), _frac(costs, "buyer_broker_fee_pct", "costs")
     others = costs.get("other") or []
-    payoff = costs.get("mortgage_payoff")
+    payoff, payoff_est = costs.get("mortgage_payoff"), False
+    if payoff is None and costs.get("mortgage_balance"):  # CMA-29: a balance isn't a payoff; add a month's interest + fees
+        payoff = round(costs["mortgage_balance"] * (1 + (costs.get("mortgage_rate") or 7) / 100 / 12) + PAYOFF_CUSHION)
+        payoff_est = True
     has_hoa = bool(costs.get("hoa", s.get("hoa", False)))
     title_fees = costs.get("title_fees")  # the title company's quote: a total or {name: amount}
     annual_tax, bill_paid = costs.get("annual_tax"), costs.get("current_tax_bill_paid")
@@ -115,7 +119,7 @@ def net_sheet(R, market, L):
         rows.append({"key": key, "label": label(line),
                      "amounts": [-next((l["amount"] for l in c["lines"] if l["key"] == key), 0) for c in cols]})
     if payoff:
-        rows.append({"key": "payoff", "label": L("net_payoff"), "amounts": [-payoff for _ in cols]})
+        rows.append({"key": "payoff", "label": L("net_payoff_est" if payoff_est else "net_payoff"), "amounts": [-payoff for _ in cols]})
     totals = [c["net"] if payoff else c["net_before_payoff"] for c in cols]
     rows.append({"key": "total", "label": L("net_total_cash" if payoff else "net_total"), "amounts": totals})
     # CMA-7: a slower option costs more to hold (loan interest, HOA, insurance, utilities; tax is in the proration)

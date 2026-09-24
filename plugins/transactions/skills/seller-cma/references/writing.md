@@ -29,3 +29,5 @@ The flyer for sellers who won't read the report. Someone who reads only page 1 k
 ## After rendering
 
 Look at every page and slide. A chart label overlapping a marker: flip that callout's `side` or `subject_label_pos`. A heading alone at the bottom of a page or a split table shouldn't happen; if it does, shorten the intro. Change the content, never the HTML or the .pptx.
+
+**Other listings' remarks.** Describe each comp and competing listing in your own words from the data fields (beds, baths, size, pool, updates the remarks name). Never quote or closely paraphrase another agent's public remarks in a client report: MLS rules often limit reproducing them, and they're the listing agent's marketing, not facts.

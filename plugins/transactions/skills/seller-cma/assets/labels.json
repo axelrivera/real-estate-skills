@@ -4,7 +4,6 @@
  "preliminary": "Preliminary",
  "wordmark_sub": "Real Estate Agent",
  "lic": "License",
-
  "sum_label": "Seller Summary",
  "sum_rec": "RECOMMENDED LIST PRICE",
  "sum_range_line": "Supported Value Range",
@@ -27,7 +26,6 @@
  "sum_next": "Next Step:",
  "sum_disclaimer": "Details, sources, and assumptions are in the full analysis that follows. This is a broker's opinion of value, not an appraisal.",
  "sum_preliminary": "Preliminary: some closing costs for this market are still missing, so the net figures will change.",
-
  "h_home": "The Home",
  "h_bottom": "The Bottom Line",
  "verdict_price": "List at {price}",
@@ -41,7 +39,6 @@
  "th_adjusted": "Adjusted Value",
  "subject_row": "Your Home (Recommended List)",
  "range_word": "Range",
-
  "h_scatter": "Where Your Home Fits in the Neighborhood",
  "band": "Supported Range",
  "lg_ren": "Sold, Renovated Pool Home",
@@ -67,7 +64,6 @@
  "r2_third": "only about a third",
  "r2_half": "about half",
  "r2_most": "most",
-
  "h_competition": "What Buyers Will Compare You To",
  "th_address": "Address",
  "th_status": "Status",
@@ -77,7 +73,6 @@
  "th_days": "Days",
  "th_notes": "Notes",
  "h_market": "The Market Right Now",
-
  "h_pricing": "Choosing a List Price",
  "strategy_label": "List at {price}",
  "th_strategy": "Strategy",
@@ -101,6 +96,7 @@
  "net_estoppel": "HOA Estoppel Letter",
  "net_credit": "Seller-Paid Buyer Costs",
  "net_payoff": "Mortgage Payoff (Your Estimate)",
+ "net_payoff_est": "Mortgage Payoff (Estimate from Balance)",
  "net_total": "Estimated Net Before Mortgage Payoff",
  "net_total_cash": "Estimated Cash at Closing",
  "net_holding": "Holding Costs Until Closing (Est.)",
@@ -113,7 +109,6 @@
  "standard_terms_sub": "standard brokerage terms, not yet the listing agreement's",
  "net_title_fees_note": "Title company fees are typical local charges ({items}); the title company's quote replaces them.",
  "net_missing": "<strong>Preliminary:</strong> not yet included because there is no local figure for {items}.",
-
  "h_payments": "What Your Price Means to Buyers",
  "pay_intro": "Buyers shop by monthly payment. Each $10,000 in price changes a typical buyer's payment by about {per10k} a month and the down payment by {down10k}.",
  "th_list_price": "List Price",
@@ -127,11 +122,9 @@
  "prog_usda": "USDA",
  "prog_cash": "Cash",
  "tax_estimated": "Buyer taxes are estimated at {basis}: no millage for this area yet.",
-
  "h_prep": "Before We List",
  "h_needs": "What We Need from You",
  "h_method": "How This Was Prepared",
-
  "deck_rec_title": "Our Recommendation",
  "deck_rec_label": "Recommended List Price",
  "deck_range_card": "Supported Value Range",
@@ -149,13 +142,13 @@
  "deck_step_adjusted": "after adjusting each for differences from your home",
  "deck_step_median": "median adjusted value",
  "deck_step_rec": "recommended list price",
- "deck_method_note": "Adjustments cover size, pool, condition, lot, seller credits, and how the market has changed since each sale.",
+ "deck_method_note": "Adjustments cover {items}.",
  "deck_drivers_title": "What Buyers Will Pay For",
  "deck_docs_title": "Needs Paperwork to Count",
  "deck_comps_title": "What Comparable Homes Sold For",
  "deck_comps_sub": "Each sale adjusted to what it would have sold for as your home",
  "deck_dot_rec": "Recommended {price}",
- "deck_shaded": "Shaded: supported range {low}–{high}. ",
+ "deck_shaded": "Shaded: Supported Range {low}–{high}. ",
  "deck_scatter_title": "Where Your Home Fits in the Neighborhood",
  "deck_series_ren": "Renovated Pool Home (Sold)",
  "deck_series_pool": "Other Pool Home (Sold)",
@@ -197,5 +190,31 @@
  "deck_app_comps_title": "Appendix: Comparable Sales",
  "deck_disclaimer": "This is a broker's opinion of value based on comparable sales, not an appraisal. Full detail is in the written analysis.",
  "deck_title_note": "Introduce the goal: a price that gets your home sold for the most money in a reasonable time, and the evidence behind it.",
- "deck_preliminary": "PRELIMINARY: some local closing costs are missing"
+ "deck_preliminary": "PRELIMINARY: some local closing costs are missing",
+ "_prose": [
+  "pay_note_mi",
+  "deck_range_sub",
+  "deck_expected_sub",
+  "deck_method_sub",
+  "deck_sold_since",
+  "deck_sold_within",
+  "deck_sold_reviewed",
+  "deck_mile",
+  "deck_miles",
+  "deck_step_comps",
+  "deck_step_adjusted",
+  "deck_step_median",
+  "deck_step_rec",
+  "deck_market_sub",
+  "deck_comp_sub",
+  "deck_net_sub",
+  "deck_cash_sub",
+  "deck_pay_sub",
+  "deck_per_month",
+  "deck_down",
+  "deck_launch_sub",
+  "deck_app_excluded",
+  "deck_preliminary",
+  "deck_method_note"
+ ]
 }

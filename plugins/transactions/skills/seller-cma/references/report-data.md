@@ -77,7 +77,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## costs
 
-All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; needed unless the market profile has the agent's standard terms), `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
+All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; needed unless the market profile has the agent's standard terms), `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*, from a payoff statement) or `mortgage_balance` + `mortgage_rate` (percent; an estimate: a month's interest and a $500 cushion are added), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
 
 ## buyer_payment
 

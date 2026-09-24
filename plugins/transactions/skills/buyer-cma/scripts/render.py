@@ -89,7 +89,7 @@ def summary_page(R, C, agent, L):
     trs = "".join(f'<tr class="{"rec" if i == 1 else ""}"><td>{a}</td><td class="n">{v}</td></tr>' for i, (a, v) in enumerate(rows))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_costs")}</div><div class="tbl"><table><tbody>{trs}</tbody></table></div>'
-             f'<div class="note">{L("sum_costs_note")}</div></div></div>')
+             f'<div class="note">{L("sum_costs_note", price=money(pay["price"]))}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_check")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["check_first"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')

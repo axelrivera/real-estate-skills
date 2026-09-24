@@ -64,7 +64,8 @@ ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--subject);paddin
 .m-ren{fill:var(--brand);stroke:var(--brand);stroke-width:1.5}
 .m-pool{fill:var(--brand-accent);stroke:var(--brand-accent);stroke-width:1.5}
 .m-nop{fill:var(--grey);stroke:var(--grey);stroke-width:1.5}
-.scatter .hol{fill:var(--bg)}
+.m-active{fill:var(--bg);stroke:var(--muted);stroke-width:1.5}
+.scatter .hol,.legend .hol{fill:var(--bg)}
 .scatter .subj{fill:var(--subject);stroke:var(--bg);stroke-width:2}
 .scatter .lbl-subj{font-size:13px;font-weight:700;fill:var(--subject)}
 .scatter .lbl{font-size:12px;fill:var(--text)}

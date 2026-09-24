@@ -166,6 +166,15 @@ class AuditStatsAndCharts(unittest.TestCase):
         self.assertLessEqual(len(ticks), 8)  # was 29 overlapping labels at $20k steps
         self.assertIn("$1.5M", svg)
 
+
+class DotPlotLabels(unittest.TestCase):
+    def test_close_markers_label_on_opposite_sides(self):
+        """CMA-23: two close markers don't stack their labels."""
+        cards = [{"address": f"{i} Oak St", "adjusted": v} for i, v in enumerate((455000, 462000, 470000))]
+        svg = cma.dotplot(cards, 455000, 480000, 474900, "Asking $474,900", (468000, "Offer $468,000"))
+        self.assertIn('text-anchor="start" class="dp-mark-lbl"', svg)
+        self.assertIn('text-anchor="end" class="dp-second-lbl"', svg)
+
 if __name__ == "__main__":
     unittest.main()
 

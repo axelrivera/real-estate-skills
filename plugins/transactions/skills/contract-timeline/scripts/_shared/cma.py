@@ -129,6 +129,31 @@ def page_one_values(C):
 
 # --- scatterplot ---------------------------------------------------------------
 
+def scatter_points(homes, sc, subject_sqft, subject_address):
+    """The chart's points, shared by the PDF and the deck so they always match (CMA-24): sold homes as renovated pool
+    (`ren`), other pool (`pool`) and no pool (`nop`), and every active listing in one `active` series.
+    Returns ({kind: [homes]}, excluded [(address, sqft, 'sale'|'listing')], others)."""
+    renovated = {" ".join(a.upper().split()) for a in sc.get("renovated", [])}
+    lo, hi = subject_sqft * sc.get("min_size_ratio", 0.6), subject_sqft * sc.get("max_size_ratio", 1.4)
+    others = [h for h in homes if not mls.same_address(h["address"], subject_address)]
+    pts, excluded = {"ren": [], "pool": [], "nop": [], "active": []}, []
+    for h in others:
+        sold = h["status"] == "SOLD" and h.get("close_price")
+        active = h["status"] == "ACTIVE" and h.get("current_price")
+        if not h.get("living_area") or not (sold or active):
+            continue
+        if not lo <= h["living_area"] <= hi:
+            excluded.append((h["address"], int(h["living_area"]), "sale" if sold else "listing"))
+        elif active:
+            pts["active"].append(h)
+        elif h["private_pool"]:
+            pts["ren" if " ".join(h["address"].upper().split()) in renovated else "pool"].append(h)
+        else:
+            pts["nop"].append(h)
+    excluded.sort(key=lambda e: e[2] != "sale")  # sales first, then listings
+    return pts, excluded, others
+
+
 def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
     """Price vs. size for sold and active homes near the subject's size, with the supported range band.
 
@@ -136,21 +161,13 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
     Label sides: left, right, above or below.
     Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind)], n_sold, n_active.
     """
-    renovated = {" ".join(a.upper().split()) for a in sc.get("renovated", [])}
-    lo, hi = subject_sqft * sc.get("min_size_ratio", 0.6), subject_sqft * sc.get("max_size_ratio", 1.4)
-    others = [h for h in homes if not mls.same_address(h["address"], subject_address)]
-    sold_all = [h for h in others if h["status"] == "SOLD" and h.get("living_area") and h.get("close_price")]
-    act_all = [h for h in others if h["status"] == "ACTIVE" and h.get("living_area") and h.get("current_price")]
-    sold = [h for h in sold_all if lo <= h["living_area"] <= hi]
-    act = [h for h in act_all if lo <= h["living_area"] <= hi]
-    excluded = ([(h["address"], int(h["living_area"]), "sale") for h in sold_all if not lo <= h["living_area"] <= hi] +
-                [(h["address"], int(h["living_area"]), "listing") for h in act_all if not lo <= h["living_area"] <= hi])
+    pts, excluded, others = scatter_points(homes, sc, subject_sqft, subject_address)
+    sold, act = pts["ren"] + pts["pool"] + pts["nop"], pts["active"]
+    kind = {id(h): k for k, hs in pts.items() for h in hs}
     fit = mls.trend(others, subject_sqft, sc.get("fit_size_ratio", 1.6))
 
     def cat(h):
-        if h["private_pool"]:
-            return "ren" if " ".join(h["address"].upper().split()) in renovated else "pool"
-        return "nop"
+        return kind[id(h)]
 
     xs = [h["living_area"] for h in sold + act] + [subject_sqft]
     ys = [h["close_price"] for h in sold] + [h["current_price"] for h in act] + [subject_price, band[0], band[1]]
@@ -167,7 +184,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
 
     def shape(kind, cx, cy, hollow, tip):
         cls, r = f"m-{kind}" + (" hol" if hollow else ""), 6
-        if kind == "ren":
+        if kind in ("ren", "active"):
             g = f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r + 0.5}" class="{cls}"/>'
         elif kind == "pool":
             g = f'<path d="M{cx:.1f},{cy - r - 1:.1f} L{cx + r + .5:.1f},{cy + r - 1:.1f} L{cx - r - .5:.1f},{cy + r - 1:.1f} Z" class="{cls}"/>'
@@ -195,7 +212,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
         o.append(shape(cat(h), x(h["living_area"]), y(h["close_price"]), False,
                        f'{h["address"].title()}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
     for h in act:
-        o.append(shape(cat(h), x(h["living_area"]), y(h["current_price"]), True,
+        o.append(shape("active", x(h["living_area"]), y(h["current_price"]), True,
                        f'{h["address"].title()}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
@@ -232,7 +249,7 @@ def scatter_legend(L, subject):
             f'<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" class="m-ren"/></svg>{L("lg_ren")}</span>'
             f'<span><svg viewBox="0 0 14 14"><path d="M7,1.5 L12.5,12 L1.5,12 Z" class="m-pool"/></svg>{L("lg_pool")}</span>'
             f'<span><svg viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" class="m-nop"/></svg>{L("lg_nop")}</span>'
-            f'<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg>{L("lg_active")}</span>'
+            f'<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" class="m-active hol"/></svg>{L("lg_active")}</span>'
             f'<span><svg viewBox="0 0 14 14"><line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>{L("lg_trend")}</span>'
             f'<span><svg viewBox="0 0 14 14"><path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--subject)"/></svg>{L("lg_subject", subject=esc(subject))}</span>'
             "</div>")
@@ -268,12 +285,20 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T - 8}" y2="{T + row * len(cs)}" class="dp-grid"/>'
                  f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">{k(v)}</text>')
     xm = x(marker_price)
+    xs = x(second[0]) if second is not None else None
+    # CMA-23: labels never sit on each other or run off the chart. Two close markers put their labels on opposite
+    # sides; a label near an edge anchors inward.
+    if xs is not None and abs(xm - xs) < 140:
+        m_pos, s_pos = ("start", "end") if xm >= xs else ("end", "start")
+    else:
+        m_pos = "start" if xm < Lm + 70 else "end" if xm > W - R - 70 else "middle"
+        s_pos = "end" if xs is None or xs > Lm + 110 else "start"
+    shift = {"start": 5, "end": -5, "middle": 0}
     o.append(f'<line x1="{xm:.1f}" x2="{xm:.1f}" y1="{T - 14}" y2="{T + row * len(cs) + 2}" class="dp-mark"/>'
-             f'<text x="{xm:.1f}" y="{T - 16}" text-anchor="middle" class="dp-mark-lbl">{esc(marker_label)}</text>')
-    if second is not None:
-        xs = x(second[0])
+             f'<text x="{xm + shift[m_pos]:.1f}" y="{T - 16}" text-anchor="{m_pos}" class="dp-mark-lbl">{esc(marker_label)}</text>')
+    if xs is not None:
         o.append(f'<line x1="{xs:.1f}" x2="{xs:.1f}" y1="{T - 8}" y2="{T + row * len(cs) + 2}" class="dp-second"/>'
-                 f'<text x="{xs - 5:.1f}" y="{T - 16}" text-anchor="end" class="dp-second-lbl">{esc(second[1])}</text>')
+                 f'<text x="{xs + shift[s_pos]:.1f}" y="{T - 16}" text-anchor="{s_pos}" class="dp-second-lbl">{esc(second[1])}</text>')
     for i, c in enumerate(cs):
         cy = T + i * row + row / 2 - 4
         o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(c["address"])}</text>'

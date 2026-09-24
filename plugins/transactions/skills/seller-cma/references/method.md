@@ -13,7 +13,7 @@ Ask for what's missing in one message; use tappable choices for occupancy, timel
 6. Known issues or past insurance claims. Most states require sellers to disclose known material defects, and they affect the price.
 7. Flood history: any flood damage while they've owned it, flood insurance claims (including NFIP), and flood assistance (including FEMA). Where the market profile has `flood.seller_disclosure` (Florida: s. 689.302), the seller signs that disclosure at or before the contract, so collect the answers now and list the form under "What We Need from You".
 8. Timeline to close, and whether the home will be occupied or vacant for showings.
-9. Mortgage payoff (optional): with it, the net sheet ends in estimated cash at closing.
+9. Mortgage payoff (optional): ask for the lender's payoff statement (`mortgage_payoff`). A balance from a monthly statement understates it: give it as `mortgage_balance` with `mortgage_rate` and compute.py adds a month's interest and a $500 fee cushion, labeled an estimate. With either, the net sheet ends in estimated cash at closing.
 
 **From the agent**
 10. The MLS CMA export (CSV) of single-family homes nearby: sales from about the last 6 months, plus active, pending, expired and canceled listings. For Stellar the columns are built in; another MLS needs its columns mapped in the market profile.
@@ -34,7 +34,7 @@ Judge each comp's condition from its remarks and compare it with the seller's de
 
 ## Adjustments
 
-Default rates come from the market profile (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the seller can't yet document (reverse it once they do), –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, use the agent's values or ask for local norms. Explain any departure in `method_note`.
+Default rates come from the market profile (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 when a comp has documented recent systems (roof, AC) that the seller's home can't match; the seller's own recent updates earn no credit until they're documented, –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, use the agent's values or ask for local norms. Explain any departure in `method_note`.
 
 The built-in rates are flat dollars from Central Florida sales in one price band (`cma.calibrated_for`). compute.py warns when the home is outside that area or band: then derive the rates from paired sales in the export, or use the agent's, and scale flat amounts (a pool, a renovation) to the price. There are no built-in rates for garage spaces, bedroom or bath count, age, view, or size differences over about 300 sq ft: derive those from paired sales and say so, or leave the difference to the range and explain it.
 
@@ -45,7 +45,7 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 ## Range and recommended price
 
 - **Supported range:** a judgment around the median adjusted value, typically about $25,000 wide (`cma.typical_range_width`). Widen it when comps disagree.
-- **Recommended list price:** near the middle of the range, usually just under a round number ($469,900). The first two to three weeks bring the most showings: a price buyers see as fair turns them into offers, an ambitious one turns into a later cut from a weaker position. compute.py warns when it falls outside the range.
+- **Recommended list price:** near the middle of the range. Mind portal search brackets: buyers filter in steps ($25,000 under $1M, $50,000 to $100,000 above), so $469,900 drops out of a "$470,000 and up" search and $475,000 drops out of "up to $470,000". Pick the side of the bracket where the likely buyers search; just under a round number ($469,900) is the usual choice. The first two to three weeks bring the most showings: a price buyers see as fair turns them into offers, an ambitious one turns into a later cut from a weaker position. compute.py warns when it falls outside the range.
 - **Appraisal ceiling:** name the highest similar sale. A contract well above it invites a low appraisal.
 
 ## The three pricing strategies

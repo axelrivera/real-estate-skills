@@ -116,8 +116,9 @@ def main(argv):
     for p in glob.glob(os.path.join(ROOT, "plugins", "*", "skills", "*", "assets", "labels.json")):
         with open(p, encoding="utf-8") as f:
             labels = json.load(f)
+        prose = set(labels.pop("_prose", []))  # CMA-26: sentences and table values that happen to share a label prefix
         for key, text in labels.items():
-            if (key.startswith(("h_", "th_", "lg_", "sum_", "deck_", "net_", "pay_", "cr_")) and not is_sentence(text)
+            if key not in prose and (key.startswith(("h_", "th_", "lg_", "sum_", "deck_", "net_", "pay_", "cr_")) and not is_sentence(text)
                     and title_case_errors(text)):
                 findings.append(f"label    {os.path.relpath(p, ROOT)} {key}: {text!r}")
     with tempfile.TemporaryDirectory() as tmp:

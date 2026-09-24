@@ -86,7 +86,7 @@
  "sum_tax_yours": "Your Estimated Tax Bill, {homestead}",
  "sum_pay_row": "Monthly Payment ({label})",
  "sum_cash_row": "Cash for Down Payment ({label})",
- "sum_costs_note": "Estimates at the asking price; insurance is a placeholder. Details in the report.",
+ "sum_costs_note": "Estimates at {price}; insurance is an estimate until there's a quote. Details in the report.",
  "sum_check": "Check Before You Offer",
  "sum_next": "Next Step:",
  "sum_opening": "SUGGESTED OPENING OFFER",
@@ -110,7 +110,7 @@
  "cr_cash": "Cash to Close (Down Payment + Closing Costs − Credit + Any Broker Fee You Pay)",
  "cr_pmt": "Monthly Payment",
  "cr_extra": "Extra per Month vs. No Credit",
- "cr_payback": "Years for the Extra Payment to Add up to the Cash Saved",
+ "cr_payback": "Years for the Extra Payment to Add Up to the Cash Saved",
  "cr_cap": "Most a Seller May Contribute ({program}, {down}% Down)",
  "cr_appr": "Room Below the Median Adjusted Comp ({median})",
  "cr_over_cap": "over limit",
@@ -142,5 +142,13 @@
  "tax_estimated": "Estimated at {basis}: no millage for this area yet. Confirm with the property appraiser.",
  "per_year": "/yr",
  "not_available": "Not available",
- "per_month": "/mo"
+ "per_month": "/mo",
+ "_prose": [
+  "cr_over_cap",
+  "cr_over_costs",
+  "cr_years",
+  "cr_seller_cost_known",
+  "cr_seller_cost_fee",
+  "cr_cc_est"
+ ]
 }

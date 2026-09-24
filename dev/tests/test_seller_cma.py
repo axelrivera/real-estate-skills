@@ -417,6 +417,37 @@ class HoldingCosts(unittest.TestCase):
                 self.assertEqual(compute.main([path, "--out", tmp]), 0)
             self.assertTrue(json.loads(out.getvalue())["handoff_file"].endswith(".seller.cma.json"))
 
+
+class AuditLowCma(unittest.TestCase):
+    """CMA-24 (one point set for PDF and deck), CMA-25 (period labels), CMA-26 (method note), CMA-29 (payoff)."""
+
+    def test_deck_and_pdf_use_the_same_points(self):
+        R = report()
+        C, homes = run(R)
+        L = compute.cma.Labels(compute.ASSETS)
+        D = deck.scatter_data(homes, R, C, L)
+        pts, _, _ = compute.cma.scatter_points(homes, R["scatter"], R["subject"]["sqft"], R["subject"].get("mls_address"))
+        self.assertEqual({k: len(v) for k, v in D["points"].items()}, {k: len(v) for k, v in pts.items()})
+
+    def test_period_labels(self):
+        w = {"first_close": "2026-04-03", "last_close": "2026-09-20", "split_date": "2026-07-01"}
+        self.assertEqual(deck.period_labels(w), ["April–June", "July–September"])
+        w["split_date"] = "2026-07-15"
+        self.assertEqual(deck.period_labels(w), ["April–July 14", "July 15–September"])
+
+    def test_method_note_lists_the_adjustments_used(self):
+        cards = [{"adjustments": [{"label": "Size", "amount": 1800}, {"label": "Larger Corner Lot", "amount": -5000}],
+                  "seller_concessions": 0},
+                 {"adjustments": [{"label": "Size", "amount": -900}], "seller_concessions": 5000}]
+        self.assertEqual(deck.adjustment_words(cards), "size, larger corner lot and seller credits")
+
+    def test_payoff_from_a_balance_is_an_estimate(self):
+        R = report()
+        R["costs"].update(mortgage_balance=200000, mortgage_rate=6)
+        C, _ = run(R)
+        self.assertEqual(row(C, "payoff")["amounts"][0], -(200000 + 1000 + 500))
+        self.assertEqual(row(C, "payoff")["label"], "Mortgage Payoff (Estimate from Balance)")
+
 if __name__ == "__main__":
     unittest.main()
 
