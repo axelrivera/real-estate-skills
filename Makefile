@@ -12,12 +12,13 @@ DIST     := dist
 
 SKILLS := $(patsubst %/SKILL.md,%,$(wildcard plugins/*/skills/*/SKILL.md))
 
-.PHONY: help setup hooks test sync check-sync runtime-check preview-design outputs package clean
+.PHONY: help setup hooks test style-check sync check-sync runtime-check preview-design outputs package clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
 	@echo "make hooks          Install the git pre-commit hook (shared/ copies must be in sync)"
 	@echo "make test           Run unit tests in dev/tests/"
+	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
 	@echo "make runtime-check  Run the runtime check against the local environment"
@@ -37,6 +38,9 @@ setup:
 
 hooks:
 	git config core.hooksPath dev/hooks
+
+style-check:
+	@$(NVM) $(DEV_ENV) $(PY) dev/style_check.py
 
 test:
 	@$(PY) -m unittest discover -s dev/tests

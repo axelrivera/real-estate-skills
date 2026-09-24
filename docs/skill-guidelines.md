@@ -21,6 +21,9 @@ Only add a folder when the skill needs it.
 - **Frontmatter:** `name` (lowercase, hyphens) and `description`: what the skill does and when to use it, including the phrases agents actually say. Slightly pushy, because skills tend to under-trigger. Under 1,024 characters.
 - **Explain why.** Say why a rule matters so Claude can apply it sensibly, rather than all-caps MUSTs.
 - **Plain language for the agent.** Users are not technical: no JSON, YAML or hex codes in replies unless asked.
+- **Guardrails first.** Right after the intro, a `## Guardrails` section: fair housing, no em dashes in prose, Title Case labels, and (for skills with `render.py`) that the render check stops on either. A skill that writes prose a client reads points to `references/fair-housing.md` and names its own risky spots (findings, value drivers, offer reasons). Copy the wording from an existing skill at the same level ([architecture](architecture.md#guardrails)).
+- **No em dashes in prose** in reports, chat replies, templates, examples or references: use a comma, colon, parentheses or a new sentence. A lone em dash standing for an empty value (a table cell with nothing in it) is fine. Claude copies the style of what it reads, so references follow the rule too.
+- **Labels in Title Case:** document and section titles, column headers, row names, tiles, legend entries, card and slide titles, pills, and template headings and bold field labels. Sentences, notes, table values, fragments spliced into a sentence, and sentence-style finding headings stay sentence case. ALL-CAPS labels stay as they are. The SKILL.md **Guardrails** section states both, so chat replies follow them too.
 - **Paths** are relative to the skill folder (`scripts/extract_colors.py`, `assets/template.md`). References are one level deep: SKILL.md points to them; they don't chain.
 
 ## Scripts vs templates

@@ -63,9 +63,9 @@ def page(body, css="", title="", theme_css="", body_class=""):
             f"<style>{base}{theme_css}{css}</style></head><body class='{body_class}'>{body}</body></html>")
 
 
-def footer(left, right_pages=True, page="Page", of="of"):
-    """Chromium footer template: `left` text and 'Page X of Y' (pass the words for other languages)."""
-    pages = (f'{html.escape(page)} <span class="pageNumber"></span> {html.escape(of)} <span class="totalPages"></span>'
+def footer(left, right_pages=True):
+    """Chromium footer template: `left` text and 'Page X of Y'."""
+    pages = ('Page <span class="pageNumber"></span> of <span class="totalPages"></span>'
              if right_pages else "")
     return ('<div style="font-size:7pt;color:#5A6672;width:100%;padding:0 0.3in;display:flex;'
             'justify-content:space-between;font-family:Helvetica,Arial,sans-serif">'
@@ -108,11 +108,13 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
     `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
     `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once.
     `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
+    Before anything is built, the data's text is checked (prose.check: no em dashes, no fair-housing
+    red flags); a problem stops the run with the fields to rewrite.
     With several formats, one that fails doesn't stop the others: the files that were made are printed,
     then the run exits with a message naming what wasn't built.
     Prints each path, one per line, so Claude can present them.
     """
-    from . import profiles
+    from . import profiles, prose
 
     ap = argparse.ArgumentParser(description="Render this skill's files from its data file.")
     ap.add_argument("data", help="the skill's data JSON")
@@ -126,11 +128,12 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
         extra_args(ap)
     args = ap.parse_args(argv)
     todo = list(formats) if args.format == "all" else [args.format]
-    errors = (profiles.ProfileError, *errors)
+    errors = (profiles.ProfileError, prose.ProseError, *errors)
 
     try:
         with open(args.data, encoding="utf-8") as f:
             data = json.load(f)
+        prose.check(data)
         ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample, "formats": todo,
                **{k: v for k, v in vars(args).items() if k not in base}}
     except (OSError, ValueError, *errors) as e:

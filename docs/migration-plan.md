@@ -69,7 +69,7 @@ All phases are built (version 0.2.0). Every skill has run through the eval loop 
 | `agent-profile` | Built; evals run and fixed (exact logo colors, one-message intake, updates in place); needs a run in claude.ai and Cowork |
 | `market-profile` | Built; evals run and fixed (Texas exemptions, title quotes, zero transfer tax, `from_profile` check); needs a run in claude.ai and Cowork |
 | `contract-timeline` | Built: engine matches the prototype sample; FR/BAR and other contracts (per-deadline time and rollover for TREC); client flags vs. agent notes; evals run and fixed; needs a run in claude.ai and Cowork |
-| `buyer-cma` | Built: numbers match the prototype sample; English/Spanish; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
+| `buyer-cma` | Built: numbers match the prototype sample; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
 | `seller-cma` | Built: report PDF and 15-slide deck from one report.json; nets from the market profile, refuses to render nets without brokerage terms; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
 | `seller-offer-review` | Built on `shared/offer_engine.py`: prototype numbers reproduced with the prototype's costs; market costs, Preliminary outside built-in markets; single and multi-offer PDF; evals run and fixed (certainty-priority sellers aren't countered for a small gain); needs a run in claude.ai and Cowork |
 | `buyer-offer-strategy` | Built on `shared/offer_engine.py` and `shared/finance`: Offer Options + Offer Package Worksheet; evals run and fixed (stronger option recommended when it lifts the outlook inside every limit, honest reasons); outcome log not ported; needs a run in claude.ai and Cowork |

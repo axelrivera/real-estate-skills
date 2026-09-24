@@ -1,4 +1,4 @@
-# Brand colors
+# Brand Colors
 
 Reports use one main color per side. Everything else (shades, tints, chart colors) is derived from it, so the agent only chooses one or two colors. Without any, buyer reports are blue and seller reports orange.
 
@@ -8,7 +8,7 @@ Offer the three ways in plain words, and make skipping easy:
 
 > If you want your reports in your brand colors, send your logo or another image, your website, or the color codes if you know them. Or skip this and reports use blue for buyers and orange for sellers.
 
-## Reading the colors
+## Reading the Colors
 
 - **Color codes:** use them as given (`#1F3A5F`, `1F3A5F` and `#abc` all work).
 - **Image or website:** run `python3 scripts/extract_colors.py <image path or website>`. It returns:

@@ -1,6 +1,6 @@
 ---
 name: buyer-cma
-description: Builds a buyer-side comparative market analysis for a specific listing, covering the supported value range, the full listing history, adjusted comps, a price-vs-size scatterplot, competition, market conditions, the buyer's real costs (taxes at their price, insurance drivers, payment scenarios, price vs. seller credit), watch items, questions for the listing agent, and a suggested opening offer with target and walk-away. Delivered as a polished PDF or a markdown summary, in English or Spanish. Use it whenever an agent shares an MLS listing sheet, a price-history screenshot or a CMA export for a home their buyer is considering, or asks "run a CMA on this listing", "is this priced right?", "what should my buyer offer?", "comps for 123 Oak St", or "same buyer report as last time". Its handoff feeds the buyer-offer-strategy skill. Not for pricing a seller's listing.
+description: Builds a buyer-side comparative market analysis for a specific listing, covering the supported value range, the full listing history, adjusted comps, a price-vs-size scatterplot, competition, market conditions, the buyer's real costs (taxes at their price, insurance drivers, payment scenarios, price vs. seller credit), watch items, questions for the listing agent, and a suggested opening offer with target and walk-away. Delivered as a polished PDF or a markdown summary. Use it whenever an agent shares an MLS listing sheet, a price-history screenshot or a CMA export for a home their buyer is considering, or asks "run a CMA on this listing", "is this priced right?", "what should my buyer offer?", "comps for 123 Oak St", or "same buyer report as last time". Its handoff feeds the buyer-offer-strategy skill. Not for pricing a seller's listing.
 ---
 
 # Buyer CMA
@@ -8,6 +8,15 @@ description: Builds a buyer-side comparative market analysis for a specific list
 A report for a buyer deciding whether and how to offer. It works because it tells the truth, including the parts that argue against buying or against a low offer. The scripts handle the math, charts and layout. The judgment is yours: reading the listing honestly, choosing and adjusting comps, and explaining each number in plain words to a buyer who may never have bought a house.
 
 Every number is computed by a script and never typed by hand, because a wrong figure in a document carrying the agent's license number is the worst failure this skill can produce. Never invent comps, prices, dates, roof ages or tax figures.
+
+## Guardrails
+
+These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
+
+- **Fair housing.** Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market profile's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing findings, watch items, questions for the listing agent or market commentary: market sections are about sales and supply, never the people who live there. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
+- **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
+- **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
 ## 1. Gather the inputs
 
@@ -36,7 +45,7 @@ Read `references/method.md` for reading the history, choosing and adjusting comp
 
 ## 3. Write report.json
 
-Copy `assets/example-report.json` (an approved report) and replace every value; its length and tone are the target. It describes a sample home with illustrative details: take its structure and tone, never a fact (a sale price, a repair, a record) into a real report. Read `references/report-data.md` for every field, `references/offer-plan.md` before setting the offer plan and credit scenarios, `references/costs.md` for taxes, insurance and payments, and `references/writing.md` for how each section reads. Write `summary_page` last; write `{median_adjusted}` where page 1 quotes the median adjusted value and the script fills it in. For Spanish, set `"language": "es"` and write every field in Spanish.
+Copy `assets/example-report.json` (an approved report) and replace every value; its length and tone are the target. It describes a sample home with illustrative details: take its structure and tone, never a fact (a sale price, a repair, a record) into a real report. Read `references/report-data.md` for every field, `references/offer-plan.md` before setting the offer plan and credit scenarios, `references/costs.md` for taxes, insurance and payments, and `references/writing.md` for how each section reads. Write `summary_page` last; write `{median_adjusted}` where page 1 quotes the median adjusted value and the script fills it in.
 
 Then compute:
 

@@ -13,7 +13,7 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 | HOA estoppel letter | When `costs.hoa` (or `subject.hoa`) is true: the market's fee (Florida $299) |
 | Seller credit | Each strategy's `seller_credit` |
 | Other | `costs.other`: `[{label, amount}]` (survey, repairs already agreed, a home warranty) |
-| Mortgage payoff | `costs.mortgage_payoff`, when the seller gave it: the last row becomes "Estimated cash at closing" |
+| Mortgage payoff | `costs.mortgage_payoff`, when the seller gave it: the last row becomes "Estimated Cash at Closing" |
 
 **Missing values.** Outside the built-in market, anything the market profile doesn't have (transfer tax, title, fees, brokerage defaults) is left out of the table, named in a "Preliminary" note, returned in `warnings`, and the whole report is marked Preliminary (page-1 tag, footer, deck title slide). Ask the agent for the values, or suggest they save them in a market profile, then re-run. Never fill them with Florida's.
 

@@ -55,7 +55,7 @@ class MatchesPrototype(unittest.TestCase):
         o = R["offers"][0]
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (348407, 345907, 352139))
         self.assertEqual((o["score"]["total"], o["action"]), (66, "COUNTER"))
-        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection period"])
+        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period"])
         self.assertEqual(R["seller"]["holding_monthly"], 1050)
 
     def test_two_offers_accept(self):
@@ -196,7 +196,7 @@ class Rules(unittest.TestCase):
         o = oe.analyze(fixture("minimal-single.json"))["offers"][0]
         self.assertEqual(o["ns"]["net_adj"], 349817)
         label = next(lab for k, lab, _ in o["ns"]["lines"] if k == "transfer")
-        self.assertTrue(label.startswith("Documentary stamp tax"))
+        self.assertTrue(label.startswith("Documentary Stamp Tax"))
 
 
 if __name__ == "__main__":

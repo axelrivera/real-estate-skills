@@ -1,4 +1,4 @@
-## Contract timeline: {{property}} ({{side}} view)
+## Contract Timeline: {{property}} ({{Side}} View)
 
 **{{effective.short}} → {{closing.short}} · {{length_days}} days.** {{one sentence: for the buyer view "Your protections run through {{contingencies_end.display}} ({{contingencies_end.short}}); after that the deposit is at risk." For the seller view "The buyer can cancel until {{contingencies_end.display}}; after that the deal is firm unless the buyer defaults." If there's no contingency, say so.}}
 
@@ -8,7 +8,7 @@
 
 {{one line per pending (on-event) item: "**{{label}}:** {{rule}}."}}
 
-**Check before relying on these dates:**
+**Check Before Relying on These Dates:**
 - {{each flag, in plain words}}
 - {{each agent note, in plain words (chat only; they are not on the PDF)}}
 

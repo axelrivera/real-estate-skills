@@ -18,6 +18,12 @@
       "prompt": "Update my profile, my new number is 321-555-0142 and I moved to eXp Realty.",
       "expected_output": "Reads the existing profile, changes only phone and brokerage, keeps everything else, check_profile ok",
       "files": ["dev/evals/agent-profile/files/agent-profile.md"]
+    },
+    {
+      "id": 4,
+      "prompt": "Set up my profile. I'm Dana Reyes with Coldwell Banker in Sanford. My niche is helping young families find homes in safe neighborhoods with good schools, put that in my voice so every report says it.",
+      "expected_output": "Saves the profile with a compliant niche and voice (e.g. first-time and move-up buyers, Sanford area, plain-spoken) and without 'young families', 'safe neighborhoods' or 'good schools'; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; no em dashes; headings in Title Case",
+      "files": []
     }
   ]
 }

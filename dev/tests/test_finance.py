@@ -102,12 +102,12 @@ class SellerSide(unittest.TestCase):
     def test_seller_net_florida(self):
         n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True)
         labels = [a for a, _ in n["items"]]
-        self.assertIn("Documentary stamp tax on the deed (0.70%)", labels)
+        self.assertIn("Documentary Stamp Tax on the Deed (0.70%)", labels)
         self.assertEqual([x["key"] for x in n["lines"]],
                          ["listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees", "estoppel", "credit"])
         self.assertAlmostEqual(sum(x["amount"] for x in n["lines"]), n["total_costs"])
-        self.assertIn("Owner's title insurance", labels)
-        self.assertIn("HOA estoppel letter", labels)
+        self.assertIn("Owner's Title Insurance", labels)
+        self.assertIn("HOA Estoppel Letter", labels)
         self.assertEqual(n["missing"], [])
         self.assertEqual([a["key"] for a in n["assumed"]], ["listing_fee", "buyer_broker_fee", "title_fees"])  # built-in defaults
         quoted = f.seller_net(465000, FL, title_fees=900)
@@ -118,7 +118,7 @@ class SellerSide(unittest.TestCase):
     def test_buyer_pays_title_county(self):
         miami = profiles.load_market(state="FL", county="Miami-Dade")
         labels = [a for a, _ in f.seller_net(500000, miami)["items"]]
-        self.assertNotIn("Owner's title insurance", labels)
+        self.assertNotIn("Owner's Title Insurance", labels)
 
     def test_other_state_reports_missing(self):
         n = f.seller_net(500000, profiles.load_market(state="TX"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)

@@ -10,7 +10,6 @@
 
 | Field | Notes |
 |---|---|
-| `language` | `en` (English only for now) |
 | `prepared_date` | Written out ("September 22, 2026"). Default: today |
 | `as_of` | `YYYY-MM-DD` for the handoff. Default: today |
 | `export` | Path to the MLS export CSV (chart, trend line, deck method step, handoff market stats) |
@@ -31,13 +30,13 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 | `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet |
 | `sqft` | *number*, heated area from the seller or public record |
 | `beds`, `baths`, `year_built`, `pool`, `hoa`, `subdivision` | For the handoff, the comp ranking and the estoppel line (`pool`, `hoa` true/false) |
-| `facts` | Ten `[label, value]`: Beds / baths, Living area, Lot, Built, Pool, Garage, HOA / CDD, Flood zone, Current taxes, Recent updates |
+| `facts` | Ten `[label, value]`, labels in Title Case: Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone, Current Taxes, Recent Updates |
 | `summary` | 2–3 sentences: the home and its updates "as described by you", and what the report does |
 | `summary_facts` | One line for page 1 ("4 bed · 2 bath · 1,849 sq ft · pool · built 1972") |
 
 ## summary_page (write it last)
 
-`label` (default "Seller summary"), `expected_sale` (short phrase, "Low-to-mid $460,000s"; the deck uses it too), `headline` (≤ ~20 words), `key_stats` (exactly 3 `[value, label]`: the median adjusted comp, the recent sale-to-list ratio, days to contract now), `why` (exactly 3, ≤ ~25 words each: the comps, the market, the competition), `first_steps` (exactly 3 `[heading, one line]` from `prep`), `next_step`. The dot plot, the options table and the net tile are computed; never type those numbers here.
+`label` (default "Seller Summary"), `expected_sale` (short phrase, "Low-to-mid $460,000s"; the deck uses it too), `headline` (≤ ~20 words), `key_stats` (exactly 3 `[value, label]`, labels in Title Case: the median adjusted comp, the recent sale-to-list ratio, days to contract now), `why` (exactly 3, ≤ ~25 words each: the comps, the market, the competition), `first_steps` (exactly 3 `[heading, one line]` from `prep`, headings in Title Case), `next_step`. The dot plot, the options table and the net tile are computed; never type those numbers here.
 
 ## recommendation
 
@@ -49,11 +48,11 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## comps
 
-`intro`, `method_note`, `cards` (3–6 of `{address, adjusted` *number*`, meta, bullets}`, written to the seller), `summary_rows` (`[address, sold, seller_paid, adjusted]` *numbers*, highest adjusted first; the "Your home" row is added), `summary_paragraph`.
+`intro`, `method_note`, `cards` (3–6 of `{address, adjusted` *number*`, meta, bullets}`, written to the seller), `summary_rows` (`[address, sold, seller_paid, adjusted]` *numbers*, highest adjusted first; the "Your Home (Recommended List)" row is added), `summary_paragraph`.
 
 ## scatter
 
-`heading`, `intro` (may use `{trend_at_subject}`), `renovated` (export addresses), `subject_label` (default "Your home"), `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), optional `after_paragraph` (may use `{trend_at_subject}`, `{r2_share}`), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (0.6/1.4/1.6).
+`heading` (Title Case), `intro` (may use `{trend_at_subject}`), `renovated` (export addresses), `subject_label` (default "Your Home"), `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`, labels in Title Case), optional `after_paragraph` (may use `{trend_at_subject}`, `{r2_share}`), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (0.6/1.4/1.6).
 
 ## competition
 
@@ -61,7 +60,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## market
 
-`intro`, `columns`, `rows` (strings you format from stats.py's numbers: "95.2%", "22 days"; without an export, from the sales you were given), `bullets` (3–5, each tied to price or timing).
+`intro`, `columns` and `rows` (column headers and row names in Title Case; cell strings you format from stats.py's numbers: "95.2%", "22 days"; without an export, from the sales you were given), `bullets` (3–5, each tied to price or timing).
 
 ## pricing
 
@@ -84,7 +83,7 @@ All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractio
 
 ## prep, needs, method
 
-`prep`: `intro` plus 5–7 `items`, each with a `<strong>` lead (shown as "Before we list"). `needs`: 5–8 specific requests to the seller. `method`: two paragraphs, sources with dates, then the not-an-appraisal statement, the estimate caveats and the shelf life.
+`prep`: `intro` plus 5–7 `items`, each with a `<strong>` lead (shown as "Before We List"). `needs`: 5–8 specific requests to the seller. `method`: two paragraphs, sources with dates, then the not-an-appraisal statement, the estimate caveats and the shelf life.
 
 ## deck
 

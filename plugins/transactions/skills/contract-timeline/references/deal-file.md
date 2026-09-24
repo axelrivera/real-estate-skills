@@ -42,7 +42,7 @@ FR/BAR contracts also use the fields in `frbar.md` (deposit days, inspection day
 Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry per deadline:
 
 ```json
-{"key": "option_period", "label": "Option period ends", "short": "Option ends",
+{"key": "option_period", "label": "Option Period Ends", "short": "Option Ends",
  "basis": "after", "days": 7, "party": "Buyer", "critical": true, "contingency": true,
  "source": "Para. 5B", "action": "Deliver notice of termination before the deadline if not proceeding",
  "if_missed": "Right to terminate for any reason ends; option fee is not refunded"}
@@ -51,7 +51,7 @@ Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry
 | Field | Notes |
 |---|---|
 | `key` | Short id, unique (used by amendments and overrides) |
-| `label`, `short` | Full name; short name for the timeline strip |
+| `label`, `short` | Full name; short name for the timeline strip. Both in Title Case ("Option Period Ends", "Option Ends") |
 | `basis` | `after` (days after the Effective Date), `before` (days before closing), `date` (with `"date": "YYYY-MM-DD HH:MM"`), `event` (runs from `received`, when recorded) |
 | `days` | For `after`, `before` and `event` |
 | `business` | `true` when the contract counts this period in business days |

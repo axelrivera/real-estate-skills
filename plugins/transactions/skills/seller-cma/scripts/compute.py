@@ -163,7 +163,7 @@ def payments(R, market):
 def compute(R, market, homes):
     _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
              "comps.cards", "pricing.strategies", "buyer_payment.rate", "buyer_payment.insurance_annual")
-    L = cma.Labels(ASSETS, R.get("language", "en"), R.get("labels"))
+    L = cma.Labels(ASSETS, R.get("labels"))
     s, rec, p = R["subject"], R["recommendation"], R["pricing"]
     strategies = p["strategies"]
     if not 1 <= len(strategies) <= 4:

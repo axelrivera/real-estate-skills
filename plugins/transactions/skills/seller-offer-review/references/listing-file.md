@@ -1,4 +1,4 @@
-# Listing file
+# Listing File
 
 One JSON file per property, with every offer in it. `scripts/review.py` analyzes it and `scripts/render.py` builds the PDF. Only `listing.list_price` and, per offer, `price` and `financing` are needed. Anything else that's missing gets the default below and is recorded as an assumption:
 
@@ -15,7 +15,7 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
 }
 ```
 
-## Top level
+## Top Level
 
 | Field | Default |
 |---|---|
@@ -29,7 +29,7 @@ The agent's name, brokerage and brand colors come from the agent profile (`--age
 
 ## listing
 
-| Field | Default if missing | Impact |
+| Field | Default if Missing | Impact |
 |---|---|---|
 | `address` | — | — |
 | `state`, `county` | state read from the address ("…, FL 32750"); neither → Florida assumed | high |
@@ -43,7 +43,7 @@ The agent's name, brokerage and brand colors come from the agent profile (`--age
 | `annual_tax` | market fallback rate × list price (Florida 1.8%); no rate → proration left out | low / med |
 | `costs` | market profile values; see below | — |
 
-### costs (this deal's own numbers, optional)
+### costs (This Deal's Own Numbers, Optional)
 
 Use when the agent has a title company quote or the county differs from the market default. Each one wins over the market profile.
 
@@ -60,7 +60,7 @@ Use when the agent has a title company quote or the county differs from the mark
 
 ## seller
 
-| Field | Default if missing | Impact |
+| Field | Default if Missing | Impact |
 |---|---|---|
 | `name` | "Seller" | — |
 | `payoff` | 0; nets labeled **before payoff** | **high** |
@@ -73,7 +73,7 @@ Use when the agent has a title company quote or the county differs from the mark
 
 ## offers[]
 
-| Field | Values | Default if missing | Impact |
+| Field | Values | Default if Missing | Impact |
 |---|---|---|---|
 | `id` | "A", "B", … | "A" | — |
 | `status` | `active` `backup` `declined` `expired` `accepted` | `active` | — |
@@ -103,9 +103,9 @@ Use when the agent has a title company quote or the county differs from the mark
 | `agent_track` | `strong` `average` `weak` | scored 3 | — |
 | `agent_note` | text for the scorecard | — | — |
 
-### Agent overrides (per offer)
+### Agent Overrides (per Offer)
 
-- `scores`: `{"appraisal": {"score": 2, "why": "Appraisers here run low"}, "agent": 5}`. Keys: `financing` `approval` `appraisal` `contingency` `deposit` `timeline` `property` `agent`. Marked "agent" in the report.
+- `scores`: `{"appraisal": {"score": 2, "why": "Appraisers here run low"}, "agent": 5}`. Keys: `financing` `approval` `appraisal` `contingency` `deposit` `timeline` `property` `agent`. Marked "Agent" in the report.
 - `counter`: any computed term (`price`, `seller_concessions`, `appraisal_gap`, `deposit`, `inspection_days`, `home_warranty`, `buyer_broker_pct`, `closing_date`), or the whole table as `rows: [[term, offered, counter, why], …]`. The counter net and certainty recompute from the terms, so keep rows and terms consistent.
 - `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE`.
 - `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`. Values `Yes` `No` `Pending` `N/A`.

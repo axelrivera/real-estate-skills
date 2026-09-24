@@ -25,14 +25,14 @@ APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full un
                   "du_approved": "Pre-approval (DU/LP approved)", "preapproval": "Pre-approval letter",
                   "prequal": "Pre-qualification only", "none": "No approval provided"}
 CRITERIA = [  # key, label, weight
-    ("financing", "Financing type & down payment", 20),
-    ("approval", "Approval / funds verified", 10),
-    ("appraisal", "Appraisal risk", 20),
-    ("contingency", "Contingency exposure", 15),
-    ("deposit", "Deposit strength", 10),
-    ("timeline", "Fit with seller's timeline", 10),
-    ("property", "Property-condition / insurance risk", 10),
-    ("agent", "Buyer agent track record", 5),
+    ("financing", "Financing Type & Down Payment", 20),
+    ("approval", "Approval / Funds Verified", 10),
+    ("appraisal", "Appraisal Risk", 20),
+    ("contingency", "Contingency Exposure", 15),
+    ("deposit", "Deposit Strength", 10),
+    ("timeline", "Fit with Seller's Timeline", 10),
+    ("property", "Property-Condition / Insurance Risk", 10),
+    ("agent", "Buyer Agent Track Record", 5),
 ]
 # Share of list price per 100 points of missing certainty, by the seller's priority.
 RISK_PENALTY = {"price": 0.05, "balanced": 0.10, "speed": 0.12, "certainty": 0.15}
@@ -398,24 +398,24 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0):
         key = _LINE_KEYS.get(ln["key"])
         if key:
             found[key] = (ln["label"], round(ln["amount"]))
-    transfer = found.get("transfer", ("",))[0] or "Deed transfer tax"  # the market's own name (e.g. documentary stamp tax)
+    transfer = found.get("transfer", ("",))[0] or "Deed Transfer Tax"  # the market's own name (e.g. documentary stamp tax)
     labels = {
-        "listing": f"Listing brokerage ({pct(S['listing_fee_pct'])})" if S["listing_fee_pct"] else "Listing brokerage (not provided)",
-        "bb": f"Buyer-broker compensation ({pct(bb_pct, 2)})" if bb_pct else "Buyer-broker compensation",
+        "listing": f"Listing Brokerage ({pct(S['listing_fee_pct'])})" if S["listing_fee_pct"] else "Listing Brokerage (Not Provided)",
+        "bb": f"Buyer-Broker Compensation ({pct(bb_pct, 2)})" if bb_pct else "Buyer-Broker Compensation",
         "transfer": transfer,
-        "title": "Owner's title policy" + (" (promulgated rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (estimate)"),
-        "settle": "Title company fees",
-        "estoppel": "HOA estoppel",
+        "title": "Owner's Title Policy" + (" (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
+        "settle": "Title Company Fees",
+        "estoppel": "HOA Estoppel",
     }
     days = (close - date(close.year, 1, 1)).days
     tax = round(L["annual_tax"] * days / 365) if L["annual_tax"] and L["tax_in_arrears"] else 0
-    lines = [("price", "Offer price", price), ("conc", "Seller-paid closing costs / concessions", -conc),
-             ("repair", "Post-inspection repair credit (est.)", -repair)]
+    lines = [("price", "Offer Price", price), ("conc", "Seller-Paid Closing Costs / Concessions", -conc),
+             ("repair", "Post-Inspection Repair Credit (Est.)", -repair)]
     for key in ("listing", "bb", "transfer", "title", "settle", "estoppel"):
         lines.append((key, labels[key], -found.get(key, ("", 0))[1]))
-    lines += [("warranty", "Home warranty", -warranty),
-              ("tax", "Property-tax proration (Jan 1 → closing)", -tax),
-              ("payoff", "Mortgage payoff (est.)", -S["payoff"])]
+    lines += [("warranty", "Home Warranty", -warranty),
+              ("tax", "Property-Tax Proration (Jan 1 → Closing)", -tax),
+              ("payoff", "Mortgage Payoff (Est.)", -S["payoff"])]
     net = sum(v for _, _, v in lines)
     months = max(0, (close - L["analysis_date"]).days) / 30
     holding = -round(S["holding_monthly"] * months)
@@ -641,42 +641,42 @@ def propose_counter(o, L, S):
         need = t["price"] - mid
         if need > o["appraisal_gap"] and need > 0:
             t["appraisal_gap"] = rnd(need, 1000, "up")
-            rows.append(("Appraisal gap coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None", money(t["appraisal_gap"]),
+            rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None", money(t["appraisal_gap"]),
                          f"Deal holds if the appraisal lands near {money(rnd(mid, 1000))}"))
     if o["seller_concessions"] > .015 * o["price"]:
         t["seller_concessions"] = rnd(o["seller_concessions"] / 2, 500)
-        rows.append(("Seller concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Biggest controllable drain on net"))
+        rows.append(("Seller Concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Biggest controllable drain on net"))
     ob = S["offered_buyer_broker_pct"]
     if ob is not None and o["buyer_broker_pct"] > ob + 1e-9:
         t["buyer_broker_pct"] = ob
-        rows.append(("Buyer-broker compensation", f"{o['buyer_broker_pct']:.1%}", f"{ob:.1%}", "Matches what the seller agreed to offer"))
+        rows.append(("Buyer-Broker Compensation", f"{o['buyer_broker_pct']:.1%}", f"{ob:.1%}", "Matches what the seller agreed to offer"))
     if o["deposit"] is not None and o["deposit"] / o["price"] < L["deposit_norm"] - 1e-9:
         norm = L["deposit_norm"] if o["financed"] else max(L["deposit_norm"], 0.05)
         t["deposit"] = max(o["deposit"], rnd(norm * t["price"], 1000, "up"))
-        rows.append(("Escrow deposit", money(o["deposit"]), money(t["deposit"]), "More buyer commitment once contingencies expire"))
+        rows.append(("Escrow Deposit", money(o["deposit"]), money(t["deposit"]), "More buyer commitment once contingencies expire"))
     if o["inspection_days"] > 7:
         t["inspection_days"] = 7
-        rows.append(("Inspection period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""), "7 days",
+        rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""), "7 days",
                      f"Shorter walk-away window; seller shares the {L['reports']}"))
     if o["sale_contingency_days"]:
         t["sale_contingency_days"] = min(21, o["sale_contingency_days"])
-        rows.append(("Sale-of-home contingency", f"{o['sale_contingency_days']} days" + (" + kick-out" if o["kickout"] else ""),
+        rows.append(("Sale-of-Home Contingency", f"{o['sale_contingency_days']} days" + (" + kick-out" if o["kickout"] else ""),
                      f"{t['sale_contingency_days']} days + 72-hr kick-out", "Limits how long the seller is tied up"))
     if o["financed"] and o["approval"] in ("prequal", "none"):
-        rows.append(("Loan approval", APPROVAL_LABEL[o["approval"]], "Full pre-approval in 3 days", "Proves the buyer can actually borrow"))
+        rows.append(("Loan Approval", APPROVAL_LABEL[o["approval"]], "Full pre-approval in 3 days", "Proves the buyer can actually borrow"))
     if o["home_warranty"]:
         t["home_warranty"] = 0
-        rows.append(("Home warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "Small give-back if the buyer pushes"))
+        rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "Small give-back if the buyer pushes"))
     new_close = o["close"]
     if S["deadline"] and new_close > S["deadline"]:
         new_close = S["deadline"]
     new_close = prior_weekday(new_close)
     if new_close != o["close"]:
         t["close"] = new_close
-        rows.append(("Closing date", f"{o['close']:%a %b %-d}", f"{new_close:%a %b %-d}",
+        rows.append(("Closing Date", f"{o['close']:%a %b %-d}", f"{new_close:%a %b %-d}",
                      "Meets the seller's deadline" if S["deadline"] and o["close"] > S["deadline"] else "Weekend closings may not fund"))
     if L["title_customary_payer"] == "seller" and o["title_by"] != "seller":
-        rows.append(("Escrow / title agent", "Buyer's title co.", "Seller's title co.", "Seller pays the owner's policy, so the seller picks title"))
+        rows.append(("Escrow / Title Agent", "Buyer's title co.", "Seller's title co.", "Seller pays the owner's policy, so the seller picks title"))
     ov = o.get("counter") or {}
     if ov.get("rows"):
         rows = [tuple(r) for r in ov["rows"]]
@@ -699,9 +699,9 @@ def fallback_counter(o, main, L):
     t["appraisal_gap"] = o["appraisal_gap"]
     t["seller_concessions"] = rnd((o["seller_concessions"] + main["seller_concessions"]) / 2, 500)
     rows = [("Price", money(o["price"]), money(t["price"]), "At the value midpoint, so no gap is needed"),
-            ("Appraisal gap coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
+            ("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
              money(t["appraisal_gap"]) if t["appraisal_gap"] else "None", "Buyer likely can't fund a gap"),
-            ("Seller concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Keeps closing-cost help this buyer needs")]
+            ("Seller Concessions", money(o["seller_concessions"]), money(t["seller_concessions"]), "Keeps closing-cost help this buyer needs")]
     return t, rows
 
 

@@ -1,5 +1,4 @@
 {
- "language": "en",
  "prepared_date": "September 22, 2026",
  "as_of": "2026-09-22",
  "subject": {
@@ -18,11 +17,11 @@
   "subdivision": "SPRING OAKS",
   "facts": [
    [
-    "Beds / baths",
+    "Beds / Baths",
     "4 / 2"
    ],
    [
-    "Living area",
+    "Living Area",
     "1,849 sq ft"
    ],
    [
@@ -46,15 +45,15 @@
     "None / None"
    ],
    [
-    "Flood zone",
+    "Flood Zone",
     "X (lower risk)"
    ],
    [
-    "Current taxes",
+    "Current Taxes",
     "$2,731 a year"
    ],
    [
-    "Recent updates",
+    "Recent Updates",
     "Kitchen, baths, floors, roof"
    ]
   ],
@@ -62,21 +61,21 @@
   "summary_facts": "4 bed · 2 bath · 1,849 sq ft · pool · built 1972"
  },
  "summary_page": {
-  "label": "Seller summary",
+  "label": "Seller Summary",
   "expected_sale": "Low-to-mid $460,000s",
   "headline": "Priced at the middle of what recent sales support, for the strongest first weeks on the market.",
   "key_stats": [
    [
     "{median_adjusted}",
-    "Median of the five closest sales, adjusted to your home"
+    "Median of the Five Closest Sales, Adjusted to Your Home"
    ],
    [
     "96.5%",
-    "Sale price vs. original asking price for nearby homes since July"
+    "Sale Price vs. Original Asking Price for Nearby Homes Since July"
    ],
    [
     "18 days",
-    "Typical time to go under contract now, up from 9 in the spring"
+    "Typical Time to Go Under Contract Now, Up from 9 in the Spring"
    ]
   ],
   "why": [
@@ -86,15 +85,15 @@
   ],
   "first_steps": [
    [
-    "Document the roof",
+    "Document the Roof",
     "Permit and date, ready for buyers and insurers"
    ],
    [
-    "Pre-listing inspection",
+    "Pre-Listing Inspection",
     "Plus 4-point and wind-mitigation reports"
    ],
    [
-    "Gather permits",
+    "Gather Permits",
     "Kitchen, bath, electrical, and plumbing work"
    ]
   ],
@@ -201,7 +200,7 @@
   "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. The two highest are the closest matches to your home's condition but sold in a stronger spring market; the two lowest needed the largest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
  },
  "scatter": {
-  "heading": "Where your home fits in the neighborhood",
+  "heading": "Where Your Home Fits in the Neighborhood",
   "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. Renovated pool homes sell well above the size-only trend line (about {trend_at_subject} at your size). At $469,900, your home would sit among the renovated pool sales, below the two spring sales at the top.",
   "renovated": [
    "621 LITTLE WEKIVA RD",
@@ -209,7 +208,7 @@
    "622 SPRING OAKS BLVD",
    "419 NAVARRE WAY"
   ],
-  "subject_label": "Your home",
+  "subject_label": "Your Home",
   "subject_label_pos": "right",
   "callouts": [
    {
@@ -219,7 +218,7 @@
    },
    {
     "address": "644 PEACHWOOD DR",
-    "label": "644 Peachwood (for sale)",
+    "label": "644 Peachwood (For Sale)",
     "side": "right"
    }
   ]
@@ -306,31 +305,31 @@
   "columns": [
    "",
    "April – June",
-   "July – mid-Sept"
+   "July – Mid-Sept"
   ],
   "rows": [
    [
-    "Homes sold",
+    "Homes Sold",
     "25",
     "10"
    ],
    [
-    "Typical sale vs. original asking price",
+    "Typical Sale vs. Original Asking Price",
     "100%",
     "96.5%"
    ],
    [
-    "Typical days to go under contract",
+    "Typical Days to Go Under Contract",
     "9",
     "18"
    ],
    [
-    "Sales with seller-paid buyer costs",
+    "Sales with Seller-Paid Buyer Costs",
     "56%",
     "80%"
    ],
    [
-    "Typical seller-paid amount",
+    "Typical Seller-Paid Amount",
     "$8,600",
     "$10,300"
    ]

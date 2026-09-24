@@ -6,16 +6,16 @@ For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "fr
 
 | Field | Where to look | Blank = form default |
 |---|---|---|
-| `effective_date` | Signature blocks and the last initials or date on the final counteroffer | — (ask) |
+| `effective_date` | Signature blocks and the last initials or date on the final counteroffer | No default (ask) |
 | `deposit_days`, `deposit_amount_str` | Para. 2(a) | 3 days |
 | `additional_deposit_days`, `additional_deposit_amount_str` | Para. 2(b). A blank amount means no additional deposit: leave both out | 10 days, only when an amount is written |
 | `financing`, `loan_application_days`, `loan_approval_days` | Para. 8 | 5 days, 30 days |
-| `closing_date`, `closing_time` | Para. 4 (extensions in Para. 5). The form has no closing time; use the one the parties or title company set | — ; time 10:00 AM (agent note) |
+| `closing_date`, `closing_time` | Para. 4 (extensions in Para. 5). The form has no closing time; use the one the parties or title company set | No default; time 10:00 AM (agent note) |
 | `possession_*` | Para. 6 | at closing |
 | `title_by`, `title_evidence_days_before`, `survey_days_before` | Para. 9 | seller, 5 days, 5 days |
 | `inspection_days` | Para. 12 | 15 days |
 | `walkthrough_days_before` | Para. 13 | 1 day |
-| `riders` | Names of attached riders | — |
+| `riders` | Names of attached riders | No default |
 | `appraisal_days` | Appraisal Contingency or FHA/VA rider | 21 days |
 | `insurance_days` | Homeowners'/Flood Insurance rider | = inspection period |
 | `sale_contingency_days` | Sale of Buyer's Property rider | 30 days |

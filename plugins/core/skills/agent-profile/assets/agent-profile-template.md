@@ -14,13 +14,13 @@ brand:
   seller_primary: "{{#RRGGBB}}"  # {{color name}}
 ---
 
-# Agent profile: {{full name}}
+# Agent Profile: {{full name}}
 
 {{team name}} · {{brokerage}}
 
 Used as context by the real estate skills.
 
-## Brand colors
+## Brand Colors
 
 {{color name}} for all reports.
 

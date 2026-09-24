@@ -3,7 +3,7 @@ name: seller-offer-review
 description: Reviews purchase offers on a listing for the seller's agent. For each offer it computes the seller's net (as offered and if the appraisal or inspection goes badly), a certainty score, risk flags and a counter; with two or more offers it ranks them and lays out a plan (counter, backup, decline). Answers in chat or as a seller-ready PDF. Use it whenever a listing agent says "we got an offer", "analyze this offer", "should my seller accept", "what should we counter", "net sheet for this offer", "compare these offers", "we have multiple offers", "highest and best", "which offer is best", uploads a contract, pre-approval letter or offer summary, or another offer arrives on a listing that already has one. Works with just list price, offer price and financing. Florida (FR/BAR) costs are built in; other states use the agent's market profile. Not for pricing a home before listing or writing a buyer's offer.
 ---
 
-# Seller offer review
+# Seller Offer Review
 
 Every offer goes through the same engine: seller net sheet, downside case, certainty score, risk flags and a proposed counter. All offers on one property live in one listing file, so the single-offer and multi-offer answers never disagree. The math always runs in the scripts; never estimate a net or score by hand, because a seller will act on these numbers.
 
@@ -11,13 +11,22 @@ Every offer goes through the same engine: seller net sheet, downside case, certa
 - **Two or more active offers:** a comparison. The recommended offer, a plan for every offer (counter / backup / decline), the ranking and a net-vs-certainty chart.
 - **One offer while others are active** ("give me the report on Offer B"): the single review, set in context. An offer worth countering alone may be a decline next to a stronger one.
 
-## Never block on missing data
+## Guardrails
+
+These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
+
+- **Fair housing.** Compare offers only on price, terms, financing mechanics, contingencies, deposits, timing and proof, never on who the buyer is. Buyer letters, photos and personal details are set aside unread and never scored; loan type is a term, described by what it changes, not by who uses it. Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market profile's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing the recommendation, risk flags or questions for the buyer's agent. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
+- **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
+- **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
+
+## Never Block on Missing Data
 
 The engine fills anything missing with a conservative default and records it as an assumption with an impact level. High-impact gaps (CMA range, payoff, listing fee, concessions, buyer-broker pay, and outside Florida the local closing costs) mark the answer **Preliminary**. Build the answer with what you have, then ask for the two to four inputs that would change it most. Don't open with a questionnaire: agents answer faster once they see what's missing.
 
 **Minimum to run:** list price, offer price and financing type. If one is missing, ask for just that.
 
-## 1. Build the listing file
+## 1. Build the Listing File
 
 One JSON file per property: read `references/listing-file.md` for the fields. If the agent uploads a listing file from an earlier session, add the new offer to it (next letter as `id`) rather than starting over.
 
@@ -34,7 +43,7 @@ Record only what the documents or the agent say. Leave a field out rather than g
 
 **Market costs:** Florida closing costs, title rates, brokerage defaults and tax proration are built in. Include the agent's market profile when there is one (project files, uploads). Outside Florida without a profile, nothing is filled in from Florida: missing costs are left out and flagged. Read `references/seller-costs.md` when the agent asks where a cost comes from or has a title company quote.
 
-## 2. Run and review
+## 2. Run and Review
 
 ```
 python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-profile.md] [--mode single|multi] [--offer B]
@@ -58,13 +67,13 @@ It saves the PDF to the outputs folder in the agent's seller-side brand colors. 
 
 In chat, keep it short: the recommendation with the net and certainty; the counter (and fallback) or the plan per offer; then the top missing inputs as one question, skipped when nothing high or medium is assumed. Offer the other format in one line. Always hand back the updated listing file: the sandbox resets between conversations, so say once "upload this with the next offer and I'll add it to the comparison."
 
-## Offers over time
+## Offers Over Time
 
 - New offer: append it; the mode switches to multi on its own.
 - Counter rejected, offer expired or withdrawn: `status` `declined` / `expired`. It leaves the ranking but stays in the file.
 - A buyer agrees to back up: `status: "backup"`. Counter accepted: `status: "accepted"`, and offer a contract timeline for the deadlines.
 
-## Rules that protect the seller and the agent
+## Rules That Protect the Seller and the Agent
 
 - **One counter out at a time** with multiple offers. Countering several buyers at once can produce two accepted contracts; the plan says so.
 - **Present every offer.** The skill ranks offers; it never hides one. Only the seller drops an offer.

@@ -1,4 +1,4 @@
-# FR/BAR AS IS Residential Contract For Sale And Purchase (Rev. 6/24) — executed (text extract)
+# FR/BAR AS IS Residential Contract For Sale And Purchase (Rev. 6/24), Executed (Text Extract)
 
 1. PARTIES: Sample Buyer ("Buyer") and Sample Seller ("Seller").
    PROPERTY: 1532 Cypress Bend Dr, Casselberry, FL 32707, Seminole County.

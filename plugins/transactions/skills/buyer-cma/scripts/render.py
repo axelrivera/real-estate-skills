@@ -162,7 +162,7 @@ def body(R, C, homes, agent, L):
     sc = R.get("scatter")
     if sc and homes:
         svg, info = cma.scatter(homes, sc, s["sqft"], s["list_price"], s.get("mls_address", s["address"]), (bl["low"], bl["high"]), L)
-        trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "—"
+        trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
               '<div class="chart-box">' + cma.scatter_legend(L, sc.get("subject_label", s["address"])) + svg + "</div>"]
@@ -236,14 +236,14 @@ def theme_css(agent):
 
 
 def build_html(R, C, homes, agent):
-    L = cma.Labels(ASSETS, R.get("language", "en"), R.get("labels"))
+    L = cma.Labels(ASSETS, R.get("labels"))
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
                cma.group_blocks(body(R, C, homes, agent, L)) + "</div>")
     title = f'{L("doc_label")}: {R["subject"]["address"]}'
     doc = render.page(content, css=cma.css(), title=title, theme_css=vars_css)
-    return doc.replace("<html>", f'<html lang="{R.get("language", "en")}">', 1), L
+    return doc.replace("<html>", '<html lang="en">', 1), L
 
 
 def build(R, fmt, out_dir, ctx):
@@ -258,7 +258,7 @@ def build(R, fmt, out_dir, ctx):
     if ctx.get("sample") or R.get("sample"):
         label = "SAMPLE DATA · " + label
     path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Buyer CMA", ext="pdf"))
-    info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label, page=L("page"), of=L("of")), before_print=cma.paginate)
+    info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label), before_print=cma.paginate)
     hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"]))
     with open(hpath, "w", encoding="utf-8") as f:
         json.dump(C["handoff"], f, indent=2)

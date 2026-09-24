@@ -20,6 +20,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
+| `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs and shipped files; a lone em dash for an empty value is fine) and labels not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make package` | Zips every skill into `dist/<plugin>-<skill>.zip` for upload to claude.ai, plus `dist/runtime-check.zip` |
 | `make clean` | Removes `out/` and `dist/` |
 
@@ -72,6 +73,8 @@ dev/                     # dev tooling, never shipped
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` or a fenced markdown block |
 | `shared/offer_engine.py` | Offer analysis for both offer skills: listing and offer defaults with ranked assumptions, seller net sheet (via `finance.seller_net`), appraisal downside, certainty score, risk flags, counters, multi-offer ranking |
 | `shared/mls.py` | MLS export reader (columns from the market profile) and market statistics, trend line |
+| `shared/prose.py` | The render check: em dashes in prose and clear fair-housing phrases in the data file stop the render, naming each field |
+| `shared/references/fair-housing.md` | Fair housing rules; copied to `references/` of each skill whose SKILL.md points to it |
 | `shared/cma.py`, `shared/cma.css` | CMA report pieces: labels, tables, scatterplot, dot plot, keep-together groups, pagination |
 
 After editing `shared/`, run `make test` and `make sync`, and commit the updated copies with the change.

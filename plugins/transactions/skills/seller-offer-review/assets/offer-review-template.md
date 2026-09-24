@@ -1,14 +1,14 @@
 <!-- Fill from scripts/review.py output. Values come from the JSON as printed; never recompute them. Use the single or the multi block, not both. -->
 
-## Offer review: {{property}} (list {{list_price}})
+## Offer Review: {{property}} (List {{list_price}})
 
 <!-- single mode -->
 **{{summary.headline}}{{" Offer " + summary.offer}}.** {{summary.why}}
 
 {{when summary.counter:}}
-**Our counter** ({{summary.counter.summary}}):
+**Our Counter** ({{summary.counter.summary}}):
 
-| Term | Buyer offered | We counter | Why |
+| Term | Buyer Offered | We Counter | Why |
 |---|---|---|---|
 | {{row.term}} | {{row.offered}} | **{{row.counter}}** | {{row.why}} |
 
@@ -19,20 +19,20 @@
 | {{each kpi: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}) |
 | Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}}; buyer can walk away until {{summary.certainty.walk_away_until}}; biggest threat: {{summary.certainty.threat}} |
 
-**Top risks:** {{each summary.risks: risk.issue}}
+**Top Risks:** {{each summary.risks: risk.issue}}
 
 <!-- multi mode -->
 **{{summary.headline}}.** {{summary.why}}
 
-**The plan** ({{summary.plan_summary}}):
+**The Plan** ({{summary.plan_summary}}):
 
-| Offer | Action | Terms / reason |
+| Offer | Action | Terms / Reason |
 |---|---|---|
 | {{plan.offer}} | {{plan.action}} | {{plan.terms}} |
 
 {{summary.plan_note}}
 
-| # | Offer | Price | Net | Downside | Certainty | Buyer can walk | Close |
+| # | Offer | Price | Net | Downside | Certainty | Buyer Can Walk | Close |
 |---|---|---|---|---|---|---|---|
 | {{r.rank}} | {{r.offer}} ({{r.financing}}) | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days}} days | {{r.close}} |
 
@@ -41,9 +41,9 @@
 
 {{summary.preliminary, when present}}
 
-**Next step:** {{summary.next_step}}
+**Next Step:** {{summary.next_step}}
 
-**To sharpen this:** {{to_confirm, as one short question; skip when empty}}
+**To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 
 <sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = if the appraisal and inspection go badly. Estimates only; the title company's settlement statement governs. Not legal advice.</sub>
 

@@ -37,7 +37,7 @@ class MatchesPrototype(unittest.TestCase):
         self.assertEqual(got, {
             "recommended": (365000, 64, 23550, 2450, 3150, 61.3, "Competitive"),
             "stronger": (365000, 68, 25550, 450, 3150, 65.3, "Competitive"),
-            "lower_cost": (364000, 66, 19980, 6020, 3142, 55.8, "At risk"),
+            "lower_cost": (364000, 66, 19980, 6020, 3142, 55.8, "At Risk"),
         })
         t = r["terms"]["recommended"]
         self.assertEqual((t["seller_concessions"], t["deposit"], t["appraisal_gap"]), (2000, 11000, 0))
@@ -144,7 +144,7 @@ class HandoffAndOtherStates(unittest.TestCase):
     def test_florida_worksheet(self):
         w = strategy.worksheet(analyze("fha-competitive.json"))
         self.assertTrue(w["frbar"])
-        self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing", "Homeowners' / Flood Insurance (if in your form set)"])
+        self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing", "Homeowners' / Flood Insurance (If in Your Form Set)"])
         self.assertEqual(w["rows"][6]["entry"], "**$11,000** within 3 days of Effective Date")
 
 
@@ -154,7 +154,7 @@ class Pdf(unittest.TestCase):
         doc = buyer_render.options_html(r, {"name": "Jane Doe", "brokerage": "Sunshine Realty"}, sample=True)
         self.assertIn("--brand:#1A74AD", doc)  # buyer blue by default (the prototype used orange)
         self.assertNotIn("--brand:#C2410C", doc)
-        self.assertIn("Buyer side", doc)
+        self.assertIn("Buyer Side", doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
 

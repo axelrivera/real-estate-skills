@@ -82,7 +82,7 @@ class FrbarMatchesPrototype(unittest.TestCase):
         deal["contract"]["contract_form"] = "standard"
         rows = by_key(timeline.analyze(deal))
         self.assertIn("repair_notice", rows)
-        self.assertEqual(rows["inspection"]["label"], "Inspection period ends")
+        self.assertEqual(rows["inspection"]["label"], "Inspection Period Ends")
 
 
 class Amendments(unittest.TestCase):
@@ -156,7 +156,7 @@ class Required(unittest.TestCase):
     def test_per_deadline_time_and_no_rollover(self):
         deal = fixture("texas-trec.json")
         deal["contract"]["effective_date"] = "2026-11-21"
-        deal["deadlines"] = [{"key": "option", "label": "Option period ends", "basis": "after", "days": 7, "party": "Buyer",
+        deal["deadlines"] = [{"key": "option", "label": "Option Period Ends", "basis": "after", "days": 7, "party": "Buyer",
                               "time": "17:00", "rollover": False}]
         deal["contract"].pop("date_overrides", None)
         row = by_key(timeline.analyze(deal))["option"]
@@ -185,7 +185,7 @@ class Pdf(unittest.TestCase):
         t = timeline.analyze(fixture("seller-amended.json"))
         doc = timeline_render.build_html(t, agent, sample=True)
         self.assertIn("--brand:#0B6E4F", doc)
-        self.assertIn("Seller view", doc)
+        self.assertIn("Seller View", doc)
         self.assertIn("SAMPLE DATA", doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)  # no license in the profile: nothing printed

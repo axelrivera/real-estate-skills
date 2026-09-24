@@ -1,28 +1,28 @@
 <!-- Fill from scripts/strategy.py output. Values come from the JSON as printed; never recompute them. -->
 
-## Offer strategy: {{property}} (list {{list_price}})
+## Offer Strategy: {{property}} (List {{list_price}})
 
-**Recommended offer: {{summary.outlook}} with {{summary.competition}}.** {{summary.why}}
+**Recommended Offer:** {{summary.outlook}} with {{summary.competition}}. {{summary.why}}
 
 | Term | Offer | Why |
 |---|---|---|
-| {{t.term}} | **{{t.offer}}**{{" (agent)" when t.agent}} | {{t.why}} |
+| {{t.term}} | **{{t.offer}}**{{" (Agent)" when t.agent}} | {{t.why}} |
 
-**Your options**
+**Your Options**
 
-| Option | Price | Outlook | Seller net | Worst-case cash | Reserve | What changes |
+| Option | Price | Outlook | Seller Net | Worst-Case Cash | Reserve | What Changes |
 |---|---|---|---|---|---|---|
 | {{o.option}} | {{o.price}} | {{o.outlook}} | {{o.seller_net}} | {{o.worst_cash}} | {{o.reserve}} | {{o.what}} |
 
-**Your exposure (recommended):** {{each summary.exposure: label + " " + value, joined with " · "}}
+**Your Exposure (Recommended):** {{each summary.exposure: label + " " + value, joined with " · "}}
 
 {{each summary.constraints: "**Limit:** " + text}}
 
 {{summary.preliminary, when present}}
 
-**Next step:** {{summary.next_step}}
+**Next Step:** {{summary.next_step}}
 
-**To sharpen this:** {{to_confirm, as one short question; skip when empty}}
+**To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 
 <sub>Financing: {{summary.financing}}. Seller net is before the seller's mortgage payoff, as a listing agent would calculate it. The outlook is an estimate, not a probability. Payments and closing costs are estimates; the lender's Loan Estimate governs.</sub>
 

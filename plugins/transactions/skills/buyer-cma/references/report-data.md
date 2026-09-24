@@ -10,8 +10,7 @@
 
 | Field | Notes |
 |---|---|
-| `language` | `en` or `es` |
-| `prepared_date` | Written out ("September 22, 2026"; Spanish "22 de septiembre de 2026"). Default: today |
+| `prepared_date` | Written out ("September 22, 2026"). Default: today |
 | `as_of` | `YYYY-MM-DD` for the handoff. Default: today |
 | `export` | Path to the MLS export CSV (used for the chart and the handoff's market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
@@ -30,13 +29,13 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 | `list_price`, `sqft` | *numbers* |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
 | `subdivision` | As in the export (improves the handoff's comp ranking) |
-| `facts` | Ten `[label, value]` in this order: List price, Price per sq ft, Beds / baths, Living area, Lot, Built, Pool, Garage, HOA / CDD, Flood zone |
+| `facts` | Ten `[label, value]` in this order, labels in Title Case: List Price, Price per Sq Ft, Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone |
 | `summary` | 2–3 sentences: what the home is and anything unusual about the sale |
 | `summary_facts` | Short line for page 1 ("4 bed · 2 bath · 1,849 sq ft · pool · built 1972") |
 
 ## summary_page
 
-`label` (default "Buyer summary"), `headline`, `key_stats` (exactly 3 `[value, label]`), `why` (exactly 3), `check_first` (exactly 3 `[heading, one line]`), `next_step`. The dot plot and the cost table are computed.
+`label` (default "Buyer Summary"), `headline`, `key_stats` (exactly 3 `[value, label]`, label in Title Case), `why` (exactly 3), `check_first` (exactly 3 `[heading, one line]`, heading in Title Case), `next_step`. The dot plot and the cost table are computed.
 
 ## bottom_line
 
@@ -52,7 +51,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## offer
 
-`heading` ("Negotiating points") and 2–4 `bullets`, each starting with a `<strong>` lead-in.
+`heading` ("Negotiating Points") and 2–4 `bullets`, each starting with a `<strong>` lead-in.
 
 ## comps
 
@@ -60,7 +59,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## scatter (standard)
 
-`heading`, `intro` (may use `{trend_at_subject}`), `renovated` (export addresses of sold, renovated private-pool homes), `subject_label`, `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), `after_paragraph` (may use `{trend_at_subject}` and `{r2_share}`, which reads like "most" or "only about a third"), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (defaults 0.6/1.4/1.6).
+`heading` (Title Case), `intro` (may use `{trend_at_subject}`), `renovated` (export addresses of sold, renovated private-pool homes), `subject_label`, `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), `after_paragraph` (may use `{trend_at_subject}` and `{r2_share}`, which reads like "most" or "only about a third"), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (defaults 0.6/1.4/1.6).
 
 ## competition
 
@@ -68,13 +67,13 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## market
 
-`intro`, `columns`, `rows` (strings you format from stats.py's numbers: "95.2%", "22 days"), `bullets` (3–5, each a `<strong>` finding plus what it means for the offer).
+`intro`, `columns` (Title Case), `rows` (first cell a Title Case row name; strings you format from stats.py's numbers: "95.2%", "22 days"), `bullets` (3–5, each a `<strong>` finding plus what it means for the offer).
 
 ## costs
 
-- `taxes`: `heading`, `intro`, `current_bill`, `current_year`, `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`), `note`, `after_paragraph` (escrow warning).
+- `taxes`: `heading`, `intro`, `current_bill`, `current_year`, `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes the row name "Your Bill if the Home Is …" and `short` fills "If … Instead", so write them in Title Case: "in Unincorporated Seminole County", "City"), `note`, `after_paragraph` (escrow warning).
 - `insurance`: `paragraph`.
-- `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`, `down_pct` a fraction: 0.05 for 5%), optional `hoa_cdd_monthly`, optional `note`.
+- `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`, `label` a Title Case column header like "Conventional, 5% Down", `down_pct` a fraction: 0.05 for 5%), optional `hoa_cdd_monthly`, optional `note`.
 - `credit_scenarios`: `intro`, `loan_type`, `down_pct` (fraction), `closing_costs` or `closing_cost_pct` (fraction), `scenarios` (2–4 `{price, credit}`), `after_paragraph`, optional `buydown` `{price, credit}`. See `offer-plan.md`.
 
 ## watch

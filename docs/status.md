@@ -35,10 +35,15 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
    - contract-timeline: per-deadline `time` / `rollover` (TREC option period), closing date optional for quick questions, `moved` list for amendments, rider words matched whole ("va" in "private" was read as a VA rider).
    - seller-offer-review: state from an address without ZIP; zero transfer tax reads as none; market deposit norm; certainty-priority sellers aren't countered for < 1%; honest counter wording.
    - buyer-offer-strategy: stronger option recommended when it lifts the outlook inside every limit; insurance quote "planned", not claimed; honest reasons; `rate` must be a percent; `tax_rate`; checked boxes print.
-   - CMAs: seller nets without brokerage terms refuse to render; `{median_adjusted}` filled on page 1; examples' unsupported facts removed and marked tone-only; subject's own export rows surfaced (a current listing is raised first); `--mls`; Spanish footer and units.
+   - CMAs: seller nets without brokerage terms refuse to render; `{median_adjusted}` filled on page 1; examples' unsupported facts removed and marked tone-only; subject's own export rows surfaced (a current listing is raised first); `--mls`.
 5. **Docs and version:** migration-plan status, development.md (evals), skill-guidelines, manifests at 0.2.0 (validated).
 
+6. **Style and compliance pass:** Spanish support removed (English only); no em dashes in prose (lone em dashes for empty values are fine) and Title Case labels across every output (`make style-check`); a Guardrails section at the top of every SKILL.md; fair housing rules in `shared/references/fair-housing.md`, synced into the five skills that write client prose; `shared/prose.py` stops a render on an em dash in a sentence or a clear fair-housing phrase; `fair_housing.extra_protected_classes` in market profiles; one fair-housing eval each for buyer-cma, seller-cma, seller-offer-review, buyer-offer-strategy and agent-profile (not run yet).
+
 ## Open items (judgment calls and smaller gaps from the evals)
+
+- **Broker review of `shared/references/fair-housing.md`** before release: it applies HUD's rules as the skills understand them and is not legal advice.
+- **Fair-housing evals** (the new id in each of the five skills above) haven't been run; include them in iteration 2.
 
 - **Eval anchoring:** the CMA example reports and the CMA evals use the same property (517 Hickorywood). Runners noticed and rebuilt from the inputs, but a second example property (or evals on a different home) would test the skills more honestly.
 - **Loose judgment rules** that make runs vary: time adjustments (1–2% per quarter), undocumented-systems adjustments, expected sale per pricing option. method.md now anchors the expected sale on the adjusted comps; the rest is still judgment.
@@ -47,12 +52,11 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 - **Rent-back / occupancy terms** in an offer aren't scored; record them as custom `flags` for now.
 - **Texas title rates** below $100k are a lookup table; the per-$1,000 tier format approximates them.
 - **State holidays** (Texas) aren't in the built-in holiday list; add them to a deal's `rules.holidays`.
-- **Chat templates** are English only (buyer-cma's PDF is bilingual); Claude translates the chat reply.
 - **Files blocked without commission:** outside Florida, seller-cma won't build the PDF or deck until the agent gives brokerage terms (by design; the chat summary says "pending brokerage terms"). Confirm this is the behavior you want.
 - **Escalation cap vs. the CMA's walk-away:** buyer-offer-strategy can set a cap above a buyer CMA's walk-away price without comment; it should say so.
 - **Unknown seller credit** on a comp is recorded as 0 in the handoff.
 - **Deck slide 6** (market stats): long values can overlap their period label; keep values short.
-- **Eval set:** buyer-cma eval 3 ("same analysis in Spanish") should include the English report.json in its inputs; the grader's expectations could be copied into `evals.json` as assertions for iteration 2.
+- **Eval set:** the grader's expectations could be copied into `evals.json` as assertions for iteration 2.
 - **Rounding:** seller-cma display rounds a few half-dollar amounts differently line to line (cosmetic).
 
 ## Remaining work, in order

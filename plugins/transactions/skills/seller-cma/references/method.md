@@ -19,7 +19,7 @@ Ask for what's missing in one message; use tappable choices for occupancy, timel
 10. Brokerage terms (listing fee and buyer's agent compensation, if the seller will offer it). Without them the market's default is used and labeled a placeholder (Florida: 2.5% + 2.5%). Outside the built-in market, ask; never borrow Florida's.
 11. Flood zone, if known. Otherwise write "to confirm".
 
-If the seller knows only some dates, go ahead and list the rest under "What we need from you". Never guess a roof date, a permit, or a tax amount.
+If the seller knows only some dates, go ahead and list the rest under "What We Need from You". Never guess a roof date, a permit, or a tax amount.
 
 ## Comps
 

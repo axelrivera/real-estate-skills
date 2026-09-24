@@ -1,10 +1,10 @@
-# Where offer fields live in the contract
+# Where Offer Fields Live in the Contract
 
-## FR/BAR contracts (Florida)
+## FR/BAR Contracts (Florida)
 
 For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts. Paragraph numbers can shift between form revisions, so confirm against the form version printed in the footer. Read the whole document: additional terms and riders often override the main paragraphs.
 
-| Field | Where to look |
+| Field | Where to Look |
 |---|---|
 | `buyer`, `buyer_agent` | Para. 1 (parties); signature page and broker block at the end |
 | `price` | Para. 2 (purchase price) |
@@ -24,11 +24,11 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 | `riders` | Rider checklist near the end |
 | `approval`, `lender` | The separate pre-approval letter or proof of funds: "DU Approve/Eligible", "LP Accept", "conditionally approved", "underwritten" |
 
-## Other states' contracts
+## Other States' Contracts
 
 The fields are the same everywhere; only where they sit changes. Read the contract's own headings rather than assuming FR/BAR paragraph numbers, and write the paragraph you used in your notes to the agent.
 
-| Field | Usually found under |
+| Field | Usually Found Under |
 |---|---|
 | `price`, `deposit` | "Purchase price", "Earnest money" (TX, CO, GA), "Initial / additional deposit" |
 | `financing`, `down_pct`, `loan_approval_days` | "Financing", "Third party financing addendum" (TX), "Loan contingency" (CA) |
@@ -44,7 +44,7 @@ Two cautions outside Florida:
 - **Walk-away windows differ.** A Texas option period or North Carolina due-diligence period lets the buyer walk for any reason, like an AS IS inspection period. Put its length in `inspection_days` (it's the walk-away window the timeline and certainty use, not the loan or appraisal dates); set `contract_form` to `standard` only when the buyer can cancel just for listed defects.
 - **Costs and customs aren't built in.** Transfer tax, who pays title and typical fees come from the agent's market profile (`--market`). Without one the net leaves them out and the answer is Preliminary; ask the agent for a recent settlement statement or the title company's quote.
 
-## Extraction tips
+## Extraction Tips
 
 - Scanned pages: read them directly.
 - Handwritten or initialed changes override typed text. Point out anything illegible instead of guessing.

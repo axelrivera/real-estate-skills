@@ -28,7 +28,7 @@ Set `"form_family": "other"` and `"form"` to the form name. Then add one `deadli
 | Title commitment, survey, objections | after or before closing |
 | Closing and possession | the contract's dates |
 
-Use the contract's own words for `label`, `action` and `if_missed`, and its paragraph numbers for `source`. When one deadline has its own time or weekend rule (a Texas option period ends at 5:00 PM and isn't extended; the earnest money date is), set `time` and `rollover` on that deadline. Contract time rules come from the contract or the agent: a web search can find a form's text, but confirm with the agent which version they signed. Mark `contingency: true` only on buyer protections that end on that date. That's what drives "your contingencies end" on page 1.
+Use the contract's own words for `label` (in Title Case), `action` and `if_missed`, and its paragraph numbers for `source`. When one deadline has its own time or weekend rule (a Texas option period ends at 5:00 PM and isn't extended; the earnest money date is), set `time` and `rollover` on that deadline. Contract time rules come from the contract or the agent: a web search can find a form's text, but confirm with the agent which version they signed. Mark `contingency: true` only on buyer protections that end on that date. That's what drives "your contingencies end" on page 1.
 
 ## 3. Confirm
 

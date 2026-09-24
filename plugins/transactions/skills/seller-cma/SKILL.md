@@ -9,6 +9,15 @@ A report and a listing presentation for a homeowner deciding what to list at. It
 
 Every number comes from a script, never typed by hand, because a wrong net figure in front of a seller is the worst failure this skill can produce. Never invent comps, update dates, permit status or tax figures.
 
+## Guardrails
+
+These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
+
+- **Fair housing.** Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market profile's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing findings, value drivers, the launch plan or deck notes. Value drivers are features of the home and the launch plan is about the property and the process, never a kind of buyer. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
+- **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
+- **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
+
 ## 1. Gather the inputs
 
 Ask for everything missing in one message. Skip what's already in the chat, project files or the agent profile. Read `references/method.md` for the full checklist and why each item matters. In short:

@@ -1,7 +1,7 @@
 """Report pieces shared by the buyer and seller CMAs: labels, tables, charts, keep-together groups, pagination.
 
-All visible text comes from the skill's labels file (assets/labels-<language>.json), so reports can be
-written in English or Spanish. Colors are theme variables (shared/cma.css), never hard-coded.
+All visible text comes from the skill's labels file (assets/labels.json). Colors are theme variables
+(shared/cma.css), never hard-coded.
 """
 import html
 import json
@@ -21,16 +21,9 @@ esc = html.escape
 class Labels:
     """Label lookup with {placeholders}: labels('pay_header', price='$474,900')."""
 
-    def __init__(self, assets_dir, language="en", overrides=None):
-        with open(os.path.join(assets_dir, "labels-en.json"), encoding="utf-8") as f:
+    def __init__(self, assets_dir, overrides=None):
+        with open(os.path.join(assets_dir, "labels.json"), encoding="utf-8") as f:
             self.text = json.load(f)
-        if language and language != "en":
-            path = os.path.join(assets_dir, f"labels-{language}.json")
-            if not os.path.exists(path):
-                raise ValueError(f"No {language!r} labels for this report (available: en"
-                                 + "".join(f", {n[7:-5]}" for n in os.listdir(assets_dir) if n.startswith("labels-") and n != "labels-en.json") + ").")
-            with open(path, encoding="utf-8") as f:
-                self.text.update(json.load(f))
         self.text.update(overrides or {})
 
     def __call__(self, key, **kw):

@@ -75,8 +75,8 @@ class MatchesPrototype(unittest.TestCase):
         self.assertEqual(row(self.C, "owner_title")["amounts"], [-2390, -2385, -2375])
         self.assertEqual(row(self.C, "title_fees")["amounts"], [-1145] * 3)
         self.assertEqual(row(self.C, "credit")["amounts"], [-10000, -10000, -5000])
-        self.assertIn("placeholder", row(self.C, "listing_fee")["label"])
-        self.assertEqual(row(self.C, "transfer_tax")["label"], "Documentary stamp tax on the deed (0.70%)")
+        self.assertIn("Placeholder", row(self.C, "listing_fee")["label"])
+        self.assertEqual(row(self.C, "transfer_tax")["label"], "Documentary Stamp Tax on the Deed (0.70%)")
         self.assertFalse(self.C["preliminary"])
 
     def test_buyer_payments(self):
@@ -119,7 +119,7 @@ class Costs(unittest.TestCase):
         R = report()
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.02}
         C, _ = run(R)
-        self.assertEqual(row(C, "listing_fee")["label"], "Listing brokerage (3%)")
+        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (3%)")
         self.assertEqual(row(C, "listing_fee")["amounts"][0], -13890)
         self.assertEqual(row(C, "buyer_broker_fee")["amounts"][0], -9260)
         self.assertFalse(any("Brokerage" in a for a in C["assumptions"]))
@@ -151,7 +151,7 @@ class Costs(unittest.TestCase):
         self.assertTrue(C["net"]["cash_at_closing"])
         self.assertEqual(row(C, "estoppel")["amounts"][0], -299)
         self.assertEqual(row(C, "other")["label"], "Survey")
-        self.assertEqual(row(C, "total")["label"], "Estimated cash at closing")
+        self.assertEqual(row(C, "total")["label"], "Estimated Cash at Closing")
         base = PROTOTYPE_NETS[0] + TITLE_FEE_CHANGE
         self.assertEqual(round(C["strategies"][0]["net"]), base - 299 - 450 - 210000)
 
@@ -212,7 +212,7 @@ class OtherMarkets(unittest.TestCase):
         doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
         self.assertIn("side prelim", doc)
         self.assertIn("no local figure for transfer tax (or confirmation there is none)", doc)
-        self.assertNotIn("Documentary stamp", doc)
+        self.assertNotIn("Documentary Stamp", doc)
 
 
 AGENT = {"name": "Jane Doe", "brokerage": "Sunshine Realty", "team": None, "license": None, "phone": None,

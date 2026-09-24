@@ -27,16 +27,16 @@
     "escrow_agent": "Lone Star Title"
   },
   "deadlines": [
-    {"key": "earnest_money", "label": "Earnest money and option fee delivered", "short": "Earnest money", "basis": "after", "days": 3,
+    {"key": "earnest_money", "label": "Earnest Money and Option Fee Delivered", "short": "Earnest Money", "basis": "after", "days": 3,
      "party": "Buyer", "critical": true, "source": "Para. 5A",
      "action": "Deliver $5,250 earnest money and $300 option fee to Lone Star Title", "if_missed": "Seller may terminate; option not granted"},
-    {"key": "option_period", "label": "Option period ends", "short": "Option ends", "basis": "after", "days": 7,
+    {"key": "option_period", "label": "Option Period Ends", "short": "Option Ends", "basis": "after", "days": 7,
      "party": "Buyer", "critical": true, "contingency": true, "source": "Para. 5B",
      "action": "Deliver notice of termination before 5:00 PM if not proceeding", "if_missed": "Unrestricted right to terminate ends; option fee kept by seller"},
-    {"key": "financing", "label": "Buyer approval (Third Party Financing Addendum) ends", "short": "Financing", "basis": "after", "days": 21,
+    {"key": "financing", "label": "Buyer Approval (Third Party Financing Addendum) Ends", "short": "Financing", "basis": "after", "days": 21,
      "party": "Buyer", "critical": true, "contingency": true, "source": "Third Party Financing Addendum 2A",
      "action": "Give notice of termination if buyer approval isn't obtained", "if_missed": "Contract is no longer subject to buyer approval"},
-    {"key": "title_commitment", "label": "Title commitment delivered", "short": "Title", "basis": "after", "days": 20,
+    {"key": "title_commitment", "label": "Title Commitment Delivered", "short": "Title", "basis": "after", "days": 20,
      "party": "Seller", "critical": false, "source": "Para. 6B",
      "action": "Title company delivers commitment and exception documents", "if_missed": "Buyer may extend or terminate"}
   ],

@@ -1,4 +1,4 @@
-# How counters are proposed
+# How Counters Are Proposed
 
 The engine drafts a counter from the rules below. Each rule adds a row (term, offered, counter, why) only when it applies. The goal is a better net **and** less risk, not simply a higher price. Review the draft for realism before answering.
 
@@ -15,11 +15,11 @@ The engine drafts a counter from the rules below. Each rule adds a row (term, of
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company.
 
-## Fallback counter (cash-constrained buyers)
+## Fallback Counter (Cash-Constrained Buyers)
 
 Added when the buyer is FHA, VA or USDA, or putting down less than 10%, and the main counter asks for new gap money. The fallback prices at the CMA midpoint (no gap needed), drops the gap request and splits the difference on concessions. It usually nets less on paper but is more likely to close at that number. Present it as "if the buyer can't fund a gap."
 
-## Multiple offers
+## Multiple Offers
 
 Only the top-ranked offer gets a counter. The backup is asked to sign a backup contract and gets its own counter only if the first deal falls through. The plan always says only one counter goes out at a time.
 

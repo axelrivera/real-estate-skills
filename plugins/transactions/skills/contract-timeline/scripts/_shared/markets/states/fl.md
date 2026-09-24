@@ -9,7 +9,7 @@ as_of: 2026
 closing_costs:
   deed_transfer_tax_rate: 0.007       # documentary stamp tax on the deed, share of price
   deed_transfer_tax_payer: seller
-  deed_transfer_tax_label: Documentary stamp tax on the deed
+  deed_transfer_tax_label: Documentary Stamp Tax on the Deed
   owner_title:
     payer: seller                     # who customarily pays the owner's title policy: seller | buyer
     rate_tiers:                       # promulgated rate, per $1,000 of price, applied tier by tier

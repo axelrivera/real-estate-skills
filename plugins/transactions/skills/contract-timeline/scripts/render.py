@@ -103,19 +103,19 @@ def build_html(t, agent, sample):
     colors = {"Buyer": p["buyer"], "Seller": p["seller"], "Both": p["both"]}
 
     snap = [("Effective Date", t["effective"]["display"]), ("Closing", t["closing"]["long"]),
-            ("Contract period", f'{t["length_days"]} days'), ("Price", t["price"] or "—"),
+            ("Contract Period", f'{t["length_days"]} days'), ("Price", t["price"] or "—"),
             ("Financing", t["financing"] or "—"), ("Contract", t["contract_label"]),
-            ("Escrow agent", t["escrow_agent"] or "—"), ("Amendments", str(len(t["history"])) if t["history"] else "None")]
+            ("Escrow Agent", t["escrow_agent"] or "—"), ("Amendments", str(len(t["history"])) if t["history"] else "None")]
     snap_html = ('<div class="snap" style="grid-template-columns:repeat(8,1fr)">' +
                  "".join(f"<div><span>{a}</span><b>{esc(str(b))}</b></div>" for a, b in snap) + "</div>")
 
     firm, first = t["contingencies_end"], t["first_deadline"]
     if side == "buyer":
-        firm_label = "Your contingencies end"
+        firm_label = "Your Contingencies End"
         lead = (f'Your protections run through <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}). '
                 "After that the deposit is at risk." if firm else "No buyer contingencies: the deposit is at risk from the start.")
     else:
-        firm_label = "Buyer can cancel until"
+        firm_label = "Buyer Can Cancel Until"
         lead = (f'The buyer can cancel under a contingency until <b>{esc(firm["display"])}</b> ({day_label(firm)}, '
                 f'{esc(firm["short"].lower())}). After that the deal is firm unless the buyer defaults.'
                 if firm else "No buyer contingencies: the deal is firm once the deposit is in.")
@@ -144,8 +144,8 @@ def build_html(t, agent, sample):
     page1 = f'''{hero}
 <h2>Timeline <span class="h2s">Effective Date → Closing</span></h2>
 <div class="panel" style="padding:2px 6px">{strip(t, colors)}</div>
-<div class="legend">{legend}<span>Filled dot = critical deadline</span></div>
-<h2>All key dates <span class="h2s">Day = calendar days after the Effective Date · {side} items highlighted</span></h2>
+<div class="legend">{legend}<span>Filled Dot = Critical Deadline</span></div>
+<h2>All Key Dates <span class="h2s">Day = calendar days after the Effective Date · {side} items highlighted</span></h2>
 <div class="tbl"><table class="kd"><colgroup><col style="width:22%"><col style="width:9%"><col style="width:57%"></colgroup>
 <thead><tr><th class="n">Date</th><th class="n">Day</th><th>Deadline</th><th>Who</th></tr></thead><tbody>{key_rows}</tbody></table></div>
 <div class="sm" style="margin-top:3px"><span class="crit" style="margin-left:0">CRITICAL</span> = missing it can cost a contract right (such as the right to cancel) or put the deposit at risk.</div>
@@ -160,25 +160,25 @@ def build_html(t, agent, sample):
     if t["history"]:
         hist = "".join(f'<tr><td class="c"><b>#{i}</b></td><td>{esc(str(h["date"] or "—"))}</td><td>{esc(h["description"])}</td>'
                        f'<td class="sm">{esc(h["summary"])}</td></tr>' for i, h in enumerate(t["history"], 1))
-        hist_html = ('<h2>Amendment history <span class="h2s">moved dates show the original as "was"</span></h2>'
+        hist_html = ('<h2>Amendment History <span class="h2s">moved dates show the original as "was"</span></h2>'
                      '<div class="tbl"><table><colgroup><col style="width:5%"><col style="width:12%"><col style="width:33%"></colgroup>'
                      f'<thead><tr><th class="c">#</th><th>Signed</th><th>Amendment</th><th>Changes</th></tr></thead><tbody>{hist}</tbody></table></div>')
     else:
-        hist_html = ('<h2>Amendment history</h2><p class="sm">No amendments recorded. When an amendment or extension is signed, '
+        hist_html = ('<h2>Amendment History</h2><p class="sm">No amendments recorded. When an amendment or extension is signed, '
                      "add it to the deal file and re-run this report.</p>")
     eff_source = t["effective"]["source"] or "confirm: date of the last signature or initial on the final counteroffer"
     method_rows = [("Effective Date", f'{t["effective"]["display"]}: {eff_source}')] + \
                   [(x["label"], x["text"]) for x in t["rules"]["lines"]]
     method = ('<div class="tbl"><table class="meth"><tbody>' +
               "".join(f"<tr><td><b>{esc(a)}</b></td><td>{esc(b)}</td></tr>" for a, b in method_rows) + "</tbody></table></div>")
-    details = f'''<div class="pb"></div><div class="dh">Deadline details</div>
+    details = f'''<div class="pb"></div><div class="dh">Deadline Details</div>
 <div class="tbl"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
-<thead><tr><th class="n">Date</th><th>Deadline · source</th><th>Who</th><th>Rule</th><th>Action</th><th>If missed</th></tr></thead><tbody>{detail_rows}</tbody></table></div>
+<thead><tr><th class="n">Date</th><th>Deadline · Source</th><th>Who</th><th>Rule</th><th>Action</th><th>If Missed</th></tr></thead><tbody>{detail_rows}</tbody></table></div>
 {hist_html}
-<h2>How the dates were computed</h2>{method}
+<h2>How the Dates Were Computed</h2>{method}
 <div class="fine">Computed from the executed contract, riders and counteroffers as recorded in the deal file. Verify every date against the documents and with the escrow or title agent; the form version and any handwritten changes control. Time rules follow {esc(t["rules"]["family"])}. Lender dates are estimates. Not legal advice.</div>'''
 
-    title = (f'Contract Timeline <span class="viewtag">{Side} view</span>'
+    title = (f'Contract Timeline <span class="viewtag">{Side} View</span>'
              f'{"<span class=sample>SAMPLE DATA</span>" if sample else ""}')
     parties = " / ".join(x for x in (t["buyer"] or "Buyer", t["seller"] or "Seller"))
     body = (f'<header><div><div class="t1">{title}</div><div class="t2">{esc(t["property"])} · {esc(parties)}</div></div>'

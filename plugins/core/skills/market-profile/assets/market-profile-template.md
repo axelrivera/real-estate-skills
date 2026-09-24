@@ -30,17 +30,20 @@ cma:
 mls_format:
   {{mls format settings}}
 
+fair_housing:
+  {{extra protected classes, when the agent named any}}
+
 county_overrides:
   {{county exceptions}}
 ---
 
-# Market profile: {{market name}}
+# Market Profile: {{market name}}
 
 {{one line: state, area and MLS}}
 
 Used as context by the real estate skills. Anything not listed here uses the built-in defaults for {{state}}, where there are any.
 
-## What's customized
+## What's Customized
 
 {{short plain-language list of the agent's own values, e.g. "Title settlement fee: $850 (Seaside Title quote, 2026)"}}
 

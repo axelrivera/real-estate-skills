@@ -55,6 +55,25 @@ class Sync(unittest.TestCase):
         self.run_sync()
         self.assertTrue(self.run_sync(check=True)[0])
 
+    def test_references_go_only_to_skills_that_point_to_them(self):
+        os.makedirs(os.path.join(self.root, "shared", "references"))
+        with open(os.path.join(self.root, "shared", "references", "rules.md"), "w") as f:
+            f.write("# Rules\n")
+        with open(os.path.join(self.without, "SKILL.md"), "w") as f:
+            f.write("Read `references/rules.md` first.\n")
+        with open(os.path.join(os.path.dirname(self.with_scripts), "SKILL.md"), "w") as f:
+            f.write("No shared references.\n")
+        self.run_sync()
+        copy = os.path.join(self.without, "references", "rules.md")
+        self.assertTrue(os.path.exists(copy))
+        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(self.with_scripts), "references")))
+        self.assertNotIn("references/rules.md", s.source_files(self.dest))  # not copied as code
+        with open(copy, "w") as f:
+            f.write("edited\n")
+        ok, out = self.run_sync(check=True)
+        self.assertFalse(ok)
+        self.assertIn("references/rules.md: edited", out)
+
 
 if __name__ == "__main__":
     unittest.main()

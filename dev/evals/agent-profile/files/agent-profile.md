@@ -10,12 +10,12 @@ brand:
   primary: "#1F3A5F"  # Navy
 ---
 
-# Agent profile: Jane Doe
+# Agent Profile: Jane Doe
 
 The Doe Group · Sunshine Realty
 
 Used as context by the real estate skills. Keep this file in your Project files so every chat can use it.
 
-## Brand colors
+## Brand Colors
 
 Navy for all reports.

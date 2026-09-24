@@ -1,8 +1,8 @@
-# Loan program rules
+# Loan Program Rules
 
 These apply to whatever financing the buyer and lender chose; the builder never picks the program. They're national agency guidelines as planning estimates: limits and fees change and lenders add overlays, so **the lender's numbers always win**. The same table drives every skill's payment math (shared finance module), so a change is made there, once.
 
-| Program | Min down | Upfront fee (financed) | Annual MI | Seller concession cap |
+| Program | Min Down | Upfront Fee (Financed) | Annual MI | Seller Concession Cap |
 |---|---|---|---|---|
 | FHA | 3.5% | 1.75% UFMIP | ~0.55% | 6% of price |
 | VA | 0% | ~2.15% funding fee (first use, <5% down; some veterans exempt) | none | 4% concessions (normal closing costs are separate) |
@@ -16,6 +16,6 @@ Also confirm with the lender: the county's FHA and conforming loan limits, credi
 
 The builder never puts concessions above the program cap or above estimated closing costs, since the buyer can't receive the excess, and flags any option that does.
 
-## Why low-down FHA/VA/USDA offers don't escalate
+## Why Low-Down FHA/VA/USDA Offers Don't Escalate
 
 These buyers rarely have cash for a gap, and the appraisal sets the loan amount, so price above value gets cut back. Their offers compete on certainty and seller net (a clean offer, a strong deposit, a short inspection), not price.

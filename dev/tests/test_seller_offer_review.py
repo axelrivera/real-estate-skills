@@ -39,7 +39,7 @@ class Analysis(unittest.TestCase):
         self.assertEqual([r["counter"] for r in s["counter"]["rows"]], ["$386,000", "7 days"])
         self.assertEqual(out["value_range"], "not provided")
         self.assertTrue(out["to_confirm"])
-        self.assertEqual(out["offers"][0]["net_sheet"]["columns"], ["As offered", "Downside", "Counter"])
+        self.assertEqual(out["offers"][0]["net_sheet"]["columns"], ["As Offered", "Downside", "Counter"])
 
     def test_multi_plan(self):
         out = review.result(review.analyze(fixture("four-offers.json")))
@@ -98,7 +98,7 @@ class Pdf(unittest.TestCase):
         self.assertEqual((mode, o), ("multi", None))
         self.assertIn("ACCEPT OFFER B", doc)
         self.assertIn("--brand:#0B6E4F", doc)
-        self.assertIn("Seller side", doc)
+        self.assertIn("Seller Side", doc)
         self.assertIn("SAMPLE DATA", doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)  # no license in the profile: nothing printed

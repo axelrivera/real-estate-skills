@@ -81,7 +81,7 @@ def data_note(R):
     if not R["listing"]["cma_provided"]:
         bits.append("No CMA yet: appraisal risk is measured against list price.")
     n, hi = len(R["assumptions"]), sum(a["impact"] == "high" for a in R["assumptions"])
-    bits.append(f"{n} input{'s' if n != 1 else ''} assumed ({hi} high-impact); see Assumptions & data to confirm."
+    bits.append(f"{n} input{'s' if n != 1 else ''} assumed ({hi} high-impact); see Assumptions & Data to Confirm."
                 if n else "All key inputs provided.")
     return " ".join(bits)
 
@@ -165,24 +165,24 @@ def single_view(R, o):
     if act in ("BACKUP", "DECLINE") and top is not o:
         compare = {"vs": top["id"], "rows": [
             ["Price", money(o["price"]), money(top["price"])],
-            ["Net after holding", money(ao), money(top["ns"]["net_adj"])],
-            ["Downside net", money(dn), money(top["ns_down"]["net_adj"])],
+            ["Net After Holding", money(ao), money(top["ns"]["net_adj"])],
+            ["Downside Net", money(dn), money(top["ns_down"]["net_adj"])],
             ["Certainty", f"{o['score']['total']}/100", f"{top['score']['total']}/100"],
             ["Closing", f"{o['close']:%b %-d}", f"{top['close']:%b %-d}"]]}
 
-    pre = "" if S["payoff_known"] else " (pre-payoff)"
-    kpis = [{"label": "Offer price", "value": money(o["price"]), "note": fin_str(o), "tone": "brand"},
-            {"label": f"Net as offered{pre}", "value": money(ao), "note": f"{signed(ao - tgt)} vs. target",
+    pre = "" if S["payoff_known"] else " (Pre-Payoff)"
+    kpis = [{"label": "Offer Price", "value": money(o["price"]), "note": fin_str(o), "tone": "brand"},
+            {"label": f"Net as Offered{pre}", "value": money(ao), "note": f"{signed(ao - tgt)} vs. target",
              "tone": "risk" if ao < tgt else "good"},
-            {"label": "Downside net", "value": money(dn), "note": "if appraisal & inspection go badly", "tone": "risk"}]
+            {"label": "Downside Net", "value": money(dn), "note": "if appraisal & inspection go badly", "tone": "risk"}]
     if act == "COUNTER":
-        kpis.append({"label": "Net with our counter", "value": money(cn), "tone": "good",
+        kpis.append({"label": "Net with Our Counter", "value": money(cn), "tone": "good",
                      "note": f"{signed(cn - ao)} vs. as offered" if cn >= ao else f"{signed(cn - dn)} vs. downside; protects the price"})
     else:
-        kpis.append({"label": "Seller's target net", "value": money(tgt), "note": "list price, clean terms", "tone": ""})
+        kpis.append({"label": "Seller's Target Net", "value": money(tgt), "note": "list price, clean terms", "tone": ""})
 
     score = o["score"]["total"]
-    opts = [{"option": "Accept as written", "net": money(ao), "certainty": f"{score}/100", "status": "good" if score >= 80 else "risk",
+    opts = [{"option": "Accept as Written", "net": money(ao), "certainty": f"{score}/100", "status": "good" if score >= 80 else "risk",
              "what": "Deal as signed" if score >= 80 else f"Realistic net closer to {money(dn)} if the appraisal or inspection goes badly",
              "recommended": act == "ACCEPT"}]
     if o["counter_rows"]:
@@ -191,12 +191,12 @@ def single_view(R, o):
                      "what": "Better net and lower walk-away risk" if act == "COUNTER"
                      else f"Only {signed(cn - ao)}, and it risks losing a strong offer"})
     if o.get("fallback_rows"):
-        opts.append({"option": "Fallback counter", "net": money(o["ns_fallback"]["net_adj"]), "certainty": "—", "status": "caution",
+        opts.append({"option": "Fallback Counter", "net": money(o["ns_fallback"]["net_adj"]), "certainty": "—", "status": "caution",
                      "what": "If the buyer can't fund an appraisal gap", "recommended": False})
     opts.append({"option": "Decline", "net": "—", "certainty": "—", "status": "caution", "recommended": act == "DECLINE",
                  "what": f"Stay on market; each extra month costs about {money(S['holding_monthly'])} in holding costs"})
     if act == "BACKUP":
-        opts.insert(0, {"option": "Hold as backup", "net": money(ao), "certainty": f"{score}/100", "status": "caution",
+        opts.insert(0, {"option": "Hold as Backup", "net": money(ao), "certainty": f"{score}/100", "status": "caution",
                         "what": f"Steps in if Offer {top['id']} falls through", "recommended": True})
 
     expires = f" before {o['expires']}" if o.get("expires") else ""
@@ -281,14 +281,14 @@ def multi_view(R):
              "what": "Best net with manageable risk" + (f"; Offer {backup['id']} is a safety net" if backup else "")}]
     if act == "ACCEPT" and top["counter_rows"]:
         g = top["ns_counter"]["net_adj"] - top["ns"]["net_adj"]
-        opts.append({"option": f"Counter {top['id']} anyway", "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
+        opts.append({"option": f"Counter {top['id']} Anyway", "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
                      "certainty": f"≈{top['counter_score']}/100", "status": "caution",
                      "what": f"Only {signed(g)}, and it risks losing the strongest offer"})
     if most_certain is not top:
-        opts.append({"option": f"Accept {most_certain['id']} now", "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
+        opts.append({"option": f"Accept {most_certain['id']} Now", "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
                      "certainty": f"{most_certain['score']['total']}/100", "status": "caution",
                      "what": f"Closes {most_certain['close']:%b %-d}, most certain, but {money(top_net - most_certain['ns']['net_adj'])} less than the plan"})
-    opts.append({"option": "Call for highest & best", "net": "Unknown", "certainty": "Varies", "status": "caution", "recommended": False,
+    opts.append({"option": "Call for Highest & Best", "net": "Unknown", "certainty": "Varies", "status": "caution", "recommended": False,
                  "what": "May lift prices, but adds ~2 days and weak terms usually stay weak"})
     verb = "send the counter to" if act == "COUNTER" else "accept"
     nxt = f"approve the plan and I'll {verb} Offer {top['id']}" + (f" and request a backup contract from Offer {backup['id']}" if backup else "") + "."
@@ -316,7 +316,7 @@ def net_sheet_rows(cols):
 
 
 def offer_detail(o):
-    cols = [("As offered", o["ns"]), ("Downside", o["ns_down"])]
+    cols = [("As Offered", o["ns"]), ("Downside", o["ns_down"])]
     if o["counter_rows"]:
         cols.append(("Counter", o["ns_counter"]))
     return {
@@ -327,8 +327,8 @@ def offer_detail(o):
         "flags": [f"{f['sev']}: {f['issue']} {f['fix']}" for f in o["flags"]],
         "net_sheet": {"columns": [c for c, _ in cols],
                       "rows": [{"label": r["label"], "values": [money(v) for v in r["values"]]} for r in net_sheet_rows(cols)]
-                      + [{"label": "Holding costs until closing", "values": [money(c["holding"]) for _, c in cols]},
-                         {"label": "Net after holding costs", "values": [money(c["net_adj"]) for _, c in cols]}]},
+                      + [{"label": "Holding Costs Until Closing", "values": [money(c["holding"]) for _, c in cols]},
+                         {"label": "Net After Holding Costs", "values": [money(c["net_adj"]) for _, c in cols]}]},
     }
 
 

@@ -2,7 +2,9 @@
 
 ## Voice
 
-Every number gets a sentence saying what it means for this buyer. Short sentences. No selling words ("stunning", "must-see"). A range, never a single number presented as fact. The buyer's language (English or Spanish). Write as the agent's analysis and don't mention the tools that produced it. When the agent profile has a voice section, follow it within these rules.
+Every number gets a sentence saying what it means for this buyer. Short sentences. No selling words ("stunning", "must-see"). A range, never a single number presented as fact. Write as the agent's analysis and don't mention the tools that produced it. When the agent profile has a voice section, follow it within these rules.
+
+**Style and fair housing:** follow the Guardrails in SKILL.md: no em dashes, labels in Title Case, and describe the home and the numbers, never people (`references/fair-housing.md`).
 
 ## Sections (the order is fixed by the script)
 

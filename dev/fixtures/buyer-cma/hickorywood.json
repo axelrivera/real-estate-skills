@@ -1,5 +1,4 @@
 {
- "language": "en",
  "prepared_date": "September 22, 2026",
  "as_of": "2026-09-22",
  "subject": {
@@ -10,19 +9,19 @@
   "sqft": 1849,
   "facts": [
    [
-    "List price",
+    "List Price",
     "$474,900"
    ],
    [
-    "Price per sq ft",
+    "Price per Sq Ft",
     "$257"
    ],
    [
-    "Beds / baths",
+    "Beds / Baths",
     "4 / 2"
    ],
    [
-    "Living area",
+    "Living Area",
     "1,849 sq ft"
    ],
    [
@@ -46,7 +45,7 @@
     "None / None"
    ],
    [
-    "Flood zone",
+    "Flood Zone",
     "X (lower risk)"
    ]
   ],
@@ -61,20 +60,20 @@
   "pool": true
  },
  "summary_page": {
-  "label": "Buyer summary",
+  "label": "Buyer Summary",
   "headline": "Open at the bottom of what recent sales support. The home has been for sale since January, which gives you room to negotiate.",
   "key_stats": [
    [
     "{median_adjusted}",
-    "Median of the five closest sales, adjusted to this home"
+    "Median of the Five Closest Sales, Adjusted to This Home"
    ],
    [
     "96.5%",
-    "Sale price vs. original asking for nearby homes since July"
+    "Sale Price vs. Original Asking for Nearby Homes Since July"
    ],
    [
     "8 months",
-    "For sale since January: four price cuts and one failed contract"
+    "For Sale Since January: Four Price Cuts and One Failed Contract"
    ]
   ],
   "why": [
@@ -84,15 +83,15 @@
   ],
   "check_first": [
    [
-    "The roof",
+    "The Roof",
     "Get the permit and date; the new-roof claim left the listing"
    ],
    [
-    "The April contract",
+    "The April Contract",
     "Ask why it fell apart and for any reports"
    ],
    [
-    "1972 systems",
+    "1972 Systems",
     "Wiring, drains, AC and pool equipment ages"
    ]
   ],
@@ -182,7 +181,7 @@
   "conditions": "the roof is documented as new, the April contract fell through for reasons unrelated to the house, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
  },
  "offer": {
-  "heading": "Negotiating points",
+  "heading": "Negotiating Points",
   "bullets": [
    "<strong>There is room to negotiate.</strong> The seller is paying to carry a vacant house, has cut the price four times, and has already lost one buyer. Mortgage rates are also higher now than when the spring sales happened.",
    "<strong>Seller help with closing costs is normal right now.</strong> Eight of the last ten sales in this area included seller-paid costs, typically around $10,000. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
@@ -278,7 +277,7 @@
   "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
  },
  "scatter": {
-  "heading": "The whole neighborhood at a glance",
+  "heading": "The Whole Neighborhood at a Glance",
   "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. The dashed line is the trend for all sales based on size alone. At 1,849 square feet, it sits around {trend_at_subject}.",
   "renovated": [
    "621 LITTLE WEKIVA RD",
@@ -295,7 +294,7 @@
    },
    {
     "address": "644 PEACHWOOD DR",
-    "label": "644 Peachwood (for sale)",
+    "label": "644 Peachwood (For Sale)",
     "side": "right"
    }
   ],
@@ -383,31 +382,31 @@
   "columns": [
    "",
    "April – June",
-   "July – mid-Sept"
+   "July – Mid-Sept"
   ],
   "rows": [
    [
-    "Homes sold",
+    "Homes Sold",
     "25",
     "10"
    ],
    [
-    "Typical sale vs. original asking price",
+    "Typical Sale vs. Original Asking Price",
     "100%",
     "96.5%"
    ],
    [
-    "Typical days to go under contract",
+    "Typical Days to Go Under Contract",
     "9",
     "18"
    ],
    [
-    "Sales with seller-paid buyer costs",
+    "Sales with Seller-Paid Buyer Costs",
     "56%",
     "80%"
    ],
    [
-    "Typical seller-paid amount",
+    "Typical Seller-Paid Amount",
     "$8,600",
     "$10,300"
    ]
@@ -429,15 +428,15 @@
    "homestead": true,
    "jurisdictions": [
     {
-     "label": "in unincorporated Seminole County",
-     "short": "unincorporated",
+     "label": "in Unincorporated Seminole County",
+     "short": "Unincorporated",
      "school_mills": 5.249,
      "total_mills": 13.679,
      "district": "Seminole County (unincorporated)"
     },
     {
-     "label": "inside Altamonte Springs city limits",
-     "short": "city",
+     "label": "Inside Altamonte Springs City Limits",
+     "short": "City",
      "school_mills": 5.249,
      "total_mills": 17.5683,
      "district": "Altamonte Springs"
@@ -457,17 +456,17 @@
    "tax_jurisdiction_index": 1,
    "scenarios": [
     {
-     "label": "Conventional, 5% down",
+     "label": "Conventional, 5% Down",
      "type": "conventional",
      "down_pct": 0.05
     },
     {
-     "label": "FHA, 3.5% down",
+     "label": "FHA, 3.5% Down",
      "type": "fha",
      "down_pct": 0.035
     },
     {
-     "label": "Conventional, 20% down",
+     "label": "Conventional, 20% Down",
      "type": "conventional",
      "down_pct": 0.2
     }

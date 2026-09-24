@@ -184,17 +184,17 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     if buyer_broker_fee_pct is None and bf is not None:
         assumed.append({"key": "buyer_broker_fee", "value": bf, "text": f"buyer's agent fee {bf * 100:g}%"})
     if lf:
-        add("listing_fee", f"Listing brokerage ({lf * 100:g}%)", price * lf, lf)
+        add("listing_fee", f"Listing Brokerage ({lf * 100:g}%)", price * lf, lf)
     if bf:
-        add("buyer_broker_fee", f"Buyer's agent ({bf * 100:g}%)", price * bf, bf)
+        add("buyer_broker_fee", f"Buyer's Agent ({bf * 100:g}%)", price * bf, bf)
 
     rate = market_value("closing_costs.deed_transfer_tax_rate", "deed transfer tax")
     payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
-    tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed transfer tax"
+    tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed Transfer Tax"
     if rate and payer in (None, "seller"):
         add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
     elif rate and payer == "split":
-        add("transfer_tax", f"{tax_label} (half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+        add("transfer_tax", f"{tax_label} (Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
 
     title_payer = market_value("closing_costs.owner_title.payer", "who pays owner's title")
     if title_payer == "seller":
@@ -204,18 +204,18 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         if quote and quote.get("price") and quote.get("premium"):
             pct = quote["premium"] / quote["price"]  # a real quote beats a rough share of price
         if tiers:  # the published rate table is exact
-            add("owner_title", "Owner's title insurance", title_premium(price, tiers))
+            add("owner_title", "Owner's Title Insurance", title_premium(price, tiers))
         elif pct:
-            add("owner_title", "Owner's title insurance (estimate)", price * pct, pct)
+            add("owner_title", "Owner's Title Insurance (Estimate)", price * pct, pct)
         else:
             missing.append("owner's title rate")
 
     if title_fees is not None:
-        add("title_fees", "Title company fees", sum(title_fees.values()) if isinstance(title_fees, dict) else title_fees)
+        add("title_fees", "Title Company Fees", sum(title_fees.values()) if isinstance(title_fees, dict) else title_fees)
     else:
         fees = market.get("closing_costs.seller_title_fees") if market is not None else None
         if fees:
-            add("title_fees", "Title company fees", sum(fees.values()))
+            add("title_fees", "Title Company Fees", sum(fees.values()))
             if market.source("closing_costs.seller_title_fees") not in ("profile", "deal"):  # a built-in default
                 assumed.append({"key": "title_fees", "value": sum(fees.values()), "text": "typical title company fees"})
         else:
@@ -223,11 +223,11 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     if has_hoa:
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
-            add("estoppel", "HOA estoppel letter", estoppel)
+            add("estoppel", "HOA Estoppel Letter", estoppel)
     if credit:
-        add("credit", "Seller credit to buyer", credit)
+        add("credit", "Seller Credit to Buyer", credit)
     if other_costs:
-        add("other", "Other costs", other_costs)
+        add("other", "Other Costs", other_costs)
 
     total = sum(a for _, a in items)
     net_before = price - total

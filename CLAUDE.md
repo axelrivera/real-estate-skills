@@ -28,6 +28,10 @@ sources/                            # prototype skills, local only, git-ignored
 - **Every skill has a markdown mode and a file mode** from the same data JSON: markdown via an `assets/` template, files via `scripts/render.py`. The core profile skills are markdown only.
 - **Skills never require other skills.** Read profiles and handoffs as files when present; otherwise collect what's needed inline.
 - **No hard-coded brand colors.** File outputs get their palette from `shared/design`, starting from the agent profile's colors (buyer blue / seller orange by default). Status colors (good / caution / risk) are fixed.
+- **Fair housing (HUD):** every skill opens with a **Guardrails** section; skills that write client prose point to `references/fair-housing.md` (edit it in `shared/references/` only). Describe the property, numbers and terms, never people. Levels per skill are in [docs/architecture.md](docs/architecture.md#guardrails).
+- **No em dashes in prose** in anything a skill ships or writes (reports, chat replies, templates, examples, references). A lone em dash for an empty value (an empty table cell) is fine, and so are en dashes in number ranges.
+- **Labels are Title Case** (headings, column headers, row names, tiles, legends, card and slide titles). Sentences, notes and table values stay sentence case. See [docs/skill-guidelines.md](docs/skill-guidelines.md#skillmd). Check with `make style-check`.
+- **English only.** No Spanish or other-language modes, label files or templates, even where a prototype in `sources/` has them.
 - **No silent Florida defaults** outside the built-in Florida/Stellar market. Ask, or label the assumption and mark the output Preliminary.
 - **Skill names** carry no output format (`-pdf`), and use a `buyer-` / `seller-` prefix when a skill serves one side.
 

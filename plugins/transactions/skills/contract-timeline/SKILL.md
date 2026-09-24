@@ -9,6 +9,15 @@ Turns an executed contract into a timeline of every deadline. The dates come fro
 
 Two views of the same dates: the **buyer view** highlights the buyer's actions and when their protections end; the **seller view** highlights the seller's obligations and until when the buyer can still cancel. Use the side the agent represents, and ask if it's unclear.
 
+## Guardrails
+
+These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
+
+- **Fair housing.** Flags and notes are about dates, terms and documents, never about the buyer, the seller or the neighborhood. Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
+- **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
+- **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
+
 ## 1. Read the executed documents
 
 Read the whole package: contract, every rider and addendum, and every counteroffer (`pdftotext -layout`, or read scanned pages directly). Record the terms in a deal file: read `references/deal-file.md` for the format.

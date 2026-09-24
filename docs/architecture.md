@@ -17,13 +17,29 @@ Each skill directory is complete on its own. Code used by several skills is edit
 
 ```
 shared/                         # edit shared code here
+shared/references/              # shared reference files (fair-housing.md), not code
 plugins/<plugin>/skills/<skill>/
-  scripts/_shared/              # copy made by the sync tool — never edit by hand
+  scripts/_shared/              # copy made by the sync tool, never edit by hand
+  references/fair-housing.md    # copy, only in skills whose SKILL.md points to it
 dev/sync_shared.py              # make sync / make check-sync (also a pre-commit hook)
 Makefile                        # make package: one zip per skill for claude.ai upload
 ```
 
+A shared reference file is copied into a skill's `references/` only when its SKILL.md mentions `references/<name>.md`, so a skill opts in by pointing to it.
+
 The `_shared/` copies are **committed**. Adding the marketplace by URL clones the repo, so every installed skill already has its code. Use copies, not symlinks.
+
+## Guardrails
+
+Every SKILL.md opens with a **Guardrails** section, right after its intro, covering fair housing, em dashes and Title Case labels. How strong the fair-housing part is depends on how much client-facing prose the skill writes:
+
+| Level | Skills | What it has |
+|---|---|---|
+| Strong | buyer-cma, seller-cma, seller-offer-review | Guardrails with the skill's risky spots named, `references/fair-housing.md`, the render check, a fair-housing eval |
+| Standard | buyer-offer-strategy, agent-profile | Guardrails, `references/fair-housing.md`, a fair-housing eval (and the render check for buyer-offer-strategy) |
+| Light | contract-timeline, market-profile | A short Guardrails section (and the render check for contract-timeline) |
+
+The render check is `shared/prose.py`, run by `render.main` before any file is built. It stops on an em dash used in a sentence (a lone one for an empty value is fine) or a clear fair-housing phrase and names each field to rewrite. The phrase list is a backstop for the written rules, not a replacement: it catches clear cases only, and chat replies are covered by the SKILL.md rules alone. State and local protected classes live in the market profile's `fair_housing.extra_protected_classes`.
 
 ## Output modes
 

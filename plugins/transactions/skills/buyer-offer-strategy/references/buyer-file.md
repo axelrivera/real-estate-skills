@@ -1,4 +1,4 @@
-# Buyer file
+# Buyer File
 
 One JSON file per property the buyer is pursuing. Only `property.list_price` is required; `buyer.cash_available` is strongly preferred. Everything else has a logged default (impact **high** marks the answer Preliminary).
 
@@ -45,13 +45,13 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 `buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the market default, flagged), `listing_fee_pct` (for the seller net sheet; default: market, Florida 2.5%).
 
-## costs (buyer's payment)
+## costs (Buyer's Payment)
 
 `rate` (interest rate as a **percent**: `6.5` for 6.5%, like lenders quote it; default 6.5), `tax_rate` (optional: annual tax as a share of price, `0.0198`, when you have a plain rate rather than millage), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged).
 
 ## buyer
 
-| Field | Default if missing | Impact |
+| Field | Default if Missing | Impact |
 |---|---|---|
 | `financing` | conventional, flagged to confirm; FHA/VA/USDA only when given | **high** |
 | `down_pct` | conventional: 20% at the luxury threshold, 3% first-time buyer, else 5%; FHA 3.5%; VA/USDA 0% | med |
@@ -73,7 +73,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## overrides
 
-The agent's call on any recommended term: `price`, `seller_concessions`, `deposit`, `inspection_days`, `loan_approval_days`, `appraisal_gap`, `closing_days`, `home_warranty`, `buyer_broker_pct`, `escalation`. Marked "agent" in the report; the stronger and lower-cost options are built from the overridden offer.
+The agent's call on any recommended term: `price`, `seller_concessions`, `deposit`, `inspection_days`, `loan_approval_days`, `appraisal_gap`, `closing_days`, `home_warranty`, `buyer_broker_pct`, `escalation`. Marked "Agent" in the report; the stronger and lower-cost options are built from the overridden offer.
 
 ## chosen_option
 

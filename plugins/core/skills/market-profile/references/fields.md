@@ -1,4 +1,4 @@
-# Market profile fields
+# Market Profile Fields
 
 Every setting the skills read, what it means, and the format.
 
@@ -19,7 +19,7 @@ For the owner's title policy the most exact source wins: a promulgated `rate_tie
 |---|---|
 | `deed_transfer_tax_rate` | State or local tax on the deed, share of price. FL: 0.007. `0` where there is none (Texas): then no payer is needed |
 | `deed_transfer_tax_payer` | `seller`, `buyer` or `split` by custom |
-| `deed_transfer_tax_label` | Local name for the tax ("Documentary stamp tax on the deed") |
+| `deed_transfer_tax_label` | Local name for the tax, in Title Case since it shows as a row name on net sheets ("Documentary Stamp Tax on the Deed") |
 | `owner_title.payer` | Who customarily pays the owner's title policy: `seller` or `buyer` |
 | `owner_title.rate_tiers` | Promulgated rate table: list of `{up_to, per_1000}`, last `up_to: null` |
 | `owner_title.quote` | `{price, premium}`: one title company quote, e.g. `{price: 400000, premium: 2400}`. Used as a share of price at other prices |
@@ -92,6 +92,12 @@ Only needed when the agent's MLS isn't built in and they'll upload MLS files.
 |---|---|
 | `cma_export_columns` | Map from the skills' names (`close_price`, `living_area`, `days_on_market`, …; see the Stellar layer for the full list) to the column headers in the agent's MLS export |
 | `history_codes` | Status codes in the listing history and what they mean |
+
+## fair_housing
+
+| Field | Meaning |
+|---|---|
+| `extra_protected_classes` | State and local protected classes beyond the federal list, as a list ("age", "marital status", "source of income", "military status"). Every skill avoids wording about them, like the federal classes. Only what the agent confirms or a cited law or ordinance says; Florida and Texas state law add none, but cities and counties can. Can go in `county_overrides` when one county differs |
 
 ## county_overrides
 

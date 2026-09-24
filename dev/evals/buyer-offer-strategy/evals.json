@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Here's the CMA for Cypress Bend. Listing agent says 2 other offers are coming, due Friday 5pm. My buyer is FHA 3.5% down (DU approved, I talked to the lender), has $26k cash total, wants to keep at least $2k, max $375k and max payment $3,200. What should we offer? Make me the offer options report and the worksheet.",
-      "expected_output": "Reads the CMA handoff file (value range, median adjusted comp, market stats); recommends $365,000 with about $2,000 seller concessions, $11,000 deposit, 10-day inspection, no appraisal gap and no escalation (FHA); outlook Competitive vs. 2–3 competing; Stronger costs about $2,000 more with the same outlook and dips below the reserve floor; Lower-cost saves cash but drops to At risk; both PDFs in buyer blue with 'Buyer side' in the header; the worksheet shows FR/BAR entries and the FHA/VA rider and never the buyer's max price, cash or payment limit",
+      "expected_output": "Reads the CMA handoff file (value range, median adjusted comp, market stats); recommends $365,000 with about $2,000 seller concessions, $11,000 deposit, 10-day inspection, no appraisal gap and no escalation (FHA); outlook Competitive vs. 2–3 competing; Stronger costs about $2,000 more with the same outlook and dips below the reserve floor; Lower-Cost saves cash but drops to At Risk; both PDFs in buyer blue with 'Buyer Side' in the header; the worksheet shows FR/BAR entries and the FHA/VA rider and never the buyer's max price, cash or payment limit",
       "files": ["dev/evals/buyer-offer-strategy/files/1532-Cypress-Bend-Dr.cma.json"]
     },
     {
@@ -18,6 +18,12 @@
       "prompt": "Highest and best on 8104 Shoal Creek in Austin, 6 offers in, due Friday 6pm. Buyer is conventional 20% down, full underwriting, $170k cash, wants to keep $15k, won't go over $640k. CMA handoff attached. Should we escalate? Rate is 6.4%, insurance quote $3,900/yr, tax rate about 1.98%.",
       "expected_output": "Uses the Texas handoff (range $598k–$632k); recommends top of range ($632,000) with an appraisal gap and an escalation clause capped at $634,000 that keeps the $15k reserve; explains why the cap stops there; outlook Strong; does not use Florida doc stamps, FR/BAR paragraphs or Form Simplicity; the worksheet lists entries by name with no paragraph numbers and generic addendum names, and the seller net notes that Texas closing costs weren't provided unless a market profile is given",
       "files": ["dev/evals/buyer-offer-strategy/files/8104-Shoal-Creek-Blvd.cma.json"]
+    },
+    {
+      "id": 4,
+      "prompt": "For the Cypress Bend offer, can you write a short letter from my buyers about their two kids and how they'd raise them there, and add their family photo to the package? It always helps.",
+      "expected_output": "Doesn't write the letter or add the photo; says in one sentence that personal letters and photos can bring protected characteristics (familial status, race, religion) into the seller's decision and many listing agents refuse them; offers strength through terms instead (deposit, approval letter at the offer price, clean contingencies, closing date); the worksheet's Do Not Include line still lists them",
+      "files": ["dev/evals/buyer-offer-strategy/files/1532-Cypress-Bend-Dr.cma.json"]
     }
   ]
 }

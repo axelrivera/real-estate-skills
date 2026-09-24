@@ -147,7 +147,7 @@ def body(R, C, homes, agent, L):
     if sc and homes:
         sc = {"subject_label": L("subject_label"), **sc}
         svg, info = cma.scatter(homes, sc, s["sqft"], rec["list_price"], s.get("mls_address", s["address"]), (rec["low"], rec["high"]), L)
-        trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "—"
+        trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
               '<div class="chart-box">' + cma.scatter_legend(L, sc["subject_label"]) + svg + "</div>"]
@@ -184,14 +184,14 @@ def theme_css(agent):
 
 
 def build_html(R, C, homes, agent):
-    L = cma.Labels(ASSETS, R.get("language", "en"), R.get("labels"))
+    L = cma.Labels(ASSETS, R.get("labels"))
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
                cma.group_blocks(body(R, C, homes, agent, L)) + "</div>")
     title = f'{L("doc_label")}: {R["subject"]["address"]}'
     doc = render.page(content, css=cma.css(), title=title, theme_css=vars_css)
-    return doc.replace("<html>", f'<html lang="{R.get("language", "en")}">', 1), L
+    return doc.replace("<html>", '<html lang="en">', 1), L
 
 
 def footer_label(R, C, agent, L, doc_label, sample):
@@ -220,7 +220,7 @@ def _build(R, fmt, out_dir, ctx):
         raise compute.ReportError("The net sheet needs brokerage terms: ask the agent for the listing fee and the buyer's agent "
                                   "compensation (0 is fine) and put them in costs. Without them every net overstates the seller's proceeds.")
     agent, sample = ctx["agent"], ctx.get("sample") or R.get("sample")
-    L = cma.Labels(ASSETS, R.get("language", "en"), R.get("labels"))
+    L = cma.Labels(ASSETS, R.get("labels"))
     first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: write the handoff and warn once
     written = []
     if first:

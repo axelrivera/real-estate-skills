@@ -55,7 +55,7 @@ def prepared_block(R, agent):
 
 
 def header(R, title, sub, agent, sample):
-    tag = '<span class="viewtag">Seller side</span>' + ('<span class="sample">SAMPLE DATA</span>' if sample else "")
+    tag = '<span class="viewtag">Seller Side</span>' + ('<span class="sample">SAMPLE DATA</span>' if sample else "")
     return (f'<header><div><div class="t1">{title}{tag}</div><div class="t2">{sub}</div></div>'
             f'<div class="prep">{prepared_block(R, agent)}</div></header>')
 
@@ -67,8 +67,8 @@ def snapshot(R, last_label, last_value):
     hoa = f"${L['hoa_monthly']:,}/mo" if L.get("hoa_monthly") else ("None" if L.get("hoa_monthly") == 0 else "—")
     cma = f"{money(L['cma_low'])}–{L['cma_high'] // 1000:,.0f}K" if L["cma_provided"] else '<span class="rt">not provided</span>'
     payoff = money(S["payoff"]) if S["payoff_known"] else '<span class="rt">not provided</span>'
-    cells = [("Beds / Baths", bb), ("Heated sq ft", f"{L['sqft']:,}" if L.get("sqft") else "—"), ("Year / Roof", yr), ("HOA", hoa),
-             ("Flood zone", esc(L.get("flood_zone") or "—")), ("CMA range", cma), ("Payoff (est.)", payoff), (last_label, last_value)]
+    cells = [("Beds / Baths", bb), ("Heated Sq Ft", f"{L['sqft']:,}" if L.get("sqft") else "—"), ("Year / Roof", yr), ("HOA", hoa),
+             ("Flood Zone", esc(L.get("flood_zone") or "—")), ("CMA Range", cma), ("Payoff (Est.)", payoff), (last_label, last_value)]
     return ('<div class="snap" style="grid-template-columns:.8fr .8fr .9fr .7fr .8fr 1.3fr 1fr 1.2fr">'
             + "".join(f"<div><span>{a}</span><b>{b}</b></div>" for a, b in cells) + "</div>")
 
@@ -92,44 +92,44 @@ def fine(R):
             f"{esc(state_name(R))} about contract terms.</div>")
 
 
-def certainty_panel(c, subtitle="as offered"):
+def certainty_panel(c, subtitle="As Offered"):
     b = c["band_class"]
     t = {"hi": "hit", "mid": "midt", "lo": "lot"}[b]
-    return f'''<div><h2>How likely is it to close? <span class="h2s">{subtitle}</span></h2><div class="panel">
+    return f'''<div><h2>How Likely Is It to Close? <span class="h2s">{subtitle}</span></h2><div class="panel">
   <div class="gauge"><b class="{t}">{c["score"]}</b><span>/100 · <b class="{t}" style="font-size:inherit">{c["band"]}</b> certainty</span></div>
   <div class="meter"><div class="bar {b}" style="width:{c["score"]}%"></div></div>
   <table class="facts2">
-   <tr><td>Buyer can walk away until</td><td class="n"><b>{esc(c["walk_away_until"])}</b></td></tr>
-   <tr><td>Deposit at risk after that</td><td class="n">{esc(c["deposit"]) if c["deposit"] != "not provided" else '<span class="rt">not provided</span>'}</td></tr>
+   <tr><td>Buyer Can Walk Away Until</td><td class="n"><b>{esc(c["walk_away_until"])}</b></td></tr>
+   <tr><td>Deposit at Risk After That</td><td class="n">{esc(c["deposit"]) if c["deposit"] != "not provided" else '<span class="rt">not provided</span>'}</td></tr>
    <tr><td>Closing</td><td class="n"><b class="{"" if c["closing_ok"] else "rt"}">{esc(c["closing"])}</b></td></tr>
-   <tr><td>Biggest threat</td><td class="n"><b class="rt">{esc(c["threat"])}</b></td></tr>
+   <tr><td>Biggest Threat</td><td class="n"><b class="rt">{esc(c["threat"])}</b></td></tr>
   </table></div></div>'''
 
 
 def options_table(opts, widths=(24, 13, 15)):
     rows = "".join(
         f'<tr class="{"recrow" if x["recommended"] else ""}"><td><b>{esc(x["option"])}</b>'
-        f'{" <span class=sm>(recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
+        f'{" <span class=sm>(Recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
         f'<td class="c">{esc(x["certainty"])}</td><td class="{x["status"]}">{esc(x["what"])}</td></tr>' for x in opts)
     cols = "".join(f'<col style="width:{w}%">' for w in widths)
-    return (f'<h2>Your options</h2><div class="tbl"><table><colgroup>{cols}</colgroup>'
-            f'<thead><tr><th>Option</th><th class="n">Net after holding</th><th class="c">Certainty</th><th>What happens</th></tr></thead>'
+    return (f'<h2>Your Options</h2><div class="tbl"><table><colgroup>{cols}</colgroup>'
+            f'<thead><tr><th>Option</th><th class="n">Net After Holding</th><th class="c">Certainty</th><th>What Happens</th></tr></thead>'
             f'<tbody>{rows}</tbody></table></div>')
 
 
 def closing_block(v):
     pre = f'<div class="prelim">{md(v["preliminary"])}</div>' if v["preliminary"] else ""
-    return (f'{pre}<div class="nextstep"><b>Next step:</b> {esc(v["next_step"])} The detail follows on the next pages.</div>'
+    return (f'{pre}<div class="nextstep"><b>Next Step:</b> {esc(v["next_step"])} The detail follows on the next pages.</div>'
             f'<div class="fine" style="margin-top:4px">{md(v["data_note"])} Estimates only; not legal or financial advice.</div>')
 
 
 def hero(v):
     cls = {"DECLINE": "decline", "BACKUP": "backup"}.get(v["action"], "")
-    ctx = f' · {v["offers_active"]} offers active' if v["offers_active"] > 1 else ""
-    return (f'<div class="hero"><div class="hl {cls}"><span class="k">Recommended response{ctx}</span><div class="big">{esc(v["headline"])}</div>'
+    ctx = f' · {v["offers_active"]} Offers Active' if v["offers_active"] > 1 else ""
+    return (f'<div class="hero"><div class="hl {cls}"><span class="k">Recommended Response{ctx}</span><div class="big">{esc(v["headline"])}</div>'
             f'<div class="why">{md(v["why"])}</div></div>'
-            f'<div class="hr"><span class="k">Respond by</span><b>{esc(v["respond_by"])}</b>'
-            f'<span class="k" style="margin-top:6px">Seller\'s priority</span><div>{esc(v["priority"])}</div></div></div>')
+            f'<div class="hr"><span class="k">Respond By</span><b>{esc(v["respond_by"])}</b>'
+            f'<span class="k" style="margin-top:6px">Seller\'s Priority</span><div>{esc(v["priority"])}</div></div></div>')
 
 
 # --- detail tables -------------------------------------------------------------
@@ -152,51 +152,51 @@ def term_rows(o, R):
                      "Verified with lender" if o.get("lender_called") else "Not yet verified by phone"))
     else:
         ok = o["approval"] == "pof_verified"
-        rows.append(("Proof of funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
+        rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
     if o["deposit"] is None:
-        rows.append(("Escrow deposit", "Not provided", "≥3% of price", "caution", "Confirm amount and due date"))
+        rows.append(("Escrow Deposit", "Not provided", "≥3% of price", "caution", "Confirm amount and due date"))
     else:
         p = o["deposit"] / o["price"]
-        rows.append(("Escrow deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥3% ({money(round(.03 * o['price']))})",
+        rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥3% ({money(round(.03 * o['price']))})",
                      "good" if p >= .03 else ("caution" if p >= .015 else "risk"), ""))
     c = o["seller_concessions"]
-    rows.append(("Seller concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", "≤1.5% of price",
+    rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", "≤1.5% of price",
                  "good" if not c else ("caution" if c <= .015 * o["price"] else "risk"), ""))
     ob = S["offered_buyer_broker_pct"]
-    rows.append(("Buyer-broker comp.", f"{oe.pct(o['buyer_broker_pct'], 2)} ({money(round(o['price'] * o['buyer_broker_pct']))})",
+    rows.append(("Buyer-Broker Comp.", f"{oe.pct(o['buyer_broker_pct'], 2)} ({money(round(o['price'] * o['buyer_broker_pct']))})",
                  f"{oe.pct(ob)} per listing agmt." if ob is not None else "Not set",
                  "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
-        rows.append(("Home warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
+        rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
     as_is = o["contract_form"] == "as_is"
-    rows.append(("Inspection period", f"{o['inspection_days']} days" + (" (AS IS)" if as_is else ""), "≤7 days",
+    rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (AS IS)" if as_is else ""), "≤7 days",
                  "good" if o["inspection_days"] <= 7 else ("caution" if o["inspection_days"] <= 14 else "risk"),
                  "Buyer may cancel for any reason" if as_is else ""))
     if o["financed"]:
-        rows.append(("Loan approval period", f"{o['loan_approval_days']} days", "≤21 days",
+        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", "≤21 days",
                      "good" if o["loan_approval_days"] <= 21 else ("caution" if o["loan_approval_days"] <= 30 else "risk"), ""))
         if o["appraisal_days"]:
-            rows.append(("Appraisal gap coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
+            rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
                          "Covers price above value", "risk" if exposed else "good", ""))
         else:
-            rows.append(("Appraisal contingency", "Waived", "—", "good", ""))
+            rows.append(("Appraisal Contingency", "Waived", "—", "good", ""))
     sc = o["sale_contingency_days"]
-    rows.append(("Sale-of-home contingency", (f"{sc} days" + (" (kick-out)" if o["kickout"] else "")) if sc else "None", "None",
+    rows.append(("Sale-of-Home Contingency", (f"{sc} days" + (" (kick-out)" if o["kickout"] else "")) if sc else "None", "None",
                  "risk" if sc else "good", ""))
     dl = S["deadline"]
     st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
-    rows.append(("Closing date", f"{o['close']:%a %b %-d} ({o['close_days']} days)", f"On/before {dl:%b %-d}" if dl else "—", st,
+    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days)", f"On/before {dl:%b %-d}" if dl else "—", st,
                  "Weekend date; confirm funding" if o["close"].weekday() >= 5 else ""))
     tb, cust = o["title_by"], L["title_customary_payer"]
     if tb or cust:
         name = {"seller": "Seller's title co.", "buyer": "Buyer's title co."}
-        rows.append(("Escrow / title agent", name.get(tb, "—"), name.get(cust, "—"), "good" if tb == cust else "caution", ""))
-    for key, lab in (("personal_property", "Personal property"), ("occupancy", "Occupancy"), ("other_terms", "Other terms")):
+        rows.append(("Escrow / Title Agent", name.get(tb, "—"), name.get(cust, "—"), "good" if tb == cust else "caution", ""))
+    for key, lab in (("personal_property", "Personal Property"), ("occupancy", "Occupancy"), ("other_terms", "Other Terms")):
         if o.get(key):
             rows.append((lab, esc(o[key]), "—", "caution", ""))
     if o.get("riders"):
         form = {"as_is": "AS IS · ", "standard": "Standard · "}.get(o["contract_form"], "")
-        rows.append(("Contract / riders", form + esc(", ".join(o["riders"])), "—", "good", ""))
+        rows.append(("Contract / Riders", form + esc(", ".join(o["riders"])), "—", "good", ""))
     return rows
 
 
@@ -256,7 +256,7 @@ def assumptions_table(R):
     rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(a["scope"].title())}</td>'
                    f'<td>{esc(a["why"])}</td></tr>' for a in R["missing"])
     return ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th>'
-            f'<th>Where</th><th>What was assumed: provide the real value to sharpen the analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
+            f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
 
 def gantt(o, R):
@@ -283,16 +283,16 @@ def gantt(o, R):
         cells = "".join(f'<td class="gantt {gx(i)} {"on-" + kind if i * step < d else ""}"><div></div></td>' for i in range(ncell))
         return f'<tr><td>{name}</td><td class="n">{d}</td><td class="n">{(L["analysis_date"] + timedelta(days=d)):%b %-d}</td>{cells}</tr>'
 
-    body = line("Inspection (right to cancel)" if o["contract_form"] == "as_is" else "Inspection", o["inspection_days"], "hot")
+    body = line("Inspection (Right to Cancel)" if o["contract_form"] == "as_is" else "Inspection", o["inspection_days"], "hot")
     if o["financed"]:
-        body += line("Appraisal", o["appraisal_days"], "warm") + line("Loan approval", o["loan_approval_days"], "warm")
-    body += line("Sale of buyer's home", o["sale_contingency_days"], "hot")
+        body += line("Appraisal", o["appraisal_days"], "warm") + line("Loan Approval", o["loan_approval_days"], "warm")
+    body += line("Sale of Buyer's Home", o["sale_contingency_days"], "hot")
     ci = (o["close_days"] - 1) // step
-    dtxt = f" <span class=sm>(deadline {S['deadline']:%b %-d})</span>" if S["deadline"] else ""
+    dtxt = f" <span class=sm>(Deadline {S['deadline']:%b %-d})</span>" if S["deadline"] else ""
     body += (f'<tr><td><b>Closing</b>{dtxt}</td><td class="n">{o["close_days"]}</td><td class="n">{o["close"]:%b %-d}</td>'
              + "".join(f'<td class="gantt {gx(i)} {"on-close" if i == ci else ""}"><div></div></td>' for i in range(ncell)) + "</tr>")
-    legend = ('<div class="legend"><span><i class="hot"></i>Cancel for any reason</span><span><i class="warm"></i>Cancel if financing/appraisal fails</span>'
-              '<span><i class="closei"></i>Closing</span>' + ('<span><i class="dl"></i>Seller deadline</span>' if dl else "")
+    legend = ('<div class="legend"><span><i class="hot"></i>Cancel for Any Reason</span><span><i class="warm"></i>Cancel if Financing/Appraisal Fails</span>'
+              '<span><i class="closei"></i>Closing</span>' + ('<span><i class="dl"></i>Seller Deadline</span>' if dl else "")
               + f'<span>Firm after day <b>{o["risk_days"]}</b> ({o["firm_date"]:%b %-d}).</span></div>')
     return f'<div class="tbl"><table style="table-layout:fixed"><thead>{hdr}</thead><tbody>{body}</tbody></table></div>{legend}'
 
@@ -301,15 +301,15 @@ def scorecard_single(o):
     rows = ""
     for k, lab, w in oe.CRITERIA:
         s = o["score"]["scores"][k]
-        src = "" if o["score"]["src"][k] == "auto" else ' <span class="pill vyes">agent</span>'
+        src = "" if o["score"]["src"][k] == "auto" else ' <span class="pill vyes">Agent</span>'
         rows += f'<tr><td>{lab}</td><td class="n">{w}%</td><td class="c s{s}">{s}</td><td>{esc(o["score"]["why"][k])}{src}</td></tr>'
     b = o["score"]["band"]
     t = {"hi": "hit", "mid": "midt", "lo": "lot"}[b[0]]
-    rows += (f'<tr class="total"><td>Certainty score</td><td class="n">100%</td><td class="c {t}"><b>{o["score"]["total"]}</b></td>'
+    rows += (f'<tr class="total"><td>Certainty Score</td><td class="n">100%</td><td class="c {t}"><b>{o["score"]["total"]}</b></td>'
              f'<td class="{t}"><b>{b[1]}</b> · 80+ strong · 60–79 workable · under 60 weak</td></tr>')
     return ('<div class="tbl"><table><colgroup><col style="width:28%"><col style="width:8%"><col style="width:7%"></colgroup>'
             f'<thead><tr><th>Criterion</th><th class="n">Weight</th><th class="c">Score</th><th>Why</th></tr></thead><tbody>{rows}</tbody></table></div>'
-            '<div class="legend"><span>Scores are drafted automatically from the contract; <span class="pill vyes">agent</span> marks scores the agent set.</span></div>')
+            '<div class="legend"><span>Scores are drafted automatically from the contract; <span class="pill vyes">Agent</span> marks scores the agent set.</span></div>')
 
 
 def netsheet_body(cols, hl=0):
@@ -317,8 +317,8 @@ def netsheet_body(cols, hl=0):
     for r in review.net_sheet_rows(cols):
         body += f"<tr><td>{esc(r['label'])}</td>" + "".join(
             f'<td class="n {"hl" if j == hl else ""} {"neg" if v < 0 else ""}">{acct(v)}</td>' for j, v in enumerate(r["values"])) + "</tr>"
-    body += '<tr class="total"><td>Estimated net proceeds</td>' + "".join(f'<td class="n">{acct(c["net"])}</td>' for _, c in cols) + "</tr>"
-    body += '<tr><td>Holding costs until closing</td>' + "".join(f'<td class="n neg">{acct(c["holding"])}</td>' for _, c in cols) + "</tr>"
+    body += '<tr class="total"><td>Estimated Net Proceeds</td>' + "".join(f'<td class="n">{acct(c["net"])}</td>' for _, c in cols) + "</tr>"
+    body += '<tr><td>Holding Costs Until Closing</td>' + "".join(f'<td class="n neg">{acct(c["holding"])}</td>' for _, c in cols) + "</tr>"
     return body
 
 
@@ -334,40 +334,40 @@ def single_html(R, o, v):
         fb = f'<div class="note">{md(v["fallback"])}</div>' if v["fallback"] else ""
         box = (f'<div class="ctr"><div class="ctrh"><span>OUR COUNTER</span><em>{md(v["counter"]["summary"])}</em></div>'
                '<table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%"><col style="width:17%"><col></colgroup>'
-               f'<thead><tr><th>Term</th><th>Buyer offered</th><th></th><th>We counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table>{fb}</div>')
+               f'<thead><tr><th>Term</th><th>Buyer Offered</th><th></th><th>We Counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table>{fb}</div>')
     elif act == "ACCEPT":
-        keys = [r for r in term_rows(o, R) if r[0] in ("Price", "Financing", "Escrow deposit", "Seller concessions", "Inspection period", "Closing date")]
+        keys = [r for r in term_rows(o, R) if r[0] in ("Price", "Financing", "Escrow Deposit", "Seller Concessions", "Inspection Period", "Closing Date")]
         rows = "".join(f'<tr><td><b>{t}</b></td><td class="now">{val}</td><td class="why2">{b}</td></tr>' for t, val, b, _, _ in keys)
-        box = (f'<div class="ctr"><div class="ctrh"><span>ACCEPT AS WRITTEN</span><em>Net after holding <b>{money(o["ns"]["net_adj"])}</b></em></div>'
+        box = (f'<div class="ctr"><div class="ctrh"><span>ACCEPT AS WRITTEN</span><em>Net After Holding <b>{money(o["ns"]["net_adj"])}</b></em></div>'
                f'<table><tbody>{rows}</tbody></table></div>')
     elif v["compare"]:
         c = v["compare"]
         rows = "".join(f'<tr><td><b>{a}</b></td><td>{b}</td><td class="now">{d}</td></tr>' for a, b, d in c["rows"])
-        box = (f'<div class="ctr cmp"><div class="ctrh"><span>HOW IT COMPARES</span><em>vs. Offer {esc(c["vs"])} (recommended)</em></div>'
+        box = (f'<div class="ctr cmp"><div class="ctrh"><span>HOW IT COMPARES</span><em>vs. Offer {esc(c["vs"])} (Recommended)</em></div>'
                f'<table><thead><tr><th>Measure</th><th>Offer {esc(o["id"])}</th><th>Offer {esc(c["vs"])}</th></tr></thead><tbody>{rows}</tbody></table></div>')
     else:
         box = ""
-    kp = "".join(f'<div class="{"kgood" if k["tone"] == "good" and "counter" in k["label"] else ""}"><span>{esc(k["label"])}</span>'
+    kp = "".join(f'<div class="{"kgood" if k["tone"] == "good" and "counter" in k["label"].lower() else ""}"><span>{esc(k["label"])}</span>'
                  f'<b class="{k["tone"] if k["tone"] in ("brand", "good") and k is not v["kpis"][1] else ""}">{esc(k["value"])}</b>'
                  f'<i class="{k["tone"] if k["tone"] in ("good", "risk") else ""}">{esc(k["note"])}</i></div>' for k in v["kpis"])
     risks = "".join(f'<tr><td class="c"><span class="pill {r["sev"].lower()}">{r["sev"]}</span></td><td>{esc(r["issue"])}</td></tr>'
                     for r in v["risks"]) or "<tr><td>No significant risks found.</td></tr>"
     page1 = (f'{hero(v)}{box}<div class="kpis">{kp}</div>'
-             f'<div class="two">{certainty_panel(v["certainty"])}<div><h2>Top risks in the offer as written</h2>'
+             f'<div class="two">{certainty_panel(v["certainty"])}<div><h2>Top Risks in the Offer as Written</h2>'
              f'<div class="tbl"><table><colgroup><col style="width:17%"></colgroup><tbody>{risks}</tbody></table></div></div></div>'
              f'{options_table(v["options"])}{closing_block(v)}')
 
-    cols = [("As offered", o["ns"]), ("Downside case", o["ns_down"])]
+    cols = [("As Offered", o["ns"]), ("Downside Case", o["ns_down"])]
     if o["counter_rows"]:
-        cols.append(("Proposed counter", o["ns_counter"]))
+        cols.append(("Proposed Counter", o["ns_counter"]))
     if o.get("fallback_rows"):
-        cols.append(("Fallback counter", o["ns_fallback"]))
-    target_label = "Seller's target"
+        cols.append(("Fallback Counter", o["ns_fallback"]))
+    target_label = "Seller's Target"
     cols.append((target_label, o["target"]))
     ns = netsheet_body(cols)
-    ns += '<tr class="total2"><td>Net after holding costs</td>' + "".join(
+    ns += '<tr class="total2"><td>Net After Holding Costs</td>' + "".join(
         f'<td class="n {"best" if c["net_adj"] >= tgt else ("worst" if c["net_adj"] < tgt - 5000 else "")}">{acct(c["net_adj"])}</td>' for _, c in cols) + "</tr>"
-    ns += "<tr class=\"alt\"><td>vs. seller's target net</td>" + "".join(
+    ns += "<tr class=\"alt\"><td>vs. Seller's Target Net</td>" + "".join(
         f'<td class="n">{"—" if n == target_label else signed(c["net_adj"] - tgt)}</td>' for n, c in cols) + "</tr>"
     ref = f"the CMA midpoint ({money(round(L['cma_mid']))})" if L["cma_provided"] else "list price"
     tr = "".join(f'<tr><td>{t}</td><td class="{st}">{val}</td><td>{b}</td><td class="c"><span class="pill {PILL[st]}">{RATING[st]}</span></td>'
@@ -380,27 +380,27 @@ def single_html(R, o, v):
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
     credit = f" + {money(o['repair_reserve'])} inspection credit" if o["repair_reserve"] else ""
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
-    details = f'''<div class="pb"></div><div class="dh">Detailed analysis</div>
-<h2>1 · Seller net sheet <span class="h2s">as offered vs. downside{", counter" if o["counter_rows"] else ""} and the seller's target terms</span></h2>
-<div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
+    details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
+<h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
+<div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span><b>Downside</b>: appraisal at {ref}{gap}{credit}.</span>
-<span><b>Seller's target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
-<h2>2 · Contingency timeline <span class="h2s">shaded = buyer can still cancel · days from {L["analysis_date"]:%b %-d}</span></h2>{gantt(o, R)}
-<h2 class="pb">3 · Terms review <span class="h2s">each term against the seller's preference or local norm</span></h2>
+<span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
+<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d}</span></h2>{gantt(o, R)}
+<h2 class="pb">3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
 <div class="tbl"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
 <thead><tr><th>Term</th><th>Offered</th><th>Benchmark</th><th class="c">Rating</th><th>Note</th></tr></thead><tbody>{tr}</tbody></table></div>
-<h2>4 · Certainty scorecard <span class="h2s">1 = weak · 5 = strong · weighted</span></h2>{scorecard_single(o)}
-<h2 class="pb">5 · Risk flags</h2><div class="tbl"><table><colgroup><col style="width:8%"><col style="width:50%"></colgroup>
+<h2>4 · Certainty Scorecard <span class="h2s">1 = Weak · 5 = Strong · Weighted</span></h2>{scorecard_single(o)}
+<h2 class="pb">5 · Risk Flags</h2><div class="tbl"><table><colgroup><col style="width:8%"><col style="width:50%"></colgroup>
 <thead><tr><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl}</tbody></table></div>
 <div class="two" style="margin-top:0">
- <div><h2>6 · Verification checklist</h2><div class="tbl"><table><colgroup><col style="width:52%"><col style="width:14%"></colgroup>
+ <div><h2>6 · Verification Checklist</h2><div class="tbl"><table><colgroup><col style="width:52%"><col style="width:14%"></colgroup>
  <thead><tr><th>Item</th><th class="c">Status</th><th>Notes</th></tr></thead><tbody>{vf}</tbody></table></div></div>
- <div><h2>7 · Questions for the buyer's agent</h2><div class="tbl"><table class="qs"><colgroup><col style="width:7%"></colgroup>
+ <div><h2>7 · Questions for the Buyer's Agent</h2><div class="tbl"><table class="qs"><colgroup><col style="width:7%"></colgroup>
  <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div></div></div>
-<h2>8 · Assumptions &amp; data to confirm</h2>{assumptions_table(R)}
+<h2>8 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
 {fine(R)}'''
     sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · Offer {esc(o['id'])} from {esc(o['buyer'])}"
-    snap = snapshot(R, "Response due", esc(o.get("expires") or "—"))
+    snap = snapshot(R, "Response Due", esc(o.get("expires") or "—"))
     return "Single Offer Review", sub, snap + f'<div class="p1">{page1}</div>' + details
 
 
@@ -426,7 +426,7 @@ def scatter(R):
     col = {"ACCEPT": "var(--good-base)", "COUNTER": "var(--good-base)", "BACKUP": "var(--caution-base)", "DECLINE": "var(--risk-base)"}
     svg = [f'<svg viewBox="0 0 {W} {H}" class="scat">',
            f'<rect x="{xs(70)}" y="{ys(y1)}" width="{xs(100) - xs(70)}" height="{max(0, ys(tgt - (y1 - y0) * .1) - ys(y1))}" fill="var(--good-base)" opacity=".07"/>',
-           f'<text x="{xs(99)}" y="{ys(y1) + 10}" text-anchor="end" class="q">sweet spot</text>']
+           f'<text x="{xs(99)}" y="{ys(y1) + 10}" text-anchor="end" class="q">Sweet Spot</text>']
     val = y0
     while val <= y1:
         svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(val)}" y2="{ys(val)}" class="gl"/>'
@@ -434,9 +434,9 @@ def scatter(R):
         val += step
     for x in range(int(xmin), 101, 10):
         svg.append(f'<text x="{xs(x)}" y="{H - B + 12}" text-anchor="middle" class="ax">{x}</text>')
-    svg.append(f'<text x="{(Lm + W - Rm) / 2}" y="{H - 3}" text-anchor="middle" class="ax">Certainty score →</text>')
+    svg.append(f'<text x="{(Lm + W - Rm) / 2}" y="{H - 3}" text-anchor="middle" class="ax">Certainty Score →</text>')
     svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
-               f'<text x="{Lm + 3}" y="{ys(tgt) - 3}" class="ax" style="fill:var(--good-strong)">target {money(tgt)} (clean offer at list)</text>')
+               f'<text x="{Lm + 3}" y="{ys(tgt) - 3}" class="ax" style="fill:var(--good-strong)">Target {money(tgt)} (Clean Offer at List)</text>')
     for o in offs:
         c = col[o["action"]]
         x, a, b = xs(o["score"]["total"]), ys(o["ns"]["net_adj"]), ys(o["ns_down"]["net_adj"])
@@ -464,13 +464,13 @@ def multi_html(R, v):
         for r in v["ranked"])
     page1 = f'''{hero(v)}
 <div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
- <table class="plan"><colgroup><col style="width:7%"><col style="width:16%"></colgroup><thead><tr><th class="c">Offer</th><th>Action</th><th>Terms / reason</th></tr></thead><tbody>{plan}</tbody></table>
+ <table class="plan"><colgroup><col style="width:7%"><col style="width:16%"></colgroup><thead><tr><th class="c">Offer</th><th>Action</th><th>Terms / Reason</th></tr></thead><tbody>{plan}</tbody></table>
  <div class="note">{esc(v["plan_note"])}</div></div>
 <div class="two" style="grid-template-columns:1.45fr 1fr">
- <div><h2>Offers ranked <span class="h2s">by downside net and certainty</span></h2><div class="tbl"><table class="rank"><colgroup><col style="width:7%"><col style="width:22%"></colgroup>
+ <div><h2>Offers Ranked <span class="h2s">By Downside Net and Certainty</span></h2><div class="tbl"><table class="rank"><colgroup><col style="width:7%"><col style="width:22%"></colgroup>
  <thead><tr><th></th><th>Offer</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Risk</th><th class="n">Close</th><th class="c">Action</th></tr></thead><tbody>{rank}</tbody></table></div>
  <div class="legend"><span><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Risk</b> = days the buyer can walk away.</span></div></div>
- <div><h2>Net vs. certainty</h2><div class="panel">{scatter(R)}<div class="legend" style="margin:0"><span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>as offered</span><span><i style="background:var(--grey);border-radius:50%"></i>downside</span></div></div></div></div>
+ <div><h2>Net vs. Certainty</h2><div class="panel">{scatter(R)}<div class="legend" style="margin:0"><span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span><span><i style="background:var(--grey);border-radius:50%"></i>Downside</span></div></div></div></div>
 {options_table(v["options"], (28, 12, 10))}{closing_block(v)}'''
 
     offs = rk
@@ -485,20 +485,20 @@ def multi_html(R, v):
     cols = [(k, o["ns"]) for k, o in zip(K, offs)]
     ns = netsheet_body(cols, hl=-1)
     adj = [o["ns"]["net_adj"] for o in offs]
-    ns += '<tr class="total2"><td>Net after holding costs</td>' + "".join(f'<td class="n {c}">{acct(x)}</td>' for x, c in zip(adj, cls(adj))) + "</tr>"
+    ns += '<tr class="total2"><td>Net After Holding Costs</td>' + "".join(f'<td class="n {c}">{acct(x)}</td>' for x, c in zip(adj, cls(adj))) + "</tr>"
     down = [o["ns_down"]["net_adj"] for o in offs]
-    ref = f"CMA midpoint ({money(round(L['cma_mid']))})" if L["cma_provided"] else "list price"
-    ap = ("<tr><td>Offer price</td>" + "".join(f'<td class="n">{money(o["price"])}</td>' for o in offs) + "</tr>"
-          + f"<tr><td>vs. {'CMA high' if L['cma_provided'] else 'list price'} ({money(L['cma_high'])})</td>" + "".join(
+    ref = f"CMA Midpoint ({money(round(L['cma_mid']))})" if L["cma_provided"] else "List Price"
+    ap = ("<tr><td>Offer Price</td>" + "".join(f'<td class="n">{money(o["price"])}</td>' for o in offs) + "</tr>"
+          + f"<tr><td>vs. {'CMA High' if L['cma_provided'] else 'List Price'} ({money(L['cma_high'])})</td>" + "".join(
               f'<td class="n"><span class="{"rt" if o["price"] > L["cma_high"] else "gt"}">{signed(o["price"] - L["cma_high"])}</span></td>' for o in offs) + "</tr>"
-          + "<tr><td>Appraisal gap buyer covers</td>" + "".join(
+          + "<tr><td>Appraisal Gap Buyer Covers</td>" + "".join(
               f'<td class="n">{"Not needed" if not o["financed"] or not o["appraisal_days"] else (money(o["appraisal_gap"]) if o["appraisal_gap"] else "None")}</td>' for o in offs) + "</tr>"
-          + f"<tr><td>Price if appraised at {ref}</td>" + "".join(f'<td class="n">{money(o["downside_price"])}</td>' for o in offs) + "</tr>"
-          + "<tr><td>Inspection credit reserve</td>" + "".join(f'<td class="n neg">{acct(-o["repair_reserve"])}</td>' for o in offs) + "</tr>"
-          + '<tr class="total2"><td>Downside net after holding</td>' + "".join(f'<td class="n {c}">{acct(x)}</td>' for x, c in zip(down, cls(down))) + "</tr>")
+          + f"<tr><td>Price if Appraised at {ref}</td>" + "".join(f'<td class="n">{money(o["downside_price"])}</td>' for o in offs) + "</tr>"
+          + "<tr><td>Inspection Credit Reserve</td>" + "".join(f'<td class="n neg">{acct(-o["repair_reserve"])}</td>' for o in offs) + "</tr>"
+          + '<tr class="total2"><td>Downside Net After Holding</td>' + "".join(f'<td class="n {c}">{acct(x)}</td>' for x, c in zip(down, cls(down))) + "</tr>")
     weeks = min(12, max(math.ceil(max(o["close_days"] for o in offs) / 7) + 1, 6))
     tl = "<tr><th>Offer</th>" + "".join(f'<th class="c">Wk {w + 1}<br><span class="sm2">{(L["analysis_date"] + timedelta(days=7 * w)):%-m/%-d}</span></th>'
-                                         for w in range(weeks)) + '<th class="n">At risk</th></tr>'
+                                         for w in range(weeks)) + '<th class="n">At Risk</th></tr>'
     for o in offs:
         tl += f"<tr><td><b>{esc(o['id'])}</b></td>"
         for w in range(weeks):
@@ -519,14 +519,14 @@ def multi_html(R, v):
         for k in t:
             if k not in labels:
                 labels.append(k)
-    terms = '<tr><td>Buyer / agent</td>' + "".join(f'<td>{esc(o["buyer"])}<br><span class="sm">{esc(o.get("buyer_agent") or "")}</span></td>' for o in offs) + "</tr>"
+    terms = '<tr><td>Buyer / Agent</td>' + "".join(f'<td>{esc(o["buyer"])}<br><span class="sm">{esc(o.get("buyer_agent") or "")}</span></td>' for o in offs) + "</tr>"
     for lab in labels:
         terms += f"<tr><td>{lab}</td>" + "".join(f'<td class="{t[lab][3] if lab in t else ""}">{t[lab][1] if lab in t else "—"}</td>' for t in tmap) + "</tr>"
     sc = ""
     for k, lab, w in oe.CRITERIA:
         sc += f'<tr><td>{lab}</td><td class="n">{w}%</td>' + "".join(
             f'<td class="c s{o["score"]["scores"][k]}">{o["score"]["scores"][k]}{"*" if o["score"]["src"][k] == "agent" else ""}</td>' for o in offs) + "</tr>"
-    sc += '<tr class="total"><td>Certainty score (weighted, 0–100)</td><td class="n">100%</td>' + "".join(
+    sc += '<tr class="total"><td>Certainty Score (Weighted, 0–100)</td><td class="n">100%</td>' + "".join(
         f'<td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[o["score"]["band"][0]]}"><b>{o["score"]["total"]}</b></td>' for o in offs) + "</tr>"
     fl = "".join(f'<tr><td class="c"><b>{esc(o["id"])}</b></td><td class="c"><span class="pill {f["sev"].lower()}">{f["sev"]}</span></td>'
                  f'<td>{esc(f["issue"])}</td><td>{esc(f["fix"])}</td></tr>' for o in offs for f in o["flags"])
@@ -534,27 +534,27 @@ def multi_html(R, v):
     vf = "".join(f"<tr><td>{esc(cl[0][i][0])}</td>" + "".join(f'<td class="c">{pill_status(c[i][1])}</td>' for c in cl) + "</tr>" for i in range(len(cl[0])))
     ctr = ""
     if act == "COUNTER" and top["counter_rows"]:
-        ctr = (f'<h2>8 · Counter to Offer {esc(top["id"])} <span class="h2s">full terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
+        ctr = (f'<h2>8 · Counter to Offer {esc(top["id"])} <span class="h2s">Full Terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
                '<thead><tr><th>Term</th><th>Offered</th><th>Counter</th><th>Why</th></tr></thead><tbody>'
                + "".join(f'<tr><td>{esc(a)}</td><td>{esc(b)}</td><td class="good"><b>{esc(c)}</b></td><td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
                + "</tbody></table></div>")
-    details = f'''<div class="pb"></div><div class="dh">Detailed comparison</div>
-<h2>1 · Seller net sheet <span class="h2s">as offered · green = best, red = weakest</span></h2>
-<div class="tbl"><table><colgroup><col style="width:30%"></colgroup><thead>{hr("Line item")}</thead><tbody>{ns}</tbody></table></div>
-<h2>2 · Appraisal &amp; inspection exposure <span class="h2s">what each offer is worth if the appraisal and inspection go badly</span></h2>
+    details = f'''<div class="pb"></div><div class="dh">Detailed Comparison</div>
+<h2>1 · Seller Net Sheet <span class="h2s">As Offered · Green = Best, Red = Weakest</span></h2>
+<div class="tbl"><table><colgroup><col style="width:30%"></colgroup><thead>{hr("Line Item")}</thead><tbody>{ns}</tbody></table></div>
+<h2>2 · Appraisal &amp; Inspection Exposure <span class="h2s">What Each Offer Is Worth if the Appraisal and Inspection Go Badly</span></h2>
 <div class="tbl"><table><colgroup><col style="width:30%"></colgroup><thead>{hr()}</thead><tbody>{ap}</tbody></table></div>
-<h2>3 · Contingency timeline <span class="h2s">weeks from {L["analysis_date"]:%b %-d} · when each buyer can still walk away</span></h2>
+<h2>3 · Contingency Timeline <span class="h2s">Weeks from {L["analysis_date"]:%b %-d} · When Each Buyer Can Still Walk Away</span></h2>
 <div class="tbl"><table style="table-layout:fixed"><colgroup><col style="width:6%">{"".join(f'<col style="width:{86 / weeks:.1f}%">' for _ in range(weeks))}<col style="width:8%"></colgroup><thead>{tl}</thead></table></div>
-<div class="legend"><span><i class="hot"></i>Inspection / sale-of-home</span><span><i class="warm"></i>Financing / appraisal open</span><span><i class="safe"></i>Firm</span><span><i class="closei"></i>Closing</span></div>
-<h2 class="pb">4 · Terms comparison <span class="h2s">green = favorable · amber = watch · red = weak</span></h2>
+<div class="legend"><span><i class="hot"></i>Inspection / Sale-of-Home</span><span><i class="warm"></i>Financing / Appraisal Open</span><span><i class="safe"></i>Firm</span><span><i class="closei"></i>Closing</span></div>
+<h2 class="pb">4 · Terms Comparison <span class="h2s">Green = Favorable · Amber = Watch · Red = Weak</span></h2>
 <div class="tbl"><table><colgroup><col style="width:16%"></colgroup><thead><tr><th>Term</th>{"".join(f"<th>Offer {esc(k)}</th>" for k in K)}</tr></thead><tbody>{terms}</tbody></table></div>
-<h2>5 · Certainty scorecard <span class="h2s">1 = weak · 5 = strong · * = set by agent</span></h2>
+<h2>5 · Certainty Scorecard <span class="h2s">1 = Weak · 5 = Strong · * = Set by Agent</span></h2>
 <div class="tbl"><table><colgroup><col style="width:34%"><col style="width:10%"></colgroup><thead><tr><th>Criterion</th><th class="n">Weight</th>{"".join(f'<th class="c">Offer {esc(k)}</th>' for k in K)}</tr></thead><tbody>{sc}</tbody></table></div>
-<h2 class="pb">6 · Risk flags</h2><div class="tbl"><table><colgroup><col style="width:6%"><col style="width:8%"><col style="width:48%"></colgroup>
+<h2 class="pb">6 · Risk Flags</h2><div class="tbl"><table><colgroup><col style="width:6%"><col style="width:8%"><col style="width:48%"></colgroup>
 <thead><tr><th class="c">Offer</th><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl or "<tr><td colspan=4>No significant risks found.</td></tr>"}</tbody></table></div>
-<h2>7 · Verification checklist</h2><div class="tbl"><table><colgroup><col style="width:40%"></colgroup><thead><tr><th>Item</th>{"".join(f'<th class="c">Offer {esc(k)}</th>' for k in K)}</tr></thead><tbody>{vf}</tbody></table></div>
+<h2>7 · Verification Checklist</h2><div class="tbl"><table><colgroup><col style="width:40%"></colgroup><thead><tr><th>Item</th>{"".join(f'<th class="c">Offer {esc(k)}</th>' for k in K)}</tr></thead><tbody>{vf}</tbody></table></div>
 {ctr}
-<h2>{"9" if ctr else "8"} · Assumptions &amp; data to confirm</h2>{assumptions_table(R)}
+<h2>{"9" if ctr else "8"} · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
 {fine(R)}'''
     sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · {len(R['active'])} active offers"
     return "Multiple Offer Review", sub, snapshot(R, "Offers", str(len(R["active"]))) + f'<div class="p1">{page1}</div>' + details
@@ -588,7 +588,7 @@ def build(data, fmt, out_dir, ctx):
     street = (R["listing"].get("address") or "Listing").split(",")[0]
     name = render.filename(street, f"Offer {o['id']} Review" if mode == "single" else "Multiple Offer Review", ext="pdf")
     path = os.path.join(out_dir, name)
-    label = f"{'Single' if mode == 'single' else 'Multiple'} Offer Review · Seller side · {street}"
+    label = f"{'Single' if mode == 'single' else 'Multiple'} Offer Review · Seller Side · {street}"
     top = render.html_to_pdf(doc, path, footer_html=render.footer(label), before_print=fit_page_one)
     if top > PAGE1_LIMIT:
         print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten the counter notes or custom flags.", file=sys.stderr)

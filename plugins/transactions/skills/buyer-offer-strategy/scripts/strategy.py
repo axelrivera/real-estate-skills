@@ -19,10 +19,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import finance, handoff, offer_engine as oe, profiles  # noqa: E402
 
 money, rnd = oe.money, oe.rnd
-COMP_LABEL = {0: "Only offer", 1: "1 competing offer", 2: "2–3 competing", 3: "Cash or 4+ competing"}
+COMP_LABEL = {0: "Only Offer", 1: "1 Competing Offer", 2: "2–3 Competing", 3: "Cash or 4+ Competing"}
 # Competitiveness thresholds (strong / competitive / at risk) per competition level. Starting judgments.
 BANDS = {0: (55, 40, 30), 1: (65, 55, 45), 2: (75, 60, 50), 3: (85, 72, 60)}
-OPTION_LABEL = {"recommended": "Recommended", "stronger": "Stronger", "lower_cost": "Lower-cost"}
+OPTION_LABEL = {"recommended": "Recommended", "stronger": "Stronger", "lower_cost": "Lower-Cost"}
 # National planning estimates, used only when neither the buyer file nor the market profile has a number.
 DEFAULT_RATE = 6.5
 NATIONAL_INSURANCE_RATE = 0.009
@@ -172,8 +172,8 @@ def prepare(B, A, market=None):
         lvl = {"hot": 2, "normal": 1, "soft": 0}[heat]
         signals = dom is not None or M.get("sale_to_list") or P.get("price_cuts")
         A.add("competition", "level", COMP_LABEL[lvl],
-              (f"Competition unknown: inferred '{COMP_LABEL[lvl]}' from market signals ({heat})" if signals else
-               f"Competition unknown and no market data: assumed '{COMP_LABEL[lvl]}' (typical)") + ". Ask the listing agent", "med")
+              (f"Competition unknown: inferred '{COMP_LABEL[lvl].lower()}' from market signals ({heat})" if signals else
+               f"Competition unknown and no market data: assumed '{COMP_LABEL[lvl].lower()}' (typical)") + ". Ask the listing agent", "med")
     C["level"], C["heat"] = lvl, heat
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
     LS["listing_fee_pct"] = LS.get("listing_fee_pct")
@@ -253,7 +253,7 @@ def ci(o, target_net, lp):
 
 def band_of(v, level):
     s, c, r = BANDS[level]
-    return ("strong", "Strong") if v >= s else ("comp", "Competitive") if v >= c else ("risk", "At risk") if v >= r else ("unl", "Unlikely")
+    return ("strong", "Strong") if v >= s else ("comp", "Competitive") if v >= c else ("risk", "At Risk") if v >= r else ("unl", "Unlikely")
 
 
 # --- offer builder -------------------------------------------------------------
@@ -509,9 +509,9 @@ def analyze(B_in, market=None, cma=None):
 
 # --- formatted views (shared by the markdown template and the PDF) ---------------
 
-TERM_KEYS = [("price", "Price"), ("seller_concessions", "Seller concessions"), ("deposit", "Escrow deposit"),
-             ("inspection_days", "Inspection period"), ("loan_approval_days", "Loan approval period"), ("appraisal_gap", "Appraisal gap"),
-             ("closing_days", "Closing"), ("buyer_broker_pct", "Buyer-broker comp."), ("home_warranty", "Home warranty"),
+TERM_KEYS = [("price", "Price"), ("seller_concessions", "Seller Concessions"), ("deposit", "Escrow Deposit"),
+             ("inspection_days", "Inspection Period"), ("loan_approval_days", "Loan Approval Period"), ("appraisal_gap", "Appraisal Gap"),
+             ("closing_days", "Closing"), ("buyer_broker_pct", "Buyer-Broker Comp."), ("home_warranty", "Home Warranty"),
              ("escalation", "Escalation")]
 
 
@@ -617,14 +617,14 @@ def summary(r):
         options.append({"key": k, "option": OPTION_LABEL[k], "price": money(o["price"]), "outlook": r["bands"][k][lvl][1],
                         "outlook_class": r["bands"][k][lvl][0], "seller_net": money(o["ns"]["net_adj"]), "worst_cash": money(c["worst"]),
                         "reserve": money(c["reserve"]), "what": what, "status": status})
-    bands = [{"level": COMP_LABEL[lv] + (" (expected)" if lv == lvl else ""),
+    bands = [{"level": COMP_LABEL[lv] + (" (Expected)" if lv == lvl else ""),
               "values": [{"band": r["bands"][k][lv][1], "class": r["bands"][k][lv][0]} for k in O]} for lv in range(4)]
-    exposure = [["Cash to close (deposit counts toward it)", money(rc["to_close"])],
-                ["+ appraisal gap if the appraisal is low", money(rc["gap"])],
-                ["Worst-case cash needed", f"{money(rc['worst'])} of {money(BU['cash_available'])}"],
-                ["Left in reserve", f"{money(rc['reserve'])} (floor {money(BU['reserve_floor'])})"],
-                ["Est. monthly payment", f"${r['payment']['recommended']:,}" + (f" of ${BU['max_payment']:,}" if BU.get("max_payment") else "")],
-                ["Deposit at risk after", f"{rec['firm_date']:%a %b %-d} ({money(rec['deposit'])})"]]
+    exposure = [["Cash to Close (Deposit Counts Toward It)", money(rc["to_close"])],
+                ["+ Appraisal Gap if the Appraisal Is Low", money(rc["gap"])],
+                ["Worst-Case Cash Needed", f"{money(rc['worst'])} of {money(BU['cash_available'])}"],
+                ["Left in Reserve", f"{money(rc['reserve'])} (floor {money(BU['reserve_floor'])})"],
+                ["Est. Monthly Payment", f"${r['payment']['recommended']:,}" + (f" of ${BU['max_payment']:,}" if BU.get("max_payment") else "")],
+                ["Deposit at Risk After", f"{rec['firm_date']:%a %b %-d} ({money(rec['deposit'])})"]]
     if r.get("cash_at_cap"):
         cc = r["cash_at_cap"]
         exposure.append([f"At the {money(t['escalation']['cap'])} cap", f"{money(cc['worst'])} · reserve {money(cc['reserve'])}"])
@@ -633,7 +633,7 @@ def summary(r):
         signal += f"; {P['dom']} DOM vs. {B['market']['median_dom']} median"
     deadline = f" before {C['deadline']}" if C.get("deadline") else ""
     return {
-        "outlook": br[1], "outlook_class": br[0], "competition": COMP_LABEL[lvl] + ("" if C.get("note") else " (inferred)"),
+        "outlook": br[1], "outlook_class": br[0], "competition": COMP_LABEL[lvl] + ("" if C.get("note") else " (Inferred)"),
         "why": why, "submit_by": C.get("deadline") or "Before the listing agent's deadline", "signal": signal,
         "financing": fin_line(B), "financing_assumed": BU.get("financing_source") == "assumed",
         "limits": f"Max {money(BU['max_price'])} · cash {money(BU['cash_available'])} · keep {money(BU['reserve_floor'])}"
@@ -659,14 +659,14 @@ def next_step(B, deadline):
 # --- offer package worksheet -------------------------------------------------------
 
 FRBAR_RIDERS = {"fha_va": "FHA/VA Financing", "appraisal": "Appraisal Contingency", "hoa": "Homeowners' Association / Community Disclosure",
-                "condo": "Condominium", "lead": "Lead-Based Paint Disclosure (federal)", "insurance": "Homeowners' / Flood Insurance (if in your form set)",
-                "sale": "Sale of Buyer's Property", "kickout": "Kick-out clause", "backup": "Back-up Contract", "escalation": "Escalation addendum",
-                "cdd": "CDD disclosure", "short_sale": "Short Sale"}
-GENERIC_RIDERS = {"fha_va": "FHA/VA financing addendum", "appraisal": "Appraisal contingency addendum", "hoa": "HOA / community addendum",
-                  "condo": "Condominium addendum", "lead": "Lead-Based Paint Disclosure (federal)", "insurance": "Insurance contingency (if your forms have one)",
-                  "sale": "Sale of buyer's property addendum", "kickout": "Kick-out clause", "backup": "Back-up contract addendum",
-                  "escalation": "Escalation clause (special provisions, if your forms and the listing agent allow it)",
-                  "cdd": "Special district / assessment disclosure", "short_sale": "Short sale addendum"}
+                "condo": "Condominium", "lead": "Lead-Based Paint Disclosure (Federal)", "insurance": "Homeowners' / Flood Insurance (If in Your Form Set)",
+                "sale": "Sale of Buyer's Property", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract", "escalation": "Escalation Addendum",
+                "cdd": "CDD Disclosure", "short_sale": "Short Sale"}
+GENERIC_RIDERS = {"fha_va": "FHA/VA Financing Addendum", "appraisal": "Appraisal Contingency Addendum", "hoa": "HOA / Community Addendum",
+                  "condo": "Condominium Addendum", "lead": "Lead-Based Paint Disclosure (Federal)", "insurance": "Insurance Contingency (if Your Forms Have One)",
+                  "sale": "Sale of Buyer's Property Addendum", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract Addendum",
+                  "escalation": "Escalation Clause (Special Provisions, if Your Forms and the Listing Agent Allow It)",
+                  "cdd": "Special District / Assessment Disclosure", "short_sale": "Short Sale Addendum"}
 
 
 def blank(x):
@@ -708,42 +708,42 @@ def worksheet(r, variant=None):
     rows = [  # (paragraph, field, entry, note)
         (para("1"), "Buyer(s)", W.get("buyer_names") or blank("buyer names exactly as on pre-approval"), "Match the pre-approval letter"),
         (para("1"), "Seller(s)", blank("from listing / tax record"), ""),
-        (para("1"), "Property address", P.get("address") or blank("address"), ""),
-        (para("1"), "Legal description / parcel ID", W.get("legal_description") or blank("from the county property appraiser"), W.get("parcel_id") or ""),
-        (para("1"), "Personal property included", W.get("personal_property") or blank("items in MLS (range, refrigerator, washer/dryer…)"),
+        (para("1"), "Property Address", P.get("address") or blank("address"), ""),
+        (para("1"), "Legal Description / Parcel ID", W.get("legal_description") or blank("from the county property appraiser"), W.get("parcel_id") or ""),
+        (para("1"), "Personal Property Included", W.get("personal_property") or blank("items in MLS (range, refrigerator, washer/dryer…)"),
          "List anything the buyer expects to stay"),
-        (para("2"), "Purchase price", f"**{money(price)}**", ""),
-        (para("2(a)"), "Initial deposit", f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar else f"**{money(t['deposit'])}**",
+        (para("2"), "Purchase Price", f"**{money(price)}**", ""),
+        (para("2(a)"), "Initial Deposit", f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar else f"**{money(t['deposit'])}**",
          "" if frbar else "Due date per the contract"),
-        (para("2(a)"), "Escrow agent", W.get("escrow_agent") or blank("title company name, address, phone"), ""),
-        (para("2(b)"), "Additional deposit", "None", "Keep the full deposit up front: it scores better"),
+        (para("2(a)"), "Escrow Agent", W.get("escrow_agent") or blank("title company name, address, phone"), ""),
+        (para("2(b)"), "Additional Deposit", "None", "Keep the full deposit up front: it scores better"),
     ]
     if financed:
         rows.append((para("2(c) / 8"), "Financing", f"**{oe.FIN_LABEL[fin]}** · loan {money(loan)} ({1 - BU['down_pct']:.1%} LTV)",
                      "As chosen by the buyer and lender" + (" (ASSUMED: confirm before entering)" if BU.get("financing_source") == "assumed" else "")))
-        rows.append((para("8(b)"), "Loan approval period", f"**{t.get('loan_approval_days', 30)} days**",
+        rows.append((para("8(b)"), "Loan Approval Period", f"**{t.get('loan_approval_days', 30)} days**",
                      "Loan application within 5 days (form default)" if frbar else ""))
     else:
         rows.append((para("8"), "Financing", "**Cash** (no financing contingency)", "Attach proof of funds"))
     rows += [
-        (para("2(d)"), "Balance to close", f"{money(price - t['deposit'] - loan)} before prorations and costs", "Buyer's funds at closing"),
-        (para("3"), "Time for acceptance", deadline or blank("date and time"), "Match the listing agent's highest-and-best deadline"),
-        (para("4"), "Closing date", f"**{close:%B %-d, %Y}**", "Weekday; lender confirmed" if BU.get("lender_called") or not financed
+        (para("2(d)"), "Balance to Close", f"{money(price - t['deposit'] - loan)} before prorations and costs", "Buyer's funds at closing"),
+        (para("3"), "Time for Acceptance", deadline or blank("date and time"), "Match the listing agent's highest-and-best deadline"),
+        (para("4"), "Closing Date", f"**{close:%B %-d, %Y}**", "Weekday; lender confirmed" if BU.get("lender_called") or not financed
          else "Weekday; confirm the lender can close by then"),
-        (para("6"), "Occupancy / possession", "At closing, vacant", ""),
+        (para("6"), "Occupancy / Possession", "At closing, vacant", ""),
     ]
     if title_payer == "seller":
-        rows.append((para("9"), "Title evidence / owner's policy", "Seller designates title agent and pays owner's policy", f"Local custom ({title_src}); verify"))
+        rows.append((para("9"), "Title Evidence / Owner's Policy", "Seller designates title agent and pays owner's policy", f"Local custom ({title_src}); verify"))
     elif title_payer == "buyer":
-        rows.append((para("9"), "Title evidence / owner's policy", "Buyer designates title agent and pays owner's policy", f"Local custom ({title_src}); verify"))
+        rows.append((para("9"), "Title Evidence / Owner's Policy", "Buyer designates title agent and pays owner's policy", f"Local custom ({title_src}); verify"))
     else:
-        rows.append((para("9"), "Title evidence / owner's policy", blank("who pays per local custom"), "Ask the title company"))
+        rows.append((para("9"), "Title Evidence / Owner's Policy", blank("who pays per local custom"), "Ask the title company"))
     rows += [
-        (para("9"), "Seller-paid closing costs", f"**{money(t['seller_concessions'])}** toward buyer's costs, prepaids and escrows"
+        (para("9"), "Seller-Paid Closing Costs", f"**{money(t['seller_concessions'])}** toward buyer's costs, prepaids and escrows"
          if t.get("seller_concessions") else "None", "Use the form's seller-contribution line if present, else Additional Terms"),
-        (para("9"), "Home warranty", "None (buyer may purchase separately)" if not t.get("home_warranty") else f"Seller pays up to {money(t['home_warranty'])}", ""),
+        (para("9"), "Home Warranty", "None (buyer may purchase separately)" if not t.get("home_warranty") else f"Seller pays up to {money(t['home_warranty'])}", ""),
         (para("9"), "Survey", "Buyer's expense (recommended)", "Lender may require"),
-        (para("12"), "Inspection period", f"**{t['inspection_days']} days**", f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"),
+        (para("12"), "Inspection Period", f"**{t['inspection_days']} days**", f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"),
     ]
 
     names = FRBAR_RIDERS if frbar else GENERIC_RIDERS
@@ -788,16 +788,16 @@ def worksheet(r, variant=None):
 
     clauses = []
     if t.get("seller_concessions"):
-        clauses.append(("Seller-paid closing costs",
+        clauses.append(("Seller-Paid Closing Costs",
                         f"Seller shall pay up to {money(t['seller_concessions'])} toward Buyer's closing costs, prepaid items and escrows, as allowed by "
                         "Buyer's lender. Any amount not used shall not be paid to Buyer."))
     if financed and t.get("appraisal_gap"):
         rider = names["fha_va"] if fin in ("fha", "va") else names["appraisal"]
-        clauses.append(("Appraisal gap",
+        clauses.append(("Appraisal Gap",
                         f"If the appraised value is less than the Purchase Price, Buyer shall pay in cash up to {money(t['appraisal_gap'])} of the "
                         f"difference between the appraised value and the Purchase Price. If the difference exceeds {money(t['appraisal_gap'])}, "
                         f"Buyer's rights under the {rider} shall apply."))
-    clauses.append(("Seller-provided reports",
+    clauses.append(("Seller-Provided Reports",
                     f"Within 2 days after the Effective Date, Seller shall provide copies of any existing {reports} and inspection reports, "
                     "permits, and insurance claims history for the Property in Seller's possession."))
     if t.get("escalation") and not any(x[0] == names["escalation"] for x in riders):
@@ -821,11 +821,11 @@ def worksheet(r, variant=None):
         ("Contract", f"{'AS IS contract' if form == 'as_is' else 'Contract'} completed and initialed on every page", CK.get("contract", "Pending"), ""),
         ("Contract", f"Riders attached and signed: {rider_list}", CK.get("riders", "Pending"), ""),
         ("Contract", "Additional terms reviewed by broker", CK.get("terms", "Pending"), ""),
-        ("Buyer docs", "Pre-approval letter at the offer price, not the max" if financed else "Proof of funds (recent statement in the buyer's name)",
+        ("Buyer Docs", "Pre-approval letter at the offer price, not the max" if financed else "Proof of funds (recent statement in the buyer's name)",
          CK.get("pre_approval", "Pending"), f"Letter at {money(price)}" if financed else ""),
-        ("Buyer docs", "Proof of funds for deposit, closing costs and appraisal gap" if financed else "Source-of-funds note if the account is new",
+        ("Buyer Docs", "Proof of funds for deposit, closing costs and appraisal gap" if financed else "Source-of-funds note if the account is new",
          CK.get("funds", "Pending"), f"At least {money(r['cash'][variant]['worst'])} available" if financed else ""),
-        ("Buyer docs", "Homeowners insurance quote for this address", CK.get("insurance", "Yes" if BU.get("insurance_quote") else "Pending"), "Before submitting"),
+        ("Buyer Docs", "Homeowners insurance quote for this address", CK.get("insurance", "Yes" if BU.get("insurance_quote") else "Pending"), "Before submitting"),
         ("Disclosures", "Brokerage relationship disclosure signed (transaction broker / single agent)" if fl else "Agency disclosure signed",
          CK.get("agency", "Pending"), "Florida requirement" if fl else "Per your state's rules"),
         ("Disclosures", "Buyer-broker agreement signed; compensation request matches", CK.get("bb", "Pending"),
@@ -838,7 +838,7 @@ def worksheet(r, variant=None):
         ("Timing", f"Inspector{' and 4-point' if fl else ''} booked inside the {t['inspection_days']}-day inspection period", CK.get("inspector", "Pending"), ""),
         ("Timing", f"Lender confirms a {(close - B['analysis_date']).days}-day close" if financed else "Funds available by closing",
          CK.get("lender_close", "Yes" if BU.get("lender_called") else "Pending"), f"Closing {close:%b %-d}"),
-        ("Do not include", "Personal letter, photos or buyer background", "Yes", "Fair housing"),
+        ("Do Not Include", "Personal letter, photos or buyer background", "Yes", "Fair housing"),
     ]
     return {"variant": variant, "option": OPTION_LABEL[variant], "price": money(price), "frbar": frbar, "form_name": form_name, "form_why": form_why,
             "software": "Form Simplicity" if frbar else "your contract software",

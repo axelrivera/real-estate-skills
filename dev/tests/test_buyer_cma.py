@@ -11,8 +11,8 @@ SKILL = os.path.join(ROOT, "plugins", "transactions", "skills", "buyer-cma")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 
-compute, buyer_render, cma, handoff, profiles = load(
-    "buyer-cma", "compute", "render", "_shared.cma", "_shared.handoff", "_shared.profiles")
+compute, buyer_render, handoff, profiles = load(
+    "buyer-cma", "compute", "render", "_shared.handoff", "_shared.profiles")
 
 FIXTURE = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "hickorywood.json")
 
@@ -109,17 +109,6 @@ class OtherMarkets(unittest.TestCase):
         self.assertIsNotNone(C["payments"])
 
 
-class Labels(unittest.TestCase):
-    def test_spanish_covers_every_english_label(self):
-        with open(os.path.join(SKILL, "assets", "labels-en.json")) as f:
-            en = json.load(f)
-        with open(os.path.join(SKILL, "assets", "labels-es.json")) as f:
-            es = json.load(f)
-        self.assertEqual(set(en), set(es))
-        with self.assertRaises(ValueError):
-            cma.Labels(os.path.join(SKILL, "assets"), "fr")
-
-
 class Pdf(unittest.TestCase):
     def test_brand_side_and_agent_fields(self):
         R = report()
@@ -133,15 +122,6 @@ class Pdf(unittest.TestCase):
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
         self.assertIn("--subject:#B3261E", doc)  # subject accent stays the fixed risk red, not the brand
-
-    def test_spanish_render(self):
-        R = report()
-        R["language"] = "es"
-        market, homes = compute.load_inputs(R)
-        C = compute.compute(R, market, homes)
-        doc, _ = buyer_render.build_html(R, C, homes, profiles.load_agent(None))
-        self.assertIn('lang="es"', doc)
-        self.assertIn("Comprador", doc)
 
     def test_full_pdf(self):
         R = report()
