@@ -59,11 +59,46 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 - **Eval set:** the grader's expectations could be copied into `evals.json` as assertions for iteration 2.
 - **Rounding:** seller-cma display rounds a few half-dollar amounts differently line to line (cosmetic).
 
+## Audit 2026-09-23
+
+[The audit](audits/2026-09-23.md) found 24 High, 62 Medium and 57 Low items. Its product gaps are in [roadmap.md](roadmap.md). Rules marked Verify are checked in [the verification note](audits/2026-09-23-verification.md) before they're fixed. Fixes land one theme per commit, with the IDs in the message, and a minor version bump closes each phase. When a theme lands, list its fixed IDs here; any ID left out on purpose goes under Won't Fix with the reason.
+
+| Phase | Version | Themes | IDs | Status |
+|---|---|---|---|---|
+| 0. Baseline | | Commit the in-progress work, roadmap, verification note | | Done |
+| 1. High and contract rules | 0.3.0 | Crashes | OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22 | Done |
+| | | Profile merge, no silent Florida | CORE-1, CORE-2, CORE-8, TL-4, CORE-10, CORE-24 | Done |
+| | | FR/BAR dates | TL-1, TL-2, TL-3, TL-5 to TL-13, TL-18, TL-23 | Done |
+| | | Escalation and appraisal | OFR-2 to OFR-5, OFR-17, OFR-27 | Open |
+| | | Offer plan wording | OFR-6, OFR-21 | Open |
+| | | Money lines | CORE-5, CORE-6, CORE-18, CMA-3, CMA-4, CMA-18, OFR-13, OFR-14 | Open |
+| | | Computed comp adjustments | CMA-2 | Open |
+| | | Disclaimers, brokerage, EHO | CORE-3, CORE-4, CMA-16, FH-6 | Open |
+| | | Fair-housing check | FH-1, FH-2, FH-3 | Open |
+| | | Condo and flood | CMA-5, CMA-6, OFR-26 | Open |
+| 2. Medium | 0.4.0 | Market data and checks | CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning), CORE-20, CORE-21 | Open |
+| | | CMA method and charts | CMA-7 to CMA-12, CMA-14, CMA-15, CMA-17, CMA-20, CMA-22 | Open |
+| | | Offer pricing and programs | OFR-7 to OFR-12, OFR-18, OFR-25, OFR-30 | Open |
+| | | Offer benchmarks and review UX | OFR-15, OFR-16, OFR-20, OFR-24, OFR-28 | Open |
+| | | TREC and other forms (TREC 20-19, current since July 1, 2026) | OFR-19, TL-15, TL-24 | Open |
+| | | Timeline wording and outputs | TL-14, TL-16, TL-17, TL-19, TL-21, TL-22, TL-25 | Open |
+| | | Fair housing and design | FH-4, FH-5, DS-1 to DS-4 | Open |
+| 3. Low, docs, tooling | 0.5.0 | Skills | CORE-22 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20 | Open |
+| | | Docs and tooling | DOC-1 to DOC-14 (DOC-13 needs a license and remote) | Open |
+| 4. Evals | | Iteration 2 on the new fixtures, plus the fair-housing evals | | Open |
+
+Fixed: OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22, CORE-1, CORE-2, CORE-8, CORE-10, CORE-24, TL-1 to TL-13 (TL-4 with the profile theme), TL-18, TL-23.
+
+Found while verifying (not in the audit): the FR/BAR forms set no time of day, so a rolled deadline runs to the end of the next business day, not 5:00 PM (fixed with TL-1); Brevard is Space Coast MLS, not Stellar; Lee and Charlotte are seller-pay counties; Texas legal holidays exclude Columbus Day (Phase 2).
+
+Won't fix: (none yet).
+
 ## Remaining work, in order
 
-1. **User testing** in claude.ai and Cowork: `make package` → upload `dist/*.zip` (claude.ai) or add the marketplace (Cowork). The user will give feedback after this pass.
-2. **Evals iteration 2** after the user's feedback: re-run the changed skills with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md), compare with iteration 1 (`--previous-workspace`).
-3. **Later / optional:** trigger-description optimization (skill-creator `run_loop`, Claude Code only), more states' market layers, more MLS layers, refresh Florida millage when 2026 rates are final (October 2026), port the prototype's offer outcome log.
+1. **Audit fixes**, phases 1 to 4 above.
+2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/*.zip` (claude.ai) or add the marketplace (Cowork). The user will give feedback after this pass.
+3. **Evals iteration 2** after the user's feedback (the audit's phase 4 covers the changed skills): re-run the changed skills with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md), compare with iteration 1 (`--previous-workspace`).
+4. **Later / optional:** refresh Florida millage when 2026 rates are final (October 2026). New skills and scope extensions (more state and MLS layers, the offer outcome log, trigger-description optimization) are in [roadmap.md](roadmap.md).
 
 ## Decisions worth remembering (details in the docs)
 

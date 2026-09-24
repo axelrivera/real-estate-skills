@@ -23,4 +23,4 @@ Deal work from pricing through closing. Every skill has a markdown mode and a fi
 
 ## Planned
 
-`lead-gen`, `content`, `social-media`, `research`.
+`lead-gen`, `content`, `social-media`, `research`. New skills proposed for any plugin are in [roadmap.md](roadmap.md).
