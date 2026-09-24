@@ -43,7 +43,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## listing_side
 
-`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the agent's standard terms from their market profile, else none, flagged; nothing is built in), `listing_fee_pct` (for the seller net sheet; unknown → the agent's standard terms from their market profile, else left out and flagged; nothing is built in).
+`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else 2.5% assumed), `listing_fee_pct` (for the seller net sheet; unknown → 2.5% assumed, 5% total with the buyer's agent).
 
 ## costs (Buyer's Payment)
 

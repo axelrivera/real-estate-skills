@@ -1,7 +1,7 @@
 {
   "name": "real-estate",
-  "version": "0.6.0",
-  "description": "Skills for real estate agents: agent and market profiles, buyer and seller CMAs, offer strategy and review, and contract timelines.",
+  "version": "0.7.0",
+  "description": "Skills for real estate agents: a one-file agent profile, buyer and seller CMAs, offer strategy and review, and contract timelines.",
   "author": {
     "name": "Axel Rivera",
     "email": "axel@axelrivera.dev"
@@ -9,5 +9,5 @@
   "homepage": "https://www.axelrivera.dev",
   "repository": "https://github.com/axelrivera/real-estate-skills",
   "license": "MIT",
-  "keywords": ["real-estate", "realtor", "cma", "offers", "contracts", "agent-profile", "market-profile", "stellar-mls"]
+  "keywords": ["real-estate", "realtor", "cma", "offers", "contracts", "agent-profile", "stellar-mls"]
 }

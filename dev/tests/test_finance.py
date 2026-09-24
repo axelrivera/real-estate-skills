@@ -62,7 +62,7 @@ class Taxes(unittest.TestCase):
     def test_fallback_rate_and_unknown(self):
         self.assertAlmostEqual(f.property_tax(400000, FL)["annual"], 400000 * 0.018)
         tx = profiles.load_market(state="TX")
-        self.assertIsNone(f.property_tax(400000, tx)["annual"])
+        self.assertAlmostEqual(f.property_tax(400000, tx)["annual"], 400000 * 0.011)  # national estimate
 
     def test_texas_style_exemptions(self):
         class M:
@@ -112,8 +112,11 @@ class SellerSide(unittest.TestCase):
         self.assertIn("Owner's Title Insurance", labels)
         self.assertIn("HOA Estoppel Letter", labels)
         self.assertEqual(n["missing"], [])
-        self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in title fees; no built-in brokerage
-        self.assertEqual(f.seller_net(465000, FL)["missing"], ["listing fee", "buyer's agent fee"])  # CORE-5
+        self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in local title fees
+        default = f.seller_net(465000, FL)
+        self.assertEqual(default["missing"], [])
+        self.assertEqual([(a["key"], a["value"], a["estimate"]) for a in default["assumed"][:2]],
+                         [("listing_fee", 0.025, True), ("buyer_broker_fee", 0.025, True)])  # 5% total assumed
         quoted = f.seller_net(465000, FL, title_fees=900)
         self.assertEqual(next(x["amount"] for x in quoted["lines"] if x["key"] == "title_fees"), 900)
         self.assertNotIn("title_fees", [a["key"] for a in quoted["assumed"]])
@@ -124,10 +127,17 @@ class SellerSide(unittest.TestCase):
         labels = [a for a, _ in f.seller_net(500000, miami)["items"]]
         self.assertNotIn("Owner's Title Insurance", labels)
 
-    def test_other_state_reports_missing(self):
+    def test_other_state_uses_labeled_estimates(self):
         n = f.seller_net(500000, profiles.load_market(state="TX"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
-        self.assertIn("deed transfer tax", n["missing"])
-        self.assertIsNone(n["net"])
+        self.assertEqual(n["missing"], [])
+        labels = {x["key"]: x["label"] for x in n["lines"]}
+        self.assertEqual(labels["transfer_tax"], "Transfer Tax (Estimate, 0.40%)")
+        self.assertEqual(labels["owner_title"], "Owner's Title Insurance (Estimate)")
+        self.assertEqual(labels["title_fees"], "Title Company Fees (Estimate)")
+        self.assertEqual({a["key"] for a in n["assumed"] if a["estimate"]}, {"transfer_tax", "owner_title", "title_fees"})
+        deal = f.seller_net(500000, profiles.load_market(state="TX").with_deal({"transfer_tax_rate": 0}),
+                            listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
+        self.assertNotIn("transfer_tax", [x["key"] for x in deal["lines"]])  # Texas has none: the looked-up 0 wins
 
 
 
@@ -174,12 +184,8 @@ class AuditMarketMoney(unittest.TestCase):
     """CORE-9, CORE-16, CORE-17, CORE-19."""
 
     def test_quote_beats_promulgated_table_and_warns_below_it(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "m.md")
-            with open(path, "w") as fh:
-                fh.write("---\nprofile: market\nstate: FL\nclosing_costs:\n  owner_title:\n"
-                         "    quote: {price: 400000, premium: 2000}\n---\n")
-            m = profiles.load_market(path, county="Seminole")
+        m = profiles.load_market(state="FL", county="Seminole")
+        m.data["closing_costs"]["owner_title"]["quote"] = {"price": 400000, "premium": 2000}
         n = f.seller_net(400000, m, listing_fee_pct=0, buyer_broker_fee_pct=0)
         line = next(x for x in n["lines"] if x["key"] == "owner_title")
         self.assertEqual((line["label"], line["amount"]), ("Owner's Title Insurance (Quote)", 2000))

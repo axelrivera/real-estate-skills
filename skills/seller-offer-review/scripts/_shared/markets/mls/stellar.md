@@ -75,7 +75,7 @@ mls_format:
     remarks: Public Remarks
 ---
 
-# Market profile layer: Stellar MLS
+# Market Layer: Stellar MLS
 
 Built-in MLS formats. Used whenever the MLS is Stellar, in any state it serves (Florida and Puerto Rico). State costs and rules come from the state layer, never from here.
 

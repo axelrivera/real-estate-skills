@@ -1,5 +1,6 @@
 """Tests for shared/mls.py and shared/cma.py."""
 import csv
+import json
 import os
 import sys
 import tempfile
@@ -37,16 +38,12 @@ class Load(unittest.TestCase):
         tx_cols = {"address": "Street", "status": "St", "living_area": "SqFt", "close_price": "Sold $", "current_price": "List $",
                    "close_date": "Closed", "original_list_price": "Orig $"}
         with tempfile.TemporaryDirectory() as tmp:
-            prof = os.path.join(tmp, "tx.md")
-            with open(prof, "w") as f:
-                f.write("---\nprofile: market\nstate: TX\nmls: ACTRIS\nmls_format:\n  cma_export_columns:\n" +
-                        "".join(f'    {k}: "{v}"\n' for k, v in tx_cols.items()) + "---\n")
             path = os.path.join(tmp, "e.csv")
             with open(path, "w", newline="") as f:
                 w = csv.writer(f)
                 w.writerow(["Street", "St", "SqFt", "Sold $", "List $", "Closed", "Orig $"])
                 w.writerow(["1 Elm", "Closed", "2,000", "$500,000", "$510,000", "2026-08-01", "$510,000"])
-            homes = mls.load(path, profiles.load_market(prof))
+            homes = mls.load(path, profiles.load_market(state="TX", mls="ACTRIS"), mls.columns_arg(json.dumps(tx_cols)))
         self.assertEqual((homes[0]["status"], homes[0]["close_price"], homes[0]["living_area"]), ("SOLD", 500000.0, 2000.0))
 
 

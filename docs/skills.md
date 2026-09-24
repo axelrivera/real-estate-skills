@@ -2,14 +2,13 @@
 
 Every skill ships in one plugin, `real-estate` (`.claude-plugin/plugin.json` at the repo root), listed in the one-plugin marketplace `real-estate-skills`. New skills go in `skills/<skill>/`; there are no other plugins.
 
-## Profiles
+## Profile
 
-Context every other skill reads. Markdown output only. Other skills use these profiles when present and never require them. In Cowork they're saved in `.claude/real-estate/` in the working folder ([architecture.md](architecture.md#saved-files)).
+Context every other skill reads. Markdown output only. Other skills use the profile when present and never require it. In Cowork it's saved in `.claude/real-estate/` in the working folder ([architecture.md](architecture.md#saved-files)).
 
 | Skill | Produces |
 |---|---|
-| `agent-profile` | `agent-profile.md`: name and brokerage (required); team, license, contact, voice, disclaimers, brand colors from hex codes, a website or an image (optional) |
-| `market-profile` | `market-profile-<area>.md`: only the agent's own values (closing costs, commission, taxes, contract rules, CMA, MLS format); everything else from the built-in Florida and Stellar layers |
+| `agent-profile` | `profile.md`, from a two-round interview (the basics, then look and sound): name and brokerage (required); team, license, contact, voice, disclaimers, brand colors from hex codes, a website or an image. No markets or costs: every report takes those from the listing ([local costs](architecture.md#local-costs)) |
 
 ## Deal Work
 

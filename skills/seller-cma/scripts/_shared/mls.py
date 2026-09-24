@@ -1,7 +1,7 @@
 """Read an MLS CMA export and compute the market numbers both CMAs use.
 
     from _shared import mls
-    homes = mls.load("export.csv", market)          # column names from the market profile's mls_format
+    homes = mls.load("export.csv", market)          # column names from the MLS layer, or columns={...}
     stats = mls.market_stats(homes, subject, split_date="2026-07-01")
     fit = mls.trend(homes, subject_sqft=1849)
 
@@ -10,6 +10,8 @@ MLS calls its columns. Statuses are normalized to SOLD, ACTIVE, PENDING, EXPIRED
 Numbers only: choosing comps and judging condition is Claude's job.
 """
 import csv
+import json
+import os
 import re
 import statistics
 from datetime import date, datetime, timedelta
@@ -47,12 +49,26 @@ def _date(v):
     return None
 
 
-def load(path, market):
-    """Records from a CSV export, using the market profile's `mls_format.cma_export_columns`."""
-    columns = market.get("mls_format.cma_export_columns")
+def columns_arg(value):
+    """--columns: a JSON file path or inline JSON object, or None."""
+    if not value:
+        return None
+    if os.path.exists(value):
+        with open(value, encoding="utf-8") as f:
+            return json.load(f)
+    try:
+        return json.loads(value)
+    except ValueError:
+        raise ExportError("--columns should be a JSON file or a JSON object mapping field names to headers.") from None
+
+
+def load(path, market, columns=None):
+    """Records from a CSV export. `columns` maps the skills' field names to the export's headers; without it, the
+    built-in MLS layer's `mls_format.cma_export_columns` (Stellar) is used."""
+    columns = columns or market.get("mls_format.cma_export_columns")
     if not columns:
-        raise ExportError("The market profile has no MLS export columns. For an MLS that isn't built in, "
-                          "map its column headers in the market profile first.")
+        raise ExportError("This MLS isn't built in: map the export's column headers to the field names "
+                          "(address, status, living_area, close_price, current_price, ...) and pass them as columns.")
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         headers = set(reader.fieldnames or [])

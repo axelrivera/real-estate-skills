@@ -50,9 +50,9 @@ Every SKILL.md opens with a **Guardrails** section, right after its intro, cover
 |---|---|---|
 | Strong | buyer-cma, seller-cma, seller-offer-review | Guardrails with the skill's risky spots named, `references/fair-housing.md`, the render check, a fair-housing eval |
 | Standard | buyer-offer-strategy, agent-profile | Guardrails, `references/fair-housing.md`, a fair-housing eval (and the render check for buyer-offer-strategy) |
-| Light | contract-timeline, market-profile | A short Guardrails section (and the render check for contract-timeline) |
+| Light | contract-timeline | A short Guardrails section and the render check |
 
-The render check is `shared/prose.py`, run by `render.main` before any file is built. It stops on an em dash used in a sentence (a lone one for an empty value is fine) or a clear fair-housing phrase and names each field to rewrite. The phrase list is a backstop for the written rules, not a replacement: it catches clear cases only, and chat replies are covered by the SKILL.md rules alone. State and local protected classes live in the market profile's `fair_housing.extra_protected_classes`.
+The render check is `shared/prose.py`, run by `render.main` before any file is built. It stops on an em dash used in a sentence (a lone one for an empty value is fine) or a clear fair-housing phrase and names each field to rewrite. The phrase list is a backstop for the written rules, not a replacement: it catches clear cases only, and chat replies are covered by the SKILL.md rules alone. State and local protected classes live in the built-in market's `fair_housing.extra_protected_classes` (some Florida counties).
 
 ## Output modes
 
@@ -82,18 +82,13 @@ Never write into the skill's own folder, which is the working directory in claud
 
 ## Profiles
 
-Two markdown documents, used as context by every other skill:
+One markdown file, `profile.md`, used as context by every other skill. It says who the agent is: name, brokerage, team, license, contact, voice, disclaimers and [brand colors](#brand-colors). Nothing about markets or costs: those come from the property (see [Local costs](#local-costs)).
 
-| Profile | Answers | Examples |
-|---|---|---|
-| **Agent profile** | *Who* | Name, brokerage, team, license, contact, voice, disclaimers, [brand colors](#brand-colors) |
-| **Market profile** | *Where* | State, MLS, closing costs, transfer taxes, who pays title, contract forms and deadline rules, MLS export columns |
-
-An agent can have one agent profile and several market profiles.
+`agent-profile` builds it from a two-round interview (the basics, then look and sound), modeled on the prototype onboarding interviews: fill-in-the-blank questions with examples, everything skippable, saved after the first round.
 
 ### Saved Files
 
-In Cowork with a working folder selected, profiles are saved in `.claude/real-estate/` inside that folder (`agent-profile.md`, `market-profile-<area>.md`), the way brand-voice keeps its guidelines in `.claude/`. Every later session finds them there without an upload. Skills resolve the path from the agent's working folder, never the current directory (Cowork runs skills from a plugin folder). Without a working folder, and in claude.ai, profiles go to the outputs folder with one line on keeping them (Project files, or share at the start of a chat). Scripts never search for profiles: the model finds the file and passes `--agent` or `--market`.
+In Cowork with a working folder selected, the profile is saved as `.claude/real-estate/profile.md` inside that folder, the way brand-voice keeps its guidelines in `.claude/`. Every later session finds it there without an upload. Skills resolve the path from the agent's working folder, never the current directory (Cowork runs skills from a plugin folder). Without a working folder, and in claude.ai, it goes to the outputs folder with one line on keeping it (Project files, or share at the start of a chat). Scripts never search for it: the model finds the file and passes `--profile`.
 
 The rules live in `shared/references/saved-files.md`, copied into every skill that reads or writes a profile or a CMA handoff.
 
@@ -101,31 +96,28 @@ Format: a YAML front block with the values scripts need, followed by readable pr
 
 ```markdown
 ---
-profile: market
-schema: 1
-name: Seminole County
-state: FL
-mls: Stellar
-closing_costs:
-  settlement_fee: 800
-...
+profile: agent
+schema: 2
+name: "Jane Doe"
+brokerage: "Sunshine Realty"
+team: "The Doe Group"
+brand:
+  primary: "#1F3A5F"  # Navy
 ---
 
-# Market profile: Seminole County
+# Profile: Jane Doe
 ...
 ```
 
-A user's market profile only needs `state`. Everything else is optional and overrides the built-in layers.
-
-### Agent profile fields
+### Agent Fields
 
 Only **name** and **brokerage** are required. Everything else is optional:
 
 ```yaml
 profile: agent
-schema: 1
-name: "Jane Doe"               # required
-brokerage: "Sunshine Realty"   # required
+schema: 2
+name: "Jane Doe"               # needed on client files
+brokerage: "Sunshine Realty"   # needed on client files
 team: "The Doe Group"          # optional
 license: "SL1234567"           # optional
 phone: ...                     # optional
@@ -156,7 +148,7 @@ Users are non-technical, so they shouldn't need to know hex codes. `agent-profil
 - **Save a readable name.** Store the color name next to the code: `primary: "#1F3A5F"  # Navy`.
 - **The image is only for reading colors.** Logos are not stored and not placed in reports.
 
-The agent profile can set the primary color used in file-mode outputs (PDF, PPTX). Markdown mode ignores it.
+The profile can set the primary color used in file-mode outputs (PDF, PPTX). Markdown mode ignores it.
 
 ```yaml
 brand:
@@ -193,14 +185,17 @@ Market values come in layers, merged in this order (later wins):
 | State | `shared/markets/states/fl.md` | Closing costs, title, property tax, contract rules, CMA adjustments, county overrides | Florida properties only |
 | MLS | `shared/markets/mls/stellar.md` | History codes, CMA export columns, coverage | Stellar, in any state it serves (Florida and Puerto Rico) |
 | Built-in county override | `county_overrides` in a built-in layer | Local customs (Miami-Dade stamps, who pays title) | That county |
-| User profile | the agent's market profile | Anything | Its state |
-| Profile county override | `county_overrides` in the agent's profile | The agent's own county exceptions | That county |
+| National estimates | `shared/markets/national.md` | Transfer tax, title, fees, commission (5% total), property tax, insurance, utilities (never contract rules) | Any property, for each section key no layer above set (source `estimate`) |
 
-The agent always wins: a built-in county custom never overrides a value the agent set. A heading with nothing under it (`closing_costs:`) sets nothing. County names match loosely ("Miami Dade", "St. Johns" or "Saint Johns"); a Florida county that isn't one of the 67 gets a note. With no state, nothing built in applies: the skill asks for the state and never assumes Florida.
+The deal's own numbers go on top (`Market.with_deal`, source `deal`). A heading with nothing under it (`closing_costs:`) sets nothing. National estimates fill whole keys, never leaves, so an estimated fee never mixes into Florida's fee list. County names match loosely ("Miami Dade", "St. Johns" or "Saint Johns"); a Florida county that isn't one of the 67 gets a note. With no state, only the national estimates apply: the skill takes the state from the listing or asks, and never assumes Florida.
 
-State and MLS are separate because an MLS can span states (Stellar serves Puerto Rico) and a state can have several MLSs (Miami-Dade isn't Stellar). Without a profile or a stated MLS, an MLS is assumed only when exactly one built-in MLS covers the property's county (never from the state alone), and the skill says so. Every value carries its source, so a skill can tell a built-in default from the agent's own number.
+State and MLS are separate because an MLS can span states (Stellar serves Puerto Rico) and a state can have several MLSs (Miami-Dade isn't Stellar). Without a stated MLS, an MLS is assumed only when exactly one built-in MLS covers the property's county (never from the state alone), and the skill says so. Every value carries its source, so a skill can tell a built-in default from the agent's own number.
 
-For any other state or MLS, the profile is built from what the user provides in chat or project files.
+For any other MLS, the skill maps the export's column headers itself (`--columns`, `export_columns`).
+
+### Local Costs
+
+Convention over configuration: reports never ask about local costs up front. They take the state and county from the listing, use this deal's numbers, then the built-in local values, then the national estimates, labeled "Estimate" (commission "Assumed", 5% total). Outside Florida the skill looks up the state's transfer tax from a trusted source (the state revenue department, the statute, or the county recorder) and falls back to the estimate when in doubt. The reply lists the estimates the agent can replace, and the agent's numbers go in the same data file for a re-render. Estimates don't mark a report Preliminary; only a value with no estimate at all does. Contract time rules are never estimated: they come from the contract. The rules for Claude are in `shared/references/local-costs.md`.
 
 ## Skills never require other skills
 
@@ -208,13 +203,13 @@ Users can turn any skill off. Skills share **files**, not invocations:
 
 1. A consumer looks for its input (profile, CMA handoff) in the chat, then Project files, then the saved folder (profiles) or the outputs and working folder (handoffs), per [Saved files](#saved-files).
 2. If it's missing, the consumer collects what *its own task* needs (it carries the schema and defaults via `_shared/`), then offers to save the result as a file.
-3. It may mention the producing skill in one line ("Tip: `market-profile` saves this so you're not asked again"). It never says a skill must be enabled.
+3. It may mention the producing skill in one line ("Tip: `agent-profile` saves this so you're not asked again"). It never says a skill must be enabled.
 
-Outside the built-in market, a missing value is **never** filled with a Florida default. Ask, or use a labeled assumption and mark the report **Preliminary**.
+Outside the built-in market, a missing value is **never** filled with a Florida default: it's a national estimate, labeled per line.
 
-**Per-deal costs.** A number that belongs to one deal (a title company quote, a transfer tax the agent confirmed for this county) goes in that deal's data file (`listing.costs` in the offer skills, `costs.title_fees` in the seller CMA), on top of the market layers, and is reported as "this listing". Numbers the agent uses on every deal belong in the market profile.
+**Per-deal costs.** A number that belongs to one deal (a title company quote, the transfer tax looked up for this state, the listing agreement's commission) goes in that deal's data file (`listing.costs` in the offer skills, `costs` in the CMAs, keys in `profiles.DEAL_COSTS`), on top of the market layers, and is reported as "this listing". Nothing is saved across deals.
 
-**Shares of price.** Every `*_pct` field in data files and profiles is a fraction: `0.025` means 2.5%. Interest `rate` is the exception, written as a percent (`6.95`) the way lenders quote it. Scripts refuse a `*_pct` of 1 or more with a message instead of guessing.
+**Shares of price.** Every `*_pct` field in data files and market layers is a fraction: `0.025` means 2.5%. Interest `rate` is the exception, written as a percent (`6.95`) the way lenders quote it. Scripts refuse a `*_pct` of 1 or more with a message instead of guessing.
 
 ## Handoffs between skills
 
@@ -224,10 +219,9 @@ A skill whose output feeds another has a small, **versioned handoff schema**, se
 |---|---|---|
 | `buyer-cma` | `cma-handoff v1` | `buyer-offer-strategy` |
 | `seller-cma` | `cma-handoff v1` | `seller-offer-review` |
-| `agent-profile` | agent profile | all skills |
-| `market-profile` | market profile | all skills |
+| `agent-profile` | `profile.md` | all skills |
 
-`cma-handoff v1` carries: as-of date, subject facts, value range, recommended price, adjusted comps (compact), market conditions, and the market profile used.
+`cma-handoff v1` carries: as-of date, subject facts, value range, recommended price, adjusted comps (compact), market conditions, and the market used (`market_profile`: state and MLS).
 
 Both modes carry the handoff:
 - **File mode:** `<address>.buyer.cma.json` or `<address>.seller.cma.json` saved next to the PDF (the side keeps two CMAs of one address apart).

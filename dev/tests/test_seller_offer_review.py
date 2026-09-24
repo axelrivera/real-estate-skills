@@ -35,7 +35,7 @@ class Analysis(unittest.TestCase):
         s = out["summary"]
         self.assertEqual((out["mode"], s["action"], s["offer_label"]), ("single", "COUNTER", "$382K FHA"))
         self.assertIn("**Preliminary", s["preliminary"])
-        self.assertEqual(s["kpis"][1]["value"], "$369,789")  # no listing fee given and none built in (CORE-5): flagged high
+        self.assertEqual(s["kpis"][1]["value"], "$350,689")  # no terms given: 5% total assumed
         self.assertEqual([r["counter"] for r in s["counter"]["rows"]], ["$386,000", "7 days"])
         self.assertEqual(out["value_range"], "not provided")
         self.assertTrue(out["to_confirm"])
@@ -147,9 +147,10 @@ class Analysis(unittest.TestCase):
         self.assertEqual(out["value_range"], "$380,000–$398,000")
         self.assertNotIn("No CMA range", json.dumps(out["assumptions"]))
 
-    def test_texas_is_preliminary_without_florida_values(self):
+    def test_texas_uses_estimates_not_florida_values(self):
         out = review.result(review.analyze(fixture("texas-single.json")))
-        self.assertIn("transfer tax", out["summary"]["preliminary"])
+        self.assertNotIn("transfer tax", out["summary"]["preliminary"] or "")
+        self.assertIn("national estimate", json.dumps(out))
         self.assertNotIn("Florida", json.dumps(out))
 
 

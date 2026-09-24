@@ -13,33 +13,33 @@ Every number comes from a script, never typed by hand, because a wrong net figur
 
 These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
 
-- **Fair housing.** Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market profile's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing findings, value drivers, the launch plan or deck notes. Value drivers are features of the home and the launch plan is about the property and the process, never a kind of buyer. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **Fair housing.** Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing findings, value drivers, the launch plan or deck notes. Value drivers are features of the home and the launch plan is about the property and the process, never a kind of buyer. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
 ## 1. Gather the Inputs
 
-Ask for everything missing in one message. Skip what's already in the chat, project files or the agent profile. Read `references/method.md` for the full checklist and why each item matters. In short:
+Ask for everything missing in one message, and skip what's already in the chat or the listing. Don't ask about local costs or commission: they're defaults the agent can correct after the first report. Read `references/method.md` for the full checklist and why each item matters. In short:
 
 - **From the seller:** address; beds, baths, heated sq ft, lot, year built, construction; pool, garage, HOA/CDD; updates with dates and permits (roof first); the current tax bill; known issues or claims; timeline and occupancy; optional mortgage payoff (turns the net sheet into cash at closing).
-- **From the agent:** the MLS CMA export (CSV) of nearby sales from about the last 6 months plus active, pending, expired and canceled listings; the brokerage terms to model (nothing is built in: without them, the agent's standard terms from their market profile, marked on every page and slide that shows a net; with neither, no files); the tax bill and expected closing date for the proration; the property type (Miami-Dade surtax); flood zone if known.
+- **From the agent:** the MLS CMA export (CSV) of nearby sales from about the last 6 months plus active, pending, expired and canceled listings; the brokerage terms if they volunteer them (otherwise 5% total is assumed and marked on every page and slide that shows a net); the tax bill and expected closing date for the proration; the property type (Miami-Dade surtax); flood zone if known.
 
 Treat the home as a first-time listing: the scripts drop every export row with its address, and its facts come from the seller. stats.py lists those rows in `subject_rows`: if the home is **listed right now** (active or pending), say so first. It may be the agent's own listing being repriced, an expired listing, or a home listed with another brokerage, which the agent must not solicit; ask which before going further. A failed current price is the most important pricing fact, so with the agent's go-ahead, address it. For an old relist, ask before adding the history.
 
-For a PDF or deck, the agent's name and brokerage go on it: use their agent profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
+For a PDF or deck, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
 
 **No MLS export** (the agent typed a few comps): skip stats.py, write the comps and competition from what you were given, and build the market table and key stats from those sales and the rate; say in the method that the market numbers come from a short list. The scatter slide is left out on its own.
 
-Use the agent's market profile when there is one (Project files, uploads, or the saved folder in `references/saved-files.md`). Florida and Stellar MLS are built in. Commission always comes from the agent or their market profile, in Florida too (commissions are negotiable and not set by law). Outside Florida, closing costs do too; a missing value is never filled with Florida's, and the report is marked Preliminary until it's supplied.
+Local costs come from the home's location: read `references/local-costs.md`. Florida and Stellar MLS are built in; elsewhere, national estimates are labeled Estimate (never Florida's numbers), and you look up the state's transfer tax from a trusted source.
 
 ## 2. Read the Market
 
 ```
-python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" --state <ST> --county <county> [--mls <MLS>] [--market market-profile.md] [--split-date YYYY-MM-DD]
+python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD]
 ```
 
-Pick a split date so "recent" is roughly the last 2–3 months. Search the web for the latest Freddie Mac 30-year rate and, when the market profile has no millage for the home's taxing district, the county's current millage. Cite both in your reply.
+Pick a split date so "recent" is roughly the last 2–3 months. For an MLS that isn't built in, map the export's headers to the field names in `references/report-data.md` and pass them with `--columns` (and as `export_columns` in report.json). Search the web for the latest Freddie Mac 30-year rate, the county's current millage when there's none built in for the home's taxing district, and outside Florida the state's transfer tax. Cite them in your reply.
 
 Read `references/method.md` for choosing and adjusting comps, setting the range and the recommended price, and the three pricing strategies. For a condo, also read `references/condo.md` (comps, adjustments, association and lending questions).
 
@@ -52,18 +52,18 @@ For the presentation, put its wording under `deck` in report.json (copy `assets/
 Then compute:
 
 ```
-python3 scripts/compute.py report.json [--market market-profile.md]
+python3 scripts/compute.py report.json
 ```
 
-Fix every item in `warnings` (a recommended price outside the range, a missing tax rate, a missing local cost) and re-run. Without brokerage terms (in any state) the nets would leave out the commission, so render.py refuses to build the files until `costs` or the market profile has them (0 is fine): ask the agent. For a chat-only answer, compute.py needs `subject`, `recommendation`, `comps.cards`, `pricing.strategies`, `costs` and `buyer_payment`; the prose sections and `deck` can stay short. Tell the agent about each item in `assumptions` (standard brokerage terms, built-in title fees). It also saves `<address>.seller.cma.json`, the handoff seller-offer-review reads.
+Fix every item in `warnings` (a recommended price outside the range, a missing tax rate) and re-run. For a chat-only answer, compute.py needs `subject`, `recommendation`, `comps.cards`, `pricing.strategies`, `costs` and `buyer_payment`; the prose sections and `deck` can stay short. Tell the agent about each item in `assumptions` (assumed brokerage, estimated costs, built-in title fees). It also saves `<address>.seller.cma.json`, the handoff seller-offer-review reads.
 
 ## 4. Deliver
 
 - **Report and presentation (default for a listing appointment):**
   ```
-  python3 scripts/render.py report.json --format all [--agent agent-profile.md] [--market market-profile.md]
+  python3 scripts/render.py report.json --format all [--profile profile.md]   # the profile puts the agent's name and colors on it
   ```
   `--format pdf` or `--format pptx` builds just one. Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); flip a chart callout's `side` if a label overlaps. Look at every page and slide before presenting; `references/deck-content.md` explains how to check the deck. If the deck can't be built (no Node), say so plainly and deliver the PDF.
 - **Summary in chat:** fill in `assets/seller-cma-template.md` from report.json and compute.py's output (numbers only from the output, already formatted), and end with its `handoff_block`.
 
-Either way, reply briefly: the recommended price and range, the one or two facts driving it, how the three strategies compare, and every placeholder the agent must replace before the appointment (brokerage terms, update dates, flood zone, payoff, title company quote). Say "Preliminary" plainly if compute.py marked it so. Offer the other format in one line. Keep the chat reply short when files are delivered (about 150 words): the files carry the detail, and a long reply repeating them gets skimmed.
+Either way, reply briefly: the recommended price and range, the one or two facts driving it, how the three strategies compare, and what the agent can replace to sharpen the nets (brokerage terms, estimated costs, payoff, title company quote), as `references/local-costs.md` shows, plus any placeholder (update dates, flood zone). Say "Preliminary" plainly if compute.py marked it so. Offer the other format in one line. Keep the chat reply short when files are delivered (about 150 words): the files carry the detail, and a long reply repeating them gets skimmed.

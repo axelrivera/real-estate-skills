@@ -1,6 +1,6 @@
 ---
 profile: agent
-schema: 1
+schema: 2
 name: "Jane Doe"
 team: "The Doe Group"
 brokerage: "Sunshine Realty"
@@ -10,7 +10,7 @@ brand:
   primary: "#1F3A5F"  # Navy
 ---
 
-# Agent Profile: Jane Doe
+# Profile: Jane Doe
 
 The Doe Group · Sunshine Realty
 

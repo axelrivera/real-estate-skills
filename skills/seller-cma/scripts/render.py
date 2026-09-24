@@ -1,7 +1,7 @@
 """Seller CMA files: the report PDF (page 1 summary, then the full analysis) and the listing presentation PPTX.
 
-    python3 scripts/render.py report.json [--format pdf|pptx|all] [--agent agent-profile.md]
-        [--market market-profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py report.json [--format pdf|pptx|all] [--profile profile.md]
+        [--sample] [--out DIR]
 
 report.json holds the written content and the few inputs the numbers come from (see
 references/report-data.md); `export` in it is the path to the MLS export, and `deck` holds the
@@ -26,7 +26,7 @@ esc = html.escape
 
 
 def agent_block(agent, L):
-    """Wordmark (left) with only the fields the agent profile has."""
+    """Wordmark (left) with only the fields the profile has."""
     name = agent.get("name")
     if not name:
         return ""
@@ -213,7 +213,7 @@ def build(R, fmt, out_dir, ctx):
 
 
 def _build(R, fmt, out_dir, ctx):
-    market, homes = compute.load_inputs(R, ctx.get("market"), ctx.get("mls"))
+    market, homes = compute.load_inputs(R, ctx.get("mls"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))

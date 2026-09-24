@@ -1,7 +1,7 @@
 """Buyer offer PDFs: the Offer Options report (for the buyer) and the Offer Package Worksheet (for the agent).
 
     python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma file.cma.json] [--option recommended|stronger|lower_cost]
-                              [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
+                              [--profile profile.md] [--sample] [--out DIR]
 
 Options report, page 1: the recommended offer with a reason for every term, the alternatives, the outlook at
 four competition levels and the buyer's cash exposure; the pages after it hold the detail.
@@ -288,7 +288,7 @@ def fit_page_one(pg):
 
 
 def build(data, fmt, out_dir, ctx):
-    r = ST.analyze(data, ctx.get("market"), ST.load_cma(data, ctx.get("cma")))
+    r = ST.analyze(data, cma=ST.load_cma(data, ctx.get("cma")))
     option = ctx.get("option")
     sample = ctx.get("sample") or r["sample"]
     street = (r["B"]["property"].get("address") or "Property").split(",")[0]

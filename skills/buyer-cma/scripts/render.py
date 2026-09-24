@@ -1,6 +1,6 @@
 """Buyer CMA PDF: page 1 summary, then the full analysis in a fixed section order.
 
-    python3 scripts/render.py report.json [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py report.json [--profile profile.md] [--sample] [--out DIR]
 
 report.json holds the written content and the few inputs the numbers come from (see
 references/report-data.md); `export` in it is the path to the MLS export. Every number is computed
@@ -22,7 +22,7 @@ esc = html.escape
 
 
 def agent_block(agent, L):
-    """Wordmark (left) with only the fields the agent profile has."""
+    """Wordmark (left) with only the fields the profile has."""
     name = agent.get("name")
     if not name:
         return ""
@@ -270,7 +270,7 @@ def build_html(R, C, homes, agent):
 
 
 def build(R, fmt, out_dir, ctx):
-    market, homes = compute.load_inputs(R, ctx.get("market"), ctx.get("mls"))
+    market, homes = compute.load_inputs(R, ctx.get("mls"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Taxes couldn't be estimated for every jurisdiction: " + "; ".join(C["warnings"]))

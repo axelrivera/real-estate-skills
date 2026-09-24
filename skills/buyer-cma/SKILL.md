@@ -13,7 +13,7 @@ Every number is computed by a script and never typed by hand, because a wrong fi
 
 These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
 
-- **Fair housing.** Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market profile's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing findings, watch items, questions for the listing agent or market commentary: market sections are about sales and supply, never the people who live there. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **Fair housing.** Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing findings, watch items, questions for the listing agent or market commentary: market sections are about sales and supply, never the people who live there. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
@@ -28,7 +28,7 @@ You need three things. If one is missing, ask for it and say why it matters:
 
 In the same message, ask the buyer questions the offer depends on: when they need to move (lease ending, home to sell), how they're financing (loan type, down payment, cash for closing), and how much they want this house. Don't block on them; without answers, plan for a typical first-time buyer and say so in the conditions.
 
-Use the agent's market profile when there is one (Project files, uploads, or the saved folder in `references/saved-files.md`). Florida and Stellar MLS are built in. For a PDF, the agent's name and brokerage go on it: use their agent profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
+Local costs come from the listing's location, never from questions up front: read `references/local-costs.md`. Florida and Stellar MLS are built in; elsewhere, national estimates are labeled. For a PDF, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
 
 **Quick gut check** ("is it priced right? just tell me"): run stats.py, pick and adjust the comps, and still run compute.py for the median and range (the payment and tax blocks can be short). Answer in a few sentences plus the handoff block; skip the full template unless asked.
 
@@ -36,10 +36,10 @@ Use the agent's market profile when there is one (Project files, uploads, or the
 
 - Rebuild the full history from the screenshot and run the numbers:
   ```
-  python3 scripts/stats.py export.csv --address "<address as in the export>" --state <ST> --county <county> [--mls <MLS>] [--market market-profile.md] [--split-date YYYY-MM-DD]
+  python3 scripts/stats.py export.csv --address "<address as in the export>" --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD]
   ```
-  Pick a split date so "recent" is roughly the last 2–3 months.
-- Search quickly: the address itself (claims that disappeared from the listing), the current 30-year mortgage rate (Freddie Mac weekly survey), and, when the market profile has no millage for the area, the county's current millage.
+  Pick a split date so "recent" is roughly the last 2–3 months. For an MLS that isn't built in, map the export's headers to the field names in `references/report-data.md` and pass them with `--columns` (and as `export_columns` in report.json).
+- Search quickly: the address itself (claims that disappeared from the listing), the current 30-year mortgage rate (Freddie Mac weekly survey), when there's no built-in millage for the area, the county's current millage, and outside Florida the state's transfer tax from a trusted source (`references/local-costs.md`).
 
 Read `references/method.md` for reading the history, choosing and adjusting comps, and classifying homes for the chart. For a condo, also read `references/condo.md` (comps, adjustments, association and lending questions).
 
@@ -50,14 +50,14 @@ Copy `assets/example-report.json` (an approved report) and replace every value; 
 Then compute:
 
 ```
-python3 scripts/compute.py report.json [--market market-profile.md]
+python3 scripts/compute.py report.json
 ```
 
 Fix every item in `warnings` (a credit over the program limit, a walk-away above the range, a tax estimated without millage) and re-run. It also saves `<address>.buyer.cma.json`, the handoff the offer skills read.
 
 ## 4. Deliver
 
-- **Report to send or print:** `python3 scripts/render.py report.json [--agent agent-profile.md] [--market market-profile.md]`. It saves the PDF and the handoff. Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); flip a chart callout's `side` if a label overlaps. Look at the pages before presenting.
+- **Report to send or print:** `python3 scripts/render.py report.json [--profile profile.md]` (the profile puts the agent's name and colors on it). It saves the PDF and the handoff. Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); flip a chart callout's `side` if a label overlaps. Look at the pages before presenting.
 - **Summary in chat:** fill in `assets/buyer-cma-template.md` from report.json and compute.py's output (numbers only from the output, already formatted), and end with its `handoff_block` so a later offer conversation can use it.
 
-Either way, reply briefly: the range, where the asking price sits, the 2–3 findings that matter most, and anything the agent must verify before sending (condition judgments, tax jurisdiction, placeholders). Cite the web sources you used. Offer the other format in one line. Keep the chat reply short when files are delivered (about 150 words): the files carry the detail, and a long reply repeating them gets skimmed.
+Either way, reply briefly: the range, where the asking price sits, the 2–3 findings that matter most, and anything the agent must verify before sending (condition judgments, tax jurisdiction, placeholders). List the estimates that could be replaced, as `references/local-costs.md` shows. Cite the web sources you used. Offer the other format in one line. Keep the chat reply short when files are delivered (about 150 words): the files carry the detail, and a long reply repeating them gets skimmed.

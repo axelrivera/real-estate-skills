@@ -114,7 +114,7 @@ class Warnings(unittest.TestCase):
         self.assertIn("Not available", doc)
 
 class OtherMarkets(unittest.TestCase):
-    def test_texas_without_millage_has_no_payment_table(self):
+    def test_texas_without_millage_estimates_the_tax(self):
         R = report()
         R["subject"].update(state="TX", county="Travis")
         R.pop("export")
@@ -122,8 +122,8 @@ class OtherMarkets(unittest.TestCase):
             j.pop("school_mills", None), j.pop("total_mills", None)
         market, homes = compute.load_inputs(R)
         C = compute.compute(R, market, homes)
-        self.assertIsNone(C["payments"])
-        self.assertTrue(any("No millage or tax rate" in w for w in C["warnings"]))
+        self.assertAlmostEqual(C["payments"]["rows"][0]["tax"], 474900 * 0.011 / 12)  # national estimate, labeled
+        self.assertTrue(any("estimated at" in w for w in C["warnings"]))
 
     def test_explicit_millage_works_anywhere(self):
         R = report()

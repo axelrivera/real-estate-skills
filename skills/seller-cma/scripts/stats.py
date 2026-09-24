@@ -1,7 +1,7 @@
 """Market numbers from an MLS CMA export for pricing a listing (the subject is left out).
 
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" --sqft 1849 [--pool]
-        [--subdivision "SPRING OAKS"] [--state FL --county Seminole] [--market market-profile.md]
+        [--subdivision "SPRING OAKS"] [--state FL --county Seminole] [--columns columns.json]
         [--split-date 2026-07-01]
 
 The seller's home is treated as a first-time listing: every row with its address (old listings,
@@ -29,15 +29,15 @@ def main(argv=None):
     ap.add_argument("--subdivision", help="subdivision name as the export writes it (improves comp ranking)")
     ap.add_argument("--state")
     ap.add_argument("--county")
-    ap.add_argument("--market", help="market profile (MLS column names); Stellar is built in")
-    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
+    ap.add_argument("--columns", help="JSON file (or inline JSON) mapping field names to the export's headers, for an MLS that isn't built in")
+    ap.add_argument("--mls", help="MLS name (Stellar is built in; assumed from the county when it's the only one)")
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
     a = ap.parse_args(argv)
     try:
-        market = profiles.load_market(a.market, state=a.state, county=a.county, mls=a.mls)
-        homes = mls.load(a.export, market)
+        market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
+        homes = mls.load(a.export, market, mls.columns_arg(a.columns))
         own = [h for h in homes if mls.same_address(h["address"], a.address)]
         subject = {"address": a.address, "living_area": a.sqft, "private_pool": a.pool, "subdivision": a.subdivision}
         out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit, exclude_address=a.address)

@@ -5,8 +5,8 @@
     if __name__ == "__main__":
         render.main(build, formats=("pdf",))
 
-ctx carries the agent profile (always a dict, empty fields when there's none), the market profile
-path, and whether this is sample data.
+ctx carries the agent's details from the profile (always a dict, empty fields when there's none), the
+MLS name, and whether this is sample data.
 
 Implements the render contract (docs/development.md#skill-render-contract) and the output
 location rule (docs/architecture.md#output-location).
@@ -85,7 +85,7 @@ def check_agent(agent):
     from . import profiles
     if str((agent or {}).get("name") or "").strip() and not str(agent.get("brokerage") or "").strip():
         raise profiles.ProfileError(
-            "The agent profile has a name but no brokerage. Client files must show the brokerage's licensed name with "
+            "The profile has a name but no brokerage. Client files must show the brokerage's licensed name with "
             "the agent's name (Florida rule 61J2-10.025, and most states): ask for it (the licensed name, not a trade "
             "name), add it to the profile, then re-run.")
 
@@ -142,7 +142,7 @@ def write_text(text, path):
 
 
 def main(build, formats, argv=None, extra_args=None, errors=()):
-    """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--agent] [--market] [--mls] [--sample].
+    """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--profile] [--mls] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
     `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
@@ -160,9 +160,8 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
     ap.add_argument("data", help="the skill's data JSON")
     ap.add_argument("--format", default="all", choices=[*formats, "all"])
     ap.add_argument("--out", help="output folder (default: sandbox outputs, or OUTPUT_DIR locally)")
-    ap.add_argument("--agent", help="agent profile (name, brokerage, brand colors on the report)")
-    ap.add_argument("--market", help="market profile")
-    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
+    ap.add_argument("--profile", help="the agent's profile.md (name, brokerage, contact, brand colors, disclaimers)")
+    ap.add_argument("--mls", help="MLS name (Stellar is built in; assumed from the county when it's the only one)")
     ap.add_argument("--sample", action="store_true", help="label the report SAMPLE DATA")
     base = {a.dest for a in ap._actions}
     if extra_args:
@@ -176,7 +175,7 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
             data = json.load(f)
         for phrase, reason in prose.check(data):  # logged so the agent can see what was let through
             print(f'Fair-housing allow list: "{phrase}" ({reason})', file=sys.stderr)
-        ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "mls": args.mls, "sample": args.sample,
+        ctx = {"agent": profiles.load_agent(args.profile), "mls": args.mls, "sample": args.sample,
                "formats": todo,
                **{k: v for k, v in vars(args).items() if k not in base}}
         check_agent(ctx["agent"])

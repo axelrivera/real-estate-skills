@@ -1,7 +1,7 @@
 """Market numbers from an MLS CMA export, for choosing comps and writing the market section.
 
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" [--state FL --county Seminole]
-        [--market market-profile.md] [--split-date 2026-07-01]
+        [--columns columns.json] [--split-date 2026-07-01]
 
 Prints JSON: the subject's row (when it's in the export), sold stats for the whole window and for an
 earlier and a recent period, inventory and months of supply, the subdivision's median $/sq ft,
@@ -23,15 +23,15 @@ def main(argv=None):
     ap.add_argument("--address", required=True, help="subject address as it appears in the export")
     ap.add_argument("--state")
     ap.add_argument("--county")
-    ap.add_argument("--market", help="market profile (MLS column names); Stellar is built in")
-    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
+    ap.add_argument("--columns", help="JSON file (or inline JSON) mapping field names to the export's headers, for an MLS that isn't built in")
+    ap.add_argument("--mls", help="MLS name (Stellar is built in; assumed from the county when it's the only one)")
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
     a = ap.parse_args(argv)
     try:
-        market = profiles.load_market(a.market, state=a.state, county=a.county, mls=a.mls)
-        homes = mls.load(a.export, market)
+        market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
+        homes = mls.load(a.export, market, mls.columns_arg(a.columns))
         row = next((h for h in homes if mls.same_address(h["address"], a.address)), None)
         subject = {"address": a.address}
         if row:

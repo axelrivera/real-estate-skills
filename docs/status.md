@@ -1,17 +1,26 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.6.0: one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.6.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
-| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
-| Profiles | `agent-profile`, `market-profile` (markdown only); saved in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`) |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.7.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
+| Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test` (369 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-24): One Onboarding Skill
+
+User testing found the onboarding too technical: two profile skills with no direction, two files to attach, and market numbers agents don't know. Now:
+
+- **`agent-profile` is the only setup skill:** a two-round interview modeled on the Cruz prototypes (`sources/michael-cruz/`), at most three fill-in-the-blank questions per round (the basics; look and sound), everything skippable, saved after Round 1. One file, `profile.md` (schema 2), with who the agent is and nothing about markets. `market-profile` is gone; no reader for the old files (nobody had saved any).
+- **Local costs are conventions** ([architecture](architecture.md#local-costs), `shared/references/local-costs.md`): location from the listing; the deal's numbers, then built-in Florida/Stellar, then `shared/markets/national.md` (transfer tax 0.4%, title 0.5%, fees $1,200, commission 5% total, tax 1.1%...), labeled Estimate or Assumed per line. Estimates don't mark reports Preliminary. The skill looks up the state's transfer tax from a trusted source and lists the replaceable estimates after the first report; the agent's numbers go in the deal's `costs` (`profiles.DEAL_COSTS`, `Market.with_deal`).
+- **Scripts:** only `render.py` takes `--profile` (name, brokerage, colors); analysis scripts take no profile. Other MLS exports: `--columns` / `export_columns`. seller-cma no longer refuses to render without commission terms.
+- Version 0.7.0 (a skill was removed).
 
 ## This pass (2026-09-23)
 
@@ -103,7 +112,7 @@ Won't fix: (none yet).
 ## Remaining work, in order
 
 1. **Audit fixes**, phases 1 to 4 above.
-2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/real-estate-<version>.plugin` (desktop app), `make package-skills` → upload `dist/skills/*.zip` (claude.ai), or add the marketplace `axelrivera/real-estate-skills` (Cowork). Check that all 7 skills appear as `real-estate:*`. Check saved files in Cowork: with a working folder, `agent-profile` writes `.claude/real-estate/agent-profile.md` and a new session's `seller-cma` uses it without an upload; with no folder, and in claude.ai, the hand-over line appears instead. The user will give feedback after this pass.
+2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/real-estate-<version>.plugin` (desktop app), `make package-skills` → upload `dist/skills/*.zip` (claude.ai), or add the marketplace `axelrivera/real-estate-skills` (Cowork). Check that all 6 skills appear as `real-estate:*`. Check the onboarding ("set me up") and saved files in Cowork: with a working folder, `agent-profile` writes `.claude/real-estate/profile.md` and a new session's `seller-cma` uses it without an upload; with no folder, and in claude.ai, the hand-over line appears instead. The user will give feedback after this pass.
 3. **Evals iteration 2** after the user's feedback (the audit's phase 4 covers the changed skills): re-run the changed skills with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md), compare with iteration 1 (`--previous-workspace`).
 4. **Yearly refreshes:** Florida millage when the year's rates are final (October); loan limits in `shared/markets/loan-limits.md` when FHFA and HUD publish the next year's (late November); the indexed homestead exemption in `fl.md` (January).
 5. **Later / optional:** New skills and scope extensions (more state and MLS layers, the offer outcome log, trigger-description optimization) are in [roadmap.md](roadmap.md).
@@ -113,9 +122,9 @@ Won't fix: (none yet).
 - Skills must be self-contained; `shared/` is copied into each skill's `scripts/_shared/` by `make sync` and committed.
 - Markdown output comes from `assets/` templates filled by Claude; scripts only do math, parsing, validation and PDF/PPTX rendering.
 - Every skill has markdown and file modes from the same data JSON; core profile skills are markdown only.
-- Brand colors from the agent profile (one primary or buyer/seller split); status colors fixed; subject accents distinct from brand.
-- Agent profile: only name and brokerage required; never print placeholders. No logos on reports.
+- Brand colors from the profile (one primary or buyer/seller split); status colors fixed; subject accents distinct from brand.
+- One profile file (`profile.md`): who the agent is; only name and brokerage required; never print placeholders. No logos on reports.
 - Market data in layers: state (FL) and MLS (Stellar, FL + PR) are separate; never fill Florida values for other states; each value carries its source. Per-deal costs go in the deal's data file.
 - Every `*_pct` is a fraction (0.025 = 2.5%); interest `rate` is a percent.
 - Offer skills consume `cma-handoff v1` (JSON file, or fenced markdown block, else extract and confirm).
-- No commissions are built in (negotiable, not set by law): they come from the deal or the agent's market profile (marked "Standard Terms"). A seller-facing net is never shown without them: seller-cma refuses to render without brokerage terms.
+- Local costs: the deal's numbers, else built-in local values, else national estimates labeled per line; commission assumed at 5% total ("Assumed") until the deal gives terms. Never Florida's numbers elsewhere.

@@ -1,29 +1,24 @@
 # Saved Files
 
-Where the agent's profiles live between conversations, and where to look for them. A profile is a convenience: when none is found, collect what the task needs in the chat, as the skill says.
+Where the agent's profile lives between conversations, and where to look for it. The profile is a convenience: when none is found, collect what the task needs in the chat, as the skill says.
 
 ## The Saved Folder
 
-In Cowork, when the agent has a working folder selected, profiles are saved in `.claude/real-estate/` inside that folder:
-
-| File | What It Holds |
-|---|---|
-| `agent-profile.md` | The agent's name, brokerage, contact details, voice, disclaimers and brand colors |
-| `market-profile-<area>.md` | One per market, for example `market-profile-seminole.md` |
+In Cowork, when the agent has a working folder selected, the profile is saved as `.claude/real-estate/profile.md` inside that folder. It's one file: the agent's name, brokerage, contact details, brand colors, voice and disclaimers. It holds no local costs: reports take those from the property.
 
 Resolve the path from the agent's working folder, never from the current directory: in Cowork, skills run from a plugin folder, not from the agent's folder. If you can't tell which folder the agent selected, there is no saved folder for this conversation.
 
-## Finding a Profile
+## Finding the Profile
 
 Use the first place that has one:
 
 1. **The conversation:** a file the agent uploaded or pasted, or one written earlier in this chat.
 2. **Project files** (claude.ai Projects).
-3. **The saved folder,** when there is a working folder: `.claude/real-estate/agent-profile.md`, and the `market-profile-*.md` whose state and area match the deal.
+3. **The saved folder,** when there is a working folder: `.claude/real-estate/profile.md`.
 
-Pass the file to the scripts by its path (`--agent`, `--market`). When the profile came from the saved folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
+Pass the file to `render.py` by its path (`--profile`). When the profile came from the saved folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
 
-## Saving a Profile
+## Saving the Profile
 
 Only save after the agent has given or confirmed the details.
 

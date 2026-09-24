@@ -73,15 +73,15 @@ class MatchesPrototype(unittest.TestCase):
 
 
 class FloridaMarketDefaults(unittest.TestCase):
-    def test_no_built_in_brokerage(self):
-        """CORE-5: no commission defaults; a missing listing fee is left out and flagged high."""
+    def test_brokerage_assumed_at_five_percent_total(self):
+        """No terms given: 2.5% listing and 2.5% buyer's agent, labeled assumed, not a Preliminary blocker."""
         R = oe.analyze(fixture("minimal-single.json"))
         o = R["offers"][0]
-        self.assertEqual(line(o["ns"], "listing"), 0)
-        self.assertEqual(line(o["ns"], "bb"), 0)
+        self.assertEqual(line(o["ns"], "listing"), -round(o["price"] * 0.025))
+        self.assertEqual(line(o["ns"], "bb"), -round(o["price"] * 0.025))
         fee = next(a for a in R["assumptions"] if a["field"] == "listing_fee_pct")
-        self.assertEqual((fee["impact"], fee["value"]), ("high", 0))
-        self.assertTrue(oe.preliminary_inputs(R))
+        self.assertEqual((fee["impact"], fee["value"]), ("med", 0.025))
+        self.assertNotIn("listing fee", oe.preliminary_inputs(R))
 
     def test_itemized_title_fees_and_stated_brokerage(self):
         d = fixture("minimal-single.json")
@@ -115,36 +115,38 @@ class FloridaMarketDefaults(unittest.TestCase):
 
 
 class OtherStates(unittest.TestCase):
-    def test_nothing_filled_from_florida(self):
+    def test_national_estimates_not_florida(self):
         R = oe.analyze(fixture("texas-single.json"))
         o = R["offers"][0]
-        for key in ("transfer", "title", "settle"):
-            self.assertEqual(line(o["ns"], key), 0, key)
+        self.assertEqual(line(o["ns"], "transfer"), -round(598000 * 0.004))  # national estimate, not Florida's 0.7%
+        self.assertEqual(line(o["ns"], "title"), -round(598000 * 0.005))
+        self.assertEqual(line(o["ns"], "settle"), -1200)
         self.assertEqual(o["repair_reserve"], 0)
         fields = {a["field"]: a["impact"] for a in R["assumptions"]}
-        self.assertEqual(fields["deed transfer tax"], "high")
-        self.assertIn("title company fees", fields)
+        self.assertEqual(fields["transfer_tax_rate"], "med")  # labeled Estimate, not a Preliminary blocker
+        self.assertIn("title_fees", fields)
         self.assertIn("inspection_credit_reserve_pct", fields)
-        self.assertTrue(any("transfer tax" in n for n in oe.preliminary_inputs(R)))
+        self.assertFalse(any("transfer tax" in n for n in oe.preliminary_inputs(R)))
         text = json.dumps(R["assumptions"]) + json.dumps(R["listing"]["cost_notes"])
         self.assertNotIn("Florida", text)
         self.assertEqual(o["contract_form"], "other")  # no FR/BAR form (or its math) outside Florida
         self.assertTrue(o["inspection_walkaway"])
 
-    def test_market_profile_fills_the_gaps(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "tx.md")
-            with open(path, "w") as f:
-                f.write("---\nprofile: market\nstate: TX\nclosing_costs:\n  deed_transfer_tax_rate: 0\n"
-                        "  owner_title: {payer: seller, estimate_pct: 0.0055}\n  seller_title_fees: {escrow_fee: 650}\n"
-                        "contract:\n  inspection_credit_reserve_pct: 0.005\n---\n")
-            R = oe.analyze(fixture("texas-single.json"), market=path)
+    def test_listing_costs_replace_the_estimates(self):
+        """The skill's looked-up transfer tax and a title quote go in the listing's costs and win."""
+        data = fixture("texas-single.json")
+        data["listing"].setdefault("costs", {}).update(
+            {"transfer_tax_rate": 0, "title_estimate_pct": 0.0055, "title_fees": {"escrow_fee": 650},
+             "inspection_credit_reserve_pct": 0.005})
+        R = oe.analyze(data)
         o = R["offers"][0]
+        self.assertEqual(line(o["ns"], "transfer"), 0)
         self.assertEqual(line(o["ns"], "title"), -round(598000 * 0.0055))
         self.assertEqual(line(o["ns"], "settle"), -650)
         self.assertEqual(o["repair_reserve"], 3000)
-        self.assertIn("your market profile", " ".join(R["listing"]["cost_notes"]))
+        self.assertIn("this listing", " ".join(R["listing"]["cost_notes"]))
+        self.assertFalse(any("national estimate" in a["why"] and a["field"] != "listing_fee_pct" and "broker" not in a["field"]
+                             for a in R["assumptions"]))
 
 
 class Handoff(unittest.TestCase):

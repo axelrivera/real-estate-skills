@@ -11,7 +11,7 @@ from skill_import import load  # noqa: E402
 check_profile, ec, profiles = load("agent-profile", "check_profile", "extract_colors", "_shared.profiles")
 from PIL import Image  # noqa: E402
 
-TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "agent-profile-template.md")
+TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "profile-template.md")
 PLACEHOLDERS = {
     "full name": "name", "team name": "team", "brokerage": "brokerage", "license number": "license",
     "phone": "phone", "email": "email", "website": "website",
@@ -20,7 +20,7 @@ PLACEHOLDERS = {
 
 
 def fill(values, brand=None):
-    """Fill the template the way SKILL.md step 4 describes: drop lines and sections not given."""
+    """Fill the template the way SKILL.md step 5 describes: drop lines and sections not given."""
     with open(TEMPLATE) as f:
         lines = f.read().splitlines()
     out, skip_section = [], False
@@ -59,7 +59,7 @@ def fill(values, brand=None):
 
 
 def write_profile(tmp, text):
-    path = os.path.join(tmp, "agent-profile.md")
+    path = os.path.join(tmp, "profile.md")
     with open(path, "w") as f:
         f.write(text)
     return path

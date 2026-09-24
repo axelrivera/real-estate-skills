@@ -21,7 +21,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
-| `make samples` | Regenerates `samples/<skill>/`, the committed preview files (PDF, PPTX and ICS; handoff JSON is dropped): one happy path per file-mode skill, rendered from `dev/samples/<skill>.json` with the mock agent in `dev/samples/agent-profile.md`. Every name, brokerage, address and MLS number in `dev/samples/` is fictional (the county and public data sources are real because the tax rules need them). It then writes `samples/README.md` from `dev/samples/readme-template.md` (`dev/samples_readme.py`): each `{{pattern}}` there becomes a link to the matching file with its page, slide or event count; edit the text in the template. Run it by hand when you want fresh previews, and commit the result |
+| `make samples` | Regenerates `samples/<skill>/`, the committed preview files (PDF, PPTX and ICS; handoff JSON is dropped): one happy path per file-mode skill, rendered from `dev/samples/<skill>.json` with the mock agent in `dev/samples/profile.md`. Every name, brokerage, address and MLS number in `dev/samples/` is fictional (the county and public data sources are real because the tax rules need them). It then writes `samples/README.md` from `dev/samples/readme-template.md` (`dev/samples_readme.py`): each `{{pattern}}` there becomes a link to the matching file with its page, slide or event count; edit the text in the template. Run it by hand when you want fresh previews, and commit the result |
 | `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
 | `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
@@ -72,7 +72,7 @@ dev/                     # dev tooling, never shipped
   package/README.md      # install instructions shipped in the release zip
   fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
-  samples/               # fully mocked inputs for make samples: <skill>.json, mls-export.csv, seller-cma-deck.json, agent-profile.md, readme-template.md
+  samples/               # fully mocked inputs for make samples: <skill>.json, mls-export.csv, seller-cma-deck.json, profile.md, readme-template.md
   samples_readme.py      # make samples: writes samples/README.md from the template
 samples/<skill>/         # committed preview files from make samples
 .venv/  out/  dist/      # git-ignored
@@ -83,17 +83,17 @@ samples/<skill>/         # committed preview files from make samples
 | Module | What it does |
 |---|---|
 | `shared/design.py` | Brand palette from the agent's colors ([architecture](architecture.md#brand-colors)) |
-| `shared/profiles.py` | Reads agent and market profiles; merges market values with the source of each |
+| `shared/profiles.py` | Reads the agent's profile (`profile.md`); merges a property's market values from the built-in layers (state, MLS, county, national estimates) with the source of each; `Market.with_deal` puts a deal's own costs on top |
 | `shared/markets/states/fl.md` | Built-in Florida state layer (costs, taxes, contract rules) |
 | `shared/markets/mls/stellar.md` | Built-in Stellar MLS layer (formats, coverage), for Florida and Puerto Rico |
-| `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--agent`, `--market`, `--sample`, plus each skill's own options through `extra_args`) |
+| `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--profile`, `--mls`, `--sample`, plus each skill's own options through `extra_args`) |
 | `shared/report.css` | Base PDF styles on the theme variables, print-light: header rule, tables with rules, outlined hero, notes |
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
 | `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` or a fenced markdown block |
 | `shared/contract_forms.py` | Which contract rules apply to which form: FR/BAR AS IS (inspection walk-away, post-inspection credit) vs. Standard (repair notices, repair limits) vs. any other contract. The offer engine, buyer-offer-strategy and contract-timeline route through it, so the forms' math never mixes |
 | `shared/offer_engine.py` | Offer analysis for both offer skills: listing and offer defaults with ranked assumptions, seller net sheet (via `finance.seller_net`), appraisal downside, certainty score, risk flags, counters, multi-offer ranking |
-| `shared/mls.py` | MLS export reader (columns from the market profile) and market statistics, trend line |
+| `shared/mls.py` | MLS export reader (columns from the MLS layer or `--columns`) and market statistics, trend line |
 | `shared/prose.py` | The render check: em dashes in prose and clear fair-housing phrases in the data file stop the render, naming each field |
 | `shared/references/fair-housing.md` | Fair housing rules; copied to `references/` of each skill whose SKILL.md points to it |
 | `shared/cma.py`, `shared/cma.css` | CMA report pieces: labels, tables, scatterplot, dot plot, keep-together groups, pagination |

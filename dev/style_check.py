@@ -87,7 +87,7 @@ def render_fixtures(skills, tmp):
     fixtures = [f for f in sorted(glob.glob(os.path.join(ROOT, "dev", "fixtures", "*", "*.json")))
                 if os.path.basename(os.path.dirname(f)) != "_profiles"
                 and (not skills or os.path.basename(os.path.dirname(f)) in skills)]
-    agent = os.path.join(ROOT, "dev", "fixtures", "_profiles", "agent-profile.md")
+    profile = os.path.join(ROOT, "dev", "fixtures", "_profiles", "profile.md")
     out = []
     for f in fixtures:
         skill, name = os.path.basename(os.path.dirname(f)), os.path.basename(f)[:-5]
@@ -96,8 +96,8 @@ def render_fixtures(skills, tmp):
         os.makedirs(cap)
         os.makedirs(dest)
         args = [sys.executable, "-c", BOOTSTRAP, scripts, cap, f, "--format", "all", "--out", dest]
-        if os.path.exists(agent):
-            args += ["--agent", agent]
+        if os.path.exists(profile):
+            args += ["--profile", profile]
         env = dict(os.environ, OUTPUT_DIR=dest, NODE_PATH=os.path.join(ROOT, "dev", "node_modules"))
         r = subprocess.run(args, cwd=ROOT, env=env, capture_output=True, text=True)
         if r.returncode:

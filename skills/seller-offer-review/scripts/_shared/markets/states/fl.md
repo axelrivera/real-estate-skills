@@ -224,21 +224,21 @@ county_overrides:
       owner_title: {payer: ask}
 ---
 
-# Market Profile Layer: Florida
+# Market Layer: Florida
 
-Built-in state defaults. Skills use them only for Florida properties. For any other state, values come from the user's own market profile or are asked for. MLS formats are a separate layer (`../mls/`), because an MLS can span states and a state can have several MLSs.
+Built-in state defaults. Skills use them only for Florida properties. For any other state, values come from the markets in the agent's profile or are asked for. MLS formats are a separate layer (`../mls/`), because an MLS can span states and a state can have several MLSs.
 
 ## Notes
 
 - Closing costs are estimates for comparing options, not a settlement statement.
 - Seller title fee defaults (2026) are midpoints of ranges published by Florida title companies and closing cost guides; the title company's quote always wins.
-- No brokerage defaults: commissions are negotiable and not set by law. Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split. Use the listing agreement and offer terms, or the agent's standard terms from their market profile.
+- No brokerage defaults: commissions are negotiable and not set by law. Since 2024, buyer-broker pay is negotiated per deal and may be paid by the seller, the buyer, or split. Use the listing agreement and offer terms, or the agent's standard terms from their profile.
 - Who pays the owner's title policy varies by county (custom, not law). Seller in most of Florida; buyer in Miami-Dade, Broward, Sarasota and Collier; seller in Lee and Charlotte; Monroe varies by area, so the skills ask. Confirm with the title company for counties not listed.
 - Millage (2025 final) covers the unincorporated area and main cities of Orange, Seminole, Osceola, Lake, Volusia, Polk and Sumter. Rates vary within a city and within unincorporated areas (water management district, fire, transit, hospital and special districts), so the right number comes from the parcel's tax district code on the property appraiser record. Orange's school rate (6.449) is from the school board's adoption, not the appraiser sheet. Sumter's Villages, Wildwood and Bushnell totals marked "summed" add up the published rates; there's no official aggregate. The Villages' CDD charges are non-ad valorem and can add over $2,000 a year.
 - Property tax for the buyer is based on the purchase price, not the seller's bill. The estimate assumes the appraiser values the home at the purchase price, so it often runs high. Non-ad valorem assessments are excluded. Warn about the first-year escrow jump.
 - HOA estoppel fees are capped by statute; associations with delinquencies can charge more.
 - FIRPTA is not computed. If the seller is a foreign person, flag 15% withholding and refer to the title company or a CPA.
-- CMA adjustment defaults were calibrated on Central Florida sales. Other Florida areas should set their own in a market profile.
+- CMA adjustment defaults were calibrated on Central Florida sales. Other Florida areas should set their own in the agent's profile.
 - Contract dates follow the FR/BAR definitions. Verify against the form version on the executed contract.
 - Flood: a lender requires flood insurance in a Special Flood Hazard Area (zones A and V). Outside one, Citizens still requires it on a policy at or above the replacement cost in `flood.citizens_requirement` for its year, and on every Citizens policy from January 1, 2027, so never write that flood insurance "isn't required". The seller gives the s. 689.302 flood disclosure at or before signing.
 - Condos: the rescission and SIRS rights in `condo` are the buyer's; deliver the association documents early so the clock starts.

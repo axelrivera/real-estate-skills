@@ -33,7 +33,7 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
 | `cma` | optional: a `cma-handoff v1` record pasted in, instead of passing `--cma` |
 | `sample` | `true` only for demo data (prints SAMPLE DATA) |
 
-The agent's name, brokerage and brand colors come from the agent profile (`--agent`), not from this file.
+The agent's name, brokerage and brand colors come from the agent's profile (`--profile`), not from this file.
 
 ## listing
 
@@ -49,11 +49,11 @@ The agent's name, brokerage and brand colors come from the agent profile (`--age
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional) | from `--cma`; else both = list price, appraisal risk measured vs. list | **high** |
 | `annual_tax` | market fallback rate × list price (Florida 1.8%); no rate → proration left out | low / med |
-| `costs` | market profile values; see below | — |
+| `costs` | market values; see below | — |
 
 ### costs (This Deal's Own Numbers, Optional)
 
-Use when the agent has a title company quote or the county differs from the market default. Each one wins over the market profile.
+Use when the agent has a title company quote, you looked up the state's transfer tax, or the county differs from the market default. Each one wins over the built-in values and estimates.
 
 | Field | Meaning |
 |---|---|
@@ -75,8 +75,8 @@ Use when the agent has a title company quote or the county differs from the mark
 | `listing.property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`) | none: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
 | `listing.flood_disclosure` | true once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer | not given: flagged for the listing side where the market requires it | — |
 | `listing.current_tax_bill_paid` | `true` once the seller paid this year's bill | false; asked for Nov and Dec closings | med |
-| `listing_fee_pct` | the agent's standard terms from their market profile; none → left out (nothing built in) | **high** |
-| `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say use the agent's standard terms, else nothing | high |
+| `listing_fee_pct` | 2.5% assumed (5% total with the buyer's agent) | med |
+| `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say assume 2.5% | med |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
 | `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty) | med |
@@ -100,7 +100,7 @@ Use when the agent has a title company quote or the county differs from the mark
 | `lender_called` | bool | false → approval score capped at 3 | — |
 | `deposit` | total escrow $ | unknown → scored 3 | med |
 | `seller_concessions` | $ | 0 | **high** |
-| `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else the agent's standard terms, else none | **high** |
+| `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else 2.5% assumed | **high** when the seller offered, med when assumed |
 | `home_warranty` | $ seller pays | 0 | — |
 | `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
 | `repair_limits` | Standard only: `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |

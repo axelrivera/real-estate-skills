@@ -14,10 +14,11 @@
 | `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
 | `export` | Path to the MLS export CSV (used for the chart and the handoff's market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
-| `mls` | The MLS name when there's no market profile and it isn't the one built in for the county (same as `--mls`) |
+| `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
+| `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
 | `labels` | Optional overrides of fixed wording |
 
-The agent's name, brokerage, license and contact come from the agent profile (`--agent`), never from report.json.
+The agent's name, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json. Local costs never come from the profile: see `local-costs.md`.
 
 ## subject
 

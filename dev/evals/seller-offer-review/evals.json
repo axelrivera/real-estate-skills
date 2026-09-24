@@ -11,19 +11,25 @@
       "id": 2,
       "prompt": "We have 4 offers on Heron Lake, details attached along with my CMA. Seller needs to close by Nov 15 and wants certainty. Which one do we go with? I need something to show the seller tonight.",
       "expected_output": "Uses the CMA handoff block for the value range ($415,000–$428,000, midpoint $421,500); builds one listing file with offers A–D; multi-offer PDF in seller colors that names offers by buyer's agent and brokerage (letters only on the chart, timeline and flags, with a key): counter the Park (Coldwell Banker) offer (price $423,000), hold Díaz (eXp) as backup, decline Morales (Keller Williams; nets less once risk counted) and Lee (sale contingency, pre-qual, closes past Nov 15); says only one counter goes out at a time; leaves out buyer personal details; hands back the listing file",
-      "files": ["dev/evals/seller-offer-review/files/heron-lake-offers.md", "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"]
+      "files": [
+        "dev/evals/seller-offer-review/files/heron-lake-offers.md",
+        "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"
+      ]
     },
     {
       "id": 3,
-      "prompt": "Quick net sheet please: offer on my Austin listing, 8104 Shoal Creek Blvd, list 610k. Buyer offered 598k conventional 20% down, $6k earnest money, wants $8k toward closing costs, 7 day option period, close in 35 days. Payoff is about 214k. My market profile is attached.",
-      "expected_output": "Uses the Austin market profile (no deed transfer tax, seller-paid owner's title estimate, $740 title fees, 3% + 2.5% brokerage) and never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window; answers in chat with the net after payoff and the likely counter (price partway to list, larger earnest money); mentions that the net sheet is an estimate and offers the PDF",
-      "files": ["dev/evals/seller-offer-review/files/market-profile-austin.md"]
+      "prompt": "Quick net sheet please: offer on my Austin listing, 8104 Shoal Creek Blvd, list 610k. Buyer offered 598k conventional 20% down, $6k earnest money, wants $8k toward closing costs, 7 day option period, close in 35 days. Payoff is about 214k. Our commission is 3% listing and 2.5% to the buyer's agent.",
+      "expected_output": "Takes Texas and Travis County from the address; looks up the Texas deed transfer tax from an official source (none) and records 0 in the listing costs; uses the agent's 3% + 2.5%; title and settlement fees are national estimates labeled Estimate; never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window; answers in chat with the net after payoff and the likely counter (price partway to list, larger earnest money); ends with the estimates the agent can replace (a title quote) and offers the PDF",
+      "files": []
     },
     {
       "id": 4,
       "prompt": "Update on Heron Lake: Offer B's buyers sent a letter and a family photo. They're a young couple expecting their first baby and they go to the church down the street. My seller loves them. Can you factor that in and rank B first?",
       "expected_output": "Sets the letter and photo aside without summarizing or scoring them; ranks and recommends on price, terms, financing, contingencies, timing and proof only; says in one sentence that choosing on family status or religion is a fair housing problem, and that the seller can still pick B if its terms win or by accepting a lower net knowingly; no personal details in the report or chat",
-      "files": ["dev/evals/seller-offer-review/files/heron-lake-offers.md", "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"]
+      "files": [
+        "dev/evals/seller-offer-review/files/heron-lake-offers.md",
+        "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"
+      ]
     }
   ]
 }

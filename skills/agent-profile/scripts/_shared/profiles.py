@@ -1,14 +1,19 @@
-"""Read agent and market profiles: markdown files with a YAML front block.
+"""Read the agent's profile and the built-in market data.
+
+The profile (profile.md, markdown with a YAML front block) says who the agent is: name, brokerage, contact, brand,
+voice and disclaimers. Market values come from the property itself (state and county from the listing) and the
+built-in layers, never from the profile:
 
     from _shared import profiles
     agent = profiles.load_agent(path)                     # path may be None
-    market = profiles.load_market(path, state="FL", county="Seminole", mls=None)
+    market = profiles.load_market(state="FL", county="Seminole", mls=None)
     rate = market.get("closing_costs.deed_transfer_tax_rate")
-    market.source("closing_costs.deed_transfer_tax_rate")  # 'profile' | 'state' | 'mls' | 'county'
+    market.source("closing_costs.deed_transfer_tax_rate")  # 'state' | 'mls' | 'county' | 'estimate'
     market.missing(["closing_costs.settlement_fee", ...])  # paths the skill still has to ask for
 
-Skills never require a profile. When one is only in the conversation (not a file), Claude writes
-it to a file verbatim and passes the path. See docs/architecture.md#profiles.
+A deal's own numbers (a title quote, the transfer tax the skill looked up) go in the skill's data file on top.
+When the profile is only in the conversation (not a file), Claude writes it to a file verbatim and passes the path.
+See docs/architecture.md#profiles.
 """
 import copy
 import glob
@@ -19,7 +24,7 @@ import yaml
 
 from . import design
 
-SCHEMA = 1
+SCHEMA = 2
 MARKETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "markets")
 AGENT_REQUIRED = ("name", "brokerage")
 AGENT_FIELDS = ("name", "team", "brokerage", "license", "phone", "email", "website")  # display order
@@ -86,7 +91,7 @@ def load_agent(path=None):
     """
     data, sections = read(path) if path else ({}, {})
     if path and data.get("profile") != "agent":
-        raise ProfileError("This file isn't an agent profile.")
+        raise ProfileError("This file isn't the agent's profile (it should start with profile: agent).")
     warnings = []
     b = data.get("brokerage")
     if isinstance(b, dict):  # CORE-15: brokerage: {name, license, address, phone}
@@ -179,9 +184,9 @@ ASK = "ask"  # a built-in value that varies locally (Monroe's title custom): tre
 class Market:
     """Merged market values with the source of each one.
 
-    Sources: 'profile' (user's market profile), 'state' (built-in state layer, that state only),
-    'mls' (built-in MLS layer, that MLS only), 'county' (county override), 'input' (given by the skill).
-    A path with no value is missing: ask for it, or use a labeled assumption and mark the output Preliminary.
+    Sources: 'state' (built-in state layer, that state only), 'mls' (built-in MLS layer, that MLS only),
+    'county' (county override), 'estimate' (national estimates, labeled Estimate on reports), 'input' (given by the skill).
+    A path with no value is missing: it comes from the deal (a contract's time rules), or the skill asks.
     """
 
     def __init__(self, data, sources, notes):
@@ -212,6 +217,46 @@ class Market:
 
     def missing(self, paths):
         return [p for p in paths if self.get(p) is None]
+
+    def with_deal(self, costs):
+        """A copy with this deal's own numbers on top (source 'deal'): `costs` uses the DEAL_COSTS keys, the way the
+        skills' data files write them (transfer_tax_rate, title_fees...). Unknown keys and None values are skipped."""
+        data, sources = copy.deepcopy(self.data), dict(self.sources)
+        for key, value in (costs or {}).items():
+            path = DEAL_COSTS.get(key)
+            if path is None or value is None:
+                continue
+            if key == "title_fees" and isinstance(value, (int, float)):
+                value = {"title company quote": value}
+            node = data
+            *parents, leaf = path.split(".")
+            for part in parents:
+                node = node.setdefault(part, {})
+            node[leaf] = copy.deepcopy(value)
+            for p in [k for k in sources if k == path or k.startswith(path + ".")]:
+                del sources[p]
+            sources[path] = "deal"
+            if key == "title_estimate_pct":  # a deal estimate replaces the rate table
+                node.pop("rate_tiers", None)
+        return Market(data, sources, list(self.notes))
+
+
+# A deal's own costs, as the skills' data files name them, mapped to market paths (Market.with_deal).
+DEAL_COSTS = {
+    "transfer_tax_rate": "closing_costs.deed_transfer_tax_rate",
+    "transfer_tax_payer": "closing_costs.deed_transfer_tax_payer",
+    "transfer_tax_label": "closing_costs.deed_transfer_tax_label",
+    "title_payer": "closing_costs.owner_title.payer",
+    "title_estimate_pct": "closing_costs.owner_title.estimate_pct",
+    "title_fees": "closing_costs.seller_title_fees",
+    "hoa_estoppel_fee": "closing_costs.hoa_estoppel_fee",
+    "buyer_closing_cost_pct": "closing_costs.buyer_closing_cost_pct",
+    "tax_paid": "property_tax.paid",
+    "tax_rate": "property_tax.fallback_rate",
+    "insurance_rate": "holding_costs.insurance_rate",
+    "utilities_monthly": "holding_costs.utilities_monthly",
+    "inspection_credit_reserve_pct": "contract.inspection_credit_reserve_pct",
+}
 
 
 def _layers(kind):
@@ -259,62 +304,66 @@ def _county_override(overrides, county):
     return {_county_key(k): v for k, v in (overrides or {}).items()}.get(_county_key(county))
 
 
+def _national():
+    data, _ = read(os.path.join(MARKETS, "national.md"))
+    return data
+
+
 def loan_limits():
     """The year's national loan limits (markets/loan-limits.md): conforming, FHA and county exceptions (OFR-11)."""
     data, _ = read(os.path.join(MARKETS, "loan-limits.md"))
     return data
 
 
-def load_market(path=None, state=None, county=None, mls=None):
-    """Market values for a property, merged from built-in layers, the user's profile and county overrides.
+def _fill(data, layer, sources, source):
+    """Fill each section key (closing_costs.owner_title, brokerage.listing_fee_pct...) only where no layer set it.
+
+    Whole keys, never leaves: an estimated fee list never mixes into a state's own fees."""
+    for section, block in layer.items():
+        if not isinstance(block, dict):
+            if data.get(section) is None:
+                data[section], sources[section] = copy.deepcopy(block), source
+            continue
+        have = data.setdefault(section, {})
+        for key, value in block.items():
+            if have.get(key) is None:
+                _merge(have, {key: value}, sources, source, section + ".")
+
+
+def load_market(state=None, county=None, mls=None):
+    """Market values for a property in `state` and `county` (from the listing), merged from the built-in layers.
 
     - State layer (costs, taxes, contract rules): only when the property's state has one (Florida).
-    - MLS layer (export formats, coverage): only for that MLS, in any state it serves. Without a
-      profile or an `mls`, an MLS is assumed only when exactly one built-in MLS covers the county.
-    - The user's profile wins over both. `county` then applies that county's overrides.
+    - MLS layer (export formats, coverage): only for that MLS, in any state it serves. Without an `mls`, an MLS is
+      assumed only when exactly one built-in MLS covers the county.
+    - County overrides from the layers, then national estimates for anything still unset (source 'estimate').
     Nothing from another state is ever filled in; `notes` explains every assumption in plain language.
     """
     want = state_code(state)
     if state and not want:
         raise ProfileError(f"{state!r} isn't a US state or territory.")
 
-    user = {}
-    if path:
-        user, _ = read(path)
-        if user.get("profile") != "market":
-            raise ProfileError("This file isn't a market profile.")
-        user_state = state_code(user.get("state"))
-        if not user_state:
-            raise ProfileError("The market profile needs a state (for example FL or Texas).")
-        if want and want != user_state:
-            raise ProfileError(f"The market profile is for {STATES[user_state]}, but the property is in {STATES[want]}.")
-        want = user_state
-
     data, sources, notes = {}, {}, []
-    try:
-        newer = int(user.get("schema", SCHEMA)) > SCHEMA
-    except (TypeError, ValueError):
-        raise ProfileError("The market profile's schema should be a number, like 1.") from None
-    if newer:
-        notes.append("This market profile was made by a newer version; some settings may be ignored.")
     states, mlss = _layers("state"), _layers("mls")
     if want is None:
-        notes.append("The property's state wasn't given, so no built-in costs or rules were applied. "
-                     "Ask for the state; don't assume Florida.")
+        notes.append("The property's state wasn't given, so only national estimates were applied. "
+                     "Take it from the listing or ask; don't assume Florida.")
     elif want in states:
         _merge(data, _strip_layer_keys(states[want]), sources, "state")
         known = states[want].get("counties")
         if county and known and _county_key(county) not in {_county_key(c) for c in known}:
             notes.append(f"{county} isn't a {STATES[want]} county: check the spelling. No county rules were applied.")
-    elif not path:
-        notes.append(f"No market profile for {STATES[want]}: local costs and rules have to be provided.")
+    else:
+        notes.append(f"Nothing is built in for {STATES[want]}: costs are national estimates (labeled Estimate), and "
+                     "contract time rules come from the contract.")
 
-    mls_name = user.get("mls") or mls
+    mls_name = mls
     layer = None
     if mls_name:
         layer = mlss.get(_mls_key(mls_name))
         if not layer:
-            notes.append(f"{mls_name} isn't built in: its export columns and history codes have to be provided.")
+            notes.append(f"{mls_name} isn't built in: map its export's column headers (--columns) and read its "
+                         "history codes from the listing.")
     else:
         candidates = {id(l): l for l in mlss.values() if _covers(l, want, county)}
         if len(candidates) == 1:
@@ -323,25 +372,20 @@ def load_market(path=None, state=None, county=None, mls=None):
                          f"{' for ' + county if county else ''}.")
         else:
             notes.append(f"The MLS wasn't given{' for ' + county if county else ''}: "
-                         "its export columns and history codes have to be provided if an MLS file is used.")
+                         "if an MLS export is used, map its column headers (--columns).")
     if layer:
         _merge(data, _strip_layer_keys(layer), sources, "mls")
 
-    # The agent always wins: built-in county customs first, then the agent's profile, then the profile's
-    # own county_overrides for this county.
     built_in = county and _county_override(data.get("county_overrides"), county)
     if built_in:
         _merge(data, built_in, sources, "county")
-    _merge(data, {k: v for k, v in user.items() if k not in ("profile", "schema")}, sources, "profile")
-    own = county and _county_override(user.get("county_overrides"), county)
-    if own:
-        _merge(data, own, sources, "profile")
+    _fill(data, _strip_layer_keys(_national()), sources, "estimate")
     if mls_name and not data.get("mls"):
         data["mls"], sources["mls"] = mls_name, "input"  # an MLS that isn't built in is still the one in use
     for leaf, value in _leaves(data):
         if value == ASK and not leaf.startswith("county_overrides."):
             notes.append(f"{leaf} varies by area here{' in ' + county if county else ''}: confirm it with the title company "
-                         "or the agent, then save it to the market profile.")
+                         "or the agent, and put it in the deal's costs.")
     data["state"] = want
-    sources["state"] = "profile" if path else "state" if want in states else "input" if want else "missing"
+    sources["state"] = "state" if want in states else "input" if want else "missing"
     return Market(data, sources, notes)

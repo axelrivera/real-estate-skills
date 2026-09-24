@@ -1,6 +1,6 @@
 """Contract timeline PDF (buyer or seller view).
 
-    python3 scripts/render.py deal.json [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py deal.json [--profile profile.md] [--sample] [--out DIR]
 
 Page 1: the contract period, when the contingencies end, a timeline strip and every key date.
 Page 2: every deadline with its source, rule, action and consequence; amendment history; how the
@@ -260,7 +260,7 @@ def ics(t):
 
 
 def build(deal, fmt, out_dir, ctx):
-    t = timeline.analyze(deal, ctx.get("market"))
+    t = timeline.analyze(deal)
     if fmt == "ics":
         path = os.path.join(out_dir, render.filename(t["property"].split(",")[0], "Contract Timeline", t["side"], ext="ics"))
         with open(path, "w", encoding="utf-8", newline="") as f:

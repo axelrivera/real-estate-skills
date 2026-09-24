@@ -1,6 +1,6 @@
-"""Check an agent profile the way every other skill will read it.
+"""Check the agent's profile the way every other skill will read it.
 
-    python3 scripts/check_profile.py agent-profile.md
+    python3 scripts/check_profile.py profile.md
 
 Prints JSON: ok, the fields that are set, the brand colors each side will use (by name),
 and problems (things to fix before handing the file over) and warnings (things to tell the agent).
@@ -15,8 +15,11 @@ from _shared import design, profiles  # noqa: E402
 
 
 def check(path):
-    with open(path, encoding="utf-8") as f:
-        text = f.read()
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError as e:
+        return {"ok": False, "problems": [f"The profile can't be opened: {e.strerror or e}."]}
     problems = []
     if re.search(r"\{\{[^}]*\}\}", text):
         problems.append("Template placeholders ({{...}}) are still in the file.")
@@ -26,7 +29,7 @@ def check(path):
         return {"ok": False, "problems": problems + [str(e)]}
 
     problems += [f"Missing {f}." for f in agent["errors"]]
-    problems += agent["warnings"]  # invalid color codes
+    problems += agent["warnings"]  # invalid color codes, numbers written without quotes
     colors, warnings = {}, []
     # CORE-27: the agent's own word for a color ("Gold"), from the comment beside it in the profile
     own = {m.group(1).upper(): m.group(2).strip() for m in re.finditer(r'"(#[0-9A-Fa-f]{6})"\s*#\s*([^\n]+)', text)}

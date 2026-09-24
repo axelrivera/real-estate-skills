@@ -26,14 +26,14 @@ Read the whole package: contract, every rider and addendum, and every counteroff
 - **Later documents win:** counteroffers override the offer; initialed handwritten changes override typed text. If something is illegible or two documents disagree, add it to `flags` instead of guessing.
 - **FR/BAR contracts (Florida):** read `references/frbar.md` for where each date lives and the form defaults for blanks. List every default you used in `agent_notes` so the agent can confirm it.
 - **Two kinds of notes.** `flags` print on the report as "Check:" lines, so use them for what the client should also see (a date two documents disagree on, a tight loan approval). `agent_notes` stay in chat: defaults used for blanks, readings to confirm, anything that would confuse a client.
-- **Any other contract:** read `references/other-contracts.md`. You list the deadlines yourself, and the time rules come from the contract's definitions if the agent's market profile doesn't have them.
+- **Any other contract:** read `references/other-contracts.md`. You list the deadlines yourself, and the time rules come from the contract's definitions.
 
 ## 2. Compute
 
-Include the agent's market profile when there is one (Project files, uploads, or the saved folder in `references/saved-files.md`); Florida rules are built in.
+Florida rules are built in; for any other state the time rules come from the contract (never estimated).
 
 ```
-python3 scripts/timeline.py deal.json [--market market-profile.md]
+python3 scripts/timeline.py deal.json
 ```
 
 It prints every date already formatted, or `ok: false` with `problems` to fix. Spot-check before going further: the deposit and loan application dates, anything extended to the next business day, and a closing date that extended past a weekend or holiday.
@@ -45,10 +45,10 @@ The script adds its own notes: `flags` lines when loan approval falls within 5 d
 **Quick question** ("when does the inspection end?", "what's due this week?"): answer from the output in a sentence or two, plus at most one line on the rule used or what to confirm. A deal file with just the Effective Date, the time rules and the one deadline is enough; leave the closing date out if you don't have it (dates counted back from closing then wait for it). **Full timeline in chat:** fill in `assets/timeline-template.md` with the output's values. **A report to send or print:**
 
 ```
-python3 scripts/render.py deal.json [--format pdf|ics|all] [--agent agent-profile.md] [--market market-profile.md]
+python3 scripts/render.py deal.json [--format pdf|ics|all] [--profile profile.md]
 ```
 
-`all` (the default) saves the PDF and a closing calendar (`.ics`: one event per dated deadline, a reminder the day before each critical one) that the agent or client can import into any calendar app. It saves the PDF to the outputs folder in the agent's brand colors, when their profile is available. If it can't render, say so and give the markdown timeline instead.
+`all` (the default) saves the PDF and a closing calendar (`.ics`: one event per dated deadline, a reminder the day before each critical one) that the agent or client can import into any calendar app. It saves the PDF to the outputs folder; `--profile` puts the agent's name and brand colors on it (found as `references/saved-files.md` describes). If it can't render, say so and give the markdown timeline instead.
 
 With the PDF, keep the chat reply short: a small table of the key dates only (first deadline, when the contingencies end, closing), not the full template, since the PDF has everything. Always tell the agent, in plain words: the first deadline and who owes it, when the contingencies end, the closing date, every flag, and every agent note to confirm. Offer the other format in one line. Keep the deal file with the deliverable: it's the record for re-runs.
 

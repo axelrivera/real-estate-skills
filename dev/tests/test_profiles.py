@@ -35,30 +35,6 @@ Warm, direct, no jargon.
 Information deemed reliable but not guaranteed.
 """
 
-TEXAS = """
----
-profile: market
-schema: 1
-name: Austin (ACTRIS)
-state: Texas
-mls: ACTRIS
-closing_costs:
-  settlement_fee: 900
----
-"""
-
-FL_USER = """
----
-profile: market
-schema: 1
-state: FL
-closing_costs:
-  settlement_fee: 800
-  owner_title: {payer: buyer}
----
-"""
-
-
 class Parsing(unittest.TestCase):
     def test_errors_are_plain_language(self):
         for text in ("no block", "---\nname: x\n", "---\n: : :\n---\n", "---\n- a\n- b\n---\n"):
@@ -100,8 +76,7 @@ class Agent(unittest.TestCase):
     def test_wrong_kind(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(p.ProfileError):
-                p.load_agent(write(tmp, "m.md", TEXAS))
-
+                p.load_agent(write(tmp, "m.md", "---\nprofile: market\nstate: TX\n---\n"))
 
 class Market(unittest.TestCase):
     def test_florida_gets_state_layer(self):
@@ -123,7 +98,8 @@ class Market(unittest.TestCase):
     def test_puerto_rico_gets_stellar_but_no_florida_costs(self):
         m = p.load_market(state="PR")
         self.assertEqual(m.mls, "Stellar")
-        self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
+        self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.004)  # the national estimate, not Florida's 0.7%
+        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "estimate")
         self.assertIsNone(m.get("county_overrides"))
 
     def test_mls_alias_and_explicit_mls(self):
@@ -132,38 +108,32 @@ class Market(unittest.TestCase):
         self.assertIsNone(m.get("mls_format"))
         self.assertTrue(any("isn't built in" in n for n in m.notes))
 
-    def test_no_state_assumes_nothing(self):
-        """CORE-8, TL-4: no silent Florida defaults."""
+    def test_no_state_assumes_nothing_from_florida(self):
+        """CORE-8, TL-4: no silent Florida defaults; national estimates only."""
         m = p.load_market()
         self.assertIsNone(m.state)
-        self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
+        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "estimate")
+        self.assertIsNone(m.get("contract.day_count"))
         self.assertTrue(any("don't assume Florida" in n for n in m.notes))
 
-    def test_no_florida_defaults_for_other_states(self):
+    def test_other_states_get_national_estimates(self):
         m = p.load_market(state="TX")
-        self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
-        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "missing")
-        self.assertEqual(m.missing(["closing_costs.settlement_fee", "state"]), ["closing_costs.settlement_fee"])
-        self.assertTrue(any("No market profile for Texas" in n for n in m.notes))
-
-    def test_other_state_profile_is_not_filled_from_florida(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            m = p.load_market(write(tmp, "tx.md", TEXAS), state="TX")
-        self.assertEqual(m.get("closing_costs.settlement_fee"), 900)
-        self.assertEqual(m.source("closing_costs.settlement_fee"), "profile")
-        self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
+        self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.004)
+        self.assertEqual(m.get("closing_costs.seller_title_fees"), {"settlement_and_title_fees": 1200})
+        self.assertEqual((m.get("brokerage.listing_fee_pct"), m.get("brokerage.buyer_broker_fee_pct")), (0.025, 0.025))
+        self.assertEqual(m.source("brokerage.listing_fee_pct"), "estimate")
+        self.assertIsNone(m.get("contract.day_count"))  # time rules come from the contract, never estimated
         self.assertIsNone(m.get("cma.adjustments.pool"))
-        self.assertEqual(m.state, "TX")
+        self.assertTrue(any("national estimates" in n for n in m.notes))
 
-    def test_florida_profile_overrides_state_layer(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            m = p.load_market(write(tmp, "fl.md", FL_USER))
-        self.assertEqual(m.get("closing_costs.settlement_fee"), 800)
-        self.assertEqual(m.source("closing_costs.settlement_fee"), "profile")
-        self.assertEqual(m.get("closing_costs.owner_title.payer"), "buyer")
-        self.assertEqual(len(m.get("closing_costs.owner_title.rate_tiers")), 5)  # sibling kept from the layer
-        self.assertEqual(m.source("closing_costs.owner_title.rate_tiers"), "state")
-        self.assertEqual(m.source("closing_costs.owner_title"), "mixed")
+    def test_estimates_never_mix_into_florida_values(self):
+        """A section key is filled whole: Florida's fee list gets no estimated fee, its title table no estimate."""
+        m = p.load_market(state="FL", county="Seminole")
+        self.assertNotIn("settlement_and_title_fees", m.get("closing_costs.seller_title_fees"))
+        self.assertEqual(m.source("closing_costs.seller_title_fees"), "state")
+        self.assertIsNone(m.get("closing_costs.owner_title.estimate_pct"))
+        self.assertEqual(m.source("brokerage.listing_fee_pct"), "estimate")  # no commission built in for Florida
+        self.assertEqual(m.get("property_tax.fallback_rate"), 0.018)
 
     def test_county_override(self):
         m = p.load_market(state="FL", county="Miami-Dade County")
@@ -171,35 +141,6 @@ class Market(unittest.TestCase):
         self.assertEqual(m.get("closing_costs.owner_title.payer"), "buyer")
         self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "county")
         self.assertEqual(p.load_market(state="FL", county="Seminole").get("closing_costs.owner_title.payer"), "seller")
-
-    def test_agent_beats_county_exception(self):
-        """CORE-1: a Miami-Dade agent's own title payer wins over the built-in county custom."""
-        with tempfile.TemporaryDirectory() as tmp:
-            path = write(tmp, "md.md", """
-                ---
-                profile: market
-                state: FL
-                closing_costs:
-                  owner_title: {payer: seller}
-                county_overrides:
-                  Broward:
-                    closing_costs: {hoa_estoppel_fee: 399}
-                ---
-                """)
-            m = p.load_market(path, county="Miami-Dade")
-            self.assertEqual(m.get("closing_costs.owner_title.payer"), "seller")
-            self.assertEqual(m.source("closing_costs.owner_title.payer"), "profile")
-            self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.006)  # untouched county value stays
-            b = p.load_market(path, county="Broward County")
-            self.assertEqual(b.get("closing_costs.hoa_estoppel_fee"), 399)
-            self.assertEqual(b.source("closing_costs.hoa_estoppel_fee"), "profile")
-
-    def test_empty_section_keeps_built_in_values(self):
-        """CORE-2: `closing_costs:` with nothing under it doesn't wipe the Florida group."""
-        with tempfile.TemporaryDirectory() as tmp:
-            m = p.load_market(write(tmp, "fl.md", "---\nprofile: market\nstate: FL\nclosing_costs:\nbrokerage:\n---\n"))
-        self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.007)
-        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "state")
 
     def test_county_spellings(self):
         """CORE-10: spelling variants match; an unknown Florida county gets a note."""
@@ -210,17 +151,7 @@ class Market(unittest.TestCase):
         self.assertFalse(any("isn't a Florida county" in n for n in p.load_market(state="FL", county="St. Johns").notes))
         self.assertTrue(any("isn't a Florida county" in n for n in p.load_market(state="FL", county="Semnole").notes))
 
-    def test_quoted_schema(self):
-        """CORE-24: schema "1" reads as 1; a non-number is a ProfileError."""
-        with tempfile.TemporaryDirectory() as tmp:
-            self.assertEqual(p.load_market(write(tmp, "a.md", '---\nprofile: market\nschema: "1"\nstate: FL\n---\n')).state, "FL")
-            with self.assertRaises(p.ProfileError):
-                p.load_market(write(tmp, "b.md", "---\nprofile: market\nschema: one\nstate: FL\n---\n"))
-
-    def test_state_mismatch_and_bad_state(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaises(p.ProfileError):
-                p.load_market(write(tmp, "tx.md", TEXAS), state="FL")
+    def test_bad_state(self):
         with self.assertRaises(p.ProfileError):
             p.load_market(state="Atlantis")
 

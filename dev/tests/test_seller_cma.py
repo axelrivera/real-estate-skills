@@ -42,8 +42,8 @@ def report():
     return R
 
 
-def run(R, market_path=None):
-    market, homes = compute.load_inputs(R, market_path)
+def run(R):
+    market, homes = compute.load_inputs(R)
     return compute.compute(R, market, homes), homes
 
 
@@ -52,7 +52,7 @@ def row(C, key):
 
 
 def texas(R):
-    R["costs"] = {}  # no agent terms: nothing is borrowed from Florida
+    R["costs"] = {}  # no terms given: national estimates, never Florida's numbers
     R["subject"].update(state="TX", county="Travis", city="Austin")
     R.pop("export")
     R["buyer_payment"].pop("district")
@@ -201,40 +201,42 @@ class Warnings(unittest.TestCase):
 
 
 class OtherMarkets(unittest.TestCase):
-    def test_texas_is_preliminary_without_florida_numbers(self):
+    def test_texas_uses_labeled_estimates_not_florida_numbers(self):
         C, _ = run(texas(report()))
-        self.assertTrue(C["preliminary"])
+        self.assertFalse(C["preliminary"])
         keys = {r["key"] for r in C["net"]["rows"]}
-        self.assertEqual(keys, {"sale", "credit", "total"})  # no brokerage, stamps, title or fees borrowed from Florida
-        for missing in ("listing brokerage fee", "transfer tax (or confirmation there is none)", "title company fees"):
-            self.assertIn(missing, C["net"]["missing"])
-        self.assertTrue(C["net"]["incomplete"])  # no commission: render.py refuses rather than overstate the net
-        self.assertTrue(any(w.startswith("Preliminary") for w in C["warnings"]))
-        self.assertTrue(any(w.startswith("No brokerage terms") for w in C["warnings"]))
-        self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 19.0 / 1000 / 12)  # no homestead in Texas
-
-    def test_texas_with_agent_terms_still_preliminary(self):
-        R = texas(report())
-        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
-        C, _ = run(R)
-        self.assertTrue(C["preliminary"])
-        self.assertNotIn("listing brokerage fee", C["net"]["missing"])
+        self.assertEqual(keys, {"sale", "listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees",
+                                "credit", "total", "holding", "after_holding"})
+        self.assertEqual(row(C, "transfer_tax")["label"], "Transfer Tax (Estimate, 0.40%)")  # never Florida's stamps
+        self.assertEqual(C["net"]["missing"], [])
         self.assertFalse(C["net"]["incomplete"])
-
-    def test_texas_without_tax_rate_has_no_payments(self):
+        self.assertTrue(any(a.startswith("National estimates") for a in C["assumptions"]))
+        self.assertTrue(any(a.startswith("Brokerage is assumed") for a in C["assumptions"]))
+        self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 19.0 / 1000 / 12)  # no homestead in Texas
+    def test_texas_deal_numbers_replace_the_estimates(self):
+        R = texas(report())
+        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025, "transfer_tax_rate": 0,
+                      "title_fees": {"escrow_fee": 650}}
+        C, _ = run(R)
+        keys = {r["key"] for r in C["net"]["rows"]}
+        self.assertNotIn("transfer_tax", keys)  # Texas has none: the looked-up 0 wins
+        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (3%)")
+        self.assertEqual(row(C, "title_fees")["amounts"][0], -650)
+        self.assertFalse(C["net"]["standard_terms"])
+    def test_texas_without_tax_rate_estimates_payments(self):
         R = texas(report())
         R["buyer_payment"].pop("total_mills")
         C, _ = run(R)
-        self.assertIsNone(C["payments"])
-        self.assertTrue(any("No millage" in w for w in C["warnings"]))
-
-    def test_preliminary_shows_in_pdf_html(self):
+        self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 0.011 / 12)  # national estimate
+        self.assertTrue(any("Buyer taxes are estimated" in w for w in C["warnings"]))
+    def test_estimates_show_in_pdf_html(self):
         R = texas(report())
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         C, homes = run(R)
         doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
-        self.assertIn("tag prelim", doc)
-        self.assertIn("no local figure for transfer tax (or confirmation there is none)", doc)
+        self.assertNotIn("tag prelim", doc)
+        self.assertIn("Transfer Tax (Estimate, 0.40%)", doc)
+        self.assertIn("Estimates, not local figures", doc)
         self.assertNotIn("Documentary Stamp", doc)
 
 
@@ -344,26 +346,21 @@ class Files(unittest.TestCase):
                 self.assertNotIn("undefined", text)
                 self.assertNotIn("C2410C", text)  # the default orange never leaks into a branded deck
 
-    def test_preliminary_pptx_without_export(self):
+    def test_texas_pptx_without_export(self):
         if not node_ready():
             self.skipTest("Node with pptxgenjs, react-icons and sharp isn't resolvable here.")
         R = texas(report())
-        with tempfile.TemporaryDirectory() as tmp:  # never the working directory: a failed build must leave nothing behind
-            with self.assertRaises(compute.ReportError):  # no brokerage terms: no files
-                seller_render.build(R, "pptx", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})
-            self.assertEqual(os.listdir(tmp), [])
-        R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         if isinstance(R["deck"], str):
             with open(R["deck"]) as f:
                 R["deck"] = json.load(f)
         R["deck"].pop("scatter_takeaway", None)  # no export, no scatter slide: not required
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp:  # never the working directory
             with contextlib.redirect_stderr(io.StringIO()):
-                paths = seller_render.build(R, "pptx", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})
+                paths = seller_render.build(R, "pptx", tmp, {"agent": profiles.load_agent(None), "sample": True})
             with zipfile.ZipFile(paths[0]) as z:
                 slides = sorted(n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n))
                 self.assertEqual(len(slides), 14)  # no scatter without an MLS export
-                self.assertIn("PRELIMINARY", z.read("ppt/slides/slide1.xml").decode())
+                self.assertNotIn("PRELIMINARY", z.read("ppt/slides/slide1.xml").decode())  # estimates are labeled, not blocking
                 text = "".join(z.read(n).decode() for n in slides)
                 self.assertNotIn("Documentary", text)
                 self.assertNotIn("placeholder", text)
@@ -455,28 +452,19 @@ if __name__ == "__main__":
 class AuditMoneyLines(unittest.TestCase):
     """CORE-5, CMA-18 (standard terms marked everywhere), CMA-3 (proration), CORE-6 (surtax)."""
 
-    def test_standard_terms_from_the_market_profile_are_marked(self):
+    def test_brokerage_assumed_when_not_given(self):
         R = report()
         R["costs"] = {}
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "market.md")
-            with open(path, "w") as f:
-                f.write("---\nprofile: market\nstate: FL\nbrokerage:\n  listing_fee_pct: 0.03\n  buyer_broker_fee_pct: 0.02\n---\n")
-            C, homes = run(R, path)
-        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (3%, Standard Terms)")
+        C, homes = run(R)
+        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (2.5%, Assumed)")
+        self.assertEqual(row(C, "buyer_broker_fee")["label"], "Buyer's Agent Compensation (2.5%, Assumed)")
         self.assertTrue(C["net"]["standard_terms"])
-        self.assertIn("Commissions are negotiable and not set by law.", C["net"]["notes"])
+        self.assertFalse(C["net"]["incomplete"])  # 5% total assumed: the files build
+        self.assertIn("Brokerage is assumed at 5% in total until the listing agreement sets it.", C["net"]["notes"])
         doc = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)[0]
-        self.assertIn("Standard Brokerage Terms", doc)  # page 1 net tile
+        self.assertIn("Assumed Brokerage", doc)  # page 1 net tile
         D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer")
-        self.assertIn("standard brokerage terms", D["net_sub"])  # the deck's net slide
-
-    def test_no_terms_anywhere_blocks_the_files(self):
-        R = report()
-        R["costs"] = {}
-        C, _ = run(R)
-        self.assertTrue(C["net"]["incomplete"])  # Florida too: nothing built in (CORE-5)
-
+        self.assertIn("brokerage assumed", D["net_sub"])  # the deck's net slide
     def test_tax_proration_and_surtax(self):
         R = report()
         R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-01")

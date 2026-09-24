@@ -1,6 +1,6 @@
 """Compute every number in the buyer CMA from report.json and the MLS export.
 
-    python3 scripts/compute.py report.json [--market market-profile.md] [--out DIR]
+    python3 scripts/compute.py report.json [--out DIR]
 
 Prints JSON: taxes, payment scenarios, price-vs-credit scenarios, buydown, scatter trend, the
 offer plan and range, formatted for the markdown template, plus `warnings` to fix and the
@@ -165,6 +165,7 @@ def compute(R, market, homes):
     _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
              "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
+    market = market.with_deal(R.get("costs"))  # this home's own numbers (the state's transfer tax, a tax rate)
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
     ladder = [("opening", op["opening"]), ("target_low", op.get("target_low")), ("target_high", op.get("target_high")),
               ("walk_away", op["walk_away"])]
@@ -265,26 +266,26 @@ def compute(R, market, homes):
     }
 
 
-def load_inputs(R, market_path=None, mls_name=None):
-    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV). The MLS is `--mls`,
-    else the report's `mls`, else the market profile's, else the one built-in MLS covering the county (CMA-15)."""
+def load_inputs(R, mls_name=None):
+    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV, `export_columns` its
+    header map for an MLS that isn't built in). The MLS is `--mls`, else the report's `mls`, else the one built-in MLS
+    covering the county (CMA-15)."""
     s = R.get("subject") or {}
-    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
-    homes = mls.load(R["export"], market) if R.get("export") else []
+    market = profiles.load_market(state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
+    homes = mls.load(R["export"], market, R.get("export_columns")) if R.get("export") else []
     return market, homes
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("report")
-    ap.add_argument("--market", help="market profile (taxes, exemptions, MLS format); built in for Florida")
     ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
-    ap.add_argument("--mls", help="MLS name when there's no market profile, as with stats.py (Stellar is built in)")
+    ap.add_argument("--mls", help="MLS name, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
         R = json.load(f)
     try:
-        market, homes = load_inputs(R, a.market, a.mls)
+        market, homes = load_inputs(R, a.mls)
         result = compute(R, market, homes)
         path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "buyer"))
         with open(path, "w", encoding="utf-8") as f:
