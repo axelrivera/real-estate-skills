@@ -1,16 +1,16 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.3.0: audit Phase 1 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | Marketplace (`core`, `transactions`) at 0.2.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
-| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing). See [development.md](development.md#shared-code) |
+| Scaffold | Marketplace (`core`, `transactions`) at 0.3.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`). See [development.md](development.md#shared-code) |
 | `core` | `agent-profile`, `market-profile` (markdown only) |
 | `transactions` | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test`: 203 passing. Every fixture renders with `make outputs` (16 PDFs and decks) |
+| Tests | `make test`: 294 passing. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
 ## This pass (2026-09-23)
@@ -68,7 +68,7 @@ Where the work stands and what's left. Last updated 2026-09-23 (version 0.2.0). 
 | Phase | Version | Themes | IDs | Status |
 |---|---|---|---|---|
 | 0. Baseline | | Commit the in-progress work, roadmap, verification note | | Done |
-| 1. High and contract rules | 0.3.0 | Crashes | OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22 | Done |
+| 1. High and contract rules (done 2026-09-24, validated) | 0.3.0 | Crashes | OFR-1, CMA-1, CMA-13, CMA-19, CMA-21, OFR-22 | Done |
 | | | Profile merge, no silent Florida | CORE-1, CORE-2, CORE-8, TL-4, CORE-10, CORE-24 | Done |
 | | | FR/BAR dates | TL-1, TL-2, TL-3, TL-5 to TL-13, TL-18, TL-23 | Done |
 | | | Escalation and appraisal | OFR-2 to OFR-5, OFR-17, OFR-27 | Done |
