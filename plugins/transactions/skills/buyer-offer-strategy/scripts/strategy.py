@@ -170,8 +170,10 @@ def prepare(B, A, market=None):
         heat = "soft"
     if lvl is None:
         lvl = {"hot": 2, "normal": 1, "soft": 0}[heat]
+        signals = dom is not None or M.get("sale_to_list") or P.get("price_cuts")
         A.add("competition", "level", COMP_LABEL[lvl],
-              f"Competition unknown: inferred '{COMP_LABEL[lvl]}' from market signals ({heat}). Ask the listing agent", "med")
+              (f"Competition unknown: inferred '{COMP_LABEL[lvl]}' from market signals ({heat})" if signals else
+               f"Competition unknown and no market data: assumed '{COMP_LABEL[lvl]}' (typical)") + ". Ask the listing agent", "med")
     C["level"], C["heat"] = lvl, heat
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
     LS["listing_fee_pct"] = LS.get("listing_fee_pct")
@@ -315,6 +317,8 @@ def build_offer(B, costs):
         why["loan_approval_days"] = "Lender standard" if t["loan_approval_days"] == 30 else "Faster approval to compete"
         t["appraisal_days"] = 21
     t["closing_days"] = BU["lender_min_close_days"] + (0 if lvl >= 1 else 10)
+    while (B["analysis_date"] + timedelta(days=t["closing_days"])).weekday() >= 5:
+        t["closing_days"] += 1  # close on a business day, never earlier than the lender's minimum
     why["closing_days"] = "Fastest your lender can reliably close" if lvl >= 1 else "Comfortable timeline"
     t["home_warranty"] = 0
     why["home_warranty"] = "Not asked of the seller; keeps the net clean"
@@ -569,6 +573,8 @@ def summary(r):
     dn = rec["ns"]["net_adj"] - r["target"]
     why = (f"The strongest offer inside your limits. A listing agent would score it **{rec['score']['total']}/100**, and it nets the seller "
            + ("about the same as a clean offer at list." if abs(dn) < 500 else f"{money(abs(dn))} {'less' if dn < 0 else 'more'} than a clean offer at list."))
+    if r.get("promoted") == "stronger":
+        why += " It includes the stronger terms (more appraisal-gap coverage and deposit): they lift the outlook and stay inside your limits."
     if rc["reserve"] < 0:
         why = f"**Not affordable as structured:** {money(-rc['reserve'])} short on cash. " + why
     if "stronger" in O:
