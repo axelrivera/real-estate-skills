@@ -123,6 +123,7 @@ def main(argv):
                if os.path.isfile(p) and "_shared" not in p and "__pycache__" not in p
                and p.endswith((".md", ".json", ".py", ".js", ".css"))]
     shipped += glob.glob(os.path.join(ROOT, ".claude-plugin", "*.json"))
+    shipped.append(os.path.join(ROOT, "dev", "package", "README.md"))  # ships in the release zip
     shipped += glob.glob(os.path.join(ROOT, "shared", "**", "*.md"), recursive=True)  # DOC-12: markets and references ship
     for p in shipped:
         in_code = False

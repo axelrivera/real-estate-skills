@@ -13,7 +13,8 @@
       "source": ".",
       "description": "Skills for real estate agents: agent and market profiles, buyer and seller CMAs, offer strategy and review, and contract timelines.",
       "category": "real-estate",
-      "homepage": "https://github.com/axelrivera/real-estate-skills",
+      "homepage": "https://www.axelrivera.dev",
+      "repository": "https://github.com/axelrivera/real-estate-skills",
       "license": "MIT"
     }
   ]

@@ -5,7 +5,9 @@
 
 plugin: dist/<name>-<version>.plugin from .claude-plugin/plugin.json, with plugin.json at the
 archive root (the desktop app's "Upload local plugin" format). The repo root is the plugin, so
-only PLUGIN_FILES go in; docs, dev tooling and shared/ stay out.
+only PLUGIN_FILES go in; docs, dev tooling and shared/ stay out. Then the release zip,
+dist/<marketplace>-<version>.zip: the .plugin plus dev/package/README.md (install instructions)
+in a <marketplace>-<version>/ folder, for sharing.
 
 skills: one dist/skills/<skill>.zip per skill for claude.ai upload, and the runtime check in
 dist/dev/runtime-check.zip (a diagnostic, not uploaded with the skills).
@@ -21,6 +23,7 @@ DIST = os.path.join(ROOT, "dist")
 SKIP_DIRS = {"__pycache__"}
 SKIP_FILES = {".DS_Store"}
 PLUGIN_FILES = (".claude-plugin/plugin.json", "skills", "LICENSE")
+RELEASE_README = os.path.join(ROOT, "dev", "package", "README.md")
 
 
 def zip_dir(src, dest, prefix=""):
@@ -43,9 +46,13 @@ def rel(path):
     return os.path.relpath(path, ROOT)
 
 
+def read_manifest(name):
+    with open(os.path.join(ROOT, ".claude-plugin", name), encoding="utf-8") as f:
+        return json.load(f)
+
+
 def package_plugin():
-    with open(os.path.join(ROOT, ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
-        plugin = json.load(f)
+    plugin = read_manifest("plugin.json")
     dest = os.path.join(DIST, f"{plugin['name']}-{plugin['version']}.plugin")
     os.makedirs(DIST, exist_ok=True)
     if os.path.exists(dest):
@@ -62,7 +69,22 @@ def package_plugin():
                     if name not in SKIP_FILES and not name.endswith(".pyc"):
                         path = os.path.join(dirpath, name)
                         z.write(path, rel(path))
-    print(f"{rel(dest)} (the release: upload this one file)")
+    print(f"{rel(dest)} (upload this one file)")
+    package_release(plugin, dest)
+
+
+def package_release(plugin, plugin_path):
+    folder = f"{read_manifest('marketplace.json')['name']}-{plugin['version']}"
+    dest = os.path.join(DIST, f"{folder}.zip")
+    if os.path.exists(dest):
+        os.remove(dest)
+    plugin_file = os.path.basename(plugin_path)
+    with open(RELEASE_README, encoding="utf-8") as f:
+        readme = f.read().replace("{{VERSION}}", plugin["version"]).replace("{{PLUGIN_FILE}}", plugin_file)
+    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(plugin_path, f"{folder}/{plugin_file}")
+        z.writestr(f"{folder}/README.md", readme)
+    print(f"{rel(dest)} (the release: the .plugin plus install instructions, for sharing)")
 
 
 def package_skills():

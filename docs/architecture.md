@@ -12,6 +12,7 @@ Three ways in, all from the same `skills/` folder:
 |---|---|---|
 | Marketplace (Cowork, desktop app) | Adding `axelrivera/real-estate-skills` | The repo; only `skills/` loads |
 | `real-estate-<version>.plugin` (desktop app upload) | `make package` | `.claude-plugin/plugin.json`, `skills/`, `LICENSE` |
+| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin` plus install instructions (`dev/package/README.md`) |
 | One zip per skill (claude.ai) | `make package-skills` | That skill's folder |
 
 ## Runtimes
