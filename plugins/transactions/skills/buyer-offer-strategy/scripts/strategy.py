@@ -825,7 +825,7 @@ def worksheet(r, variant=None):
         gap_note = (f" · appraisal gap coverage rises with the price, up to **{money(e['gap_at_cap'])}** at the cap"
                     if e.get("gap_at_cap", 0) > (t.get("appraisal_gap") or 0) else "")
         riders.append((names["escalation"], f"Increment: **{money(e['increment'])}** · cap: **{money(e['cap'])}** · "
-                       f"proof of competing offer required{gap_note}",
+                       f"redacted copy of the competing offer's price terms required{gap_note}",
                        "The cap is inside the value range, so the appraisal can support it" if e["cap"] <= B["value"]["cma_high"]
                        else "Above the value range: the buyer's cash covers the gap at the cap with the reserve intact"))
     if P.get("cdd"):
@@ -850,7 +850,8 @@ def worksheet(r, variant=None):
     if t.get("escalation") and not any(x[0] == names["escalation"] for x in riders):
         e = t["escalation"]
         clauses.append(("Escalation", f"Buyer will pay {money(e['increment'])} more than any bona fide competing offer, up to {money(e['cap'])}, "
-                                      "upon receipt of a copy of that offer."))
+                                      "upon receipt of a redacted copy of the competing offer's signature page and price terms, "
+                                      "provided with the seller's authorization."))
 
     docs = ["Seller's property disclosure", "Permits and open-permit search", f"Existing inspection{', 4-point and wind-mit' if costs.state == 'FL' else ''} reports",
             "Survey, if available"]

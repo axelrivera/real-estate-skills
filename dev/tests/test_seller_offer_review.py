@@ -230,3 +230,14 @@ class Pdf(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditPlanWording(unittest.TestCase):
+    """OFR-6, OFR-21: no backup request while the primary is open; disclosure needs the seller's authorization."""
+
+    def test_backup_only_after_primary_is_signed(self):
+        out = review.result(review.analyze(fixture("escalation.json")))
+        text = json.dumps(out)
+        self.assertIn("once that contract is fully signed", out["summary"]["next_step"] if "next_step" in out["summary"] else text)
+        self.assertNotIn("request a backup contract", text)
+        self.assertIn("written authorization", text)

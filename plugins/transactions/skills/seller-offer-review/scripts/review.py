@@ -239,8 +239,9 @@ def single_view(R, o):
     expires = f" before {o['expires']}" if o.get("expires") else ""
     nxt = {"COUNTER": f"approve the counter terms and I'll send the counter to the buyer's agent{expires}.",
            "ACCEPT": "sign the contract and I'll open escrow and calendar every deadline.",
-           "BACKUP": "approve asking this buyer to sign a backup contract.",
-           "DECLINE": "approve and I'll let the buyer's agent know the seller is moving forward with another offer."}[act]
+           "BACKUP": "once the primary contract is fully signed, approve offering this buyer a backup position on the "
+                     "Back-Up Contract rider.",
+           "DECLINE": "approve, and with your written OK I'll tell the buyer's agent the seller is moving forward with another offer."}[act]
     return {
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
         "action": act, "headline": "HOLD AS BACKUP" if act == "BACKUP" else act, "why": why,
@@ -298,7 +299,8 @@ def multi_view(R):
         elif o is top:
             t = "Accept as written"
         elif a == "BACKUP":
-            t = f"Ask for a backup contract; counter at {money(o['counter_terms']['price'])} if needed"
+            t = (f"After {top['label']}'s contract is fully signed, offer a backup position on the Back-Up Contract rider"
+                 f" (at {money(o['counter_terms']['price'])} if needed)")
         else:
             t = o["action_reason"]
         terms[o["id"]] = t
@@ -307,8 +309,9 @@ def multi_view(R):
         summary += f" ({signed(top_net - top['ns']['net_adj'])} vs. as offered"
         summary += f", {signed(top_net - top['ns_down']['net_adj'])} vs. downside)" if top_net < top["ns"]["net_adj"] else ")"
     note = ("Only one counter goes out at a time, so the seller can't end up with two accepted contracts. " if act == "COUNTER" else "")
-    note += (f"Other buyers' agents are told the seller is {'responding to' if act == 'COUNTER' else 'moving forward with'} "
-             "another offer; nothing is declined until the seller approves.")
+    note += ("With the seller's written authorization, other buyers' agents are told the seller is "
+             f"{'responding to' if act == 'COUNTER' else 'moving forward with'} another offer (NAR Standard of Practice 1-15); "
+             "nothing is declined until the seller approves.")
 
     ranked = [{"rank": i + 1, "offer": o["label"],
                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
@@ -341,7 +344,8 @@ def multi_view(R):
     opts.append({"option": "Call for Highest & Best", "net": "Unknown", "certainty": "Varies", "status": "caution", "recommended": False,
                  "what": "May lift prices, but adds ~2 days and weak terms usually stay weak"})
     verb = "send the counter to" if act == "COUNTER" else "accept"
-    nxt = f"approve the plan and I'll {verb} {top['ref']}" + (f" and request a backup contract on {backup['ref']}" if backup else "") + "."
+    nxt = f"approve the plan and I'll {verb} {top['ref']}" + (
+        f"; once that contract is fully signed, I'll offer {backup['ref']} a backup position" if backup else "") + "."
     return {
         "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act, "headline": act, "why": lead,
         "offers_active": len(R["active"]) + len(R["incomplete"]), "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1],

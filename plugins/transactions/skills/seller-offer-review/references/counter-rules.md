@@ -15,13 +15,17 @@ The engine drafts a counter from the rules below. Each rule adds a row (term, of
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company.
 
+## One Live Contract at a Time
+
+Never recommend two live counters or a backup request while the primary deal isn't fully signed: two acceptances can mean two binding contracts. Offer the backup position only after the primary contract is fully signed, on the Back-Up Contract rider. Two live counters only with a multiple counter-offer form that makes each counter subject to the seller's final acceptance. Telling other buyers' agents about the seller's plans or the competing offers needs the seller's written authorization (NAR Standard of Practice 1-15).
+
 ## Appraisal Terms
 
 Appraisal risk starts at the top of the CMA range. A price above it is countered back to it rather than asking for gap money the buyer may not have. FHA and VA offers are never asked for gap coverage: the rider lets the buyer walk if the appraisal is low, so a gap clause shows intent only. A financed offer that waives the appraisal is credited only up to the buyer's documented cash beyond the down payment and closing costs (`gap_funds`).
 
 ## Multiple Offers
 
-Only the top-ranked offer gets a counter. The backup is asked to sign a backup contract and gets its own counter only if the first deal falls through. The plan always says only one counter goes out at a time.
+Only the top-ranked offer gets a counter. The backup is offered a backup position (Back-Up Contract rider) only after the primary contract is fully signed, and gets its own counter only if the first deal falls through. The plan always says only one counter goes out at a time.
 
 ## Overrides
 
