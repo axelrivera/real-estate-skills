@@ -26,6 +26,8 @@ def main(argv=None):
     ap.add_argument("--market", help="market profile (MLS column names); Stellar is built in")
     ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
+    ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
+    ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
     a = ap.parse_args(argv)
     try:
         market = profiles.load_market(a.market, state=a.state, county=a.county, mls=a.mls)
@@ -34,7 +36,7 @@ def main(argv=None):
         subject = {"address": a.address}
         if row:
             subject.update(living_area=row.get("living_area"), private_pool=row["private_pool"], subdivision=row.get("subdivision"))
-        out = mls.market_stats(homes, subject, split_date=a.split_date)
+        out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit)
         out["subject_row"] = mls._summary(row) if row else None
         out["market_notes"] = market.notes
         if not row:

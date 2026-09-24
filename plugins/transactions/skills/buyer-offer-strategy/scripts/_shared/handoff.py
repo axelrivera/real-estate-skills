@@ -1,6 +1,6 @@
 """cma-handoff v1: the small, stable record a CMA hands to the offer skills.
 
-Producers (buyer-cma, seller-cma) write it as `<address>.cma.json` next to the PDF, and at the end
+Producers (buyer-cma, seller-cma) write it as `<address>.<side>.cma.json` next to the PDF, and at the end
 of a markdown reply as a fenced block:
 
     ```cma-handoff v1
@@ -94,7 +94,8 @@ def load(path):
     return h
 
 
-def filename(address):
-    """'517 Hickorywood Ave' -> '517-Hickorywood-Ave.cma.json'."""
+def filename(address, side=None):
+    """'517 Hickorywood Ave', 'buyer' -> '517-Hickorywood-Ave.buyer.cma.json'. The side keeps a buyer and a seller CMA
+    of the same address from overwriting each other (CMA-17)."""
     slug = re.sub(r"[^A-Za-z0-9]+", "-", address).strip("-")
-    return f"{slug or 'property'}.cma.json"
+    return f"{slug or 'property'}{'.' + side if side else ''}.cma.json"

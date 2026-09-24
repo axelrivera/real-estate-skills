@@ -81,7 +81,8 @@ class MatchesPrototype(unittest.TestCase):
         self.assertFalse(self.C["preliminary"])
 
     def test_buyer_payments(self):
-        self.assertEqual([round(x["payment"]) for x in self.C["strategies"]], [4147, 4065, 3984])  # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
+        # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
+        self.assertEqual([round(x["payment"]) for x in self.C["strategies"]], [4147, 4065, 3984])
         self.assertEqual([round(x["down"]) for x in self.C["strategies"]], [23995, 23495, 22995])
         self.assertEqual(self.C["payments"]["per_10k_display"], "$80")
         self.assertEqual(self.C["payments"]["down_per_10k_display"], "$500")
@@ -155,7 +156,9 @@ class Costs(unittest.TestCase):
             C, _ = run(R)
             self.assertEqual(row(C, "credit")["amounts"], [-c for c in credits])
             for i, total in enumerate(C["net"]["totals"]):
-                self.assertAlmostEqual(sum(r["amounts"][i] for r in C["net"]["rows"] if r["key"] != "total"), total, places=2)
+                self.assertAlmostEqual(sum(r["amounts"][i] for r in C["net"]["rows"]
+                                           if r["key"] not in ("total", "holding", "after_holding")), total, places=2)
+                self.assertEqual(C["net"]["after_holding"][i], total - C["net"]["holding"][i])
 
     def test_payoff_hoa_and_other(self):
         R = report()
@@ -179,9 +182,16 @@ class Warnings(unittest.TestCase):
 
     def test_expected_sale_above_range(self):
         R = report()
-        R["pricing"]["strategies"][0]["expected_sale"] = 485000
+        R["pricing"]["strategies"][2]["expected_sale"] = 485000  # the competing-offer option may sell above list
         C, _ = run(R)
         self.assertTrue(any("above the supported range" in w for w in C["warnings"]))
+
+    def test_expected_sale_above_list_outside_competing_option(self):
+        """CMA-20: only the competing-offer option can expect to sell above its list price."""
+        R = report()
+        R["pricing"]["strategies"][0]["expected_sale"] = 485000
+        with self.assertRaisesRegex(compute.ReportError, r"strategies\[0\]"):
+            run(R)
 
     def test_missing_field(self):
         R = report()
@@ -376,6 +386,36 @@ class Flood(unittest.TestCase):
     def test_no_citizens_rule_outside_florida(self):
         C, _ = run(texas(report()))
         self.assertNotIn("Citizens", C["payments"]["flood"]["note"])
+
+
+class HoldingCosts(unittest.TestCase):
+    """CMA-7: slower options pay more to hold the home, and options are compared after that."""
+
+    def test_net_after_holding(self):
+        R = report()
+        R["costs"]["mortgage_payoff"] = 210000
+        C, _ = run(R)
+        hold = C["net"]["holding"]
+        self.assertTrue(hold[0] > hold[1] > hold[2] > 0)  # 45–90 days, 3–6 weeks, 1–3 weeks to contract
+        self.assertEqual([x["net_after_holding"] for x in C["strategies"]],
+                         [t - h for t, h in zip(C["net"]["totals"], hold)])
+        after = C["net"]["after_holding"]
+        self.assertEqual(C["net_spread"], max(after) - min(after))
+        self.assertTrue(any("month to close" in n for n in C["net"]["notes"]))
+
+    def test_months_from_time_text(self):
+        f = compute.finance
+        self.assertEqual((f.months_in("45–90 days"), f.months_in("3–6 weeks"), f.months_in("2 months")), (2.22, 1.03, 2.0))
+        self.assertIsNone(f.months_in("soon"))
+
+    def test_handoff_file_has_the_side(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "report.json")
+            with open(path, "w") as f:
+                json.dump(report(), f)
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(compute.main([path, "--out", tmp]), 0)
+            self.assertTrue(json.loads(out.getvalue())["handoff_file"].endswith(".seller.cma.json"))
 
 if __name__ == "__main__":
     unittest.main()

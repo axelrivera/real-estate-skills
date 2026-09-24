@@ -36,7 +36,6 @@ CRITERIA = [  # key, label, weight
 ]
 # Share of list price per 100 points of missing certainty, by the seller's priority.
 RISK_PENALTY = {"price": 0.05, "balanced": 0.10, "speed": 0.12, "certainty": 0.15}
-PAYOFF_INTEREST = 0.045  # seller's mortgage interest for holding-cost estimates (national planning figure)
 IMPACT_ORDER = {"high": 0, "med": 1, "low": 2}
 ACTIVE = ("active", "backup")
 
@@ -271,18 +270,8 @@ def prepare_listing(data, A, costs):
     S["default_buyer_broker_pct"] = (S["offered_buyer_broker_pct"] if S["offered_buyer_broker_pct"] is not None
                                      else costs.get("brokerage.buyer_broker_fee_pct"))  # the agent's own terms; none built in
     if S.get("holding_monthly") is None:
-        ins_rate, utilities = costs.get("holding_costs.insurance_rate"), costs.get("holding_costs.utilities_monthly")
-        parts = [(L["hoa_monthly"] or 0), S["payoff"] * PAYOFF_INTEREST / 12]  # tax is in the proration already (OFR-13)
-        left_out = []
-        if ins_rate is None:
-            left_out.append("insurance")
-        else:
-            parts.append(lp * ins_rate / 12)
-        if utilities is None:
-            left_out.append("utilities")
-        else:
-            parts.append(utilities)
-        S["holding_monthly"] = rnd(sum(parts), 50)
+        monthly, left_out = finance.holding_monthly(lp, costs, S["payoff"], L["hoa_monthly"])
+        S["holding_monthly"] = rnd(monthly, 50)
         note = "Holding cost estimated from insurance, HOA, utilities and loan interest (tax is in the proration)"
         if left_out:
             note = f"Holding cost estimated from HOA and loan interest ({' and '.join(left_out)} unknown for this market; tax is in the proration)"

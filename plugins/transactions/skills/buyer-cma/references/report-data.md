@@ -11,9 +11,10 @@
 | Field | Notes |
 |---|---|
 | `prepared_date` | Written out ("September 22, 2026"). Default: today |
-| `as_of` | `YYYY-MM-DD` for the handoff. Default: today |
+| `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
 | `export` | Path to the MLS export CSV (used for the chart and the handoff's market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
+| `mls` | The MLS name when there's no market profile and it isn't the one built in for the county (same as `--mls`) |
 | `labels` | Optional overrides of fixed wording |
 
 The agent's name, brokerage, license and contact come from the agent profile (`--agent`), never from report.json.

@@ -99,7 +99,7 @@ def pricing_section(R, C, L):
          f'<h3>{L("h_net")}</h3>', f'<p>{p.get("net_intro") or L("net_intro")}</p>']
     rows = [[r["label"]] + r["display"] for r in net["rows"]]
     b.append(table([L("th_at_closing")] + [x["label"] for x in strats], rows, num_cols=tuple(range(1, len(strats) + 1)),
-                   row_classes={len(rows) - 1: "total"}))
+                   row_classes={i: "total" for i, r in enumerate(net["rows"]) if r["key"] in ("total", "after_holding")}))
     notes = net["notes"] + ([p["net_note"]] if p.get("net_note") else [])
     b.append(f'<p class="note">{" ".join(notes)}</p>')
     return b
@@ -213,7 +213,7 @@ def build(R, fmt, out_dir, ctx):
 
 
 def _build(R, fmt, out_dir, ctx):
-    market, homes = compute.load_inputs(R, ctx.get("market"))
+    market, homes = compute.load_inputs(R, ctx.get("market"), ctx.get("mls"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))
@@ -225,7 +225,7 @@ def _build(R, fmt, out_dir, ctx):
     first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: write the handoff and warn once
     written = []
     if first:
-        hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"]))
+        hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"], "seller"))
         with open(hpath, "w", encoding="utf-8") as f:
             json.dump(C["handoff"], f, indent=2)
         for w in C["warnings"]:

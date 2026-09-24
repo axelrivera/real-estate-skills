@@ -44,6 +44,18 @@ def footer_block(agent, R, L):
     return "<footer>" + "<br>".join(lines) + "</footer>"
 
 
+def seller_cost_note(cr, L):
+    """CMA-11: what each $10,000 of price costs the seller in the percentage costs we know, plus the listing fee."""
+    cost = (L("cr_seller_cost_known", amt=money(cr["seller_cost_per_10k"]), what=" and ".join(cr["seller_cost_parts"]))
+            if cr["seller_cost_per_10k"] else L("cr_seller_cost_fee"))
+    return L("cr_seller_cost", cost=cost)
+
+
+def homestead_label(R, L):
+    """CMA-14: "With Homestead" only when the estimate applies it (not for an investor or a second home)."""
+    return L("with_homestead") if R["costs"]["taxes"].get("homestead", True) else L("no_homestead")
+
+
 def summary_page(R, C, agent, L):
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
     sp = cma.fill(R["summary_page"], cma.page_one_values(C))
@@ -71,7 +83,7 @@ def summary_page(R, C, agent, L):
     tax = C["taxes"][pay["tax_index"]]
     bill = R["costs"]["taxes"].get("current_bill")
     rows = [[L("sum_tax_now"), money(bill) + L("per_year") if bill else L("not_available")],
-            [L("sum_tax_yours"), "≈ " + money(tax["annual"], 100) + L("per_year")],
+            [L("sum_tax_yours", homestead=homestead_label(R, L)), "≈ " + money(tax["annual"], 100) + L("per_year")],
             [L("sum_pay_row", label=sc0["label"]), money(first["total"]) + L("per_month")],
             [L("sum_cash_row", label=sc0["label"]), money(first["cash_down"])]]
     trs = "".join(f'<tr class="{"rec" if i == 1 else ""}"><td>{a}</td><td class="n">{v}</td></tr>' for i, (a, v) in enumerate(rows))
@@ -114,7 +126,7 @@ def credit_section(R, C, L):
                 names=" and ".join(x.lower() for x in cr["loan_tax_labels"]))
     out = [f'<h3>{L("h_credit")}</h3>', f'<p>{cs["intro"]}</p>',
            table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"}),
-           f'<p class="note">{L("cr_note", cc=cc)}</p>']
+           f'<p class="note">{L("cr_note", cc=cc)}{seller_cost_note(cr, L)}</p>']
     if cs.get("after_paragraph"):
         out.append(f'<p>{cs["after_paragraph"]}</p>')
     b = cr.get("buydown")
@@ -191,7 +203,7 @@ def body(R, C, homes, agent, L):
     seller_row = L("seller_bill", year=t["current_year"]) if t.get("current_year") else L("seller_bill_no_year")
     trows = [[seller_row, money(bill), money(bill / 12)] if bill else [seller_row, L("not_available"), "—"]]
     trows += [[L("your_bill", label=j["label"]), "≈ " + money(j["annual"], 100), "≈ " + money(j["annual"] / 12)] for j in C["taxes"]]
-    homestead = L("with_homestead") if t.get("homestead", True) else L("no_homestead")
+    homestead = homestead_label(R, L)
     b.append(table([L("tax_header", price=money(t["purchase_price"]), homestead=homestead), L("th_yearly"), L("th_monthly")],
                    trows, num_cols=(1, 2), row_classes={i: "tax-jump" for i in range(1, len(trows))}))
     note = t["note"]
@@ -206,7 +218,7 @@ def body(R, C, homes, agent, L):
     short = C["taxes"][pay["tax_index"]]["short"]
     prow = [[L("pay_cash")] + [money(r["cash_down"]) for r in rows_p],
             [L("pay_pi")] + [money(r["pi"]) for r in rows_p],
-            [L("pay_tax", short=short)] + [money(r["tax"]) for r in rows_p],
+            [L("pay_tax", short=short, homestead=homestead_label(R, L))] + [money(r["tax"]) for r in rows_p],
             [L("pay_ins")] + [money(r["ins"]) for r in rows_p],
             [L("pay_flood")] + [money(r["flood"]) if r["flood"] is not None else L("pay_flood_quote") for r in rows_p],
             [L("pay_mi")] + [money(r["mi"]) for r in rows_p],
@@ -254,7 +266,7 @@ def build_html(R, C, homes, agent):
 
 
 def build(R, fmt, out_dir, ctx):
-    market, homes = compute.load_inputs(R, ctx.get("market"))
+    market, homes = compute.load_inputs(R, ctx.get("market"), ctx.get("mls"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Taxes couldn't be estimated for every jurisdiction: " + "; ".join(C["warnings"]))
@@ -266,7 +278,7 @@ def build(R, fmt, out_dir, ctx):
         label = "SAMPLE DATA · " + label
     path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Buyer CMA", ext="pdf"))
     info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label), before_print=cma.paginate)
-    hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"]))
+    hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"], "buyer"))
     with open(hpath, "w", encoding="utf-8") as f:
         json.dump(C["handoff"], f, indent=2)
     if not info["summary_page"]["fits"]:

@@ -112,6 +112,60 @@ class SubjectHeading(unittest.TestCase):
         self.assertNotIn("loc", h)
         self.assertNotIn("homefacts", h)
 
+
+class AuditStatsAndCharts(unittest.TestCase):
+    """CMA-8, CMA-9, CMA-12, CMA-22."""
+
+    def setUp(self):
+        self.homes = mls.load(EXPORT, FL)
+
+    def test_distressed_and_new_construction_flags(self):
+        from datetime import date
+        self.assertEqual(mls.sale_flags({"sale_terms": "REO/Bank Owned", "remarks": ""}), ["distressed"])
+        self.assertEqual(mls.sale_flags({"remarks": "Short sale, subject to lender approval"}), ["distressed"])
+        self.assertEqual(mls.sale_flags({"year_built": 2026, "close_date": date(2026, 5, 1), "remarks": ""}), ["new_construction"])
+        self.assertEqual(mls.sale_flags({"year_built": 1972, "close_date": date(2026, 5, 1), "remarks": "Updated kitchen"}), [])
+
+    def test_distressed_sale_ranks_lower(self):
+        base = mls.market_stats(self.homes, SUBJECT)["sold_candidates"]
+        top = base[0]["address"]
+        for h in self.homes:
+            if h["address"] == top:
+                h["sale_terms"] = "Foreclosure"
+        ranked = [c["address"] for c in mls.market_stats(self.homes, SUBJECT)["sold_candidates"]]
+        self.assertNotEqual(ranked[0], top)
+        self.assertIn("distressed", next(c for c in mls.market_stats(self.homes, SUBJECT)["sold_candidates"]
+                                         if c["address"] == top)["flags"])
+
+    def test_limit_and_rest(self):
+        s = mls.market_stats(self.homes, SUBJECT, limit=5)
+        self.assertEqual(len(s["sold_candidates"]), 5)
+        n_sold = s["sold_all"]["n"]
+        self.assertEqual(s["more_candidates"], n_sold - 5)
+
+    def test_sale_to_list_is_net_of_seller_costs(self):
+        sold = [{"close_price": 500000, "original_list_price": 500000, "seller_paid": 10000, "living_area": 2000,
+                 "days_on_market": 10}]
+        self.assertEqual(mls.period_stats(sold)["median_sale_to_original_list"], 0.98)
+
+    def test_months_supply_runs_to_as_of_with_pendings(self):
+        s = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01")
+        later = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01", as_of="2026-12-31")
+        self.assertGreater(later["months_supply_at_recent_pace"], s["months_supply_at_recent_pace"])  # slower pace
+        self.assertEqual(later["window"]["as_of"], "2026-12-31")
+
+    def test_bad_split_date_is_a_plain_error(self):
+        with self.assertRaisesRegex(mls.ExportError, "--split-date"):
+            mls.market_stats(self.homes, SUBJECT, split_date="07/01/2026")
+
+    def test_million_dollar_ticks(self):
+        self.assertEqual((cma.k(455000), cma.k(1250000), cma.k(2000000)), ("$455K", "$1.25M", "$2M"))
+        cards = [{"address": f"{i} Bay Dr", "adjusted": v} for i, v in enumerate((1210000, 1390000, 1480000, 1620000, 1790000))]
+        svg = cma.dotplot(cards, 1400000, 1600000, 1550000, "Asking")
+        ticks = [t for t in svg.split('class="dp-tick">')[1:]]
+        self.assertLessEqual(len(ticks), 8)  # was 29 overlapping labels at $20k steps
+        self.assertIn("$1.5M", svg)
+
 if __name__ == "__main__":
     unittest.main()
 

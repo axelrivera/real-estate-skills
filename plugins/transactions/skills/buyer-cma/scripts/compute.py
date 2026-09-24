@@ -4,7 +4,7 @@
 
 Prints JSON: taxes, payment scenarios, price-vs-credit scenarios, buydown, scatter trend, the
 offer plan and range, formatted for the markdown template, plus `warnings` to fix and the
-`handoff_block` to end a markdown reply with. Also writes <address>.cma.json (the CMA handoff the
+`handoff_block` to end a markdown reply with. Also writes <address>.buyer.cma.json (the CMA handoff the
 offer skills read) to the outputs folder. render.py uses the same numbers for the PDF.
 """
 import argparse
@@ -134,7 +134,12 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         saved = base["cash"] - col["cash"]
         col["payback_years"] = saved / (col["extra"] * 12) if col["extra"] > 0 and saved > 0 else None
         cols.append(col)
-    out = {"program": program, "down_pct": down, "columns": cols,
+    # CMA-11: a higher price raises the seller's percentage costs, so "price minus credit" isn't quite their net
+    transfer = market.get("closing_costs.deed_transfer_tax_rate") if market.get("closing_costs.deed_transfer_tax_payer") \
+        in (None, "seller") else 0
+    seller_cost_pct = (transfer or 0) + (seller_pays or 0)
+    out = {"program": program, "down_pct": down, "columns": cols, "seller_cost_per_10k": round(10000 * seller_cost_pct),
+           "seller_cost_parts": [x for x, v in (("transfer tax", transfer), ("buyer-broker pay", seller_pays)) if v],
            "closing_costs_given": bool(cs.get("closing_costs")), "closing_cost_pct": closing_pct,
            "loan_tax_labels": [t["label"] for t in finance.loan_taxes(1, market)] if itemize else []}
     bd = cs.get("buydown")
@@ -161,6 +166,15 @@ def compute(R, market, homes):
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
              "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
+    ladder = [("opening", op["opening"]), ("target_low", op.get("target_low")), ("target_high", op.get("target_high")),
+              ("walk_away", op["walk_away"])]
+    ladder = [(k, v) for k, v in ladder if v is not None]
+    for (k1, v1), (k2, v2) in zip(ladder, ladder[1:]):  # CMA-20
+        if v1 > v2:
+            raise ReportError(f"offer_plan.{k1} ({money(v1)}) is above offer_plan.{k2} ({money(v2)}): the plan runs "
+                              "opening, then target, then walk-away, from low to high.")
+    if bl["low"] > bl["high"]:
+        raise ReportError("bottom_line.low is above bottom_line.high.")
     warnings = comp_count_warnings(R["comps"]["cards"])
     try:
         warnings += cma.derive_comps(R["comps"])  # adjusted values and summary rows computed from their parts
@@ -171,6 +185,9 @@ def compute(R, market, homes):
             raise ReportError(f"competition.rows[{i}] should be [address, status, price, sqft, pool, days, notes], "
                               "with price and sqft as plain numbers (474500, not \"$474,500\").")
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
+    scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), s["list_price"])  # CMA-10
+    if scope:
+        warnings.append(scope)
     tax_rows = taxes(R, market)
     for j in tax_rows:
         if j["annual"] is None:
@@ -197,7 +214,7 @@ def compute(R, market, homes):
     if homes:
         st = mls.market_stats(homes, {"address": s.get("mls_address", s["address"]), "living_area": s["sqft"],
                                       "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision")},
-                              split_date=R.get("split_date"))
+                              split_date=R.get("split_date"), as_of=R.get("as_of"))
         recent = st["sold_recent"]
         stats = {k: v for k, v in {
             "split_date": st["window"]["split_date"],
@@ -248,10 +265,11 @@ def compute(R, market, homes):
     }
 
 
-def load_inputs(R, market_path=None):
-    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV)."""
+def load_inputs(R, market_path=None, mls_name=None):
+    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV). The MLS is `--mls`,
+    else the report's `mls`, else the market profile's, else the one built-in MLS covering the county (CMA-15)."""
     s = R.get("subject") or {}
-    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"))
+    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
     homes = mls.load(R["export"], market) if R.get("export") else []
     return market, homes
 
@@ -261,13 +279,14 @@ def main(argv=None):
     ap.add_argument("report")
     ap.add_argument("--market", help="market profile (taxes, exemptions, MLS format); built in for Florida")
     ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
+    ap.add_argument("--mls", help="MLS name when there's no market profile, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
         R = json.load(f)
     try:
-        market, homes = load_inputs(R, a.market)
+        market, homes = load_inputs(R, a.market, a.mls)
         result = compute(R, market, homes)
-        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"]))
+        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "buyer"))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result["handoff"], f, indent=2)
         result["handoff_file"] = path

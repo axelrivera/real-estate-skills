@@ -6,7 +6,7 @@ Prints JSON: the net sheet for each pricing strategy (brokerage, transfer tax, t
 fees, estoppel, seller credit, optional payoff), a buyer's payment at each list price, the effect of
 $10,000 in price, the scatter trend, all formatted for the markdown template, plus `warnings` to fix,
 `assumptions` to confirm with the agent, `preliminary` (true when the market is missing a cost) and
-the `handoff_block` to end a markdown reply with. Also writes <address>.cma.json (the handoff the
+the `handoff_block` to end a markdown reply with. Also writes <address>.seller.cma.json (the handoff the
 seller-offer-review skill reads). render.py uses the same numbers for the PDF and the deck.
 """
 import argparse
@@ -23,6 +23,7 @@ from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
 NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_surtax", "owner_title", "title_fees", "estoppel",
                   "credit", "other", "tax_proration")
 
+CONTRACT_TO_CLOSE_MONTHS = 1  # a typical financed contract-to-close period, added to each option's time to contract
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money = finance.money
 
@@ -117,10 +118,22 @@ def net_sheet(R, market, L):
         rows.append({"key": "payoff", "label": L("net_payoff"), "amounts": [-payoff for _ in cols]})
     totals = [c["net"] if payoff else c["net_before_payoff"] for c in cols]
     rows.append({"key": "total", "label": L("net_total_cash" if payoff else "net_total"), "amounts": totals})
+    # CMA-7: a slower option costs more to hold (loan interest, HOA, insurance, utilities; tax is in the proration)
+    monthly, left_out = finance.holding_monthly(strategies[0]["list_price"], market, payoff, costs.get("hoa_monthly"))
+    months = [x.get("months_to_contract") if x.get("months_to_contract") is not None else finance.months_in(x.get("time"))
+              for x in strategies]
+    holding = None
+    if monthly and all(m is not None for m in months):
+        holding = [round(monthly * (m + CONTRACT_TO_CLOSE_MONTHS)) for m in months]
+        rows.append({"key": "holding", "label": L("net_holding"), "amounts": [-h for h in holding]})
+        rows.append({"key": "after_holding", "label": L("net_after_holding"), "amounts": [t - h for t, h in zip(totals, holding)]})
     for r in rows:
         r["display"] = [money(a) for a in r["amounts"]]
 
     notes = []
+    if holding:
+        notes.append(L("net_holding_note", monthly=money(monthly, 10), close=f"{CONTRACT_TO_CLOSE_MONTHS:g}")
+                     + (" " + L("net_holding_left_out", items=" and ".join(left_out)) if left_out else ""))
     standard_terms = bool(assumed_keys & {"listing_fee", "buyer_broker_fee"})
     if standard_terms:
         total_pct = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
@@ -138,7 +151,8 @@ def net_sheet(R, market, L):
     if first["missing"]:
         notes.append(L("net_missing", items=", ".join(shown)))
     return {"columns": [{"net_before_payoff": c["net_before_payoff"], "net": c["net"], "total_costs": c["total_costs"]} for c in cols],
-            "totals": totals, "rows": rows, "notes": notes, "missing": shown, "assumed": first["assumed"],
+            "totals": totals, "rows": rows, "holding": holding,
+            "after_holding": [t - h for t, h in zip(totals, holding)] if holding else None, "notes": notes, "missing": shown, "assumed": first["assumed"],
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
             "payoff": payoff, "cash_at_closing": bool(payoff), "standard_terms": standard_terms, "has_tax": has_tax,
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
@@ -215,6 +229,9 @@ def compute(R, market, homes):
     except ValueError as e:
         raise ReportError(str(e)) from e
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
+    scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
+    if scope:
+        warnings.append(scope)
     n = len(R["comps"]["cards"])
     if n < 3:
         warnings.append(f"Only {n} comp{'s' if n > 1 else ''}: the range rests on thin support. Widen the search if you can, "
@@ -225,6 +242,12 @@ def compute(R, market, homes):
                         f"{money(rec['low'])} – {money(rec['high'])}: move it inside, or widen the range and say why.")
     if strategies[ri]["list_price"] != rec["list_price"]:
         warnings.append("The recommended strategy's list price doesn't match recommendation.list_price.")
+    for i, x in enumerate(strategies[:-1] if len(strategies) == 3 else strategies):  # CMA-20
+        if x["expected_sale"] > x["list_price"]:  # only the competing-offer option (the last of three) may sell above list
+            raise ReportError(f"pricing.strategies[{i}] expects to sell at {money(x['expected_sale'])}, above its "
+                              f"{money(x['list_price'])} list price. Only the competing-offer option (the third) can.")
+    if rec["low"] > rec["high"]:
+        raise ReportError("recommendation.low is above recommendation.high.")
     for x in strategies:
         if x["expected_sale"] > rec["high"]:
             warnings.append(f"The expected sale {money(x['expected_sale'])} is above the supported range: "
@@ -268,7 +291,8 @@ def compute(R, market, homes):
     stats = {}
     if others:
         st = mls.market_stats(homes, {"address": address, "living_area": s["sqft"], "private_pool": bool(s.get("pool")),
-                                      "subdivision": s.get("subdivision")}, split_date=R.get("split_date"), exclude_address=address)
+                                      "subdivision": s.get("subdivision")}, split_date=R.get("split_date"),
+                              exclude_address=address, as_of=R.get("as_of"))
         recent = st["sold_recent"]
         stats = {k: v for k, v in {
             "split_date": st["window"]["split_date"],
@@ -306,12 +330,14 @@ def compute(R, market, homes):
                "expected_sale": x["expected_sale"], "expected_sale_display": money(x["expected_sale"]),
                "time": x.get("time", ""), "seller_credit": x.get("seller_credit", 0) or 0,
                "seller_credit_display": money(x.get("seller_credit", 0) or 0), "note": x.get("note", ""),
-               "net": net["totals"][i], "net_display": money(net["totals"][i]), "recommended": i == ri}
+               "net": net["totals"][i], "net_display": money(net["totals"][i]), "recommended": i == ri,
+               "net_after_holding": (net["after_holding"] or net["totals"])[i],
+               "net_after_holding_display": money((net["after_holding"] or net["totals"])[i])}
         if pay:
             row.update(payment=pay["rows"][i]["payment"], payment_display=pay["rows"][i]["payment_display"],
                        down=pay["rows"][i]["down"], down_display=pay["rows"][i]["down_display"])
         strat_out.append(row)
-    nets = [x["net"] for x in strat_out]
+    nets = net["after_holding"] or [x["net"] for x in strat_out]  # CMA-7: compare options after holding costs
     data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
     return {
         "data_source": data_source,
@@ -342,10 +368,11 @@ def compute(R, market, homes):
     }
 
 
-def load_inputs(R, market_path=None):
-    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV)."""
+def load_inputs(R, market_path=None, mls_name=None):
+    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV). The MLS is `--mls`,
+    else the report's `mls`, else the market profile's, else the one built-in MLS covering the county (CMA-15)."""
     s = R.get("subject") or {}
-    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"))
+    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
     homes = mls.load(R["export"], market) if R.get("export") else []
     return market, homes
 
@@ -355,13 +382,14 @@ def main(argv=None):
     ap.add_argument("report")
     ap.add_argument("--market", help="market profile (closing costs, commission, taxes, MLS format); built in for Florida")
     ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
+    ap.add_argument("--mls", help="MLS name when there's no market profile, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
         R = json.load(f)
     try:
-        market, homes = load_inputs(R, a.market)
+        market, homes = load_inputs(R, a.market, a.mls)
         result = compute(R, market, homes)
-        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"]))
+        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "seller"))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result["handoff"], f, indent=2)
         result["handoff_file"] = path

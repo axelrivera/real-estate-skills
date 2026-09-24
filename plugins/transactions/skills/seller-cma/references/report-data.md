@@ -11,9 +11,10 @@
 | Field | Notes |
 |---|---|
 | `prepared_date` | Written out ("September 22, 2026"). Default: today |
-| `as_of` | `YYYY-MM-DD` for the handoff. Default: today |
+| `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
 | `export` | Path to the MLS export CSV (chart, trend line, deck method step, handoff market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
+| `mls` | The MLS name when there's no market profile and it isn't the one built in for the county (same as `--mls`) |
 | `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, relative to where you run the scripts). See `deck-content.md`; `competition` takes 1–3 cards, `scatter_takeaway` only when there is an export |
 | `preliminary` | Optional `true` to mark the report Preliminary yourself (compute.py also sets it when a local cost is missing) |
 | `labels` | Optional overrides of fixed wording |
@@ -68,7 +69,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 | Field | Notes |
 |---|---|
 | `intro` | Frames the options as estimates; says whether the nets are close |
-| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money) |
+| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer. `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
 | `recommended_index` | The recommended row (usually 1); its `list_price` must equal `recommendation.list_price` |
 | `note` | The assumption behind any difference between options (shown after "*Before paying off any mortgage.") |
 | `net_intro` | Optional sentence above the net sheet |
@@ -76,7 +77,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## costs
 
-All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; needed unless the market profile has the agent's standard terms), `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `other` (`[{label, amount}]`).
+All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; needed unless the market profile has the agent's standard terms), `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
 
 ## buyer_payment
 

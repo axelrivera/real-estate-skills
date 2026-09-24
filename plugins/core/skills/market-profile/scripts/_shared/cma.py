@@ -69,9 +69,45 @@ def subject_heading(subject):
     return f'<div class="subj-head"><h1>{esc(subject["address"])}</h1>{row("loc", loc)}</div>{row("homefacts", facts)}'
 
 
+def adjustment_scope_warning(market, county, price):
+    """CMA-10: the built-in adjustment rates are flat dollars from one area and price band. Outside them, say so."""
+    scope = market.get("cma.calibrated_for") if market is not None else None
+    if not scope or market.source("cma.adjustments") not in ("state", "mls", "mixed"):
+        return None  # the agent's own rates, or none built in
+    counties = {str(c).lower() for c in scope.get("counties") or []}
+    lo, hi = (scope.get("price_range") or [None, None])[:2]
+    outside = []
+    if county and counties and str(county).lower().removesuffix(" county") not in counties:
+        outside.append(f"{county} County")
+    if price and lo and hi and not lo <= price <= hi:
+        outside.append(f"a {money(price)} home")
+    if not outside:
+        return None
+    return (f"The built-in adjustment rates were set from {', '.join(scope.get('counties') or [])} sales between "
+            f"{money(lo)} and {money(hi)}; they don't fit {' and '.join(outside)}. Derive the rates from paired sales in the "
+            "export (or use the agent's), scale flat amounts like the pool to the price, and say so in method_note.")
+
+
 def k(v):
-    """$455K."""
+    """$455K, or $1.25M from a million up (CMA-12)."""
+    if abs(v) >= 1_000_000:
+        return "$" + f"{v / 1_000_000:.2f}".rstrip("0").rstrip(".") + "M"
     return money(v / 1000) + "K"
+
+
+def nice_step(span, target=6):
+    """A tick step of 1, 2, 2.5 or 5 x 10^n giving about `target` ticks across `span` (CMA-12)."""
+    raw = max(span, 1) / target
+    mag = 10 ** math.floor(math.log10(raw))
+    return next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
+
+
+def _ticks(lo, hi, step):
+    v, out = lo, []
+    while v <= hi + step / 1000:
+        out.append(round(v))
+        v += step
+    return out
 
 
 def fill(value, values):
@@ -119,7 +155,8 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
     xs = [h["living_area"] for h in sold + act] + [subject_sqft]
     ys = [h["close_price"] for h in sold] + [h["current_price"] for h in act] + [subject_price, band[0], band[1]]
     X0, X1 = math.floor((min(xs) - 50) / 100) * 100, math.ceil((max(xs) + 50) / 100) * 100
-    Y0, Y1 = math.floor((min(ys) - 15000) / 50000) * 50000, math.ceil((max(ys) + 15000) / 50000) * 50000
+    ystep = nice_step(max(ys) - min(ys) + 30000, 8)
+    Y0, Y1 = math.floor((min(ys) - 15000) / ystep) * ystep, math.ceil((max(ys) + 15000) / ystep) * ystep
     W, H, Lm, R, T, B = 760, 470, 72, 20, 20, 58
 
     def x(v):
@@ -141,11 +178,11 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
     o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">',
          f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>',
          f'<text x="{Lm + 8}" y="{y(band[1]) - 6:.1f}" class="lbl-band">{esc(L("band"))} {k(band[0])}–{k(band[1])}</text>']
-    for v in range(int(Y0), int(Y1) + 1, 50000):
+    for v in _ticks(Y0, Y1, ystep):
         o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
-                 f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">${v // 1000}K</text>')
-    step = 200 if X1 - X0 <= 1800 else 400
-    for v in range(int(math.ceil(X0 / step) * step), int(X1) + 1, step):
+                 f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{k(v)}</text>')
+    step = nice_step(X1 - X0, 8)
+    for v in _ticks(math.ceil(X0 / step) * step, X1, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T}" y2="{H - B}" class="grid"/>'
                  f'<text x="{x(v):.1f}" y="{H - B + 18}" text-anchor="middle" class="tick">{v:,}</text>')
     o.append(f'<text x="{(Lm + W - R) / 2}" y="{H - 12}" text-anchor="middle" class="axis">{esc(L("axis_x"))}</text>')
@@ -216,7 +253,8 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
     """Adjusted comps against the supported range, with the asking (or list) price marked."""
     cs = sorted(cards, key=lambda c: -c["adjusted"])
     vals = [c["adjusted"] for c in cs] + [low, high, marker_price] + ([second[0]] if second else [])
-    lo, hi = math.floor((min(vals) - 8000) / 20000) * 20000, math.ceil((max(vals) + 8000) / 20000) * 20000
+    step = nice_step(max(vals) - min(vals) + 16000, 6)
+    lo, hi = math.floor((min(vals) - 8000) / step) * step, math.ceil((max(vals) + 8000) / step) * step
     W, Lm, R, T = 730, 190, 20, 26
     row = 21 if len(cs) <= 5 else 18  # six comps: tighter rows, same label size
     H = T + row * len(cs) + 26
@@ -226,11 +264,9 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
 
     o = [f'<svg viewBox="0 0 {W} {H}" role="img">',
          f'<rect x="{x(low):.1f}" y="{T - 8}" width="{x(high) - x(low):.1f}" height="{row * len(cs) + 8}" class="dp-band"/>']
-    v = lo
-    while v <= hi:
+    for v in _ticks(lo, hi, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T - 8}" y2="{T + row * len(cs)}" class="dp-grid"/>'
-                 f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">${v // 1000}K</text>')
-        v += 20000
+                 f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">{k(v)}</text>')
     xm = x(marker_price)
     o.append(f'<line x1="{xm:.1f}" x2="{xm:.1f}" y1="{T - 14}" y2="{T + row * len(cs) + 2}" class="dp-mark"/>'
              f'<text x="{xm:.1f}" y="{T - 16}" text-anchor="middle" class="dp-mark-lbl">{esc(marker_label)}</text>')

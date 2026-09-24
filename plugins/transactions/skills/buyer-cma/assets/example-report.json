@@ -508,7 +508,7 @@
    ]
   },
   "credit_scenarios": {
-   "intro": "The seller cares about what they net; you may care more about the cash you need at closing. These three offers leave the seller with about the same amount but split it differently between price and a credit toward your closing costs.",
+   "intro": "The seller cares about what they net; you may care more about the cash you need at closing. These three offers have about the same price minus credit but split it differently between price and a credit toward your closing costs.",
    "loan_type": "conventional",
    "down_pct": 0.05,
    "closing_cost_pct": 0.03,

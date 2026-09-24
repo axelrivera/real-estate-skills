@@ -208,7 +208,7 @@ A skill whose output feeds another has a small, **versioned handoff schema**, se
 `cma-handoff v1` carries: as-of date, subject facts, value range, recommended price, adjusted comps (compact), market conditions, and the market profile used.
 
 Both modes carry the handoff:
-- **File mode:** `<address>.cma.json` saved next to the PDF.
+- **File mode:** `<address>.buyer.cma.json` or `<address>.seller.cma.json` saved next to the PDF (the side keeps two CMAs of one address apart).
 - **Markdown mode:** a fenced `cma-handoff v1` block at the end of the reply, so it survives copy-paste, project files and new chats.
 
 Consumers accept input in this order:

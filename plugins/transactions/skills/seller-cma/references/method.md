@@ -28,11 +28,15 @@ For a condo, choose and adjust comps by `condo.md` instead of the rules below.
 
 From `stats.py`'s `sold_candidates`, choose 3–6 sales: same subdivision first, then a comparable neighborhood within about a mile; within about 20% of the size, same pool status, similar age and construction, closed within about 6 months. Include the sales that argue for a lower price; the seller's next agent will show them anyway.
 
+Each candidate carries `flags`: `distressed` (REO, short sale, auction) and `new_construction`. Leave those out unless the market is mostly distressed or new construction (or the subject is), then adjust for it and explain why in `method_note`. The ranking already favors recent, close sales; `more_candidates` counts the ones not listed (re-run stats.py with `--limit 30` to see them). Pass `--as-of` with the date the export was pulled so months of supply runs to that day.
+
 Judge each comp's condition from its remarks and compare it with the seller's described updates (never with an old listing of the subject). Say that condition adjustments are judgment calls based on listing text.
 
 ## Adjustments
 
 Default rates come from the market profile (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the seller can't yet document (reverse it once they do), –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, use the agent's values or ask for local norms. Explain any departure in `method_note`.
+
+The built-in rates are flat dollars from Central Florida sales in one price band (`cma.calibrated_for`). compute.py warns when the home is outside that area or band: then derive the rates from paired sales in the export, or use the agent's, and scale flat amounts (a pool, a renovation) to the price. There are no built-in rates for garage spaces, bedroom or bath count, age, view, or size differences over about 300 sq ft: derive those from paired sales and say so, or leave the difference to the range and explain it.
 
 - Subtract seller-paid buyer costs from the sale price, dollar for dollar.
 - List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
@@ -50,7 +54,7 @@ Default rates come from the market profile (`cma.adjustments`; built in for Flor
 2. **Recommended:** the middle of the range, with room for the negotiating the data shows.
 3. **Competing-offer price:** just below the middle; fast, possibly with a smaller seller credit, and only if competing offers actually show up. Say so.
 
-Base each option's expected sale on the adjusted comps first (they already reflect what similar homes sold for, net of credits), then check it against stats.py's recent sale-to-original-list ratio: that ratio includes overpriced listings, so applied to a well-priced home it runs low. The recommended option usually expects about 97–99% of its list price in a balanced market; the top-of-range option less. Time to contract and the assumed seller credit come from recent days on market and the share and size of seller-paid costs. Label them estimates. If one option comes out ahead only because of an assumption (a smaller credit), say that in `pricing.note`; the table shouldn't suggest precision it doesn't have.
+Base each option's expected sale on the adjusted comps first (they already reflect what similar homes sold for, net of credits), then check it against stats.py's recent sale-to-original-list ratio: that ratio includes overpriced listings, so applied to a well-priced home it runs low. The recommended option usually expects about 97–99% of its list price in a balanced market; the top-of-range option less. Time to contract and the assumed seller credit come from recent days on market and the share and size of seller-paid costs. Write `time` as a range with its unit ("3–6 weeks"), or give `months_to_contract`: compute.py turns it into holding costs (loan interest, HOA, insurance, utilities) and shows the net after holding, so a slower, higher price is compared fairly. Label them estimates. If one option comes out ahead only because of an assumption (a smaller credit), say that in `pricing.note`; the table shouldn't suggest precision it doesn't have.
 
 ## The scatterplot
 

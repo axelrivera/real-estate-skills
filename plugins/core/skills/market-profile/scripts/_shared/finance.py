@@ -89,6 +89,38 @@ def transfer_tax_warning(market):
     return None
 
 
+PAYOFF_INTEREST = 0.045  # seller's mortgage interest for holding-cost estimates (national planning figure)
+
+
+def holding_monthly(price, market, payoff=0, hoa_monthly=0):
+    """A seller's monthly cost of owning the home while it's for sale: loan interest, HOA, insurance and utilities
+    from the market's `holding_costs`. Property tax is left out: it's in the tax proration already (OFR-13).
+    Returns (monthly, [names of parts the market doesn't have])."""
+    ins_rate = market.get("holding_costs.insurance_rate") if market is not None else None
+    utilities = market.get("holding_costs.utilities_monthly") if market is not None else None
+    parts, left_out = [hoa_monthly or 0, (payoff or 0) * PAYOFF_INTEREST / 12], []
+    if ins_rate is None:
+        left_out.append("insurance")
+    else:
+        parts.append(price * ins_rate / 12)
+    if utilities is None:
+        left_out.append("utilities")
+    else:
+        parts.append(utilities)
+    return sum(parts), left_out
+
+
+def months_in(text):
+    """'45–90 days' -> 2.2, '3–6 weeks' -> 1.0, '2 months' -> 2.0: the midpoint of a time range, in months (None if
+    there's no number)."""
+    nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", str(text or ""))]
+    if not nums:
+        return None
+    t = str(text).lower()
+    per = 1 / 30.44 if "day" in t else 7 / 30.44 if "week" in t else 1.0
+    return round(sum(nums[:2]) / len(nums[:2]) * per, 2)
+
+
 def loan_taxes(loan, market):
     """Taxes on a buyer's loan from the market layer (`buyer_costs.loan_taxes`: [{label, rate}] on the loan amount;
     Florida: note stamps 0.35% and intangible tax 0.2%). [] for a cash purchase or a market without them."""

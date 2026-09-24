@@ -10,6 +10,7 @@ MLS calls its columns. Statuses are normalized to SOLD, ACTIVE, PENDING, EXPIRED
 Numbers only: choosing comps and judging condition is Claude's job.
 """
 import csv
+import re
 import statistics
 from datetime import date, datetime, timedelta
 
@@ -91,7 +92,8 @@ def period_stats(sold):
     if not sold:
         return {"n": 0}
     paid = [h["seller_paid"] or 0 for h in sold]
-    ratios = [h["close_price"] / h["original_list_price"] for h in sold if h.get("original_list_price")]
+    # CMA-22: net of seller-paid buyer costs, so a $10k credit on a list-price sale reads as 98%, not 100%
+    ratios = [(h["close_price"] - (h["seller_paid"] or 0)) / h["original_list_price"] for h in sold if h.get("original_list_price")]
     ppsf = [h["close_price"] / h["living_area"] for h in sold if h.get("living_area")]
     return {
         "n": len(sold),
@@ -108,11 +110,38 @@ def _subdivision_key(name):
     return str(name or "").upper().split(" UNIT")[0].split(" SEC")[0].strip()
 
 
-def market_stats(homes, subject, split_date=None, exclude_address=None):
+DISTRESSED = re.compile(r"\b(reo|bank[- ]owned|foreclos\w*|short sale|auction|hud home|lender[- ]owned|third party approval)\b", re.I)
+NEW_BUILD = re.compile(r"\b(new construction|builder|to be built|under construction|never lived in|spec home)\b", re.I)
+
+
+def sale_flags(h):
+    """CMA-8: 'distressed' (REO, short sale, auction) and 'new_construction' sales, from the terms and remarks."""
+    text = f'{h.get("sale_terms") or ""} {h.get("remarks") or ""}'
+    flags = []
+    if DISTRESSED.search(text):
+        flags.append("distressed")
+    built, closed = h.get("year_built"), h.get("close_date")
+    if NEW_BUILD.search(text) or (built and closed and built >= closed.year - 1):
+        flags.append("new_construction")
+    return flags
+
+
+def _as_date(value, name):
+    if value in (None, "") or isinstance(value, date):
+        return value or None
+    try:
+        return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+    except ValueError:
+        raise ExportError(f"{name} should be a date like 2026-07-01, not {value!r}.") from None
+
+
+def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=None, limit=15):
     """Sold stats (all, earlier, recent), inventory, months of supply, subdivision stats, comp candidates, competition.
 
-    `subject`: {address, living_area, private_pool, subdivision}. `exclude_address` drops every row for
-    that address first (the seller CMA ignores the subject's own listings).
+    `subject`: {address, living_area, private_pool, subdivision, distressed}. `exclude_address` drops every row for
+    that address first (the seller CMA ignores the subject's own listings). `as_of` (default: the last sale) is where
+    the recent period and months of supply are measured to. `limit` caps the ranked comp candidates; the count of the
+    rest is `more_candidates`.
     """
     if exclude_address:
         homes = [h for h in homes if not same_address(h["address"], exclude_address)]
@@ -120,10 +149,12 @@ def market_stats(homes, subject, split_date=None, exclude_address=None):
     if not sold:
         raise ExportError("The export has no sold homes with a close price and date.")
     last, first = max(h["close_date"] for h in sold), min(h["close_date"] for h in sold)
-    split = datetime.strptime(split_date, "%Y-%m-%d").date() if split_date else last - timedelta(days=90)
+    end = max(_as_date(as_of, "as_of") or last, last)
+    split = _as_date(split_date, "--split-date") or last - timedelta(days=90)
     early = [h for h in sold if h["close_date"] < split]
     recent = [h for h in sold if h["close_date"] >= split]
-    months_recent = max((last - split).days / 30.44, 0.5)
+    months_recent = max((end - split).days / 30.44, 0.5)
+    pendings = [h for h in homes if h["status"] == "PENDING"]
     actives = [h for h in homes if h["status"] == "ACTIVE" and not same_address(h["address"], subject.get("address", ""))]
     cuts = [h for h in actives if h.get("current_price") and h.get("original_list_price")]
     counts = {}
@@ -131,11 +162,13 @@ def market_stats(homes, subject, split_date=None, exclude_address=None):
         counts[h["status"]] = counts.get(h["status"], 0) + 1
 
     out = {
-        "window": {"first_close": str(first), "last_close": str(last), "split_date": str(split)},
+        "window": {"first_close": str(first), "last_close": str(last), "split_date": str(split), "as_of": str(end)},
         "sold_all": period_stats(sold), "sold_early": period_stats(early), "sold_recent": period_stats(recent),
         "active_count": len(actives),
         "active_share_with_price_cut": round(sum(h["current_price"] < h["original_list_price"] for h in cuts) / len(cuts), 3) if cuts else 0,
-        "months_supply_at_recent_pace": round(len(actives) / (len(recent) / months_recent), 1) if recent else None,
+        # CMA-22: pendings count as sales in progress, and the pace runs to the as-of date, not the last close
+        "months_supply_at_recent_pace": round(len(actives) / ((len(recent) + len(pendings)) / months_recent), 1)
+        if recent or pendings else None,
         "status_counts": counts,
     }
 
@@ -150,10 +183,17 @@ def market_stats(homes, subject, split_date=None, exclude_address=None):
             size_diff = (h["living_area"] / sqft - 1) if h.get("living_area") else 1.0
             same_sub = bool(sub_key) and sub_key in str(h.get("subdivision", "")).upper()
             pool_match = h["private_pool"] == bool(subject.get("private_pool"))
-            score = same_sub * 3 + pool_match * 2 + (abs(size_diff) <= 0.2) * 2 - abs(size_diff) * 5
+            months = (end - h["close_date"]).days / 30.44
+            flags = sale_flags(h)
+            score = (same_sub * 3 + pool_match * 2 + (abs(size_diff) <= 0.2) * 2 - abs(size_diff) * 5
+                     - 0.25 * months  # CMA-9: newer sales first
+                     - (min(h["distance"], 5) * 0.8 if h.get("distance") is not None else 0)  # and closer ones
+                     - 3 * ("distressed" in flags and not subject.get("distressed"))  # CMA-8
+                     - 2 * ("new_construction" in flags))
             scored.append((score, round(size_diff, 3), h))
         scored.sort(key=lambda x: -x[0])
-        out["sold_candidates"] = [_summary(h, size_diff=d) for _, d, h in scored[:15]]
+        out["sold_candidates"] = [_summary(h, size_diff=d) for _, d, h in scored[:limit]]
+        out["more_candidates"] = max(0, len(scored) - limit)
     others = [h for h in homes if h["status"] != "SOLD" and not same_address(h["address"], subject.get("address", ""))]
     others.sort(key=lambda h: h.get("distance") if h.get("distance") is not None else 99)
     out["competition"] = [_summary(h) for h in others]
@@ -166,6 +206,7 @@ def _summary(h, size_diff=None):
             "lot_acres", "days_on_market", "sale_terms")
     s = {k: (str(h[k]) if isinstance(h.get(k), date) else h.get(k)) for k in keys if k in h}
     s["remarks"] = str(h.get("remarks", ""))[:700]
+    s["flags"] = sale_flags(h)
     if size_diff is not None:
         s["size_diff_pct"] = size_diff
     return s

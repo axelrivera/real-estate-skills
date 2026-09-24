@@ -38,14 +38,16 @@ class MatchesPrototype(unittest.TestCase):
 
     def test_payments(self):
         rows = self.C["payments"]["rows"]
-        self.assertEqual([round(r["total"]) for r in rows], [4106, 4228, 3446])  # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
+        # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
+        self.assertEqual([round(r["total"]) for r in rows], [4106, 4228, 3446])
         self.assertEqual([round(r["cash_down"]) for r in rows], [23745, 16622, 94980])
         self.assertEqual(round(self.C["payments"]["per_10k"] / 5) * 5, 80)
 
     def test_credit_scenarios(self):
         cols = self.C["credit"]["columns"]
         self.assertEqual([round(c["cash"], -2) for c in cols], [36400, 31800, 27200])
-        self.assertEqual([round(c["payment"]) for c in cols], [3944, 3985, 4025])  # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
+        # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
+        self.assertEqual([round(c["payment"]) for c in cols], [3944, 3985, 4025])
         self.assertEqual([round(c["payback_years"]) if c["payback_years"] else None for c in cols], [None, 9, 9])
         self.assertFalse(any(c["over_cap"] or c["over_costs"] for c in cols))
         self.assertFalse(self.C["credit"]["buydown"]["covered"])
@@ -213,6 +215,65 @@ class LoanTaxes(unittest.TestCase):
         market, homes = compute.load_inputs(R)
         C = compute.compute(R, market, homes)
         self.assertEqual(C["credit"]["columns"][0]["loan_taxes"], 0)
+
+
+class AuditMethod(unittest.TestCase):
+    """CMA-10, CMA-11, CMA-14, CMA-15, CMA-17, CMA-20."""
+
+    def run_(self, R, **kw):
+        market, homes = compute.load_inputs(R, **kw)
+        return compute.compute(R, market, homes)
+
+    def test_adjustment_rates_outside_their_area_warn(self):
+        C = self.run_(report())
+        self.assertFalse(any("adjustment rates" in w for w in C["warnings"]))  # Seminole, $474,900: inside
+        R = report()
+        R["subject"]["county"] = "Hillsborough"  # Stellar, but not where the rates were set
+        C = self.run_(R)
+        self.assertTrue(any("don't fit Hillsborough County" in w for w in C["warnings"]))
+
+    def test_price_minus_credit_is_not_called_the_same_net(self):
+        R = report()
+        R["costs"]["credit_scenarios"]["seller_pays_buyer_broker_pct"] = 0.025
+        C = self.run_(R)
+        self.assertEqual(C["credit"]["seller_cost_per_10k"], 320)  # 0.7% doc stamps + 2.5% buyer-broker pay
+        html, _ = buyer_render.build_html(R, C, [], {})
+        self.assertNotIn("Same Seller Net", html)
+        self.assertIn("about $320 in transfer tax and buyer-broker pay, plus their listing fee", html)
+
+    def test_no_homestead_label(self):
+        R = report()
+        R["costs"]["taxes"]["homestead"] = False
+        C = self.run_(R)
+        html, _ = buyer_render.build_html(R, C, [], {})
+        self.assertNotIn("With Homestead", html)
+        self.assertIn("Your Estimated Tax Bill, No Homestead", html)
+
+    def test_mls_option(self):
+        R = report()
+        R["subject"]["county"] = "Brevard"  # not Stellar: no MLS assumed, so the export can't be read
+        with self.assertRaises(compute.mls.ExportError):
+            compute.load_inputs(R)
+        market, homes = compute.load_inputs(R, mls_name="Stellar")
+        self.assertEqual(market.mls, "Stellar")
+        self.assertTrue(homes)
+
+    def test_handoff_file_has_the_side(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "report.json")
+            with open(path, "w") as f:
+                json.dump(report(), f)
+            import contextlib
+            import io
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(compute.main([path, "--out", tmp]), 0)
+            self.assertTrue(json.loads(out.getvalue())["handoff_file"].endswith(".buyer.cma.json"))
+
+    def test_offer_ladder_order(self):
+        R = report()
+        R["offer_plan"]["opening"] = R["offer_plan"]["walk_away"] + 5000
+        with self.assertRaisesRegex(compute.ReportError, "opening"):
+            self.run_(R)
 
 if __name__ == "__main__":
     unittest.main()

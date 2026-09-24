@@ -56,6 +56,9 @@ class Handoff(unittest.TestCase):
 
     def test_filename(self):
         self.assertEqual(h.filename("517 Hickorywood Ave"), "517-Hickorywood-Ave.cma.json")
+        # CMA-17: a buyer and a seller CMA of the same address don't overwrite each other
+        self.assertEqual(h.filename("517 Hickorywood Ave", "buyer"), "517-Hickorywood-Ave.buyer.cma.json")
+        self.assertEqual(h.filename("517 Hickorywood Ave", "seller"), "517-Hickorywood-Ave.seller.cma.json")
 
 
 if __name__ == "__main__":

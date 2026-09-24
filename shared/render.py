@@ -142,7 +142,7 @@ def write_text(text, path):
 
 
 def main(build, formats, argv=None, extra_args=None, errors=()):
-    """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--agent] [--market] [--sample].
+    """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--agent] [--market] [--mls] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
     `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
@@ -162,6 +162,7 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
     ap.add_argument("--out", help="output folder (default: sandbox outputs, or OUTPUT_DIR locally)")
     ap.add_argument("--agent", help="agent profile (name, brokerage, brand colors on the report)")
     ap.add_argument("--market", help="market profile")
+    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
     ap.add_argument("--sample", action="store_true", help="label the report SAMPLE DATA")
     base = {a.dest for a in ap._actions}
     if extra_args:
@@ -175,7 +176,8 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
             data = json.load(f)
         for phrase, reason in prose.check(data):  # logged so the agent can see what was let through
             print(f'Fair-housing allow list: "{phrase}" ({reason})', file=sys.stderr)
-        ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample, "formats": todo,
+        ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "mls": args.mls, "sample": args.sample,
+               "formats": todo,
                **{k: v for k, v in vars(args).items() if k not in base}}
         check_agent(ctx["agent"])
     except (OSError, ValueError, *errors) as e:

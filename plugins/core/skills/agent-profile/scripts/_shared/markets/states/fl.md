@@ -157,6 +157,9 @@ contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked
   typical_deposit_pct: 0.03           # a strong escrow deposit on a financed offer, share of price
 
 cma:                                  # calibrated on Central Florida (Seminole County) sales
+  calibrated_for:                     # CMA-10: flat dollar rates fit these counties and prices; elsewhere the CMA warns
+    counties: [Seminole, Orange, Osceola, Lake, Volusia]
+    price_range: [300000, 700000]
   radius_miles: 1
   lookback_months: 6
   typical_range_width: 25000
