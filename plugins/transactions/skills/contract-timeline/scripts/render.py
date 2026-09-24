@@ -102,12 +102,11 @@ def build_html(t, agent, sample):
     p = theme["party"]
     colors = {"Buyer": p["buyer"], "Seller": p["seller"], "Both": p["both"]}
 
-    snap = [("Effective Date", t["effective"]["display"]), ("Closing", t["closing"]["long"]),
-            ("Contract Period", f'{t["length_days"]} days'), ("Price", t["price"] or "—"),
-            ("Financing", t["financing"] or "—"), ("Contract", t["contract_label"]),
-            ("Escrow Agent", t["escrow_agent"] or "—"), ("Amendments", str(len(t["history"])) if t["history"] else "None")]
-    snap_html = ('<div class="snap" style="grid-template-columns:repeat(8,1fr)">' +
-                 "".join(f"<div><span>{a}</span><b>{esc(str(b))}</b></div>" for a, b in snap) + "</div>")
+    # the dates live in the hero; the contract terms run in one divider row, and missing ones drop out
+    n = len(t["history"])
+    terms = [t["price"], t["financing"], t["contract_label"], f'Escrow: {t["escrow_agent"]}' if t["escrow_agent"] else None,
+             f'{n} amendment{"s" if n != 1 else ""}' if n else "No amendments"]
+    snap_html = ('<div class="divrow factrow"><div>' + "".join(f"<span>{esc(str(x))}</span>" for x in terms if x) + "</div></div>")
 
     firm, first = t["contingencies_end"], t["first_deadline"]
     if side == "buyer":
@@ -122,7 +121,7 @@ def build_html(t, agent, sample):
     if first:
         lead += f' {esc(first["short"])} due {esc(first["date_display"])} ({day_label(first)}).'
     hero = (f'<div class="hero"><div class="hl"><span class="k">Effective Date → Closing</span>'
-            f'<div class="big">{t["effective"]["short"]} → {t["closing"]["short"]} · {t["length_days"]} days</div>'
+            f'<div class="big">{t["effective"]["short"]} → {t["closing"]["long"]} · {t["length_days"]} days</div>'
             f'<div class="why">{lead}</div></div>'
             f'<div class="hr"><span class="k">{firm_label}</span><b>{esc(firm["display"]) if firm else "—"}</b>'
             f'{f" <span class=sm>({day_label(firm)})</span>" if firm else ""}'
@@ -131,7 +130,7 @@ def build_html(t, agent, sample):
 
     key_rows = "".join(
         f'<tr class="{"mine" if r["party"] == Side else ""}"><td class="n"><b>{esc(r["display"])}</b></td><td class="n">{day_label(r)}</td>'
-        f'<td>{esc(r["label"])}{"<span class=crit>CRITICAL</span>" if r["critical"] else ""}'
+        f'<td>{esc(r["label"])}{"&nbsp;<span class=crit>★</span>" if r["critical"] else ""}'
         f'{(" <span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}</td>'
         f'<td>{party_pill(r["party"], colors)}</td></tr>' for r in t["rows"])
     pending = "".join(f'<div class="note-caution"><b>{esc(r["label"])}:</b> {esc(r["rule"])}. {esc(r["action"])}.</div>'
@@ -145,16 +144,16 @@ def build_html(t, agent, sample):
 <h2>Timeline <span class="h2s">Effective Date → Closing</span></h2>
 <div class="panel" style="padding:2px 6px">{strip(t, colors)}</div>
 <div class="legend">{legend}<span>Filled Dot = Critical Deadline</span></div>
-<h2>All Key Dates <span class="h2s">Day = calendar days after the Effective Date · {side} items highlighted</span></h2>
+<h2>All Key Dates <span class="h2s">Day = calendar days after the Effective Date · ★ = Critical · {side} items highlighted</span></h2>
 <div class="tbl"><table class="kd"><colgroup><col style="width:22%"><col style="width:9%"><col style="width:57%"></colgroup>
 <thead><tr><th class="n">Date</th><th class="n">Day</th><th>Deadline</th><th>Who</th></tr></thead><tbody>{key_rows}</tbody></table></div>
-<div class="sm" style="margin-top:3px"><span class="crit" style="margin-left:0">CRITICAL</span> = missing it can cost a contract right (such as the right to cancel) or put the deposit at risk.</div>
+<div class="sm" style="margin-top:3px"><span class="crit">★</span> Critical = missing it can cost a contract right (such as the right to cancel) or put the deposit at risk.</div>
 {pending}{amended}{flags}'''
 
     detail_rows = "".join(
         f'<tr><td class="n"><b>{esc(r["display"])}</b><br><span class="sm">{day_label(r)}</span>'
         f'{("<br><span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}</td>'
-        f'<td><b>{esc(r["label"])}</b>{"<span class=crit>CRITICAL</span>" if r["critical"] else ""}<br><span class="sm">{esc(r["source"])}</span></td>'
+        f'<td><b>{esc(r["label"])}</b>{"&nbsp;<span class=crit>★</span>" if r["critical"] else ""}<br><span class="sm">{esc(r["source"])}</span></td>'
         f'<td>{esc(r["party"])}</td><td class="sm">{esc(r["rule"])}{("<br><i>" + esc(r["note"]) + "</i>") if r["note"] else ""}</td>'
         f'<td class="sm">{esc(r["action"])}</td><td class="sm">{esc(r["if_missed"])}</td></tr>' for r in t["rows"] + t["pending"])
     if t["history"]:
@@ -172,6 +171,7 @@ def build_html(t, agent, sample):
     method = ('<div class="tbl"><table class="meth"><tbody>' +
               "".join(f"<tr><td><b>{esc(a)}</b></td><td>{esc(b)}</td></tr>" for a, b in method_rows) + "</tbody></table></div>")
     details = f'''<div class="pb"></div><div class="dh">Deadline Details</div>
+<div class="sm" style="margin-bottom:4px"><span class="crit">★</span> Critical = missing it can cost a contract right or put the deposit at risk.</div>
 <div class="tbl"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
 <thead><tr><th class="n">Date</th><th>Deadline · Source</th><th>Who</th><th>Rule</th><th>Action</th><th>If Missed</th></tr></thead><tbody>{detail_rows}</tbody></table></div>
 {hist_html}

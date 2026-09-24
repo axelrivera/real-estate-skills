@@ -4,7 +4,7 @@
 
 | Date | Day | Deadline | Who |
 |---|---|---|---|
-| {{row.display}} | {{row.day}} | {{row.label}}{{" · was " + row.was when it moved}}{{" ⚠" when row.critical}} | {{row.party}} |
+| {{row.display}} | {{row.day}} | {{row.label}}{{" · was " + row.was when it moved}}{{" ★" when row.critical}} | {{row.party}} |
 
 {{one line per pending (on-event) item: "**{{label}}:** {{rule}}."}}
 
@@ -12,4 +12,4 @@
 - {{each flag, in plain words}}
 - {{each agent note, in plain words (chat only; they are not on the PDF)}}
 
-⚠ = missing it can cost a contract right or put the deposit at risk. Effective Date {{effective.display}} ({{effective.source}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.
+★ Critical = missing it can cost a contract right or put the deposit at risk. Effective Date {{effective.display}} ({{effective.source}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.

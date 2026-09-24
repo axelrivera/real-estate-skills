@@ -11,7 +11,8 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
   "analysis_date": "2026-09-23",
   "listing": {"address": "418 Heron Lake Dr, Longwood, FL 32750", "list_price": 425000, "cma_low": 415000, "cma_high": 428000},
   "seller": {"name": "Pat Seller", "payoff": 238400, "listing_fee_pct": 0.03, "offered_buyer_broker_pct": 0.025},
-  "offers": [{"id": "A", "price": 432000, "financing": "fha", "down_pct": 0.035, "seller_concessions": 12000}]
+  "offers": [{"id": "A", "buyer_agent": "J. Morales", "buyer_brokerage": "Keller Williams",
+              "price": 432000, "financing": "fha", "down_pct": 0.035, "seller_concessions": 12000}]
 }
 ```
 
@@ -75,10 +76,13 @@ Use when the agent has a title company quote or the county differs from the mark
 
 | Field | Values | Default if Missing | Impact |
 |---|---|---|---|
-| `id` | "A", "B", … | "A" | — |
+| `id` | "A", "B", …: an internal key, next letter for each new offer | "A" | — |
+| `label` | the offer's name in the report, when the agent wants something other than the default (see Offer Names) | agent and brokerage | — |
 | `status` | `active` `backup` `declined` `expired` `accepted` | `active` | — |
 | `received`, `expires` | `YYYY-MM-DD HH:MM` | — | — |
-| `buyer`, `buyer_agent`, `lender` | text | "Buyer X" | — |
+| `buyer` | name(s) on the contract; shown once, as contract identification | not shown | — |
+| `buyer_agent`, `buyer_brokerage` | the buyer's agent and their brokerage, as on the contract | name falls back to price and financing | — |
+| `lender` | text | — | — |
 | `price` | number | **required** | — |
 | `financing` | `cash` `conventional` `fha` `va` `usda` | conventional | high |
 | `down_pct` | 0–1 | FHA .035, VA/USDA 0, conventional .10 | med |
@@ -96,12 +100,19 @@ Use when the agent has a title company quote or the county differs from the mark
 | `sale_contingency_days`, `kickout` | days, bool | 0, false | — |
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
 | `title_by` | `seller` / `buyer` | the local custom | — |
-| `riders` | list of names | — | — |
+| `riders` | list of names, as attached | none; rider checks run only when listed | — |
+| `loan_amount` | $ from the financing paragraph | none; checked against the down payment when given | — |
 | `escalation` | `{cap, increment}` | none | — |
 | `personal_property`, `occupancy`, `other_terms` | text | — | — |
 | `insurance_quote` | bool | unknown | — |
 | `agent_track` | `strong` `average` `weak` | scored 3 | — |
 | `agent_note` | text for the scorecard | — | — |
+
+### Offer Names
+
+Reports name each offer the way listing agents talk about it, by the buyer's side: the agent's surname and brokerage, "Morales · Keller Williams" (in sentences, "the Morales (Keller Williams) offer"). Without an agent or brokerage, price and financing: "$432K FHA". Two offers that would share a name get the price and financing added. Never name an offer by the buyer (fair housing); the buyer's name appears only in the Buyer / Agent row of the terms table. If the agent asks for a different name, set `label` (a short name, without the word "offer").
+
+A single-offer review carries the name too (under the headline and in the PDF filename, "8104-Shoal-Creek-Blvd-Whitfield-Compass-Offer-Review.pdf"), so reviews of different offers on one listing never share a file name. The `id` letter never shows in a single-offer review. In a comparison it appears only where space is tight (chart points, contingency timeline, risk flags), always with a key.
 
 ### Agent Overrides (per Offer)
 
@@ -110,3 +121,4 @@ Use when the agent has a title company quote or the county differs from the mark
 - `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE`.
 - `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`. Values `Yes` `No` `Pending` `N/A`.
 - `flags`: extra flags `[{"sev": "High", "issue": "…", "fix": "…"}]`.
+- `contract_issues`: what reading the contract found, per `contract-check.md`: `[{"sev": "Blocking", "issue": "…", "fix": "…", "request": "…", "check": "signed"}]`. `sev` is `Blocking` `High` `Med` `Low`. A **Blocking** issue takes the offer out of the recommendation and the ranking until it's fixed; remove it from the file once the corrected contract arrives. `request` goes to the buyer's agent questions (leave it out when the fix is on the listing side); `check` puts the issue on that checklist line (`signed`, `riders`, `terms`).

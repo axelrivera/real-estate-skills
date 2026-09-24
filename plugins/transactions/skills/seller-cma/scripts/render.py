@@ -29,11 +29,10 @@ def agent_block(agent, L):
     """Wordmark (left) with only the fields the agent profile has."""
     name = agent.get("name")
     if not name:
-        return "", ""
+        return ""
     org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
     left = f'<div class="wm-name">{esc(name)}</div><div class="wm-sub">{esc(org or L("wordmark_sub"))}</div>'
-    contact = " · ".join(str(agent[f]) for f in ("phone", "email", "website") if agent.get(f))
-    return left, contact
+    return left
 
 
 def footer_block(agent, R, L):
@@ -56,12 +55,12 @@ def summary_page(R, C, agent, L):
     cash = C["net"]["cash_at_closing"]
     tile = L("sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
     stats = list(sp["key_stats"])[:3] + [[C["recommended_net_display"], tile]]
-    left, contact = agent_block(agent, L)
-    tags = f'<span class="side">{L("side")}</span>' + (f' <span class="side prelim">{L("preliminary")}</span>' if C["preliminary"] else "")
+    left = agent_block(agent, L)
+    tags = f'<span class="tag prelim">{L("preliminary")}</span><br>' if C["preliminary"] else ""
     o = ['<div class="onepage">',
-         f'<header class="top"><div>{left}</div><div class="prep">{tags}<br>'
+         f'<header class="top"><div>{left}</div><div class="prep">{tags}'
          f'{esc(sp.get("label", L("sum_label")))}<br>{L("prepared")} {esc(R["prepared_date"])}</div></header>',
-         f'<h1>{esc(s["address"])}</h1><div class="sub">{s["locality"]} · {s.get("summary_facts", "")}</div>',
+         cma.subject_heading(s),
          '<div class="sp-hero"><div class="sp-rec">'
          f'<div class="lbl">{L("sum_rec")}</div><div class="price">{money(rec["list_price"])}</div>'
          f'<div class="line">{L("sum_range_line")} <b>{money(rec["low"])} – {money(rec["high"])}</b></div>'
@@ -81,8 +80,7 @@ def summary_page(R, C, agent, L):
              f'<div class="note">{L("sum_options_note_cash" if cash else "sum_options_note")}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
-    who = " · ".join(x for x in (agent.get("name"), agent.get("phone"), agent.get("email")) if x)
-    o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span><span>{esc(who)}</span></div>')
+    o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
     note = L("sum_disclaimer") + (" " + L("sum_preliminary") if C["preliminary"] else "")
     o.append(f'<div class="note" style="margin-top:6px">{note}</div></div>')
     return "".join(o)
@@ -179,7 +177,7 @@ def theme_css(agent):
     """Seller palette from the agent's brand; the subject home uses the palette's neutral 'both' party color, never the brand."""
     t = design.theme(agent.get("brand"), "seller")
     extra = (":root{--subject:var(--party-both);--subject-bg:var(--party-both-bg)}"
-             ".prep .side.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}")
+             ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}")
     return design.css_vars(t) + extra, t
 
 
@@ -237,6 +235,8 @@ def _build(R, fmt, out_dir, ctx):
         written.append(path)
         if not info["summary_page"]["fits"]:
             print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
+        elif info["summary_page"]["fit_level"]:
+            print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
         if info["moved"]:
             print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
     elif fmt == "pptx":

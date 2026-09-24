@@ -1,11 +1,13 @@
 """Offer review PDF for the seller (listing side): one offer, or every active offer compared.
 
-    python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer B]
+    python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet]
                               [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
 
-Page 1 is a self-contained executive summary (the recommendation, the counter or the plan, key
-numbers, certainty and the seller's options). The pages after it hold the net sheets, contingency
+Single review: page 1 is a self-contained executive summary (the recommendation, the counter, key
+numbers, certainty and the seller's options); the pages after it hold the net sheet, contingency
 timeline, terms review, scorecard, risk flags, checklist, questions and assumptions.
+Comparison: a two-page landscape decision summary, one row per offer (plan and ranking, chart up to 6 offers,
+key terms side by side). --packet renders the comparison plus a single review of every active offer.
 Colors follow the agent's seller-side brand color.
 """
 import html
@@ -22,7 +24,8 @@ from _shared import design, handoff, offer_engine as oe, profiles, render  # noq
 esc = html.escape
 money, signed = oe.money, review.signed
 CSS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "offer-review.css")
-PAGE1_LIMIT = 989  # px available on page 1 at the print viewport
+PAGE1_LIMIT = 989  # px available on page 1 at the print viewport (portrait)
+PAGE1_LIMIT_WIDE = 749  # the comparison prints landscape: 8.5in minus margins
 PILL = {"good": "low", "caution": "med", "risk": "high"}
 RATING = {"good": "Favorable", "caution": "Watch", "risk": "Weak"}
 
@@ -60,17 +63,21 @@ def header(R, title, sub, agent, sample):
             f'<div class="prep">{prepared_block(R, agent)}</div></header>')
 
 
-def snapshot(R, last_label, last_value):
+def snapshot(R):
+    """One divider row: the home, then the inputs the numbers rest on. Missing facts drop out; a missing
+    input that makes the review Preliminary stays, in the risk color."""
     L, S = R["listing"], R["seller"]
-    bb = f"{L['beds']} / {L['baths']}" if L.get("beds") else "—"
-    yr = f"{L.get('year_built') or '—'} / {L.get('roof_year') or '—'}"
-    hoa = f"${L['hoa_monthly']:,}/mo" if L.get("hoa_monthly") else ("None" if L.get("hoa_monthly") == 0 else "—")
-    cma = f"{money(L['cma_low'])}–{L['cma_high'] // 1000:,.0f}K" if L["cma_provided"] else '<span class="rt">not provided</span>'
-    payoff = money(S["payoff"]) if S["payoff_known"] else '<span class="rt">not provided</span>'
-    cells = [("Beds / Baths", bb), ("Heated Sq Ft", f"{L['sqft']:,}" if L.get("sqft") else "—"), ("Year / Roof", yr), ("HOA", hoa),
-             ("Flood Zone", esc(L.get("flood_zone") or "—")), ("CMA Range", cma), ("Payoff (Est.)", payoff), (last_label, last_value)]
-    return ('<div class="snap" style="grid-template-columns:.8fr .8fr .9fr .7fr .8fr 1.3fr 1fr 1.2fr">'
-            + "".join(f"<div><span>{a}</span><b>{b}</b></div>" for a, b in cells) + "</div>")
+    hoa = f"HOA ${L['hoa_monthly']:,}/mo" if L.get("hoa_monthly") else ("no HOA" if L.get("hoa_monthly") == 0 else None)
+    facts = [f"{L['beds']} bed" if L.get("beds") else None, f"{L['baths']} bath" if L.get("baths") else None,
+             f"{L['sqft']:,} sq ft" if L.get("sqft") else None, f"built {L['year_built']}" if L.get("year_built") else None,
+             f"roof {L['roof_year']}" if L.get("roof_year") else None, hoa,
+             f"flood zone {L['flood_zone']}" if L.get("flood_zone") else None]
+    items = [esc(x) for x in facts if x]
+    items.append(f"CMA {oe.short_price(L['cma_low'])}–{oe.short_price(L['cma_high'])}" if L["cma_provided"] else '<b class="rt">CMA not provided</b>')
+    items.append(f"payoff {money(S['payoff'])}" if S["payoff_known"] else '<b class="rt">payoff not provided</b>')
+    if S["deadline"]:
+        items.append(f"seller's deadline {S['deadline']:%a %b %-d}")
+    return '<div class="divrow factrow"><div>' + "".join(f"<span>{x}</span>" for x in items) + "</div></div>"
 
 
 def state_name(R):
@@ -107,6 +114,8 @@ def certainty_panel(c, subtitle="As Offered"):
 
 
 def options_table(opts, widths=(24, 13, 15)):
+    if not opts:
+        return ""
     rows = "".join(
         f'<tr class="{"recrow" if x["recommended"] else ""}"><td><b>{esc(x["option"])}</b>'
         f'{" <span class=sm>(Recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
@@ -119,17 +128,25 @@ def options_table(opts, widths=(24, 13, 15)):
 
 def closing_block(v):
     pre = f'<div class="prelim">{md(v["preliminary"])}</div>' if v["preliminary"] else ""
-    return (f'{pre}<div class="nextstep"><b>Next Step:</b> {esc(v["next_step"])} The detail follows on the next pages.</div>'
+    return (f'{pre}<div class="nextstep"><b>Next Step:</b> {esc(v["next_step"])} {"The detail follows on the next pages." if v["mode"] == "single" else "Key terms follow on the next page."}</div>'
             f'<div class="fine" style="margin-top:4px">{md(v["data_note"])} Estimates only; not legal or financial advice.</div>')
 
 
 def hero(v):
-    cls = {"DECLINE": "decline", "BACKUP": "backup"}.get(v["action"], "")
+    cls = {"DECLINE": "decline", "BACKUP": "backup", "INCOMPLETE": "decline"}.get(v["action"], "")
     ctx = f' · {v["offers_active"]} Offers Active' if v["offers_active"] > 1 else ""
-    return (f'<div class="hero"><div class="hl {cls}"><span class="k">Recommended Response{ctx}</span><div class="big">{esc(v["headline"])}</div>'
-            f'<div class="why">{md(v["why"])}</div></div>'
+    kicker = "Status" if v["action"] == "INCOMPLETE" else "Recommended Response"
+    return (f'<div class="hero"><div class="hl {cls}"><span class="k">{kicker}{ctx}</span><div class="big">{esc(v["headline"])}</div>'
+            + f'<div class="who">{esc(v["offer_label"])}</div>'
+            + f'<div class="why">{md(v["why"])}</div></div>'
             f'<div class="hr"><span class="k">Respond By</span><b>{esc(v["respond_by"])}</b>'
-            f'<span class="k" style="margin-top:6px">Seller\'s Priority</span><div>{esc(v["priority"])}</div></div></div>')
+            + (f'<span class="rbo">{esc(v["respond_by_offer"])}</span>' if v.get("respond_by_offer") else "")
+            + f'<span class="k" style="margin-top:6px">Seller\'s Priority</span><div>{esc(v["priority"])}</div></div></div>')
+
+
+def key_legend(offs):
+    """Key for the places that show an offer's short key instead of its label (chart, timeline, flags)."""
+    return ('<div class="legend okey">' + "".join(f'<span><b>{esc(o["key"])}</b> {esc(o["label"])}</span>' for o in offs) + "</div>")
 
 
 # --- detail tables -------------------------------------------------------------
@@ -149,7 +166,7 @@ def term_rows(o, R):
         ap = o["approval"]
         st = "good" if ap == "full_uw" else ("caution" if ap in ("du_approved", "preapproval") else "risk")
         rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap), "Full underwriting", st,
-                     "Verified with lender" if o.get("lender_called") else "Not yet verified by phone"))
+                     "Verified with lender" if o.get("lender_called") else "Call the loan officer (section 8)"))
     else:
         ok = o["approval"] == "pof_verified"
         rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
@@ -201,36 +218,60 @@ def term_rows(o, R):
 
 
 def questions(o, R):
-    Q, L = [], R["listing"]
+    """Only what the contract, the counter and the loan officer can't answer. Terms the counter sets (price, gap,
+    concessions, deposit, inspection, closing) aren't asked: sending the counter asks them."""
+    L = R["listing"]
+    Q = [f["request"] for f in o["flags"] if f.get("contract") and f.get("request")]  # contract fixes come first
     if o["financed"] and o.get("insurance_quote") is not True:
         roof = f", given the {L['roof_year']} roof?" if L.get("roof_year") else "?"
         Q.append("Has the buyer obtained a homeowners insurance quote for this address" + roof)
-    if o["financed"] and o["counter_terms"]["appraisal_gap"] > o["appraisal_gap"]:
-        Q.append("Can the buyer cover an appraisal gap? How much cash do they have beyond closing costs?")
-    if o["seller_concessions"] > .015 * o["price"]:
-        Q.append(f"How firm are the {money(o['seller_concessions'])} in concessions: needed to close, or a negotiating ask?")
-    if o["inspection_days"] > 7:
-        Q.append(f"Would the buyer shorten inspection to 7 days if the seller provides the {L['reports']}?")
-    if o["close"].weekday() >= 5:
-        Q.append(f"Can the lender close on {oe.prior_weekday(o['close']):%a %b %-d} instead?")
+    if o["sale_contingency_days"]:
+        Q.append("Is the buyer's current home listed or under contract? At what price?")
     if o["financed"] and o["approval"] in ("prequal", "none"):
         Q.append("When can the buyer provide a full pre-approval?")
     if o["financed"] and not o.get("lender_called"):
         Q.append("Who is the loan officer, so we can verify the approval directly?")
-    if o["sale_contingency_days"]:
-        Q.append("Is the buyer's current home listed or under contract? At what price?")
-    if o["deposit"] is None or o["deposit"] / o["price"] < .03:
-        Q.append("Can the buyer increase the escrow deposit?")
     if o.get("escalation"):
         Q.append("What proof of a competing offer does the escalation clause require?")
-    return Q[:6]
+    return Q
+
+
+def lender_questions(o, R):
+    """The call before responding: what the letter can't show. At most five, asked the same way of every buyer's lender or bank."""
+    L = R["listing"]
+    if not o["financed"]:
+        return ["Is the account in the name of the buyer (or the entity signing the contract)?",
+                f"Are funds for {money(o['price'])} plus closing costs available now, not waiting on a sale, loan or transfer?",
+                "Can the bank confirm the balance in writing to the escrow agent?"]
+    fin = oe.FIN_LABEL[o["financing"]]
+    fin = fin if fin.isupper() else fin.lower()  # "an FHA loan", "a conventional loan"
+    Q = ["What conditions are left on the underwriting approval?" if o["approval"] == "full_uw" else
+         "Has the file been through automated underwriting (DU or LP), and are income, assets and credit verified with documents?"]
+    conc = f", with {money(o['seller_concessions'])} in seller concessions" if o["seller_concessions"] else ""
+    Q.append(f"Is the approval good for {money(o['price'])} with {o['down_pct'] * 100:.1f}% down on "
+             f"{'an' if fin[0] in 'AEFHILMNORSX' else 'a'} {fin} loan{conc}?")
+    gap = max(o["appraisal_gap"], o["counter_terms"]["appraisal_gap"] if o.get("action") == "COUNTER" else 0)
+    Q.append("Are funds verified for the down payment and closing costs"
+             + (f", plus an appraisal gap of up to {money(gap)}?" if gap else "?"))
+    if o["financing"] in ("fha", "va", "usda"):
+        roof = f" (roof {L['roof_year']})" if L.get("roof_year") else ""
+        Q.append(f"Any concern about the property meeting {fin} appraisal and condition rules{roof}?")
+    if o["close"].weekday() >= 5:
+        Q.append(f"The contract closes {o['close']:%a %b %-d}; can you close {oe.prior_weekday(o['close']):%a %b %-d} instead?")
+    else:
+        Q.append(f"Can you close by {o['close']:%a %b %-d} with your current workload?")
+    return Q
 
 
 def checklist(o):
     C = o.get("checklist") or {}
+    found = {}  # contract problems noted on the matching line ("signed", "riders", "terms")
+    for f in o["flags"]:
+        if f.get("contract"):
+            found.setdefault(f["check"], []).append(f["issue"].rstrip("."))
     fin = o["financed"]
     items = [("signed", "All parties signed & initialed; dates filled", "Pending"),
-             ("lender", "Lender called / proof of funds confirmed with bank",
+             ("lender", "Loan officer called (questions in section 8)" if fin else "Proof of funds confirmed with the bank (questions in section 8)",
               "Yes" if o.get("lender_called") or (not fin and o["approval"] == "pof_verified") else "No"),
              ("deposit", "Deposit amount, due date & escrow agent confirmed", "Pending"),
              ("riders", "All riders attached and consistent", "Pending"),
@@ -241,21 +282,25 @@ def checklist(o):
     for k, lab, dflt in items:
         v = C.get(k, dflt)
         v, note = (v.get("status", dflt), v.get("note", "")) if isinstance(v, dict) else (v, "")
-        out.append((lab, v, note))
+        note = "; ".join([note] * bool(note) + found.get(k, []))
+        if v != "N/A":
+            out.append((lab, v, note))
     return out
 
 
-def pill_status(v):
-    return f'<span class="pill v{v.lower().replace("/", "")}">{esc(v)}</span>'
+def checkbox(v):
+    """The report is printed once: a box to tick by hand, already ticked when the file says it's done."""
+    return '<span class="cb on">✓</span>' if v == "Yes" else '<span class="cb"></span>'
 
-
-def assumptions_table(R):
-    if not R["assumptions"]:
+def assumptions_table(R, multi=False):
+    """Every assumption; in the comparison, only the listing's and each offer's high-impact ones (the rest are in the single reviews)."""
+    items = [a for a in R["missing"] if not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"]
+    if not items:
         return '<p class="sm">No assumptions: every key input was provided.</p>'
     lab = {"high": "High", "med": "Med", "low": "Low"}
-    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(a["scope"].title())}</td>'
-                   f'<td>{esc(a["why"])}</td></tr>' for a in R["missing"])
-    return ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th>'
+    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.where(R, a["scope"]))}</td>'
+                   f'<td>{esc(a["why"])}</td></tr>' for a in items)
+    return ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
             f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
 
@@ -335,6 +380,12 @@ def single_html(R, o, v):
         box = (f'<div class="ctr"><div class="ctrh"><span>OUR COUNTER</span><em>{md(v["counter"]["summary"])}</em></div>'
                '<table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%"><col style="width:17%"><col></colgroup>'
                f'<thead><tr><th>Term</th><th>Buyer Offered</th><th></th><th>We Counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table>{fb}</div>')
+    elif act == "INCOMPLETE":
+        rows = "".join(f'<tr><td class="c"><span class="cb"></span></td><td><span class="pill {f["sev"].lower()}">{f["sev"]}</span> '
+                       f'<b>{esc(f["issue"])}</b></td><td class="why2">{esc(f["fix"])}</td></tr>' for f in v["fixes"])
+        box = ('<div class="ctr stop"><div class="ctrh"><span>FIX BEFORE REVIEW</span><em>No recommendation until the contract is corrected</em></div>'
+               '<table><colgroup><col style="width:5%"><col style="width:50%"></colgroup>'
+               f'<thead><tr><th></th><th>Issue</th><th>How to Fix</th></tr></thead><tbody>{rows}</tbody></table></div>')
     elif act == "ACCEPT":
         keys = [r for r in term_rows(o, R) if r[0] in ("Price", "Financing", "Escrow Deposit", "Seller Concessions", "Inspection Period", "Closing Date")]
         rows = "".join(f'<tr><td><b>{t}</b></td><td class="now">{val}</td><td class="why2">{b}</td></tr>' for t, val, b, _, _ in keys)
@@ -343,8 +394,8 @@ def single_html(R, o, v):
     elif v["compare"]:
         c = v["compare"]
         rows = "".join(f'<tr><td><b>{a}</b></td><td>{b}</td><td class="now">{d}</td></tr>' for a, b, d in c["rows"])
-        box = (f'<div class="ctr cmp"><div class="ctrh"><span>HOW IT COMPARES</span><em>vs. Offer {esc(c["vs"])} (Recommended)</em></div>'
-               f'<table><thead><tr><th>Measure</th><th>Offer {esc(o["id"])}</th><th>Offer {esc(c["vs"])}</th></tr></thead><tbody>{rows}</tbody></table></div>')
+        box = (f'<div class="ctr cmp"><div class="ctrh"><span>HOW IT COMPARES</span><em>vs. {esc(c["vs"])} (Recommended)</em></div>'
+               f'<table><thead><tr><th>Measure</th><th>{esc(c["this"])}</th><th>{esc(c["vs"])}</th></tr></thead><tbody>{rows}</tbody></table></div>')
     else:
         box = ""
     kp = "".join(f'<div class="{"kgood" if k["tone"] == "good" and "counter" in k["label"].lower() else ""}"><span>{esc(k["label"])}</span>'
@@ -370,13 +421,16 @@ def single_html(R, o, v):
     ns += "<tr class=\"alt\"><td>vs. Seller's Target Net</td>" + "".join(
         f'<td class="n">{"—" if n == target_label else signed(c["net_adj"] - tgt)}</td>' for n, c in cols) + "</tr>"
     ref = f"the CMA midpoint ({money(round(L['cma_mid']))})" if L["cma_provided"] else "list price"
-    tr = "".join(f'<tr><td>{t}</td><td class="{st}">{val}</td><td>{b}</td><td class="c"><span class="pill {PILL[st]}">{RATING[st]}</span></td>'
-                 f'<td class="sm" style="color:var(--text)">{esc(n)}</td></tr>' for t, val, b, st, n in term_rows(o, R))
+    who = " · ".join(esc(x) for x in (o["buyer"], o.get("buyer_agent")) if x)
+    tr = (f'<tr><td>Buyer / Agent</td><td colspan="4">{who}</td></tr>' if who else "") + "".join(
+        f'<tr><td>{t}</td><td class="{st}">{val}</td><td>{b}</td><td class="c"><span class="pill {PILL[st]}">{RATING[st]}</span></td>'
+        f'<td class="sm" style="color:var(--text)">{esc(n)}</td></tr>' for t, val, b, st, n in term_rows(o, R))
     fl = "".join(f'<tr><td class="c"><span class="pill {f["sev"].lower()}">{f["sev"]}</span></td><td>{esc(f["issue"])}</td><td>{esc(f["fix"])}</td></tr>'
                  for f in o["flags"]) or '<tr><td colspan="3">No significant risks found.</td></tr>'
-    vf = "".join(f'<tr><td>{esc(a)}</td><td class="c">{pill_status(b)}</td><td class="sm" style="color:var(--text)">{esc(c)}</td></tr>'
+    vf = "".join(f'<tr><td class="c">{checkbox(b)}</td><td>{esc(a)}</td><td class="sm" style="color:var(--text)">{esc(c)}</td></tr>'
                  for a, b, c in checklist(o))
-    qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or "<tr><td></td><td>None: the offer is complete.</td></tr>"
+    lq = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(lender_questions(o, R)))
+    qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the contract{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
     credit = f" + {money(o['repair_reserve'])} inspection credit" if o["repair_reserve"] else ""
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
@@ -392,21 +446,23 @@ def single_html(R, o, v):
 <h2>4 · Certainty Scorecard <span class="h2s">1 = Weak · 5 = Strong · Weighted</span></h2>{scorecard_single(o)}
 <h2 class="pb">5 · Risk Flags</h2><div class="tbl"><table><colgroup><col style="width:8%"><col style="width:50%"></colgroup>
 <thead><tr><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl}</tbody></table></div>
+<h2>6 · Verification Checklist</h2><div class="tbl"><table class="ck"><colgroup><col style="width:5%"><col style="width:45%"></colgroup>
+<thead><tr><th class="c">Done</th><th>Item</th><th>Notes</th></tr></thead><tbody>{vf}</tbody></table></div>
 <div class="two" style="margin-top:0">
- <div><h2>6 · Verification Checklist</h2><div class="tbl"><table><colgroup><col style="width:52%"><col style="width:14%"></colgroup>
- <thead><tr><th>Item</th><th class="c">Status</th><th>Notes</th></tr></thead><tbody>{vf}</tbody></table></div></div>
  <div><h2>7 · Questions for the Buyer's Agent</h2><div class="tbl"><table class="qs"><colgroup><col style="width:7%"></colgroup>
- <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div></div></div>
-<h2>8 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
+ <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div></div>
+ <div><h2>8 · Questions for the {"Loan Officer" if o["financed"] else "Bank"}</h2><div class="tbl"><table class="qs"><colgroup><col style="width:7%"></colgroup>
+ <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{lq}</tbody></table></div></div></div>
+<h2>9 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
 {fine(R)}'''
-    sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · Offer {esc(o['id'])} from {esc(o['buyer'])}"
-    snap = snapshot(R, "Response Due", esc(o.get("expires") or "—"))
+    sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · Offer from {esc(o['label'])}"
+    snap = snapshot(R)
     return "Single Offer Review", sub, snap + f'<div class="p1">{page1}</div>' + details
 
 
 # --- multiple offers -----------------------------------------------------------
 
-def scatter(R):
+def scatter(R, W=300, H=230):
     offs = R["active"]
     vals = [x for o in offs for x in (o["ns"]["net_adj"], o["ns_down"]["net_adj"])] + [R["target"]["net_adj"]]
     lo, hi = min(vals), max(vals)
@@ -414,7 +470,7 @@ def scatter(R):
     step = 5000 if hi - lo < 40000 else 10000 if hi - lo < 90000 else 25000
     y0, y1 = math.floor((lo - pad) / step) * step, math.ceil((hi + pad) / step) * step
     xmin = max(0, min(40, (min(o["score"]["total"] for o in offs) // 10) * 10))
-    W, H, Lm, Rm, T, B = 300, 230, 42, 10, 10, 28
+    Lm, Rm, T, B = 42, 10, 10, 28
 
     def xs(val):
         return Lm + (val - xmin) / (100 - xmin) * (W - Lm - Rm)
@@ -443,121 +499,71 @@ def scatter(R):
         right = o["score"]["total"] > 90
         svg.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
                    f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
-                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{c}">{esc(o["id"])}</text>')
+                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{c}">{esc(o["key"])}</text>')
     svg.append("</svg>")
     return "".join(svg)
 
 
+CHART_MAX = 6  # past this many offers the chart crowds; the decision table stands alone
+KEY_TERMS = [("Financing", ("Financing",)), ("Approval / Funds", ("Approval", "Proof of Funds")), ("Deposit", ("Escrow Deposit",)),
+             ("Concessions", ("Seller Concessions",)), ("Inspection", ("Inspection Period",)),
+             ("Appraisal", ("Appraisal Gap Coverage", "Appraisal Contingency")), ("Sale of Home", ("Sale-of-Home Contingency",)),
+             ("Closing", ("Closing Date",))]
+
+
 def multi_html(R, v):
+    """The decision summary: one row per offer, so it reads the same with 2 offers or 12. Detail lives in each single review."""
     L = R["listing"]
     rk = R["ranked"]
     top = rk[0]
-    act = v["action"]
-    plan = "".join(f'<tr><td class="c"><b>{esc(p["offer"])}</b></td><td class="act {p["status"]}">{esc(p["action"])}</td><td>{esc(p["terms"])}</td></tr>'
-                   for p in v["plan"])
-    pill = {"Accept": "rec", "Counter": "rec", "Backup": "med", "Decline": "high"}
-    rank = "".join(
-        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td><b>Offer {esc(r["offer"])}</b><br>'
-        f'<span class="sm">{esc(r["financing"])}</span></td><td class="n">{r["price"]}</td><td class="n">{r["net"]}</td>'
-        f'<td class="n"><b>{r["downside"]}</b></td><td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[r["band_class"]]}"><b>{r["score"]}</b></td>'
-        f'<td class="n">{r["risk_days"]} d</td><td class="n">{r["close"]}</td><td class="c"><span class="pill {pill[r["action"]]}">{r["action"]}</span></td></tr>'
-        for r in v["ranked"])
-    page1 = f'''{hero(v)}
-<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
- <table class="plan"><colgroup><col style="width:7%"><col style="width:16%"></colgroup><thead><tr><th class="c">Offer</th><th>Action</th><th>Terms / Reason</th></tr></thead><tbody>{plan}</tbody></table>
- <div class="note">{esc(v["plan_note"])}</div></div>
-<div class="two" style="grid-template-columns:1.45fr 1fr">
- <div><h2>Offers Ranked <span class="h2s">By Downside Net and Certainty</span></h2><div class="tbl"><table class="rank"><colgroup><col style="width:7%"><col style="width:22%"></colgroup>
- <thead><tr><th></th><th>Offer</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Risk</th><th class="n">Close</th><th class="c">Action</th></tr></thead><tbody>{rank}</tbody></table></div>
- <div class="legend"><span><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Risk</b> = days the buyer can walk away.</span></div></div>
- <div><h2>Net vs. Certainty</h2><div class="panel">{scatter(R)}<div class="legend" style="margin:0"><span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span><span><i style="background:var(--grey);border-radius:50%"></i>Downside</span></div></div></div></div>
-{options_table(v["options"], (28, 12, 10))}{closing_block(v)}'''
+    band = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
+    pill = {"Accept": "rec", "Counter": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
+    rows = "".join(
+        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td><b>{esc(r["offer"])}</b></td>'
+        f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
+        f'<td class="n">{r["price"]}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
+        f'<td class="c {band[r["band_class"]]}"><b>{r["score"]}</b></td><td class="n">{r["risk_days"]}{"" if r["risk_days"] == "—" else " d"}</td><td class="n">{r["close"]}</td>'
+        f'<td class="why2">{esc(r["terms"])}</td></tr>' for r in v["ranked"])
+    decision = f'''<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
+ <table class="rank"><colgroup><col style="width:3%"><col style="width:15%"><col style="width:11%"><col style="width:9%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
+ <thead><tr><th></th><th>Offer</th><th>Financing</th><th class="c">Action</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Walk</th><th class="n">Close</th><th>Terms / Reason</th></tr></thead><tbody>{rows}</tbody></table>
+ <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away. {esc(v["plan_note"])}</div></div>'''
+    if len(R["active"]) <= CHART_MAX:
+        chart = (f'<div><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
+                 '<span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span>'
+                 f'<span><i style="background:var(--grey);border-radius:50%"></i>Downside</span></div>{key_legend(rk)}</div></div>')
+        lower = f'<div class="two" style="grid-template-columns:1.35fr 1fr"><div>{options_table(v["options"], (26, 13, 11))}</div>{chart}</div>'
+    else:
+        lower = options_table(v["options"], (28, 12, 10))
+    page1 = f"{hero(v)}{decision}{lower}{closing_block(v)}"
 
-    offs = rk
-    K = [o["id"] for o in offs]
-
-    def hr(first=""):
-        return "<tr><th>" + first + "</th>" + "".join(f'<th class="n">Offer {esc(k)}</th>' for k in K) + "</tr>"
-
-    def cls(vals):
-        return ["best" if x == max(vals) else ("worst" if x == min(vals) else "") for x in vals]
-
-    cols = [(k, o["ns"]) for k, o in zip(K, offs)]
-    ns = netsheet_body(cols, hl=-1)
-    adj = [o["ns"]["net_adj"] for o in offs]
-    ns += '<tr class="total2"><td>Net After Holding Costs</td>' + "".join(f'<td class="n {c}">{acct(x)}</td>' for x, c in zip(adj, cls(adj))) + "</tr>"
-    down = [o["ns_down"]["net_adj"] for o in offs]
-    ref = f"CMA Midpoint ({money(round(L['cma_mid']))})" if L["cma_provided"] else "List Price"
-    ap = ("<tr><td>Offer Price</td>" + "".join(f'<td class="n">{money(o["price"])}</td>' for o in offs) + "</tr>"
-          + f"<tr><td>vs. {'CMA High' if L['cma_provided'] else 'List Price'} ({money(L['cma_high'])})</td>" + "".join(
-              f'<td class="n"><span class="{"rt" if o["price"] > L["cma_high"] else "gt"}">{signed(o["price"] - L["cma_high"])}</span></td>' for o in offs) + "</tr>"
-          + "<tr><td>Appraisal Gap Buyer Covers</td>" + "".join(
-              f'<td class="n">{"Not needed" if not o["financed"] or not o["appraisal_days"] else (money(o["appraisal_gap"]) if o["appraisal_gap"] else "None")}</td>' for o in offs) + "</tr>"
-          + f"<tr><td>Price if Appraised at {ref}</td>" + "".join(f'<td class="n">{money(o["downside_price"])}</td>' for o in offs) + "</tr>"
-          + "<tr><td>Inspection Credit Reserve</td>" + "".join(f'<td class="n neg">{acct(-o["repair_reserve"])}</td>' for o in offs) + "</tr>"
-          + '<tr class="total2"><td>Downside Net After Holding</td>' + "".join(f'<td class="n {c}">{acct(x)}</td>' for x, c in zip(down, cls(down))) + "</tr>")
-    weeks = min(12, max(math.ceil(max(o["close_days"] for o in offs) / 7) + 1, 6))
-    tl = "<tr><th>Offer</th>" + "".join(f'<th class="c">Wk {w + 1}<br><span class="sm2">{(L["analysis_date"] + timedelta(days=7 * w)):%-m/%-d}</span></th>'
-                                         for w in range(weeks)) + '<th class="n">At Risk</th></tr>'
-    for o in offs:
-        tl += f"<tr><td><b>{esc(o['id'])}</b></td>"
-        for w in range(weeks):
-            d0, d1 = 7 * w + 1, 7 * w + 7
-            if d0 <= o["close_days"] <= d1:
-                tl += '<td class="tc close">CLOSE</td>'
-            elif d0 > o["close_days"]:
-                tl += '<td class="tc"></td>'
-            else:
-                open_ = [n for n, d in (("Insp", o["inspection_days"]), ("Sale", o["sale_contingency_days"]),
-                                        ("Appr", o["appraisal_days"]), ("Loan", o["loan_approval_days"])) if d >= d0]
-                c = "hot" if ("Sale" in open_ or "Insp" in open_) else ("warm" if open_ else "safe")
-                tl += f'<td class="tc {c}">{" · ".join(open_) if open_ else "firm"}</td>'
-        tl += f'<td class="n"><b>{o["risk_days"]} d</b></td></tr>'
-    tmap = [{r[0]: r for r in term_rows(o, R)} for o in offs]
-    labels = []
-    for t in tmap:
-        for k in t:
-            if k not in labels:
-                labels.append(k)
-    terms = '<tr><td>Buyer / Agent</td>' + "".join(f'<td>{esc(o["buyer"])}<br><span class="sm">{esc(o.get("buyer_agent") or "")}</span></td>' for o in offs) + "</tr>"
-    for lab in labels:
-        terms += f"<tr><td>{lab}</td>" + "".join(f'<td class="{t[lab][3] if lab in t else ""}">{t[lab][1] if lab in t else "—"}</td>' for t in tmap) + "</tr>"
-    sc = ""
-    for k, lab, w in oe.CRITERIA:
-        sc += f'<tr><td>{lab}</td><td class="n">{w}%</td>' + "".join(
-            f'<td class="c s{o["score"]["scores"][k]}">{o["score"]["scores"][k]}{"*" if o["score"]["src"][k] == "agent" else ""}</td>' for o in offs) + "</tr>"
-    sc += '<tr class="total"><td>Certainty Score (Weighted, 0–100)</td><td class="n">100%</td>' + "".join(
-        f'<td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[o["score"]["band"][0]]}"><b>{o["score"]["total"]}</b></td>' for o in offs) + "</tr>"
-    fl = "".join(f'<tr><td class="c"><b>{esc(o["id"])}</b></td><td class="c"><span class="pill {f["sev"].lower()}">{f["sev"]}</span></td>'
-                 f'<td>{esc(f["issue"])}</td><td>{esc(f["fix"])}</td></tr>' for o in offs for f in o["flags"])
-    cl = [checklist(o) for o in offs]
-    vf = "".join(f"<tr><td>{esc(cl[0][i][0])}</td>" + "".join(f'<td class="c">{pill_status(c[i][1])}</td>' for c in cl) + "</tr>" for i in range(len(cl[0])))
+    head = "".join(f"<th>{lab}</th>" for lab, _ in KEY_TERMS)
+    body = ""
+    for o in rk + R["incomplete"]:  # incomplete contracts: their terms as written, not ranked
+        t = {r[0]: r for r in term_rows(o, R)}
+        cells = ""
+        for _, keys in KEY_TERMS:
+            hit = next((t[k] for k in keys if k in t), None)
+            cells += f'<td class="{hit[3]}">{hit[1]}</td>' if hit else "<td>—</td>"
+        risk = o["flags"][0] if o["flags"] else None
+        risk = (f'<span class="pill {risk["sev"].lower()}">{risk["sev"]}</span> {esc(risk["issue"])}' if risk else "None major")
+        body += f'<tr><td><b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
     ctr = ""
-    if act == "COUNTER" and top["counter_rows"]:
-        ctr = (f'<h2>8 · Counter to Offer {esc(top["id"])} <span class="h2s">Full Terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
+    if v["action"] == "COUNTER" and top["counter_rows"]:
+        ctr = (f'<h2>Counter to {esc(top["label"])} <span class="h2s">Full Terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
                '<thead><tr><th>Term</th><th>Offered</th><th>Counter</th><th>Why</th></tr></thead><tbody>'
                + "".join(f'<tr><td>{esc(a)}</td><td>{esc(b)}</td><td class="good"><b>{esc(c)}</b></td><td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
                + "</tbody></table></div>")
-    details = f'''<div class="pb"></div><div class="dh">Detailed Comparison</div>
-<h2>1 · Seller Net Sheet <span class="h2s">As Offered · Green = Best, Red = Weakest</span></h2>
-<div class="tbl"><table><colgroup><col style="width:30%"></colgroup><thead>{hr("Line Item")}</thead><tbody>{ns}</tbody></table></div>
-<h2>2 · Appraisal &amp; Inspection Exposure <span class="h2s">What Each Offer Is Worth if the Appraisal and Inspection Go Badly</span></h2>
-<div class="tbl"><table><colgroup><col style="width:30%"></colgroup><thead>{hr()}</thead><tbody>{ap}</tbody></table></div>
-<h2>3 · Contingency Timeline <span class="h2s">Weeks from {L["analysis_date"]:%b %-d} · When Each Buyer Can Still Walk Away</span></h2>
-<div class="tbl"><table style="table-layout:fixed"><colgroup><col style="width:6%">{"".join(f'<col style="width:{86 / weeks:.1f}%">' for _ in range(weeks))}<col style="width:8%"></colgroup><thead>{tl}</thead></table></div>
-<div class="legend"><span><i class="hot"></i>Inspection / Sale-of-Home</span><span><i class="warm"></i>Financing / Appraisal Open</span><span><i class="safe"></i>Firm</span><span><i class="closei"></i>Closing</span></div>
-<h2 class="pb">4 · Terms Comparison <span class="h2s">Green = Favorable · Amber = Watch · Red = Weak</span></h2>
-<div class="tbl"><table><colgroup><col style="width:16%"></colgroup><thead><tr><th>Term</th>{"".join(f"<th>Offer {esc(k)}</th>" for k in K)}</tr></thead><tbody>{terms}</tbody></table></div>
-<h2>5 · Certainty Scorecard <span class="h2s">1 = Weak · 5 = Strong · * = Set by Agent</span></h2>
-<div class="tbl"><table><colgroup><col style="width:34%"><col style="width:10%"></colgroup><thead><tr><th>Criterion</th><th class="n">Weight</th>{"".join(f'<th class="c">Offer {esc(k)}</th>' for k in K)}</tr></thead><tbody>{sc}</tbody></table></div>
-<h2 class="pb">6 · Risk Flags</h2><div class="tbl"><table><colgroup><col style="width:6%"><col style="width:8%"><col style="width:48%"></colgroup>
-<thead><tr><th class="c">Offer</th><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl or "<tr><td colspan=4>No significant risks found.</td></tr>"}</tbody></table></div>
-<h2>7 · Verification Checklist</h2><div class="tbl"><table><colgroup><col style="width:40%"></colgroup><thead><tr><th>Item</th>{"".join(f'<th class="c">Offer {esc(k)}</th>' for k in K)}</tr></thead><tbody>{vf}</tbody></table></div>
+    details = f'''<div class="pb"></div><div class="dh">Key Terms Side by Side</div>
+{snapshot(R)}
+<h2>Key Terms <span class="h2s">Green = Favorable · Amber = Watch · Red = Weak</span></h2>
+<div class="tbl"><table class="kt"><colgroup><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:9%"></colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
+<div class="legend"><span>Each offer's single review has its full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
 {ctr}
-<h2>{"9" if ctr else "8"} · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
+<h2>Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, multi=True)}
 {fine(R)}'''
-    sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · {len(R['active'])} active offers"
-    return "Multiple Offer Review", sub, snapshot(R, "Offers", str(len(R["active"]))) + f'<div class="p1">{page1}</div>' + details
+    sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · {v['offers_active']} active offers"
+    return "Multiple Offer Review", sub, f'<div class="p1">{page1}</div>' + details
 
 
 # --- document ------------------------------------------------------------------
@@ -569,38 +575,55 @@ def build_html(R, agent, sample=False, mode="auto", offer_id=None):
     theme = design.theme(agent.get("brand"), "seller")
     with open(CSS_PATH, encoding="utf-8") as f:
         css = f.read()
-    doc = render.page(header(R, title, sub, agent, sample) + body, css=css, title=title, theme_css=design.css_vars(theme))
+    if mode == "multi":
+        css += "@page{size:Letter landscape}"  # the comparison is two wide tables; after report.css's portrait rule
+    doc = render.page(header(R, title, sub, agent, sample) + body, css=css, title=title, theme_css=design.css_vars(theme),
+                      body_class="wide" if mode == "multi" else "")
     return doc, mode, o
 
 
-def fit_page_one(pg):
+def fit_page_one(pg, limit=PAGE1_LIMIT):
     """Measure page 1; switch to the compact layout when it would spill onto page 2."""
     top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
-    if top > PAGE1_LIMIT:
+    if top > limit:
         pg.evaluate("() => document.body.classList.add('compact')")
         top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
     return top
 
 
-def build(data, fmt, out_dir, ctx):
-    R = review.analyze(data, ctx.get("market"), review.load_cma(data, ctx.get("cma")))
-    doc, mode, o = build_html(R, ctx["agent"], ctx.get("sample") or R["sample"], ctx.get("mode") or "auto", ctx.get("offer"))
+def write_pdf(R, agent, sample, mode, offer_id, out_dir):
+    doc, mode, o = build_html(R, agent, sample, mode, offer_id)
     street = (R["listing"].get("address") or "Listing").split(",")[0]
-    name = render.filename(street, f"Offer {o['id']} Review" if mode == "single" else "Multiple Offer Review", ext="pdf")
+    name = render.filename(street, f"{o['label']} Offer Review" if mode == "single" else "Multiple Offer Review", ext="pdf")
     path = os.path.join(out_dir, name)
-    label = f"{'Single' if mode == 'single' else 'Multiple'} Offer Review · Seller Side · {street}"
-    top = render.html_to_pdf(doc, path, footer_html=render.footer(label), before_print=fit_page_one)
-    if top > PAGE1_LIMIT:
-        print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten the counter notes or custom flags.", file=sys.stderr)
+    label = f"Single Offer Review · Seller Side · {street} · {o['label']}" if mode == "single" else f"Multiple Offer Review · Seller Side · {street}"
+    limit = PAGE1_LIMIT_WIDE if mode == "multi" else PAGE1_LIMIT
+    top = render.html_to_pdf(doc, path, footer_html=render.footer(label), landscape=mode == "multi",
+                             before_print=lambda pg: fit_page_one(pg, limit))
+    if top > limit:
+        print(f"{name}: page 1 overflows by {top - limit:.0f}px; shorten the counter notes or custom flags.", file=sys.stderr)
+    return path
+
+
+def build(data, fmt, out_dir, ctx):
+    """One PDF; with --packet and 2+ active offers, the comparison plus a single review of each active offer, in rank order."""
+    R = review.analyze(data, ctx.get("market"), review.load_cma(data, ctx.get("cma")))
+    sample = ctx.get("sample") or R["sample"]
+    if ctx.get("packet") and len(R["active"]) >= 2:
+        paths = [write_pdf(R, ctx["agent"], sample, "multi", None, out_dir)]
+        paths += [write_pdf(R, ctx["agent"], sample, "single", o["id"], out_dir) for o in R["ranked"]]
+    else:
+        paths = [write_pdf(R, ctx["agent"], sample, ctx.get("mode") or "auto", ctx.get("offer"), out_dir)]
     for a in R["missing"][:6]:
         print(f"Assumed [{a['impact']}] {a['why']}", file=sys.stderr)
-    return [path]
+    return paths
 
 
 def options(ap):
     ap.add_argument("--cma", help="cma-handoff v1 file (.cma.json or markdown with the block)")
     ap.add_argument("--mode", choices=["auto", "single", "multi"], default="auto")
     ap.add_argument("--offer", help="offer id for a single review while others are active")
+    ap.add_argument("--packet", action="store_true", help="with 2+ offers: the comparison plus a single review of every active offer")
 
 
 def main(argv=None):

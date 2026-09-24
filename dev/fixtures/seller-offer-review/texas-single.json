@@ -12,7 +12,8 @@
   },
   "seller": {"name": "Sample Seller", "payoff": 214000, "listing_fee_pct": 0.03, "offered_buyer_broker_pct": 0.025},
   "offers": [
-    {"id": "A", "buyer": "Buyer A", "expires": "2026-09-24 21:00",
+    {"id": "A", "buyer": "Sample Buyer", "buyer_agent": "Dana Whitfield", "buyer_brokerage": "Compass",
+     "received": "2026-09-22", "expires": "2026-09-24 21:00",
      "price": 598000, "financing": "conventional", "down_pct": 0.20, "approval": "du_approved", "lender_called": true,
      "deposit": 6000, "seller_concessions": 8000, "buyer_broker_pct": 0.025, "inspection_days": 7,
      "loan_approval_days": 21, "appraisal_contingency": 21, "closing_days": 35, "insurance_quote": true}

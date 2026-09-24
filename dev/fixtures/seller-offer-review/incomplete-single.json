@@ -1,0 +1,28 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "listing": {
+    "address": "3310 Magnolia Bend, Sanford, FL 32771",
+    "state": "FL",
+    "county": "Seminole",
+    "list_price": 349000,
+    "beds": 3, "baths": 2, "sqft": 1410, "year_built": 1974, "roof_year": 2019,
+    "hoa_monthly": 45, "flood_zone": "X",
+    "cma_low": 338000, "cma_high": 352000, "annual_tax": 4100
+  },
+  "seller": {"name": "Sample Seller", "payoff": 121000, "listing_fee_pct": 0.03, "offered_buyer_broker_pct": 0.025},
+  "offers": [
+    {"id": "A", "buyer": "Sample Buyer", "buyer_agent": "Rosa Delgado", "buyer_brokerage": "Premier Sotheby's",
+     "expires": "2026-09-25 18:00",
+     "price": 345000, "financing": "fha", "down_pct": 0.035, "loan_amount": 318000, "approval": "du_approved",
+     "deposit": 5000, "seller_concessions": 7000, "buyer_broker_pct": 0.025, "inspection_days": 10,
+     "loan_approval_days": 30, "closing_days": 35, "contract_form": "as_is", "riders": ["HOA"],
+     "contract_issues": [
+       {"sev": "Blocking", "issue": "Second buyer named in paragraph 1 has not signed or initialed.",
+        "fix": "Get the second buyer's signature and initials on every page.",
+        "request": "Please have the second buyer sign and initial every page."},
+       {"sev": "High", "issue": "Additional deposit amount is blank in paragraph 2(b).",
+        "fix": "Ask the buyer's agent to fill in or strike paragraph 2(b).", "check": "terms"}
+     ]}
+  ]
+}

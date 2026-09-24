@@ -317,6 +317,71 @@ def cost_notes(costs, L):
     return notes
 
 
+# --- offer labels --------------------------------------------------------------
+# Offers are named the way listing agents talk about them: by the buyer's agent and brokerage, never by the
+# buyer (fair housing). The id stays an internal key; a one- or two-character id doubles as the chart key.
+
+NAME_PARTICLES = {"de", "del", "della", "da", "di", "do", "dos", "du", "la", "le", "van", "von", "der", "den", "st.", "st"}
+NAME_SUFFIXES = {"jr", "jr.", "sr", "sr.", "ii", "iii", "iv"}
+
+
+def surname(name):
+    """'J. Morales' -> 'Morales'; 'Ana de la Cruz' -> 'de la Cruz'; 'Tom Hill Jr.' -> 'Hill'."""
+    toks = [t.strip(",") for t in name.split() if t.strip(",")]
+    while len(toks) > 1 and toks[-1].lower() in NAME_SUFFIXES:
+        toks.pop()
+    i = len(toks) - 1
+    while i > 1 and toks[i - 1].lower() in NAME_PARTICLES:
+        i -= 1
+    return " ".join(toks[i:])
+
+
+def short_price(v):
+    """$432K, $432.5K, $1.25M."""
+    if v >= 1_000_000:
+        return f"${v / 1_000_000:.2f}".rstrip("0").rstrip(".") + "M"
+    k = round(v / 100) / 10
+    return f"${k:,.0f}K" if k == int(k) else f"${k:,.1f}K"
+
+
+def label_offers(offers):
+    """Set label ('Morales · Keller Williams'), ref ('the Morales (Keller Williams) offer') and key ('A') on each offer.
+
+    Label order: the agent's `label`; else the buyer's agent's surname and brokerage; else price and financing
+    ('$432K FHA'). Offers that would share a label get the price and financing added, then the key.
+    """
+    for i, o in enumerate(offers):
+        k = str(o["id"])
+        o["key"] = k if len(k) <= 2 else chr(65 + i % 26)
+        agent, firm = (o.get("buyer_agent") or "").strip(), (o.get("buyer_brokerage") or "").strip()
+        if agent and not firm and " · " in agent:
+            agent, firm = (x.strip() for x in agent.split(" · ", 1))
+        who = surname(agent) if agent else ""
+        tag = f"{short_price(o['price'])} {FIN_LABEL[o['financing']]}"
+        custom = re.sub(r"\s+offer$", "", (o.get("label") or "").strip(), flags=re.I)
+        o["_name"] = {"custom": custom, "who": who, "firm": firm, "tag": tag, "extra": []}
+    def base(n):
+        return n["custom"] or " · ".join(x for x in (n["who"], n["firm"]) if x) or n["tag"]
+    for step in ("tag", "key"):
+        seen = {}
+        for o in offers:
+            seen.setdefault(base(o["_name"]) + "|" + "|".join(o["_name"]["extra"]), []).append(o)
+        for group in seen.values():
+            if len(group) > 1:
+                for o in group:
+                    n = o["_name"]
+                    if step == "key" or base(n) != n["tag"]:
+                        n["extra"].append(n["tag"] if step == "tag" else o["key"])
+    for o in offers:
+        n = o.pop("_name")
+        extra = [x for x in n["extra"] if x != base(n)]
+        o["label"] = base(n) + (f", {', '.join(extra)}" if extra else "")
+        if not n["custom"] and n["who"] and n["firm"]:
+            o["ref"] = f"the {n['who']} ({', '.join([n['firm']] + extra)}) offer"
+        else:
+            o["ref"] = f"the {o['label']} offer"
+
+
 # --- offers ------------------------------------------------------------------
 
 def prepare_offer(o, L, S, A):
@@ -335,7 +400,7 @@ def prepare_offer(o, L, S, A):
     o["status"] = o.get("status", "active")
     o["expires_raw"] = o.get("expires")
     o["expires"] = fmt_when(o.get("expires"))
-    o["buyer"] = o.get("buyer") or f"Buyer {k}"
+    o["buyer"] = (o.get("buyer") or "").strip()
     dflt_down = {"cash": 1.0, "fha": 0.035, "va": 0.0, "usda": 0.0, "conventional": 0.10}[fin]
     o["down_pct"] = 1.0 if fin == "cash" else given(
         o, "down_pct", dflt_down, A, sc, f"Down payment not provided: assumed {dflt_down * 100:g}% for {FIN_LABEL[fin]}", "med")
@@ -557,6 +622,72 @@ def score_offer(o, L, S):
 
 # --- flags -------------------------------------------------------------------
 
+# --- contract completeness ------------------------------------------------------
+# Blocking = the contract can't be reviewed as written (unsigned, missing pages, price blank...). A blocked
+# offer gets no recommendation, counter or ranking: only the list of what to fix. Whether a contract is
+# legally valid is for an attorney; the skill only says it can't review it as written.
+
+CONTRACT_SEV = ("Blocking", "High", "Med", "Low")
+
+
+def _has_rider(riders, *words):
+    text = " | ".join(riders).lower()
+    return any(w in text for w in words)
+
+
+def as_request(fix):
+    """'Ask the buyer's agent to fill in 2(b).' -> 'Please fill in 2(b).' for the buyer's agent list."""
+    fix = fix.strip()
+    m = re.match(r"^Ask (?:the buyer's agent |the buyer )?(to|for) (.+)", fix)
+    if not m:
+        return fix or None
+    return ("Please " if m.group(1) == "to" else "Please send ") + m.group(2)
+
+
+def contract_checks(o, L):
+    """Rider and consistency checks the extracted fields can prove, plus the agent's `contract_issues` from reading
+    the document. Rider checks run only when the offer lists its riders (a chat summary may not)."""
+    F = []
+
+    def add(sev, issue, fix, check, request=None):
+        """`request` is what to ask the buyer's agent for; None when the fix is on the listing side."""
+        F.append({"sev": sev, "issue": issue, "fix": fix, "check": check, "contract": True, "request": request})
+
+    riders = o.get("riders") or []
+    if riders:
+        if o["financing"] in ("fha", "va") and not _has_rider(riders, "fha", "va "):
+            add("High", f"{FIN_LABEL[o['financing']]} financing without an FHA/VA rider.", "Ask for the signed FHA/VA financing rider.", "riders",
+                "Please send the signed FHA/VA financing rider.")
+        if o["sale_contingency_days"] and not _has_rider(riders, "sale of buyer", "sale of other", "contingent on sale"):
+            add("High", "Sale-of-home contingency without its rider.", "Ask for the signed Sale of Buyer's Property rider.", "riders",
+                "Please send the signed Sale of Buyer's Property rider.")
+        if o["financing"] == "conventional" and o["appraisal_days"] and o.get("appraisal_contingency") not in (None, "") \
+                and not _has_rider(riders, "apprais"):
+            add("Med", "Appraisal period stated without an appraisal rider.", "Ask which appraisal terms apply, and for the rider.", "riders",
+                "Which appraisal terms apply? Please send the appraisal rider.")
+        if L.get("hoa_monthly") and not _has_rider(riders, "hoa", "homeowner", "condo", "community"):
+            add("High", "The property has an HOA but no HOA or condo rider is attached.",
+                "Add the HOA or condo rider, and give the buyer the required HOA disclosure, before accepting.", "riders")
+        yb = L.get("year_built")
+        if yb and yb < 1978 and not _has_rider(riders, "lead"):
+            add("High", f"Built {yb}: no lead-based paint disclosure attached (federally required before 1978).",
+                "Complete the lead-based paint disclosure with the seller and have the buyer sign it before accepting.", "riders")
+    loan = o.get("loan_amount")
+    if loan and o["financed"] and abs(loan - o["price"] * (1 - o["down_pct"])) > max(1000, .01 * o["price"]):
+        add("Med", f"Loan amount {money(loan)} doesn't match {pct(o['down_pct'])} down on {money(o['price'])}.",
+            "Ask the buyer's agent to correct the financing figures.", "terms",
+            "Please correct the loan amount or down payment in the financing section.")
+    if o["financed"] and o["loan_approval_days"] and o["loan_approval_days"] > o["close_days"]:
+        add("Med", f"Loan approval period ({o['loan_approval_days']} days) ends after closing ({o['close_days']} days).",
+            "Ask for a loan approval date before closing.", "terms", "Can the loan approval date move before closing?")
+    for c in o.get("contract_issues") or []:
+        sev = c.get("sev", "High")
+        sev = sev if sev in CONTRACT_SEV else "High"
+        add(sev, c["issue"], c.get("fix", ""), c.get("check", "signed" if sev == "Blocking" else "terms"),
+            c.get("request") or (as_request(c.get("fix", "")) if sev in ("Blocking", "High") else None))
+    return F
+
+
 def flags_for(o, L, S):
     F = []
 
@@ -582,8 +713,6 @@ def flags_for(o, L, S):
     if o["financed"] and o["approval"] in ("prequal", "none"):
         add("High" if o["approval"] == "none" else "Med", "Buyer has only a pre-qualification (or no approval).",
             "Require a full pre-approval within 3 days.")
-    if o["financed"] and not o.get("lender_called"):
-        add("Med", "Lender not yet called to confirm approval and closing capacity.", "Call the loan officer before responding.")
     if o["deposit"] is not None and o["deposit"] / o["price"] < L["deposit_norm"] / 2:
         add("Med", f"Deposit is {o['deposit'] / o['price']:.1%} of price.", f"Counter for {pct(L['deposit_norm'])} or a larger additional deposit.")
     roof = L.get("roof_year")
@@ -617,7 +746,8 @@ def flags_for(o, L, S):
         add("Low", "Buyer has no insurance quote yet.", "Ask for a quote before countering.")
     for f in o.get("flags") or []:
         F.append({"sev": f.get("sev", "Med"), "issue": f["issue"], "fix": f.get("fix", "")})
-    order = {"High": 0, "Med": 1, "Low": 2}
+    F += contract_checks(o, L)
+    order = {"Blocking": -1, "High": 0, "Med": 1, "Low": 2}
     return sorted(F, key=lambda f: order.get(f["sev"], 1))
 
 
@@ -722,6 +852,7 @@ def analyze_offer(o, L, S, costs):
                              o["close"], L, S, costs, repair)
     o["score"] = score_offer(o, L, S)
     o["flags"] = flags_for(o, L, S)
+    o["blocking"] = [f for f in o["flags"] if f["sev"] == "Blocking"]
     ct, rows = propose_counter(o, L, S)
     o["counter_terms"], o["counter_rows"] = ct, rows
     o["ns_counter"] = _sheet(ct, L, S, costs)
@@ -798,11 +929,17 @@ def analyze(data, market=None, cma=None):
     offers = [prepare_offer(o, L, S, A) for o in data.get("offers") or []]
     if not offers:
         raise OfferError("There are no offers in the listing file.")
+    label_offers(offers)
     for o in offers:
         analyze_offer(o, L, S, costs)
     _missing_market(costs, offers[0]["ns"], A)
-    active = [o for o in offers if o["status"] in ACTIVE]
+    live_offers = [o for o in offers if o["status"] in ACTIVE]
+    active = [o for o in live_offers if not o["blocking"]]
+    for o in live_offers:
+        if o["blocking"]:  # no recommendation on a contract that can't be reviewed as written
+            o["action"], o["action_reason"] = "INCOMPLETE", "Contract can't be reviewed as written"
     res = {"listing": L, "seller": S, "offers": offers, "active": active, "costs": costs,
+           "incomplete": [o for o in live_offers if o["blocking"]],
            "market_notes": [n for n in costs.notes if "MLS" not in n],  # offers don't use MLS files
            "sample": bool(data.get("sample"))}
     close_ref = max((o["close"] for o in active), default=L["analysis_date"] + timedelta(days=30))
@@ -825,7 +962,7 @@ def analyze(data, market=None, cma=None):
         top["action_reason"] = "Best risk-adjusted net"
         for i, o in enumerate(ranked[1:], start=2):
             if i == 2 and o["score"]["total"] >= 60:
-                o["action"], o["action_reason"] = "BACKUP", f"Strong enough to hold as backup to Offer {top['id']}"
+                o["action"], o["action_reason"] = "BACKUP", f"Strong enough to hold as backup to {top['ref']}"
             else:
                 o["action"] = "DECLINE"
                 why = []
@@ -836,13 +973,13 @@ def analyze(data, market=None, cma=None):
                 if S["deadline"] and o["close"] > S["deadline"]:
                     why.append(f"closes past {S['deadline']:%b %-d} deadline")
                 if not why:
-                    why.append(f"nets less than Offer {top['id']} once costs and risk are counted")
+                    why.append("nets less than the recommended offer after costs and risk")
                 text = "; ".join(why)
                 o["action_reason"] = text[:1].upper() + text[1:]
         for o in ranked:
             if o.get("recommendation"):
                 o["action"] = o["recommendation"].upper()
-    live = {f"offer {o['id']}" for o in active}
+    live = {f"offer {o['id']}" for o in active + res["incomplete"]}
     res["assumptions"] = [a for a in A.items if not a["scope"].startswith("offer ") or a["scope"] in live]
     res["missing"] = sorted(res["assumptions"], key=lambda a: IMPACT_ORDER[a["impact"]])
     return res

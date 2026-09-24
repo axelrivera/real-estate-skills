@@ -2,40 +2,48 @@
    good / caution / risk use the fixed status variables. Never hard-code a brand color here. */
 .hero{margin:6px 0}
 .hero .big{font-size:25pt;letter-spacing:.04em;line-height:1.05}
-.hero .hl.decline{background:var(--risk-strong)} .hero .hl.backup{background:var(--brand-deep)}
+.hero .rbo{display:block;font-size:8pt;color:var(--muted)}
+.hero .who{font-size:12.5pt;font-weight:800;color:var(--brand-ink);margin-top:2px}
+.legend.okey{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:7.4pt} .legend.okey span{margin:0}
+.legend.okey b{color:var(--brand-ink);margin-right:3px}
+.rank th:nth-child(n+3),.rank td:nth-child(n+3){padding-left:3px;padding-right:3px}
+.rank td.why2{font-size:7.6pt;color:var(--text)}
+.kt td{font-size:7.8pt;vertical-align:top} .kt th{font-size:7pt}
+.hero .hl.decline{border-left-color:var(--risk-base)} .hero .hl.decline .big{color:var(--risk-strong)}
+.hero .hl.backup{border-left-color:var(--brand-deep)} .hero .hl.backup .big{color:var(--brand-deep)}
 
 /* status text and cells */
 .gt{color:var(--good-strong);font-weight:700} .rt{color:var(--risk-strong);font-weight:700}
 .hit{color:var(--good-strong)} .midt{color:var(--caution-strong)} .lot{color:var(--risk-strong)}
-td.good{background:var(--good-bg)!important} td.caution{background:var(--caution-bg)!important} td.risk{background:var(--risk-bg)!important}
-td.best{background:var(--good-bg)!important;color:var(--good-strong)} td.worst{background:var(--risk-bg)!important;color:var(--risk-strong)}
+/* status cells: a thin left mark in the status color, no fill */
+td.good{box-shadow:inset 3px 0 0 var(--good-base)} td.caution{box-shadow:inset 3px 0 0 var(--caution-base)} td.risk{box-shadow:inset 3px 0 0 var(--risk-base)}
+td.best{color:var(--good-strong);font-weight:700} td.worst{color:var(--risk-strong);font-weight:700}
 td.neg{color:var(--muted)}
-td.hl{background:var(--brand-callout)!important;font-weight:700} th.hl{background:var(--brand-strong)}
-tr.total td{font-weight:700;border-top:2px solid var(--brand);background:var(--brand-callout)!important}
-tr.total2 td{font-weight:800;font-size:9.4pt;border-top:2px solid var(--brand);background:var(--brand-callout)!important}
+td.hl{color:var(--brand-strong);font-weight:700} th.hl{color:var(--brand-strong);border-bottom-width:3px}
+tr.total td{font-weight:700;border-top:2px solid var(--brand)}
+tr.total2 td{font-weight:800;font-size:9.4pt;border-top:2px solid var(--brand);border-bottom:2px solid var(--brand)}
 tr.alt td{color:var(--muted);font-size:7.8pt}
 .pill.high{background:var(--risk-bg);color:var(--risk-strong)} .pill.med{background:var(--caution-bg);color:var(--caution-strong)}
 .pill.low{background:var(--good-bg);color:var(--good-strong)}
-.pill.vyes{background:var(--good-bg);color:var(--good-strong)} .pill.vno{background:var(--risk-bg);color:var(--risk-strong)}
-.pill.vpending{background:var(--caution-bg);color:var(--caution-strong)} .pill.vna{background:var(--brand-panel);color:var(--muted)}
-.pill.rec{background:var(--good-base);color:#fff}
-.s5{background:var(--good-border)!important;color:var(--good-strong);font-weight:700} .s4{background:var(--good-bg)!important;color:var(--good-strong)}
-.s3{background:var(--caution-bg)!important;color:var(--caution-strong)} .s2{background:var(--risk-bg)!important;color:var(--risk-strong)}
-.s1{background:var(--risk-border)!important;color:var(--risk-strong);font-weight:700}
+.pill.vyes{background:var(--good-bg);color:var(--good-strong)}
+.cb{display:inline-block;width:11px;height:11px;border:1.3px solid var(--brand-ink);border-radius:2px;vertical-align:middle;
+ font-size:9px;line-height:10px;text-align:center;font-weight:900;color:var(--good-strong)} .cb.on{border-color:var(--good-base)}
+.pill.rec{background:var(--good-bg);color:var(--good-strong);box-shadow:inset 0 0 0 1px var(--good-base)}
+/* 1-5 scores: colored numbers, the extremes in bold */
+.s5{color:var(--good-strong);font-weight:800} .s4{color:var(--good-strong)}
+.s3{color:var(--caution-strong)} .s2{color:var(--risk-strong)}
+.s1{color:var(--risk-strong);font-weight:800}
 
-/* counter / plan box: green because it is the recommended move */
+/* counter / plan box: green because it is the recommended move. Outlined, no fills */
 .ctr{border:2px solid var(--good-base);border-radius:6px;overflow:hidden;margin:0 0 7px;break-inside:avoid}
-.ctrh{background:var(--good-base);color:#fff;padding:5px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.ctrh{color:var(--good-strong);border-bottom:1.5px solid var(--good-base);padding:5px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .ctrh span{font-size:12pt;font-weight:900;letter-spacing:.06em;white-space:nowrap} .ctrh em{font-style:normal;font-size:8.8pt;text-align:right} .ctrh em b{font-size:10.5pt}
-.ctr th{background:var(--good-bg);color:var(--good-strong);font-size:7.6pt;text-transform:uppercase;letter-spacing:.04em}
+.ctr th{color:var(--good-strong);border-bottom:1px solid var(--good-border);font-size:7.6pt;text-transform:uppercase;letter-spacing:.04em}
 .ctr td{padding:3px 8px;font-size:9pt} .ctr td.was{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--grey)}
 .ctr td.arr{color:var(--good-base);font-weight:800;text-align:center;padding:3px 0} .ctr td.now{color:var(--good-strong);font-weight:800;font-size:9.6pt}
-.ctr td.why2{font-size:7.9pt;color:var(--muted)} .ctr tbody tr:nth-child(even) td{background:var(--good-bg)}
-.ctr .note{background:var(--good-bg);padding:4px 10px;font-size:7.9pt;color:var(--muted);border-top:1px solid var(--good-border)}
-.ctr.cmp{border-color:var(--brand-deep)} .ctr.cmp .ctrh{background:var(--brand-deep)}
-.plan td.act{font-weight:800} .plan td{font-size:8.8pt;vertical-align:middle}
-.plan td.act.good{color:var(--good-strong);background:transparent!important} .plan td.act.caution{color:var(--caution-strong);background:transparent!important}
-.plan td.act.risk{color:var(--risk-strong);background:transparent!important}
+.ctr td.why2{font-size:7.9pt;color:var(--muted)} .ctr td{border-top-color:var(--good-border)}
+.ctr .note{padding:4px 10px;font-size:7.9pt;color:var(--muted);border-top:1px solid var(--good-border)}
+.ctr.cmp{border-color:var(--brand-deep)} .ctr.cmp .ctrh{color:var(--brand-deep);border-bottom-color:var(--brand-deep)}
 
 /* key numbers */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
@@ -44,21 +52,21 @@ tr.alt td{color:var(--muted);font-size:7.8pt}
 .kpis b{display:block;font-size:17pt;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
 .kpis b.brand{color:var(--brand-ink)} .kpis b.good{color:var(--good-strong)}
 .kpis i{font-style:normal;font-size:7.6pt;color:var(--muted)} .kpis i.good{color:var(--good-strong);font-weight:700} .kpis i.risk{color:var(--risk-strong);font-weight:700}
-.kpis .kgood{border-top-color:var(--good-base);background:var(--good-bg)}
+.kpis .kgood{border-top-color:var(--good-base)}
 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .gauge b{font-size:24pt;font-weight:900;line-height:1} .gauge span{font-size:9pt;color:var(--muted);margin-left:3px}
 .meter{height:9px;background:var(--brand-rule);border-radius:3px;margin-top:4px;overflow:hidden}
 .bar{height:100%} .bar.hi{background:var(--good-base)} .bar.mid{background:var(--caution-base)} .bar.lo{background:var(--risk-base)}
 table.facts2 td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt}
-tr.recrow td{background:var(--good-bg)!important} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--good-base)}
-.nextstep{margin-top:6px;background:var(--brand-deep);color:var(--on-brand);padding:6px 10px;border-radius:4px;font-size:8.6pt}
-.prelim{margin-top:6px;background:var(--caution-bg);border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:5px 10px;border-radius:4px;font-size:8.4pt}
+tr.recrow td{font-weight:700} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--good-base)}
+.nextstep{margin-top:6px;border:1.5px solid var(--brand-deep);padding:5px 10px;border-radius:4px;font-size:8.6pt} .nextstep b:first-child{color:var(--brand-deep)}
+.prelim{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
 .qs td:first-child{color:var(--brand-ink);font-weight:700;text-align:center}
 
 /* ranking and chart */
 .rank td{font-size:8.8pt;vertical-align:middle} .rank td.rk{font-size:13pt;font-weight:900;color:var(--brand-ink);text-align:center}
-.rank tr.top td{background:var(--good-bg)!important} .rank tr.top td.rk{color:var(--good-strong);box-shadow:inset 3px 0 0 var(--good-base)}
+.rank tr.top td{font-weight:700} .rank tr.top td.rk{color:var(--good-strong);box-shadow:inset 3px 0 0 var(--good-base)}
 .scat{width:100%;display:block} .scat .ax{font-size:10px;fill:var(--muted)} .scat .gl{stroke:var(--brand-rule)}
 .scat .pl{font-size:11px;font-weight:800} .scat .q{font-size:8.5px;fill:var(--muted);font-style:italic}
 
@@ -69,13 +77,21 @@ td.on-hot div{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} td.on-war
 td.tc{text-align:center;font-size:7pt;padding:3px 2px;border-left:1px solid #fff}
 td.hot{background:var(--risk-border)!important;color:var(--risk-strong)} td.warm{background:var(--caution-bg)!important;color:var(--caution-strong)}
 td.safe{background:var(--good-bg)!important;color:var(--good-strong)}
-td.close{background:var(--brand-deep)!important;color:var(--on-brand);font-weight:800;letter-spacing:.05em}
-.legend i.hot{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} .legend i.warm{background:var(--caution-border)} .legend i.closei{background:var(--brand-deep)}
+td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow:inset 0 0 0 1.5px var(--brand-deep)}
+.legend i.hot{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} .legend i.warm{background:var(--caution-border)} .legend i.closei{border:1.5px solid var(--brand-deep)}
 .legend i.safe{background:var(--good-bg);border:1px solid var(--good-border)} .legend i.dl{background:var(--risk-base);width:2px}
 .sm2{font-size:6.8pt;font-weight:400;opacity:.9}
 
 /* compact page 1 when it would spill onto page 2 */
-.compact .hero .big{font-size:20pt} .compact .hero .why{font-size:8.3pt} .compact .hero .hl,.compact .hero .hr{padding:6px 10px}
+.compact .hero .big{font-size:20pt} .compact .hero .who{font-size:11pt} .compact .hero .why{font-size:8.3pt} .compact .hero .hl,.compact .hero .hr{padding:6px 10px}
 .compact .ctr td{padding:1.5px 7px;font-size:8.3pt} .compact .ctr td.now{font-size:8.8pt} .compact .ctr td.why2{font-size:7.4pt}
 .compact .kpis b{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
 .compact .p1 td{padding-top:1.8px;padding-bottom:1.8px} .compact h2{margin:6px 0 3px} .compact .prelim{padding:3px 8px;font-size:7.8pt;margin-top:4px}
+
+/* the comparison prints landscape */
+.wide .snap div b{white-space:nowrap} .wide .rank .pill,.wide .rank td:nth-child(3){white-space:nowrap} .wide .legend.okey{grid-template-columns:1fr 1fr 1fr}
+
+/* contract can't be reviewed as written: no recommendation, only what to fix */
+.pill.blocking{color:var(--risk-strong);box-shadow:inset 0 0 0 1.2px var(--risk-base);font-weight:800}
+.ctr.stop{border-color:var(--risk-base)} .ctr.stop .ctrh{color:var(--risk-strong);border-bottom-color:var(--risk-base)}
+.ctr.stop th{color:var(--risk-strong);border-bottom-color:var(--risk-border)} .ctr.stop td{border-top-color:var(--risk-border)}

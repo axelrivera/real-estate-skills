@@ -63,28 +63,43 @@ def band_pill(b):
 # --- Offer Options report --------------------------------------------------------
 
 def snapshot(r):
+    """Home facts in a divider row, then the market and deadline strip: one value per cell."""
     B = r["B"]
-    P, V, M, C = B["property"], B["value"], B["market"], B["competition"]
-    vr = f"{money(V['cma_low'])}–{V['cma_high'] // 1000:,.0f}K" if not V.get("assumed") else '<span class="rt">not provided</span>'
-    bbs = " / ".join(str(x) if x else "—" for x in (P.get("beds"), P.get("baths"), f"{P['sqft']:,}" if P.get("sqft") else None))
-    cells = [("Beds / Baths / Sq Ft", bbs), ("Value Range", vr), ("Year / Roof", f"{P.get('year_built') or '—'} / {P.get('roof_year') or '—'}"),
-             ("Sale-to-List", f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else "—"),
-             ("Months Supply", M.get("months_supply") or "—"), ("DOM / Median", f"{P.get('dom', '—')} / {M.get('median_dom') or '—'}"),
-             ("Offers Due", esc(C.get("deadline") or "—"))]
-    return ('<div class="snap" style="grid-template-columns:1.1fr 1.2fr .8fr .8fr .8fr .9fr 1.4fr">'
+    P, M, C = B["property"], B["market"], B["competition"]
+    facts = [f"{P['beds']} bed" if P.get("beds") else None, f"{P['baths']} bath" if P.get("baths") else None,
+             f"{P['sqft']:,} sq ft" if P.get("sqft") else None, f"built {P['year_built']}" if P.get("year_built") else None,
+             f"roof {P['roof_year']}" if P.get("roof_year") else None]
+    facts = [x for x in facts if x]
+    row = f'<div class="divrow factrow"><div>{"".join(f"<span>{esc(x)}</span>" for x in facts)}</div></div>' if facts else ""
+    cells = [("Sale-to-List", f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else None),
+             ("Months Supply", M.get("months_supply")), ("Days on Market", P.get("dom")),
+             ("Median DOM", M.get("median_dom")), ("Offers Due", esc(C["deadline"]) if C.get("deadline") else None)]
+    cells = [(a, b) for a, b in cells if b is not None and b != ""]  # missing values drop out rather than show a dash
+    if not cells:
+        return row
+    cols = " ".join("1.6fr" if a == "Offers Due" else "1fr" for a, _ in cells)
+    return (row + f'<div class="snap" style="grid-template-columns:{cols}">'
             + "".join(f"<div><span>{a}</span><b>{b}</b></div>" for a, b in cells) + "</div>")
+
+
+def value_note(V):
+    """Second line under the offer price: the value range it sits in."""
+    if V.get("assumed"):
+        return '<small>Value range not provided</small>'
+    return f'<small>Value range ${V["cma_low"] / 1000:,.0f}K–${V["cma_high"] / 1000:,.0f}K</small>'
 
 
 def page1(r, s):
     labels = s["option_labels"]
     hero = (f'<div class="hero"><div class="hl"><span class="k">Recommended Offer · Outlook with {esc(s["competition"])}</span>'
             f'<div class="big2">{esc(s["outlook"].upper())}</div><div class="why">{md(s["why"])}</div></div>'
-            f'<div class="hr"><span class="k">Submit By</span><b>{esc(s["submit_by"])}</b>'
-            f'<span class="k" style="margin-top:6px">Competition Signal</span><div>{esc(s["signal"])}</div>'
-            f'<span class="k" style="margin-top:6px">Financing</span><div>{esc(s["financing"])}</div>'
-            f'<span class="k" style="margin-top:6px">Your Limits</span><div>{esc(s["limits"])}</div></div></div>')
+            f'<div class="hr"><span class="k">Submit By</span><b>{esc(s["submit_by"])}</b><dl>'
+            + "".join(f"<dt>{a}</dt><dd>{esc(b)}</dd>" for a, b in (("Competition", s["signal"]), ("Financing", s["financing"]),
+                                                                  ("Your Limits", s["limits"])))
+            + "</dl></div></div>")
     agent_pill = ' <span class="pill vyes">Agent</span>'
-    rows = "".join(f'<tr><td><b>{esc(t["term"])}</b></td><td class="val">{esc(t["offer"])}</td><td class="why2">{esc(t["why"])}'
+    vnote = value_note(r["B"]["value"])
+    rows = "".join(f'<tr><td><b>{esc(t["term"])}</b></td><td class="val">{esc(t["offer"])}{vnote if t["term"] == "Price" else ""}</td><td class="why2">{esc(t["why"])}'
                    f'{agent_pill if t["agent"] else ""}</td></tr>' for t in s["terms"])
     box = (f'<div class="ctr"><div class="ctrh"><span>RECOMMENDED OFFER</span><em>Strength <b>{s["strength"]}</b> · Seller Net <b>{s["seller_net"]}</b>'
            f' · Your Worst-Case Cash <b>{s["worst_cash"]}</b></em></div><table><colgroup><col style="width:20%"><col style="width:24%"><col></colgroup>'
@@ -211,8 +226,7 @@ def options_html(r, agent, sample):
     s = res["summary"]
     B = r["B"]
     P = B["property"]
-    dom = f" · {P['dom']} DOM" if P.get("dom") is not None else ""
-    sub = f'{esc(P.get("address") or "")} · List {money(P["list_price"])}{dom} · {oe.FIN_LABEL[B["buyer"]["financing"]]} offer'
+    sub = f'{esc(P.get("address") or "")} · List {money(P["list_price"])} · {oe.FIN_LABEL[B["buyer"]["financing"]]} offer'
     prep = f'Prepared for <b>{esc(B["buyer"].get("name") or "Buyer")}</b> · {B["analysis_date"]:%B %-d, %Y}{agent_lines(agent)}'
     body = header("Offer Options", sub, prep, sample) + snapshot(r) + f'<div class="p1">{page1(r, s)}</div>' + details(r, res)
     theme = design.theme(agent.get("brand"), "buyer")

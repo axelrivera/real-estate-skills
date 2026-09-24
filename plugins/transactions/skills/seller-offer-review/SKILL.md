@@ -8,8 +8,8 @@ description: Reviews purchase offers on a listing for the seller's agent. For ea
 Every offer goes through the same engine: seller net sheet, downside case, certainty score, risk flags and a proposed counter. All offers on one property live in one listing file, so the single-offer and multi-offer answers never disagree. The math always runs in the scripts; never estimate a net or score by hand, because a seller will act on these numbers.
 
 - **One active offer:** a single-offer review. Recommendation (Accept / Counter), the counter terms, key numbers, certainty, top risks and the seller's options.
-- **Two or more active offers:** a comparison. The recommended offer, a plan for every offer (counter / backup / decline), the ranking and a net-vs-certainty chart.
-- **One offer while others are active** ("give me the report on Offer B"): the single review, set in context. An offer worth countering alone may be a decline next to a stronger one.
+- **Two or more active offers:** a two-page landscape decision summary, one row per offer so it holds any number of offers: the recommended offer, the plan and ranking in one table (counter / backup / decline), a net-vs-certainty chart up to 6 offers, and key terms side by side. The detail (net sheets, timeline, scorecard, checklist) lives in each offer's single review.
+- **One offer while others are active** ("give me the report on the Park offer"): the single review, set in context. An offer worth countering alone may be a decline next to a stronger one.
 
 ## Guardrails
 
@@ -28,9 +28,9 @@ The engine fills anything missing with a conservative default and records it as 
 
 ## 1. Build the Listing File
 
-One JSON file per property: read `references/listing-file.md` for the fields. If the agent uploads a listing file from an earlier session, add the new offer to it (next letter as `id`) rather than starting over.
+One JSON file per property: read `references/listing-file.md` for the fields. If the agent uploads a listing file from an earlier session, add the new offer to it (next letter as `id`) rather than starting over. Record `buyer_agent` and `buyer_brokerage` from the contract: reports name each offer by them ("Morales · Keller Williams"), never by the buyer, and never by the letter; see Offer Names in `references/listing-file.md`. In chat, use the same names; when the agent says "Offer B", match it to the id.
 
-- **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). For FR/BAR forms, and for how to read other states' contracts, read `references/contract-fields.md`.
+- **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). For FR/BAR forms, and for how to read other states' contracts, read `references/contract-fields.md`. Then check the contract is complete with `references/contract-check.md` and record problems in `contract_issues`.
 - **Pre-approval letter or proof of funds:** set `approval` and `lender`.
 - **Offer described in chat:** take what's given.
 
@@ -46,7 +46,7 @@ Record only what the documents or the agent say. Leave a field out rather than g
 ## 2. Run and Review
 
 ```
-python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-profile.md] [--mode single|multi] [--offer B]
+python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-profile.md] [--mode single|multi] [--offer ID]
 ```
 
 It prints every value already formatted: the page-1 summary, each offer's net sheet, and the assumptions ranked by impact. Read it critically before answering; the rules are a first draft and the agent's judgment wins.
@@ -60,10 +60,10 @@ It prints every value already formatted: the page-1 summary, each offer's net sh
 **Quick question** ("should we take it?", "what's the net?"): answer in two or three sentences from the output. **Full review in chat:** fill in `assets/offer-review-template.md` with the output's values. **A report for the seller:**
 
 ```
-python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer B] [--agent agent-profile.md] [--market market-profile.md]
+python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--agent agent-profile.md] [--market market-profile.md]
 ```
 
-It saves the PDF to the outputs folder in the agent's seller-side brand colors. Page 1 fits on one page; if it can't render, say so and give the markdown review instead.
+It saves the PDF to the outputs folder in the agent's seller-side brand colors. Page 1 fits on one page; if it can't render, say so and give the markdown review instead. When the agent asks for every offer's report, the full set or the packet, add `--packet`: the comparison plus a single review of each active offer, in rank order, one PDF each. Otherwise render only what was asked.
 
 In chat, keep it short: the recommendation with the net and certainty; the counter (and fallback) or the plan per offer; then the top missing inputs as one question, skipped when nothing high or medium is assumed. Offer the other format in one line. Always hand back the updated listing file: the sandbox resets between conversations, so say once "upload this with the next offer and I'll add it to the comparison."
 
@@ -77,4 +77,5 @@ In chat, keep it short: the recommendation with the net and certainty; the count
 
 - **One counter out at a time** with multiple offers. Countering several buyers at once can produce two accepted contracts; the plan says so.
 - **Present every offer.** The skill ranks offers; it never hides one. Only the seller drops an offer.
+- **No recommendation on an incomplete contract.** When a contract can't be reviewed as written (a Blocking issue: unsigned, pages missing, price blank), the review still runs and shows every warning, but it's labeled CONTRACT INCOMPLETE with no accept, counter or decline, and the offer isn't ranked. Say what to fix; never say whether the contract is binding.
 - **Not legal advice.** For unusual clauses, recommend a real estate attorney licensed in the property's state rather than interpreting them.

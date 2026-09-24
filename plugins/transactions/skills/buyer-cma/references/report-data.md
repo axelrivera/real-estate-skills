@@ -25,7 +25,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 | `address` | Display form ("517 Hickorywood Ave") |
 | `mls_address` | Exactly as in the export's address column |
 | `city`, `state`, `county` | `state` and `county` pick the market's tax rules, millage and MLS format |
-| `locality` | "City, ST ZIP · Subdivision · County · MLS #" |
+| `locality` | "City, ST ZIP · Subdivision · County · MLS #". Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
 | `list_price`, `sqft` | *numbers* |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
 | `subdivision` | As in the export (improves the handoff's comp ranking) |

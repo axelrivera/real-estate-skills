@@ -1,6 +1,6 @@
 """Analyze the offers on a listing: net sheets, downside, certainty, counter, ranking.
 
-    python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-profile.md] [--mode single|multi] [--offer B]
+    python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-profile.md] [--mode single|multi] [--offer ID]
 
 Prints JSON with every value already formatted: the page-1 summary (the same one the PDF shows), the
 net sheet for each offer, and the assumptions ranked by impact. Or {"ok": false, "problems": [...]}.
@@ -45,15 +45,15 @@ def pick(R, mode="auto", offer_id=None):
     """(mode, offer) for the report. Single mode on one offer keeps the multi-offer context."""
     mode = R["mode"] if mode in (None, "auto") else mode
     if mode == "multi" and len(R["active"]) < 2:
-        raise oe.OfferError("A comparison needs at least 2 active offers; use single mode.")
+        raise oe.OfferError("A comparison needs at least 2 active offers whose contracts can be reviewed; use single mode.")
     if mode == "multi":
         return "multi", None
     if offer_id:
         o = next((x for x in R["offers"] if x["id"] == offer_id), None)
         if o is None:
-            raise oe.OfferError(f"There's no Offer {offer_id} in the listing file.")
+            raise oe.OfferError(f"There's no offer with id {offer_id!r} in the listing file.")
     else:
-        o = R["ranked"][0] if R["ranked"] else R["offers"][0]
+        o = (R["ranked"] or R["incomplete"] or R["offers"])[0]
     if "action" not in o:  # declined / expired offer shown on request
         o["action"], o["action_reason"] = "DECLINE", f"Offer status: {o['status']}"
     return "single", o
@@ -84,6 +84,14 @@ def data_note(R):
     bits.append(f"{n} input{'s' if n != 1 else ''} assumed ({hi} high-impact); see Assumptions & Data to Confirm."
                 if n else "All key inputs provided.")
     return " ".join(bits)
+
+
+def where(R, scope):
+    """An assumption's scope for display: 'offer A' becomes the offer's label."""
+    if scope.startswith("offer "):
+        o = next((x for x in R["offers"] if x["id"] == scope[6:]), None)
+        return o["label"] if o else scope.title()
+    return scope.title()
 
 
 def to_confirm(R, limit=4):
@@ -120,12 +128,43 @@ def row(term, offered, counter, why):
 
 # --- single offer ------------------------------------------------------------
 
+def incomplete_view(R, o):
+    """A contract that can't be reviewed as written: what to fix, the numbers as written, and no recommendation."""
+    S = R["seller"]
+    issues = "; ".join(f["issue"].rstrip(".") for f in o["blocking"])
+    fixes = [f for f in o["flags"] if f.get("contract") and f["sev"] in ("Blocking", "High")]
+    return {
+        "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
+        "action": "INCOMPLETE", "headline": "CONTRACT INCOMPLETE",
+        "why": (f"This contract can't be reviewed as written: {issues[:1].lower() + issues[1:]}. There is no recommendation, "
+                "counter or ranking until the buyer's agent sends a corrected, fully signed contract. The numbers below are "
+                "for reference only. For questions about whether the contract is binding, see a real estate attorney."),
+        "offers_active": len(R["active"]) + len(R["incomplete"]),
+        "respond_by": o.get("expires") or "See contract", "respond_by_offer": o["label"] if o.get("expires") else None,
+        "priority": S.get("priority_note") or S["priority"].title(),
+        "fixes": [{"sev": f["sev"], "issue": f["issue"], "fix": f["fix"]} for f in fixes],
+        "counter": None, "fallback": None, "compare": None,
+        "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": fin_str(o), "tone": "brand"},
+                 {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
+                 {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": "if appraisal & inspection go badly", "tone": "risk"},
+                 {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": "list price, clean terms", "tone": ""}],
+        "certainty": certainty(o, S),
+        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"] if not f.get("contract")][:3],  # contract issues are in fixes
+        "options": [],
+        "preliminary": None,
+        "next_step": "ask the buyer's agent for a corrected, fully signed contract with every page and rider, then run the review again.",
+        "data_note": data_note(R),
+    }
+
+
 def single_view(R, o):
+    if o["action"] == "INCOMPLETE":
+        return incomplete_view(R, o)
     L, S = R["listing"], R["seller"]
     tgt = o["target"]["net_adj"]
     ao, dn, cn = o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]
     act = o["action"]
-    top = R["ranked"][0]
+    top = R["ranked"][0] if R["ranked"] else o
     multi_ctx = R["mode"] == "multi"
 
     if act == "COUNTER":
@@ -146,7 +185,7 @@ def single_view(R, o):
     elif act == "ACCEPT":
         why = f"Strong offer: nets {money(ao)} with {o['score']['total']}/100 certainty. Nothing in the terms is worth risking the deal over."
     else:
-        why = f"{o.get('action_reason', '')}. Offer {top['id']} is the recommended offer; see the comparison below."
+        why = f"{o.get('action_reason', '')}. {cap(top['ref'])} is the recommended offer; see the comparison below."
 
     counter = None
     if act == "COUNTER" and o["counter_rows"]:
@@ -163,7 +202,7 @@ def single_view(R, o):
                     "Priced at value, so the number is more likely to hold.")
     compare = None
     if act in ("BACKUP", "DECLINE") and top is not o:
-        compare = {"vs": top["id"], "rows": [
+        compare = {"this": o["label"], "vs": top["label"], "rows": [
             ["Price", money(o["price"]), money(top["price"])],
             ["Net After Holding", money(ao), money(top["ns"]["net_adj"])],
             ["Downside Net", money(dn), money(top["ns_down"]["net_adj"])],
@@ -197,7 +236,7 @@ def single_view(R, o):
                  "what": f"Stay on market; each extra month costs about {money(S['holding_monthly'])} in holding costs"})
     if act == "BACKUP":
         opts.insert(0, {"option": "Hold as Backup", "net": money(ao), "certainty": f"{score}/100", "status": "caution",
-                        "what": f"Steps in if Offer {top['id']} falls through", "recommended": True})
+                        "what": f"Steps in if {top['ref']} falls through", "recommended": True})
 
     expires = f" before {o['expires']}" if o.get("expires") else ""
     nxt = {"COUNTER": f"approve the counter terms and I'll send the counter to the buyer's agent{expires}.",
@@ -205,10 +244,10 @@ def single_view(R, o):
            "BACKUP": "approve asking this buyer to sign a backup contract.",
            "DECLINE": "approve and I'll let the buyer's agent know the seller is moving forward with another offer."}[act]
     return {
-        "mode": "single", "offer": o["id"], "buyer": o["buyer"],
+        "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
         "action": act, "headline": "HOLD AS BACKUP" if act == "BACKUP" else act, "why": why,
         "offers_active": len(R["active"]) if multi_ctx else 1,
-        "respond_by": o.get("expires") or "See contract",
+        "respond_by": o.get("expires") or "See contract", "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "fallback": fallback, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S),
@@ -223,11 +262,12 @@ def single_view(R, o):
 # --- multiple offers ---------------------------------------------------------
 
 def first_expiry(R):
-    ex = [o for o in R["active"] if o.get("expires_raw")]
+    """(when, offer label) of the first offer to expire."""
+    ex = [o for o in R["active"] + R["incomplete"] if o.get("expires_raw")]
     if not ex:
-        return "See contracts"
+        return "See contracts", None
     o = min(ex, key=lambda o: str(o["expires_raw"]))
-    return f"{o['expires']} (Offer {o['id']})"
+    return o["expires"], o["label"]
 
 
 def multi_view(R):
@@ -237,30 +277,34 @@ def multi_view(R):
     act = top["action"]
     backup = next((o for o in rk if o["action"] == "BACKUP"), None)
     hi_price = max(R["active"], key=lambda o: o["price"])
-    lead = f"Offer {top['id']} has the best net once risk is counted and closes {top['close']:%b %-d}"
+    lead = f"{cap(top['ref'])} has the best net once risk is counted and closes {top['close']:%b %-d}"
     lead += ", before the seller's deadline." if S["deadline"] and top["close"] <= S["deadline"] else "."
     if hi_price is not top:
         reason = hi_price["action_reason"]
         reason = (reason[:1].lower() + reason[1:]) if reason else "more risk"
-        lead += f" The highest price (Offer {hi_price['id']}, {money(hi_price['price'])}) ranks #{rk.index(hi_price) + 1}: {reason}."
+        lead += f" The highest price ({hi_price['label']}, {money(hi_price['price'])}) ranks #{rk.index(hi_price) + 1}: {reason}."
     if backup:
-        lead += f" Keep Offer {backup['id']} as backup."
+        lead += f" Keep {backup['ref']} as backup."
+    if R["incomplete"]:
+        n = len(R["incomplete"])
+        names = ", ".join(x["label"] for x in R["incomplete"])
+        lead += (f" {n} more offer{'s' if n != 1 else ''} ({names}) can't be reviewed until the contract is corrected, "
+                 + ("so it isn't ranked." if n == 1 else "so they aren't ranked."))
     top_net = top["ns_counter"]["net_adj"] if act == "COUNTER" else top["ns"]["net_adj"]
 
-    plan = []
+    terms = {}
     for o in rk:
         a = o["action"]
         if o is top and a == "COUNTER":
-            terms = " · ".join(f"{r[0].lower()} {r[2]}" for r in o["counter_rows"][:5])
+            t = "Counter: " + " · ".join(f"{r[0].lower()} {r[2]}" for r in o["counter_rows"][:5])
         elif o is top:
-            terms = "Accept as written"
+            t = "Accept as written"
         elif a == "BACKUP":
-            terms = f"Ask if the buyer will sign a backup contract; if Offer {top['id']} falls through, counter at {money(o['counter_terms']['price'])}"
+            t = f"Ask for a backup contract; counter at {money(o['counter_terms']['price'])} if needed"
         else:
-            terms = o["action_reason"]
-        plan.append({"offer": o["id"], "action": "Hold as backup" if a == "BACKUP" else a.title(),
-                     "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[a], "terms": terms})
-    summary = f"Net after holding with Offer {top['id']} {'counter' if act == 'COUNTER' else 'as written'}: **{money(top_net)}**"
+            t = o["action_reason"]
+        terms[o["id"]] = t
+    summary = f"Net after holding with {top['ref']} {'counter' if act == 'COUNTER' else 'as written'}: **{money(top_net)}**"
     if act == "COUNTER":
         summary += f" ({signed(top_net - top['ns']['net_adj'])} vs. as offered"
         summary += f", {signed(top_net - top['ns_down']['net_adj'])} vs. downside)" if top_net < top["ns"]["net_adj"] else ")"
@@ -268,35 +312,43 @@ def multi_view(R):
     note += (f"Other buyers' agents are told the seller is {'responding to' if act == 'COUNTER' else 'moving forward with'} "
              "another offer; nothing is declined until the seller approves.")
 
-    ranked = [{"rank": i + 1, "offer": o["id"],
+    ranked = [{"rank": i + 1, "offer": o["label"],
                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                "price": money(o["price"]), "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]),
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
-               "close": f"{o['close']:%b %-d}", "action": o["action"].title()} for i, o in enumerate(rk)]
+               "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
+               "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],
+               "terms": terms[o["id"]]} for i, o in enumerate(rk)]
+    ranked += [{"rank": "—", "offer": o["label"],
+                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
+                "price": money(o["price"]), "net": "—", "downside": "—", "score": "—", "band_class": "na", "risk_days": "—",
+                "close": f"{o['close']:%b %-d}", "action": "Incomplete", "status": "risk",
+                "terms": "Contract can't be reviewed as written: " + o["blocking"][0]["issue"].rstrip(".").lower()}
+               for o in R["incomplete"]]
 
     most_certain = max(R["active"], key=lambda o: (o["score"]["total"], o["ns_down"]["net_adj"]))
-    first = f"{'Counter' if act == 'COUNTER' else 'Accept'} {top['id']}" + (f", hold {backup['id']} as backup" if backup else "")
+    first = f"{'Counter' if act == 'COUNTER' else 'Accept'} {top['label']}" + (f", Hold {backup['label']} as Backup" if backup else "")
     opts = [{"option": first, "net": money(top_net), "recommended": True, "status": "good",
              "certainty": f"≈{top['counter_score']}/100" if act == "COUNTER" else f"{top['score']['total']}/100",
-             "what": "Best net with manageable risk" + (f"; Offer {backup['id']} is a safety net" if backup else "")}]
+             "what": "Best net with manageable risk" + (f"; {backup['ref']} is a safety net" if backup else "")}]
     if act == "ACCEPT" and top["counter_rows"]:
         g = top["ns_counter"]["net_adj"] - top["ns"]["net_adj"]
-        opts.append({"option": f"Counter {top['id']} Anyway", "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
+        opts.append({"option": f"Counter {top['label']} Anyway", "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
                      "certainty": f"≈{top['counter_score']}/100", "status": "caution",
                      "what": f"Only {signed(g)}, and it risks losing the strongest offer"})
     if most_certain is not top:
-        opts.append({"option": f"Accept {most_certain['id']} Now", "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
+        opts.append({"option": f"Accept {most_certain['label']} Now", "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
                      "certainty": f"{most_certain['score']['total']}/100", "status": "caution",
                      "what": f"Closes {most_certain['close']:%b %-d}, most certain, but {money(top_net - most_certain['ns']['net_adj'])} less than the plan"})
     opts.append({"option": "Call for Highest & Best", "net": "Unknown", "certainty": "Varies", "status": "caution", "recommended": False,
                  "what": "May lift prices, but adds ~2 days and weak terms usually stay weak"})
     verb = "send the counter to" if act == "COUNTER" else "accept"
-    nxt = f"approve the plan and I'll {verb} Offer {top['id']}" + (f" and request a backup contract from Offer {backup['id']}" if backup else "") + "."
+    nxt = f"approve the plan and I'll {verb} {top['ref']}" + (f" and request a backup contract on {backup['ref']}" if backup else "") + "."
     return {
-        "mode": "multi", "offer": top["id"], "action": act, "headline": f"{act} OFFER {top['id']}", "why": lead,
-        "offers_active": len(R["active"]), "respond_by": first_expiry(R),
+        "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act, "headline": act, "why": lead,
+        "offers_active": len(R["active"]) + len(R["incomplete"]), "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1],
         "priority": S.get("priority_note") or S["priority"].title(),
-        "plan": plan, "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
+        "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
         "preliminary": preliminary(R, top["id"]), "next_step": nxt, "data_note": data_note(R),
         "target_net": money(R["target"]["net_adj"]),
     }
@@ -320,7 +372,7 @@ def offer_detail(o):
     if o["counter_rows"]:
         cols.append(("Counter", o["ns_counter"]))
     return {
-        "id": o["id"], "buyer": o["buyer"], "price": money(o["price"]), "financing": fin_str(o),
+        "id": o["id"], "label": o["label"], "buyer": o["buyer"], "buyer_agent": o.get("buyer_agent") or "", "price": money(o["price"]), "financing": fin_str(o),
         "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]), "counter_net": money(o["ns_counter"]["net_adj"]),
         "score": o["score"]["total"], "band": o["score"]["band"][1], "action": o.get("action"),
         "close": f"{o['close']:%a %b %-d}", "firm_date": f"{o['firm_date']:%a %b %-d}",
@@ -343,7 +395,7 @@ def result(R, mode="auto", offer_id=None):
         "summary": view,
         "offers": [offer_detail(x) for x in offers],
         "to_confirm": to_confirm(R),
-        "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in R["missing"]],
+        "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"]), "what": a["why"]} for a in R["missing"]],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
     }

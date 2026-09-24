@@ -210,7 +210,7 @@ class OtherMarkets(unittest.TestCase):
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
         C, homes = run(R)
         doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
-        self.assertIn("side prelim", doc)
+        self.assertIn("tag prelim", doc)
         self.assertIn("no local figure for transfer tax (or confirmation there is none)", doc)
         self.assertNotIn("Documentary Stamp", doc)
 
@@ -225,12 +225,12 @@ class Brand(unittest.TestCase):
         C, homes = run(R)
         doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
         self.assertIn("--brand:#0B6E4F", doc)
-        self.assertIn('<span class="side">Seller</span>', doc)
+        self.assertIn("Seller Summary", doc)  # the side shows in the page-1 label; no separate pill
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("License", doc)
         self.assertIn("--party-both:#1F3A5F", doc)  # the subject is the palette's 'both' color, never the brand
         self.assertIn("--subject:var(--party-both)", doc)
-        self.assertNotIn("side prelim", doc)
+        self.assertNotIn("tag prelim", doc)
 
     def test_default_seller_orange(self):
         R = report()

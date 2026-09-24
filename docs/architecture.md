@@ -160,6 +160,7 @@ How the color reaches every output:
 - **Legibility.** If the primary color doesn't reach WCAG AA contrast on white, a darkened version is used for text, and the original is used only for fills and accents. `agent-profile` mentions this in plain words when the color is saved.
 - **Party coding.** Documents that show both parties (the timeline's Buyer / Seller / Both markers) use the resolved buyer and seller colors. If the two are the same or too close, the second party gets a clearly different shade, and parties are always labeled in text, never by color alone.
 - **Side labels.** Default blue and orange keep buyer and seller documents easy to tell apart. With a single brand color that signal is gone, so every file-mode output shows its side (Buyer / Seller) in the header on every page.
+- **Print-light PDFs.** Agents print these reports, so color goes into type, rules and thin accent bars, not background fills. Section headings are colored text with no rule under them (most sit on a boxed table or panel, and a rule on a box doubles the line); table headers are bold colored text over a rule, with no zebra rows; the page-1 answer, plans and callouts are outlined or carry a left bar; highlighted rows and status cells get a thin left mark and bold or colored text. A fill is allowed only where it is the data itself: chart bands and marks, timeline bars, meters, small status pills. Shared rules live in `shared/report.css` and `shared/cma.css`.
 
 ### Built-in market layers
 

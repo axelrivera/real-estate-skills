@@ -118,7 +118,8 @@ class Pdf(unittest.TestCase):
                  "email": None, "website": None, "brand": {"buyer_primary": "#0B6E4F"}}
         doc, _ = buyer_render.build_html(copy.deepcopy(R), C, homes, agent)
         self.assertIn("--brand:#0B6E4F", doc)
-        self.assertIn('<span class="side">Buyer</span>', doc)
+        self.assertIn("Buyer Summary", doc)  # the side shows in the page-1 label; no separate pill
+        self.assertNotIn('class="tag', doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
         self.assertIn("--subject:#B3261E", doc)  # subject accent stays the fixed risk red, not the brand

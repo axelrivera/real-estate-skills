@@ -25,11 +25,10 @@ def agent_block(agent, L):
     """Wordmark (left) with only the fields the agent profile has."""
     name = agent.get("name")
     if not name:
-        return "", ""
+        return ""
     org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
     left = f'<div class="wm-name">{esc(name)}</div><div class="wm-sub">{esc(org or L("wordmark_sub"))}</div>'
-    contact = " · ".join(str(agent[f]) for f in ("phone", "email", "website") if agent.get(f))
-    return left, contact
+    return left
 
 
 def footer_block(agent, R, L):
@@ -54,11 +53,11 @@ def summary_page(R, C, agent, L):
     stats = list(sp["key_stats"])[:3] + [[money(first["total"]),
                                            L("sum_payment_tile", price=money(pay["price"]), down=f"{sc0['down_pct'] * 100:g}")]]
     tgt = k(op["target_low"]) + (f"–{k(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
-    left, contact = agent_block(agent, L)
+    left = agent_block(agent, L)
     o = ['<div class="onepage">',
-         f'<header class="top"><div>{left}</div><div class="prep"><span class="side">{L("side")}</span><br>'
+         f'<header class="top"><div>{left}</div><div class="prep">'
          f'{esc(sp.get("label", L("sum_label")))}<br>{L("prepared")} {esc(R["prepared_date"])}</div></header>',
-         f'<h1>{esc(s["address"])}</h1><div class="sub">{s["locality"]} · {s.get("summary_facts", "")}</div>',
+         cma.subject_heading(s),
          '<div class="sp-hero"><div class="sp-rec">'
          f'<div class="lbl">{L("sum_opening")}</div><div class="price">{money(op["opening"])}</div>'
          f'<div class="line">{L("sum_ladder_line", target=tgt, walk=money(op["walk_away"]))}</div>'
@@ -80,8 +79,7 @@ def summary_page(R, C, agent, L):
              f'<div class="note">{L("sum_costs_note")}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_check")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["check_first"]) + "</div>")
-    o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span>'
-             f'<span>{esc(" · ".join(x for x in (agent.get("name"), contact) if x))}</span></div>')
+    o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
     o.append(f'<div class="note" style="margin-top:6px">{L("sum_disclaimer")}</div></div>')
     return "".join(o)
 
@@ -264,6 +262,8 @@ def build(R, fmt, out_dir, ctx):
         json.dump(C["handoff"], f, indent=2)
     if not info["summary_page"]["fits"]:
         print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
+    elif info["summary_page"]["fit_level"]:
+        print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
     if info["moved"]:
         print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
     for w in C["warnings"]:

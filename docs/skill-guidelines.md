@@ -38,6 +38,13 @@ Only add a folder when the skill needs it.
 
 Markdown mode takes its numbers from the same data JSON the scripts produce, so chat and files always agree. Only the layout comes from the template.
 
+## PDF Layout
+
+- **Top fact row.** Context under the header (home facts, contract terms, the inputs a report rests on) goes in one divider row (`divrow factrow` in `shared/report.css`), not a grid of boxed cells. It wraps onto a second line as it grows and needs no layout change when an item is added.
+- **Every item carries its word** ("payoff $214,000", "built 1962", "deadline Sun Nov 15"), since a bare value means nothing in a row of mixed facts. Order: the property first, then the money and dates.
+- **Missing items drop out**, no dashes. A missing input that makes the report Preliminary stays and shows in the risk color ("CMA not provided").
+- **The row is context only.** A number the reader decides on (a net, a target, a score) belongs in page 1's tiles or tables, not the fact row. A boxed strip (`.snap`) is only for a few comparable numbers read side by side, as in buyer-offer-strategy's market strip.
+
 ## References
 
 - One topic per file, named for what it answers (`references/brand-colors.md`, `references/florida-costs.md`).

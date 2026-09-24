@@ -1,0 +1,537 @@
+{
+ "prepared_date": "September 22, 2026",
+ "as_of": "2026-09-22",
+ "subject": {
+  "address": "12345 North Lake Buena Vista Boulevard Unit 1204",
+  "mls_address": "517 HICKORYWOOD AVE",
+  "locality": "Altamonte Springs, FL 32714 \u00b7 Spring Oaks Unit Two Replat at Hickorywood Estates \u00b7 Seminole County \u00b7 MLS O6433709",
+  "list_price": 474900,
+  "sqft": 1849,
+  "facts": [
+   [
+    "List Price",
+    "$474,900"
+   ],
+   [
+    "Price per Sq Ft",
+    "$257"
+   ],
+   [
+    "Beds / Baths",
+    "4 / 2"
+   ],
+   [
+    "Living Area",
+    "1,849 sq ft"
+   ],
+   [
+    "Lot",
+    "0.22 acre"
+   ],
+   [
+    "Built",
+    "1972, block"
+   ],
+   [
+    "Pool",
+    "Private, in-ground"
+   ],
+   [
+    "Garage",
+    "2-car attached"
+   ],
+   [
+    "HOA / CDD",
+    "None / None"
+   ],
+   [
+    "Flood Zone",
+    "X (lower risk)"
+   ]
+  ],
+  "summary": "This is a renovated pool home: new kitchen with stone counters, updated baths, new flooring, and a resurfaced pool. The house is vacant and owned by a trust, and the listing agent is related to the owner. The seller wants offers on the As-Is contract with proof of funds or a pre-approval letter.",
+  "summary_facts": "4 bed \u00b7 2.5 bath \u00b7 1,849 sq ft \u00b7 0.22 acre \u00b7 pool \u00b7 2-car garage \u00b7 built 1972 \u00b7 block",
+  "state": "FL",
+  "county": "Seminole",
+  "city": "Altamonte Springs",
+  "beds": 4,
+  "baths": 2,
+  "year_built": 1972,
+  "pool": true
+ },
+ "summary_page": {
+  "label": "Buyer Summary",
+  "headline": "Open at the bottom of what recent sales support, because the home has sat since January and the seller has already cut the price four times.",
+  "key_stats": [
+   [
+    "{median_adjusted}",
+    "Median of the Five Closest Sales, Adjusted to This Home"
+   ],
+   [
+    "96.5%",
+    "Sale Price vs. Original Asking for Nearby Homes Since July"
+   ],
+   [
+    "8 months",
+    "For Sale Since January: Four Price Cuts and One Failed Contract"
+   ]
+  ],
+  "why": [
+   "The five closest Spring Oaks pool sales, adjusted to your home, center on about {median_adjusted}, with the two most recent sales landing right in the middle of the range.",
+   "The four newest Spring Oaks pool sales, adjusted to your home, center on about {median_adjusted}, with the two most recent sales landing right in the middle of the range.",
+   "The five closest nearby pool sales, adjusted to your home, center on about {median_adjusted}, with the two most recent sales landing right in the middle of the range."
+  ],
+  "check_first": [
+   [
+    "The Roof",
+    "Get the permit, the final inspection date and any warranty paperwork from the roofer before listing day."
+   ],
+   [
+    "The April Contract",
+    "Get the permit, the final inspection date and any warranty paperwork from the roofer before listing day."
+   ],
+   [
+    "1972 Systems",
+    "Get the permit, the final inspection date and any warranty paperwork from the roofer before listing day."
+   ]
+  ],
+  "next_step": "Get the listing agent's answers on the roof and the April contract, then write the offer together this week so it lands before the weekend showings."
+ },
+ "bottom_line": {
+  "low": 455000,
+  "high": 480000,
+  "midpoint": 467500,
+  "paragraph": "The asking price of $474,900 sits in the upper part of what recent sales support. It isn't out of line, but it isn't a bargain either. The two sales that support this price closed in the spring, when mortgage rates were lower and homes were selling faster. The recent sales and this home's own history point lower."
+ },
+ "history": {
+  "heading": "This home has been for sale since January",
+  "intro": "The current listing shows 36 days on the market. That number only counts the second listing. The full history:",
+  "rows": [
+   [
+    "Jan 16, 2026",
+    "First listed",
+    "$483,900"
+   ],
+   [
+    "Jan 22",
+    "Price cut",
+    "$479,900"
+   ],
+   [
+    "Jan 27 \u2013 Mar 5",
+    "Taken off the market twice, put back each time",
+    "\u2014"
+   ],
+   [
+    "Feb 7",
+    "Price cut",
+    "$474,500"
+   ],
+   [
+    "Apr 11",
+    "Went under contract",
+    "$474,500 asking"
+   ],
+   [
+    "May 17",
+    "Contract fell apart; taken off the market",
+    "\u2014"
+   ],
+   [
+    "May 21",
+    "Back on market at a <em>higher</em> price",
+    "$484,900"
+   ],
+   [
+    "Jun 9",
+    "Listing canceled",
+    "\u2014"
+   ],
+   [
+    "Aug 17",
+    "Relisted as a new listing, which reset the day count",
+    "$484,900"
+   ],
+   [
+    "Aug 31",
+    "Price cut",
+    "$478,900"
+   ],
+   [
+    "Sep 16",
+    "Price cut",
+    "$474,900"
+   ]
+  ],
+  "after": "That adds up to about 119 days of active marketing across two listings, spread over eight months, plus one failed contract. The market has had a long look at this home in the $475,000\u2013$485,000 range, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the April contract fell apart before writing an offer."
+ },
+ "offer_plan": {
+  "intro": "Our recommendation for your offer, based on the comparable sales, the market, and this home's history. These three numbers are a negotiating plan, not a value opinion, so we'll adjust them together if anything changes.",
+  "opening": 455000,
+  "target_low": 460000,
+  "target_high": 465000,
+  "walk_away": 470000,
+  "why_opening": "The bottom of the supported range, backed by the comps. After eight months, four price cuts, and a failed contract, the seller has reason to negotiate rather than ignore it.",
+  "why_target": "Where recent sales and the typical 3.5% negotiation suggest this home settles.",
+  "why_walk_away": "About the median of the adjusted comps. Above it you'd be paying spring-market prices and risking a low appraisal you'd have to cover in cash.",
+  "credit_alt": {
+   "price": 465000,
+   "credit": 10000
+  },
+  "conditions": "the roof is documented as new, the April contract fell through for reasons unrelated to the house, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
+ },
+ "offer": {
+  "heading": "Negotiating Points",
+  "bullets": [
+   "<strong>There is room to negotiate.</strong> The seller is paying to carry a vacant house, has cut the price four times, and has already lost one buyer. Mortgage rates are also higher now than when the spring sales happened.",
+   "<strong>Seller help with closing costs is normal right now.</strong> Eight of the last ten sales in this area included seller-paid costs, typically around $10,000. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
+   "<strong>Watch the appraisal.</strong> Only two homes in Spring Oaks have sold above this home's price per square foot, both renovated pool homes. An offer above about $480,000 raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
+  ]
+ },
+ "comps": {
+  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Spring Oaks pool homes of about 1,800\u20131,900 square feet, built in the 1970s. We included the ones that argue against a lower price. For each sale, we adjust for differences so it reflects what that home would have sold for if it were this one.",
+  "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000\u2013$45,000 for a home that hadn't been renovated to this level; $5,000\u2013$10,000 for a noticeably larger or better lot; 1\u20132% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "cards": [
+   {
+    "address": "622 Spring Oaks Blvd",
+    "adjusted": 492300,
+    "meta": "Sold $505,500 \u00b7 April 24, 2026 \u00b7 1,824 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.29-acre corner lot \u00b7 0.2 mi",
+    "bullets": [
+     "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
+     "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more: minus $5,000.",
+     "It sold in April, when rates were lower and homes were moving faster: minus about $10,000."
+    ]
+   },
+   {
+    "address": "516 Oakwood Ct",
+    "adjusted": 483800,
+    "meta": "Sold $495,000 \u00b7 June 26, 2026 \u00b7 1,865 sq ft \u00b7 4/2 \u00b7 pool \u00b7 1972 \u00b7 0.3 mi",
+    "bullets": [
+     "Same year and nearly the same size. Sold above asking in five days.",
+     "It came with a documented 2020 roof, AC, electrical, and windows. We don't yet know the age of this home's AC, electrical, or windows, so that home gets a small edge: minus $5,000.",
+     "Early summer sale: minus about $5,000 for the market since then."
+    ]
+   },
+   {
+    "address": "745 Little Wekiva Cir",
+    "adjusted": 469800,
+    "meta": "Sold $427,000 \u00b7 August 20, 2026 \u00b7 1,871 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.5 mi",
+    "bullets": [
+     "The most recent pool-home sale in Spring Oaks. It was listed at $450,000 and took 60 days to sell.",
+     "Described as well maintained but not renovated. Adjusting up for the renovation this home has: plus $45,000."
+    ]
+   },
+   {
+    "address": "602 Mockingbird Ln",
+    "adjusted": 438400,
+    "meta": "Sold $429,000 \u00b7 April 27, 2026 \u00b7 1,849 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.1 mi",
+    "bullets": [
+     "Same size and likely the same floor plan, one street over.",
+     "The seller paid $12,000 of the buyer's costs, so the seller actually received about $417,000.",
+     "Partly updated (new appliances, stone counters) but not a full renovation: plus $30,000. Spring sale: minus about $8,600."
+    ]
+   },
+   {
+    "address": "621 Little Wekiva Rd",
+    "adjusted": 436200,
+    "meta": "Sold $465,000 \u00b7 June 18, 2026 \u00b7 1,865 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.41-acre canal lot \u00b7 0.4 mi",
+    "bullets": [
+     "A renovated pool home with new windows. It was listed at $484,900, almost exactly this home's original price, and sold for $465,000.",
+     "The seller paid about $13,000 of the buyer's costs, so the seller netted about $452,000.",
+     "It sits on nearly twice the land, backing onto a canal: minus $10,000. Early summer sale: minus about $4,500."
+    ]
+   },
+   {
+    "address": "900 Extra Comp Ln",
+    "adjusted": 485300,
+    "meta": "Sold $505,500 \u00b7 April 24, 2026 \u00b7 1,824 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.29-acre corner lot \u00b7 0.2 mi",
+    "bullets": [
+     "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
+     "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more: minus $5,000.",
+     "It sold in April, when rates were lower and homes were moving faster: minus about $10,000."
+    ]
+   }
+  ],
+  "summary_rows": [
+   [
+    "622 Spring Oaks Blvd",
+    505500,
+    0,
+    492300
+   ],
+   [
+    "516 Oakwood Ct",
+    495000,
+    0,
+    483800
+   ],
+   [
+    "745 Little Wekiva Cir",
+    427000,
+    500,
+    469800
+   ],
+   [
+    "602 Mockingbird Ln",
+    429000,
+    12000,
+    438400
+   ],
+   [
+    "621 Little Wekiva Rd",
+    465000,
+    13071,
+    436200
+   ]
+  ],
+  "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
+ },
+ "scatter": {
+  "heading": "The Whole Neighborhood at a Glance",
+  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. The dashed line is the trend for all sales based on size alone. At 1,849 square feet, it sits around {trend_at_subject}.",
+  "renovated": [
+   "621 LITTLE WEKIVA RD",
+   "516 OAKWOOD CT",
+   "622 SPRING OAKS BLVD",
+   "419 NAVARRE WAY"
+  ],
+  "subject_label": "517 Hickorywood",
+  "callouts": [
+   {
+    "address": "622 SPRING OAKS BLVD",
+    "label": "622 Spring Oaks Blvd",
+    "side": "left"
+   },
+   {
+    "address": "644 PEACHWOOD DR",
+    "label": "644 Peachwood (For Sale)",
+    "side": "right"
+   }
+  ],
+  "after_paragraph": "The trend line isn't a value estimate for this house. It lumps dated homes and homes without pools together with renovated ones, and size explains {r2_share} of the difference in sale prices here. What the chart shows is where this home sits: renovated pool homes sell well above the line, and 517 Hickorywood is asking right among them, near the top of the shaded range the adjustments support. Only two Spring Oaks sales of similar size closed higher. Meanwhile, 644 Peachwood, a renovated home of the same size without a pool, is for sale well below."
+ },
+ "competition": {
+  "intro": "These are the homes this seller is competing with right now. Several have been sitting, and most have cut their price.",
+  "rows": [
+   [
+    "644 Peachwood Dr",
+    "For sale",
+    400000,
+    1849,
+    "No",
+    91,
+    "Fully renovated, same size, 2.5 baths. Cut from $449,900. Even adding about $25,000 for a pool, it's a strong alternative."
+   ],
+   [
+    "394 Barberry Ln",
+    "For sale",
+    565000,
+    1943,
+    "Yes",
+    57,
+    "Updated, new roof and windows, solar. Not selling at this level."
+   ],
+   [
+    "626 Orchid Ln",
+    "For sale",
+    470000,
+    2400,
+    "Yes",
+    302,
+    "Larger but dated. Cut from $499,000; motivated seller."
+   ],
+   [
+    "656 Little Wekiva Rd",
+    "For sale",
+    449000,
+    2400,
+    "Yes",
+    51,
+    "5 bedrooms, light fixer, tri-level."
+   ],
+   [
+    "513 Oakcrest St",
+    "For sale",
+    490000,
+    2400,
+    "No",
+    63,
+    "Remodeled 2017, replumbed and rewired."
+   ],
+   [
+    "412 Majorca Ave",
+    "Under contract",
+    454900,
+    1458,
+    "Yes",
+    9,
+    "Renovated and went under contract in 9 days. A renovated pool home priced in the $450s moves fast."
+   ],
+   [
+    "400 W Orange St",
+    "Under contract",
+    449000,
+    1682,
+    "Yes",
+    14,
+    "Dated, large lot, 0.7 mi."
+   ],
+   [
+    "621 Ashberry Ln",
+    "Expired",
+    389999,
+    1849,
+    "No",
+    114,
+    "Same size in Spring Oaks. Started at $425,000 and never sold."
+   ]
+  ]
+ },
+ "market": {
+  "intro": "We looked at 35 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
+  "columns": [
+   "",
+   "April \u2013 June",
+   "July \u2013 Mid-Sept"
+  ],
+  "rows": [
+   [
+    "Homes Sold",
+    "25",
+    "10"
+   ],
+   [
+    "Typical Sale vs. Original Asking Price",
+    "100%",
+    "96.5%"
+   ],
+   [
+    "Typical Days to Go Under Contract",
+    "9",
+    "18"
+   ],
+   [
+    "Sales with Seller-Paid Buyer Costs",
+    "56%",
+    "80%"
+   ],
+   [
+    "Typical Seller-Paid Amount",
+    "$8,600",
+    "$10,300"
+   ]
+  ],
+  "bullets": [
+   "<strong>Homes are selling for about 3.5% under their original asking price</strong>, compared with full price in the spring. Sellers are now expecting to negotiate.",
+   "<strong>Inventory is balanced.</strong> There are 15 homes for sale in this area, and at the summer pace of sales that's about four months of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Six in ten current listings have already cut their price.",
+   "<strong>Mortgage rates are up.</strong> The national average 30-year rate was 6.95% the week of September 17, versus roughly 6.2\u20136.4% during the spring sales. That's the main reason the spring prices are harder to repeat now.",
+   "<strong>Price per square foot.</strong> Spring Oaks homes have sold for a median of about $231 per square foot since April. This home is asking $257. That's supportable for a renovated pool home, but only two Spring Oaks sales have been higher."
+  ]
+ },
+ "costs": {
+  "taxes": {
+   "heading": "Property taxes will be much higher than the listing shows",
+   "intro": "The listing shows $2,731 in taxes. That's the 2024 bill, based on a previous owner's assessment. In Florida, a home's taxable value is reset when it sells, so your bill will be based on roughly what you pay. You also get to file for your own homestead exemption.",
+   "current_bill": 2731,
+   "current_year": 2024,
+   "purchase_price": 474900,
+   "homestead": true,
+   "jurisdictions": [
+    {
+     "label": "in Unincorporated Seminole County",
+     "short": "Unincorporated",
+     "school_mills": 5.249,
+     "total_mills": 13.679,
+     "district": "Seminole County (unincorporated)"
+    },
+    {
+     "label": "Inside Altamonte Springs City Limits",
+     "short": "City",
+     "school_mills": 5.249,
+     "total_mills": 17.5683,
+     "district": "Altamonte Springs"
+    }
+   ],
+   "note": "Based on 2025 final millage rates (13.6790 unincorporated; 17.5683 City of Altamonte Springs). We still need to confirm which applies; the property appraiser's record shows it. These estimates assume the county values the home at the purchase price, and it often values homes somewhat lower, so treat these as the high end. Garbage and other flat assessments aren't included. File for homestead by March 1 of the year after you close.",
+   "after_paragraph": "<strong>Your first year matters.</strong> Your lender will likely set up your escrow using the seller's lower bill. When your own higher bill arrives, your monthly payment can rise to cover the difference. Budget for the higher number from the start."
+  },
+  "insurance": {
+   "paragraph": "The main things that drive the cost for this house are the roof's age, the 1972 construction (especially the wiring and plumbing), wind-mitigation features, and the pool. The flood zone (X) means flood insurance isn't required, though it's inexpensive and still worth considering. Get a real quote during your inspection period, after the 4-point and wind-mitigation inspections. The payment estimates below use $3,600 a year as a placeholder, not a quote."
+  },
+  "payment": {
+   "intro": "Three common ways to finance this home at the full asking price. Your lender will give you exact numbers.",
+   "price": 474900,
+   "rate": 6.95,
+   "insurance_annual": 3600,
+   "tax_jurisdiction_index": 1,
+   "scenarios": [
+    {
+     "label": "Conventional, 5% Down",
+     "type": "conventional",
+     "down_pct": 0.05
+    },
+    {
+     "label": "FHA, 3.5% Down",
+     "type": "fha",
+     "down_pct": 0.035
+    },
+    {
+     "label": "Conventional, 20% Down",
+     "type": "conventional",
+     "down_pct": 0.2
+    }
+   ]
+  },
+  "credit_scenarios": {
+   "intro": "The seller cares about what they net; you may care more about the cash you need at closing. These three offers leave the seller with about the same amount but split it differently between price and a credit toward your closing costs.",
+   "loan_type": "conventional",
+   "down_pct": 0.05,
+   "closing_cost_pct": 0.03,
+   "scenarios": [
+    {
+     "price": 455000,
+     "credit": 0
+    },
+    {
+     "price": 460000,
+     "credit": 5000
+    },
+    {
+     "price": 465000,
+     "credit": 10000
+    }
+   ],
+   "after_paragraph": "Each $5,000 of credit saves you about $4,600 at closing and costs about $41 a month. That's worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term. All three prices sit below the median adjusted comp, so the appraisal should support any of them.",
+   "buydown": {
+    "price": 465000,
+    "credit": 10000
+   }
+  }
+ },
+ "watch": {
+  "items": [
+   "<strong>The roof.</strong> The first version of this listing described a brand-new roof. The current listing doesn't mention the roof at all. Roof age is the biggest factor in insuring a Florida home, so we want the permit and date in writing.",
+   "<strong>Why the April contract fell apart.</strong> If a previous buyer walked away over an inspection or appraisal problem, we want to know what it was.",
+   "<strong>Wiring and plumbing from 1972.</strong> Homes of this age in Spring Oaks often have aluminum branch wiring and original cast-iron drains. Insurers ask about both. Add a sewer-line camera inspection to the general inspection.",
+   "<strong>Permits for the renovation.</strong> Confirm the kitchen, bath, and any electrical or plumbing work was permitted. Unpermitted work can cause problems with insurance and future resale.",
+   "<strong>The fourth bedroom.</strong> Check that the property appraiser's record shows four bedrooms, and if a room was converted, confirm it was permitted.",
+   "<strong>AC age and pool equipment.</strong> Neither is listed. Also confirm the pool has a compliant safety barrier.",
+   "<strong>\"As-Is\" doesn't mean no inspection.</strong> The As-Is contract still gives you an inspection period in which you can cancel for any reason. It only means the seller isn't committing to repairs."
+  ],
+  "questions": [
+   "When was the roof replaced? Can you share the permit and a copy of the roof, 4-point, or wind-mitigation report?",
+   "Why did the April contract fall apart, and were there inspection or appraisal reports from that buyer?",
+   "How old are the AC and the pool equipment? Does the home have aluminum branch wiring, and what brand is the electrical panel?",
+   "Were the kitchen, bathroom, and any electrical or plumbing updates permitted?",
+   "Is the fourth bedroom original to the house?",
+   "Is the seller open to contributing toward the buyer's closing costs?"
+  ]
+ },
+ "method": [
+  "This analysis uses the Stellar MLS listing and full price history for 517 Hickorywood Ave, a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 17, 2026, plus current active, pending, and expired listings), Seminole County Property Appraiser 2025 final millage rates, and the Freddie Mac weekly mortgage rate survey for September 17, 2026.",
+  "This is a broker's opinion of value based on comparable sales. It is not an appraisal. A lender's appraiser works under different standards and may reach a different number. Tax, insurance, and payment figures are estimates for planning, not quotes, so confirm them with your lender and insurance agent. Market conditions change, so this analysis should be refreshed if you haven't made an offer within a few weeks."
+ ],
+ "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
+ "split_date": "2026-07-01",
+ "sample": true
+}

@@ -52,6 +52,22 @@ def ul(items, cls="plain"):
     return f'<ul class="{cls}">' + "".join(f"<li>{i}</li>" for i in items) + "</ul>"
 
 
+def subject_heading(subject):
+    """Page-1 heading: the address across the full width, a location line (city, area, MLS number), the home facts.
+
+    `locality` is "City, ST ZIP · Subdivision · County · MLS #": the first part is the city line and a part
+    starting with "MLS" goes last. Items are separated by dividers that never dangle at a line end.
+    """
+    parts = [x.strip() for x in str(subject.get("locality", "")).split("·") if x.strip()]
+    mls_no = [x for x in parts[1:] if x.upper().startswith("MLS")]
+    loc = parts[:1] + [x for x in parts[1:] if x not in mls_no] + mls_no
+    facts = [x.strip() for x in str(subject.get("summary_facts", "")).split("·") if x.strip()]
+
+    def row(cls, items):
+        return f'<div class="divrow {cls}"><div>' + "".join(f"<span>{esc(x)}</span>" for x in items) + "</div></div>" if items else ""
+    return f'<div class="subj-head"><h1>{esc(subject["address"])}</h1>{row("loc", loc)}</div>{row("homefacts", facts)}'
+
+
 def k(v):
     """$455K."""
     return money(v / 1000) + "K"
@@ -200,7 +216,8 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
     cs = sorted(cards, key=lambda c: -c["adjusted"])
     vals = [c["adjusted"] for c in cs] + [low, high, marker_price] + ([second[0]] if second else [])
     lo, hi = math.floor((min(vals) - 8000) / 20000) * 20000, math.ceil((max(vals) + 8000) / 20000) * 20000
-    W, Lm, R, T, row = 730, 190, 20, 26, 21
+    W, Lm, R, T = 730, 190, 20, 26
+    row = 21 if len(cs) <= 5 else 18  # six comps: tighter rows, same label size
     H = T + row * len(cs) + 26
 
     def x(v):
@@ -292,6 +309,9 @@ def group_blocks(elements):
 
 
 PAGINATE_JS = """(pageH) => {
+  // Page 1 fits itself: tighten in steps (fit1 → fit3, cumulative) until it clears the page with a small margin.
+  const one = document.querySelector('.onepage'); let fit = 0;
+  while (one && fit < 3 && one.getBoundingClientRect().height > pageH - 16) one.classList.add('fit' + (++fit));
   const wrap = document.querySelector('.wrap');
   const base = wrap.getBoundingClientRect().top;
   let shift = 0; const moved = [];
@@ -320,7 +340,7 @@ PAGINATE_JS = """(pageH) => {
     else if (pos > 5 && keepOK && pos + h > pageH) brk = true;
     if (brk) { el.classList.add('pb'); shift += pageH - pos; moved.push((el.innerText || '').split('\\n')[0].slice(0, 50)); }
   }
-  return { moved, onepageH: window.__onepageH || 0, pageH };
+  return { moved, onepageH: window.__onepageH || 0, pageH, fit };
 }"""
 
 PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": "0.45in"}
@@ -328,8 +348,9 @@ CONTENT_HEIGHT_PX = 10 * 96  # 11in − 0.45in − 0.55in
 
 
 def paginate(pg):
-    """Before printing: move groups so none splits and no section starts in the bottom quarter of a page."""
+    """Before printing: fit page 1 on one page (fit_level 0-3), then move groups so none splits
+    and no section starts in the bottom quarter of a page."""
     pg.set_viewport_size({"width": 730, "height": 1000})  # 8.5in − 2 × 0.45in
     res = pg.evaluate(PAGINATE_JS, CONTENT_HEIGHT_PX)
     return {"moved": res["moved"], "summary_page": {"height_px": round(res["onepageH"]), "page_px": res["pageH"],
-                                                    "fits": res["onepageH"] <= res["pageH"]}}
+                                                    "fits": res["onepageH"] <= res["pageH"], "fit_level": res["fit"]}}

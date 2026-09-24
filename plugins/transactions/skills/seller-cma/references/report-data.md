@@ -27,7 +27,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 | `address` | Display form ("517 Hickorywood Ave") |
 | `mls_address` | Exactly as in the export's address column. Every row with it is left out of stats, chart and deck |
 | `city`, `state`, `county` | `state` and `county` pick the market's closing costs, tax rules, millage and MLS format |
-| `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet |
+| `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet. Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
 | `sqft` | *number*, heated area from the seller or public record |
 | `beds`, `baths`, `year_built`, `pool`, `hoa`, `subdivision` | For the handoff, the comp ranking and the estoppel line (`pool`, `hoa` true/false) |
 | `facts` | Ten `[label, value]`, labels in Title Case: Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone, Current Taxes, Recent Updates |

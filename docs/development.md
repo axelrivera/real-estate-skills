@@ -53,7 +53,7 @@ dev/                     # dev tooling, never shipped
   sync_shared.py         # make sync / make check-sync
   tests/                 # unit tests (make test); skill_import.py loads each skill's scripts without name clashes
   preview_design.py      # palette preview (make preview-design)
-  fixtures/<skill>/      # data files for make outputs (file-mode skills)
+  fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
 .venv/  out/  dist/      # git-ignored
 ```

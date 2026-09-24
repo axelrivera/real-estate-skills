@@ -96,5 +96,21 @@ class Blocks(unittest.TestCase):
         self.assertEqual(svg.count('class="dp-dot"'), 2)
 
 
+
+class SubjectHeading(unittest.TestCase):
+    def test_location_line_puts_mls_last(self):
+        h = cma.subject_heading({"address": "517 Hickorywood Ave", "summary_facts": "4 bed · 2 bath",
+                                 "locality": "Altamonte Springs, FL 32714 · MLS O6433709 · Spring Oaks · Seminole County"})
+        self.assertIn('<h1>517 Hickorywood Ave</h1>', h)
+        self.assertIn('<div class="divrow loc"><div><span>Altamonte Springs, FL 32714</span><span>Spring Oaks</span>'
+                      '<span>Seminole County</span><span>MLS O6433709</span></div></div>', h)
+        self.assertIn("<span>4 bed</span><span>2 bath</span>", h)
+
+    def test_escaping_and_empty_rows(self):
+        h = cma.subject_heading({"address": "1 A & B St"})
+        self.assertIn("1 A &amp; B St", h)
+        self.assertNotIn("loc", h)
+        self.assertNotIn("homefacts", h)
+
 if __name__ == "__main__":
     unittest.main()

@@ -72,10 +72,11 @@ def footer(left, right_pages=True):
             f"<span>{html.escape(left)}</span><span>{pages}</span></div>")
 
 
-def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_print=None):
+def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_print=None, landscape=False):
     """Print HTML to PDF with Chromium (print media, backgrounds on).
 
     `before_print(page)` can measure or adjust layout first; its return value is returned.
+    `landscape` turns the page (11in wide); layout is measured at the matching width.
     """
     from playwright.sync_api import sync_playwright
 
@@ -83,11 +84,12 @@ def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
-            pg = browser.new_page(viewport={"width": 758, "height": 1000})  # 8.5in minus margins, at 96 dpi
+            width = 998 if landscape else 758  # page width minus margins, at 96 dpi
+            pg = browser.new_page(viewport={"width": width, "height": 1000})
             pg.set_content(doc, wait_until="load")
             pg.emulate_media(media="print")
             info = before_print(pg) if before_print else None
-            pg.pdf(path=path, format=fmt, print_background=True, margin=margins,
+            pg.pdf(path=path, format=fmt, landscape=landscape, print_background=True, margin=margins,
                    display_header_footer=bool(footer_html), header_template="<span></span>",
                    footer_template=footer_html or "<span></span>")
         finally:
