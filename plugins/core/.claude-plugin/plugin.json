@@ -6,6 +6,8 @@
     "name": "Axel Rivera",
     "email": "axel@axelrivera.me"
   },
+  "homepage": "https://github.com/axelrivera/real-estate-marketplace",
+  "repository": "https://github.com/axelrivera/real-estate-marketplace",
   "license": "MIT",
   "keywords": ["real-estate", "agent-profile", "market-profile", "context"]
 }

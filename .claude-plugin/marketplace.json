@@ -15,6 +15,7 @@
       "description": "Agent and market profiles that every other plugin in this marketplace reads as context.",
       "version": "0.5.0",
       "category": "real-estate",
+      "homepage": "https://github.com/axelrivera/real-estate-marketplace",
       "license": "MIT"
     },
     {
@@ -23,6 +24,7 @@
       "description": "Core deal work: buyer and seller CMAs, offer strategy and review, and contract timelines.",
       "version": "0.5.0",
       "category": "real-estate",
+      "homepage": "https://github.com/axelrivera/real-estate-marketplace",
       "license": "MIT"
     }
   ]
