@@ -165,7 +165,7 @@ def build_html(t, agent, sample):
     else:
         hist_html = ('<h2>Amendment History</h2><p class="sm">No amendments recorded. When an amendment or extension is signed, '
                      "add it to the deal file and re-run this report.</p>")
-    eff_source = t["effective"]["source"] or "confirm: date of the last signature or initial on the final counteroffer"
+    eff_source = t["effective"]["source"] or "confirm: date the last party signed or initialed and delivered the final counteroffer"
     method_rows = [("Effective Date", f'{t["effective"]["display"]}: {eff_source}')] + \
                   [(x["label"], x["text"]) for x in t["rules"]["lines"]]
     method = ('<div class="tbl"><table class="meth"><tbody>' +

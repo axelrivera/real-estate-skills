@@ -27,13 +27,13 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 |---|---|
 | `form_family` | `frbar` for FR/BAR AS IS or Standard; anything else is treated as another contract |
 | `form` | Form name as printed, for other contracts ("TREC One to Four Family Residential Contract") |
-| `effective_date` | **Required.** `YYYY-MM-DD`. Last signature or initial on the final counter or acceptance |
+| `effective_date` | **Required.** `YYYY-MM-DD`. The date the last party signed or initialed and delivered the final counter or acceptance |
 | `effective_date_source` | The evidence ("Seller's initials on Counteroffer #1, 9/25 4:12 PM") |
 | `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so |
 | `property`, `buyer`, `seller`, `price`, `escrow_agent` | For the report |
 | `financing` | `cash`, `conventional`, `fha`, `va`, `usda` |
 | `possession_date`, `possession_time`, `possession_note` | Only if possession differs from closing |
-| `date_overrides` | `{deadline key: "YYYY-MM-DD HH:MM"}` for deadlines the contract states as a specific date |
+| `date_overrides` | `{deadline key: "YYYY-MM-DD HH:MM"}` for deadlines the contract states as a specific date. With a time it's kept as given; a date alone (`"YYYY-MM-DD"`) ends at the contract's end of day and extends past a weekend or holiday like any period. A `closing` override also moves every date counted back from closing |
 
 FR/BAR contracts also use the fields in `frbar.md` (deposit days, inspection days, riders…).
 

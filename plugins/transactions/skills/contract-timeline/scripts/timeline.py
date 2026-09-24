@@ -5,7 +5,7 @@
 Prints JSON with every date already formatted (for the markdown template and the PDF), or
 {"ok": false, "problems": [...]} when something needed is missing. See references/deal-file.md.
 
-Time rules (day counting, short periods, end of day, weekend/holiday rollover) come from the
+Time rules (day counting, any short-period rule, end of day, weekend/holiday rollover) come from the
 market profile's `contract` section (built in for Florida), overridden by the deal file's `rules`.
 FR/BAR contracts get their deadline list from the contract fields; any other contract lists its
 deadlines explicitly in `deadlines`.
@@ -95,7 +95,8 @@ def forward(start, days, rules, business=False, end_time=None, rollover=True):
     isn't extended past a weekend or holiday)."""
     extra = rules["_extra_holidays"]
     notes = []
-    if business or rules["day_count"] == "business" or days <= int(rules["short_period_days"]):
+    short = int(rules["short_period_days"])
+    if business or rules["day_count"] == "business" or (short > 0 and days <= short):
         d = dates.add_business_days(start, days, extra)
         if not business and rules["day_count"] != "business":
             notes.append(f"{days} days or less: weekends and holidays skipped")
@@ -107,7 +108,7 @@ def forward(start, days, rules, business=False, end_time=None, rollover=True):
         why = dates.holiday_name(d, extra) or d.strftime("%A")
         d = dates.next_business_day(d, extra)
         rt = _t(rules["rollover_time"])
-        notes.append(f"ends on a {why}: extended to {rt:%-I:%M %p} {d:%a %b %-d}")
+        notes.append(f"ends on a {why}: extended to {_clock(rt)} {d:%a %b %-d}")
         return datetime.combine(d, rt), "; ".join(notes)
     return datetime.combine(d, _t(end_time or rules["end_time"])), "; ".join(notes)
 
@@ -122,16 +123,30 @@ def backward(closing, days, rules, business=False):
         why = dates.holiday_name(d, extra) or d.strftime("%A")
         d = dates.previous_business_day(d, extra)
         return datetime.combine(d, t), f"falls on a {why}: moved earlier to {d:%a %b %-d} (conservative)"
+    if not dates.is_business_day(d, extra) and rules["before_closing_rollover"] == "next_business_day":
+        why = dates.holiday_name(d, extra) or d.strftime("%A")
+        d = dates.next_business_day(d, extra)
+        return datetime.combine(d, t), f"falls on a {why}: extended to {d:%a %b %-d}"
     return datetime.combine(d, t), ""
+
+
+def _clock(t):
+    return "the end of" if t == time(23, 59) else f"{t:%-I:%M %p}"
 
 
 # --- FR/BAR deadline list ----------------------------------------------------
 
 def frbar_deadlines(c):
-    """Deadlines for an FR/BAR AS IS or Standard contract, from its fields (blank = form default)."""
+    """Deadlines for an FR/BAR AS IS or Standard contract, from its fields (blank = form default).
+
+    Checked against ASIS-7x Rev. 2/26 and its riders (see docs/audits/2026-09-23-verification.md). A row may
+    carry `default` (a form default used for a blank, for agent_notes), `cap_at_closing` (a right that ends at
+    closing) or `from_key` (counted from another row's date instead of the Effective Date).
+    """
     financed = c.get("financing", "conventional") != "cash"
     riders = [r.lower() for r in c.get("riders", [])]
     has = lambda words: any(re.search(rf"\b{words}\b", r) for r in riders)  # noqa: E731  whole words: "va" isn't "private"
+    fha_va = has("fha") or has("va")
     as_is = c.get("contract_form", "as_is") == "as_is"
     out = []
 
@@ -153,6 +168,11 @@ def frbar_deadlines(c):
             source="Para. 8(b)", party="Buyer", critical=False,
             action="Apply for the loan and provide the lender's written confirmation if requested",
             if_missed="Buyer may lose financing protections")
+    if c.get("seller_has_survey"):
+        add(key="seller_survey", label="Seller Delivers Existing Survey", short="Seller's Survey", basis="after", days=5,
+            source="Para. 9(d)", party="Seller", critical=False,
+            action="Seller gives a copy of the existing survey to the buyer and the closing agent",
+            if_missed="Buyer may need a new survey sooner")
     add(key="inspection", label="Inspection Period Ends" + (" (Right to Cancel)" if as_is else ""), short="Inspection Ends",
         basis="after", days=c.get("inspection_days", 15), source="Para. 12", party="Buyer", critical=True, contingency=True,
         action="Complete inspections (including 4-point and wind mitigation); deliver written cancellation notice before the deadline if not proceeding",
@@ -161,48 +181,89 @@ def frbar_deadlines(c):
         add(key="repair_notice", label="Repair Notice to Seller", short="Repair Notice", basis="after",
             days=c.get("inspection_days", 15), source="Para. 12 (Standard)", party="Buyer", critical=True,
             action="Deliver written notice of repairs within the repair limit", if_missed="Buyer accepts property condition")
-    if financed and (c.get("appraisal_days") or has("appraisal") or has("fha") or has("va")):
+    # The Appraisal Contingency rider has its own period. The FHA/VA rider has none: its protection runs to
+    # closing, so it's a standing note (analyze), not a dated row.
+    if financed and (has("appraisal") or (c.get("appraisal_days") and not fha_va)):
         add(key="appraisal", label="Appraisal Contingency Ends", short="Appraisal Ends", basis="after",
-            days=c.get("appraisal_days", 21), source="Appraisal Contingency / FHA-VA rider", party="Buyer", critical=True,
+            days=c.get("appraisal_days", 21), source="Appraisal Contingency rider", party="Buyer", critical=True,
             contingency=True, action="Confirm the appraisal is in; cancel or renegotiate before the deadline if it's low",
             if_missed="Appraisal protection ends")
     if financed:
         add(key="loan_approval", label="Loan Approval Period Ends", short="Loan Approval", basis="after",
             days=c.get("loan_approval_days", 30), source="Para. 8(b)", party="Buyer", critical=True, contingency=True,
-            action="Deliver written loan approval, or written notice to cancel or extend, before the deadline",
+            action="Deliver written loan approval, or written notice to cancel or proceed, before the deadline",
             if_missed="Buyer's right to cancel for financing ends; deposit at risk")
+        add(key="seller_terminate", label="Seller's Right to Terminate (No Loan Notice)", short="Seller May Terminate",
+            basis="after", from_key="loan_approval", days=3, source="Para. 8(b)(v)", party="Seller", critical=False,
+            action="If the buyer sent no loan approval or loan notice by the Loan Approval deadline, the seller may terminate "
+                   "in writing within 3 days after it",
+            if_missed="Seller's right ends; the buyer proceeds without the financing contingency")
     if c.get("sale_contingency_days") or has("sale of buyer"):
         add(key="sale_contingency", label="Sale-of-Buyer's-Property Contingency Ends", short="Sale Contingency",
             basis="after", days=c.get("sale_contingency_days", 30), source="Sale of Buyer's Property rider", party="Buyer",
             critical=True, contingency=True, action="Buyer's property must be under contract or closed as the rider requires",
             if_missed="Per the rider, the contract may terminate")
-    if c.get("lead_paint_days") or (c.get("year_built") and int(c["year_built"]) < 1978):
+    if not c.get("lbp_waived") and (c.get("lead_paint_days") or (c.get("year_built") and int(c["year_built"]) < 1978)):
         add(key="lead_paint", label="Lead-Based Paint Risk Assessment Ends", short="Lead Paint", basis="after",
-            days=c.get("lead_paint_days", 10), source="Lead-Based Paint disclosure", party="Buyer", critical=False,
-            action="Complete any risk assessment and deliver notice if canceling", if_missed="Assessment right ends")
+            days=c.get("lead_paint_days", 10), source="Lead-Based Paint rider", party="Buyer", critical=True, contingency=True,
+            action="Complete any risk assessment and deliver notice if canceling", if_missed="Assessment and cancellation right ends")
+    if c.get("flood_elevation_days") or re.match(r"^\s*[AV]", str(c.get("flood_zone") or ""), re.I):
+        add(key="flood_elevation", label="Flood Elevation Cancellation Ends", short="Flood Elevation", basis="after",
+            days=c.get("flood_elevation_days", 20), source="Para. 10(d)", party="Buyer", critical=True, contingency=True,
+            action="Get the elevation certificate; if the home is below minimum flood elevation or can't get flood insurance, "
+                   "deliver written cancellation notice", if_missed="Buyer accepts the existing elevation and flood zone")
     if c.get("insurance_days") or has("insurance"):
         add(key="insurance", label="Insurance Contingency Ends", short="Insurance Ends", basis="after",
             days=c.get("insurance_days", c.get("inspection_days", 15)), source="Homeowners' / Flood Insurance rider",
             party="Buyer", critical=True, contingency=True, action="Bind coverage or cancel per the rider",
             if_missed="Insurance protection ends")
-    if c.get("hoa") or has("association"):
-        add(key="hoa_docs", label="HOA Documents / Approval", short="HOA Docs", basis="event",
-            received=c.get("hoa_docs_received"), days=c.get("doc_review_days", 3), source="HOA rider; Ch. 720 F.S.",
-            party="Seller", critical=False,
-            action="Seller delivers HOA disclosure and documents; buyer applies for approval if required",
-            if_missed="If documents arrive after the contract, the buyer may have a short cancellation window after receipt")
-    if c.get("condo") or has("condominium"):
-        add(key="condo_docs", label="Condominium Documents", short="Condo Docs", basis="event",
-            received=c.get("condo_docs_received"), days=c.get("doc_review_days", 3), source="Condominium rider; Ch. 718 F.S.",
-            party="Seller", critical=False,
-            action="Seller delivers condo documents (including SIRS and milestone reports); note the buyer's review window after receipt",
-            if_missed="Buyer's review window runs from receipt")
-    add(key="title", label="Title Evidence Delivered", short="Title Evidence", basis="before", days=c.get("title_evidence_days_before", 5),
-        source="Para. 9", party="Seller" if c.get("title_by", "seller") == "seller" else "Buyer", critical=False,
-        action="Title commitment delivered; buyer reviews and gives notice of any title defects", if_missed="Closing may be delayed")
-    add(key="survey", label="Survey Completed", short="Survey", basis="before", days=c.get("survey_days_before", 5),
-        source="Para. 9", party="Buyer", critical=False, action="Order the survey early; review for encroachments",
+    # Association document rights are the buyer's, run from receipt, and end at closing (CR-7x A, CR-7 B).
+    if (c.get("hoa") or has("association")) and not c.get("hoa_disclosure_before_contract"):
+        add(key="hoa_docs", label="HOA Disclosure Cancellation Window", short="HOA Disclosure", basis="event",
+            received=c.get("hoa_docs_received"), what="the HOA disclosure summary", days=3, cap_at_closing=True, source="HOA rider; s. 720.401 F.S.",
+            party="Buyer", critical=True, contingency=True,
+            action="The HOA disclosure summary came after signing: the buyer may cancel in writing within 3 days after receiving it",
+            if_missed="Cancellation right under s. 720.401 ends")
+    if (c.get("condo") or has("condominium")) and not c.get("condo_docs_before_contract"):
+        developer = bool(c.get("developer_sale"))
+        add(key="condo_docs", label="Condo Documents Cancellation Window", short="Condo Docs", basis="event",
+            received=c.get("condo_docs_received"), what="the condo documents", start_after_effective=True, days=15 if developer else 7,
+            business=not developer, cap_at_closing=True,
+            source="Condominium rider; s. 718.503 F.S." + (" (developer)" if developer else ""), party="Buyer",
+            critical=True, contingency=True,
+            action=("The buyer may cancel in writing within 15 days after signing and receiving the developer's documents"
+                    if developer else
+                    "The buyer may cancel in writing within 7 business days after signing and receiving the condo documents "
+                    "(declaration, bylaws, rules, budget, financials, FAQ, and the milestone inspection summary and SIRS)"),
+            if_missed="Cancellation right under s. 718.503 ends")
+    if c.get("association_approval"):
+        add(key="assoc_apply", label="Seller Starts Association Approval", short="Approval Applied", basis="after",
+            days=c.get("association_apply_days", 5), source="Condominium / HOA rider", party="Seller", critical=False,
+            action="Seller starts the association's approval process; the buyer applies and attends any interview",
+            if_missed="Approval may not come in time")
+        add(key="assoc_approval", label="Association Approval Deadline", short="Association Approval", basis="before",
+            days=c.get("association_approval_days_before", 5), source="Condominium / HOA rider", party="Buyer",
+            critical=True, contingency=True, action="Written association approval in hand",
+            if_missed="The contract's approval contingency applies")
+    title_days = c.get("title_evidence_days_before")
+    add(key="title", label="Title Evidence Delivered", short="Title Evidence", basis="before",
+        days=title_days if title_days is not None else (15 if financed else 5), source="Para. 9(c)",
+        party="Seller" if c.get("title_by", "seller") == "seller" else "Buyer", critical=False,
+        default=None if title_days is not None else
+        f"Title evidence deadline blank: used the form default, {15 if financed else 5} days before closing"
+        + ("" if financed else " (cash)"),
+        action="Title commitment delivered to the buyer", if_missed="Buyer may extend closing to review it")
+    add(key="title_exam", label="Title Defect Notice", short="Title Defects", basis="event",
+        received=c.get("title_commitment_received"), what="the title commitment", days=5, source="Standard A(ii)", party="Buyer", critical=True,
+        action="Review the title commitment and give written notice of any defects that make title unmarketable",
+        if_missed="Buyer accepts title as it is")
+    add(key="survey", label="Survey Deadline", short="Survey", basis="before", days=c.get("survey_days_before", 5),
+        source="Para. 9(d)", party="Buyer", critical=False, action="If the buyer wants a survey, have it done by this date",
         if_missed="Survey issues can't be raised in time")
+    add(key="survey_notice", label="Survey Defect Notice", short="Survey Defects", basis="event",
+        received=c.get("survey_received"), what="the survey", days=5, cap_at_closing=True, source="Standard B", party="Buyer", critical=False,
+        action="Send the seller written notice of any encroachment or violation, with a copy of the survey",
+        if_missed="Survey matters can't be raised as a title defect")
     if financed:
         add(key="insurance_bound", label="Homeowners Insurance Bound", short="Insurance Bound", basis="before",
             days=c.get("insurance_bound_days_before", 7), source="Lender requirement", party="Buyer", critical=True,
@@ -212,7 +273,8 @@ def frbar_deadlines(c):
             critical=True, action="Buyer receives and signs the Closing Disclosure at least 3 business days before closing",
             if_missed="Closing must move")
     add(key="walkthrough", label="Final Walk-Through", short="Walk-Through", basis="before", days=c.get("walkthrough_days_before", 1),
-        source="Para. 13", party="Buyer", critical=False, action="Walk the property; confirm condition, repairs and included items",
+        cap_at_closing=True, source="Para. 12(b)", party="Buyer", critical=False,
+        action="Walk the property the day before closing or on closing day; confirm condition, repairs and included items",
         if_missed="Buyer loses the chance to verify condition")
     return out
 
@@ -244,17 +306,71 @@ def apply_amendments(contract, amendments):
     return c, history
 
 
+def _override(value, rules):
+    """A deadline stated as a specific date. With a time it's kept as given; a date alone ends at the contract's
+    end of day, and a weekend or holiday rolls forward like any period."""
+    if len(str(value)) >= 16:
+        return _dt(value, _t(rules["end_time"])), ""
+    d, extra = _d(value), rules["_extra_holidays"]
+    if not dates.is_business_day(d, extra) and rules["weekend_holiday_rollover"] == "next_business_day":
+        why = dates.holiday_name(d, extra) or d.strftime("%A")
+        nd = dates.next_business_day(d, extra)
+        return datetime.combine(nd, _t(rules["rollover_time"])), f"falls on a {why}: extended to {nd:%a %b %-d}"
+    return datetime.combine(d, _t(rules["end_time"])), ""
+
+
+def check_inputs(c, extra_deadlines):
+    """Plain errors for dates and periods that can't be right (TL-9)."""
+    eff, closing = _d(c["effective_date"]), _d((c.get("date_overrides") or {}).get("closing") or c.get("closing_date"))
+    if closing and closing <= eff:
+        raise DealError(f"The closing date ({closing:%b %-d, %Y}) is on or before the Effective Date ({eff:%b %-d, %Y}): "
+                        "check both dates.")
+    for key, v in c.items():
+        if key.endswith("_days") or key.endswith("_days_before"):
+            if v is not None and (isinstance(v, bool) or not isinstance(v, int) or v < 0):
+                raise DealError(f"contract.{key} is {v!r}: a period is a whole number of days, 0 or more.")
+    for x in extra_deadlines:
+        if x.get("days") is not None and (not isinstance(x["days"], int) or x["days"] < 0):
+            raise DealError(f"Deadline {x.get('key')!r} has days {x['days']!r}: use a whole number, 0 or more.")
+
+
 def compute(c, extra_deadlines, rules, frbar):
-    eff, closing = _d(c["effective_date"]), _d(c.get("closing_date"))
+    check_inputs(c, extra_deadlines)
+    eff, extra = _d(c["effective_date"]), rules["_extra_holidays"]
+    overrides = c.get("date_overrides") or {}
+    closing_dt = None  # the closing everything counts back from: an override, then the contract date, rolled forward
+    closing_note = ""
+    raw = overrides.get("closing") or c.get("closing_date")
+    if raw:
+        closing = _d(raw)
+        if not dates.is_business_day(closing, extra) and rules.get("closing_rollover") \
+                and rules["weekend_holiday_rollover"] == "next_business_day":
+            why = dates.holiday_name(closing, extra) or closing.strftime("%A")
+            rolled = dates.next_business_day(closing, extra)
+            closing_note = f"contract date {closing:%a %b %-d} is a {why}: closing extends to {rolled:%a %b %-d}"
+            closing = rolled
+        elif not dates.is_business_day(closing, extra):
+            closing_note = (f"closing date falls on a {dates.holiday_name(closing, extra) or closing.strftime('%A')}: "
+                            "confirm the title company can close")
+        t = str(raw)[11:16] if len(str(raw)) >= 16 else (c.get("closing_time") or rules["closing_time"])
+        closing_dt = datetime.combine(closing, _t(t))
+    closing = closing_dt.date() if closing_dt else None
+
     items = (frbar_deadlines(c) if frbar else []) + [dict(x, contingency=x.get("contingency", False)) for x in extra_deadlines]
     if closing:
         items += closing_rows(c, frbar)
-    extra = rules["_extra_holidays"]
-    rows = []
+    rows, done = [], {}
     for x in items:
         r = dict(x)
         basis, days = x["basis"], x.get("days")
-        if basis == "after":
+        if basis == "after" and x.get("from_key"):
+            ref = done.get(x["from_key"])
+            if not ref or not ref["when"]:
+                continue
+            r["when"], r["note"] = forward(ref["when"].date(), int(days), rules, x.get("business", False), x.get("time"),
+                                           x.get("rollover", True))
+            r["rule"] = f"{_plural(int(days), 'day')} after {ref['short']}"
+        elif basis == "after":
             r["when"], r["note"] = forward(eff, int(days), rules, x.get("business", False), x.get("time"), x.get("rollover", True))
             r["rule"] = f"{_plural(int(days), 'day')} after Effective Date" + (" (business days)" if x.get("business") else "")
         elif basis == "before" and not closing:
@@ -265,10 +381,7 @@ def compute(c, extra_deadlines, rules, frbar):
         elif basis == "date":
             r["when"], r["rule"], r["note"] = _dt(x["date"], _t(x.get("time") or rules["end_time"])), "Specific date in contract", ""
         elif basis == "closing":
-            r["when"] = datetime.combine(closing, _t(c.get("closing_time") or rules["closing_time"]))
-            r["rule"], r["note"] = "Closing date in contract", ""
-            if not dates.is_business_day(closing, extra):
-                r["note"] = f"closing date falls on a {dates.holiday_name(closing, extra) or closing.strftime('%A')}: confirm the title company can close"
+            r["when"], r["rule"], r["note"] = closing_dt, "Closing date in contract", closing_note
         elif basis == "possession":
             pd = _d(c.get("possession_date")) or closing
             r["when"] = datetime.combine(pd, _t(c.get("possession_time") or "17:00"))
@@ -276,16 +389,26 @@ def compute(c, extra_deadlines, rules, frbar):
         elif basis == "event":
             received = _d(x.get("received"))
             if received:
-                r["when"], r["note"] = forward(received, int(days or 3), rules)
-                r["rule"] = f"{_plural(int(days or 3), 'day')} after documents received ({received:%b %-d})"
+                start = max(received, eff) if x.get("start_after_effective") else received
+                r["when"], r["note"] = forward(start, int(days or 3), rules, x.get("business", False))
+                r["rule"] = (f"{_plural(int(days or 3), 'day')}{' (business days)' if x.get('business') else ''} "
+                             f"after {x.get('what', 'documents')} received ({received:%b %-d})")
             else:
-                r["when"], r["rule"], r["note"] = None, "Runs from receipt of documents", "Record the receipt date and re-run"
+                r["when"], r["rule"] = None, f"Runs from receipt of {x.get('what', 'documents')}"
+                r["note"] = "Record the receipt date and re-run"
         else:
             raise DealError(f"Deadline {x.get('key')!r} has an unknown basis {basis!r} (use after, before, date or event).")
-        override = (c.get("date_overrides") or {}).get(x["key"])
+        override = overrides.get(x["key"]) if x["key"] != "closing" else None
         if override:
-            r["when"], r["rule"], r["note"] = _dt(override, _t(rules["end_time"])), "Specific date in contract / amendment", ""
+            r["when"], r["note"] = _override(override, rules)
+            r["rule"] = "Specific date in contract / amendment"
+        if x.get("cap_at_closing") and r["when"] and closing_dt and r["when"] > closing_dt:
+            r["when"] = closing_dt
+            r["note"] = "; ".join(n for n in (r.get("note"), "the right ends at closing") if n)
+        if x.get("default"):
+            r["default"] = x["default"]
         rows.append(r)
+        done[x["key"]] = r
     rows.sort(key=lambda r: (r["when"] is None, r["when"] or datetime.max))
     return rows
 
@@ -303,8 +426,8 @@ def analyze(deal, market_path=None, side=None):
     """Everything the markdown template and the PDF need, as plain JSON-ready data."""
     contract = deal.get("contract") or {}
     if not contract.get("effective_date"):
-        raise DealError("contract.effective_date is required. The Effective Date is the date of the last signature "
-                        "or initial on the final counteroffer or acceptance.")
+        raise DealError("contract.effective_date is required. The Effective Date is the date the last party signed or "
+                        "initialed and delivered the final counteroffer or acceptance.")
     frbar = contract.get("form_family", "frbar" if contract.get("contract_form") else "other") == "frbar"
     if not frbar and not deal.get("deadlines"):
         raise DealError("This contract isn't FR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
@@ -341,10 +464,22 @@ def analyze(deal, market_path=None, side=None):
     flags = list(deal.get("flags") or [])
     agent_notes = list(deal.get("agent_notes") or [])
     if closing_row and closing_row["note"]:
-        flags.append(closing_row["note"])
+        flags.append(closing_row["note"][:1].upper() + closing_row["note"][1:])
+    riders = " ".join(current_contract.get("riders") or []).lower()
+    if frbar and current_contract.get("financing") in ("fha", "va") or re.search(r"\b(fha|va)\b", riders):
+        flags.append("FHA/VA rider: the buyer isn't obligated to close if the appraisal comes in below the price, and that "
+                     "protection runs to closing. The buyer's choice to go ahead anyway is due within 3 days after receiving "
+                     "the appraisal")
     approval = next((r for r in dated if r["key"] == "loan_approval"), None)
-    if closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]) - timedelta(days=5):
+    if closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]):
+        flags.append("Loan approval period ends after closing: extend closing or shorten the loan approval period in writing")
+    elif closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]) - timedelta(days=5):
         flags.append("Loan approval deadline is within 5 days of closing: little room if financing slips")
+    if closing_row:
+        late = [r["label"] for r in contingent if r["key"] != "loan_approval" and r["when"] > closing_row["when"]]
+        if late:
+            flags.append(", ".join(late) + " ends after closing: amend the dates in writing")
+    agent_notes += [r["default"] for r in current if r.get("default")]
     if not closing_row:
         agent_notes.append("No closing date given: dates counted back from closing are left out")
     elif not current_contract.get("closing_time"):
@@ -394,10 +529,16 @@ def rules_text(rules, eff):
     if int(rules["short_period_days"]) > 0 and rules["day_count"] != "business":
         lines.append(("Short Periods", f"Periods of {rules['short_period_days']} days or less skip Saturdays, Sundays and holidays."))
     if rules["weekend_holiday_rollover"] == "next_business_day":
-        lines.append(("Weekend / Holiday End", f"A period ending on a Saturday, Sunday or holiday extends to {_t(rules['rollover_time']):%-I:%M %p} the next business day."))
-    lines.append(("End of Day", f"Otherwise deadlines end at {_t(rules['end_time']):%-I:%M %p} local time."))
+        lines.append(("Weekend / Holiday End", f"A period ending on a Saturday, Sunday or holiday extends to {_clock(_t(rules['rollover_time']))} the next business day."))
+    end = _t(rules["end_time"])
+    lines.append(("End of Day", "Otherwise a period runs to the end of its last day, where the property is located." if end == time(23, 59)
+                  else f"Otherwise deadlines end at {end:%-I:%M %p} local time."))
     if rules["before_closing_rollover"] == "previous_business_day":
         lines.append(("Before-Closing Dates", "Counted back from closing; a weekend or holiday moves the date earlier (conservative)."))
+    elif rules["before_closing_rollover"] == "next_business_day":
+        lines.append(("Before-Closing Dates", "Counted back from closing; a weekend or holiday extends to the next business day."))
+    if rules.get("closing_rollover"):
+        lines.append(("Closing Date", "A closing date on a weekend or holiday extends to the next business day."))
     lines.append(("Holidays", "National legal holidays (5 U.S.C. 6103), including observed dates" +
                   (", plus holidays listed in the contract." if rules["_extra_holidays"] else ".")))
     return [{"label": a, "text": b} for a, b in lines]

@@ -32,44 +32,132 @@ class Holidays(unittest.TestCase):
         self.assertEqual(dates.holiday_name(date(2027, 12, 24)), "Christmas Day (observed)")
         self.assertFalse(dates.is_business_day(date(2026, 9, 7)))  # Labor Day
 
+    def test_saturday_new_years_observed_friday(self):
+        """TL-5: Jan 1, 2028 and Jan 1, 2033 are Saturdays, observed Fri Dec 31 of the year before."""
+        for d in (date(2027, 12, 31), date(2032, 12, 31)):
+            self.assertEqual(dates.holiday_name(d), "New Year's Day (observed)")
+            self.assertFalse(dates.is_business_day(d))
+        self.assertTrue(dates.is_business_day(date(2026, 12, 31)))
+
     def test_business_day_counting(self):
         self.assertEqual(dates.add_business_days(date(2026, 9, 25), 3), date(2026, 9, 30))
         self.assertEqual(dates.add_business_days(date(2026, 10, 30), -3), date(2026, 10, 27))
 
 
-class FrbarMatchesPrototype(unittest.TestCase):
-    """Dates from the prototype's buyer sample PDF (FHA, AS IS, effective 2026-09-25)."""
+class FrbarDates(unittest.TestCase):
+    """Buyer FHA sample, AS IS, effective Fri 2026-09-25, closing Fri 2026-10-30. Hand-checked against ASIS-7x
+    Rev. 2/26: calendar days, no short-period rule, a period ending on a weekend or holiday runs to the end of
+    the next business day (Standard F), title evidence 15 days before closing when blank (Para. 9(c))."""
     EXPECTED = {
-        "deposit": "2026-09-30 23:59", "loan_app": "2026-10-02 23:59", "inspection": "2026-10-05 23:59",
-        "insurance": "2026-10-05 23:59", "appraisal": "2026-10-16 23:59", "title": "2026-10-23 17:00",
-        "survey": "2026-10-23 17:00", "insurance_bound": "2026-10-23 17:00", "loan_approval": "2026-10-26 17:00",
-        "clear_to_close": "2026-10-27 17:00", "walkthrough": "2026-10-29 17:00", "closing": "2026-10-30 10:00",
+        "deposit": "2026-09-28 23:59", "loan_app": "2026-09-30 23:59", "inspection": "2026-10-05 23:59",
+        "insurance": "2026-10-05 23:59", "title": "2026-10-15 23:59", "insurance_bound": "2026-10-23 23:59",
+        "loan_approval": "2026-10-26 23:59", "survey": "2026-10-26 23:59", "clear_to_close": "2026-10-27 23:59",
+        "seller_terminate": "2026-10-29 23:59", "walkthrough": "2026-10-29 23:59", "closing": "2026-10-30 10:00",
     }
 
     def test_every_date(self):
         r = timeline.analyze(fixture("buyer-fha.json"))
         rows = by_key(r)
         self.assertEqual({k: rows[k]["when"] for k in self.EXPECTED}, self.EXPECTED)
-        self.assertEqual(rows["deposit"]["day"], 5)
+        self.assertEqual(rows["deposit"]["day"], 3)
+        self.assertNotIn("appraisal", rows)  # TL-3: the FHA/VA rider has no appraisal period
+        self.assertTrue(any(f.startswith("FHA/VA rider") for f in r["flags"]))
         self.assertEqual(r["contingencies_end"]["key"], "loan_approval")
         self.assertEqual(r["first_deadline"]["key"], "deposit")
-        self.assertIn("Loan approval deadline is within 5 days of closing", r["flags"][0])
+        self.assertTrue(any("Loan approval deadline is within 5 days of closing" in f for f in r["flags"]))
+        self.assertTrue(any("Title evidence deadline blank" in n for n in r["agent_notes"]))
         self.assertEqual(rows["closing"]["source"], "Para. 4 · possession Para. 6")
+        self.assertEqual({x["key"] for x in r["pending"]}, {"title_exam", "survey_notice"})
 
     def test_rider_words_and_agent_notes(self):
         deal = fixture("buyer-fha.json")
         c = deal["contract"]
-        c.pop("appraisal_days", None)
         c["riders"] = ["Private Well and Septic", "Vacant Land"]
         c["financing"] = "conventional"
         c.pop("closing_time", None)
         r = timeline.analyze(deal)
         self.assertNotIn("appraisal", by_key(r))  # "va" is a whole word, not part of "private"
+        self.assertFalse(any(f.startswith("FHA/VA") for f in r["flags"]))
         self.assertTrue(any("Closing time isn't stated" in n for n in r["agent_notes"]))
         self.assertFalse(any("Closing time" in f for f in r["flags"]))
         self.assertFalse(any("MLS" in n for n in r["agent_notes"]))
-        c["riders"] = ["FHA/VA Financing"]
+        c["riders"] = ["Appraisal Contingency"]
         self.assertIn("appraisal", by_key(timeline.analyze(deal)))
+
+    def test_cash_title_default_is_5_days(self):
+        """TL-2: 15 days before closing, or 5 when the deal is cash."""
+        deal = fixture("buyer-fha.json")
+        deal["contract"]["financing"] = "cash"
+        self.assertEqual(by_key(timeline.analyze(deal))["title"]["when"], "2026-10-26 23:59")  # Sun Oct 25 extends
+
+    def test_weekend_closing_extends(self):
+        """TL-6, TL-8: a Saturday closing extends to Monday, and dates counted back from closing follow it."""
+        deal = fixture("buyer-fha.json")
+        deal["contract"]["closing_date"] = "2026-10-31"
+        r = timeline.analyze(deal)
+        rows = by_key(r)
+        self.assertEqual(rows["closing"]["when"], "2026-11-02 10:00")
+        self.assertIn("closing extends to Mon Nov 2", rows["closing"]["note"])
+        self.assertEqual(rows["walkthrough"]["when"], "2026-11-02 10:00")  # Sun extends to closing day, before closing
+        deal["contract"]["closing_date"] = "2026-10-30"
+        deal["contract"]["date_overrides"] = {"closing": "2026-11-06"}
+        rows = by_key(timeline.analyze(deal))
+        self.assertEqual(rows["closing"]["when"], "2026-11-06 10:00")
+        self.assertEqual(rows["walkthrough"]["when"], "2026-11-05 23:59")
+
+    def test_date_only_override_rolls_forward(self):
+        """TL-7: a date-only override on a Saturday extends; one with a time is kept."""
+        deal = fixture("buyer-fha.json")
+        deal["contract"]["date_overrides"] = {"inspection": "2026-10-10", "deposit": "2026-09-27 15:00"}
+        rows = by_key(timeline.analyze(deal))
+        self.assertEqual(rows["inspection"]["when"], "2026-10-13 23:59")  # Sat, Sun, Columbus Day Mon
+        self.assertEqual(rows["deposit"]["when"], "2026-09-27 15:00")
+
+    def test_bad_inputs(self):
+        """TL-9: closing before the Effective Date, or a negative period, is a plain error."""
+        for change in ({"closing_date": "2026-09-20"}, {"inspection_days": -3}):
+            deal = fixture("buyer-fha.json")
+            deal["contract"].update(change)
+            with self.assertRaises(timeline.DealError):
+                timeline.analyze(deal)
+
+    def test_contingency_after_closing_is_flagged(self):
+        deal = fixture("buyer-fha.json")
+        deal["contract"]["inspection_days"] = 40
+        r = timeline.analyze(deal)
+        self.assertTrue(any("Inspection Period Ends (Right to Cancel) ends after closing" in f for f in r["flags"]))
+        deal["contract"]["inspection_days"] = 10
+        deal["contract"]["loan_approval_days"] = 40
+        self.assertTrue(any("Loan approval period ends after closing" in f for f in timeline.analyze(deal)["flags"]))
+
+    def test_association_rights_are_the_buyers(self):
+        """TL-11: condo 7 business days (capped at closing), HOA 3 calendar days; both buyer contingencies."""
+        deal = fixture("buyer-fha.json")
+        c = deal["contract"]
+        c.update(riders=["Condominium Rider"], condo_docs_received="2026-10-22")
+        row = by_key(timeline.analyze(deal))["condo_docs"]
+        self.assertEqual((row["party"], row["contingency"], row["when"]), ("Buyer", True, "2026-10-30 10:00"))  # 7 bus. days > closing
+        c["condo_docs_received"] = "2026-10-01"
+        self.assertEqual(by_key(timeline.analyze(deal))["condo_docs"]["when"], "2026-10-13 23:59")  # skips Columbus Day
+        c.update(riders=["Homeowners' Association"], condo_docs_received=None, hoa_docs_received="2026-10-01")
+        row = by_key(timeline.analyze(deal))["hoa_docs"]
+        self.assertEqual((row["party"], row["contingency"], row["when"]), ("Buyer", True, "2026-10-05 23:59"))  # Sun → Mon
+        c["hoa_disclosure_before_contract"] = True
+        self.assertNotIn("hoa_docs", by_key(timeline.analyze(deal)))
+
+    def test_new_frbar_rows(self):
+        """TL-12, TL-13, TL-23: survey and title notices from receipt, flood elevation, waived lead paint."""
+        deal = fixture("buyer-fha.json")
+        c = deal["contract"]
+        c.update(title_commitment_received="2026-10-14", survey_received="2026-10-27", flood_zone="AE",
+                 seller_has_survey=True, year_built=1970, lbp_waived=True)
+        rows = by_key(timeline.analyze(deal))
+        self.assertEqual(rows["title_exam"]["when"], "2026-10-19 23:59")
+        self.assertEqual(rows["survey_notice"]["when"], "2026-10-30 10:00")  # 5 days after receipt, capped at closing
+        self.assertEqual(rows["flood_elevation"]["when"], "2026-10-15 23:59")
+        self.assertEqual(rows["seller_survey"]["when"], "2026-09-30 23:59")
+        self.assertEqual(rows["survey"]["label"], "Survey Deadline")
+        self.assertNotIn("lead_paint", rows)
 
     def test_cash_drops_loan_deadlines(self):
         deal = fixture("buyer-fha.json")
@@ -100,7 +188,7 @@ class Amendments(unittest.TestCase):
     def test_hoa_received_starts_review_window(self):
         deal = fixture("seller-amended.json")
         deal["contract"]["hoa_docs_received"] = "2026-11-06"
-        self.assertEqual(by_key(timeline.analyze(deal))["hoa_docs"]["when"], "2026-11-12 23:59")  # Mon, Tue, (Veterans Day), Thu
+        self.assertEqual(by_key(timeline.analyze(deal))["hoa_docs"]["when"], "2026-11-09 23:59")  # 3 calendar days
 
 
 class OtherContracts(unittest.TestCase):

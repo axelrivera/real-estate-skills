@@ -121,14 +121,16 @@ holding_costs:
 buyer_costs:
   insurance_rate: 0.009               # a buyer's new homeowner's policy, share of price, for payment estimates; a quote replaces it
 
-contract:
+contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked against ASIS-7x Rev. 2/26)
   forms: [FR/BAR AS IS, FR/BAR Standard]
   day_count: calendar                 # Day 1 is the day after the Effective Date
-  short_period_days: 5                # periods this long or shorter skip weekends and holidays
-  end_time: "23:59"
+  short_period_days: 0                # none: current FR/BAR forms count every period in calendar days
+  end_time: "23:59"                   # the form sets no time of day: a period runs to the end of its last day
   weekend_holiday_rollover: next_business_day
-  rollover_time: "17:00"
-  before_closing_rollover: previous_business_day
+  rollover_time: "23:59"              # extends to the next business day, to the end of that day
+  before_closing_rollover: next_business_day  # Standard F extends every period and date, including those counted back from closing
+  before_closing_time: "23:59"
+  closing_rollover: true              # a Closing Date on a weekend or holiday extends to the next business day
   holidays: us_federal
   inspection_credit_reserve_pct: 0.007  # typical post-inspection renegotiation on AS IS contracts
   typical_deposit_pct: 0.03           # a strong escrow deposit on a financed offer, share of price

@@ -33,10 +33,12 @@ def federal_holidays(year):
     out = {}
     for name, d in {**fixed, **moving}.items():
         out[d] = name
-        if name in fixed and d.weekday() == 5:
+        if name in fixed and d.weekday() == 5 and d.year == (d - timedelta(days=1)).year:
             out[d - timedelta(days=1)] = f"{name} (observed)"
         if name in fixed and d.weekday() == 6:
             out[d + timedelta(days=1)] = f"{name} (observed)"
+    if date(year + 1, 1, 1).weekday() == 5:  # a Saturday New Year's Day is observed on Friday Dec 31 of this year
+        out[date(year, 12, 31)] = "New Year's Day (observed)"
     _CACHE[year] = out
     return out
 

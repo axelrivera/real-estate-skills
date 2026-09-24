@@ -22,12 +22,10 @@
     "loan_application_days": 5,
     "loan_approval_days": 30,
     "inspection_days": 10,
-    "appraisal_days": 21,
     "riders": ["FHA/VA Financing", "Homeowners'/Flood Insurance"],
     "insurance_days": 10,
     "year_built": 1994,
-    "title_by": "seller",
-    "title_evidence_days_before": 5
+    "title_by": "seller"
   },
   "amendments": [],
   "flags": []
