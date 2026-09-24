@@ -1,5 +1,5 @@
 # The server-side counterpart of dev/hooks/pre-commit: the same checks as `make package`,
-# minus style-check (it needs Node, Chromium and LibreOffice). Seller CMA deck tests skip without Node.
+# minus style-check (it needs Node and LibreOffice). Seller CMA deck tests skip without Node.
 name: Check
 
 on:
@@ -27,6 +27,7 @@ jobs:
           python3.12 -m venv .venv
           .venv/bin/python -m pip install -q --upgrade pip
           .venv/bin/python -m pip install -q -r dev/requirements.txt
+          .venv/bin/python -m playwright install --with-deps chromium
 
       - run: make check-sync
       - run: make test
