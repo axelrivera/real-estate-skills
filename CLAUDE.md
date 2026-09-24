@@ -41,6 +41,7 @@ sources/                            # prototype skills, local only, git-ignored
 
 ## Workflow
 
+- **Branches:** work and commit on `develop`; `main` changes only through a pull request from `develop` (the `check-sync` status check must pass). Never push to `main` directly. See [docs/development.md](docs/development.md#branches).
 - Follow the phases and per-skill checklist in [docs/migration-plan.md](docs/migration-plan.md) and update its status table as skills move.
 - Update [docs/skills.md](docs/skills.md) and the README skill table when a skill is added or renamed.
 - Validate after changing any manifest: `claude plugin validate .`

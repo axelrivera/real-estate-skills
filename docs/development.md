@@ -13,7 +13,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | Command | What it does |
 |---|---|
 | `make setup` | Creates `.venv` from `dev/requirements.txt`, installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json` |
-| `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too). GitHub Actions ([.github/workflows/check.yml](../.github/workflows/check.yml)) runs check-sync on every push to `main` and every pull request |
+| `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too). GitHub Actions ([.github/workflows/check.yml](../.github/workflows/check.yml)) runs check-sync on every push to `main` or `develop` and every pull request |
 | `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
 | `make sync` copies only what each skill imports | Each skill's `scripts/_shared/` holds the shared modules its scripts import, what those import, and the data they read (markets for `profiles`, CSS for `render` and `cma`) |
 | `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package`; the pre-commit hook also compares what's staged |
@@ -28,6 +28,13 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin` plus `dev/package/README.md` (install instructions, version filled in) for sharing |
 | `make package-skills` | Runs the same checks, then zips every skill into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
+
+## Branches
+
+- **`develop`:** active development. Commit and push here.
+- **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
+
+To release: push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
 
 ## Evals
 
