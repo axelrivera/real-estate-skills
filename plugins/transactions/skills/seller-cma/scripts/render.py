@@ -107,7 +107,7 @@ def pricing_section(R, C, L):
 
 def payments_section(R, C, L):
     pay, bp = C["payments"], R["buyer_payment"]
-    mi_rate = finance.LOAN_PROGRAMS[pay["loan_type"]]["annual_mi"]
+    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"])  # OFR-25: PMI by down payment
     mi = L("pay_note_mi", mi=f"{mi_rate * 100:g}") if mi_rate and not (pay["loan_type"] == "conventional" and pay["down_pct"] >= 0.20) else ""
     note = bp.get("note") or L("pay_note", program=L("prog_" + pay["loan_type"]), down=f'{pay["down_pct"] * 100:g}', rate=f'{pay["rate"]:.2f}',
                                basis=pay["tax_basis"], ins=money(pay["insurance_annual"]), mi=mi)

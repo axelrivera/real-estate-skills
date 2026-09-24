@@ -249,6 +249,7 @@ def prepare_listing(data, A, costs):
         A.add("listing", "title_payer", "unknown", "Who customarily pays the owner's title policy wasn't given: left out of the net", "med")
     for w in finance.seller_net(lp, costs)["warnings"]:  # CORE-9: a title quote below the published rate
         A.add("listing", "owner_title.quote", "check", w, "med")
+    L["loan_limits"] = profiles.loan_limits()
     L["frbar_market"] = cf.frbar_market(costs.get("contract.forms"))
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
     L["deposit_norm"] = costs.get("contract.typical_deposit_pct") or 0.01  # a strong deposit here, share of price
@@ -715,9 +716,11 @@ def auto_scores(o, L, S):
         if fz[:1] in ("A", "V"):
             v -= 1
             notes.append(f"flood zone {fz}")
-        if o.get("insurance_quote"):
+        if o.get("insurance_quote") is True:  # OFR-18: a planned quote isn't scored until it's in hand
             v += 1
-            notes.append("insurance quote before submitting" if o["insurance_quote"] == "planned" else "buyer has insurance quote")
+            notes.append("buyer has insurance quote")
+        elif o.get("insurance_quote") == "planned":
+            notes.append("insurance quote planned before submitting (scored once in hand)")
         s["property"] = max(1, min(5, v))
         why["property"] = "; ".join(notes) or "No known condition or insurance issues"
 
@@ -847,6 +850,17 @@ def flags_for(o, L, S):
         add("Med", f"{FIN_LABEL[o['financing']]} appraisal gap clause ({money(o['appraisal_gap'])}): the buyer can still cancel "
                    "if the appraisal is low (amendatory clause), so it shows intent only.",
             "Ask for proof of funds for the gap; don't count it in the net.")
+    cap = finance.concession_cap(o["financing"], o["down_pct"])  # OFR-12
+    if cap is not None and o["seller_concessions"] > cap * o["price"] + 1:
+        over = o["seller_concessions"] - cap * o["price"]
+        add("High", f"Concessions ({money(o['seller_concessions'])}) exceed the {FIN_LABEL[o['financing']]} limit of "
+                    f"{pct(cap)} at {pct(o['down_pct'])} down ({money(cap * o['price'])}): {money(over)} can't be used.",
+            "Counter the concessions down to the limit, or the price down by the excess.")
+    if o["financed"]:
+        note = finance.loan_limit_note(o.get("loan_amount") or finance.loan_amount(o["price"], o["financing"], o["down_pct"]),
+                                       o["financing"], L["loan_limits"], L.get("state"), L.get("county"))
+        if note:  # OFR-11
+            add("High" if "can't be FHA" in note else "Med", note, "Ask the buyer's agent for the lender's confirmation.")
     extras = o["seller_concessions"] + o["home_warranty"]
     if o["price"] > L["list_price"] and extras >= (o["price"] - L["list_price"]):
         add("Med", f"Concessions + warranty ({money(extras)}) cancel out the {money(o['price'] - L['list_price'])} over list.",

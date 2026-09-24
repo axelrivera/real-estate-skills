@@ -200,6 +200,33 @@ class AuditMarketMoney(unittest.TestCase):
         self.assertIsNone(f.transfer_tax_warning(FL))
         self.assertTrue(f.seller_net(900000, ny)["warnings"])
 
+
+class AuditLoanPrograms(unittest.TestCase):
+    """OFR-11 (loan limits, 2026 verified), OFR-25 (VA funding fee table, PMI by loan-to-value)."""
+
+    def test_va_funding_fee(self):
+        self.assertEqual(f.upfront_fee("va", 0), 0.0215)
+        self.assertEqual(f.upfront_fee("va", 0, va_later_use=True), 0.033)
+        self.assertEqual((f.upfront_fee("va", 0.05), f.upfront_fee("va", 0.10)), (0.015, 0.0125))
+        self.assertEqual(f.upfront_fee("va", 0, va_exempt=True), 0.0)
+        self.assertAlmostEqual(f.loan_amount(400000, "va", 0, va_exempt=True), 400000)
+
+    def test_pmi_by_loan_to_value(self):
+        self.assertEqual([f.annual_mi_rate("conventional", d) for d in (0.03, 0.05, 0.10, 0.15, 0.20)],
+                         [0.0075, 0.005, 0.0035, 0.002, 0.0])
+        self.assertEqual(f.annual_mi_rate("fha", 0.035), 0.0055)
+
+    def test_loan_limits(self):
+        lim = profiles.loan_limits()
+        self.assertEqual((lim["year"], lim["conforming"]["baseline"], lim["fha"]["floor"]), (2026, 832750, 541287))
+        self.assertIsNone(f.loan_limit_note(800000, "conventional", lim, "FL", "Orange"))
+        self.assertIn("jumbo", f.loan_limit_note(900000, "conventional", lim, "FL", "Orange"))
+        self.assertIsNone(f.loan_limit_note(900000, "conventional", lim, "FL", "Monroe"))  # $990,150 in Monroe
+        self.assertIn("high-cost", f.loan_limit_note(900000, "conventional", lim, "CA", "Alameda"))
+        self.assertIn("confirm the county", f.loan_limit_note(600000, "fha", lim, "FL", "Orange"))
+        self.assertIn("can't be FHA", f.loan_limit_note(1300000, "fha", lim, "FL", "Orange"))
+        self.assertIsNone(f.loan_limit_note(900000, "va", lim, "FL", "Orange"))
+
 if __name__ == "__main__":
     unittest.main()
 

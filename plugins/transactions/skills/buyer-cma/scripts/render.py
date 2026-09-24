@@ -229,8 +229,11 @@ def body(R, C, homes, agent, L):
         prow.append([L("pay_if", short=pay["alt_jurisdiction"]["short"])] + [money(r["total"] + pay["alt_jurisdiction"]["delta_monthly"]) for r in rows_p])
         classes[len(prow) - 1] = "alt"
     progs = finance.LOAN_PROGRAMS
+    conv_down = next((sc["down_pct"] for sc in R["costs"]["payment"]["scenarios"]
+                      if finance.program(sc["type"]) == "conventional" and sc["down_pct"] < 0.2), 0.05)  # OFR-25
     pay_note = R["costs"]["payment"].get("note") or L(
-        "pay_note", rate=f'{pay["rate"]:.2f}', ins=money(pay["insurance_annual"]), pmi=f'{progs["conventional"]["annual_mi"] * 100:.1f}',
+        "pay_note", rate=f'{pay["rate"]:.2f}', ins=money(pay["insurance_annual"]),
+        pmi=f'{finance.annual_mi_rate("conventional", conv_down) * 100:g}', pmi_down=f"{conv_down * 100:g}",
         mip=f'{progs["fha"]["annual_mi"] * 100:.2f}', ufmip=f'{progs["fha"]["upfront_fee"] * 100:.2f}', per10k=money(pay["per_10k"], 5))
     pay_note += " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one
     b += [f'<h3>{L("h_payment")}</h3>', f'<p>{R["costs"]["payment"]["intro"]}</p>',

@@ -37,10 +37,12 @@ class MatchesPrototype(unittest.TestCase):
         # Audit 2026-09-23 (OFR-3, OFR-4, OFR-17): FHA appraisal protection runs to closing and a gap clause earns no
         # listing-side credit, so there's no "stronger" option built on gap money; scores move by a point or three.
         self.assertEqual(got, {
-            # CORE-16: the loan taxes are itemized (0.55% of the FHA loan) and the lump share drops 0.5 points: about +$146 cash.
+            # CORE-16: the loan taxes are itemized (0.55% of the FHA loan) and the lump share drops 0.5 points.
             # CORE-17: the 2026 indexed homestead exemption lowers the payment $1.
-            "recommended": (365000, 65, 23696, 2304, 3149, 62.3, "Competitive"),
-            "lower_cost": (364000, 63, 19126, 6874, 3141, 52.8, "At Risk"),
+            # OFR-10: at 3.5% down with competition, the price stops at the value midpoint ($363,500, rounded down) and
+            # the offer competes on terms; the lower price lifts the appraisal score two points.
+            "recommended": (363000, 67, 23555, 2445, 3133, 61.6, "Competitive"),
+            "lower_cost": (363000, 65, 19055, 6945, 3133, 53.5, "At Risk"),
         })
         t = r["terms"]["recommended"]
         self.assertEqual((t["seller_concessions"], t["deposit"], t["appraisal_gap"]), (2000, 11000, 0))
@@ -53,12 +55,13 @@ class MatchesPrototype(unittest.TestCase):
         d["property"]["costs"] = {"title_fees": 645}
         r = strategy.analyze(d)
         # Audit: 4% early-payment discount in the proration (OFR-14), no tax in holding costs (OFR-13)
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333670)
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331804)  # OFR-10: $363,000, the value midpoint
         self.assertEqual(r["target"], 335670)
 
     def test_market_defaults(self):
         r = analyze("fha-competitive.json")
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 344120)  # no built-in listing fee (CORE-5), $1,145 title fees
+        # No built-in listing fee (CORE-5), $1,145 title fees; OFR-10: priced at the value midpoint, $2,000 below list
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 342194)
         self.assertTrue(any(a["field"] == "listing_fee_pct" for a in r["R"]["assumptions"]))
         # CORE-16: Florida 2.5% + 0.5% prepaids, with the loan's note stamps (0.35%) and intangible tax (0.2%) itemized
         self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.03)
@@ -108,15 +111,24 @@ class MissingData(unittest.TestCase):
 
 class EvalFindings(unittest.TestCase):
     def test_stronger_is_recommended_when_it_lifts_the_outlook_inside_limits(self):
+        # OFR-18: only a quote in hand is scored, so the buyer here has one
         B = {"analysis_date": "2026-09-23", "property": {"address": "2716 Gatlin Ave, Orlando, FL", "list_price": 429000},
-             "buyer": {"cash_available": 38000}}
+             "buyer": {"cash_available": 38000, "insurance_quote": True}}
         r = strategy.analyze(B)
         lvl = r["B"]["competition"]["level"]
         self.assertEqual(r["promoted"], "stronger")
         self.assertEqual(r["bands"]["recommended"][lvl][0], "strong")
         self.assertEqual(r["R"]["listing"]["state"], "FL")  # read from "Orlando, FL" without a ZIP
         self.assertEqual(r["why"]["inspection_days"], "Room for a full inspection + 4-point (year built unknown)")
-        self.assertIn("insurance quote before submitting", r["O"]["recommended"]["score"]["why"]["property"])
+
+    def test_planned_insurance_quote_is_not_scored(self):
+        """OFR-18: a quote the buyer plans to get is a to-do, not a point."""
+        B = {"analysis_date": "2026-09-23", "property": {"address": "2716 Gatlin Ave, Orlando, FL", "list_price": 429000},
+             "buyer": {"cash_available": 38000}}
+        r = strategy.analyze(B)
+        self.assertIsNone(r["promoted"])
+        self.assertIn("insurance quote planned before submitting (scored once in hand)",
+                      r["O"]["recommended"]["score"]["why"]["property"])
         self.assertIn("get the insurance quote", strategy.summary(r)["next_step"])
 
     def test_rate_written_as_fraction_is_refused(self):
@@ -135,9 +147,12 @@ class HandoffAndOtherStates(unittest.TestCase):
         self.assertEqual((B["market"]["sale_to_list"], B["market"]["median_dom"]), (0.992, 11))
         self.assertEqual((B["property"]["list_price"], B["property"]["state"]), (610000, "TX"))
         self.assertEqual(B["competition"]["heat"], "hot")
-        # OFR-5: the offer is already at the CMA's $632,000 walk-away, so no escalation cap above it
-        self.assertNotIn("escalation", r["terms"]["recommended"])
-        self.assertIn("walk-away", r["why"]["escalation"])
+        # OFR-9: $615,000 reaches the same Strong outlook as the $632,000 offer, so it's recommended and the fuller offer
+        # stays as the stronger alternative. OFR-5: that one is already at the CMA's walk-away, so it doesn't escalate.
+        self.assertEqual(r["promoted"], "lower_cost")
+        self.assertEqual((r["terms"]["recommended"]["price"], r["terms"]["stronger"]["price"]), (615000, 632000))
+        self.assertEqual(r["bands"]["recommended"][3][0], r["bands"]["stronger"][3][0])
+        self.assertNotIn("escalation", r["terms"]["stronger"])
         self.assertNotIn("cma_low / cma_high", [a["field"] for a in r["missing"]])
 
     def test_handoff_file_via_cli(self):
@@ -194,7 +209,7 @@ class Pdf(unittest.TestCase):
     def test_option_choice(self):
         r = analyze("fha-competitive.json")
         _, w = buyer_render.worksheet_html(r, {}, sample=False, variant="lower_cost")
-        self.assertEqual(w["price"], "$364,000")
+        self.assertEqual(w["price"], "$363,000")  # OFR-8: never above the recommended price (OFR-10: the midpoint)
         with self.assertRaises(strategy.oe.OfferError):
             strategy.worksheet(analyze("fha-competitive.json"), "nope")
 
@@ -238,6 +253,53 @@ class FloodCddCondo(unittest.TestCase):
         self.assertIn("milestone inspection summary and SIRS", text)
         self.assertIn("s. 689.302", text)
 
+
+class AuditPricing(unittest.TestCase):
+    """OFR-7, OFR-8, OFR-11, OFR-30."""
+
+    def only_offer(self, **buyer):
+        return {"analysis_date": "2026-09-23",
+                "property": {"address": "1 Main St, Orlando, FL", "state": "FL", "county": "Orange", "list_price": 400000},
+                "value": {"cma_low": 420000, "cma_high": 440000}, "competition": {"level": 0},
+                "buyer": {"financing": "conventional", "down_pct": 0.2, "cash_available": 150000, **buyer}}
+
+    def test_only_offer_never_above_list(self):
+        r = strategy.analyze(self.only_offer())
+        self.assertEqual(r["terms"]["recommended"]["price"], 400000)
+        self.assertIn("value range starts above it", r["why"]["price"])
+
+    def test_lower_cost_starts_from_the_agents_price(self):
+        for price in (632000, 612000):
+            d = fixture("texas-cma-escalation.json")
+            d["overrides"] = {"price": price}
+            r = strategy.analyze(d, cma=strategy.load_cma(d))
+            self.assertEqual(r["terms"]["recommended"]["price"], price)  # the agent's choice stands (no OFR-9 swap)
+            lc = r["terms"].get("lower_cost")
+            if price == 632000:
+                self.assertEqual(lc["price"], 615000)
+                self.assertLess(r["cash"]["lower_cost"]["worst"], r["cash"]["recommended"]["worst"])
+            elif lc:  # below the rules' own price, softening never raises it
+                self.assertLessEqual(lc["price"], price)
+
+    def test_option_that_saves_nothing_is_dropped(self):
+        for name in ("fha-competitive.json", "texas-cma-escalation.json", "cash.json"):
+            r = analyze(name)
+            if "lower_cost" in r["terms"]:
+                self.assertLess(r["cash"]["lower_cost"]["worst"], r["cash"]["recommended"]["worst"], name)
+
+    def test_jumbo_and_fha_limits(self):
+        d = self.only_offer(down_pct=0.05)
+        d["property"].update(list_price=950000)
+        d["value"] = {"cma_low": 930000, "cma_high": 980000}
+        r = strategy.analyze(d)
+        self.assertTrue(any("jumbo" in a["why"] for a in r["assumptions"]))
+        self.assertIn("check the loan limit", r["limits"]["recommended"])
+        d = self.only_offer(financing="fha", down_pct=0.035)
+        d["property"].update(list_price=700000)
+        d["value"] = {"cma_low": 690000, "cma_high": 720000}
+        r = strategy.analyze(d)
+        self.assertTrue(any("FHA floor ($541,287)" in a["why"] for a in r["assumptions"]))
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -248,6 +310,7 @@ class AuditEscalationCap(unittest.TestCase):
     def setUp(self):
         d = fixture("texas-cma-escalation.json")
         d["cma"]["offer_plan"]["walk_away"] = 650000
+        d["overrides"] = {"price": 632000}  # the agent chose the fuller offer, so OFR-9 doesn't swap in a cheaper one
         self.r = strategy.analyze(d, cma=strategy.load_cma(d))
 
     def test_cap_is_funded_from_the_same_risk_line(self):
@@ -273,8 +336,8 @@ class AuditBuyerBrokerShortfall(unittest.TestCase):
         d["buyer"]["buyer_broker_agreement_pct"] = 0.03
         r = strategy.analyze(d)
         c = r["cash"]["recommended"]
-        self.assertEqual(c["bb_short"], 1825)
-        self.assertEqual(c["to_close"], c["down"] + c["cc"] + c["conc"] + 1825)
+        self.assertEqual(c["bb_short"], 1815)  # 0.5% of $363,000 (OFR-10 prices at the value midpoint)
+        self.assertEqual(c["to_close"], c["down"] + c["cc"] + c["conc"] + 1815)
         doc = buyer_render.options_html(r, {"name": None, "brokerage": None, "brand": {}}, False)
         self.assertIn("Broker Fee (Not Paid by Seller)", doc)
         self.assertFalse(any(a["field"] == "buyer_broker_agreement_pct" for a in r["missing"]))

@@ -26,6 +26,30 @@ LOAN_PROGRAMS = {
 }
 ALIASES = {"conv": "conventional"}
 
+# OFR-25: private mortgage insurance by loan-to-value, as a planning estimate (good credit; the lender's quote wins)
+PMI_BY_LTV = ((0.95, 0.0075), (0.90, 0.005), (0.85, 0.0035), (0.80, 0.002))  # (LTV above, annual rate)
+# VA funding fee (38 U.S.C. 3729): by down payment, first use and later use; waived for exempt veterans
+VA_FEE = ((0.10, 0.0125, 0.0125), (0.05, 0.015, 0.015), (0.0, 0.0215, 0.033))  # (down at least, first, later)
+
+
+def annual_mi_rate(name, down):
+    """Annual mortgage insurance as a share of the base loan: PMI by loan-to-value for conventional loans."""
+    key = program(name)
+    if key != "conventional":
+        return LOAN_PROGRAMS[key]["annual_mi"]
+    ltv = 1 - down
+    return next((rate for above, rate in PMI_BY_LTV if ltv > above + 1e-9), 0.0)
+
+
+def upfront_fee(name, down, va_later_use=False, va_exempt=False):
+    """The financed upfront fee: FHA's premium, USDA's guarantee fee, or the VA funding fee from its table."""
+    key = program(name)
+    if key != "va":
+        return LOAN_PROGRAMS[key]["upfront_fee"]
+    if va_exempt:
+        return 0.0
+    return next(later if va_later_use else first for at_least, first, later in VA_FEE if down >= at_least - 1e-9)
+
 
 def program(name):
     key = ALIASES.get(str(name).lower(), str(name).lower())
@@ -128,6 +152,32 @@ def loan_taxes(loan, market):
     return [{"label": r["label"], "rate": r["rate"], "amount": round(loan * r["rate"])} for r in rows if loan and r.get("rate")]
 
 
+def loan_limit_note(loan, name, limits, state=None, county=None):
+    """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `limits` is
+    profiles.loan_limits(); county limits above the baseline come from its `counties` table."""
+    key = program(name)
+    if not loan or key not in ("conventional", "fha") or not limits:
+        return None
+    year = limits.get("year", "")
+    own = ((limits.get("counties") or {}).get(state or "") or {}).get(str(county or "").removesuffix(" County"), {})
+    if key == "conventional":
+        cap = own.get("conforming") or limits["conforming"]["baseline"]
+        if loan <= cap:
+            return None
+        if loan > limits["conforming"]["ceiling"] or own.get("conforming") or state == "FL":
+            return (f"The {money(loan)} loan is above the {year} conforming limit here ({money(cap)}): a jumbo loan, with "
+                    "its own rates, down payment and reserves. Confirm with the lender.")
+        return (f"The {money(loan)} loan is above the {year} baseline conforming limit ({money(cap)}): jumbo unless the "
+                "county is high-cost. Confirm the county limit with the lender.")
+    cap = own.get("fha")
+    if cap and loan > cap or loan > limits["fha"]["ceiling"]:
+        return f"The {money(loan)} FHA loan is above the {year} FHA limit here ({money(cap or limits['fha']['ceiling'])}): it can't be FHA."
+    if not cap and loan > limits["fha"]["floor"]:
+        return (f"The {money(loan)} FHA loan is above the {year} FHA floor ({money(limits['fha']['floor'])}): confirm the "
+                "county's FHA limit with the lender.")
+    return None
+
+
 def buyer_broker_shortfall(price, agreement_pct, seller_pays_pct):
     """What the buyer owes their own broker when the seller pays less than the buyer-broker agreement (after the 2024
     NAR settlement): (agreement − seller-paid) × price, never below 0. None when the agreement isn't known."""
@@ -180,23 +230,23 @@ def pi_payment(loan, annual_rate_pct, years=30):
     return loan / n if m == 0 else loan * m / (1 - (1 + m) ** -n)
 
 
-def loan_amount(price, name, down):
+def loan_amount(price, name, down, va_later_use=False, va_exempt=False):
     key = program(name)
     if key == "cash":
         return 0.0
-    return price * (1 - down) * (1 + LOAN_PROGRAMS[key]["upfront_fee"])
+    return price * (1 - down) * (1 + upfront_fee(key, down, va_later_use, va_exempt))
 
 
 def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, hoa_monthly=0.0, mi_rate=None,
-                    flood_annual=None):
+                    flood_annual=None, va_later_use=False, va_exempt=False):
     """Monthly payment breakdown. Conventional mortgage insurance only below 20% down.
 
     `flood_annual` is a flood insurance quote; without one `flood` is None and the total leaves it out (the report
     says "get a quote", never $0: see flood_insurance)."""
     key = program(name)
     base = price * (1 - down)
-    loan = loan_amount(price, key, down)
-    rate_mi = LOAN_PROGRAMS[key]["annual_mi"] if mi_rate is None else mi_rate
+    loan = loan_amount(price, key, down, va_later_use, va_exempt)
+    rate_mi = annual_mi_rate(key, down) if mi_rate is None else mi_rate
     mi = 0.0 if key == "cash" or (key == "conventional" and down >= 0.20) else base * rate_mi / 12
     pi = 0.0 if key == "cash" else pi_payment(loan, rate_pct)
     tax, ins = tax_annual / 12, insurance_annual / 12

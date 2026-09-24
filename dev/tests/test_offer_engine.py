@@ -246,6 +246,26 @@ class CondoAndFlood(unittest.TestCase):
         self.assertNotIn("689.302", text)
         self.assertNotIn("718.503", text)
 
+
+class AuditSellerSideLimits(unittest.TestCase):
+    """OFR-12 (concessions over the program cap), OFR-18 (a planned quote isn't scored)."""
+
+    def test_concessions_over_the_cap(self):
+        d = fixture("two-offers-accept.json")
+        o = d["offers"][0]
+        o.update(financing="conventional", down_pct=0.05, seller_concessions=25600)  # 5% of $512,000; the cap is 3%
+        R = oe.analyze(d)
+        flags = [x["issue"] for x in by_id(R)["B"]["flags"]]
+        self.assertTrue(any("exceed the Conventional limit of 3% at 5% down" in x for x in flags), flags)
+
+    def test_planned_quote_not_scored(self):
+        d = fixture("two-offers-accept.json")
+        d["offers"][0]["insurance_quote"] = "planned"
+        planned = by_id(oe.analyze(d))["B"]["score"]["scores"]["property"]
+        d["offers"][0]["insurance_quote"] = True
+        in_hand = by_id(oe.analyze(d))["B"]["score"]["scores"]["property"]
+        self.assertEqual(in_hand - planned, 1)
+
 if __name__ == "__main__":
     unittest.main()
 

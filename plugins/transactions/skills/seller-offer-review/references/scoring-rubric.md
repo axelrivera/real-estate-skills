@@ -10,7 +10,7 @@ The score estimates how likely an offer is to close on its terms. Eight criteria
 | Contingency Exposure | 15 | sale-of-home contingency 1. Otherwise the lower of: days until firm ≤7 5 · ≤14 4 · ≤30 3 · ≤45 2 · more 1; inspection period (the walk-away-for-any-reason window; AS IS and other contracts' option periods only) ≤7 5 · ≤10 4 · ≤14 3 · more 2. Days until firm count the inspection period only when it's a walk-away; on the FR/BAR Standard they run through the repair election (inspection + 10 + 5 days), since either party may terminate when repairs exceed a limit |
 | Deposit Strength | 10 | ≥10% 5 · ≥3% 4 · ≥2% 3 · ≥1% 2 · less 1 · unknown 3 |
 | Fit with Seller's Timeline | 10 | with a deadline: ≥7 days early 5 · on time 4 · ≤7 days late 2 · later 1. Without: ≤30 days 5 · ≤45 4 · ≤60 3 · more 2 |
-| Property-Condition / Insurance Risk | 10 | cash 5. Financed: start at 4; roof ≥14 yrs −1 (≥20 yrs −2); FHA/VA/USDA −1; flood zone A/V −1; buyer has an insurance quote +1 (range 1–5) |
+| Property-Condition / Insurance Risk | 10 | cash 5. Financed: start at 4; roof ≥14 yrs −1 (≥20 yrs −2); FHA/VA/USDA −1; flood zone A/V −1; buyer has an insurance quote in hand +1 (a planned quote isn't scored) (range 1–5) |
 | Buyer Agent Track Record | 5 | strong 5 · average 3 · weak 2 · not assessed 3 |
 
 ## Downside Case

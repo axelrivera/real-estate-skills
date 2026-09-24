@@ -14,7 +14,7 @@ From the listing agent's statement when available; otherwise inferred from marke
 
 | Term | Rule |
 |---|---|
-| Price | Anchor = the lower of list and the value point (median adjusted comp, else CMA midpoint). Only offer: ~2% under the anchor, not below CMA low. One competing: the anchor. Two–three: list, kept inside the range (up to CMA high). Cash or 4+: CMA high. Then capped at max price and max payment |
+| Price | Anchor = the lower of list and the value point (median adjusted comp, else CMA midpoint). Only offer: ~2% under the anchor, not below CMA low, and never above list (when the range starts above list, offer list and say why). One competing: the anchor. Two–three: list, kept inside the range (up to CMA high). Cash or 4+: CMA high. Low down payment (FHA, VA, USDA, or conventional under 5%) with two or more competing: no higher than the CMA midpoint, competing on terms instead. Then capped at max price and max payment |
 | Seller Concessions | Only offer: full estimated closing costs. One competing: at least half. Two or more: only what the buyer's cash can't cover after the reserve. Always ≤ program cap and ≤ closing costs |
 | Appraisal Gap | Financed and price above the CMA high (the same risk line the listing side uses): cover the difference, limited by cash after the reserve. FHA/VA: the rider lets the buyer walk if the appraisal is low, so the clause shows intent; send proof of funds with it |
 | Deposit | Financed 1% / 2% / 3% / 3% by competition level; cash 3% / 5% / 10% / 10% |
@@ -27,9 +27,9 @@ From the listing agent's statement when available; otherwise inferred from marke
 
 ## Alternatives
 
-- **Which one is recommended:** the rule-built offer, unless the stronger option reaches a better outlook against the expected competition while staying inside every limit (price, payment, reserve, program cap). Then the stronger terms become the recommendation. A cheaper option in the same band stays an alternative: the bands can't see above Strong.
+- **Which one is recommended:** the rule-built offer, unless the stronger option reaches a better outlook against the expected competition while staying inside every limit (price, payment, reserve, program cap), or the lower-cost option reaches the same outlook for less cash. Then those terms become the recommendation, and when the cheaper one wins, the fuller offer stays as the stronger alternative. The agent's `overrides` turn this off.
 - **Stronger:** a 3% deposit, plus gap coverage for the part of the price above the CMA high (never for FHA/VA, where it earns no listing-side credit), never beyond the buyer's actual cash. If it only helps by dipping below the reserve floor, it's labeled the buyer's call; if it doesn't change the outlook, the report says the extra cash isn't worth it. Not offered when the buyer can't afford the recommended offer.
-- **Lower-cost:** the same rules one competition level lower, without escalation: what the buyer saves and what happens to the outlook. Dropped when it would be "Unlikely" against the expected competition (level 2+); not offered when competition is already "only offer".
+- **Lower-cost:** the recommended offer (with the agent's overrides) softened toward the rules one competition level lower: never a higher price, deposit or gap, no escalation, and more concessions only inside the program cap and closing costs. Dropped when it saves nothing, or would be "Unlikely" against the expected competition (level 2+); not offered when competition is already "only offer".
 
 ## Outlook Bands
 

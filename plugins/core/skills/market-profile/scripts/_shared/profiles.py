@@ -282,6 +282,12 @@ def _county_override(overrides, county):
     return {_county_key(k): v for k, v in (overrides or {}).items()}.get(_county_key(county))
 
 
+def loan_limits():
+    """The year's national loan limits (markets/loan-limits.md): conforming, FHA and county exceptions (OFR-11)."""
+    data, _ = read(os.path.join(MARKETS, "loan-limits.md"))
+    return data
+
+
 def load_market(path=None, state=None, county=None, mls=None):
     """Market values for a property, merged from built-in layers, the user's profile and county overrides.
 

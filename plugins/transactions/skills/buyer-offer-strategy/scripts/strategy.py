@@ -220,7 +220,7 @@ def closing_costs(B, price):
     BU = B["buyer"]
     cc = price * BU["closing_cost_pct"]
     if B.get("loan_taxes"):
-        loan = finance.loan_amount(price, BU["financing"], BU["down_pct"])
+        loan = finance.loan_amount(price, BU["financing"], BU["down_pct"], bool(BU.get("va_later_use")), bool(BU.get("va_exempt")))
         cc += sum(round(loan * t["rate"]) for t in B["loan_taxes"])
     return round(cc)
 
@@ -252,7 +252,8 @@ def monthly_payment(B, costs, price):
     BU, K, P = B["buyer"], B["costs"], B["property"]
     tax = property_tax(B, costs, price)["annual"] or 0
     p = finance.monthly_payment(price, BU["financing"], BU["down_pct"], K["rate"], tax, K["insurance_annual"],
-                                P["hoa_monthly"] + (P.get("cdd_annual") or 0) / 12, flood_annual=B["flood"]["annual"])
+                                P["hoa_monthly"] + (P.get("cdd_annual") or 0) / 12, flood_annual=B["flood"]["annual"],
+                                va_later_use=bool(BU.get("va_later_use")), va_exempt=bool(BU.get("va_exempt")))
     return round(p["total"])
 
 
@@ -312,12 +313,22 @@ def build_offer(B, costs):
     lp, lvl, fin = P["list_price"], C["level"], BU["financing"]
     why = {}
     anchor = min(lp, V["point"])
-    price = {0: max(V["cma_low"], anchor * 0.98), 1: anchor, 2: min(max(lp, V["mid"]), V["cma_high"]), 3: V["cma_high"]}[lvl]
+    # OFR-7: with little competition the offer never goes above list, even when the value range starts above it
+    price = {0: min(lp, max(V["cma_low"], anchor * 0.98)), 1: anchor, 2: min(max(lp, V["mid"]), V["cma_high"]),
+             3: V["cma_high"]}[lvl]
     why["price"] = {0: "Room to negotiate: little competition", 1: "At value, not above it",
                     2: "At list, inside the value range, to compete", 3: "Top of the value range to compete"}[lvl]
+    if lvl == 0 and V["cma_low"] > lp:
+        why["price"] = "At list: the value range starts above it, and with little competition there's no reason to pay more"
+    low_down = fin in ("fha", "va", "usda") or (fin == "conventional" and BU["down_pct"] < 0.05)
+    if low_down and lvl >= 2 and price > V["mid"]:  # OFR-10: low down payment competes on terms, not price
+        price = rnd(V["mid"], 1000, "down")
+        why["price"] = (f"Value midpoint: with {BU['down_pct']:.1%} down the appraisal sets the loan, so this offer competes "
+                        "on terms (deposit, inspection, closing date) rather than price")
     if price > BU["max_price"]:
         price, why["price"] = BU["max_price"], "Capped at your max price"
-    price = lp if abs(price - lp) < 1000 else rnd(price, 1000, "down" if price > lp else "round")
+    price = lp if abs(price - lp) < 1000 and not (low_down and lvl >= 2 and lp > V["mid"]) \
+        else rnd(price, 1000, "down" if price > lp else "round")
     if BU.get("max_payment") and monthly_payment(B, costs, price) > BU["max_payment"]:
         while price > 1000 and monthly_payment(B, costs, price) > BU["max_payment"]:
             price -= 1000
@@ -388,7 +399,7 @@ def build_offer(B, costs):
             t["buyer_broker_pct"] = 0
             why["buyer_broker_pct"] = "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
     t["contract_form"] = B["contract_form"]
-    t["insurance_quote"] = True if BU.get("insurance_quote") else "planned"  # scored as submitted with a quote
+    t["insurance_quote"] = True if BU.get("insurance_quote") else "planned"  # OFR-18: only a quote in hand is scored
     why["insurance_quote"] = ("Quote in hand: include it with the offer" if BU.get("insurance_quote") else
                               "Get the quote before submitting; listing agents weigh it on older roofs")
     if lvl >= 2 and fin in ("cash", "conventional") and BU["down_pct"] >= 0.10:
@@ -438,15 +449,25 @@ def stronger(B, t):
 
 
 def lower_cost(B, costs, rec):
-    """Write for one competition level lower, without escalation. None if it's the same offer."""
+    """The recommended offer (with the agent's overrides) softened toward one competition level lower: never a higher
+    price, deposit or gap, no escalation (OFR-8). None if nothing changes."""
     lvl = B["competition"]["level"]
     if lvl == 0:
         return None, {}
     B2 = copy.deepcopy(B)
     B2["competition"]["level"] = lvl - 1
-    t, why = build_offer(B2, costs)
-    t = {**{k: v for k, v in rec.items() if k not in t}, **t}
+    soft, why = build_offer(B2, costs)
+    t = dict(rec)
     t.pop("escalation", None)
+    for k in ("price", "deposit", "appraisal_gap"):
+        t[k] = min(rec.get(k, 0), soft.get(k, 0))
+    for k in ("inspection_days", "loan_approval_days", "closing_days"):
+        if k in rec and k in soft:
+            t[k] = max(rec[k], soft[k])
+    cc = closing_costs(B, t["price"])
+    t["seller_concessions"] = min(max(rec.get("seller_concessions", 0), soft.get("seller_concessions", 0)),
+                                  int(cc // 100 * 100), int(concession_cap(B, t["price"]) // 100 * 100))
+    why = {k: v for k, v in why.items() if t.get(k) != rec.get(k)}
     return (None, {}) if t == rec else (t, why)
 
 
@@ -481,13 +502,19 @@ def better_option(B, costs, terms, O, lvl):
     rank = {k: BAND_RANK[band_of(ci(O[k], tgt, lp), lvl)[0]] for k in terms}
     if "stronger" in terms and rank["stronger"] > rank["recommended"] and within_limits(B, costs, terms["stronger"]):
         return "stronger"
-    # A cheaper option in the same band stays an alternative: the bands are coarse (nothing above Strong), and the
-    # recommended terms were built for the expected competition. The summary shows the saving so the buyer can choose.
+    # OFR-9: "best" is the strongest outlook at the lowest cost that reaches it, so a cheaper option in the same band wins
+    if "lower_cost" in terms and rank["lower_cost"] >= rank["recommended"] and within_limits(B, costs, terms["lower_cost"]) \
+            and buyer_cash(B, terms["lower_cost"])["worst"] < buyer_cash(B, terms["recommended"])["worst"]:
+        return "lower_cost"
     return None
 
 
 def promote_why(why, lc_why, pick, t):
     why = dict(why)
+    if pick == "lower_cost":
+        why.update(lc_why)
+        why.pop("escalation", None)
+        why["price"] = (lc_why.get("price") or why.get("price", "")) + "; the same outlook as the fuller offer, for less"
     if pick == "stronger":
         why["appraisal_gap"] = "Covers more of an appraisal shortfall: lifts the outlook and stays inside your limits"
         why["deposit"] = f"{t['deposit'] / t['price']:.0%} shows commitment; refundable during inspection; counts toward cash to close"
@@ -518,11 +545,21 @@ def analyze(B_in, market=None, cma=None):
         pick = better_option(B, costs, dict(variants), O, lvl)
         if not pick or promoted:
             break
-        promoted = pick
+        promoted, fuller = pick, rec
         rec = dict(variants)[pick]
         why = promote_why(why, lc_why, pick, rec)
+        if pick == "lower_cost":  # OFR-9: the fuller offer stays on the table as the stronger alternative
+            variants, lc_why = [("recommended", rec), ("stronger", fuller)], {}
+            R, O = run_engine(B, costs, variants)
+            break
     lp = B["property"]["list_price"]
     tgt = O["recommended"]["target"]["net_adj"]
+    limits = profiles.loan_limits()  # OFR-11: jumbo and FHA limits
+    BU0, P0 = B["buyer"], B["property"]
+    loan_notes = {k: finance.loan_limit_note(finance.loan_amount(t["price"], BU0["financing"], BU0["down_pct"]),
+                                             BU0["financing"], limits, P0.get("state"), P0.get("county")) for k, t in variants}
+    if loan_notes.get("recommended"):
+        A.add("buyer", "loan_limit", "check", loan_notes["recommended"], "high")
     engine_assumed = [a for a in R["assumptions"] if not a["scope"].startswith("offer") and a["scope"] != "seller"
                       and a["field"] not in ("cma_low / cma_high", "state")]
     res = {"B": B, "R": R, "O": O, "why": why, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
@@ -535,7 +572,8 @@ def analyze(B_in, market=None, cma=None):
         if esc_ else None
     res["ci"] = {k: ci(O[k], tgt, lp) for k, _ in variants}
     res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
-    if "lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl":
+    saves_nothing = "lower_cost" in res["terms"] and res["cash"]["lower_cost"]["worst"] >= res["cash"]["recommended"]["worst"]
+    if saves_nothing or ("lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl"):  # OFR-30
         for d in (res["terms"], res["cash"], res["payment"], res["ci"], res["bands"], O):
             d.pop("lower_cost", None)
         res["lower_cost_dropped"] = True
@@ -556,6 +594,8 @@ def analyze(B_in, market=None, cma=None):
             issues.append(f"concessions over program cap ({money(round(cap))})")
         if c["wasted_conc"]:
             issues.append(f"{money(c['wasted_conc'])} of concessions exceed closing costs")
+        if loan_notes.get(k):
+            issues.append("loan over the program limit" if "can't be FHA" in loan_notes[k] else "check the loan limit")
         lim[k] = issues
     res["limits"] = lim
     cons = []

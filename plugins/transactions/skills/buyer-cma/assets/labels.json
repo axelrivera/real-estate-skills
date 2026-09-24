@@ -65,7 +65,7 @@
  "pay_hoa": "HOA / CDD",
  "pay_total": "Estimated Monthly Total",
  "pay_if": "If {short} Instead",
- "pay_note": "Assumes a 30-year fixed rate of {rate}%, insurance of {ins} a year, private mortgage insurance of {pmi}% a year below 20% down, and FHA mortgage insurance of {mip}% a year with the {ufmip}% upfront premium added to the loan. Closing costs are not included. These are estimates, not loan quotes. Every $10,000 off the price lowers the payment by roughly {per10k} a month.",
+ "pay_note": "Assumes a 30-year fixed rate of {rate}%, insurance of {ins} a year, private mortgage insurance of about {pmi}% a year at {pmi_down}% down (an estimate by down payment: less with more down, none from 20%), and FHA mortgage insurance of {mip}% a year with the {ufmip}% upfront premium added to the loan. Closing costs are not included. These are estimates, not loan quotes. Every $10,000 off the price lowers the payment by roughly {per10k} a month.",
  "h_watch": "Things to Look Into",
  "h_questions": "Questions for the Listing Agent",
  "h_method": "How This Was Prepared",

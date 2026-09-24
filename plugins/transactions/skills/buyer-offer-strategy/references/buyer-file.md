@@ -64,7 +64,8 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 | `closing_cost_pct` | market buyer closing costs + 0.5% prepaids (Florida 3.5%); cash: half the market figure; no market: 3.5% / 1.5% | low |
 | `approval` | `preapproval` (`pof_verified` for cash). Values: `none`, `prequal`, `preapproval`, `full_uw` (DU/LP or underwriter approval), `pof_verified` (cash) | — |
 | `lender_called` | false. True only when the agent says they talked to the lender: it prints "lender confirmed" on the worksheet | — |
-| `insurance_quote` | false. True when the buyer already has a quote for this address | — |
+| `insurance_quote` | false. True when the buyer already has a quote for this address; only a quote in hand is scored (a planned one is a to-do) | — |
+| `va_later_use`, `va_exempt` | VA only: a later use of the benefit (higher funding fee under 5% down), or exempt from the fee | false |
 | `lender_min_close_days` | 35 financed / 21 cash | — |
 | `agent_track` | `average`: how a listing agent would rate the buyer's agent | — |
 | `buyer_broker_agreement_pct` | none (flagged): the rate in the buyer's own broker agreement. When the seller pays less, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" line in cash to close and counts in every limit | med |
