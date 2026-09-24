@@ -55,7 +55,7 @@ Copy this list into a skill's notes when building or rebuilding it; the status t
 
 ## Status
 
-All phases are built (version 0.2.0; 0.3.0 and 0.4.0 add the audit's Phase 1 and 2 fixes, see [status.md](status.md#audit-2026-09-23)). Every skill has run through the eval loop once (iteration 1, 2026-09-23: 21 prompts, with-skill runs by sandbox-simulating subagents) and the fixes from those runs are in. What's left for every skill is a run in claude.ai and Cowork by the user.
+All phases are built (version 0.2.0; 0.3.0 to 0.5.0 add the audit's Phase 1 to 3 fixes, see [status.md](status.md#audit-2026-09-23)). Every skill has run through the eval loop once (iteration 1, 2026-09-23: 21 prompts, with-skill runs by sandbox-simulating subagents) and the fixes from those runs are in. What's left for every skill is a run in claude.ai and Cowork by the user.
 
 | Shared module | Status |
 |---|---|

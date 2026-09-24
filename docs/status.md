@@ -1,16 +1,16 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.4.0: audit Phases 1 and 2 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.5.0: audit Phases 1 to 3 done, except DOC-13). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | Marketplace (`core`, `transactions`) at 0.4.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| Scaffold | Marketplace (`core`, `transactions`) at 0.5.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`). See [development.md](development.md#shared-code) |
 | `core` | `agent-profile`, `market-profile` (markdown only) |
 | `transactions` | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test` (364 passing on 2026-09-24). Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test` (369 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
 ## This pass (2026-09-23)
@@ -84,7 +84,7 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.4.0: a
 | | | TREC and other forms (TREC 20-19, current since July 1, 2026) | OFR-19, TL-15, TL-24 | Done |
 | | | Timeline wording and outputs | TL-14, TL-16, TL-17, TL-19, TL-21, TL-22, TL-25 | Done |
 | | | Fair housing and design | FH-4, FH-5, DS-1 to DS-4 | Done |
-| 3. Low, docs, tooling | 0.5.0 | Skills | CORE-22 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20 | Done |
+| 3. Low, docs, tooling (done 2026-09-24 except DOC-13, validated) | 0.5.0 | Skills | CORE-22 to CORE-29, CMA-23 to CMA-32, OFR-23, OFR-29, OFR-31, OFR-32, TL-20 | Done |
 | | | Docs and tooling | DOC-1 to DOC-14 (DOC-13 needs a license and remote) | Done except DOC-13 |
 | 4. Evals | | Iteration 2 on the new fixtures, plus the fair-housing evals | | Open |
 
