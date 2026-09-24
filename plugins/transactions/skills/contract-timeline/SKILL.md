@@ -13,7 +13,7 @@ Two views of the same dates: the **buyer view** highlights the buyer's actions a
 
 Read the whole package: contract, every rider and addendum, and every counteroffer (`pdftotext -layout`, or read scanned pages directly). Record the terms in a deal file: read `references/deal-file.md` for the format.
 
-- **Effective Date** is the last signature or initial on the final counteroffer or acceptance, not the offer date. Write down the evidence. If it's ambiguous, or later than today for a contract the agent calls executed, stop and ask: every deadline depends on it.
+- **Effective Date** is the last signature or initial on the final counteroffer or acceptance, not the offer date. Write down the evidence. If it's ambiguous, or later than today for a contract the agent calls executed, stop and ask: every deadline depends on it. A future date is fine for a what-if ("if we go under contract on the 20th"); say it's hypothetical.
 - **Later documents win:** counteroffers override the offer; initialed handwritten changes override typed text. If something is illegible or two documents disagree, add it to `flags` instead of guessing.
 - **FR/BAR contracts (Florida):** read `references/frbar.md` for where each date lives and the form defaults for blanks. List every default you used in `agent_notes` so the agent can confirm it.
 - **Two kinds of notes.** `flags` print on the report as "Check:" lines, so use them for what the client should also see (a date two documents disagree on, a tight loan approval). `agent_notes` stay in chat: defaults used for blanks, readings to confirm, anything that would confuse a client.

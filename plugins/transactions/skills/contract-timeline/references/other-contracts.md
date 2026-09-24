@@ -32,4 +32,6 @@ Use the contract's own words for `label`, `action` and `if_missed`, and its para
 
 ## 3. Confirm
 
-Before running, list the deadlines back to the agent in plain words ("Option period: 7 days after the Effective Date, ends Oct 2 at 5 PM") and ask them to confirm. Put anything you had to interpret in `flags`.
+For a quick question about one date, skip the round trip: answer, and state in the same reply the rule you used and the reading to confirm ("7 days after Nov 20, ending 5:00 PM, not extended; confirm your form says the same").
+
+For a full timeline, before running, list the deadlines back to the agent in plain words ("Option period: 7 days after the Effective Date, ends Oct 2 at 5 PM") and ask them to confirm. Put anything you had to interpret in `flags`.
