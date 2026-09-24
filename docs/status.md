@@ -1,16 +1,16 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.3.0: audit Phase 1 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.4.0: audit Phases 1 and 2 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | Marketplace (`core`, `transactions`) at 0.3.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| Scaffold | Marketplace (`core`, `transactions`) at 0.4.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`). See [development.md](development.md#shared-code) |
 | `core` | `agent-profile`, `market-profile` (markdown only) |
 | `transactions` | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test`: 294 passing. Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test`: 355 passing. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
 ## This pass (2026-09-23)
@@ -77,7 +77,7 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.3.0: a
 | | | Disclaimers, brokerage, EHO | CORE-3, CORE-4, CMA-16, FH-6 | Done |
 | | | Fair-housing check | FH-1, FH-2, FH-3 | Done |
 | | | Condo and flood | CMA-5, CMA-6, OFR-26 | Done |
-| 2. Medium | 0.4.0 | Market data and checks | CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning), CORE-20, CORE-21 | Open |
+| 2. Medium (done 2026-09-24, validated) | 0.4.0 | Market data and checks | CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning), CORE-20, CORE-21 | Open |
 | | | CMA method and charts | CMA-7 to CMA-12, CMA-14, CMA-15, CMA-17, CMA-20, CMA-22 | Done |
 | | | Offer pricing and programs | OFR-7 to OFR-12, OFR-18, OFR-25, OFR-30 | Done |
 | | | Offer benchmarks and review UX | OFR-15, OFR-16, OFR-20, OFR-24, OFR-28 | Done |
