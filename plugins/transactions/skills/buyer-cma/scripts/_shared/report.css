@@ -72,3 +72,7 @@ thead+tbody tr:first-child td{border-top:none}
 .was{font-size:7pt;color:var(--muted);text-decoration:line-through}
 
 .fine{font-size:6.9pt;color:var(--muted);margin-top:6px;line-height:1.35}
+
+/* closing notices: data source, not-advice lines, the agent's disclaimers (render.notices) */
+.notices{margin-top:10px;padding-top:4px;border-top:1px solid var(--brand-rule);font-size:7pt;line-height:1.3;color:var(--muted);break-inside:avoid}
+.notices p{margin:0 0 2px}

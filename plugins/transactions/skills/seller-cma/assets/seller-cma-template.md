@@ -32,6 +32,8 @@
 
 **Next Step:** {{summary_page.next_step}}
 
-_Broker's opinion of value, not an appraisal. Net figures are estimates; the closing agent provides exact figures._
+_Broker's opinion of value, not an appraisal, and not for lending purposes. Sales data: {{data_source.mls}} MLS as of {{data_source.as_of}}, deemed reliable but not guaranteed. Net figures are estimates; the closing agent provides exact figures. Commissions are negotiable and not set by law._
+
+{{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}
 
 {{handoff_block, pasted exactly as compute.py printed it}}

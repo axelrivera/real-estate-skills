@@ -41,6 +41,8 @@
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 
-<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = if the appraisal and inspection go badly. Estimates only; the title company's settlement statement governs. Not legal advice.</sub>
+<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = if the appraisal and inspection go badly. Estimates only; the title company's settlement statement governs. Commissions are negotiable and not set by law. Not legal advice.</sub>
+
+{{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}
 
 <!-- On request only ("show me the net sheet"): one table per offer from offers[].net_sheet, columns net_sheet.columns, rows net_sheet.rows. Then list assumptions[] as "impact · where · what". -->

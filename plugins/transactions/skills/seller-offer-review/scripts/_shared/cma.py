@@ -405,3 +405,15 @@ def derive_comps(comps):
     comps["summary_rows"] = sorted(out, key=lambda r: -r[3])
     return warnings
 
+
+def report_notices(C):
+    """The CMA's fixed closing notices (CMA-16): where the sales data came from and as of when, that a CMA isn't an
+    appraisal or for lending, and that payment and tax figures are estimates."""
+    src = C.get("data_source") or {}
+    when = src.get("as_of") or ""
+    lines = [f"Sales data: {src['mls']} MLS as of {when}. Deemed reliable but not guaranteed." if src.get("mls") and src.get("export")
+             else f"Sales data as of {when}, from the sources named in the report. Deemed reliable but not guaranteed."]
+    lines.append("This comparative market analysis is an opinion of price, not an appraisal, and isn't for lending purposes.")
+    lines.append("Payment, tax and cost figures are estimates only, not lending or tax advice.")
+    return lines
+

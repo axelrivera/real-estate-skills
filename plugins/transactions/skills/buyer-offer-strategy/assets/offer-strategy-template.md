@@ -30,4 +30,5 @@
 - "How does it stack up?": a table from summary.bands (rows = level, columns = summary.option_labels).
 - "Side by side": side_by_side[] as a table (term + one column per option).
 - "Contract entries / worksheet": worksheet.form_name, then worksheet.rows as "field: entry (note)" (paragraph first when worksheet.frbar), worksheet.riders, worksheet.clauses (quote the text as written), then worksheet.package as a checklist with "- [ ]". Text in [brackets] is a blank for the agent to fill.
-- Assumptions: assumptions[] as "impact · where · what". -->
+- Assumptions: assumptions[] as "impact · where · what".
+- Close with the agent's disclaimers from their profile, verbatim, when there are any. -->

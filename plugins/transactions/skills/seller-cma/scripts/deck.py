@@ -16,7 +16,7 @@ import tempfile
 import zipfile
 from datetime import datetime, timedelta
 
-from _shared import design, finance, mls
+from _shared import cma, design, finance, mls, render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILDER = os.path.join(HERE, "build_deck.js")
@@ -197,7 +197,8 @@ def deck_data(R, C, homes, agent, L, footer):
                         f'{L("range_word")} {k(rec["low"])}–{k(rec["high"])}'],
         "table_head": [L("th_sale"), L("th_sold_for"), L("th_seller_paid"), L("th_adjusted")],
         "net_head": L("th_at_closing"),
-        "appendix_note": " ".join(x for x in (content.get("adjustments_summary", ""), L("deck_disclaimer")) if x),
+        "appendix_note": " ".join(x for x in (content.get("adjustments_summary", ""), L("deck_disclaimer"),
+                                              *render.notice_lines(agent, cma.report_notices(C), marketing=True)) if x),
     }
 
 

@@ -185,7 +185,8 @@ def build_html(t, agent, sample):
             f'<div class="prep">{prepared_block(t, agent)}</div></header>{snap_html}<div class="p1">{page1}</div>{details}')
     with open(CSS_PATH, encoding="utf-8") as f:
         css = f.read()
-    return render.page(body, css=css, title="Contract Timeline", theme_css=design.css_vars(theme), body_class=side)
+    return render.page(body + render.notices(agent), css=css, title="Contract Timeline", theme_css=design.css_vars(theme),
+                       body_class=side)
 
 
 def fit_page_one(pg):

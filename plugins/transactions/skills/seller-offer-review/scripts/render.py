@@ -579,7 +579,7 @@ def build_html(R, agent, sample=False, mode="auto", offer_id=None):
         css = f.read()
     if mode == "multi":
         css += "@page{size:Letter landscape}"  # the comparison is two wide tables; after report.css's portrait rule
-    doc = render.page(header(R, title, sub, agent, sample) + body, css=css, title=title, theme_css=design.css_vars(theme),
+    doc = render.page(header(R, title, sub, agent, sample) + body + render.notices(agent), css=css, title=title, theme_css=design.css_vars(theme),
                       body_class="wide" if mode == "multi" else "")
     return doc, mode, o
 

@@ -229,7 +229,8 @@ def options_html(r, agent, sample):
     P = B["property"]
     sub = f'{esc(P.get("address") or "")} · List {money(P["list_price"])} · {oe.FIN_LABEL[B["buyer"]["financing"]]} offer'
     prep = f'Prepared for <b>{esc(B["buyer"].get("name") or "Buyer")}</b> · {B["analysis_date"]:%B %-d, %Y}{agent_lines(agent)}'
-    body = header("Offer Options", sub, prep, sample) + snapshot(r) + f'<div class="p1">{page1(r, s)}</div>' + details(r, res)
+    body = (header("Offer Options", sub, prep, sample) + snapshot(r) + f'<div class="p1">{page1(r, s)}</div>' + details(r, res)
+            + render.notices(agent))
     theme = design.theme(agent.get("brand"), "buyer")
     return render.page(body, css=css("options"), title="Offer Options", theme_css=design.css_vars(theme))
 
@@ -271,7 +272,8 @@ def worksheet_html(r, agent, sample, variant=None):
 <h2>5 · Request from the Seller After Acceptance</h2><div class="tbl"><table><tbody>{docs}</tbody></table></div>
 <div class="fine">Generated from the same analysis as the Offer Options report. {"Paragraph numbers follow the FR/BAR AS IS contract and may differ by form version. " if W["frbar"] else ""}Rider availability depends on your form set. Draft clause language must be reviewed by the agent and broker; consult a real estate attorney for legal questions.</div>'''
     theme = design.theme(agent.get("brand"), "buyer")
-    return render.page(body, css=css("worksheet"), title="Offer Package Worksheet", theme_css=design.css_vars(theme)), W
+    return render.page(body + render.notices(agent), css=css("worksheet"), title="Offer Package Worksheet",
+                       theme_css=design.css_vars(theme)), W
 
 
 # --- files -----------------------------------------------------------------------

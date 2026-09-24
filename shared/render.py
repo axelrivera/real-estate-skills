@@ -52,6 +52,39 @@ def filename(*parts, ext):
 REPORT_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "report.css")
 
 
+EHO = "Equal Housing Opportunity."
+NOT_ADVICE = "Estimates only, not legal, lending or tax advice."
+
+
+def notice_lines(agent, lines=(), marketing=False):
+    """Closing notices for a client-facing file (CORE-3, FH-6): the skill's fixed lines, then the agent's
+    disclaimers from their profile, verbatim, one paragraph each. Marketing pieces (a listing presentation) add
+    the Equal Housing Opportunity statement unless the agent's disclaimers already carry it."""
+    disc = str((agent or {}).get("disclaimers") or "")
+    paras = [" ".join(p.split()) for p in disc.replace("\r", "").split("\n\n") if p.strip()]
+    out = [x for x in lines if x] + paras
+    if marketing and "equal housing" not in disc.lower():
+        out.append(EHO)
+    return out
+
+
+def notices(agent, lines=(), marketing=False):
+    """The closing notices as an HTML block for the end of the document (empty when there are none)."""
+    items = notice_lines(agent, lines, marketing)
+    return ('<div class="notices">' + "".join(f"<p>{html.escape(x)}</p>" for x in items) + "</div>") if items else ""
+
+
+def check_agent(agent):
+    """CORE-4: an agent name on a client file needs the licensed brokerage name with it (Florida rule 61J2-10.025
+    and most states' advertising rules). Raises ProfileError with what to ask for."""
+    from . import profiles
+    if str((agent or {}).get("name") or "").strip() and not str(agent.get("brokerage") or "").strip():
+        raise profiles.ProfileError(
+            "The agent profile has a name but no brokerage. Client files must show the brokerage's licensed name with "
+            "the agent's name (Florida rule 61J2-10.025, and most states): ask for it (the licensed name, not a trade "
+            "name), add it to the profile, then re-run.")
+
+
 def page(body, css="", title="", theme_css="", body_class=""):
     """A complete HTML document: shared report.css, then the theme's color variables, then skill CSS.
 
@@ -138,6 +171,7 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
         prose.check(data)
         ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample, "formats": todo,
                **{k: v for k, v in vars(args).items() if k not in base}}
+        check_agent(ctx["agent"])
     except (OSError, ValueError, *errors) as e:
         sys.exit(str(e))
     out_dir = output_dir(args.out)

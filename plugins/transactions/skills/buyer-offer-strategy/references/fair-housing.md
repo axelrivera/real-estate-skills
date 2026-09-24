@@ -36,6 +36,7 @@ Describe the property, the numbers and the terms. Never describe people: not who
 | Any mention of the racial, religious or ethnic makeup of an area | Never volunteered (REALTOR Standard of Practice 10-1) | Leave it out |
 | "Christian home", "near our church community" | Religion | Leave it out |
 | "No wheelchairs", "must be able to climb stairs", "able-bodied" | Disability | Describe the home: "second-floor primary suite, no elevator", "step-free entry", "grab bars in the hall bath" |
+| "No Section 8", "no vouchers", "must have W-2 income", "VA buyers need not apply" | Source of income, where local law protects it (Miami-Dade and Orange County, Florida, among others), and a financing type standing in for a person | Describe terms, not buyers: "Seller prefers offers with a 10-day inspection period". On the seller side, compare loan programs by their mechanics (appraisal rules, timelines), never by who uses them |
 
 **Allowed, per HUD's advertising guidance:** describing the property and its rooms ("family room", "walk-in closet", "two bedrooms", "master bedroom", though "primary bedroom" is the common term now), services and rules ("no pets", "no smoking"), and physical facts about the area ("quiet cul-de-sac", "walking distance to the park", "0.4 miles to the lake"). A feature is never the problem; attaching it to a kind of person is.
 
@@ -45,6 +46,7 @@ Describe the property, the numbers and the terms. Never describe people: not who
 - **Who will buy.** Talk about buyer behavior by price and terms ("buyers at this price mostly use conventional loans with 5 to 10% down"), never by who the buyers are.
 - **Photos and marketing plans** (seller launch plans): describe the property, the price and the process. Marketing aimed at, or away from, a group of people is not a plan the skill writes.
 - **Accessibility:** describe features precisely. Never say who can or can't live there.
+- **Equal Housing Opportunity.** Marketing pieces (a listing presentation, a launch plan, anything that advertises a listing or the agent) carry the Equal Housing Opportunity statement or logo, per HUD's advertising guidance (24 CFR 109, still used as the standard). The deck adds the statement automatically unless the agent's profile disclaimers already include it. Reports for a client (a CMA, an offer review) print the agent's disclaimers; if the brokerage requires the EHO statement on every document, put it in the profile's disclaimers and every file carries it.
 
 ## Choosing Between Buyers
 

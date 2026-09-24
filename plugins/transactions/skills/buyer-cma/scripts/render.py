@@ -242,7 +242,7 @@ def build_html(R, C, homes, agent):
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
-               cma.group_blocks(body(R, C, homes, agent, L)) + "</div>")
+               cma.group_blocks(body(R, C, homes, agent, L)) + render.notices(agent, cma.report_notices(C)) + "</div>")
     title = f'{L("doc_label")}: {R["subject"]["address"]}'
     doc = render.page(content, css=cma.css(), title=title, theme_css=vars_css)
     return doc.replace("<html>", '<html lang="en">', 1), L

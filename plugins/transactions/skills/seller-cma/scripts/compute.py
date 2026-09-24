@@ -306,7 +306,9 @@ def compute(R, market, homes):
                        down=pay["rows"][i]["down"], down_display=pay["rows"][i]["down_display"])
         strat_out.append(row)
     nets = [x["net"] for x in strat_out]
+    data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
     return {
+        "data_source": data_source,
         "ok": True,
         "preliminary": preliminary,
         "subject": {"address": s["address"]},

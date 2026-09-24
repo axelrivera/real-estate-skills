@@ -202,7 +202,9 @@ def compute(R, market, homes):
         offer_plan={k: op[k] for k in ("opening", "target_low", "target_high", "walk_away") if k in op},
         market_profile={"state": market.state, "mls": market.mls},
     )
+    data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
     return {
+        "data_source": data_source,
         "ok": True,
         "subject": {"address": s["address"], "list_price": s["list_price"], "list_price_display": money(s["list_price"])},
         "range": {"low": bl["low"], "high": bl["high"], "display": f"{money(bl['low'])} – {money(bl['high'])}",

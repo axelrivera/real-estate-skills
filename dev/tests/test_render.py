@@ -107,3 +107,23 @@ class Pdf(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuditNoticesAndBrokerage(unittest.TestCase):
+    """CORE-3, CORE-4, CMA-16, FH-6."""
+
+    def test_name_without_brokerage_is_refused(self):
+        from shared import profiles
+        with self.assertRaises(profiles.ProfileError):
+            render.check_agent({"name": "Jane Doe", "brokerage": ""})
+        render.check_agent({"name": "Jane Doe", "brokerage": "Sunshine Realty"})
+        render.check_agent({"name": None, "brokerage": None})  # no agent block at all is fine
+
+    def test_notices_print_disclaimers_verbatim(self):
+        agent = {"disclaimers": "Each office independently owned and operated.\n\nEqual Housing Opportunity."}
+        html_block = render.notices(agent, ["Sales data: Stellar MLS as of 2026-09-22."])
+        self.assertIn("Sales data: Stellar MLS", html_block)
+        self.assertIn("Each office independently owned and operated.", html_block)
+        self.assertEqual(render.notice_lines(agent, marketing=True).count("Equal Housing Opportunity."), 1)
+        self.assertEqual(render.notice_lines({}, marketing=True), ["Equal Housing Opportunity."])
+        self.assertEqual(render.notices({}), "")

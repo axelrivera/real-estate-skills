@@ -26,7 +26,8 @@ Look in the conversation, Project files and uploads for a file that starts with 
 Only **name** and **brokerage** are required. Ask for everything missing in one message and make clear the rest is optional:
 
 - Required: name as it should appear on documents; brokerage.
-- Optional: team name, license number, phone, email, website; writing voice (a sentence, or a sample of their writing); disclaimers for documents; brand colors.
+- Optional: team name, license number, phone, email, website; writing voice (a sentence, or a sample of their writing); disclaimers for documents (what the brokerage requires, such as "Each office independently owned and operated" or "Equal Housing Opportunity"): every file the skills make prints them verbatim at the end; brand colors.
+- **Brokerage:** ask for the brokerage's licensed name (as on the license), not a trade name or team name. Client files refuse to print the agent's name without it (Florida rule 61J2-10.025 and most states).
 
 Don't ask about brokerage or compliance rules; that's the agent's call. Don't fill in anything they skipped, because a guessed license number or phone ends up on client documents.
 
