@@ -13,7 +13,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | Command | What it does |
 |---|---|
 | `make setup` | Creates `.venv` from `dev/requirements.txt`, installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json` |
-| `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too). GitHub Actions ([.github/workflows/check.yml](../.github/workflows/check.yml)) runs check-sync on every push to `main` and every pull request |
+| `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too). GitHub Actions ([.github/workflows/check.yml](../.github/workflows/check.yml)) runs check-sync on every push to `main` or `develop` and every pull request |
 | `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
 | `make sync` copies only what each skill imports | Each skill's `scripts/_shared/` holds the shared modules its scripts import, what those import, and the data they read (markets for `profiles`, CSS for `render` and `cma`) |
 | `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package`; the pre-commit hook also compares what's staged |
@@ -21,12 +21,20 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
+| `make samples` | Regenerates `samples/<skill>/`, the committed preview files (PDF, PPTX and ICS; handoff JSON is dropped): one happy path per file-mode skill, rendered from `dev/samples/<skill>.json` with the mock agent in `dev/samples/agent-profile.md`. Every name, brokerage, address and MLS number in `dev/samples/` is fictional (the county and public data sources are real because the tax rules need them). It then writes `samples/README.md` from `dev/samples/readme-template.md` (`dev/samples_readme.py`): each `{{pattern}}` there becomes a link to the matching file with its page, slide or event count; edit the text in the template. Run it by hand when you want fresh previews, and commit the result |
 | `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
 | `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
 | `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin` plus `dev/package/README.md` (install instructions, version filled in) for sharing |
 | `make package-skills` | Runs the same checks, then zips every skill into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
+
+## Branches
+
+- **`develop`:** active development. Commit and push here.
+- **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
+
+To release: push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
 
 ## Evals
 
@@ -64,6 +72,9 @@ dev/                     # dev tooling, never shipped
   package/README.md      # install instructions shipped in the release zip
   fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
+  samples/               # fully mocked inputs for make samples: <skill>.json, mls-export.csv, seller-cma-deck.json, agent-profile.md, readme-template.md
+  samples_readme.py      # make samples: writes samples/README.md from the template
+samples/<skill>/         # committed preview files from make samples
 .venv/  out/  dist/      # git-ignored
 ```
 

@@ -10,10 +10,6 @@ Claude skills for real estate agents, in one plugin: agent and market profiles, 
 
 Start with `agent-profile`. In Cowork, select a working folder: profiles are saved in `.claude/real-estate/` there, so every session finds them.
 
-### Upgrading From 0.5
-
-0.5 shipped two plugins. Uninstall `real-estate-core` and `real-estate-transactions`, remove the `real-estate-marketplace` marketplace, then install as above. Saved profile files keep working.
-
 ## Skills
 
 | Skill | What It Does |
@@ -26,7 +22,7 @@ Start with `agent-profile`. In Cowork, select a working folder: profiles are sav
 | `seller-offer-review` | Nets, certainty and counters for offers on a listing |
 | `contract-timeline` | Every deadline in an executed contract, plus a closing calendar |
 
-Details in [docs/skills.md](docs/skills.md).
+Details in [docs/skills.md](docs/skills.md). Sample output from each skill, made from mock data, is in [samples/](samples/).
 
 ## Documentation
 

@@ -23,10 +23,6 @@ Instead of uploading the file, add the marketplace `axelrivera/real-estate-skill
 
 Upload the new `.plugin` file. If the app keeps the old version, remove the plugin first and upload it again.
 
-### Upgrading From 0.5
-
-0.5 shipped two plugins. Remove `real-estate-core` and `real-estate-transactions` (and the `real-estate-marketplace` marketplace, if you added it), then install as above. Saved profile files keep working.
-
 ## More Information
 
 Source, documentation and license: https://github.com/axelrivera/real-estate-skills
