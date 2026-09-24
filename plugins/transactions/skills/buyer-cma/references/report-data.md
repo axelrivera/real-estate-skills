@@ -55,7 +55,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## comps
 
-`intro`, `method_note`, `cards` (3–6: `address`, `adjusted` *number*, `meta`, 2–3 `bullets`), `summary_rows` (`[address, sold_price, seller_paid, adjusted]` *numbers*, highest adjusted first; the subject row is added), `summary_paragraph`.
+`intro`, `method_note`, `cards` (3–6: `address`, `sold_price` *number*, `seller_concessions` *number* (what the seller paid toward the buyer's costs, 0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), `meta`, 2–3 `bullets` that explain the same adjustments in words), `summary_paragraph`. compute.py computes each adjusted value (sale price − concessions + adjustments) and builds the summary table from the cards; never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
 
 ## scatter (standard)
 

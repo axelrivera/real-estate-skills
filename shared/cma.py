@@ -13,6 +13,7 @@ from . import finance, mls
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
+ADJ_NET_LIMIT, ADJ_GROSS_LIMIT = 0.15, 0.25  # common appraisal guidelines, as shares of the comp's sale price
 esc = html.escape
 
 
@@ -354,3 +355,53 @@ def paginate(pg):
     res = pg.evaluate(PAGINATE_JS, CONTENT_HEIGHT_PX)
     return {"moved": res["moved"], "summary_page": {"height_px": round(res["onepageH"]), "page_px": res["pageH"],
                                                     "fits": res["onepageH"] <= res["pageH"], "fit_level": res["fit"]}}
+
+
+def derive_comps(comps):
+    """Adjusted comp values from their parts, so the script does the math (CMA-2). Returns warnings.
+
+    Itemized cards (`sold_price`, optional `seller_concessions`, `adjustments: [{label, amount}]`): the adjusted value
+    is sale price minus seller concessions plus the adjustments, written to `card["adjusted"]`, and `summary_rows` is
+    built from the cards (highest adjusted first). Warns when adjustments pass 15% net or 25% gross of the sale price.
+    Older reports that type `adjusted` and `summary_rows` by hand must agree card by card, or it's an error.
+    Raises ValueError with a message for the agent.
+    """
+    cards = comps.get("cards") or []
+    itemized = [c for c in cards if "adjustments" in c]
+    if itemized and len(itemized) != len(cards):
+        raise ValueError("Give every comp card sold_price and adjustments, or none of them: "
+                         + ", ".join(c.get("address", "?") for c in cards if "adjustments" not in c) + " has none.")
+    warnings = []
+    if not itemized:
+        rows = {r[0]: r for r in comps.get("summary_rows") or []}
+        for c in cards:
+            r = rows.get(c.get("address"))
+            if r is None:
+                raise ValueError(f"Comp card {c.get('address')!r} has no summary row: add it, or itemize the comps "
+                                 "(sold_price, seller_concessions, adjustments) and let the script build the rows.")
+            if round(r[3]) != round(c["adjusted"]):
+                raise ValueError(f"{c['address']}: the card's adjusted value {money(c['adjusted'])} and the summary row's "
+                                 f"{money(r[3])} differ. Itemize the comps so the script computes one value for both.")
+        if len(rows) != len(cards):
+            raise ValueError("summary_rows lists a sale that has no comp card.")
+        return warnings
+    out = []
+    for c in cards:
+        where = c.get("address", "?")
+        sold, conc = c.get("sold_price"), c.get("seller_concessions") or 0
+        amounts = [a.get("amount") for a in c["adjustments"]]
+        if not isinstance(sold, (int, float)) or sold <= 0 or not isinstance(conc, (int, float)) \
+                or not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in amounts):
+            raise ValueError(f"{where}: sold_price, seller_concessions and every adjustment amount must be plain numbers.")
+        value = round(sold - conc + sum(amounts))
+        if c.get("adjusted") is not None and round(c["adjusted"]) != value:
+            warnings.append(f"{where}: the typed adjusted value {money(c['adjusted'])} was replaced by the computed {money(value)}.")
+        c["adjusted"] = value
+        net, gross = abs(sum(amounts)) / sold, sum(abs(x) for x in amounts) / sold
+        if net > ADJ_NET_LIMIT or gross > ADJ_GROSS_LIMIT:
+            warnings.append(f"{where}: adjustments are {net:.0%} net and {gross:.0%} gross of the sale price (appraisal "
+                            "guidelines are about 15% net and 25% gross). Check that it's a true comp, or explain it in the report.")
+        out.append([where, sold, conc, value])
+    comps["summary_rows"] = sorted(out, key=lambda r: -r[3])
+    return warnings
+

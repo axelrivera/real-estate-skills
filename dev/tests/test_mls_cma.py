@@ -114,3 +114,35 @@ class SubjectHeading(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DeriveComps(unittest.TestCase):
+    """CMA-2: adjusted comp values come from their parts; hand-typed values must agree."""
+
+    def card(self, addr, sold, conc, *adj):
+        return {"address": addr, "sold_price": sold, "seller_concessions": conc,
+                "adjustments": [{"label": "X", "amount": a} for a in adj]}
+
+    def test_itemized(self):
+        comps = {"cards": [self.card("A", 429000, 12000, 30000, -8600), self.card("B", 505500, 0, 1800, -5000, -10000)]}
+        self.assertEqual(cma.derive_comps(comps), [])
+        self.assertEqual([c["adjusted"] for c in comps["cards"]], [438400, 492300])
+        self.assertEqual(comps["summary_rows"], [["B", 505500, 0, 492300], ["A", 429000, 12000, 438400]])
+
+    def test_limits_and_replaced_values(self):
+        big = self.card("C", 400000, 0, 70000)          # 17.5% net
+        wide = self.card("D", 400000, 0, 60000, -45000)  # 26.3% gross
+        typed = dict(self.card("E", 400000, 0, 5000), adjusted=410000)
+        w = cma.derive_comps({"cards": [big, wide, typed]})
+        self.assertTrue(any(x.startswith("C:") and "18% net" in x for x in w))
+        self.assertTrue(any(x.startswith("D:") and "26% gross" in x for x in w))
+        self.assertTrue(any(x.startswith("E:") and "replaced by the computed $405,000" in x for x in w))
+
+    def test_hand_typed_must_agree(self):
+        ok = {"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": [["A", 429000, 12000, 438400]]}
+        self.assertEqual(cma.derive_comps(ok), [])
+        for bad in ({"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": [["A", 429000, 12000, 440000]]},
+                    {"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": []},
+                    {"cards": [self.card("A", 1, 0), {"address": "B", "adjusted": 2}]}):
+            with self.assertRaises(ValueError):
+                cma.derive_comps(bad)

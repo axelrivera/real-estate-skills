@@ -205,8 +205,11 @@ def compute(R, market, homes):
         raise ReportError("pricing.recommended_index doesn't point at a strategy.")
     if not R["comps"]["cards"]:
         raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
+    try:
+        warnings, assumptions = cma.derive_comps(R["comps"]), []  # adjusted values and summary rows from their parts
+    except ValueError as e:
+        raise ReportError(str(e)) from e
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
-    warnings, assumptions = [], []
     n = len(R["comps"]["cards"])
     if n < 3:
         warnings.append(f"Only {n} comp{'s' if n > 1 else ''}: the range rests on thin support. Widen the search if you can, "

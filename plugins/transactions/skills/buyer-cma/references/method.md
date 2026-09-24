@@ -32,7 +32,7 @@ Default rates come from the market profile (`cma.adjustments`; built in for Flor
 
 - Subtract seller-paid buyer costs from the sale price, dollar for dollar.
 - Apply a time adjustment only when the data shows the market has shifted since the sale.
-- Compute adjusted values with Python, not in your head.
+- List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
 - Write each adjustment as a sentence with its dollar amount: "It sold in April, when rates were lower and homes were moving faster: minus about $10,000." Not "Time adj –2%."
 
 The supported range is a judgment around the median adjusted value, typically about $25,000 wide (`cma.typical_range_width`). Lean toward the best condition matches and the most recent sales, say which way you leaned and why, and widen the range when comps disagree.

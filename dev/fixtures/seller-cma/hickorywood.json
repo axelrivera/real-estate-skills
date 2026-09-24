@@ -117,7 +117,22 @@
   "cards": [
    {
     "address": "622 Spring Oaks Blvd",
-    "adjusted": 492300,
+    "sold_price": 505500,
+    "seller_concessions": 0,
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 1800
+     },
+     {
+      "label": "Larger Corner Lot",
+      "amount": -5000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -10000
+     }
+    ],
     "meta": "Sold $505,500 · April 24, 2026 · 1,824 sq ft · 4/2 · pool · 0.29-acre corner lot · 0.2 mi",
     "bullets": [
      "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
@@ -127,7 +142,22 @@
    },
    {
     "address": "516 Oakwood Ct",
-    "adjusted": 483800,
+    "sold_price": 495000,
+    "seller_concessions": 0,
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -1200
+     },
+     {
+      "label": "Documented Recent Systems",
+      "amount": -5000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -5000
+     }
+    ],
     "meta": "Sold $495,000 · June 26, 2026 · 1,865 sq ft · 4/2 · pool · 1972 · 0.3 mi",
     "bullets": [
      "Same year and nearly the same size. Sold above asking in five days.",
@@ -137,7 +167,18 @@
    },
    {
     "address": "745 Little Wekiva Cir",
-    "adjusted": 469800,
+    "sold_price": 427000,
+    "seller_concessions": 500,
+    "adjustments": [
+     {
+      "label": "Renovation",
+      "amount": 45000
+     },
+     {
+      "label": "Size",
+      "amount": -1700
+     }
+    ],
     "meta": "Sold $427,000 · August 20, 2026 · 1,871 sq ft · 4/2 · pool · 0.5 mi",
     "bullets": [
      "The most recent pool-home sale in Spring Oaks. It was listed at $450,000 and took 60 days to sell.",
@@ -146,7 +187,18 @@
    },
    {
     "address": "602 Mockingbird Ln",
-    "adjusted": 438400,
+    "sold_price": 429000,
+    "seller_concessions": 12000,
+    "adjustments": [
+     {
+      "label": "Partial Update vs. Full Renovation",
+      "amount": 30000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -8600
+     }
+    ],
     "meta": "Sold $429,000 · April 27, 2026 · 1,849 sq ft · 4/2 · pool · 0.1 mi",
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
@@ -156,7 +208,22 @@
    },
    {
     "address": "621 Little Wekiva Rd",
-    "adjusted": 436200,
+    "sold_price": 465000,
+    "seller_concessions": 13071,
+    "adjustments": [
+     {
+      "label": "Larger Canal Lot",
+      "amount": -10000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -4500
+     },
+     {
+      "label": "Size",
+      "amount": -1229
+     }
+    ],
     "meta": "Sold $465,000 · June 18, 2026 · 1,865 sq ft · 4/2 · pool · 0.41-acre canal lot · 0.4 mi",
     "bullets": [
      "A renovated pool home with new windows. It was listed at $484,900 and sold for $465,000.",
@@ -164,38 +231,6 @@
      "It sits on nearly twice the land, backing onto a canal: minus $10,000. Early summer sale: minus about $4,500."
     ]
    }
-  ],
-  "summary_rows": [
-   [
-    "622 Spring Oaks Blvd",
-    505500,
-    0,
-    492300
-   ],
-   [
-    "516 Oakwood Ct",
-    495000,
-    0,
-    483800
-   ],
-   [
-    "745 Little Wekiva Cir",
-    427000,
-    500,
-    469800
-   ],
-   [
-    "602 Mockingbird Ln",
-    429000,
-    12000,
-    438400
-   ],
-   [
-    "621 Little Wekiva Rd",
-    465000,
-    13071,
-    436200
-   ]
   ],
   "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. The two highest are the closest matches to your home's condition but sold in a stronger spring market; the two lowest needed the largest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
  },
@@ -374,7 +409,10 @@
   "net_intro": "What each option is likely to leave you after the costs a Florida seller typically pays at closing.",
   "net_note": "Not included: your mortgage payoff, your share of this year's property taxes (about $228 for each month of the year before closing, credited to the buyer), and any repairs agreed after inspection. While the home is on the market you keep paying the mortgage, taxes, insurance, and utilities, which is the real cost of a slower strategy."
  },
- "costs": {"listing_fee_pct": 0.025, "buyer_broker_fee_pct": 0.025},
+ "costs": {
+  "listing_fee_pct": 0.025,
+  "buyer_broker_fee_pct": 0.025
+ },
  "buyer_payment": {
   "rate": 6.95,
   "loan_type": "conventional",

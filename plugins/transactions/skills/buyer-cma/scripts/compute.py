@@ -15,7 +15,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import finance, handoff, mls, profiles, render  # noqa: E402
+from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
 
 money = finance.money
 
@@ -143,6 +143,10 @@ def compute(R, market, homes):
              "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
     warnings = comp_count_warnings(R["comps"]["cards"])
+    try:
+        warnings += cma.derive_comps(R["comps"])  # adjusted values and summary rows computed from their parts
+    except ValueError as e:
+        raise ReportError(str(e)) from e
     for i, r in enumerate((R.get("competition") or {}).get("rows", [])):
         if len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool) for j in (2, 3)):
             raise ReportError(f"competition.rows[{i}] should be [address, status, price, sqft, pool, days, notes], "

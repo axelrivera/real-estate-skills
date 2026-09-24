@@ -4,7 +4,7 @@
  "subject": {
   "address": "12345 North Lake Buena Vista Boulevard Unit 1204",
   "mls_address": "517 HICKORYWOOD AVE",
-  "locality": "Altamonte Springs, FL 32714 \u00b7 Spring Oaks Unit Two Replat at Hickorywood Estates \u00b7 Seminole County \u00b7 MLS O6433709",
+  "locality": "Altamonte Springs, FL 32714 · Spring Oaks Unit Two Replat at Hickorywood Estates · Seminole County · MLS O6433709",
   "list_price": 474900,
   "sqft": 1849,
   "facts": [
@@ -50,7 +50,7 @@
    ]
   ],
   "summary": "This is a renovated pool home: new kitchen with stone counters, updated baths, new flooring, and a resurfaced pool. The house is vacant and owned by a trust, and the listing agent is related to the owner. The seller wants offers on the As-Is contract with proof of funds or a pre-approval letter.",
-  "summary_facts": "4 bed \u00b7 2.5 bath \u00b7 1,849 sq ft \u00b7 0.22 acre \u00b7 pool \u00b7 2-car garage \u00b7 built 1972 \u00b7 block",
+  "summary_facts": "4 bed · 2.5 bath · 1,849 sq ft · 0.22 acre · pool · 2-car garage · built 1972 · block",
   "state": "FL",
   "county": "Seminole",
   "city": "Altamonte Springs",
@@ -118,9 +118,9 @@
     "$479,900"
    ],
    [
-    "Jan 27 \u2013 Mar 5",
+    "Jan 27 – Mar 5",
     "Taken off the market twice, put back each time",
-    "\u2014"
+    "—"
    ],
    [
     "Feb 7",
@@ -135,7 +135,7 @@
    [
     "May 17",
     "Contract fell apart; taken off the market",
-    "\u2014"
+    "—"
    ],
    [
     "May 21",
@@ -145,7 +145,7 @@
    [
     "Jun 9",
     "Listing canceled",
-    "\u2014"
+    "—"
    ],
    [
     "Aug 17",
@@ -163,7 +163,7 @@
     "$474,900"
    ]
   ],
-  "after": "That adds up to about 119 days of active marketing across two listings, spread over eight months, plus one failed contract. The market has had a long look at this home in the $475,000\u2013$485,000 range, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the April contract fell apart before writing an offer."
+  "after": "That adds up to about 119 days of active marketing across two listings, spread over eight months, plus one failed contract. The market has had a long look at this home in the $475,000–$485,000 range, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the April contract fell apart before writing an offer."
  },
  "offer_plan": {
   "intro": "Our recommendation for your offer, based on the comparable sales, the market, and this home's history. These three numbers are a negotiating plan, not a value opinion, so we'll adjust them together if anything changes.",
@@ -189,13 +189,28 @@
   ]
  },
  "comps": {
-  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Spring Oaks pool homes of about 1,800\u20131,900 square feet, built in the 1970s. We included the ones that argue against a lower price. For each sale, we adjust for differences so it reflects what that home would have sold for if it were this one.",
-  "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000\u2013$45,000 for a home that hadn't been renovated to this level; $5,000\u2013$10,000 for a noticeably larger or better lot; 1\u20132% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Spring Oaks pool homes of about 1,800–1,900 square feet, built in the 1970s. We included the ones that argue against a lower price. For each sale, we adjust for differences so it reflects what that home would have sold for if it were this one.",
+  "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000–$45,000 for a home that hadn't been renovated to this level; $5,000–$10,000 for a noticeably larger or better lot; 1–2% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
   "cards": [
    {
     "address": "622 Spring Oaks Blvd",
-    "adjusted": 492300,
-    "meta": "Sold $505,500 \u00b7 April 24, 2026 \u00b7 1,824 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.29-acre corner lot \u00b7 0.2 mi",
+    "sold_price": 505500,
+    "seller_concessions": 0,
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 1800
+     },
+     {
+      "label": "Larger Corner Lot",
+      "amount": -5000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -10000
+     }
+    ],
+    "meta": "Sold $505,500 · April 24, 2026 · 1,824 sq ft · 4/2 · pool · 0.29-acre corner lot · 0.2 mi",
     "bullets": [
      "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
      "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more: minus $5,000.",
@@ -204,8 +219,23 @@
    },
    {
     "address": "516 Oakwood Ct",
-    "adjusted": 483800,
-    "meta": "Sold $495,000 \u00b7 June 26, 2026 \u00b7 1,865 sq ft \u00b7 4/2 \u00b7 pool \u00b7 1972 \u00b7 0.3 mi",
+    "sold_price": 495000,
+    "seller_concessions": 0,
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -1200
+     },
+     {
+      "label": "Documented Recent Systems",
+      "amount": -5000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -5000
+     }
+    ],
+    "meta": "Sold $495,000 · June 26, 2026 · 1,865 sq ft · 4/2 · pool · 1972 · 0.3 mi",
     "bullets": [
      "Same year and nearly the same size. Sold above asking in five days.",
      "It came with a documented 2020 roof, AC, electrical, and windows. We don't yet know the age of this home's AC, electrical, or windows, so that home gets a small edge: minus $5,000.",
@@ -214,8 +244,19 @@
    },
    {
     "address": "745 Little Wekiva Cir",
-    "adjusted": 469800,
-    "meta": "Sold $427,000 \u00b7 August 20, 2026 \u00b7 1,871 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.5 mi",
+    "sold_price": 427000,
+    "seller_concessions": 500,
+    "adjustments": [
+     {
+      "label": "Renovation",
+      "amount": 45000
+     },
+     {
+      "label": "Size",
+      "amount": -1700
+     }
+    ],
+    "meta": "Sold $427,000 · August 20, 2026 · 1,871 sq ft · 4/2 · pool · 0.5 mi",
     "bullets": [
      "The most recent pool-home sale in Spring Oaks. It was listed at $450,000 and took 60 days to sell.",
      "Described as well maintained but not renovated. Adjusting up for the renovation this home has: plus $45,000."
@@ -223,8 +264,19 @@
    },
    {
     "address": "602 Mockingbird Ln",
-    "adjusted": 438400,
-    "meta": "Sold $429,000 \u00b7 April 27, 2026 \u00b7 1,849 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.1 mi",
+    "sold_price": 429000,
+    "seller_concessions": 12000,
+    "adjustments": [
+     {
+      "label": "Partial Update vs. Full Renovation",
+      "amount": 30000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -8600
+     }
+    ],
+    "meta": "Sold $429,000 · April 27, 2026 · 1,849 sq ft · 4/2 · pool · 0.1 mi",
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
      "The seller paid $12,000 of the buyer's costs, so the seller actually received about $417,000.",
@@ -233,8 +285,23 @@
    },
    {
     "address": "621 Little Wekiva Rd",
-    "adjusted": 436200,
-    "meta": "Sold $465,000 \u00b7 June 18, 2026 \u00b7 1,865 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.41-acre canal lot \u00b7 0.4 mi",
+    "sold_price": 465000,
+    "seller_concessions": 13071,
+    "adjustments": [
+     {
+      "label": "Larger Canal Lot",
+      "amount": -10000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -4500
+     },
+     {
+      "label": "Size",
+      "amount": -1229
+     }
+    ],
+    "meta": "Sold $465,000 · June 18, 2026 · 1,865 sq ft · 4/2 · pool · 0.41-acre canal lot · 0.4 mi",
     "bullets": [
      "A renovated pool home with new windows. It was listed at $484,900, almost exactly this home's original price, and sold for $465,000.",
      "The seller paid about $13,000 of the buyer's costs, so the seller netted about $452,000.",
@@ -243,46 +310,29 @@
    },
    {
     "address": "900 Extra Comp Ln",
-    "adjusted": 485300,
-    "meta": "Sold $505,500 \u00b7 April 24, 2026 \u00b7 1,824 sq ft \u00b7 4/2 \u00b7 pool \u00b7 0.29-acre corner lot \u00b7 0.2 mi",
+    "sold_price": 505500,
+    "seller_concessions": 0,
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -5200
+     },
+     {
+      "label": "Larger Corner Lot",
+      "amount": -5000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -10000
+     }
+    ],
+    "meta": "Sold $505,500 · April 24, 2026 · 1,824 sq ft · 4/2 · pool · 0.29-acre corner lot · 0.2 mi",
     "bullets": [
      "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
      "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more: minus $5,000.",
      "It sold in April, when rates were lower and homes were moving faster: minus about $10,000."
     ]
    }
-  ],
-  "summary_rows": [
-   [
-    "622 Spring Oaks Blvd",
-    505500,
-    0,
-    492300
-   ],
-   [
-    "516 Oakwood Ct",
-    495000,
-    0,
-    483800
-   ],
-   [
-    "745 Little Wekiva Cir",
-    427000,
-    500,
-    469800
-   ],
-   [
-    "602 Mockingbird Ln",
-    429000,
-    12000,
-    438400
-   ],
-   [
-    "621 Little Wekiva Rd",
-    465000,
-    13071,
-    436200
-   ]
   ],
   "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
  },
@@ -391,8 +441,8 @@
   "intro": "We looked at 35 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
   "columns": [
    "",
-   "April \u2013 June",
-   "July \u2013 Mid-Sept"
+   "April – June",
+   "July – Mid-Sept"
   ],
   "rows": [
    [
@@ -424,7 +474,7 @@
   "bullets": [
    "<strong>Homes are selling for about 3.5% under their original asking price</strong>, compared with full price in the spring. Sellers are now expecting to negotiate.",
    "<strong>Inventory is balanced.</strong> There are 15 homes for sale in this area, and at the summer pace of sales that's about four months of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Six in ten current listings have already cut their price.",
-   "<strong>Mortgage rates are up.</strong> The national average 30-year rate was 6.95% the week of September 17, versus roughly 6.2\u20136.4% during the spring sales. That's the main reason the spring prices are harder to repeat now.",
+   "<strong>Mortgage rates are up.</strong> The national average 30-year rate was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. That's the main reason the spring prices are harder to repeat now.",
    "<strong>Price per square foot.</strong> Spring Oaks homes have sold for a median of about $231 per square foot since April. This home is asking $257. That's supportable for a renovated pool home, but only two Spring Oaks sales have been higher."
   ]
  },

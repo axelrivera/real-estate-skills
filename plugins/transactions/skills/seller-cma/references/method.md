@@ -32,7 +32,7 @@ Judge each comp's condition from its remarks and compare it with the seller's de
 Default rates come from the market profile (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the seller can't yet document (reverse it once they do), –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, use the agent's values or ask for local norms. Explain any departure in `method_note`.
 
 - Subtract seller-paid buyer costs from the sale price, dollar for dollar.
-- Compute adjusted values with Python, not in your head.
+- List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
 - Write each adjustment as a sentence with its dollar amount, to the seller: "It sold in April, when rates were lower: minus about $10,000."
 
 ## Range and recommended price

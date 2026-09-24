@@ -49,7 +49,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## comps
 
-`intro`, `method_note`, `cards` (3–6 of `{address, adjusted` *number*`, meta, bullets}`, written to the seller), `summary_rows` (`[address, sold, seller_paid, adjusted]` *numbers*, highest adjusted first; the "Your Home (Recommended List)" row is added), `summary_paragraph`.
+`intro`, `method_note`, `cards` (3–6, written to the seller: `address`, `sold_price` *number*, `seller_concessions` *number* (what the seller paid toward the buyer's costs, 0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), `meta`, `bullets` that explain the same adjustments in words), `summary_paragraph`. compute.py computes each adjusted value (sale price − concessions + adjustments) and builds the summary table (plus the "Your Home (Recommended List)" row); never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
 
 ## scatter
 
