@@ -54,10 +54,26 @@ def _plural(n, word):
 
 # --- rules --------------------------------------------------------------------
 
-def load_rules(deal, market_path=None):
+def _form_covered(market_contract, deal, frbar):
+    """True when the market's rules are for this deal's form. A market that names its `forms` (Florida:
+    the FR/BAR forms) doesn't cover another contract, such as a builder's or a commercial form."""
+    forms = [str(f).lower() for f in market_contract.get("forms") or []]
+    if not forms:
+        return True
+    if frbar:
+        return any(f.startswith("fr/bar") for f in forms)
+    form = str((deal.get("contract") or {}).get("form") or "").strip().lower()
+    return bool(form) and form in forms
+
+
+def load_rules(deal, market_path=None, frbar=True):
     """Market profile `contract` rules for the deal's state/county, then the deal file's `rules`."""
+    if not deal.get("state") and not market_path:
+        raise DealError("The deal file needs the property's state (for example FL or TX): time rules and holidays "
+                        "depend on it. Ask the agent; don't assume Florida.")
     market = profiles.load_market(market_path, state=deal.get("state"), county=deal.get("county"))
-    rules = {**RULE_DEFAULTS, **(market.get("contract") or {}), **(deal.get("rules") or {})}
+    mc = market.get("contract") or {}
+    rules = {**RULE_DEFAULTS, **(mc if _form_covered(mc, deal, frbar) else {}), **(deal.get("rules") or {})}
     missing = [k for k in RULE_KEYS if rules.get(k) in (None, "")]
     if missing:
         raise DealError("The contract's time rules are missing: " + ", ".join(missing) +
@@ -292,7 +308,7 @@ def analyze(deal, market_path=None, side=None):
     frbar = contract.get("form_family", "frbar" if contract.get("contract_form") else "other") == "frbar"
     if not frbar and not deal.get("deadlines"):
         raise DealError("This contract isn't FR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
-    rules, market = load_rules(deal, market_path)
+    rules, market = load_rules(deal, market_path, frbar)
 
     original = compute(copy.deepcopy(contract), deal.get("deadlines") or [], rules, frbar)
     current_contract, history = apply_amendments(contract, deal.get("amendments"))

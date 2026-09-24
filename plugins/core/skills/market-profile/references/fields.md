@@ -101,4 +101,4 @@ Only needed when the agent's MLS isn't built in and they'll upload MLS files.
 
 ## county_overrides
 
-`{County name: {any of the sections above}}` for local exceptions, e.g. a county where the buyer pays for title.
+`{County name: {any of the sections above}}` for local exceptions, e.g. a county where the buyer pays for title. The agent's values, general or per county, always win over the built-in county customs.

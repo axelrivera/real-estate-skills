@@ -13,6 +13,7 @@ it to a file verbatim and passes the path. See docs/architecture.md#profiles-cor
 import copy
 import glob
 import os
+import re
 
 import yaml
 
@@ -154,8 +155,14 @@ def _leaves(d, prefix=""):
 
 
 def _merge(base, over, sources, source, prefix=""):
-    """Deep-merge `over` into `base` in place, recording the source of every leaf it sets."""
+    """Deep-merge `over` into `base` in place, recording the source of every leaf it sets.
+
+    A None value (an empty heading such as `closing_costs:` with nothing under it) sets nothing, so it
+    never wipes the values below it. Only an explicit value overrides; 0 is an explicit value.
+    """
     for k, v in over.items():
+        if v is None:
+            continue
         path = f"{prefix}{k}"
         if isinstance(v, dict) and isinstance(base.get(k), dict):
             _merge(base[k], v, sources, source, path + ".")
@@ -233,11 +240,19 @@ def _covers(layer, state, county):
 
 
 def _county_key(county):
-    return county.strip().lower().removesuffix(" county")
+    """'Miami-Dade', 'Miami Dade County', 'St. Johns' and 'Saint Johns' all match their county."""
+    k = re.sub(r"\bcounty\b", "", str(county).strip().lower())
+    return re.sub(r"[^a-z]", "", re.sub(r"\bsaint\b", "st", k))
 
 
 def _strip_layer_keys(layer):
-    return {k: v for k, v in layer.items() if k not in ("layer", "name", "aliases", "as_of", "schema", "profile")}
+    return {k: v for k, v in layer.items()
+            if k not in ("layer", "name", "aliases", "as_of", "schema", "profile", "counties")}
+
+
+def _county_override(overrides, county):
+    """The override block for `county` from a {county name: block} map, or None."""
+    return {_county_key(k): v for k, v in (overrides or {}).items()}.get(_county_key(county))
 
 
 def load_market(path=None, state=None, county=None, mls=None):
@@ -266,15 +281,21 @@ def load_market(path=None, state=None, county=None, mls=None):
         want = user_state
 
     data, sources, notes = {}, {}, []
-    if user.get("schema", SCHEMA) > SCHEMA:
+    try:
+        newer = int(user.get("schema", SCHEMA)) > SCHEMA
+    except (TypeError, ValueError):
+        raise ProfileError("The market profile's schema should be a number, like 1.") from None
+    if newer:
         notes.append("This market profile was made by a newer version; some settings may be ignored.")
     states, mlss = _layers("state"), _layers("mls")
     if want is None:
-        want = "FL"
-        notes.append("The property's state wasn't given, so Florida was assumed.")
-
-    if want in states:
+        notes.append("The property's state wasn't given, so no built-in costs or rules were applied. "
+                     "Ask for the state; don't assume Florida.")
+    elif want in states:
         _merge(data, _strip_layer_keys(states[want]), sources, "state")
+        known = states[want].get("counties")
+        if county and known and _county_key(county) not in {_county_key(c) for c in known}:
+            notes.append(f"{county} isn't a {STATES[want]} county: check the spelling. No county rules were applied.")
     elif not path:
         notes.append(f"No market profile for {STATES[want]}: local costs and rules have to be provided.")
 
@@ -296,14 +317,17 @@ def load_market(path=None, state=None, county=None, mls=None):
     if layer:
         _merge(data, _strip_layer_keys(layer), sources, "mls")
 
+    # The agent always wins: built-in county customs first, then the agent's profile, then the profile's
+    # own county_overrides for this county.
+    built_in = county and _county_override(data.get("county_overrides"), county)
+    if built_in:
+        _merge(data, built_in, sources, "county")
     _merge(data, {k: v for k, v in user.items() if k not in ("profile", "schema")}, sources, "profile")
+    own = county and _county_override(user.get("county_overrides"), county)
+    if own:
+        _merge(data, own, sources, "profile")
     if mls_name and not data.get("mls"):
         data["mls"], sources["mls"] = mls_name, "input"  # an MLS that isn't built in is still the one in use
     data["state"] = want
-    sources["state"] = "profile" if path else "state" if want in states else "input"
-
-    if county:
-        overrides = {_county_key(k): v for k, v in (data.get("county_overrides") or {}).items()}
-        if _county_key(county) in overrides:
-            _merge(data, overrides[_county_key(county)], sources, "county")
+    sources["state"] = "profile" if path else "state" if want in states else "input" if want else "missing"
     return Market(data, sources, notes)

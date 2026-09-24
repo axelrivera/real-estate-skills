@@ -2,7 +2,7 @@
 
 ## Net sheet
 
-compute.py runs each strategy's expected sale price through the shared seller-net calculator. Every local value comes from the market profile (built-in Florida layer, the agent's own market profile, then county overrides), so the same report works in any state.
+compute.py runs each strategy's expected sale price through the shared seller-net calculator. Every local value comes from the market profile (the built-in Florida layer and its county customs, then the agent's own market profile, which always wins), so the same report works in any state.
 
 | Line | Where it comes from |
 |---|---|

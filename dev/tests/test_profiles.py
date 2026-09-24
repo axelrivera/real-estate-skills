@@ -132,10 +132,12 @@ class Market(unittest.TestCase):
         self.assertIsNone(m.get("mls_format"))
         self.assertTrue(any("isn't built in" in n for n in m.notes))
 
-    def test_unknown_state_assumes_florida_and_says_so(self):
+    def test_no_state_assumes_nothing(self):
+        """CORE-8, TL-4: no silent Florida defaults."""
         m = p.load_market()
-        self.assertEqual(m.state, "FL")
-        self.assertTrue(any("Florida was assumed" in n for n in m.notes))
+        self.assertIsNone(m.state)
+        self.assertIsNone(m.get("closing_costs.deed_transfer_tax_rate"))
+        self.assertTrue(any("don't assume Florida" in n for n in m.notes))
 
     def test_no_florida_defaults_for_other_states(self):
         m = p.load_market(state="TX")
@@ -169,6 +171,51 @@ class Market(unittest.TestCase):
         self.assertEqual(m.get("closing_costs.owner_title.payer"), "buyer")
         self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "county")
         self.assertEqual(p.load_market(state="FL", county="Seminole").get("closing_costs.owner_title.payer"), "seller")
+
+    def test_agent_beats_county_exception(self):
+        """CORE-1: a Miami-Dade agent's own title payer wins over the built-in county custom."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write(tmp, "md.md", """
+                ---
+                profile: market
+                state: FL
+                closing_costs:
+                  owner_title: {payer: seller}
+                county_overrides:
+                  Broward:
+                    closing_costs: {hoa_estoppel_fee: 399}
+                ---
+                """)
+            m = p.load_market(path, county="Miami-Dade")
+            self.assertEqual(m.get("closing_costs.owner_title.payer"), "seller")
+            self.assertEqual(m.source("closing_costs.owner_title.payer"), "profile")
+            self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.006)  # untouched county value stays
+            b = p.load_market(path, county="Broward County")
+            self.assertEqual(b.get("closing_costs.hoa_estoppel_fee"), 399)
+            self.assertEqual(b.source("closing_costs.hoa_estoppel_fee"), "profile")
+
+    def test_empty_section_keeps_built_in_values(self):
+        """CORE-2: `closing_costs:` with nothing under it doesn't wipe the Florida group."""
+        with tempfile.TemporaryDirectory() as tmp:
+            m = p.load_market(write(tmp, "fl.md", "---\nprofile: market\nstate: FL\nclosing_costs:\nbrokerage:\n---\n"))
+        self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.007)
+        self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "state")
+
+    def test_county_spellings(self):
+        """CORE-10: spelling variants match; an unknown Florida county gets a note."""
+        for name in ("Miami Dade", "miami-dade county", "MIAMI-DADE"):
+            self.assertEqual(p.load_market(state="FL", county=name).get("closing_costs.owner_title.payer"), "buyer", name)
+        for a, b in (("St. Johns", "Saint Johns"), ("DeSoto", "De Soto County")):
+            self.assertEqual(p._county_key(a), p._county_key(b))
+        self.assertFalse(any("isn't a Florida county" in n for n in p.load_market(state="FL", county="St. Johns").notes))
+        self.assertTrue(any("isn't a Florida county" in n for n in p.load_market(state="FL", county="Semnole").notes))
+
+    def test_quoted_schema(self):
+        """CORE-24: schema "1" reads as 1; a non-number is a ProfileError."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(p.load_market(write(tmp, "a.md", '---\nprofile: market\nschema: "1"\nstate: FL\n---\n')).state, "FL")
+            with self.assertRaises(p.ProfileError):
+                p.load_market(write(tmp, "b.md", "---\nprofile: market\nschema: one\nstate: FL\n---\n"))
 
     def test_state_mismatch_and_bad_state(self):
         with tempfile.TemporaryDirectory() as tmp:

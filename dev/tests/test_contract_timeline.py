@@ -139,6 +139,22 @@ class OtherContracts(unittest.TestCase):
 
 
 class Required(unittest.TestCase):
+    def test_state_required(self):
+        """TL-4: no state is a question for the agent, never Florida by default."""
+        deal = fixture("buyer-fha.json")
+        del deal["state"]
+        with self.assertRaisesRegex(timeline.DealError, "state"):
+            timeline.analyze(deal)
+
+    def test_florida_builder_contract_gets_no_frbar_rules(self):
+        """TL-4: a Florida contract that isn't FR/BAR uses only the rules in the deal file."""
+        deal = fixture("texas-trec.json")
+        deal.update(state="FL", county="Orange")
+        deal["contract"]["form"] = "Builder Purchase Agreement"
+        deal.pop("rules")
+        with self.assertRaisesRegex(timeline.DealError, "time rules are missing"):
+            timeline.analyze(deal)
+
     def test_effective_date_required(self):
         deal = fixture("buyer-fha.json")
         del deal["contract"]["effective_date"]

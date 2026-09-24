@@ -170,8 +170,11 @@ Market values come in layers, merged in this order (later wins):
 |---|---|---|---|
 | State | `shared/markets/states/fl.md` | Closing costs, title, property tax, contract rules, CMA adjustments, county overrides | Florida properties only |
 | MLS | `shared/markets/mls/stellar.md` | History codes, CMA export columns, coverage | Stellar, in any state it serves (Florida and Puerto Rico) |
+| Built-in county override | `county_overrides` in a built-in layer | Local customs (Miami-Dade stamps, who pays title) | That county |
 | User profile | the agent's market profile | Anything | Its state |
-| County override | `county_overrides` in any layer | Local exceptions (Miami-Dade stamps, who pays title) | That county |
+| Profile county override | `county_overrides` in the agent's profile | The agent's own county exceptions | That county |
+
+The agent always wins: a built-in county custom never overrides a value the agent set. A heading with nothing under it (`closing_costs:`) sets nothing. County names match loosely ("Miami Dade", "St. Johns" or "Saint Johns"); a Florida county that isn't one of the 67 gets a note. With no state, nothing built in applies: the skill asks for the state and never assumes Florida.
 
 State and MLS are separate because an MLS can span states (Stellar serves Puerto Rico) and a state can have several MLSs (Miami-Dade isn't Stellar). Without a profile or a stated MLS, an MLS is assumed only when exactly one built-in MLS covers the property's county, and the skill says so. Every value carries its source, so a skill can tell a built-in default from the agent's own number.
 
