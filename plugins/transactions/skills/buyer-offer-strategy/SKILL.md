@@ -46,7 +46,7 @@ It prints every value already formatted: the page-1 summary, the options side by
 
 ## 3. Deliver
 
-**Quick question** ("what should we offer?"): two or three sentences from the output. **Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
+**Quick question** ("what should we offer?"): two or three sentences from the output, no files; the one question can cover the top two missing inputs (usually the listing agent's competition read and the loan type), and offer the report in one line, with a tip that a buyer CMA sharpens the price. **Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
 
 ```
 python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma file.cma.json] [--option stronger] [--agent agent-profile.md] [--market market-profile.md]

@@ -21,7 +21,7 @@
 
 | List at | Time to contract | Expected sale | Est. net* | Buyer's payment |
 |---|---|---|---|---|
-| {{each strategies: list_price_display (★ when recommended), time, expected_sale_display, net_display, payment_display/mo}} |
+| {{each strategies: list_price_display (★ when recommended), time, expected_sale_display, net_display (or "pending brokerage terms" when net.incomplete is true: never show a net without the commission), payment_display/mo}} |
 
 \*{{"Before mortgage payoff" or, with a payoff, "Cash at closing after your payoff"}}. Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
 

@@ -207,7 +207,10 @@ def compute(R, market, homes):
     if pay is None:
         warnings.append("No millage or tax rate for the buyer-payment estimate: give buyer_payment.school_mills and total_mills "
                         "(or a district in the market profile).")
-    elif pay["tax_estimated"]:
+    elif pay["homestead"] and not market.get("property_tax.primary_residence_exemptions"):
+        warnings.append("Buyer taxes assume a homestead, but this market has no exemptions on file, so none are applied: "
+                        "add the local exemptions to the market profile, or set buyer_payment.homestead to false and say so.")
+    if pay and pay["tax_estimated"]:
         warnings.append(f"Buyer taxes are estimated at {pay['tax_basis']}; find the millage for the home's taxing district if you can.")
 
     address = s.get("mls_address", s["address"])

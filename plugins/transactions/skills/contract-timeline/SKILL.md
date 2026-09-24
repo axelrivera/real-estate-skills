@@ -33,7 +33,7 @@ The script adds its own notes: a `flags` line when loan approval falls within 5 
 
 ## 3. Deliver
 
-**Quick question** ("when does the inspection end?", "what's due this week?"): answer from the output in a sentence or two. A deal file with just the Effective Date, the time rules and the one deadline is enough; leave the closing date out if you don't have it (dates counted back from closing then wait for it). **Full timeline in chat:** fill in `assets/timeline-template.md` with the output's values. **A report to send or print:**
+**Quick question** ("when does the inspection end?", "what's due this week?"): answer from the output in a sentence or two, plus at most one line on the rule used or what to confirm. A deal file with just the Effective Date, the time rules and the one deadline is enough; leave the closing date out if you don't have it (dates counted back from closing then wait for it). **Full timeline in chat:** fill in `assets/timeline-template.md` with the output's values. **A report to send or print:**
 
 ```
 python3 scripts/render.py deal.json [--agent agent-profile.md] [--market market-profile.md]

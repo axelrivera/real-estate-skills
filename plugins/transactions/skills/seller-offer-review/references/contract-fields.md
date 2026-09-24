@@ -41,7 +41,7 @@ The fields are the same everywhere; only where they sit changes. Read the contra
 
 Two cautions outside Florida:
 
-- **Walk-away windows differ.** A Texas option period or North Carolina due-diligence period lets the buyer walk for any reason, like an AS IS inspection period. Put its length in `inspection_days`; set `contract_form` to `standard` only when the buyer can cancel just for listed defects.
+- **Walk-away windows differ.** A Texas option period or North Carolina due-diligence period lets the buyer walk for any reason, like an AS IS inspection period. Put its length in `inspection_days` (it's the walk-away window the timeline and certainty use, not the loan or appraisal dates); set `contract_form` to `standard` only when the buyer can cancel just for listed defects.
 - **Costs and customs aren't built in.** Transfer tax, who pays title and typical fees come from the agent's market profile (`--market`). Without one the net leaves them out and the answer is Preliminary; ask the agent for a recent settlement statement or the title company's quote.
 
 ## Extraction tips
