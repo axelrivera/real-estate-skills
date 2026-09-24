@@ -173,14 +173,35 @@ def frbar_deadlines(c):
             source="Para. 9(d)", party="Seller", critical=False,
             action="Seller gives a copy of the existing survey to the buyer and the closing agent",
             if_missed="Buyer may need a new survey sooner")
-    add(key="inspection", label="Inspection Period Ends" + (" (Right to Cancel)" if as_is else ""), short="Inspection Ends",
-        basis="after", days=c.get("inspection_days", 15), source="Para. 12", party="Buyer", critical=True, contingency=True,
-        action="Complete inspections (including 4-point and wind mitigation); deliver written cancellation notice before the deadline if not proceeding",
-        if_missed="Right to cancel for inspection ends; deposit at risk")
-    if not as_is:
-        add(key="repair_notice", label="Repair Notice to Seller", short="Repair Notice", basis="after",
-            days=c.get("inspection_days", 15), source="Para. 12 (Standard)", party="Buyer", critical=True,
-            action="Deliver written notice of repairs within the repair limit", if_missed="Buyer accepts property condition")
+    if as_is:
+        add(key="inspection", label="Inspection Period Ends (Right to Cancel)", short="Inspection Ends",
+            basis="after", days=c.get("inspection_days", 15), source="Para. 12(a)", party="Buyer", critical=True, contingency=True,
+            action="Complete inspections (including 4-point and wind mitigation); deliver written cancellation notice before the deadline if not proceeding",
+            if_missed="Right to cancel for inspection ends; deposit at risk")
+    else:
+        # Standard: no right to cancel for inspection. The period is the deadline for the repair, WDO and permit
+        # notices; the seller's repair obligation is capped by the repair limits in Para. 9(a) (1.5% each if blank).
+        add(key="inspection", label="Inspection Period Ends (Repair Notices Due)", short="Repair Notices",
+            basis="after", days=c.get("inspection_days", 15), source="Para. 12(a)-(d)", party="Buyer", critical=True,
+            action="Deliver written notice of General Repair Items, the WDO report if it found anything, and any open or "
+                   "unpermitted work to the seller",
+            if_missed="Buyer waives the seller's obligation to repair, treat or permit anything not reported")
+        add(key="repair_estimates", label="Seller's Repair Estimates Due", short="Repair Estimates", basis="event",
+            received=c.get("repair_notice_delivered"), what="the buyer's repair notice", days=10,
+            source="Para. 12(b)(iii), (c)(ii), (d)(ii)", party="Seller", critical=True,
+            action="Seller makes the repairs, or delivers licensed estimates or a second inspection report",
+            if_missed="Seller is in breach of the repair provisions")
+        add(key="repair_election", label="Repair Limit Election", short="Repair Election", basis="event",
+            received=c.get("repair_estimates_received"), what="the last repair estimate", days=5,
+            source="Para. 12(b)(iii), (c)(ii), (d)(ii)", party="Both", critical=True,
+            action="When repairs exceed a repair limit: the seller may pay the excess, or the buyer chooses repairs up to "
+                   "the limit and takes the rest as is",
+            if_missed="If neither party sends notice, either may terminate and the deposit is refunded")
+        if c.get("open_permits"):
+            add(key="permits_closed", label="Open Permits Closed", short="Permits Closed", basis="before", days=5,
+                source="Para. 12(d)(ii)", party="Seller", critical=True,
+                action="Seller closes the open or expired permits the buyer reported, up to the Permit Limit",
+                if_missed="Closing may extend up to 10 days for final inspections, then either party may terminate")
     # The Appraisal Contingency rider has its own period. The FHA/VA rider has none: its protection runs to
     # closing, so it's a standing note (analyze), not a dated row.
     if financed and (has("appraisal") or (c.get("appraisal_days") and not fha_va)):
@@ -273,7 +294,7 @@ def frbar_deadlines(c):
             critical=True, action="Buyer receives and signs the Closing Disclosure at least 3 business days before closing",
             if_missed="Closing must move")
     add(key="walkthrough", label="Final Walk-Through", short="Walk-Through", basis="before", days=c.get("walkthrough_days_before", 1),
-        cap_at_closing=True, source="Para. 12(b)", party="Buyer", critical=False,
+        cap_at_closing=True, source="Para. 12(b)" if as_is else "Para. 12(e)", party="Buyer", critical=False,
         action="Walk the property the day before closing or on closing day; confirm condition, repairs and included items",
         if_missed="Buyer loses the chance to verify condition")
     return out

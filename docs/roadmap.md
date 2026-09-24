@@ -29,7 +29,7 @@ After the 2024 NAR settlement, a written buyer agreement is required before tour
 
 ### GAP-3: Repair Negotiation
 
-Drafts the repair request or the response to one, with the contract math: under FR/BAR AS IS, cancel or ask for a credit; under the Standard contract, the repair limits. Reads contract-timeline's data for the inspection deadline when present.
+Drafts the repair request or the response to one, with the contract math: under FR/BAR AS IS, cancel or ask for a credit; under the Standard contract, the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank), the seller's 10-day estimate window and the 5-day election when repairs exceed a limit (Para. 12). contract-timeline already dates those windows. Reads contract-timeline's data for the inspection deadline when present.
 
 - **Open questions:** Should it read an inspection report PDF and extract the items, or take a list? Should it show a credit-vs-repair comparison?
 

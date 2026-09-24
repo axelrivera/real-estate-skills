@@ -1,6 +1,6 @@
 # FR/BAR contracts (Florida)
 
-For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "frbar"` and `"contract_form": "as_is"` or `"standard"`; the script builds the deadline list from the fields below. Rules and paragraph numbers follow ASIS-7x Rev. 2/26 and the CR-7 riders (condominium rider CR-7x Rev. 05/2026); the Standard form uses the same time rules and title default. Numbers can shift between versions, so confirm against the form footer.
+For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "frbar"` and `"contract_form": "as_is"` or `"standard"`; the script builds the deadline list from the fields below. Rules and paragraph numbers follow ASIS-7x Rev. 2/26, the Standard form (FloridaRealtors/FloridaBar-7x Rev. 2/26) and the CR-7 riders (condominium rider CR-7x Rev. 05/2026). Both forms share the time rules, title default and paragraph numbers except Para. 12 (inspection and repair) and 9(a) (repair limits, Standard only). Numbers can shift between versions, so confirm against the form footer.
 
 ## Where the dates are
 
@@ -16,8 +16,9 @@ For the FR/BAR AS IS and Standard Residential Contracts. Set `"form_family": "fr
 | `title_commitment_received` | Date the buyer got the title commitment; starts the 5-day title defect notice (Standard A(ii)) | On event |
 | `survey_days_before`, `survey_received` | Para. 9(d); the buyer's survey defect notice is due 5 days after receipt, no later than closing (Standard B) | 5 days; on event |
 | `seller_has_survey` | Para. 9(d): the seller furnishes an existing survey within 5 days | No row unless true |
-| `inspection_days` | Para. 12 | 15 days |
-| `walkthrough_days_before` | Para. 12(b): the day before closing or closing day | 1 day |
+| `inspection_days` | Para. 12(a). AS IS: the buyer's right to cancel. Standard: no right to cancel; the deadline for repair, WDO and permit notices | 15 days |
+| `repair_notice_delivered`, `repair_estimates_received`, `open_permits` | Standard only, Para. 12(b)-(d): the seller's estimates are due 10 days after the buyer's notice; the repair-limit election 5 days after the last estimate; open permits closed 5 days before closing. Repair limits are in Para. 9(a) (1.5% of price each for general repairs, WDO and permits if blank) | On event; 5 days |
+| `walkthrough_days_before` | AS IS Para. 12(b), Standard Para. 12(e): the day before closing or closing day | 1 day |
 | `riders` | Names of attached riders | No default |
 | `appraisal_days` | Appraisal Contingency rider only. The FHA/VA rider has no appraisal period (its protection runs to closing; the script adds a note) | 21 days |
 | `insurance_days` | Homeowners'/Flood Insurance rider | = inspection period |

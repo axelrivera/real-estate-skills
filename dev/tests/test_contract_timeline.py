@@ -165,12 +165,19 @@ class FrbarDates(unittest.TestCase):
         keys = set(by_key(timeline.analyze(deal)))
         self.assertFalse(keys & {"loan_app", "loan_approval", "appraisal", "insurance_bound", "clear_to_close"})
 
-    def test_standard_contract_adds_repair_notice(self):
+    def test_standard_contract_has_repair_notices_not_a_cancel_right(self):
+        """Standard (CRSP 7x): the inspection period is for repair notices; no right to cancel; seller windows."""
         deal = fixture("buyer-fha.json")
-        deal["contract"]["contract_form"] = "standard"
+        c = deal["contract"]
+        c.update(contract_form="standard", repair_notice_delivered="2026-10-05", repair_estimates_received="2026-10-12",
+                 open_permits=True)
         rows = by_key(timeline.analyze(deal))
-        self.assertIn("repair_notice", rows)
-        self.assertEqual(rows["inspection"]["label"], "Inspection Period Ends")
+        self.assertEqual(rows["inspection"]["label"], "Inspection Period Ends (Repair Notices Due)")
+        self.assertFalse(rows["inspection"]["contingency"])
+        self.assertEqual(rows["repair_estimates"]["when"], "2026-10-15 23:59")
+        self.assertEqual(rows["repair_election"]["when"], "2026-10-19 23:59")  # Sat Oct 17 extends
+        self.assertEqual(rows["permits_closed"]["when"], "2026-10-26 23:59")  # Sun Oct 25 extends
+        self.assertEqual(rows["walkthrough"]["source"], "Para. 12(e)")
 
 
 class Amendments(unittest.TestCase):

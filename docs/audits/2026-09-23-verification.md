@@ -23,6 +23,21 @@ Checks of the audit's rule-based findings against primary sources, done before a
 | OFR-14 | Confirmed, with an addition | Taxes, CDD and special-district assessments, association fees and other recurring items are prorated through the day before closing. Due allowance is made for the maximum allowable discount and exemptions. When the current year's millage isn't set, proration uses the current assessment and the prior year's millage. Either party may ask to readjust once the bill arrives. | Standard K |
 | CMA-3 | Confirmed | Same rule as OFR-14. CDD assessments are included in the tax proration. | Standard K |
 
+### Standard Form Differences (7x Rev. 2/26)
+
+The riders are the same as AS IS, and so are Paras. 8(b)(v), 9(c), 9(d), 10(d) and Standards A, B, F and K. What differs:
+
+| Topic | Rule | Source |
+|---|---|---|
+| Inspection | No right to cancel for inspection. The Inspection Period (15 days if blank) is the deadline for written notice of General Repair Items, the WDO report and open or unpermitted work; anything not reported is waived. | Para. 12(a)-(d) |
+| Seller's response | Within 10 days after the buyer's notice or report: make the repairs, or deliver licensed estimates or a second inspection. | Para. 12(b)(iii), (c)(ii), (d)(ii) |
+| Over the limit | Within 5 days after the last estimate: the seller may pay the excess, or the buyer picks repairs up to the limit and takes the rest as is. If neither sends notice, either party may terminate and the deposit is refunded. | Para. 12(b)(iii), (c)(ii), (d)(ii) |
+| Permits | The seller closes open or expired permits no later than 5 days before closing, up to the Permit Limit; closing extends up to 10 days for final inspections. | Para. 12(d)(ii) |
+| Repair limits | General Repair, WDO and Permit Limits: 1.5% of the price each if blank. 125% of the estimated cost of unfinished work (up to the limits) is escrowed at closing. | Para. 9(a) |
+| Walk-through | Para. 12(e), same rule as AS IS 12(b). | Para. 12(e) |
+
+New finding (not in the audit), **OFR-33:** the offer engine reserves nothing for repairs on a Standard contract (`offer_engine.py`, `contract_form != "standard"`), but the seller owes repairs up to the three limits (up to 4.5% of price by default). The downside net should reserve against the limits, and the review should say so.
+
 Not in the form: ASIS-7 Rev. 2/26 Para. 10 has no seller flood disclosure paragraph. The statutory disclosure (CMA-6) is a separate form; see below.
 
 ## Statutes, Programs and Other Forms
@@ -31,7 +46,7 @@ Researched 2026-09-24 from primary sources where they could be reached (statute 
 
 | ID | Verdict | Rule | Source |
 |---|---|---|---|
-| FR/BAR Standard | Confirmed | The Residential Contract for Sale and Purchase (FloridaRealtors/FloridaBar-7x Rev. 2/26) has the same Standard F time rule and the same Para. 9(c) title default (15 days, 5 when Para. 8(a) cash is checked) and payer options as ASIS-7. | Florida Realtors redline of the 7x form |
+| FR/BAR Standard | Confirmed | The Residential Contract for Sale and Purchase (FloridaRealtors/FloridaBar-7x Rev. 2/26) has the same Standard F time rule and the same Para. 9(c) title default (15 days, 5 when Para. 8(a) cash is checked) and payer options as ASIS-7. Checked against the form itself as well as the redline. | Florida Realtors redline; the 7x form |
 | CMA-6 | Confirmed, with dates | **Seller flood disclosure (s. 689.302):** a seller of residential real property gives the statutory form at or before the contract is signed. It asks whether the seller knows of flooding that damaged the property during their ownership, has filed a flood claim (including NFIP), or received flood assistance (including FEMA). The claims and federal assistance questions started Oct 1, 2024 (ch. 2024-215); the knowledge question and any-assistance wording started Oct 1, 2025 (ch. 2025-166). No exemptions in the text. **Citizens flood requirement (s. 627.351(6)(aa), not (6)(a)):** flood coverage is required for personal residential policies effective on or after Jan 1, 2024 at $600,000+ dwelling replacement cost, Jan 1, 2025 at $500,000+, Jan 1, 2026 at $400,000+, and Jan 1, 2027 for all others; Special Flood Hazard Areas since 2023. Policies without wind coverage and HO-6 condo unit policies are exempt. So "flood insurance isn't required" in zone X is wrong for a Citizens policy at $400,000+ in 2026 and for every Citizens policy from 2027. | leg.state.fl.us s. 689.302, s. 627.351; ch. 2024-215, 2025-166 |
 | CORE-7 | Corrected | **Owner's title payer (custom, not law):** buyer pays in Miami-Dade, Broward, Sarasota and Collier. Lee and Charlotte are seller-pay counties (the audit suggested buyer). Monroe is split by area (Upper Keys buyer, Middle Keys seller, Lower Keys mixed). Add Collier; leave Lee and Charlotte; mark Monroe as ask. **MLS coverage:** Pinellas is Stellar (Suncoast Tampa Association of REALTORS, a Stellar shareholder). **Brevard is not Stellar** (Space Coast MLS). Miami-Dade, Broward and Palm Beach are MIAMI MLS and BeachesMLS, which merged associations on May 12, 2026 (combined MLS name to be set). | Florida TitleFund county survey (secondary); stellarmls.com shareholders; spacecoastmls.com |
 | CORE-17 | Confirmed, with 2026 figure | The second homestead exemption (non-school levies, assessed value above $50,000) is indexed to CPI-U each Jan 1 (s. 196.031(1)(b), 2024 Amendment 5): $25,722 for 2025 and **$26,411 for 2026**, so it covers assessed value from $50,000 to $76,411. A proposed amendment (HJR 1F, on the Nov 2026 ballot) would change non-school exemptions from 2027; not in effect. | s. 196.031; Florida DOR CPI homestead table (Jan 2026) |
