@@ -9,12 +9,27 @@ Two rules, both hard stops (the render ends and names each field to rewrite):
 The phrase list is a backstop for the rules in references/fair-housing.md, not the rules themselves:
 it only catches clear cases and never flags wording HUD allows ("family room", "walk-in closet",
 "walking distance", "55+ community"). Chat replies aren't checked here; the skill's instructions cover them.
+
+Not flagged:
+  - a pointer to an official source: a bare topic ("school ratings", "crime rate") in a sentence that also names
+    the district, sheriff, police or another official source ("School ratings are available from the district.");
+    claims ("great schools", "low crime") are flagged either way;
+  - place names in address, subdivision, city, county and school fields (SKIP_KEYS);
+  - a proper name listed in the data's `fair_housing_allow`: [{"phrase": "Asian Community Center", "reason":
+    "name of the community center 0.3 miles away"}]. Each entry needs a reason; check() returns the entries used
+    so the run can log them.
 """
 import re
 
 EM_DASH = "\u2014"
 PROSE_DASH = re.compile(r"\w\s*\u2014|\u2014\s*\w")  # an em dash used as punctuation, not as an empty value
-SKIP_KEYS = {"export", "path", "file", "files", "url"}  # file locations, not prose
+SKIP_KEYS = {"export", "path", "file", "files", "url",  # file locations, not prose
+             "address", "mls_address", "street", "subdivision", "city", "county", "zip",  # place names
+             "school", "schools", "assigned_school", "fair_housing_allow"}
+ALLOW_KEY = "fair_housing_allow"
+# An official source named in the same sentence turns a bare topic into a pointer, not a claim.
+OFFICIAL = re.compile(r"\b(?:district|school board|sheriff|police|department|official|FDLE|FBI|county records?)\b", re.I)
+SENTENCE = re.compile(r"[^.!?;]+[.!?;]?")
 
 # (pattern, why), matched case-insensitively on word boundaries.
 _WHO = r"(?:famil(?:y|ies)|kids|children|couples?|singles|retirees|seniors|empty[- ]nesters|young professionals|students|bachelors?|newlyweds)"
@@ -26,10 +41,10 @@ FAIR_HOUSING = [
     (r"\b(?:no|without)\s+(?:kids|children)\b|\badults?[- ]only\b", "limits familial status"),
     (rf"\b(?:young|older|mature|retired)\s+(?:couples?|professionals|buyers?|famil(?:y|ies)|residents|neighbors)\b",
      "describes the buyer or neighbors by age or family status"),
-    (r"\b(?:un)?safe\s+(?:neighborhood|area|community|street|part of town)\b|\b(?:low|high)[- ]crime\b|\bcrime[- ](?:rate|free|stats?)\b"
+    (r"\b(?:un)?safe\s+(?:neighborhood|area|community|street|part of town)\b|\b(?:low|high)[- ]crime\b|\bcrime[- ]free\b"
      r"|\b(?:bad|good|rough|better|best)\s+(?:neighborhood|area|part of town)\b(?!\s+rugs?)|\bdangerous\s+(?:area|neighborhood)\b",
      "safety and crime claims about an area can steer; point the client to official sources instead"),
-    (r"\b(?:good|great|excellent|top[- ]rated|best|bad|poor|failing|[a-f][- ]rated)\s+schools?\b|\bschool\s+(?:ratings?|scores?|quality)\b",
+    (r"\b(?:good|great|excellent|top[- ]rated|best|bad|poor|failing|[a-f][- ]rated)\s+schools?\b",
      "school quality claims can steer; name the assigned school only if asked, and point to the district"),
     (r"\b(?:up[- ]and[- ]coming|transitional|changing)\s+(?:neighborhood|area|community)\b|\bexclusive\s+(?:neighborhood|area|community)\b"
      r"|\b(?:diverse|integrated|ethnic)\s+(?:neighborhood|area|community)\b",
@@ -42,8 +57,18 @@ FAIR_HOUSING = [
      "disability; describe the home's features, not what a person must be able to do"),
     (r"\b(?:man|woman|lady|gentleman)'?s\s+(?:home|house)\b|\bgay[- ]friendly\b|\bstraight\s+(?:couples?|buyers?)\b",
      "sex, sexual orientation or gender identity"),
+    (r"\bbuyer\s+profile\b|\b(?:va|fha|usda|voucher|section 8)\s+buyers?\s+(?:need not|not welcome|welcome)\b",
+     "describes the buyer through a loan or income type; describe the terms (appraisal rules, down payment, timeline)"),
+]
+# Bare topics: fine when the sentence points to an official source, a claim otherwise.
+TOPICS = [
+    (r"\bcrime[- ](?:rates?|stats?|statistics|data)\b",
+     "crime figures can steer; point the client to the police or sheriff's public data instead"),
+    (r"\bschool\s+(?:ratings?|scores?|quality|grades?)\b",
+     "school ratings can steer; point the client to the school district to verify"),
 ]
 _COMPILED = [(re.compile(p, re.I), why) for p, why in FAIR_HOUSING]
+_TOPICS = [(re.compile(p, re.I), why) for p, why in TOPICS]
 
 
 class ProseError(ValueError):
@@ -62,24 +87,62 @@ def _strings(value, path="$"):
             yield from _strings(v, f"{path}[{i}]")
 
 
-def issues(data):
-    """[(field path, problem)] for every em dash in prose and fair-housing phrase in the data's text."""
+def allow_list(data):
+    """The data's `fair_housing_allow` entries as [(phrase, reason)]; an entry without a reason is refused."""
+    entries = data.get(ALLOW_KEY) if isinstance(data, dict) else None
+    out, bad = [], []
+    for i, e in enumerate(entries or []):
+        phrase, reason = (e.get("phrase"), e.get("reason")) if isinstance(e, dict) else (None, None)
+        if not (isinstance(phrase, str) and phrase.strip() and isinstance(reason, str) and reason.strip()):
+            bad.append(f"- $.{ALLOW_KEY}[{i}]: needs a \"phrase\" and the \"reason\" it is a proper name, not a description")
+        else:
+            out.append((phrase.strip(), reason.strip()))
+    if bad:
+        raise ProseError("Nothing was rendered. Fix the fair-housing allow list:\n" + "\n".join(bad))
+    return out
+
+
+def _allowed(text, m, allow):
+    """The allow-list phrase covering match `m` in `text`, if any."""
+    for phrase, reason in allow:
+        for a in re.finditer(re.escape(phrase), text, re.I):
+            if a.start() <= m.start() and m.end() <= a.end():
+                return phrase, reason
+    return None
+
+
+def issues(data, used=None):
+    """[(field path, problem)] for every em dash in prose and fair-housing phrase in the data's text.
+
+    Allow-list entries that excused a match are added to `used` (a list) when given."""
+    allow = allow_list(data)
     out = []
     for path, text in _strings(data):
         if PROSE_DASH.search(text):
             out.append((path, "em dash in a sentence: use a comma, colon, parentheses or a new sentence"))
-        for rx, why in _COMPILED:
-            m = rx.search(text)
-            if m:
+        hits = [(m, why) for rx, why in _COMPILED for m in rx.finditer(text)]
+        for sent in SENTENCE.finditer(text):
+            if not OFFICIAL.search(sent.group(0)):
+                hits += [(m, why) for rx, why in _TOPICS for m in rx.finditer(sent.group(0))]
+        seen = set()
+        for m, why in hits:
+            ok = _allowed(m.string, m, allow)  # m.string: the field, or the sentence for a topic match
+            if ok:
+                if used is not None and ok not in used:
+                    used.append(ok)
+                continue
+            if why not in seen:  # one line per rule and field
+                seen.add(why)
                 out.append((path, f'"{m.group(0)}": {why}'))
     return out
 
 
 def check(data, limit=12):
-    """Raise ProseError listing what to rewrite, or return quietly."""
-    found = issues(data)
+    """Raise ProseError listing what to rewrite; otherwise return the allow-list entries that were used."""
+    used = []
+    found = issues(data, used)
     if not found:
-        return
+        return used
     lines = [f"- {path}: {problem}" for path, problem in found[:limit]]
     if len(found) > limit:
         lines.append(f"- and {len(found) - limit} more")

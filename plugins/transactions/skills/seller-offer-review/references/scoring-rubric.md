@@ -4,7 +4,7 @@ The score estimates how likely an offer is to close on its terms. Eight criteria
 
 | Criterion | Weight | Auto Rule |
 |---|---|---|
-| Financing Type & Down Payment | 20 | cash 5 · conv ≥20% 4 · conv ≥5% 3 · conv <5% 2 · VA 3 · FHA/USDA 2 |
+| Financing Type & Down Payment | 20 | cash 5 · conv ≥20% 4 · conv ≥5% 3 · conv <5% 2 · VA 3 (the Tidewater process gives notice and a chance to send sales before a low value is final) · FHA/USDA 2. The reason names the loan's terms, never the buyer |
 | Approval / Funds Verified | 10 | POF verified or full UW 5 · DU/LP approved 4 · pre-approval 3 · pre-qual 2 · none 1. Financed and lender not called → capped at 3 |
 | Appraisal Risk | 20 | cash, or no appraisal contingency on a conventional loan with documented funds, 5. Otherwise exposure = price − (CMA high + gap cover): price ≤ mid 5 · exposure ≤ 0 4 · ≤1% of price 3 · ≤2.5% 2 · more 1. Gap cover is the gap clause, except: FHA and VA 0 (the rider lets the buyer walk if the appraisal is low, so a waiver is ignored and a gap clause is intent only, and the protection runs to closing); a financed waiver, the buyer's documented cash beyond the down payment and closing costs (`gap_funds`) |
 | Contingency Exposure | 15 | sale-of-home contingency 1. Otherwise the lower of: days until firm ≤7 5 · ≤14 4 · ≤30 3 · ≤45 2 · more 1; inspection period (the walk-away-for-any-reason window; AS IS and other contracts' option periods only) ≤7 5 · ≤10 4 · ≤14 3 · more 2. Days until firm count the inspection period only when it's a walk-away; on the FR/BAR Standard they run through the repair election (inspection + 10 + 5 days), since either party may terminate when repairs exceed a limit |

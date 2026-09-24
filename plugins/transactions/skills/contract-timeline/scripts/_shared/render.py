@@ -144,7 +144,7 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
     `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once.
     `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
     Before anything is built, the data's text is checked (prose.check: no em dashes, no fair-housing
-    red flags); a problem stops the run with the fields to rewrite.
+    red flags); a problem stops the run with the fields to rewrite. Allow-list entries it used go to stderr.
     With several formats, one that fails doesn't stop the others: the files that were made are printed,
     then the run exits with a message naming what wasn't built.
     Prints each path, one per line, so Claude can present them.
@@ -168,7 +168,8 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
     try:
         with open(args.data, encoding="utf-8") as f:
             data = json.load(f)
-        prose.check(data)
+        for phrase, reason in prose.check(data):  # logged so the agent can see what was let through
+            print(f'Fair-housing allow list: "{phrase}" ({reason})', file=sys.stderr)
         ctx = {"agent": profiles.load_agent(args.agent), "market": args.market, "sample": args.sample, "formats": todo,
                **{k: v for k, v in vars(args).items() if k not in base}}
         check_agent(ctx["agent"])

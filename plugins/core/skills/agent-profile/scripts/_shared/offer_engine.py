@@ -628,9 +628,11 @@ def auto_scores(o, L, S):
         s["financing"] = 4 if down >= .20 else (3 if down >= .05 else 2)
         why["financing"] = f"Conventional, {down:.0%} down"
     elif fin == "va":
-        s["financing"], why["financing"] = 3, "VA: strong buyer profile, stricter appraisal/condition rules"
+        s["financing"], why["financing"] = 3, ("VA financing: Tidewater notice before a low appraisal is final; "
+                                               "stricter appraisal and condition rules")
     else:
-        s["financing"], why["financing"] = 2, f"{FIN_LABEL[fin]} at {down:.1%} down: thin cash cushion, stricter appraisal & condition rules"
+        s["financing"], why["financing"] = 2, (f"{FIN_LABEL[fin]}, {down:.1%} down" + (": appraisal protection to closing" if fin == "fha" else "")
+                                  + ", stricter appraisal and condition rules")
 
     ap = o["approval"]
     s["approval"] = {"pof_verified": 5, "full_uw": 5, "du_approved": 4, "preapproval": 3, "prequal": 2, "none": 1}.get(ap, 3)

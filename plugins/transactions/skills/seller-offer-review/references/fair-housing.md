@@ -40,6 +40,10 @@ Describe the property, the numbers and the terms. Never describe people: not who
 
 **Allowed, per HUD's advertising guidance:** describing the property and its rooms ("family room", "walk-in closet", "two bedrooms", "master bedroom", though "primary bedroom" is the common term now), services and rules ("no pets", "no smoking"), and physical facts about the area ("quiet cul-de-sac", "walking distance to the park", "0.4 miles to the lake"). A feature is never the problem; attaching it to a kind of person is.
 
+**Pointing to a source is fine.** "School ratings are available from the district" and "crime data is on the sheriff's site" pass the render check, because they name the official source instead of making a claim. "Great schools" and "low crime" are claims and are blocked either way.
+
+**Proper names.** Address, subdivision, city, county and school fields aren't checked. When a proper name in prose trips the check (a place like "Asian Community Center"), keep the name and add it to the data file's allow list with a reason: `"fair_housing_allow": [{"phrase": "Asian Community Center", "reason": "name of the community center 0.3 miles away"}]`. Use it only for names, never to let a description through. The render prints each entry it used, so tell the agent.
+
 ## Topics With Their Own Rule
 
 - **Neighborhood sections** in a CMA are about the market: sales, prices, days on market, supply, and named amenities with distances. Never about the people who live there.
