@@ -185,7 +185,8 @@ class Market:
     """Merged market values with the source of each one.
 
     Sources: 'state' (built-in state layer, that state only), 'mls' (built-in MLS layer, that MLS only),
-    'county' (county override), 'estimate' (national estimates, labeled Estimate on reports), 'input' (given by the skill).
+    'county' (county override), 'estimate' (national estimates, labeled Estimate on reports), 'national' (a national
+    rule that isn't an estimate: no transfer tax in a no_state_transfer_tax state), 'input' (given by the skill).
     A path with no value is missing: it comes from the deal (a contract's time rules), or the skill asks.
     """
 
@@ -221,6 +222,11 @@ class Market:
     def with_deal(self, costs):
         """A copy with this deal's own numbers on top (source 'deal'): `costs` uses the DEAL_COSTS keys, the way the
         skills' data files write them (transfer_tax_rate, title_fees...). Unknown keys and None values are skipped."""
+        from .finance import check_units
+        try:
+            check_units({k: v for k, v in (costs or {}).items() if k in DEAL_COSTS}, "costs")
+        except ValueError as e:
+            raise ProfileError(str(e)) from None
         data, sources = copy.deepcopy(self.data), dict(self.sources)
         for key, value in (costs or {}).items():
             path = DEAL_COSTS.get(key)
@@ -379,7 +385,14 @@ def load_market(state=None, county=None, mls=None):
     built_in = county and _county_override(data.get("county_overrides"), county)
     if built_in:
         _merge(data, built_in, sources, "county")
-    _fill(data, _strip_layer_keys(_national()), sources, "estimate")
+    national = _strip_layer_keys(_national())
+    no_tax = set(national.pop("no_state_transfer_tax", None) or [])
+    if want in no_tax and data.get("closing_costs", {}).get("deed_transfer_tax_rate") is None:
+        data.setdefault("closing_costs", {})["deed_transfer_tax_rate"] = 0
+        sources["closing_costs.deed_transfer_tax_rate"] = "national"
+        notes.append(f"{STATES[want]} has no state transfer tax, so none is charged. A few cities and counties add their "
+                     "own: confirm with the title company.")
+    _fill(data, national, sources, "estimate")
     if mls_name and not data.get("mls"):
         data["mls"], sources["mls"] = mls_name, "input"  # an MLS that isn't built in is still the one in use
     for leaf, value in _leaves(data):

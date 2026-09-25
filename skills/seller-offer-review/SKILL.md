@@ -61,7 +61,7 @@ It prints every value already formatted: the page-1 summary, each offer's net sh
 **Quick question** ("should we take it?", "what's the net?"): answer in two or three sentences from the output. **Full review in chat:** fill in `assets/offer-review-template.md` with the output's values. **A report for the seller:**
 
 ```
-python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--profile profile.md]
+python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet] [--profile profile.md]
 ```
 
 `--profile` puts the agent's name and colors on it (found as `references/saved-files.md` describes). It saves the PDF to the outputs folder in the agent's seller-side brand colors. Page 1 fits on one page; if it can't render, say so and give the markdown review instead. When the agent asks for every offer's report, the full set or the packet, add `--packet`: the comparison plus a single review of each active offer, in rank order, one PDF each. Otherwise render only what was asked.

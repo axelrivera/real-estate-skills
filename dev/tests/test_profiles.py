@@ -117,7 +117,7 @@ class Market(unittest.TestCase):
         self.assertTrue(any("don't assume Florida" in n for n in m.notes))
 
     def test_other_states_get_national_estimates(self):
-        m = p.load_market(state="TX")
+        m = p.load_market(state="GA")
         self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0.004)
         self.assertEqual(m.get("closing_costs.seller_title_fees"), {"settlement_and_title_fees": 1200})
         self.assertEqual((m.get("brokerage.listing_fee_pct"), m.get("brokerage.buyer_broker_fee_pct")), (0.025, 0.025))
@@ -125,6 +125,16 @@ class Market(unittest.TestCase):
         self.assertIsNone(m.get("contract.day_count"))  # time rules come from the contract, never estimated
         self.assertIsNone(m.get("cma.adjustments.pool"))
         self.assertTrue(any("national estimates" in n for n in m.notes))
+
+    def test_no_state_transfer_tax_states(self):
+        for st in ("TX", "AZ", "OR", "AK"):
+            m = p.load_market(state=st)
+            self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0, st)
+            self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "national")
+            self.assertTrue(any("no state transfer tax" in n for n in m.notes))
+        self.assertEqual(p.load_market(state="FL").get("closing_costs.deed_transfer_tax_rate"), 0.007)  # its own
+        self.assertEqual(p.load_market(state="TX").with_deal({"transfer_tax_rate": 0.002})
+                         .get("closing_costs.deed_transfer_tax_rate"), 0.002)  # the deal's number still wins
 
     def test_estimates_never_mix_into_florida_values(self):
         """A section key is filled whole: Florida's fee list gets no estimated fee, its title table no estimate."""

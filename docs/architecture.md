@@ -187,7 +187,7 @@ Market values come in layers, merged in this order (later wins):
 | State | `shared/markets/states/fl.md` | Closing costs, title, property tax, contract rules, CMA adjustments, county overrides | Florida properties only |
 | MLS | `shared/markets/mls/stellar.md` | History codes, CMA export columns, coverage | Stellar, in any state it serves (Florida and Puerto Rico) |
 | Built-in county override | `county_overrides` in a built-in layer | Local customs (Miami-Dade stamps, who pays title) | That county |
-| National estimates | `shared/markets/national.md` | Transfer tax, title, fees, commission (5% total), property tax, insurance, utilities (never contract rules) | Any property, for each section key no layer above set (source `estimate`) |
+| National estimates | `shared/markets/national.md` | Transfer tax, title, fees, commission (5% total), property tax, insurance, utilities (never contract rules); the states with no state transfer tax (none charged, source `national`) | Any property, for each section key no layer above set (source `estimate`) |
 
 The deal's own numbers go on top (`Market.with_deal`, source `deal`). A heading with nothing under it (`closing_costs:`) sets nothing. National estimates fill whole keys, never leaves, so an estimated fee never mixes into Florida's fee list. County names match loosely ("Miami Dade", "St. Johns" or "Saint Johns"); a Florida county that isn't one of the 67 gets a note. With no state, only the national estimates apply: the skill takes the state from the listing or asks, and never assumes Florida.
 
@@ -197,7 +197,7 @@ For any other MLS, the skill maps the export's column headers itself (`--columns
 
 ### Local Costs
 
-Convention over configuration: reports never ask about local costs up front. They take the state and county from the listing, use this deal's numbers, then the built-in local values, then the national estimates, labeled "Estimate" (commission "Assumed", 5% total). Outside Florida the skill looks up the state's transfer tax from a trusted source (the state revenue department, the statute, or the county recorder) and falls back to the estimate when in doubt. The reply lists the estimates the agent can replace, and the agent's numbers go in the same data file for a re-render. Estimates don't mark a report Preliminary; only a value with no estimate at all does. Contract time rules are never estimated: they come from the contract. The rules for Claude are in `shared/references/local-costs.md`.
+Convention over configuration: reports never ask about local costs up front. They take the state and county from the listing, use this deal's numbers, then the built-in local values, then the national estimates, labeled "Estimate" (commission "Assumed", 5% total). Best-practice assumptions throughout: the 15 states with no state transfer tax get none (never the estimate), and the buyer's agent fee is included (2.5%, assumed) until the deal says otherwise. Elsewhere outside Florida the skill looks up the state's transfer tax from a trusted source (the state revenue department, the statute, or the county recorder) and falls back to the estimate when in doubt. The reply lists the estimates the agent can replace, and the agent's numbers go in the same data file for a re-render. Estimates don't mark a report Preliminary; only a value with no estimate at all does. Contract time rules are never estimated: they come from the contract. The rules for Claude are in `shared/references/local-costs.md`.
 
 ## Skills never require other skills
 
@@ -209,7 +209,7 @@ Users can turn any skill off. Skills share **files**, not invocations:
 
 Outside the built-in market, a missing value is **never** filled with a Florida default: it's a national estimate, labeled per line.
 
-**Per-deal costs.** A number that belongs to one deal (a title company quote, the transfer tax looked up for this state, the listing agreement's commission) goes in that deal's data file (`listing.costs` in the offer skills, `costs` in the CMAs, keys in `profiles.DEAL_COSTS`), on top of the market layers, and is reported as "this listing". Nothing is saved across deals.
+**Per-deal costs.** A number that belongs to one deal (a title company quote, the transfer tax looked up for this state, the listing agreement's commission) goes in that deal's data file (`listing.costs` in seller-offer-review, `property.costs` in buyer-offer-strategy, `costs` in the CMAs, keys in `profiles.DEAL_COSTS`), on top of the market layers, and is reported as "this listing". Nothing is saved across deals.
 
 **Shares of price.** Every `*_pct` field in data files and market layers is a fraction: `0.025` means 2.5%. Interest `rate` is the exception, written as a percent (`6.95`) the way lenders quote it. Scripts refuse a `*_pct` of 1 or more with a message instead of guessing.
 

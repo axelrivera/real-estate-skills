@@ -210,6 +210,33 @@ def fraction(value, name, default=None, whole=False):
     return value
 
 
+FRACTION_RATES = ("transfer_tax_rate", "tax_rate", "insurance_rate")  # shares of price, like *_pct, and small
+PERCENT_RATES = ("rate", "mortgage_rate")  # interest rates are written as percents: 6.5 means 6.5%
+
+
+def check_units(node, where="report"):
+    """Every unit in a data file, before any math: `*_pct` and the FRACTION_RATES are fractions (0.025 = 2.5%), and
+    an interest rate is a percent (6.5). A value in the other unit raises ValueError naming the field and the fix,
+    instead of silently becoming a wrong number."""
+    items = node.items() if isinstance(node, dict) else enumerate(node) if isinstance(node, list) else ()
+    for key, value in items:
+        here = f"{where}.{key}" if isinstance(key, str) else f"{where}[{key}]"
+        if not isinstance(key, str) or value is None or isinstance(value, (dict, list)):
+            check_units(value, here)
+        elif key.endswith("_pct"):
+            fraction(value, here, whole=key == "down_pct")
+        elif key in FRACTION_RATES:
+            fraction(value, here)
+            if value >= 0.1:
+                raise ValueError(f"{here} is {value:g}, {value * 100:g}% of price: write it as a fraction "
+                                 f"({value / 100:g} for {value:g}%).")
+        elif key in PERCENT_RATES:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 1 <= value <= 25:
+                hint = f" (that looks like a fraction: write {value * 100:g} for {value * 100:g}%)" \
+                    if isinstance(value, (int, float)) and 0 < value < 1 else ""
+                raise ValueError(f"{here} is {value!r}: write the interest rate as a percent, like 6.5{hint}.")
+
+
 def concession_cap(name, down):
     """Most a seller may contribute, as a share of price. `down` is a fraction (0.05 = 5%)."""
     key = program(name)

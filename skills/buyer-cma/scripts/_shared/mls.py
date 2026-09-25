@@ -79,6 +79,15 @@ def _flag(v):
 FLOOD_RISK = ("VE", "V", "AE", "AH", "AO", "A", "D", "X500", "X")  # riskiest first
 
 
+def resolve_export(path, data_file=None):
+    """The export path from a data file: as written when it exists (absolute, or relative to where the script runs),
+    else relative to the data file's own folder, where report.json and the export usually sit together."""
+    if not path or not data_file or os.path.isabs(path) or os.path.exists(path):
+        return path
+    beside = os.path.join(os.path.dirname(os.path.abspath(data_file)), path)
+    return beside if os.path.exists(beside) else path
+
+
 def flood_zone(v):
     """The riskiest FEMA zone named in a free-typed flood field ('X*', 'Yes (X, X500, Ae)'), or None ('xx', 'n')."""
     found = set(re.findall(r"\b(VE|V|AE|AH|AO|A|D|X500|X)\b", str(v or "").upper().replace("*", " ")))

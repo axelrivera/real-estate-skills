@@ -13,6 +13,17 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.8.0: t
 | Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
+## This pass (2026-09-24): Sanity Check Fixes and Best-Practice Assumptions
+
+A regression run of every fixture and sample, commit by commit from `main`, found no math change outside the intended ones; an audit of documented commands and fields found the items below, all fixed.
+
+- **Best-practice assumptions** (the rule for every default): the 15 states with no state transfer tax (AK, AZ, ID, IN, KS, LA, MS, MO, MT, ND, NM, OR, TX, UT, WY) get none, never the 0.4% estimate (`national.md` `no_state_transfer_tax`, source `national`, a note to confirm local taxes). The buyer's agent fee stays included (2.5%, assumed) until the deal says otherwise.
+- **Millage:** codes split on "/" too (Orange); `finance.millage_row` never guesses between districts that share a code or name, and both CMAs warn.
+- **Units:** `finance.check_units` refuses a `*_pct` or cost rate written as a percent and an interest rate written as a fraction, in both CMAs and every deal's costs (`Market.with_deal`).
+- **buyer-cma:** stats.py takes `--sqft --pool --subdivision --type --lat --lon` for a home with no export row; `tax_jurisdiction_index` is range-checked; `export` resolves beside report.json and is in both examples.
+- **Chat templates and handoffs:** compute.py prints `comps_table`; offer-review template reads `summary.kpis`; buyer-offer-strategy reads the CMA's seller-paid stats by the handoff's names.
+- **Docs:** `property.costs` in the buyer file, `du_approved`, `received` not scored, `recommendation.midpoint`, `--side`, `--packet`, the Texas evals.
+
 ## This pass (2026-09-24): Seller CMA Defaults and Table Fixes
 
 - seller-cma builds only the report PDF by default (`render.main(..., default="pdf")`); the listing presentation is built when the request asks for it, or offered in one line afterward. New eval: seller-cma #5.
@@ -80,7 +91,6 @@ User testing found the onboarding too technical: two profile skills with no dire
 - **Rent-back / occupancy terms** in an offer aren't scored; record them as custom `flags` for now.
 - **Texas title rates** below $100k are a lookup table; the per-$1,000 tier format approximates them.
 - **State holidays** (Texas) aren't in the built-in holiday list; add them to a deal's `rules.holidays`.
-- **Files blocked without commission:** outside Florida, seller-cma won't build the PDF or deck until the agent gives brokerage terms (by design; the chat summary says "pending brokerage terms"). Confirm this is the behavior you want.
 - **Escalation cap vs. the CMA's walk-away:** buyer-offer-strategy can set a cap above a buyer CMA's walk-away price without comment; it should say so.
 - **Unknown seller credit** on a comp is recorded as 0 in the handoff.
 - **Deck slide 6** (market stats): long values can overlap their period label; keep values short.

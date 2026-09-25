@@ -35,7 +35,7 @@ Write deal.json in a temporary folder, never the outputs folder (`references/sav
 Florida rules are built in; for any other state the time rules come from the contract (never estimated).
 
 ```
-python3 scripts/timeline.py deal.json
+python3 scripts/timeline.py deal.json [--side buyer|seller]   # --side overrides the deal file's side
 ```
 
 It prints every date already formatted, or `ok: false` with `problems` to fix. Spot-check before going further: the deposit and loan application dates, anything extended to the next business day, and a closing date that extended past a weekend or holiday.

@@ -89,7 +89,8 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `id` | "A", "B", …: an internal key, next letter for each new offer | "A" | — |
 | `label` | the offer's name in the report, when the agent wants something other than the default (see Offer Names) | agent and brokerage | — |
 | `status` | `active` `backup` `declined` `expired` `accepted` | `active` | — |
-| `received`, `expires` | `YYYY-MM-DD HH:MM` | — | — |
+| `expires` | `YYYY-MM-DD HH:MM`: when the offer lapses (the respond-by time) | — | — |
+| `received` | `YYYY-MM-DD HH:MM`, for the record (not scored) | — | — |
 | `buyer` | name(s) on the contract; shown once, as contract identification | not shown | — |
 | `buyer_agent`, `buyer_brokerage` | the buyer's agent and their brokerage, as on the contract | name falls back to price and financing | — |
 | `lender` | text | — | — |

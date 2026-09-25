@@ -161,7 +161,8 @@ class Costs:
         src = self.source(path)
         state = profiles.STATES.get(self.state or "", self.state or "market")
         return {"deal": "this listing", "estimate": "national estimate", "state": f"{state} default",
-                "county": "county default", "mls": "MLS default"}.get(src, "market default")
+                "county": "county default", "mls": "MLS default",
+                "national": f"none in {state}; confirm local taxes with the title company"}.get(src, "market default")
 
 
 def load_costs(listing, market=None):

@@ -212,7 +212,7 @@ def build(R, fmt, out_dir, ctx):
 
 
 def _build(R, fmt, out_dir, ctx):
-    market, homes = compute.load_inputs(R, ctx.get("mls"))
+    market, homes = compute.load_inputs(R, ctx.get("mls"), ctx.get("data_file"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))

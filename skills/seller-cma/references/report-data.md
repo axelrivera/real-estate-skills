@@ -12,7 +12,7 @@
 |---|---|
 | `prepared_date` | Written out ("September 22, 2026"). Default: today |
 | `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
-| `export` | Path to the MLS export CSV (chart, trend line, deck method step, handoff market stats) |
+| `export` | Path to the MLS export CSV (absolute, or relative to report.json's folder; keep them together in the temporary folder) (chart, trend line, deck method step, handoff market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
 | `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
 | `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
@@ -44,7 +44,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 
 ## recommendation
 
-`list_price`, `low`, `high` (*numbers*), `paragraph` (4–5 sentences: the range, the price and why, and why a higher first price is a risk).
+`list_price`, `low`, `high` (*numbers*), optional `midpoint` (*number*; default the middle of low and high, used for the handoff), `paragraph` (4–5 sentences: the range, the price and why, and why a higher first price is a risk).
 
 ## means
 

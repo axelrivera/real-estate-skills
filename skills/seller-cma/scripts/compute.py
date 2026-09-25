@@ -217,6 +217,11 @@ def compute(R, market, homes):
     _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
              "comps.cards", "pricing.strategies", "buyer_payment.rate", "buyer_payment.insurance_annual")
     L = cma.Labels(ASSETS, R.get("labels"))
+    for block in ("costs", "buyer_payment"):  # units before any math: fractions stay fractions, interest stays a percent
+        try:
+            finance.check_units(R.get(block) or {}, block)
+        except ValueError as e:
+            raise ReportError(str(e)) from e
     market = market.with_deal(R.get("costs"))  # this listing's own numbers (a title quote, the state's transfer tax)
     s, rec, p = R["subject"], R["recommendation"], R["pricing"]
     strategies = p["strategies"]
@@ -387,12 +392,14 @@ def compute(R, market, homes):
     }
 
 
-def load_inputs(R, mls_name=None):
+def load_inputs(R, mls_name=None, data_file=None):
     """Market and MLS records for a report.json (`export` is the path to the MLS export CSV, `export_columns` its
     header map for an MLS that isn't built in). The MLS is `--mls`, else the report's `mls`, else the one built-in MLS
     covering the county (CMA-15)."""
     s = R.get("subject") or {}
     market = profiles.load_market(state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
+    if R.get("export"):
+        R["export"] = mls.resolve_export(R["export"], data_file)  # beside report.json when not found from here
     homes = mls.load(R["export"], market, R.get("export_columns")) if R.get("export") else []
     mls.fill_distances(homes, s.get("mls_address", s.get("address")),
                        (s["latitude"], s["longitude"]) if s.get("latitude") and s.get("longitude") else None)
@@ -408,7 +415,7 @@ def main(argv=None):
     with open(a.report, encoding="utf-8") as f:
         R = json.load(f)
     try:
-        market, homes = load_inputs(R, a.mls)
+        market, homes = load_inputs(R, a.mls, a.report)
         result = compute(R, market, homes)
         path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "seller"))
         with open(path, "w", encoding="utf-8") as f:

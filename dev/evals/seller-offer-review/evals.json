@@ -19,7 +19,7 @@
     {
       "id": 3,
       "prompt": "Quick net sheet please: offer on my Austin listing, 8104 Shoal Creek Blvd, list 610k. Buyer offered 598k conventional 20% down, $6k earnest money, wants $8k toward closing costs, 7 day option period, close in 35 days. Payoff is about 214k. Our commission is 3% listing and 2.5% to the buyer's agent.",
-      "expected_output": "Takes Texas and Travis County from the address; looks up the Texas deed transfer tax from an official source (none) and records 0 in the listing costs; uses the agent's 3% + 2.5%; title and settlement fees are national estimates labeled Estimate; never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window; answers in chat with the net after payoff and the likely counter (price partway to list, larger earnest money); ends with the estimates the agent can replace (a title quote) and offers the PDF",
+      "expected_output": "Takes Texas and Travis County from the address; applies the built-in rule that Texas has no state transfer tax (no transfer line, no web lookup needed); uses the agent's 3% + 2.5%; title and settlement fees are national estimates labeled Estimate; never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window; answers in chat with the net after payoff and the likely counter (price partway to list, larger earnest money); ends with the estimates the agent can replace (a title quote) and offers the PDF",
       "files": []
     },
     {

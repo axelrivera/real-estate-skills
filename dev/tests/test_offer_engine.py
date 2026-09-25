@@ -118,13 +118,13 @@ class OtherStates(unittest.TestCase):
     def test_national_estimates_not_florida(self):
         R = oe.analyze(fixture("texas-single.json"))
         o = R["offers"][0]
-        self.assertEqual(line(o["ns"], "transfer"), -round(598000 * 0.004))  # national estimate, not Florida's 0.7%
+        self.assertEqual(line(o["ns"], "transfer"), 0)  # Texas has no transfer tax, not Florida's 0.7%
         self.assertEqual(line(o["ns"], "title"), -round(598000 * 0.005))
         self.assertEqual(line(o["ns"], "settle"), -1200)
         self.assertEqual(o["repair_reserve"], 0)
         fields = {a["field"]: a["impact"] for a in R["assumptions"]}
-        self.assertEqual(fields["transfer_tax_rate"], "med")  # labeled Estimate, not a Preliminary blocker
-        self.assertIn("title_fees", fields)
+        self.assertNotIn("transfer_tax_rate", fields)
+        self.assertEqual(fields["title_fees"], "med")  # labeled Estimate, not a Preliminary blocker
         self.assertIn("inspection_credit_reserve_pct", fields)
         self.assertFalse(any("transfer tax" in n for n in oe.preliminary_inputs(R)))
         text = json.dumps(R["assumptions"]) + json.dumps(R["listing"]["cost_notes"])

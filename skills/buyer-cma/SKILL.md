@@ -37,6 +37,7 @@ Local costs come from the listing's location, never from questions up front: rea
   ```
   python3 scripts/stats.py export.csv --address "<address as in the export>" --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD]
   ```
+  When the home has no row in the export, add its facts from the property report so comps are ranked: `--sqft <sqft> [--pool] --subdivision "<name>" [--type <property_type>]`, and `--lat`/`--lon` when the export has no Distance column.
   Pick a split date so "recent" is roughly the last 2–3 months. For an MLS that isn't built in, map the export's headers to the field names in `references/report-data.md` and pass them with `--columns` (and as `export_columns` in report.json).
 - Search quickly: the address itself (claims that disappeared from the listing), the current 30-year mortgage rate (Freddie Mac weekly survey), when there's no built-in millage for the area, the county's current millage, and outside Florida the state's transfer tax from a trusted source (`references/local-costs.md`).
 

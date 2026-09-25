@@ -205,14 +205,14 @@ class OtherMarkets(unittest.TestCase):
         C, _ = run(texas(report()))
         self.assertFalse(C["preliminary"])
         keys = {r["key"] for r in C["net"]["rows"]}
-        self.assertEqual(keys, {"sale", "listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees",
-                                "credit", "total", "holding", "after_holding"})
-        self.assertEqual(row(C, "transfer_tax")["label"], "Transfer Tax (Estimate, 0.40%)")  # never Florida's stamps
+        self.assertEqual(keys, {"sale", "listing_fee", "buyer_broker_fee", "owner_title", "title_fees",
+                                "credit", "total", "holding", "after_holding"})  # no transfer tax in Texas, never Florida's stamps
         self.assertEqual(C["net"]["missing"], [])
         self.assertFalse(C["net"]["incomplete"])
         self.assertTrue(any(a.startswith("National estimates") for a in C["assumptions"]))
         self.assertTrue(any(a.startswith("Brokerage is assumed") for a in C["assumptions"]))
         self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 19.0 / 1000 / 12)  # no homestead in Texas
+
     def test_texas_deal_numbers_replace_the_estimates(self):
         R = texas(report())
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025, "transfer_tax_rate": 0,
@@ -235,7 +235,8 @@ class OtherMarkets(unittest.TestCase):
         C, homes = run(R)
         doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
         self.assertNotIn("tag prelim", doc)
-        self.assertIn("Transfer Tax (Estimate, 0.40%)", doc)
+        self.assertNotIn("Transfer Tax", doc)  # Texas has no state transfer tax
+        self.assertIn("Owner's Title Insurance (Estimate)", doc)
         self.assertIn("Estimates, not local figures", doc)
         self.assertNotIn("Documentary Stamp", doc)
 

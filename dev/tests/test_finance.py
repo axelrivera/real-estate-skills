@@ -101,6 +101,16 @@ class Taxes(unittest.TestCase):
         self.assertEqual(f.millage(FL, county="Seminole", district="a1")[0]["district"], "Altamonte Springs")
         self.assertEqual(f.millage(FL, county="Orange", district="8")[0]["district"], "Orlando (St. Johns WMD)")  # "8/28/71/78"
 
+    def test_check_units(self):
+        f.check_units({"costs": {"listing_fee_pct": 0.025, "transfer_tax_rate": 0.007, "mortgage_rate": 6.5},
+                       "payment": {"rate": 6.95, "scenarios": [{"down_pct": 1}]}})
+        for bad in ({"listing_fee_pct": 2.5}, {"transfer_tax_rate": 0.7}, {"tax_rate": 1.1}, {"rate": 0.065},
+                    {"rate": 65}, {"mortgage_rate": "6.5%"}):
+            with self.assertRaises(ValueError, msg=bad):
+                f.check_units(bad)
+        with self.assertRaises(profiles.ProfileError):  # a deal's costs are checked on the way in, for every skill
+            profiles.load_market(state="FL").with_deal({"transfer_tax_rate": 0.7})
+
     def test_millage_row_never_guesses(self):
         row, why = f.millage_row(FL, "Seminole", "01")
         self.assertEqual((row["total"], why), (13.6790, None))
@@ -143,16 +153,23 @@ class SellerSide(unittest.TestCase):
         self.assertNotIn("Owner's Title Insurance", labels)
 
     def test_other_state_uses_labeled_estimates(self):
-        n = f.seller_net(500000, profiles.load_market(state="TX"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
+        n = f.seller_net(500000, profiles.load_market(state="GA"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
         self.assertEqual(n["missing"], [])
         labels = {x["key"]: x["label"] for x in n["lines"]}
         self.assertEqual(labels["transfer_tax"], "Transfer Tax (Estimate, 0.40%)")
         self.assertEqual(labels["owner_title"], "Owner's Title Insurance (Estimate)")
         self.assertEqual(labels["title_fees"], "Title Company Fees (Estimate)")
         self.assertEqual({a["key"] for a in n["assumed"] if a["estimate"]}, {"transfer_tax", "owner_title", "title_fees"})
-        deal = f.seller_net(500000, profiles.load_market(state="TX").with_deal({"transfer_tax_rate": 0}),
+        deal = f.seller_net(500000, profiles.load_market(state="GA").with_deal({"transfer_tax_rate": 0.001}),
                             listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
-        self.assertNotIn("transfer_tax", [x["key"] for x in deal["lines"]])  # Texas has none: the looked-up 0 wins
+        self.assertEqual({x["key"]: x["label"] for x in deal["lines"]}["transfer_tax"], "Transfer Tax (0.10%)")  # looked up
+
+    def test_no_state_transfer_tax(self):
+        # Texas has no state transfer tax: best practice is none, never the national 0.4% estimate.
+        n = f.seller_net(500000, profiles.load_market(state="TX"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
+        self.assertNotIn("transfer_tax", [x["key"] for x in n["lines"]])
+        self.assertNotIn("transfer_tax", [a["key"] for a in n["assumed"]])
+        self.assertEqual(n["missing"], [])
 
 
 

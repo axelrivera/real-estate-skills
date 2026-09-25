@@ -16,7 +16,7 @@
 
 | | |
 |---|---|
-| {{each kpi: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}) |
+| {{each summary.kpis: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}, when there is one) |
 | Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}}; buyer can walk away until {{summary.certainty.walk_away_until}}; biggest threat: {{summary.certainty.threat}} |
 
 **Top Risks:** {{each summary.risks: risk.issue}}

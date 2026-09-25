@@ -577,7 +577,7 @@ def analyze(deal, side=None):
         agent_notes.append("No closing date given: dates counted back from closing are left out")
     elif not current_contract.get("closing_time"):
         agent_notes.append(f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
-    agent_notes += [n for n in market.notes if "MLS" not in n  # MLS assumptions don't matter for a timeline
+    agent_notes += [n for n in market.notes if "MLS" not in n and "transfer tax" not in n  # costs don't matter here
                     and not (deal.get("rules") and n.startswith("Nothing is built in for"))]  # the contract's rules are given
 
     return {

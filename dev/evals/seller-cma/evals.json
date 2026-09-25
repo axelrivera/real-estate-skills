@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "Can you do a listing CMA and presentation for my seller in Austin? Notes and the comps I pulled are attached.",
-      "expected_output": "Uses Texas, not Florida: no documentary stamp tax, Florida title rates, Florida title fees or 2.5% + 2.5% defaults; asks for the commission terms, title/closing costs (or a market profile) and the tax rate, or builds a report clearly marked Preliminary with the missing costs named; since there's no MLS export, works from the typed comps (no scatter slide) and says so; payoff turns the net into cash at closing",
+      "expected_output": "Uses Texas, not Florida: no documentary stamp tax, Florida title rates or Florida title fees; no transfer tax line (Texas has none, built in, with a note to confirm local taxes); owner's title and title company fees as national estimates labeled Estimate; commission assumed at 5% total and labeled Assumed; not marked Preliminary and doesn't block on questions about costs; since there's no MLS export, works from the typed comps (no scatter slide) and says so; payoff turns the net into cash at closing; lists the estimates the agent can replace",
       "files": ["dev/evals/seller-cma/files/seller-notes-austin.md"]
     },
     {

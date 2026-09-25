@@ -9,9 +9,14 @@ as_of: 2026
 # what the agent can send to replace it. A section's key is filled only when no other layer has it, so an estimate
 # never mixes into a state's own fee list.
 
+# States with no state deed transfer tax (Arizona charges only a flat $2 affidavit fee). Best-practice assumption:
+# none is charged, never the estimate below. A few cities and counties add their own (Washington County, Oregon),
+# so reports say to verify. Checked 2026-09-24 against state revenue sources and the NCSL transfer-tax table.
+no_state_transfer_tax: [AK, AZ, ID, IN, KS, LA, MS, MO, MT, ND, NM, OR, TX, UT, WY]
+
 closing_costs:
-  deed_transfer_tax_rate: 0.004       # a middle value across states that tax deeds (0 in Texas, 0.1% to over 1% elsewhere);
-                                      # the skill looks up the state's rate from an official source before using this
+  deed_transfer_tax_rate: 0.004       # a middle value across the states that tax deeds (0.1% to over 1%); never used
+                                      # in a no_state_transfer_tax state; the skill looks up the state's rate first
   deed_transfer_tax_payer: seller
   deed_transfer_tax_label: Transfer Tax
   owner_title:

@@ -146,7 +146,8 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all"):
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
     `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
-    `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once.
+    `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once;
+    `ctx["data_file"]` is the data file's path (relative paths inside it can resolve beside it).
     `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
     `default` is the --format used when none is given ("all", or one format a skill builds unless asked for more).
     Before anything is built, the data's text is checked (prose.check: no em dashes, no fair-housing
@@ -177,7 +178,7 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all"):
         for phrase, reason in prose.check(data):  # logged so the agent can see what was let through
             print(f'Fair-housing allow list: "{phrase}" ({reason})', file=sys.stderr)
         ctx = {"agent": profiles.load_agent(args.profile), "mls": args.mls, "sample": args.sample,
-               "formats": todo,
+               "formats": todo, "data_file": args.data,
                **{k: v for k, v in vars(args).items() if k not in base}}
         check_agent(ctx["agent"])
     except (OSError, ValueError, *errors) as e:
