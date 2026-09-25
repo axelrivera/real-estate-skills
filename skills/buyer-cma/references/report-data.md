@@ -63,7 +63,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 ## scatter (standard)
 
-`heading` (Title Case), `intro` (may use `{trend_at_subject}`), `renovated` (export addresses of sold, renovated private-pool homes), `subject_label`, `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), `after_paragraph` (may use `{trend_at_subject}` and `{r2_share}`, which reads like "most" or "only about a third"), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (defaults 0.6/1.4/1.6).
+`heading` (Title Case), `intro` (may use `{trend_at_subject}`), `subject_label`, `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`), `after_paragraph` (may use `{trend_at_subject}` and `{r2_share}`, which reads like "most" or "only about a third"), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (defaults 0.6/1.4/1.6). The script adds a caption under the chart that explains the dashed line and says how far above or below it the home sits; don't repeat that in `intro` or `after_paragraph`.
 
 ## competition
 

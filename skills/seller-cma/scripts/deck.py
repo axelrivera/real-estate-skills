@@ -104,9 +104,11 @@ def _month(iso):
 
 
 def scatter_data(homes, R, C, L):
-    """Points by category (same rules as the PDF chart), the size-only trend line, and the subject at the list price."""
+    """Points by category (same rules as the PDF chart), the size-only trend line, and the subject at the list price.
+    `series` holds only the non-empty ones, in drawing order, so the legend never lists something the chart doesn't show."""
     s, sc = R["subject"], R.get("scatter") or {}
-    homes_by_kind, _, others = cma.scatter_points(homes, sc, s["sqft"], s.get("mls_address", s["address"]))  # CMA-24
+    homes_by_kind, _, others = cma.scatter_points(homes, sc, s["sqft"], s.get("mls_address", s["address"]),
+                                                  [cd["address"] for cd in R["comps"]["cards"]])  # CMA-24
     pts = {kind: [[h["living_area"], h["close_price"] if kind != "active" else h["current_price"]] for h in hs]
            for kind, hs in homes_by_kind.items()}
     fit = mls.trend(others, s["sqft"], sc.get("fit_size_ratio", 1.6))
@@ -115,10 +117,20 @@ def scatter_data(homes, R, C, L):
     if fit:
         x0, x1 = min(xs), max(xs)
         trend = [[x0 + (x1 - x0) * i / 27, fit["intercept"] + fit["slope"] * (x0 + (x1 - x0) * i / 27)] for i in range(28)]
-    return {"points": pts, "trend": trend, "subject": [s["sqft"], R["recommendation"]["list_price"]],
-            "trend_note": L("deck_trend_note", trend=k(fit["at_subject"])) if fit else "",
-            "series": [L(f"deck_series_{key}") for key in ("ren", "pool", "nop", "active", "trend", "subject")],
+    subject = [[s["sqft"], R["recommendation"]["list_price"]]]
+    series = [{"key": key, "name": L(f"deck_series_{key}"), "points": p}
+              for key, p in (*pts.items(), ("trend", trend), ("subject", subject)) if p]
+    return {"points": pts, "series": series,
+            "trend_note": trend_note(fit, R["recommendation"]["list_price"], L),
             "axis_x": L("axis_x"), "axis_y": L("axis_y")}
+
+
+def trend_note(fit, price, L):
+    """The slide's line under the takeaway: what size alone predicts and where the list price sits against it."""
+    if not fit:
+        return ""
+    side, gap = cma.trend_position(price, fit["at_subject"])
+    return L("deck_trend_" + side, trend=k(fit["at_subject"]), gap=k(gap))
 
 
 def deck_data(R, C, homes, agent, L, footer):
@@ -251,7 +263,8 @@ def build_pptx(D, path):
             raise DeckError(f"The deck needs the Node module {missing.group(1)}, which isn't available here "
                             "(pptxgenjs, react, react-dom, react-icons and sharp). The PDF is unaffected.")
         raise DeckError("The deck builder failed: " + next((l for l in lines if "Error" in l), lines[-1]).strip())
-    style_scatter(path, D["colors"])
+    if D.get("scatter"):
+        style_scatter(path, D["colors"], [ser["key"] for ser in D["scatter"]["series"]])
     return path
 
 
@@ -263,25 +276,24 @@ def _marker(symbol, size, fill, line, line_w=9525):
             f'<a:ln w="{line_w}"><a:solidFill><a:srgbClr val="{line}"/></a:solidFill></a:ln></c:spPr></c:marker>')
 
 
-def _restyle(ser, colors):
-    """One scatter series, by its position: 0 renovated, 1 other pool, 2 no pool, 3 for sale, 4 trend, 5 subject."""
+def _restyle(ser, colors, keys):
+    """One scatter series, by its position in `keys` (comp, sold, active, trend, subject; empty ones left out)."""
     idx = re.search(r'<c:idx val="(\d+)"/>', ser)
     i = int(idx.group(1)) if idx else -1
+    kind = keys[i] if 0 <= i < len(keys) else None
     mk = re.compile(r"<c:marker>.*?</c:marker>", re.S)
-    if i == 0:
+    if kind == "comp":
         ser = mk.sub(_marker("circle", 8, colors["brand"], colors["brand"]), ser, 1)
-    elif i == 1:
-        ser = mk.sub(_marker("triangle", 8, colors["brand_accent"], colors["brand_accent"]), ser, 1)
-    elif i == 2:
+    elif kind == "sold":
         ser = mk.sub(_marker("square", 6, colors["grey"], colors["grey"]), ser, 1)
-    elif i == 3:
+    elif kind == "active":
         ser = mk.sub(_marker("circle", 7, colors["bg"], colors["grey"], 15875), ser, 1)
-    elif i == 4:
+    elif kind == "trend":
         ser = mk.sub('<c:marker><c:symbol val="none"/></c:marker>', ser, 1)
         ser = re.sub(r"(<c:spPr>.*?)<a:ln[^>]*>\s*<a:noFill/>\s*</a:ln>",
                      lambda m: m.group(1) + f'<a:ln w="15875"><a:solidFill><a:srgbClr val="{colors["muted"]}"/></a:solidFill>'
                                             '<a:prstDash val="dash"/></a:ln>', ser, 1, flags=re.S)
-    elif i == 5:
+    elif kind == "subject":
         ser = mk.sub(_marker("diamond", 14, colors["party_both"], colors["bg"], 12700), ser, 1)
     return ser
 
@@ -296,7 +308,7 @@ def _x_axis(m):
     return ax
 
 
-def style_scatter(path, colors):
+def style_scatter(path, colors, keys):
     """Per-series markers (shape carries meaning, not only color), a dashed trend, sq ft axis. Chart stays editable."""
     tmp = path + ".tmp"
     with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
@@ -304,7 +316,7 @@ def style_scatter(path, colors):
             data = zin.read(item.filename)
             if item.filename.startswith("ppt/charts/chart") and item.filename.endswith(".xml") and b"<c:scatterChart>" in data:
                 xml = data.decode("utf-8")
-                xml = re.sub(r"<c:ser>.*?</c:ser>", lambda m: _restyle(m.group(0), colors), xml, flags=re.S)
+                xml = re.sub(r"<c:ser>.*?</c:ser>", lambda m: _restyle(m.group(0), colors, keys), xml, flags=re.S)
                 xml = re.sub(r"<c:valAx>.*?</c:valAx>", _x_axis, xml, flags=re.S)
                 data = xml.encode("utf-8")
             zout.writestr(item, data)

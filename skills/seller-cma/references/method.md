@@ -60,4 +60,4 @@ Base each option's expected sale on the adjusted comps first (they already refle
 
 ## The Scatterplot
 
-List in `scatter.renovated` the sold private-pool homes that are genuinely renovated (be conservative: "well maintained" doesn't count). Pick 1–3 callouts, usually the top comp and the strongest active competitor. The subject is plotted at the recommended list price; the script draws the rest, the size-only trend line, and lists homes left off the chart.
+Pick 1–3 callouts, usually the top comp and the strongest active competitor. The subject is plotted at the recommended list price. The script marks the comp cards' sales as Comparable Sales (matched to the export by street address, so write each card's address as the export has it), draws the other sales and the listings, the size-only trend line, and notes how many homes were left off the chart for size.

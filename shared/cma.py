@@ -129,14 +129,19 @@ def page_one_values(C):
 
 # --- scatterplot ---------------------------------------------------------------
 
-def scatter_points(homes, sc, subject_sqft, subject_address):
-    """The chart's points, shared by the PDF and the deck so they always match (CMA-24): sold homes as renovated pool
-    (`ren`), other pool (`pool`) and no pool (`nop`), and every active listing in one `active` series.
+def _street(address):
+    """Match key for an address: the part before the first comma, upper case, spaces collapsed."""
+    return " ".join(str(address).split(",")[0].upper().split())
+
+
+def scatter_points(homes, sc, subject_sqft, subject_address, comps=()):
+    """The chart's points, shared by the PDF and the deck so they always match (CMA-24): sold homes used as comps
+    (`comp`, matched by the comp cards' addresses), other sales (`sold`), and every active listing (`active`).
     Returns ({kind: [homes]}, excluded [(address, sqft, 'sale'|'listing')], others)."""
-    renovated = {" ".join(a.upper().split()) for a in sc.get("renovated", [])}
+    comp_keys = {_street(a) for a in comps}
     lo, hi = subject_sqft * sc.get("min_size_ratio", 0.6), subject_sqft * sc.get("max_size_ratio", 1.4)
     others = [h for h in homes if not mls.same_address(h["address"], subject_address)]
-    pts, excluded = {"ren": [], "pool": [], "nop": [], "active": []}, []
+    pts, excluded = {"comp": [], "sold": [], "active": []}, []
     for h in others:
         sold = h["status"] == "SOLD" and h.get("close_price")
         active = h["status"] == "ACTIVE" and h.get("current_price")
@@ -146,23 +151,23 @@ def scatter_points(homes, sc, subject_sqft, subject_address):
             excluded.append((h["address"], int(h["living_area"]), "sale" if sold else "listing"))
         elif active:
             pts["active"].append(h)
-        elif h["private_pool"]:
-            pts["ren" if " ".join(h["address"].upper().split()) in renovated else "pool"].append(h)
         else:
-            pts["nop"].append(h)
+            pts["comp" if _street(h["address"]) in comp_keys else "sold"].append(h)
     excluded.sort(key=lambda e: e[2] != "sale")  # sales first, then listings
     return pts, excluded, others
 
 
-def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
+def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=()):
     """Price vs. size for sold and active homes near the subject's size, with the supported range band.
 
-    `sc`: {renovated: [addresses], callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
+    `comps`: the comp cards' addresses, drawn as comparable sales.
+    `sc`: {callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
     Label sides: left, right, above or below.
-    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind)], n_sold, n_active.
+    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind)], n_sold, n_active and
+    counts {kind: n} for scatter_legend.
     """
-    pts, excluded, others = scatter_points(homes, sc, subject_sqft, subject_address)
-    sold, act = pts["ren"] + pts["pool"] + pts["nop"], pts["active"]
+    pts, excluded, others = scatter_points(homes, sc, subject_sqft, subject_address, comps)
+    sold, act = pts["comp"] + pts["sold"], pts["active"]
     kind = {id(h): k for k, hs in pts.items() for h in hs}
     fit = mls.trend(others, subject_sqft, sc.get("fit_size_ratio", 1.6))
 
@@ -184,10 +189,8 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
 
     def shape(kind, cx, cy, hollow, tip):
         cls, r = f"m-{kind}" + (" hol" if hollow else ""), 6
-        if kind in ("ren", "active"):
+        if kind in ("comp", "active"):
             g = f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r + 0.5}" class="{cls}"/>'
-        elif kind == "pool":
-            g = f'<path d="M{cx:.1f},{cy - r - 1:.1f} L{cx + r + .5:.1f},{cy + r - 1:.1f} L{cx - r - .5:.1f},{cy + r - 1:.1f} Z" class="{cls}"/>'
         else:
             g = f'<rect x="{cx - r + .5:.1f}" y="{cy - r + .5:.1f}" width="{2 * r - 1}" height="{2 * r - 1}" class="{cls}"/>'
         return f"<g><title>{esc(tip)}</title>{g}</g>"
@@ -230,7 +233,8 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L):
         o.append(_label(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10))
     o.append("</svg>")
     info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
-            "excluded": excluded, "n_sold": len(sold), "n_active": len(act)}
+            "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
+            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0}}
     return "\n".join(o), info
 
 
@@ -244,24 +248,54 @@ def _label(px, py, side, text, cls, gap):
             f'class="{cls}">{esc(text)}</text>')
 
 
-def scatter_legend(L, subject):
-    return ('<div class="legend">'
-            f'<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" class="m-ren"/></svg>{L("lg_ren")}</span>'
-            f'<span><svg viewBox="0 0 14 14"><path d="M7,1.5 L12.5,12 L1.5,12 Z" class="m-pool"/></svg>{L("lg_pool")}</span>'
-            f'<span><svg viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" class="m-nop"/></svg>{L("lg_nop")}</span>'
-            f'<span><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" class="m-active hol"/></svg>{L("lg_active")}</span>'
-            f'<span><svg viewBox="0 0 14 14"><line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>{L("lg_trend")}</span>'
-            f'<span><svg viewBox="0 0 14 14"><path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--subject)"/></svg>{L("lg_subject", subject=esc(subject))}</span>'
-            "</div>")
+def scatter_legend(L, subject, counts):
+    """Only the entries with something on the chart: `counts` is scatter()'s info["counts"]."""
+    entries = [
+        ("comp", '<circle cx="7" cy="7" r="5.5" class="m-comp"/>'),
+        ("sold", '<rect x="2" y="2" width="10" height="10" class="m-sold"/>'),
+        ("active", '<circle cx="7" cy="7" r="5.5" class="m-active hol"/>'),
+        ("trend", '<line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>'),
+    ]
+    spans = [f'<span><svg viewBox="0 0 14 14">{mark}</svg>{L("lg_" + kind)}</span>' for kind, mark in entries if counts.get(kind)]
+    spans.append(f'<span><svg viewBox="0 0 14 14"><path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--subject)"/></svg>'
+                 f'{L("lg_subject", subject=esc(subject))}</span>')
+    return '<div class="legend">' + "".join(spans) + "</div>"
+
+
+def trend_position(price, at_subject):
+    """Where the subject's price sits against the size-only line: ('above' | 'below' | 'at', gap in dollars).
+    Within 1% of the price (at least $5,000) counts as at the line."""
+    gap = price - at_subject
+    if abs(gap) < max(5000, price * 0.01):
+        return "at", 0
+    return ("above" if gap > 0 else "below"), abs(gap)
+
+
+_TREND_ICON_Y = {"above": 10.5, "below": 22.5, "at": 16.5}
+
+
+def trend_caption(info, price, L):
+    """The chart's takeaway box: a headline with where the subject sits against the size-only line (and by how much),
+    what the line means, and an icon that draws the same thing. The one chart element allowed a tint (see cma.css)."""
+    if not info.get("trend_at_subject"):
+        return ""
+    side, gap = trend_position(price, info["trend_at_subject"])
+    values = {"price": finance.money(price), "gap": finance.money(gap, 1000)}
+    cy = _TREND_ICON_Y[side]
+    icon = ('<svg class="cr-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" class="cr-disc"/>'
+            '<line x1="6" y1="21.5" x2="26" y2="11.5" class="cr-line"/>'
+            f'<path d="M16,{cy - 4} L20,{cy} L16,{cy + 4} L12,{cy} Z" class="cr-subj"/></svg>')
+    body = " ".join(t for t in (L("trend_caption"), L("trend_" + side, **values)) if t)
+    return (f'<div class="chart-read">{icon}<div><p class="cr-head">{L("trend_head_" + side, **values)}</p>'
+            f'<p class="cr-body">{body}</p></div></div>')
 
 
 def excluded_note(excluded, L):
+    """One line with the count only: which homes were left off doesn't matter to the reader, just that some were."""
     if not excluded:
         return ""
-    parts = [L("excluded_item", sqft=f"{sq:,}", kind=L("kind_" + kind)) for _, sq, kind in excluded]
-    count = L("excluded_one") if len(excluded) == 1 else L("excluded_many", n=len(excluded))
-    joined = parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + f' {L("and")} ' + parts[-1]
-    return f'<p class="note">{L("excluded", count=count, list=joined)}</p>'
+    text = L("excluded_one") if len(excluded) == 1 else L("excluded_many", n=len(excluded))
+    return f'<p class="note">{text}</p>'
 
 
 # --- dot plot (page 1) ---------------------------------------------------------
@@ -336,7 +370,7 @@ def group_blocks(elements):
 
     def is_note(i):
         (tag, cls), _ = info[i]
-        return tag == "p" and "note" in cls
+        return (tag == "p" and "note" in cls) or (tag == "div" and "chart-read" in cls)
 
     out, i = [], 0
     while i < len(info):

@@ -11,7 +11,7 @@ The deck is the conversation piece for the appointment; the PDF is the leave-beh
 | 3 | How We Priced It (5 steps) | sales in the export, comps, adjusted min/max/median, list price | optional `sold_line` |
 | 4 | What Buyers Will Pay For | — | `value_drivers`, `document_items` |
 | 5 | What Comparable Homes Sold For (dot plot, range band, price line) | comp cards' adjusted values | `comp_lines`, `comps_takeaway` |
-| 6 | Where Your Home Fits in the Neighborhood (native scatter; left out when there's no MLS export) | export + `scatter.renovated` | `scatter_takeaway` |
+| 6 | Where Your Home Fits in the Neighborhood (native scatter; left out when there's no MLS export) | export + the comp cards | `scatter_takeaway` |
 | 7 | How the Market Has Changed (or `market_title`) | — | `market_title`, `market_periods`, `market_period_labels`, `market_stats`, `market_takeaway` |
 | 8 | Your Competition (1–3 cards; fewer when there are fewer real competitors) | prices from the report's competition table | `competition`, `competition_takeaway` |
 | 9 | Three Ways to Price It | strategies | `strategy_takeaway` |
