@@ -34,7 +34,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 - **`develop`:** active development. Commit and push here.
 - **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
 
-To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
+To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes. Then run `make package` on `main` and publish the GitHub release: `gh release create v<version> dist/real-estate-skills-<version>.zip dist/real-estate-<version>.plugin --target main --title <version> --generate-notes`.
 
 ## Versioning
 

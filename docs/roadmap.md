@@ -59,3 +59,9 @@ A review of an active listing's showings, days on market and competing listings,
 | | More MLS layers | Only Stellar is built in. Miami (MIAMI REALTORS) and BeachesMLS cover the southeast Florida counties Stellar doesn't. |
 | | Offer outcome log | Ported from the prototype: record how offers turned out to calibrate scoring. |
 | | Trigger-description optimization | skill-creator's `run_loop`, run in Claude Code. |
+
+## Dev Tooling
+
+| ID | Item | Notes |
+|---|---|---|
+| | Release workflow | A GitHub Action (`.github/workflows/release.yml`) that builds `make package` on a clean runner and creates the GitHub release with the `.plugin` and the release zip. Trigger on a `v*` tag push or on a `plugin.json` version change in `main`; fail if the tag and version differ. Needs `permissions: contents: write` and a `make setup` that works on Ubuntu (Node from `.nvmrc`); if that's heavy, call `dev/package.py plugin` and leave the checks to the pull request. Until then, releases are made by hand with `gh release create` ([development.md](development.md)). |
