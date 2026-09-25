@@ -29,6 +29,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 | `city`, `state`, `county` | `state` and `county` pick the market's tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County · MLS #". Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
 | `list_price`, `sqft` | *numbers* |
+| `latitude`, `longitude` | Optional *numbers*: only when the export has no Distance column and no row for the home (distances are measured from its own row otherwise) |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
 | `subdivision` | As in the export (improves the handoff's comp ranking) |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. A condo follows `condo.md` (comps, adjustments, association questions) |

@@ -36,10 +36,10 @@ Local costs come from the home's location: read `references/local-costs.md`. Flo
 ## 2. Read the Market
 
 ```
-python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD]
+python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" [--type <property_type>] [--lat <lat> --lon <lon>] --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD]
 ```
 
-Pick a split date so "recent" is roughly the last 2–3 months. For an MLS that isn't built in, map the export's headers to the field names in `references/report-data.md` and pass them with `--columns` (and as `export_columns` in report.json). Search the web for the latest Freddie Mac 30-year rate, the county's current millage when there's none built in for the home's taxing district, and outside Florida the state's transfer tax. Cite them in your reply.
+Pick a split date so "recent" is roughly the last 2–3 months. When the export has no Distance column (a zip or subdivision search), distances come from Latitude and Longitude: pass the home's `--lat`/`--lon` (and `latitude`/`longitude` in report.json) when it has no row of its own in the export. For an MLS that isn't built in, map the export's headers to the field names in `references/report-data.md` and pass them with `--columns` (and as `export_columns` in report.json). Search the web for the latest Freddie Mac 30-year rate, the county's current millage when there's none built in for the home's taxing district, and outside Florida the state's transfer tax. Cite them in your reply.
 
 Read `references/method.md` for choosing and adjusting comps, setting the range and the recommended price, and the three pricing strategies. For a condo, also read `references/condo.md` (comps, adjustments, association and lending questions).
 

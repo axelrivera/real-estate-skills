@@ -32,13 +32,15 @@ def main(argv=None):
     try:
         market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
         homes = mls.load(a.export, market, mls.columns_arg(a.columns))
+        mls.fill_distances(homes, a.address)
         row = next((h for h in homes if mls.same_address(h["address"], a.address)), None)
         subject = {"address": a.address}
         if row:
-            subject.update(living_area=row.get("living_area"), private_pool=row["private_pool"], subdivision=row.get("subdivision"))
+            subject.update(mls.subject_facts(homes, a.address), living_area=row.get("living_area"),
+                           private_pool=row["private_pool"], subdivision=row.get("subdivision"))
         out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit)
         out["subject_row"] = mls._summary(row) if row else None
-        out["market_notes"] = market.notes
+        out["market_notes"] = market.notes + list(homes.notes)
         if not row:
             out["market_notes"].append("The subject isn't in the export: comp candidates are unranked. Check the address spelling.")
         out["ok"] = True

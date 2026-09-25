@@ -32,6 +32,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 | `city`, `state`, `county` | `state` and `county` pick the market's closing costs, tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet. Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
 | `sqft` | *number*, heated area from the seller or public record |
+| `latitude`, `longitude` | Optional *numbers*: the home's location, for distances when the export has no Distance column and no row for the home |
 | `beds`, `baths`, `year_built`, `pool`, `hoa`, `subdivision` | For the handoff, the comp ranking and the estoppel line (`pool`, `hoa` true/false) |
 | `facts` | Ten `[label, value]`, labels in Title Case: Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone, Current Taxes, Recent Updates |
 | `summary` | 2–3 sentences: the home and its updates "as described by you", and what the report does |

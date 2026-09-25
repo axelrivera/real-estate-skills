@@ -302,8 +302,10 @@ def compute(R, market, homes):
 
     stats = {}
     if others:
-        st = mls.market_stats(homes, {"address": address, "living_area": s["sqft"], "private_pool": bool(s.get("pool")),
-                                      "subdivision": s.get("subdivision")}, split_date=R.get("split_date"),
+        st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
+                                      "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
+                                      **({"property_type": s["property_type"]} if s.get("property_type") else {})},
+                              split_date=R.get("split_date"),
                               exclude_address=address, as_of=R.get("as_of"))
         recent = st["sold_recent"]
         stats = {k: v for k, v in {
@@ -387,6 +389,8 @@ def load_inputs(R, mls_name=None):
     s = R.get("subject") or {}
     market = profiles.load_market(state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
     homes = mls.load(R["export"], market, R.get("export_columns")) if R.get("export") else []
+    mls.fill_distances(homes, s.get("mls_address", s.get("address")),
+                       (s["latitude"], s["longitude"]) if s.get("latitude") and s.get("longitude") else None)
     return market, homes
 
 
