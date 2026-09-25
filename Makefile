@@ -85,6 +85,10 @@ samples:
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
 			--profile dev/samples/profile.md || exit 1; \
 	done
+	@echo "seller-offer-review (single offer)"; \
+		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/seller-offer-review" \
+		$(PY) skills/seller-offer-review/scripts/render.py dev/samples/seller-offer-review-single.json --format all \
+		--out samples/seller-offer-review --profile dev/samples/profile.md
 	@$(PY) dev/samples_readme.py
 
 package: check-sync test lint-skills py311 style-check
