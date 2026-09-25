@@ -4,8 +4,21 @@ Claude skills for real estate agents, in one plugin: a one-file agent profile, b
 
 ## Install
 
+### Desktop App, From the Release Zip
+
+1. Go to the [latest release](https://github.com/axelrivera/real-estate-skills/releases/latest) and, under **Assets**, download `real-estate-skills-<version>.zip`.
+2. Unzip it. The folder holds the plugin (`real-estate-<version>.plugin`), a setup guide (`README.md`) and the manual (`Real-Estate-Skills-Manual.pdf`).
+3. Open the Claude desktop app and go to the plugin settings.
+4. Choose **Upload local plugin**.
+5. Drag `real-estate-<version>.plugin` onto the upload area (or click **browse** and pick it), then click **Upload**.
+
+To update, download the newer zip and upload its `.plugin` the same way. If the app keeps the old version, remove the plugin first and upload the new one. Your profile stays as it is.
+
+The [PDF manual](dev/package/Real-Estate-Skills-Manual.pdf) walks through setup, the MLS export and each skill.
+
+### Other Routes
+
 - **Cowork or the desktop app, from GitHub:** add the marketplace `axelrivera/real-estate-skills` (https://github.com/axelrivera/real-estate-skills), then install the `real-estate` plugin. In Claude Code terms: `/plugin marketplace add axelrivera/real-estate-skills`, then `/plugin install real-estate@real-estate-skills`.
-- **Desktop app, from a file:** upload `real-estate-<version>.plugin` with **Upload local plugin** (build it with `make package`; it lands in `dist/`, along with `real-estate-skills-<version>.zip`, which bundles the `.plugin` with install instructions for sharing).
 - **claude.ai, single skills:** run `make package-skills` and upload each zip in `dist/skills/` as a skill (not `dist/dev/`, which holds a diagnostic).
 
 Start with `agent-profile` ("set me up"): a two-minute interview that saves `profile.md` and ready-to-paste Project instructions, with the steps to set up a claude.ai or Cowork Project. In Cowork, select a working folder first: the profile is saved in `.claude/real-estate/` there, so every session finds it.
