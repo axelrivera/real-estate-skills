@@ -10,7 +10,6 @@ computed by compute.py, never typed, so the PDF and the deck always agree. Print
 then layout notes and checks on stderr.
 """
 import html
-import json
 import os
 import sys
 from datetime import date
@@ -18,7 +17,7 @@ from datetime import date
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compute  # noqa: E402
 import deck  # noqa: E402
-from _shared import cma, design, finance, handoff, render  # noqa: E402
+from _shared import cma, design, finance, render  # noqa: E402
 
 ASSETS = compute.ASSETS
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
@@ -93,7 +92,7 @@ def pricing_section(R, C, L):
     cash = net["cash_at_closing"]
     b = [f'<h2>{L("h_pricing")}</h2>', f'<p>{p["intro"]}</p>',
          table([L("th_strategy"), L("th_time"), L("th_expected"), L("th_cash" if cash else "th_net"), L("th_expect")],
-               [[f'<strong>{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_display"], x["note"]] for x in strats],
+               [[f'<strong style="white-space:nowrap">{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_display"], x["note"]] for x in strats],
                num_cols=(2, 3), row_classes={C["recommended_index"]: "total"}),
          f'<p class="note">{L("pricing_note_cash" if cash else "pricing_note")} {p.get("note", "")}</p>',
          f'<h3>{L("h_net")}</h3>', f'<p>{p.get("net_intro") or L("net_intro")}</p>']
@@ -222,12 +221,9 @@ def _build(R, fmt, out_dir, ctx):
                                   "compensation (0 is fine) and put them in costs. Without them every net overstates the seller's proceeds.")
     agent, sample = ctx["agent"], ctx.get("sample") or R.get("sample")
     L = cma.Labels(ASSETS, R.get("labels"))
-    first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: write the handoff and warn once
+    first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: warn once
     written = []
     if first:
-        hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"], "seller"))
-        with open(hpath, "w", encoding="utf-8") as f:
-            json.dump(C["handoff"], f, indent=2)
         for w in C["warnings"]:
             print(f"Check: {w}", file=sys.stderr)
     if fmt == "pdf":
@@ -247,11 +243,11 @@ def _build(R, fmt, out_dir, ctx):
         D = deck.deck_data(R, C, homes, agent, L, footer_label(R, C, agent, L, "", sample))
         deck.build_pptx(D, path)  # a DeckError keeps the PDF and names the problem (render.main)
         written.append(path)
-    return written + ([hpath] if first else [])
+    return written
 
 
 def main(argv=None):
-    return render.main(build, formats=("pdf", "pptx"), argv=argv,
+    return render.main(build, formats=("pdf", "pptx"), argv=argv, default="pdf",  # the deck only when asked for
                        errors=(compute.ReportError, deck.DeckError, compute.mls.ExportError))
 
 

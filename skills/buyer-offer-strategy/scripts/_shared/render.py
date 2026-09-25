@@ -141,13 +141,14 @@ def write_text(text, path):
     return path
 
 
-def main(build, formats, argv=None, extra_args=None, errors=()):
+def main(build, formats, argv=None, extra_args=None, errors=(), default="all"):
     """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--profile] [--mls] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
     `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
     `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once.
     `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
+    `default` is the --format used when none is given ("all", or one format a skill builds unless asked for more).
     Before anything is built, the data's text is checked (prose.check: no em dashes, no fair-housing
     red flags); a problem stops the run with the fields to rewrite. Allow-list entries it used go to stderr.
     With several formats, one that fails doesn't stop the others: the files that were made are printed,
@@ -158,7 +159,7 @@ def main(build, formats, argv=None, extra_args=None, errors=()):
 
     ap = argparse.ArgumentParser(description="Render this skill's files from its data file.")
     ap.add_argument("data", help="the skill's data JSON")
-    ap.add_argument("--format", default="all", choices=[*formats, "all"])
+    ap.add_argument("--format", default=default, choices=[*formats, "all"])
     ap.add_argument("--out", help="output folder (default: sandbox outputs, or OUTPUT_DIR locally)")
     ap.add_argument("--profile", help="the agent's profile.md (name, brokerage, contact, brand colors, disclaimers)")
     ap.add_argument("--mls", help="MLS name (Stellar is built in; assumed from the county when it's the only one)")

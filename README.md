@@ -16,7 +16,7 @@ Start with `agent-profile` ("set me up"): a two-minute interview that saves one 
 |---|---|
 | `agent-profile` | One short interview, one file: the agent's name, brokerage, contact details, voice and brand colors. Reports work out local costs from the listing |
 | `buyer-cma` | Buyer-side CMA for a listing, with a suggested offer |
-| `seller-cma` | Listing CMA with pricing strategies, nets and a listing presentation |
+| `seller-cma` | Listing CMA with pricing strategies and nets, plus a listing presentation on request |
 | `buyer-offer-strategy` | The strongest offer inside the buyer's limits, plus an offer package |
 | `seller-offer-review` | Nets, certainty and counters for offers on a listing |
 | `contract-timeline` | Every deadline in an executed contract, plus a closing calendar |
