@@ -80,6 +80,8 @@ Save files to the first of:
 
 Never write into the skill's own folder, which is the working directory in claude.ai. This rule lives in `shared/` and is not repeated per skill.
 
+The outputs folder holds deliverables only (PDF, PowerPoint, ICS, the profile). Data files and handoffs are working files in a temporary folder (`mktemp -d`), never presented or offered for download (`shared/references/saved-files.md`, Working Files). render.py returns and prints only the deliverables.
+
 ## Profiles
 
 One markdown file, `profile.md`, used as context by every other skill. It says who the agent is: name, brokerage, team, license, contact, voice, disclaimers and [brand colors](#brand-colors). Nothing about markets or costs: those come from the property (see [Local costs](#local-costs)).
@@ -201,7 +203,7 @@ Convention over configuration: reports never ask about local costs up front. The
 
 Users can turn any skill off. Skills share **files**, not invocations:
 
-1. A consumer looks for its input (profile, CMA handoff) in the chat, then Project files, then the saved folder (profiles) or the outputs and working folder (handoffs), per [Saved files](#saved-files).
+1. A consumer looks for its input (profile, CMA handoff) in the chat, then Project files, then the saved folder (profiles) or this conversation's temporary folder (handoffs), per [Saved files](#saved-files).
 2. If it's missing, the consumer collects what *its own task* needs (it carries the schema and defaults via `_shared/`), then offers to save the result as a file.
 3. It may mention the producing skill in one line ("Tip: `agent-profile` saves this so you're not asked again"). It never says a skill must be enabled.
 
@@ -223,15 +225,15 @@ A skill whose output feeds another has a small, **versioned handoff schema**, se
 
 `cma-handoff v1` carries: as-of date, subject facts, value range, recommended price, adjusted comps (compact), market conditions, and the market used (`market_profile`: state and MLS).
 
-Both modes carry the handoff:
-- **File mode:** `<address>.buyer.cma.json` or `<address>.seller.cma.json` saved next to the PDF (the side keeps two CMAs of one address apart).
-- **Markdown mode:** a fenced `cma-handoff v1` block at the end of the reply, so it survives copy-paste, project files and new chats.
+Both modes save the handoff; neither shows it to the agent (no JSON in chat or downloads):
+- **File mode:** compute.py saves `<address>.buyer.cma.json` or `<address>.seller.cma.json` next to report.json in the conversation's temporary folder (the side keeps two CMAs of one address apart). It's a working file, never presented; in a new conversation the offer skill reads the CMA PDF and confirms the range with the agent.
+- **Markdown mode:** the same file from compute.py. The chat summary never carries a JSON block: the agents aren't technical.
 
 Consumers accept input in this order:
 
 | Available | Behavior |
 |---|---|
-| Handoff JSON file | Use directly |
-| Markdown with a handoff block | Parse the block |
-| Other CMA (plain markdown, another tool's PDF, notes) | Extract, confirm key numbers with the user, label as assumptions |
+| Handoff JSON file (this conversation) | Use directly |
+| Markdown with an old handoff block | Parse the block (still read, no longer written) |
+| Any CMA PDF or summary (ours from an earlier conversation, another tool's, notes) | Extract, confirm key numbers with the user, label as assumptions |
 | Nothing | Conservative defaults, report marked **Preliminary** |

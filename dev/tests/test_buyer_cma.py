@@ -55,7 +55,7 @@ class MatchesPrototype(unittest.TestCase):
 
     def test_no_warnings_and_handoff(self):
         self.assertEqual(self.C["warnings"], [])
-        h = handoff.parse_text("reply\n" + self.C["handoff_block"])
+        h = handoff.validate(self.C["handoff"])
         self.assertEqual(h["value"]["median_adjusted"], 469800)
         self.assertEqual(h["offer_plan"]["opening"], 455000)
         self.assertEqual(h["market_profile"], {"state": "FL", "mls": "Stellar"})
@@ -161,7 +161,8 @@ class Pdf(unittest.TestCase):
                 paths = buyer_render.build(R, "pdf", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})
             with open(paths[0], "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
-            self.assertEqual(handoff.load(paths[1])["side"], "buyer")
+            self.assertEqual(paths, [paths[0]])  # the PDF only: no JSON handed to the agent
+            self.assertFalse([f for f in os.listdir(tmp) if f.endswith(".json")])
 
 
 
@@ -268,6 +269,19 @@ class AuditMethod(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()) as out:
                 self.assertEqual(compute.main([path, "--out", tmp]), 0)
             self.assertTrue(json.loads(out.getvalue())["handoff_file"].endswith(".buyer.cma.json"))
+
+    def test_handoff_file_defaults_next_to_report(self):
+        # A working file beside report.json, never in the outputs folder the agent downloads from.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "report.json")
+            with open(path, "w") as f:
+                json.dump(report(), f)
+            import contextlib
+            import io
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(compute.main([path]), 0)
+            hfile = json.loads(out.getvalue())["handoff_file"]
+            self.assertEqual(os.path.dirname(hfile), os.path.abspath(tmp))
 
     def test_offer_ladder_order(self):
         R = report()

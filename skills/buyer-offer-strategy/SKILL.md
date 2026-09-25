@@ -32,11 +32,11 @@ These apply to everything this skill writes: files, chat replies, and text the a
 
 ## 1. Build the Buyer File
 
-One JSON file per property the buyer is pursuing: read `references/buyer-file.md` for the fields. For a condo (`property.type: condo`), also read `references/condo.md` for lender approval, association questions and the buyer's rescission rights.
+One JSON file per property the buyer is pursuing, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files): read `references/buyer-file.md` for the fields. For a condo (`property.type: condo`), also read `references/condo.md` for lender approval, association questions and the buyer's rescission rights.
 
 - **Value range and market stats:** use the CMA, in this order:
-  1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a buyer CMA; where to look is in `references/saved-files.md`): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats. A seller-side CMA is flagged: its range was built for the other party.
-  2. Any other CMA (another tool's PDF, notes): read the low, high and any market stats, confirm them with the agent in one line, and put them in `value` and `market`.
+  1. A buyer CMA's `.cma.json` from earlier in this conversation (`references/saved-files.md`): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats. A seller-side CMA is flagged: its range was built for the other party.
+  2. Any other CMA (a CMA PDF from an earlier conversation, another tool's PDF, notes): read the low, high and any market stats, confirm them with the agent in one line, and put them in `value` and `market`.
   3. Nothing: list price stands in for value and the answer is Preliminary.
 - **Buyer:** loan type and down payment, first-time buyer or not, max price, cash available, reserve floor, max payment.
 - **Listing-agent intel:** competition level, offer deadline, buyer-broker pay offered, seller priorities. This is the most valuable input; if it's unknown, run with the inferred level and say so in one line.

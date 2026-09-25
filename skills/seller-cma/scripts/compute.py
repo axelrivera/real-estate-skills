@@ -5,9 +5,8 @@
 Prints JSON: the net sheet for each pricing strategy (brokerage, transfer tax, title, title company
 fees, estoppel, seller credit, optional payoff), a buyer's payment at each list price, the effect of
 $10,000 in price, the scatter trend, all formatted for the markdown template, plus `warnings` to fix,
-`assumptions` to confirm with the agent, `preliminary` (true when the market is missing a cost) and
-the `handoff_block` to end a markdown reply with. Also writes <address>.seller.cma.json (the handoff the
-seller-offer-review skill reads). render.py uses the same numbers for the PDF and the deck.
+`assumptions` to confirm with the agent, `preliminary` (true when the market is missing a cost). Also writes <address>.seller.cma.json (the handoff the
+seller-offer-review skill reads) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF and the deck.
 """
 import argparse
 import json
@@ -17,7 +16,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
+from _shared import cma, finance, handoff, mls, profiles  # noqa: E402
 
 # The order finance.seller_net adds its lines in.
 NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_surtax", "owner_title", "title_fees", "estoppel",
@@ -375,7 +374,6 @@ def compute(R, market, homes):
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,
-        "handoff_block": handoff.to_block(h),
         "warnings": warnings,
         "assumptions": assumptions,
         "market_notes": market.notes,
@@ -397,7 +395,7 @@ def load_inputs(R, mls_name=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("report")
-    ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
+    ap.add_argument("--out", help="where to write the .cma.json handoff (default: next to report.json, the working folder; never the outputs)")
     ap.add_argument("--mls", help="MLS name, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
@@ -405,7 +403,7 @@ def main(argv=None):
     try:
         market, homes = load_inputs(R, a.mls)
         result = compute(R, market, homes)
-        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "seller"))
+        path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "seller"))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result["handoff"], f, indent=2)
         result["handoff_file"] = path

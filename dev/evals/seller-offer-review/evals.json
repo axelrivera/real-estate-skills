@@ -10,7 +10,7 @@
     {
       "id": 2,
       "prompt": "We have 4 offers on Heron Lake, details attached along with my CMA. Seller needs to close by Nov 15 and wants certainty. Which one do we go with? I need something to show the seller tonight.",
-      "expected_output": "Uses the CMA handoff block for the value range ($415,000–$428,000, midpoint $421,500); builds one listing file with offers A–D; multi-offer PDF in seller colors that names offers by buyer's agent and brokerage (letters only on the chart, timeline and flags, with a key): counter the Park (Coldwell Banker) offer (price $423,000), hold Díaz (eXp) as backup, decline Morales (Keller Williams; nets less once risk counted) and Lee (sale contingency, pre-qual, closes past Nov 15); says only one counter goes out at a time; leaves out buyer personal details; hands back the listing file",
+      "expected_output": "Reads the CMA summary for the value range ($415,000–$428,000, midpoint $421,500) and confirms it in one line; builds one listing file with offers A–D; multi-offer PDF in seller colors that names offers by buyer's agent and brokerage (letters only on the chart, timeline and flags, with a key): counter the Park (Coldwell Banker) offer (price $423,000), hold Díaz (eXp) as backup, decline Morales (Keller Williams; nets less once risk counted) and Lee (sale contingency, pre-qual, closes past Nov 15); says only one counter goes out at a time; leaves out buyer personal details; keeps the listing file in a temporary folder and offers no JSON",
       "files": [
         "dev/evals/seller-offer-review/files/heron-lake-offers.md",
         "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"

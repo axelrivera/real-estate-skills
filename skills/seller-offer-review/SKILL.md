@@ -29,7 +29,7 @@ The engine fills anything missing with a conservative default and records it as 
 
 ## 1. Build the Listing File
 
-One JSON file per property: read `references/listing-file.md` for the fields. If the agent uploads a listing file from an earlier session, add the new offer to it (next letter as `id`) rather than starting over. Record `buyer_agent` and `buyer_brokerage` from the contract: reports name each offer by them ("Morales · Keller Williams"), never by the buyer, and never by the letter; see Offer Names in `references/listing-file.md`. In chat, use the same names; when the agent says "Offer B", match it to the id.
+One JSON file per property, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files): read `references/listing-file.md` for the fields. When a new offer arrives later in the conversation, add it to the same file (next letter as `id`) rather than starting over; in a new conversation, rebuild the file from the offers the agent shares. Record `buyer_agent` and `buyer_brokerage` from the contract: reports name each offer by them ("Morales · Keller Williams"), never by the buyer, and never by the letter; see Offer Names in `references/listing-file.md`. In chat, use the same names; when the agent says "Offer B", match it to the id.
 
 - **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). For FR/BAR forms, and for how to read other states' contracts, read `references/contract-fields.md`. Then check the contract is complete with `references/contract-check.md` and record problems in `contract_issues`. For a condo (`listing.property_type: condo`), also read `references/condo.md`: FHA/VA project approval and the buyer's rescission windows decide when the deal is firm.
 - **Pre-approval letter or proof of funds:** set `approval` and `lender`.
@@ -38,8 +38,8 @@ One JSON file per property: read `references/listing-file.md` for the fields. If
 Record only what the documents or the agent say. Leave a field out rather than guess: the engine's default is labeled, a guess isn't. Buyer letters, photos and personal details never go in the file or the report (fair housing).
 
 **Value range (for appraisal risk):** use the CMA, in this order:
-1. A `.cma.json` file or a markdown reply with a `cma-handoff v1` block (from a seller CMA; where to look is in `references/saved-files.md`): pass it with `--cma`. Its low, high and midpoint become the appraisal range. A buyer-side CMA is flagged: its range was built for the other party.
-2. Any other CMA (another tool's PDF, notes, a pasted range): read the low and high, confirm them with the agent in one line, and put them in `listing.cma_low` / `cma_high`.
+1. A seller CMA's `.cma.json` from earlier in this conversation (`references/saved-files.md`): pass it with `--cma`. Its low, high and midpoint become the appraisal range. A buyer-side CMA is flagged: its range was built for the other party.
+2. Any other CMA (a CMA PDF from an earlier conversation, another tool's PDF, notes, a pasted range): read the low and high, confirm them with the agent in one line, and put them in `listing.cma_low` / `cma_high`.
 3. Nothing: leave them out. Appraisal risk is measured against list price and the answer is Preliminary.
 
 **Market costs:** read `references/local-costs.md`. The engine takes the state and county from the listing: Florida closing costs, title rates and tax proration are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Outside Florida, look up the state's transfer tax from a trusted source and put it in `listing.costs`. Without terms, commission is assumed at 5% total. Read `references/seller-costs.md` when the agent asks where a cost comes from or has a title company quote.

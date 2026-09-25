@@ -84,7 +84,6 @@ samples:
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/$$skill" \
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
 			--profile dev/samples/profile.md || exit 1; \
-		rm -f samples/$$skill/*.json; \
 	done
 	@$(PY) dev/samples_readme.py
 

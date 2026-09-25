@@ -96,7 +96,7 @@ class MatchesPrototype(unittest.TestCase):
 class Handoff(unittest.TestCase):
     def test_seller_handoff(self):
         C, _ = run(report())
-        h = handoff.parse_text("reply\n" + C["handoff_block"])
+        h = handoff.validate(C["handoff"])
         self.assertEqual(h["side"], "seller")
         self.assertEqual(h["source"], "seller-cma")
         self.assertEqual(h["recommended_list_price"], 469900)
@@ -322,7 +322,8 @@ class Files(unittest.TestCase):
                 paths = seller_render.build(R, "pdf", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})
             with open(paths[0], "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
-            self.assertEqual(handoff.load(paths[1])["side"], "seller")
+            self.assertEqual(paths, [paths[0]])  # the PDF only: no JSON handed to the agent
+            self.assertFalse([f for f in os.listdir(tmp) if f.endswith(".json")])
 
     def test_full_pptx(self):
         if not node_ready():

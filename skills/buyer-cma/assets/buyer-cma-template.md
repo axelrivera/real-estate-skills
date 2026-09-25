@@ -27,5 +27,3 @@
 _Broker's opinion of value, not an appraisal, and not for lending purposes. Sales data: {{data_source.mls}} MLS as of {{data_source.as_of}}, deemed reliable but not guaranteed. Estimates for planning, not lending or tax advice; confirm with the lender and insurer._
 
 {{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}
-
-{{handoff_block, pasted exactly as compute.py printed it}}

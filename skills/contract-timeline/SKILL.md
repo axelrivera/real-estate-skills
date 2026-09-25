@@ -30,6 +30,8 @@ Read the whole package: contract, every rider and addendum, and every counteroff
 
 ## 2. Compute
 
+Write deal.json in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files).
+
 Florida rules are built in; for any other state the time rules come from the contract (never estimated).
 
 ```
@@ -50,7 +52,7 @@ python3 scripts/render.py deal.json [--format pdf|ics|all] [--profile profile.md
 
 `all` (the default) saves the PDF and a closing calendar (`.ics`: one event per dated deadline, a reminder the day before each critical one) that the agent or client can import into any calendar app. It saves the PDF to the outputs folder; `--profile` puts the agent's name and brand colors on it (found as `references/saved-files.md` describes). If it can't render, say so and give the markdown timeline instead.
 
-With the PDF, keep the chat reply short: a small table of the key dates only (first deadline, when the contingencies end, closing), not the full template, since the PDF has everything. Always tell the agent, in plain words: the first deadline and who owes it, when the contingencies end, the closing date, every flag, and every agent note to confirm. Offer the other format in one line. Keep the deal file with the deliverable: it's the record for re-runs.
+With the PDF, keep the chat reply short: a small table of the key dates only (first deadline, when the contingencies end, closing), not the full template, since the PDF has everything. Always tell the agent, in plain words: the first deadline and who owes it, when the contingencies end, the closing date, every flag, and every agent note to confirm. Offer the other format in one line. Keep the deal file in the temporary folder for re-runs in this conversation (`references/saved-files.md`, Working Files); never present or offer it.
 
 ## Amendments and Extensions
 

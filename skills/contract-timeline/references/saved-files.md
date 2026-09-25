@@ -30,6 +30,10 @@ Only save after the agent has given or confirmed the details.
 
 Never block the task over saving: the profile still works for the rest of this conversation.
 
+## Working Files
+
+The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, and the profile) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply.
+
 ## CMA Handoffs
 
-A CMA saves `<address>.buyer.cma.json` or `<address>.seller.cma.json` next to its report, where the agent can see it. The offer skills look for it in this order: the conversation (a file, or a reply ending in a `cma-handoff v1` block), Project files, then the outputs folder and the working folder. Use a match only when the address is the same home, and name the file you used.
+compute.py saves `<address>.buyer.cma.json` or `<address>.seller.cma.json` next to report.json, in the temporary folder. Later in the same conversation, pass that file to an offer skill with `--cma`. In a new conversation it's gone: read the CMA the agent shares (its PDF or chat summary) for the low, high and median adjusted value, confirm them in one line, and fill them in by hand, as the offer skill says for any other CMA. Use a CMA only when the address is the same home.

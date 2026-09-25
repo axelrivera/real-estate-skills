@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "My buyers (first-time, FHA 3.5% down, about $30k cash total, lease ends in December) love 517 Hickorywood. Here's the listing, the history and my CMA export. Can you do the buyer CMA as a PDF I can send them?",
-      "expected_output": "Reads all three files; total ~119 active days and the failed April contract from the history; flags the vanished roof claim; 3-6 comps incl. ones that hurt a low offer; range around $455–480K; offer plan (opening near bottom of range, walk-away at/below median adjusted); FHA credit scenarios within the 6% cap; compute.py warnings resolved; PDF rendered with page 1 fitting; handoff .cma.json saved; short chat reply with sources",
+      "expected_output": "Reads all three files; total ~119 active days and the failed April contract from the history; flags the vanished roof claim; 3-6 comps incl. ones that hurt a low offer; range around $455–480K; offer plan (opening near bottom of range, walk-away at/below median adjusted); FHA credit scenarios within the 6% cap; compute.py warnings resolved; PDF rendered with page 1 fitting; handoff .cma.json saved in the temporary folder, not presented; short chat reply with sources",
       "files": ["dev/evals/buyer-cma/files/listing-517-hickorywood.md", "dev/evals/buyer-cma/files/history-517-hickorywood.md", "dev/evals/buyer-cma/files/export-spring-oaks.csv"]
     },
     {
       "id": 2,
       "prompt": "quick gut check, is 517 Hickorywood priced right? just tell me in chat, no pdf needed",
-      "expected_output": "Markdown mode from the template: range, asking position, 2-3 findings, opening/target/walk-away, costs line, ending with the cma-handoff v1 block; numbers from compute.py, not mental math",
+      "expected_output": "Markdown mode from the template: range, asking position, 2-3 findings, opening/target/walk-away, costs line; no JSON or code block in the reply; numbers from compute.py, not mental math",
       "files": ["dev/evals/buyer-cma/files/listing-517-hickorywood.md", "dev/evals/buyer-cma/files/history-517-hickorywood.md", "dev/evals/buyer-cma/files/export-spring-oaks.csv"]
     },
     {

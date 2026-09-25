@@ -3,9 +3,8 @@
     python3 scripts/compute.py report.json [--out DIR]
 
 Prints JSON: taxes, payment scenarios, price-vs-credit scenarios, buydown, scatter trend, the
-offer plan and range, formatted for the markdown template, plus `warnings` to fix and the
-`handoff_block` to end a markdown reply with. Also writes <address>.buyer.cma.json (the CMA handoff the
-offer skills read) to the outputs folder. render.py uses the same numbers for the PDF.
+offer plan and range, formatted for the markdown template, plus `warnings` to fix. Also writes <address>.buyer.cma.json (the CMA handoff the
+offer skills read) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF.
 """
 import argparse
 import json
@@ -15,7 +14,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
+from _shared import cma, finance, handoff, mls, profiles  # noqa: E402
 
 money = finance.money
 
@@ -262,7 +261,6 @@ def compute(R, market, homes):
         "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "handoff": h,
-        "handoff_block": handoff.to_block(h),
         "warnings": warnings,
         "market_notes": market.notes,
     }
@@ -283,7 +281,7 @@ def load_inputs(R, mls_name=None):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("report")
-    ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
+    ap.add_argument("--out", help="where to write the .cma.json handoff (default: next to report.json, the working folder; never the outputs)")
     ap.add_argument("--mls", help="MLS name, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
@@ -291,7 +289,7 @@ def main(argv=None):
     try:
         market, homes = load_inputs(R, a.mls)
         result = compute(R, market, homes)
-        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "buyer"))
+        path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "buyer"))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result["handoff"], f, indent=2)
         result["handoff_file"] = path
