@@ -1,5 +1,6 @@
 """Tests for shared/mls.py and shared/cma.py."""
 import csv
+import json
 import os
 import sys
 import tempfile
@@ -37,17 +38,73 @@ class Load(unittest.TestCase):
         tx_cols = {"address": "Street", "status": "St", "living_area": "SqFt", "close_price": "Sold $", "current_price": "List $",
                    "close_date": "Closed", "original_list_price": "Orig $"}
         with tempfile.TemporaryDirectory() as tmp:
-            prof = os.path.join(tmp, "tx.md")
-            with open(prof, "w") as f:
-                f.write("---\nprofile: market\nstate: TX\nmls: ACTRIS\nmls_format:\n  cma_export_columns:\n" +
-                        "".join(f'    {k}: "{v}"\n' for k, v in tx_cols.items()) + "---\n")
             path = os.path.join(tmp, "e.csv")
             with open(path, "w", newline="") as f:
                 w = csv.writer(f)
                 w.writerow(["Street", "St", "SqFt", "Sold $", "List $", "Closed", "Orig $"])
                 w.writerow(["1 Elm", "Closed", "2,000", "$500,000", "$510,000", "2026-08-01", "$510,000"])
-            homes = mls.load(path, profiles.load_market(prof))
+            homes = mls.load(path, profiles.load_market(state="TX", mls="ACTRIS"), mls.columns_arg(json.dumps(tx_cols)))
         self.assertEqual((homes[0]["status"], homes[0]["close_price"], homes[0]["living_area"]), ("SOLD", 500000.0, 2000.0))
+
+
+RESO = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-reso.csv")
+RESO_SUBJECT = "517 LARKWOOD AVE"
+
+
+class StandardNames(unittest.TestCase):
+    """Stellar's export with standard (RESO) field names: no Distance column, True/False flags, messy fields."""
+
+    def setUp(self):
+        self.homes = mls.load(RESO, FL)
+
+    def test_loads_and_drops_duplicate_sale(self):
+        self.assertEqual(len(self.homes), 14)  # 15 rows, the J-numbered copy of one closing dropped
+        self.assertEqual([h["mls_number"] for h in self.homes if h["address"] == "602 QUAIL LN" and h["status"] == "SOLD"], ["X7000002"])
+        self.assertIn("Dropped 1 duplicate", self.homes.notes[0])
+        h = self.homes[0]
+        self.assertEqual((h["status"], h["private_pool"], h["waterfront"], h["type_key"], h["flood_zone"]),
+                         ("ACTIVE", True, False, "single_family", "X"))
+        self.assertEqual({h["status"] for h in self.homes}, {"SOLD", "ACTIVE", "PENDING", "CANCELED"})
+
+    def test_cleans_fields(self):
+        condo = next(h for h in self.homes if h["type_key"] == "condo")
+        self.assertIsNone(condo["lot_acres"])  # 711 acres on a condo
+        self.assertEqual((condo["flood_zone"], condo["flood_zone_raw"]), ("AE", "Yes (X, X500, Ae)"))
+        for raw, zone in (("X*", "X"), ("x", "X"), ("AE*", "AE"), ("xx", None), ("00", None), ("PUD-MO", None), ("n", None)):
+            self.assertEqual(mls.flood_zone(raw), zone, raw)
+        self.assertEqual(mls.sale_flags(next(h for h in self.homes if h["address"] == "305 ALDER RD")), ["distressed"])
+        typo = next(h for h in self.homes if h["address"] == "910 FAR OAKS DR")
+        self.assertEqual((typo["days_on_market"], typo["contract_date"]), (None, None))  # -1 days; contract after closing
+
+    def test_distances_from_coordinates(self):
+        self.assertTrue(mls.fill_distances(self.homes, RESO_SUBJECT))
+        by = {h["address"]: h["distance"] for h in self.homes}
+        self.assertEqual(by[RESO_SUBJECT], 0)
+        self.assertAlmostEqual(by["602 QUAIL LN"], 0.15, places=2)
+        self.assertFalse(mls.fill_distances(self.homes, RESO_SUBJECT))  # already there
+        self.assertFalse(mls.fill_distances(mls.load(RESO, FL), "NOT IN THE EXPORT"))
+
+    def test_ranking_and_competition(self):
+        mls.fill_distances(self.homes, RESO_SUBJECT)
+        subject = {**mls.subject_facts(self.homes, RESO_SUBJECT), "address": RESO_SUBJECT, "living_area": 1849,
+                   "private_pool": True, "subdivision": "FERNWOOD PARK UNIT 2"}
+        s = mls.market_stats(self.homes, subject, as_of="2026-09-24")
+        ranked = [c["address"] for c in s["sold_candidates"]]
+        self.assertEqual(ranked[0], "602 QUAIL LN")
+        self.assertLess(ranked.index("88 TERN CT"), ranked.index("10 HERON WAY #204"))  # townhouse near, condo far
+        self.assertEqual(ranked[-1], "10 HERON WAY #204")
+        self.assertEqual(s["sold_by_type"], {"single_family": 6, "townhouse": 1, "condo": 1})
+        relist = next(c for c in s["competition"] if c["address"] == "531 FIRST AVE")
+        self.assertEqual((relist["status"], relist["listings"], relist["earlier_prices"]), ("ACTIVE", 3, [417000.0, 407500.0]))
+        self.assertEqual(len(s["competition"]), 2)  # 602 Quail's canceled listing is left out: it sold
+
+    def test_mismatch_penalties(self):
+        base = {"property_type": "single_family", "waterfront": False, "senior_community": False, "stories": "One"}
+        self.assertEqual(mls._mismatch(base, {"type_key": "single_family", "waterfront": False, "stories": "One"}), 0)
+        self.assertEqual(mls._mismatch(base, {"type_key": "townhouse"}), 1.5)
+        self.assertEqual(mls._mismatch(base, {"type_key": "condo"}), 4)
+        self.assertEqual(mls._mismatch(base, {"type_key": "single_family", "senior_community": True, "waterfront": True,
+                                              "stories": "Two"}), 7)
 
 
 class Stats(unittest.TestCase):

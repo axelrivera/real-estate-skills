@@ -15,7 +15,7 @@ The score estimates how likely an offer is to close on its terms. Eight criteria
 
 ## Downside Case
 
-The price if the appraisal lands at the CMA high, the top of the supported range (plus the gap cover above), minus the seller's repair cost for the contract's form: on FR/BAR AS IS, the market's typical post-inspection credit (Florida: about 0.7% of price); on the FR/BAR Standard, the General Repair Limit the seller owes (1.5% of price if blank); on another contract, the market's credit only when the agent's market profile sets one for their own contract (never Florida's AS IS figure). Cash offers keep their price. Without a figure, the downside leaves repairs out and says so.
+The price if the appraisal lands at the CMA high, the top of the supported range (plus the gap cover above), minus the seller's repair cost for the contract's form: on FR/BAR AS IS, the market's typical post-inspection credit (Florida: about 0.7% of price); on the FR/BAR Standard, the General Repair Limit the seller owes (1.5% of price if blank); on another contract, only a credit the agent gives for this listing (`listing.costs.inspection_credit_reserve_pct`; never Florida's AS IS figure). Cash offers keep their price. Without a figure, the downside leaves repairs out and says so.
 
 ## Ranking (Multiple Offers)
 

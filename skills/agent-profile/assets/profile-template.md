@@ -1,6 +1,6 @@
 ---
 profile: agent
-schema: 1
+schema: 2
 name: "{{full name}}"
 team: "{{team name}}"
 brokerage: "{{brokerage}}"
@@ -19,7 +19,7 @@ brand:
   seller_primary: "{{#RRGGBB}}"  # {{color name}}
 ---
 
-# Agent Profile: {{full name}}
+# Profile: {{full name}}
 
 {{team name}} · {{brokerage}}
 

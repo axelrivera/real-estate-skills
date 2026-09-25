@@ -12,14 +12,15 @@
 |---|---|
 | `prepared_date` | Written out ("September 22, 2026"). Default: today |
 | `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
-| `export` | Path to the MLS export CSV (chart, trend line, deck method step, handoff market stats) |
+| `export` | Path to the MLS export CSV (absolute, or relative to report.json's folder; keep them together in the temporary folder) (chart, trend line, deck method step, handoff market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
-| `mls` | The MLS name when there's no market profile and it isn't the one built in for the county (same as `--mls`) |
+| `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
+| `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
 | `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, relative to where you run the scripts). See `deck-content.md`; `competition` takes 1–3 cards, `scatter_takeaway` only when there is an export |
-| `preliminary` | Optional `true` to mark the report Preliminary yourself (compute.py also sets it when a local cost is missing) |
+| `preliminary` | Optional `true` to mark the report Preliminary yourself (compute.py also sets it when a cost has no value at all) |
 | `labels` | Optional overrides of fixed wording |
 
-The agent's name, team, brokerage, license and contact come from the agent profile (`--agent`), never from report.json; only the fields the profile has are shown.
+The agent's name, team, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json; only the fields the profile has are shown.
 
 ## subject
 
@@ -31,6 +32,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 | `city`, `state`, `county` | `state` and `county` pick the market's closing costs, tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet. Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
 | `sqft` | *number*, heated area from the seller or public record |
+| `latitude`, `longitude` | Optional *numbers*: the home's location, for distances when the export has no Distance column and no row for the home |
 | `beds`, `baths`, `year_built`, `pool`, `hoa`, `subdivision` | For the handoff, the comp ranking and the estoppel line (`pool`, `hoa` true/false) |
 | `facts` | Ten `[label, value]`, labels in Title Case: Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone, Current Taxes, Recent Updates |
 | `summary` | 2–3 sentences: the home and its updates "as described by you", and what the report does |
@@ -42,7 +44,7 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## recommendation
 
-`list_price`, `low`, `high` (*numbers*), `paragraph` (4–5 sentences: the range, the price and why, and why a higher first price is a risk).
+`list_price`, `low`, `high` (*numbers*), optional `midpoint` (*number*; default the middle of low and high, used for the handoff), `paragraph` (4–5 sentences: the range, the price and why, and why a higher first price is a risk).
 
 ## means
 
@@ -77,11 +79,11 @@ The agent's name, team, brokerage, license and contact come from the agent profi
 
 ## costs
 
-All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; needed unless the market profile has the agent's standard terms), `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*, from a payoff statement) or `mortgage_balance` + `mortgage_rate` (percent; an estimate: a month's interest and a $500 cushion are added), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
+All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; without them 2.5% each is assumed and labeled), `transfer_tax_rate` (the state's rate from a trusted source; `0` where there is none), `transfer_tax_payer` (`seller`, `buyer` or `split`), `transfer_tax_label`, `title_payer`, `title_estimate_pct`, `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*, from a payoff statement) or `mortgage_balance` + `mortgage_rate` (percent; an estimate: a month's interest and a $500 cushion are added), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
 
 ## buyer_payment
 
-`rate` (percent), `loan_type` (default `conventional`), `down_pct` (fraction, default 0.05), `insurance_annual` (placeholder), `district` (looked up in the market profile) or `school_mills` + `total_mills`, `homestead` (default true), optional `hoa_monthly`, optional `flood_zone` (else the Flood Zone fact), optional `flood_insurance_annual` (a quote; without one the payment leaves flood out and the note says to get a quote, never $0), optional `note` (assumptions and the rate's week; a default is written when it's missing; the flood rule is added to it).
+`rate` (percent), `loan_type` (default `conventional`), `down_pct` (fraction, default 0.05), `insurance_annual` (placeholder), `district` (looked up in the built-in millage) or `school_mills` + `total_mills`, `homestead` (default true), optional `hoa_monthly`, optional `flood_zone` (else the Flood Zone fact), optional `flood_insurance_annual` (a quote; without one the payment leaves flood out and the note says to get a quote, never $0), optional `note` (assumptions and the rate's week; a default is written when it's missing; the flood rule is added to it).
 
 ## prep, needs, method
 

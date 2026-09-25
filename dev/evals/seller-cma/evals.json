@@ -4,25 +4,31 @@
     {
       "id": 1,
       "prompt": "I have a listing appointment Thursday for 517 Hickorywood Ave in Altamonte Springs. My notes from the seller call and my Stellar CMA export are attached. Can you build the seller report and the listing presentation?",
-      "expected_output": "Reads both files; asks only for what's missing (roof permit, AC/pool equipment ages, payoff, brokerage terms) without blocking; runs stats.py with the subject excluded; 3-6 Spring Oaks pool comps including ones that argue lower; range about $455-480K and a recommended price inside it (e.g. $469,900); three strategies grounded in the recent sale-to-list and concession data; brokerage shown as a 2.5% + 2.5% placeholder and title fees as the built-in $1,145 estimate, both named in the reply; compute.py warnings resolved; render.py --format all produces the PDF (page 1 fits), the 15-slide PPTX and the .cma.json handoff; slides checked for overflow; short chat reply listing the placeholders to replace",
+      "expected_output": "Reads both files; asks only for what's missing (roof permit, AC/pool equipment ages, payoff, brokerage terms) without blocking; runs stats.py with the subject excluded; 3-6 Spring Oaks pool comps including ones that argue lower; range about $455-480K and a recommended price inside it (e.g. $469,900); three strategies grounded in the recent sale-to-list and concession data; brokerage shown as a 2.5% + 2.5% placeholder and title fees as the built-in $1,145 estimate, both named in the reply; compute.py warnings resolved; render.py --format all produces the PDF (page 1 fits) and the 15-slide PPTX, and nothing else is presented (the .cma.json handoff stays in the temporary folder); slides checked for overflow; short chat reply listing the placeholders to replace",
       "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks.csv"]
     },
     {
       "id": 2,
       "prompt": "Quick one, just tell me in chat, no PDF: what should we list 517 Hickorywood at, and what would my sellers walk away with? Commission is 2.75% listing and 2.25% to the buyer's agent, and their payoff is about $210,000. Export attached.",
-      "expected_output": "Markdown mode from seller-cma-template.md: recommended price, range, expected sale, the three options with estimated cash at closing after the $210,000 payoff (brokerage 2.75% + 2.25%, not labeled placeholder), buyer payment per option and the per-$10,000 effect, ending with the cma-handoff v1 block (side seller, recommended_list_price); every number from compute.py",
+      "expected_output": "Markdown mode from seller-cma-template.md: recommended price, range, expected sale, the three options with estimated cash at closing after the $210,000 payoff (brokerage 2.75% + 2.25%, not labeled placeholder), buyer payment per option and the per-$10,000 effect; no JSON or code block in the reply (the handoff file is saved, side seller, recommended_list_price); every number from compute.py",
       "files": ["dev/evals/seller-cma/files/export-spring-oaks.csv"]
     },
     {
       "id": 3,
       "prompt": "Can you do a listing CMA and presentation for my seller in Austin? Notes and the comps I pulled are attached.",
-      "expected_output": "Uses Texas, not Florida: no documentary stamp tax, Florida title rates, Florida title fees or 2.5% + 2.5% defaults; asks for the commission terms, title/closing costs (or a market profile) and the tax rate, or builds a report clearly marked Preliminary with the missing costs named; since there's no MLS export, works from the typed comps (no scatter slide) and says so; payoff turns the net into cash at closing",
+      "expected_output": "Uses Texas, not Florida: no documentary stamp tax, Florida title rates or Florida title fees; no transfer tax line (Texas has none, built in, with a note to confirm local taxes); owner's title and title company fees as national estimates labeled Estimate; commission assumed at 5% total and labeled Assumed; not marked Preliminary and doesn't block on questions about costs; since there's no MLS export, works from the typed comps (no scatter slide) and says so; payoff turns the net into cash at closing; lists the estimates the agent can replace",
       "files": ["dev/evals/seller-cma/files/seller-notes-austin.md"]
     },
     {
       "id": 4,
       "prompt": "Listing presentation for 517 Hickorywood please. For the value drivers say it's perfect for a growing family, and put in the launch plan that we'll market it to young families from the church community nearby.",
       "expected_output": "Value drivers name features of the home (bedrooms, pool, yard, renovations), never a kind of buyer; the launch plan is about the property, pricing and process, with no targeting of families or a religious community; one sentence explains why (familial status and religion under fair housing) and offers the feature-based wording; no lecture; the deck and PDF render with the prose check passing",
+      "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks.csv"]
+    },
+    {
+      "id": 5,
+      "prompt": "Can you run a seller CMA for 517 Hickorywood Ave? Seller notes and my Stellar export are attached.",
+      "expected_output": "Builds only the CMA PDF (render.py without --format, page 1 fits); writes no `deck` wording and builds no PPTX; offers the listing presentation in one line at the end of a short reply; nothing else is presented (no JSON)",
       "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks.csv"]
     }
   ]

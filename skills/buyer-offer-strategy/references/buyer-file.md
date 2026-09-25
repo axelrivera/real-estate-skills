@@ -43,7 +43,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## listing_side
 
-`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else the agent's standard terms from their market profile, else none, flagged; nothing is built in), `listing_fee_pct` (for the seller net sheet; unknown → the agent's standard terms from their market profile, else left out and flagged; nothing is built in).
+`buyer_broker_offered_pct` (what the seller offers; unknown → the buyer-broker agreement %, else 2.5% assumed), `listing_fee_pct` (for the seller net sheet; unknown → 2.5% assumed, 5% total with the buyer's agent).
 
 ## costs (Buyer's Payment)
 
@@ -62,7 +62,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 | `reserve_floor` | $2,000 | med |
 | `max_payment` | none | — |
 | `closing_cost_pct` | market buyer closing costs + 0.5% prepaids (Florida 3.5%); cash: half the market figure; no market: 3.5% / 1.5% | low |
-| `approval` | `preapproval` (`pof_verified` for cash). Values: `none`, `prequal`, `preapproval`, `full_uw` (DU/LP or underwriter approval), `pof_verified` (cash) | — |
+| `approval` | `preapproval` (`pof_verified` for cash). Values: `none`, `prequal`, `preapproval`, `du_approved` (pre-approval with an automated DU/LP approval), `full_uw` (underwriter approval), `pof_verified` (cash) | — |
 | `lender_called` | false. True only when the agent says they talked to the lender: it prints "lender confirmed" on the worksheet | — |
 | `insurance_quote` | false. True when the buyer already has a quote for this address; only a quote in hand is scored (a planned one is a to-do) | — |
 | `va_later_use`, `va_exempt` | VA only: a later use of the benefit (higher funding fee under 5% down), or exempt from the fee | false |

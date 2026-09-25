@@ -1,7 +1,8 @@
 """Market numbers from an MLS CMA export for pricing a listing (the subject is left out).
 
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" --sqft 1849 [--pool]
-        [--subdivision "SPRING OAKS"] [--state FL --county Seminole] [--market market-profile.md]
+        [--subdivision "SPRING OAKS"] [--type single_family] [--lat 28.67 --lon -81.40]
+        [--state FL --county Seminole] [--columns columns.json]
         [--split-date 2026-07-01]
 
 The seller's home is treated as a first-time listing: every row with its address (old listings,
@@ -27,21 +28,26 @@ def main(argv=None):
     ap.add_argument("--sqft", type=float, required=True, help="heated living area, from the seller or public record")
     ap.add_argument("--pool", action="store_true", help="the home has a private pool")
     ap.add_argument("--subdivision", help="subdivision name as the export writes it (improves comp ranking)")
+    ap.add_argument("--type", help="single_family, townhouse, condo, ... (ranks the same type first; default: the export's row)")
+    ap.add_argument("--lat", type=float, help="the home's latitude, for distances when the export has no Distance column")
+    ap.add_argument("--lon", type=float, help="the home's longitude")
     ap.add_argument("--state")
     ap.add_argument("--county")
-    ap.add_argument("--market", help="market profile (MLS column names); Stellar is built in")
-    ap.add_argument("--mls", help="MLS name, when there's no market profile (Stellar is built in)")
+    ap.add_argument("--columns", help="JSON file (or inline JSON) mapping field names to the export's headers, for an MLS that isn't built in")
+    ap.add_argument("--mls", help="MLS name (Stellar is built in; assumed from the county when it's the only one)")
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
     a = ap.parse_args(argv)
     try:
-        market = profiles.load_market(a.market, state=a.state, county=a.county, mls=a.mls)
-        homes = mls.load(a.export, market)
+        market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
+        homes = mls.load(a.export, market, mls.columns_arg(a.columns))
+        mls.fill_distances(homes, a.address, (a.lat, a.lon) if a.lat and a.lon else None)
         own = [h for h in homes if mls.same_address(h["address"], a.address)]
-        subject = {"address": a.address, "living_area": a.sqft, "private_pool": a.pool, "subdivision": a.subdivision}
+        subject = {**mls.subject_facts(homes, a.address), "address": a.address, "living_area": a.sqft,
+                   "private_pool": a.pool, "subdivision": a.subdivision, **({"property_type": a.type} if a.type else {})}
         out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit, exclude_address=a.address)
-        out["market_notes"] = list(market.notes)
+        out["market_notes"] = list(market.notes) + list(homes.notes)
         out["subject_rows"] = [mls._summary(h) for h in own]  # the home's own history: a current listing needs a word with the agent
         if own:
             out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address (see subject_rows): "

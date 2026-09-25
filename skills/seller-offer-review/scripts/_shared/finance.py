@@ -6,7 +6,7 @@
     net = finance.seller_net(465000, market, credit=10000, payoff=210000)
 
 Market-specific values (transfer tax, title, fees, commissions, exemptions, millage) come from the
-market profile (shared/profiles.load_market). Lending rules are national estimates: the lender's
+built-in market layers (shared/profiles.load_market). Lending rules are national estimates: the lender's
 numbers always win.
 """
 import math
@@ -195,7 +195,7 @@ def money(v, round_to=1):
 def fraction(value, name, default=None, whole=False):
     """A share of price from a data file, as a fraction: 0.025 means 2.5%.
 
-    Every `*_pct` field in the skills' data files is a fraction (like the market profile). A value of 1 or more
+    Every `*_pct` field in the skills' data files is a fraction (like the market layers). A value of 1 or more
     is almost always a percent written the other way (2.5 for 2.5%), so it's refused with a plain message
     instead of silently becoming 250%. `whole=True` also accepts exactly 1 (a cash buyer's 100% down).
     """
@@ -208,6 +208,33 @@ def fraction(value, name, default=None, whole=False):
     if value >= 1:
         raise ValueError(f"{name} is {value:g}: write it as a fraction, {value / 100:g} for {value:g}%.")
     return value
+
+
+FRACTION_RATES = ("transfer_tax_rate", "tax_rate", "insurance_rate")  # shares of price, like *_pct, and small
+PERCENT_RATES = ("rate", "mortgage_rate")  # interest rates are written as percents: 6.5 means 6.5%
+
+
+def check_units(node, where="report"):
+    """Every unit in a data file, before any math: `*_pct` and the FRACTION_RATES are fractions (0.025 = 2.5%), and
+    an interest rate is a percent (6.5). A value in the other unit raises ValueError naming the field and the fix,
+    instead of silently becoming a wrong number."""
+    items = node.items() if isinstance(node, dict) else enumerate(node) if isinstance(node, list) else ()
+    for key, value in items:
+        here = f"{where}.{key}" if isinstance(key, str) else f"{where}[{key}]"
+        if not isinstance(key, str) or value is None or isinstance(value, (dict, list)):
+            check_units(value, here)
+        elif key.endswith("_pct"):
+            fraction(value, here, whole=key == "down_pct")
+        elif key in FRACTION_RATES:
+            fraction(value, here)
+            if value >= 0.1:
+                raise ValueError(f"{here} is {value:g}, {value * 100:g}% of price: write it as a fraction "
+                                 f"({value / 100:g} for {value:g}%).")
+        elif key in PERCENT_RATES:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 1 <= value <= 25:
+                hint = f" (that looks like a fraction: write {value * 100:g} for {value * 100:g}%)" \
+                    if isinstance(value, (int, float)) and 0 < value < 1 else ""
+                raise ValueError(f"{here} is {value!r}: write the interest rate as a percent, like 6.5{hint}.")
 
 
 def concession_cap(name, down):
@@ -310,7 +337,7 @@ def buydown_2_1(loan, rate_pct):
 def property_tax(value, market=None, school_mills=None, total_mills=None, homestead=True):
     """Annual tax for a buyer at `value`: {'annual', 'basis', 'estimated'}.
 
-    With millage, exemptions come from the market profile: each is an `amount` or a `percent` of value
+    With millage, exemptions come from the market: each is an `amount` or a `percent` of value
     (0.20 = 20%), optionally only on value `above` a threshold, and `levies` says what it lowers: `all`, `non_school` (all but school) or `school` (school
     only, as in Texas). Without millage, the market's fallback rate is used and marked `estimated`.
     With neither, `annual` is None.
@@ -340,14 +367,30 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
 
 
 def millage(market, county=None, district=None):
-    """Millage entries from the market profile, filtered by county and/or a district name fragment."""
+    """Millage entries from the market, filtered by county and/or a district: a name fragment ("Altamonte") or the
+    appraiser's tax-area code exactly as a property report prints it ("01"; each row lists its codes, separated by
+    "," or "/"). A code can belong to several districts (Orange County reuses them), so check how many came back."""
     rows = market.get("property_tax.millage") or []
     if county:
         c = county.strip().lower().removesuffix(" county")
         rows = [r for r in rows if str(r.get("county", "")).lower() == c]
     if district:
-        rows = [r for r in rows if district.lower() in str(r.get("district", "")).lower()]
+        d = str(district).strip().lower()
+        by_code = [r for r in rows if d in {c.strip().lower() for c in re.split(r"[,/]", str(r.get("code", "")))}]
+        rows = by_code or [r for r in rows if d in str(r.get("district", "")).lower()]
     return rows
+
+
+def millage_row(market, county, district):
+    """The one millage entry for a district, or (None, why) when there's none or it's ambiguous: never a guess."""
+    rows = millage(market, county=county, district=district)
+    if len(rows) == 1:
+        return rows[0], None
+    if not rows:
+        return None, None
+    names = "; ".join(str(r.get("district")) for r in rows)
+    return None, (f'District "{district}" matches {len(rows)} taxing districts ({names}): name the one the parcel is '
+                  f"in, or give school_mills and total_mills from the property appraiser.")
 
 
 # --- seller side --------------------------------------------------------------
@@ -371,9 +414,10 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
     'net_before_payoff', 'net', 'missing', 'assumed'}. `lines` carries stable keys (listing_fee, buyer_broker_fee,
     transfer_tax, owner_title, title_fees, estoppel, credit, other) so reports can use their own wording.
-    `missing` lists market values that weren't available (the output should be marked Preliminary);
-    `assumed` lists defaults taken from the market profile rather than the agent, as
-    {'key', 'value', 'text'} (key: listing_fee, buyer_broker_fee, title_fees). `warnings` are sentences to show the
+    `missing` lists market values that weren't available (rare: the national estimates fill most);
+    `assumed` lists defaults the deal didn't give, as {'key', 'value', 'text', 'estimate'} (key: listing_fee,
+    buyer_broker_fee, transfer_tax, owner_title, title_fees, estoppel); `estimate` is true for a national estimate
+    (labeled "Estimate" on the line) and false for a built-in local default. `warnings` are sentences to show the
     agent (a title quote below the published rate).
     A saved owner's title quote (`closing_costs.owner_title.quote`: {price, premium}) wins over the rate table.
     `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
@@ -393,12 +437,18 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
             missing.append(label)
         return v
 
+    def estimated(path):
+        return market is not None and market.source(path) == "estimate"
+
+    def assume(key, value, text, path):
+        assumed.append({"key": key, "value": value, "text": text, "estimate": estimated(path)})
+
     lf = listing_fee_pct if listing_fee_pct is not None else market_value("brokerage.listing_fee_pct", "listing fee")
     bf = buyer_broker_fee_pct if buyer_broker_fee_pct is not None else market_value("brokerage.buyer_broker_fee_pct", "buyer's agent fee")
     if listing_fee_pct is None and lf is not None:
-        assumed.append({"key": "listing_fee", "value": lf, "text": f"listing fee {lf * 100:g}%"})
+        assume("listing_fee", lf, f"listing fee {lf * 100:g}%", "brokerage.listing_fee_pct")
     if buyer_broker_fee_pct is None and bf is not None:
-        assumed.append({"key": "buyer_broker_fee", "value": bf, "text": f"buyer's agent fee {bf * 100:g}%"})
+        assume("buyer_broker_fee", bf, f"buyer's agent fee {bf * 100:g}%", "brokerage.buyer_broker_fee_pct")
     if lf:
         add("listing_fee", f"Listing Brokerage ({lf * 100:g}%)", price * lf, lf)
     if bf:
@@ -409,10 +459,13 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         warnings.append(transfer_tax_warning(market))
     payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
     tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed Transfer Tax"
+    est = "Estimate, " if estimated("closing_costs.deed_transfer_tax_rate") else ""
     if rate and payer in (None, "seller"):
-        add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
+        add("transfer_tax", f"{tax_label} ({est}{rate * 100:.2f}%)", price * rate, rate)
     elif rate and payer == "split":
-        add("transfer_tax", f"{tax_label} (Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+        add("transfer_tax", f"{tax_label} ({est}Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+    if rate and payer in (None, "seller", "split") and est:
+        assume("transfer_tax", rate, f"transfer tax {rate * 100:g}%", "closing_costs.deed_transfer_tax_rate")
     surtax = market.get("closing_costs.deed_transfer_surtax") if market is not None else None
     if surtax and surtax.get("rate") and payer in (None, "seller"):
         kind = property_type(prop_type)
@@ -438,6 +491,8 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
             add("owner_title", "Owner's Title Insurance", title_premium(price, tiers))
         elif pct:
             add("owner_title", "Owner's Title Insurance (Estimate)", price * pct, pct)
+            if market.source("closing_costs.owner_title.estimate_pct") != "deal":
+                assume("owner_title", pct, f"owner's title {pct * 100:g}% of price", "closing_costs.owner_title.estimate_pct")
         else:
             missing.append("owner's title rate")
 
@@ -446,15 +501,17 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     else:
         fees = market.get("closing_costs.seller_title_fees") if market is not None else None
         if fees:
-            add("title_fees", "Title Company Fees", sum(fees.values()))
-            if market.source("closing_costs.seller_title_fees") not in ("profile", "deal"):  # a built-in default
-                assumed.append({"key": "title_fees", "value": sum(fees.values()), "text": "typical title company fees"})
+            est = estimated("closing_costs.seller_title_fees")
+            add("title_fees", "Title Company Fees" + (" (Estimate)" if est else ""), sum(fees.values()))
+            if market.source("closing_costs.seller_title_fees") != "deal":  # a built-in default
+                assume("title_fees", sum(fees.values()), "typical title company fees", "closing_costs.seller_title_fees")
         else:
             missing.append("title company fees")
     if has_hoa:
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
-            add("estoppel", "HOA Estoppel Letter", estoppel)
+            add("estoppel", "HOA Estoppel Letter" + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""),
+                estoppel)
     if credit:
         add("credit", "Seller Credit to Buyer", credit)
     if other_costs:

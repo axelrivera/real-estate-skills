@@ -12,12 +12,13 @@
 |---|---|
 | `prepared_date` | Written out ("September 22, 2026"). Default: today |
 | `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
-| `export` | Path to the MLS export CSV (used for the chart and the handoff's market stats) |
+| `export` | Path to the MLS export CSV (absolute, or relative to report.json's folder; keep them together in the temporary folder) (used for the chart and the handoff's market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
-| `mls` | The MLS name when there's no market profile and it isn't the one built in for the county (same as `--mls`) |
+| `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
+| `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
 | `labels` | Optional overrides of fixed wording |
 
-The agent's name, brokerage, license and contact come from the agent profile (`--agent`), never from report.json.
+The agent's name, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json. Local costs never come from the profile: see `local-costs.md`.
 
 ## subject
 
@@ -28,6 +29,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 | `city`, `state`, `county` | `state` and `county` pick the market's tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County · MLS #". Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
 | `list_price`, `sqft` | *numbers* |
+| `latitude`, `longitude` | Optional *numbers*: only when the export has no Distance column and no row for the home (distances are measured from its own row otherwise) |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
 | `subdivision` | As in the export (improves the handoff's comp ranking) |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. A condo follows `condo.md` (comps, adjustments, association questions) |
@@ -73,6 +75,7 @@ The agent's name, brokerage, license and contact come from the agent profile (`-
 
 ## costs
 
+- This home's own cost numbers, when you have them (see `local-costs.md`): `transfer_tax_rate`, `transfer_tax_payer`, `title_payer`, `title_estimate_pct`, `title_fees`, `buyer_closing_cost_pct`, `tax_rate`, `insurance_rate` (fractions: `0.007` for 0.7%). They replace the built-in and national values.
 - `taxes`: `heading`, `intro`, `current_bill` and `current_year` (optional: leave out when there's no bill for the home, as with new construction or a land-only bill), `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes the row name "Your Bill if the Home Is …" and `short` fills "If … Instead", so write them in Title Case: "in Unincorporated Seminole County", "City"), `note`, `after_paragraph` (escrow warning).
 - `insurance`: `paragraph`.
 - `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`, `label` a Title Case column header like "Conventional, 5% Down", `down_pct` a fraction: 0.05 for 5%), optional `hoa_cdd_monthly`, optional `flood_zone` (else the Flood Zone fact), optional `flood_insurance_annual` (a quote; without one the Flood Insurance row reads "Get a Quote" and the total leaves it out, never $0), optional `note` (compute.py adds the flood rule to it).

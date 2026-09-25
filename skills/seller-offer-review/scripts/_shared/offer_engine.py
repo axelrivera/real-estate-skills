@@ -9,9 +9,10 @@ proposed counter; with 2+ active offers, a ranking and a response plan.
 
 Rule: the engine never stops on missing data. Every missing input gets a conservative default and is
 recorded as an assumption with an impact level (high / med / low), so the report can say what to confirm
-and mark itself Preliminary. Market costs (transfer tax, title, fees, brokerage defaults, property tax,
-holding costs, inspection credit reserve) come from the market profile via shared.finance; outside a
-built-in market a missing value is left out and labeled, never filled with another state's number.
+and mark itself Preliminary. Market costs (transfer tax, title, fees, commission, property tax, holding costs,
+inspection credit reserve) come from the built-in layers via shared.finance: local defaults where there are any
+(Florida), national estimates labeled Estimate otherwise, never another state's number. The listing file's
+`costs` block (a title quote, the transfer tax the skill looked up) wins over both.
 """
 import copy
 import math
@@ -117,18 +118,7 @@ def state_of(listing):
 
 
 # Deal-specific cost overrides in the listing file's `costs` block, mapped to market paths.
-COST_KEYS = {
-    "transfer_tax_rate": "closing_costs.deed_transfer_tax_rate",
-    "transfer_tax_payer": "closing_costs.deed_transfer_tax_payer",
-    "title_payer": "closing_costs.owner_title.payer",
-    "title_estimate_pct": "closing_costs.owner_title.estimate_pct",
-    "title_fees": "closing_costs.seller_title_fees",
-    "hoa_estoppel_fee": "closing_costs.hoa_estoppel_fee",
-    "tax_paid": "property_tax.paid",
-    "insurance_rate": "holding_costs.insurance_rate",
-    "utilities_monthly": "holding_costs.utilities_monthly",
-    "inspection_credit_reserve_pct": "contract.inspection_credit_reserve_pct",
-}
+COST_KEYS = profiles.DEAL_COSTS
 
 
 class Costs:
@@ -167,17 +157,18 @@ class Costs:
         return "deal" if path in self.over else self.market.source(path)
 
     def described(self, path):
-        """Plain words for where a value came from: 'Florida default', 'your market profile', 'this listing'."""
+        """Plain words for where a value came from: 'Florida default', 'national estimate', 'this listing'."""
         src = self.source(path)
         state = profiles.STATES.get(self.state or "", self.state or "market")
-        return {"deal": "this listing", "profile": "your market profile", "state": f"{state} default",
-                "county": "county default", "mls": "MLS default"}.get(src, "market default")
+        return {"deal": "this listing", "estimate": "national estimate", "state": f"{state} default",
+                "county": "county default", "mls": "MLS default",
+                "national": f"none in {state}; confirm local taxes with the title company"}.get(src, "market default")
 
 
 def load_costs(listing, market=None):
-    """Costs for a listing: `market` may be a profiles.Market, a market profile path, or None."""
-    if market is None or isinstance(market, str):
-        market = profiles.load_market(market, state=state_of(listing), county=listing.get("county"))
+    """Costs for a listing: `market` is a profiles.Market, or None to load the listing's state and county."""
+    if market is None:
+        market = profiles.load_market(state=state_of(listing), county=listing.get("county"))
     return Costs(market, listing.get("costs"))
 
 
@@ -274,7 +265,7 @@ def prepare_listing(data, A, costs):
     if L["norms_source"] == "national":
         A.add("listing", "offer_norms", "national estimates", "No offer benchmarks for this market: deposit, concessions, "
               "inspection and loan approval are compared with national planning norms (1% deposit, 3% concessions, 10 and "
-              "30 days). Add the local norms to the market profile", "med")
+              "30 days)", "med")
     L["deposit_norm"] = L["norms"]["deposit_pct"]
 
     S["payoff_known"] = S.get("payoff") is not None
@@ -285,14 +276,14 @@ def prepare_listing(data, A, costs):
         lf = costs.get("brokerage.listing_fee_pct")
         if lf is None:
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", 0,
-                                         "Listing brokerage fee not provided (nothing is built in; commissions are negotiable): "
-                                         "left out of the net. Ask for the listing agreement's fee", "high")
+                                         "Listing brokerage fee not provided: left out of the net", "high")
         else:
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", lf,
-                                         f"Listing brokerage fee not provided: assumed {pct(lf)}, the agent's standard terms ({costs.described('brokerage.listing_fee_pct')})", "high")
+                                         f"Listing brokerage fee not provided: assumed {pct(lf)} ({costs.described('brokerage.listing_fee_pct')}; "
+                                         "5% total with the buyer's agent)", "med")
     S["offered_buyer_broker_pct"] = S.get("offered_buyer_broker_pct")
     S["default_buyer_broker_pct"] = (S["offered_buyer_broker_pct"] if S["offered_buyer_broker_pct"] is not None
-                                     else costs.get("brokerage.buyer_broker_fee_pct"))  # the agent's own terms; none built in
+                                     else costs.get("brokerage.buyer_broker_fee_pct"))  # 2.5% national estimate
     if S.get("holding_monthly") is None:
         monthly, left_out = finance.holding_monthly(lp, costs, S["payoff"], L["hoa_monthly"])
         S["holding_monthly"] = rnd(monthly, 50)
@@ -473,11 +464,12 @@ def prepare_offer(o, L, S, A):
         o["bb_tag"] = "Assumed"
         if bb is None:
             o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", 0,
-                                          "Buyer-broker compensation not stated, and nothing offered by the seller or set in the "
-                                          "agent's market profile: left out of the net. Commissions are negotiable: ask", "high")
+                                          "Buyer-broker compensation not stated: left out of the net", "high")
         else:
-            src = "what the seller offered" if S["offered_buyer_broker_pct"] is not None else "the agent's standard terms"
-            o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: assumed {pct(bb)} ({src})", "high")
+            offered = S["offered_buyer_broker_pct"] is not None
+            src = "what the seller offered" if offered else "national estimate"
+            o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: assumed {pct(bb)} ({src})",
+                                          "high" if offered else "med")
     else:
         o["bb_tag"] = "Requested"
         if o.get("buyer_broker_pct") is None:
@@ -621,7 +613,7 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     months = max(0, (close - L["analysis_date"]).days) / 30
     holding = -round(S["holding_monthly"] * months)
     return {"lines": lines, "net": net, "holding": holding, "net_adj": net + holding, "close": close, "price": price,
-            "missing": base["missing"]}
+            "missing": base["missing"], "assumed": base["assumed"]}
 
 
 def appraisal_line(L):
@@ -1080,8 +1072,16 @@ def _missing_market(costs, sheet, A):
         if label == "who pays owner's title":
             continue  # already recorded in prepare_listing
         A.add("listing", label, "not included",
-              f"{label[:1].upper() + label[1:]} not known for this market: left out of the net (add it, or 0 if there is none, to the market profile)",
+              f"{label[:1].upper() + label[1:]} not known for this market: left out of the net (add it, or 0 if there is none, to the listing's costs)",
               impact.get(label, "med"))
+    what = {"transfer_tax": ("transfer_tax_rate", "Transfer tax", "the state's rate"),
+            "owner_title": ("title_estimate_pct", "Owner's title policy", "a title quote"),
+            "title_fees": ("title_fees", "Title company fees", "a title quote")}
+    for a in sheet["assumed"]:
+        if a.get("estimate") and a["key"] in what:
+            field, name, fix = what[a["key"]]
+            shown = f"{a['value'] * 100:g}% of price" if a["key"] != "title_fees" else money(a["value"])
+            A.add("listing", field, a["value"], f"{name}: national estimate of {shown} (Estimate; {fix} replaces it)", "med")
 
 
 def check_fractions(node, where="file"):

@@ -6,8 +6,8 @@ New skills and scope decisions that aren't defects. Defects go in an audit and a
 
 | ID | Priority | Skill | Builds On |
 |---|---|---|---|
-| GAP-1 | High | `listing-copy`: MLS remarks, social posts, flyer copy | agent profile `voice`, `shared/prose.py`, `fair-housing.md`, MLS layer character limits |
-| GAP-2 | High | `buyer-consultation`: plain-language buyer-broker agreement summary and fee conversation guide | agent profile, market profile brokerage terms |
+| GAP-1 | High | `listing-copy`: MLS remarks, social posts, flyer copy | profile `voice`, `shared/prose.py`, `fair-housing.md`, MLS layer character limits |
+| GAP-2 | High | `buyer-consultation`: plain-language buyer-broker agreement summary and fee conversation guide | profile, the deal's brokerage terms |
 | GAP-3 | Medium | `repair-negotiation`: inspection repair request and response | contract-timeline's inspection deadline, FR/BAR AS IS and Standard repair rules |
 | GAP-4 | Medium | `seller-net-sheet` and `buyer-cash-to-close`: standalone, no CMA or offer needed | `shared/finance.py` (`seller_net`, payments, proration) |
 | GAP-5 | Medium | Transaction checklist and weekly client update emails | contract-timeline's data JSON |
@@ -22,7 +22,7 @@ The highest-volume writing task agents have, and the riskiest for fair housing. 
 
 ### GAP-2: Buyer Consultation
 
-After the 2024 NAR settlement, a written buyer agreement is required before touring. This skill reads the agent profile and produces a plain-language summary of the agent's agreement (term, fee, who may pay it, how to end it) and a guide for the fee conversation.
+After the 2024 NAR settlement, a written buyer agreement is required before touring. This skill reads the agent's profile and produces a plain-language summary of the agent's agreement (term, fee, who may pay it, how to end it) and a guide for the fee conversation.
 
 - **Guardrails:** no legal advice; it summarizes the agent's own form, and the buyer is told to read the agreement itself. Commissions are negotiable and not set by law.
 - **Open questions:** Which agreement forms are built in (the FR/BAR exclusive buyer brokerage agreement first)? Should it produce a one-page PDF for the buyer?

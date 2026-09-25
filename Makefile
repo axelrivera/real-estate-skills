@@ -74,7 +74,7 @@ outputs:
 		echo "$$skill: $$name"; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="$(OUT)/$$skill/$$name" \
 			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" \
-			$(if $(wildcard dev/fixtures/_profiles/agent-profile.md),--agent dev/fixtures/_profiles/agent-profile.md) || exit 1; \
+			$(if $(wildcard dev/fixtures/_profiles/profile.md),--profile dev/fixtures/_profiles/profile.md) || exit 1; \
 	done
 
 # One happy-path sample per skill for previews, committed. Inputs in dev/samples/ are fully mocked.
@@ -83,8 +83,7 @@ samples:
 		echo "$$skill"; rm -rf samples/$$skill; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/$$skill" \
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
-			--agent dev/samples/agent-profile.md || exit 1; \
-		rm -f samples/$$skill/*.json; \
+			--profile dev/samples/profile.md || exit 1; \
 	done
 	@$(PY) dev/samples_readme.py
 

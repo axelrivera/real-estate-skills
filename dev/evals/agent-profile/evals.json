@@ -3,26 +3,38 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "hey can you set me up so my reports have my info on them? I'm Maria Gonzalez with Keller Williams Winter Park, team is The Gonzalez Group. license SL3398812. use navy #1B2A4A for everything",
-      "expected_output": "agent-profile.md with name, team, brokerage, license and primary #1B2A4A named Navy; no phone/email/website/voice/disclaimer lines; check_profile ok; summary in plain words; one line on adding it to Project files",
+      "prompt": "I just installed this. set me up",
+      "expected_output": "Opens with the one-line promise (two quick rounds, about two minutes, skip anything) and Round 1 only: name and licensed brokerage, team, what to show on reports. Fill-in-the-blank lines with examples; no questions about markets, costs or commission; no jargon, YAML or field names; no em dashes; writes no file yet",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "I want my listing presentations in my brand colors. Here's my logo. I'm Derek Owens, Premier Sotheby's.",
-      "expected_output": "Runs extract_colors.py on the logo, names the colors, asks to confirm (and about a buyer/seller split only if two strong colors), then writes the profile with name, brokerage and the confirmed colors",
-      "files": ["dev/evals/agent-profile/files/logo-navy-gold.png"]
+      "prompt": "hey can you set me up so my reports have my info on them? I'm Maria Gonzalez with Keller Williams Winter Park, team is The Gonzalez Group. license SL3398812. use navy #1B2A4A for everything",
+      "expected_output": "Skips what's answered and writes profile.md right away: name, team, brokerage, license, primary #1B2A4A named Navy; no phone/email/website/voice/disclaimer lines and nothing about markets; check_profile ok; says it's saved and sends Round 2 minus colors (disclaimers, how they talk), with one line on keeping the file",
+      "files": []
     },
     {
       "id": 3,
-      "prompt": "Update my profile, my new number is 321-555-0142 and I moved to eXp Realty.",
-      "expected_output": "Reads the existing profile, changes only phone and brokerage, keeps everything else, check_profile ok",
-      "files": ["dev/evals/agent-profile/files/agent-profile.md"]
+      "prompt": "I want my listing presentations in my brand colors. Here's my logo. I'm Derek Owens, Premier Sotheby's.",
+      "expected_output": "Runs extract_colors.py on the logo, names the colors, proposes one direction and asks to confirm (a buyer/seller split only because there are two strong colors), and writes profile.md with name, brokerage and the proposed colors",
+      "files": ["dev/evals/agent-profile/files/logo-navy-gold.png"]
     },
     {
       "id": 4,
+      "prompt": "Update my profile, my new number is 321-555-0142 and I moved to eXp Realty.",
+      "expected_output": "Reads the existing profile, no interview; changes only phone and brokerage, keeps everything else, asks in one line whether the team name, email, website or disclaimers change too; check_profile ok",
+      "files": ["dev/evals/agent-profile/files/profile.md"]
+    },
+    {
+      "id": 5,
       "prompt": "Set up my profile. I'm Dana Reyes with Coldwell Banker in Sanford. My niche is helping young families find homes in safe neighborhoods with good schools, put that in my voice so every report says it.",
-      "expected_output": "Saves the profile with a compliant niche and voice (e.g. first-time and move-up buyers, Sanford area, plain-spoken) and without 'young families', 'safe neighborhoods' or 'good schools'; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; no em dashes; headings in Title Case",
+      "expected_output": "Saves the profile with a compliant voice (e.g. first-time and move-up buyers, Sanford area, plain-spoken) and without 'young families', 'safe neighborhoods' or 'good schools'; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; no em dashes; headings in Title Case",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Can you save that I usually do 3% listing and 2% to buyer agents, and my title company charges $850?",
+      "expected_output": "Doesn't add costs or commission to the profile; explains in plain words that each report assumes these (5% total commission, labeled) and takes their numbers on the report itself, so they can just mention them when asking for a net sheet or CMA; offers to set up the profile if there isn't one",
       "files": []
     }
   ]

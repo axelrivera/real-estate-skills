@@ -1,13 +1,12 @@
 """Compute every number in the seller CMA (PDF, deck and chat summary) from report.json.
 
-    python3 scripts/compute.py report.json [--market market-profile.md] [--out DIR]
+    python3 scripts/compute.py report.json [--out DIR]
 
 Prints JSON: the net sheet for each pricing strategy (brokerage, transfer tax, title, title company
 fees, estoppel, seller credit, optional payoff), a buyer's payment at each list price, the effect of
 $10,000 in price, the scatter trend, all formatted for the markdown template, plus `warnings` to fix,
-`assumptions` to confirm with the agent, `preliminary` (true when the market is missing a cost) and
-the `handoff_block` to end a markdown reply with. Also writes <address>.seller.cma.json (the handoff the
-seller-offer-review skill reads). render.py uses the same numbers for the PDF and the deck.
+`assumptions` to confirm with the agent, `preliminary` (true when the market is missing a cost). Also writes <address>.seller.cma.json (the handoff the
+seller-offer-review skill reads) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF and the deck.
 """
 import argparse
 import json
@@ -17,7 +16,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
+from _shared import cma, finance, handoff, mls, profiles  # noqa: E402
 
 # The order finance.seller_net adds its lines in.
 NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_surtax", "owner_title", "title_fees", "estoppel",
@@ -148,9 +147,12 @@ def net_sheet(R, market, L):
     if not has_tax and market.get("property_tax.paid") == "arrears":
         notes.append(L("net_tax_note"))
     fees = market.get("closing_costs.seller_title_fees")
-    if "title_fees" in assumed_keys:
+    if "title_fees" in assumed_keys and market.source("closing_costs.seller_title_fees") != "estimate":
         items = ", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())
         notes.append(L("net_title_fees_note", items=items))
+    estimates = [a["text"] for a in first["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
+    if estimates:
+        notes.append(L("net_estimates_note", items=", ".join(estimates)))
     shown = [MISSING_WORDS.get(m, m) for m in first["missing"]]
     if first["missing"]:
         notes.append(L("net_missing", items=", ".join(shown)))
@@ -169,9 +171,9 @@ def buyer_tax_rates(R, market):
     bp = R["buyer_payment"]
     school, total = bp.get("school_mills"), bp.get("total_mills")
     if total is None and bp.get("district"):
-        found = finance.millage(market, county=R["subject"].get("county"), district=bp["district"])
-        if found:
-            school, total = found[0]["school"], found[0]["total"]
+        row, _ = finance.millage_row(market, R["subject"].get("county"), bp["district"])
+        if row:
+            school, total = row["school"], row["total"]
     return school, total, bp.get("homestead", True)
 
 
@@ -215,6 +217,12 @@ def compute(R, market, homes):
     _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
              "comps.cards", "pricing.strategies", "buyer_payment.rate", "buyer_payment.insurance_annual")
     L = cma.Labels(ASSETS, R.get("labels"))
+    for block in ("costs", "buyer_payment"):  # units before any math: fractions stay fractions, interest stays a percent
+        try:
+            finance.check_units(R.get(block) or {}, block)
+        except ValueError as e:
+            raise ReportError(str(e)) from e
+    market = market.with_deal(R.get("costs"))  # this listing's own numbers (a title quote, the state's transfer tax)
     s, rec, p = R["subject"], R["recommendation"], R["pricing"]
     strategies = p["strategies"]
     if not 1 <= len(strategies) <= 4:
@@ -265,26 +273,35 @@ def compute(R, market, homes):
                         "render.py won't build the files until then.")
     if net["missing"]:
         warnings.append("Preliminary: the market has no value for " + ", ".join(net["missing"]) +
-                        ". Ask the agent (or use their market profile) and re-run; the report is marked Preliminary until then.")
+                        ". Ask the agent and re-run; the report is marked Preliminary until then.")
     brokerage = [a["text"] for a in net["assumed"] if a["key"] in ("listing_fee", "buyer_broker_fee")]
     if brokerage:
-        assumptions.append("Brokerage uses your standard terms from the market profile (" + ", ".join(brokerage) +
-                           "), marked on every page and slide that shows a net. Replace them with this listing agreement's "
-                           "terms when the agent gives them.")
+        assumptions.append("Brokerage is assumed (" + ", ".join(brokerage) + "), marked on every page and slide that shows "
+                           "a net. The agent can give the listing agreement's terms to update it.")
+    estimated = [a["text"] for a in net["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
+    if estimated:
+        assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". Look up the "
+                           "state's transfer tax from an official source (costs.transfer_tax_rate, and transfer_tax_payer if "
+                           "the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest.")
     costs_in = R.get("costs") or {}
     if costs_in.get("annual_tax") and not net["has_tax"]:
         warnings.append("costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
                         "closing_date per pricing option) to include the tax proration.")
-    if any(a["key"] == "title_fees" for a in net["assumed"]):
+    if any(a["key"] == "title_fees" and not a.get("estimate") for a in net["assumed"]):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
 
     pay, tax_info = payments(R, market)
+    bp = R["buyer_payment"]
+    if bp.get("total_mills") is None and bp.get("district"):
+        problem = finance.millage_row(market, s.get("county"), bp["district"])[1]
+        if problem:
+            warnings.append(problem)
     if pay is None:
         warnings.append("No millage or tax rate for the buyer-payment estimate: give buyer_payment.school_mills and total_mills "
-                        "(or a district in the market profile).")
+                        "(or a district in the built-in millage).")
     elif pay["homestead"] and not market.get("property_tax.primary_residence_exemptions"):
         warnings.append("Buyer taxes assume a homestead, but this market has no exemptions on file, so none are applied: "
-                        "add the local exemptions to the market profile, or set buyer_payment.homestead to false and say so.")
+                        "set buyer_payment.homestead to false and say so, or give the tax with the exemption applied.")
     if pay and pay["tax_estimated"]:
         warnings.append(f"Buyer taxes are estimated at {pay['tax_basis']}; find the millage for the home's taxing district if you can.")
 
@@ -294,8 +311,10 @@ def compute(R, market, homes):
 
     stats = {}
     if others:
-        st = mls.market_stats(homes, {"address": address, "living_area": s["sqft"], "private_pool": bool(s.get("pool")),
-                                      "subdivision": s.get("subdivision")}, split_date=R.get("split_date"),
+        st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
+                                      "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
+                                      **({"property_type": s["property_type"]} if s.get("property_type") else {})},
+                              split_date=R.get("split_date"),
                               exclude_address=address, as_of=R.get("as_of"))
         recent = st["sold_recent"]
         stats = {k: v for k, v in {
@@ -365,35 +384,40 @@ def compute(R, market, homes):
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,
-        "handoff_block": handoff.to_block(h),
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+                        for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
         "assumptions": assumptions,
         "market_notes": market.notes,
     }
 
 
-def load_inputs(R, market_path=None, mls_name=None):
-    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV). The MLS is `--mls`,
-    else the report's `mls`, else the market profile's, else the one built-in MLS covering the county (CMA-15)."""
+def load_inputs(R, mls_name=None, data_file=None):
+    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV, `export_columns` its
+    header map for an MLS that isn't built in). The MLS is `--mls`, else the report's `mls`, else the one built-in MLS
+    covering the county (CMA-15)."""
     s = R.get("subject") or {}
-    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
-    homes = mls.load(R["export"], market) if R.get("export") else []
+    market = profiles.load_market(state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
+    if R.get("export"):
+        R["export"] = mls.resolve_export(R["export"], data_file)  # beside report.json when not found from here
+    homes = mls.load(R["export"], market, R.get("export_columns")) if R.get("export") else []
+    mls.fill_distances(homes, s.get("mls_address", s.get("address")),
+                       (s["latitude"], s["longitude"]) if s.get("latitude") and s.get("longitude") else None)
     return market, homes
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("report")
-    ap.add_argument("--market", help="market profile (closing costs, commission, taxes, MLS format); built in for Florida")
-    ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
-    ap.add_argument("--mls", help="MLS name when there's no market profile, as with stats.py (Stellar is built in)")
+    ap.add_argument("--out", help="where to write the .cma.json handoff (default: next to report.json, the working folder; never the outputs)")
+    ap.add_argument("--mls", help="MLS name, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
         R = json.load(f)
     try:
-        market, homes = load_inputs(R, a.market, a.mls)
+        market, homes = load_inputs(R, a.mls, a.report)
         result = compute(R, market, homes)
-        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "seller"))
+        path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "seller"))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result["handoff"], f, indent=2)
         result["handoff_file"] = path

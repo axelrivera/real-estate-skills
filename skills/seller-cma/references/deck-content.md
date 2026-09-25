@@ -6,7 +6,7 @@ The deck is the conversation piece for the appointment; the PDF is the leave-beh
 
 | # | Slide | Numbers from | Wording from `deck` |
 |---|---|---|---|
-| 1 | Title (dark) | agent profile, date | `title`, `subtitle` |
+| 1 | Title (dark) | agent's profile, date | `title`, `subtitle` |
 | 2 | Our Recommendation | recommendation, `summary_page.expected_sale` | `recommendation_why` |
 | 3 | How We Priced It (5 steps) | sales in the export, comps, adjusted min/max/median, list price | optional `sold_line` |
 | 4 | What Buyers Will Pay For | — | `value_drivers`, `document_items` |

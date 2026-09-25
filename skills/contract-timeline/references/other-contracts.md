@@ -11,7 +11,7 @@ Find the contract's definitions of time (usually a "Time", "Computation of time"
 - What happens when a period ends on a weekend or holiday?
 - Does it name holidays beyond the federal ones? Texas forms use Texas legal holidays: set `holidays: tx_state`.
 
-If the agent's market profile has `contract` rules and they match, nothing more is needed. Otherwise put what the contract says in the deal file's `rules` (format in `deal-file.md`). If the contract is silent on something, ask the agent rather than assume Florida's rules; that's what would otherwise quietly move a deadline by a day.
+Put what the contract says in the deal file's `rules` (format in `deal-file.md`). If the contract is silent on something, ask the agent rather than assume Florida's rules; that's what would otherwise quietly move a deadline by a day.
 
 ## 2. Deadlines
 

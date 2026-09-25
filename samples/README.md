@@ -15,7 +15,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 ## Buyer Offer Strategy
 
-- [1532-Cypress-Bend-Dr-Offer-Options.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Options.pdf) (4 pages). An FHA buyer competing with two other offers on a $365,000 listing. It shows the recommended offer inside the buyer's limits, the alternatives and what each changes and costs, and how the offer scores against the competition from the listing agent's side.
+- [1532-Cypress-Bend-Dr-Offer-Options.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Options.pdf) (3 pages). An FHA buyer competing with two other offers on a $365,000 listing. It shows the recommended offer inside the buyer's limits, the alternatives and what each changes and costs, and how the offer scores against the competition from the listing agent's side.
 - [1532-Cypress-Bend-Dr-Offer-Package.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Package.pdf) (2 pages). The worksheet for writing the recommended offer on the FR/BAR AS IS contract: contract entries by paragraph, riders, draft language for additional terms, the offer package checklist and what to request from the seller after acceptance.
 
 ## Contract Timeline

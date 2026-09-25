@@ -259,9 +259,9 @@ def _shift_status(brand_hex):
 def theme(brand=None, side="buyer"):
     """All color tokens for one document side.
 
-    `brand` is the agent profile's `brand` mapping (or None). Returns a JSON-serialisable dict:
+    `brand` is the profile's `brand` mapping (or None). Returns a JSON-serialisable dict:
     brand tokens, neutrals, status sets, party colors, and `warnings` in plain language
-    (for agent-profile to relay) plus `adjustments` (internal notes, for debugging).
+    (for the agent-profile skill to relay) plus `adjustments` (internal notes, for debugging).
     """
     primary, source, warnings = resolve(brand, side)
     # The default blue and orange are a designed pair checked against the fixed status colors; only an agent's brand shifts them

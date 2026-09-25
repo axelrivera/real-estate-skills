@@ -62,7 +62,7 @@ class Taxes(unittest.TestCase):
     def test_fallback_rate_and_unknown(self):
         self.assertAlmostEqual(f.property_tax(400000, FL)["annual"], 400000 * 0.018)
         tx = profiles.load_market(state="TX")
-        self.assertIsNone(f.property_tax(400000, tx)["annual"])
+        self.assertAlmostEqual(f.property_tax(400000, tx)["annual"], 400000 * 0.011)  # national estimate
 
     def test_texas_style_exemptions(self):
         class M:
@@ -95,6 +95,31 @@ class Taxes(unittest.TestCase):
     def test_millage_lookup(self):
         self.assertEqual(f.millage(FL, county="Seminole County", district="Altamonte")[0]["total"], 17.5683)
 
+    def test_millage_by_tax_area_code(self):
+        # A property report's "Tax Area: 01" is Seminole's unincorporated code, whatever the mailing city says.
+        self.assertEqual(f.millage(FL, county="Seminole", district="01")[0]["total"], 13.6790)
+        self.assertEqual(f.millage(FL, county="Seminole", district="a1")[0]["district"], "Altamonte Springs")
+        self.assertEqual(f.millage(FL, county="Orange", district="8")[0]["district"], "Orlando (St. Johns WMD)")  # "8/28/71/78"
+
+    def test_check_units(self):
+        f.check_units({"costs": {"listing_fee_pct": 0.025, "transfer_tax_rate": 0.007, "mortgage_rate": 6.5},
+                       "payment": {"rate": 6.95, "scenarios": [{"down_pct": 1}]}})
+        for bad in ({"listing_fee_pct": 2.5}, {"transfer_tax_rate": 0.7}, {"tax_rate": 1.1}, {"rate": 0.065},
+                    {"rate": 65}, {"mortgage_rate": "6.5%"}):
+            with self.assertRaises(ValueError, msg=bad):
+                f.check_units(bad)
+        with self.assertRaises(profiles.ProfileError):  # a deal's costs are checked on the way in, for every skill
+            profiles.load_market(state="FL").with_deal({"transfer_tax_rate": 0.7})
+
+    def test_millage_row_never_guesses(self):
+        row, why = f.millage_row(FL, "Seminole", "01")
+        self.assertEqual((row["total"], why), (13.6790, None))
+        for district in ("6", "11", "Orlando"):  # Orange reuses codes; "Orlando" names two districts
+            row, why = f.millage_row(FL, "Orange", district)
+            self.assertIsNone(row)
+            self.assertIn("matches", why)
+        self.assertEqual(f.millage_row(FL, "Orange", "999"), (None, None))
+
 
 class SellerSide(unittest.TestCase):
     def test_title_premium_florida(self):
@@ -112,8 +137,11 @@ class SellerSide(unittest.TestCase):
         self.assertIn("Owner's Title Insurance", labels)
         self.assertIn("HOA Estoppel Letter", labels)
         self.assertEqual(n["missing"], [])
-        self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in title fees; no built-in brokerage
-        self.assertEqual(f.seller_net(465000, FL)["missing"], ["listing fee", "buyer's agent fee"])  # CORE-5
+        self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in local title fees
+        default = f.seller_net(465000, FL)
+        self.assertEqual(default["missing"], [])
+        self.assertEqual([(a["key"], a["value"], a["estimate"]) for a in default["assumed"][:2]],
+                         [("listing_fee", 0.025, True), ("buyer_broker_fee", 0.025, True)])  # 5% total assumed
         quoted = f.seller_net(465000, FL, title_fees=900)
         self.assertEqual(next(x["amount"] for x in quoted["lines"] if x["key"] == "title_fees"), 900)
         self.assertNotIn("title_fees", [a["key"] for a in quoted["assumed"]])
@@ -124,10 +152,24 @@ class SellerSide(unittest.TestCase):
         labels = [a for a, _ in f.seller_net(500000, miami)["items"]]
         self.assertNotIn("Owner's Title Insurance", labels)
 
-    def test_other_state_reports_missing(self):
+    def test_other_state_uses_labeled_estimates(self):
+        n = f.seller_net(500000, profiles.load_market(state="GA"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
+        self.assertEqual(n["missing"], [])
+        labels = {x["key"]: x["label"] for x in n["lines"]}
+        self.assertEqual(labels["transfer_tax"], "Transfer Tax (Estimate, 0.40%)")
+        self.assertEqual(labels["owner_title"], "Owner's Title Insurance (Estimate)")
+        self.assertEqual(labels["title_fees"], "Title Company Fees (Estimate)")
+        self.assertEqual({a["key"] for a in n["assumed"] if a["estimate"]}, {"transfer_tax", "owner_title", "title_fees"})
+        deal = f.seller_net(500000, profiles.load_market(state="GA").with_deal({"transfer_tax_rate": 0.001}),
+                            listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
+        self.assertEqual({x["key"]: x["label"] for x in deal["lines"]}["transfer_tax"], "Transfer Tax (0.10%)")  # looked up
+
+    def test_no_state_transfer_tax(self):
+        # Texas has no state transfer tax: best practice is none, never the national 0.4% estimate.
         n = f.seller_net(500000, profiles.load_market(state="TX"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
-        self.assertIn("deed transfer tax", n["missing"])
-        self.assertIsNone(n["net"])
+        self.assertNotIn("transfer_tax", [x["key"] for x in n["lines"]])
+        self.assertNotIn("transfer_tax", [a["key"] for a in n["assumed"]])
+        self.assertEqual(n["missing"], [])
 
 
 
@@ -174,12 +216,8 @@ class AuditMarketMoney(unittest.TestCase):
     """CORE-9, CORE-16, CORE-17, CORE-19."""
 
     def test_quote_beats_promulgated_table_and_warns_below_it(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "m.md")
-            with open(path, "w") as fh:
-                fh.write("---\nprofile: market\nstate: FL\nclosing_costs:\n  owner_title:\n"
-                         "    quote: {price: 400000, premium: 2000}\n---\n")
-            m = profiles.load_market(path, county="Seminole")
+        m = profiles.load_market(state="FL", county="Seminole")
+        m.data["closing_costs"]["owner_title"]["quote"] = {"price": 400000, "premium": 2000}
         n = f.seller_net(400000, m, listing_fee_pct=0, buyer_broker_fee_pct=0)
         line = next(x for x in n["lines"] if x["key"] == "owner_title")
         self.assertEqual((line["label"], line["amount"]), ("Owner's Title Insurance (Quote)", 2000))

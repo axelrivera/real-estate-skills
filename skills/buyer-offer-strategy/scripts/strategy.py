@@ -1,6 +1,6 @@
 """Build the buyer's offer: a recommended offer inside the buyer's limits, up to two alternatives, outlook bands.
 
-    python3 scripts/strategy.py buyer.json [--cma file.cma.json] [--market market-profile.md] [--option recommended|stronger|lower_cost]
+    python3 scripts/strategy.py buyer.json [--cma file.cma.json] [--option recommended|stronger|lower_cost]
 
 Every option is scored by the shared offer engine the listing side uses (seller net, appraisal downside,
 certainty score, likely counter), so "best" means best as a listing agent would judge it.
@@ -23,7 +23,7 @@ COMP_LABEL = {0: "Only Offer", 1: "1 Competing Offer", 2: "2–3 Competing", 3: 
 # Competitiveness thresholds (strong / competitive / at risk) per competition level. Starting judgments.
 BANDS = {0: (55, 40, 30), 1: (65, 55, 45), 2: (75, 60, 50), 3: (85, 72, 60)}
 OPTION_LABEL = {"recommended": "Recommended", "stronger": "Stronger", "lower_cost": "Lower-Cost"}
-# National planning estimates, used only when neither the buyer file nor the market profile has a number.
+# National planning estimates, used only when neither the buyer file nor the market has a number.
 DEFAULT_RATE = 6.5
 NATIONAL_INSURANCE_RATE = 0.009
 NATIONAL_CLOSING_PCT = {"financed": 0.035, "cash": 0.015}
@@ -64,10 +64,14 @@ def apply_cma(B, h):
     for ours, theirs in (("sale_to_list", ("sale_to_list", "sale_to_list_recent", "sale_to_original_list_recent")),
                          ("median_dom", ("median_dom", "median_days_recent", "median_days")),
                          ("months_supply", ("months_supply",)),
-                         ("share_with_seller_costs", ("share_with_seller_costs",)),
-                         ("typical_seller_paid", ("typical_seller_paid",))):
+                         ("share_with_seller_costs", ("share_with_seller_costs", "share_with_seller_paid_costs_recent")),
+                         ("typical_seller_paid", ("typical_seller_paid", "median_seller_paid_recent"))):
         val = next((mk[k] for k in theirs if mk.get(k) is not None), None)
-        if val is not None and M.get(ours) is None:
+        if val is not None and M.get(ours) is None:  # the CMA's raw numbers read like the buyer file's text ("44%", "$6,500")
+            if ours == "share_with_seller_costs" and isinstance(val, (int, float)):
+                val = f"{val * 100:.0f}%"
+            elif ours == "typical_seller_paid" and isinstance(val, (int, float)):
+                val = f"${val:,.0f}" if val else None
             M[ours] = val
     if h.get("offer_plan") and not B.get("cma_offer_plan"):
         B["cma_offer_plan"] = h["offer_plan"]
@@ -397,7 +401,7 @@ def build_offer(B, costs):
             why["buyer_broker_pct"] = "Per your buyer-broker agreement (confirm with listing agent)"
         elif costs.get("brokerage.buyer_broker_fee_pct") is not None:
             t["buyer_broker_pct"] = costs.get("brokerage.buyer_broker_fee_pct")
-            why["buyer_broker_pct"] = f"Market default ({t['buyer_broker_pct'] * 100:g}%): set it from your buyer-broker agreement"
+            why["buyer_broker_pct"] = f"Assumed {t['buyer_broker_pct'] * 100:g}% (5% total): set it from your buyer-broker agreement"
         else:
             t["buyer_broker_pct"] = 0
             why["buyer_broker_pct"] = "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
@@ -1037,13 +1041,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("buyer")
     ap.add_argument("--cma", help="CMA handoff: a .cma.json file or markdown with a cma-handoff block")
-    ap.add_argument("--market", help="market profile (built in for Florida)")
     ap.add_argument("--option", choices=list(OPTION_LABEL), help="option for the worksheet (default: the file's chosen_option)")
     a = ap.parse_args(argv)
     try:
         with open(a.buyer, encoding="utf-8") as f:
             data = json.load(f)
-        r = analyze(data, a.market, load_cma(data, a.cma))
+        r = analyze(data, cma=load_cma(data, a.cma))
         out = result(r, a.option)
     except (oe.OfferError, handoff.HandoffError, profiles.ProfileError, ValueError, KeyError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}

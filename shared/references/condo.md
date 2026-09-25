@@ -49,14 +49,14 @@ Ask in one message, and list what's missing under the report's requests:
 
 ## Payment
 
-The payment includes the association fee (`hoa_monthly` or `hoa_cdd_monthly`) and, when known, a special assessment spread over its term as its own line or note. Flood insurance follows the market profile's `flood` rules: an HO-6 unit policy is exempt from Florida's Citizens flood requirement, but the building still needs flood coverage in zones A and V.
+The payment includes the association fee (`hoa_monthly` or `hoa_cdd_monthly`) and, when known, a special assessment spread over its term as its own line or note. Flood insurance follows the market's `flood` rules: an HO-6 unit policy is exempt from Florida's Citizens flood requirement, but the building still needs flood coverage in zones A and V.
 
 ## Contract Rights
 
-The buyer's condo rights come from the market profile's `condo` section (Florida: s. 718.503 rescission, a separate right after the milestone and SIRS summaries, association approval before closing). They are buyer rights:
+The buyer's condo rights come from the market's `condo` section (Florida: s. 718.503 rescission, a separate right after the milestone and SIRS summaries, association approval before closing). They are buyer rights:
 
 - **Seller side:** deliver the association documents, the milestone summary and the SIRS with the offer or right after acceptance, because each clock starts when the buyer receives them. A deal isn't firm until those windows pass.
 - **Buyer side:** note the dates the documents arrive; the rights end at closing.
 - Attach the condo rider (FR/BAR CR-7x in Florida) and start the association application within the contract's deadline.
 
-Outside a market whose profile has a `condo` section, don't assume Florida's periods: ask the agent which rider and statute apply.
+Outside a built-in market with a `condo` section (Florida), don't assume Florida's periods: ask the agent which rider and statute apply.

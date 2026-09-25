@@ -2,16 +2,18 @@
 
 ## The Subject
 
-Pull the ten facts for the fact grid (see `report-data.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
+Pull the ten facts for the fact grid (see `report-data.md`) from the property report, using the county's figures where the MLS and public records disagree (`listing-sheet.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
 
 ## The Listing History
 
-The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. The status codes and what they mean are in the market profile (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
+The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. For the 360 property view's grid (status moves like `ACT->PND`, price moves like `895000.00->839000`) and checking closings against the public-record sale history, see `listing-sheet.md`. The status codes and what they mean are in the MLS layer (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
 
 - A new MLS number resets days on market. Look for older numbers below it and report the true timeline: first list date, total active days across all listings, every price change.
 - A pending followed by anything other than a sale means a contract failed. That's a question for the listing agent, not an assumption about the house.
 - Repeated off/back-on-market pairs usually mean a seller managing showings or pausing to reset.
 - A price increase after a failed contract is a signal worth naming.
+
+A relist at a higher price than a listing that failed (canceled, expired or withdrawn) is a finding too: the market already passed at the lower price.
 
 Search the address: earlier syndicated remarks sometimes claim things (a "brand-new roof") that later vanish from the listing. That's a watch item.
 
@@ -26,13 +28,13 @@ From `stats.py`'s `sold_candidates`, pick 3–6 sales:
 
 Include the sales that hurt a low offer. The buyer will find them anyway, and a report that hides them loses its credibility.
 
-Each candidate carries `flags`: `distressed` (REO, short sale, auction) and `new_construction`. Leave those out unless the market is mostly distressed or new construction (or the subject is), then adjust for it and explain why in `method_note`. The ranking already favors recent, close sales; `more_candidates` counts the ones not listed (re-run stats.py with `--limit 30` to see them). Pass `--as-of` with the date the export was pulled so months of supply runs to that day.
+Each candidate carries `flags`: `distressed` (REO, short sale, auction) and `new_construction`. Leave those out unless the market is mostly distressed or new construction (or the subject is), then adjust for it and explain why in `method_note`. The export holds the property types the agent chose to compare. Single-family homes and townhouses can be compared when they overlap in size and price, so neither is dropped: the ranking puts the subject's type first, then close types, and puts condos, 55+ communities, leased land, a different waterfront status or a different number of stories lower. `sold_by_type` shows the mix; when the comps span types, say so in `method_note`. Duplicate sale records are already dropped (see `market_notes`), and a relisted home shows once in the competition with `listings` and `earlier_prices`. The ranking already favors recent, close sales; `more_candidates` counts the ones not listed (re-run stats.py with `--limit 30` to see them). Pass `--as-of` with the date the export was pulled so months of supply runs to that day.
 
 ## Adjusting
 
 Judge each comp's condition from its remarks (renovated, partially updated, maintained, needs work), and say that condition adjustments are judgment calls based on listing text.
 
-Default rates come from the market profile (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the subject can't match, –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, use the agent's profile values, or ask the agent for local norms before adjusting. Explain any departure in `method_note`.
+Default rates come from the built-in market (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the subject can't match, –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, derive the rates from paired sales in the export, scaled to the price, and say so. Explain any departure in `method_note`.
 
 The built-in rates are flat dollars from Central Florida sales in one price band (`cma.calibrated_for`). compute.py warns when the home is outside that area or band: then derive the rates from paired sales in the export, or use the agent's, and scale flat amounts (a pool, a renovation) to the price. There are no built-in rates for garage spaces, bedroom or bath count, age, view, or size differences over about 300 sq ft: derive those from paired sales and say so, or leave the difference to the range and explain it.
 

@@ -227,17 +227,6 @@ class OtherContracts(unittest.TestCase):
         with self.assertRaises(timeline.DealError):
             timeline.analyze(deal)
 
-    def test_market_profile_rules(self):
-        deal = fixture("texas-trec.json")
-        rules = deal.pop("rules")
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "tx.md")
-            with open(path, "w") as f:
-                f.write("---\nprofile: market\nstate: TX\ncontract:\n" +
-                        "".join(f"  {k}: {json.dumps(v)}\n" for k, v in rules.items()) + "---\n")
-            r = timeline.analyze(deal, market_path=path)
-        self.assertEqual(by_key(r)["option_period"]["when"], "2026-11-27 17:00")
-
 
 class Required(unittest.TestCase):
     def test_state_required(self):

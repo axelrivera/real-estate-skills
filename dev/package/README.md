@@ -1,6 +1,6 @@
 # Real Estate Skills {{VERSION}}
 
-Claude skills for real estate agents, in one plugin: agent and market profiles, buyer and seller CMAs, offer strategy and review, and contract timelines.
+Claude skills for real estate agents, in one plugin: a one-file agent profile, buyer and seller CMAs, offer strategy and review, and contract timelines.
 
 `{{PLUGIN_FILE}}` in this folder is the plugin, ready to upload to the Claude desktop app.
 
@@ -13,7 +13,7 @@ Claude skills for real estate agents, in one plugin: agent and market profiles, 
 
 Upload the `.plugin` file itself. Don't upload this zip or the unzipped folder.
 
-All 7 skills then appear as `real-estate:<skill>`. Start with `real-estate:agent-profile`. In Cowork, select a working folder: profiles are saved in `.claude/real-estate/` there, so every session finds them.
+All 6 skills then appear as `real-estate:<skill>`. Start with `real-estate:agent-profile` ("set me up"): a two-minute interview that saves one file, `profile.md`. In Cowork, select a working folder first: the profile is saved in `.claude/real-estate/` there, so every session finds it.
 
 ## Install From GitHub (Cowork)
 

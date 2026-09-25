@@ -1,7 +1,7 @@
 """Buyer offer PDFs: the Offer Options report (for the buyer) and the Offer Package Worksheet (for the agent).
 
     python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma file.cma.json] [--option recommended|stronger|lower_cost]
-                              [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
+                              [--profile profile.md] [--sample] [--out DIR]
 
 Options report, page 1: the recommended offer with a reason for every term, the alternatives, the outlook at
 four competition levels and the buyer's cash exposure; the pages after it hold the detail.
@@ -180,7 +180,8 @@ def details(r, res):
         f'<td class="n {"worst" if r["cash"][k]["reserve"] < floor else "best"}">{acct(r["cash"][k]["reserve"])}</td>' for k in K) + "</tr>"
     cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{O[k]["firm_date"]:%b %-d} · {money(O[k]["deposit"])}</td>' for k in K) + "</tr>"
     M, V = B["market"], B["value"]
-    mk = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' + (f' ({V["source"]})' if V.get("source") else "") if not V.get("assumed") else "Not provided"),
+    mk = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' if not V.get("assumed") else "Not provided",
+           V.get("source") if not V.get("assumed") else None),  # the source on its own line, so the range never wraps
           ("Sale-to-List", f'{M["sale_to_list"] * 100:.1f}%' if M.get("sale_to_list") else "—"), ("Months of Supply", M.get("months_supply") or "—"),
           ("Median Days on Market", M.get("median_dom") or "—"), ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
           ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"), ("Market Read", B["competition"]["heat"].title())]
@@ -190,7 +191,8 @@ def details(r, res):
     if plan.get("target_low") and plan.get("target_high"):
         mk.append(("CMA Offer Plan", f'target {money(plan["target_low"])}–{money(plan["target_high"])}'
                    + (f' · walk away {money(plan["walk_away"])}' if plan.get("walk_away") else "")))
-    mkt = "".join(f"<tr><td>{a}</td><td><b>{esc(str(b))}</b></td></tr>" for a, b in mk)
+    mkt = "".join(f"<tr><td>{m[0]}</td><td><b>{esc(str(m[1]))}</b>"
+                  + (f"<br><small>{esc(str(m[2]))}</small>" if len(m) > 2 and m[2] else "") + "</td></tr>" for m in mk)
     pb = "".join(f'<tr><td>{esc(t)}</td><td>{esc(a)}</td><td class="caution">{esc(b)}</td><td>{esc(RESP.get(t, "Discuss with the buyer"))}</td></tr>'
                  for t, a, b, _ in rec["counter_rows"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
     if r["missing"]:
@@ -288,7 +290,7 @@ def fit_page_one(pg):
 
 
 def build(data, fmt, out_dir, ctx):
-    r = ST.analyze(data, ctx.get("market"), ST.load_cma(data, ctx.get("cma")))
+    r = ST.analyze(data, cma=ST.load_cma(data, ctx.get("cma")))
     option = ctx.get("option")
     sample = ctx.get("sample") or r["sample"]
     street = (r["B"]["property"].get("address") or "Property").split(",")[0]

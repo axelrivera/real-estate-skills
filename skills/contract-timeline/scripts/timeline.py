@@ -1,12 +1,12 @@
 """Compute every contract deadline from a deal file.
 
-    python3 scripts/timeline.py deal.json [--market market-profile.md] [--side buyer|seller]
+    python3 scripts/timeline.py deal.json [--side buyer|seller]
 
 Prints JSON with every date already formatted (for the markdown template and the PDF), or
 {"ok": false, "problems": [...]} when something needed is missing. See references/deal-file.md.
 
 Time rules (day counting, any short-period rule, end of day, weekend/holiday rollover) come from the
-market profile's `contract` section (built in for Florida), overridden by the deal file's `rules`.
+market's `contract` section (built in for Florida), overridden by the deal file's `rules`.
 FR/BAR contracts get their deadline list from the contract fields; any other contract lists its
 deadlines explicitly in `deadlines`.
 """
@@ -66,12 +66,12 @@ def _form_covered(market_contract, deal, frbar):
     return bool(form) and form in forms
 
 
-def load_rules(deal, market_path=None, frbar=True):
-    """Market profile `contract` rules for the deal's state/county, then the deal file's `rules`."""
-    if not deal.get("state") and not market_path:
+def load_rules(deal, frbar=True):
+    """Built-in `contract` rules for the deal's state/county, then the deal file's `rules`."""
+    if not deal.get("state"):
         raise DealError("The deal file needs the property's state (for example FL or TX): time rules and holidays "
                         "depend on it. Ask the agent; don't assume Florida.")
-    market = profiles.load_market(market_path, state=deal.get("state"), county=deal.get("county"))
+    market = profiles.load_market(state=deal.get("state"), county=deal.get("county"))
     mc = market.get("contract") or {}
     rules = {**RULE_DEFAULTS, **(mc if _form_covered(mc, deal, frbar) else {}), **(deal.get("rules") or {})}
     missing = [k for k in RULE_KEYS if rules.get(k) in (None, "")]
@@ -497,7 +497,7 @@ def _fmt(dt, rules, with_time=True):
     return f"{dt:%a %b %-d} · {t}{suffix}"
 
 
-def analyze(deal, market_path=None, side=None):
+def analyze(deal, side=None):
     """Everything the markdown template and the PDF need, as plain JSON-ready data."""
     contract = deal.get("contract") or {}
     if not contract.get("effective_date"):
@@ -513,7 +513,7 @@ def analyze(deal, market_path=None, side=None):
     contract = {**contract, "contract_form": form}
     if not frbar and not deal.get("deadlines"):
         raise DealError("This contract isn't FR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
-    rules, market = load_rules(deal, market_path, frbar)
+    rules, market = load_rules(deal, frbar)
 
     original = compute(copy.deepcopy(contract), deal.get("deadlines") or [], rules, frbar)
     current_contract, history = apply_amendments(contract, deal.get("amendments"))
@@ -577,8 +577,8 @@ def analyze(deal, market_path=None, side=None):
         agent_notes.append("No closing date given: dates counted back from closing are left out")
     elif not current_contract.get("closing_time"):
         agent_notes.append(f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
-    agent_notes += [n for n in market.notes if "MLS" not in n  # MLS assumptions don't matter for a timeline
-                    and not (deal.get("rules") and n.startswith("No market profile"))]  # the contract's rules are given
+    agent_notes += [n for n in market.notes if "MLS" not in n and "transfer tax" not in n  # costs don't matter here
+                    and not (deal.get("rules") and n.startswith("Nothing is built in for"))]  # the contract's rules are given
 
     return {
         "ok": True,
@@ -641,13 +641,12 @@ def rules_text(rules, eff):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("deal")
-    ap.add_argument("--market", help="market profile (time rules); built in for Florida")
     ap.add_argument("--side", choices=["buyer", "seller"])
     a = ap.parse_args(argv)
     with open(a.deal, encoding="utf-8") as f:
         deal = json.load(f)
     try:
-        result = analyze(deal, a.market, a.side)
+        result = analyze(deal, a.side)
     except (DealError, profiles.ProfileError, ValueError, KeyError) as e:
         result = {"ok": False, "problems": [str(e)]}
     print(json.dumps(result, indent=2, ensure_ascii=False))

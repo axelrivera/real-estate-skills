@@ -11,8 +11,8 @@ SKILL = os.path.join(ROOT, "skills", "buyer-cma")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 
-compute, buyer_render, handoff, profiles = load(
-    "buyer-cma", "compute", "render", "_shared.handoff", "_shared.profiles")
+compute, buyer_render, buyer_stats, handoff, profiles = load(
+    "buyer-cma", "compute", "render", "stats", "_shared.handoff", "_shared.profiles")
 
 FIXTURE = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "hickorywood.json")
 
@@ -55,11 +55,13 @@ class MatchesPrototype(unittest.TestCase):
 
     def test_no_warnings_and_handoff(self):
         self.assertEqual(self.C["warnings"], [])
-        h = handoff.parse_text("reply\n" + self.C["handoff_block"])
+        h = handoff.validate(self.C["handoff"])
         self.assertEqual(h["value"]["median_adjusted"], 469800)
         self.assertEqual(h["offer_plan"]["opening"], 455000)
         self.assertEqual(h["market_profile"], {"state": "FL", "mls": "Stellar"})
         self.assertIn("months_supply", h["market"])
+        self.assertEqual(len(self.C["comps_table"]), len(self.C["handoff"]["comps"]))  # the chat template's rows
+        self.assertTrue(self.C["comps_table"][0]["adjusted_display"].startswith("$"))
 
 
 class Warnings(unittest.TestCase):
@@ -91,7 +93,10 @@ class Warnings(unittest.TestCase):
         """CMA-19, CMA-21: formatted numbers, no comps and a scenario without down_pct are plain errors."""
         for change in (lambda R: R["competition"]["rows"][0].__setitem__(2, "$474,500"),
                        lambda R: R["comps"].__setitem__("cards", []),
-                       lambda R: R["costs"]["payment"]["scenarios"][0].pop("down_pct")):
+                       lambda R: R["costs"]["payment"]["scenarios"][0].pop("down_pct"),
+                       lambda R: R["costs"]["payment"].__setitem__("rate", 0.0695),  # a fraction, not 6.95
+                       lambda R: R["costs"].__setitem__("transfer_tax_rate", 0.7),  # 0.7 meant 0.7%
+                       lambda R: R["costs"]["payment"].__setitem__("tax_jurisdiction_index", 5)):
             R = report()
             change(R)
             market, homes = compute.load_inputs(R)
@@ -114,7 +119,7 @@ class Warnings(unittest.TestCase):
         self.assertIn("Not available", doc)
 
 class OtherMarkets(unittest.TestCase):
-    def test_texas_without_millage_has_no_payment_table(self):
+    def test_texas_without_millage_estimates_the_tax(self):
         R = report()
         R["subject"].update(state="TX", county="Travis")
         R.pop("export")
@@ -122,8 +127,8 @@ class OtherMarkets(unittest.TestCase):
             j.pop("school_mills", None), j.pop("total_mills", None)
         market, homes = compute.load_inputs(R)
         C = compute.compute(R, market, homes)
-        self.assertIsNone(C["payments"])
-        self.assertTrue(any("No millage or tax rate" in w for w in C["warnings"]))
+        self.assertAlmostEqual(C["payments"]["rows"][0]["tax"], 474900 * 0.011 / 12)  # national estimate, labeled
+        self.assertTrue(any("estimated at" in w for w in C["warnings"]))
 
     def test_explicit_millage_works_anywhere(self):
         R = report()
@@ -161,7 +166,8 @@ class Pdf(unittest.TestCase):
                 paths = buyer_render.build(R, "pdf", tmp, {"agent": profiles.load_agent(None), "market": None, "sample": True})
             with open(paths[0], "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
-            self.assertEqual(handoff.load(paths[1])["side"], "buyer")
+            self.assertEqual(paths, [paths[0]])  # the PDF only: no JSON handed to the agent
+            self.assertFalse([f for f in os.listdir(tmp) if f.endswith(".json")])
 
 
 
@@ -269,11 +275,57 @@ class AuditMethod(unittest.TestCase):
                 self.assertEqual(compute.main([path, "--out", tmp]), 0)
             self.assertTrue(json.loads(out.getvalue())["handoff_file"].endswith(".buyer.cma.json"))
 
+    def test_export_resolves_beside_the_report(self):
+        # report.json names its export "export.csv": found in report.json's folder, whatever folder the script runs from.
+        import shutil
+        with tempfile.TemporaryDirectory() as tmp:
+            R = report()
+            shutil.copy(R["export"], os.path.join(tmp, "export.csv"))
+            R["export"] = "export.csv"
+            path = os.path.join(tmp, "report.json")
+            with open(path, "w") as f:
+                json.dump(R, f)
+            import contextlib
+            import io
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(compute.main([path, "--out", tmp]), 0)
+            self.assertTrue(json.loads(out.getvalue())["ok"])
+
+    def test_handoff_file_defaults_next_to_report(self):
+        # A working file beside report.json, never in the outputs folder the agent downloads from.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "report.json")
+            with open(path, "w") as f:
+                json.dump(report(), f)
+            import contextlib
+            import io
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(compute.main([path]), 0)
+            hfile = json.loads(out.getvalue())["handoff_file"]
+            self.assertEqual(os.path.dirname(hfile), os.path.abspath(tmp))
+
     def test_offer_ladder_order(self):
         R = report()
         R["offer_plan"]["opening"] = R["offer_plan"]["walk_away"] + 5000
         with self.assertRaisesRegex(compute.ReportError, "opening"):
             self.run_(R)
+
+
+class StatsWithoutAnExportRow(unittest.TestCase):
+    def test_facts_rank_the_comps(self):
+        """A home from a property report with no export row: its facts rank the candidates, lat/lon set distances."""
+        import contextlib
+        import io
+        export = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-reso.csv")
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            buyer_stats.main([export, "--address", "999 NOWHERE LN", "--state", "FL", "--county", "Seminole",
+                              "--sqft", "1849", "--pool", "--subdivision", "FERNWOOD PARK UNIT 2",
+                              "--lat", "28.67", "--lon", "-81.41"])
+        d = json.loads(out.getvalue())
+        self.assertEqual(d["sold_candidates"][0]["address"], "602 QUAIL LN")
+        self.assertEqual(d["sold_candidates"][0]["distance"], 0.15)
+        self.assertIn("ranked from the facts given", d["market_notes"][-1])
+
 
 if __name__ == "__main__":
     unittest.main()

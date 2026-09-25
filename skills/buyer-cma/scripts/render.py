@@ -1,20 +1,19 @@
 """Buyer CMA PDF: page 1 summary, then the full analysis in a fixed section order.
 
-    python3 scripts/render.py report.json [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py report.json [--profile profile.md] [--sample] [--out DIR]
 
 report.json holds the written content and the few inputs the numbers come from (see
 references/report-data.md); `export` in it is the path to the MLS export. Every number is computed
 by compute.py, never typed. Prints the PDF path, then layout notes on stderr.
 """
 import html
-import json
 import os
 import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compute  # noqa: E402
-from _shared import cma, design, finance, handoff, render  # noqa: E402
+from _shared import cma, design, finance, render  # noqa: E402
 
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
@@ -22,7 +21,7 @@ esc = html.escape
 
 
 def agent_block(agent, L):
-    """Wordmark (left) with only the fields the agent profile has."""
+    """Wordmark (left) with only the fields the profile has."""
     name = agent.get("name")
     if not name:
         return ""
@@ -270,7 +269,7 @@ def build_html(R, C, homes, agent):
 
 
 def build(R, fmt, out_dir, ctx):
-    market, homes = compute.load_inputs(R, ctx.get("market"), ctx.get("mls"))
+    market, homes = compute.load_inputs(R, ctx.get("mls"), ctx.get("data_file"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
         raise compute.ReportError("Taxes couldn't be estimated for every jurisdiction: " + "; ".join(C["warnings"]))
@@ -282,9 +281,6 @@ def build(R, fmt, out_dir, ctx):
         label = "SAMPLE DATA · " + label
     path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Buyer CMA", ext="pdf"))
     info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label), before_print=cma.paginate)
-    hpath = os.path.join(out_dir, handoff.filename(R["subject"]["address"], "buyer"))
-    with open(hpath, "w", encoding="utf-8") as f:
-        json.dump(C["handoff"], f, indent=2)
     if not info["summary_page"]["fits"]:
         print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
     elif info["summary_page"]["fit_level"]:
@@ -293,7 +289,7 @@ def build(R, fmt, out_dir, ctx):
         print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
     for w in C["warnings"]:
         print(f"Check: {w}", file=sys.stderr)
-    return [path, hpath]
+    return [path]
 
 
 if __name__ == "__main__":

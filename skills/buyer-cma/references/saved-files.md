@@ -1,29 +1,24 @@
 # Saved Files
 
-Where the agent's profiles live between conversations, and where to look for them. A profile is a convenience: when none is found, collect what the task needs in the chat, as the skill says.
+Where the agent's profile lives between conversations, and where to look for it. The profile is a convenience: when none is found, collect what the task needs in the chat, as the skill says.
 
 ## The Saved Folder
 
-In Cowork, when the agent has a working folder selected, profiles are saved in `.claude/real-estate/` inside that folder:
-
-| File | What It Holds |
-|---|---|
-| `agent-profile.md` | The agent's name, brokerage, contact details, voice, disclaimers and brand colors |
-| `market-profile-<area>.md` | One per market, for example `market-profile-seminole.md` |
+In Cowork, when the agent has a working folder selected, the profile is saved as `.claude/real-estate/profile.md` inside that folder. It's one file: the agent's name, brokerage, contact details, brand colors, voice and disclaimers. It holds no local costs: reports take those from the property.
 
 Resolve the path from the agent's working folder, never from the current directory: in Cowork, skills run from a plugin folder, not from the agent's folder. If you can't tell which folder the agent selected, there is no saved folder for this conversation.
 
-## Finding a Profile
+## Finding the Profile
 
 Use the first place that has one:
 
 1. **The conversation:** a file the agent uploaded or pasted, or one written earlier in this chat.
 2. **Project files** (claude.ai Projects).
-3. **The saved folder,** when there is a working folder: `.claude/real-estate/agent-profile.md`, and the `market-profile-*.md` whose state and area match the deal.
+3. **The saved folder,** when there is a working folder: `.claude/real-estate/profile.md`.
 
-Pass the file to the scripts by its path (`--agent`, `--market`). When the profile came from the saved folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
+Pass the file to `render.py` by its path (`--profile`). When the profile came from the saved folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
 
-## Saving a Profile
+## Saving the Profile
 
 Only save after the agent has given or confirmed the details.
 
@@ -35,6 +30,10 @@ Only save after the agent has given or confirmed the details.
 
 Never block the task over saving: the profile still works for the rest of this conversation.
 
+## Working Files
+
+The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, and the profile) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply.
+
 ## CMA Handoffs
 
-A CMA saves `<address>.buyer.cma.json` or `<address>.seller.cma.json` next to its report, where the agent can see it. The offer skills look for it in this order: the conversation (a file, or a reply ending in a `cma-handoff v1` block), Project files, then the outputs folder and the working folder. Use a match only when the address is the same home, and name the file you used.
+compute.py saves `<address>.buyer.cma.json` or `<address>.seller.cma.json` next to report.json, in the temporary folder. Later in the same conversation, pass that file to an offer skill with `--cma`. In a new conversation it's gone: read the CMA the agent shares (its PDF or chat summary) for the low, high and median adjusted value, confirm them in one line, and fill them in by hand, as the offer skill says for any other CMA. Use a CMA only when the address is the same home.

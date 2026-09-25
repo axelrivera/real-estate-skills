@@ -1,6 +1,6 @@
 ---
 profile: agent
-schema: 1
+schema: 2
 name: "Jordan Avery, REALTOR®"
 team: "The Avery Team"
 brokerage: "Sample Realty, LLC"
@@ -10,7 +10,7 @@ email: "jordan@example.com"
 website: "example.com"
 ---
 
-# Agent Profile: Jordan Avery
+# Profile: Jordan Avery
 
 The Avery Team · Sample Realty, LLC
 

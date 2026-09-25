@@ -52,30 +52,58 @@ mls_format:
     CANC: Canceled
     EXP: Expired
     WDN: Withdrawn
+  # Field name: accepted headers. Stellar exports use the standard (RESO) field names; older Matrix exports
+  # use the display labels listed after them. Only address, status, living_area, close_price and
+  # current_price are required; the rest make the comp ranking and summaries better when present.
   cma_export_columns:
-    distance: Distance
-    mls_number: ML Number
-    status: Status
-    address: Address
-    subdivision: Legal Subdivision Name
-    living_area: Heated Area
-    current_price: Current Price
-    close_price: Close Price
-    close_date: Close Date
-    original_list_price: Original List Price
-    contract_date: Contract Date
-    beds: Beds
-    full_baths: Full Baths
-    year_built: Year Built
-    pool: Pool
-    days_on_market: CDOM
-    seller_paid_buyer_costs: Seller Paid Buyer Costs
-    lot_acres: Lot Size Acres
-    sale_terms: Sold Terms
-    remarks: Public Remarks
+    mls_number: [ListingId, ML Number, MLS Number]
+    status: [MlsStatus, Status]
+    address: [UnparsedAddress, Address]
+    unit: [UnitNumber, Unit Number]
+    zip: [PostalCode, Zip]
+    subdivision: [SubdivisionName, Legal Subdivision Name]
+    distance: [Distance]
+    latitude: [Latitude]
+    longitude: [Longitude]
+    original_list_price: [OriginalListPrice, Original List Price]
+    current_price: [ListPrice, Current Price]
+    close_price: [ClosePrice, Close Price]
+    contract_date: [PurchaseContractDate, Contract Date]
+    close_date: [CloseDate, Close Date]
+    days_on_market: [CumulativeDaysOnMarket, CDOM]
+    sale_terms: [BuyerFinancing, Sold Terms]
+    seller_paid_buyer_costs: [ConcessionsAmount, Seller Paid Buyer Costs]
+    sale_provisions: [SpecialListingConditions, Special Sale Provision(s)]
+    new_construction: [NewConstructionYN, New Construction YN]
+    property_type: [PropertySubType, Property Style]
+    living_area: [LivingArea, Heated Area]
+    beds: [BedroomsTotal, Beds]
+    full_baths: [BathroomsFull, Full Baths]
+    half_baths: [BathroomsHalf, Half Baths]
+    stories: [Levels, Floors in Unit/Home]
+    floor_number: [FloorNumber, Floor Number]
+    year_built: [YearBuilt, Year Built]
+    construction: [ConstructionMaterials, Exterior Construction]
+    garage_spaces: [GarageSpaces, Garage Spaces]
+    pool: [PoolPrivateYN, Pool Private Y/N, Pool]
+    furnished: [Furnished, Furnishings]
+    lot_acres: [LotSizeAcres, Lot Size Acres]
+    waterfront: [WaterfrontYN, Water Frontage Y/N]
+    water_frontage: [WaterfrontFeatures, Water Frontage]
+    water_access: [WaterAccess, Water Access]
+    water_view: [WaterViewYN, Water View Y/N]
+    sewer: [Sewer]
+    water_source: [WaterSource, Water]
+    flood_zone: [FloodZoneCode, Flood Zone Code]
+    senior_community: [SeniorCommunityYN, Housing for Older Persons Y/N]
+    land_lease: [LandLeaseYN, Land Lease Y/N]
+    total_annual_fees: [TotalAnnualFees, Total Annual Association Fees]
+    annual_cdd_fee: [AnnualCDDFee, Annual CDD Fee]
+    remarks: [PublicRemarks, Public Remarks]
+    sold_remarks: [SoldRemarks, Sold Remarks]
 ---
 
-# Market profile layer: Stellar MLS
+# Market Layer: Stellar MLS
 
 Built-in MLS formats. Used whenever the MLS is Stellar, in any state it serves (Florida and Puerto Rico). State costs and rules come from the state layer, never from here.
 
@@ -85,3 +113,13 @@ Built-in MLS formats. Used whenever the MLS is Stellar, in any state it serves (
 - PNC followed by TOM, BOM or CANC instead of SLD means the contract failed.
 - Repeated TOM/BOM pairs often mean a seller managing showings or pausing to reset.
 - A cancel followed by NEW is a relist that resets the day count.
+- The Cross Property 360 Property View PDF prints the history differently: Change Info holds status moves (`ACT->PND`, `PND->SLD`, `ACT->TOM`, `ACT->CAN`) and price moves (`895000.00->839000`), one block per MLS number. How to read it is in `shared/references/listing-sheet.md`.
+
+## CMA Export
+
+- The export holds the property types the agent wants compared. Single-family homes and townhouses can sit together when they overlap in size and price; the ranking favors the subject's type without dropping the others.
+- A zip or subdivision search has no Distance column: the scripts measure miles from Latitude and Longitude, starting at the subject's own row.
+- The same closing can appear twice (a "Sold Data Entry Only" copy, often an MLS number starting with J). The scripts keep one.
+- A relisted home shows once in the competition, with how many times it was listed and its earlier prices.
+- Fees: TotalAnnualFees is the annual total. AssociationFee is left out because its period varies by listing.
+- Lot size is ignored for condos, and flood zone codes are cleaned up ("X*" reads X; "Yes (X, X500, Ae)" reads AE, the riskiest).

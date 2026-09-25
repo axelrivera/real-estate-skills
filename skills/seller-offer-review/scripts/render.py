@@ -1,7 +1,7 @@
 """Offer review PDF for the seller (listing side): one offer, or every active offer compared.
 
     python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet]
-                              [--agent agent-profile.md] [--market market-profile.md] [--sample] [--out DIR]
+                              [--profile profile.md] [--sample] [--out DIR]
 
 Single review: page 1 is a self-contained executive summary (the recommendation, the counter, key
 numbers, certainty and the seller's options); the pages after it hold the net sheet, contingency
@@ -619,7 +619,7 @@ def write_pdf(R, agent, sample, mode, offer_id, out_dir):
 
 def build(data, fmt, out_dir, ctx):
     """One PDF; with --packet and 2+ active offers, the comparison plus a single review of each active offer, in rank order."""
-    R = review.analyze(data, ctx.get("market"), review.load_cma(data, ctx.get("cma")))
+    R = review.analyze(data, cma=review.load_cma(data, ctx.get("cma")))
     sample = ctx.get("sample") or R["sample"]
     if ctx.get("packet") and len(R["active"]) >= 2:
         paths = [write_pdf(R, ctx["agent"], sample, "multi", None, out_dir)]

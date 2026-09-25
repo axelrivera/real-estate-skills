@@ -1,11 +1,10 @@
 """Compute every number in the buyer CMA from report.json and the MLS export.
 
-    python3 scripts/compute.py report.json [--market market-profile.md] [--out DIR]
+    python3 scripts/compute.py report.json [--out DIR]
 
 Prints JSON: taxes, payment scenarios, price-vs-credit scenarios, buydown, scatter trend, the
-offer plan and range, formatted for the markdown template, plus `warnings` to fix and the
-`handoff_block` to end a markdown reply with. Also writes <address>.buyer.cma.json (the CMA handoff the
-offer skills read) to the outputs folder. render.py uses the same numbers for the PDF.
+offer plan and range, formatted for the markdown template, plus `warnings` to fix. Also writes <address>.buyer.cma.json (the CMA handoff the
+offer skills read) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF.
 """
 import argparse
 import json
@@ -15,7 +14,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import cma, finance, handoff, mls, profiles, render  # noqa: E402
+from _shared import cma, finance, handoff, mls, profiles  # noqa: E402
 
 money = finance.money
 
@@ -47,14 +46,14 @@ def taxes(R, market):
     county = R["subject"].get("county")
     out = []
     for j in t["jurisdictions"]:
-        school, total = j.get("school_mills"), j.get("total_mills")
+        school, total, problem = j.get("school_mills"), j.get("total_mills"), None
         if total is None and j.get("district"):
-            found = finance.millage(market, county=county, district=j["district"])
-            if found:
-                school, total = found[0]["school"], found[0]["total"]
+            row, problem = finance.millage_row(market, county, j["district"])
+            if row:
+                school, total = row["school"], row["total"]
         est = finance.property_tax(t["purchase_price"], market, school, total, t.get("homestead", True))
         out.append({"label": j["label"], "short": j.get("short", ""), "school_mills": school, "total_mills": total,
-                    "annual": est["annual"], "estimated": est["estimated"], "basis": est["basis"]})
+                    "annual": est["annual"], "estimated": est["estimated"], "basis": est["basis"], "problem": problem})
     return out
 
 
@@ -165,6 +164,18 @@ def compute(R, market, homes):
     _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
              "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
+    for block in ("costs",):  # units before any math: fractions stay fractions, interest stays a percent
+        try:
+            finance.check_units(R.get(block) or {}, block)
+        except ValueError as e:
+            raise ReportError(str(e)) from e
+    market = market.with_deal(R.get("costs"))  # this home's own numbers (the state's transfer tax, a tax rate)
+    n_juris, ji = len(R["costs"]["taxes"].get("jurisdictions") or []), R["costs"]["payment"].get("tax_jurisdiction_index", 0)
+    if not n_juris:
+        raise ReportError("costs.taxes.jurisdictions needs at least one entry.")
+    if not isinstance(ji, int) or isinstance(ji, bool) or not 0 <= ji < n_juris:
+        raise ReportError(f"costs.payment.tax_jurisdiction_index is {ji!r}: it must be 0 to {n_juris - 1}, the "
+                          "position of the jurisdiction the payment uses in costs.taxes.jurisdictions.")
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
     ladder = [("opening", op["opening"]), ("target_low", op.get("target_low")), ("target_high", op.get("target_high")),
               ("walk_away", op["walk_away"])]
@@ -190,6 +201,8 @@ def compute(R, market, homes):
         warnings.append(scope)
     tax_rows = taxes(R, market)
     for j in tax_rows:
+        if j["problem"]:
+            warnings.append(j["problem"])
         if j["annual"] is None:
             warnings.append(f"No millage or tax rate for {j['label']}: add school_mills and total_mills.")
         elif j["estimated"]:
@@ -212,8 +225,10 @@ def compute(R, market, homes):
 
     stats = {}
     if homes:
-        st = mls.market_stats(homes, {"address": s.get("mls_address", s["address"]), "living_area": s["sqft"],
-                                      "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision")},
+        address = s.get("mls_address", s["address"])
+        st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
+                                      "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
+                                      **({"property_type": s["property_type"]} if s.get("property_type") else {})},
                               split_date=R.get("split_date"), as_of=R.get("as_of"))
         recent = st["sold_recent"]
         stats = {k: v for k, v in {
@@ -259,34 +274,39 @@ def compute(R, market, homes):
         "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "handoff": h,
-        "handoff_block": handoff.to_block(h),
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+                        for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
         "market_notes": market.notes,
     }
 
 
-def load_inputs(R, market_path=None, mls_name=None):
-    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV). The MLS is `--mls`,
-    else the report's `mls`, else the market profile's, else the one built-in MLS covering the county (CMA-15)."""
+def load_inputs(R, mls_name=None, data_file=None):
+    """Market and MLS records for a report.json (`export` is the path to the MLS export CSV, `export_columns` its
+    header map for an MLS that isn't built in). The MLS is `--mls`, else the report's `mls`, else the one built-in MLS
+    covering the county (CMA-15)."""
     s = R.get("subject") or {}
-    market = profiles.load_market(market_path, state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
-    homes = mls.load(R["export"], market) if R.get("export") else []
+    market = profiles.load_market(state=s.get("state"), county=s.get("county"), mls=mls_name or R.get("mls"))
+    if R.get("export"):
+        R["export"] = mls.resolve_export(R["export"], data_file)  # beside report.json when not found from here
+    homes = mls.load(R["export"], market, R.get("export_columns")) if R.get("export") else []
+    mls.fill_distances(homes, s.get("mls_address", s.get("address")),
+                       (s["latitude"], s["longitude"]) if s.get("latitude") and s.get("longitude") else None)
     return market, homes
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("report")
-    ap.add_argument("--market", help="market profile (taxes, exemptions, MLS format); built in for Florida")
-    ap.add_argument("--out", help="where to write the .cma.json handoff (default: outputs folder)")
-    ap.add_argument("--mls", help="MLS name when there's no market profile, as with stats.py (Stellar is built in)")
+    ap.add_argument("--out", help="where to write the .cma.json handoff (default: next to report.json, the working folder; never the outputs)")
+    ap.add_argument("--mls", help="MLS name, as with stats.py (Stellar is built in)")
     a = ap.parse_args(argv)
     with open(a.report, encoding="utf-8") as f:
         R = json.load(f)
     try:
-        market, homes = load_inputs(R, a.market, a.mls)
+        market, homes = load_inputs(R, a.mls, a.report)
         result = compute(R, market, homes)
-        path = os.path.join(render.output_dir(a.out), handoff.filename(R["subject"]["address"], "buyer"))
+        path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "buyer"))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result["handoff"], f, indent=2)
         result["handoff_file"] = path

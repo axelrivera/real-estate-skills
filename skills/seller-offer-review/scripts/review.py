@@ -1,6 +1,6 @@
 """Analyze the offers on a listing: net sheets, downside, certainty, counter, ranking.
 
-    python3 scripts/review.py listing.json [--cma file.cma.json] [--market market-profile.md] [--mode single|multi] [--offer ID]
+    python3 scripts/review.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID]
 
 Prints JSON with every value already formatted: the page-1 summary (the same one the PDF shows), the
 net sheet for each offer, and the assumptions ranked by impact. Or {"ok": false, "problems": [...]}.
@@ -417,14 +417,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("listing")
     ap.add_argument("--cma", help="CMA handoff: a .cma.json file or markdown with a cma-handoff block")
-    ap.add_argument("--market", help="market profile (built in for Florida)")
     ap.add_argument("--mode", choices=["auto", "single", "multi"], default="auto")
     ap.add_argument("--offer", help="offer id for a single-offer report")
     a = ap.parse_args(argv)
     try:
         with open(a.listing, encoding="utf-8") as f:
             data = json.load(f)
-        R = analyze(data, a.market, load_cma(data, a.cma))
+        R = analyze(data, cma=load_cma(data, a.cma))
         out = result(R, a.mode, a.offer)
     except (oe.OfferError, handoff.HandoffError, profiles.ProfileError, ValueError, KeyError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}

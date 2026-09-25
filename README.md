@@ -1,6 +1,6 @@
 # Real Estate Skills
 
-Claude skills for real estate agents, in one plugin: agent and market profiles, buyer and seller CMAs, offer strategy and review, and contract timelines. Skills run in the Claude desktop app and cloud (claude.ai and Cowork).
+Claude skills for real estate agents, in one plugin: a one-file agent profile, buyer and seller CMAs, offer strategy and review, and contract timelines. Skills run in the Claude desktop app and cloud (claude.ai and Cowork).
 
 ## Install
 
@@ -8,16 +8,15 @@ Claude skills for real estate agents, in one plugin: agent and market profiles, 
 - **Desktop app, from a file:** upload `real-estate-<version>.plugin` with **Upload local plugin** (build it with `make package`; it lands in `dist/`, along with `real-estate-skills-<version>.zip`, which bundles the `.plugin` with install instructions for sharing).
 - **claude.ai, single skills:** run `make package-skills` and upload each zip in `dist/skills/` as a skill (not `dist/dev/`, which holds a diagnostic).
 
-Start with `agent-profile`. In Cowork, select a working folder: profiles are saved in `.claude/real-estate/` there, so every session finds them.
+Start with `agent-profile` ("set me up"): a two-minute interview that saves one file, `profile.md`. In Cowork, select a working folder first: the profile is saved in `.claude/real-estate/` there, so every session finds it.
 
 ## Skills
 
 | Skill | What It Does |
 |---|---|
-| `agent-profile` | The agent's name, brokerage, contact details, voice and brand colors |
-| `market-profile` | Local closing costs, taxes, commissions and contract rules |
+| `agent-profile` | One short interview, one file: the agent's name, brokerage, contact details, voice and brand colors. Reports work out local costs from the listing |
 | `buyer-cma` | Buyer-side CMA for a listing, with a suggested offer |
-| `seller-cma` | Listing CMA with pricing strategies, nets and a listing presentation |
+| `seller-cma` | Listing CMA with pricing strategies and nets, plus a listing presentation on request |
 | `buyer-offer-strategy` | The strongest offer inside the buyer's limits, plus an offer package |
 | `seller-offer-review` | Nets, certainty and counters for offers on a listing |
 | `contract-timeline` | Every deadline in an executed contract, plus a closing calendar |

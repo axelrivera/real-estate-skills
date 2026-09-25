@@ -22,7 +22,7 @@ If the website can't be opened (some sites block automated visits), ask for an i
 
 ## Confirming
 
-Always confirm by name, because a wrong guess ends up on every report. When you write the file before the agent answers (SKILL.md step 2), save `suggestion.primary` for all reports, say so, and change it when they reply:
+Always confirm by name, because a wrong guess ends up on every report. When you write the file before the agent answers (after Round 1), save `suggestion.primary` for all reports, say so, and change it when they reply:
 
 - One color: "Your logo is mostly Navy. Use Navy for all your reports?"
 - With a `split`: "Your logo has Navy and Gold. Use Navy for everything, or Navy for buyer reports and Gold for seller reports?"

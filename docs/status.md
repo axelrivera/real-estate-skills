@@ -1,17 +1,56 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.6.0: one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.6.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
-| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
-| Profiles | `agent-profile`, `market-profile` (markdown only); saved in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`) |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.8.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
+| Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test` (369 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-24): Sanity Check Fixes and Best-Practice Assumptions
+
+A regression run of every fixture and sample, commit by commit from `main`, found no math change outside the intended ones; an audit of documented commands and fields found the items below, all fixed.
+
+- **Best-practice assumptions** (the rule for every default): the 15 states with no state transfer tax (AK, AZ, ID, IN, KS, LA, MS, MO, MT, ND, NM, OR, TX, UT, WY) get none, never the 0.4% estimate (`national.md` `no_state_transfer_tax`, source `national`, a note to confirm local taxes). The buyer's agent fee stays included (2.5%, assumed) until the deal says otherwise.
+- **Millage:** codes split on "/" too (Orange); `finance.millage_row` never guesses between districts that share a code or name, and both CMAs warn.
+- **Units:** `finance.check_units` refuses a `*_pct` or cost rate written as a percent and an interest rate written as a fraction, in both CMAs and every deal's costs (`Market.with_deal`).
+- **buyer-cma:** stats.py takes `--sqft --pool --subdivision --type --lat --lon` for a home with no export row; `tax_jurisdiction_index` is range-checked; `export` resolves beside report.json and is in both examples.
+- **Chat templates and handoffs:** compute.py prints `comps_table`; offer-review template reads `summary.kpis`; buyer-offer-strategy reads the CMA's seller-paid stats by the handoff's names.
+- **Docs:** `property.costs` in the buyer file, `du_approved`, `received` not scored, `recommendation.midpoint`, `--side`, `--packet`, the Texas evals.
+
+## This pass (2026-09-24): Seller CMA Defaults and Table Fixes
+
+- seller-cma builds only the report PDF by default (`render.main(..., default="pdf")`); the listing presentation is built when the request asks for it, or offered in one line afterward. New eval: seller-cma #5.
+- Seller pricing table: "Time to Contract" header, strategy labels on one line. Buyer offer options, Market Check: the CMA source on its own line under the value range.
+- Version 0.8.0.
+
+## This pass (2026-09-24): No JSON Handed to the Agent
+
+Agents were being offered `.cma.json` handoffs and data files (report.json, listing.json) next to their reports. Now the outputs folder holds deliverables only: render.py writes and prints just the PDF, deck or calendar; compute.py saves the handoff next to report.json; and every skill writes its data file in a temporary folder (`saved-files.md`, Working Files). In a new conversation the offer skills read the CMA PDF or chat summary and confirm the range, as for any other CMA. Chat summaries no longer end in a `cma-handoff v1` JSON block (the agents aren't technical); an old block is still read. Tests check that renders write no JSON.
+
+## This pass (2026-09-24): The 360 Property View as the Subject Input
+
+Agents will usually upload the Stellar **Cross Property 360 Property View** PDF for the subject (listing, public records, full history across MLS numbers, flood, AVM), next to the CSV export. It's preferred, not required.
+
+- `shared/references/listing-sheet.md` (synced into both CMAs): read it with `pdftotext -layout`; section-to-field map; the 360 history grid (`ACT->PND`, `895000.00->839000`, DOM per MLS number); MLS vs. county cross-checks (county sq ft and lot, bonus rooms counted as the county records them, homestead from the tax tab); what stays with the agent (owner names, mortgage history, private remarks, showing details, the AVM); buyer (current report, no history screenshot needed) vs. seller (often the last sale's report: history and county facts only, ask what changed since).
+- buyer-cma asks for two inputs, not three; seller-cma skips the fact questions the report answers.
+- `finance.millage` also matches the appraiser's tax-area code (the 360's `Tax Area: 01` is unincorporated Seminole whatever the mailing city says).
+- Open: no eval uses a 360 PDF yet; it needs a fully mocked one (the real sample has real owners and agents).
+
+## This pass (2026-09-24): One Onboarding Skill
+
+User testing found the onboarding too technical: two profile skills with no direction, two files to attach, and market numbers agents don't know. Now:
+
+- **`agent-profile` is the only setup skill:** a two-round interview modeled on the Cruz prototypes (`sources/michael-cruz/`), at most three fill-in-the-blank questions per round (the basics; look and sound), everything skippable, saved after Round 1. One file, `profile.md` (schema 2), with who the agent is and nothing about markets. `market-profile` is gone; no reader for the old files (nobody had saved any).
+- **Local costs are conventions** ([architecture](architecture.md#local-costs), `shared/references/local-costs.md`): location from the listing; the deal's numbers, then built-in Florida/Stellar, then `shared/markets/national.md` (transfer tax 0.4%, title 0.5%, fees $1,200, commission 5% total, tax 1.1%...), labeled Estimate or Assumed per line. Estimates don't mark reports Preliminary. The skill looks up the state's transfer tax from a trusted source and lists the replaceable estimates after the first report; the agent's numbers go in the deal's `costs` (`profiles.DEAL_COSTS`, `Market.with_deal`).
+- **Scripts:** only `render.py` takes `--profile` (name, brokerage, colors); analysis scripts take no profile. Other MLS exports: `--columns` / `export_columns`. seller-cma no longer refuses to render without commission terms.
+- Version 0.7.0 (a skill was removed).
 
 ## This pass (2026-09-23)
 
@@ -52,7 +91,6 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.6.0: o
 - **Rent-back / occupancy terms** in an offer aren't scored; record them as custom `flags` for now.
 - **Texas title rates** below $100k are a lookup table; the per-$1,000 tier format approximates them.
 - **State holidays** (Texas) aren't in the built-in holiday list; add them to a deal's `rules.holidays`.
-- **Files blocked without commission:** outside Florida, seller-cma won't build the PDF or deck until the agent gives brokerage terms (by design; the chat summary says "pending brokerage terms"). Confirm this is the behavior you want.
 - **Escalation cap vs. the CMA's walk-away:** buyer-offer-strategy can set a cap above a buyer CMA's walk-away price without comment; it should say so.
 - **Unknown seller credit** on a comp is recorded as 0 in the handoff.
 - **Deck slide 6** (market stats): long values can overlap their period label; keep values short.
@@ -103,7 +141,7 @@ Won't fix: (none yet).
 ## Remaining work, in order
 
 1. **Audit fixes**, phases 1 to 4 above.
-2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/real-estate-<version>.plugin` (desktop app), `make package-skills` → upload `dist/skills/*.zip` (claude.ai), or add the marketplace `axelrivera/real-estate-skills` (Cowork). Check that all 7 skills appear as `real-estate:*`. Check saved files in Cowork: with a working folder, `agent-profile` writes `.claude/real-estate/agent-profile.md` and a new session's `seller-cma` uses it without an upload; with no folder, and in claude.ai, the hand-over line appears instead. The user will give feedback after this pass.
+2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/real-estate-<version>.plugin` (desktop app), `make package-skills` → upload `dist/skills/*.zip` (claude.ai), or add the marketplace `axelrivera/real-estate-skills` (Cowork). Check that all 6 skills appear as `real-estate:*`. Check the onboarding ("set me up") and saved files in Cowork: with a working folder, `agent-profile` writes `.claude/real-estate/profile.md` and a new session's `seller-cma` uses it without an upload; with no folder, and in claude.ai, the hand-over line appears instead. The user will give feedback after this pass.
 3. **Evals iteration 2** after the user's feedback (the audit's phase 4 covers the changed skills): re-run the changed skills with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md), compare with iteration 1 (`--previous-workspace`).
 4. **Yearly refreshes:** Florida millage when the year's rates are final (October); loan limits in `shared/markets/loan-limits.md` when FHFA and HUD publish the next year's (late November); the indexed homestead exemption in `fl.md` (January).
 5. **Later / optional:** New skills and scope extensions (more state and MLS layers, the offer outcome log, trigger-description optimization) are in [roadmap.md](roadmap.md).
@@ -113,9 +151,9 @@ Won't fix: (none yet).
 - Skills must be self-contained; `shared/` is copied into each skill's `scripts/_shared/` by `make sync` and committed.
 - Markdown output comes from `assets/` templates filled by Claude; scripts only do math, parsing, validation and PDF/PPTX rendering.
 - Every skill has markdown and file modes from the same data JSON; core profile skills are markdown only.
-- Brand colors from the agent profile (one primary or buyer/seller split); status colors fixed; subject accents distinct from brand.
-- Agent profile: only name and brokerage required; never print placeholders. No logos on reports.
+- Brand colors from the profile (one primary or buyer/seller split); status colors fixed; subject accents distinct from brand.
+- One profile file (`profile.md`): who the agent is; only name and brokerage required; never print placeholders. No logos on reports.
 - Market data in layers: state (FL) and MLS (Stellar, FL + PR) are separate; never fill Florida values for other states; each value carries its source. Per-deal costs go in the deal's data file.
 - Every `*_pct` is a fraction (0.025 = 2.5%); interest `rate` is a percent.
 - Offer skills consume `cma-handoff v1` (JSON file, or fenced markdown block, else extract and confirm).
-- No commissions are built in (negotiable, not set by law): they come from the deal or the agent's market profile (marked "Standard Terms"). A seller-facing net is never shown without them: seller-cma refuses to render without brokerage terms.
+- Local costs: the deal's numbers, else built-in local values, else national estimates labeled per line; commission assumed at 5% total ("Assumed") until the deal gives terms. Never Florida's numbers elsewhere.
