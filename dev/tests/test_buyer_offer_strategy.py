@@ -155,6 +155,13 @@ class HandoffAndOtherStates(unittest.TestCase):
         self.assertNotIn("escalation", r["terms"]["stronger"])
         self.assertNotIn("cma_low / cma_high", [a["field"] for a in r["missing"]])
 
+    def test_handoff_seller_paid_stats_fill_the_market_table(self):
+        # A buyer CMA's handoff names these share_with_seller_paid_costs_recent and median_seller_paid_recent (raw numbers).
+        d = fixture("texas-cma-escalation.json")
+        d["cma"]["market"].update({"share_with_seller_paid_costs_recent": 0.44, "median_seller_paid_recent": 6500})
+        B = strategy.analyze(d, cma=strategy.load_cma(d))["B"]
+        self.assertEqual((B["market"]["share_with_seller_costs"], B["market"]["typical_seller_paid"]), ("44%", "$6,500"))
+
     def test_handoff_file_via_cli(self):
         d = fixture("texas-cma-escalation.json")
         h = d.pop("cma")

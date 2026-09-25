@@ -15,7 +15,7 @@
 
 | Sale | Sold For | Adjusted |
 |---|---|---|
-| {{each comps.summary_rows: address, sold price, adjusted}} |
+| {{each comps_table: address | sold_display | adjusted_display}} |
 
 **Your Pricing Options** (estimates, not guarantees):
 

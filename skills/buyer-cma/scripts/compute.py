@@ -46,14 +46,14 @@ def taxes(R, market):
     county = R["subject"].get("county")
     out = []
     for j in t["jurisdictions"]:
-        school, total = j.get("school_mills"), j.get("total_mills")
+        school, total, problem = j.get("school_mills"), j.get("total_mills"), None
         if total is None and j.get("district"):
-            found = finance.millage(market, county=county, district=j["district"])
-            if found:
-                school, total = found[0]["school"], found[0]["total"]
+            row, problem = finance.millage_row(market, county, j["district"])
+            if row:
+                school, total = row["school"], row["total"]
         est = finance.property_tax(t["purchase_price"], market, school, total, t.get("homestead", True))
         out.append({"label": j["label"], "short": j.get("short", ""), "school_mills": school, "total_mills": total,
-                    "annual": est["annual"], "estimated": est["estimated"], "basis": est["basis"]})
+                    "annual": est["annual"], "estimated": est["estimated"], "basis": est["basis"], "problem": problem})
     return out
 
 
@@ -190,6 +190,8 @@ def compute(R, market, homes):
         warnings.append(scope)
     tax_rows = taxes(R, market)
     for j in tax_rows:
+        if j["problem"]:
+            warnings.append(j["problem"])
         if j["annual"] is None:
             warnings.append(f"No millage or tax rate for {j['label']}: add school_mills and total_mills.")
         elif j["estimated"]:
@@ -261,6 +263,8 @@ def compute(R, market, homes):
         "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "handoff": h,
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+                        for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
         "market_notes": market.notes,
     }

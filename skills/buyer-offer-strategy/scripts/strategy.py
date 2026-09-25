@@ -64,10 +64,14 @@ def apply_cma(B, h):
     for ours, theirs in (("sale_to_list", ("sale_to_list", "sale_to_list_recent", "sale_to_original_list_recent")),
                          ("median_dom", ("median_dom", "median_days_recent", "median_days")),
                          ("months_supply", ("months_supply",)),
-                         ("share_with_seller_costs", ("share_with_seller_costs",)),
-                         ("typical_seller_paid", ("typical_seller_paid",))):
+                         ("share_with_seller_costs", ("share_with_seller_costs", "share_with_seller_paid_costs_recent")),
+                         ("typical_seller_paid", ("typical_seller_paid", "median_seller_paid_recent"))):
         val = next((mk[k] for k in theirs if mk.get(k) is not None), None)
-        if val is not None and M.get(ours) is None:
+        if val is not None and M.get(ours) is None:  # the CMA's raw numbers read like the buyer file's text ("44%", "$6,500")
+            if ours == "share_with_seller_costs" and isinstance(val, (int, float)):
+                val = f"{val * 100:.0f}%"
+            elif ours == "typical_seller_paid" and isinstance(val, (int, float)):
+                val = f"${val:,.0f}" if val else None
             M[ours] = val
     if h.get("offer_plan") and not B.get("cma_offer_plan"):
         B["cma_offer_plan"] = h["offer_plan"]

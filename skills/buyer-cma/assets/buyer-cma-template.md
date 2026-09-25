@@ -13,7 +13,7 @@
 
 | Sale | Sold For | Adjusted |
 |---|---|---|
-| {{each comps.summary_rows: address, sold price, adjusted}} |
+| {{each comps_table: address | sold_display | adjusted_display}} |
 
 **What It Will Cost:** estimated tax {{taxes[payments.tax_index].annual_display}}/yr{{" (Estimate from the market's average rate)" when taxes[payments.tax_index].estimated}}{{ (the listing shows current_bill_display), left out when current_bill_display is null}}; {{payments.rows[0].label}}: about {{payments.rows[0].total_display}}/mo with {{payments.rows[0].cash_down_display}} down. {{payments.flood.note, shortened: when payments.flood.annual is null say the total leaves out flood insurance until there's a quote; never write $0 or that flood insurance isn't required}} {{one line on price vs. credit when there are credit scenarios}}
 

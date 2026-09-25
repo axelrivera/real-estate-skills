@@ -19,7 +19,7 @@ Read the text, not the page images, so every number is copied exactly: `pdftotex
 | Land, Site and Tax (legal, zoning, tax ID, taxes, homestead, CDD, flood zone and panel, lot size) | Lot, CDD, flood zone; the MLS's tax figure is a starting point only (see Cross-checks) |
 | Interior, Exterior, Community (rooms, construction, roof type, pool features, HOA fee and schedule, in-law suite) | Facts and watch items. Annual HOA = `Total Annual Assoc Fees`; the HOA fee field is per payment period (quarterly here) |
 | Realtor Information (list agent and office, original price, occupancy, financing accepted, As-Is, private remarks) | Negotiation context for the agent, never quoted in client files (see below) |
-| Tax tab: Location Information | Subdivision (for `--subdivision`), `Tax Area` code (picks the millage district), census data (ignore) |
+| Tax tab: Location Information | Subdivision (`subject.subdivision`; seller-cma's stats.py also takes it as `--subdivision`), `Tax Area` code (picks the millage district), census data (ignore) |
 | Tax tab: Tax Information, Assessment and Taxes | The current bill: the latest year's `Total Tax` and its year (`current_bill`, `current_year`); exemptions (homestead); just and assessed value by year |
 | Tax tab: Characteristics, Building Features | The county's record of beds, baths, heated and total area, year built and effective year, construction, lot size, pool and patio years |
 | Estimated Value (RealAVM) | Never a comp and never an input to the range. At most a one-line cross-check in the chat reply, with its confidence score |
@@ -75,7 +75,7 @@ Past sale prices and dates, list prices, price changes and days on market are fi
 
 The report should be current: the status line Active (or Pending, for a backup offer) at the list price the agent is looking at. It covers the listing sheet and the full history, so don't ask for a history screenshot. If it's more than a few days old, ask whether the price or status has changed since.
 
-For taxes: `current_bill` and `current_year` come from the latest Total Tax; `Tax Area` goes in the jurisdiction's `district` (compute.py matches the appraiser's code), which settles city vs. unincorporated even when the mailing city says otherwise. A current bill carrying the owner's homestead exemption says nothing about the buyer's bill, which resets at the purchase price.
+For taxes: `current_bill` and `current_year` come from the latest Total Tax; `Tax Area` goes in the jurisdiction's `district` (compute.py matches the appraiser's code), which settles city vs. unincorporated even when the mailing city says otherwise. Some counties reuse a code across districts (Orange): compute.py then warns instead of guessing, so name the district. A current bill carrying the owner's homestead exemption says nothing about the buyer's bill, which resets at the purchase price.
 
 ## Seller Side
 

@@ -341,16 +341,29 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
 
 def millage(market, county=None, district=None):
     """Millage entries from the market, filtered by county and/or a district: a name fragment ("Altamonte") or the
-    appraiser's tax-area code exactly as a property report prints it ("01"; codes are listed per row)."""
+    appraiser's tax-area code exactly as a property report prints it ("01"; each row lists its codes, separated by
+    "," or "/"). A code can belong to several districts (Orange County reuses them), so check how many came back."""
     rows = market.get("property_tax.millage") or []
     if county:
         c = county.strip().lower().removesuffix(" county")
         rows = [r for r in rows if str(r.get("county", "")).lower() == c]
     if district:
         d = str(district).strip().lower()
-        by_code = [r for r in rows if d in {c.strip().lower() for c in str(r.get("code", "")).split(",")}]
+        by_code = [r for r in rows if d in {c.strip().lower() for c in re.split(r"[,/]", str(r.get("code", "")))}]
         rows = by_code or [r for r in rows if d in str(r.get("district", "")).lower()]
     return rows
+
+
+def millage_row(market, county, district):
+    """The one millage entry for a district, or (None, why) when there's none or it's ambiguous: never a guess."""
+    rows = millage(market, county=county, district=district)
+    if len(rows) == 1:
+        return rows[0], None
+    if not rows:
+        return None, None
+    names = "; ".join(str(r.get("district")) for r in rows)
+    return None, (f'District "{district}" matches {len(rows)} taxing districts ({names}): name the one the parcel is '
+                  f"in, or give school_mills and total_mills from the property appraiser.")
 
 
 # --- seller side --------------------------------------------------------------

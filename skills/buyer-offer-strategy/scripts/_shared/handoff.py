@@ -1,15 +1,11 @@
 """cma-handoff v1: the small, stable record a CMA hands to the offer skills.
 
-Producers (buyer-cma, seller-cma) write it as `<address>.<side>.cma.json` next to the PDF, and at the end
-of a markdown reply as a fenced block:
+Producers (buyer-cma, seller-cma) write it as `<address>.<side>.cma.json` next to report.json, in the
+conversation's temporary folder: a working file, never shown to the agent or put in the outputs.
 
-    ```cma-handoff v1
-    { ...same JSON... }
-    ```
-
-Consumers (buyer-offer-strategy, seller-offer-review) call `find()` / `load()` / `parse_text()`,
-in this order of preference: JSON file, markdown with the block, then anything else (extract by
-hand, confirm with the agent, label as assumptions).
+Consumers (buyer-offer-strategy, seller-offer-review) call `load()`: the JSON file, or markdown that
+carries an older fenced `cma-handoff v1` block (no longer written, still read). Without either, the skill
+reads the CMA's PDF or summary, confirms the numbers with the agent and labels them as assumptions.
 """
 import json
 import re

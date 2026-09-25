@@ -99,7 +99,16 @@ class Taxes(unittest.TestCase):
         # A property report's "Tax Area: 01" is Seminole's unincorporated code, whatever the mailing city says.
         self.assertEqual(f.millage(FL, county="Seminole", district="01")[0]["total"], 13.6790)
         self.assertEqual(f.millage(FL, county="Seminole", district="a1")[0]["district"], "Altamonte Springs")
-        self.assertEqual(f.millage(FL, county="Orange", district="6")[0]["district"], "Maitland")
+        self.assertEqual(f.millage(FL, county="Orange", district="8")[0]["district"], "Orlando (St. Johns WMD)")  # "8/28/71/78"
+
+    def test_millage_row_never_guesses(self):
+        row, why = f.millage_row(FL, "Seminole", "01")
+        self.assertEqual((row["total"], why), (13.6790, None))
+        for district in ("6", "11", "Orlando"):  # Orange reuses codes; "Orlando" names two districts
+            row, why = f.millage_row(FL, "Orange", district)
+            self.assertIsNone(row)
+            self.assertIn("matches", why)
+        self.assertEqual(f.millage_row(FL, "Orange", "999"), (None, None))
 
 
 class SellerSide(unittest.TestCase):

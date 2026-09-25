@@ -60,6 +60,8 @@ class MatchesPrototype(unittest.TestCase):
         self.assertEqual(h["offer_plan"]["opening"], 455000)
         self.assertEqual(h["market_profile"], {"state": "FL", "mls": "Stellar"})
         self.assertIn("months_supply", h["market"])
+        self.assertEqual(len(self.C["comps_table"]), len(self.C["handoff"]["comps"]))  # the chat template's rows
+        self.assertTrue(self.C["comps_table"][0]["adjusted_display"].startswith("$"))
 
 
 class Warnings(unittest.TestCase):

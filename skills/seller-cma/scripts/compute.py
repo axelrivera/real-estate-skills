@@ -171,9 +171,9 @@ def buyer_tax_rates(R, market):
     bp = R["buyer_payment"]
     school, total = bp.get("school_mills"), bp.get("total_mills")
     if total is None and bp.get("district"):
-        found = finance.millage(market, county=R["subject"].get("county"), district=bp["district"])
-        if found:
-            school, total = found[0]["school"], found[0]["total"]
+        row, _ = finance.millage_row(market, R["subject"].get("county"), bp["district"])
+        if row:
+            school, total = row["school"], row["total"]
     return school, total, bp.get("homestead", True)
 
 
@@ -286,6 +286,11 @@ def compute(R, market, homes):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
 
     pay, tax_info = payments(R, market)
+    bp = R["buyer_payment"]
+    if bp.get("total_mills") is None and bp.get("district"):
+        problem = finance.millage_row(market, s.get("county"), bp["district"])[1]
+        if problem:
+            warnings.append(problem)
     if pay is None:
         warnings.append("No millage or tax rate for the buyer-payment estimate: give buyer_payment.school_mills and total_mills "
                         "(or a district in the built-in millage).")
@@ -374,6 +379,8 @@ def compute(R, market, homes):
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+                        for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
         "assumptions": assumptions,
         "market_notes": market.notes,
