@@ -4,6 +4,8 @@
 
 Ask for what's missing in one message; use tappable choices for occupancy, timeline and pool when the runtime offers them.
 
+With the home's MLS property report (`listing-sheet.md`), items 2, 3 (except CDD details it leaves blank), 5 and 12 are answered from the county record: confirm them in one line instead of asking. Items 4, 6, 7, 8 and 9 still come from the seller, and item 4 is "what changed since" the report's listing date.
+
 **From the seller (about the home)**
 1. Address.
 2. Beds, full and half baths, heated square feet, lot size, year built, construction (block or frame).
@@ -30,7 +32,7 @@ From `stats.py`'s `sold_candidates`, choose 3–6 sales: same subdivision first,
 
 Each candidate carries `flags`: `distressed` (REO, short sale, auction) and `new_construction`. Leave those out unless the market is mostly distressed or new construction (or the subject is), then adjust for it and explain why in `method_note`. The export holds the property types the agent chose to compare. Single-family homes and townhouses can be compared when they overlap in size and price, so neither is dropped: the ranking puts the subject's type first, then close types, and puts condos, 55+ communities, leased land, a different waterfront status or a different number of stories lower. `sold_by_type` shows the mix; when the comps span types, say so in `method_note`. Duplicate sale records are already dropped (see `market_notes`), and a relisted home shows once in the competition with `listings` and `earlier_prices`. The ranking already favors recent, close sales; `more_candidates` counts the ones not listed (re-run stats.py with `--limit 30` to see them). Pass `--as-of` with the date the export was pulled so months of supply runs to that day.
 
-Judge each comp's condition from its remarks and compare it with the seller's described updates (never with an old listing of the subject). Say that condition adjustments are judgment calls based on listing text.
+Judge each comp's condition from its remarks and compare it with the seller's described updates (never with an old listing of the subject, including the remarks and photos in its property report). Say that condition adjustments are judgment calls based on listing text.
 
 ## Adjustments
 

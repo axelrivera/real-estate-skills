@@ -2,16 +2,18 @@
 
 ## The Subject
 
-Pull the ten facts for the fact grid (see `report-data.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
+Pull the ten facts for the fact grid (see `report-data.md`) from the property report, using the county's figures where the MLS and public records disagree (`listing-sheet.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
 
 ## The Listing History
 
-The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. The status codes and what they mean are in the MLS layer (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
+The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. For the 360 property view's grid (status moves like `ACT->PND`, price moves like `895000.00->839000`) and checking closings against the public-record sale history, see `listing-sheet.md`. The status codes and what they mean are in the MLS layer (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
 
 - A new MLS number resets days on market. Look for older numbers below it and report the true timeline: first list date, total active days across all listings, every price change.
 - A pending followed by anything other than a sale means a contract failed. That's a question for the listing agent, not an assumption about the house.
 - Repeated off/back-on-market pairs usually mean a seller managing showings or pausing to reset.
 - A price increase after a failed contract is a signal worth naming.
+
+A relist at a higher price than a listing that failed (canceled, expired or withdrawn) is a finding too: the market already passed at the lower price.
 
 Search the address: earlier syndicated remarks sometimes claim things (a "brand-new roof") that later vanish from the listing. That's a watch item.
 

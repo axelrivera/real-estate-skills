@@ -95,6 +95,12 @@ class Taxes(unittest.TestCase):
     def test_millage_lookup(self):
         self.assertEqual(f.millage(FL, county="Seminole County", district="Altamonte")[0]["total"], 17.5683)
 
+    def test_millage_by_tax_area_code(self):
+        # A property report's "Tax Area: 01" is Seminole's unincorporated code, whatever the mailing city says.
+        self.assertEqual(f.millage(FL, county="Seminole", district="01")[0]["total"], 13.6790)
+        self.assertEqual(f.millage(FL, county="Seminole", district="a1")[0]["district"], "Altamonte Springs")
+        self.assertEqual(f.millage(FL, county="Orange", district="6")[0]["district"], "Maitland")
+
 
 class SellerSide(unittest.TestCase):
     def test_title_premium_florida(self):

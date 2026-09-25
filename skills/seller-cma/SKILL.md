@@ -1,11 +1,11 @@
 ---
 name: seller-cma
-description: Builds a listing-side comparative market analysis for a seller's home, with a recommended list price, supported value range, adjusted comps, a price-vs-size scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds (brokerage, transfer tax, title, seller credit, optional payoff), what buyers would pay per month at each price, a launch plan and the documents needed from the seller. Delivers a polished report PDF and an editable listing presentation (PowerPoint) with the same numbers, or a short markdown summary. Use it whenever an agent has a listing appointment, asks "what should we list at?", "pricing analysis for 123 Oak St", "listing presentation", "net sheet with comps", "seller CMA", or uploads an MLS CMA export and mentions a seller or a list price, even when they only give an address. Its handoff feeds the seller-offer-review skill. Not for a buyer deciding what to offer.
+description: Builds a listing-side comparative market analysis for a seller's home, with a recommended list price, supported value range, adjusted comps, a price-vs-size scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds (brokerage, transfer tax, title, seller credit, optional payoff), what buyers would pay per month at each price, a launch plan and the documents needed from the seller. Delivers a polished report PDF, an editable listing presentation (PowerPoint) with the same numbers when asked, or a short markdown summary. Use it whenever an agent has a listing appointment, asks "what should we list at?", "pricing analysis for 123 Oak St", "listing presentation", "net sheet with comps", "seller CMA", or uploads an MLS CMA export or the home's MLS 360 property view and mentions a seller or a list price, even when they only give an address. Its handoff feeds the seller-offer-review skill. Not for a buyer deciding what to offer.
 ---
 
 # Seller CMA
 
-A report and a listing presentation for a homeowner deciding what to list at. It answers three questions: what is the home worth, what should we list it at, and what will I walk away with. It works because it's honest: a seller who sees only flattering comps overprices, loses the first weeks, and blames the agent. The scripts do the math, the charts, the layout and the deck. Your part is the intake, the comp judgment, and plain words for a homeowner who isn't a real estate professional.
+A report (and, when the agent wants one, a listing presentation) for a homeowner deciding what to list at. It answers three questions: what is the home worth, what should we list it at, and what will I walk away with. It works because it's honest: a seller who sees only flattering comps overprices, loses the first weeks, and blames the agent. The scripts do the math, the charts, the layout and the deck. Your part is the intake, the comp judgment, and plain words for a homeowner who isn't a real estate professional.
 
 Every number comes from a script, never typed by hand, because a wrong net figure in front of a seller is the worst failure this skill can produce. Never invent comps, update dates, permit status or tax figures.
 
@@ -20,12 +20,14 @@ These apply to everything this skill writes: files, chat replies, and text the a
 
 ## 1. Gather the Inputs
 
-Ask for everything missing in one message, and skip what's already in the chat or the listing. Don't ask about local costs or commission: they're defaults the agent can correct after the first report. Read `references/method.md` for the full checklist and why each item matters. In short:
+Ask for everything missing in one message, and skip what's already in the chat or the listing. Don't ask about local costs or commission: they're defaults the agent can correct after the first report. Read `references/method.md` for the full checklist and why each item matters.
+
+The agent usually uploads the home's **MLS property report** (Stellar's Cross Property 360 PDF). It answers the fact questions (county record of size, rooms, lot, year built, construction, pool, garage, HOA, taxes, flood zone) and holds the full listing history. It's often from the seller's purchase or an old listing, so its remarks, photos and condition are history, not today's home: ask the seller what changed since. Read `references/listing-sheet.md` for how to read it and what never goes in a seller-facing file. Without it, ask for the facts below. In short:
 
 - **From the seller:** address; beds, baths, heated sq ft, lot, year built, construction; pool, garage, HOA/CDD; updates with dates and permits (roof first); the current tax bill; known issues or claims; timeline and occupancy; optional mortgage payoff (turns the net sheet into cash at closing).
 - **From the agent:** the MLS CMA export (CSV) of nearby sales from about the last 6 months plus active, pending, expired and canceled listings; the brokerage terms if they volunteer them (otherwise 5% total is assumed and marked on every page and slide that shows a net); the tax bill and expected closing date for the proration; the property type (Miami-Dade surtax); flood zone if known.
 
-Treat the home as a first-time listing: the scripts drop every export row with its address, and its facts come from the seller. stats.py lists those rows in `subject_rows`: if the home is **listed right now** (active or pending), say so first. It may be the agent's own listing being repriced, an expired listing, or a home listed with another brokerage, which the agent must not solicit; ask which before going further. A failed current price is the most important pricing fact, so with the agent's go-ahead, address it. For an old relist, ask before adding the history.
+Treat the home as a first-time listing: the scripts drop every export row with its address, and its facts come from the property report and the seller. stats.py lists those rows in `subject_rows`, and the property report's status line and history show the same: if the home is **listed right now** (active or pending), say so first. It may be the agent's own listing being repriced, an expired listing, or a home listed with another brokerage, which the agent must not solicit; ask which before going further. A failed current price is the most important pricing fact, so with the agent's go-ahead, address it. An expired, withdrawn or canceled listing in the history is a failed price: name it and how long it sat. For an old relist, ask before adding the history.
 
 For a PDF or deck, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
 
@@ -45,9 +47,9 @@ Read `references/method.md` for choosing and adjusting comps, setting the range 
 
 ## 3. Write report.json
 
-Copy `assets/example-report.json` (an approved report) and replace every value; its length and tone are the target. It describes a sample home with illustrative details: take its structure and tone, never a fact (a sale price, a repair, a record) into a real report. Read `references/report-data.md` for every field, `references/costs.md` before the costs and buyer-payment blocks, and `references/writing.md` for how each section reads. Write `summary_page` last; write `{median_adjusted}` where page 1 quotes the median adjusted value and the script fills it in.
+Write it in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files). Copy `assets/example-report.json` (an approved report) and replace every value; its length and tone are the target. It describes a sample home with illustrative details: take its structure and tone, never a fact (a sale price, a repair, a record) into a real report. Read `references/report-data.md` for every field, `references/costs.md` before the costs and buyer-payment blocks, and `references/writing.md` for how each section reads. Write `summary_page` last; write `{median_adjusted}` where page 1 quotes the median adjusted value and the script fills it in.
 
-For the presentation, put its wording under `deck` in report.json (copy `assets/example-deck-content.json`; read `references/deck-content.md`). It holds wording only: prices, nets and payments come from the report, and `{list_price}`-style placeholders fill them in.
+Only when the agent asked for the presentation (see Deliver), put its wording under `deck` in report.json (copy `assets/example-deck-content.json`; read `references/deck-content.md`). It holds wording only: prices, nets and payments come from the report, and `{list_price}`-style placeholders fill them in.
 
 Then compute:
 
@@ -55,15 +57,15 @@ Then compute:
 python3 scripts/compute.py report.json
 ```
 
-Fix every item in `warnings` (a recommended price outside the range, a missing tax rate) and re-run. For a chat-only answer, compute.py needs `subject`, `recommendation`, `comps.cards`, `pricing.strategies`, `costs` and `buyer_payment`; the prose sections and `deck` can stay short. Tell the agent about each item in `assumptions` (assumed brokerage, estimated costs, built-in title fees). It also saves `<address>.seller.cma.json`, the handoff seller-offer-review reads.
+Fix every item in `warnings` (a recommended price outside the range, a missing tax rate) and re-run. For a chat-only answer, compute.py needs `subject`, `recommendation`, `comps.cards`, `pricing.strategies`, `costs` and `buyer_payment`; the prose sections and `deck` can stay short. Tell the agent about each item in `assumptions` (assumed brokerage, estimated costs, built-in title fees). It also saves `<address>.seller.cma.json` next to report.json, the handoff seller-offer-review reads later in this conversation: a working file, never shown or offered to the agent.
 
 ## 4. Deliver
 
-- **Report and presentation (default for a listing appointment):**
+- **Report (the default):**
   ```
-  python3 scripts/render.py report.json --format all [--profile profile.md]   # the profile puts the agent's name and colors on it
+  python3 scripts/render.py report.json [--profile profile.md]   # the PDF; the profile puts the agent's name and colors on it
   ```
-  `--format pdf` or `--format pptx` builds just one. Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); flip a chart callout's `side` if a label overlaps. Look at every page and slide before presenting; `references/deck-content.md` explains how to check the deck. If the deck can't be built (no Node), say so plainly and deliver the PDF.
-- **Summary in chat:** fill in `assets/seller-cma-template.md` from report.json and compute.py's output (numbers only from the output, already formatted), and end with its `handoff_block`.
+  Build the listing presentation only when the agent asked for it in the request ("listing presentation", "deck", "slides", "PowerPoint"): then write `deck` and use `--format all`. Otherwise deliver the PDF and offer the presentation in one line; if they say yes, write `deck` and run `--format pptx` (the PDF is already made). Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); flip a chart callout's `side` if a label overlaps. Look at every page (and slide) before presenting; `references/deck-content.md` explains how to check the deck. If the deck can't be built (no Node), say so plainly and deliver the PDF.
+- **Summary in chat:** fill in `assets/seller-cma-template.md` from report.json and compute.py's output (numbers only from the output, already formatted). Never paste JSON or code blocks into a reply: the agent isn't technical, and seller-offer-review reads the handoff file compute.py saved.
 
 Either way, reply briefly: the recommended price and range, the one or two facts driving it, how the three strategies compare, and what the agent can replace to sharpen the nets (brokerage terms, estimated costs, payoff, title company quote), as `references/local-costs.md` shows, plus any placeholder (update dates, flood zone). Say "Preliminary" plainly if compute.py marked it so. Offer the other format in one line. Keep the chat reply short when files are delivered (about 150 words): the files carry the detail, and a long reply repeating them gets skimmed.

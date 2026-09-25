@@ -340,13 +340,16 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
 
 
 def millage(market, county=None, district=None):
-    """Millage entries from the market, filtered by county and/or a district name fragment."""
+    """Millage entries from the market, filtered by county and/or a district: a name fragment ("Altamonte") or the
+    appraiser's tax-area code exactly as a property report prints it ("01"; codes are listed per row)."""
     rows = market.get("property_tax.millage") or []
     if county:
         c = county.strip().lower().removesuffix(" county")
         rows = [r for r in rows if str(r.get("county", "")).lower() == c]
     if district:
-        rows = [r for r in rows if district.lower() in str(r.get("district", "")).lower()]
+        d = str(district).strip().lower()
+        by_code = [r for r in rows if d in {c.strip().lower() for c in str(r.get("code", "")).split(",")}]
+        rows = by_code or [r for r in rows if d in str(r.get("district", "")).lower()]
     return rows
 
 

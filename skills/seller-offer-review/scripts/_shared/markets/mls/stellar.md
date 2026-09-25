@@ -113,6 +113,7 @@ Built-in MLS formats. Used whenever the MLS is Stellar, in any state it serves (
 - PNC followed by TOM, BOM or CANC instead of SLD means the contract failed.
 - Repeated TOM/BOM pairs often mean a seller managing showings or pausing to reset.
 - A cancel followed by NEW is a relist that resets the day count.
+- The Cross Property 360 Property View PDF prints the history differently: Change Info holds status moves (`ACT->PND`, `PND->SLD`, `ACT->TOM`, `ACT->CAN`) and price moves (`895000.00->839000`), one block per MLS number. How to read it is in `shared/references/listing-sheet.md`.
 
 ## CMA Export
 
