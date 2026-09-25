@@ -2,10 +2,11 @@
 
 Claude skills for real estate agents: buyer and seller CMAs, offer strategy, offer reviews and contract timelines, all with your name, brokerage and brand colors.
 
-This folder holds two files:
+This folder holds three files:
 
 - `{{PLUGIN_FILE}}`: the plugin you install in the Claude desktop app.
 - `README.md`: this guide.
+- `Real-Estate-Skills-Manual.pdf`: the manual.
 
 ## Contents
 
@@ -28,16 +29,14 @@ The MLS steps use **Stellar MLS (Matrix)** as the example. Other MLS systems wor
 3. Choose **Upload local plugin**.
 4. Drag `{{PLUGIN_FILE}}` onto the upload area (or click **browse** and pick it), then click **Upload**.
 
-Upload the `.plugin` file itself, not this zip or the unzipped folder. The skills then appear as `real-estate:agent-profile`, `real-estate:buyer-cma` and so on. You don't need to type those names: ask in plain words ("run a CMA on this listing") and Claude picks the right skill.
-
-**Install from GitHub instead (Cowork):** add the marketplace `axelrivera/real-estate-skills`, then install the `real-estate` plugin. Updates then come from GitHub.
+Upload the `.plugin` file itself, not this zip or the unzipped folder. The skills then appear as `real-estate:agent-profile`, `real-estate:buyer-cma` and so on. To use one, type **/** and its name in a chat (for example **/buyer-cma**) and select it from the list. Section 6 gives each skill's name.
 
 ## 2. Set Up Your Profile (Once)
 
 Do this first. It takes about two minutes and every report after it carries your name, brokerage, license, contact details and brand colors, and every client note sounds like you.
 
-1. In Cowork, select a working folder for your real estate work (for example a folder named "Real Estate"). Your profile is saved there, so every session finds it.
-2. Type: **"Set me up."**
+1. Start a new chat.
+2. Type **/agent-profile** and select it from the list, then type **"Set me up."**
 3. Answer two short rounds of questions. Skip anything you like. Have these handy:
    - Your name as it appears on documents and your brokerage's licensed name.
    - Team name, phone, email, website and license number (any or none).
@@ -55,9 +54,9 @@ To change something later, just say it: "My new number is 407-555-0100", "I move
 
 The CMA skills read a spreadsheet (CSV) of nearby listings and sales. Set up a custom export once and reuse it for every property.
 
-1. In Matrix, go to **My Matrix**, then **Settings**, then **Custom Exports**.
+1. In Matrix, click **Hello, [Your Name]** at the top right, then **Settings**, then **Custom Exports**.
 2. Click **Add Export** and name it **Basic CMA Export**.
-3. In **Available Fields** (left), find each field in the table below and click **Add** to move it to **Export Fields** (right). The order doesn't matter.
+3. For each field in the table below, type its name in the **Search** box under **Available Fields** (left), then click **Add** to move it to **Export Fields** (right). The order doesn't matter.
 4. At the bottom, set **Separator** to **Comma** and **Include Column Names** to **Name**.
 5. Click **Save**.
 
@@ -118,8 +117,8 @@ Add these fields, shown here as Matrix labels them. Only the five marked **Requi
 Do this for each CMA. It takes a few minutes.
 
 1. Go to **Search**, then **Residential**, then **Quick**.
-2. **Statuses:** check **Active**, **Pending**, **Sold**, **Expired** and **Canceled**. For Sold, Expired and Canceled, enter **0-180** days (the last 6 months).
-3. **Location:** use the map search to search within **1 mile** of the property's address.
+2. **Statuses:** check **Active**, **Pending**, **Sold**, **Expired** and **Canceled (WDN-U)**. Matrix fills in **0-180** days (the last 6 months) for each one except Active; leave it as is.
+3. **Location:** in **Within [1] miles of [address]**, keep **1** and enter the property's address. You don't need to draw on the map.
    - In a rural area with few sales, widen to 2 or 3 miles.
    - In a dense area or a big subdivision, 0.5 mile is often enough.
 4. **Property style:** select the styles that match the home (for example Single Family Residence, or Townhouse and Villa for a townhome, or Condominium for a condo). Single-family homes and townhouses can go together when they're similar in size and price.
@@ -128,8 +127,8 @@ Do this for each CMA. It takes a few minutes.
    - Add a heated square footage range, about 30% above and below the home.
    - Add a year built range or a minimum number of bedrooms.
    - Shorten the days to 0-90.
-6. Go to **Results** and click **Select All**.
-7. Click **Export**, pick **Basic CMA Export**, and download the CSV.
+6. Go to **Results** and click **All** next to "Checked".
+7. Click **Export** in the action bar at the bottom, pick **Basic CMA Export**, and download the CSV.
 
 Upload the file exactly as downloaded. Opening and saving it in Excel can change dates and numbers.
 
@@ -140,16 +139,17 @@ The property report is the home's full record in one PDF: the listing, public re
 **For a buyer** (a home for sale now):
 
 1. Search for the active listing by MLS number or address and open it.
-2. Click **Print** and choose the **360 Property View** format.
-3. Select **Print All Tabs**.
-4. Save as PDF.
+2. Check only this home. **Print** uses every checked listing, so if you came from search results, click **None** first, then check this one.
+3. Click **Print** and choose the **360 Property View** format.
+4. Select **Print All Tabs**.
+5. Click **Print to PDF** and save the file.
 
 **For a seller** (your listing appointment):
 
-1. Go to **Search**, then **Public Record**, and search by the address.
-2. Open the home's most recent MLS listing (usually from when the seller bought it).
-3. Click **Print**, choose **360 Property View**, and select **Print All Tabs**.
-4. Save as PDF.
+1. Go to **Search**, then **Public Record**. This opens **Tax Search**; search by the address.
+2. Click the result's **Folio/PID** link to open its **360 Property View**.
+3. The **Last Listing** tab has the home's most recent MLS listing (usually from when the seller bought it), so you don't need to find it separately.
+4. Click **Print**, choose **360 Property View**, select **Print All Tabs**, then click **Print to PDF** and save the file.
 
 For a seller the report is usually years old, so Claude uses it for the facts that don't change (size, lot, taxes, history) and asks what the seller has updated since.
 
@@ -157,11 +157,11 @@ The report includes owner names, mortgage history and agent-only remarks. The sk
 
 ## 6. Using the Skills
 
-Ask in plain words and attach the files. Claude asks for anything missing, and every question can be skipped: you'll get a report marked Preliminary instead of a stop.
+Type **/** and the skill's name (shown next to each heading below), select it, then ask in plain words and attach the files. Claude asks for anything missing, and every question can be skipped: you'll get a report marked Preliminary instead of a stop.
 
 **Keep a deal together.** A CMA and the offer work after it share numbers when they're in the same chat. In a new chat, upload the CMA PDF (or keep it in the deal's Project, section 7) and Claude reads the value range from it.
 
-### Buyer CMA
+### Buyer CMA (/buyer-cma)
 
 What a home is worth, how the asking price compares, your buyer's real monthly cost, and a suggested opening offer with a target and a walk-away.
 
@@ -170,7 +170,7 @@ What a home is worth, how the asking price compares, your buyer's real monthly c
 - **Example:** "Run a buyer CMA on 123 Oak St. My buyer is FHA with 3.5% down, their lease ends in March, and they love it."
 - **You get:** a PDF report to send, or a short summary in chat.
 
-### Buyer Offer Strategy
+### Buyer Offer Strategy (/buyer-offer-strategy)
 
 The strongest offer inside your buyer's limits, up to two alternatives, and how it stacks up against other offers.
 
@@ -179,7 +179,7 @@ The strongest offer inside your buyer's limits, up to two alternatives, and how 
 - **Example:** "What should we offer? My buyer can go to $450,000, has $40,000 cash and wants to keep $10,000. The listing agent says there are two other offers and they want to close in 30 days."
 - **You get:** an Offer Options report and an Offer Package Worksheet (the contract entries, riders and a checklist).
 
-### Seller CMA
+### Seller CMA (/seller-cma)
 
 A recommended list price, three pricing strategies with the seller's estimated net at each, and a launch plan.
 
@@ -188,17 +188,27 @@ A recommended list price, three pricing strategies with the seller's estimated n
 - **Example:** "Seller CMA for 456 Pine Ave. They replaced the roof in 2023 and redid the kitchen in 2021. Payoff is about $210,000. They'd like to be moved by June."
 - **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers.
 
-### Seller Offer Review
+### Seller Offer Review (/seller-offer-review)
 
-Each offer's net to the seller, how likely it is to close, the risks, and a counter. With several offers, a ranking and a plan.
+Reviews the offers on your listing. It works two ways, depending on how many offers you upload.
+
+**One offer:** the seller's net (as offered, and if the appraisal or inspection goes badly), how likely it is to close, the risks, and a counter.
+
+- **Example:** "We got an offer on 456 Pine Ave. Should my seller accept, and what should we counter?"
+
+**Two or more offers:** everything above for each offer, plus a side-by-side ranking and a plan: which offer to counter, which to hold as a backup and which to decline.
+
+- **Example:** "We got three offers on 456 Pine Ave. Which is best and what should we do with each?"
+- A single offer turns into a comparison when another one arrives: upload it in the same chat.
+
+**For both:**
 
 - **Upload:** each offer (the contract with its addenda), plus pre-approval letters or proof of funds.
 - **Best inputs:** a seller CMA from the same chat, the seller's payoff, and what matters most to them (price, speed, certainty).
-- **Minimum:** list price, offer price and financing type.
-- **Example:** "We got two offers on 456 Pine Ave. Which is better and what should we counter?"
-- **You get:** a seller-ready PDF, or the review in chat. When another offer comes in, upload it in the same chat to add it to the comparison.
+- **Minimum:** list price, and each offer's price and financing type.
+- **You get:** a seller-ready PDF, or the review in chat.
 
-### Contract Timeline
+### Contract Timeline (/contract-timeline)
 
 Every deadline in an executed contract: who owes what, by when, and what happens if it's missed.
 
