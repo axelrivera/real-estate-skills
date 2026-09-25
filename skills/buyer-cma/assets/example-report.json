@@ -314,13 +314,7 @@
  },
  "scatter": {
   "heading": "The Whole Neighborhood at a Glance",
-  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. The dashed line is the trend for all sales based on size alone. At 1,849 square feet, it sits around {trend_at_subject}.",
-  "renovated": [
-   "621 LITTLE WEKIVA RD",
-   "516 OAKWOOD CT",
-   "622 SPRING OAKS BLVD",
-   "419 NAVARRE WAY"
-  ],
+  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price.",
   "subject_label": "517 Hickorywood",
   "callouts": [
    {
@@ -334,7 +328,7 @@
     "side": "right"
    }
   ],
-  "after_paragraph": "The trend line isn't a value estimate for this house. It lumps dated homes and homes without pools together with renovated ones, and size explains {r2_share} of the difference in sale prices here. What the chart shows is where this home sits: renovated pool homes sell well above the line, and 517 Hickorywood is asking right among them, near the top of the shaded range the adjustments support. Only two Spring Oaks sales of similar size closed higher. Meanwhile, 644 Peachwood, a renovated home of the same size without a pool, is for sale well below."
+  "after_paragraph": "The trend line isn't a value estimate for this house. It lumps dated homes and homes without pools together with renovated ones, and size explains {r2_share} of the difference in sale prices here. The renovated comparable sales sit well above it, and only two Spring Oaks sales of similar size closed higher than this asking price. Meanwhile, 644 Peachwood, a renovated home of the same size without a pool, is for sale well below."
  },
  "competition": {
   "intro": "These are the homes this seller is competing with right now. Several have been sitting, and most have cut their price.",

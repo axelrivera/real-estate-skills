@@ -47,4 +47,4 @@ The supported range is a judgment around the median adjusted value, typically ab
 
 ## The Scatterplot
 
-From the export's remarks, list in `scatter.renovated` the sold private-pool homes that are genuinely renovated. Be conservative: "upgraded" or "well maintained" alone doesn't count. Pick 1–3 callouts, usually the top-selling comp and the strongest active competitor. The script draws everything else, computes the size-only trend line and lists homes left off the chart.
+The script marks the comp cards' sales as Comparable Sales (matched to the export by street address, so write each card's address as the export has it), draws the other sales and the listings, computes the size-only trend line and notes how many homes were left off the chart for size. Pick 1–3 callouts, usually the top-selling comp and the strongest active competitor.

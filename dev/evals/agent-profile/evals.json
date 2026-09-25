@@ -4,26 +4,30 @@
     {
       "id": 1,
       "prompt": "I just installed this. set me up",
-      "expected_output": "Opens with the one-line promise (two quick rounds, about two minutes, skip anything) and Round 1 only: name and licensed brokerage, team, what to show on reports. Fill-in-the-blank lines with examples; no questions about markets, costs or commission; no jargon, YAML or field names; no em dashes; writes no file yet",
+      "expected_output": "Opens with the one-line promise (two quick rounds, about two minutes, skip anything) and Round 1 only: name and licensed brokerage, team, what to show on reports. Fill-in-the-blank lines with examples; no questions about markets, costs or commission; no jargon, YAML or field names; no em dashes; writes no file yet; no Project steps yet",
       "files": []
     },
     {
       "id": 2,
       "prompt": "hey can you set me up so my reports have my info on them? I'm Maria Gonzalez with Keller Williams Winter Park, team is The Gonzalez Group. license SL3398812. use navy #1B2A4A for everything",
-      "expected_output": "Skips what's answered and writes profile.md right away: name, team, brokerage, license, primary #1B2A4A named Navy; no phone/email/website/voice/disclaimer lines and nothing about markets; check_profile ok; says it's saved and sends Round 2 minus colors (disclaimers, how they talk), with one line on keeping the file",
+      "expected_output": "Skips what's answered and writes profile.md right away: name, team, brokerage, license, primary #1B2A4A named Navy; no phone/email/website/voice/disclaimer lines and nothing about markets; check_profile ok; says it's saved and sends Round 2 minus colors (disclaimers, how they talk), and writes no project instructions yet (the interview isn't done)",
       "files": []
     },
     {
       "id": 3,
       "prompt": "I want my listing presentations in my brand colors. Here's my logo. I'm Derek Owens, Premier Sotheby's.",
       "expected_output": "Runs extract_colors.py on the logo, names the colors, proposes one direction and asks to confirm (a buyer/seller split only because there are two strong colors), and writes profile.md with name, brokerage and the proposed colors",
-      "files": ["dev/evals/agent-profile/files/logo-navy-gold.png"]
+      "files": [
+        "dev/evals/agent-profile/files/logo-navy-gold.png"
+      ]
     },
     {
       "id": 4,
       "prompt": "Update my profile, my new number is 321-555-0142 and I moved to eXp Realty.",
       "expected_output": "Reads the existing profile, no interview; changes only phone and brokerage, keeps everything else, asks in one line whether the team name, email, website or disclaimers change too; check_profile ok",
-      "files": ["dev/evals/agent-profile/files/profile.md"]
+      "files": [
+        "dev/evals/agent-profile/files/profile.md"
+      ]
     },
     {
       "id": 5,
@@ -36,6 +40,14 @@
       "prompt": "Can you save that I usually do 3% listing and 2% to buyer agents, and my title company charges $850?",
       "expected_output": "Doesn't add costs or commission to the profile; explains in plain words that each report assumes these (5% total commission, labeled) and takes their numbers on the report itself, so they can just mention them when asking for a net sheet or CMA; offers to set up the profile if there isn't one",
       "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "ok I'm done with my profile. how do I make it so I don't have to upload it every time I start a chat?",
+      "expected_output": "No interview; writes project-instructions.md from the template naming only the agent (Jane Doe), with no contact details, colors or costs copied in; presents it with the profile; recommends a Project in one sentence and gives the claude.ai steps as a short numbered list with bold button names (+ New Project, Set project instructions, + to upload profile.md), plus one line offering the Cowork steps; plain words, no em dashes",
+      "files": [
+        "dev/evals/agent-profile/files/profile.md"
+      ]
     }
   ]
 }

@@ -25,7 +25,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
 | `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
-| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin` plus `dev/package/README.md` (install instructions, version filled in) for sharing |
+| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin`, `dev/package/README.md` (the agent guide: install, profile, MLS setup using Stellar as the example, each skill with inputs and examples; version filled in) and every PDF in `dev/package/` (the manual; the build stops if there is none) for sharing |
 | `make package-skills` | Runs the same checks, then zips every skill into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
 
@@ -34,7 +34,23 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 - **`develop`:** active development. Commit and push here.
 - **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
 
-To release: push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
+To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
+
+## Versioning
+
+The version lives only in `.claude-plugin/plugin.json`. It names the `.plugin` and the release zip, and installed copies update when it changes, so a release that ships without a bump can leave agents on the old version.
+
+Bump once per release (before the pull request into `main`, or before sharing a zip), not per commit. Pick the highest level that applies to everything since the last release:
+
+| Bump | When the release... | Examples |
+|---|---|---|
+| Minor (0.8.0 to 0.9.0) | Changes what an agent does, uploads or gets: a skill added, removed or renamed; a new or changed input, output file or default; a change to `profile.md` or a handoff format | 0.7.0 removed market-profile; 0.8.0 took the 360 report as input; 0.9.0 added project instructions and the agent guide |
+| Patch (0.9.0 to 0.9.1) | Ships fixes an agent notices only as things working better: wrong numbers, parsing, wording, references, guide text, an accepted column name | A new MLS column alias; a template typo |
+| None | Changes nothing shipped: `docs/`, `dev/` tooling, evals, tests, samples | This file |
+
+While the version is below 1.0, a minor bump may also break things (a removed skill, a new profile schema); say so in the status notes. Go to 1.0.0 once every skill has passed its evals and been checked by hand in claude.ai and Cowork; after that, a breaking change is a major bump.
+
+Record each release in [status.md](status.md) (what changed for agents), and run `claude plugin validate .` after the bump.
 
 ## Evals
 
@@ -70,6 +86,7 @@ dev/                     # dev tooling, never shipped
   preview_design.py      # palette preview (make preview-design)
   package.py             # make package (one .plugin + release zip) / make package-skills
   package/README.md      # install instructions shipped in the release zip
+  package/*.pdf          # the manual, shipped in the release zip
   fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
   samples/               # fully mocked inputs for make samples: <skill>.json, mls-export.csv, seller-cma-deck.json, profile.md, readme-template.md

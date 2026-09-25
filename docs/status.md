@@ -1,17 +1,30 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-25 (version 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.8.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.9.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
 | Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-25): Agent Guide and Version 0.9.0
+
+- The release zip's README is the full agent guide (`dev/package/README.md`): install, profile and Project setup, the Stellar Matrix custom export with its on-screen labels and fields, the comps search, the 360 Property View, each skill with inputs and examples, best practices (a Project per transaction) and other MLS systems.
+- The Stellar layer accepts the Matrix label "List Price".
+- Version 0.9.0 (agent-profile's project instructions and the guide change what agents get). Versioning rules added to [development.md](development.md#versioning).
+
+## This pass (2026-09-24): Project Instructions
+
+- agent-profile also writes `project-instructions.md` when the interview is done (`assets/project-instructions-template.md`): a first-person prompt for a claude.ai Project's instructions or a Cowork project's Instructions. It names only the agent and points to `profile.md`, the skills, the voice and the guardrails, so profile updates never make it stale.
+- The hand-over recommends a Project and gives the steps for where the agent is (claude.ai or Cowork, in a Project or not), from `references/project-setup.md`; button names checked against the Claude Help Center on 2026-09-24.
+- `saved-files.md`: the instructions file is a deliverable, saved next to the profile. New eval: agent-profile #7.
+- Open: run the agent-profile evals; check the setup steps in claude.ai and Cowork by hand.
 
 ## This pass (2026-09-24): Sanity Check Fixes and Best-Practice Assumptions
 

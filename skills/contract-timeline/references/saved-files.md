@@ -28,11 +28,13 @@ Only save after the agent has given or confirmed the details.
   - **Cowork with no folder selected:** "Select a working folder and I'll save this there, so every session can use it." Offer to save it once they do.
   - **Otherwise:** "Keep this file and share it at the start of a chat when you want it used. If you use a Project, add it to the Project files."
 
+`project-instructions.md` (written by agent-profile) is saved next to the profile, by the same rules. It's for the agent to paste into a Project; other skills never read it.
+
 Never block the task over saving: the profile still works for the rest of this conversation.
 
 ## Working Files
 
-The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, and the profile) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply.
+The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, the profile and its project instructions) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply.
 
 ## CMA Handoffs
 

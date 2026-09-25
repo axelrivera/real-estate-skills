@@ -175,14 +175,13 @@ def body(R, C, homes, agent, L):
 
     sc = R.get("scatter")
     if sc and homes:
-        svg, info = cma.scatter(homes, sc, s["sqft"], s["list_price"], s.get("mls_address", s["address"]), (bl["low"], bl["high"]), L)
+        svg, info = cma.scatter(homes, sc, s["sqft"], s["list_price"], s.get("mls_address", s["address"]), (bl["low"], bl["high"]), L,
+                                [cd["address"] for cd in R["comps"]["cards"]])
         trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
-              '<div class="chart-box">' + cma.scatter_legend(L, sc.get("subject_label", s["address"])) + svg + "</div>"]
-        note = cma.excluded_note(info["excluded"], L)
-        if note:
-            b.append(note)
+              '<div class="chart-box">' + cma.scatter_legend(L, sc.get("subject_label", s["address"]), info["counts"]) + svg + "</div>"]
+        b += [n for n in (cma.excluded_note(info["excluded"], L), cma.trend_caption(info, s["list_price"], L)) if n]
         b.append(f'<p>{sc["after_paragraph"].replace("{trend_at_subject}", trend).replace("{r2_share}", share)}</p>')
 
     cp = R["competition"]

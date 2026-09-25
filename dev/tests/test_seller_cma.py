@@ -339,7 +339,7 @@ class Files(unittest.TestCase):
                 self.assertEqual(len(slides), 15)
                 charts = [z.read(n).decode() for n in z.namelist() if n.startswith("ppt/charts/chart") and n.endswith(".xml")]
                 scatter = next(c for c in charts if "<c:scatterChart>" in c)
-                self.assertIn('<c:symbol val="triangle"/>', scatter)
+                self.assertIn('<c:symbol val="square"/>', scatter)
                 self.assertIn('<c:symbol val="diamond"/>', scatter)
                 self.assertIn('val="1F3A5F"', scatter)
                 self.assertIn('val="0B6E4F"', scatter)
@@ -425,8 +425,18 @@ class AuditLowCma(unittest.TestCase):
         C, homes = run(R)
         L = compute.cma.Labels(compute.ASSETS)
         D = deck.scatter_data(homes, R, C, L)
-        pts, _, _ = compute.cma.scatter_points(homes, R["scatter"], R["subject"]["sqft"], R["subject"].get("mls_address"))
+        comps = [cd["address"] for cd in R["comps"]["cards"]]
+        pts, _, _ = compute.cma.scatter_points(homes, R["scatter"], R["subject"]["sqft"], R["subject"].get("mls_address"), comps)
         self.assertEqual({k: len(v) for k, v in D["points"].items()}, {k: len(v) for k, v in pts.items()})
+        self.assertEqual(len(pts["comp"]), len(comps))  # every comp card is on the chart, matched by address
+        self.assertEqual([sr["key"] for sr in D["series"]], ["comp", "sold", "active", "trend", "subject"])
+
+    def test_legend_lists_only_what_is_drawn(self):
+        L = compute.cma.Labels(compute.ASSETS)
+        legend = compute.cma.scatter_legend(L, "Your Home", {"comp": 3, "sold": 0, "active": 2, "trend": 1})
+        self.assertIn(L("lg_comp"), legend)
+        self.assertNotIn(L("lg_sold"), legend)
+        self.assertIn(L("lg_active"), legend)
 
     def test_period_labels(self):
         w = {"first_close": "2026-04-03", "last_close": "2026-09-20", "split_date": "2026-07-01"}

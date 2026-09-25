@@ -12,7 +12,7 @@ Three ways in, all from the same `skills/` folder:
 |---|---|---|
 | Marketplace (Cowork, desktop app) | Adding `axelrivera/real-estate-skills` | The repo; only `skills/` loads |
 | `real-estate-<version>.plugin` (desktop app upload) | `make package` | `.claude-plugin/plugin.json`, `skills/`, `LICENSE` |
-| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin` plus install instructions (`dev/package/README.md`) |
+| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin`, the agent guide (`dev/package/README.md`: install, profile, MLS export and comps search, property report, each skill with inputs and examples) and the PDF manual (`dev/package/*.pdf`) |
 | One zip per skill (claude.ai) | `make package-skills` | That skill's folder |
 
 ## Runtimes
@@ -80,13 +80,15 @@ Save files to the first of:
 
 Never write into the skill's own folder, which is the working directory in claude.ai. This rule lives in `shared/` and is not repeated per skill.
 
-The outputs folder holds deliverables only (PDF, PowerPoint, ICS, the profile). Data files and handoffs are working files in a temporary folder (`mktemp -d`), never presented or offered for download (`shared/references/saved-files.md`, Working Files). render.py returns and prints only the deliverables.
+The outputs folder holds deliverables only (PDF, PowerPoint, ICS, the profile and its project instructions). Data files and handoffs are working files in a temporary folder (`mktemp -d`), never presented or offered for download (`shared/references/saved-files.md`, Working Files). render.py returns and prints only the deliverables.
 
 ## Profiles
 
 One markdown file, `profile.md`, used as context by every other skill. It says who the agent is: name, brokerage, team, license, contact, voice, disclaimers and [brand colors](#brand-colors). Nothing about markets or costs: those come from the property (see [Local costs](#local-costs)).
 
 `agent-profile` builds it from a two-round interview (the basics, then look and sound), modeled on the prototype onboarding interviews: fill-in-the-blank questions with examples, everything skippable, saved after the first round.
+
+When the interview is done it also writes `project-instructions.md` (from `assets/project-instructions-template.md`), a short first-person prompt the agent pastes into a claude.ai Project's instructions or a Cowork project's Instructions: it names the agent, points to `profile.md`, and says to use the skills, the profile's voice and the guardrails. It names only the agent, so a profile change never makes it stale. The hand-over recommends a Project and gives the setup steps for where the agent is (`references/project-setup.md`). No other skill reads it.
 
 ### Saved Files
 
@@ -174,7 +176,7 @@ How the color reaches every output:
 - **Legibility.** If the primary color doesn't reach WCAG AA contrast on white, a darkened version is used for text, and the original is used only for fills and accents. `agent-profile` mentions this in plain words when the color is saved.
 - **Party coding.** Documents that show both parties (the timeline's Buyer / Seller / Both markers) use the resolved buyer and seller colors. If the two are the same or too close, the second party gets a clearly different shade, and parties are always labeled in text, never by color alone.
 - **Side labels.** Default blue and orange keep buyer and seller documents easy to tell apart. With a single brand color that signal is gone, so every file-mode output shows its side (Buyer / Seller) in the header on every page.
-- **Print-light PDFs.** Agents print these reports, so color goes into type, rules and thin accent bars, not background fills. Section headings are colored text with no rule under them (most sit on a boxed table or panel, and a rule on a box doubles the line); table headers are bold colored text over a rule, with no zebra rows; the page-1 answer, plans and callouts are outlined or carry a left bar; highlighted rows and status cells get a thin left mark and bold or colored text. A fill is allowed only where it is the data itself: chart bands and marks, timeline bars, meters, small status pills. Shared rules live in `shared/report.css` and `shared/cma.css`.
+- **Print-light PDFs.** Agents print these reports, so color goes into type, rules and thin accent bars, not background fills. Section headings are colored text with no rule under them (most sit on a boxed table or panel, and a rule on a box doubles the line); table headers are bold colored text over a rule, with no zebra rows; the page-1 answer, plans and callouts are outlined or carry a left bar; highlighted rows and status cells get a thin left mark and bold or colored text. A fill is allowed only where it is the data itself: chart bands and marks, timeline bars, meters, small status pills. One exception: a chart's takeaway box (`.chart-read` in `shared/cma.css`, the CMA scatterplot's "where this home sits against the dashed line") gets the faint `--brand-callout` tint, a left bar, an icon and a bold colored headline, because it's the one line a skimming reader must see. Keep it to one per chart and never use it for general notes. Shared rules live in `shared/report.css` and `shared/cma.css`.
 
 **Status colors and color vision (DS-4).** Good and risk look alike under deuteranopia (both read olive-brown), and the caution base (`#B7791F`) is only 3.6:1 on white. So status is never shown by color alone: every colored cell, pill or bar has a word or icon with it (Favorable / Watch / Weak, a pill label, a legend). The `*-base` status colors are for fills, borders and chart marks; text uses `*-strong`. Party colors follow the same split: the raw color for borders and fills, `party_*_ink` (darkened to 4.5:1) for text (DS-1). A brand color within 0.10 (OKLab) of a status color rotates that status away from it; the default blue and orange are a checked pair and never shift (DS-2).
 

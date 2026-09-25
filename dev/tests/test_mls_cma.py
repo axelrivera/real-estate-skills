@@ -46,6 +46,17 @@ class Load(unittest.TestCase):
             homes = mls.load(path, profiles.load_market(state="TX", mls="ACTRIS"), mls.columns_arg(json.dumps(tx_cols)))
         self.assertEqual((homes[0]["status"], homes[0]["close_price"], homes[0]["living_area"]), ("SOLD", 500000.0, 2000.0))
 
+    def test_matrix_display_labels(self):
+        # The labels Stellar's Matrix field picker shows, as in the agent guide's column table.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "e.csv")
+            with open(path, "w", newline="") as f:
+                w = csv.writer(f)
+                w.writerow(["MLS Number", "Address", "Status", "List Price", "Close Price", "Heated Area", "HOA Fee"])
+                w.writerow(["O1", "1 ELM ST", "ACT", "$510,000", "", "2,000", "100"])
+            homes = mls.load(path, FL)
+        self.assertEqual((homes[0]["mls_number"], homes[0]["status"], homes[0]["current_price"]), ("O1", "ACTIVE", 510000.0))
+
 
 RESO = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-reso.csv")
 RESO_SUBJECT = "517 LARKWOOD AVE"

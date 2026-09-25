@@ -25,7 +25,7 @@ help:
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
 	@echo "make samples        Regenerate the committed preview files and samples/README.md from the mock data in dev/samples/"
-	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README)"
+	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README + PDF manual)"
 	@echo "make package-skills Run every check, then zip every skill into $(DIST)/skills/ (runtime-check into $(DIST)/dev/)"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
 
@@ -85,6 +85,10 @@ samples:
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
 			--profile dev/samples/profile.md || exit 1; \
 	done
+	@echo "seller-offer-review (single offer)"; \
+		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/seller-offer-review" \
+		$(PY) skills/seller-offer-review/scripts/render.py dev/samples/seller-offer-review-single.json --format all \
+		--out samples/seller-offer-review --profile dev/samples/profile.md
 	@$(PY) dev/samples_readme.py
 
 package: check-sync test lint-skills py311 style-check

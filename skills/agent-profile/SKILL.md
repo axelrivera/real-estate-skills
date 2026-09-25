@@ -1,11 +1,11 @@
 ---
 name: agent-profile
-description: Sets up the real estate agent in a short, friendly interview and saves one file, profile.md, that every other real estate skill reads for who they are and how their documents look and sound (name, brokerage, license, contact details, brand colors, writing voice and disclaimers). Local costs, taxes and commissions aren't part of it; each report works them out from the listing. Use it whenever the agent says "set me up", "get started", "set up my profile", "save my info", "use my brand colors", "change my report colors", "update my phone / license / brokerage", shares a logo, business card or website for their branding, or another skill needs their name or brokerage and no profile exists.
+description: Sets up the real estate agent in a short, friendly interview and saves profile.md, which every other real estate skill reads for who they are and how their documents look and sound (name, brokerage, license, contact details, brand colors, writing voice and disclaimers), plus ready-to-paste project instructions and the steps to set up a claude.ai or Cowork Project with both. Local costs, taxes and commissions aren't part of it; each report works them out from the listing. Use it whenever the agent says "set me up", "get started", "set up my profile", "save my info", "set up a project", "project instructions", "make Claude remember me", "use my brand colors", "change my report colors", "update my phone / license / brokerage", shares a logo, business card or website for their branding, or another skill needs their name or brokerage and no profile exists.
 ---
 
 # Agent Profile
 
-Sets the agent up in about two minutes and saves one file, `profile.md`: who they are and how their documents look and sound. Every other skill reads it when it's there and still works without it, so this is a convenience, never a gate.
+Sets the agent up in about two minutes and saves `profile.md`: who they are and how their documents look and sound. Every other skill reads it when it's there and still works without it, so this is a convenience, never a gate. Alongside it goes `project-instructions.md`, a short prompt the agent pastes into a claude.ai or Cowork Project, so every chat there starts knowing who they are and which skills to use.
 
 It holds nothing about markets or costs. Each skill takes the location from the listing and uses built-in local values or labeled estimates, and the agent corrects them on the report if they want to.
 
@@ -23,7 +23,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 
 Look for a file that starts with `profile: agent` in the places `references/saved-files.md` lists: the conversation, Project files, then the saved folder in the agent's Cowork working folder.
 
-If there is one, this is an update, not an interview. Change only what the agent asks, keep the rest (and their formatting, such as how they write their phone), then go to step 5. A move to a new brokerage often changes the team name, email, website and disclaimers too: ask about those in one line instead of changing them.
+If there is one, this is an update, not an interview. Change only what the agent asks, keep the rest (and their formatting, such as how they write their phone), then go to step 5. When they only ask how to set up a Project, skip to step 6. A move to a new brokerage often changes the team name, email, website and disclaimers too: ask about those in one line instead of changing them.
 
 ## 2. The Interview
 
@@ -82,8 +82,14 @@ python3 scripts/check_profile.py <path to profile.md>
 
 Fix anything under `problems` and check again. Pass on `warnings` in plain words.
 
+**Project instructions.** When the interview is done (after Round 2, or when they stop answering), fill in `assets/project-instructions-template.md` and save it as `project-instructions.md` next to the profile. It names only the agent; everything else comes from the profile, so the two never disagree. Keep it as written: it's what makes a Project use the skills and the profile. On an update, rewrite it only when the name changed. Don't write it after Round 1 alone: the agent is still mid-interview.
+
 ## 6. Hand It Over
 
-Present the file with a short summary in plain words: who, which details are saved, which colors. Then say where it's kept, or give the one line on keeping it, as `references/saved-files.md` describes, and end with one next step: "Try it: send me a listing and ask for a CMA."
+Present both files with a short summary in plain words: who, which details are saved, which colors. Say where the profile is kept, as `references/saved-files.md` describes.
+
+Then recommend a Project in one sentence ("Put both files in a Project and every chat there starts knowing who you are.") and give the steps for where the agent is now, from `references/project-setup.md`. Those steps replace the one line on keeping the file. Skip them when this chat is already in a Project that has the instructions and only the profile changed; then just say to replace profile.md in the Project files, or that it was updated in place.
+
+End with one next step: "Try it: send me a listing and ask for a CMA."
 
 If the agent asks to save local costs or commission terms here, say they don't need to: every report estimates them from the listing, labels the estimates, and takes their numbers when they share them on that report.

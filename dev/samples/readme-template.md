@@ -26,4 +26,5 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 ## Seller Offer Review
 
-{{seller-offer-review/*-Offer-Review.pdf}}. Two offers on a $515,000 listing, a conventional offer and a VA offer at a higher price. For each offer it shows the seller's net as offered and if the appraisal or inspection goes badly, a certainty score and risk flags, then ranks them and recommends accepting the conventional offer.
+- {{seller-offer-review/*-VA-Offer-Review.pdf}}. One offer on a $515,000 listing: a VA offer above list with a seller credit and a small deposit. It opens with a one-page summary: the recommendation to counter, the counter terms and the seller's net as offered, if the appraisal or inspection goes badly and with the counter. The detail pages cover the net sheet, the contingency timeline, a terms review, a certainty scorecard, risk flags, a verification checklist and questions for the buyer's agent and the loan officer.
+- {{seller-offer-review/*-Multiple-Offer-Review.pdf}}. The same listing once a second offer arrives, a conventional offer at a lower price. For each offer it shows the seller's net as offered and if the appraisal or inspection goes badly, a certainty score and risk flags, then ranks them and recommends accepting the conventional offer.

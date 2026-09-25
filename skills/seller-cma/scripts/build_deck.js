@@ -18,7 +18,7 @@ const K = D.colors;
 // Color roles (all from shared/design): brand_ink carries text and fills behind on_brand text; brand marks
 // charts; party_both is the subject and the dark title slides; tints are brand_callout / brand_rule / brand_panel.
 const BRAND = K.brand_ink, MARK = K.brand, ON = K.on_brand, NAVY = K.party_both, INK = K.text, MUTED = K.muted,
-  TINT = K.brand_callout, LINE = K.brand_rule, PANEL = K.brand_panel, ACCENT = K.brand_accent, GRAY = K.grey,
+  TINT = K.brand_callout, LINE = K.brand_rule, PANEL = K.brand_panel, GRAY = K.grey,
   WHITE = K.bg, SLATE = K.party_both_bg, ON_DARK_SOFT = K.party_both_soft, ON_DARK_ACCENT = K.brand_soft;
 const FONT = 'Arial';
 const fmt = (s, v) => s.replace(/\{(\w+)\}/g, (m, key) => (key in v ? v[key] : m));
@@ -157,15 +157,15 @@ async function icon(name, color, size = 256) {
   // 6. Scatter (native chart; per-series markers are finished in deck.py's style_scatter)
   if (D.scatter) {
     const s = content(); title(s, T.deck_scatter_title);
-    const P = D.scatter.points, names = D.scatter.series;
-    const series = [[names[0], P.ren], [names[1], P.pool], [names[2], P.nop], [names[3], P.active], [names[4], D.scatter.trend], [names[5], [D.scatter.subject]]];
+    const COLOR = { comp: MARK, sold: GRAY, active: WHITE, trend: MUTED, subject: NAVY };
+    const series = D.scatter.series.map(sr => [sr.name, sr.points]);
     const xs = [], cols = series.map(() => []);
     series.forEach(([, pts], si) => pts.forEach(p => { xs.push(p[0]); series.forEach((_, sj) => cols[sj].push(sj === si ? p[1] : null)); }));
     const data = [{ name: 'X', values: xs }].concat(series.map(([nm], i) => ({ name: nm, values: cols[i] })));
     const allY = series.flatMap(([, p]) => p.map(q => q[1]));
     s.addChart(pres.charts.SCATTER, data, {
       x: M, y: 1.05, w: 6.1, h: 4.1, lineSize: 0, lineDataSymbol: 'circle', lineDataSymbolSize: 7,
-      chartColors: [MARK, ACCENT, GRAY, WHITE, MUTED, NAVY],
+      chartColors: D.scatter.series.map(sr => COLOR[sr.key]),
       valAxisMinVal: Math.floor((Math.min(...allY) - 20000) / 50000) * 50000, valAxisMaxVal: Math.ceil((Math.max(...allY) + 20000) / 50000) * 50000,
       catAxisMinVal: Math.floor((Math.min(...xs) - 50) / 200) * 200, catAxisMaxVal: Math.ceil((Math.max(...xs) + 50) / 200) * 200,
       valAxisLabelFormatCode: '$#,##0,"K"', catAxisLabelFormatCode: '#,##0',

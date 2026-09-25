@@ -237,13 +237,7 @@
  },
  "scatter": {
   "heading": "Where Your Home Fits in the Neighborhood",
-  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. Renovated pool homes sell well above the size-only trend line (about {trend_at_subject} at your size). At $469,900, your home would sit among the renovated pool sales, below the two spring sales at the top.",
-  "renovated": [
-   "621 LITTLE WEKIVA RD",
-   "516 OAKWOOD CT",
-   "622 SPRING OAKS BLVD",
-   "419 NAVARRE WAY"
-  ],
+  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. The renovated comparable sales sit well above the dashed line, and at the recommended price your home sits among them, below the two spring sales at the top.",
   "subject_label": "Your Home",
   "subject_label_pos": "right",
   "callouts": [
