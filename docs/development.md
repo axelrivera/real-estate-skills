@@ -34,7 +34,23 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 - **`develop`:** active development. Commit and push here.
 - **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
 
-To release: push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
+To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes.
+
+## Versioning
+
+The version lives only in `.claude-plugin/plugin.json`. It names the `.plugin` and the release zip, and installed copies update when it changes, so a release that ships without a bump can leave agents on the old version.
+
+Bump once per release (before the pull request into `main`, or before sharing a zip), not per commit. Pick the highest level that applies to everything since the last release:
+
+| Bump | When the release... | Examples |
+|---|---|---|
+| Minor (0.8.0 to 0.9.0) | Changes what an agent does, uploads or gets: a skill added, removed or renamed; a new or changed input, output file or default; a change to `profile.md` or a handoff format | 0.7.0 removed market-profile; 0.8.0 took the 360 report as input; 0.9.0 added project instructions and the agent guide |
+| Patch (0.9.0 to 0.9.1) | Ships fixes an agent notices only as things working better: wrong numbers, parsing, wording, references, guide text, an accepted column name | A new MLS column alias; a template typo |
+| None | Changes nothing shipped: `docs/`, `dev/` tooling, evals, tests, samples | This file |
+
+While the version is below 1.0, a minor bump may also break things (a removed skill, a new profile schema); say so in the status notes. Go to 1.0.0 once every skill has passed its evals and been checked by hand in claude.ai and Cowork; after that, a breaking change is a major bump.
+
+Record each release in [status.md](status.md) (what changed for agents), and run `claude plugin validate .` after the bump.
 
 ## Evals
 
