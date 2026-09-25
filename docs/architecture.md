@@ -80,13 +80,15 @@ Save files to the first of:
 
 Never write into the skill's own folder, which is the working directory in claude.ai. This rule lives in `shared/` and is not repeated per skill.
 
-The outputs folder holds deliverables only (PDF, PowerPoint, ICS, the profile). Data files and handoffs are working files in a temporary folder (`mktemp -d`), never presented or offered for download (`shared/references/saved-files.md`, Working Files). render.py returns and prints only the deliverables.
+The outputs folder holds deliverables only (PDF, PowerPoint, ICS, the profile and its project instructions). Data files and handoffs are working files in a temporary folder (`mktemp -d`), never presented or offered for download (`shared/references/saved-files.md`, Working Files). render.py returns and prints only the deliverables.
 
 ## Profiles
 
 One markdown file, `profile.md`, used as context by every other skill. It says who the agent is: name, brokerage, team, license, contact, voice, disclaimers and [brand colors](#brand-colors). Nothing about markets or costs: those come from the property (see [Local costs](#local-costs)).
 
 `agent-profile` builds it from a two-round interview (the basics, then look and sound), modeled on the prototype onboarding interviews: fill-in-the-blank questions with examples, everything skippable, saved after the first round.
+
+When the interview is done it also writes `project-instructions.md` (from `assets/project-instructions-template.md`), a short first-person prompt the agent pastes into a claude.ai Project's instructions or a Cowork project's Instructions: it names the agent, points to `profile.md`, and says to use the skills, the profile's voice and the guardrails. It names only the agent, so a profile change never makes it stale. The hand-over recommends a Project and gives the setup steps for where the agent is (`references/project-setup.md`). No other skill reads it.
 
 ### Saved Files
 

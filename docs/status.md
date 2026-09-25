@@ -13,6 +13,13 @@ Where the work stands and what's left. Last updated 2026-09-24 (version 0.8.0: t
 | Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
+## This pass (2026-09-24): Project Instructions
+
+- agent-profile also writes `project-instructions.md` when the interview is done (`assets/project-instructions-template.md`): a first-person prompt for a claude.ai Project's instructions or a Cowork project's Instructions. It names only the agent and points to `profile.md`, the skills, the voice and the guardrails, so profile updates never make it stale.
+- The hand-over recommends a Project and gives the steps for where the agent is (claude.ai or Cowork, in a Project or not), from `references/project-setup.md`; button names checked against the Claude Help Center on 2026-09-24.
+- `saved-files.md`: the instructions file is a deliverable, saved next to the profile. New eval: agent-profile #7.
+- Open: run the agent-profile evals; check the setup steps in claude.ai and Cowork by hand.
+
 ## This pass (2026-09-24): Sanity Check Fixes and Best-Practice Assumptions
 
 A regression run of every fixture and sample, commit by commit from `main`, found no math change outside the intended ones; an audit of documented commands and fields found the items below, all fixed.

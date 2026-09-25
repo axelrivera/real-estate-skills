@@ -67,7 +67,7 @@ All phases are built (version 0.2.0; 0.3.0 to 0.5.0 add the audit's Phase 1 to 3
 
 | Skill | Status |
 |---|---|
-| `agent-profile` | Rebuilt 2026-09-24 as the one onboarding skill: two-round interview after the Cruz prototypes, one `profile.md` with who the agent is; `market-profile` removed (local costs are conventions: national estimates, per-deal overrides). Evals rewritten (6 prompts, incl. a cold start); needs an eval run and a run in claude.ai and Cowork |
+| `agent-profile` | Rebuilt 2026-09-24 as the one onboarding skill: two-round interview after the Cruz prototypes, one `profile.md` with who the agent is; `market-profile` removed (local costs are conventions: national estimates, per-deal overrides). Writes `project-instructions.md` with Project setup steps (2026-09-24). Evals rewritten (7 prompts, incl. a cold start and the Project flow); needs an eval run and a run in claude.ai and Cowork |
 | `contract-timeline` | Built: engine matches the prototype sample; FR/BAR and other contracts (per-deadline time and rollover for TREC); client flags vs. agent notes; evals run and fixed; needs a run in claude.ai and Cowork |
 | `buyer-cma` | Built: numbers match the prototype sample; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
 | `seller-cma` | Built: report PDF and 15-slide deck from one report.json; nets from the market layers with labeled estimates and an assumed 5% commission; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |

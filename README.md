@@ -8,7 +8,7 @@ Claude skills for real estate agents, in one plugin: a one-file agent profile, b
 - **Desktop app, from a file:** upload `real-estate-<version>.plugin` with **Upload local plugin** (build it with `make package`; it lands in `dist/`, along with `real-estate-skills-<version>.zip`, which bundles the `.plugin` with install instructions for sharing).
 - **claude.ai, single skills:** run `make package-skills` and upload each zip in `dist/skills/` as a skill (not `dist/dev/`, which holds a diagnostic).
 
-Start with `agent-profile` ("set me up"): a two-minute interview that saves one file, `profile.md`. In Cowork, select a working folder first: the profile is saved in `.claude/real-estate/` there, so every session finds it.
+Start with `agent-profile` ("set me up"): a two-minute interview that saves `profile.md` and ready-to-paste Project instructions, with the steps to set up a claude.ai or Cowork Project. In Cowork, select a working folder first: the profile is saved in `.claude/real-estate/` there, so every session finds it.
 
 ## Skills
 

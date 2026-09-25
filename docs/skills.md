@@ -8,7 +8,7 @@ Context every other skill reads. Markdown output only. Other skills use the prof
 
 | Skill | Produces |
 |---|---|
-| `agent-profile` | `profile.md`, from a two-round interview (the basics, then look and sound): name and brokerage (required); team, license, contact, voice, disclaimers, brand colors from hex codes, a website or an image. No markets or costs: every report takes those from the listing ([local costs](architecture.md#local-costs)) |
+| `agent-profile` | `profile.md`, from a two-round interview (the basics, then look and sound): name and brokerage (required); team, license, contact, voice, disclaimers, brand colors from hex codes, a website or an image. Also `project-instructions.md` to paste into a claude.ai or Cowork Project, with the setup steps in chat. No markets or costs: every report takes those from the listing ([local costs](architecture.md#local-costs)) |
 
 ## Deal Work
 
