@@ -1,17 +1,36 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-24 (version 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-24 (version 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.7.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.8.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
 | Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-24): Seller CMA Defaults and Table Fixes
+
+- seller-cma builds only the report PDF by default (`render.main(..., default="pdf")`); the listing presentation is built when the request asks for it, or offered in one line afterward. New eval: seller-cma #5.
+- Seller pricing table: "Time to Contract" header, strategy labels on one line. Buyer offer options, Market Check: the CMA source on its own line under the value range.
+- Version 0.8.0.
+
+## This pass (2026-09-24): No JSON Handed to the Agent
+
+Agents were being offered `.cma.json` handoffs and data files (report.json, listing.json) next to their reports. Now the outputs folder holds deliverables only: render.py writes and prints just the PDF, deck or calendar; compute.py saves the handoff next to report.json; and every skill writes its data file in a temporary folder (`saved-files.md`, Working Files). In a new conversation the offer skills read the CMA PDF or chat summary and confirm the range, as for any other CMA. Chat summaries no longer end in a `cma-handoff v1` JSON block (the agents aren't technical); an old block is still read. Tests check that renders write no JSON.
+
+## This pass (2026-09-24): The 360 Property View as the Subject Input
+
+Agents will usually upload the Stellar **Cross Property 360 Property View** PDF for the subject (listing, public records, full history across MLS numbers, flood, AVM), next to the CSV export. It's preferred, not required.
+
+- `shared/references/listing-sheet.md` (synced into both CMAs): read it with `pdftotext -layout`; section-to-field map; the 360 history grid (`ACT->PND`, `895000.00->839000`, DOM per MLS number); MLS vs. county cross-checks (county sq ft and lot, bonus rooms counted as the county records them, homestead from the tax tab); what stays with the agent (owner names, mortgage history, private remarks, showing details, the AVM); buyer (current report, no history screenshot needed) vs. seller (often the last sale's report: history and county facts only, ask what changed since).
+- buyer-cma asks for two inputs, not three; seller-cma skips the fact questions the report answers.
+- `finance.millage` also matches the appraiser's tax-area code (the 360's `Tax Area: 01` is unincorporated Seminole whatever the mailing city says).
+- Open: no eval uses a 360 PDF yet; it needs a fully mocked one (the real sample has real owners and agents).
 
 ## This pass (2026-09-24): One Onboarding Skill
 
