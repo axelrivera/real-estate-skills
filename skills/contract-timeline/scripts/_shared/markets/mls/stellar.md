@@ -66,7 +66,7 @@ mls_format:
     latitude: [Latitude]
     longitude: [Longitude]
     original_list_price: [OriginalListPrice, Original List Price]
-    current_price: [ListPrice, Current Price]
+    current_price: [ListPrice, Current Price, List Price]
     close_price: [ClosePrice, Close Price]
     contract_date: [PurchaseContractDate, Contract Date]
     close_date: [CloseDate, Close Date]

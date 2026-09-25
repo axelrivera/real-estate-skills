@@ -6,7 +6,7 @@
 plugin: dist/<name>-<version>.plugin from .claude-plugin/plugin.json, with plugin.json at the
 archive root (the desktop app's "Upload local plugin" format). The repo root is the plugin, so
 only PLUGIN_FILES go in; docs, dev tooling and shared/ stay out. Then the release zip,
-dist/<marketplace>-<version>.zip: the .plugin plus dev/package/README.md (install instructions)
+dist/<marketplace>-<version>.zip: the .plugin plus dev/package/README.md (the agent guide)
 in a <marketplace>-<version>/ folder, for sharing.
 
 skills: one dist/skills/<skill>.zip per skill for claude.ai upload, and the runtime check in
@@ -84,7 +84,7 @@ def package_release(plugin, plugin_path):
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(plugin_path, f"{folder}/{plugin_file}")
         z.writestr(f"{folder}/README.md", readme)
-    print(f"{rel(dest)} (the release: the .plugin plus install instructions, for sharing)")
+    print(f"{rel(dest)} (the release: the .plugin plus the agent guide, for sharing)")
 
 
 def package_skills():
