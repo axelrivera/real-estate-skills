@@ -26,6 +26,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists |
 | `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
 | `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin`, `dev/package/README.md` (the agent guide: install, profile, MLS setup using Stellar as the example, each skill with inputs and examples; version filled in) and every PDF in `dev/package/` (the manual; the build stops if there is none) for sharing |
+| `make release` | From an up-to-date `main` with nothing uncommitted: checks that release `v<version>` (from `plugin.json`) doesn't exist yet, runs `make package`, then publishes the GitHub release with only the release zip. See [Branches](#branches) |
 | `make package-skills` | Runs the same checks, then zips every skill into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
 
@@ -34,7 +35,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 - **`develop`:** active development. Commit and push here.
 - **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
 
-To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes. Then run `make package` on `main` and publish the GitHub release with only the release zip (the `.plugin` is inside it): `gh release create v<version> dist/real-estate-skills-<version>.zip --target main --title <version> --generate-notes`.
+To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes. Then, on an up-to-date `main`, run `make release`: it reads the version from `plugin.json`, stops unless you're on `main` with nothing uncommitted, level with `origin/main` and the tag is new, runs `make package`, and publishes GitHub release `v<version>` with only the release zip (the `.plugin` is inside it). Never pass the version by hand; bump `plugin.json` instead.
 
 ## Versioning
 
