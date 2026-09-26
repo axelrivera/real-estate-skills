@@ -17,7 +17,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
 | `make sync` copies only what each skill imports | Each skill's `scripts/_shared/` holds the shared modules its scripts import, what those import, and the data they read (markets for `profiles`, CSS for `render` and `cma`) |
 | `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package`; the pre-commit hook also compares what's staged |
-| `make test` | Runs the unit tests in `dev/tests/` |
+| `make test` | Runs the unit tests in `dev/tests/`. With LibreOffice installed (`LO_BIN`, added at the end of `PATH`) it also checks the listing presentation's PDF copy, with a 60-second conversion limit; without it that check is skipped |
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |

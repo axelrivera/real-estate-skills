@@ -1,17 +1,26 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-25 (version 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-25 (version 0.10.0: the listing presentation with a PDF copy, measured layout and copy that follows the listing, one-hue brand palette; 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.9.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.10.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard routing), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`). See [development.md](development.md#shared-code) |
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test` (352 passing on 2026-09-24); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test` (379 passing on 2026-09-25; the deck-PDF check runs when LibreOffice is installed); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-25): Listing Presentation and Version 0.10.0
+
+- The seller-cma deck ships with a PDF copy of the slides (LibreOffice), as a backup and a way to check the layout.
+- Every slide text is measured and fitted; text that can't fit prints a `Check:` line naming the `deck` field to shorten. How We Priced It is four numbered steps plus the answer card; the scatter is bigger; appendix notes carry only the required notices, the rest in speaker notes.
+- Deck copy follows the listing (tax proration and payoff exclusions, strategy count, expected sale vs. list, comps basis, no mortgage, loan program); item counts are ranges, and items name their icon.
+- One hue: outputs use only the brand's shades and tints plus black and grays; other hues only for status and party coding. The subject home is black. Deck color roles are contrast-checked for light and near-black brands.
+- Report fixes: no double border at the top of the multiple-offer review and Offer Options.
+- Not breaking: deck content written before this still builds (neutral icons, wider counts).
 
 ## This pass (2026-09-25): Agent Guide and Version 0.9.0
 

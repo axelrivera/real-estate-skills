@@ -254,8 +254,8 @@ class Brand(unittest.TestCase):
         self.assertIn("Seller Summary", doc)  # the side shows in the page-1 label; no separate pill
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("License", doc)
-        self.assertIn("--party-both:#1F3A5F", doc)  # the subject is the palette's 'both' color, never the brand
-        self.assertIn("--subject:var(--party-both-ink)", doc)  # DS-1: darkened where it's text
+        self.assertIn("--subject:var(--text)", doc)  # the subject home is black: one brand hue, no second color
+        self.assertNotIn("var(--party", doc)  # no party color outside party coding
         self.assertNotIn("tag prelim", doc)
 
     def test_default_seller_orange(self):
@@ -276,6 +276,19 @@ class Brand(unittest.TestCase):
         self.assertEqual(D["strategies"][1]["net_display"], "$422,136")
         self.assertIn("$80", D["content"]["payment_takeaway"])  # {per_10k} filled from compute.py
         self.assertEqual(D["competition"][0][1], "$400,000")  # price from the report's competition table
+
+    def test_deck_roles_hold_contrast_for_any_brand(self):
+        design = deck.design
+        for primary in (None, "#F2C94C", "#FFE600", "#111827", "#9CA3AF", "#6B21A8", "#0B6E4F"):
+            K = design.pptx_colors(design.theme({"primary": primary} if primary else None, "seller"))
+            K.update(deck.contrast_roles(K))
+            c = lambda a, b: design.contrast("#" + K[a], "#" + K[b])
+            self.assertGreaterEqual(c("mark", "bg"), 3.0, primary)          # chart marks on white
+            self.assertGreaterEqual(c("brand_ink", "bg"), 4.5, primary)     # brand text, fills behind white text
+            self.assertGreaterEqual(c("brand_strong", "brand_callout"), 6.0, primary)  # small brand text on cards
+            self.assertGreaterEqual(c("on_dark", "brand_deep"), 7.0, primary)  # text and circles on the dark slides
+            self.assertGreaterEqual(c("on_ink", "brand_ink"), 4.5, primary)
+            self.assertGreaterEqual(design.distance("#" + K["mark"], "#" + K["text"]), 0.12, primary)  # comps vs subject
 
     def test_builder_has_no_hard_coded_colors(self):
         with open(os.path.join(SKILL, "scripts", "build_deck.js")) as f:
@@ -301,6 +314,92 @@ class DeckContent(unittest.TestCase):
         with self.assertRaises(deck.DeckError):
             deck.deck_data(R, C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer")
 
+    def deck_R(self):
+        R = report()
+        with open(R["deck"]) as f:
+            R["deck"] = json.load(f)
+        return R
+
+    def data(self, R):
+        C, homes = run(R)
+        return deck.deck_data(R, C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer"), C
+
+    def test_net_note_lists_only_what_is_left_out(self):
+        R = self.deck_R()
+        D, C = self.data(R)
+        self.assertFalse(C["net"]["has_tax"])
+        self.assertIn("mortgage payoff, tax proration and repairs", D["net_note"])
+        R["costs"].update(annual_tax=6000, expected_closing_date="2026-11-20", mortgage_payoff=210000)
+        D, C = self.data(R)
+        self.assertTrue(C["net"]["has_tax"])
+        self.assertNotIn("tax proration", D["net_note"])  # the proration is a row in the table: never "not included"
+        self.assertNotIn("mortgage payoff", D["net_note"])
+        self.assertIn("Not included: repairs;", D["net_note"])
+
+    def test_strategy_title_follows_the_count(self):
+        R = self.deck_R()
+        D, _ = self.data(R)
+        self.assertEqual(D["labels"]["deck_strat_title"], "Three Ways to Price It")
+
+    def test_expected_sub_follows_the_market(self):
+        R = self.deck_R()
+        D, _ = self.data(R)
+        self.assertEqual(D["labels"]["deck_expected_sub"], "After the negotiating that is normal now")
+        ri = R["pricing"]["recommended_index"]
+        R["pricing"]["strategies"][ri]["expected_sale"] = R["recommendation"]["list_price"]  # a seller's market: sells at list
+        D, _ = self.data(R)
+        self.assertEqual(D["labels"]["deck_expected_sub"], "With competing offers likely at this price")
+
+    def test_comps_basis(self):
+        R = self.deck_R()
+        R["deck"].pop("comps_basis", None)
+        D, _ = self.data(R)
+        self.assertEqual(D["labels"]["deck_step_comps"], "closest matches to your home")  # never "pool" by default
+        R["deck"]["comps_basis"] = "size, floor, view and building"
+        D, _ = self.data(R)
+        self.assertEqual(D["labels"]["deck_step_comps"], "closest matches in size, floor, view and building")
+
+    def test_no_adjustments_note(self):
+        R = self.deck_R()
+        for c in R["comps"]["cards"]:
+            c["adjustments"], c["seller_concessions"] = [], 0
+        D, _ = self.data(R)
+        self.assertEqual(D["labels"]["deck_method_note"], "The comps needed no adjustment.")
+
+    def test_no_mortgage_is_cash_at_closing(self):
+        R = self.deck_R()
+        R["costs"]["mortgage_payoff"] = 0
+        D, C = self.data(R)
+        self.assertTrue(C["net"]["cash_at_closing"] and C["net"]["no_mortgage"])
+        self.assertEqual(D["net_sub"], "Estimated cash at closing, with no mortgage to pay off")
+        self.assertFalse([r for r in C["net"]["rows"] if r["key"] == "payoff"])
+        self.assertEqual(row(C, "total")["label"], "Estimated Cash at Closing")
+
+    def test_icons(self):
+        R = self.deck_R()
+        R["deck"]["value_drivers"][1] = R["deck"]["value_drivers"][1][:2] + ["pool"]
+        D, _ = self.data(R)
+        self.assertEqual(D["icons"]["value_drivers"][1], "FaSwimmingPool")  # named in the content
+        R["deck"]["value_drivers"][1] = R["deck"]["value_drivers"][1][:2]
+        D, _ = self.data(R)
+        self.assertEqual(D["icons"]["value_drivers"][1], "FaStar")  # neutral, never a pool the home may not have
+        R["deck"]["value_drivers"][0] = R["deck"]["value_drivers"][0][:2] + ["hot tub"]
+        with self.assertRaises(deck.DeckError):
+            deck.load_content(R)
+
+    def test_counts_are_ranges(self):
+        R = self.deck_R()
+        R["deck"]["document_items"] = []  # nothing needs paperwork: allowed, the box is left out
+        R["deck"]["launch_plan"] = R["deck"]["launch_plan"][:4]
+        deck.load_content(R)
+        R["deck"]["value_drivers"] = R["deck"]["value_drivers"][:1]
+        with self.assertRaises(deck.DeckError):
+            deck.load_content(R)
+
+    def test_period_labels_across_new_year(self):
+        w = {"first_close": "2025-11-03", "last_close": "2026-02-20", "split_date": "2026-01-01"}
+        self.assertEqual(deck.period_labels(w), ["November 2025–December 2025", "January 2026–February 2026"])
+
 
 def node_ready():
     """True when node can load pptxgenjs, react-icons and sharp (NODE_PATH, the global folder, or dev/node_modules)."""
@@ -315,7 +414,14 @@ def node_ready():
     return r.returncode == 0
 
 
+def office_ready():
+    return bool(shutil.which("soffice") or shutil.which("libreoffice"))
+
+
 class Files(unittest.TestCase):
+    def setUp(self):
+        deck.PDF_TIMEOUT = 60  # a stalled LibreOffice fails the run in a minute, not three
+
     def test_full_pdf(self):
         R = report()
         with tempfile.TemporaryDirectory() as tmp:
@@ -332,8 +438,15 @@ class Files(unittest.TestCase):
                           "(set NODE_PATH to dev/node_modules after `make setup`).")
         R = report()
         with tempfile.TemporaryDirectory() as tmp:
-            with contextlib.redirect_stderr(io.StringIO()):
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
                 paths = seller_render.build(R, "pptx", tmp, {"agent": AGENT, "market": None, "sample": True})
+            self.assertNotIn("doesn't fit", err.getvalue())  # the sample wording fits every box
+            if office_ready():  # a PDF copy of the slides next to the PPTX
+                self.assertEqual(len(paths), 2)
+                self.assertTrue(paths[1].endswith("-Listing-Presentation.pdf"))
+                with open(paths[1], "rb") as f:
+                    self.assertEqual(len(re.findall(rb"/Type\s*/Page[^s]", f.read())), 15)
             with zipfile.ZipFile(paths[0]) as z:
                 slides = [n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n)]
                 self.assertEqual(len(slides), 15)
@@ -341,12 +454,31 @@ class Files(unittest.TestCase):
                 scatter = next(c for c in charts if "<c:scatterChart>" in c)
                 self.assertIn('<c:symbol val="square"/>', scatter)
                 self.assertIn('<c:symbol val="diamond"/>', scatter)
-                self.assertIn('val="1F3A5F"', scatter)
+                self.assertIn('val="1A1A1A"', scatter)  # the subject home is black, not a second hue
                 self.assertIn('val="0B6E4F"', scatter)
                 text = "".join(z.read(n).decode() for n in slides)
                 self.assertIn("Sunshine Realty", text)
                 self.assertNotIn("undefined", text)
                 self.assertNotIn("C2410C", text)  # the default orange never leaks into a branded deck
+                everything = text + "".join(charts)
+                for hue in ("1F3A5F", "E4E7EC", "D2D8DF"):  # the navy 'both' color and its tints: one brand color only
+                    self.assertNotIn(hue, everything)
+
+    def test_long_wording_is_flagged(self):
+        if not node_ready():
+            self.skipTest("Node with pptxgenjs, react-icons and sharp isn't resolvable here.")
+        R = report()
+        with open(R["deck"]) as f:
+            R["deck"] = json.load(f)
+        R["deck"]["market_stats"][3][0] = "Average 30-Year Fixed Mortgage Rate This Quarter"
+        C, homes = run(R)
+        D = deck.deck_data(R, C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer")
+        with tempfile.TemporaryDirectory() as tmp:
+            checks = deck.build_pptx(D, os.path.join(tmp, "deck.pptx"))  # still built
+            self.assertTrue(os.path.exists(os.path.join(tmp, "deck.pptx")))
+        self.assertEqual(len(checks), 1)
+        self.assertIn("slide 7", checks[0])
+        self.assertIn("deck.market_stats label", checks[0])
 
     def test_texas_pptx_without_export(self):
         if not node_ready():

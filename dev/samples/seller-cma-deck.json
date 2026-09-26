@@ -5,29 +5,35 @@
  "value_drivers": [
   [
    "Renovated Kitchen and Baths",
-   "The single biggest reason your home sells near the top of the neighborhood."
+   "The single biggest reason your home sells near the top of the neighborhood.",
+   "kitchen"
   ],
   [
    "Private Pool",
-   "Worth about $25,000 against similar homes without one."
+   "Worth about $25,000 against similar homes without one.",
+   "pool"
   ],
   [
    "Four Bedrooms, No HOA or CDD",
-   "Flexible space and no monthly association costs."
+   "Flexible space and no monthly association costs.",
+   "bedroom"
   ],
   [
    "Flood Zone X",
-   "Outside the high-risk flood zone, so lenders don't require flood insurance."
+   "Outside the high-risk flood zone, so lenders don't require flood insurance.",
+   "insurance"
   ]
  ],
  "document_items": [
   [
    "The Roof",
-   "Permit and date. Roof age decides whether a buyer can insure the home."
+   "Permit and date. Roof age decides whether a buyer can insure the home.",
+   "roof"
   ],
   [
    "The Permits",
-   "Kitchen, bath, electrical, and plumbing work. Undocumented upgrades count for less."
+   "Kitchen, bath, electrical, and plumbing work. Undocumented upgrades count for less.",
+   "permit"
   ]
  ],
  "comp_lines": {
@@ -37,6 +43,7 @@
   "602 Thrasher Ln": "Same floor plan; partly updated",
   "621 Little Heron Rd": "Renovated; bigger canal lot"
  },
+ "comps_basis": "size, pool, age and neighborhood",
  "comps_takeaway": "The two highest sold in the spring. The recent sales point to the middle of the range.",
  "scatter_takeaway": "The renovated comparable sales sit well above the neighborhood trend. At {list_price}, yours sits among them without testing the ceiling.",
  "market_title": "The Market Shifted Since Spring",
@@ -52,22 +59,26 @@
   [
    "Sale vs. Original Price",
    "100%",
-   "95.2%"
+   "95.2%",
+   "percent"
   ],
   [
    "Days to Contract",
    "8",
-   "22"
+   "22",
+   "time"
   ],
   [
    "Sales with Seller Credits",
    "50%",
-   "89%"
+   "89%",
+   "money"
   ],
   [
    "30-Year Mortgage Rate",
    "~6.3%",
-   "6.95%"
+   "6.95%",
+   "trend"
   ]
  ],
  "market_takeaway": "Buyers are negotiating again. Price for the market we have now, not the one from April.",
@@ -94,27 +105,33 @@
  "launch_plan": [
   [
    "Document the Roof",
-   "Permit and date, ready to share"
+   "Permit and date, ready to share",
+   "roof"
   ],
   [
    "Pre-Listing Inspection",
-   "Plus 4-point and wind-mitigation reports"
+   "Plus 4-point and wind-mitigation reports",
+   "inspection"
   ],
   [
    "Gather Permits",
-   "Kitchen, baths, electrical, plumbing"
+   "Kitchen, baths, electrical, plumbing",
+   "permit"
   ],
   [
    "Easy Showings",
-   "Lockbox access with short notice"
+   "Lockbox access with short notice",
+   "showings"
   ],
   [
    "Seller-Credit Budget",
-   "Decide it now, before offers arrive"
+   "Decide it now, before offers arrive",
+   "money"
   ],
   [
    "3-Week Review",
-   "Steady showings but no offer? Revisit the price"
+   "Steady showings but no offer? Revisit the price",
+   "calendar"
   ]
  ],
  "needs_short": [

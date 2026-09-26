@@ -13,6 +13,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 - {{seller-cma/*-Seller-CMA.pdf}}. The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
 - {{seller-cma/*-Listing-Presentation.pptx}}. An editable listing presentation with the same numbers, for the listing appointment.
+- {{seller-cma/*-Listing-Presentation.pdf}}. The same presentation as a PDF, the backup copy delivered with the PPTX.
 
 ## Buyer Offer Strategy
 

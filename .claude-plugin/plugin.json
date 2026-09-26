@@ -1,6 +1,6 @@
 {
   "name": "real-estate",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Skills for real estate agents: a one-file agent profile, buyer and seller CMAs, offer strategy and review, and contract timelines.",
   "author": {
     "name": "Axel Rivera",

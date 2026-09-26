@@ -2,6 +2,7 @@
 
     D = deck.deck_data(R, C, homes, agent, L, footer)   # every number the slides show, already computed
     deck.build_pptx(D, "out.pptx")                       # node scripts/build_deck.js, then style_scatter()
+    deck.pptx_to_pdf("out.pptx", "out.pdf")              # LibreOffice copy of the slides, or None
 
 build_deck.js only lays out what it is given: it never computes a price, net or payment, and it has no
 colors of its own (they come from shared/design, starting from the agent's brand).
@@ -20,13 +21,29 @@ from _shared import cma, design, finance, mls, render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILDER = os.path.join(HERE, "build_deck.js")
+PDF_TIMEOUT = 180  # seconds for LibreOffice to convert the deck; a hung conversion gives up and the PPTX ships alone
 money, k = finance.money, lambda v: finance.money(v / 1000) + "K"
 
 REQUIRED = {"title": str, "subtitle": str, "recommendation_why": str, "value_drivers": list, "document_items": list,
             "comp_lines": dict, "comps_takeaway": str, "scatter_takeaway": str, "market_stats": list, "market_takeaway": str,
             "competition": list, "competition_takeaway": str, "strategy_takeaway": str, "payment_takeaway": str,
             "launch_plan": list, "needs_short": list, "timeline": list}
-COUNTS = {"value_drivers": 4, "document_items": 2, "market_stats": 4, "launch_plan": 6, "timeline": 4}
+COUNTS = {"value_drivers": (2, 4), "document_items": (0, 2), "market_stats": (2, 4), "launch_plan": (3, 6), "timeline": (2, 5),
+          "competition": (1, 3), "needs_short": (1, 5)}  # (fewest, most): never pad a slide to reach a count
+# Icons an item can name as its last element ("pool", "kitchen"...), so the picture matches this home, not the sample.
+# Features and process only, never people (fair housing).
+ICONS = {"kitchen": "FaUtensils", "renovation": "FaHammer", "repairs": "FaWrench", "tools": "FaTools", "paint": "FaPaintRoller",
+         "pool": "FaSwimmingPool", "bedroom": "FaBed", "bath": "FaBath", "water": "FaWater", "waterfront": "FaUmbrellaBeach",
+         "view": "FaEye", "parking": "FaCar", "garage": "FaWarehouse", "lot": "FaTree", "yard": "FaLeaf", "location": "FaMapMarkerAlt",
+         "size": "FaRulerCombined", "layout": "FaDoorOpen", "building": "FaBuilding", "home": "FaHome", "roof": "FaHome",
+         "solar": "FaSun", "energy": "FaBolt", "ac": "FaSnowflake", "heating": "FaThermometerHalf", "security": "FaLock",
+         "insurance": "FaShieldAlt", "document": "FaFileAlt", "permit": "FaClipboardCheck", "contract": "FaFileSignature",
+         "inspection": "FaSearch", "photos": "FaCamera", "marketing": "FaBullhorn", "sign": "FaSign", "showings": "FaKey",
+         "staging": "FaCouch", "cleaning": "FaBroom", "price": "FaTag", "money": "FaHandHoldingUsd", "dollar": "FaDollarSign",
+         "percent": "FaPercent", "time": "FaClock", "calendar": "FaCalendarCheck", "trend": "FaChartLine", "chart": "FaChartBar",
+         "inventory": "FaLayerGroup", "negotiation": "FaHandshake", "star": "FaStar", "check": "FaCheckCircle"}
+# (field, fields before the optional icon, icon when none is named)
+ICON_FIELDS = (("value_drivers", 2, "star"), ("document_items", 2, "document"), ("market_stats", 3, "chart"), ("launch_plan", 2, "check"))
 NOTE_KEYS = ("recommendation", "method", "drivers", "comps", "scatter", "market", "competition", "strategies", "nets",
              "payments", "launch", "next")
 
@@ -47,12 +64,15 @@ def load_content(R):
         raise DeckError("report.json needs `deck` with the listing presentation's wording (see references/deck-content.md).")
     required = {k: t for k, t in REQUIRED.items() if k != "scatter_takeaway" or R.get("export")}  # no export: no scatter slide
     problems = [f"deck.{key} is missing" for key, typ in required.items() if not isinstance(c.get(key), typ)]
-    if isinstance(c.get("competition"), list) and not 1 <= len(c["competition"]) <= 3:
-        problems.append("deck.competition needs 1 to 3 cards")
-    problems += [f"deck.{key} needs exactly {n} items" for key, n in COUNTS.items()
-                 if isinstance(c.get(key), list) and len(c[key]) != n]
-    if len(c.get("needs_short") or []) > 5:
-        problems.append("deck.needs_short has more than 5 items")
+    problems += [f"deck.{key} needs {lo} to {hi} items" for key, (lo, hi) in COUNTS.items()
+                 if isinstance(c.get(key), list) and not lo <= len(c[key]) <= hi]
+    for key, n, _ in ICON_FIELDS:
+        for item in c.get(key) or []:
+            if not isinstance(item, list) or len(item) not in (n, n + 1):
+                problems.append(f"each deck.{key} item is {n} texts plus an optional icon name")
+                break
+            if len(item) == n + 1 and item[n] not in ICONS:
+                problems.append(f'deck.{key} uses the icon "{item[n]}"; use one of: {", ".join(sorted(ICONS))}')
     if problems:
         raise DeckError("The deck content isn't complete: " + "; ".join(problems) + ".")
     return c
@@ -85,7 +105,7 @@ def adjustment_words(cards):
     if any(c.get("seller_concessions") for c in cards):
         seen.append("seller credits")
     if not seen:
-        return "none: the comps needed no adjustment"
+        return ""
     return seen[0] if len(seen) == 1 else ", ".join(seen[:-1]) + " and " + seen[-1]
 
 
@@ -94,13 +114,21 @@ def period_labels(window):
     a mid-month split shows the day, so no days are dropped ("April–July 14", "July 15–September")."""
     split = datetime.strptime(window["split_date"], "%Y-%m-%d")
     before = split - timedelta(days=1)
+    y = _two_years(window)  # a window across New Year names the years, so "November–January" can't be misread
+    first, last = _month(window["first_close"], y), _month(window["last_close"], y)
+    b, a = f'{before:%B}' + (f' {before.year}' if y else ""), f'{split:%B}' + (f' {split.year}' if y else "")
     if split.day == 1:
-        return [f'{_month(window["first_close"])}–{before:%B}', f'{split:%B}–{_month(window["last_close"])}']
-    return [f'{_month(window["first_close"])}–{before:%B} {before.day}', f'{split:%B} {split.day}–{_month(window["last_close"])}']
+        return [f'{first}–{b}', f'{a}–{last}']
+    b, a = f'{before:%B} {before.day}' + (f', {before.year}' if y else ""), f'{split:%B} {split.day}' + (f', {split.year}' if y else "")
+    return [f'{first}–{b}', f'{a}–{last}']
 
 
-def _month(iso):
-    return datetime.strptime(iso, "%Y-%m-%d").strftime("%B")
+def _month(iso, year=False):
+    return datetime.strptime(iso, "%Y-%m-%d").strftime("%B %Y" if year else "%B")
+
+
+def _two_years(window):
+    return window["first_close"][:4] != window["last_close"][:4]
 
 
 def scatter_data(homes, R, C, L):
@@ -157,13 +185,14 @@ def deck_data(R, C, homes, agent, L, footer):
         cards.append([c[0], money(price), c[1], c[2]])
 
     theme = design.theme(agent.get("brand"), "seller")
-    colors = design.pptx_colors(theme)  # includes party_both_soft / party_both_bg tints
+    colors = design.pptx_colors(theme)  # the brand's shades and tints, plus black and grays; the deck uses nothing else
+    colors.update(contrast_roles(colors))
 
     window = C.get("window") or {}
     if content.get("sold_line"):
         sold_line = content["sold_line"]
     elif window:
-        month = _month(window["first_close"])
+        month = _month(window["first_close"], _two_years(window))
         d = C.get("max_distance")
         if d:
             miles = math.ceil(d * 2) / 2
@@ -177,15 +206,39 @@ def deck_data(R, C, homes, agent, L, footer):
         periods = period_labels(window)
 
     L_deck = {key: v for key, v in L.text.items() if key.startswith("deck_")}
-    L_deck["deck_method_note"] = L("deck_method_note", items=adjustment_words(R["comps"]["cards"]))  # CMA-26
+    words = adjustment_words(R["comps"]["cards"])
+    L_deck["deck_method_note"] = L("deck_method_note", items=words) if words else L("deck_method_note_none")  # CMA-26
+    basis = content.get("comps_basis")
+    L_deck["deck_step_comps"] = L("deck_step_comps_basis", basis=basis) if basis else L("deck_step_comps")
+    k_strats = len(C["strategies"])
+    L_deck["deck_strat_title"] = L(f"deck_strat_title_{k_strats}")
+    ri = C["recommended_index"]
+    expected = R["pricing"]["strategies"][ri]["expected_sale"]
+    L_deck["deck_expected_sub"] = content.get("expected_sub") or L(
+        "deck_expected_sub" if expected < rec["list_price"] else "deck_expected_sub_at")
+    if content.get("scatter_title"):
+        L_deck["deck_scatter_title"] = content["scatter_title"]
+    program = L("prog_" + pay["loan_type"])
+    program = program if program.isupper() else program.lower()  # "FHA", "VA"; "conventional" mid-sentence
+    L_deck["deck_pay_sub"] = L("deck_pay_sub", program=program, down=f'{pay["down_pct"] * 100:g}')
+    icons = {key: [ICONS[item[n] if len(item) > n else fallback] for item in content.get(key) or []]
+             for key, n, fallback in ICON_FIELDS}
     org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
     if agent.get("license"):
         org = " · ".join(x for x in (org, f'{L("lic")} {agent["license"]}') if x)
     contact = " · ".join(str(agent[f]) for f in ("phone", "email", "website") if agent.get(f))
-    cash = net["cash_at_closing"]
-    excluded = L("deck_app_excluded" if cash else "deck_app_excluded_payoff")
-    app_note = " ".join([n for n in net["notes"]] + [L("deck_app_net_note", excluded=excluded)])
-    app_note = re.sub(r"</?strong>", "", app_note)
+    cash, free = net["cash_at_closing"], net["no_mortgage"]
+    left_out = [L(key) for key, out in (("deck_ex_payoff", not cash), ("deck_ex_tax", not net["has_tax"]), ("deck_ex_repairs", True)) if out]
+    excluded = left_out[0] if len(left_out) == 1 else ", ".join(left_out[:-1]) + " and " + left_out[-1]
+    strip = lambda t: re.sub(r"</?strong>", "", t)
+    # The appendix slides show only what must be on them (the net sheet's placeholder, commission and preliminary
+    # notes; the CMA disclaimer, data source and notices); the full detail goes in the speaker notes.
+    net_note = strip(" ".join([L("deck_app_net_note", excluded=excluded)] + net["key_notes"]))
+    net_speaker = strip(" ".join(net["notes"] + [L("deck_app_net_note", excluded=excluded)]))
+    notices = cma.report_notices(C)
+    comps_note = " ".join([L("deck_disclaimer"), notices[0], *render.notice_lines(agent, (), marketing=True)])
+    comps_speaker = " ".join(x for x in (content.get("adjustments_summary", ""), L("deck_disclaimer"),
+                                         *render.notice_lines(agent, notices, marketing=True)) if x)
     return {
         "colors": colors,
         "labels": L_deck,
@@ -215,18 +268,41 @@ def deck_data(R, C, homes, agent, L, footer):
                         "payment_display": L("deck_per_month", amount=x["payment_display"]),
                         "down_display": L("deck_down", amount=x["down_display"], pct=f'{pay["down_pct"] * 100:g}')} for x in C["strategies"]],
         "recommended_index": C["recommended_index"],
-        "net_sub": L("deck_cash_sub" if cash else "deck_net_sub") + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else ""),
+        "icons": icons,
+        "net_sub": L("deck_cash_free_sub" if free else "deck_cash_sub" if cash else "deck_net_sub") + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else ""),
         "net_spread_display": C["net_spread_display"],
         "net_rows": [[r["label"]] + r["display"] for r in net["rows"]],
-        "net_note": app_note,
+        "net_note": net_note,
+        "net_speaker": net_speaker,
         "appendix_comps": [[r[0], money(r[1]), money(r[2]), money(r[3])] for r in R["comps"]["summary_rows"]],
         "subject_row": [R["comps"].get("subject_row_label", L("subject_row")), money(rec["list_price"]), "—",
                         f'{L("range_word")} {k(rec["low"])}–{k(rec["high"])}'],
         "table_head": [L("th_sale"), L("th_sold_for"), L("th_seller_paid"), L("th_adjusted")],
         "net_head": L("th_at_closing"),
-        "appendix_note": " ".join(x for x in (content.get("adjustments_summary", ""), L("deck_disclaimer"),
-                                              *render.notice_lines(agent, cma.report_notices(C), marketing=True)) if x),
+        "appendix_note": comps_note,
+        "appendix_speaker": comps_speaker,
     }
+
+
+def contrast_roles(colors):
+    """The deck's contrast-checked roles, so a light brand (yellow), a mid one (orange) and a near-black one all work:
+    `mark` for chart marks and accent bars (3:1 on white, WCAG for graphics, and apart
+    from the black subject marker and the gray other sales), `on_dark` for secondary text on brand_deep (7:1), `on_ink` for secondary text on brand_ink
+    fills (4.5:1), and `grey_pale` for the "for sale now" markers."""
+    hx = lambda key: "#" + colors[key]
+    white, text = hx("bg"), hx("text")
+    # The brand itself when it's distinct from the black subject marker and the gray "other sales"; else the first
+    # shade or tint of it that is (a gray or near-black brand), else the most distinct one: the marker shapes still differ.
+    options = [design.darken_to(c, 3.0) for c in (hx("brand"), hx("brand_ink"), hx("brand_strong"), hx("brand_accent"),
+                                                   design.mix_white(hx("brand"), 0.25))]
+    gap = lambda c: min(design.distance(c, text), design.distance(c, hx("grey")))
+    mark = next((c for c in options if gap(c) >= 0.12), max(options, key=gap))
+    def first(options, against, target):
+        return next((c for c in options if design.contrast(hx(c), hx(against)) >= target), "bg")
+    return {"mark": mark.lstrip("#"),
+            "on_dark": colors[first(("brand_soft", "brand_rule"), "brand_deep", 7.0)],
+            "on_ink": colors[first(("brand_soft", "brand_rule"), "brand_ink", 4.5)],
+            "grey_pale": design.mix_white(hx("grey"), 0.6).lstrip("#")}
 
 
 # --- node --------------------------------------------------------------------
@@ -248,6 +324,7 @@ def node_env():
 
 
 def build_pptx(D, path):
+    """Write the deck; returns the builder's layout checks (text that doesn't fit its box), one line each."""
     node = shutil.which("node")
     if not node:
         raise DeckError("Node isn't available, so the deck can't be built here. The PDF is unaffected.")
@@ -265,7 +342,25 @@ def build_pptx(D, path):
         raise DeckError("The deck builder failed: " + next((l for l in lines if "Error" in l), lines[-1]).strip())
     if D.get("scatter"):
         style_scatter(path, D["colors"], [ser["key"] for ser in D["scatter"]["series"]])
-    return path
+    return [l[len("Check: "):] for l in r.stderr.splitlines() if l.startswith("Check: ")]
+
+
+def pptx_to_pdf(pptx, pdf):
+    """A PDF copy of the slides through LibreOffice (headless, its own profile). None when it isn't available."""
+    office = shutil.which("soffice") or shutil.which("libreoffice")
+    if not office:
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            subprocess.run([office, "--headless", "--norestore", f"-env:UserInstallation=file://{tmp}/profile",
+                            "--convert-to", "pdf", "--outdir", tmp, pptx], capture_output=True, timeout=PDF_TIMEOUT)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        made = os.path.join(tmp, os.path.splitext(os.path.basename(pptx))[0] + ".pdf")
+        if not os.path.exists(made):
+            return None
+        shutil.move(made, pdf)
+    return pdf
 
 
 # --- chart styling pptxgenjs can't do ------------------------------------------
@@ -283,18 +378,18 @@ def _restyle(ser, colors, keys):
     kind = keys[i] if 0 <= i < len(keys) else None
     mk = re.compile(r"<c:marker>.*?</c:marker>", re.S)
     if kind == "comp":
-        ser = mk.sub(_marker("circle", 8, colors["brand"], colors["brand"]), ser, 1)
+        ser = mk.sub(_marker("circle", 8, colors["mark"], colors["mark"]), ser, 1)
     elif kind == "sold":
         ser = mk.sub(_marker("square", 6, colors["grey"], colors["grey"]), ser, 1)
     elif kind == "active":
-        ser = mk.sub(_marker("circle", 7, colors["bg"], colors["grey"], 15875), ser, 1)
+        ser = mk.sub(_marker("circle", 7, colors["grey_pale"], colors["grey"], 15875), ser, 1)  # a pale fill: visible where the outline isn't drawn
     elif kind == "trend":
         ser = mk.sub('<c:marker><c:symbol val="none"/></c:marker>', ser, 1)
         ser = re.sub(r"(<c:spPr>.*?)<a:ln[^>]*>\s*<a:noFill/>\s*</a:ln>",
                      lambda m: m.group(1) + f'<a:ln w="15875"><a:solidFill><a:srgbClr val="{colors["muted"]}"/></a:solidFill>'
                                             '<a:prstDash val="dash"/></a:ln>', ser, 1, flags=re.S)
     elif kind == "subject":
-        ser = mk.sub(_marker("diamond", 14, colors["party_both"], colors["bg"], 12700), ser, 1)
+        ser = mk.sub(_marker("diamond", 14, colors["text"], colors["bg"], 12700), ser, 1)
     return ser
 
 
