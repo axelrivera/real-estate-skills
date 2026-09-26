@@ -146,8 +146,8 @@ def scatter_data(homes, R, C, L):
         x0, x1 = min(xs), max(xs)
         trend = [[x0 + (x1 - x0) * i / 27, fit["intercept"] + fit["slope"] * (x0 + (x1 - x0) * i / 27)] for i in range(28)]
     subject = [[s["sqft"], R["recommendation"]["list_price"]]]
-    series = [{"key": key, "name": L(f"deck_series_{key}"), "points": p}
-              for key, p in (*pts.items(), ("trend", trend), ("subject", subject)) if p]
+    order = (("sold", pts["sold"]), ("active", pts["active"]), ("trend", trend), ("comp", pts["comp"]), ("subject", subject))
+    series = [{"key": key, "name": L(f"deck_series_{key}"), "points": p} for key, p in order if p]  # background first
     return {"points": pts, "series": series,
             "trend_note": trend_note(fit, R["recommendation"]["list_price"], L),
             "axis_x": L("axis_x"), "axis_y": L("axis_y")}
@@ -288,7 +288,7 @@ def contrast_roles(colors):
     """The deck's contrast-checked roles, so a light brand (yellow), a mid one (orange) and a near-black one all work:
     `mark` for chart marks and accent bars (3:1 on white, WCAG for graphics, and apart
     from the black subject marker and the gray other sales), `on_dark` for secondary text on brand_deep (7:1), `on_ink` for secondary text on brand_ink
-    fills (4.5:1), and `grey_pale` for the "for sale now" markers."""
+    fills (4.5:1), and `grey_pale` for the "other sales" markers."""
     hx = lambda key: "#" + colors[key]
     white, text = hx("bg"), hx("text")
     # The brand itself when it's distinct from the black subject marker and the gray "other sales"; else the first
@@ -366,13 +366,14 @@ def pptx_to_pdf(pptx, pdf):
 # --- chart styling pptxgenjs can't do ------------------------------------------
 
 def _marker(symbol, size, fill, line, line_w=9525):
+    """`line` None draws no outline."""
     fill_xml = "<a:noFill/>" if fill is None else f'<a:solidFill><a:srgbClr val="{fill}"/></a:solidFill>'
-    return (f'<c:marker><c:symbol val="{symbol}"/><c:size val="{size}"/><c:spPr>{fill_xml}'
-            f'<a:ln w="{line_w}"><a:solidFill><a:srgbClr val="{line}"/></a:solidFill></a:ln></c:spPr></c:marker>')
+    ln = "<a:ln><a:noFill/></a:ln>" if line is None else f'<a:ln w="{line_w}"><a:solidFill><a:srgbClr val="{line}"/></a:solidFill></a:ln>'
+    return f'<c:marker><c:symbol val="{symbol}"/><c:size val="{size}"/><c:spPr>{fill_xml}{ln}</c:spPr></c:marker>'
 
 
 def _restyle(ser, colors, keys):
-    """One scatter series, by its position in `keys` (comp, sold, active, trend, subject; empty ones left out)."""
+    """One scatter series, by its position in `keys` (sold, active, trend, comp, subject; empty ones left out)."""
     idx = re.search(r'<c:idx val="(\d+)"/>', ser)
     i = int(idx.group(1)) if idx else -1
     kind = keys[i] if 0 <= i < len(keys) else None
@@ -380,9 +381,10 @@ def _restyle(ser, colors, keys):
     if kind == "comp":
         ser = mk.sub(_marker("circle", 8, colors["mark"], colors["mark"]), ser, 1)
     elif kind == "sold":
-        ser = mk.sub(_marker("square", 6, colors["grey"], colors["grey"]), ser, 1)
+        # background: small solid dots, no outline (LibreOffice, which makes the PDF copy, ignores marker transparency)
+        ser = mk.sub(_marker("circle", 5, colors["grey_pale"], None), ser, 1)
     elif kind == "active":
-        ser = mk.sub(_marker("circle", 7, colors["grey_pale"], colors["grey"], 15875), ser, 1)  # a pale fill: visible where the outline isn't drawn
+        ser = mk.sub(_marker("circle", 7, colors["grey"], colors["grey"], 15875), ser, 1)  # darker than other sales: the listings to watch
     elif kind == "trend":
         ser = mk.sub('<c:marker><c:symbol val="none"/></c:marker>', ser, 1)
         ser = re.sub(r"(<c:spPr>.*?)<a:ln[^>]*>\s*<a:noFill/>\s*</a:ln>",

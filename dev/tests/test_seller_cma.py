@@ -452,7 +452,7 @@ class Files(unittest.TestCase):
                 self.assertEqual(len(slides), 15)
                 charts = [z.read(n).decode() for n in z.namelist() if n.startswith("ppt/charts/chart") and n.endswith(".xml")]
                 scatter = next(c for c in charts if "<c:scatterChart>" in c)
-                self.assertIn('<c:symbol val="square"/>', scatter)
+                self.assertIn('<c:size val="5"/>', scatter)  # other sales are small background dots
                 self.assertIn('<c:symbol val="diamond"/>', scatter)
                 self.assertIn('val="1A1A1A"', scatter)  # the subject home is black, not a second hue
                 self.assertIn('val="0B6E4F"', scatter)
@@ -561,7 +561,7 @@ class AuditLowCma(unittest.TestCase):
         pts, _, _ = compute.cma.scatter_points(homes, R["scatter"], R["subject"]["sqft"], R["subject"].get("mls_address"), comps)
         self.assertEqual({k: len(v) for k, v in D["points"].items()}, {k: len(v) for k, v in pts.items()})
         self.assertEqual(len(pts["comp"]), len(comps))  # every comp card is on the chart, matched by address
-        self.assertEqual([sr["key"] for sr in D["series"]], ["comp", "sold", "active", "trend", "subject"])
+        self.assertEqual([sr["key"] for sr in D["series"]], ["sold", "active", "trend", "comp", "subject"])
 
     def test_legend_lists_only_what_is_drawn(self):
         L = compute.cma.Labels(compute.ASSETS)

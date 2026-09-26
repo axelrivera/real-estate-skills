@@ -188,12 +188,9 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         return T + (Y1 - v) / (Y1 - Y0) * (H - T - B)
 
     def shape(kind, cx, cy, hollow, tip):
-        cls, r = f"m-{kind}" + (" hol" if hollow else ""), 6
-        if kind in ("comp", "active"):
-            g = f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r + 0.5}" class="{cls}"/>'
-        else:
-            g = f'<rect x="{cx - r + .5:.1f}" y="{cy - r + .5:.1f}" width="{2 * r - 1}" height="{2 * r - 1}" class="{cls}"/>'
-        return f"<g><title>{esc(tip)}</title>{g}</g>"
+        # other sales are the background: small, see-through dots, so overlapping sales read as a denser patch
+        cls, r = f"m-{kind}" + (" hol" if hollow else ""), 4 if kind == "sold" else 6.5
+        return f'<g><title>{esc(tip)}</title><circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" class="{cls}"/></g>'
 
     o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">',
          f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>',
@@ -211,12 +208,17 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         xa, xb = X0 + 50, X1 - 50
         o.append(f'<line x1="{x(xa):.1f}" y1="{y(fit["intercept"] + fit["slope"] * xa):.1f}" '
                  f'x2="{x(xb):.1f}" y2="{y(fit["intercept"] + fit["slope"] * xb):.1f}" class="trend"/>')
-    for h in sold:
+    def sale(h):
         o.append(shape(cat(h), x(h["living_area"]), y(h["close_price"]), False,
                        f'{h["address"].title()}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
+
+    for h in pts["sold"]:  # background first, comps and the subject on top
+        sale(h)
     for h in act:
         o.append(shape("active", x(h["living_area"]), y(h["current_price"]), True,
                        f'{h["address"].title()}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
+    for h in pts["comp"]:
+        sale(h)
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
@@ -252,7 +254,7 @@ def scatter_legend(L, subject, counts):
     """Only the entries with something on the chart: `counts` is scatter()'s info["counts"]."""
     entries = [
         ("comp", '<circle cx="7" cy="7" r="5.5" class="m-comp"/>'),
-        ("sold", '<rect x="2" y="2" width="10" height="10" class="m-sold"/>'),
+        ("sold", '<circle cx="7" cy="7" r="4" class="m-sold"/>'),
         ("active", '<circle cx="7" cy="7" r="5.5" class="m-active hol"/>'),
         ("trend", '<line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>'),
     ]
