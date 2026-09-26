@@ -45,7 +45,7 @@ style-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/style_check.py
 
 test:
-	@$(PY) -m unittest discover -s dev/tests
+	@PATH="$$PATH:$(LO_BIN)" $(PY) -m unittest discover -s dev/tests  # LibreOffice, when installed, for the deck-PDF check
 
 lint-skills:
 	@$(PY) dev/lint_skills.py

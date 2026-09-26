@@ -419,6 +419,9 @@ def office_ready():
 
 
 class Files(unittest.TestCase):
+    def setUp(self):
+        deck.PDF_TIMEOUT = 60  # a stalled LibreOffice fails the run in a minute, not three
+
     def test_full_pdf(self):
         R = report()
         with tempfile.TemporaryDirectory() as tmp:

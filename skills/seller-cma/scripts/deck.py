@@ -21,6 +21,7 @@ from _shared import cma, design, finance, mls, render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILDER = os.path.join(HERE, "build_deck.js")
+PDF_TIMEOUT = 180  # seconds for LibreOffice to convert the deck; a hung conversion gives up and the PPTX ships alone
 money, k = finance.money, lambda v: finance.money(v / 1000) + "K"
 
 REQUIRED = {"title": str, "subtitle": str, "recommendation_why": str, "value_drivers": list, "document_items": list,
@@ -352,7 +353,7 @@ def pptx_to_pdf(pptx, pdf):
     with tempfile.TemporaryDirectory() as tmp:
         try:
             subprocess.run([office, "--headless", "--norestore", f"-env:UserInstallation=file://{tmp}/profile",
-                            "--convert-to", "pdf", "--outdir", tmp, pptx], capture_output=True, timeout=180)
+                            "--convert-to", "pdf", "--outdir", tmp, pptx], capture_output=True, timeout=PDF_TIMEOUT)
         except (OSError, subprocess.SubprocessError):
             return None
         made = os.path.join(tmp, os.path.splitext(os.path.basename(pptx))[0] + ".pdf")
