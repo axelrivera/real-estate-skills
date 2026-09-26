@@ -406,17 +406,52 @@ def _summary(h, size_diff=None):
     return s
 
 
-def trend(homes, subject_sqft, fit_size_ratio=1.6, exclude_address=None):
-    """Least-squares price-vs-size line over sold homes up to `fit_size_ratio` × the subject's size.
+OUTLIER_Z = 3.5  # modified z-score cutoff for sales (Iglewicz and Hoaglin)
+OUTLIER_Z_LISTING = 7.0  # listings: a low asking price is competition to show; drop only data errors and other product
 
-    Returns {'slope', 'intercept', 'at_subject', 'r2', 'n'}; None with fewer than 3 sales.
+
+def _theil_sen(pts):
+    """A line through (x, y) points that a few extreme prices can't pull: the median slope over all pairs."""
+    slopes = [(y2 - y1) / (x2 - x1) for i, (x1, y1) in enumerate(pts) for x2, y2 in pts[i + 1:] if x2 != x1]
+    slope = statistics.median(slopes) if slopes else 0.0
+    return slope, statistics.median(y - slope * x for x, y in pts)
+
+
+def price_outlier(fit, sqft, price, listing=False):
+    """True when a price is far off what size predicts (see trend): a waterfront or teardown sale, a typo. Listings
+    get a wider cutoff."""
+    robust = (fit or {}).get("robust")
+    if not robust or not robust["mad"]:
+        return False
+    resid = price - (robust["intercept"] + robust["slope"] * sqft)
+    return abs(0.6745 * (resid - robust["center"]) / robust["mad"]) > (OUTLIER_Z_LISTING if listing else OUTLIER_Z)
+
+
+def trend(homes, subject_sqft, fit_size_ratio=1.6, exclude_address=None):
+    """Least-squares price-vs-size line over sold homes from subject size / `fit_size_ratio` to × `fit_size_ratio`.
+
+    Sales priced far off the line (price_outlier) are left out of the fit, so one waterfront or distressed sale can't
+    move it; with fewer than 6 sales there's too little to judge and every sale counts.
+    Returns {'slope', 'intercept', 'at_subject', 'r2', 'n', 'outliers' (addresses), 'robust'}; None with fewer than 3 sales.
     """
-    pts = [(h["living_area"], h["close_price"]) for h in homes
-           if h["status"] == "SOLD" and h.get("living_area") and h.get("close_price")
-           and h["living_area"] <= subject_sqft * fit_size_ratio
-           and not (exclude_address and same_address(h["address"], exclude_address))]
-    if len(pts) < 3:
+    lo, hi = subject_sqft / fit_size_ratio, subject_sqft * fit_size_ratio
+    sales = [h for h in homes
+             if h["status"] == "SOLD" and h.get("living_area") and h.get("close_price")
+             and lo <= h["living_area"] <= hi
+             and not (exclude_address and same_address(h["address"], exclude_address))]
+    fit = {"robust": None, "outliers": []}
+    if len(sales) >= 6:
+        pts = [(h["living_area"], h["close_price"]) for h in sales]
+        slope, intercept = _theil_sen(pts)
+        resid = [y - (intercept + slope * x) for x, y in pts]
+        center = statistics.median(resid)
+        fit["robust"] = {"slope": slope, "intercept": intercept, "center": center,
+                         "mad": statistics.median(abs(r - center) for r in resid)}
+        fit["outliers"] = [h["address"] for h in sales if price_outlier(fit, h["living_area"], h["close_price"])]
+        sales = [h for h in sales if h["address"] not in fit["outliers"]]
+    if len(sales) < 3:
         return None
+    pts = [(h["living_area"], h["close_price"]) for h in sales]
     xs, ys = [p[0] for p in pts], [p[1] for p in pts]
     mx, my = statistics.fmean(xs), statistics.fmean(ys)
     sxx = sum((x - mx) ** 2 for x in xs)
@@ -425,7 +460,8 @@ def trend(homes, subject_sqft, fit_size_ratio=1.6, exclude_address=None):
     slope = sxy / sxx if sxx else 0.0
     intercept = my - slope * mx
     r2 = (sxy * sxy) / (sxx * syy) if sxx and syy else 0.0
-    return {"slope": slope, "intercept": intercept, "at_subject": intercept + slope * subject_sqft, "r2": r2, "n": len(pts)}
+    return {**fit, "slope": slope, "intercept": intercept, "at_subject": intercept + slope * subject_sqft, "r2": r2,
+            "n": len(pts)}
 
 
 def r2_key(r2):
