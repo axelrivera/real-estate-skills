@@ -9,8 +9,10 @@ LO_BIN   ?= /Applications/LibreOffice.app/Contents/MacOS
 DEV_ENV := NODE_PATH="$(CURDIR)/dev/node_modules" PATH="$(CURDIR)/$(VENV)/bin:$(LO_BIN):$$PATH"
 OUT      := out
 DIST     := dist
+# The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
+VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs samples package package-skills clean
+.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
@@ -26,6 +28,7 @@ help:
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
 	@echo "make samples        Regenerate the committed preview files and samples/README.md from the mock data in dev/samples/"
 	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README + PDF manual)"
+	@echo "make release        From an up-to-date main: run make package, then publish GitHub release v<version> with the release zip only"
 	@echo "make package-skills Run every check, then zip every skill into $(DIST)/skills/ (runtime-check into $(DIST)/dev/)"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
 
@@ -93,6 +96,17 @@ samples:
 
 package: check-sync test lint-skills py311 style-check
 	@$(PY) dev/package.py plugin
+
+# The version comes from plugin.json, never an argument, so the tag and the zip can't disagree. The guards run before
+# the build: on main, nothing uncommitted, level with origin/main, and a tag that doesn't exist yet (bump plugin.json).
+release:
+	@test "$$(git branch --show-current)" = main || { echo "Release from main (git checkout main && git pull)."; exit 1; }
+	@git diff --quiet && git diff --cached --quiet || { echo "Commit or stash your changes first."; exit 1; }
+	@git fetch -q origin && test "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/main)" || { echo "main isn't level with origin/main: pull or push first."; exit 1; }
+	@! gh release view v$(VERSION) >/dev/null 2>&1 || { echo "Release v$(VERSION) already exists: bump the version in .claude-plugin/plugin.json."; exit 1; }
+	@$(MAKE) --no-print-directory package
+	@echo "Publishing v$(VERSION) with $(DIST)/real-estate-skills-$(VERSION).zip"
+	gh release create v$(VERSION) $(DIST)/real-estate-skills-$(VERSION).zip --target main --title $(VERSION) --generate-notes
 
 package-skills: check-sync test lint-skills py311 style-check
 	@$(PY) dev/package.py skills
