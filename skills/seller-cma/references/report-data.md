@@ -56,7 +56,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 
 ## scatter
 
-`heading` (Title Case), `intro` (may use `{trend_at_subject}`), `subject_label` (default "Your Home"), `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`, labels in Title Case), optional `after_paragraph` (may use `{trend_at_subject}`, `{r2_share}`), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (0.6/1.4/1.6). The script adds a caption under the chart that explains the dashed line and says how far above or below it the home sits; don't repeat that in `intro` or `after_paragraph`.
+`heading` (Title Case), `intro` (may use `{trend_at_subject}`), `subject_label` (default "Your Home"), `subject_label_pos` and each callout's `side` (`left`, `right`, `above` or `below`), `callouts` (1–3 `{address, label, side}`, labels in Title Case), optional `after_paragraph` (may use `{trend_at_subject}`, `{r2_share}`), optional `min_size_ratio`/`max_size_ratio`/`fit_size_ratio` (0.6/1.4/1.6). The dashed line is fit to sales from subject size ÷ `fit_size_ratio` to × `fit_size_ratio`; sales priced far off it (and listings wildly off it) are left out of the line and off the chart, never a comp card, and the script adds a note with the count. The script adds a caption under the chart that explains the dashed line and says how far above or below it the home sits; don't repeat that in `intro` or `after_paragraph`.
 
 ## competition
 

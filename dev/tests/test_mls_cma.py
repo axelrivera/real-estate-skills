@@ -144,6 +144,41 @@ class Stats(unittest.TestCase):
         self.assertEqual(mls.r2_key(0.83), "r2_most")
         self.assertIsNone(mls.trend(self.homes[:2], 1849))
 
+    def _sale(self, address, sqft, price, status="SOLD"):
+        return {"address": address, "status": status, "living_area": sqft, "close_price": price, "current_price": price}
+
+    def test_price_outliers_leave_the_trend_alone(self):
+        base = mls.trend(self.homes, 1849, exclude_address="517 HICKORYWOOD AVE")
+        self.assertEqual(base["outliers"], [])  # a normal market: nothing dropped
+        for odd in (self._sale("1 LAKE DR", 1880, 1100000), self._sale("2 BANK ST", 1850, 210000)):
+            fit = mls.trend(self.homes + [odd], 1849, exclude_address="517 HICKORYWOOD AVE")
+            self.assertEqual(fit["outliers"], [odd["address"]])
+            self.assertAlmostEqual(fit["at_subject"], base["at_subject"], places=0)
+            self.assertAlmostEqual(fit["r2"], base["r2"], places=6)
+
+    def test_trend_fits_sizes_on_both_sides(self):
+        base = mls.trend(self.homes, 1849, exclude_address="517 HICKORYWOOD AVE")
+        tiny = mls.trend(self.homes + [self._sale("3 TINY LN", 700, 140000)], 1849, exclude_address="517 HICKORYWOOD AVE")
+        self.assertEqual(tiny["n"], base["n"])  # below subject / 1.6: not in the fit
+
+    def test_too_few_sales_to_judge_outliers(self):
+        few = [self._sale(f"{i} A ST", 1800 + 20 * i, 400000 + 5000 * i) for i in range(4)] + [self._sale("9 B ST", 1850, 900000)]
+        fit = mls.trend(few, 1849)
+        self.assertEqual(fit["outliers"], [])
+        self.assertEqual(fit["n"], 5)
+
+    def test_chart_drops_price_outliers_but_keeps_comps(self):
+        homes = self.homes + [self._sale("1 LAKE DR", 1880, 1100000), self._sale("4 GOLD ST", 1900, 1500000, "ACTIVE"),
+                              self._sale("5 COMP RD", 1860, 1000000)]
+        pts, excluded, fit = cma.scatter_points(homes, {}, 1849, "517 HICKORYWOOD AVE", comps=["5 Comp Rd"])
+        self.assertIn(("1 LAKE DR", 1880, "sale", "price"), excluded)
+        self.assertIn(("4 GOLD ST", 1900, "listing", "price"), excluded)
+        self.assertIn("5 COMP RD", [h["address"] for h in pts["comp"]])  # a comp card is always drawn
+        self.assertIn("656 LITTLE WEKIVA RD", [h["address"] for h in pts["active"]])  # low asking price: competition, kept
+        L = lambda key, **kw: key + ":" + str(kw.get("n", ""))
+        note = cma.excluded_note(excluded, L)
+        self.assertIn("excluded_price_many:2", note)
+
 
 class Blocks(unittest.TestCase):
     def test_groups_heading_intro_and_figure(self):

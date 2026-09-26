@@ -135,26 +135,33 @@ def _street(address):
 
 
 def scatter_points(homes, sc, subject_sqft, subject_address, comps=()):
-    """The chart's points, shared by the PDF and the deck so they always match (CMA-24): sold homes used as comps
-    (`comp`, matched by the comp cards' addresses), other sales (`sold`), and every active listing (`active`).
-    Returns ({kind: [homes]}, excluded [(address, sqft, 'sale'|'listing')], others)."""
+    """The chart's points and trend line, shared by the PDF and the deck so they always match (CMA-24): sold homes used
+    as comps (`comp`, matched by the comp cards' addresses), other sales (`sold`), and every active listing (`active`).
+    Homes far larger or smaller than the subject, and sales or listings priced far off the trend (mls.price_outlier;
+    listings only when wildly off), are left off; comps always stay. Returns ({kind: [homes]}, excluded [(address, sqft, 'sale'|'listing',
+    'size'|'price')], trend fit or None)."""
     comp_keys = {_street(a) for a in comps}
     lo, hi = subject_sqft * sc.get("min_size_ratio", 0.6), subject_sqft * sc.get("max_size_ratio", 1.4)
     others = [h for h in homes if not mls.same_address(h["address"], subject_address)]
+    fit = mls.trend(others, subject_sqft, sc.get("fit_size_ratio", 1.6))
     pts, excluded = {"comp": [], "sold": [], "active": []}, []
     for h in others:
         sold = h["status"] == "SOLD" and h.get("close_price")
         active = h["status"] == "ACTIVE" and h.get("current_price")
         if not h.get("living_area") or not (sold or active):
             continue
+        kind = "active" if active else "comp" if _street(h["address"]) in comp_keys else "sold"
+        price = h["current_price"] if active else h["close_price"]
         if not lo <= h["living_area"] <= hi:
-            excluded.append((h["address"], int(h["living_area"]), "sale" if sold else "listing"))
-        elif active:
-            pts["active"].append(h)
+            reason = "size"
+        elif kind != "comp" and mls.price_outlier(fit, h["living_area"], price, listing=bool(active)):
+            reason = "price"
         else:
-            pts["comp" if _street(h["address"]) in comp_keys else "sold"].append(h)
+            pts[kind].append(h)
+            continue
+        excluded.append((h["address"], int(h["living_area"]), "listing" if active else "sale", reason))
     excluded.sort(key=lambda e: e[2] != "sale")  # sales first, then listings
-    return pts, excluded, others
+    return pts, excluded, fit
 
 
 def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=()):
@@ -163,13 +170,12 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     `comps`: the comp cards' addresses, drawn as comparable sales.
     `sc`: {callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
     Label sides: left, right, above or below.
-    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind)], n_sold, n_active and
+    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active and
     counts {kind: n} for scatter_legend.
     """
-    pts, excluded, others = scatter_points(homes, sc, subject_sqft, subject_address, comps)
+    pts, excluded, fit = scatter_points(homes, sc, subject_sqft, subject_address, comps)
     sold, act = pts["comp"] + pts["sold"], pts["active"]
     kind = {id(h): k for k, hs in pts.items() for h in hs}
-    fit = mls.trend(others, subject_sqft, sc.get("fit_size_ratio", 1.6))
 
     def cat(h):
         return kind[id(h)]
@@ -293,11 +299,14 @@ def trend_caption(info, price, L):
 
 
 def excluded_note(excluded, L):
-    """One line with the count only: which homes were left off doesn't matter to the reader, just that some were."""
-    if not excluded:
-        return ""
-    text = L("excluded_one") if len(excluded) == 1 else L("excluded_many", n=len(excluded))
-    return f'<p class="note">{text}</p>'
+    """One line with the counts only: which homes were left off doesn't matter to the reader, just that some were
+    and why (size, or a price far off the line)."""
+    parts = []
+    for reason in ("size", "price"):
+        n = sum(e[3] == reason for e in excluded)
+        if n:
+            parts.append(L(f"excluded_{reason}_one") if n == 1 else L(f"excluded_{reason}_many", n=n))
+    return f'<p class="note">{" ".join(parts)}</p>' if parts else ""
 
 
 # --- dot plot (page 1) ---------------------------------------------------------

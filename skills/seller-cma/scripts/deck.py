@@ -17,7 +17,7 @@ import tempfile
 import zipfile
 from datetime import datetime, timedelta
 
-from _shared import cma, design, finance, mls, render
+from _shared import cma, design, finance, render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILDER = os.path.join(HERE, "build_deck.js")
@@ -135,11 +135,10 @@ def scatter_data(homes, R, C, L):
     """Points by category (same rules as the PDF chart), the size-only trend line, and the subject at the list price.
     `series` holds only the non-empty ones, in drawing order, so the legend never lists something the chart doesn't show."""
     s, sc = R["subject"], R.get("scatter") or {}
-    homes_by_kind, _, others = cma.scatter_points(homes, sc, s["sqft"], s.get("mls_address", s["address"]),
-                                                  [cd["address"] for cd in R["comps"]["cards"]])  # CMA-24
+    homes_by_kind, _, fit = cma.scatter_points(homes, sc, s["sqft"], s.get("mls_address", s["address"]),
+                                               [cd["address"] for cd in R["comps"]["cards"]])  # CMA-24
     pts = {kind: [[h["living_area"], h["close_price"] if kind != "active" else h["current_price"]] for h in hs]
            for kind, hs in homes_by_kind.items()}
-    fit = mls.trend(others, s["sqft"], sc.get("fit_size_ratio", 1.6))
     xs = [p[0] for v in pts.values() for p in v] + [s["sqft"]]
     trend = []
     if fit:
