@@ -78,6 +78,8 @@ def net_sheet(R, market, L):
     lf, bf = _frac(costs, "listing_fee_pct", "costs"), _frac(costs, "buyer_broker_fee_pct", "costs")
     others = costs.get("other") or []
     payoff, payoff_est = costs.get("mortgage_payoff"), False
+    if payoff is None and costs.get("mortgage_balance") == 0:  # owned free and clear: the net is the cash at closing
+        payoff = 0
     if payoff is None and costs.get("mortgage_balance"):  # CMA-29: a balance isn't a payoff; add a month's interest + fees
         payoff = round(costs["mortgage_balance"] * (1 + (costs.get("mortgage_rate") or 7) / 100 / 12) + PAYOFF_CUSHION)
         payoff_est = True
@@ -119,8 +121,9 @@ def net_sheet(R, market, L):
                      "amounts": [-next((l["amount"] for l in c["lines"] if l["key"] == key), 0) for c in cols]})
     if payoff:
         rows.append({"key": "payoff", "label": L("net_payoff_est" if payoff_est else "net_payoff"), "amounts": [-payoff for _ in cols]})
-    totals = [c["net"] if payoff else c["net_before_payoff"] for c in cols]
-    rows.append({"key": "total", "label": L("net_total_cash" if payoff else "net_total"), "amounts": totals})
+    cash = payoff is not None  # a payoff, or none to make (0): either way the total is the seller's cash at closing
+    totals = [c["net"] if cash else c["net_before_payoff"] for c in cols]
+    rows.append({"key": "total", "label": L("net_total_cash" if cash else "net_total"), "amounts": totals})
     # CMA-7: a slower option costs more to hold (loan interest, HOA, insurance, utilities; tax is in the proration)
     monthly, left_out = finance.holding_monthly(strategies[0]["list_price"], market, payoff, costs.get("hoa_monthly"))
     months = [x.get("months_to_contract") if x.get("months_to_contract") is not None else finance.months_in(x.get("time"))
@@ -133,7 +136,7 @@ def net_sheet(R, market, L):
     for r in rows:
         r["display"] = [money(a) for a in r["amounts"]]
 
-    notes = []
+    notes, key_notes = [], []  # key_notes: the ones a slide must still show (the deck keeps the rest for speaker notes)
     if holding:
         notes.append(L("net_holding_note", monthly=money(monthly, 10), close=f"{CONTRACT_TO_CLOSE_MONTHS:g}")
                      + (" " + L("net_holding_left_out", items=" and ".join(left_out)) if left_out else ""))
@@ -141,8 +144,10 @@ def net_sheet(R, market, L):
     if standard_terms:
         total_pct = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
         notes.append(L("net_placeholder_note", pct=pct_text(total_pct)))
+        key_notes.append(notes[-1])
     if any(l["key"] in ("listing_fee", "buyer_broker_fee") for c in cols for l in c["lines"]):
         notes.append(finance.COMMISSION_NOTE)
+        key_notes.append(notes[-1])
     has_tax = any(l["key"] == "tax_proration" for c in cols for l in c["lines"])
     if not has_tax and market.get("property_tax.paid") == "arrears":
         notes.append(L("net_tax_note"))
@@ -156,11 +161,12 @@ def net_sheet(R, market, L):
     shown = [MISSING_WORDS.get(m, m) for m in first["missing"]]
     if first["missing"]:
         notes.append(L("net_missing", items=", ".join(shown)))
+        key_notes.append(notes[-1])
     return {"columns": [{"net_before_payoff": c["net_before_payoff"], "net": c["net"], "total_costs": c["total_costs"]} for c in cols],
             "totals": totals, "rows": rows, "holding": holding,
-            "after_holding": [t - h for t, h in zip(totals, holding)] if holding else None, "notes": notes, "missing": shown, "assumed": first["assumed"],
+            "after_holding": [t - h for t, h in zip(totals, holding)] if holding else None, "notes": notes, "key_notes": key_notes, "missing": shown, "assumed": first["assumed"],
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
-            "payoff": payoff, "cash_at_closing": bool(payoff), "standard_terms": standard_terms, "has_tax": has_tax,
+            "payoff": payoff, "cash_at_closing": cash, "no_mortgage": payoff == 0, "standard_terms": standard_terms, "has_tax": has_tax,
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
 
 

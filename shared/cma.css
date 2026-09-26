@@ -1,5 +1,7 @@
-/* CMA reports (buyer and seller): loaded after report.css. Theme variables only; each skill sets
-   --subject and --subject-bg (the subject home's accent, kept distinct from the brand). US Letter, 0.45in margins. */
+/* CMA reports (buyer and seller): loaded after report.css. Theme variables only. The subject home is black (--subject),
+   apart from the brand-colored comps without a second hue: only status and party coding may leave the brand's shades
+   and tints. US Letter, 0.45in margins. */
+:root{--subject:var(--text)}
 @page{size:Letter;margin:0.45in 0.45in 0.55in}
 body{font-size:10.5pt;line-height:1.45}
 .wrap{padding:0}
@@ -36,7 +38,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 tr.subj td{color:var(--subject);font-weight:700} tr.subj td:first-child{box-shadow:inset 3px 0 0 var(--subject)}
 tr.total td{font-weight:700;border-top:2px solid var(--brand)}
 tr.alt td{color:var(--muted);font-size:8.5pt}
-.tax-jump td.n{color:var(--subject);font-weight:600}
+.tax-jump td.n{color:var(--brand-strong);font-weight:600}
 .flag{color:var(--risk-base);font-weight:700}
 .comps2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .comp{border:1px solid var(--brand-rule);border-left:4px solid var(--brand);border-radius:6px;padding:9px 12px;break-inside:avoid}
@@ -48,7 +50,7 @@ tr.alt td{color:var(--muted);font-size:8.5pt}
 .comp li{font-size:9.5pt;margin:2px 0}
 ul.plain{padding-left:20px;margin:0 0 10px} ul.plain li{margin:5px 0}
 ol.qs{padding-left:22px;margin:0 0 10px} ol.qs li{margin:5px 0}
-ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--subject);padding-left:9px;list-style:none;margin:5px 0}
+ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--brand);padding-left:9px;list-style:none;margin:5px 0}
 .note{font-size:8.5pt;color:var(--muted)}
 /* The chart takeaway: the one line a skimming reader must see. The only tinted box in the report (docs/architecture.md). */
 .chart-read{display:flex;gap:12px;align-items:flex-start;background:var(--brand-callout);border-left:5px solid var(--brand);

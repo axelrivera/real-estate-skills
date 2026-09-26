@@ -155,7 +155,8 @@ class Pdf(unittest.TestCase):
         self.assertNotIn('class="tag', doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
-        self.assertIn("--subject:var(--party-both-ink)", doc)  # DS-3: the neutral subject accent, never a status color
+        self.assertIn("--subject:var(--text)", doc)  # DS-3: black, never a status color or a second hue
+        self.assertNotIn("var(--party", doc)
 
     def test_full_pdf(self):
         R = report()

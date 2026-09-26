@@ -1,4 +1,5 @@
-"""Seller CMA files: the report PDF (page 1 summary, then the full analysis) and the listing presentation PPTX.
+"""Seller CMA files: the report PDF (page 1 summary, then the full analysis) and the listing presentation PPTX
+(with a PDF copy of the slides when LibreOffice is available).
 
     python3 scripts/render.py report.json [--format pdf|pptx|all] [--profile profile.md]
         [--sample] [--out DIR]
@@ -51,8 +52,8 @@ def summary_page(R, C, agent, L):
     s, rec = R["subject"], R["recommendation"]
     sp = cma.fill(R["summary_page"], cma.page_one_values(C))
     strats, ri = C["strategies"], C["recommended_index"]
-    cash = C["net"]["cash_at_closing"]
-    tile = L("sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
+    cash, free = C["net"]["cash_at_closing"], C["net"]["no_mortgage"]
+    tile = L("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
     if C["net"]["standard_terms"]:  # CMA-18: every place a net shows says the brokerage isn't the listing agreement's yet
         tile += f" ({L('sum_standard_terms')})"
     stats = list(sp["key_stats"])[:3] + [[C["recommended_net_display"], tile]]
@@ -78,7 +79,7 @@ def summary_page(R, C, agent, L):
              f'<div class="sp-table"><div class="sp-h">{L("sum_options")}</div><div class="tbl"><table><thead><tr>'
              f'<th>{L("th_list_at")}</th><th>{L("th_time_short")}</th><th class="n">{L("th_expected")}</th>'
              f'<th class="n">{L("th_est_cash" if cash else "th_est_net")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
-             f'<div class="note">{L("sum_options_note_cash" if cash else "sum_options_note")}</div></div></div>')
+             f'<div class="note">{L("sum_options_note_free" if free else "sum_options_note_cash" if cash else "sum_options_note")}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
@@ -90,11 +91,12 @@ def summary_page(R, C, agent, L):
 def pricing_section(R, C, L):
     p, strats, net = R["pricing"], C["strategies"], C["net"]
     cash = net["cash_at_closing"]
+    cash_note = L("pricing_note_free" if net["no_mortgage"] else "pricing_note_cash")
     b = [f'<h2>{L("h_pricing")}</h2>', f'<p>{p["intro"]}</p>',
          table([L("th_strategy"), L("th_time"), L("th_expected"), L("th_cash" if cash else "th_net"), L("th_expect")],
                [[f'<strong style="white-space:nowrap">{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_display"], x["note"]] for x in strats],
                num_cols=(2, 3), row_classes={C["recommended_index"]: "total"}),
-         f'<p class="note">{L("pricing_note_cash" if cash else "pricing_note")} {p.get("note", "")}</p>',
+         f'<p class="note">{(cash_note if cash else L("pricing_note"))} {p.get("note", "")}</p>',
          f'<h3>{L("h_net")}</h3>', f'<p>{p.get("net_intro") or L("net_intro")}</p>']
     rows = [[r["label"]] + r["display"] for r in net["rows"]]
     b.append(table([L("th_at_closing")] + [x["label"] for x in strats], rows, num_cols=tuple(range(1, len(strats) + 1)),
@@ -175,10 +177,9 @@ def body(R, C, homes, agent, L):
 
 
 def theme_css(agent):
-    """Seller palette from the agent's brand; the subject home uses the palette's neutral 'both' party color, never the brand."""
+    """Seller palette from the agent's brand; the subject home is black (shared/cma.css), never a second hue."""
     t = design.theme(agent.get("brand"), "seller")
-    extra = (":root{--subject:var(--party-both-ink);--subject-bg:var(--party-both-bg)}"
-             ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}")
+    extra = ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}"
     return design.css_vars(t) + extra, t
 
 
@@ -240,8 +241,15 @@ def _build(R, fmt, out_dir, ctx):
     elif fmt == "pptx":
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Listing Presentation", ext="pptx"))
         D = deck.deck_data(R, C, homes, agent, L, footer_label(R, C, agent, L, "", sample))
-        deck.build_pptx(D, path)  # a DeckError keeps the PDF and names the problem (render.main)
+        checks = deck.build_pptx(D, path)  # a DeckError keeps the PDF and names the problem (render.main)
         written.append(path)
+        for c in checks:
+            print(f"Check: {c}", file=sys.stderr)
+        pdf = deck.pptx_to_pdf(path, os.path.join(out_dir, render.filename(R["subject"]["address"], "Listing Presentation", ext="pdf")))
+        if pdf:
+            written.append(pdf)
+        else:
+            print("Check: the presentation PDF couldn't be made here (no LibreOffice); the PPTX is unaffected.", file=sys.stderr)
     return written
 
 

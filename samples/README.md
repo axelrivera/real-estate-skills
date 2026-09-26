@@ -12,6 +12,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 - [517-Larkwood-Ave-Seller-CMA.pdf](seller-cma/517-Larkwood-Ave-Seller-CMA.pdf) (9 pages). The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
 - [517-Larkwood-Ave-Listing-Presentation.pptx](seller-cma/517-Larkwood-Ave-Listing-Presentation.pptx) (15 slides). An editable listing presentation with the same numbers, for the listing appointment.
+- [517-Larkwood-Ave-Listing-Presentation.pdf](seller-cma/517-Larkwood-Ave-Listing-Presentation.pdf) (15 pages). The same presentation as a PDF, the backup copy delivered with the PPTX.
 
 ## Buyer Offer Strategy
 
