@@ -73,7 +73,7 @@ ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--brand);padding-
 .scatter .lbl-band{font-size:12px;fill:var(--brand-strong);font-weight:600}
 .scatter .trend{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 5}
 .m-comp{fill:var(--brand);stroke:var(--brand);stroke-width:1.5}
-.m-sold{fill:var(--grey);stroke:var(--grey);stroke-width:1.5}
+.m-sold{fill:var(--muted);fill-opacity:.3;stroke:none}
 .m-active{fill:var(--bg);stroke:var(--muted);stroke-width:1.5}
 .scatter .hol,.legend .hol{fill:var(--bg)}
 .scatter .subj{fill:var(--subject);stroke:var(--bg);stroke-width:2}
