@@ -1,0 +1,175 @@
+{
+ "family": "CR-7_P",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "lead_known": {
+   "at": {
+    "after": "Known lead-based paint",
+    "kind": "check"
+   },
+   "check": "bool(v.lead_known)"
+  },
+  "lead_known_explain": {
+   "at": {
+    "label": "lead-based paint hazards",
+    "kind": "line",
+    "nth": 0
+   },
+   "value": "v.lead_known if isinstance(v.lead_known, str) else None"
+  },
+  "lead_no_knowledge": {
+   "at": {
+    "after": "Seller has no knowledge",
+    "kind": "check"
+   },
+   "check": "not v.lead_known"
+  },
+  "records_provided": {
+   "at": {
+    "after": "Seller has provided the Buyer",
+    "kind": "check"
+   },
+   "check": "bool(v.records)"
+  },
+  "records_list": {
+   "at": {
+    "label": "List documents:"
+   },
+   "value": "v.records"
+  },
+  "no_records": {
+   "at": {
+    "after": "Seller has no reports",
+    "kind": "check"
+   },
+   "check": "not v.records"
+  },
+  "risk_assessment_received": {
+   "at": {
+    "after": "Received a 10-day",
+    "kind": "check"
+   },
+   "check": "v.risk_assessment == 'received'"
+  },
+  "risk_assessment_waived": {
+   "at": {
+    "after": "Waived the opportunity",
+    "kind": "check"
+   },
+   "check": "v.risk_assessment != 'received'"
+  }
+ },
+ "roles": {
+  "initials:seller:1": [
+   {
+    "after": "(a) Presence of lead-based paint",
+    "nth": 0
+   },
+   {
+    "after": "(b) Records and reports",
+    "nth": 0
+   }
+  ],
+  "initials:seller:2": [
+   {
+    "after": "(a) Presence of lead-based paint",
+    "nth": 1
+   },
+   {
+    "after": "(b) Records and reports",
+    "nth": 1
+   }
+  ],
+  "initials:buyer:1": [
+   {
+    "after": "(c) Buyer has received copies",
+    "nth": 0
+   },
+   {
+    "after": "(d) Buyer has received the",
+    "nth": 0
+   },
+   {
+    "after": "(e) Buyer has (CHECK ONE",
+    "nth": 0
+   }
+  ],
+  "initials:buyer:2": [
+   {
+    "after": "(c) Buyer has received copies",
+    "nth": 1
+   },
+   {
+    "after": "(d) Buyer has received the",
+    "nth": 1
+   },
+   {
+    "after": "(e) Buyer has (CHECK ONE",
+    "nth": 1
+   }
+  ],
+  "initials:listing_agent": {
+   "after": "(f) Licensee has informed"
+  },
+  "sign:seller": {
+   "above": "SELLER",
+   "all": true,
+   "part": [
+    0,
+    0.64
+   ]
+  },
+  "date:seller": {
+   "above": "SELLER",
+   "all": true,
+   "part": [
+    0.66,
+    1
+   ]
+  },
+  "sign:buyer": {
+   "above": "BUYER",
+   "all": true,
+   "part": [
+    0,
+    0.64
+   ]
+  },
+  "date:buyer": {
+   "above": "BUYER",
+   "all": true,
+   "part": [
+    0.66,
+    1
+   ]
+  },
+  "sign:listing_agent": {
+   "above": "Listing Licensee",
+   "part": [
+    0,
+    0.64
+   ]
+  },
+  "date:listing_agent": {
+   "above": "Listing Licensee",
+   "part": [
+    0.66,
+    1
+   ]
+  },
+  "sign:buyer_agent": {
+   "above": "Selling Licensee",
+   "part": [
+    0,
+    0.64
+   ]
+  },
+  "date:buyer_agent": {
+   "above": "Selling Licensee",
+   "part": [
+    0.66,
+    1
+   ]
+  }
+ }
+}

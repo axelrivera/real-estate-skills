@@ -1,0 +1,8 @@
+{
+ "family": "CR-7_F",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "appraisal_date": {"at": {"label": "appraiser, on or before"}, "value": "mdy(v.appraisal_date)"},
+  "appraised_value": {"at": {"label": "of the Property is at least"}, "value": "money(v.appraised_value)"}
+ }
+}

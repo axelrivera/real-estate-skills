@@ -1,0 +1,11 @@
+{
+  "name": "asis-late-comp-agreement",
+  "form": "as_is",
+  "stage": "executed",
+  "buyers": ["Hayden Castellanos"],
+  "sellers": ["Avery Kowalczyk"],
+  "property": {"address": "5518 Coral Vine Ter, Melbourne, FL 32901", "county": "Brevard", "year_built": 2011},
+  "price": 347500,
+  "financing": {"type": "conventional", "ltv": 90},
+  "defects": ["late-compensation-agreement", {"type": "missing-initials", "party": "seller", "page": 6}]
+}

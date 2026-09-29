@@ -1,0 +1,12 @@
+{
+ "family": "CR-7_D",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "mortgage_balance": {"at": {"label": "existing mortgage, in the amount of"}, "value": "money(v.mortgage_balance)"},
+  "variable": {"at": {"after": "a variable", "kind": "check"}, "check": "v.rate_type == 'variable'"},
+  "fixed": {"at": {"after": "a fixed interest rate of", "kind": "check"}, "check": "v.rate_type != 'variable'"},
+  "rate": {"at": {"label": "or a fixed interest rate of"}, "value": "v.rate if v.rate_type != 'variable' else None"},
+  "max_rate": {"at": {"label": "the rate shall not exceed"}, "value": "v.max_rate"},
+  "fees_cap": {"at": {"label": "mortgagee charge(s), not to exceed"}, "value": "money(v.fees_cap)"}
+ }
+}

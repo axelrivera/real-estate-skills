@@ -36,6 +36,24 @@
       "prompt": "Offer on 1207 Palmetto Way (list 389k): 385k conventional 20% down, $10k deposit, close in 40 days, on the FR/BAR Standard contract but they attached the As Is Rider K with a 10 day inspection period. Repair limits are blank. How does that compare to a normal Standard offer for my seller?",
       "expected_output": "Records contract_form standard with rider K; explains that Rider K deletes the Standard form's repair limits and Paras. 11 and 12 and gives the buyer a 10-day right to cancel for any reason, so the seller owes no repairs (no General Repair Limit in the downside net; the post-inspection credit estimate is used instead) and the deal is firm sooner than a Standard offer's repair windows; the report labels the form 'Standard + As Is Rider (K)'; no best-effort disclaimer (FR/BAR)",
       "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "got this offer on my listing at 2604 Sable Palm Way, list is 504k. should my seller take it?",
+      "mock_package": "asis-offer-aga",
+      "expected_output": "Reads the offer from the package, matching offers[0] in key/2604-Sable-Palm-Way-Answer-Key.json: AS IS, $489,000 conventional with 20% down (loan $391,200), pre-approval from Palm Ridge Mortgage Co., $20,000 in deposits, 10-day inspection, closing Nov 2, AGA-1 appraisal gap of $15,000 (appraisal_form aga), Riders B and GG (2.5% to the buyer's broker), the additional terms (pool robot, patio furniture). Net and certainty against a $504,000 list; a counter recommendation. Notes that the acceptance deadline (Sep 23, 5:00 PM) has passed, so the offer needs to be extended or rewritten. The disclosures (SPDR-4x, FD-2) and HOA rider are recognized as part of the package",
+      "files": [
+        "out/mock-contracts/asis-offer-aga/2604-Sable-Palm-Way-Offer.pdf"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "we countered Saw Grass Pointe at 629 with a 10 day inspection and the buyer came back. list was 639k. should my seller take the buyer's counter?",
+      "mock_package": "standard-buyer-counter-pending",
+      "expected_output": "Reads the chain: the offer (Standard, $610,000 conventional 25% down, 15-day inspection, closing Oct 27), the seller's CO-3 #1 ($629,000, inspection 10 days) and the buyer's CO-3 #2 ($619,500, closing Nov 16), which is pending. Reviews CO #2 as the live terms and notes it doesn't restate the 10-day inspection, so the offer's 15 days apply (CO-3 terms don't carry over). The key (key/915-Saw-Grass-Pointe-Answer-Key.json) holds the original offer in offers[0] and CO #2 in mock.counters. Net at $619,500 against a $639,000 list; recommends accept or a counter with the reasoning; notes CO #2's 2-day acceptance window (delivered Sep 23) may have lapsed",
+      "files": [
+        "out/mock-contracts/standard-buyer-counter-pending/915-Saw-Grass-Pointe-Offer.pdf"
+      ]
     }
   ]
 }

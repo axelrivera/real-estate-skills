@@ -1,0 +1,15 @@
+{
+  "name": "asis-short-sale-rent-back",
+  "form": "as_is",
+  "stage": "executed",
+  "buyers": ["Blake Prescott"],
+  "sellers": ["Taylor Ashcombe"],
+  "property": {"address": "6027 Osprey Ridge Ln, Lakeland, FL 33803", "county": "Polk", "year_built": 1996},
+  "price": 289900,
+  "financing": {"type": "fha"},
+  "riders": [
+    {"code": "G", "short_sale_application_days": 7, "short_sale_approval_days": 60, "backup_offers": "b"},
+    {"code": "U", "rent_back_days": 14, "rent_back_monthly": 1850, "expense": "split"}
+  ],
+  "dates": {"offer": "2026-09-21 18:20", "closing": "2026-12-22"}
+}

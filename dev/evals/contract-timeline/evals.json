@@ -24,6 +24,61 @@
       "prompt": "Heron Lake is fully executed. Standard contract this time, with a few riders. Can you give my buyer every deadline?",
       "expected_output": "Reads the Standard form and riders F, H and L by letter; Effective Date Fri Oct 2 2026 (seller's signature delivered 11:20 AM); deposit Mon Oct 5 (3-day default); Right To Inspect Period ends Mon Oct 19 (15-day rider default, Sat Oct 17 rolled) as a right to cancel that also keeps the repair notices, with the seller's 10-day estimates and 5-day election pending the buyer's notice; loan approval Mon Nov 2 (30-day default, Sun Nov 1 rolled); insurance contingency Mon Nov 2 (Rider H blank: the earlier of 30 days after the Effective Date or 10 days before closing); appraisal due Tue Nov 3 and low-appraisal notice Fri Nov 6 (Rider F blank: 10 days before closing, then 3 days); closing Fri Nov 13; lists every default used as an agent note; no best-effort disclaimer (FR/BAR)",
       "files": ["dev/evals/contract-timeline/files/executed-contract-heron-lake-standard.md"]
+    },
+    {
+      "id": 5,
+      "prompt": "here's the fully executed package for Cypress Bend, dotloop export. can you build my buyer's timeline?",
+      "mock_package": "asis-fha-executed",
+      "expected_output": "Reads the Dotloop package: AS IS, FHA $365,000, Riders E, H and GG checked and attached. Effective Date Fri Sep 25 2026 (seller's signature, 4:12 PM). Deposit ($11,000, 3 days) Mon Sep 28; compensation agreement due Mon Sep 28 and GG's cancel window to Thu Oct 1; loan application Wed Sep 30; inspection ends Mon Oct 5; insurance contingency Mon Oct 5 (the date written in Rider H); loan approval Mon Oct 26; closing Fri Oct 30. The deal file matches key/1532-Cypress-Bend-Dr-Answer-Key.json on the contract fields (price, financing, dates, day counts, riders). Buyer-view PDF; no best-effort disclaimer (FR/BAR)",
+      "files": [
+        "out/mock-contracts/asis-fha-executed/1532-Cypress-Bend-Dr-Contract.pdf"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Tern Island condo: we're executed and just signed an extension and another addendum. can you give me the updated deadlines for my buyer?",
+      "mock_package": "condo-asis-amended",
+      "expected_output": "Reads the package: AS IS condo, cash; the offer was countered once (CO-3 #1 at $284,500) and the buyer's signature on it Wed Sep 23 is the Effective Date. Riders A (association approval required), P (built 1974) and GG. Records the EA-4 (closing extended to Fri Nov 6, inspection 5 more days: 10 to 15, ends Thu Oct 8) and the ACSP-4 (condo documents, milestone summary and SIRS received Oct 2; $1,500 seller credit) as amendments, not by rewriting the contract. Condo rescission window from the documents' receipt, lead-based paint 10 days, association approval rows, closing Nov 6. Deal file matches key/410-Tern-Island-Cir-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/condo-asis-amended/410-Tern-Island-Cir-Contract.pdf"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "we went back and forth three times on Magnolia Crest but it's finally done. deadlines for my buyer please",
+      "mock_package": "standard-counter-chain",
+      "expected_output": "Reads three CO-3 counters and applies only the last (CO #3, restating $432,500, Nov 20 closing and a 25-day loan approval): the earlier counters' terms don't carry over (CO-3). Effective Date Fri Sep 25 (buyer's signature on CO #3, 12:25 PM). Standard form, VA (Rider E), Rider U, GG. Inspection 15 days (repair notices, Standard) ends Tue Oct 13; loan approval Tue Oct 20; Rider U agreement due Nov 10 (10 days before closing) and the seller's possession 5 days after closing (Nov 25, no rent); closing Fri Nov 20. Deal file matches key/3317-Magnolia-Crest-Blvd-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/standard-counter-chain/3317-Magnolia-Crest-Blvd-Contract.pdf"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "the seller countered right on the contract and my buyer initialed everything. can you give me the timeline for my buyer?",
+      "mock_package": "asis-counter-on-contract",
+      "expected_output": "Reads the seller's counter on the contract (counter box checked on page 12): price $405,000 struck and $412,000 written in, closing Oct 29 struck to Fri Nov 6, inspection 10 struck to 7 days, and a Para. 20 term keeping the refrigerator, washer and dryer, each initialed by both. Uses the new values, not the struck ones. Effective Date Thu Sep 24 (the buyer's last initial on the changes, 6:58 PM, Para. 3(b)). Inspection ends Thu Oct 1; additional deposit Mon Oct 5; loan approval Mon Oct 26; closing Nov 6. Deal file matches key/3841-Juniper-Hollow-Rd-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/asis-counter-on-contract/3841-Juniper-Hollow-Rd-Contract.pdf"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "short sale on Osprey Ridge is executed, seller is renting back after closing. this is the scan the listing agent sent. deadlines for my buyer?",
+      "mock_package": "asis-short-sale-rent-back",
+      "mock_scanned": true,
+      "expected_output": "Reads an image-only scan (no text layer): either reads the pages visually or says plainly what it couldn't read and asks for the Dotloop copy; never invents values. AS IS, FHA $289,900, Riders E, G (7-day application, 60-day approval deadline, back-up offers allowed), U (14 days after closing, $1,850 a month) and GG. Effective Date Tue Sep 22. Short sale approval deadline Mon Nov 23 and the contract's automatic end 30 days later; notes that most periods restart when the short sale approval is received (Rider G), so dates will need to be re-run then. Loan approval Oct 22 falls before the approval deadline (flag). Closing Tue Dec 22; seller possession 14 days after closing. Deal file matches key/6027-Osprey-Ridge-Ln-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/asis-short-sale-rent-back/6027-Osprey-Ridge-Ln-Contract-Scanned.pdf"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "can you set up the deadline calendar for Sable Palm? here's what I have",
+      "mock_package": "asis-offer-aga",
+      "expected_output": "Sees that the package is a buyer-signed offer: no seller signature or initials, no Effective Date, and the acceptance deadline (Sep 23, 5:00 PM) has passed. Says the timeline starts once the contract is fully executed and doesn't invent an Effective Date or build a calendar from the offer date; offers to build it as soon as the seller signs (asks for the executed copy). key/2604-Sable-Palm-Way-Answer-Key.json has mock.accepted false",
+      "files": [
+        "out/mock-contracts/asis-offer-aga/2604-Sable-Palm-Way-Offer.pdf"
+      ]
     }
   ]
 }

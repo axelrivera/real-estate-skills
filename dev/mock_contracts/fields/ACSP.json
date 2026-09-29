@@ -1,0 +1,8 @@
+{
+ "family": "ACSP",
+ "revision": "ACSP-4 Rev 6/17",
+ "fields": {
+  "number": {"at": {"label": "Addendum No."}, "value": "v.number"},
+  "terms": {"at": {"kind": "area", "page": 1}, "value": "v.text"}
+ }
+}

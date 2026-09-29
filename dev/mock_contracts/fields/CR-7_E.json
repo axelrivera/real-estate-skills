@@ -1,0 +1,18 @@
+{
+ "family": "CR-7_E",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "repair_cap": {"at": {"label": "Repairs shall not exceed"}, "value": "money(v.repair_cap if v.repair_cap is not None else round(price * 0.015, -2))"},
+  "fha": {"at": {"after": "(CHECK IF APPLICABLE): FHA"}, "check": "financing == 'fha'"},
+  "fha_value": {"at": {"after": "The Purchaser shall have the"}, "value": "money(v.appraised_value or price) if financing == 'fha' else None"},
+  "fha_fees_max": {"at": {"label": "Seller up to a maximum of"}, "value": "money(v.fha_fees_max)"},
+  "va": {"at": {"after": "(CHECK IF APPLICABLE): VA"}, "check": "financing == 'va'"},
+  "va_fees_max": {"at": {"label": "under the VA regulations up to"}, "value": "money(v.va_fees_max)"}
+ },
+ "roles": {
+  "sign:buyer_agent": {"above": "BROKER", "page": 2, "nth": 0, "part": [0, 0.64]},
+  "date:buyer_agent": {"above": "BROKER", "page": 2, "nth": 0, "part": [0.66, 1]},
+  "sign:listing_agent": {"above": "BROKER", "page": 2, "nth": 1, "part": [0, 0.64]},
+  "date:listing_agent": {"above": "BROKER", "page": 2, "nth": 1, "part": [0.66, 1]}
+ }
+}

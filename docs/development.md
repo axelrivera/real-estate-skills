@@ -63,6 +63,12 @@ Each skill's test prompts live in `dev/evals/<skill>/evals.json` with their inpu
 3. Grade each run against `expected_output` into `with_skill/grading.json`, and review with the skill-creator's `eval-viewer/generate_review.py out/evals/iteration-N --static out/evals/iteration-N/review.html`.
 4. Fix what `friction.md` and the grades reveal (skill text, references, scripts), add a test for each script fix, and re-run the evals that changed.
 
+**Contract packages.** Evals for the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) use mock FR/BAR packages ([mock-contracts.md](mock-contracts.md)), which are never committed: they contain Florida Realtors' form text. The eval entry names the starter instead, `"mock_package": "<starter>"` (add `"mock_scanned": true` for the scanned copy), and lists the package's files by name in `files`.
+
+1. Build the starters with `make mock-contracts ARGS="--answer-key"` (add `--scanned` when an eval wants the scan).
+2. Copy only the package's PDFs from `out/mock-contracts/<starter>/` into the eval's `inputs/`. Never copy `key/`: it holds the answers.
+3. Grade against `out/mock-contracts/<starter>/key/<Street>-Answer-Key.json`: contract-timeline against an executed package's deal file, seller-offer-review against an offer's listing file. contract-timeline on an offer package should say the contract isn't executed yet.
+
 Baselines (the same prompts without the skill) are optional here: the skills are rebuilds with known-good outputs, so the with-skill runs and their friction notes carry most of the signal.
 
 ## Troubleshooting
@@ -78,14 +84,18 @@ skills/<skill>/          # every skill; the only folder the plugin loads
 shared/                  # shared code and references, copied into skills by make sync
 Makefile
 .nvmrc
+.claude/skills/          # Claude Code skills for developing this repo (mock-contract); never shipped
 dev/                     # dev tooling, never shipped
   requirements.txt       # Python packages, pinned to sandbox versions
+  requirements-tools.txt # local-only dev tools the sandbox doesn't have (PyMuPDF); never imported by skills/ or shared/
   package.json           # Node modules, pinned to sandbox versions
   runtime-check/         # diagnostic skill
   hooks/pre-commit       # runs check-sync
   sync_shared.py         # make sync / make check-sync
   forms_check.py         # make forms-check: FR/BAR form PDFs vs. the manifest
   forms/frbar-forms.json # the fully supported forms: revision, text hash, what depends on each (no form text)
+  mock_contracts/        # mock FR/BAR contract packages (make mock-contracts, the mock-contract skill): build.py, scenario.py,
+                         #   locate.py (finds blanks), fields.py + fields/ (field maps), stamp.py, fonts/, scenarios/
   tests/                 # unit tests (make test); skill_import.py loads each skill's scripts without name clashes
   preview_design.py      # palette preview (make preview-design)
   package.py             # make package (one .plugin + release zip) / make package-skills
@@ -131,6 +141,7 @@ Florida Realtors revises forms one at a time, a few times a year. Only the forms
 2. Run `make forms-check`. It shows the form as CHANGED with a line diff against the last snapshot and lists what depends on it (`used_by`).
 3. Update the affected blocks in `shared/references/frbar-*.md`, including the "Verified Against" row. If a default, day count or paragraph changed, update `shared/contract_forms.py` (`VERIFIED` for the contracts), `skills/contract-timeline/scripts/timeline.py`, the offer engine and their tests.
 4. `make forms-check ARGS="--accept <FAMILY>"` records the new text and revision, then `make test`, `make sync`, `make outputs`.
+   If the form has a mock-contract field map (`dev/mock_contracts/fields/<FAMILY>.json`), re-anchor it and update its `revision` ([mock-contracts.md](mock-contracts.md#when-a-form-is-revised)); builds that use the form stop until you do.
 5. Version: patch for wording or citations, minor when a default or deadline changes what agents get.
 
 A new form works the same way (it shows as NEW). An agent's upload of a newer revision is caught at run time too: the data file's `form_revision` is compared with `VERIFIED`, and the skill tells the agent in chat to confirm the paragraphs.

@@ -9,7 +9,8 @@ One Claude plugin (`real-estate`) of skills for real estate agents; the repo roo
 .claude-plugin/marketplace.json     # one-plugin marketplace, source "./"; lets users add the repo by URL
 skills/<skill>/SKILL.md             # one directory per skill
 shared/                             # shared code and references, copied into skills by make sync
-dev/                                # dev tooling and fixtures, never shipped
+dev/                                # dev tooling and fixtures, never shipped (mock_contracts/: mock FR/BAR packages, docs/mock-contracts.md)
+.claude/skills/                     # Claude Code skills for developing this repo (mock-contract), never shipped
 Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | samples | package | package-skills | clean
 docs/                               # all documentation
 samples/                            # committed preview files (PDF, PPTX, ICS), one happy path per skill (make samples), never shipped

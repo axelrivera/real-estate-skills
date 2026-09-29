@@ -1,0 +1,68 @@
+{
+ "family": "EAC",
+ "revision": "\u00a9 2021",
+ "fields": {
+  "property": {
+   "at": {
+    "within": [
+     60,
+     148,
+     500,
+     165
+    ],
+    "page": 1
+   },
+   "value": "property_address"
+  },
+  "offered_price": {
+   "at": {
+    "label": "Buyer offered Seller"
+   },
+   "value": "money(price)"
+  },
+  "form_as_is": {
+   "at": {
+    "after": "\"AS IS\" Residential",
+    "kind": "check"
+   },
+   "check": "form == 'as_is'"
+  },
+  "form_standard": {
+   "at": {
+    "after": "Residential Contract for Sale",
+    "kind": "check"
+   },
+   "check": "form == 'standard'"
+  },
+  "escalation_amount": {
+   "at": {
+    "label": "Purchase Price shall be increased by"
+   },
+   "value": "money(v.escalation_amount or 2500)"
+  },
+  "maximum_price": {
+   "at": {
+    "label": "forth in Competing Offer up to"
+   },
+   "value": "money(v.maximum_price or round(price * 1.05, -3))"
+  },
+  "pay_cash": {
+   "at": {
+    "after": "(a) At Closing, Buyer shall"
+   },
+   "check": "(v.pay or 'cash') == 'cash'"
+  },
+  "finance": {
+   "at": {
+    "after": "(b) Buyer shall seek financing"
+   },
+   "check": "v.pay == 'finance'"
+  },
+  "revised_price": {
+   "at": {
+    "label": "to exceed Maximum Purchase Price) of"
+   },
+   "value": "money(v.revised_price) if effective_date else None"
+  }
+ }
+}

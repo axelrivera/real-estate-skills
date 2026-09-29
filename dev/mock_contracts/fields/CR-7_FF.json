@@ -1,0 +1,16 @@
+{
+ "family": "CR-7_FF",
+ "revision": "CR-7 Rev. 8/24",
+ "fields": {
+  "buyer_broker": {"at": {"label": "by this reference) with"}, "value": "v.buyer_brokerage or cooperating_broker"},
+  "percent_only": {"at": {"within": [50, 320, 68, 338], "kind": "check", "page": 1}, "check": "bool(v.percent) and not v.amount"},
+  "percent_only_value": {"at": {"within": [68, 320, 106, 338], "kind": "field", "page": 1}, "value": "v.percent if v.percent and not v.amount else None"},
+  "amount_only": {"at": {"within": [50, 340, 68, 358], "kind": "check", "page": 1}, "check": "bool(v.amount) and not v.percent"},
+  "amount_only_value": {"at": {"within": [75, 340, 170, 358], "kind": "field", "page": 1}, "value": "money(v.amount) if v.amount and not v.percent else None"},
+  "percent_plus": {"at": {"within": [50, 360, 68, 378], "kind": "check", "page": 1}, "check": "bool(v.percent and v.amount)"},
+  "percent_plus_value": {"at": {"within": [68, 360, 106, 378], "kind": "field", "page": 1}, "value": "v.percent if v.percent and v.amount else None"},
+  "percent_plus_amount": {"at": {"within": [238, 360, 315, 378], "kind": "field", "page": 1}, "value": "money(v.amount) if v.percent and v.amount else None"},
+  "excess_to_broker": {"at": {"after": "the balance of the credit", "kind": "check"}, "check": "(v.excess or 'broker') == 'broker'"},
+  "excess_reduced": {"at": {"after": "the credit will be", "kind": "check"}, "check": "v.excess == 'reduce'"}
+ }
+}

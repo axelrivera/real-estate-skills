@@ -1,0 +1,221 @@
+{
+ "family": "CR-7_A",
+ "revision": "CR-7x Rev. 05/2026",
+ "fields": {
+  "association": {
+   "at": {
+    "within": [
+     28,
+     370,
+     285,
+     397
+    ],
+    "page": 1
+   },
+   "value": "v.association"
+  },
+  "management_company": {
+   "at": {
+    "within": [
+     314,
+     370,
+     575,
+     397
+    ],
+    "page": 1
+   },
+   "value": "v.management_company"
+  },
+  "association_contact": {
+   "at": {
+    "label": "Contact Person",
+    "after": "Contact Person",
+    "page": 1
+   },
+   "value": "v.contact"
+  },
+  "management_contact": {
+   "at": {
+    "label": "Contact Person Contact Person",
+    "page": 1
+   },
+   "value": "v.management_contact"
+  },
+  "association_phone": {
+   "at": {
+    "label": "Phone",
+    "after": "Phone",
+    "page": 1
+   },
+   "value": "v.phone"
+  },
+  "management_phone": {
+   "at": {
+    "label": "Phone Phone",
+    "page": 1
+   },
+   "value": "v.management_phone"
+  },
+  "association_email": {
+   "at": {
+    "label": "Email",
+    "after": "Email",
+    "page": 1
+   },
+   "value": "v.email"
+  },
+  "management_email": {
+   "at": {
+    "label": "Email Email",
+    "page": 1
+   },
+   "value": "v.management_email"
+  },
+  "website": {
+   "at": {
+    "label": "www.",
+    "page": 1
+   },
+   "value": "v.website"
+  },
+  "approval_days": {
+   "at": {
+    "label": "by the Association no later than"
+   },
+   "value": "v.approval_days if v.approval_required else None"
+  },
+  "approval_initiate_days": {
+   "at": {
+    "label": "prior to Closing. Within",
+    "page": 1
+   },
+   "value": "v.approval_initiate_days if v.approval_required else None"
+  },
+  "assessment": {
+   "at": {
+    "within": [
+     75,
+     180,
+     172,
+     196
+    ],
+    "page": 2
+   },
+   "value": "money(v.fee)"
+  },
+  "assessment_monthly": {
+   "at": {
+    "within": [
+     280,
+     180,
+     540,
+     195
+    ],
+    "page": 2,
+    "kind": "check",
+    "nth": 0
+   },
+   "check": "v.fee_period == 'monthly'"
+  },
+  "assessment_quarterly": {
+   "at": {
+    "within": [
+     280,
+     180,
+     540,
+     195
+    ],
+    "page": 2,
+    "kind": "check",
+    "nth": 1
+   },
+   "check": "v.fee_period == 'quarterly'"
+  },
+  "assessment_semiannual": {
+   "at": {
+    "within": [
+     280,
+     180,
+     540,
+     195
+    ],
+    "page": 2,
+    "kind": "check",
+    "nth": 2
+   },
+   "check": "v.fee_period == 'semi-annually'"
+  },
+  "assessment_annual": {
+   "at": {
+    "within": [
+     280,
+     180,
+     540,
+     195
+    ],
+    "page": 2,
+    "kind": "check",
+    "nth": 3
+   },
+   "check": "v.fee_period == 'annually'"
+  },
+  "approval_is_required": {
+   "at": {
+    "after": "is is not required",
+    "kind": "check"
+   },
+   "check": "bool(v.approval_required)"
+  },
+  "approval_not_required": {
+   "at": {
+    "after": "is not required. If approval",
+    "kind": "check"
+   },
+   "check": "not v.approval_required"
+  },
+  "rofr_association": {
+   "at": {
+    "after": "has does not have",
+    "kind": "check"
+   },
+   "check": "bool(v.rofr)"
+  },
+  "no_rofr_association": {
+   "at": {
+    "after": "does not have a right",
+    "kind": "check"
+   },
+   "check": "not v.rofr"
+  },
+  "rofr_members": {
+   "at": {
+    "after": "have do not have",
+    "kind": "check"
+   },
+   "check": "bool(v.rofr_members)"
+  },
+  "no_rofr_members": {
+   "at": {
+    "after": "do not have a Right",
+    "kind": "check"
+   },
+   "check": "not v.rofr_members"
+  },
+  "docs_before_contract": {
+   "at": {
+    "after": "(a) THE BUYER HEREBY ACKNOWLED",
+    "kind": "check",
+    "page": 2
+   },
+   "check": "bool(v.condo_docs_before_contract)"
+  },
+  "docs_after_contract": {
+   "at": {
+    "after": "(b) THIS AGREEMENT IS VOIDABLE",
+    "kind": "check",
+    "page": 3
+   },
+   "check": "not v.condo_docs_before_contract"
+  }
+ }
+}

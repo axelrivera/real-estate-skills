@@ -1,0 +1,14 @@
+{
+  "name": "asis-counter-on-contract",
+  "form": "as_is",
+  "stage": "executed",
+  "buyers": ["Logan Merriweather"],
+  "sellers": ["Ellis Nakamura"],
+  "property": {"address": "3841 Juniper Hollow Rd, Kissimmee, FL 34744", "county": "Osceola", "year_built": 2014},
+  "price": 405000,
+  "financing": {"type": "conventional", "ltv": 80},
+  "additional_terms": "Seller to have the carpets professionally cleaned before Closing.",
+  "counter": {"method": "contract", "price": 412000, "closing": "2026-11-06", "changes": {"inspection_days": 7},
+              "terms": [{"text": "Refrigerator, washer and dryer stay with the Property."}]},
+  "dates": {"offer": "2026-09-22 20:15"}
+}

@@ -1,0 +1,27 @@
+{
+ "family": "SPDC",
+ "revision": "SPDC-2 Rev. 10/24",
+ "fields": {
+  "owner_occupied": {
+   "at": {
+    "label": "The Unit is",
+    "kind": "check"
+   },
+   "check": "(v.occupancy or 'owner') == 'owner'"
+  },
+  "tenant_occupied": {
+   "at": {
+    "label": "owner occupied",
+    "kind": "check"
+   },
+   "check": "v.occupancy == 'tenant' or tenants"
+  },
+  "unoccupied": {
+   "at": {
+    "label": "tenant occupied",
+    "kind": "check"
+   },
+   "check": "v.occupancy == 'unoccupied'"
+  }
+ }
+}

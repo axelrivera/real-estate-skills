@@ -1,0 +1,25 @@
+{
+ "family": "FD",
+ "revision": "FD-2 Rev 10/25",
+ "fields": {
+  "seller_names": {
+   "at": {
+    "label": "Seller,"
+   },
+   "value": "seller_names"
+  },
+  "copy_date": {
+   "at": {
+    "label": "Copy provided to Buyer on"
+   },
+   "value": "mdy(v.copy_date or offer_date)"
+  },
+  "copy_by_email": {
+   "at": {
+    "label": "Copy provided to Buyer on by",
+    "kind": "check"
+   },
+   "check": "True"
+  }
+ }
+}

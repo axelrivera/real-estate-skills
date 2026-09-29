@@ -1,0 +1,10 @@
+{
+ "family": "CCCLA",
+ "revision": "CCCLA-3 Rev 2/20",
+ "fields": {
+  "county": {"at": {"label": "County of"}, "value": "county"}
+ },
+ "roles": {
+  "print:seller": {"label": "Print Name:", "all": true}
+ }
+}

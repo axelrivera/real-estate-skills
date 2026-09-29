@@ -1,0 +1,11 @@
+{
+ "family": "CR-7_G",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "application_days": {"at": {"label": "Short Sale. Seller shall within"}, "value": "v.short_sale_application_days"},
+  "approval_days": {"at": {"label": "Approval to Buyer within"}, "value": "v.short_sale_approval_days"},
+  "closing_days": {"at": {"label": "The Closing Date shall be"}, "value": "v.short_sale_closing_days"},
+  "no_backup_offers": {"at": {"after": "Seller's Agreement Not to Accept", "kind": "check"}, "check": "v.backup_offers == 'a'"},
+  "backup_offers": {"at": {"after": "Seller's Right to Accept Back", "kind": "check"}, "check": "v.backup_offers == 'b'"}
+ }
+}

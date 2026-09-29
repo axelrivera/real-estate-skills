@@ -1,0 +1,24 @@
+{
+ "family": "CR-7_C",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "first_mortgage": {"at": {"after": "a first or", "kind": "check", "page": 2}, "check": "v.lien != 'second'"},
+  "second_mortgage": {"at": {"after": "a second purchase money", "kind": "check", "page": 2}, "check": "v.lien == 'second'"},
+  "amount": {"at": {"label": "Buyer in the principal amount of", "page": 2}, "value": "money(v.seller_financing)"},
+  "rate": {"at": {"label": "principal amount of at", "page": 2}, "value": "v.rate"},
+  "amortized": {"at": {"after": "fully amortized for a term", "kind": "check"}, "check": "(v.loan_type or 'amortized') == 'amortized'"},
+  "amortized_years": {"at": {"label": "fully amortized for a term of"}, "value": "v.term_years if (v.loan_type or 'amortized') == 'amortized' else None"},
+  "interest_only": {"at": {"after": "an interest only mortgage", "kind": "check"}, "check": "v.loan_type == 'interest_only'"},
+  "interest_only_months": {"at": {"label": "of", "after": "(if left blank, then 60)", "page": 2}, "value": "v.interest_only_months if v.loan_type == 'interest_only' else None"},
+  "balloon": {"at": {"after": "a balloon mortgage", "kind": "check"}, "check": "v.loan_type == 'balloon'"},
+  "balloon_years": {"at": {"label": "for a term of", "nth": 1, "page": 2}, "value": "v.term_years if v.loan_type == 'balloon' else None"},
+  "adjustable": {"at": {"after": "an adjustable rate mortgage", "kind": "check"}, "check": "v.loan_type == 'adjustable'"},
+  "adjustable_years": {"at": {"label": "loan for a minimum term of"}, "value": "v.term_years if v.loan_type == 'adjustable' else None"},
+  "monthly": {"at": {"after": "monthly quarterly", "kind": "check"}, "check": "(v.payment_period or 'monthly') == 'monthly'"},
+  "quarterly": {"at": {"label": "monthly", "kind": "check", "page": 2}, "check": "v.payment_period == 'quarterly'"},
+  "annual": {"at": {"label": "monthly quarterly or", "kind": "check"}, "check": "v.payment_period == 'annual'"},
+  "payment": {"at": {"label": "annual payments of"}, "value": "money(v.payment)"},
+  "first_payment_months": {"at": {"after": "month(s) after Closing"}, "value": "v.first_payment_months"},
+  "balloon_due_months": {"at": {"label": "shall be due and payable in"}, "value": "v.balloon_due_months if v.loan_type == 'balloon' else None"}
+ }
+}

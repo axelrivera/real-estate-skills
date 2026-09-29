@@ -1,0 +1,11 @@
+{
+ "family": "CR-7_S",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "lease_purchase": {"at": {"label": "Buyer and Seller executing a", "kind": "check"}, "check": "(v.lease_type or 'purchase') == 'purchase'"},
+  "lease_option": {"at": {"label": "Seller executing a lease/purchase", "kind": "check"}, "check": "v.lease_type == 'option'"},
+  "fees_buyer": {"at": {"label": "shall be paid by: (CHECK ONE)", "kind": "check"}, "check": "v.attorney_fees_by == 'buyer'"},
+  "fees_seller": {"at": {"label": "(CHECK ONE) Buyer", "kind": "check"}, "check": "v.attorney_fees_by == 'seller'"},
+  "fees_split": {"at": {"label": "(CHECK ONE) Buyer Seller", "kind": "check"}, "check": "v.attorney_fees_by == 'split'"}
+ }
+}

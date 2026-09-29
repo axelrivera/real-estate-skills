@@ -1,0 +1,15 @@
+{
+  "name": "standard-buyer-counter-pending",
+  "form": "standard",
+  "stage": "countered",
+  "buyers": ["Dana Galloway"],
+  "sellers": ["Sawyer Lindqvist"],
+  "property": {"address": "915 Saw Grass Pointe, Naples, FL 34102", "county": "Collier", "year_built": 2008},
+  "price": 610000,
+  "list_price": 639000,
+  "financing": {"type": "conventional", "ltv": 75},
+  "counters": [
+    {"by": "seller", "price": 629000, "changes": {"inspection_days": 10}},
+    {"by": "buyer", "price": 619500, "closing": "2026-11-16", "accepted": false}
+  ]
+}

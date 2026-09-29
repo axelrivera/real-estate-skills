@@ -1,0 +1,33 @@
+{
+ "family": "SPDR",
+ "revision": "SPDR-4x Rev 3/25",
+ "fields": {
+  "owner_occupied": {
+   "at": {
+    "label": "The Property is",
+    "kind": "check"
+   },
+   "check": "(v.occupancy or 'owner') == 'owner'"
+  },
+  "tenant_occupied": {
+   "at": {
+    "label": "owner occupied",
+    "kind": "check"
+   },
+   "check": "v.occupancy == 'tenant' or tenants"
+  },
+  "unoccupied": {
+   "at": {
+    "label": "tenant occupied",
+    "kind": "check"
+   },
+   "check": "v.occupancy == 'unoccupied'"
+  },
+  "vacant_since": {
+   "at": {
+    "label": "occupied the Property?"
+   },
+   "value": "v.vacant_since if v.occupancy == 'unoccupied' else None"
+  }
+ }
+}

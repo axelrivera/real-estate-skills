@@ -1,0 +1,12 @@
+{
+  "name": "standard-seller-paid-comp",
+  "form": "standard",
+  "stage": "executed",
+  "buyers": ["Kendall Okafor", "Jamie Okafor"],
+  "sellers": ["Marley Thornbury"],
+  "property": {"address": "1906 Osprey Ridge Ln, Sarasota, FL 34231", "county": "Sarasota", "year_built": 1999},
+  "price": 512000,
+  "financing": "conventional",
+  "buyer_broker": {"form": "GG", "between": "seller", "percent": 2, "compensation_agreement_days": 5},
+  "dates": {"offer": "2026-09-20 17:45", "effective": "2026-09-21 13:20"}
+}

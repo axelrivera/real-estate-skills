@@ -1,0 +1,12 @@
+{
+ "family": "CR-7_T",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "agreement_days": {"at": {"label": "Buyer and Seller within"}, "value": "v.pre_closing_agreement_days"},
+  "seller_expense": {"at": {"label": "(CHECK ONE):", "kind": "check"}, "check": "v.expense == 'seller'"},
+  "buyer_expense": {"at": {"label": "Seller's expense", "kind": "check"}, "check": "v.expense == 'buyer'"},
+  "split_expense": {"at": {"label": "Buyer's expense", "kind": "check"}, "check": "v.expense == 'split'"},
+  "possession_date": {"at": {"after": "The Pre-Closing Agreement"}, "value": "mdy(v.possession_date)"},
+  "rent": {"at": {"label": "shall pay a monthly rent of"}, "value": "money(v.rent)"}
+ }
+}
