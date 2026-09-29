@@ -371,11 +371,20 @@ def compute(R, market, homes):
 
     preliminary = bool(net["missing"]) or bool(R.get("preliminary"))
     as_of = R.get("as_of") or date.today().isoformat()
+    c_in, bp_in = R.get("costs") or {}, R.get("buyer_payment") or {}
+    school_m, total_m, homestead = buyer_tax_rates(R, market) if bp_in else (None, None, None)
+    hoa_flag = c_in.get("hoa", s.get("hoa"))
     h = handoff.build(
         side="seller", as_of=as_of, source="seller-cma",
-        subject={k: v for k, v in {"address": s["address"], "city": s.get("city"), "state": market.state,
-                                   "county": s.get("county"), "sqft": s["sqft"], "beds": s.get("beds"), "baths": s.get("baths"),
-                                   "year_built": s.get("year_built"), "pool": s.get("pool")}.items() if v is not None},
+        subject={**{k: v for k, v in {"address": s["address"], "city": s.get("city"), "state": market.state,
+                                      "county": s.get("county"), "sqft": s["sqft"], "beds": s.get("beds"), "baths": s.get("baths"),
+                                      "year_built": s.get("year_built"), "pool": s.get("pool")}.items() if v is not None},
+                 # CMA-111: the seller's tax bill (the offer review's proration), the buyer-payment millage, flood, HOA, roof
+                 **handoff.subject_facts(annual_tax=c_in.get("annual_tax"), school_mills=school_m, total_mills=total_m,
+                                         homestead=homestead, hoa_monthly=c_in.get("hoa_monthly", 0 if hoa_flag is False else None),
+                                         flood_zone=bp_in.get("flood_zone") or next((v for lbl, v in s.get("facts") or []
+                                                                                     if str(lbl).lower() == "flood zone"), None),
+                                         roof_year=s.get("roof_year"))},
         value={"low": rec["low"], "high": rec["high"], "midpoint": rec.get("midpoint", (rec["low"] + rec["high"]) / 2),
                "median_adjusted": median_adjusted},
         comps=[{"address": r[0], "sold_price": r[1], "seller_paid": r[2], "adjusted": r[3]} for r in R["comps"].get("summary_rows", [])],

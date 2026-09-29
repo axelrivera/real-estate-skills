@@ -22,10 +22,34 @@ REQUIRED = {
     "comps": list,
 }
 VALUE_KEYS = ("low", "high", "midpoint")
+# CMA-111: optional subject facts (still v1: a reader that doesn't know them ignores them). The offer skills use them when
+# the offer file doesn't say: the tax the CMA computed (millage and homestead for the buyer's payment, the current bill
+# for the seller's proration), the flood zone (a FEMA code only), HOA dues and the roof year.
+NUMBER = (int, float)
+SUBJECT_OPTIONAL = {"annual_tax": NUMBER, "school_mills": NUMBER, "total_mills": NUMBER, "homestead": bool,
+                    "flood_zone": str, "hoa_monthly": NUMBER, "roof_year": int}
+_FEMA = re.compile(r"^\s*(A99|AE|AH|AO|AR|A|VE|V|X500|X|B|C|D)\b", re.I)
 
 
 class HandoffError(ValueError):
     """The handoff can't be used; the message says why in plain words."""
+
+
+def flood_code(text):
+    """'X (lower risk)' -> 'X'; 'AE' -> 'AE'; 'To confirm (likely X)' or anything else -> None. Only a FEMA zone code goes
+    in a handoff, so no reader ever takes a note for a zone."""
+    m = _FEMA.match(str(text or ""))
+    return m.group(1).upper() if m else None
+
+
+def subject_facts(**facts):
+    """The optional subject facts that are set, for build(subject=...): None, a value of the wrong kind and a zone that
+    isn't a FEMA code are left out, so a producer never fails on a fact it only passes along."""
+    if "flood_zone" in facts:
+        facts["flood_zone"] = flood_code(facts["flood_zone"])
+    typ = SUBJECT_OPTIONAL
+    return {k: v for k, v in facts.items() if v is not None and k in typ and isinstance(v, typ[k])
+            and (typ[k] is bool or not isinstance(v, bool))}
 
 
 def build(side, as_of, subject, value, comps, market=None, offer_plan=None, recommended_list_price=None,
@@ -54,6 +78,14 @@ def validate(h):
         raise HandoffError(f"The CMA handoff's value range is missing {', '.join(missing)}.")
     if h["value"]["low"] > h["value"]["high"]:
         raise HandoffError("The CMA handoff's value range is reversed (low above high).")
+    for key, typ in SUBJECT_OPTIONAL.items():
+        v = h["subject"].get(key)
+        if v is None:
+            continue
+        if not isinstance(v, typ) or (typ is not bool and isinstance(v, bool)):
+            raise HandoffError(f"The CMA handoff's subject.{key} isn't the right kind of value ({v!r}).")
+        if key == "flood_zone" and flood_code(v) is None:
+            raise HandoffError(f"The CMA handoff's flood zone ({v!r}) isn't a FEMA zone code.")
     return h
 
 
