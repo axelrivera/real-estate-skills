@@ -92,6 +92,9 @@ def fine(R):
     ref = "top of the value range (CMA high)" if L["cma_provided"] else "list price"  # OFR-4: appraisal_line
     credit = (f" and an inspection credit of about {L['repair_reserve_pct'] * 100:.1f}% of price when the buyer has an inspection period"
               if L["repair_reserve_pct"] else "")
+    if any(o["repairs_owed"] and o["repair_reserve"] for o in R["offers"]):
+        credit += (" (on the Standard form, repairs up to its General Repair Limit instead)" if credit else
+                   " and, on the Standard form, repairs up to its General Repair Limit")
     return (f'<div class="fine">All figures are estimates for discussion only. {esc(costs)}. The {tax}; holding costs assume '
             f'{money(S["holding_monthly"])}/mo. The downside case assumes the appraisal lands at the {ref}{credit}. Actual costs come '
             "from the title company's settlement statement. Certainty scores reflect the listing agent's professional judgment, not a "
@@ -100,6 +103,7 @@ def fine(R):
 
 
 def certainty_panel(c, subtitle="As Offered"):
+    note = f'<div class="legend"><span>{esc(c["walk_away_note"])}</span></div>' if c.get("walk_away_note") else ""
     b = c["band_class"]
     t = {"hi": "hit", "mid": "midt", "lo": "lot"}[b]
     return f'''<div><h2>How Likely Is It to Close? <span class="h2s">{subtitle}</span></h2><div class="panel">
@@ -110,7 +114,7 @@ def certainty_panel(c, subtitle="As Offered"):
    <tr><td>Deposit at Risk After That</td><td class="n">{esc(c["deposit"]) if c["deposit"] != "not provided" else '<span class="rt">not provided</span>'}</td></tr>
    <tr><td>Closing</td><td class="n"><b class="{"" if c["closing_ok"] else "rt"}">{esc(c["closing"])}</b></td></tr>
    <tr><td>Biggest Threat</td><td class="n"><b class="rt">{esc(c["threat"])}</b></td></tr>
-  </table></div></div>'''
+  </table>{note}</div></div>'''
 
 
 def options_table(opts, widths=(24, 13, 15)):
@@ -343,7 +347,8 @@ def gantt(o, R):
     body = line("Inspection (Right to Cancel)" if o["inspection_walkaway"] else "Inspection (Repair Notices)", o["inspection_days"],
                 "hot" if o["inspection_walkaway"] else "warm")
     if o["financed"]:
-        body += line("Appraisal", o["appraisal_days"], "warm") + line("Loan Approval", o["loan_approval_days"], "warm")
+        body += (line("Appraisal (Part of Loan Approval)" if o.get("appraisal_in_loan") and not o["appraisal_protected"] else
+                      "Appraisal", o["appraisal_days"], "warm") + line("Loan Approval", o["loan_approval_days"], "warm"))
     body += line("Sale of Buyer's Home", o["sale_contingency_days"], "hot")
     ci = (o["close_days"] - 1) // step
     dtxt = f" <span class=sm>(Deadline {S['deadline']:%b %-d})</span>" if S["deadline"] else ""
@@ -442,14 +447,15 @@ def single_html(R, o, v):
     lq = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(lender_questions(o, R)))
     qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the contract{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
-    credit = f" + {money(o['repair_reserve'])} inspection credit" if o["repair_reserve"] else ""
+    credit = ("" if not o["repair_reserve"] else f" + {money(o['repair_reserve'])} in repairs (the contract's General Repair Limit)"
+              if o["repairs_owed"] else f" + {money(o['repair_reserve'])} inspection credit")
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
     details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
 <h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
 <div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span><b>Downside</b>: appraisal at {ref}{gap}{credit}.</span>
 <span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
-<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d}</span></h2>{gantt(o, R)}
+<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
 <h2 class="pb">3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
 <div class="tbl"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
 <thead><tr><th>Term</th><th>Offered</th><th>Benchmark</th><th class="c">Rating</th><th>Note</th></tr></thead><tbody>{tr}</tbody></table></div>

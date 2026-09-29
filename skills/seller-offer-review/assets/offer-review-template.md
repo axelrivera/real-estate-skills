@@ -3,7 +3,8 @@
 
 ## Offer Review: {{property}} (List {{list_price}})
 
-<!-- single mode; when summary.action is INCOMPLETE, write only the headline, why, the fixes as a list ("issue: fix") and the next step: no counter, options or recommendation -->
+<!-- single mode; when summary.action is INCOMPLETE, write only the headline, why, the fixes as a list ("issue: fix") and the next step: no counter, options or recommendation.
+     Exception, an offer whose time for acceptance has passed (summary.revive is present): a seller counter can revive it, so after the fixes also give the "What a Counter Could Look Like" block below. It's reference, never a recommendation. -->
 **{{summary.headline}}: {{summary.offer_label}}.** {{summary.why}}
 
 {{when summary.counter:}}
@@ -13,11 +14,18 @@
 |---|---|---|---|
 | {{row.term}} | {{row.offered}} | **{{row.counter}}** | {{row.why}} |
 
+{{when summary.revive:}}
+**If the Seller Wants This Buyer: What a Counter Could Look Like** (for reference; {{summary.revive.summary}}). {{summary.revive.note}}
+
+| Term | Buyer Offered | A Counter Could Say | Why |
+|---|---|---|---|
+| {{row.term}} | {{row.offered}} | {{row.counter}} | {{row.why}} |
+
 
 | | |
 |---|---|
 | {{each summary.kpis: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}, when there is one) |
-| Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}}; buyer can walk away until {{summary.certainty.walk_away_until}}; biggest threat: {{summary.certainty.threat}} |
+| Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}}; buyer can walk away until {{summary.certainty.walk_away_until}} ({{summary.certainty.walk_away_note}}, when there is one); biggest threat: {{summary.certainty.threat}} |
 
 **Top Risks:** {{each summary.risks: risk.issue}}
 

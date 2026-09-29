@@ -239,6 +239,21 @@ def appraisal_form(form, item=None):
     return "E" if "E" in codes else "F" if "F" in codes else None
 
 
+def appraisal_in_loan_approval(form, item=None):
+    """True when an FR/BAR financed offer has no appraisal rider or addendum (no F, E or AGA-1): Para. 8(b)(2) makes
+    the lender's appraisal part of Loan Approval, so the appraisal window is the Loan Approval Period (both forms)."""
+    return form in FRBAR and appraisal_form(form, item) is None
+
+
+def owner_title_payer(form, item=None):
+    """Who pays the owner's title policy under the contract, from `title_by` (who designates the Closing Agent), or
+    None when the contract doesn't settle it. FR/BAR Para. 9(c): (i) Seller designates and pays the Owner's Policy;
+    (ii) and (iii) Buyer designates and pays it (under (iii) the Seller still pays the title search, up to $200 if
+    blank). Another contract: None (local custom, or the listing's costs)."""
+    who = str((item or {}).get("title_by") or "").lower()
+    return who if form in FRBAR and who in ("seller", "buyer") else None
+
+
 def appraisal_window(kind, close_days, item=None):
     """Days after the Effective Date until the appraisal protection ends, from the form's defaults and filled blanks.
 

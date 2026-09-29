@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import handoff, offer_engine as oe, profiles  # noqa: E402
@@ -118,11 +119,31 @@ def threat(o):
             "financing": "Financing", "deposit": "Low deposit", "property": "Insurance / condition", "agent": "Buyer's agent"}[worst]
 
 
+def walk_away(o):
+    """(until, note): when the buyer's last cancel right ends, counted from acceptance (the Effective Date isn't set
+    yet). AGA-1's renegotiation window only opens when the valuation plus the gap is below the price, so it's the
+    note, a condition, rather than the date."""
+    ex = o.get("risk_days_ex_appraisal", o["risk_days"])
+    if o.get("appraisal_form") == "aga" and ex < o["risk_days"] == o["appraisal_days"]:
+        first = o["firm_date"] - timedelta(days=o["risk_days"] - ex)
+        return (f"{first:%a %b %-d} ({ex} days from acceptance)",
+                f"To {o['firm_date']:%b %-d} ({o['risk_days']} days) only if the valuation plus the gap comes in below the price (AGA-1).")
+    return f"{o['firm_date']:%a %b %-d} ({o['risk_days']} days from acceptance)", None
+
+
+def respond_by(o):
+    """The time for acceptance, or that it has passed (never a past date to beat)."""
+    if not o.get("expires"):
+        return "See contract"
+    return f"Passed ({o['expires']})" if o.get("lapsed") == "passed" else \
+        f"Likely passed ({o['expires']})" if o.get("lapsed") == "likely" else o["expires"]
+
+
 def certainty(o, S):
     dl = S["deadline"]
     return {
         "score": o["score"]["total"], "band": o["score"]["band"][1], "band_class": o["score"]["band"][0],
-        "walk_away_until": f"{o['firm_date']:%a %b %-d} ({o['risk_days']} days)",
+        "walk_away_until": walk_away(o)[0], "walk_away_note": walk_away(o)[1],
         "deposit": f"{money(o['deposit'])} ({o['deposit'] / o['price']:.1%})" if o["deposit"] is not None else "not provided",
         "closing": (f"{o['close']:%b %-d} vs. {dl:%b %-d} deadline" if dl else f"{o['close']:%b %-d} ({o['close_days']} days)"),
         "closing_ok": (o["close"] <= dl) if dl else True,
@@ -137,21 +158,38 @@ def row(term, offered, counter, why):
 # --- single offer ------------------------------------------------------------
 
 def incomplete_view(R, o):
-    """A contract that can't be reviewed as written: what to fix, the numbers as written, and no recommendation."""
+    """A contract that can't be reviewed as written: what to fix, the numbers as written, and no recommendation.
+
+    An offer whose only Blocking issue is a passed time for acceptance can be revived by a seller counter, so the view
+    also carries what that counter could look like (`revive`), labeled as reference, never as a recommendation."""
     S = R["seller"]
     issues = "; ".join(f["issue"].rstrip(".") for f in o["blocking"])
     fixes = [f for f in o["flags"] if f.get("contract") and f["sev"] in ("Blocking", "High")]
+    expired_only = all(f.get("topic") == "expired" or "expired" in (f.get("agent_topics") or ()) for f in o["blocking"])
+    revive = None
+    if expired_only and o["counter_rows"]:
+        cn = o["ns_counter"]["net_adj"]
+        revive = {"note": "The offer has lapsed, so it can't be accepted as written, but a seller counter with a new time for "
+                          "acceptance revives it. For reference only, this is what a counter could look like:",
+                  "rows": [row(*r) for r in o["counter_rows"]],
+                  "summary": f"net after holding {money(o['ns']['net_adj'])} as written → {money(cn)} with this counter"}
+    nxt = ("ask the buyer's agent for a corrected, fully signed contract with every page and rider, then run the review again."
+           if not expired_only else
+           "the time for acceptance has passed. If the seller wants this buyer, approve a counter with a new time for "
+           "acceptance, or I'll ask the buyer's agent to re-sign it with a new time for acceptance.")
     return {
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
         "action": "INCOMPLETE", "headline": "CONTRACT INCOMPLETE",
         "why": (f"This contract can't be reviewed as written: {issues[:1].lower() + issues[1:]}. There is no recommendation, "
-                "counter or ranking until the buyer's agent sends a corrected, fully signed contract. The numbers below are "
-                "for reference only. For questions about whether the contract is binding, see a real estate attorney."),
+                + ("counter or ranking until the buyer's agent sends a corrected, fully signed contract." if not expired_only else
+                   "and it isn't ranked; a seller counter with a new time for acceptance can revive it.")
+                + " The numbers below are for reference only. For questions about whether the contract is binding, see a "
+                "real estate attorney."),
         "offers_active": len(R["active"]) + len(R["incomplete"]),
-        "respond_by": o.get("expires") or "See contract", "respond_by_offer": o["label"] if o.get("expires") else None,
+        "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
         "fixes": [{"sev": f["sev"], "issue": f["issue"], "fix": f["fix"]} for f in fixes],
-        "counter": None, "compare": None,
+        "counter": None, "compare": None, "revive": revive,
         "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
                  {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
                  {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": "if appraisal & inspection go badly", "tone": "risk"},
@@ -160,7 +198,7 @@ def incomplete_view(R, o):
         "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"] if not f.get("contract")][:3],  # contract issues are in fixes
         "options": [],
         "preliminary": None,
-        "next_step": "ask the buyer's agent for a corrected, fully signed contract with every page and rider, then run the review again.",
+        "next_step": nxt,
         "data_note": data_note(R),
     }
 
@@ -247,7 +285,7 @@ def single_view(R, o):
                         "what": f"Steps in if {top['ref']} falls through; until then the backup buyer can cancel "
                                 "(Back-Up Contract Rider W)", "recommended": True})
 
-    expires = f" before {o['expires']}" if o.get("expires") else ""
+    expires = f" before {o['expires']}" if o.get("expires") and not o.get("lapsed") else ""
     nxt = {"COUNTER": f"approve the counter terms and I'll send the counter to the buyer's agent{expires}.",
            "ACCEPT": "sign the contract and I'll open escrow and calendar every deadline.",
            "BACKUP": "once the primary contract is fully signed, approve offering this buyer a backup position on the "
@@ -257,7 +295,7 @@ def single_view(R, o):
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
         "action": act, "headline": "HOLD AS BACKUP" if act == "BACKUP" else act, "why": why,
         "offers_active": len(R["active"]) if multi_ctx else 1,
-        "respond_by": o.get("expires") or "See contract", "respond_by_offer": o["label"] if o.get("expires") else None,
+        "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S),
@@ -273,7 +311,7 @@ def single_view(R, o):
 
 def first_expiry(R):
     """(when, offer label) of the first offer to expire."""
-    ex = [o for o in R["active"] + R["incomplete"] if o.get("expires_raw")]
+    ex = [o for o in R["active"] + R["incomplete"] if o.get("expires_raw") and not o.get("lapsed")]
     if not ex:
         return "See contracts", None
     o = min(ex, key=lambda o: str(o["expires_raw"]))

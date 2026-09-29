@@ -49,6 +49,9 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional) | from `--cma`; else both = list price, appraisal risk measured vs. list | **high** |
 | `annual_tax` | market fallback rate × list price (Florida 1.8%); no rate → proration left out | low / med |
+| `current_tax_bill_paid` | `true` once the seller paid this year's bill; else false, and asked for Nov and Dec closings | med |
+| `property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`). Missing: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
+| `flood_disclosure` | `true` once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer; else flagged for the listing side where the market requires it | — |
 | `costs` | market values; see below | — |
 
 ### costs (This Deal's Own Numbers, Optional)
@@ -59,7 +62,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 |---|---|
 | `title_fees` | seller's title company charges: a number (a quote) or `{"settlement_fee": 700, ...}` |
 | `transfer_tax_rate`, `transfer_tax_payer` | deed transfer tax as a share of price; `seller`, `buyer` or `split` |
-| `title_payer` | who customarily pays the owner's title policy: `seller` or `buyer` |
+| `title_payer` | who customarily pays the owner's title policy: `seller` or `buyer`. It also wins over an offer's FR/BAR `title_by`, so set it only when the agent says so |
 | `title_estimate_pct` | owner's title premium as a share of price, when there's no rate table |
 | `hoa_estoppel_fee` | HOA / condo estoppel letter |
 | `tax_paid` | `arrears` (seller credits the buyer from Jan 1) or `advance` |
@@ -72,9 +75,6 @@ Use when the agent has a title company quote, you looked up the state's transfer
 |---|---|---|
 | `name` | "Seller" | — |
 | `payoff` | 0; nets labeled **before payoff** | **high** |
-| `listing.property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`) | none: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
-| `listing.flood_disclosure` | true once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer | not given: flagged for the listing side where the market requires it | — |
-| `listing.current_tax_bill_paid` | `true` once the seller paid this year's bill | false; asked for Nov and Dec closings | med |
 | `listing_fee_pct` | 2.5% assumed (5% total with the buyer's agent) | med |
 | `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say assume 2.5% | med |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
@@ -89,18 +89,23 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `id` | "A", "B", …: an internal key, next letter for each new offer | "A" | — |
 | `label` | the offer's name in the report, when the agent wants something other than the default (see Offer Names) | agent and brokerage | — |
 | `status` | `active` `backup` `declined` `expired` `accepted` | `active` | — |
-| `expires` | `YYYY-MM-DD HH:MM`: when the offer lapses (the respond-by time) | — | — |
+| `expires` | `YYYY-MM-DD HH:MM`: when the offer lapses (the time for acceptance). Before `analysis_date`: a Blocking issue (lapsed) | — | — |
+| `expires_estimated` | `true` when `expires` is counted from the signature date because the delivery date isn't known (a counter "2 days after delivery"): a passed date is then a High issue and a question, not Blocking | false | — |
+| `prior_counters` | earlier counters on this offer, oldest first: `[{"by": "seller", "price": 629000, "inspection_days": 10, "note": "Counter 1"}, {"by": "buyer", ...}]`. Terms: `price`, `inspection_days`, `loan_approval_days`, `deposit`, `seller_concessions`, `appraisal_gap`, `closing_date`. The engine never counters above the seller's last price or asks for weaker terms than the seller's last counter, and raises a High issue for terms of that counter the live offer doesn't carry | none | — |
 | `received` | `YYYY-MM-DD HH:MM`, for the record (not scored) | — | — |
 | `buyer` | name(s) on the contract; shown once, as contract identification | not shown | — |
 | `buyer_agent`, `buyer_brokerage` | the buyer's agent and their brokerage, as on the contract | name falls back to price and financing | — |
 | `lender` | text | — | — |
 | `price` | number | **required** | — |
 | `financing` | `cash` `conventional` `fha` `va` `usda` | conventional | high |
-| `down_pct` | 0–1 | FHA .035, VA/USDA 0, conventional .10 | med |
+| `down_pct` | 0–1 | from `loan_amount` and `price` when both are given; else FHA .035, VA/USDA 0, conventional .10 | med |
 | `approval` | `pof_verified` `full_uw` `du_approved` `preapproval` `prequal` `none` | preapproval (financed) | med |
+| `approval_expires` | the expiration date on the pre-approval letter. Before closing: a Med issue | none | — |
+| `proof_of_funds` | $ the buyer's proof of funds verifies (bank letter or statement). Below the down payment plus any appraisal gap the buyer covers, it's a High issue | none | — |
+| `approval_max_price`, `approval_max_loan` | the caps printed on the pre-approval letter. A price (or loan) above them is a High issue, and a counter above the price cap asks for an updated letter | none | — |
 | `lender_called` | bool | false → approval score capped at 3 | — |
 | `deposit` | total escrow $ | unknown → scored 3 | med |
-| `seller_concessions` | $ | 0 | **high** |
+| `seller_concessions` | $; `0` when the contract or offer you read has no seller-paid closing costs or concessions | 0 | **high** |
 | `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else 2.5% assumed | **high** when the seller offered, med when assumed |
 | `home_warranty` | $ seller pays | 0 | — |
 | `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
@@ -109,16 +114,18 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `inspection_walkaway` | Other contracts only: `true` when the buyer may cancel for any reason in the period, `false` for a repair or objection process only | assumed `true` and flagged | **high** |
 | `inspection_days` | days | 10 | med |
 | `loan_approval_days` | days | 30 (financed) | low |
-| `appraisal_contingency` | days to the end of the buyer's appraisal notice, `true` or `false`. Rider F: the rider's date plus 3 days | Rider F attached: its default (10 days before closing, plus 3); otherwise 21 days if financed | med |
+| `appraisal_contingency` | days to the end of the buyer's appraisal notice, `true` or `false`. Rider F: the rider's date plus 3 days. FR/BAR with no Rider F, E or AGA-1: leave it out (Para. 8(b) makes the appraisal part of Loan Approval) | Rider F attached: its default (10 days before closing, plus 3); FR/BAR financed with no appraisal rider: the loan approval period, no assumption; otherwise 21 days if financed | med |
 | `appraisal_gap` | $ the buyer covers (FHA/VA: recorded, credited 0) | 0 | — |
 | `appraisal_form` | FR/BAR: `aga` when the gap is on the Appraisal Gap Addendum (AGA-1); also read from its name in `riders` or `addenda`. The window becomes AGA-1's (valuation + 3 days + renegotiation), and a cash offer carries appraisal risk | Rider F by letter; else the terms above | — |
 | `aga_valuation_days`, `aga_renegotiate_days` | AGA-1 blanks | 30, 3 | — |
 | `gap_funds` | financed waiver only: $ documented beyond down payment and closing costs | 0 when waived | med |
 | `sale_contingency_days`, `kickout` | days, bool; Rider X in `riders` sets `kickout` | 0, false | — |
+| `buyer_broker_paid_by` | `listing_broker` when the listing broker pays the buyer's broker from its own fee (Rider GG signed by the Seller's Broker, or the listing agreement says so): no buyer-broker line in the seller's net, and an assumed listing fee becomes the market's total (5%). Set `seller.listing_fee_pct` to the total fee in the listing agreement | `seller` | — |
 | `buyer_broker_form` | FR/BAR: `FF` when the buyer's broker is paid as a seller credit (Rider FF, also read from `riders`), which counts toward the loan program's concession limit; `GG` or blank for a separate compensation agreement | GG | — |
 | `insurance_days`, `mold_days`, `drywall_days`, `rezoning_days`, `attorney_days` | days from the Effective Date for a rider's cancel window when the rider's date or days are filled in (`frbar-riders.md`) | each rider's default; Z and R have none and are flagged | — |
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
-| `title_by` | `seller` / `buyer` | the local custom | — |
+| `title_by` | who designates the closing agent: `seller` / `buyer`. FR/BAR Para. 9(c): that party also pays the owner's policy ((i) `seller`; (ii) and (iii) `buyer`), so the net follows the contract unless `listing.costs.title_payer` is set | the local custom | — |
+| `addenda` | names of the attached addenda, as printed ("Appraisal Gap Addendum (AGA-1)", "Counter Offer (CO-3)"): the AGA-1 name sets `appraisal_form: aga` | none | — |
 | `riders` | CR-7 letters or names, as attached ("K", "FHA/VA Financing"). Rider K or L on the Standard form changes the inspection terms; I, K, L on AS IS stop the review (RESERVED) | none; rider checks run only when listed | — |
 | `rent_back_days`, `rent_back_monthly` | Rider U: days the seller stays after closing and the monthly rent the seller pays | not in the net; flagged when Rider U is attached | med |
 | `seller_financing` | Rider C: the note amount the seller carries (paid over time, not cash at closing) | 0 | — |
@@ -144,4 +151,4 @@ A single-offer review carries the name too (under the headline and in the PDF fi
 - `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE`.
 - `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`. Values `Yes` `No` `Pending` `N/A`.
 - `flags`: extra flags `[{"sev": "High", "issue": "…", "fix": "…"}]`.
-- `contract_issues`: what reading the contract found, per `contract-check.md`: `[{"sev": "Blocking", "issue": "…", "fix": "…", "request": "…", "check": "signed"}]`. `sev` is `Blocking` `High` `Med` `Low`. A **Blocking** issue takes the offer out of the recommendation and the ranking until it's fixed; remove it from the file once the corrected contract arrives. `request` goes to the buyer's agent questions (leave it out when the fix is on the listing side); `check` puts the issue on that checklist line (`signed`, `riders`, `terms`).
+- `contract_issues`: what reading the contract found, per `contract-check.md`: `[{"sev": "Blocking", "issue": "…", "fix": "…", "request": "…", "check": "signed", "topic": "expired"}]`. `topic` (optional) names the engine check the issue covers (`contract-check.md` lists them); the engine then drops its own flag for it and keeps yours at the higher of the two levels. Without `topic`, the issue's words are matched. `sev` is `Blocking` `High` `Med` `Low`. A **Blocking** issue takes the offer out of the recommendation and the ranking until it's fixed; remove it from the file once the corrected contract arrives. `request` goes to the buyer's agent questions (leave it out when the fix is on the listing side); `check` puts the issue on that checklist line (`signed`, `riders`, `terms`).

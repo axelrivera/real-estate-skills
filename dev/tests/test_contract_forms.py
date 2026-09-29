@@ -189,7 +189,7 @@ class SellerEngine(unittest.TestCase):
         self.assertFalse(o["inspection_walkaway"])
         self.assertEqual(o["repair_limits"]["general"], round(0.015 * o["price"]))
         line = dict((k, (lbl, v)) for k, lbl, v in o["ns_down"]["lines"])["repair"]
-        self.assertEqual(line, ("Repairs up to the General Repair Limit (Standard)", -oe.rnd(0.015 * o["price"], 500)))
+        self.assertEqual(line, ("Repairs up to the General Repair Limit (Standard)", -round(0.015 * o["price"])))
         self.assertEqual(o["risk_days"], max(o["inspection_days"] + 15, o["loan_approval_days"], o["appraisal_days"]))
         self.assertIn("no walk-away", o["score"]["why"]["contingency"])
         self.assertTrue(any("Standard contract" in f["issue"] for f in o["flags"]))

@@ -30,10 +30,10 @@ The engine fills anything missing with a conservative default and records it as 
 
 ## 1. Build the Listing File
 
-One JSON file per property, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files): read `references/listing-file.md` for the fields. When a new offer arrives later in the conversation, add it to the same file (next letter as `id`) rather than starting over; in a new conversation, rebuild the file from the offers the agent shares. Record `buyer_agent` and `buyer_brokerage` from the contract: reports name each offer by them ("Morales · Keller Williams"), never by the buyer, and never by the letter; see Offer Names in `references/listing-file.md`. In chat, use the same names; when the agent says "Offer B", match it to the id.
+One JSON file per property, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files): read `references/listing-file.md` for the fields. It's a working file: never hand it to the agent or offer it for download. When a new offer or counter arrives later in the conversation, add it to the same file (next letter as `id`, or the offer's `prior_counters`) rather than starting over. In a new conversation, rebuild the file from the offers and counters the agent uploads again, plus the numbers from the earlier report when the agent gives them (payoff, CMA range, commission). Record `buyer_agent` and `buyer_brokerage` from the contract: reports name each offer by them ("Morales · Keller Williams"), never by the buyer, and never by the letter; see Offer Names in `references/listing-file.md`. In chat, use the same names; when the agent says "Offer B", match it to the id.
 
-- **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). Read `references/contract-fields.md` for where each field lives. FR/BAR: read `references/frbar-riders.md` for every attached rider (what it does to the net and certainty) and `references/frbar-addenda.md` for any addendum; `references/frbar-contract.md` has every paragraph when you need one. Any other contract: read `references/other-contracts.md`. Then check the contract is complete with `references/contract-check.md` (and `references/frbar-package-check.md` for FR/BAR) and record problems in `contract_issues`. For a condo (`listing.property_type: condo`), also read `references/condo.md`: FHA/VA project approval and the buyer's rescission windows decide when the deal is firm.
-- **Pre-approval letter or proof of funds:** set `approval` and `lender`.
+- **Contract or offer uploaded:** read the whole document, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly). Read `references/contract-fields.md` for where each field lives. FR/BAR: read `references/frbar-riders.md` for every attached rider (what it does to the net and certainty) and `references/frbar-addenda.md` for any addendum; `references/frbar-contract.md` has every paragraph when you need one. Any other contract: read `references/other-contracts.md`. Then check the contract is complete with `references/contract-check.md` (and `references/frbar-package-check.md` for FR/BAR) and record problems in `contract_issues`, except what the engine already raises (listed there). A document you read that has no seller-paid closing costs or concessions: record `seller_concessions: 0`. A counteroffer chain: record the terms that would govern if the seller signed the live one, and the seller's earlier counters in `prior_counters`. For a condo (`listing.property_type: condo`), also read `references/condo.md`: FHA/VA project approval and the buyer's rescission windows decide when the deal is firm.
+- **Pre-approval letter or proof of funds:** set `approval` and `lender`, and the letter's caps in `approval_max_price` / `approval_max_loan`.
 - **Offer described in chat:** take what's given.
 
 Record only what the documents or the agent say. Leave a field out rather than guess: the engine's default is labeled, a guess isn't. Buyer letters, photos and personal details never go in the file or the report (fair housing).
@@ -59,7 +59,7 @@ It prints every value already formatted: the page-1 summary, each offer's net sh
 
 ## 3. Deliver
 
-**Quick question** ("should we take it?", "what's the net?"): answer in two or three sentences from the output. **Full review in chat:** fill in `assets/offer-review-template.md` with the output's values. **A report for the seller:**
+**Quick question** ("should we take it?", "what's the net?"): answer in two or three sentences from the output. When there's a Blocking or High issue, the answer names it (one sentence each, the fix included): never a plain "yes" past one. **Full review in chat:** fill in `assets/offer-review-template.md` with the output's values. **A report for the seller:**
 
 ```
 python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet] [--profile profile.md]
@@ -67,11 +67,14 @@ python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|mult
 
 `--profile` puts the agent's name and colors on it (found as `references/saved-files.md` describes). It saves the PDF to the outputs folder in the agent's seller-side brand colors. Page 1 fits on one page; if it can't render, say so and give the markdown review instead. When the agent asks for every offer's report, the full set or the packet, add `--packet`: the comparison plus a single review of each active offer, in rank order, one PDF each. Otherwise render only what was asked.
 
-In chat, keep it short: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs and estimates as one line the agent can answer after seeing the numbers, skipped when nothing high or medium is assumed. Offer the other format in one line. Always hand back the updated listing file: the sandbox resets between conversations, so say once "upload this with the next offer and I'll add it to the comparison."
+In chat, keep it short: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs and estimates as one line the agent can answer after seeing the numbers, skipped when nothing high or medium is assumed. Offer the other format in one line. The listing file stays in the temporary folder; when the agent asks about the next offer in a later conversation, ask them to upload the offers again.
+
+**Offer that has lapsed** (the time for acceptance has passed): it's CONTRACT INCOMPLETE, but unlike a broken contract a seller counter with a new time for acceptance revives it. Say so, give the numbers as written, and give `summary.revive` (what a counter could look like) clearly labeled as reference, not a recommendation. Never tell the agent to send anything before a date that has passed. When the deadline is only likely passed (the delivery date is unknown), the review runs with a High issue: ask when it was delivered.
 
 ## Offers Over Time
 
 - New offer: append it; the mode switches to multi on its own.
+- Buyer counters back: the buyer's counter becomes the offer's terms (only what would govern if signed), and the seller's counter goes in `prior_counters`. The engine never counters above the seller's last price or asks for less than the seller's last terms, and flags terms the buyer's counter dropped.
 - Counter rejected, offer expired or withdrawn: `status` `declined` / `expired`. It leaves the ranking but stays in the file.
 - A buyer agrees to back up: `status: "backup"`. Counter accepted: `status: "accepted"`, and offer a contract timeline for the deadlines.
 

@@ -10,10 +10,20 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 6. **Deposit under the norm** (Florida 3%) → the norm on the counter price for financed offers, at least 5% for cash.
 7. **Inspection period over the norm** (Florida 7 days) → the norm, paired with the seller sharing the insurance inspection reports up front (Florida: 4-point and wind-mitigation).
 8. **Sale-of-home contingency** → cap at 21 days with a 72-hour kick-out.
-9. **Pre-qual or no approval** → full pre-approval within 3 days.
+9. **Pre-qual or no approval** → full pre-approval within 3 days. **Counter price above the pre-approval letter's cap** (`approval_max_price`) → an updated letter at the counter price within 3 days.
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
-12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company.
+12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
+
+## Negotiation History
+
+When the seller has already countered (`prior_counters`), the draft builds on the seller's last counter instead of starting over:
+
+- **Price** never goes above the seller's last counter price. Below it, meet partway between the offer and that price (rounded up to $1,000, never above it); rule 1 still applies, capped at the same price.
+- **Terms the seller already asked for** (inspection and loan approval days, deposit, concessions, gap coverage) are restated as the seller last countered them when the offer is weaker, with the why "Restates the seller's last counter". The draft doesn't go back to a harder ask than the seller's last counter: that retracts a concession and stalls the deal. Terms the offer already meets get no row.
+- If the agent's own counter goes above the seller's last price or asks for less than the seller's last terms, say why in its `rows`.
+
+A buyer's counter that drops a term the seller countered (under FR/BAR CO-3 only what a counter restates carries) is raised as a High issue (`counter_chain`), and the draft restates the term.
 
 ## One Live Contract at a Time
 

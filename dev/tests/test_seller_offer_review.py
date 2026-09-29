@@ -257,6 +257,35 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class LapsedOffers(unittest.TestCase):
+    """A lapsed offer is CONTRACT INCOMPLETE, never 'send before <a past date>', and shows what a counter could be."""
+
+    def test_passed_deadline(self):
+        s = review.result(review.analyze(fixture("expired-aga.json")))["summary"]
+        self.assertEqual(s["action"], "INCOMPLETE")
+        self.assertTrue(s["respond_by"].startswith("Passed ("))
+        self.assertNotIn("before Sep", s["next_step"])
+        self.assertIn("new time for acceptance", s["next_step"])
+        self.assertEqual([r["counter"] for r in s["revive"]["rows"]][0], "$497,000")
+        self.assertIsNone(s["counter"])
+
+    def test_estimated_deadline_counters_without_a_past_date(self):
+        s = review.result(review.analyze(fixture("counter-chain-standard.json")))["summary"]
+        self.assertEqual(s["action"], "COUNTER")
+        self.assertTrue(s["respond_by"].startswith("Likely passed ("))
+        self.assertNotIn("before", s["next_step"])
+        self.assertEqual(s["certainty"]["walk_away_until"], "Mon Oct 26 (30 days from acceptance)")
+
+    def test_broken_contract_gets_no_revive(self):
+        s = review.result(review.analyze(fixture("incomplete-single.json")))["summary"]
+        self.assertIsNone(s["revive"])
+
+    def test_aga_window_is_a_condition(self):
+        c = review.result(review.analyze(fixture("expired-aga.json")))["summary"]["certainty"]
+        self.assertEqual(c["walk_away_until"], "Mon Oct 26 (30 days from acceptance)")
+        self.assertIn("only if the valuation plus the gap comes in below the price", c["walk_away_note"])
+
+
 class AuditPlanWording(unittest.TestCase):
     """OFR-6, OFR-21: no backup request while the primary is open; disclosure needs the seller's authorization."""
 
