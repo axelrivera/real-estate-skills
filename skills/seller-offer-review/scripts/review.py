@@ -27,6 +27,10 @@ def cap(text):
     return text[:1].upper() + text[1:]
 
 
+def low_first(text):
+    return text[:1].lower() + text[1:]
+
+
 # --- inputs ------------------------------------------------------------------
 
 def load_cma(data, cma_path=None):
@@ -95,12 +99,15 @@ def data_note(R):
     return " ".join(bits)
 
 
-def where(R, scope):
-    """An assumption's scope for display: 'offer A' becomes the offer's label."""
-    if scope.startswith("offer "):
-        o = next((x for x in R["offers"] if x["id"] == scope[6:]), None)
-        return o["label"] if o else scope.title()
-    return scope.title()
+def where(R, scope, also=()):
+    """An assumption's scope for display: 'offer A' becomes the offer's label; an assumption shared by several offers
+    (OFR-119) names each."""
+    def one(s):
+        if s.startswith("offer "):
+            o = next((x for x in R["offers"] if x["id"] == s[6:]), None)
+            return o["label"] if o else s.title()
+        return s.title()
+    return ", ".join(one(s) for s in [scope, *also])
 
 
 def to_confirm(R, limit=4):
@@ -122,13 +129,21 @@ def threat(o):
 def walk_away(o):
     """(until, note): when the buyer's last cancel right ends, counted from acceptance (the Effective Date isn't set
     yet). AGA-1's renegotiation window only opens when the valuation plus the gap is below the price, so it's the
-    note, a condition, rather than the date."""
+    note, a condition, rather than the date. OFR-121: when the inspection walk-away (AS IS, Rider K or L) ends sooner,
+    the note says until when the buyer may cancel for any reason."""
     ex = o.get("risk_days_ex_appraisal", o["risk_days"])
+    notes = []
+    wd = o.get("walkaway_days") or 0
+    if wd and wd < o["risk_days"]:
+        start = o["firm_date"] - timedelta(days=o["risk_days"])
+        notes.append(f"For any reason until {start + timedelta(days=wd):%b %-d} ({wd}-day inspection period"
+                     + (f", {o['contract_label']}" if o["contract_form"] in oe.cf.FRBAR else "")
+                     + "); after that only under the loan, appraisal or rider terms.")
     if o.get("appraisal_form") == "aga" and ex < o["risk_days"] == o["appraisal_days"]:
         first = o["firm_date"] - timedelta(days=o["risk_days"] - ex)
-        return (f"{first:%a %b %-d} ({ex} days from acceptance)",
-                f"To {o['firm_date']:%b %-d} ({o['risk_days']} days) only if the valuation plus the gap comes in below the price (AGA-1).")
-    return f"{o['firm_date']:%a %b %-d} ({o['risk_days']} days from acceptance)", None
+        notes.append(f"To {o['firm_date']:%b %-d} ({o['risk_days']} days) only if the valuation plus the gap comes in below the price (AGA-1).")
+        return f"{first:%a %b %-d} ({ex} days from acceptance)", " ".join(notes)
+    return f"{o['firm_date']:%a %b %-d} ({o['risk_days']} days from acceptance)", " ".join(notes) or None
 
 
 def respond_by(o):
@@ -169,8 +184,9 @@ def incomplete_view(R, o):
     revive = None
     if expired_only and o["counter_rows"]:
         cn = o["ns_counter"]["net_adj"]
-        revive = {"note": "The offer has lapsed, so it can't be accepted as written, but a seller counter with a new time for "
-                          "acceptance revives it. For reference only, this is what a counter could look like:",
+        # FH-103: the facts (the offer's own deadline has passed), never a conclusion about whether it can be accepted
+        revive = {"note": "The offer's time for acceptance has passed. A seller counter sets a new time for acceptance. "
+                          "For reference only, this is what a counter could look like:",
                   "rows": [row(*r) for r in o["counter_rows"]],
                   "summary": f"net after holding {money(o['ns']['net_adj'])} as written → {money(cn)} with this counter"}
     nxt = ("ask the buyer's agent for a corrected, fully signed contract with every page and rider, then run the review again."
@@ -182,13 +198,13 @@ def incomplete_view(R, o):
         "action": "INCOMPLETE", "headline": "CONTRACT INCOMPLETE",
         "why": (f"This contract can't be reviewed as written: {issues[:1].lower() + issues[1:]}. There is no recommendation, "
                 + ("counter or ranking until the buyer's agent sends a corrected, fully signed contract." if not expired_only else
-                   "and it isn't ranked; a seller counter with a new time for acceptance can revive it.")
+                   "and it isn't ranked; a seller counter would set a new time for acceptance.")
                 + " The numbers below are for reference only. For questions about whether the contract is binding, see a "
                 "real estate attorney."),
-        "offers_active": len(R["active"]) + len(R["incomplete"]),
+        "offers_active": len(R["active"]) + len(R["incomplete"]), "offers_incomplete": len(R["incomplete"]),
         "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
-        "fixes": [{"sev": f["sev"], "issue": f["issue"], "fix": f["fix"]} for f in fixes],
+        "fixes":[{"sev": f["sev"], "issue": f["issue"], "fix": f["fix"]} for f in fixes],
         "counter": None, "compare": None, "revive": revive,
         "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
                  {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
@@ -312,8 +328,8 @@ def single_view(R, o):
 def first_expiry(R):
     """(when, offer label) of the first offer to expire."""
     ex = [o for o in R["active"] + R["incomplete"] if o.get("expires_raw") and not o.get("lapsed")]
-    if not ex:
-        return "See contracts", None
+    if not ex:  # OFR-120: no deadline in the files is a fact to state, not a place to look
+        return "No time stated", None
     o = min(ex, key=lambda o: str(o["expires_raw"]))
     return o["expires"], o["label"]
 
@@ -373,7 +389,8 @@ def multi_view(R):
                 "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                 "price": money(o["price"]), "net": "—", "downside": "—", "score": "—", "band_class": "na", "risk_days": "—",
                 "close": f"{o['close']:%b %-d}", "action": "Incomplete", "status": "risk",
-                "terms": "Contract can't be reviewed as written: " + o["blocking"][0]["issue"].rstrip(".").lower()}
+                # OFR-120: only the first letter goes lowercase, so dates and times keep their case
+                "terms": "Contract can't be reviewed as written: " + low_first(o["blocking"][0]["issue"].rstrip("."))}
                for o in R["incomplete"]]
 
     most_certain = max(R["active"], key=lambda o: (o["score"]["total"], o["ns_down"]["net_adj"]))
@@ -381,8 +398,8 @@ def multi_view(R):
     opts = [{"option": first, "net": money(top_net), "recommended": True, "status": "good",
              "certainty": f"≈{top['counter_score']}/100" if act == "COUNTER" else f"{top['score']['total']}/100",
              "what": "Best net with manageable risk" + (f"; {backup['ref']} is a safety net" if backup else "")}]
-    if act == "ACCEPT" and top["counter_rows"]:
-        g = top["ns_counter"]["net_adj"] - top["ns"]["net_adj"]
+    g = top["ns_counter"]["net_adj"] - top["ns"]["net_adj"]
+    if act == "ACCEPT" and top["counter_rows"] and g > 0:  # OFR-116: never "Only +$0"
         opts.append({"option": f"Counter {top['label']} Anyway", "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
                      "certainty": f"≈{top['counter_score']}/100", "status": "caution",
                      "what": f"Only {signed(g)}, and it risks losing the strongest offer"})
@@ -397,7 +414,8 @@ def multi_view(R):
         f"; once that contract is fully signed, I'll offer {backup['ref']} a backup position" if backup else "") + "."
     return {
         "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act, "headline": act, "why": lead,
-        "offers_active": len(R["active"]) + len(R["incomplete"]), "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1],
+        "offers_active": len(R["active"]) + len(R["incomplete"]), "offers_incomplete": len(R["incomplete"]),
+        "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1],
         "priority": S.get("priority_note") or S["priority"].title(),
         "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
         "preliminary": preliminary(R, top["id"]), "next_step": nxt, "data_note": data_note(R),
@@ -440,17 +458,18 @@ def result(R, mode="auto", offer_id=None):
     view = single_view(R, o) if mode == "single" else multi_view(R)
     L = R["listing"]
     offers = [o] if mode == "single" else R["ranked"]
+    checked = offers if mode == "single" else R["ranked"] + R["incomplete"]  # OFR-114: a blocked offer still gets its chat notes
     return {
         "ok": True, "mode": mode, "property": L.get("address") or "", "list_price": money(L["list_price"]),
         "value_range": f"{money(L['cma_low'])}–{money(L['cma_high'])}" if L["cma_provided"] else "not provided",
         "summary": view,
         "offers": [offer_detail(x) for x in offers],
         "to_confirm": to_confirm(R),
-        "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"]), "what": a["why"]} for a in R["missing"]],
+        "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"], a.get("also") or ()), "what": a["why"]} for a in R["missing"]],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
         # chat only (never on the report): the best-effort line for a contract that isn't FR/BAR, and revision notes
-        **oe.cf.support([x["contract_form"] for x in offers], [(x["contract_form"], x.get("form_revision")) for x in offers]),
+        **oe.cf.support([x["contract_form"] for x in checked], [(x["contract_form"], x.get("form_revision")) for x in checked]),
     }
 
 

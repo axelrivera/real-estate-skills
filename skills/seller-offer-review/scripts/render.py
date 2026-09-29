@@ -138,7 +138,8 @@ def closing_block(v):
 
 def hero(v):
     cls = {"DECLINE": "decline", "BACKUP": "backup", "INCOMPLETE": "decline"}.get(v["action"], "")
-    ctx = f' · {v["offers_active"]} Offers Active' if v["offers_active"] > 1 else ""
+    n = v["offers_active"] - (v.get("offers_incomplete") or 0)  # OFR-120: incomplete offers aren't active
+    ctx = f' · {n} Offers Active' if n > 1 else ""
     kicker = "Status" if v["action"] == "INCOMPLETE" else "Recommended Response"
     return (f'<div class="hero"><div class="hl {cls}"><span class="k">{kicker}{ctx}</span><div class="big">{esc(v["headline"])}</div>'
             + f'<div class="who">{esc(v["offer_label"])}</div>'
@@ -197,7 +198,7 @@ def term_rows(o, R):
                  "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    form = f" ({o['contract_label']})" if o["contract_form"] in ("as_is", "standard") else ""
+    form = f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FRBAR else ""  # the label comes from contract_forms
     note = ("Buyer may cancel for any reason; seller still pays repairs up to the limits"
             if o["inspection_walkaway"] and o["repairs_owed"] else "Buyer may cancel for any reason" if o["inspection_walkaway"]
             else "Repair notices only; seller pays repairs up to the limits" if o["repairs_owed"] else "")
@@ -228,7 +229,8 @@ def term_rows(o, R):
         if o.get(key):
             rows.append((lab, esc(o[key]), "—", "caution", ""))
     if o.get("riders"):
-        form = {"as_is": "AS IS · ", "standard": "Standard · "}.get(o["contract_form"], "")  # riders are listed after it
+        # ENG-11: the form and rider label from contract_forms ("Standard + As Is Rider (K)"); riders are listed after it
+        form = f"{o['contract_label']} · " if o["contract_form"] in oe.cf.FRBAR else ""
         rows.append(("Contract / Riders", form + esc(", ".join(o["riders"])), "—", "good", ""))
     return rows
 
@@ -314,7 +316,7 @@ def assumptions_table(R, multi=False):
     if not items:
         return '<p class="sm">No assumptions: every key input was provided.</p>'
     lab = {"high": "High", "med": "Med", "low": "Low"}
-    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.where(R, a["scope"]))}</td>'
+    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.where(R, a["scope"], a.get("also") or ()))}</td>'
                    f'<td>{esc(a["why"])}</td></tr>' for a in items)
     return ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
             f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
@@ -418,16 +420,18 @@ def single_html(R, o, v):
     kp = "".join(f'<div class="{"kgood" if k["tone"] == "good" and "counter" in k["label"].lower() else ""}"><span>{esc(k["label"])}</span>'
                  f'<b class="{k["tone"] if k["tone"] in ("brand", "good") and k is not v["kpis"][1] else ""}">{esc(k["value"])}</b>'
                  f'<i class="{k["tone"] if k["tone"] in ("good", "risk") else ""}">{esc(k["note"])}</i></div>' for k in v["kpis"])
+    # DS-106: an incomplete contract's issues are in the Fix Before Review box, never "no risks"
+    none = "See Fix Before Review above." if act == "INCOMPLETE" else "No significant risks found."
     risks = "".join(f'<tr><td class="c"><span class="pill {r["sev"].lower()}">{r["sev"]}</span></td><td>{esc(r["issue"])}</td></tr>'
-                    for r in v["risks"]) or "<tr><td>No significant risks found.</td></tr>"
+                    for r in v["risks"]) or f"<tr><td>{none}</td></tr>"
     page1 = (f'{hero(v)}{box}<div class="kpis">{kp}</div>'
              f'<div class="two">{certainty_panel(v["certainty"])}<div><h2>Top Risks in the Offer as Written</h2>'
              f'<div class="tbl"><table><colgroup><col style="width:17%"></colgroup><tbody>{risks}</tbody></table></div></div></div>'
              f'{options_table(v["options"])}{closing_block(v)}')
 
     cols = [("As Offered", o["ns"]), ("Downside Case", o["ns_down"])]
-    if o["counter_rows"]:
-        cols.append(("Proposed Counter", o["ns_counter"]))
+    if o["counter_rows"]:  # DS-106: a lapsed offer's counter is for reference, never a proposal
+        cols.append(("Counter (Reference)" if act == "INCOMPLETE" else "Proposed Counter", o["ns_counter"]))
     target_label = "Seller's Target"
     cols.append((target_label, o["target"]))
     ns = netsheet_body(cols)
@@ -449,6 +453,10 @@ def single_html(R, o, v):
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
     credit = ("" if not o["repair_reserve"] else f" + {money(o['repair_reserve'])} in repairs (the contract's General Repair Limit)"
               if o["repairs_owed"] else f" + {money(o['repair_reserve'])} inspection credit")
+    if o["ns_down"]["net_adj"] == o["ns"]["net_adj"]:  # OFR-127: say why the two columns match
+        credit += (". It matches As Offered: the price is inside the value range" if o["appraisal_risk"] else
+                   ". It matches As Offered: no appraisal contingency") + (" and there's no repair figure for this market"
+                                                                          if not o["repair_reserve"] else "")
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
     details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
 <h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
@@ -582,7 +590,9 @@ def multi_html(R, v):
 {ctr}
 <h2>Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, multi=True)}
 {fine(R)}'''
-    sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · {v['offers_active']} active offers"
+    n_inc = v.get("offers_incomplete") or 0  # OFR-120: a lapsed or blocked offer isn't counted as active
+    sub = (f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · {v['offers_active'] - n_inc} active offers"
+           + (f", {n_inc} incomplete" if n_inc else ""))
     return "Multiple Offer Review", sub, f'<div class="p1">{page1}</div>' + details
 
 

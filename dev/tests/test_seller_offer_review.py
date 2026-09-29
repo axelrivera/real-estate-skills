@@ -36,7 +36,7 @@ class Analysis(unittest.TestCase):
         self.assertEqual((out["mode"], s["action"], s["offer_label"]), ("single", "COUNTER", "$382K FHA"))
         self.assertIn("**Preliminary", s["preliminary"])
         self.assertEqual(s["kpis"][1]["value"], "$350,689")  # no terms given: 5% total assumed
-        self.assertEqual([r["counter"] for r in s["counter"]["rows"]], ["$386,000", "7 days"])
+        self.assertEqual([r["counter"] for r in s["counter"]["rows"]], ["$386,000", "7 days", "Fri Sep 25, 5:00 PM"])  # OFR-122
         self.assertEqual(out["value_range"], "not provided")
         self.assertTrue(out["to_confirm"])
         self.assertEqual(out["offers"][0]["net_sheet"]["columns"], ["As Offered", "Downside", "Counter"])
@@ -280,10 +280,59 @@ class LapsedOffers(unittest.TestCase):
         s = review.result(review.analyze(fixture("incomplete-single.json")))["summary"]
         self.assertIsNone(s["revive"])
 
+    def test_lapsed_review_states_facts_and_labels_the_counter(self):  # FH-103, DS-106, OFR-120
+        R = review.analyze(fixture("expired-aga.json"))
+        s = review.result(R)["summary"]
+        self.assertNotIn("can't be accepted", json.dumps(s))
+        self.assertEqual(s["revive"]["rows"][-1]["term"], "Time for Acceptance")  # OFR-122
+        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        self.assertIn("Counter (Reference)", doc)
+        self.assertNotIn("Proposed Counter", doc)
+        self.assertNotIn("No significant risks found", doc)
+        data = fixture("expired-aga.json")
+        data["offers"].append(dict(data["offers"][0], id="B", expires="2026-10-30 17:00", price=480000))
+        data["offers"].append(dict(data["offers"][0], id="C", expires="2026-10-30 17:00", price=470000))
+        R = review.analyze(data)
+        out = review.result(R, mode="multi")
+        lapsed = next(r for r in out["summary"]["ranked"] if r["action"] == "Incomplete")
+        self.assertIn("Sep", lapsed["terms"])  # the date keeps its case
+        doc, _, _ = review_render.build_html(R, {}, sample=False, mode="multi")
+        self.assertIn("2 active offers, 1 incomplete", doc)
+
     def test_aga_window_is_a_condition(self):
         c = review.result(review.analyze(fixture("expired-aga.json")))["summary"]["certainty"]
         self.assertEqual(c["walk_away_until"], "Mon Oct 26 (30 days from acceptance)")
         self.assertIn("only if the valuation plus the gap comes in below the price", c["walk_away_note"])
+
+
+class Audit20260929(unittest.TestCase):
+    """Fixes from the 2026-09-29 audit in the review and the PDF."""
+
+    def test_blocked_other_contract_keeps_its_chat_note(self):  # OFR-114
+        data = fixture("four-offers.json")
+        data["offers"][0].update(contract_form="Texas TREC 20-18", inspection_walkaway=True,
+                                 contract_issues=[{"sev": "Blocking", "issue": "Page 3 is missing.", "fix": "Ask for it."}])
+        out = review.result(review.analyze(data), mode="multi")
+        self.assertEqual(out["support"], "best_effort")
+
+    def test_no_zero_gain_counter_option(self):  # OFR-116
+        R = review.analyze(fixture("two-offers-accept.json"))
+        top = R["ranked"][0]
+        top["ns_counter"] = dict(top["ns_counter"], net_adj=top["ns"]["net_adj"])
+        opts = review.multi_view(R)["options"]
+        self.assertFalse([o for o in opts if o["option"].endswith("Anyway")])
+
+    def test_no_deadline_is_stated_as_such(self):  # OFR-120
+        data = fixture("two-offers-accept.json")
+        for o in data["offers"]:
+            o.pop("expires", None)
+        self.assertEqual(review.first_expiry(review.analyze(data))[0], "No time stated")
+
+    def test_rider_k_label_on_the_terms_table(self):  # ENG-11
+        data = fixture("minimal-single.json")
+        data["offers"][0].update(contract_form="standard", riders=["K"])
+        doc, _, _ = review_render.build_html(review.analyze(data), {}, sample=False)
+        self.assertIn("Standard + As Is Rider (K) · K", doc)
 
 
 class AuditPlanWording(unittest.TestCase):

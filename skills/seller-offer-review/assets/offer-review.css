@@ -1,5 +1,8 @@
 /* Offer review: styles on top of the shared report.css. Brand colors come from theme variables;
    good / caution / risk use the fixed status variables. Never hard-code a brand color here. */
+/* DS-103: a long offer name wraps the subtitle, never the prepared-for date or the respond-by time */
+header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto;white-space:nowrap}
+.hero .hr b{white-space:nowrap}
 .hero{margin:6px 0}
 .hero .big{font-size:25pt;letter-spacing:.04em;line-height:1.05}
 .hero .rbo{display:block;font-size:8pt;color:var(--muted)}
@@ -78,7 +81,7 @@ td.tc{text-align:center;font-size:7pt;padding:3px 2px;border-left:1px solid #fff
 td.hot{background:var(--risk-border)!important;color:var(--risk-strong)} td.warm{background:var(--caution-bg)!important;color:var(--caution-strong)}
 td.safe{background:var(--good-bg)!important;color:var(--good-strong)}
 td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow:inset 0 0 0 1.5px var(--brand-deep)}
-.legend i.hot{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} .legend i.warm{background:var(--caution-border)} .legend i.closei{border:1.5px solid var(--brand-deep)}
+.legend i.hot{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} .legend i.warm{background:var(--caution-border)} .legend i.closei{background:var(--brand-deep)}
 .legend i.safe{background:var(--good-bg);border:1px solid var(--good-border)} .legend i.dl{background:var(--risk-base);width:2px}
 .sm2{font-size:6.8pt;font-weight:400;opacity:.9}
 

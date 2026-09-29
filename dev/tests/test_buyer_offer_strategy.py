@@ -56,13 +56,15 @@ class MatchesPrototype(unittest.TestCase):
         d["property"]["costs"] = {"title_fees": 645}
         r = strategy.analyze(d)
         # Audit: 4% early-payment discount in the proration (OFR-14), no tax in holding costs (OFR-13)
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331804)  # OFR-10: $363,000, the value midpoint
-        self.assertEqual(r["target"], 335670)
+        # OFR-10: $363,000, the value midpoint. OFR-123: closing counts from Sep 26 (the day after the Sep 25 deadline),
+        # so the tax proration runs three days longer than when it counted from the analysis date
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331714)
+        self.assertEqual(r["target"], 335580)  # the same closing, so the same three days of proration
 
     def test_market_defaults(self):
         r = analyze("fha-competitive.json")
         # No built-in listing fee (CORE-5), $1,145 title fees; OFR-10: priced at the value midpoint, $2,000 below list
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333119)  # 2.5% listing fee assumed (5% total)
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333029)  # 2.5% listing fee assumed (5% total); OFR-123
         self.assertTrue(any(a["field"] == "listing_fee_pct" for a in r["R"]["assumptions"]))
         # CORE-16: Florida 2.5% + 0.5% prepaids, with the loan's note stamps (0.35%) and intangible tax (0.2%) itemized
         self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.03)
@@ -410,4 +412,95 @@ class AuditBuyerBrokerShortfall(unittest.TestCase):
         doc = buyer_render.options_html(r, {"name": None, "brokerage": None, "brand": {}}, False)
         self.assertIn("Broker Fee (Not Paid by Seller)", doc)
         self.assertFalse(any(a["field"] == "buyer_broker_agreement_pct" for a in r["missing"]))
+
+
+class Audit20260929(unittest.TestCase):
+    """Fixes from the 2026-09-29 audit (docs/audits/2026-09-29.md)."""
+
+    GAP = {"analysis_date": "2026-09-23",
+           "property": {"address": "100 Test Rd, Sanford, FL 32771", "county": "Seminole", "list_price": 400000,
+                        "year_built": 2012},
+           "value": {"cma_low": 380000, "cma_high": 398000},
+           "competition": {"level": 3, "deadline": "2026-09-25 17:00"},
+           "buyer": {"financing": "conventional", "down_pct": 0.2, "cash_available": 140000, "max_price": 420000,
+                     "reserve_floor": 5000},
+           "worksheet": {"contract_form": "as_is"}}
+
+    def test_variants_are_one_buyer(self):  # OFR-101
+        r = strategy.analyze(copy.deepcopy(self.GAP))
+        rec = r["terms"]["recommended"]
+        self.assertIn("escalation", rec)
+        _, alone = strategy.run_engine(r["B"], r["costs"], [("recommended", rec)])
+        _, both = strategy.run_engine(r["B"], r["costs"], [("recommended", rec), ("stronger", dict(rec, price=rec["price"] + 5000))])
+        self.assertEqual(both["recommended"]["score"]["total"], alone["recommended"]["score"]["total"])
+        self.assertFalse(both["recommended"]["escalated"])
+
+    def test_escalation_gap_is_written_at_the_cap(self):  # OFR-105
+        r = strategy.analyze(copy.deepcopy(self.GAP))
+        rec = r["terms"]["recommended"]
+        self.assertEqual(rec["appraisal_gap"], rec["escalation"]["gap_at_cap"])
+        self.assertEqual(r["O"]["recommended"]["appraisal_form"], "aga")
+        self.assertNotIn("rises with the price", json.dumps(strategy.worksheet(r)))
+
+    def test_dates_count_from_the_expected_acceptance(self):  # OFR-123
+        r = strategy.analyze(copy.deepcopy(self.GAP))
+        self.assertEqual(str(r["B"]["effective_date"]), "2026-09-26")
+        o, t = r["O"]["recommended"], r["terms"]["recommended"]
+        self.assertEqual(o["close_days"], t["closing_days"])  # a 35-day close is 35 days after acceptance
+        rows = {x["field"]: x["entry"] for x in strategy.worksheet(r)["rows"]}
+        self.assertIn("September 26, 2026", rows["Time for Acceptance"])
+        d = copy.deepcopy(self.GAP)
+        d["expected_effective_date"] = "2026-10-01"
+        self.assertEqual(str(strategy.analyze(d)["B"]["effective_date"]), "2026-10-01")
+        self.assertEqual(strategy.deadline_date("Fri Sep 25 · 5 PM", strategy._d("2026-09-23")), strategy._d("2026-09-25"))
+
+    def test_city_millage_and_homestead(self):  # OFR-124
+        d = fixture("fha-competitive.json")
+        d["costs"].pop("total_mills"), d["costs"].pop("school_mills"), d["costs"].pop("homestead")
+        r = strategy.analyze(d)
+        self.assertEqual(r["B"]["costs"]["total_mills"], 18.1808)  # Casselberry, from the address
+        fields = {a["field"] for a in r["assumptions"]}
+        self.assertTrue({"total_mills", "homestead"} <= fields)
+
+    def test_plain_words_and_the_agents_boxes(self):  # OFR-126, ENG-12
+        d = copy.deepcopy(self.GAP)
+        d["worksheet"].pop("contract_form")
+        d["buyer"]["lender_called"] = True
+        r = strategy.analyze(d)
+        form = next(a for a in r["assumptions"] if a["field"] == "contract_form")
+        self.assertEqual(form["impact"], "high")
+        self.assertFalse([a for a in r["assumptions"] if "re-run" in a["why"] or "worksheet." in a["why"]])
+        box = next(p for p in strategy.worksheet(r)["package"] if p["item"].startswith("Lender confirms"))
+        self.assertEqual(box["status"], "Pending")
+
+    def test_usda_gap_isnt_written_on_aga(self):  # ENG-10, OFR-104
+        d = copy.deepcopy(self.GAP)
+        d["buyer"].update(financing="usda", down_pct=0)
+        d["overrides"] = {"price": 400000, "appraisal_gap": 5000}
+        r = strategy.analyze(d)
+        self.assertNotEqual(r["O"]["recommended"]["appraisal_form"], "aga")
+        w = strategy.worksheet(r)
+        self.assertFalse([x for x in w["riders"] if "AGA-1" in x["rider"]])
+        self.assertIn("Appraisal Gap", [c["title"] for c in w["clauses"]])
+
+    def test_stronger_names_only_what_it_raised(self):  # CMA-103
+        self.assertEqual(strategy.raised({"deposit": 12000, "appraisal_gap": 0}, {"deposit": 8000, "appraisal_gap": 0}), "deposit")
+        why = strategy.promote_why({}, {}, "stronger", {"price": 400000, "deposit": 12000, "appraisal_gap": 0},
+                                   {"deposit": 8000, "appraisal_gap": 0})
+        self.assertNotIn("appraisal_gap", why)
+
+    def test_handoff_tax_and_address(self):  # CMA-111, CMA-102, CMA-101
+        d = fixture("texas-cma-escalation.json")
+        d["costs"].pop("total_mills")
+        d["cma"]["subject"].update(total_mills=21.4, school_mills=9.1, homestead=True)
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertEqual(r["B"]["costs"]["total_mills"], 21.4)
+        d = fixture("texas-cma-escalation.json")
+        d["property"]["address"] = "12 Other Ln, Austin, TX 78757"
+        d["cma"]["side"] = "seller"
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        text = strategy.preliminary(r)
+        self.assertIn("a CMA for this property", text)
+        self.assertIn("a buyer-side CMA", text)
+        self.assertNotIn("cma side", text)
 

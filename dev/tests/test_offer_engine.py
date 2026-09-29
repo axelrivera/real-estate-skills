@@ -63,7 +63,8 @@ class MatchesPrototype(unittest.TestCase):
         # Audit: 4% early-payment discount in the proration (OFR-14) and no tax in holding costs (OFR-13)
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349279, 346779, 353011))
         self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))  # FHA: appraisal protected to closing
-        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period"])
+        # OFR-122: every counter sets its own time for acceptance
+        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period", "Time for Acceptance"])
         self.assertEqual(R["seller"]["holding_monthly"], 500)  # HOA and loan interest; tax is in the proration (OFR-13)
 
     def test_two_offers_accept(self):
@@ -360,8 +361,9 @@ class MockContractFixes(unittest.TestCase):
         self.assertEqual([f["topic"] for f in blocking], ["expired"])
         self.assertEqual(o["action"], "INCOMPLETE")
         d = fixture("expired-aga.json")
-        d["offers"][0]["expires"] = "2026-09-26 17:00"  # the same day: not provably passed
-        self.assertFalse([f for f in self.one(d)["flags"] if f.get("topic") == "expired"])
+        d["offers"][0]["expires"] = "2026-09-26 17:00"  # the same day: not provably passed, but it ends today (ENG-18)
+        self.assertEqual([f["sev"] for f in self.one(d)["flags"] if f.get("topic") == "expired"], ["High"])
+        self.assertEqual(self.one(d)["action"], "COUNTER")
 
     def test_estimated_deadline_is_high_not_blocking(self):
         o = self.one(fixture("counter-chain-standard.json"))

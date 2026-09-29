@@ -283,7 +283,10 @@ class BuyerStrategy(unittest.TestCase):
         r = strategy.analyze(d)
         o = r["O"]["recommended"]
         self.assertEqual(o["appraisal_form"], "aga")
-        self.assertEqual(o["appraisal_days"], 36)
+        # OFR-106: the valuation blank is filled so AGA-1's periods end with the 21-day loan approval (15 + 3 + 3)
+        self.assertEqual(o["appraisal_days"], 21)
+        self.assertEqual(o["aga_valuation_days"], 15)
+        self.assertIn("valuation within **15 days**", json.dumps(strategy.worksheet(r)))
 
     def test_needs_sale_is_scored_with_a_kickout(self):
         d = fixture("buyer-offer-strategy", "fha-competitive.json")

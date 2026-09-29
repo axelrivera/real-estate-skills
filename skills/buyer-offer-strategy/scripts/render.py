@@ -163,7 +163,7 @@ def details(r, res):
     ns += '<tr class="total2"><td>Net as the Listing Agent Sees It</td>' + "".join(
         f'<td class="n {"best" if c["net_adj"] >= tgt["net_adj"] else ("worst" if c["net_adj"] < tgt["net_adj"] - 5000 else "")}">{acct(c["net_adj"])}</td>'
         for _, c in cols) + "</tr>"
-    ns += '<tr class="alt"><td>If the Appraisal and Inspection Go Badly (Value Midpoint, Typical Repair Credit)</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
+    ns += '<tr class="alt"><td>If the Appraisal and Inspection Go Badly (Appraisal at the Top of the Value Range, Typical Repair Credit)</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
     sc = ""
     for key, label, w in oe.CRITERIA:
         sc += f'<tr><td>{label}</td><td class="n">{w}%</td>' + "".join(f'<td class="c s{O[k]["score"]["scores"][key]}">{O[k]["score"]["scores"][key]}</td>' for k in K) \
@@ -194,7 +194,7 @@ def details(r, res):
     mkt = "".join(f"<tr><td>{m[0]}</td><td><b>{esc(str(m[1]))}</b>"
                   + (f"<br><small>{esc(str(m[2]))}</small>" if len(m) > 2 and m[2] else "") + "</td></tr>" for m in mk)
     pb = "".join(f'<tr><td>{esc(t)}</td><td>{esc(a)}</td><td class="caution">{esc(b)}</td><td>{esc(RESP.get(t, "Discuss with the buyer"))}</td></tr>'
-                 for t, a, b, _ in rec["counter_rows"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
+                 for t, a, b, _ in rec["counter_rows"] if t != "Time for Acceptance") or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
     if r["missing"]:
         asum = ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th><th>Where</th><th>What Was Assumed</th></tr></thead><tbody>'
                 + "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{a["impact"].title()}</span></td><td>{esc(a["scope"].title())}</td><td>{esc(a["why"])}</td></tr>'
