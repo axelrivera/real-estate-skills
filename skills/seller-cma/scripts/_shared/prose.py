@@ -34,6 +34,9 @@ SENTENCE = re.compile(r"[^.!?;]+[.!?;]?")
 # (pattern, why), matched case-insensitively on word boundaries.
 _WHO = r"(?:famil(?:y|ies)|kids|children|couples?|singles|retirees|seniors|empty[- ]nesters|young professionals|students|bachelors?|newlyweds)"
 _PEOPLE = r"(?:neighborhoods?|areas?|communit(?:y|ies)|famil(?:y|ies)|buyers?|sellers?|residents|neighbors)"
+# A house of worship, not when it is part of a street or place name ("Church Street", "Temple Terrace")
+_WORSHIP = (r"(?:church|synagogue|mosque|temple|parish|chapel|congregation)(?![- ](?:st|street|rd|road|ave|avenue|ln|lane"
+            r"|dr|drive|blvd|boulevard|way|ct|court|pl|place|cir|circle|hill|lake|park|pkwy|parkway|terrace)\b)")
 FAIR_HOUSING = [
     (rf"\b(?:perfect|ideal|great|made|suited|best|wonderful)\s+for\s+(?:a\s+|the\s+)?(?:growing\s+|young\s+|large\s+|small\s+)?{_WHO}\b",
      "says who the home suits (familial status); describe the space instead: bedrooms, yard, layout"),
@@ -61,7 +64,31 @@ FAIR_HOUSING = [
      "coded neighborhood description; describe the property and the market numbers instead"),
     (rf"\b(?:white|black|hispanic|latino|latina|latinx|asian|african[- ]american|caucasian|immigrant|foreign)\s+{_PEOPLE}\b",
      "race, color or national origin"),
-    (rf"\b(?:christian|jewish|muslim|catholic|hindu|buddhist|mormon|protestant)\s+{_PEOPLE}\b", "religion"),
+    (rf"\b(?:christian|jewish|muslim|catholic|hindu|buddhist|mormon|protestant|religious|devout|observant)\s+"
+     rf"(?:{_PEOPLE}|homes?|house|households?|couples?|people|folks)\b", "religion"),
+    # FH-106: a house of worship tied to people (attending it, its community, whose it is). The building as a
+    # landmark ("near a church", "across from the church", "0.3 miles to the church") and street names
+    # ("Church Street") describe the place and pass.
+    (rf"\b(?:attend(?:s|ed|ing)?|worship(?:s|ped|ping)?\s+at|members?\s+of|belong(?:s|ing)?\s+to)\s+"
+     rf"(?:the\s+|a\s+|their\s+|our\s+|his\s+|her\s+|your\s+)?(?:[\w'-]+\s+){{0,2}}?{_WORSHIP}\b"
+     rf"|\battend(?:s|ed|ing)?\s+(?:religious\s+)?(?:services|mass|worship)\b"
+     rf"|\b(?:their|our|his|her|your|buyers?'s?|sellers?'s?)\s+(?:own\s+|home\s+|local\s+)?(?:{_WORSHIP}|faith|religion)\b"
+     rf"|\b(?:{_WORSHIP}|faith|religious)[- ](?:communit(?:y|ies)|famil(?:y|ies)|members?|groups?|neighbors|folks|going|goers?)\b"
+     rf"|\b(?:go(?:es)?|walk(?:s)?|drive(?:s)?)\s+to\s+(?:church|mass|services|synagogue|temple|mosque)\b|\bchurchgo(?:ing|ers?)\b"
+     rf"|\bparishioners?\b|\bhouse\s+of\s+worship\s+(?:they|she|he|the buyers?|the sellers?)\b",
+     "religion: says what people practice or who belongs; name the place only as a landmark, with its distance"),
+    # FH-106: familial status covers pregnancy; marital status is protected in several counties (Miami-Dade among them)
+    (r"\bexpecting\s+(?:a|an|their|her|his|our|your)\s+(?:(?:first|second|third|fourth|next|new)\s+)?"
+     r"(?:baby|babies|child|kid|little one|son|daughter|twins)\b|\bbab(?:y|ies)\s+on\s+the\s+way\b"
+     r"|\bpregnan(?:t|cy)\b|\bexpectant\s+(?:mothers?|moms?|parents?|couples?)\b|\b(?:new|first)\s+baby\b|\bnewborns?\b"
+     r"|\bgrowing\s+famil(?:y|ies)\b"
+     r"|\b(?:buyers?|sellers?|couples?|famil(?:y|ies)|parents|they|who)\s+(?:with|have|has)\s+"
+     r"(?:(?:a|an|two|three|four|five|young|small|little|\d+)\s+)?(?:kids|children|bab(?:y|ies)|toddlers?|teens?|teenagers?|infants?)\b",
+     "familial status (children, pregnancy); describe the home and the terms, not who will live there"),
+    (r"\b(?:married|unmarried|single|divorced|widowed|engaged)\s+(?:couples?|buyers?|sellers?|m[ae]n|wom[ae]n|mothers?|moms?"
+     r"|fathers?|dads?|parents?|persons?|people|professionals?|residents)\b|\bhusband\s+and\s+wife\b|\bwife\s+and\s+husband\b"
+     r"|\b(?:buyers?|sellers?|they|she|he)\s+(?:is|are)\s+(?:a\s+)?(?:recently\s+|newly\s+)?(?:married|divorced|divorcing|widowed)\b",
+     "marital status; describe the terms, not the people"),
     (r"\b(?:english|spanish|french|creole|haitian|portuguese|chinese|mandarin|cantonese|korean|vietnamese|russian|arabic|hindi"
      r"|tagalog|german|italian|japanese|polish|hebrew)[- ](?:speaking|only)\b", "national origin"),
     (r"\bno\s+(?:wheelchairs?|disabled|handicapped)\b|\bable[- ]bodied\b|\bmentally ill\b",

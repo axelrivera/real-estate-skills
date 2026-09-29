@@ -11,7 +11,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import design, profiles  # noqa: E402
+from _shared import design, profiles, prose  # noqa: E402
 
 
 def check(path):
@@ -31,8 +31,16 @@ def check(path):
     problems += [f"Missing {f}." for f in agent["errors"]]
     problems += agent["warnings"]  # invalid color codes, numbers written without quotes
     colors, warnings = {}, []
-    # CORE-27: the agent's own word for a color ("Gold"), from the comment beside it in the profile
-    own = {m.group(1).upper(): m.group(2).strip() for m in re.finditer(r'"(#[0-9A-Fa-f]{6})"\s*#\s*([^\n]+)', text)}
+    # FH-106: every skill writes in this voice and prints these disclaimers, so they get the render-time check
+    for field, why in prose.issues({"voice": agent["voice"], "disclaimers": agent["disclaimers"]}):
+        problems.append(f"{field[2:].capitalize()} section: {why}")
+    # CORE-27: the agent's own word for a color ("Gold"), from the comment beside it in the profile.
+    # CORE-102: 3- or 6-digit codes, quoted or not, with or without the #.
+    own = {}
+    for m in re.finditer(r"^\s*\w*primary\s*:\s*[\"']?(#?[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?)[\"']?\s+#\s*([^\n]+)", text, re.M):
+        hx = design.parse_hex(m.group(1))
+        if hx:
+            own[hx] = m.group(2).strip()
     for side in ("buyer", "seller"):
         hx, source, _ = design.resolve(agent["brand"], side)
         name = own.get(str(hx).upper()) or design.color_name(hx)

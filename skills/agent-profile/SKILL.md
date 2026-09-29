@@ -39,7 +39,7 @@ Two rounds, one message each, at most three questions per round. Short rounds fe
 
 > I'll set you up so every report carries your name, your look and your voice. Two quick rounds, about two minutes. Skip anything you like.
 >
-> 1. Your name as it should appear on documents, and your brokerage's licensed name (for example "Keller Williams Realty Heathrow", not a team name): ____
+> 1. Your name as it should appear on documents, and your brokerage's licensed name (for example "Lakeshore Realty Group, LLC", not a team name): ____
 > 2. Team name, if you're on one: ____
 > 3. What should show on your reports: phone, email, website, license number. Any or none: ____
 >
