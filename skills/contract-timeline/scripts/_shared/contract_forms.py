@@ -62,18 +62,20 @@ RIDERS = {
 RESERVED_ON_AS_IS = ("I", "K", "L")
 _SHORT = {"K": "As Is", "L": "Right to Inspect"}  # labels on reports
 
-# Name words to rider letter, checked in order (most specific first), as whole words in the lowercase name.
+# Name words to rider letter, checked in order (most specific first), as whole words in the lowercase name with hyphens
+# read as spaces ("Short-Sale Rider"). Condominium comes before the association words: "Condominium Association" is A.
 _RIDER_WORDS = (
-    ("GG", r"seller'?s agreement"), ("FF", r"credit related|broker compensation credit"),
-    ("T", r"pre[- ]?closing occupancy"), ("U", r"post[- ]?closing occupancy"),
-    ("Y", r"seller'?s attorney"), ("Z", r"buyer'?s attorney"),
-    ("V", r"sale of buyer'?s?( property)?|sale contingency"), ("X", r"kick[- ]?out"), ("W", r"back[- ]?up"),
-    ("L", r"right to inspect|right to cancel"), ("K", r"as[- ]?is"),
-    ("H", r"insurance|flood ins"), ("B", r"homeowners'? assn|association|hoa|community disclosure"),
-    ("A", r"condominium|condo"), ("C", r"seller financing|purchase money"), ("D", r"assumption"),
-    ("E", r"fha|va"), ("F", r"appraisal contingency|appraisal(?! gap)"), ("G", r"short sale"), ("I", r"mold"),
-    ("J", r"interest[- ]bearing"), ("M", r"drywall"), ("N", r"coastal construction|cccl"), ("O", r"insulation"),
-    ("P", r"lead[- ]?based paint|lead paint"), ("Q", r"older persons"), ("R", r"rezoning"),
+    ("GG", r"seller'?s?'? agreement"), ("FF", r"credit related|broker compensation credit"),
+    ("T", r"pre ?closing occupancy"), ("U", r"post ?closing occupancy"),
+    ("Y", r"seller'?s?'? attorney"), ("Z", r"buyer'?s?'? attorney"),
+    ("V", r"sale of buyer'?s?( property)?|sale contingency"), ("X", r"kick ?out"), ("W", r"back ?up"),
+    ("L", r"right to inspect|right to cancel"), ("K", r"as ?is"),
+    ("H", r"insurance|flood ins"), ("A", r"condominium|condo"),
+    ("B", r"homeowners'? assn|association|hoa|community disclosure"),
+    ("C", r"seller financing|purchase money"), ("D", r"assumption"),
+    ("E", r"fha|va"), ("F", r"appraisal contingency|appraisal(?! gap)"), ("G", r"short ?sale"), ("I", r"mold"),
+    ("J", r"interest bearing"), ("M", r"drywall"), ("N", r"coastal construction|cccl"), ("O", r"insulation"),
+    ("P", r"lead ?based paint|lead paint"), ("Q", r"older persons"), ("R", r"rezoning"),
     ("S", r"lease purchase|lease option"), ("AA", r"licensee|personal interest"), ("BB", r"arbitration"),
     ("CC", r"special taxing district"), ("DD", r"seasonal|vacation rental"),
     ("EE", r"qualifying improvements?|pace"),
@@ -103,7 +105,7 @@ def rider_code(name):
     m = re.match(r"^(?:CR-?7x?\s+|Rider\s+)?([A-Z]{1,2})(?:[.:)]|\s|$)", s)
     if m and m.group(1) in RIDERS and (len(m.group(1)) == 1 or m.group(1)[0] == m.group(1)[1]):
         return m.group(1)
-    low = s.lower()
+    low = s.lower().replace("-", " ").replace("\u2019", "'")
     for code, words in _RIDER_WORDS:
         if re.search(rf"\b(?:{words})\b", low):
             return code

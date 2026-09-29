@@ -58,6 +58,16 @@ class Module(unittest.TestCase):
                                                  ["Appraisal Gap Addendum", "Private road maintenance"]))
         self.assertEqual(len(cf.RIDERS), 33)
 
+    def test_rider_names_with_hyphens_and_condo_association(self):
+        """TL-101: hyphenated and possessive-less names map; TL-102: "Condominium Association" is Rider A, not B."""
+        names = ["Short-Sale Rider", "Shortsale", "Seller Attorney Approval", "Buyers Attorney Approval",
+                 "Pre-Closing Occupancy", "Kick-Out Clause", "Lead-Based Paint", "Interest-Bearing Account",
+                 "Seller’s Agreement with Respect to Buyer’s Broker Compensation"]
+        self.assertEqual(cf.rider_codes(names)[0], ["G", "Y", "Z", "T", "X", "P", "J", "GG"])
+        self.assertEqual(cf.rider_code("Condominium Association"), "A")
+        self.assertEqual(cf.rider_code("Condo Association Rider"), "A")
+        self.assertEqual(cf.rider_code("Homeowners' Association/Community Disclosure"), "B")
+
     def test_rider_k_on_standard_is_as_is_math(self):
         t = cf.terms("standard", {"riders": ["As Is Rider"]})
         self.assertEqual((t["walkaway"], t["repairs_owed"], t["inspection_rider"]), (True, False, "K"))
