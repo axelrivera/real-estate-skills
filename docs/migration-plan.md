@@ -54,7 +54,7 @@ Copy this list into a skill's notes when building or rebuilding it; the status t
 
 ## Status
 
-All phases are built (version 0.2.0; 0.3.0 to 0.5.0 add the audit's Phase 1 to 3 fixes, see [status.md](status.md#audit-2026-09-23)). Every skill has run through the eval loop once (iteration 1, 2026-09-23: 21 prompts, with-skill runs by sandbox-simulating subagents) and the fixes from those runs are in. What's left for every skill is a run in claude.ai and Cowork by the user.
+All phases are built; the current version and what each release changed are in [status.md](status.md). Every skill has run through the eval loop (iteration 1 on 2026-09-23, then the contract skills again on mock FR/BAR packages on 2026-09-29, [mock-contracts.md](mock-contracts.md)), and the fixes from those runs are in. What's left for every skill is the manual smoke test in claude.ai and Cowork ([manual-testing.md](manual-testing.md)).
 
 | Shared module | Status |
 |---|---|
@@ -63,12 +63,14 @@ All phases are built (version 0.2.0; 0.3.0 to 0.5.0 add the audit's Phase 1 to 3
 | `shared/render` | Done: output location, file names, HTML → PDF, render command line with skill options and partial formats |
 | `shared/finance`, `dates`, `handoff`, `mls`, `cma` | Done: payments, program caps, property tax (incl. school-only and percent exemptions), title (table, quote, estimate), seller net with keyed lines and structured assumptions; business days; cma-handoff v1; MLS export reader and stats; CMA report pieces |
 | `shared/offer_engine` | Done: one port of the prototype engine for both offer skills |
+| `shared/contract_forms` | Done: which rules apply to which contract: FR/BAR AS IS vs. Standard, riders K and L on Standard, RESERVED riders on AS IS, rider windows and appraisal forms, verified revisions and the chat-only support notes; every other contract gets no FR/BAR default |
+| `shared/references/frbar-*.md`, `other-contracts.md` | Done: the FR/BAR contract, rider, addenda and package-check library read from the form PDFs (`make forms-check`), and the best-effort guide for every other contract |
 | Sync and drift check | Done: `make sync`, `make check-sync`, pre-commit hook |
 
 | Skill | Status |
 |---|---|
 | `agent-profile` | Rebuilt 2026-09-24 as the one onboarding skill: two-round interview after the Cruz prototypes, one `profile.md` with who the agent is; `market-profile` removed (local costs are conventions: national estimates, per-deal overrides). Writes `project-instructions.md` with Project setup steps (2026-09-24). Evals rewritten (7 prompts, incl. a cold start and the Project flow); needs an eval run and a run in claude.ai and Cowork |
-| `contract-timeline` | Built: engine matches the prototype sample; FR/BAR and other contracts (per-deadline time and rollover for TREC); client flags vs. agent notes; evals run and fixed; needs a run in claude.ai and Cowork |
+| `contract-timeline` | Built: engine matches the prototype sample; FR/BAR contracts with every rider (short sales in two phases, completed deadlines) and other contracts best effort, from their own time rules (no built-in rules for any other state); client flags vs. agent notes; evals run and fixed, including on mock packages; needs a run in claude.ai and Cowork |
 | `buyer-cma` | Built: numbers match the prototype sample; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
 | `seller-cma` | Built: report PDF and 15-slide deck from one report.json; nets from the market layers with labeled estimates and an assumed 5% commission; cma-handoff v1; evals run and fixed; needs a run in claude.ai and Cowork |
 | `seller-offer-review` | Built on `shared/offer_engine.py`: prototype numbers reproduced with the prototype's costs; market costs, labeled national estimates outside built-in markets; single and multi-offer PDF; evals run and fixed (certainty-priority sellers aren't countered for a small gain); needs a run in claude.ai and Cowork |

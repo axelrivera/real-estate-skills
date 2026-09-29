@@ -31,7 +31,7 @@ The gate every release passes before the pull request from `develop` into `main`
 
 - [ ] List `dist/real-estate-<version>.plugin`: only `.claude-plugin/plugin.json`, `skills/` and `LICENSE`; no `__pycache__`, `.DS_Store`, `dev/`, `sources/` or `out/`.
 - [ ] `dist/skills/` holds one zip per folder in `skills/` and nothing else.
-- [ ] The release zip holds the `.plugin`, the agent guide (`README.md`), the PDF manual and `LICENSE`. The guide and the manual describe this version's behavior.
+- [ ] The release zip holds the `.plugin`, the agent guide (`README.md`), the PDF manual and `LICENSE`. The guide (`dev/package/README.md`) describes this version's behavior, and `make manual` rebuilt the manual from it ([The Agent Guide and Manual](development.md#the-agent-guide-and-manual); `make package` stops when the manual is stale).
 
 ## 6. Manual Smoke Test
 
@@ -40,5 +40,5 @@ The gate every release passes before the pull request from `develop` into `main`
 ## 7. Version and Notes
 
 - [ ] The version in `.claude-plugin/plugin.json` is bumped per [Versioning](development.md#versioning), once for the release.
-- [ ] [status.md](status.md) has release notes written for agents: what they'll notice, anything that changed or was removed, and whether several unreleased versions ship together.
+- [ ] [status.md](status.md) has release notes written for agents under a heading ending in `Version <version>`: what they'll notice, anything that changed or was removed, and whether several unreleased versions ship together. `make release` publishes every section since the last release tag as the GitHub notes.
 - [ ] Open the pull request `develop` → `main`; merge when `check-sync` passes. Then `make release` from an up-to-date `main`.

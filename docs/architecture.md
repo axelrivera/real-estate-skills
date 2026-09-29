@@ -12,7 +12,7 @@ Three ways in, all from the same `skills/` folder:
 |---|---|---|
 | Marketplace (Cowork, desktop app) | Adding `axelrivera/real-estate-skills` | The repo; only `skills/` loads |
 | `real-estate-<version>.plugin` (desktop app upload) | `make package` | `.claude-plugin/plugin.json`, `skills/`, `LICENSE` |
-| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin`, the agent guide (`dev/package/README.md`: install, profile, MLS export and comps search, property report, each skill with inputs and examples) and the PDF manual (`dev/package/*.pdf`) |
+| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin`, the agent guide (`dev/package/README.md`: install, profile, MLS export and comps search, property report, each skill with inputs and examples) the PDF manual (`dev/package/*.pdf`, built from the guide by `make manual`) and `LICENSE` |
 | One zip per skill (claude.ai) | `make package-skills` | That skill's folder |
 
 ## Runtimes

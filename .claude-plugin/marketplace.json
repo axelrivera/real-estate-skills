@@ -11,7 +11,7 @@
     {
       "name": "real-estate",
       "source": "./",
-      "description": "Skills for real estate agents: agent and market profiles, buyer and seller CMAs, offer strategy and review, and contract timelines."
+      "description": "Skills for real estate agents: a one-file agent profile, buyer and seller CMAs, offer strategy and review, and contract timelines."
     }
   ]
 }

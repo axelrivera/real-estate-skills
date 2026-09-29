@@ -9,9 +9,9 @@ One Claude plugin (`real-estate`) of skills for real estate agents; the repo roo
 .claude-plugin/marketplace.json     # one-plugin marketplace, source "./"; lets users add the repo by URL
 skills/<skill>/SKILL.md             # one directory per skill
 shared/                             # shared code and references, copied into skills by make sync
-dev/                                # dev tooling and fixtures, never shipped (mock_contracts/: mock FR/BAR packages, docs/mock-contracts.md)
+dev/                                # dev tooling and fixtures, never shipped (mock_contracts/: mock FR/BAR packages, docs/mock-contracts.md; package/: the agent guide and PDF manual, make manual)
 .claude/skills/                     # Claude Code skills for developing this repo (mock-contract), never shipped
-Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | samples | mock-contracts | package | package-skills | clean
+Makefile                            # make setup | hooks | test | golden | sync | check-sync | style-check | lint-skills | py311 | forms-check | outputs | samples | mock-contracts | manual-kit | manual | runtime-check | preview-design | package | package-skills | release | clean
 docs/                               # all documentation
 samples/                            # committed preview files (PDF, PPTX, ICS), one happy path per skill (make samples), never shipped
 sources/                            # prototype skills, local only, git-ignored
@@ -46,5 +46,6 @@ sources/                            # prototype skills, local only, git-ignored
 - **Branches:** work and commit on `develop`; `main` changes only through a pull request from `develop` (the `check-sync` status check must pass). Never push to `main` directly. See [docs/development.md](docs/development.md#branches).
 - Follow the phases and per-skill checklist in [docs/migration-plan.md](docs/migration-plan.md) and update its status table as skills move.
 - Update [docs/skills.md](docs/skills.md) and the README skill table when a skill is added or renamed.
+- **Releases:** follow [docs/release-checklist.md](docs/release-checklist.md) before the pull request into `main`.
 - **Version:** bump once per release in `plugin.json`, before the pull request into `main`: minor for anything that changes what agents do, upload or get; patch for fixes; none for docs, dev tooling, evals or tests. Rules in [docs/development.md](docs/development.md#versioning).
 - Validate after changing any manifest: `claude plugin validate .`

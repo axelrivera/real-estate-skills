@@ -5,7 +5,8 @@
 Checks: frontmatter with `name` (lowercase, hyphens, same as the folder, no output format like "-pdf") and
 `description` (1,024 characters or fewer, no angle brackets); a `## Guardrails` section as the first section;
 every `references/...`, `assets/...` or `scripts/...` path the SKILL.md names exists in the skill. Also checks that
-no shipped Python (skills/, shared/) imports a dev-only library the sandbox doesn't have (dev/requirements-tools.txt).
+no shipped Python (skills/, shared/) imports a dev-only library the sandbox doesn't have (dev/requirements-tools.txt),
+and that no shipped markdown names a repo path under shared/ (a skill can't see it; FH-104).
 """
 import glob
 import os
@@ -16,6 +17,7 @@ import yaml
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEV_ONLY = re.compile(r"^\s*(?:import|from)\s+(fitz|pymupdf)\b", re.M)  # dev/requirements-tools.txt: local only
+REPO_PATH = re.compile(r"(?<![\w/])shared/[\w./-]+")  # scripts/_shared/ is the skill's own copy, not a repo path
 
 
 def lint(path):
@@ -65,9 +67,24 @@ def dev_only_imports(root=ROOT):
     return out
 
 
+def repo_paths(root=ROOT):
+    """Shipped markdown (SKILL.md, references/, assets/) that names a repo path like shared/contract_forms.py: Claude
+    reads it in the sandbox, where only the skill's own folder exists."""
+    out = []
+    for path in sorted(glob.glob(os.path.join(root, "skills", "*", "**", "*.md"), recursive=True)):
+        if f"{os.sep}_shared{os.sep}" in path:
+            continue
+        with open(path, encoding="utf-8") as f:
+            for n, line in enumerate(f, 1):
+                for m in REPO_PATH.finditer(line):
+                    out.append(f"{os.path.relpath(path, root)}:{n}: names {m.group(0)}, a repo path the skill can't see")
+    return out
+
+
 def main():
     problems = [p for path in sorted(glob.glob(os.path.join(ROOT, "skills", "*", "SKILL.md"))) for p in lint(path)]
     problems += dev_only_imports()
+    problems += repo_paths()
     print("\n".join(problems) if problems else "lint-skills: OK")
     return 1 if problems else 0
 
