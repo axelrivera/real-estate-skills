@@ -283,6 +283,7 @@ def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, h
 
 
 SFHA = ("A", "V")  # FEMA Special Flood Hazard Areas: A, AE, AH, AO, AR, A99, V, VE
+FEMA_ZONE = re.compile(r"A|AE|AH|AO|AR|A99|A\d{1,2}|V|VE|V\d{1,2}|X|X500|B|C|D")  # FIRM zone codes
 
 
 def flood_insurance(zone, quote=None, market=None, as_of=None, condo_unit=False):
@@ -291,9 +292,10 @@ def flood_insurance(zone, quote=None, market=None, as_of=None, condo_unit=False)
     `annual` is the quote or None (never 0: a missing quote reads "get a quote"). `required` is "lender" in a
     Special Flood Hazard Area, "citizens" when the market's Citizens rule reaches every policy on `as_of`, "citizens_value"
     when it applies above a replacement cost, else None. The note is one or two sentences for the report."""
-    m = re.match(r"(?:ZONE\s+)?([A-Z]{1,2}\d{0,3})\b", str(zone or "").strip().upper())  # "X (lower risk)" -> X
+    # CMA-106: only a FEMA zone code counts ("X (lower risk)" -> X); anything else ("To confirm", "TBD") is unknown
+    m = re.match(r"(?:FLOOD\s+)?(?:ZONE\s+)?(?:SHADED\s+)?([A-Z]{1,2}\d{0,3})\b", str(zone or "").strip().upper())
     z = m.group(1) if m else ""
-    known = bool(z) and z not in ("TBD", "D", "UNK")  # D: undetermined risk
+    known = bool(FEMA_ZONE.fullmatch(z)) and z != "D"  # D: undetermined risk
     sfha = known and z[:1] in SFHA
     annual = quote if quote not in (None, "", 0) else None
     tail = "" if annual is not None else " Get a quote; the total leaves it out until then."
@@ -510,8 +512,8 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     if has_hoa:
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
-            add("estoppel", "HOA Estoppel Letter" + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""),
-                estoppel)
+            name = (market.get("closing_costs.hoa_estoppel_label") if market is not None else None) or "HOA Status Letter"
+            add("estoppel", name + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""), estoppel)
     if credit:
         add("credit", "Seller Credit to Buyer", credit)
     if other_costs:

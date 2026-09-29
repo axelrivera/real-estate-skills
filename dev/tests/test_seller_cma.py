@@ -213,6 +213,23 @@ class OtherMarkets(unittest.TestCase):
         self.assertTrue(any(a.startswith("Brokerage is assumed") for a in C["assumptions"]))
         self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 19.0 / 1000 / 12)  # no homestead in Texas
 
+    def test_out_of_state_terms(self):
+        """CMA-109: outside Florida the HOA line has a generic name, and no transfer tax lookup where there is none."""
+        R = texas(report())
+        R["costs"]["hoa"] = True
+        C, _ = run(R)
+        self.assertEqual(row(C, "estoppel")["label"], "HOA Status Letter (Estimate)")
+        estimates = next(a for a in C["assumptions"] if a.startswith("National estimates"))
+        self.assertNotIn("transfer tax", estimates)
+        R = texas(report())
+        R["subject"].update(state="GA", county="Fulton", city="Atlanta")  # a state that taxes deeds: look it up
+        C, _ = run(R)
+        self.assertIn("Look up the state's transfer tax", next(a for a in C["assumptions"] if a.startswith("National estimates")))
+        R = report()
+        R["costs"]["hoa"] = True
+        C, _ = run(R)
+        self.assertEqual(row(C, "estoppel")["label"], "HOA Estoppel Letter")  # Florida's own term
+
     def test_texas_deal_numbers_replace_the_estimates(self):
         R = texas(report())
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025, "transfer_tax_rate": 0,

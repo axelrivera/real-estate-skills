@@ -203,6 +203,16 @@ class FloodInsurance(unittest.TestCase):
         self.assertIsNone(r["required"])
         self.assertNotIn("Citizens", r["note"])
 
+    def test_zone_that_isnt_a_fema_code_is_unknown(self):
+        """CMA-106: "To confirm" (method.md's own wording) was read as zone "TO"."""
+        for zone in ("To confirm", "to confirm (likely X)", "TBD", "Unknown", "N/A", "Pending", "D", "", None):
+            r = f.flood_insurance(zone, None, None, date(2026, 9, 24))
+            self.assertFalse(r["sfha"], zone)
+            self.assertTrue(r["note"].startswith("The flood zone isn't confirmed"), (zone, r["note"]))
+        for zone, code in (("X", "X"), ("Zone X", "X"), ("Flood Zone AE", "AE"), ("X500", "X500"), ("Shaded X", "X"),
+                           ("A12", "A12"), ("VE (coastal)", "VE")):
+            self.assertRegex(f.flood_insurance(zone, None, None)["note"], rf"^Flood zone {code}[: ]", zone)
+
     def test_quote_is_counted_and_never_zero(self):
         self.assertIsNone(f.flood_insurance("AE", 0, self.FL)["annual"])  # 0 is not a quote
         self.assertIn("Get a quote", f.flood_insurance("AE", None, self.FL)["note"])

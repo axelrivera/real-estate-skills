@@ -25,6 +25,7 @@ closing_costs:
     municipal_lien_search: 125        # $100–$125
     recording: 70                     # seller-side recording (e.g. mortgage release)
   hoa_estoppel_fee: 299               # when the property has an HOA or condo association
+  hoa_estoppel_label: HOA Estoppel Letter
   buyer_closing_cost_pct: 0.025       # buyer's closing costs when no estimate is given, before the loan taxes in buyer_costs
 
 # brokerage: none built in. Commissions are negotiable and not set by law: they come from the agent's own market

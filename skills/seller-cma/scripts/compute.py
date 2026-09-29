@@ -101,7 +101,7 @@ def net_sheet(R, market, L):
         key, rate = line["key"], line["rate"]
         if key in ("listing_fee", "buyer_broker_fee"):
             return L(f"net_{key}" + ("_assumed" if key in assumed_keys else ""), pct=pct_text(rate))
-        if key == "transfer_tax":
+        if key in ("transfer_tax", "estoppel"):  # CMA-109: the market's own name ("HOA Estoppel Letter" in Florida)
             return line["label"]  # the market's own name and rate ("Documentary stamp tax on the deed (0.70%)")
         if key == "owner_title":
             return L("net_owner_title_est" if rate else "net_owner_title")
@@ -286,9 +286,12 @@ def compute(R, market, homes):
                            "a net. The agent can give the listing agreement's terms to update it.")
     estimated = [a["text"] for a in net["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimated:
-        assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". Look up the "
-                           "state's transfer tax from an official source (costs.transfer_tax_rate, and transfer_tax_payer if "
-                           "the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest.")
+        # CMA-109: the transfer tax lookup only when the net used the estimate (never in a no-transfer-tax state)
+        lookup = ("Look up the state's transfer tax from an official source (costs.transfer_tax_rate, and transfer_tax_payer "
+                  "if the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest."
+                  if any(a["key"] == "transfer_tax" and a.get("estimate") for a in net["assumed"]) else
+                  "A title quote (costs.title_fees, title_estimate_pct) replaces them.")
+        assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". " + lookup)
     costs_in = R.get("costs") or {}
     if costs_in.get("annual_tax") and not net["has_tax"]:
         warnings.append("costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
