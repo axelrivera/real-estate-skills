@@ -30,7 +30,7 @@
    "insurance_annual": 3400,
    "rate": 6.5,
    "school_mills": 5.25,
-   "total_mills": 16.35
+   "total_mills": 18.18
   },
   "flood": {
    "annual": null,
@@ -3658,8 +3658,8 @@
   "count": 0
  },
  "payment": {
-  "lower_cost": 3133,
-  "recommended": 3133
+  "lower_cost": 3180,
+  "recommended": 3180
  },
  "promoted": null,
  "sample": true,

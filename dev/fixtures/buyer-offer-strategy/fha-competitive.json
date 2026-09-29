@@ -15,7 +15,7 @@
   "market": {"sale_to_list": 0.981, "months_supply": 3.8, "median_dom": 34, "share_with_seller_costs": "44%", "typical_seller_paid": "$6,500"},
   "competition": {"level": 2, "note": "Listing agent: 2 other offers expected", "deadline": "Fri Sep 25 · 5 PM"},
   "listing_side": {"buyer_broker_offered_pct": 0.025},
-  "costs": {"rate": 6.5, "insurance_annual": 3400, "total_mills": 16.35, "school_mills": 5.249, "homestead": true},
+  "costs": {"rate": 6.5, "insurance_annual": 3400, "total_mills": 18.1808, "school_mills": 5.249, "homestead": true},
   "buyer": {
     "name": "Sample Buyer",
     "financing": "fha", "down_pct": 0.035, "approval": "du_approved", "lender_called": true, "lender_min_close_days": 35,

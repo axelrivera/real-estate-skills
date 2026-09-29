@@ -41,8 +41,9 @@ class MatchesPrototype(unittest.TestCase):
             # CORE-17: the 2026 indexed homestead exemption lowers the payment $1.
             # OFR-10: at 3.5% down with competition, the price stops at the value midpoint ($363,500, rounded down) and
             # the offer competes on terms; the lower price lifts the appraisal score two points.
-            "recommended": (363000, 67, 23555, 2445, 3133, 61.7, "Competitive"),  # the 5% assumed brokerage lowers the seller net
-            "lower_cost": (363000, 65, 19055, 6945, 3133, 53.5, "At Risk"),
+            # Audit 2026-09-29 CMA-104: the built-in Casselberry millage (18.1808, was 16.35) adds $47 a month.
+            "recommended": (363000, 67, 23555, 2445, 3180, 61.7, "Competitive"),  # the 5% assumed brokerage lowers the seller net
+            "lower_cost": (363000, 65, 19055, 6945, 3180, 53.5, "At Risk"),
         })
         t = r["terms"]["recommended"]
         self.assertEqual((t["seller_concessions"], t["deposit"], t["appraisal_gap"]), (2000, 11000, 0))
