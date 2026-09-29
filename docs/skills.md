@@ -16,7 +16,7 @@ From pricing through closing. Every skill has a markdown mode and a file mode.
 
 | Skill | Side | File Mode Output |
 |---|---|---|
-| `buyer-cma` | Buyer | CMA PDF + `.buyer.cma.json` handoff |
+| `buyer-cma` | Buyer | CMA PDF; `.buyer.cma.json` handoff kept as a working file |
 | `seller-cma` | Listing | CMA PDF; editable listing presentation (PPTX, same numbers, plus a PDF copy of the slides) when asked or accepted; `.seller.cma.json` handoff kept as a working file |
 | `buyer-offer-strategy` | Buyer | Offer Options PDF + Offer Package Worksheet PDF (FR/BAR contracts, riders and addenda fully supported; other contracts best effort, by entry name) |
 | `seller-offer-review` | Listing | Single- or multi-offer review PDF (net sheets, counter, certainty, ranking; FR/BAR fully supported, other contracts best effort) |

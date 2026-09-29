@@ -63,7 +63,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 - **Precedence:** riders, addenda and typed or handwritten terms control printed contract terms in conflict with them (STANDARD R in both contracts). Most addenda here also say all non-conflicting terms stay in force.
 - **Counting Days:** the contracts use calendar days; a period ending on a Saturday, Sunday or national legal holiday rolls to the next day that isn't one (STANDARD F). The roll does not apply to the time for acceptance or the Effective Date (Para. 3). Statutory condo and co-op rescission windows count 7 days excluding Saturdays, Sundays and legal holidays. EDRV-1 counts business days.
-- **Which Contract:** route every Standard vs. AS IS rule through `shared/contract_forms.py`. A form marked "Standard only" below never applies to an AS IS deal; don't run its math there.
+- **Which Contract:** record which contract the deal uses (AS IS or Standard) and every rider; the scripts apply that form's rules, so never work out a Standard or AS IS rule by hand. A form marked "Standard only" below never applies to an AS IS deal; don't use its terms there.
 - **Deposit on a Cancel:** where a form gives a cancel right but doesn't say what happens to the Deposit, say so and document the refund with RC-4.
 - **Defaults:** never invent one. Where the form prints no default for a blank, the block says "no default (ask)".
 
@@ -628,7 +628,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 - **Deadlines:** None.
 - **Cancel Rights:** None.
 - **Money Effects:** none until transferred into a signed contract.
-- **Changes to the Contract:** none. The inspection choice maps to the contract form: "as is" is the AS IS contract; "repairs up to limits" is the Standard contract with Para. 9(a) limits. Route that choice through `shared/contract_forms.py`; if neither is checked, ask.
+- **Changes to the Contract:** none. The inspection choice maps to the contract form: "as is" is the AS IS contract; "repairs up to limits" is the Standard contract with Para. 9(a) limits. Record that choice as the contract form and the scripts apply its rules; if neither is checked, ask.
 - **Red Flags:** treating it as an accepted offer; no inspection choice; the regional title option chosen outside Miami-Dade or Broward.
 - **Skill Use:** the offer builder may take a PTS-1 as input and map each field to the contract. The seller's review may use it for a verbal or early offer, labeled non-binding. The timeline never uses it for dates.
 
@@ -643,7 +643,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 - **Money Effects:** None.
 - **Changes to the Contract:** None.
 - **Red Flags:** its presence means the governing contract may not be FR/BAR.
-- **Skill Use:** all three skills treat the contract as "other" (not FR/BAR) in `shared/contract_forms.py`, work from that contract's own dates and terms, apply none of the FR/BAR defaults in this file, and say so.
+- **Skill Use:** all three skills record the contract as another contract (not FR/BAR), work from that contract's own dates and terms, apply none of the FR/BAR defaults in this file, and say so.
 
 ## Not in This Set
 

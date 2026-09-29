@@ -27,8 +27,8 @@ closing_costs:
   hoa_estoppel_fee: 299               # when the property has an HOA or condo association
   buyer_closing_cost_pct: 0.025       # buyer's closing costs when no estimate is given, before the loan taxes in buyer_costs
 
-# brokerage: none built in. Commissions are negotiable and not set by law: they come from the agent's own market
-# profile (their standard terms) or the listing agreement and offer for each deal.
+# brokerage: none built in. Commissions are negotiable and not set by law: they come from the listing agreement and
+# offer for each deal (the deal's costs), else the national estimate (5% total), labeled Assumed.
 
 property_tax:
   paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing (until the seller pays the bill in Nov)
