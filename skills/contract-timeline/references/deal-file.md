@@ -1,6 +1,6 @@
 # Deal File
 
-The JSON record of an executed contract. `scripts/timeline.py` computes the dates from it and `scripts/render.py` builds the PDF. Keep it with the deliverable: amendments are added to it, never rebuilt.
+The JSON record of an executed contract. `scripts/timeline.py` computes the dates from it and `scripts/render.py` builds the PDF. It's a working file in the temporary folder, never handed to the agent (`saved-files.md`). Within a conversation, amendments are added to it; in a later one, rebuild it from the executed package and add each amendment to `amendments` in signing order.
 
 ```json
 {
@@ -11,6 +11,8 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
   "contract": { },
   "deadlines": [ ],
   "amendments": [ ],
+  "completed": {"deposit": "2026-09-26"},
+  "report_date": "2026-09-26",
   "flags": ["checks the client should see too; printed on the report"],
   "agent_notes": ["for the agent only: defaults used, readings to confirm; never printed"],
   "rules": { }
@@ -18,6 +20,8 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 ```
 
 `time_zone` (optional: `CT`, `ET`...; Florida's western Panhandle counties are Central time and print "CT" after each time; Gulf County is split, so set it there). `state` (required: ask for it, never assume Florida) and `county` pick the market's time rules (built in for Florida). Those rules cover only the market's own forms (in Florida, FR/BAR AS IS and Standard); any other contract, such as a builder's form, takes its time rules from its own definitions in `rules`. `rules` also overrides the market's rules for this contract (see below).
+
+`completed` (optional): deadlines already met, by deadline key (the keys in the script output), with the date each was done. An escrow receipt in the package is the deposit done. A done row shows "Done Sep 26" on the report and in the output (`done`, `done_display`), never counts as the first deadline, and gets no calendar event. `report_date` (optional, `YYYY-MM-DD`): the report's Prepared date, today if left out.
 
 `flags` print on the PDF as "Check:" lines; `agent_notes` go only to the agent in chat. When in doubt, it's an agent note: a client reading "used the 5-day form default" worries without being able to act on it.
 
@@ -30,9 +34,10 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 | `form_revision` | FR/BAR: the footer as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). A revision other than the verified one adds an agent note |
 | `effective_date` | **Required.** `YYYY-MM-DD`. The date the last party signed or initialed and delivered the final counter or acceptance |
 | `effective_date_source` | The evidence ("Seller's initials on Counteroffer #1, 9/25 4:12 PM") |
-| `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so |
+| `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so. With a short sale rider (FR/BAR Rider G) the closing counts from the approval instead (`frbar.md`) |
 | `property`, `buyer`, `seller`, `price`, `escrow_agent` | For the report |
 | `financing` | `cash`, `conventional`, `fha`, `va`, `usda` |
+| `preapproval_expires` | The expiration date on the buyer's pre-approval letter when the package has one. Before closing: an agent note to ask the lender |
 | `possession_date`, `possession_time`, `possession_note` | Only if possession differs from closing |
 | `date_overrides` | `{deadline key: "YYYY-MM-DD HH:MM"}` for deadlines the contract states as a specific date. With a time it's kept as given; a date alone (`"YYYY-MM-DD"`) ends at the contract's end of day and extends past a weekend or holiday like any period. A `closing` override also moves every date counted back from closing |
 
@@ -56,7 +61,7 @@ Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry
 | `basis` | `after` (days after the Effective Date), `before` (days before closing), `date` (with `"date": "YYYY-MM-DD HH:MM"`), `event` (runs from `received`, when recorded) |
 | `days` | For `after`, `before` and `event` |
 | `business` | `true` when the contract counts this period in business days |
-| `time` | When this deadline ends, `"17:00"`, when it differs from the contract's end of day (a period the contract says ends at 5:00 PM on its last day) |
+| `time` | When this deadline ends, `"17:00"`, when it differs from the contract's end of day (a period the contract says ends at 5:00 PM on its last day). `"closing"` means by the closing time: with `basis: before` and `days: 0` it's due "by Closing" on closing day and sorts before the closing (a Para. 20 promise such as carpets cleaned before closing) |
 | `rollover` | `false` when this deadline isn't extended past a weekend or holiday even though others are (read the paragraph's own words) |
 | `receipt_date`, `what` | For an `after` period that runs from someone's receipt rather than the Effective Date (20 days after the title company receives the contract): the receipt date and what was received ("title company's receipt of the contract"). Without the date, ask for it |
 | `party` | `Buyer`, `Seller` or `Both` |
@@ -88,4 +93,4 @@ In signing order. `changes` for contract fields, `date_overrides` for deadlines 
  "date_overrides": {"appraisal": "2026-10-23 17:00"}}
 ```
 
-HOA or condo documents received, short sale approval received, a back-up contract delivered, or any other event a rider runs from: set the matching field in `contract` (FR/BAR, listed in `frbar.md`), or `received` on the `event` deadline, and re-run.
+HOA or condo documents received, short sale approval received (`short_sale_approval_received`), a back-up contract delivered, or any other event a rider runs from: set the matching field in `contract` (FR/BAR, listed in `frbar.md`), or `received` on the `event` deadline, and re-run.

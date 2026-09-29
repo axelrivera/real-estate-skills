@@ -6,6 +6,7 @@ For the FR/BAR AS IS and Standard contracts. Set `"form_family": "frbar"` and `"
 
 - Contract Fields
 - Rider Fields
+  - Short Sales (Rider G)
 - Checks Before Running
 - Time Rules
 
@@ -19,7 +20,7 @@ For the FR/BAR AS IS and Standard contracts. Set `"form_family": "frbar"` and `"
 | `financing`, `loan_application_days`, `loan_approval_days` | Para. 8 | 5 days, 30 days |
 | `closing_date`, `closing_time` | Para. 4 (extensions in Para. 5). The form has no closing time; use the one the parties or title company set | No default; time 10:00 AM (agent note) |
 | `possession_*` | Para. 6 | At closing |
-| `title_by`, `title_evidence_days_before` | Para. 9(c). Who designates the title agent is a checkbox with no default: ask | 15 days before closing, or 5 when cash |
+| `title_by`, `title_evidence_days_before` | Para. 9(c). `title_by` is `"seller"` or `"buyer"`: the party who designates the closing agent and delivers the title evidence (the checkbox has no default: ask). Left out, the row shows the seller and the script adds an agent note | 15 days before closing, or 5 when cash |
 | `title_commitment_received` | Date the buyer got the title commitment; starts the 5-day title defect notice (Standard A(ii)) | On event |
 | `title_defect_notice` | Date the buyer delivered a title defect notice; starts the seller's 30-day cure period (Standard A(ii)) | On event |
 | `survey_days_before`, `survey_received` | Para. 9(d); the buyer's survey defect notice is due 5 days after receipt, no later than closing (Standard B) | 5 days; on event |
@@ -27,8 +28,8 @@ For the FR/BAR AS IS and Standard contracts. Set `"form_family": "frbar"` and `"
 | `inspection_days` | Para. 12(a). AS IS: the buyer's right to cancel. Standard: no right to cancel; the deadline for repair, WDO and permit notices. With Rider K or L, the rider's period (15 days if blank) | 15 days |
 | `repair_notice_delivered`, `repair_estimates_received`, `open_permits` | Standard only (alone or with Rider L), Para. 12(b)-(d): the seller's estimates are due 10 days after the buyer's notice; the repair-limit election 5 days after the last estimate; open permits closed 5 days before closing | On event; 5 days |
 | `walkthrough_days_before` | AS IS Para. 12(b), Standard Para. 12(e), Rider K Para. 3: the day before closing or closing day | 1 day |
-| `flood_zone`, `flood_elevation_days` | Para. 10(d): the buyer may cancel if the home is in a Special Flood Hazard Area (zones starting A or V) below minimum elevation or can't get flood insurance | 20 days |
-| `tenants` | Para. 6(b) checked (tenant-occupied): tenant estoppel letters or a seller's affidavit 10 days before closing (Standard D) | No row unless true |
+| `flood_zone`, `flood_elevation_days` | Para. 10(d): the buyer may cancel if the home is in a Special Flood Hazard Area (zones starting A or V) below minimum elevation or can't get flood insurance. The row appears only when `flood_zone` starts with A or V or the days are written. Zone unknown: check the seller's flood disclosure (FD-2) or the seller's property disclosure; a "yes" to the special flood hazard area question means record an A zone, and a "no" means leave the row out (no note needed). Still unknown: leave the row out and add an agent note to confirm the zone | 20 days |
+| `tenants` | Para. 6(b) checked for a tenant (not for the seller's own stay after closing under Rider U): tenant estoppel letters or a seller's affidavit 10 days before closing (Standard D) | No row unless true |
 | `fincen_report` | Standard I(iii): an entity or trust buyer without institutional financing; both parties give the closing agent the FinCEN information the day before closing | No row unless true |
 | `insurance_bound_days_before`, `cd_days_before` | Lender, not the contract | 7 days, 3 business days |
 | `riders` | Para. 19: the rider letters or names as printed ("K", "FHA/VA Financing"). The script reads them by letter | No default |
@@ -39,11 +40,11 @@ Only for riders listed in `riders`. Defaults are each rider's own "if left blank
 
 | Rider | Fields | Blank = Rider Default |
 |---|---|---|
-| A Condominium | `condo`, `condo_docs_received`, `condo_docs_before_contract`, `developer_sale`; `rofr`, `rofr_days`; `association_approval`, `association_apply_days`, `association_approval_days_before` | Rescission 7 business days after receiving the documents (including the milestone summary and SIRS), until closing (s. 718.503). Rider A is the nondeveloper disclosure; a developer sale has a 15-day statutory window (`developer_sale`). ROFR documents 5 days; approval started in 5 days, due 5 days before closing |
+| A Condominium | `condo`, `condo_docs_received`, `condo_docs_before_contract`, `developer_sale`; `rofr`, `rofr_days`; `association_approval` (true; `"unknown"` when the rider's "is / is not required" box is blank: the rows assume it's required, with a Check line and an agent note), `association_apply_days`, `association_approval_days_before` | Rescission 7 business days after receiving the documents (including the milestone summary and SIRS), until closing (s. 718.503). Rider A is the nondeveloper disclosure; a developer sale has a 15-day statutory window (`developer_sale`). ROFR documents 5 days; approval started in 5 days, due 5 days before closing |
 | B HOA | `hoa`, `hoa_docs_received`, `hoa_disclosure_before_contract`; approval fields as for A | 3 calendar days after receiving the disclosure summary, until closing, only when it came after signing (s. 720.401) |
 | E FHA/VA | No period: the appraisal protection runs to closing (the script adds a note) | None |
 | F Appraisal Contingency | `appraisal_date` (the date written in the rider) | Appraisal due 10 days before closing; the buyer's low-appraisal notice 3 days after that date |
-| G Short Sale | `short_sale_application_days`, `short_sale_approval_days` | Application forms 10 days; approval deadline 90 days after the Effective Date; the contract expires 30 days after that. Most other periods restart when the buyer receives the approval: once it's received, ask the agent for the dates and record them as `date_overrides` |
+| G Short Sale | `short_sale_application_days`, `short_sale_approval_days`, `short_sale_approval_received`, `short_sale_closing_days` | See Short Sales below |
 | H Homeowner's/Flood Insurance | `insurance_date` (the date written in the rider) | The earlier of 30 days after the Effective Date or 10 days before closing |
 | I Mold (Standard only) | `mold_days` | 20 days |
 | K As Is (Standard only) | `inspection_days` | 15 days; the inspection period becomes a right to cancel and the repair rows drop |
@@ -62,9 +63,17 @@ Only for riders listed in `riders`. Defaults are each rider's own "if left blank
 | DD Seasonal Rentals | `management_agreements_received` | Seller delivers agreements in 5 days; buyer review 5 days after receipt |
 | GG Buyer's Broker Compensation | `compensation_agreement_days` | 3 days; the buyer may cancel within 3 days after that |
 
-Addenda: an Extension Addendum (EA-4) or any amendment goes in `amendments` (`changes` for fields, `date_overrides` for specific dates). The Appraisal Gap (AGA-1), Escalation (EAC-1) and CDD (CDDA-2) addenda set no timeline row of their own beyond what `frbar-addenda.md` lists; add a `deadlines` entry for any date one of them creates.
+### Short Sales (Rider G)
 
-A term the contract leaves blank takes the default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every default you use goes in `agent_notes`, not in `flags`, which print on the client's report.
+Two phases. **Phase 1**, from the Effective Date: the initial deposit, the seller getting the application forms (Para. 2, 10 days if blank) and returning them completed (5 days after), the Short Sale Approval Deadline (Para. 4, 90 days if blank) and the contract expiring 30 days after it. Rider GG stays on the Effective Date too, as its own words say; the script adds an agent note that Para. 5 could be read to move it. **Phase 2**, from the buyer's receipt of the approval (Para. 5): every other period (additional deposit, loan application, inspection, loan approval, seller's termination, appraisal, insurance, rider periods) and the closing, `short_sale_closing_days` after it (Para. 6, 45 if blank).
+
+- Until `short_sale_approval_received` (the date the buyer received the approval) is recorded, Phase 2 rows are pending ("10 days after short sale approval") and never dated from the Effective Date; the PDF and calendar work with the dated rows only. Record it in `contract` (or as an amendment's `changes`) and re-run: the rows get real dates, the approval deadline shows as done and the expiry row drops.
+- A closing date written in Para. 4 is replaced by Para. 6 (riders control); the script ignores it and adds an agent note. A closing the parties later agree in writing goes in `date_overrides.closing`.
+- The approval deadline is not a buyer contingency: after it either party may cancel, so it never reads as the end of the buyer's protections.
+
+Addenda: an Extension Addendum (EA-4) or any amendment goes in `amendments` (`changes` for fields, `date_overrides` for specific dates). An extension that adds N days to a period: add N to that period's days in `changes` (the safe reading in `frbar-addenda.md`, EA-4); when the original end had rolled past a weekend or holiday, add an agent note with the later reading. The Appraisal Gap (AGA-1), Escalation (EAC-1) and CDD (CDDA-2) addenda set no timeline row of their own beyond what `frbar-addenda.md` lists; add a `deadlines` entry for any date one of them creates.
+
+A term the contract leaves blank takes the default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every default you use goes in `agent_notes`, not in `flags`, which print on the client's report, except the ones the script reports itself: title evidence, Rider F's appraisal date, Rider H's insurance date, the closing time and `title_by` (SKILL.md lists them all).
 
 ## Checks Before Running
 

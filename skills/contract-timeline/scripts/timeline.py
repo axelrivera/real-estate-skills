@@ -131,31 +131,45 @@ def forward(start, days, rules, business=False, end_time=None, rollover=None):
         d = start + timedelta(days=days)
     rolls = rollover if rollover is not None else rules["weekend_holiday_rollover"] == "next_business_day"
     if rolls and not dates.is_business_day(d, extra):
-        why = dates.holiday_name(d, extra) or d.strftime("%A")
-        d = dates.next_business_day(d, extra)
+        nd = dates.next_business_day(d, extra)
         rt = _t(rules["rollover_time"])
-        notes.append(f"ends on a {why}: extended to {_clock(rt)} {d:%a %b %-d}")
-        return datetime.combine(d, rt), "; ".join(notes)
+        notes.append(f"ends on {_on(d, nd, extra)}: extended to {_clock(rt)} {nd:%a %b %-d}")
+        return datetime.combine(nd, rt), "; ".join(notes)
     return datetime.combine(d, _t(end_time or rules["end_time"])), "; ".join(notes)
 
 
-def backward(closing, days, rules, business=False):
+def backward(closing, days, rules, business=False, at=None):
+    """Deadline `days` before closing, at the contract's before-closing time or `at` (a time of day)."""
     extra = rules["_extra_holidays"]
-    t = _t(rules["before_closing_time"])
+    t = at or _t(rules["before_closing_time"])
     if business == "trid":  # TL-17: Reg Z business days (Saturdays count; Sundays and federal holidays don't)
         return datetime.combine(dates.add_trid_days(closing, -days), t), "TRID business days (Saturdays count)"
     if business:
         return datetime.combine(dates.add_business_days(closing, -days, extra), t), "business days (weekends and holidays skipped)"
     d = closing - timedelta(days=days)
     if not dates.is_business_day(d, extra) and rules["before_closing_rollover"] == "previous_business_day":
-        why = dates.holiday_name(d, extra) or d.strftime("%A")
-        d = dates.previous_business_day(d, extra)
-        return datetime.combine(d, t), f"falls on a {why}: moved earlier to {d:%a %b %-d} (conservative)"
+        nd = dates.previous_business_day(d, extra)
+        return datetime.combine(nd, t), f"falls on {_on(d, nd, extra)}: moved earlier to {nd:%a %b %-d} (conservative)"
     if not dates.is_business_day(d, extra) and rules["before_closing_rollover"] == "next_business_day":
-        why = dates.holiday_name(d, extra) or d.strftime("%A")
-        d = dates.next_business_day(d, extra)
-        return datetime.combine(d, t), f"falls on a {why}: extended to {d:%a %b %-d}"
+        nd = dates.next_business_day(d, extra)
+        return datetime.combine(nd, t), f"falls on {_on(d, nd, extra)}: extended to {nd:%a %b %-d}"
     return datetime.combine(d, t), ""
+
+
+def _on(d, nd, extra):
+    """What a date that isn't a business day falls on, naming every holiday the move to `nd` passes:
+    "a Saturday (Mon Oct 12 is Columbus Day)", "Thanksgiving Day (Thu Nov 26)"."""
+    name = dates.holiday_name(d, extra)
+    text = f"{name} ({d:%a %b %-d})" if name else f"a {d:%A}"
+    if nd == d:
+        return text
+    step = timedelta(days=1 if nd > d else -1)
+    passed, x = [], d + step
+    while x != nd:
+        if dates.holiday_name(x, extra):
+            passed.append(f"{x:%a %b %-d} is {dates.holiday_name(x, extra)}")
+        x += step
+    return text + (f" ({'; '.join(passed)})" if passed else "")
 
 
 def _clock(t):
@@ -178,6 +192,7 @@ def frbar_deadlines(c):
     fha_va = has("E")
     as_is = c["contract_form"] == cf.AS_IS
     rider = t["inspection_rider"]  # Standard + Rider K (As Is) or L (Right to Inspect and Right to Cancel)
+    unit = bool(c.get("condo") or has("A"))  # a condo unit: the building is the association's
     out = []
 
     def add(**k):
@@ -208,7 +223,10 @@ def frbar_deadlines(c):
         add(key="inspection", label="Inspection Period Ends (Right to Cancel)", short="Inspection Ends",
             basis="after", days=c.get("inspection_days", 15), source="Para. 12(a)" if as_is else "As Is Rider (K), Para. 2",
             party="Buyer", critical=True, contingency=True,
-            action="Complete inspections (including 4-point and wind mitigation); deliver written cancellation notice before the deadline if not proceeding",
+            action=("Complete inspections of the unit (the insurer may ask for a 4-point on the unit); deliver written "
+                    "cancellation notice before the deadline if not proceeding" if unit else
+                    "Complete inspections (including 4-point and wind mitigation); deliver written cancellation notice "
+                    "before the deadline if not proceeding"),
             if_missed="Right to cancel for inspection ends; deposit at risk")
     else:
         # Standard: no right to cancel for inspection. The period is the deadline for the repair, WDO and permit
@@ -255,7 +273,8 @@ def frbar_deadlines(c):
         elif c.get("appraisal_days"):
             add(**due, basis="after", days=c["appraisal_days"])
         else:
-            add(**due, basis="before", days=10, default="Appraisal date blank: used the rider default, 10 days before Closing")
+            add(**due, basis="before", days=10, default="Appraisal date blank: used the rider default, 10 days before Closing",
+                default_topic="appraisal date")
         add(key="appraisal", label="Low-Appraisal Notice Due", short="Appraisal Ends", basis="after", from_key="appraisal_due",
             days=3, source="Appraisal Contingency Rider (F)", party="Buyer", critical=True, contingency=True,
             action="If the value is below the rider's amount, deliver a copy of the appraisal with written notice to cancel "
@@ -301,8 +320,8 @@ def frbar_deadlines(c):
     if c.get("insurance_date") or c.get("insurance_days") or has("H"):
         ins = dict(key="insurance", label="Insurance Contingency Ends", short="Insurance Ends",
                    source="Homeowner's/Flood Insurance Rider (H)", party="Buyer", critical=True, contingency=True,
-                   action="If homeowner's or flood coverage isn't available within the rider's premium cap, deliver written "
-                          "notice to cancel",
+                   action="If the coverage the rider names (homeowner's, flood, or both as checked) isn't available within "
+                          "any premium cap written in the rider, deliver written notice to cancel",
                    if_missed="The insurance cancel right ends")
         if c.get("insurance_date"):
             add(**ins, basis="date", date=c["insurance_date"], date_rule="Date written in the rider")
@@ -311,7 +330,7 @@ def frbar_deadlines(c):
         else:
             add(**ins, basis="earliest", of=[{"basis": "after", "days": 30}, {"basis": "before", "days": 10}],
                 default="Insurance date blank: used the rider default, the earlier of 30 days after the Effective Date "
-                        "or 10 days before Closing")
+                        "or 10 days before Closing", default_topic="insurance date")
     rider_rows(c, has, add)
     # Association document rights are the buyer's, run from receipt, and end at closing (CR-7x A, CR-7 B).
     if (c.get("hoa") or has("B")) and not c.get("hoa_disclosure_before_contract"):
@@ -342,12 +361,17 @@ def frbar_deadlines(c):
             critical=True, contingency=True, action="Written association approval in hand",
             if_missed="The contract's approval contingency applies")
     title_days = c.get("title_evidence_days_before")
+    title_by = str(c.get("title_by") or "").strip().lower()
+    if title_by not in ("", "seller", "buyer"):
+        raise DealError(f"contract.title_by is {c['title_by']!r}: use \"seller\" or \"buyer\" (who designates the "
+                        "closing agent and obtains title evidence, Para. 9(c)).")
     add(key="title", label="Title Evidence Delivered", short="Title Evidence", basis="before",
         days=title_days if title_days is not None else (15 if financed else 5), source="Para. 9(c)",
-        party="Seller" if c.get("title_by", "seller") == "seller" else "Buyer", critical=False,
+        party="Buyer" if title_by == "buyer" else "Seller", critical=False,
         default=None if title_days is not None else
         f"Title evidence deadline blank: used the form default, {15 if financed else 5} days before closing"
         + ("" if financed else " (cash)"),
+        default_topic="title evidence",
         action="Title commitment delivered to the buyer", if_missed="Buyer may extend closing to review it")
     add(key="title_exam", label="Title Defect Notice", short="Title Defects", basis="event",
         received=c.get("title_commitment_received"), what="the title commitment", days=5, source="Standard A(ii)", party="Buyer", critical=True,
@@ -370,11 +394,22 @@ def frbar_deadlines(c):
             critical=True, action="Buyer receives and signs the Closing Disclosure at least 3 business days before closing",
             if_missed="Closing must move")
     add(key="walkthrough", label="Final Walk-Through", short="Walk-Through", basis="before", days=c.get("walkthrough_days_before", 1),
-        cap_at_closing=True, source="Para. 12(b)" if as_is else "As Is Rider (K), Para. 3" if rider == "K" else "Para. 12(e)",
+        cap_at_closing=True, no_time=True, source="Para. 12(b)" if as_is else "As Is Rider (K), Para. 3" if rider == "K" else "Para. 12(e)",
         party="Buyer", critical=False,
         action="Walk the property the day before closing or on closing day; confirm condition, repairs and included items",
         if_missed="Buyer loses the chance to verify condition")
+    if has("G"):  # Rider G Para. 5: every other period runs from the buyer's receipt of the short sale approval
+        for x in out:
+            if (x["key"] not in SHORT_SALE_PHASE1 and x["basis"] in ("after", "earliest")
+                    and not x.get("from_key") and not x.get("receipt_date")):
+                x["from_approval"] = True
     return out
+
+
+# Rider G Para. 5: the rows still counted from the Effective Date (Phase 1). Rider GG stays here too: its own words count
+# from the Effective Date, and analyze() adds an agent note that Para. 5 could be read otherwise.
+SHORT_SALE_PHASE1 = ("deposit", "short_sale_application", "short_sale_forms", "short_sale_approval", "short_sale_expires",
+                     "compensation_agreement", "compensation_cancel")
 
 
 def rider_rows(c, has, add):
@@ -398,18 +433,24 @@ def rider_rows(c, has, add):
             action="Buyer and seller sign what the association needs to waive or exercise its right of first refusal",
             if_missed="The association's review may not start")
     if has("G"):
-        add(key="short_sale_application", label="Seller Gets Short Sale Application", short="Short Sale Forms",
+        add(key="short_sale_application", label="Seller Gets Short Sale Application", short="Application Forms",
             basis="after", days=c.get("short_sale_application_days", 10), source="Short Sale Rider (G), Para. 2", party="Seller",
-            critical=False, action="Seller obtains the lender's short sale forms, then returns them completed within 5 days",
+            critical=False, action="Seller obtains the lender's short sale application forms",
             if_missed="Seller is in default of the rider")
-        add(key="short_sale_approval", label="Short Sale Approval Deadline", short="Short Sale Approval", basis="after",
+        add(key="short_sale_forms", label="Seller Returns Completed Short Sale Forms", short="Forms Returned",
+            basis="after", from_key="short_sale_application", days=5, source="Short Sale Rider (G), Para. 2", party="Seller",
+            critical=False, action="Seller completes and returns the lender's forms, then promptly sends any added documents",
+            if_missed="Seller is in default of the rider")
+        # Not a buyer contingency: after this date either party may cancel, so nothing the buyer relies on ends here.
+        add(key="short_sale_approval", label="Short Sale Approval Deadline", short="Short Sale Deadline", basis="after",
             days=c.get("short_sale_approval_days", 90), source="Short Sale Rider (G), Para. 4", party="Seller", critical=True,
-            contingency=True, action="Seller delivers the lender's written short sale approval",
+            action="Seller delivers the lender's written short sale approval",
             if_missed="Either party may cancel in writing; the deposit is refunded")
-        add(key="short_sale_expires", label="Contract Expires Without Approval", short="Contract Expires", basis="after",
-            from_key="short_sale_approval", days=30, source="Short Sale Rider (G), Para. 4", party="Both", critical=True,
-            action="The contract ends automatically if approval hasn't been delivered",
-            if_missed="The contract terminates and the deposit is refunded")
+        if not c.get("short_sale_approval_received"):  # once the approval is in, the contract can't expire for want of it
+            add(key="short_sale_expires", label="Contract Expires Without Approval", short="Contract Expires", basis="after",
+                from_key="short_sale_approval", days=30, source="Short Sale Rider (G), Para. 4", party="Both", critical=True,
+                action="The contract ends automatically if approval hasn't been delivered",
+                if_missed="The contract terminates and the deposit is refunded")
     if has("R"):
         add(key="rezoning", label="Rezoning Final Action Deadline", short="Rezoning", basis="date", date=c.get("rezoning_date"),
             date_rule="Date written in the rider", source="Rezoning Contingency Rider (R)", party="Buyer", critical=True,
@@ -564,9 +605,8 @@ def _override(value, rules):
         return _dt(value, _t(rules["end_time"])), ""
     d, extra = _d(value), rules["_extra_holidays"]
     if not dates.is_business_day(d, extra) and rules["weekend_holiday_rollover"] == "next_business_day":
-        why = dates.holiday_name(d, extra) or d.strftime("%A")
         nd = dates.next_business_day(d, extra)
-        return datetime.combine(nd, _t(rules["rollover_time"])), f"falls on a {why}: extended to {nd:%a %b %-d}"
+        return datetime.combine(nd, _t(rules["rollover_time"])), f"falls on {_on(d, nd, extra)}: extended to {nd:%a %b %-d}"
     return datetime.combine(d, _t(rules["end_time"])), ""
 
 
@@ -590,18 +630,25 @@ def compute(c, extra_deadlines, rules, frbar):
     eff, extra = _d(c["effective_date"]), rules["_extra_holidays"]
     overrides = c.get("date_overrides") or {}
     closing_dt = None  # the closing everything counts back from: an override, then the contract date, rolled forward
-    closing_note = ""
-    raw = overrides.get("closing") or c.get("closing_date")
+    closing_note, closing_rule = "", "Closing date in contract"
+    # Rider G: most periods, and the closing, count from the buyer's receipt of the short sale approval (Paras. 5, 6)
+    short_sale = frbar and "G" in cf.rider_codes(c.get("riders"))[0]
+    approval = _d(c.get("short_sale_approval_received")) if short_sale else None
+    ss_days = int(c.get("short_sale_closing_days") or 45)
+    raw = overrides.get("closing") or (None if short_sale else c.get("closing_date"))
+    if short_sale and not raw and approval:
+        raw = str(approval + timedelta(days=ss_days))
+        closing_rule = f"{_plural(ss_days, 'day')} after short sale approval (Rider G, Para. 6)"
     if raw:
         closing = _d(raw)
         if not dates.is_business_day(closing, extra) and rules.get("closing_rollover") \
                 and rules["weekend_holiday_rollover"] == "next_business_day":
-            why = dates.holiday_name(closing, extra) or closing.strftime("%A")
             rolled = dates.next_business_day(closing, extra)
-            closing_note = f"contract date {closing:%a %b %-d} is a {why}: closing extends to {rolled:%a %b %-d}"
+            closing_note = (f"closing date {closing:%a %b %-d} falls on {_on(closing, rolled, extra)}: "
+                            f"closing extends to {rolled:%a %b %-d}")
             closing = rolled
         elif not dates.is_business_day(closing, extra):
-            closing_note = (f"closing date falls on a {dates.holiday_name(closing, extra) or closing.strftime('%A')}: "
+            closing_note = (f"closing date falls on {_on(closing, closing, extra)}: "
                             "confirm the title company can close")
         t = str(raw)[11:16] if len(str(raw)) >= 16 else (c.get("closing_time") or rules["closing_time"])
         closing_dt = datetime.combine(closing, _t(t))
@@ -610,40 +657,71 @@ def compute(c, extra_deadlines, rules, frbar):
     items = (frbar_deadlines(c) if frbar else []) + [dict(x, contingency=x.get("contingency", False)) for x in extra_deadlines]
     if closing:
         items += closing_rows(c, frbar)
+    elif short_sale:  # the closing waits for the approval: shown as pending, never dated from the Effective Date
+        items += [dict(closing_rows(c, frbar)[0], basis="pending_closing")]
+    after_approval = "after short sale approval"
     rows, done = [], {}
     for x in items:
         r = dict(x)
         basis, days = x["basis"], x.get("days")
+        by_closing = x.get("time") == "closing"  # a custom row due by the closing time ("by Closing")
+        at = None if by_closing or not x.get("time") else _t(x["time"])
         if basis == "after" and x.get("from_key"):
             ref = done.get(x["from_key"])
-            if not ref or not ref["when"]:
+            if not ref:
                 continue
-            r["when"], r["note"] = forward(ref["when"].date(), int(days), rules, x.get("business", False), x.get("time"),
-                                           x.get("rollover"))
-            r["rule"] = f"{_plural(int(days), 'day')} after {ref['short']}"
+            if not ref["when"]:  # the row it counts from is still pending: so is this one
+                r["when"], r["rule"] = None, f"{_plural(int(days), 'day')} after {ref['short']}"
+                r["note"] = ref.get("note", "")
+            else:
+                r["when"], r["note"] = forward(ref["when"].date(), int(days), rules, x.get("business", False), x.get("time"),
+                                               x.get("rollover"))
+                r["rule"] = f"{_plural(int(days), 'day')} after {ref['short']}"
+        elif basis in ("after", "earliest") and x.get("from_approval") and not approval:
+            r["when"] = None
+            r["rule"] = (f"{_plural(int(days), 'day')} {after_approval}" if basis == "after" else
+                         "Earlier of " + " or ".join(
+                             f"{_plural(int(p['days']), 'day')} " + (after_approval if p["basis"] == "after" else "before Closing")
+                             for p in x["of"]))
+            r["note"] = "Starts when the buyer receives the short sale approval (Rider G, Para. 5)"
+        elif basis == "after" and x.get("from_approval"):
+            r["when"], r["note"] = forward(approval, int(days), rules, x.get("business", False), x.get("time"), x.get("rollover"))
+            r["rule"] = f"{_plural(int(days), 'day')} {after_approval} ({approval:%b %-d})"
+        elif basis == "pending_closing":
+            r["when"], r["rule"] = None, f"{_plural(ss_days, 'day')} {after_approval} (Rider G, Para. 6)"
+            r["note"] = "Set by the short sale approval date"
         elif basis == "after":
             start = _d(x.get("receipt_date")) or eff  # TL-15: a period that runs from someone's receipt
             r["when"], r["note"] = forward(start, int(days), rules, x.get("business", False), x.get("time"), x.get("rollover"))
             r["rule"] = (f"{_plural(int(days), 'day')} after " + (f"{x.get('what', 'receipt')} ({start:%b %-d})" if x.get("receipt_date")
                          else "Effective Date") + (" (business days)" if x.get("business") else ""))
         elif basis == "before" and not closing:
-            r["when"], r["rule"], r["note"] = None, f"{_plural(int(days), 'day')} before Closing", "Add the closing date and re-run"
+            r["when"], r["rule"] = None, f"{_plural(int(days), 'day')} before Closing"
+            r["note"] = "Waits for the closing date, set by the short sale approval" if short_sale else "Add the closing date and re-run"
         elif basis == "before":
-            r["when"], r["note"] = backward(closing, int(days), rules, x.get("business", False))
-            r["rule"] = f"{_plural(int(days), 'day')} before Closing" + (" (TRID business days)" if x.get("business") == "trid"
-                                                                       else " (business days)" if x.get("business") else "")
+            r["when"], r["note"] = backward(closing, int(days), rules, x.get("business", False),
+                                            closing_dt.time() if by_closing else at)
+            r["rule"] = ("By Closing" if by_closing and int(days) == 0 else
+                         f"{_plural(int(days), 'day')} before Closing" + (" (TRID business days)" if x.get("business") == "trid"
+                                                                         else " (business days)" if x.get("business") else ""))
         elif basis == "date" and not x.get("date"):  # a date blank with no form default (Riders R, V, W, Y, Z)
             r["when"], r["rule"] = None, x.get("blank_rule", "Date written in the rider")
             r["note"] = x.get("blank_note", "The date is blank: ask the agent for it and re-run")
         elif basis == "date":
             r["when"], r["note"] = _override(x["date"], rules)
+            if by_closing and closing_dt:
+                r["when"] = datetime.combine(r["when"].date(), closing_dt.time())
+            elif at:
+                r["when"] = datetime.combine(r["when"].date(), at)
             r["rule"] = x.get("date_rule", "Specific date in contract")
         elif basis == "earliest":  # the earlier of several periods (Rider H: 30 days after Effective Date or 10 before Closing)
             opts = []
             for part in x["of"]:
                 if part["basis"] == "after":
-                    when, note = forward(eff, int(part["days"]), rules)
-                    opts.append((when, note, f"{_plural(int(part['days']), 'day')} after Effective Date"))
+                    start = approval if x.get("from_approval") else eff
+                    when, note = forward(start, int(part["days"]), rules)
+                    opts.append((when, note, f"{_plural(int(part['days']), 'day')} "
+                                 + (after_approval if x.get("from_approval") else "after Effective Date")))
                 elif closing:
                     when, note = backward(closing, int(part["days"]), rules)
                     opts.append((when, note, f"{_plural(int(part['days']), 'day')} before Closing"))
@@ -654,12 +732,13 @@ def compute(c, extra_deadlines, rules, frbar):
                 r["when"], r["note"] = forward(closing, int(days), rules)
                 r["rule"] = f"{_plural(int(days), 'day')} after Closing"
             else:
-                r["when"], r["rule"], r["note"] = None, f"{_plural(int(days), 'day')} after Closing", "Add the closing date and re-run"
+                r["when"], r["rule"] = None, f"{_plural(int(days), 'day')} after Closing"
+                r["note"] = "Waits for the closing date, set by the short sale approval" if short_sale else "Add the closing date and re-run"
         elif basis == "closing":
-            r["when"], r["rule"], r["note"] = closing_dt, "Closing date in contract", closing_note
+            r["when"], r["rule"], r["note"] = closing_dt, closing_rule, closing_note
         elif basis == "possession":
             pd = _d(c.get("possession_date")) or closing
-            r["when"] = datetime.combine(pd, _t(c.get("possession_time") or "17:00"))
+            r["when"] = datetime.combine(pd, _t(c.get("possession_time") or "17:00")) if pd else None
             r["rule"], r["note"] = ("At closing" if pd == closing else "Per occupancy agreement"), ""
         elif basis == "event":
             received = _d(x.get("received"))
@@ -682,21 +761,72 @@ def compute(c, extra_deadlines, rules, frbar):
             r["note"] = "; ".join(n for n in (r.get("note"), "the right ends at closing") if n)
         if x.get("default"):
             r["default"] = x["default"]
+        r["by_closing"] = bool(by_closing and r["when"] and closing_dt and r["when"].date() == closing_dt.date())
         rows.append(r)
         done[x["key"]] = r
-    rows.sort(key=lambda r: (r["when"] is None, r["when"] or datetime.max))
+    # the closing sorts after anything due "by Closing" at the same time
+    rows.sort(key=lambda r: (r["when"] is None, r["when"] or datetime.max, r["key"] == "closing"))
     return rows
 
 
 def _fmt(dt, rules, with_time=True):
     if dt is None:
-        return "On event"
+        return "Pending"
     if not with_time:
         return f"{dt:%a %b %-d}"
     t = "11:59 PM" if dt.time() == time(23, 59) else f"{dt:%-I:%M %p}"
     zone = rules.get("_tz")
     suffix = f" {zone}" if zone and zone != rules.get("time_zone", zone) else ""  # only when it differs from the usual
     return f"{dt:%a %b %-d} · {t}{suffix}"
+
+
+def _row_display(r, when, rules, closing_dt):
+    """A deadline's date and time. An event rather than a deadline (the walk-through) shows its date only, or "before
+    Closing" on closing day; a row due by the closing time shows "by Closing"."""
+    if when is None:
+        return _fmt(None, rules)
+    on_closing_day = bool(closing_dt) and when.date() == closing_dt.date()
+    if r.get("no_time"):
+        return f"{when:%a %b %-d}" + (" · before Closing" if on_closing_day else "")
+    if r.get("by_closing") and on_closing_day:
+        return f"{when:%a %b %-d} · by Closing"
+    return _fmt(when, rules)
+
+
+def _completed(deal, keys):
+    """{key: date}: deadlines already met (an escrow receipt shows the deposit in). An unknown key is a plain error."""
+    done = deal.get("completed") or {}
+    if not isinstance(done, dict):
+        raise DealError('completed is a map of deadline key to the date it was done: {"deposit": "2026-09-26"}.')
+    bad = [k for k in done if k not in keys]
+    if bad:
+        raise DealError(f"completed names {', '.join(map(repr, bad))}, not a deadline in this timeline. Use one of: "
+                        + ", ".join(sorted(keys)) + ".")
+    out = {}
+    for k, v in done.items():
+        try:
+            out[k] = _d(v)
+        except ValueError:
+            raise DealError(f"completed.{k} is {v!r}: use the date it was done, YYYY-MM-DD.") from None
+        if not out[k]:
+            raise DealError(f"completed.{k} needs the date it was done, YYYY-MM-DD.")
+    return out
+
+
+def _norm(text):
+    return re.sub(r"\W+", " ", str(text).lower()).strip()
+
+
+def _dedupe_notes(agent_given, script_notes, topics):
+    """The agent's notes plus the script's, without saying the same thing twice. A script note replaces an agent note
+    on the same default (same topic words and "default"), since the script's is exact."""
+    kept = [n for n in agent_given
+            if not any(t in _norm(n) and "default" in _norm(n) for t in topics)]
+    out = []
+    for n in kept + script_notes:
+        if _norm(n) not in {_norm(x) for x in out}:
+            out.append(n)
+    return out
 
 
 def _check_riders(contract):
@@ -738,36 +868,47 @@ def analyze(deal, side=None):
     was = {r["key"]: r["when"] for r in original}
     eff = _d(current_contract["effective_date"])
 
+    closing_dt = next((r["when"] for r in current if r["key"] == "closing" and r["when"]), None)
+    completed = _completed(deal, {r["key"] for r in current})
+    if _d(current_contract.get("short_sale_approval_received")) and "short_sale_approval" in {r["key"] for r in current}:
+        completed.setdefault("short_sale_approval", _d(current_contract["short_sale_approval_received"]))
     rows = []
     for r in current:
         moved = was.get(r["key"]) if was.get(r["key"]) != r["when"] else None
+        done_on = completed.get(r["key"])
         rows.append({
             "key": r["key"], "label": r["label"], "short": r.get("short") or r["label"], "party": r["party"],
             "critical": bool(r.get("critical")), "contingency": bool(r.get("contingency")),
             "when": r["when"].strftime("%Y-%m-%d %H:%M") if r["when"] else None,
-            "display": _fmt(r["when"], rules), "date_display": _fmt(r["when"], rules, False),
+            "display": _row_display(r, r["when"], rules, closing_dt), "date_display": _fmt(r["when"], rules, False),
             "day": (r["when"].date() - eff).days if r["when"] else None,
             "rule": r["rule"], "note": r.get("note", ""), "source": r.get("source", ""),
             "action": r.get("action", ""), "if_missed": r.get("if_missed", ""),
-            "was": _fmt(moved, rules) if moved else None,
+            "was": _row_display(r, moved, rules, closing_dt) if moved else None,
+            "done": bool(done_on), "done_display": f"Done {done_on:%b %-d}" if done_on else None,
+            "waits_on_approval": bool(r.get("from_approval") and not r["when"]),
+            "no_time": bool(r.get("no_time")), "by_closing": bool(r.get("by_closing")),
         })
 
     side = (side or deal.get("side") or "buyer").lower()
     dated = [r for r in rows if r["when"]]
-    closing_row = next((r for r in rows if r["key"] == "closing"), None)  # None: a quick question without a closing date
+    closing_row = next((r for r in dated if r["key"] == "closing"), None)  # None: no closing date yet
     contingent = [r for r in dated if r["contingency"]]
-    firm = max(contingent, key=lambda r: r["when"]) if contingent else None
+    # Rider G before the approval: the buyer's contingencies haven't started, so none of the dated ones is "the end"
+    waiting = [r for r in rows if r["waits_on_approval"] and r["contingency"]]
+    firm = max(contingent, key=lambda r: r["when"]) if contingent and not waiting else None
     names = {r["key"]: r["label"] for r in rows}
     # TL-14: rights that outlast the main contingencies (association documents, title and survey notices, FHA/VA)
     open_rights = [r["short"] for r in rows if r["key"] in OPEN_RIGHT_KEYS
                    and (r["when"] is None or not firm or r["when"] > firm["when"])]
     if current_contract.get("financing") in ("fha", "va"):
         open_rights.append("FHA/VA appraisal clause (to closing)")
-    first = next((r for r in dated if r["party"] != "Both"), None)
+    # The first thing the client's side must act on: its own rows and the ones both sides owe (a compensation agreement).
+    first = next((r for r in dated if r["party"].lower() in (side, "both") and not r["done"]), None)
 
     # flags print on the report as "Check:" lines; agent_notes stay in chat (defaults used, assumptions to confirm)
     flags = list(deal.get("flags") or [])
-    agent_notes = list(deal.get("agent_notes") or [])
+    agent_notes = []  # the script's own; the agent's are merged in at the end without repeats
     sup = cf.support([current_contract["contract_form"] if frbar else cf.OTHER],
                      [(current_contract["contract_form"], current_contract.get("form_revision"))] if frbar else [])
     agent_notes += [n for n in sup["chat_notes"] if n not in agent_notes]  # chat only, never on the PDF
@@ -779,6 +920,15 @@ def analyze(deal, side=None):
         flags.append("FHA/VA rider: the buyer isn't obligated to close if the appraisal comes in below the price, and that "
                      "protection runs to closing. The buyer's choice to go ahead anyway is due within 3 days after receiving "
                      "the appraisal")
+    if str(current_contract.get("association_approval")).lower() == "unknown":  # the rider's "is / is not" box left blank
+        flags.append("The rider's association approval box is blank: these dates assume approval is required. Confirm with "
+                     "the association")
+        agent_notes.append("Association approval box blank on the rider (no default): assumed required; ask the listing agent "
+                           "or the association")
+    exp = current_contract.get("preapproval_expires")
+    if exp and closing_row and _d(exp) < _d(closing_row["when"]):
+        agent_notes.append(f"The buyer's pre-approval expires {_date_text(exp)}, before closing: ask the lender to extend or "
+                           "update it")
     approval = next((r for r in dated if r["key"] == "loan_approval"), None)
     if closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]):
         flags.append("Loan approval period ends after closing: extend closing or shorten the loan approval period in writing")
@@ -789,12 +939,34 @@ def analyze(deal, side=None):
         if late:
             flags.append(", ".join(late) + " ends after closing: amend the dates in writing")
     agent_notes += [r["default"] for r in current if r.get("default")]
+    short_sale = frbar and "G" in cf.rider_codes(current_contract.get("riders"))[0]
+    approval = _d(current_contract.get("short_sale_approval_received")) if short_sale else None
+    if short_sale:
+        if current_contract.get("closing_date") and not (current_contract.get("date_overrides") or {}).get("closing"):
+            agent_notes.append(f"Para. 4 closing date ({_date_text(current_contract['closing_date'])}) is replaced by the "
+                               "short sale rider: closing is "
+                               f"{_plural(int(current_contract.get('short_sale_closing_days') or 45), 'day')} after the "
+                               "buyer receives the approval (Rider G, Para. 6)")
+        if not approval:
+            agent_notes.append("Short sale approval not received yet: every period except the deposit and the short sale "
+                               "rows waits for it (Rider G, Para. 5). Record short_sale_approval_received when it arrives "
+                               "and re-run")
+        if "GG" in cf.rider_codes(current_contract.get("riders"))[0]:
+            agent_notes.append("Rider GG is counted from the Effective Date, as its own words say; Rider G Para. 5 "
+                               "(all other periods run from the approval) could be read to move it. Confirm which reading the parties use")
     if not closing_row:
-        agent_notes.append("No closing date given: dates counted back from closing are left out")
+        if not short_sale:
+            agent_notes.append("No closing date given: dates counted back from closing are left out")
     elif not current_contract.get("closing_time"):
         agent_notes.append(f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
+    if frbar and not current_contract.get("title_by"):
+        agent_notes.append("Who designates the closing agent (Para. 9(c)) isn't recorded: the title evidence row shows "
+                           "the seller. Set title_by and re-run if the buyer designates")
     agent_notes += [n for n in market.notes if "MLS" not in n and "transfer tax" not in n  # costs don't matter here
                     and not (deal.get("rules") and n.startswith("Nothing is built in for"))]  # the contract's rules are given
+    topics = [r["default_topic"] for r in current if r.get("default") and r.get("default_topic")]
+    topics += ["closing time"] if closing_row and not current_contract.get("closing_time") else []
+    agent_notes = _dedupe_notes(list(deal.get("agent_notes") or []), agent_notes, topics)
 
     return {
         "ok": True,
@@ -816,10 +988,14 @@ def analyze(deal, side=None):
         "length_days": closing_row["day"] if closing_row else None,
         "moved": [{"label": r["label"], "now": r["display"], "was": r["was"]} for r in rows if r["was"]],
         "contingencies_end": firm,
+        "contingencies_waiting": [r["short"] for r in waiting],
+        "short_sale": ({"approval_received": f"{approval:%b %-d, %Y}" if approval else None,
+                        "closing_days": int(current_contract.get("short_sale_closing_days") or 45)} if short_sale else None),
         "open_rights": open_rights,
         "first_deadline": first,
+        "report_date": _report_date(deal.get("report_date")),
         "rows": dated,
-        "pending": [r for r in rows if not r["when"]],
+        "pending": _pending_order([r for r in rows if not r["when"]], {r["key"]: r for r in current}),
         "history": [{**h, "date_display": _date_text(h.get("date")), "summary": "; ".join(
             [f"{k.replace('_', ' ')}: {_was(k, h['before'].get(k), frbar)} → {_value_text(v)}" for k, v in h["changes"].items()] +
             [f"{names.get(k, k.replace('_', ' '))} → {_value_text(v)}" for k, v in h["date_overrides"].items()])}
@@ -832,6 +1008,26 @@ def analyze(deal, side=None):
             "lines": rules_text(rules, eff),
         },
     }
+
+
+def _pending_order(pending, src):
+    """Rows without a date: those counted from an event first (in contract order), then the ones counted back from
+    closing (farthest first), the closing, and anything after it."""
+    def key(ir):
+        i, r = ir
+        x = src[r["key"]]
+        group = {"before": 2, "pending_closing": 3, "closing": 3, "after_closing": 4}.get(x["basis"], 0)
+        return (group, -int(x.get("days") or 0) if group == 2 else i)
+    return [r for _, r in sorted(enumerate(pending), key=key)]
+
+
+def _report_date(v):
+    """The "Prepared" date: the deal file's report_date (YYYY-MM-DD) when set, else today."""
+    try:
+        d = _d(v) or date.today()
+    except ValueError:
+        raise DealError(f"report_date is {v!r}: use YYYY-MM-DD.") from None
+    return {"date": str(d), "long": f"{d:%B %-d, %Y}"}
 
 
 def rules_text(rules, eff):

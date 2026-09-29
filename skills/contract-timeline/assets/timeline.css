@@ -18,3 +18,10 @@ tr.mine td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .pb.flow{break-before:auto}
 .det thead{display:table-header-group}
 .det tr{break-inside:avoid}
+
+/* strip labels keep a white halo so a leader line passing behind never runs through the text */
+.strip .lbl{paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+/* deadlines already met read as done; rows waiting on an event show their rule in the date column */
+tr.done td{color:var(--muted)}
+tr.done td:first-child b{font-weight:600}
+tr.pend td:first-child{white-space:normal}
