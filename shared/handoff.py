@@ -91,7 +91,7 @@ def load(path):
 
 
 def filename(address, side=None):
-    """'517 Hickorywood Ave', 'buyer' -> '517-Hickorywood-Ave.buyer.cma.json'. The side keeps a buyer and a seller CMA
+    """'1438 Buttonbush Dr', 'buyer' -> '1438-Buttonbush-Dr.buyer.cma.json'. The side keeps a buyer and a seller CMA
     of the same address from overwriting each other (CMA-17)."""
     slug = re.sub(r"[^A-Za-z0-9]+", "-", address).strip("-")
     return f"{slug or 'property'}{'.' + side if side else ''}.cma.json"

@@ -3,39 +3,39 @@
  "as_of": "2026-09-22",
  "export": "export.csv",
  "subject": {
-  "address": "517 Hickorywood Ave",
-  "mls_address": "517 HICKORYWOOD AVE",
-  "city": "Altamonte Springs",
+  "address": "1438 Buttonbush Dr",
+  "mls_address": "1438 BUTTONBUSH DR",
+  "city": "Oviedo",
   "state": "FL",
   "county": "Seminole",
-  "locality": "Altamonte Springs, FL 32714 · Spring Oaks · Seminole County",
-  "sqft": 1849,
+  "locality": "Oviedo, FL 32765 · Cattail Crossing · Seminole County",
+  "sqft": 2214,
   "beds": 4,
-  "baths": 2,
-  "year_built": 1972,
+  "baths": 3,
+  "year_built": 1998,
   "pool": true,
   "hoa": false,
-  "subdivision": "SPRING OAKS",
+  "subdivision": "CATTAIL CROSSING",
   "facts": [
    [
     "Beds / Baths",
-    "4 / 2"
+    "4 / 3"
    ],
    [
     "Living Area",
-    "1,849 sq ft"
+    "2,214 sq ft"
    ],
    [
     "Lot",
-    "0.22 acre"
+    "0.26 acre"
    ],
    [
     "Built",
-    "1972, block"
+    "1998, block"
    ],
    [
     "Pool",
-    "Private, in-ground"
+    "Private, screened"
    ],
    [
     "Garage",
@@ -51,43 +51,43 @@
    ],
    [
     "Current Taxes",
-    "$2,731 a year"
+    "$5,212 a year"
    ],
    [
     "Recent Updates",
     "Kitchen, baths, floors, roof"
    ]
   ],
-  "summary": "A four-bedroom block pool home in Spring Oaks with a renovated kitchen (new cabinets, stone counters, stainless appliances), remodeled baths, new flooring, fresh paint, a new roof and water heater, and a resurfaced pool, as described by you. This analysis estimates what the home is worth in today's market, recommends a list price, and shows what each pricing choice is likely to net you.",
-  "summary_facts": "4 bed · 2 bath · 1,849 sq ft · pool · built 1972"
+  "summary": "A four-bedroom, three-bath block pool home in Cattail Crossing with a remodeled kitchen (new cabinets, quartz counters, stainless appliances), updated baths, new flooring, a new roof this summer, and a resurfaced pool, as described by you. This analysis estimates what the home is worth in today's market, recommends a list price, and shows what each pricing choice is likely to net you.",
+  "summary_facts": "4 bed · 3 bath · 2,214 sq ft · pool · built 1998"
  },
  "summary_page": {
   "label": "Seller Summary",
-  "expected_sale": "Low-to-mid $460,000s",
-  "headline": "Priced at the middle of what recent sales support, for the strongest first weeks on the market.",
+  "expected_sale": "Mid-to-upper $570,000s",
+  "headline": "Priced near the middle of what recent sales support, for the strongest first weeks on the market.",
   "key_stats": [
    [
     "{median_adjusted}",
     "Median of the Five Closest Sales, Adjusted to Your Home"
    ],
    [
-    "96.5%",
+    "96.2%",
     "Sale Price vs. Original Asking Price for Nearby Homes Since July"
    ],
    [
-    "18 days",
-    "Typical Time to Go Under Contract Now, Up from 9 in the Spring"
+    "21 days",
+    "Typical Time to Go Under Contract Now, Up from 10 in the Spring"
    ]
   ],
   "why": [
-   "The five closest Spring Oaks pool sales, adjusted to your home, center on about $469,800.",
-   "The market cooled since spring: homes now sell about 3.5% under asking, and eight in ten sellers help with buyer costs.",
-   "Well-priced renovated pool homes nearby are selling fast; overpriced ones are sitting."
+   "The five closest Cattail Crossing pool sales, adjusted to your home, center on about $581,400.",
+   "The market cooled since spring: homes now sell about 4% under asking, and three in four sellers help with buyer costs.",
+   "Well-priced renovated pool homes nearby are going under contract fast; overpriced ones are sitting."
   ],
   "first_steps": [
    [
-    "Document the Roof",
-    "Permit and date, ready for buyers and insurers"
+    "Document the New Roof",
+    "Permit, final inspection and warranty, ready to share"
    ],
    [
     "Pre-Listing Inspection",
@@ -101,54 +101,29 @@
   "next_step": "Review this plan together, sign the listing agreement, and go live in about three weeks."
  },
  "recommendation": {
-  "list_price": 469900,
-  "low": 455000,
-  "high": 480000,
-  "paragraph": "Recent sales of similar Spring Oaks pool homes, adjusted for their differences from yours, support a value of roughly $455,000 to $480,000. We recommend launching at $469,900, the middle of what those sales support. It leaves room for the negotiating that is normal right now, and it presents the home as fairly priced during its first few weeks on the market, when buyer attention is highest. The two sales that would support a higher price closed in the spring, when mortgage rates were lower and homes sold faster than they do now."
+  "list_price": 584900,
+  "low": 570000,
+  "high": 595000,
+  "paragraph": "Recent sales of similar Cattail Crossing pool homes, adjusted for their differences from yours, support a value of roughly $570,000 to $595,000. We recommend launching at $584,900, near the middle of what those sales support and just above their median. It leaves room for the negotiating that is normal right now, and it presents the home as fairly priced during its first few weeks on the market, when buyer attention is highest. The two sales that would support a higher price closed before July, when mortgage rates were lower and homes sold faster than they do now."
  },
  "means": [
-  "<strong>Expect to negotiate.</strong> Homes nearby that sold since July closed at about 96.5% of their original asking price, and eight in ten sellers paid part of the buyer's closing costs, typically about $10,000. A likely sale price at $469,900 is in the low-to-mid $460,000s.",
+  "<strong>Expect to negotiate.</strong> Homes nearby that sold since July closed at about 96.2% of their original asking price after seller-paid costs, and three in four sellers paid part of the buyer's closing costs, typically about $9,500. A likely sale price at $584,900 is in the mid-to-upper $570,000s.",
   "<strong>The first three weeks matter most.</strong> A new listing gets its biggest wave of showings right away. If it is priced where buyers expect, that wave turns into offers; if not, the home starts to look stale and the price cut comes later, from a weaker position.",
-  "<strong>Watch the appraisal.</strong> Only two Spring Oaks homes of similar size have sold above $480,000, both in the spring. A contract well above that level would risk a low appraisal and a renegotiation.",
-  "<strong>Documentation is worth money.</strong> Your updates are the reason this home can sell near the top of the neighborhood. Permits and dates for the roof and the renovation turn them from claims into value a buyer and an appraiser can rely on."
+  "<strong>Watch the appraisal.</strong> Only two similar pool homes nearby have sold above $595,000, both before July. A contract well above that level would risk a low appraisal and a renegotiation.",
+  "<strong>Documentation is worth money.</strong> Your updates are the reason this home can sell near the top of the neighborhood. The roof permit and final inspection, and permits for the remodel, turn them from claims into value a buyer and an appraiser can rely on."
  ],
  "comps": {
-  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Spring Oaks pool homes of about 1,800–1,900 square feet, built in the 1970s. Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
-  "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000–$45,000 for a home that hadn't been renovated to this level; $5,000–$10,000 for a noticeably larger or better lot; 1–2% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Cattail Crossing pool homes of about 2,200–2,300 square feet, built in the late 1990s. Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
+  "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000–$45,000 for a home that hadn't been updated to this level; $5,000 for documented recent systems your home can't yet match; $10,000 for a pond lot; about 1.5% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
   "cards": [
    {
-    "address": "622 Spring Oaks Blvd",
-    "sold_price": 505500,
+    "address": "1512 Buttonbush Dr",
+    "sold_price": 612000,
     "seller_concessions": 0,
     "adjustments": [
      {
       "label": "Size",
-      "amount": 1800
-     },
-     {
-      "label": "Larger Corner Lot",
-      "amount": -5000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -10000
-     }
-    ],
-    "meta": "Sold $505,500 · April 24, 2026 · 1,824 sq ft · 4/2 · pool · 0.29-acre corner lot · 0.2 mi",
-    "bullets": [
-     "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
-     "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more than yours: minus $5,000.",
-     "It sold in April, when rates were lower and homes were moving faster: minus about $10,000."
-    ]
-   },
-   {
-    "address": "516 Oakwood Ct",
-    "sold_price": 495000,
-    "seller_concessions": 0,
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1200
+      "amount": -2550
      },
      {
       "label": "Documented Recent Systems",
@@ -156,20 +131,45 @@
      },
      {
       "label": "Market Since the Sale",
-      "amount": -5000
+      "amount": -9000
      }
     ],
-    "meta": "Sold $495,000 · June 26, 2026 · 1,865 sq ft · 4/2 · pool · 1972 · 0.3 mi",
+    "meta": "Sold $612,000 · April 30, 2026 · 2,248 sq ft · 4/3 · pool · 0.24 acre · 0.1 mi",
     "bullets": [
-     "Same year and nearly the same size. Sold above asking in five days.",
-     "It came with a documented 2020 roof, AC, electrical, and windows. Until we have your records for the AC, electrical, and windows, it gets a small edge: minus $5,000.",
-     "Early summer sale: minus about $5,000 for the market since then."
+     "The highest recent sale for a home like yours: renovated in 2023 on your street, sold above asking in five days with no seller help.",
+     "Slightly larger: minus about $2,500. It came with a permitted 2023 AC; until we have your AC's date and records, it gets a small edge: minus $5,000.",
+     "It sold in April, when rates were lower and homes were moving faster: minus about $9,000."
     ]
    },
    {
-    "address": "745 Little Wekiva Cir",
-    "sold_price": 427000,
-    "seller_concessions": 500,
+    "address": "1377 Sedgefield Ct",
+    "sold_price": 598500,
+    "seller_concessions": 0,
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 1800
+     },
+     {
+      "label": "Pond Lot",
+      "amount": -10000
+     },
+     {
+      "label": "Market Since the Sale",
+      "amount": -4000
+     }
+    ],
+    "meta": "Sold $598,500 · June 19, 2026 · 2,190 sq ft · 4/3 · pool · 0.31-acre pond lot · 0.3 mi",
+    "bullets": [
+     "A renovated pool home that went under contract in eight days at nearly full price.",
+     "A bit smaller than yours: plus $1,800. It backs onto the pond on a larger lot, which buyers pay more for: minus $10,000.",
+     "Early summer sale: minus about $4,000 for the market since then."
+    ]
+   },
+   {
+    "address": "1455 Arrowroot Way",
+    "sold_price": 548000,
+    "seller_concessions": 8000,
     "adjustments": [
      {
       "label": "Renovation",
@@ -177,19 +177,19 @@
      },
      {
       "label": "Size",
-      "amount": -1700
+      "amount": -3600
      }
     ],
-    "meta": "Sold $427,000 · August 20, 2026 · 1,871 sq ft · 4/2 · pool · 0.5 mi",
+    "meta": "Sold $548,000 · August 27, 2026 · 2,262 sq ft · 4/3 · pool · 0.4 mi",
     "bullets": [
-     "The most recent pool-home sale in Spring Oaks. It was listed at $450,000 and took 60 days to sell.",
-     "Described as well maintained but not renovated. Adjusting up for the renovation your home has: plus $45,000."
+     "The most recent pool-home sale in Cattail Crossing. It was listed at $569,900, took 41 days, and the seller paid $8,000 of the buyer's costs.",
+     "Original kitchen and baths. Adjusting up for the remodel your home has: plus $45,000. Slightly larger: minus $3,600."
     ]
    },
    {
-    "address": "602 Mockingbird Ln",
-    "sold_price": 429000,
-    "seller_concessions": 12000,
+    "address": "1621 Sedgefield Ct",
+    "sold_price": 561000,
+    "seller_concessions": 11000,
     "adjustments": [
      {
       "label": "Partial Update vs. Full Renovation",
@@ -197,141 +197,133 @@
      },
      {
       "label": "Market Since the Sale",
-      "amount": -8600
+      "amount": -8400
      }
     ],
-    "meta": "Sold $429,000 · April 27, 2026 · 1,849 sq ft · 4/2 · pool · 0.1 mi",
+    "meta": "Sold $561,000 · May 15, 2026 · 2,214 sq ft · 4/3 · pool · 0.2 mi",
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
-     "The seller paid $12,000 of the buyer's costs, so the seller actually received about $417,000.",
-     "Partly updated (new appliances, stone counters) but not a full renovation: plus $30,000. Spring sale: minus about $8,600."
+     "The seller paid $11,000 of the buyer's costs, so the seller actually received $550,000.",
+     "Updated kitchen but original baths, not a full remodel: plus $30,000. Spring sale: minus about $8,400."
     ]
    },
    {
-    "address": "621 Little Wekiva Rd",
-    "sold_price": 465000,
-    "seller_concessions": 13071,
+    "address": "1340 Buttonbush Dr",
+    "sold_price": 589000,
+    "seller_concessions": 9500,
     "adjustments": [
      {
-      "label": "Larger Canal Lot",
-      "amount": -10000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -4500
-     },
-     {
       "label": "Size",
-      "amount": -1229
+      "amount": -6525
      }
     ],
-    "meta": "Sold $465,000 · June 18, 2026 · 1,865 sq ft · 4/2 · pool · 0.41-acre canal lot · 0.4 mi",
+    "meta": "Sold $589,000 · July 24, 2026 · 2,301 sq ft · 4/3 · pool · 0.2 mi",
     "bullets": [
-     "A renovated pool home with new windows. It was listed at $484,900 and sold for $465,000.",
-     "The seller paid about $13,000 of the buyer's costs, so the seller netted about $452,000.",
-     "It sits on nearly twice the land, backing onto a canal: minus $10,000. Early summer sale: minus about $4,500."
+     "Renovated in 2021 on your street. It was listed at $599,900 and sold in 18 days.",
+     "The seller paid $9,500 of the buyer's costs, so the seller netted $579,500.",
+     "About 90 square feet larger than yours: minus about $6,500. A summer sale, so no market adjustment."
     ]
    }
   ],
-  "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. The two highest are the closest matches to your home's condition but sold in a stronger spring market; the two lowest needed the largest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
+  "summary_paragraph": "The adjusted values run from about $572,000 to $595,000, with a median of $581,400. The two highest are strong matches to your home's condition but sold before July, in a stronger market; the summer sales sit lower. Other Cattail Crossing sales support the same picture: 1409 Arrowroot Way (updated, pool) sold for $566,000 in May, and 1586 Buttonbush Dr (renovated, no pool) sold for $552,000 in June."
  },
  "scatter": {
   "heading": "Where Your Home Fits in the Neighborhood",
-  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. The renovated comparable sales sit well above the dashed line, and at the recommended price your home sits among them, below the two spring sales at the top.",
+  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price. The renovated comparable sales sit above the dashed line, and at the recommended price your home sits among them, below the two sales from before July at the top.",
   "subject_label": "Your Home",
   "subject_label_pos": "right",
   "callouts": [
    {
-    "address": "622 SPRING OAKS BLVD",
-    "label": "622 Spring Oaks Blvd",
+    "address": "1512 BUTTONBUSH DR",
+    "label": "1512 Buttonbush Dr",
     "side": "left"
    },
    {
-    "address": "644 PEACHWOOD DR",
-    "label": "644 Peachwood (For Sale)",
+    "address": "1471 SEDGEFIELD CT",
+    "label": "1471 Sedgefield (For Sale)",
     "side": "right"
    }
   ]
  },
  "competition": {
-  "intro": "These homes are for sale or just went under contract nearby. A buyer touring yours will likely see several of them. The ones that matter most: 644 Peachwood is renovated and the same size, without a pool, at $400,000; and 412 Majorca, a renovated pool home at $454,900, went under contract in nine days.",
+  "intro": "These homes are for sale or just went under contract nearby. A buyer touring yours will likely see several of them. The ones that matter most: 1471 Sedgefield is updated and the same size, without a pool, at $529,900; and 1365 Sedgefield, a renovated pool home at $574,900, went under contract in 11 days.",
   "rows": [
    [
-    "644 Peachwood Dr",
+    "1471 Sedgefield Ct",
     "For sale",
-    400000,
-    1849,
+    529900,
+    2236,
     "No",
-    91,
-    "Fully renovated, same size, 2.5 baths. Cut from $449,900. Even adding about $25,000 for a pool, it's a strong alternative."
+    76,
+    "Updated kitchen, same size, no pool. Cut from $564,900. Even adding about $25,000 for a pool, it's priced well below yours."
    ],
    [
-    "394 Barberry Ln",
+    "1603 Arrowroot Way",
     "For sale",
+    649000,
+    2410,
+    "Yes",
+    48,
+    "Larger and renovated, 2024 roof and solar. Not selling at this level."
+   ],
+   [
+    "1288 Bluestem Ln",
+    "For sale",
+    574900,
+    2520,
+    "Yes",
+    187,
+    "Larger but dated. Cut from $615,000 and still sitting."
+   ],
+   [
+    "1519 Arrowroot Way",
+    "For sale",
+    559000,
+    2180,
+    "Yes",
+    34,
+    "Same size, original kitchen and baths. Buyers who want a finished home will compare it with yours."
+   ],
+   [
+    "1702 Bluestem Ln",
+    "For sale",
+    599000,
+    2390,
+    "No",
+    55,
+    "Remodeled 2022, larger lot, no pool."
+   ],
+   [
+    "1365 Sedgefield Ct",
+    "Under contract",
+    574900,
+    2160,
+    "Yes",
+    11,
+    "Renovated and went under contract in 11 days. A renovated pool home priced in the $570s moves fast."
+   ],
+   [
+    "912 Canebrake Rd",
+    "Under contract",
     565000,
-    1943,
+    2050,
     "Yes",
-    57,
-    "Updated, new roof and windows, solar. Not selling at this level."
+    16,
+    "Updated, older roof, 0.8 mi."
    ],
    [
-    "626 Orchid Ln",
-    "For sale",
-    470000,
-    2400,
-    "Yes",
-    302,
-    "Larger but dated. Cut from $499,000; motivated seller."
-   ],
-   [
-    "656 Little Wekiva Rd",
-    "For sale",
-    449000,
-    2400,
-    "Yes",
-    51,
-    "5 bedrooms, light fixer, tri-level."
-   ],
-   [
-    "513 Oakcrest St",
-    "For sale",
-    490000,
-    2400,
-    "No",
-    63,
-    "Remodeled 2017, replumbed and rewired."
-   ],
-   [
-    "412 Majorca Ave",
-    "Under contract",
-    454900,
-    1458,
-    "Yes",
-    9,
-    "Renovated and went under contract in 9 days. A renovated pool home priced in the $450s moves fast."
-   ],
-   [
-    "400 W Orange St",
-    "Under contract",
-    449000,
-    1682,
-    "Yes",
-    14,
-    "Dated, large lot, 0.7 mi."
-   ],
-   [
-    "621 Ashberry Ln",
+    "1426 Buttonbush Dr",
     "Expired",
-    389999,
-    1849,
+    549900,
+    2214,
     "No",
-    114,
-    "Same size in Spring Oaks. Started at $425,000 and never sold."
+    128,
+    "Same floor plan on your street, no pool. Started at $584,900 and never sold."
    ]
   ]
  },
  "market": {
-  "intro": "We looked at 35 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
+  "intro": "We looked at 38 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
   "columns": [
    "",
    "April – June",
@@ -340,33 +332,33 @@
   "rows": [
    [
     "Homes Sold",
-    "25",
-    "10"
+    "26",
+    "12"
    ],
    [
     "Typical Sale vs. Original Asking Price",
-    "100%",
-    "96.5%"
+    "99.0%",
+    "96.2%"
    ],
    [
     "Typical Days to Go Under Contract",
-    "9",
-    "18"
+    "10",
+    "21"
    ],
    [
     "Sales with Seller-Paid Buyer Costs",
-    "56%",
-    "80%"
+    "54%",
+    "75%"
    ],
    [
     "Typical Seller-Paid Amount",
-    "$8,600",
-    "$10,300"
+    "$8,000",
+    "$9,500"
    ]
   ],
   "bullets": [
-   "<strong>Buyers are negotiating again.</strong> Since July, homes nearby sold for about 3.5% under their original asking price and took about twice as long to go under contract as in the spring.",
-   "<strong>Inventory is balanced.</strong> There are 14 other homes for sale nearby, about three and a half months of supply at the summer pace, and more than half have already cut their price.",
+   "<strong>Buyers are negotiating again.</strong> Since July, homes nearby sold for about 4% under their original asking price after seller-paid costs and took about twice as long to go under contract as in the spring.",
+   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about three months of supply at the summer pace, and two in three have already cut their price.",
    "<strong>Mortgage rates are up.</strong> The 30-year average was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. Buyers' budgets stretch less than they did in April.",
    "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in the next few weeks gives the home its best window before the holidays."
   ]
@@ -376,67 +368,67 @@
   "recommended_index": 1,
   "strategies": [
    {
-    "label": "List at $479,900",
-    "list_price": 479900,
-    "expected_sale": 463000,
+    "label": "List at $594,900",
+    "list_price": 594900,
+    "expected_sale": 574000,
     "time": "45–90 days",
     "seller_credit": 10000,
     "note": "Tests the top of the range; likely needs a price cut before an offer"
    },
    {
-    "label": "List at $469,900",
-    "list_price": 469900,
-    "expected_sale": 462000,
+    "label": "List at $584,900",
+    "list_price": 584900,
+    "expected_sale": 575000,
     "time": "3–6 weeks",
     "seller_credit": 10000,
-    "note": "Priced at the middle of recent adjusted sales; room to negotiate"
+    "note": "Priced near the middle of recent adjusted sales; room to negotiate"
    },
    {
-    "label": "List at $459,900",
-    "list_price": 459900,
-    "expected_sale": 460000,
+    "label": "List at $574,900",
+    "list_price": 574900,
+    "expected_sale": 572000,
     "time": "1–3 weeks",
     "seller_credit": 5000,
     "note": "Aims for competing offers; depends on them materializing"
    }
   ],
-  "note": "The $459,900 option assumes a smaller seller credit ($5,000) because competing offers usually ask for less help; if they don't materialize, its net falls to about the others' level or below.",
+  "note": "The $574,900 option assumes a smaller seller credit ($5,000) because competing offers usually ask for less help; if they don't materialize, its net falls to about the others' level or below.",
   "net_intro": "What each option is likely to leave you after the costs a Florida seller typically pays at closing.",
-  "net_note": "Not included: your mortgage payoff, your share of this year's property taxes (about $228 for each month of the year before closing, credited to the buyer), and any repairs agreed after inspection. While the home is on the market you keep paying the mortgage, taxes, insurance, and utilities, which is the real cost of a slower strategy."
+  "net_note": "Not included: your mortgage payoff, your share of this year's property taxes (about $434 for each month of the year before closing, credited to the buyer), and any repairs agreed after inspection. While the home is on the market you keep paying the mortgage, taxes, insurance, and utilities, which is the real cost of a slower strategy."
  },
  "costs": {},
  "buyer_payment": {
   "rate": 6.95,
   "loan_type": "conventional",
   "down_pct": 0.05,
-  "insurance_annual": 3600,
-  "district": "Altamonte Springs",
+  "insurance_annual": 4200,
+  "district": "Oviedo",
   "homestead": true,
-  "note": "Conventional loan, 5% down, 6.95% 30-year fixed (Freddie Mac average, week of September 17, 2026), Altamonte Springs property taxes with homestead, $3,600 a year insurance (placeholder), and 0.5% mortgage insurance."
+  "note": "Conventional loan, 5% down, 6.95% 30-year fixed (Freddie Mac average, week of September 17, 2026), City of Oviedo property taxes with homestead, $4,200 a year insurance (placeholder), and 0.5% mortgage insurance."
  },
  "prep": {
   "intro": "These steps cost little and remove the questions that slow Florida buyers down or cost sellers money at the negotiating table.",
   "items": [
-   "<strong>Document the roof.</strong> Have the permit and completion date ready to share. Roof age decides whether a buyer can insure the home, so a documented new roof is one of the most valuable facts in the listing.",
-   "<strong>Get a pre-listing inspection, 4-point, and wind-mitigation report.</strong> Buyers can get insurance quotes before they offer, and you learn about any issue before a buyer uses it to renegotiate.",
-   "<strong>Gather the renovation permits.</strong> Kitchen, bath, electrical, and plumbing work. Unpermitted work can surface during the buyer's due diligence and delay or derail a sale.",
-   "<strong>Check the public record.</strong> Make sure the property appraiser's record matches the four bedrooms and two baths we will advertise.",
+   "<strong>Document the new roof.</strong> Have the permit, final inspection, and any roofer's warranty ready to share. Roof age decides whether a buyer can insure the home, so a documented new roof is one of the most valuable facts in the listing.",
+   "<strong>Get a pre-listing inspection, 4-point, and wind-mitigation report.</strong> Buyers can get insurance quotes before they offer, and you learn about any issue before a buyer uses it to renegotiate. A new roof usually earns new wind-mitigation credits.",
+   "<strong>Gather the remodel permits.</strong> Kitchen, bath, electrical, and plumbing work. Unpermitted work can surface during the buyer's due diligence and delay or derail a sale.",
+   "<strong>Check the public record.</strong> Make sure the property appraiser's record matches the four bedrooms and three full baths we will advertise.",
    "<strong>Make it easy to show.</strong> Lockbox access through the standard showing system with short notice gets the most buyers through in the first weeks.",
    "<strong>Decide on a seller-credit budget now.</strong> Most recent sales included one. A credit toward a temporary rate buydown lowers a buyer's payment far more in the first years than the same amount off the price.",
    "<strong>Agree on a review point.</strong> If there are steady showings but no offer after about three weeks, we revisit the price with fresh data rather than waiting."
   ]
  },
  "needs": [
-  "The roof permit and replacement date, plus any existing 4-point or wind-mitigation report.",
-  "The age of the AC, water heater, and pool equipment, and the dates of the kitchen, bath, and flooring work.",
-  "The electrical panel brand, whether the home has aluminum branch wiring, and whether the plumbing has been updated. Both are common questions for homes built in the early 1970s.",
-  "Copies of any permits for the renovation work.",
+  "The roof permit, final inspection, and replacement date, plus any roofer's warranty and wind-mitigation report.",
+  "The age of the AC, water heater, and pool equipment, and the dates of the kitchen, bath, flooring, and pool resurfacing work.",
+  "Any wind-mitigation features added since 1998, such as impact windows or storm shutters. They lower a buyer's insurance quote.",
+  "Copies of any permits for the remodel work.",
   "Anything you know that affects the home's value or condition, such as past leaks, insurance claims, or repairs. Florida law requires sellers to disclose known material defects.",
   "Your estimated mortgage payoff, so we can turn the net estimates into cash at closing.",
   "When you would like to close, and whether the home will be occupied or vacant during showings."
  ],
  "method": [
-  "This analysis uses the property details and current tax bill you provided; a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 17, 2026, plus current active, pending, and expired listings); and the Freddie Mac weekly mortgage rate survey for September 17, 2026. Florida documentary stamp tax and owner's title insurance are calculated at the state's standard rates.",
+  "This analysis uses the property details and current tax bill you provided; a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 15, 2026, plus current active, pending, and expired listings); and the Freddie Mac weekly mortgage rate survey for September 17, 2026. Florida documentary stamp tax and owner's title insurance are calculated at the state's standard rates.",
   "This is a broker's opinion of value based on comparable sales. It is not an appraisal. Expected sale prices, timelines, costs, and net proceeds are estimates for planning, not guarantees; your closing agent will provide exact figures. Condition adjustments are based on listing descriptions of the comparable homes and on the updates you described, and will be refined once we see your records. Market conditions change, so this analysis should be refreshed if the home is not listed within a few weeks."
  ]
 }

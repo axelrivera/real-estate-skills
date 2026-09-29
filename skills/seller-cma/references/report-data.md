@@ -27,7 +27,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 
 | Field | Notes |
 |---|---|
-| `address` | Display form ("517 Hickorywood Ave") |
+| `address` | Display form ("1438 Buttonbush Dr") |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. Needed in Miami-Dade, where every type but single-family owes the 0.45% deed surtax |
 | `mls_address` | Exactly as in the export's address column. Every row with it is left out of stats, chart and deck |
 | `city`, `state`, `county` | `state` and `county` pick the market's closing costs, tax rules, millage and MLS format |

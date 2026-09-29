@@ -24,7 +24,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 | Field | Notes |
 |---|---|
-| `address` | Display form ("517 Hickorywood Ave") |
+| `address` | Display form ("1438 Buttonbush Dr") |
 | `mls_address` | Exactly as in the export's address column |
 | `city`, `state`, `county` | `state` and `county` pick the market's tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County · MLS #". Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |

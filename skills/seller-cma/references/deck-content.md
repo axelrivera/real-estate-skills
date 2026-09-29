@@ -26,7 +26,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 
 | Field | Format |
 |---|---|
-| `title`, `subtitle` | "Pricing 517 Hickorywood Ave"; "Listing Presentation · City, Subdivision" (Title Case) |
+| `title`, `subtitle` | "Pricing 1438 Buttonbush Dr"; "Listing Presentation · City, Subdivision" (Title Case) |
 | `recommendation_why` | One sentence, ≤ ~25 words |
 | `value_drivers` | 2–4 `[heading, one line, icon]`, headings in Title Case: the features the adjustments credit for this home |
 | `document_items` | 0–2 `[heading, one line, icon]`, headings in Title Case: upgrades this home has that need paperwork to count (a roof or permits the seller controls). None is fine: the box is left out |
