@@ -6,8 +6,8 @@
 plugin: dist/<name>-<version>.plugin from .claude-plugin/plugin.json, with plugin.json at the
 archive root (the desktop app's "Upload local plugin" format). The repo root is the plugin, so
 only PLUGIN_FILES go in; docs, dev tooling and shared/ stay out. Then the release zip,
-dist/<marketplace>-<version>.zip: the .plugin, dev/package/README.md (the agent guide) and
-every PDF in dev/package/ (the manual), in a <marketplace>-<version>/ folder, for sharing.
+dist/<marketplace>-<version>.zip: the .plugin, dev/package/README.md (the agent guide),
+every PDF in dev/package/ (the manual) and LICENSE, in a <marketplace>-<version>/ folder, for sharing.
 
 skills: one dist/skills/<skill>.zip per skill for claude.ai upload, and the runtime check in
 dist/dev/runtime-check.zip (a diagnostic, not uploaded with the skills).
@@ -85,12 +85,13 @@ def package_release(plugin, plugin_path):
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(plugin_path, f"{folder}/{plugin_file}")
         z.writestr(f"{folder}/README.md", readme)
+        z.write(os.path.join(ROOT, "LICENSE"), f"{folder}/LICENSE")  # also inside the .plugin; here so it's seen on unzip
         manuals = sorted(glob.glob(os.path.join(RELEASE_DIR, "*.pdf")))
         if not manuals:
             sys.exit(f"no PDF manual in {rel(RELEASE_DIR)}")
         for path in manuals:
             z.write(path, f"{folder}/{os.path.basename(path)}")
-    print(f"{rel(dest)} (the release: the .plugin, the agent guide and the manual, for sharing)")
+    print(f"{rel(dest)} (the release: the .plugin, the agent guide, the manual and the license, for sharing)")
 
 
 def package_skills():

@@ -7,7 +7,7 @@ Claude skills for real estate agents, in one plugin: a one-file agent profile, b
 ### Desktop App, From the Release Zip
 
 1. Go to the [latest release](https://github.com/axelrivera/real-estate-skills/releases/latest) and, under **Assets**, download `real-estate-skills-<version>.zip`.
-2. Unzip it. The folder holds the plugin (`real-estate-<version>.plugin`), a setup guide (`README.md`) and the manual (`Real-Estate-Skills-Manual.pdf`).
+2. Unzip it. The folder holds the plugin (`real-estate-<version>.plugin`), a setup guide (`README.md`), the manual (`Real-Estate-Skills-Manual.pdf`) and the license (`LICENSE`).
 3. Open the Claude desktop app and go to the plugin settings.
 4. Choose **Upload local plugin**.
 5. Drag `real-estate-<version>.plugin` onto the upload area (or click **browse** and pick it), then click **Upload**.
