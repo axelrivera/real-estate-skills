@@ -1,6 +1,7 @@
 {
  "side": "buyer",
  "sample": true,
+ "report_date": "2026-11-20",
  "state": "OH",
  "client": "Sample Buyer",
  "rules": {

@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 4
+  "count": 7
  },
  "chat_notes": {
   "count": 0
@@ -16,17 +16,19 @@
  "financing": "FHA",
  "first_deadline": {
   "by_closing": false,
-  "contingency": false,
-  "critical": false,
-  "day": 3,
+  "contingency": true,
+  "critical": true,
+  "day": 6,
   "done": false,
   "done_display": null,
-  "key": "compensation_agreement",
+  "key": "compensation_cancel",
   "no_time": false,
-  "party": "Both",
+  "party": "Buyer",
+  "past": false,
+  "past_display": null,
   "waits_on_approval": false,
   "was": null,
-  "when": "2026-09-25 23:59"
+  "when": "2026-09-28 23:59"
  },
  "flags": {
   "count": 1
@@ -36,6 +38,9 @@
  },
  "length_days": null,
  "moved": {
+  "count": 0
+ },
+ "newly_dated": {
   "count": 0
  },
  "ok": true,
@@ -55,6 +60,8 @@
    "key": "loan_app",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": true,
    "was": null,
    "when": null
@@ -71,6 +78,8 @@
    "key": "inspection",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": true,
    "was": null,
    "when": null
@@ -87,6 +96,8 @@
    "key": "loan_approval",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": true,
    "was": null,
    "when": null
@@ -103,6 +114,44 @@
    "key": "seller_terminate",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
+   "waits_on_approval": false,
+   "was": null,
+   "when": null
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "date_display": "Pending",
+   "day": null,
+   "display": "Pending",
+   "done": false,
+   "done_display": null,
+   "key": "fha_va_election",
+   "no_time": false,
+   "party": "Buyer",
+   "past": false,
+   "past_display": null,
+   "waits_on_approval": false,
+   "was": null,
+   "when": null
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "date_display": "Pending",
+   "day": null,
+   "display": "Pending",
+   "done": false,
+   "done_display": null,
+   "key": "short_sale_copy",
+   "no_time": false,
+   "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -119,6 +168,8 @@
    "key": "title_exam",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -135,6 +186,8 @@
    "key": "survey_notice",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -151,6 +204,8 @@
    "key": "title",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -167,6 +222,8 @@
    "key": "post_closing_agreement",
    "no_time": false,
    "party": "Both",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -183,6 +240,8 @@
    "key": "insurance_bound",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -199,6 +258,8 @@
    "key": "survey",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Survey",
    "waits_on_approval": false,
    "was": null,
@@ -216,6 +277,8 @@
    "key": "clear_to_close",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -232,6 +295,8 @@
    "key": "walkthrough",
    "no_time": true,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Walk-Through",
    "waits_on_approval": false,
    "was": null,
@@ -250,6 +315,8 @@
    "label": "Closing",
    "no_time": false,
    "party": "Both",
+   "past": false,
+   "past_display": null,
    "short": "Closing",
    "waits_on_approval": false,
    "was": null,
@@ -267,6 +334,8 @@
    "key": "seller_moves_out",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -285,6 +354,8 @@
    "key": "deposit",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Deposit",
    "waits_on_approval": false,
    "was": null,
@@ -300,6 +371,7 @@
    "key": "compensation_agreement",
    "no_time": false,
    "party": "Both",
+   "past": true,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-25 23:59"
@@ -314,6 +386,8 @@
    "key": "compensation_cancel",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-28 23:59"
@@ -328,6 +402,8 @@
    "key": "short_sale_application",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-29 23:59"
@@ -342,6 +418,8 @@
    "key": "short_sale_forms",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-05 23:59"
@@ -356,6 +434,8 @@
    "key": "short_sale_approval",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-23 23:59"
@@ -370,6 +450,8 @@
    "key": "short_sale_expires",
    "no_time": false,
    "party": "Both",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-12-23 23:59"
@@ -395,5 +477,7 @@
   "closing_days": 45
  },
  "side": "buyer",
- "support": "full"
+ "support": "full",
+ "time_zone": "ET",
+ "what_if": false
 }

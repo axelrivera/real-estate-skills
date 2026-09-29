@@ -212,8 +212,8 @@ def build_html(t, agent, sample):
                 + open_txt + (" Otherwise the deal is firm unless the buyer defaults." if still else
                               " After that the deal is firm unless the buyer defaults.")
                 if firm else "No buyer contingencies: the deal is firm once the deposit is in." + open_txt)
-    if first:
-        lead += f' {esc(first["short"])} due {esc(first["date_display"])} ({day_label(first)}).'
+    if first:  # TL-104: the full label, from the report date
+        lead += f' Next deadline: {esc(first["label"])}, {esc(first["date_display"])} ({day_label(first)}).'
     closing = t["closing"]
     if closing:
         big = f'{t["effective"]["short"]} → {closing["long"]} · {t["length_days"]} days'
@@ -232,42 +232,47 @@ def build_html(t, agent, sample):
             f'<span class="k" style="margin-top:6px">Closing</span><div>{closing_html}</div></div></div>')
 
     def done_pill(r):
-        return f' <span class="pill good">{esc(r["done_display"])}</span>' if r.get("done") else ""
+        if r.get("done"):
+            return f' <span class="pill good">{esc(r["done_display"])}</span>'
+        return f' <span class="pill caution">{esc(r["past_display"])}</span>' if r.get("past") else ""
+
+    def star(r):
+        return "&nbsp;<span class=crit>★</span>" if r["critical"] and not r.get("done") else ""
 
     def row_class(r):
         return " ".join(c for c in ("mine" if r["party"] == Side else "", "done" if r.get("done") else "") if c)
 
     key_rows = "".join(
         f'<tr class="{row_class(r)}"><td class="n"><b>{esc(r["display"])}</b></td><td class="n">{day_label(r)}</td>'
-        f'<td>{esc(r["label"])}{"&nbsp;<span class=crit>★</span>" if r["critical"] and not r.get("done") else ""}'
+        f'<td>{esc(r["label"])}{star(r)}'
         f'{(" <span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}{done_pill(r)}</td>'
         f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["rows"])
     # dates that wait for an event (a receipt, the short sale approval) close the table with their rule instead of a date
     key_rows += "".join(
         f'<tr class="pend {row_class(r)}"><td class="n"><i class="sm">{esc(pending_text(r))}</i></td><td class="n">—</td>'
-        f'<td>{esc(r["label"])}{"&nbsp;<span class=crit>★</span>" if r["critical"] else ""}</td>'
+        f'<td>{esc(r["label"])}{star(r)}</td>'
         f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["pending"])
     pending = ""
     flags = "".join(f'<div class="note-caution"><b>Check:</b> {esc(f)}</div>' for f in t["flags"])
-    amended = (f'<div class="note-good"><b>Includes {len(t["history"])} amendment(s).</b> Dates that moved show "was". '
-               "See the amendment history for details.</div>") if t["history"] else ""
+    amended = (f'<div class="note-good"><b>Includes {n} amendment{"s" if n != 1 else ""}.</b> Dates that moved show '
+               '"was". See the amendment history for details.</div>') if n else ""
     legend = "".join(f'<span><i style="background:{colors[k]};border-radius:50%"></i>{k}</span>' for k in ("Buyer", "Seller", "Both"))
 
-    page1 = f'''{hero}
+    page1 = f'''{hero}{amended}
 <h2>Timeline <span class="h2s">Effective Date → Closing</span></h2>
 <div class="panel" style="padding:2px 6px">{strip(t, colors)}</div>
 <div class="legend">{legend}<span>Filled Dot = Critical Deadline</span></div>
 <h2>All Key Dates <span class="h2s">Day = calendar days after the Effective Date · ★ = Critical · {side} items highlighted</span></h2>
-<div class="tbl"><table class="kd"><colgroup><col style="width:22%"><col style="width:9%"><col style="width:57%"></colgroup>
+<div class="tbl brk"><table class="kd"><colgroup><col style="width:22%"><col style="width:9%"><col style="width:57%"></colgroup>
 <thead><tr><th class="n">Date</th><th class="n">Day</th><th>Deadline</th><th>Who</th></tr></thead><tbody>{key_rows}</tbody></table></div>
 <div class="sm" style="margin-top:3px"><span class="crit">★</span> Critical = missing it can cost a contract right (such as the right to cancel) or put the deposit at risk.</div>
-{pending}{amended}{flags}'''
+{pending}{flags}'''
 
     detail_rows = "".join(
         f'<tr class="{"done" if r.get("done") else ""}"><td class="n"><b>{esc(r["display"])}</b><br><span class="sm">{day_label(r)}</span>'
         f'{("<br><span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}'
-        f'{("<br>" + done_pill(r).strip()) if r.get("done") else ""}</td>'
-        f'<td><b>{esc(r["label"])}</b>{"&nbsp;<span class=crit>★</span>" if r["critical"] else ""}<br><span class="sm">{esc(r["source"])}</span></td>'
+        f'{("<br>" + done_pill(r).strip()) if r.get("done") or r.get("past") else ""}</td>'
+        f'<td><b>{esc(r["label"])}</b>{star(r)}<br><span class="sm">{esc(r["source"])}</span></td>'
         f'<td>{esc(r["party"])}</td><td class="sm">{esc(r["rule"])}{("<br><i>" + esc(r["note"]) + "</i>") if r["note"] else ""}</td>'
         f'<td class="sm">{esc(r["action"])}</td><td class="sm">{esc(r["if_missed"])}</td></tr>' for r in t["rows"] + t["pending"])
     if t["history"]:
@@ -294,6 +299,7 @@ def build_html(t, agent, sample):
 <div class="fine">Computed from the executed contract, riders, counteroffers and amendments. Verify every date against the documents and with the escrow or title agent; the form version and any handwritten changes control. Time rules follow {esc(t["rules"]["family"])}. Lender dates are estimates. Not legal advice.</div></div>'''
 
     title = (f'Contract Timeline <span class="viewtag">{Side} View</span>'
+             f'{" <span class=viewtag>What-If</span>" if t.get("what_if") else ""}'  # TL-119: a hypothetical timeline
              f'{"<span class=sample>SAMPLE DATA</span>" if sample else ""}')
     parties = " / ".join(x for x in (t["buyer"] or "Buyer", t["seller"] or "Seller"))
     body = (f'<header><div><div class="t1">{title}</div><div class="t2">{esc(t["property"])} · {esc(parties)}</div></div>'
@@ -332,31 +338,57 @@ def _fold(line):
     return "\r\n".join(out)
 
 
+# TL-115: timed events carry the property's zone, so a calendar in another zone shows the right hour. US rules since 2007.
+TZIDS = {"ET": "America/New_York", "CT": "America/Chicago"}
+VTIMEZONES = {
+    "America/New_York": ("-0500", "-0400", "EST", "EDT"),
+    "America/Chicago": ("-0600", "-0500", "CST", "CDT"),
+}
+
+
+def _vtimezone(tzid):
+    std, dst, std_name, dst_name = VTIMEZONES[tzid]
+    return ["BEGIN:VTIMEZONE", f"TZID:{tzid}",
+            "BEGIN:DAYLIGHT", f"TZOFFSETFROM:{std}", f"TZOFFSETTO:{dst}", f"TZNAME:{dst_name}", "DTSTART:20070311T020000",
+            "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU", "END:DAYLIGHT",
+            "BEGIN:STANDARD", f"TZOFFSETFROM:{dst}", f"TZOFFSETTO:{std}", f"TZNAME:{std_name}", "DTSTART:20071104T020000",
+            "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU", "END:STANDARD", "END:VTIMEZONE"]
+
+
 def ics(t):
     """TL-20: the closing calendar as an .ics file. End-of-day deadlines are all-day events; the rest are timed in the
-    property's local time; critical ones get a reminder the day before."""
+    property's time zone (TZID) when it's known; critical ones get a reminder the day before (at 9:00 AM for an
+    all-day event). SEQUENCE counts the amendments, so a re-imported calendar replaces the older events. Deadlines
+    already done or past (TL-104) are left out."""
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # when the file was made, in UTC (RFC 5545)
+    what_if = "What-If: " if t.get("what_if") else ""  # TL-119: a hypothetical timeline says so in the calendar too
+    tzid = TZIDS.get(t.get("time_zone") or "", t.get("time_zone") if t.get("time_zone") in VTIMEZONES else None)
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//real-estate-skills//contract-timeline//EN", "CALSCALE:GREGORIAN",
-             f"X-WR-CALNAME:{_ics_text('Contract Timeline: ' + t['property'])}"]
+             f"X-WR-CALNAME:{_ics_text(what_if + 'Contract Timeline: ' + t['property'])}"]
+    if tzid:
+        lines += [f"X-WR-TIMEZONE:{tzid}", *_vtimezone(tzid)]
+    at = f";TZID={tzid}" if tzid else ""
     for r in t["rows"]:
-        if r.get("done"):  # already met: nothing to remind anyone about
+        if r.get("done") or r.get("past"):  # already met, or to confirm: nothing to remind anyone about
             continue
         when = datetime.strptime(r["when"], "%Y-%m-%d %H:%M")
         event = r.get("no_time")  # an event on a day (the walk-through), not a deadline at a time
         all_day = event or when.strftime("%H:%M") == "23:59"
-        start = f"DTSTART;VALUE=DATE:{when:%Y%m%d}" if all_day else f"DTSTART:{when:%Y%m%dT%H%M%S}"
+        start = f"DTSTART;VALUE=DATE:{when:%Y%m%d}" if all_day else f"DTSTART{at}:{when:%Y%m%dT%H%M%S}"
         end = (f"DTEND;VALUE=DATE:{(when + timedelta(days=1)):%Y%m%d}" if all_day
-               else f"DTEND:{(when + timedelta(minutes=30)):%Y%m%dT%H%M%S}")
+               else f"DTEND{at}:{(when + timedelta(minutes=30)):%Y%m%dT%H%M%S}")
         desc = " ".join(x for x in (f"Who: {r['party']}.", r["action"] and f"{r['action']}.", r["if_missed"] and
                                     f"If missed: {r['if_missed']}.", r["rule"] and f"Rule: {r['rule']}.",
                                     r["source"] and f"Source: {r['source']}.",
                                     "Ends at 11:59 PM." if all_day and not event else "",
                                     "Due by Closing." if r.get("by_closing") else "") if x)
         lines += ["BEGIN:VEVENT", f"UID:{r['key']}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline",
-                  f"DTSTAMP:{now}", start, end, f"SUMMARY:{_ics_text(r['label'] + (' ★' if r['critical'] else ''))}",
+                  f"SEQUENCE:{len(t.get('history') or [])}", f"DTSTAMP:{now}", start, end,
+                  f"SUMMARY:{_ics_text(what_if + r['label'] + (' ★' if r['critical'] else ''))}",
                   f"DESCRIPTION:{_ics_text(desc)}"]
-        if r["critical"]:
-            lines += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_ics_text(r['label'])}", "TRIGGER:-P1D", "END:VALARM"]
+        if r["critical"]:  # the day before: 9:00 AM for an all-day event (its start is midnight), else 24 hours ahead
+            lines += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_ics_text(r['label'])}",
+                      "TRIGGER:-PT15H" if all_day else "TRIGGER:-P1D", "END:VALARM"]
         lines.append("END:VEVENT")
     lines.append("END:VCALENDAR")
     return "\r\n".join(_fold(x) for x in lines) + "\r\n"
@@ -382,7 +414,7 @@ def build(deal, fmt, out_dir, ctx):
         print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; the key-dates table continues on page 2.", file=sys.stderr)
     for flag in t["flags"]:
         print(f"Check (on the report): {flag}", file=sys.stderr)
-    for note in t["agent_notes"]:
+    for note in t["agent_notes"] + t.get("chat_notes", []):
         print(f"For the agent (not printed): {note}", file=sys.stderr)
     return [path]
 

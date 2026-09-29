@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 4
+  "count": 6
  },
  "chat_notes": {
   "count": 0
@@ -19,6 +19,8 @@
   "key": "loan_approval",
   "no_time": false,
   "party": "Buyer",
+  "past": false,
+  "past_display": null,
   "waits_on_approval": false,
   "when": "2026-12-10 23:59"
  },
@@ -39,6 +41,8 @@
   "key": "title",
   "no_time": false,
   "party": "Seller",
+  "past": false,
+  "past_display": null,
   "waits_on_approval": false,
   "when": "2026-12-03 23:59"
  },
@@ -75,6 +79,9 @@
    "label": "Closing"
   }
  ],
+ "newly_dated": {
+  "count": 0
+ },
  "ok": true,
  "open_rights": {
   "count": 3
@@ -92,6 +99,8 @@
    "key": "hoa_docs",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -108,6 +117,8 @@
    "key": "title_exam",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -124,13 +135,15 @@
    "key": "survey_notice",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
   }
  ],
  "report_date": {
-  "date": "2026-09-26"
+  "date": "2026-11-20"
  },
  "rows": [
   {
@@ -143,6 +156,7 @@
    "key": "deposit",
    "no_time": false,
    "party": "Buyer",
+   "past": true,
    "short": "Deposit",
    "waits_on_approval": false,
    "was": null,
@@ -158,6 +172,7 @@
    "key": "loan_app",
    "no_time": false,
    "party": "Buyer",
+   "past": true,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-09 23:59"
@@ -172,6 +187,7 @@
    "key": "add_deposit",
    "no_time": false,
    "party": "Buyer",
+   "past": true,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
@@ -186,6 +202,7 @@
    "key": "inspection",
    "no_time": false,
    "party": "Buyer",
+   "past": true,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
@@ -200,6 +217,7 @@
    "key": "lead_paint",
    "no_time": false,
    "party": "Buyer",
+   "past": true,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
@@ -214,6 +232,8 @@
    "key": "appraisal_due",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-23 23:59"
@@ -228,6 +248,8 @@
    "key": "appraisal",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "when": "2026-11-25 17:00"
   },
@@ -241,6 +263,8 @@
    "key": "title",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "when": "2026-12-03 23:59"
   },
@@ -254,6 +278,8 @@
    "key": "loan_approval",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "when": "2026-12-10 23:59"
   },
@@ -267,6 +293,8 @@
    "key": "insurance_bound",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "when": "2026-12-11 23:59"
   },
@@ -280,6 +308,8 @@
    "key": "seller_terminate",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "when": "2026-12-14 23:59"
   },
@@ -293,6 +323,8 @@
    "key": "survey",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Survey",
    "waits_on_approval": false,
    "when": "2026-12-14 23:59"
@@ -307,6 +339,8 @@
    "key": "clear_to_close",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "when": "2026-12-15 23:59"
   },
@@ -320,6 +354,8 @@
    "key": "walkthrough",
    "no_time": true,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Walk-Through",
    "waits_on_approval": false,
    "when": "2026-12-17 23:59"
@@ -335,6 +371,8 @@
    "label": "Closing",
    "no_time": false,
    "party": "Both",
+   "past": false,
+   "past_display": null,
    "short": "Closing",
    "waits_on_approval": false,
    "when": "2026-12-18 10:00"
@@ -357,5 +395,7 @@
  "sample": true,
  "short_sale": null,
  "side": "seller",
- "support": "full"
+ "support": "full",
+ "time_zone": "ET",
+ "what_if": false
 }

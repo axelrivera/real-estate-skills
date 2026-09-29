@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 1
+  "count": 2
  },
  "chat_notes": {
   "count": 0
@@ -19,6 +19,8 @@
   "key": "loan_approval",
   "no_time": false,
   "party": "Buyer",
+  "past": false,
+  "past_display": null,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-10-26 23:59"
@@ -40,6 +42,8 @@
   "key": "deposit",
   "no_time": false,
   "party": "Buyer",
+  "past": false,
+  "past_display": null,
   "short": "Deposit",
   "waits_on_approval": false,
   "was": null,
@@ -55,11 +59,32 @@
  "moved": {
   "count": 0
  },
+ "newly_dated": {
+  "count": 0
+ },
  "ok": true,
  "open_rights": {
   "count": 3
  },
  "pending": [
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "date_display": "Pending",
+   "day": null,
+   "display": "Pending",
+   "done": false,
+   "done_display": null,
+   "key": "fha_va_election",
+   "no_time": false,
+   "party": "Buyer",
+   "past": false,
+   "past_display": null,
+   "waits_on_approval": false,
+   "was": null,
+   "when": null
+  },
   {
    "by_closing": false,
    "contingency": false,
@@ -72,6 +97,8 @@
    "key": "title_exam",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -88,6 +115,8 @@
    "key": "survey_notice",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -107,6 +136,8 @@
    "key": "deposit",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Deposit",
    "waits_on_approval": false,
    "was": null,
@@ -122,6 +153,8 @@
    "key": "loan_app",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-30 23:59"
@@ -136,6 +169,8 @@
    "key": "inspection",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-05 23:59"
@@ -150,6 +185,8 @@
    "key": "insurance",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-05 23:59"
@@ -164,6 +201,8 @@
    "key": "title",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-15 23:59"
@@ -178,6 +217,8 @@
    "key": "insurance_bound",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-23 23:59"
@@ -192,6 +233,8 @@
    "key": "loan_approval",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-26 23:59"
@@ -206,6 +249,8 @@
    "key": "survey",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Survey",
    "waits_on_approval": false,
    "was": null,
@@ -221,6 +266,8 @@
    "key": "clear_to_close",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-27 23:59"
@@ -235,6 +282,8 @@
    "key": "seller_terminate",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-29 23:59"
@@ -249,6 +298,8 @@
    "key": "walkthrough",
    "no_time": true,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Walk-Through",
    "waits_on_approval": false,
    "was": null,
@@ -265,6 +316,8 @@
    "label": "Closing",
    "no_time": false,
    "party": "Both",
+   "past": false,
+   "past_display": null,
    "short": "Closing",
    "waits_on_approval": false,
    "was": null,
@@ -288,5 +341,7 @@
  "sample": true,
  "short_sale": null,
  "side": "buyer",
- "support": "full"
+ "support": "full",
+ "time_zone": "ET",
+ "what_if": false
 }

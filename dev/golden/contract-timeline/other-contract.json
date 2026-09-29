@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 1
+  "count": 0
  },
  "chat_notes": {
   "count": 1
@@ -19,6 +19,8 @@
   "key": "financing",
   "no_time": false,
   "party": "Buyer",
+  "past": false,
+  "past_display": null,
   "short": "Financing",
   "waits_on_approval": false,
   "was": null,
@@ -41,6 +43,8 @@
   "key": "earnest_money",
   "no_time": false,
   "party": "Buyer",
+  "past": false,
+  "past_display": null,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-11-23 23:59"
@@ -55,6 +59,9 @@
  "moved": {
   "count": 0
  },
+ "newly_dated": {
+  "count": 0
+ },
  "ok": true,
  "open_rights": {
   "count": 0
@@ -63,7 +70,7 @@
   "count": 0
  },
  "report_date": {
-  "date": "2026-09-26"
+  "date": "2026-11-20"
  },
  "rows": [
   {
@@ -76,6 +83,8 @@
    "key": "earnest_money",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-23 23:59"
@@ -90,6 +99,8 @@
    "key": "walkaway_period",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-27 17:00"
@@ -104,6 +115,8 @@
    "key": "title_commitment",
    "no_time": false,
    "party": "Seller",
+   "past": false,
+   "past_display": null,
    "short": "Title",
    "waits_on_approval": false,
    "was": null,
@@ -119,6 +132,8 @@
    "key": "financing",
    "no_time": false,
    "party": "Buyer",
+   "past": false,
+   "past_display": null,
    "short": "Financing",
    "waits_on_approval": false,
    "was": null,
@@ -135,6 +150,8 @@
    "label": "Closing",
    "no_time": false,
    "party": "Both",
+   "past": false,
+   "past_display": null,
    "short": "Closing",
    "source": "Contract",
    "waits_on_approval": false,
@@ -156,5 +173,7 @@
  "sample": true,
  "short_sale": null,
  "side": "buyer",
- "support": "best_effort"
+ "support": "best_effort",
+ "time_zone": null,
+ "what_if": false
 }

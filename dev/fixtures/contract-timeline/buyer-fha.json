@@ -1,6 +1,7 @@
 {
   "side": "buyer",
   "sample": true,
+  "report_date": "2026-09-26",
   "state": "FL",
   "county": "Seminole",
   "client": "Sample Buyer",
