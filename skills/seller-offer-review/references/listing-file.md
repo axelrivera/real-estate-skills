@@ -104,17 +104,26 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else 2.5% assumed | **high** when the seller offered, med when assumed |
 | `home_warranty` | $ seller pays | 0 | — |
 | `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
-| `repair_limits` | Standard only: `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |
-| `inspection_walkaway` | Other contracts only: `false` when the buyer can cancel just for listed defects | `true` (an option or due-diligence period) | — |
+| `form_revision` | FR/BAR footer as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26") | none; a revision other than the verified one adds a chat note | — |
+| `repair_limits` | Standard only (alone or with Rider L): `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |
+| `inspection_walkaway` | Other contracts only: `true` when the buyer may cancel for any reason in the period, `false` for a repair or objection process only | assumed `true` and flagged | **high** |
 | `inspection_days` | days | 10 | med |
 | `loan_approval_days` | days | 30 (financed) | low |
-| `appraisal_contingency` | days, `true` or `false` | 21 days if financed | med |
+| `appraisal_contingency` | days to the end of the buyer's appraisal notice, `true` or `false`. Rider F: the rider's date plus 3 days | Rider F attached: its default (10 days before closing, plus 3); otherwise 21 days if financed | med |
 | `appraisal_gap` | $ the buyer covers (FHA/VA: recorded, credited 0) | 0 | — |
+| `appraisal_form` | FR/BAR: `aga` when the gap is on the Appraisal Gap Addendum (AGA-1); also read from its name in `riders` or `addenda`. The window becomes AGA-1's (valuation + 3 days + renegotiation), and a cash offer carries appraisal risk | Rider F by letter; else the terms above | — |
+| `aga_valuation_days`, `aga_renegotiate_days` | AGA-1 blanks | 30, 3 | — |
 | `gap_funds` | financed waiver only: $ documented beyond down payment and closing costs | 0 when waived | med |
-| `sale_contingency_days`, `kickout` | days, bool | 0, false | — |
+| `sale_contingency_days`, `kickout` | days, bool; Rider X in `riders` sets `kickout` | 0, false | — |
+| `buyer_broker_form` | FR/BAR: `FF` when the buyer's broker is paid as a seller credit (Rider FF, also read from `riders`), which counts toward the loan program's concession limit; `GG` or blank for a separate compensation agreement | GG | — |
+| `insurance_days`, `mold_days`, `drywall_days`, `rezoning_days`, `attorney_days` | days from the Effective Date for a rider's cancel window when the rider's date or days are filled in (`frbar-riders.md`) | each rider's default; Z and R have none and are flagged | — |
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
 | `title_by` | `seller` / `buyer` | the local custom | — |
-| `riders` | list of names, as attached | none; rider checks run only when listed | — |
+| `riders` | CR-7 letters or names, as attached ("K", "FHA/VA Financing"). Rider K or L on the Standard form changes the inspection terms; I, K, L on AS IS stop the review (RESERVED) | none; rider checks run only when listed | — |
+| `rent_back_days`, `rent_back_monthly` | Rider U: days the seller stays after closing and the monthly rent the seller pays | not in the net; flagged when Rider U is attached | med |
+| `seller_financing` | Rider C: the note amount the seller carries (paid over time, not cash at closing) | 0 | — |
+| `assessment_payoff` | Rider EE or the CDD addendum: an assessment balance the seller agrees to pay at closing | 0; flagged when Rider EE is attached | — |
+| `attorney_days` | Rider Z: days from the Effective Date to the buyer's attorney-approval date (a walk-away until then) | 0 | — |
 | `loan_amount` | $ from the financing paragraph | none; checked against the down payment when given | — |
 | `escalation` | `{cap, increment, proof}`; the offer is scored at the price it reaches against the other offers | none | — |
 | `personal_property`, `occupancy`, `other_terms` | text | — | — |

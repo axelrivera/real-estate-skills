@@ -190,7 +190,7 @@ def build_html(t, agent, sample):
               "".join(f"<tr><td><b>{esc(a)}</b></td><td>{esc(b)}</td></tr>" for a, b in method_rows) + "</tbody></table></div>")
     details = f'''<div class="pb"></div><div class="dh">Deadline Details</div>
 <div class="sm" style="margin-bottom:4px"><span class="crit">★</span> Critical = missing it can cost a contract right or put the deposit at risk.</div>
-<div class="tbl"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
+<div class="tbl brk"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
 <thead><tr><th class="n">Date</th><th>Deadline · Source</th><th>Who</th><th>Rule</th><th>Action</th><th>If Missed</th></tr></thead><tbody>{detail_rows}</tbody></table></div>
 <div class="appx"><div class="dh" style="margin-top:10px">Appendix: Amendments and Date Rules</div>
 {hist_html}
@@ -214,6 +214,8 @@ def fit_page_one(pg):
     if top > PAGE1_LIMIT:
         pg.evaluate("() => document.body.classList.add('compact')")
         top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
+    if top > PAGE1_LIMIT:  # page 1 spills anyway: let the details follow on page 2 instead of leaving it nearly empty
+        pg.evaluate("() => document.querySelector('.pb').classList.add('flow')")
     return top
 
 

@@ -1,6 +1,6 @@
 # Checking the Contract Before Reviewing It
 
-Read this whenever a contract is uploaded. Before scoring an offer, check that the contract can be reviewed as written. Record what you find in the offer's `contract_issues` (see `listing-file.md`). The engine adds the checks it can prove from the fields itself: riders the terms call for, loan amount vs. down payment, loan approval after closing.
+Read this whenever a contract is uploaded. Before scoring an offer, check that the contract can be reviewed as written. Record what you find in the offer's `contract_issues` (see `listing-file.md`). The engine adds the checks it can prove from the fields itself: riders the terms call for, rider risks (short sale, attorney approval, a sale contingency without a kick-out, an assessment with no payoff agreement, a compensation agreement not yet seen), loan amount vs. down payment, loan approval after closing. For an FR/BAR contract, also run the full list in `frbar-package-check.md`: required riders and disclosures by the property's facts, RESERVED riders, and which blanks have form defaults.
 
 This is a completeness check, not a legal opinion. Never tell the agent a contract is or isn't binding; say it can't be reviewed as written, and point questions about validity to a real estate attorney licensed in the property's state.
 
@@ -25,7 +25,7 @@ This is a completeness check, not a legal opinion. Never tell the agent a contra
 
 - Blank lines that the form doesn't default: deposit amount, escrow agent, additional deposit due date, loan amount or type, closing date.
 - A rider the terms call for isn't attached: FHA/VA financing, sale of the buyer's property, appraisal terms, HOA or condo.
-- A required disclosure is missing: lead-based paint for homes built before 1978 (federal). In Florida, the HOA disclosure summary (without it the buyer may cancel within 3 days after receiving it) and the seller's flood disclosure (s. 689.302, at or before signing; set `listing.flood_disclosure` once it's given).
+- A required disclosure is missing: lead-based paint for homes built before 1978 (federal). In Florida, the HOA disclosure summary (without it the buyer may cancel within 3 days after receiving it) and the seller's flood disclosure (FD-2, s. 689.302, at or before signing; set `listing.flood_disclosure` once it's given).
 - A condo: the condo rider, and for an FHA or VA offer the project's approval. The buyer's rescission windows start when they receive the association documents, the milestone summary and the SIRS, so deliver them right away (`condo.md`).
 - The rider checklist and the attached riders disagree.
 
@@ -33,7 +33,7 @@ Some of these are the listing side's job (the seller's HOA and lead-paint disclo
 
 ## Blanks That Fall Back to the Form
 
-A blank that the form fills in is not an issue: record the form's value and say so. On the FR/BAR AS IS contract a blank inspection period is 15 days, and a blank loan approval period is the form default in Para. 8(b). Other states: check the form's own default language.
+A blank that the form fills in is not an issue: record the form's value and say so. FR/BAR defaults (both forms and every rider) are listed in `frbar-package-check.md`. Any other contract: only a default the contract itself prints counts; otherwise it's a question (`other-contracts.md`).
 
 ## Consistency
 

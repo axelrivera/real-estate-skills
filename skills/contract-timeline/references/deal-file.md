@@ -26,7 +26,8 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 | Field | Notes |
 |---|---|
 | `form_family` | `frbar` for FR/BAR AS IS or Standard; anything else is treated as another contract |
-| `form` | Form name as printed, for other contracts ("TREC One to Four Family Residential Contract") |
+| `form` | Form name as printed, for other contracts ("Sample Residential Purchase Agreement") |
+| `form_revision` | FR/BAR: the footer as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). A revision other than the verified one adds an agent note |
 | `effective_date` | **Required.** `YYYY-MM-DD`. The date the last party signed or initialed and delivered the final counter or acceptance |
 | `effective_date_source` | The evidence ("Seller's initials on Counteroffer #1, 9/25 4:12 PM") |
 | `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so |
@@ -35,29 +36,29 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 | `possession_date`, `possession_time`, `possession_note` | Only if possession differs from closing |
 | `date_overrides` | `{deadline key: "YYYY-MM-DD HH:MM"}` for deadlines the contract states as a specific date. With a time it's kept as given; a date alone (`"YYYY-MM-DD"`) ends at the contract's end of day and extends past a weekend or holiday like any period. A `closing` override also moves every date counted back from closing |
 
-FR/BAR contracts also use the fields in `frbar.md` (deposit days, inspection days, riders…).
+FR/BAR contracts also use the fields in `frbar.md` (deposit days, inspection days, riders, rider dates).
 
 ## deadlines
 
 Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry per deadline:
 
 ```json
-{"key": "option_period", "label": "Option Period Ends", "short": "Option Ends",
+{"key": "due_diligence", "label": "Due Diligence Period Ends", "short": "Due Diligence",
  "basis": "after", "days": 7, "party": "Buyer", "critical": true, "contingency": true,
- "source": "Para. 5B", "action": "Deliver notice of termination before the deadline if not proceeding",
- "if_missed": "Right to terminate for any reason ends; option fee is not refunded"}
+ "source": "Para. 7", "action": "Deliver notice of termination before the deadline if not proceeding",
+ "if_missed": "Right to terminate for any reason ends"}
 ```
 
 | Field | Notes |
 |---|---|
 | `key` | Short id, unique (used by amendments and overrides) |
-| `label`, `short` | Full name; short name for the timeline strip. Both in Title Case ("Option Period Ends", "Option Ends") |
+| `label`, `short` | Full name; short name for the timeline strip. Both in Title Case ("Due Diligence Period Ends", "Due Diligence") |
 | `basis` | `after` (days after the Effective Date), `before` (days before closing), `date` (with `"date": "YYYY-MM-DD HH:MM"`), `event` (runs from `received`, when recorded) |
 | `days` | For `after`, `before` and `event` |
 | `business` | `true` when the contract counts this period in business days |
-| `time` | When this deadline ends, `"17:00"`, when it differs from the contract's end of day (a TREC option period ends at 5:00 PM) |
+| `time` | When this deadline ends, `"17:00"`, when it differs from the contract's end of day (a period the contract says ends at 5:00 PM on its last day) |
 | `rollover` | `false` when this deadline isn't extended past a weekend or holiday even though others are (read the paragraph's own words) |
-| `receipt_date`, `what` | For an `after` period that runs from someone's receipt rather than the Effective Date (TREC Para. 6B: 20 days after the title company receives the contract): the receipt date and what was received ("title company's receipt of the contract"). Without the date, ask for it |
+| `receipt_date`, `what` | For an `after` period that runs from someone's receipt rather than the Effective Date (20 days after the title company receives the contract): the receipt date and what was received ("title company's receipt of the contract"). Without the date, ask for it |
 | `party` | `Buyer`, `Seller` or `Both` |
 | `critical` | Missing it can cost a contract right or put the deposit at risk |
 | `contingency` | It's a buyer protection that ends on this date (drives "your contingencies end") |
@@ -75,7 +76,7 @@ Only when the contract's time rules differ from the market's (or the market has 
 | `weekend_holiday_rollover` | `next_business_day` or `none` |
 | `rollover_time` | Time on the next business day, default `"17:00"` |
 | `before_closing_rollover` | `previous_business_day` or `none` |
-| `holidays` | `us_federal`; `tx_state` for TREC forms (Texas legal holidays: no Columbus Day, adds June 19 and the Friday after Thanksgiving, no observed days); or a list of extra holiday dates from the contract |
+| `holidays` | `us_federal`; a list of extra holiday dates the contract adds (`["2026-11-27"]`); or, when the contract defines its own full list instead of the federal one, `{"base": "none", "dates": ["2026-11-26", "2026-11-27"]}` |
 
 ## amendments
 
@@ -87,4 +88,4 @@ In signing order. `changes` for contract fields, `date_overrides` for deadlines 
  "date_overrides": {"appraisal": "2026-10-23 17:00"}}
 ```
 
-HOA or condo documents received: set `hoa_docs_received` or `condo_docs_received` in `contract` (FR/BAR), or `received` on the `event` deadline, and re-run.
+HOA or condo documents received, short sale approval received, a back-up contract delivered, or any other event a rider runs from: set the matching field in `contract` (FR/BAR, listed in `frbar.md`), or `received` on the `event` deadline, and re-run.

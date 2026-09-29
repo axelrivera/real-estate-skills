@@ -151,7 +151,20 @@ class Analysis(unittest.TestCase):
         out = review.result(review.analyze(fixture("texas-single.json")))
         self.assertNotIn("transfer tax", out["summary"]["preliminary"] or "")
         self.assertIn("national estimate", json.dumps(out))
+        notes = out.pop("chat_notes")  # the chat-only best-effort line names Florida on purpose
+        self.assertEqual(out["support"], "best_effort")
+        self.assertTrue(any("Only Florida FR/BAR contracts are fully supported" in n for n in notes))
         self.assertNotIn("Florida", json.dumps(out))
+
+    def test_best_effort_line_never_on_the_report(self):
+        data = fixture("texas-single.json")
+        doc, _, _ = review_render.build_html(review.analyze(data), {}, sample=False)
+        self.assertNotIn("fully supported", doc)
+        self.assertNotIn("best-effort", doc)
+
+    def test_frbar_offer_is_fully_supported(self):
+        out = review.result(review.analyze(fixture("two-offers-accept.json")))
+        self.assertEqual((out["support"], out["chat_notes"]), ("full", []))
 
 
 class Pdf(unittest.TestCase):

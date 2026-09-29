@@ -307,6 +307,8 @@ def build(data, fmt, out_dir, ctx):
         render.html_to_pdf(doc, path, footer_html=render.footer(f"Offer Package Worksheet · Buyer Side · {street} · Draft"))
         print(f"Worksheet ({W['option'].lower()} offer): {len(W['riders'])} rider(s), {len(W['clauses'])} clause draft(s), {W['blanks']} blank(s) to fill",
               file=sys.stderr)
+    for note in oe.cf.support([r["B"]["contract_form"]])["chat_notes"]:
+        print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
     return [path]
 
 

@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "Highest and best on 8104 Shoal Creek in Austin, 6 offers in, due Friday 6pm. Buyer is conventional 20% down, full underwriting, $170k cash, wants to keep $15k, won't go over $640k. CMA handoff attached. Should we escalate? Rate is 6.4%, insurance quote $3,900/yr, tax rate about 1.98%.",
-      "expected_output": "Uses the Texas handoff (range $598k–$632k); recommends top of range ($632,000) with an appraisal gap and an escalation clause capped at $634,000 that keeps the $15k reserve; explains why the cap stops there; outlook Strong; does not use Florida doc stamps, FR/BAR paragraphs or Form Simplicity; the worksheet lists entries by name with no paragraph numbers and generic addendum names, and the seller net notes that Texas closing costs weren't provided unless a market profile is given",
+      "expected_output": "Uses the Texas handoff (range $598k–$632k); recommends top of range ($632,000) with an appraisal gap and an escalation clause capped at $634,000 that keeps the $15k reserve; explains why the cap stops there; outlook Strong; does not use Florida doc stamps, FR/BAR paragraphs or Form Simplicity; the worksheet lists entries by name with no paragraph numbers and generic addendum names, and the seller net notes that Texas closing costs weren't provided unless a market profile is given. Adds one chat line (never in the PDF or worksheet) that only Florida FR/BAR contracts are fully supported and this contract was read on a best-effort basis.",
       "files": ["dev/evals/buyer-offer-strategy/files/8104-Shoal-Creek-Blvd.cma.json"]
     },
     {

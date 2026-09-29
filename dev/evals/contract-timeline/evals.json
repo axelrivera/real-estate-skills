@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "just got this one fully executed!! can you give me a timeline for my buyer with all the deadlines? i want to send it to them",
-      "expected_output": "Effective Date Sep 25 2026 (seller's initials on counter #1); FR/BAR deal file; deposit Wed Sep 30, inspection Mon Oct 5, appraisal Oct 16, loan approval Mon Oct 26 5 PM, closing Oct 30; buyer-view PDF; chat summary names the first deadline, when contingencies end, closing, and flags (loan approval within 5 days of closing)",
+      "expected_output": "Effective Date Sep 25 2026 (seller's initials on counter #1); FR/BAR deal file; deposit Wed Sep 30, inspection Mon Oct 5, no appraisal period row (the FHA/VA rider's protection runs to closing, stated as a note), insurance rider 10 days, loan approval Mon Oct 26 5 PM, closing Oct 30; buyer-view PDF; chat summary names the first deadline, when contingencies end, closing, and flags (loan approval within 5 days of closing); no best-effort disclaimer (FR/BAR is fully supported)",
       "files": ["dev/evals/contract-timeline/files/executed-contract-cypress-bend.md"]
     },
     {
@@ -15,9 +15,15 @@
     },
     {
       "id": 3,
-      "prompt": "Quick one: TREC contract in Austin, effective 11/20/2026, 7 day option period. When exactly does the option end?",
-      "expected_output": "Doesn't apply Florida rules; uses the TREC rule that the option period ends at 5:00 PM local time (asks or states the assumption), computes Friday Nov 27 2026 5:00 PM with the script, answers in a sentence or two",
+      "prompt": "Quick one: Ohio purchase agreement, effective 11/20/2026. Para. 7 gives the buyer a 7 day due diligence period that ends at 5 PM on the last day. When exactly does it end?",
+      "expected_output": "Doesn't apply Florida rules or any built-in state rules; uses the contract's own rule as the agent quoted it (5:00 PM on the last day, asks or states the assumption about weekends and holidays), computes Friday Nov 27 2026 5:00 PM with the script, answers in a sentence or two, and adds one chat line that only Florida FR/BAR contracts are fully supported and this was read on a best-effort basis",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Heron Lake is fully executed. Standard contract this time, with a few riders. Can you give my buyer every deadline?",
+      "expected_output": "Reads the Standard form and riders F, H and L by letter; Effective Date Fri Oct 2 2026 (seller's signature delivered 11:20 AM); deposit Mon Oct 5 (3-day default); Right To Inspect Period ends Mon Oct 19 (15-day rider default, Sat Oct 17 rolled) as a right to cancel that also keeps the repair notices, with the seller's 10-day estimates and 5-day election pending the buyer's notice; loan approval Mon Nov 2 (30-day default, Sun Nov 1 rolled); insurance contingency Mon Nov 2 (Rider H blank: the earlier of 30 days after the Effective Date or 10 days before closing); appraisal due Tue Nov 3 and low-appraisal notice Fri Nov 6 (Rider F blank: 10 days before closing, then 3 days); closing Fri Nov 13; lists every default used as an agent note; no best-effort disclaimer (FR/BAR)",
+      "files": ["dev/evals/contract-timeline/files/executed-contract-heron-lake-standard.md"]
     }
   ]
 }

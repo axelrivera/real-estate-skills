@@ -14,3 +14,7 @@ tr.mine td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 
 /* TL-22: the amendments and date rules stay together as one appendix block */
 .appx{break-inside:avoid}
+.tbl.brk{break-inside:auto}
+.pb.flow{break-before:auto}
+.det thead{display:table-header-group}
+.det tr{break-inside:avoid}

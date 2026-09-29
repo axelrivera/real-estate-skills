@@ -2,49 +2,38 @@
 
 ## FR/BAR Contracts (Florida)
 
-For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts. Paragraph numbers can shift between form revisions, so confirm against the form version printed in the footer. Read the whole document: additional terms and riders often override the main paragraphs.
+For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts, fully supported. Paragraph numbers are from the verified revisions in `frbar-contract.md`; record the footer in `form_revision`. Read the whole document: riders, addenda and additional terms override the printed paragraphs (Standard R). What each rider does to the seller's net and certainty is in `frbar-riders.md`; addenda (counteroffer, escalation, appraisal gap, CDD, co-op, compensation) are in `frbar-addenda.md`.
 
 | Field | Where to Look |
 |---|---|
 | `buyer`, `buyer_agent` | Para. 1 (parties); signature page and broker block at the end |
 | `price` | Para. 2 (purchase price) |
 | `deposit` | Para. 2(a) initial + 2(b) additional deposit, added together. Note the escrow agent and due dates |
-| `financing`, `down_pct` | Para. 2(c) financing amount and Para. 8 (type, LTV / loan amount). FHA/VA rider → `fha` / `va`. "Cash" checked → `cash` |
-| `loan_approval_days` | Para. 8(b) (form default when blank) |
-| `closing_date` | Para. 4 |
+| `financing`, `down_pct`, `loan_amount` | Para. 2(c) financing amount and Para. 8 (type, LTV / loan amount). Rider E → `fha` / `va`. Para. 8(a) cash checked → `cash` |
+| `loan_approval_days` | Para. 8(b) (30 days when blank) |
+| `closing_date` | Para. 4 (Rider G moves it to 45 days after short sale approval) |
 | `expires` | Para. 3 (time for acceptance) |
-| `occupancy` | Para. 6 |
+| `occupancy` | Para. 6; Riders T and U |
 | `personal_property` | Para. 1 (items included / excluded) |
-| `seller_concessions`, `home_warranty`, `title_by` | Para. 9 and additional terms. Seller-paid closing costs are often a dollar amount or % in additional terms |
-| `inspection_days`, `contract_form` | Read the form's title: "AS IS Residential Contract for Sale and Purchase" is `as_is` (Para. 12: the buyer may cancel for any reason); "Residential Contract for Sale and Purchase" is `standard` (no walk-away; the seller pays repairs up to the repair limits). Never guess: the two run different math |
-| `repair_limits` | Standard only, Para. 9(a): the General Repair, WDO and Permit Limits (1.5% of price each if blank) |
-| `buyer_broker_pct` | Additional terms, a compensation addendum, or the buyer-broker agreement. Ask if it's not in the offer |
-| `appraisal_days`, `appraisal_gap` | Appraisal Contingency rider; FHA/VA rider (amendatory clause: protection to closing, can't be waived, a gap clause is intent only); additional terms for gap language |
+| `seller_concessions`, `home_warranty`, `title_by` | Para. 9 and additional terms. Seller-paid closing costs are often a dollar amount or % in additional terms. Para. 9(c) (who designates the title agent) has no default: ask |
+| `contract_form` | Read the form's title: "AS IS Residential Contract for Sale and Purchase" is `as_is` (Para. 12: the buyer may cancel for any reason); "Residential Contract for Sale and Purchase" is `standard` (no walk-away; the seller pays repairs up to the repair limits). Never guess: the two run different math. The Florida Realtors CRSP and any non-FR/BAR form are other contracts (below) |
+| `inspection_days` | Para. 12(a) (15 days when blank); with Rider K or L on the Standard form, the rider's period |
+| `repair_limits` | Standard only, Para. 9(a): the General Repair, WDO and Permit Limits (1.5% of price each if blank). Rider K deletes them; Rider L keeps them |
+| `buyer_broker_pct` | Rider FF (credit to the buyer), Rider GG (separate compensation agreement), or additional terms. Ask if it's not in the offer |
+| `appraisal_contingency`, `appraisal_gap`, `appraisal_form` | Rider F (appraisal due by its date, 10 days before closing if blank, then 3 days for notice); Rider E (FHA/VA amendatory clause: protection to closing, can't be waived, a gap clause is intent only); the Appraisal Gap Addendum (AGA-1, conventional or cash only: set `appraisal_form: aga`, its Gap Amount in `appraisal_gap` and any filled periods in `aga_valuation_days` / `aga_renegotiate_days`) or additional terms for gap language |
 | `gap_funds` | Financed offer that waives the appraisal: the buyer's documented cash beyond the down payment and closing costs (proof of funds). The waiver is credited only up to it |
-| `sale_contingency_days`, `kickout` | Sale of Buyer's Property rider and kick-out clause |
-| `escalation` | Escalation addendum or additional terms: `cap`, `increment`, and `proof` (how a competing offer is proven, e.g. "redacted copy") |
-| `riders` | Rider checklist near the end |
+| `sale_contingency_days`, `kickout` | Rider V (a sale date, no default: count days from the analysis date to that date plus 3) and Rider X |
+| `escalation` | Escalation Addendum (EAC-1) or additional terms: `cap`, `increment`, and `proof` (EAC-1: a redacted copy of the competing offer) |
+| `rent_back_days`, `rent_back_monthly` | Rider U |
+| `seller_financing` | Rider C (note amount) |
+| `assessment_payoff` | Rider EE or the CDD addendum, when the seller agrees to pay off the balance |
+| `attorney_days` | Rider Z's date, as days from the Effective Date |
+| `riders` | Para. 19 checklist: record the letters of every checked and attached rider |
 | `approval`, `lender` | The separate pre-approval letter or proof of funds: "DU Approve/Eligible", "LP Accept", "conditionally approved", "underwritten" |
 
-## Other States' Contracts
+## Other Contracts
 
-The fields are the same everywhere; only where they sit changes. Read the contract's own headings rather than assuming FR/BAR paragraph numbers, and write the paragraph you used in your notes to the agent.
-
-| Field | Usually Found Under |
-|---|---|
-| `price`, `deposit` | "Purchase price", "Earnest money" (TX, CO, GA), "Initial / additional deposit" |
-| `financing`, `down_pct`, `loan_approval_days` | "Financing", "Third party financing addendum" (TX), "Loan contingency" (CA) |
-| `inspection_days` | "Option period" (TX, walk-away for a fee), "Due diligence period" (NC, GA), "Inspection contingency" (CA and most others) |
-| `appraisal_days`, `appraisal_gap` | "Appraisal contingency", an appraisal addendum, or the financing addendum |
-| `closing_date`, `occupancy` | "Closing", "Possession" |
-| `seller_concessions`, `home_warranty` | "Settlement / closing costs", "Seller contributions" |
-| `title_by` | "Title policy", "Title insurance" (TX: the seller usually furnishes the owner's policy; confirm) |
-| `sale_contingency_days`, `kickout` | Sale-of-other-property addendum |
-
-Two cautions outside Florida:
-
-- **Walk-away windows differ.** A Texas option period or North Carolina due-diligence period lets the buyer walk for any reason, like an AS IS inspection period. Put its length in `inspection_days` (it's the walk-away window the timeline and certainty use, not the loan or appraisal dates); leave `contract_form` as the form's name (not `standard`, which means the FR/BAR Standard and its repair limits), and set `inspection_walkaway: false` only when the buyer can cancel just for listed defects.
-- **Costs and customs aren't built in.** Look up the state's transfer tax from a trusted source and put it in `listing.costs` (`local-costs.md`); the rest (title, fees) are national estimates, labeled Estimate, until the agent sends a settlement statement or the title company's quote.
+Any contract that isn't FR/BAR is read on a best-effort basis: read `other-contracts.md` for how to find each term by what it does, what to record, and the chat disclaimer. The fields are the same; only where they sit changes. Set `contract_form` to the form's name, never `standard`, and set `inspection_walkaway` from the contract's own words.
 
 ## Extraction Tips
 

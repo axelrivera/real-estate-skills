@@ -50,7 +50,8 @@ class MatchesPrototype(unittest.TestCase):
             # to closing, so its counter asks for no gap coverage it couldn't enforce (OFR-3, OFR-17).
             # The tax proration allows Florida's 4% early-payment discount (FR/BAR Standard K; OFR-14).
             "A": (143084, 136352, 145996, 55, 63, "DECLINE"),
-            "D": (154485, 140349, 146337, 42, 62, "DECLINE"),
+            # D's sale contingency has a kick-out clause (Rider X): contingency 2, not 1, so 45 (was 42 in the prototype).
+            "D": (154485, 140349, 146337, 45, 65, "DECLINE"),
         })
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
         self.assertEqual(R["mode"], "multi")

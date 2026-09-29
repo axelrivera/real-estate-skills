@@ -4,44 +4,39 @@ The worksheet turns the chosen option into what the agent types into the contrac
 
 ## Florida (FR/BAR)
 
-The worksheet follows the FR/BAR **AS IS** contract's paragraphs (1 parties and property, 2 price and deposits, 3 time for acceptance, 4 closing, 6 occupancy, 8 financing, 9 closing costs and title, 12 inspection). Paragraph numbers and rider titles change between revisions: verify against the current form in Form Simplicity.
+The worksheet follows the FR/BAR contract's paragraphs (1 parties and property, 2 price and deposits, 3 time for acceptance, 4 closing, 6 occupancy, 8 financing, 9 closing costs and title, 12 inspection), checked against the revisions in `frbar-contract.md`. Riders are named by their CR-7 letter; what each one does, its blanks and defaults are in `frbar-riders.md`, and the addenda (AGA-1, EAC-1, CDDA-2) in `frbar-addenda.md`.
 
 - **AS IS** (default): the buyer can cancel for any reason during the inspection period; no seller repairs. The usual choice for competitive offers.
-- **Standard:** no inspection walk-away; the seller pays repairs up to the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank; set others in `worksheet.repair_limits`). Only when the buyer asks (a well-kept home, soft market, no competition). Set `worksheet.contract_form: "standard"` **before** running: the options are scored on the same form the worksheet prints, so a changed form means a re-run.
+- **Standard:** no inspection walk-away; the seller pays repairs up to the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank; set others in `worksheet.repair_limits`). Only when the buyer asks (a well-kept home, soft market, no competition). Set `worksheet.contract_form: "standard"` **before** running: the options are scored on the same form the worksheet prints, so a changed form means a re-run. Riders I, K and L exist only for the Standard form; never add them to an AS IS offer.
 
-## Other States
+## Other Contracts
 
-The worksheet lists the same entries by name with no paragraph numbers, because every state's form orders them differently. Put the form's name in `worksheet.contract_name` ("TREC One to Four Family Residential Contract (Resale)") so it prints. Walk the agent through where each entry goes in their form:
-
-| Entry | Look For |
-|---|---|
-| Deposit | "Earnest money" and its due date (TX, CO, GA: often 1–3 days) |
-| Walk-Away Window | Option period and option fee (TX), due-diligence period and fee (NC, GA), inspection contingency (most others) |
-| Financing, Loan Approval | Financing addendum or loan contingency section |
-| Title | "Title policy": who furnishes it varies by state and county |
-| Texas (TREC 20-19) | The worksheet prints Option Fee and Option Period (Para. 5B: notices by 5:00 PM on the last day, never extended) in place of an inspection period, and Earnest Money (Para. 5A: 3 days, to the end of the day, extended past a weekend or legal holiday). Financing goes on the Third Party Financing Addendum; the right to terminate over a low appraisal is TREC 49-1 (not for FHA or VA, whose terms are in the financing addendum). TREC has no escalation addendum: write escalation in Special Provisions only if the listing agent accepts it. Set `worksheet.option_fee` |
-
-Rider names are generic outside Florida ("Appraisal Contingency Addendum"); map them to the state's forms. Ask the agent before adding anything their form set doesn't have.
+Only FR/BAR is built in. For any other form, the worksheet lists the same entries by name with no paragraph numbers and generic addendum names. Put the form's name in `worksheet.contract_name` so it prints, read `other-contracts.md`, and walk the agent through where each entry goes in their form: deposit and its due date, the walk-away or inspection period and its notice rules, financing and appraisal terms, title. Ask before adding anything their form set doesn't have (an escalation clause, for example, only when the form and the listing agent allow it). The chat reply carries the best-effort line; the worksheet never does.
 
 ## Riders: When Each Is Recommended
 
-| Rider | Trigger | Suggested Inputs |
+| Rider (FR/BAR) | Trigger | Suggested Inputs |
 |---|---|---|
-| FHA/VA Financing | financing fha or va | appraised-value threshold = price (amendatory / escape clause) |
-| Appraisal Contingency | conventional or usda | value threshold = price; appraisal period (21 days); pair with gap language when there's a gap |
-| HOA / Community Disclosure | `hoa_monthly` > 0 or `hoa_name` | association, dues, approval required, special assessments |
-| Condominium | `property.type` = condo | association, approval, reserve study and milestone inspection status |
-| Lead-Based Paint (Federal) | built before 1978 | disclosure and 10-day risk-assessment opportunity (buyer may waive) |
-| Homeowners' / Flood Insurance | roof 15+ years, flood zone A/V, or no insurance quote yet (financed) | days to obtain coverage; max acceptable premium |
-| Sale of Buyer's Property + Kick-Out | `buyer.needs_sale` | days, the buyer's address, 72-hour kick-out; warn that it weakens the offer |
-| Back-Up Contract | `competition.backup` | — |
-| Escalation Addendum | the chosen option escalates | increment, cap, proof of competing offer |
-| CDD / Special District | `property.cdd` | annual amount and outstanding debt |
-| Short Sale | `property.short_sale` | lender approval period |
+| FHA/VA Financing Rider (E) | financing fha or va | appraised-value threshold = price; fill the appraisal repair cap (no default) |
+| Appraisal Contingency Rider (F) | conventional or usda, no appraisal gap | value threshold = price; appraisal date (blank = 10 days before closing, notice within 3 days after) |
+| Appraisal Gap Addendum (AGA-1) | conventional, usda or cash with an appraisal gap | Gap Amount; valuation within 30 days (default); 3 days to agree on new terms. Not used with Rider F |
+| Homeowners' Association/Community Disclosure Rider (B) | `hoa_monthly` > 0 or `hoa_name` | association, dues, approval required, special assessments; the seller's disclosure summary before the buyer signs |
+| Condominium Rider (A) | `property.type` = condo | association, approval, milestone inspection and SIRS status, documents requested |
+| Lead-Based Paint Disclosure Rider (P) | built before 1978 | disclosure and 10-day risk-assessment opportunity (buyer may waive) |
+| Homeowner's/Flood Insurance Rider (H) | roof 15+ years, flood zone A/V, or no insurance quote yet (financed) | premium caps; date (blank = the earlier of 30 days after the Effective Date or 10 days before closing) |
+| Sale of Buyer's Property Rider (V) + Kick-Out Clause Rider (X) | `buyer.needs_sale` | the sale date (no default), the buyer's address, the kick-out deposit; warn that it weakens the offer |
+| Back-Up Contract Rider (W) | `competition.backup` | the seller's notice date (no default) |
+| Escalation Addendum (EAC-1) | the chosen option escalates | increment, cap, proof of competing offer |
+| Community Development District Addendum (CDDA-2) | `property.cdd` | district name, annual amount and outstanding debt |
+| Short Sale Approval Contingency Rider (G) | `property.short_sale` | approval deadline (90 days if blank) |
+| Seller's Agreement with Respect to Buyer's Broker Compensation Rider (GG) | buyer-broker pay requested from the seller (default route) | who signs the compensation agreement; signed within 3 days. Doesn't use the loan's concession room |
+| Credit Related to Buyer's Broker Compensation Rider (FF) | `buyer_broker_form: FF` | credit as a % of price; what happens over the lender's limit. Counts toward the concession limit with any closing-cost credit, so the options leave less room for concessions |
+
+Other contracts get the same list with generic names ("Appraisal Contingency Addendum").
 
 ## Additional Terms (Draft Language)
 
-Only when they apply: seller-paid closing costs (unused amounts aren't paid to the buyer), appraisal gap (the buyer pays up to $X of any shortfall; beyond that the appraisal rider applies), seller-provided reports within 2 days (in Florida the 4-point and wind-mitigation reports speed up the insurance quote), escalation (only when the addendum isn't used).
+Only when they apply: seller-paid closing costs (unused amounts aren't paid to the buyer), appraisal gap when AGA-1 doesn't apply (an FHA/VA offer, where it's stated intent only, or another contract: the buyer pays up to $X of any shortfall; beyond that the appraisal protection applies), seller-provided reports within 2 days (in Florida the 4-point and wind-mitigation reports speed up the insurance quote), escalation (only when the addendum isn't used).
 
 ## Package Checklist
 

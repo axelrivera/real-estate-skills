@@ -1,6 +1,6 @@
 ---
 name: contract-timeline
-description: Reads an executed real estate purchase contract (with riders, addenda and counteroffers) and lays out every deadline, from the Effective Date and deposits through inspection, appraisal, loan approval, title, walk-through and closing, from the buyer's or the seller's side, with who owes each one, the action and what happens if it's missed. Florida FR/BAR contracts are built in; other states' contracts work from the contract's own dates and time rules. Use it whenever an agent has an accepted or executed contract and asks for key dates, deadlines, a contract timeline or closing calendar, "when does the inspection period end", "what's due next", a deadline summary for a client, or when an amendment or extension is signed and the dates need to be re-run. Not for writing or analyzing offers before acceptance.
+description: Reads an executed real estate purchase contract (with riders, addenda and counteroffers) and lays out every deadline, from the Effective Date and deposits through inspection, appraisal, loan approval, title, walk-through and closing, from the buyer's or the seller's side, with who owes each one, the action and what happens if it's missed. Florida FR/BAR contracts (AS IS and Standard, every rider and addendum) are fully supported; any other contract is read on a best-effort basis from its own dates and time rules. Use it whenever an agent has an accepted or executed contract and asks for key dates, deadlines, a contract timeline or closing calendar, "when does the inspection period end", "what's due next", a deadline summary for a client, or when an amendment or extension is signed and the dates need to be re-run. Not for writing or analyzing offers before acceptance.
 ---
 
 # Contract Timeline
@@ -16,6 +16,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Fair housing.** Flags and notes are about dates, terms and documents, never about the buyer, the seller or the neighborhood. Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
+- **Contract support.** Only Florida FR/BAR contracts (AS IS and Standard, with their CR-7 riders and addenda) are fully supported. For any other contract the script output has `support: "best_effort"` and the line to use in `chat_notes`: say it once in chat, in your own short words. The same goes for a note that an FR/BAR contract isn't the revision the rules were checked against. Never put either in a PDF, calendar file, worksheet or markdown report.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
 ## 1. Read the Executed Documents
@@ -24,15 +25,15 @@ Read the whole package: contract, every rider and addendum, and every counteroff
 
 - **Effective Date** is when the last party signed or initialed **and delivered** the final counteroffer or acceptance, not the offer date. Write down the evidence, and ask for the delivery date when it differs from the signature date. If it's ambiguous, or later than today for a contract the agent calls executed, stop and ask: every deadline depends on it. A future date is fine for a what-if ("if we go under contract on the 20th"); say it's hypothetical.
 - **Later documents win:** counteroffers override the offer; initialed handwritten changes override typed text. If something is illegible or two documents disagree, add it to `flags` instead of guessing.
-- **FR/BAR contracts (Florida):** read `references/frbar.md` for where each date lives and the form defaults for blanks. List every default you used in `agent_notes` so the agent can confirm it.
+- **FR/BAR contracts (Florida):** read `references/frbar.md` for where each date goes in the deal file and the defaults for blanks, `references/frbar-riders.md` for every rider attached (deadlines, defaults, what changes), and `references/frbar-addenda.md` for any addendum (counteroffer, extension, escalation, appraisal gap, co-op). Check the package with `references/frbar-package-check.md` (riders checked vs. attached, RESERVED riders on AS IS). `references/frbar-contract.md` has every paragraph of both forms when you need one. List every default you used in `agent_notes` so the agent can confirm it.
 - **Two kinds of notes.** `flags` print on the report as "Check:" lines, so use them for what the client should also see (a date two documents disagree on, a tight loan approval). `agent_notes` stay in chat: defaults used for blanks, readings to confirm, anything that would confuse a client.
-- **Any other contract:** read `references/other-contracts.md`. You list the deadlines yourself, and the time rules come from the contract's definitions.
+- **Any other contract** (another state's form, a builder contract, the Florida Realtors CRSP): read `references/other-contracts.md`. You list the deadlines yourself, and the time rules come from the contract's definitions; nothing about another state's forms is built in.
 
 ## 2. Compute
 
 Write deal.json in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files).
 
-Florida rules are built in; for any other state the time rules come from the contract (never estimated).
+Florida rules are built in; for any other contract the time rules come from the contract (never estimated).
 
 ```
 python3 scripts/timeline.py deal.json [--side buyer|seller]   # --side overrides the deal file's side

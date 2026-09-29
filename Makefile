@@ -12,7 +12,7 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync forms-check runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
@@ -23,6 +23,7 @@ help:
 	@echo "make py311          Check shipped Python for 3.11 (the Cowork runtime)"
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
+	@echo "make forms-check    Compare the FR/BAR form PDFs in sources/ with dev/forms/frbar-forms.json (ARGS=\"--accept CR-7_L\")"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
@@ -64,6 +65,10 @@ sync:
 
 check-sync:
 	@python3 dev/sync_shared.py --check
+
+# Local only: the PDFs live in the git-ignored sources/. See docs/development.md#updating-a-contract-form.
+forms-check:
+	@$(PY) dev/forms_check.py $(ARGS)
 
 runtime-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py

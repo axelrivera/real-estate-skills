@@ -244,13 +244,14 @@ def single_view(R, o):
                  "what": f"Stay on market; each extra month costs about {money(S['holding_monthly'])} in holding costs"})
     if act == "BACKUP":
         opts.insert(0, {"option": "Hold as Backup", "net": money(ao), "certainty": f"{score}/100", "status": "caution",
-                        "what": f"Steps in if {top['ref']} falls through", "recommended": True})
+                        "what": f"Steps in if {top['ref']} falls through; until then the backup buyer can cancel "
+                                "(Back-Up Contract Rider W)", "recommended": True})
 
     expires = f" before {o['expires']}" if o.get("expires") else ""
     nxt = {"COUNTER": f"approve the counter terms and I'll send the counter to the buyer's agent{expires}.",
            "ACCEPT": "sign the contract and I'll open escrow and calendar every deadline.",
            "BACKUP": "once the primary contract is fully signed, approve offering this buyer a backup position on the "
-                     "Back-Up Contract rider.",
+                     "Back-Up Contract rider, with a short notice date: the backup buyer can cancel until the seller's notice.",
            "DECLINE": "approve, and with your written OK I'll tell the buyer's agent the seller is moving forward with another offer."}[act]
     return {
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
@@ -410,6 +411,8 @@ def result(R, mode="auto", offer_id=None):
         "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"]), "what": a["why"]} for a in R["missing"]],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
+        # chat only (never on the report): the best-effort line for a contract that isn't FR/BAR, and revision notes
+        **oe.cf.support([x["contract_form"] for x in offers], [(x["contract_form"], x.get("form_revision")) for x in offers]),
     }
 
 

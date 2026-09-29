@@ -212,6 +212,15 @@ def prepare(B, A, market=None):
             if cf.frbar_market(costs.get("contract.forms")) else cf.OTHER
     B["contract_form"] = form
     B["repair_limits"] = W.get("repair_limits") or BU.get("repair_limits")
+    # Buyer's broker pay requested from the seller, and how it's paid on an FR/BAR offer: Rider GG (a separate
+    # compensation agreement, the default) or Rider FF (a seller credit to the buyer, which uses the loan program's
+    # concession room). contract_forms.buyer_broker_as_credit is the rule.
+    B["bb_request"] = bb_request(B, costs)
+    route = str(W.get("buyer_broker_form") or BU.get("buyer_broker_form") or "GG").upper()
+    B["buyer_broker_form"] = route if form in cf.FRBAR and B["bb_request"][0] else None
+    if BU.get("needs_sale") and not BU.get("sale_contingency_days"):
+        A.add("buyer", "sale_contingency_days", 21, "Buyer needs to sell first, no sale deadline given: planned on 21 days with a "
+              "kick-out clause. Set the date the buyer's sale can close", "med")
     if BU.get("buyer_broker_agreement_pct") is None:
         A.add("buyer", "buyer_broker_agreement_pct", "not given",
               "Buyer-broker agreement not given: cash to close leaves out any fee the seller doesn't pay. Enter the "
@@ -265,7 +274,25 @@ def monthly_payment(B, costs, price):
 
 
 def concession_cap(B, price):
-    return (finance.concession_cap(B["buyer"]["financing"], B["buyer"]["down_pct"]) or 0) * price
+    """What the loan program lets the seller pay toward the buyer's costs. A buyer's broker credit under Rider FF uses the
+    same room, so it comes off the top (contract_forms.buyer_broker_as_credit)."""
+    cap = (finance.concession_cap(B["buyer"]["financing"], B["buyer"]["down_pct"]) or 0) * price
+    if cf.buyer_broker_as_credit(B.get("contract_form"), {"buyer_broker_form": B.get("buyer_broker_form")}):
+        cap = max(0, cap - (B.get("bb_request") or (0,))[0] * price)
+    return cap
+
+
+def bb_request(B, costs):
+    """(share of price, why) the buyer asks the seller to pay toward the buyer's broker."""
+    LS, BU = B["listing_side"], B["buyer"]
+    if LS.get("buyer_broker_offered_pct") is not None:
+        return LS["buyer_broker_offered_pct"], "What the seller is offering"
+    if BU.get("buyer_broker_agreement_pct") is not None:
+        return BU["buyer_broker_agreement_pct"], "Per your buyer-broker agreement (confirm with listing agent)"
+    if costs.get("brokerage.buyer_broker_fee_pct") is not None:
+        pct_ = costs.get("brokerage.buyer_broker_fee_pct")
+        return pct_, f"Assumed {pct_ * 100:g}% (5% total): set it from your buyer-broker agreement"
+    return 0, "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
 
 
 # --- engine bridge -------------------------------------------------------------
@@ -291,8 +318,18 @@ def engine_data(B, variants):
                 o[k] = t[k]
         if B.get("repair_limits"):
             o["repair_limits"] = B["repair_limits"]
-        if BU["financing"] != "cash":
+        # FR/BAR: a gap offer is written on the Appraisal Gap Addendum (AGA-1: conventional or cash, never with Rider F),
+        # a conventional offer without a gap on Rider F, each scored on its own form's window (contract_forms)
+        fin = BU["financing"]
+        riders = [B["buyer_broker_form"]] if B.get("buyer_broker_form") and t.get("buyer_broker_pct") else []
+        if B["contract_form"] in cf.FRBAR and t.get("appraisal_gap") and fin in ("conventional", "usda", "cash"):
+            o["appraisal_form"] = "aga"
+        elif B["contract_form"] in cf.FRBAR and fin in ("conventional", "usda"):
+            riders.append("F")
+        elif fin != "cash":
             o["appraisal_contingency"] = t.get("appraisal_days", 21)
+        if riders:
+            o["riders"] = riders
         offers.append(o)
     return {"analysis_date": str(B["analysis_date"]), "listing": listing, "seller": seller, "offers": offers}
 
@@ -393,18 +430,12 @@ def build_offer(B, costs):
         if lvl >= 1 else "Comfortable timeline"
     t["home_warranty"] = 0
     why["home_warranty"] = "Not asked of the seller; keeps the net clean"
-    if LS["buyer_broker_offered_pct"] is not None:
-        t["buyer_broker_pct"], why["buyer_broker_pct"] = LS["buyer_broker_offered_pct"], "What the seller is offering"
-    else:
-        t["buyer_broker_pct"] = BU.get("buyer_broker_agreement_pct")
-        if t["buyer_broker_pct"] is not None:
-            why["buyer_broker_pct"] = "Per your buyer-broker agreement (confirm with listing agent)"
-        elif costs.get("brokerage.buyer_broker_fee_pct") is not None:
-            t["buyer_broker_pct"] = costs.get("brokerage.buyer_broker_fee_pct")
-            why["buyer_broker_pct"] = f"Assumed {t['buyer_broker_pct'] * 100:g}% (5% total): set it from your buyer-broker agreement"
-        else:
-            t["buyer_broker_pct"] = 0
-            why["buyer_broker_pct"] = "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
+    t["buyer_broker_pct"], why["buyer_broker_pct"] = B["bb_request"]
+    if B.get("buyer_broker_form") == "FF":
+        why["buyer_broker_pct"] += "; paid as a credit (Rider FF), which counts toward the loan's concession limit"
+    if BU.get("needs_sale"):  # Rider V with a kick-out (Rider X): the listing side scores it that way too
+        t["sale_contingency_days"], t["kickout"] = BU.get("sale_contingency_days") or 21, True
+        why["sale_contingency_days"] = "Your sale has to close first; the kick-out clause lets the seller keep marketing"
     t["contract_form"] = B["contract_form"]
     t["insurance_quote"] = True if BU.get("insurance_quote") else "planned"  # OFR-18: only a quote in hand is scored
     why["insurance_quote"] = ("Quote in hand: include it with the offer" if BU.get("insurance_quote") else
@@ -779,27 +810,20 @@ def next_step(B, deadline):
 
 # --- offer package worksheet -------------------------------------------------------
 
-FRBAR_RIDERS = {"fha_va": "FHA/VA Financing", "appraisal": "Appraisal Contingency", "hoa": "Homeowners' Association / Community Disclosure",
-                "condo": "Condominium", "lead": "Lead-Based Paint Disclosure (Federal)", "insurance": "Homeowners' / Flood Insurance (If in Your Form Set)",
-                "sale": "Sale of Buyer's Property", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract", "escalation": "Escalation Addendum",
-                "cdd": "CDD Disclosure", "short_sale": "Short Sale"}
+# CR-7 riders by letter and the Florida Realtors addenda by form number (shared/references/frbar-riders.md, frbar-addenda.md)
+FRBAR_RIDERS = {"fha_va": "FHA/VA Financing Rider (E)", "appraisal": "Appraisal Contingency Rider (F)",
+                "hoa": "Homeowners' Association/Community Disclosure Rider (B)", "condo": "Condominium Rider (A)",
+                "lead": "Lead-Based Paint Disclosure Rider (P)", "insurance": "Homeowner's/Flood Insurance Rider (H)",
+                "sale": "Sale of Buyer's Property Rider (V)", "kickout": "Kick-Out Clause Rider (X)", "backup": "Back-Up Contract Rider (W)",
+                "escalation": "Escalation Addendum (EAC-1)", "cdd": "Community Development District Addendum (CDDA-2)",
+                "short_sale": "Short Sale Approval Contingency Rider (G)", "gap": "Appraisal Gap Addendum (AGA-1)",
+                "bb_GG": "Seller's Agreement with Respect to Buyer's Broker Compensation Rider (GG)",
+                "bb_FF": "Credit Related to Buyer's Broker Compensation Rider (FF)"}
 GENERIC_RIDERS = {"fha_va": "FHA/VA Financing Addendum", "appraisal": "Appraisal Contingency Addendum", "hoa": "HOA / Community Addendum",
                   "condo": "Condominium Addendum", "lead": "Lead-Based Paint Disclosure (Federal)", "insurance": "Insurance Contingency (if Your Forms Have One)",
                   "sale": "Sale of Buyer's Property Addendum", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract Addendum",
                   "escalation": "Escalation Clause (Special Provisions, if Your Forms and the Listing Agent Allow It)",
                   "cdd": "Special District / Assessment Disclosure", "short_sale": "Short Sale Addendum"}
-# OFR-19: TREC forms (Texas). Financing, and FHA/VA's appraisal terms, are on the Third Party Financing Addendum; the right
-# to terminate over a low appraisal is TREC 49-1 (not for FHA or VA). Verified against TREC 20-19 and 49-1.
-TREC_RIDERS = {**GENERIC_RIDERS, "fha_va": "Third Party Financing Addendum (FHA/VA Section)",
-               "appraisal": "Addendum Concerning Right to Terminate Due to Lender's Appraisal (TREC 49-1)",
-               "financing": "Third Party Financing Addendum", "hoa": "Addendum for Property Subject to Mandatory Membership in a "
-               "Property Owners Association", "lead": "Addendum for Seller's Disclosure of Information on Lead-Based Paint (Federal)"}
-
-
-def is_trec(form_name, state):
-    return "TREC" in str(form_name or "").upper() or (state == "TX" and not form_name)
-
-
 def blank(x):
     """A blank the agent must fill in (rendered red in the PDF)."""
     return f"[{x}]"
@@ -833,9 +857,6 @@ def worksheet(r, variant=None):
         form_name = W.get("contract_name") or "Your state's standard residential purchase contract"
         form_why = "Paragraph numbers vary by form, so find each entry by its name and confirm the form version."
     deadline = W.get("acceptance_deadline") or C.get("deadline")
-    trec = not frbar and is_trec(W.get("contract_name"), P.get("state"))
-    if trec and not W.get("contract_name"):
-        form_name = "TREC One to Four Family Residential Contract (Resale), 20-19"
     para = (lambda p: p) if frbar else (lambda p: "")
     title_payer = costs.get("closing_costs.owner_title.payer")
     title_src = costs.described("closing_costs.owner_title.payer")
@@ -848,9 +869,9 @@ def worksheet(r, variant=None):
         (para("1"), "Personal Property Included", W.get("personal_property") or blank("items in MLS (range, refrigerator, washer/dryer…)"),
          "List anything the buyer expects to stay"),
         (para("2"), "Purchase Price", f"**{money(price)}**", ""),
-        (para("2(a)"), "Earnest Money" if trec else "Initial Deposit",
-         f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar or trec else f"**{money(t['deposit'])}**",
-         "Para. 5A: to the end of day 3; extends past a weekend or legal holiday" if trec else "" if frbar else "Due date per the contract"),
+        (para("2(a)"), "Initial Deposit",
+         f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar else f"**{money(t['deposit'])}**",
+         "" if frbar else "Due date per the contract"),
         (para("2(a)"), "Escrow Agent", W.get("escrow_agent") or blank("title company name, address, phone"), ""),
         (para("2(b)"), "Additional Deposit", "None", "Keep the full deposit up front: it scores better"),
     ]
@@ -880,32 +901,31 @@ def worksheet(r, variant=None):
         (para("9"), "Home Warranty", "None (buyer may purchase separately)" if not t.get("home_warranty") else f"Seller pays up to {money(t['home_warranty'])}", ""),
         (para("9"), "Survey", "Buyer's expense (recommended)", "Lender may require"),
     ]
-    if trec:  # OFR-19: the walk-away is the option period, bought with the option fee (Para. 5B)
-        rows += [("", "Option Fee", f"**{money(W['option_fee'])}**" if W.get("option_fee") else blank("amount, delivered with the earnest money"),
-                  "Credited to the buyer at closing; kept by the seller if the buyer terminates"),
-                 ("", "Option Period", f"**{t['inspection_days']} days**", "Notices by 5:00 PM on the last day; not extended "
-                  "for weekends or holidays. Book the inspector before submitting")]
-    else:
-        rows.append((para("12"), "Inspection Period", f"**{t['inspection_days']} days**",
-                     f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"))
+    rows.append((para("12"), "Inspection Period", f"**{t['inspection_days']} days**",
+                 f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting" if frbar else
+                 "Book the inspector before submitting; find the contract's inspection or walk-away period and its notice rules"))
     if form == cf.STANDARD:
         lim = cf.repair_limits(price, {"repair_limits": B.get("repair_limits")})
         rows.append((para("9"), "Repair Limits", f"General **{money(lim['general'])}** · WDO **{money(lim['wdo'])}** · "
                      f"Permits **{money(lim['permit'])}**", "Para. 9(a); 1.5% of price each when left blank"))
 
-    names = FRBAR_RIDERS if frbar else TREC_RIDERS if trec else GENERIC_RIDERS
+    names = FRBAR_RIDERS if frbar else GENERIC_RIDERS
     riders = []  # (name, inputs, why)
-    if trec and fin in ("conventional", "usda"):
-        riders.append((names["financing"], f"Loan: {oe.FIN_LABEL[fin]} {money(loan)} · buyer approval: **{t.get('loan_approval_days', 21)} days**",
-                       "Required for financed offers on TREC forms"))
     yb, roof, fz = P.get("year_built"), P.get("roof_year"), (P.get("flood_zone") or "").upper()
     if fin in ("fha", "va"):
         riders.append((names["fha_va"], f"Loan type: {fin.upper()} · appraised-value threshold: **{money(price)}**",
                        "Required with FHA/VA loans (amendatory / escape clause)"))
-    if fin in ("conventional", "usda"):
-        riders.append((names["appraisal"], (f"Waiver: none, or the amount of the gap the buyer covers ({money(t['appraisal_gap'])})"
-                                            if trec and t.get("appraisal_gap") else "Waiver: none" if trec else
-                                            f"Value threshold: **{money(price)}** · appraisal period: **{t.get('appraisal_days', 21)} days**"),
+    # FR/BAR: the Appraisal Gap Addendum is for conventional or cash offers and isn't used with the Appraisal Contingency
+    # Rider (AGA-1's own instructions), so a gap offer uses AGA-1 and no rider F.
+    aga = frbar and t.get("appraisal_gap") and fin in ("conventional", "usda", "cash")
+    if aga:
+        riders.append((names["gap"], f"Gap Amount: **{money(t['appraisal_gap'])}** · valuation within **30 days** (form default) · "
+                                     "3 days to agree on new terms if the gap isn't enough",
+                       "The buyer covers a low appraisal up to the gap; beyond it the contract ends unless both agree to new terms"))
+    elif fin in ("conventional", "usda"):
+        due = ("appraisal due: blank = **10 days before Closing**, buyer's notice within 3 days after" if frbar
+               else f"appraisal period: **{t.get('appraisal_days', 21)} days**")
+        riders.append((names["appraisal"], f"Value threshold: **{money(price)}** · {due}",
                        "Protects the buyer if the appraisal is low" + ("; pair with gap language below" if t.get("appraisal_gap") else "")))
     if (P.get("hoa_monthly") or 0) > 0 or W.get("hoa_name"):
         riders.append((names["hoa"], f"Association: {W.get('hoa_name') or blank('name')} · dues: {money(P['hoa_monthly'])}/mo · "
@@ -941,13 +961,24 @@ def worksheet(r, variant=None):
         riders.append((names["cdd"], f"Annual amount: {blank('amount')} · outstanding debt: {blank('amount')}", "Property is in a special district"))
     if P.get("short_sale"):
         riders.append((names["short_sale"], f"Lender approval period: {blank('days')}", "Listed as a short sale"))
+    if frbar and B.get("buyer_broker_form") and t.get("buyer_broker_pct"):
+        bb = money(round(t["buyer_broker_pct"] * price))
+        if B["buyer_broker_form"] == "FF":
+            riders.append((names["bb_FF"], f"Credit: **{t['buyer_broker_pct']:.2%}** of price ({bb}) · if over the lender's limit: "
+                                           "balance paid by the seller directly to your brokerage (form default)",
+                           "Counts toward the loan program's concession limit together with any closing-cost credit"))
+        else:
+            riders.append((names["bb_GG"], f"Compensation agreement ({bb}) signed by: {blank('seller or listing broker')} · "
+                                           "within **3 days** (form default)",
+                           "Paid as a commission, so it doesn't use the loan's concession room; have the agreement ready "
+                           "to sign with the offer"))
 
     clauses = []
     if t.get("seller_concessions"):
         clauses.append(("Seller-Paid Closing Costs",
                         f"Seller shall pay up to {money(t['seller_concessions'])} toward Buyer's closing costs, prepaid items and escrows, as allowed by "
                         "Buyer's lender. Any amount not used shall not be paid to Buyer."))
-    if financed and t.get("appraisal_gap"):
+    if financed and t.get("appraisal_gap") and not aga:
         rider = names["fha_va"] if fin in ("fha", "va") else names["appraisal"]
         clauses.append(("Appraisal Gap",
                         f"If the appraised value is less than the Purchase Price, Buyer shall pay in cash up to {money(t['appraisal_gap'])} of the "
@@ -1034,6 +1065,7 @@ def result(r, variant=None):
         "to_confirm": [a["why"] for a in r["missing"] if a["impact"] in ("high", "med")][:4],
         "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in r["missing"]],
         "market_notes": list(r["costs"].notes),
+        **cf.support([B["contract_form"]]),  # chat only: the best-effort line for a contract that isn't FR/BAR
     }
 
 

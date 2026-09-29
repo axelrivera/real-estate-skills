@@ -1,0 +1,725 @@
+{
+  "forms": {
+    "AA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (AA-1)"
+      ],
+      "file": "Other/Auction Addendum to Purchase and Sale Contract (AA-1).pdf",
+      "revision": "AA-1 Rev. 12/2010",
+      "sha256": "3f54f634fce53870f38e531a6e93d740c2e579a563598202230c5e65acc325f6"
+    },
+    "ACSP": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (ACSP-4)"
+      ],
+      "file": "Other/Addendum to Contract (ACSP-4)-2.pdf",
+      "revision": "ACSP-4 Rev 6/17",
+      "sha256": "3ae8a71844b197bc7c2e75cc4072c596f0a80ef82b59254320ebe14ec30b44dc"
+    },
+    "AGA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (AGA-1)",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS (gap)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Appraisal Gap Addendum (AGA-1).pdf",
+      "revision": "AGA-1 Rev 9/22",
+      "sha256": "4153ed6d6384c69ea8bae1339bffb389f1118c9aecb89f3274861a315fca0def"
+    },
+    "BBCCA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (BBCCA-1)"
+      ],
+      "file": "Other/Buyer's Broker Compensation Contingency Addendum (BBCCA-1).pdf",
+      "revision": "BBCCA-1 Rev. 9/2024",
+      "sha256": "ad447a925bfb0696a8b663a0eaa8dcfc71c31450f6fbff8555f5d3659b347e92"
+    },
+    "BRR": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (©)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Buyer's Request for Repairs andor Remedies (BRR-1).pdf",
+      "revision": "© 2014",
+      "sha256": "684da1b64ef4c0687c1c0bd1aa42fe515cf3c5442e9ad8a9fdd42befbf8af510"
+    },
+    "BWTIR": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (©)"
+      ],
+      "file": "Other/Buyer's Walk-Through Inspection  Reinspection (BWTIR-1).pdf",
+      "revision": "© 2012",
+      "sha256": "fff3cbe32259fcce3771c6ba44d85a832a4630d020fa381430bbcea4681b703a"
+    },
+    "CASSB": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (CASSB-1)"
+      ],
+      "file": "Other/Compensation Agreement - Seller or Seller's Broker to Buyer's Broker (CASSB-1).pdf",
+      "revision": "CASSB-1 Rev 1/26",
+      "sha256": "9a47368e0f1e23a9f7cb864eb9e6950e87f78a76fc75edb7c54db240bcd490a3"
+    },
+    "CCCLA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (CCCLA-3)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Coastal Construction Control Line Affidavit (CCCLA-3).pdf",
+      "revision": "CCCLA-3 Rev 2/20",
+      "sha256": "e79f7ee614dfab67c7150b18d0e270569a94584c4434873c64b1ac39227b9da9"
+    },
+    "CDDA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (CDDA)",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS (cdd)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Community Development District Addendum (CDDA-2).pdf",
+      "revision": "CDDA 2 Rev 2/18",
+      "sha256": "a652e74eb95a4361ff14dafb2fa8ac39d5ca4a856933c2c3b2e174d6abdadd0e"
+    },
+    "CO": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (CO-3)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Counter Offer (CO-3).pdf",
+      "revision": "CO-3 Rev 1/15",
+      "sha256": "80188335930df4b25e8e3f9b8d9cd9e4f427fb977afe6eb7493f094e407e8287"
+    },
+    "COOP": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (COOP-4)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Addendum to Contract for Sale and Purchase of Cooperative (COOP-4).pdf",
+      "revision": "COOP-4 Rev 7/25",
+      "sha256": "eb755ced7ebc50c20acb87310440cd34e9dd08f1a1ab0d0a5a243d8463d1c4d0"
+    },
+    "CR-7_A": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider A)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() condo rows, rider_rows() ROFR",
+        "skills/contract-timeline/references/frbar.md",
+        "shared/offer_engine.py contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/A. Condominium Rider (CR-7x A).pdf",
+      "revision": "CR-7x Rev. 05/2026",
+      "sha256": "151ec0671436b7261d01c29d03e637d9db287e8c3a05089fa492f66596e5de04"
+    },
+    "CR-7_AA": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider AA)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/AA. Licensee Disclosure of Personal Interest in Property Rider (CR-7 AA).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "23b3bc97f60884a150e9d57c9e806098c486dbf13a234e904c92f202b7d708c4"
+    },
+    "CR-7_B": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider B)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() HOA rows",
+        "skills/contract-timeline/references/frbar.md",
+        "shared/offer_engine.py contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/B. Homeowners' Association  Community Disclosure Rider (CR-7 B).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "b816f2cdb33708e9762e40ba1638f365a705a6bfea9677535ceb107d264b0786"
+    },
+    "CR-7_BB": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider BB)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/BB. Binding Arbitration Rider (CR-7 BB).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "ce53f95174c25bfbb4fe017ad6daaedc76fc9904cedff8d040de8ed82d2bf8c5"
+    },
+    "CR-7_C": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider C)",
+        "shared/contract_forms.py RIDERS",
+        "shared/offer_engine.py rider_money()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/C. Seller Financing Rider (Purchase Money Mortgage; Security Agreement to Seller) (CR-7 C).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "f9766910384172f9a25afdf9c3fb9f910d689bfa12d1d43bb118b2e3a2368d1a"
+    },
+    "CR-7_CC": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider CC)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/CC. Miami-Dade County Special Taxing District Disclosure Rider (CR-7 CC).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "c23b911a9842fb0327946744c630f639f202dd0a2cacb3d9adb9c67c3d9a9177"
+    },
+    "CR-7_D": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider D)",
+        "shared/contract_forms.py RIDERS",
+        "shared/offer_engine.py contract_checks()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/D. Assumption of Existing Mortgage Rider (CR-7 D).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "e83c3d37dbe8b92aa61cc6931dedc3f9c2bf506b28bdb76b6656ec698c22e175"
+    },
+    "CR-7_DD": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider DD)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/DD. Seasonal and Vacation Rentals After Closing Rider (CR-7 DD).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "c79d79ea6b19df2ca8b79cf687f593e2706b3a7c18f04f4cd7b7de4700382d80"
+    },
+    "CR-7_E": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider E)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py FHA/VA note",
+        "shared/offer_engine.py appraisal protection, contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/E. Federal Housing Administration (FHA)  U.S. Department of Veterans Affairs (VA) Rider (CR-7 E).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "3216f38e0cff3a57140f75dfb1f07e7db47b00899954efc49c7496b1cb849a0e"
+    },
+    "CR-7_EE": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider EE)",
+        "shared/contract_forms.py RIDERS",
+        "shared/contract_forms.py RIDERS alias PACE",
+        "shared/offer_engine.py rider_money(), contract_checks()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/EE. Property Assessed Clean Energy (PACE) Disclosure Rider (CR-7x EE).pdf",
+      "revision": "CR-7x Rev. 2/26",
+      "sha256": "8f5805b032d84a5b5715052354acbb9094298ccf917002554e0809c6490341a4"
+    },
+    "CR-7_F": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider F)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() appraisal rows",
+        "skills/contract-timeline/references/frbar.md",
+        "shared/offer_engine.py Rider F appraisal default",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/F. Appraisal Contingency Rider (CR-7 F).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "c586136be8db89d273a31e125b953fbd739f46f19e8821a54242d5bafccd1d7a"
+    },
+    "CR-7_FF": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider FF)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/FF. Credit Related to Buyer's Broker Compensation Rider (CR-7 FF).pdf",
+      "revision": "CR-7 Rev. 8/24",
+      "sha256": "b46c5e3bf89c8846e7b024660700a8fc4ee4e5ce2696fc9780f8c522f471b0c0"
+    },
+    "CR-7_G": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider G)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/offer_engine.py contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/G. Short Sale Approval Contingency Rider (CR-7 G).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "225e2e1b51ec0d55c21e86cde96250fa222a8478a9dbd722c85f6d659c3c2e5a"
+    },
+    "CR-7_GG": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider GG)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/offer_engine.py contract_checks()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/GG. Seller's Agreement with Respect to Buyer's Broker Compensation Rider (CR-7 GG).pdf",
+      "revision": "CR-7 Rev. 8/24",
+      "sha256": "2b37b68854575cb2d7572545c16e2682702e4f838c37229d4be525d5faaf1e5b"
+    },
+    "CR-7_H": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider H)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() insurance row",
+        "skills/contract-timeline/references/frbar.md",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/H. Homeowner's  Flood Insurance Rider (CR-7 H).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "9bb7b742569434816e64108bbcaecb542ae2f315bcf6e44ab3397eca646c00fd"
+    },
+    "CR-7_I": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider I)",
+        "shared/contract_forms.py RIDERS",
+        "shared/contract_forms.py RESERVED_ON_AS_IS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/I. Mold Inspection Rider (CR-7 I).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "8d7f3bd41d715e87b2f74d97844af16f4d0bbe4cc545061fc5cb6f0aade24081"
+    },
+    "CR-7_J": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider J)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/J. Interest-Bearing Account Rider (CR-7 J).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "dc660eaefee891857b6d2a746927f9257f32dab6d62aee47b05963d9e0c1e6f2"
+    },
+    "CR-7_K": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider K)",
+        "shared/contract_forms.py RIDERS",
+        "shared/contract_forms.py terms()",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() inspection row",
+        "shared/offer_engine.py risk_days(), repair_reserve()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/K. As Is Rider (CR-7 K).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "d47b4d0bea00d6e1290f750d16aa6e8c18098a752164c30dd5b3dc59afe094fc"
+    },
+    "CR-7_L": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider L)",
+        "shared/contract_forms.py RIDERS",
+        "shared/contract_forms.py terms()",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() inspection row",
+        "shared/offer_engine.py risk_days(), repair_reserve()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/L. Right to Inspect and Right to Cancel Rider (CR-7 L).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "6fdf057caacab6d5d429c66716d561e2ed67e8d9232fc71437f905a0416c11a2"
+    },
+    "CR-7_M": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider M)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/M. Defective Drywall Rider (CR-7 M).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "a87ad5d0232452f78a9226ef84851f566bd4c9ee221cab02e9dc84defa13d026"
+    },
+    "CR-7_N": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider N)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/N. Coastal Construction Control Line Rider (CR-7 N).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "f831851a13ae33429bf39cd25db231906781537c0a5a5a31fe49fd8ee27829a7"
+    },
+    "CR-7_O": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider O)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/O. Insulation Disclosure for New Residence Rider (CR-7 O).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "f433d254672d9fdebb89306daec7d2069c133e2dc7c5b1d285ffffaa40c0d6d9"
+    },
+    "CR-7_P": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider P)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() lead paint row",
+        "shared/offer_engine.py contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/P. Lead-Based Paint Disclosure (Pre-1978 Housing) Rider (CR-7 P).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "fec68463cd15dacf6feb0dd7d4f26d58c5ee6d531550ea58487f8287afc5e1da"
+    },
+    "CR-7_Q": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider Q)",
+        "shared/contract_forms.py RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/Q. Housing for Older Persons Rider (CR-7 Q).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "3cdba613ef33d4d148090c7ea7eb5e4ce85c50eb3989f096f132b3ff09731b70"
+    },
+    "CR-7_R": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider R)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/R. Rezoning Contingency Rider (CR-7 R).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "e79fac45e6f9e6d55ebfda9816a9b975e91818568847f973b1484124658069e4"
+    },
+    "CR-7_S": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider S)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/S. Lease Purchase  Lease Option Rider (CR-7 S).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "60ec9933d59c20e0be579a3d2c0062bae6416327dff32e076d3f74a4e98d737e"
+    },
+    "CR-7_T": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider T)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/T. Pre-Closing Occupancy by Buyer Rider (CR-7 T).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "c5d02e214ac0d693f2d23cec0a5a8e7c0f94f84728e7b9017573612cb1809d11"
+    },
+    "CR-7_U": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider U)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/offer_engine.py rider_money()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/U. Post-Closing Occupancy By Seller Rider (CR-7 U).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "444805a54f3d18704f5b3469562fe3fa1489482dfa69eb80a0c65677f0fa77eb"
+    },
+    "CR-7_V": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider V)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines() sale rows",
+        "skills/contract-timeline/references/frbar.md",
+        "shared/offer_engine.py contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/V. Sale of Buyer's Property Rider (CR-7 V).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "5dd517c3154495b31569e81bbf8e2cbc64f58a57c34a8f6e4e78f73f1efee1cb"
+    },
+    "CR-7_W": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider W)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/W. Back Up Contract Rider (CR-7 W).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "62f217ede106331b9be78e24cdd7685764741d12b6c6218fa17234718043f855"
+    },
+    "CR-7_X": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider X)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/offer_engine.py contract_checks()",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/X. Kick Out Clause Rider (CR-7 X).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "738ef9283ee25b3b07d263458e4aa4b09ca9d1a48e96f1d7ef569fb5be0f8d30"
+    },
+    "CR-7_Y": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider Y)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/offer_engine.py contract_checks()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/Y. Seller's Attorney Approval Rider (CR-7 Y).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "476173ec207c1099ca21b4ca350ccf87eddbb976a3d5df642aa7f94f4da644bd"
+    },
+    "CR-7_Z": {
+      "used_by": [
+        "shared/references/frbar-riders.md (Rider Z)",
+        "shared/contract_forms.py RIDERS",
+        "skills/contract-timeline/scripts/timeline.py rider_rows()",
+        "shared/offer_engine.py contract_checks(), rider_money()",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Riders/Z. Buyer's Attorney Approval Rider (CR-7 Z).pdf",
+      "revision": "CR-7 Rev. 10/21",
+      "sha256": "d4ff242cf1e0d9361fc11e4e3de7ab78ede080934ae7f8dbc3071508d55010da"
+    },
+    "EA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (EA-4)",
+        "skills/contract-timeline/references/frbar.md (amendments)"
+      ],
+      "file": "Other/Extension Addendum to Contract (EA-4).pdf",
+      "revision": "EA-4 Rev 3/21",
+      "sha256": "a10d061428aa1ea72a4b2005dd186e5ef0e2d701a6c57ea3ace964743ac10a57"
+    },
+    "EAC": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (©)",
+        "skills/buyer-offer-strategy/scripts/strategy.py FRBAR_RIDERS (escalation)",
+        "shared/offer_engine.py escalation"
+      ],
+      "file": "Other/Escalation Addendum to Contract (EAC-1).pdf",
+      "revision": "© 2021",
+      "sha256": "63d0506c26b5aca12f9ae0f6d381a4a84505aa4eed7315d35bdb6bf548f7fd57"
+    },
+    "EDRV": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (EDRV-1)"
+      ],
+      "file": "Other/Escrow Deposit Receipt Verification (EDRV-1).pdf",
+      "revision": "EDRV-1 4 /09",
+      "sha256": "6f51edb7d220328c1438b9685b8cd18b0f8c335a390641cdc07e0ec6e7b8e055"
+    },
+    "FD": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (FD-2)",
+        "shared/offer_engine.py flood disclosure flag",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Flood Disclosure (FD-2).pdf",
+      "revision": "FD-2 Rev 10/25",
+      "sha256": "07a523ce1b2a8ed4579a3ad6e8a3b7484ec33082ad7b530b1b44ef30eefaf691"
+    },
+    "FIN": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (FIN-2)"
+      ],
+      "file": "Other/Flood Insurance Notice (FIN-2).pdf",
+      "revision": "FIN-2 Rev 4/14",
+      "sha256": "66a89414c3f7b120acc7c10eeee807e11dd77c7e8af3e19f574c9da8700e2065"
+    },
+    "FND": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (FND-1)"
+      ],
+      "file": "Other/Form Notice and Disclosure (FND-1).pdf",
+      "revision": "FND-1 Rev 7/18",
+      "sha256": "e8b68bdef25df2f7111c483eb4f32a76259fa05f71aae0b616839fd7bc01351d"
+    },
+    "FRBAR-ASIS": {
+      "used_by": [
+        "shared/references/frbar-contract.md",
+        "shared/references/frbar-package-check.md",
+        "shared/contract_forms.py (VERIFIED, terms, repair_limits)",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines()",
+        "skills/contract-timeline/references/frbar.md",
+        "shared/offer_engine.py (risk_days, repair_reserve)",
+        "skills/buyer-offer-strategy/scripts/strategy.py worksheet()",
+        "skills/seller-offer-review/references/contract-fields.md"
+      ],
+      "file": "AS IS Residential Contract for Sale And Purchase (ASIS-7).pdf",
+      "revision": "FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
+      "sha256": "dcc6e2dd2e7e2b82cdfd946f77d71b2acb6a3dbdf644a3d799fdfff9bc7ce01c"
+    },
+    "FRBAR-STANDARD": {
+      "used_by": [
+        "shared/references/frbar-contract.md",
+        "shared/references/frbar-package-check.md",
+        "shared/contract_forms.py (VERIFIED, terms, repair_limits)",
+        "skills/contract-timeline/scripts/timeline.py frbar_deadlines()",
+        "skills/contract-timeline/references/frbar.md",
+        "shared/offer_engine.py (risk_days, repair_reserve)",
+        "skills/buyer-offer-strategy/scripts/strategy.py worksheet()",
+        "skills/seller-offer-review/references/contract-fields.md"
+      ],
+      "file": "Residential Contract for Sale And Purchase (7).pdf",
+      "revision": "FloridaRealtors/FloridaBar – 7x Rev. 2/26",
+      "sha256": "ad72be2faa3f140e704c9ce28cd2c79c423ad86e4f6efa1caf09313579531538"
+    },
+    "HID": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (HID-2)"
+      ],
+      "file": "Other/Home Inspection Disclosure (HID-2).pdf",
+      "revision": "HID-2 07/11",
+      "sha256": "9b499346783253a99b8804d455709a7b0a41c542bfec9c7771738bb0d0b704c4"
+    },
+    "LBPL": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (LBPL-1x)"
+      ],
+      "file": "Other/Complying with the Lead-Based Paint Law Notice to SellerLandlord (LBPL-1x).pdf",
+      "revision": "LBPL-1x Rev. 10/06",
+      "sha256": "fafac9eb8068b722fda412d0bafc3ba9bd3012ea243138418d871b999b45b3d1"
+    },
+    "MDSTS": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (MDSTS-2)"
+      ],
+      "file": "Other/Miami-Dade County Septic Tank System Disclosure (MDSTS-2).pdf",
+      "revision": "MDSTS-2 Rev 12/2025",
+      "sha256": "235bf2af16f7caf7d43247df3c0e5f292c5901c99fbc391937e8ebcd462c3f52"
+    },
+    "MISIRS": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (MISIRS-2)"
+      ],
+      "file": "Other/Milestone Inspection and Structural Integrity Reserve Study Disclosure (MISIRS-2).pdf",
+      "revision": "MISIRS-2 Rev. 1/26",
+      "sha256": "655915a8fdf342b416e514ed8443e2d9ccefc3d70b9b36f7fd8de68c141b66ed"
+    },
+    "MODS": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (MODS-1)"
+      ],
+      "file": "Other/Multiple Offer Disclosure to Seller (MODS-1).pdf",
+      "revision": "MODS-1 Rev. 5/18",
+      "sha256": "0a37d9826b55b0a762655de7250e337edb08adb7b9bc563221bd4438a06ae08e"
+    },
+    "NMOB": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (NMOB-1)"
+      ],
+      "file": "Other/Notice of Multiple Offers to Buyers (NMOB-1).pdf",
+      "revision": "NMOB-1 Rev. 5/18",
+      "sha256": "9866ac08a188a9eb8fa90311691a5d4e41daa909ae42654f947ea2d8c7260e9d"
+    },
+    "NTA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (NTA-2)"
+      ],
+      "file": "Other/Notice to Association (Sale) (NTA-2).pdf",
+      "revision": "NTA-2 3/00",
+      "sha256": "c293c9b3ac5d2f8fc7a3b3b1bf0d50399ed62ff582986c29d72109bde860672a"
+    },
+    "PTS": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (PTS-1)"
+      ],
+      "file": "Proposed Terms Sheet (PTS-1).pdf",
+      "revision": "© 2014",
+      "sha256": "7baa9ed89781d2bafc862d93eefc8feff772e6130f0a3277c1f29cca2b6e7237"
+    },
+    "RC": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (RC-4)"
+      ],
+      "file": "Other/Release and Cancellation of Contract (RC-4).pdf",
+      "revision": "RC-4 Rev. 3/19",
+      "sha256": "440b67abdc5742c429725701a72653e551e8ef3f1ab84edeb0f27acb6539dc3a"
+    },
+    "RCD": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (RCD-8)",
+        "shared/references/frbar-package-check.md"
+      ],
+      "file": "Other/Receipt of Condominium  Cooperative Documents (RCD-8).pdf",
+      "revision": "RCD-8 Rev 1/26",
+      "sha256": "3539d2bbec6d28681023db27242da4596cd7be361db7548ebc054178404bb43e"
+    },
+    "SD": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SD-2)"
+      ],
+      "file": "Other/Sinkhole Disclosure (SD-2).pdf",
+      "revision": "SD-2 Rev 2/20",
+      "sha256": "2c3944764e13f382a389d2cc7d5c7a269da623af051838b191a51b523453f4dd"
+    },
+    "SOD": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SOD-2)"
+      ],
+      "file": "Other/Sexual Offender Disclosure (SOD-2).pdf",
+      "revision": "SOD-2 Rev. 7/08",
+      "sha256": "a6ac7f54bcaf21502ea0308d7649cf86e87976810adf96bc0c9d03ecf4fa168d"
+    },
+    "SPDC": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SPDC-2)"
+      ],
+      "file": "Other/Seller's Property Disclosure - Condominium (SPDC-2).pdf",
+      "revision": "SPDC-2 Rev. 10/24",
+      "sha256": "aaa364a2f6e7240dfbc89aa54197ca8a0176500665d89f8f46d8140148a49067"
+    },
+    "SPDR": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SPDR-4x)"
+      ],
+      "file": "Other/Seller's Property Disclosure - Residential (SPDR-4x).pdf",
+      "revision": "SPDR-4x Rev 3/25",
+      "sha256": "fc8a5e037c718824e332db0b6d686d85f49f5065acacc215b288de55b007e812"
+    },
+    "SPDU": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SPDU-1)"
+      ],
+      "file": "Other/Seller's Property Disclosure Update (SPDU-1).pdf",
+      "revision": "SPDU-1 2/20",
+      "sha256": "b867f953430c3406a6b29394f45f5bdf07771f9d101fca968251dfdbf0b23e99"
+    },
+    "SPRA": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SPRA-2)"
+      ],
+      "file": "Other/Septic Program Replacement Addendum (SPRA-2).pdf",
+      "revision": "SPRA-2 Rev 3/2024",
+      "sha256": "0805496d1fb516d4dffb00751c507978aaf580797d7c59f28b554c740410ed6e"
+    },
+    "SUP": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (SUP-1)"
+      ],
+      "file": "Other/Sight Unseen Property Disclosure and Acknowledgment (Buyers) (SUP-1).pdf",
+      "revision": "SUP-1 Rev 1/24",
+      "sha256": "f9d8bb4b6dfc4a2e97b7059b16ea027dde6be7acfce5473c61224ec0cea29d1b"
+    },
+    "TRID": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (TRID-1)"
+      ],
+      "file": "Other/Authorization to Furnish TILA-RESPA Integrated Disclosures (TRID-1).pdf",
+      "revision": "TRID-1 Rev 5/16",
+      "sha256": "16489ff82650cb195ce6bcf4c50ef3bd5289b17a58ce2a1d7b46dc553e807fea"
+    },
+    "WFPN": {
+      "used_by": [
+        "shared/references/frbar-addenda.md (WFPN-3)"
+      ],
+      "file": "Other/Wire Fraud Prevention Notice (WFPN-3).pdf",
+      "revision": "WFPN-3 Rev 2/20",
+      "sha256": "cba82a050f743c0e6bfee0bd23879aad97288a1ac01d271c72518c094878df59"
+    }
+  }
+}

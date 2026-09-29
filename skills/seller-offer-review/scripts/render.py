@@ -193,11 +193,13 @@ def term_rows(o, R):
                  "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    form = {"as_is": " (AS IS)", "standard": " (Standard)"}.get(o["contract_form"], "")
+    form = f" ({o['contract_label']})" if o["contract_form"] in ("as_is", "standard") else ""
+    note = ("Buyer may cancel for any reason; seller still pays repairs up to the limits"
+            if o["inspection_walkaway"] and o["repairs_owed"] else "Buyer may cancel for any reason" if o["inspection_walkaway"]
+            else "Repair notices only; seller pays repairs up to the limits" if o["repairs_owed"] else "")
     rows.append(("Inspection Period", f"{o['inspection_days']} days{form}", f"≤{N['inspection_days']} days{est}",
                  "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
-                 "Buyer may cancel for any reason" if o["inspection_walkaway"] else "Repair notices only; seller pays repairs up to the limits"
-                 if o["contract_form"] == "standard" else ""))
+                 note))
     if o["financed"]:
         la = N["loan_approval_days"]
         rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", f"≤{la} days{est}",
@@ -222,7 +224,7 @@ def term_rows(o, R):
         if o.get(key):
             rows.append((lab, esc(o[key]), "—", "caution", ""))
     if o.get("riders"):
-        form = {"as_is": "AS IS · ", "standard": "Standard · "}.get(o["contract_form"], "")
+        form = {"as_is": "AS IS · ", "standard": "Standard · "}.get(o["contract_form"], "")  # riders are listed after it
         rows.append(("Contract / Riders", form + esc(", ".join(o["riders"])), "—", "good", ""))
     return rows
 
@@ -628,6 +630,10 @@ def build(data, fmt, out_dir, ctx):
         paths = [write_pdf(R, ctx["agent"], sample, ctx.get("mode") or "auto", ctx.get("offer"), out_dir)]
     for a in R["missing"][:6]:
         print(f"Assumed [{a['impact']}] {a['why']}", file=sys.stderr)
+    offers = R["active"] + R.get("incomplete", [])
+    for note in oe.cf.support([o["contract_form"] for o in offers],
+                              [(o["contract_form"], o.get("form_revision")) for o in offers])["chat_notes"]:
+        print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
     return paths
 
 

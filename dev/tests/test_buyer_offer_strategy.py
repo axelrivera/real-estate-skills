@@ -185,14 +185,15 @@ class HandoffAndOtherStates(unittest.TestCase):
         text = json.dumps(w)
         for florida in ("FR/BAR", "Form Simplicity", "4-point", "Florida"):
             self.assertNotIn(florida, text)
-        self.assertEqual(w["form_name"], "TREC One to Four Family Residential Contract (Resale)")
+        self.assertEqual(w["form_name"], "Sample Residential Purchase Agreement")
         self.assertTrue(all(row["para"] == "" for row in w["rows"]))
         self.assertIn("national estimate", json.dumps(r["missing"]))  # closing costs, not Florida's
 
     def test_florida_worksheet(self):
         w = strategy.worksheet(analyze("fha-competitive.json"))
         self.assertTrue(w["frbar"])
-        self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing", "Homeowners' / Flood Insurance (If in Your Form Set)"])
+        self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing Rider (E)", "Homeowner's/Flood Insurance Rider (H)",
+                                                         "Seller's Agreement with Respect to Buyer's Broker Compensation Rider (GG)"])
         self.assertEqual(w["rows"][6]["entry"], "**$11,000** within 3 days of Effective Date")
 
 
@@ -308,29 +309,46 @@ class AuditPricing(unittest.TestCase):
         self.assertTrue(any("FHA floor ($541,287)" in a["why"] for a in r["assumptions"]))
 
 
-class TrecWorksheet(unittest.TestCase):
-    """OFR-19 (TREC 20-19 and 49-1, verified): option fee and period, the financing addendum and 49-1."""
+class FrbarGap(unittest.TestCase):
+    def test_conventional_gap_uses_aga_not_rider_f(self):
+        """AGA-1 is for conventional or cash offers and isn't used with the Appraisal Contingency Rider (F)."""
+        d = fixture("fha-competitive.json")
+        d["buyer"].update(financing="conventional", down_pct=0.2)
+        d["overrides"] = {"appraisal_gap": 10000}
+        w = strategy.worksheet(strategy.analyze(d))
+        riders = [r["rider"] for r in w["riders"]]
+        self.assertIn("Appraisal Gap Addendum (AGA-1)", riders)
+        self.assertNotIn("Appraisal Contingency Rider (F)", riders)
+        self.assertNotIn("Appraisal Gap", [c["title"] for c in w["clauses"]])
 
-    def test_trec_rows_and_riders(self):
+
+class OtherContractWorksheet(unittest.TestCase):
+    """Only FR/BAR is built in: any other contract gets the generic entries by name, never another state's form rules."""
+
+    def test_other_contract_rows_and_riders_are_generic(self):
         d = fixture("texas-cma-escalation.json")
-        d.setdefault("worksheet", {})["option_fee"] = 300
         w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
         fields = [r["field"] for r in w["rows"]]
-        self.assertIn("Option Fee", fields)
-        self.assertIn("Option Period", fields)
-        self.assertNotIn("Inspection Period", fields)
-        self.assertIn("Earnest Money", fields)
+        self.assertIn("Inspection Period", fields)
+        self.assertIn("Initial Deposit", fields)
+        self.assertNotIn("Option Fee", fields)
+        self.assertEqual(next(r for r in w["rows"] if r["field"] == "Initial Deposit")["note"], "Due date per the contract")
         riders = [r["rider"] for r in w["riders"]]
-        self.assertIn("Third Party Financing Addendum", riders)
-        self.assertIn("Addendum Concerning Right to Terminate Due to Lender's Appraisal (TREC 49-1)", riders)
+        self.assertIn("Appraisal Contingency Addendum", riders)
+        self.assertFalse(any("TREC" in x or "Third Party" in x for x in riders))
 
-    def test_fha_on_trec_has_no_49_1(self):
+    def test_best_effort_line_is_chat_only(self):
+        d = fixture("texas-cma-escalation.json")
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        out = strategy.result(r)
+        self.assertEqual(out["support"], "best_effort")
+        self.assertNotIn("fully supported", json.dumps(out["worksheet"]))
+
+    def test_fha_on_other_contract(self):
         d = fixture("texas-cma-escalation.json")
         d["buyer"].update(financing="fha", down_pct=0.035)
         w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
-        riders = [r["rider"] for r in w["riders"]]
-        self.assertFalse(any("49-1" in x for x in riders))
-        self.assertIn("Third Party Financing Addendum (FHA/VA Section)", riders)
+        self.assertIn("FHA/VA Financing Addendum", [r["rider"] for r in w["riders"]])
 
     def test_florida_keeps_its_inspection_period(self):
         w = strategy.worksheet(analyze("fha-competitive.json"))
