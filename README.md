@@ -8,13 +8,13 @@ Claude skills for real estate agents, in one plugin: a one-file agent profile, b
 
 1. Go to the [latest release](https://github.com/axelrivera/real-estate-skills/releases/latest) and, under **Assets**, download `real-estate-skills-<version>.zip`.
 2. Unzip it. The folder holds the plugin (`real-estate-<version>.plugin`), a setup guide (`README.md`), the manual (`Real-Estate-Skills-Manual.pdf`) and the license (`LICENSE`).
-3. Open the Claude desktop app and go to the plugin settings.
-4. Choose **Upload local plugin**.
+3. Open the Claude desktop app and click **Customize** in the sidebar.
+4. On the **Plugins** tab, click **Add**, then **Upload plugin**.
 5. Drag `real-estate-<version>.plugin` onto the upload area (or click **browse** and pick it), then click **Upload**.
 
 To update, download the newer zip and upload its `.plugin` the same way. If the app keeps the old version, remove the plugin first and upload the new one. Your profile stays as it is.
 
-The [PDF manual](dev/package/Real-Estate-Skills-Manual.pdf) walks through setup, the MLS export and each skill.
+The [PDF manual](dev/package/Real-Estate-Skills-Manual.pdf) walks through setup, the MLS export, each skill and which contracts are supported, with screenshots.
 
 ### Other Routes
 
@@ -44,6 +44,7 @@ Details in [docs/skills.md](docs/skills.md). Sample output from each skill, made
 - [docs/skills.md](docs/skills.md): skill catalog
 - [docs/runtime-support.md](docs/runtime-support.md): what each runtime can run
 - [docs/development.md](docs/development.md): local setup, packaging and generating outputs
+- [docs/release-checklist.md](docs/release-checklist.md) and [docs/manual-testing.md](docs/manual-testing.md): what every release passes
 - [docs/status.md](docs/status.md): where the work stands and what's next
 
 ## License

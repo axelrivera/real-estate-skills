@@ -53,4 +53,4 @@ Markdown mode takes its numbers from the same data JSON the scripts produce, so 
 
 ## Evals
 
-Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): 2–4 realistic prompts with the expected result, plus input files when needed. They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.
+Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): at least 3 realistic prompts with the expected result, plus input files when needed: the happy path, a minimal-input run, and every behavior that's easy to get wrong (a fair-housing request, a best-effort contract, an edge case a fix covered). Contract skills carry more (contract-timeline has 10), many on mock contract packages. They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.

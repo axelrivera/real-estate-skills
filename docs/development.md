@@ -5,6 +5,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 ## Requirements
 
 - Python 3.12 (`PYTHON=python3.x make setup` to use another; keep code 3.11-compatible)
+- Python 3.11 for `make py311` (the Cowork runtime): `make setup` installs [uv](https://docs.astral.sh/uv/) with Homebrew when it's missing (`brew install uv`) and runs `uv python install 3.11`. `make py311` uses `python3.11` on the `PATH`, else `uv python find 3.11`
 - [nvm](https://github.com/nvm-sh/nvm); the Node version comes from `.nvmrc` (pinned to the sandbox's 22.22.2)
 - Optional: LibreOffice (`brew install --cask libreoffice`) for deck checks and PPTX → PDF previews. The sandbox has it; decks are generated without it. The Makefile adds `/Applications/LibreOffice.app/Contents/MacOS` to `PATH`; override with `LO_BIN=...` if it's installed elsewhere. Shell aliases don't work here.
 
@@ -12,7 +13,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 
 | Command | What it does |
 |---|---|
-| `make setup` | Creates `.venv` from `dev/requirements.txt`, adds the local-only tools in `dev/requirements-tools.txt` (PyMuPDF, which the sandbox doesn't have), installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json` |
+| `make setup` | Creates `.venv` from `dev/requirements.txt`, adds the local-only tools in `dev/requirements-tools.txt` (PyMuPDF, which the sandbox doesn't have), installs Chromium for Playwright, installs Node from `.nvmrc` and the modules in `dev/package.json`, and installs Python 3.11 with uv (uv itself with Homebrew if missing) |
 | `make hooks` | Installs the pre-commit hook that blocks commits when `scripts/_shared/` copies are out of date (`make setup` does this too). GitHub Actions ([.github/workflows/check.yml](../.github/workflows/check.yml)) runs check-sync on every push to `main` or `develop` and every pull request |
 | `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
 | `make sync` copies only what each skill imports | Each skill's `scripts/_shared/` holds the shared modules its scripts import, what those import, and the data they read (markets for `profiles`, CSS for `render` and `cma`) |
@@ -20,22 +21,27 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make forms-check` | Local only (the PDFs live in the git-ignored `sources/`): compares every FR/BAR form PDF in `sources/Contracts/FARBAR/` with `dev/forms/frbar-forms.json` and reports new, removed and changed forms with a text diff and what depends on each, plus revision citations in `shared/references/frbar-*.md` or `contract_forms.VERIFIED` that don't match. `make forms-check ARGS="--accept CR-7_L"` records a reviewed form. See [Updating a Contract Form](#updating-a-contract-form) |
 | `make mock-contracts` | Local only (fills the FR/BAR PDFs in the git-ignored `sources/`): builds every starter scenario in `dev/mock_contracts/scenarios/` into `out/mock-contracts/<name>/`, as one contract package PDF each, named after the property. `ARGS="--answer-key --scanned"` adds the answer key and a scanned copy. Any other scenario: ask the `mock-contract` skill in Claude Code. See [mock-contracts.md](mock-contracts.md) |
 | `make test` | Runs the unit tests in `dev/tests/`. With LibreOffice installed (`LO_BIN`, added at the end of `PATH`) it also checks the listing presentation's PDF copy, with a 60-second conversion limit; without it that check is skipped |
+| `make golden` | Rewrites `dev/golden/` (`dev/golden.py --update`): what each skill computes for its fixtures (numbers, dates, flags), with the clock frozen. `make test` fails until the snapshots match, so an engine change that moves a number is either approved here, with the `git diff dev/golden/` explained in the commit, or fixed |
+| `make manual-kit` | Local only: builds the manual smoke-test kit into `out/manual-test/` (files to upload, prompts, expected facts). See [manual-testing.md](manual-testing.md) |
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
 | `make runtime-check` | Runs the runtime check against the local environment, to compare with [runtime-support.md](runtime-support.md) |
 | `make outputs` | Renders every fixture in `dev/fixtures/<skill>/*.json` into `out/<skill>/<fixture>/` |
 | `make samples` | Regenerates `samples/<skill>/`, the committed preview files (PDF, PPTX and ICS; renders never write JSON): one happy path per file-mode skill, rendered from `dev/samples/<skill>.json` with the mock agent in `dev/samples/profile.md`. Real cities and counties are fine in `dev/samples/` (the tax rules need them, and so do the public data sources); every street, name, brokerage and MLS number is made up. It then writes `samples/README.md` from `dev/samples/readme-template.md` (`dev/samples_readme.py`): each `{{pattern}}` there becomes a link to the matching file with its page, slide or event count; edit the text in the template. Run it by hand when you want fresh previews, and commit the result |
 | `make style-check` | Renders every fixture and flags em dashes used in prose (in outputs, shipped files and `shared/**/*.md`; a lone em dash for an empty value is fine), `--` or a spaced en dash used as a dash in shipped markdown, labels not in Title Case, and markdown headings not in Title Case. `dev/style_check.py <skill>` checks one skill. Remaining label findings should be sentence-style headings or fragments |
 | `make lint-skills` | Checks every SKILL.md: valid frontmatter, name matches the folder, description ≤ 1,024 characters, Guardrails first, every named path exists. Also fails if shipped Python (`skills/`, `shared/`) imports a dev-only library from `dev/requirements-tools.txt` |
-| `make py311` | Checks shipped Python for 3.11 (the Cowork runtime): `python3.11 -m compileall` when it's installed, otherwise the grammar plus 3.12-only f-string forms |
-| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only `plugin.json`, `skills/` and `LICENSE`; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin`, `dev/package/README.md` (the agent guide: install, profile, MLS setup using Stellar as the example, each skill with inputs and examples; version filled in) every PDF in `dev/package/` (the manual; the build stops if there is none) and `LICENSE` for sharing |
-| `make release` | From an up-to-date `main` with nothing uncommitted: checks that release `v<version>` (from `plugin.json`) doesn't exist yet, runs `make package`, then publishes the GitHub release with only the release zip. See [Branches](#branches) |
-| `make package-skills` | Runs the same checks, then zips every skill into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
+| `make py311` | Compiles every shipped Python file with a real Python 3.11 (the Cowork runtime): `python3.11 -m compileall`, using uv's 3.11 when none is on the `PATH`. With no 3.11 at all it falls back to the grammar plus the 3.12-only f-string forms, and says so |
+| `make manual` | Rebuilds the PDF manual, `dev/package/Real-Estate-Skills-Manual.pdf`, from the agent guide (`dev/package/README.md`), its screenshots (`dev/package/images/`) and `dev/package/manual.css`, printed with the dev Chromium (`dev/manual.py`). Commit the PDF and `dev/package/manual.sha256` with the guide change. See [The Agent Guide and Manual](#the-agent-guide-and-manual) |
+| `make package` | Runs check-sync, test, lint-skills, py311 and style-check, then builds `dist/real-estate-<version>.plugin` (the desktop app's **Upload local plugin** format: `.claude-plugin/plugin.json` at the archive root). It holds only the git-tracked `plugin.json`, `skills/` and `LICENSE`, so an untracked file never ships; docs, `dev/` and `shared/` stay out. Also builds the release zip `dist/real-estate-skills-<version>.zip`: the `.plugin`, the agent guide as `README.md` (version filled in, screenshot lines left out), the PDF manual and `LICENSE`, for sharing. It stops before building when the manual is older than the guide (`make manual`) |
+| `make release` | From an up-to-date `main` with nothing uncommitted and no untracked file under `skills/`: checks that release `v<version>` (from `plugin.json`) doesn't exist yet and that [status.md](status.md) has a section for it, runs `make package`, then publishes the GitHub release with only the release zip. The release notes are the status.md sections for every version since the last release tag (`dev/package.py notes`, into `dist/release-notes-<version>.md`), so an unreleased version's notes ship with the next one. See [Branches](#branches) |
+| `make package-skills` | Runs the same checks, clears `dist/skills/` and `dist/dev/`, then zips every skill's tracked files into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
 
 ## Branches
 
 - **`develop`:** active development. Commit and push here.
 - **`main`:** releases. It changes only through a pull request from `develop`, and a ruleset requires the `check-sync` status check to pass before merging.
+
+Before every release, work through [release-checklist.md](release-checklist.md), including the manual smoke test in [manual-testing.md](manual-testing.md) (`make manual-kit`).
 
 To release: bump the version (below), push `develop`, open a pull request into `main` (`gh pr create --base main --head develop`), and merge it once `check-sync` passes. Then, on an up-to-date `main`, run `make release`: it reads the version from `plugin.json`, stops unless you're on `main` with nothing uncommitted, level with `origin/main` and the tag is new, runs `make package`, and publishes GitHub release `v<version>` with only the release zip (the `.plugin` is inside it). Never pass the version by hand; bump `plugin.json` instead.
 
@@ -53,7 +59,16 @@ Bump once per release (before the pull request into `main`, or before sharing a 
 
 While the version is below 1.0, a minor bump may also break things (a removed skill, a new profile schema); say so in the status notes. Go to 1.0.0 once every skill has passed its evals and been checked by hand in claude.ai and Cowork; after that, a breaking change is a major bump.
 
-Record each release in [status.md](status.md) (what changed for agents), and run `claude plugin validate .` after the bump.
+Record each release in [status.md](status.md) (what changed for agents) under a heading that ends in the version, `## This pass (YYYY-MM-DD): What Changed and Version x.y.z`: `make release` publishes those sections as the release notes and stops when the version has none. Run `claude plugin validate .` after the bump.
+
+## The Agent Guide and Manual
+
+The release zip carries two agent-facing documents built from one source, `dev/package/README.md` (the agent guide):
+
+- **The guide** ships as the zip's `README.md`. It uses the on-screen labels verbatim (**Customize**, **Upload plugin**, **Add Export**) and never mentions JSON, script names or other implementation details.
+- **The manual** (`Real-Estate-Skills-Manual.pdf`) is the same text with a cover, contents and screenshots. A screenshot goes in the guide as an HTML comment on its own line, `<!-- figure: images/<name>.png | Caption. -->`, indented to sit inside a numbered step; two in a row sit side by side. Markdown viewers hide these lines and `make package` strips them from the zip's copy. Styles are neutral (black and grays, print-light) in `dev/package/manual.css`.
+
+Update the guide when a release changes what an agent does, uploads or gets, then run `make manual` and commit the guide, the PDF and `dev/package/manual.sha256` together. `make package` and `make test` fail while the manual is older than its sources. The manual carries no version number, so a version bump alone doesn't rebuild it. Replace a screenshot by saving the new PNG under the same name in `dev/package/images/`.
 
 ## Evals
 
@@ -99,9 +114,14 @@ dev/                     # dev tooling, never shipped
                          #   locate.py (finds blanks), fields.py + fields/ (field maps), stamp.py, fonts/, scenarios/
   tests/                 # unit tests (make test); skill_import.py loads each skill's scripts without name clashes
   preview_design.py      # palette preview (make preview-design)
-  package.py             # make package (one .plugin + release zip) / make package-skills
-  package/README.md      # install instructions shipped in the release zip
-  package/*.pdf          # the manual, shipped in the release zip
+  package.py             # make package (one .plugin + release zip) / make package-skills / release notes
+  manual.py              # make manual: the PDF manual from the agent guide
+  package/README.md      # the agent guide, shipped in the release zip as README.md
+  package/Real-Estate-Skills-Manual.pdf  # the manual, shipped in the release zip (built by make manual)
+  package/manual.css     # the manual's styles; package/manual.sha256: the sources the committed PDF was built from
+  package/images/        # the manual's screenshots (Claude desktop app, Stellar Matrix)
+  golden.py, golden/     # make golden: snapshots of what each skill computes (checked by make test)
+  manual_kit/            # make manual-kit: the manual smoke-test kit (docs/manual-testing.md)
   fixtures/<skill>/      # data files for make outputs (file-mode skills); the CMAs' long-summary.json pushes every page-1 field to its limit, so page 1 must still fit
   evals/<skill>/         # test prompts per skill (see skill-guidelines.md)
   samples/               # fully mocked inputs for make samples: <skill>.json, mls-export.csv, seller-cma-deck.json, profile.md, readme-template.md
