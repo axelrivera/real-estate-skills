@@ -71,6 +71,31 @@ class Phrases(unittest.TestCase):
             self.assertEqual(bool(flagged(text)), bad, text)
         self.assertIn("judging an area", flagged("a good area")[0])  # not called a crime claim
 
+    def test_phrase_table_fh106(self):
+        """Audit 2026-09-29 FH-106: (text, flagged?). Familial status (pregnancy), marital status and religion;
+        a house of worship as a landmark and "Church" in a street or place name pass."""
+        table = [
+            # the audit's phrases, each rendered into a PDF before the fix
+            ("Buyers are expecting their first baby", True), ("They attend the church down the street", True),
+            ("a married couple with a baby on the way", True), ("near the church community", True),
+            # more of the same classes
+            ("the buyer is pregnant", True), ("expectant parents", True), ("expecting a baby in March", True),
+            ("buyers with two kids", True), ("a single mother", True), ("husband and wife", True),
+            ("the sellers are recently divorced", True), ("room for a growing family", True),
+            ("their church is two blocks away", True), ("a church-going street", True), ("they attend services", True),
+            ("members of the synagogue on Elm", True), ("walk to Mass on Sundays", True), ("Christian home", True),
+            ("a religious neighborhood", True),
+            # allowed: landmarks, street and place names, and "expecting" about the deal
+            ("near a church", False), ("across from the church on Main", False), ("0.3 miles to the church", False),
+            ("walking distance to the church", False), ("Turn left on Church Street", False), ("Church St frontage", False),
+            ("in Temple Terrace", False), ("a chapel in the clubhouse", False),
+            ("We are expecting multiple offers", False), ("the seller is expecting a counter by Friday", False),
+            ("expecting the appraisal Friday", False), ("single-family home", False), ("the sellers are engaged in repairs", False),
+            ("a single ceiling fan", False), ("pre-approval letter from the lender", False),
+        ]
+        for text, bad in table:
+            self.assertEqual(bool(flagged(text)), bad, text)
+
     def test_offer_reasons_describe_terms(self):
         """FH-2: the engine's own score reasons pass the check for every loan type."""
         with open(os.path.join(FIXTURES, "seller-offer-review", "four-offers.json")) as f:

@@ -184,7 +184,7 @@ def theme_css(agent):
 
 
 def build_html(R, C, homes, agent):
-    L = cma.Labels(ASSETS, R.get("labels"))
+    L = compute.labels(R)
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
@@ -220,7 +220,7 @@ def _build(R, fmt, out_dir, ctx):
         raise compute.ReportError("The net sheet needs brokerage terms: ask the agent for the listing fee and the buyer's agent "
                                   "compensation (0 is fine) and put them in costs. Without them every net overstates the seller's proceeds.")
     agent, sample = ctx["agent"], ctx.get("sample") or R.get("sample")
-    L = cma.Labels(ASSETS, R.get("labels"))
+    L = compute.labels(R)
     first = fmt == (ctx.get("formats") or [fmt])[0]  # --format all builds each format: warn once
     written = []
     if first:

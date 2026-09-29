@@ -19,7 +19,7 @@ One opening offer, a target and a walk-away. They're a negotiating plan for this
 2–4 offers with about the same price minus credit, split differently between price and a credit toward the buyer's closing costs. They don't leave the seller exactly the same net: a higher price also raises the seller's percentage costs (listing fee, buyer-broker pay, transfer tax), and the report says so, so never write "the seller nets the same". Usually the opening offer with no credit, then +$5,000 and +$10,000 of price with the same added credit.
 
 - `loan_type` and `down_pct` come from the buyer's financing answers. They set the seller-contribution limit: conventional 3% below 10% down, 6% from 10% to under 25%, 9% at 25% or more; FHA and USDA 6%; VA 4% in concessions.
-- Use the lender's closing-cost estimate when you have it (`closing_costs`); otherwise the 3% placeholder, which the report labels.
+- Use the lender's closing-cost estimate when you have it (`closing_costs`); otherwise compute.py uses the market's share of price plus the taxes on the loan, itemized on the loan amount (Florida: 2.5% of price plus the documentary stamp tax on the note, 0.35%, and the intangible tax, 0.2%; elsewhere the national 3% estimate), and the report labels it. `closing_cost_pct` replaces the share and drops the itemized loan taxes.
 - compute.py flags any credit over the program limit or over the closing costs. Fix the scenario rather than leaving the flag: a credit above actual costs is simply lost.
 - Optional `buydown`: the same credit spent on a temporary 2-1 rate buydown. The script prices it and says plainly when the credit doesn't cover it.
 - `after_paragraph` explains the trade-off for this buyer: cash-tight vs. staying long term.

@@ -276,5 +276,38 @@ class AuditSmallFixes(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertIn("File not found", r["notes"][0])
 
+class AuditFixes0929(unittest.TestCase):
+    def check_text(self, text):
+        with tempfile.TemporaryDirectory() as tmp:
+            return check_profile.check(write_profile(tmp, text))
+
+    def test_voice_gets_fair_housing_check(self):
+        """FH-106: the Voice and Disclaimers sections get the same check as every rendered file."""
+        base = '---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\n---\n\n## Voice\n\n{}\n'
+        r = self.check_text(base.format("Warm and patient; I love helping young families and couples expecting a baby."))
+        self.assertFalse(r["ok"])
+        self.assertTrue(any(p.startswith("Voice section:") and "familial" in p for p in r["problems"]), r["problems"])
+        r = self.check_text(base.format("Warm and patient, numbers first. Office is across from the church on Main."))
+        self.assertTrue(r["ok"], r)
+
+    def test_unquoted_brand_color_warns(self):
+        """CORE-101: an unquoted #code is a YAML comment; say so instead of falling back to blue silently."""
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n  primary: #1F3A5F\n---\n')
+        self.assertFalse(r["ok"])
+        self.assertTrue(any(p.startswith("primary is empty") for p in r["problems"]), r["problems"])
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand: #1F3A5F\n---\n')
+        self.assertTrue(any(p.startswith("brand is empty") for p in r["problems"]), r["problems"])
+
+    def test_color_name_short_and_bare_codes(self):
+        """CORE-102: the agent's color name is found for 3-digit codes and codes without #."""
+        for code in ("#D4AF37", "D4AF37", "#d4af37"):
+            r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n'
+                                f'  primary: "{code}"  # Harvest\n---\n')
+            self.assertEqual(r["colors"]["buyer"]["name"], "Harvest", code)
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n'
+                            '  primary: "#FC0"  # Sunny\n---\n')
+        self.assertEqual((r["colors"]["buyer"]["hex"], r["colors"]["buyer"]["name"]), ("#FFCC00", "Sunny"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -27,7 +27,12 @@ The agent usually uploads the home's **MLS property report** (Stellar's Cross Pr
 - **From the seller:** address; beds, baths, heated sq ft, lot, year built, construction; pool, garage, HOA/CDD; updates with dates and permits (roof first); the current tax bill; known issues or claims; timeline and occupancy; optional mortgage payoff (turns the net sheet into cash at closing).
 - **From the agent:** the MLS CMA export (CSV) of nearby sales from about the last 6 months plus active, pending, expired and canceled listings; the brokerage terms if they volunteer them (otherwise 5% total is assumed and marked on every page and slide that shows a net); the tax bill and expected closing date for the proration; the property type (Miami-Dade surtax); flood zone if known.
 
-Treat the home as a first-time listing: the scripts drop every export row with its address, and its facts come from the property report and the seller. stats.py lists those rows in `subject_rows`, and the property report's status line and history show the same: if the home is **listed right now** (active or pending), say so first. It may be the agent's own listing being repriced, an expired listing, or a home listed with another brokerage, which the agent must not solicit; ask which before going further. A failed current price is the most important pricing fact, so with the agent's go-ahead, address it. An expired, withdrawn or canceled listing in the history is a failed price: name it and how long it sat. For an old relist, ask before adding the history.
+The scripts drop every export row with the home's address, and its facts come from the property report and the seller. stats.py lists those rows in `subject_rows`, and the property report's status line and history show the same. An expired, withdrawn or canceled listing in the history is a failed price: name it and how long it sat. For an old relist, ask before adding the history.
+
+**Listed right now** (stats.py's `listed_now`, or an active or pending status on the property report): stop before any pricing and ask whose listing it is. Build nothing until the agent answers.
+
+- **The agent's own listing:** build it as a reprice. Set `reprice` in report.json (`current_price`, `days_on_market`); the report names the price that hasn't sold and how long it has sat, adds a "Stay at Current Price" option before the three strategies (compute.py requires it), and its headings read "Before We Reprice".
+- **Another brokerage's listing:** don't build it. The agent must not solicit a home listed with someone else; offer to run it when that listing ends.
 
 For a PDF or deck, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
 

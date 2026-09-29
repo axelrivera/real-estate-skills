@@ -5,9 +5,9 @@
         [--state FL --county Seminole] [--columns columns.json]
         [--split-date 2026-07-01]
 
-The seller's home is treated as a first-time listing: every row with its address (old listings,
-prior sales, a current listing) is dropped before anything is counted, and its size, pool and
-subdivision come from the seller, not the export. Prints JSON: sold stats for the whole window and
+Every row with the seller's address (old listings, prior sales, a current listing) is dropped
+before anything is counted, and its size, pool and subdivision come from the seller, not the export.
+When one of those rows is active or pending, `listed_now` is true: confirm whose listing it is first. Prints JSON: sold stats for the whole window and
 for an earlier and a recent period, inventory and months of supply, the subdivision's median $/sq ft,
 ranked comp candidates with remarks, and the competition. Numbers only: picking and adjusting comps
 is a judgment made from this output.
@@ -18,7 +18,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import mls, profiles  # noqa: E402
+from _shared import finance, mls, profiles  # noqa: E402
+
+money = finance.money
 
 
 def main(argv=None):
@@ -49,9 +51,21 @@ def main(argv=None):
         out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit, exclude_address=a.address)
         out["market_notes"] = list(market.notes) + list(homes.notes)
         out["subject_rows"] = [mls._summary(h) for h in own]  # the home's own history: a current listing needs a word with the agent
-        if own:
+        # CMA-108: a current listing is a question for the agent before any pricing, never a go-ahead
+        listed = [h for h in own if h["status"] in ("ACTIVE", "PENDING")]
+        out["listed_now"] = bool(listed)
+        if listed:
+            h = listed[0]
+            out["market_notes"].append(
+                f"The home is listed right now ({h['status'].lower()}"
+                + (f" at {money(h['current_price'])}" if h.get("current_price") else "")
+                + (f", {h['days_on_market']:g} days on market" if h.get("days_on_market") is not None else "")
+                + "). Confirm whose listing it is before pricing: stop and ask the agent. Only their own listing "
+                "is priced, as a reprice; never another brokerage's.")
+        elif own:
             out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address (see subject_rows): "
-                                       "the report treats the home as a new listing.")
+                                       "past sales or listings, not a current one. An expired, withdrawn or canceled "
+                                       "listing is a failed price to name in the report.")
         out["ok"] = True
     except (profiles.ProfileError, mls.ExportError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}

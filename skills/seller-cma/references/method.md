@@ -42,6 +42,7 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 
 - Subtract seller-paid buyer costs from the sale price, dollar for dollar.
 - List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
+- **Outliers.** After adjusting, a comp more than 10% above or below the median of the other comps (compute.py names it) is an outlier: replace it with the next candidate. Keep it only when it's one of the two closest matches in condition and location, say why in `method_note`, and don't let it set an end of the range. Decide once, before the range, so the same comps always give the same median.
 - Write each adjustment as a sentence with its dollar amount, to the seller: "It sold in April, when rates were lower: minus about $10,000."
 
 ## Range and Recommended Price
@@ -55,6 +56,8 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 1. **Top of the range:** longer to contract, a likely price cut, and an expected sale near the middle anyway.
 2. **Recommended:** the middle of the range, with room for the negotiating the data shows.
 3. **Competing-offer price:** just below the middle; fast, possibly with a smaller seller credit, and only if competing offers actually show up. Say so.
+
+**A reprice** (the agent's own listing that hasn't sold, `reprice` in report.json): put **Stay at Current Price** first, then the three above. The market has already answered that price, so its expected sale and time come from how long it has sat and the showings and feedback so far, not from a fresh launch. Name the current price and its days on market in the recommendation, and say what the lower price changes (the search brackets it enters, the competition it now beats).
 
 Base each option's expected sale on the adjusted comps first (they already reflect what similar homes sold for, net of credits), then check it against stats.py's recent sale-to-original-list ratio: that ratio includes overpriced listings, so applied to a well-priced home it runs low. The recommended option usually expects about 97–99% of its list price in a balanced market; the top-of-range option less. Time to contract and the assumed seller credit come from recent days on market and the share and size of seller-paid costs. Write `time` as a range with its unit ("3–6 weeks"), or give `months_to_contract`: compute.py turns it into holding costs (loan interest, HOA, insurance, utilities) and shows the net after holding, so a slower, higher price is compared fairly. Label them estimates. If one option comes out ahead only because of an assumption (a smaller credit), say that in `pricing.note`; the table shouldn't suggest precision it doesn't have.
 

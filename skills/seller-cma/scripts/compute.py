@@ -42,6 +42,31 @@ def _date(v, name):
         raise ReportError(f"{name} should be a date like 2026-11-20, not {v!r}.") from None
 
 
+# CMA-108: the agent's own current listing, priced again. Its wording, unless report.json's `labels` says otherwise.
+REPRICE_LABELS = {"sum_first": "Before We Reprice", "h_prep": "Before We Reprice", "deck_launch_title": "Relaunch Plan"}
+
+
+def labels(R):
+    """The report's wording: labels.json, the reprice wording when `reprice` is set, then report.json's `labels`."""
+    return cma.Labels(ASSETS, {**(REPRICE_LABELS if R.get("reprice") else {}), **(R.get("labels") or {})})
+
+
+def check_reprice(R, strategies):
+    """CMA-108: a reprice names the failed price and its days on market, and keeps staying at that price as an option.
+    Returns the index of the Stay at Current Price option, or None when this isn't a reprice."""
+    rp = R.get("reprice")
+    if not rp:
+        return None
+    if not isinstance(rp, dict) or not all(isinstance(rp.get(k), (int, float)) for k in ("current_price", "days_on_market")):
+        raise ReportError("reprice needs current_price and days_on_market as numbers (the price that hasn't sold and how "
+                          "long it has been listed).")
+    stay = next((i for i, x in enumerate(strategies) if x["list_price"] == rp["current_price"]), None)
+    if stay is None:
+        raise ReportError(f"A reprice keeps staying at the current {money(rp['current_price'])} as an option: add a "
+                          "\"Stay at Current Price\" strategy at that list price, before the others.")
+    return stay
+
+
 def _require(R, *paths):
     for path in paths:
         node = R
@@ -101,7 +126,7 @@ def net_sheet(R, market, L):
         key, rate = line["key"], line["rate"]
         if key in ("listing_fee", "buyer_broker_fee"):
             return L(f"net_{key}" + ("_assumed" if key in assumed_keys else ""), pct=pct_text(rate))
-        if key == "transfer_tax":
+        if key in ("transfer_tax", "estoppel"):  # CMA-109: the market's own name ("HOA Estoppel Letter" in Florida)
             return line["label"]  # the market's own name and rate ("Documentary stamp tax on the deed (0.70%)")
         if key == "owner_title":
             return L("net_owner_title_est" if rate else "net_owner_title")
@@ -222,7 +247,7 @@ def payments(R, market):
 def compute(R, market, homes):
     _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
              "comps.cards", "pricing.strategies", "buyer_payment.rate", "buyer_payment.insurance_annual")
-    L = cma.Labels(ASSETS, R.get("labels"))
+    L = labels(R)
     for block in ("costs", "buyer_payment"):  # units before any math: fractions stay fractions, interest stays a percent
         try:
             finance.check_units(R.get(block) or {}, block)
@@ -232,11 +257,13 @@ def compute(R, market, homes):
     s, rec, p = R["subject"], R["recommendation"], R["pricing"]
     strategies = p["strategies"]
     if not 1 <= len(strategies) <= 4:
-        raise ReportError("pricing.strategies should have 3 options (top of range, recommended, competing-offer price).")
+        raise ReportError("pricing.strategies should have 3 options (top of range, recommended, competing-offer price), "
+                          "or 4 for a reprice (Stay at Current Price first).")
     for x in strategies:
         for k in ("list_price", "expected_sale"):
             if not isinstance(x.get(k), (int, float)):
                 raise ReportError(f"Every pricing strategy needs {k} as a number.")
+    stay = check_reprice(R, strategies)
     ri = p.get("recommended_index", 1)
     if not 0 <= ri < len(strategies):
         raise ReportError("pricing.recommended_index doesn't point at a strategy.")
@@ -246,6 +273,7 @@ def compute(R, market, homes):
         warnings, assumptions = cma.derive_comps(R["comps"]), []  # adjusted values and summary rows from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
+    warnings += cma.outlier_warnings(R["comps"]["cards"])  # CMA-110
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
     if scope:
@@ -260,10 +288,11 @@ def compute(R, market, homes):
                         f"{money(rec['low'])} – {money(rec['high'])}: move it inside, or widen the range and say why.")
     if strategies[ri]["list_price"] != rec["list_price"]:
         warnings.append("The recommended strategy's list price doesn't match recommendation.list_price.")
-    for i, x in enumerate(strategies[:-1] if len(strategies) == 3 else strategies):  # CMA-20
+    three = len(strategies) - (stay is not None) == 3  # the three strategies, besides a reprice's Stay at Current Price
+    for i, x in enumerate(strategies[:-1] if three else strategies):  # CMA-20
         if x["expected_sale"] > x["list_price"]:  # only the competing-offer option (the last of three) may sell above list
             raise ReportError(f"pricing.strategies[{i}] expects to sell at {money(x['expected_sale'])}, above its "
-                              f"{money(x['list_price'])} list price. Only the competing-offer option (the third) can.")
+                              f"{money(x['list_price'])} list price. Only the competing-offer option (the last) can.")
     if rec["low"] > rec["high"]:
         raise ReportError("recommendation.low is above recommendation.high.")
     for x in strategies:
@@ -286,9 +315,12 @@ def compute(R, market, homes):
                            "a net. The agent can give the listing agreement's terms to update it.")
     estimated = [a["text"] for a in net["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimated:
-        assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". Look up the "
-                           "state's transfer tax from an official source (costs.transfer_tax_rate, and transfer_tax_payer if "
-                           "the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest.")
+        # CMA-109: the transfer tax lookup only when the net used the estimate (never in a no-transfer-tax state)
+        lookup = ("Look up the state's transfer tax from an official source (costs.transfer_tax_rate, and transfer_tax_payer "
+                  "if the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest."
+                  if any(a["key"] == "transfer_tax" and a.get("estimate") for a in net["assumed"]) else
+                  "A title quote (costs.title_fees, title_estimate_pct) replaces them.")
+        assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". " + lookup)
     costs_in = R.get("costs") or {}
     if costs_in.get("annual_tax") and not net["has_tax"]:
         warnings.append("costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
@@ -382,6 +414,9 @@ def compute(R, market, homes):
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
         "n_comps": len(R["comps"]["cards"]),
         "strategies": strat_out, "recommended_index": ri,
+        "reprice": {"current_price": R["reprice"]["current_price"], "current_price_display": money(R["reprice"]["current_price"]),
+                    "days_on_market": R["reprice"]["days_on_market"], "stay_index": stay} if stay is not None else None,
+        "first_steps_heading": L("sum_first"),  # "Before We List", or "Before We Reprice"
         "recommended_net_display": strat_out[ri]["net_display"],
         "net_spread": max(nets) - min(nets), "net_spread_display": money(max(nets) - min(nets)),
         "net": net,

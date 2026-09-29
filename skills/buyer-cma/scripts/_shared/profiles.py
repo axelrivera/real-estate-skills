@@ -113,6 +113,11 @@ def load_agent(path=None):
                                              for x in licenses)}
     errors = [f for f in AGENT_REQUIRED if not str(data.get(f) or "").strip()]
     brand = data.get("brand")
+    # CORE-101: in YAML an unquoted # starts a comment, so `primary: #1F3A5F` reads as empty and the brand is lost
+    empty = ([k for k in ("primary", "buyer_primary", "seller_primary") if k in brand and brand[k] in (None, "")]
+             if isinstance(brand, dict) else ["brand"] if "brand" in data and brand in (None, "") else [])
+    for k in empty:
+        warnings.append(f"{k} is empty: write the color code in quotes (\"#1F3A5F\"), since an unquoted # starts a comment.")
     if brand is not None and not isinstance(brand, dict):
         warnings.append("Brand colors should be listed under 'brand' as primary, buyer_primary or seller_primary.")
         brand = None

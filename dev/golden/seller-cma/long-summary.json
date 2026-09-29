@@ -312,6 +312,7 @@
   "low": 455000
  },
  "recommended_index": 1,
+ "reprice": null,
  "strategies": [
   {
    "down": 23995.0,

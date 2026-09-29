@@ -3,7 +3,9 @@
     python3 scripts/compute.py report.json [--out DIR]
 
 Prints JSON: taxes, payment scenarios, price-vs-credit scenarios, buydown, scatter trend, the
-offer plan and range, formatted for the markdown template, plus `warnings` to fix. Also writes <address>.buyer.cma.json (the CMA handoff the
+offer plan and range, formatted for the markdown template, plus `warnings` to fix. With only `subject` and
+`comps` in report.json (no bottom_line, offer_plan or costs yet), it prints the adjusted comps alone: the median,
+the spread and the outlier warnings, to set the range from or answer a gut check. Also writes <address>.buyer.cma.json (the CMA handoff the
 offer skills read) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF.
 """
 import argparse
@@ -160,6 +162,33 @@ def comp_count_warnings(cards):
             "and say so in the report."] if len(cards) < 3 else []
 
 
+def comps_first(R, market):
+    """CMA-110: the adjusted comps alone, before the range and offer plan exist, for a gut check or to set the range
+    from: the median adjusted value, the spread and the outlier and adjustment warnings. Writes no handoff."""
+    _require(R, "subject.address", "subject.list_price", "comps.cards")
+    warnings = comp_count_warnings(R["comps"]["cards"])
+    try:
+        warnings += cma.derive_comps(R["comps"])
+    except ValueError as e:
+        raise ReportError(str(e)) from e
+    warnings += cma.outlier_warnings(R["comps"]["cards"])
+    s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
+    median_adjusted = statistics.median(values)
+    return {
+        "ok": True, "stage": "comps",
+        "next": "Set bottom_line (the range around the median) and offer_plan, add costs, then run compute.py again "
+                "for the payments, the credit scenarios and the handoff.",
+        "subject": {"address": s["address"], "list_price": s["list_price"], "list_price_display": money(s["list_price"])},
+        "median_adjusted": median_adjusted, "median_adjusted_display": money(median_adjusted),
+        "adjusted_min": min(values), "adjusted_max": max(values),
+        "asking_vs_median": s["list_price"] - median_adjusted,
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+                        for r in R["comps"].get("summary_rows", [])],
+        "warnings": warnings,
+        "market_notes": market.notes,
+    }
+
+
 def compute(R, market, homes):
     _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
@@ -191,6 +220,7 @@ def compute(R, market, homes):
         warnings += cma.derive_comps(R["comps"])  # adjusted values and summary rows computed from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
+    warnings += cma.outlier_warnings(R["comps"]["cards"])
     for i, r in enumerate((R.get("competition") or {}).get("rows", [])):
         if len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool) for j in (2, 3)):
             raise ReportError(f"competition.rows[{i}] should be [address, status, price, sqft, pool, days, notes], "
@@ -262,6 +292,8 @@ def compute(R, market, homes):
                   "asking_position": "above the range" if s["list_price"] > bl["high"] else
                   "below the range" if s["list_price"] < bl["low"] else "inside the range"},
         "median_adjusted": median_adjusted, "median_adjusted_display": money(median_adjusted),
+        "adjusted_min": min(c["adjusted"] for c in R["comps"]["cards"]),  # CMA-112: the spread, as seller-cma gives it
+        "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
         "offer_plan": {"opening": money(op["opening"]), "walk_away": money(op["walk_away"]),
                        "target": money(op.get("target_low", op["opening"])) + (
                            f" – {money(op['target_high'])}" if op.get("target_high") and op["target_high"] != op.get("target_low") else "")},
@@ -305,11 +337,14 @@ def main(argv=None):
         R = json.load(f)
     try:
         market, homes = load_inputs(R, a.mls, a.report)
-        result = compute(R, market, homes)
-        path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "buyer"))
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(result["handoff"], f, indent=2)
-        result["handoff_file"] = path
+        if not any(R.get(k) for k in ("bottom_line", "offer_plan", "costs")):  # CMA-110: comps only, no range yet
+            result = comps_first(R, market)
+        else:
+            result = compute(R, market, homes)
+            path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "buyer"))
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(result["handoff"], f, indent=2)
+            result["handoff_file"] = path
     except (ReportError, profiles.ProfileError, mls.ExportError, handoff.HandoffError, KeyError, ValueError) as e:
         result = {"ok": False, "problems": [str(e) if not isinstance(e, KeyError) else f"report.json is missing {e}"]}
     print(json.dumps(result, indent=2, ensure_ascii=False, default=str))

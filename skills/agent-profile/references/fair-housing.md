@@ -34,7 +34,8 @@ Describe the property, the numbers and the terms. Never describe people: not who
 | "Great schools", "A-rated schools", "top school district" | School quality is a common proxy for steering | Taxing district and millage are costs and are fine. If the client asks about schools, name the assigned school when known and point them to the district to verify |
 | "Up-and-coming", "transitional", "exclusive", "diverse", "changing neighborhood" | Coded descriptions of who lives there | Market facts: days on market, price trend, distance to named amenities |
 | Any mention of the racial, religious or ethnic makeup of an area | Never volunteered (REALTOR Standard of Practice 10-1) | Leave it out |
-| "Christian home", "near our church community" | Religion | Leave it out |
+| "Christian home", "near our church community", "they attend the church down the street" | Religion | Leave it out. A house of worship is fine as a landmark with its distance ("0.3 miles to the church on Main"), and "Church Street" is a place name |
+| "Buyers are expecting their first baby", "a married couple with a baby on the way", "buyers with two kids" | Familial status (children and pregnancy), and marital status where local law protects it (Miami-Dade among others) | Leave it out. Describe the home and the terms |
 | "No wheelchairs", "must be able to climb stairs", "able-bodied" | Disability | Describe the home: "second-floor primary suite, no elevator", "step-free entry", "grab bars in the hall bath" |
 | "No Section 8", "no vouchers", "must have W-2 income", "VA buyers need not apply" | Source of income, where local law protects it (Miami-Dade and Orange County, Florida, among others), and a financing type standing in for a person | Describe terms, not buyers: "Seller prefers offers with a 10-day inspection period". On the seller side, compare loan programs by their mechanics (appraisal rules, timelines), never by who uses them |
 

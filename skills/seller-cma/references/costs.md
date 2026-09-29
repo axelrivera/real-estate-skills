@@ -10,7 +10,7 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 | Deed transfer tax | `costs.transfer_tax_rate` (with `transfer_tax_payer` and `transfer_tax_label`) when you looked it up from a trusted source; else the market's rate, payer and name (Florida: documentary stamp tax on the deed, 0.70%, seller pays; Miami-Dade single-family 0.60% by county override); else the national estimate, 0.4%, labeled Estimate |
 | Owner's title insurance | Only where the seller customarily pays. Florida: the promulgated rate tiers; the buyer pays in Miami-Dade, Broward, Sarasota and some others (county overrides). Elsewhere 0.5% of price, labeled Estimate, until `costs.title_estimate_pct` or `title_payer` says otherwise |
 | Title company fees | The market's itemized seller fees (Florida: settlement $700, title search $250, municipal lien search $125, recording $70 = $1,145). The note names them. Elsewhere $1,200, labeled Estimate. A title company quote for this sale goes in `costs.title_fees` |
-| HOA estoppel letter | When `costs.hoa` (or `subject.hoa`) is true: the market's fee (Florida $299) |
+| HOA estoppel or status letter | When `costs.hoa` (or `subject.hoa`) is true: the market's fee and name (Florida: HOA Estoppel Letter, $299; elsewhere HOA Status Letter, an estimate) |
 | Seller credit | Each strategy's `seller_credit` |
 | Other | `costs.other`: `[{label, amount}]` (survey, repairs already agreed, a home warranty) |
 | Mortgage payoff | `costs.mortgage_payoff`, when the seller gave it: the last row becomes "Estimated Cash at Closing" |
