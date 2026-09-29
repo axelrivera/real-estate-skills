@@ -4,7 +4,8 @@
 
 Checks: frontmatter with `name` (lowercase, hyphens, same as the folder, no output format like "-pdf") and
 `description` (1,024 characters or fewer, no angle brackets); a `## Guardrails` section as the first section;
-every `references/...`, `assets/...` or `scripts/...` path the SKILL.md names exists in the skill.
+every `references/...`, `assets/...` or `scripts/...` path the SKILL.md names exists in the skill. Also checks that
+no shipped Python (skills/, shared/) imports a dev-only library the sandbox doesn't have (dev/requirements-tools.txt).
 """
 import glob
 import os
@@ -14,6 +15,7 @@ import sys
 import yaml
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DEV_ONLY = re.compile(r"^\s*(?:import|from)\s+(fitz|pymupdf)\b", re.M)  # dev/requirements-tools.txt: local only
 
 
 def lint(path):
@@ -51,8 +53,21 @@ def lint(path):
     return out
 
 
+def dev_only_imports(root=ROOT):
+    """Shipped Python that imports a dev-only library (PyMuPDF): it would pass locally and fail in the sandbox."""
+    out = []
+    for path in sorted(glob.glob(os.path.join(root, "skills", "**", "*.py"), recursive=True)
+                       + glob.glob(os.path.join(root, "shared", "**", "*.py"), recursive=True)):
+        with open(path, encoding="utf-8") as f:
+            m = DEV_ONLY.search(f.read())
+        if m:
+            out.append(f"{os.path.relpath(path, root)}: imports {m.group(1)}, a dev-only library (dev/requirements-tools.txt)")
+    return out
+
+
 def main():
     problems = [p for path in sorted(glob.glob(os.path.join(ROOT, "skills", "*", "SKILL.md"))) for p in lint(path)]
+    problems += dev_only_imports()
     print("\n".join(problems) if problems else "lint-skills: OK")
     return 1 if problems else 0
 

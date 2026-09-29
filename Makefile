@@ -12,7 +12,7 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync forms-check runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync forms-check mock-contracts runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
@@ -24,6 +24,7 @@ help:
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
 	@echo "make forms-check    Compare the FR/BAR form PDFs in sources/ with dev/forms/frbar-forms.json (ARGS=\"--accept CR-7_L\")"
+	@echo "make mock-contracts Build every mock FR/BAR contract package in dev/mock_contracts/scenarios/ into $(OUT)/mock-contracts/ (ARGS=\"--answer-key --scanned\")"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
@@ -38,6 +39,7 @@ setup:
 	$(PYTHON) -m venv $(VENV)
 	$(PY) -m pip install -q --upgrade pip
 	$(PY) -m pip install -q -r dev/requirements.txt
+	$(PY) -m pip install -q -r dev/requirements-tools.txt
 	$(PY) -m playwright install chromium
 	. "$${NVM_DIR:-$$HOME/.nvm}/nvm.sh" && nvm install && cd dev && SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm install --silent
 	git config core.hooksPath dev/hooks
@@ -69,6 +71,13 @@ check-sync:
 # Local only: the PDFs live in the git-ignored sources/. See docs/development.md#updating-a-contract-form.
 forms-check:
 	@$(PY) dev/forms_check.py $(ARGS)
+
+# Local only: fills the FR/BAR PDFs in the git-ignored sources/. Any other scenario: the mock-contract skill in
+# Claude Code, or dev/mock_contracts/build.py SPEC.json. See docs/mock-contracts.md.
+mock-contracts:
+	@for f in dev/mock_contracts/scenarios/*.json; do \
+		$(PY) dev/mock_contracts/build.py $$f $(ARGS) || exit 1; \
+	done
 
 runtime-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py

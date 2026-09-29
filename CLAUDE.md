@@ -11,7 +11,7 @@ skills/<skill>/SKILL.md             # one directory per skill
 shared/                             # shared code and references, copied into skills by make sync
 dev/                                # dev tooling and fixtures, never shipped (mock_contracts/: mock FR/BAR packages, docs/mock-contracts.md)
 .claude/skills/                     # Claude Code skills for developing this repo (mock-contract), never shipped
-Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | samples | package | package-skills | clean
+Makefile                            # make setup | test | sync | check-sync | style-check | lint-skills | outputs | samples | mock-contracts | package | package-skills | clean
 docs/                               # all documentation
 samples/                            # committed preview files (PDF, PPTX, ICS), one happy path per skill (make samples), never shipped
 sources/                            # prototype skills, local only, git-ignored

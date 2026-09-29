@@ -7,6 +7,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import lint_skills as ls  # noqa: E402
 
+ROOT_OK = ls.ROOT
+
 
 def skill(tmp, name, text, files=()):
     d = os.path.join(tmp, name)
@@ -19,6 +21,17 @@ def skill(tmp, name, text, files=()):
 
 
 class Lint(unittest.TestCase):
+    def test_dev_only_imports(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "skills", "x", "scripts"))
+            os.makedirs(os.path.join(tmp, "shared"))
+            with open(os.path.join(tmp, "skills", "x", "scripts", "render.py"), "w") as f:
+                f.write("import json\nimport fitz\n")
+            with open(os.path.join(tmp, "shared", "ok.py"), "w") as f:
+                f.write("# pymupdf is mentioned but not imported\n")
+            self.assertEqual(len(ls.dev_only_imports(tmp)), 1)
+            self.assertEqual(ls.dev_only_imports(ROOT_OK), [])
+
     def test_every_shipped_skill_passes(self):
         import contextlib
         import io
