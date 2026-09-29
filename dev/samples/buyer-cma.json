@@ -4,7 +4,7 @@
  "subject": {
   "address": "517 Larkwood Ave",
   "mls_address": "517 LARKWOOD AVE",
-  "locality": "Harrow Springs, FL 32700 · Fernwood Park · Seminole County · MLS X9033709",
+  "locality": "Casselberry, FL 32707 · Fernwood Park · Seminole County · MLS X9033709",
   "list_price": 474900,
   "sqft": 1849,
   "facts": [
@@ -53,7 +53,7 @@
   "summary_facts": "4 bed · 2 bath · 1,849 sq ft · pool · built 1972",
   "state": "FL",
   "county": "Seminole",
-  "city": "Harrow Springs",
+  "city": "Casselberry",
   "beds": 4,
   "baths": 2,
   "year_built": 1972,
@@ -464,14 +464,14 @@
      "district": "Seminole County (unincorporated)"
     },
     {
-     "label": "Inside Harrow Springs City Limits",
+     "label": "Inside Casselberry City Limits",
      "short": "City",
      "school_mills": 5.249,
-     "total_mills": 17.5683,
-     "district": "Harrow Springs"
+     "total_mills": 18.1808,
+     "district": "Casselberry"
     }
    ],
-   "note": "Based on 2025 final millage rates (13.6790 unincorporated; 17.5683 City of Harrow Springs). We still need to confirm which applies; the property appraiser's record shows it. These estimates assume the county values the home at the purchase price, and it often values homes somewhat lower, so treat these as the high end. Garbage and other flat assessments aren't included. File for homestead by March 1 of the year after you close.",
+   "note": "Based on 2025 final millage rates (13.6790 unincorporated; 18.1808 City of Casselberry). We still need to confirm which applies; the property appraiser's record shows it. These estimates assume the county values the home at the purchase price, and it often values homes somewhat lower, so treat these as the high end. Garbage and other flat assessments aren't included. File for homestead by March 1 of the year after you close.",
    "after_paragraph": "<strong>Your first year matters.</strong> Your lender will likely set up your escrow using the seller's lower bill. When your own higher bill arrives, your monthly payment can rise to cover the difference. Budget for the higher number from the start."
   },
   "insurance": {

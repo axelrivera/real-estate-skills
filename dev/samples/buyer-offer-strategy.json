@@ -2,7 +2,7 @@
   "sample": true,
   "analysis_date": "2026-09-23",
   "property": {
-    "address": "1532 Cypress Bend Dr, Harrow Springs, FL 32700",
+    "address": "1532 Cypress Bend Dr, Casselberry, FL 32707",
     "state": "FL",
     "county": "Seminole",
     "list_price": 365000,
@@ -24,7 +24,7 @@
   },
   "worksheet": {
     "buyer_names": "Sample Buyer",
-    "escrow_agent": "Sample Title Co., Harrow Springs FL · (407) 555-0100",
+    "escrow_agent": "Sample Title Co., Casselberry FL · (407) 555-0100",
     "personal_property": "Range, refrigerator, dishwasher, microwave, washer, dryer, window treatments"
   },
   "chosen_option": "recommended",
