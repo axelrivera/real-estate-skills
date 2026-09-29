@@ -272,6 +272,65 @@ class Packages(unittest.TestCase):
         self.assertEqual((offer["price"], offer["inspection_days"], key["mock"]["pending"]), (545000, 10, "counter offer"))
         self.assertEqual(key["mock"]["counters"][0]["price"], 552000)  # the pending counter changes nothing yet
 
+    def test_buyer_counter_is_the_live_offer(self):
+        """A pending buyer counter is what the seller reviews: the original offer with only that counter's terms (CO-3),
+        the seller's earlier counter in prior_counters, and the review dated the day of the last counter."""
+        key = sc.build(spec("standard-buyer-counter-pending"))["key"]
+        offer = key["offers"][0]
+        self.assertEqual((offer["price"], offer["closing_date"], offer["inspection_days"]), (619500, "2026-11-16", 15))
+        self.assertEqual(offer["prior_counters"], [{"by": "seller", "note": "Counter Offer #1", "price": 629000,
+                                                    "inspection_days": 10}])
+        self.assertEqual((key["analysis_date"], offer["received"]), ("2026-09-23", "2026-09-23 14:27"))
+        self.assertEqual((offer["expires"], offer["expires_estimated"]), ("2026-09-25 23:59", True))  # 2 days after delivery
+        self.assertEqual(offer["addenda"], ["Counter Offer (CO-3)"])
+
+    def test_offer_key_carries_hoa_broker_payer_and_addenda(self):
+        key = sc.build(spec("asis-offer-aga"))["key"]
+        rider_b = next(d["values"] for d in sc.build(spec("asis-offer-aga"))["documents"] if d.get("code") == "B")
+        per = {"month": 1, "monthly": 1, "quarter": 3}[rider_b["fee_period"]]
+        self.assertEqual(key["listing"]["hoa_monthly"], round(rider_b["fee"] / per, 2))
+        offer = key["offers"][0]
+        self.assertEqual((offer["addenda"], offer["buyer_broker_paid_by"]), (["Appraisal Gap Addendum (AGA-1)"], "listing_broker"))
+        key = sc.build(spec("standard-buyer-counter-pending"))["key"]
+        self.assertEqual(key["listing"]["hoa_monthly"], 0)  # no association rider, no HOA
+        seller_paid = sc.build({"name": "gg-seller", "form": "as_is", "stage": "offer", "financing": "cash",
+                                "buyer_broker": {"form": "GG", "between": "seller"}})["key"]
+        self.assertEqual(seller_paid["offers"][0]["buyer_broker_paid_by"], "seller")
+
+    def test_effective_date_is_the_last_signature(self):
+        """Two sellers sign a few minutes apart: the Effective Date is the second signature (Para. 3(b))."""
+        c = sc.build(spec("asis-fha-executed"))["key"]["contract"]
+        self.assertEqual(c["effective_date_source"], "Seller's signature on the contract, 09/25/2026 4:15 PM")
+        c = sc.build({**spec("standard-counter-chain"), "buyers": ["Emerson Delacroix", "Ellis Delacroix"]})["key"]["contract"]
+        self.assertTrue(c["effective_date_source"].endswith("09/25/2026 12:28 PM"), c["effective_date_source"])
+
+    def test_escrow_receipts_are_completed_deposits(self):
+        key = sc.build(spec("asis-fha-executed"))["key"]
+        receipt = key["mock"]["deposits_received"][0]["date"]
+        self.assertEqual(key["completed"], {"deposit": f"{receipt[6:10]}-{receipt[:2]}-{receipt[3:5]}"})
+        key = sc.build({"name": "add-dep", "form": "as_is", "price": 480000, "stage": "amended"})["key"]
+        self.assertEqual(set(key["completed"]), {"deposit", "add_deposit"})
+        self.assertNotIn("completed", sc.build(spec("asis-offer-aga"))["key"])
+
+    def test_amendment_without_deadline_changes_is_described(self):
+        s = copy.deepcopy(spec("condo-asis-amended"))
+        s["amendments"][1].pop("description")
+        amend = sc.build(s)["key"]["amendments"]
+        self.assertEqual((amend[0]["description"], amend[1]["description"], amend[1]["changes"]),
+                         ("Extension Addendum", "Addendum No. 1 (no deadline changes)", {}))
+
+    def test_property_facts_follow_the_address(self):
+        """Two offers on one listing (different scenarios) describe the same parcel and the same association."""
+        prop = {"address": "2604 Sable Palm Way, Jupiter, FL 33458", "county": "Palm Beach", "hoa": True}
+        a = sc.build({"name": "offer-one", "form": "as_is", "stage": "offer", "property": dict(prop)})
+        b = sc.build({"name": "offer-two", "form": "as_is", "stage": "offer", "property": dict(prop), "price": 470000})
+        for k in ("tax_id", "legal_description", "year_built"):
+            self.assertEqual(a["ctx"][k], b["ctx"][k], k)
+        rider = lambda S: next(d["values"] for d in S["documents"] if d.get("code") == "B")  # noqa: E731
+        for k in ("association", "contact", "phone", "fee", "fee_period", "management_company"):
+            self.assertEqual(rider(a)[k], rider(b)[k], k)
+        self.assertNotEqual(a["ctx"]["buyer_names"], b["ctx"]["buyer_names"])  # the deal itself still varies
+
     def test_amendments_carry_the_changes(self):
         key = sc.build(spec("condo-asis-amended"))["key"]
         ea = key["amendments"][0]
@@ -401,6 +460,16 @@ class Packages(unittest.TestCase):
         picked = {q: a for _, q, a in answers.choose(found, words, given)}
         self.assertEqual(next(a for q, a in picked.items() if "membership in a homeowner" in q), "yes")
         self.assertEqual(next(a for q, a in picked.items() if "claim for sinkhole damage been made" in q), "yes")
+        # A home built before 1978 says so on its disclosure (it carries Rider P), condo or not.
+        for family, prop in (("SPDR", {"year_built": 1972}), ("SPDC", {"unit": "304", "year_built": 1974})):
+            path, found, _ = fields.form_blanks(family)
+            words = {i + 1: [w[:5] for w in p.get_text("words")] for i, p in enumerate(pymupdf.open(path))}
+            S = sc.build({"name": "old", "form": "as_is", "financing": "cash", "property": prop})
+            given = next(d for d in S["documents"] if d["family"] == family)["values"]["answers"]
+            picked = {q: a for _, q, a in answers.choose(found, words, given)}
+            self.assertEqual(next(a for q, a in picked.items() if "built before 1978" in q), "yes", family)
+            picked = {q: a for _, q, a in answers.choose(found, words, {})}
+            self.assertEqual(next(a for q, a in picked.items() if "built before 1978" in q), "no", family)
 
     def test_rules_come_from_contract_forms(self):
         s = {"name": "k-on-as-is", "form": "as_is", "riders": ["K"]}

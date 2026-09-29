@@ -11,5 +11,5 @@
     {"code": "G", "short_sale_application_days": 7, "short_sale_approval_days": 60, "backup_offers": "b"},
     {"code": "U", "rent_back_days": 14, "rent_back_monthly": 1850, "expense": "split"}
   ],
-  "dates": {"offer": "2026-09-21 18:20", "closing": "2026-12-22"}
+  "dates": {"offer": "2026-09-21 18:20", "effective": "2026-09-22 13:08", "closing": "2026-12-22"}
 }

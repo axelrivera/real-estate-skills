@@ -9,6 +9,7 @@
   "financing": {"type": "conventional", "ltv": 80},
   "additional_terms": "Seller to have the carpets professionally cleaned before Closing.",
   "counter": {"method": "contract", "price": 412000, "closing": "2026-11-06", "changes": {"inspection_days": 7},
+              "date": "2026-09-23 12:16",
               "terms": [{"text": "Refrigerator, washer and dryer stay with the Property."}]},
-  "dates": {"offer": "2026-09-22 20:15"}
+  "dates": {"offer": "2026-09-22 20:15", "effective": "2026-09-24 18:58"}
 }

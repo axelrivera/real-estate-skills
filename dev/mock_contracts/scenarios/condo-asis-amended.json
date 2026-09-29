@@ -8,10 +8,11 @@
   "price": 289000,
   "financing": "cash",
   "riders": [{"code": "A", "fee": 612, "fee_period": "monthly", "approval_required": true}],
-  "counters": [{"price": 284500}],
+  "counters": [{"price": 284500, "date": "2026-09-22 11:35"}],
+  "dates": {"effective": "2026-09-23 15:33"},
   "disclosures": {"RCD": {"received": "2026-10-02 11:30"}},
   "amendments": [
     {"form": "EA", "closing": "2026-11-06", "inspection_extra_days": 5},
-    {"form": "ACSP", "text": "Buyer acknowledges receipt of the condominium documents, the milestone inspection summary and the structural integrity reserve study on 10/02/2026. Seller shall credit Buyer $1,500.00 at Closing toward Buyer's closing costs."}
+    {"form": "ACSP", "description": "Condo documents received Oct 2; $1,500 seller credit at Closing", "text": "Buyer acknowledges receipt of the condominium documents, the milestone inspection summary and the structural integrity reserve study on 10/02/2026. Seller shall credit Buyer $1,500.00 at Closing toward Buyer's closing costs."}
   ]
 }

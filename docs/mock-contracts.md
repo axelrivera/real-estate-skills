@@ -73,7 +73,7 @@ By default the outputs are the package PDF, the compensation agreement with Ride
   - `1532-Cypress-Bend-Dr-Offer.pdf` before acceptance, and `1532-Cypress-Bend-Dr-Contract.pdf` once accepted.
   - `1532-Cypress-Bend-Dr-Compensation-Agreement.pdf`.
   - `...-Scanned.pdf`.
-- **Seed:** the id also seeds every mock default, so the same spec always builds the same package.
+- **Seed:** the id also seeds every mock default, so the same spec always builds the same package. The property's own facts (parcel number, legal description, year built, the association on Riders A and B, the CDD's assessments) are seeded from its address instead, so two offers on one listing describe the same parcel and the same association.
 
 `dev/mock_contracts/locate.py` inspects a form's blanks (see [Field Maps](#field-maps)):
 
@@ -381,7 +381,7 @@ Every signature is a handwriting font with a "dotloop verified" stamp: date, tim
 |---|---|---|---|---|
 | `offer` | Buyers only | None | None | None: the offer is pending |
 | `countered` | Buyers (sellers too with `seller_signs_offer`) | Each counter by its maker; the last one by the other side only when `accepted` | None | The last counter's acceptance, or none while it's pending |
-| `executed` | Buyers, then sellers at acceptance when there's no counter | As above, the last one accepted | None | The last signature on the final document |
+| `executed` | Buyers, then sellers at acceptance when there's no counter | As above, the last one accepted | None | The last signature on the final document (with two sellers, the second one's, a few minutes after `dates.effective`) |
 | `amended` | As executed | As executed | Both sides on their date (or one side with `signed`) | As executed |
 
 Some documents are signed out of that order, as they are in practice:
@@ -417,9 +417,11 @@ In `out/mock-contracts/<id>/`:
   - **Executed or amended** (`executed`, `amended`): contract-timeline's deal-file schema (`skills/contract-timeline/references/deal-file.md` and `frbar.md`). It holds `side`, `state`, `county`, `client`, `contract` (the contract as finally accepted, with the rider names), `deadlines` and `amendments` (each with its `changes`). `skills/contract-timeline/scripts/render.py` renders it directly.
     - With addenda it adds `contract.addenda` (their names). An Appraisal Gap Addendum adds two `deadlines` entries (valuation due, renegotiation ends), since contract-timeline sets no row of its own for AGA-1.
     - For a condo it adds `condo` and `condo_docs_received` (the RCD-8 date). For an HOA it adds `hoa` with `hoa_disclosure_before_contract`. Association approval comes from Riders A and B.
+    - Each escrow receipt in the package is a deposit done: `completed` has `deposit` (and `add_deposit` for an additional deposit) with the receipt's date.
+    - An amendment that moves no deadline (a credit, a repair) is still listed, with empty `changes` and its `description` (default "Addendum No. 1 (no deadline changes)").
   - **Not accepted yet** (`offer`, or `countered` with the counter pending): seller-offer-review's listing file (`skills/seller-offer-review/references/listing-file.md`), since an offer isn't a contract and contract-timeline takes only an executed one.
-    - It holds `analysis_date`, `listing` (address, county, `list_price`, year built, type, whether the flood disclosure was given), `seller` and one entry in `offers[]` with the offer as written, in that file's field names. Fields include the price, financing, down payment, lender and `approval` from the pre-approval or proof of funds, the deposit, days, riders, `buyer_broker_form` and percent, the appraisal gap and any escalation.
-    - A pending counter changes nothing yet; it's listed in `mock.counters`.
+    - It holds `analysis_date`, `listing` (address, county, `list_price`, year built, type, whether the flood disclosure was given, `hoa_monthly` from Rider A or B, or 0 with no association), `seller` and one entry in `offers[]` with the buyer's live terms, in that file's field names. Fields include the price, financing, down payment, lender and `approval` from the pre-approval or proof of funds, the deposit, days, riders, `addenda` (as printed, CO-3 included), `buyer_broker_form` and percent, `buyer_broker_paid_by` (`listing_broker` for a broker-to-broker GG agreement), the appraisal gap and any escalation.
+    - **Counters:** the live terms are the buyer's latest position. A pending buyer counter is the original offer with only that counter's terms (CO-3 carries nothing from an earlier counter), with its own time for acceptance (2 days after delivery when blank, counted from signing: `expires_estimated`). While a seller counter is pending, the live terms are the buyer's last position. Every other counter goes in `prior_counters`, oldest first, and `analysis_date` is the last counter's day. Every counter is also in `mock.counters`.
     - `skills/seller-offer-review/scripts/render.py` renders it directly.
     - Handing this package to contract-timeline is itself a test: the skill should say the contract isn't executed yet.
   - **The `mock` block** (every stage) holds:

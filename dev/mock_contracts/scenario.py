@@ -194,6 +194,18 @@ def fresh_name(rng, used):
     return f"{first} {last}"
 
 
+def property_name(prng, used):
+    """A fictional "First Last" tied to the property (the association's contact): the same on every package for that
+    address, skipping only names someone in this package already has. `used` is updated."""
+    firsts, lasts = FIRST[:], LAST[:]
+    prng.shuffle(firsts)
+    prng.shuffle(lasts)
+    first = next((n for n in firsts if n not in used), firsts[0])
+    last = next((n for n in lasts if n not in used), lasts[0])
+    used.update((first, last))
+    return f"{first} {last}"
+
+
 def _weekday(d):
     while d.weekday() >= 5 or sd.holiday_name(d):
         d += timedelta(days=1)
@@ -370,20 +382,23 @@ def build(spec):
     street_slug = re.sub(r"[^A-Za-z0-9]+", "-", prop["address"].split(",")[0]).strip("-")
     if not name:
         name = f"{street_slug.lower()}-{stage}-{digest}"
-    prop.setdefault("tax_id", f"{rng.randint(10, 36)}-{rng.randint(19, 22)}-{rng.randint(28, 31)}-{rng.randint(1, 9)}"
-                              f"{rng.choice('ABCDEFG')}{rng.choice('ABCDEFG')}-{rng.randint(0, 9999):04d}-{rng.randint(10, 990):04d}")
+    # The property's own facts (parcel, legal description, year built, association) are seeded from its address, not
+    # the scenario, so two offers on one listing describe the same parcel and the same HOA.
+    prng = random.Random(f"property|{prop['address'].lower()}")
+    prop.setdefault("tax_id", f"{prng.randint(10, 36)}-{prng.randint(19, 22)}-{prng.randint(28, 31)}-{prng.randint(1, 9)}"
+                              f"{prng.choice('ABCDEFG')}{prng.choice('ABCDEFG')}-{prng.randint(0, 9999):04d}-{prng.randint(10, 990):04d}")
     ptype = prop.setdefault("type", "condo" if unit else "single_family")
-    sub = rng.choice(SUBDIVISIONS)
+    sub = prng.choice(SUBDIVISIONS)
     if ptype == "condo":
-        legal = (f"UNIT {unit or rng.randint(101, 420)}, {sub.upper()} CONDOMINIUM, ACCORDING TO THE DECLARATION OF "
-                 f"CONDOMINIUM RECORDED IN OFFICIAL RECORDS BOOK {rng.randint(2000, 9999)}, PAGE {rng.randint(1, 1900)}, "
+        legal = (f"UNIT {unit or prng.randint(101, 420)}, {sub.upper()} CONDOMINIUM, ACCORDING TO THE DECLARATION OF "
+                 f"CONDOMINIUM RECORDED IN OFFICIAL RECORDS BOOK {prng.randint(2000, 9999)}, PAGE {prng.randint(1, 1900)}, "
                  f"PUBLIC RECORDS OF {prop['county'].upper()} COUNTY, FLORIDA")
     else:
-        legal = (f"LOT {rng.randint(1, 180)}, BLOCK {rng.choice('ABCDEFGH')}, {sub.upper()} UNIT {rng.randint(1, 4)}, "
-                 f"ACCORDING TO THE PLAT THEREOF AS RECORDED IN PLAT BOOK {rng.randint(10, 99)}, PAGES "
-                 f"{rng.randint(1, 90)}-{rng.randint(91, 99)}, PUBLIC RECORDS OF {prop['county'].upper()} COUNTY, FLORIDA")
+        legal = (f"LOT {prng.randint(1, 180)}, BLOCK {prng.choice('ABCDEFGH')}, {sub.upper()} UNIT {prng.randint(1, 4)}, "
+                 f"ACCORDING TO THE PLAT THEREOF AS RECORDED IN PLAT BOOK {prng.randint(10, 99)}, PAGES "
+                 f"{prng.randint(1, 90)}-{prng.randint(91, 99)}, PUBLIC RECORDS OF {prop['county'].upper()} COUNTY, FLORIDA")
     prop.setdefault("legal_description", legal)
-    prop.setdefault("year_built", rng.choice([1986, 1994, 2003, 2007, 2016]))
+    prop.setdefault("year_built", prng.choice([1986, 1994, 2003, 2007, 2016]))
     prop.setdefault("hoa", False)
 
     # Money.
@@ -543,15 +558,15 @@ def build(spec):
             kind = "Condominium" if code == "A" else "Homeowners"
             values.setdefault("community", sub)
             values.setdefault("association", f"{sub} {kind} Association, Inc.")
-            values.setdefault("management_company", rng.choice(["Tidewater Community Management", "Keystone Association Services",
-                                                                "Pelican Bay Property Management"]))
+            values.setdefault("management_company", prng.choice(["Tidewater Community Management", "Keystone Association Services",
+                                                                 "Pelican Bay Property Management"]))
             if not values.get("contact"):
-                values["contact"] = fresh_name(rng, used)
-            values.setdefault("phone", f"({area}) 555-{rng.randint(200, 299):04d}")
+                values["contact"] = property_name(prng, used)
+            values.setdefault("phone", f"({area}) 555-{prng.randint(200, 299):04d}")
             values.setdefault("email", "manager@" + re.sub(r"[^a-z]", "", sub.lower()) + "hoa.example")
             values.setdefault("website", re.sub(r"[^a-z]", "", sub.lower()) + "hoa.example")
-            values.setdefault("fee", rng.choice([385, 465, 540, 615]) if code == "A" else rng.choice([95, 140, 225, 310]))
-            values.setdefault("fee_period", "monthly" if code == "A" else rng.choice(["month", "quarter"]))
+            values.setdefault("fee", prng.choice([385, 465, 540, 615]) if code == "A" else prng.choice([95, 140, 225, 310]))
+            values.setdefault("fee_period", "monthly" if code == "A" else prng.choice(["month", "quarter"]))
             values.setdefault("approval_required", code == "A")
     riders.sort(key=lambda r: (len(r[0]), r[0]))
     codes = [c for c, _ in riders]
@@ -567,8 +582,8 @@ def build(spec):
     for a in addenda:
         if a["form"] == "CDDA":  # the district and its current assessments have no printed default
             a.setdefault("district", sub.upper())
-            a.setdefault("assessments", [{"amount": rng.choice([985, 1150, 1320]), "per": "year", "to": f"{prop['county']} County Tax Collector"},
-                                         {"amount": rng.choice([640, 780, 915]), "per": "year", "to": f"{prop['county']} County Tax Collector"}])
+            a.setdefault("assessments", [{"amount": prng.choice([985, 1150, 1320]), "per": "year", "to": f"{prop['county']} County Tax Collector"},
+                                         {"amount": prng.choice([640, 780, 915]), "per": "year", "to": f"{prop['county']} County Tax Collector"}])
     appraisal = cf.appraisal_form(form, {"riders": codes, "addenda": [a["form"] for a in addenda]})
     aga = next((a for a in addenda if a["form"] == "AGA"), None)
     if aga is not None and not D.get("closing"):
@@ -693,6 +708,8 @@ def build(spec):
             facts.update({"insurance claim for sinkhole damage": "yes", "was the claim paid": "yes"})
         if f == "SPDR" and prop.get("coastal"):
             facts["seaward of the coastal construction control line"] = "yes"
+        if f in ("SPDR", "SPDC") and prop["year_built"] < 1978:  # "Was the Property built before 1978?" (Rider P)
+            facts["built before 1978"] = "yes"
         values["answers"] = {**DEFAULT_ANSWERS.get(f, {}), **facts, **(values.get("answers") or {})}
         if f == "RCD":
             values["received"] = _dt(values.get("received") or receipt_date)
@@ -753,6 +770,13 @@ def build(spec):
         a.setdefault("signed", "all")
         docs.append({"family": a["form"], "role": "amendment", "values": a, "fill": a.get("fill", {})})
     events = _signing(docs, ctx, counters, amendments, stage, accepted, base, effective)
+    # The Effective Date is the LAST signature or initial on the final document (Para. 3(b)): with two sellers (or
+    # two buyers accepting a counter) that's the second one, a few minutes after `effective`.
+    last_signed = effective
+    if accepted and not ctx["counter_on_contract"]:
+        final = next(i for i, d in enumerate(docs) if (d["values"] is last_counter if last_counter else d["role"] == "contract"))
+        party = "buyer" if last_counter and last_counter["by"] == "seller" else "seller"
+        last_signed = max(dt for p, _, dt in events[final] if p == party)
     gg_values = next((v for c, v in riders if c == "GG"), bb)
     compensation = _compensation(bb_form, gg_values, ctx, accepted, base, effective, rng, has("late-compensation-agreement"))
     if has("late-compensation-agreement") and not (compensation and compensation["executed"]):
@@ -768,7 +792,7 @@ def build(spec):
             d["document"] = docs[d["doc_index"]]["family"]
             if d["type"] == "missing-initials":
                 d.setdefault("page", 4)
-    key = _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, riders, notes, defects,
+    key = _answer_key(spec, ctx, form, docs, counters, amendments, stage, last_signed, riders, notes, defects,
                       dropped, unattached, unchecked, bb_form, bb, dropped_disclosure)
     key["mock"]["compensation_agreement"] = None if not compensation else {
         k: (when(v) if isinstance(v, datetime) else v) for k, v in compensation.items() if k != "values"}
@@ -1005,9 +1029,11 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
         if a.get("short_sale_extra_days") and "G" in ctx["riders"]:
             contract["short_sale_approval_days"] = changes["short_sale_approval_days"] = \
                 contract.get("short_sale_approval_days", 90) + a["short_sale_extra_days"]
-        entry = {"date": a["date"].date().isoformat(), "description": a.get("description") or
-                 ("Extension Addendum" if a["form"] == "EA" else f"Addendum No. {a['number']}"), "changes": changes}
         overrides = {EA_OVERRIDES[k]: _d(a[k]).isoformat() for k in EA_OVERRIDES if a.get(k)} if a["form"] == "EA" else {}
+        title = "Extension Addendum" if a["form"] == "EA" else f"Addendum No. {a['number']}"
+        # An amendment that moves no deadline (a credit, a repair) still goes on the record, saying so.
+        entry = {"date": a["date"].date().isoformat(), "description": a.get("description") or
+                 (title if changes or overrides else f"{title} (no deadline changes)"), "changes": changes}
         if overrides:
             entry["date_overrides"] = overrides
         amend.append(entry)
@@ -1043,36 +1069,81 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
             "notes": notes,
     }
     if not accepted:  # not a contract yet: the key is the offer as seller-offer-review records it
-        return _offer_key(ctx, form, docs, riders, bb_form, bb, mock)
-    return {
+        return _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters)
+    # An escrow agent's receipt in the package is that deposit done (deal-file.md `completed`).
+    done = {"Initial deposit": "deposit", "Additional deposit": "add_deposit"}
+    completed = {done[d["values"]["label"]]: d["values"]["date"].date().isoformat()
+                 for d in docs if d["family"] == "escrow_receipt" and d["values"]["label"] in done}
+    key = {
         "side": spec.get("side", "buyer"), "state": "FL", "county": ctx["county"], "client": ctx["buyer_names"],
         "contract": contract, "deadlines": deadlines, "amendments": amend, "flags": [], "mock": mock,
     }
+    if completed:
+        key["completed"] = completed
+    return key
 
 
-def _offer_key(ctx, form, docs, riders, bb_form, bb, mock):
+def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
     """The answer key for a package that isn't a contract yet (an offer, or an offer with a counter pending): a
-    seller-offer-review listing file (skills/seller-offer-review/references/listing-file.md) with the offer as written.
-    A pending counter is in mock.counters; it changes nothing until it's accepted. contract-timeline takes only an
-    executed contract, so feeding it this package should get a "not executed yet" answer (mock.accepted is false)."""
+    seller-offer-review listing file (skills/seller-offer-review/references/listing-file.md) with the buyer's live
+    terms. contract-timeline takes only an executed contract, so feeding it this package should get a "not executed
+    yet" answer (mock.accepted is false).
+
+    With counters, the live terms are the buyer's latest position: the buyer's last counter applied to the original
+    offer (CO-3 carries no term of an earlier counter unless restated), or the offer itself while a seller counter is
+    pending. Every other counter goes in `prior_counters`, oldest first, and `analysis_date` is the last counter's day."""
     codes = [c for c, _ in riders if c != mock.get("unattached_rider")]
     values = {c: v for c, v in riders}
     letters_ = {d["family"]: d["values"] for d in docs if d["role"] == "letter"}
     addenda = {d["family"]: d["values"] for d in docs if d["role"] == "addendum"}
-    price, loan = ctx["price"], ctx["loan_amount"]
+    loan = ctx["loan_amount"]  # a CO-3 changes the price, not the financing paragraph
+    live = next((c for c in reversed(counters) if c["by"] == "buyer"), None)
+    changes = dict((live or {}).get("changes") or {})
+    price = (live or {}).get("price") or ctx["price"]
+    closing = _d(live["closing"]) if live and live.get("closing") else ctx["closing_date"]
+    additional = changes.get("additional_deposit", ctx["additional_deposit"])
+    if live is None:
+        expires, estimated = ctx["acceptance_deadline"], None
+    elif live.get("deadline"):
+        expires, estimated = _dt(live["deadline"]), None
+    else:  # a CO-3 with no date: 2 days after delivery (Para. 3(a)); delivery isn't in the package, so from signing
+        expires = datetime.combine(live["date"].date() + timedelta(days=2), datetime.min.time()).replace(hour=23, minute=59)
+        estimated = True
     offer = {
-        "id": "A", "status": "active", "received": ctx["offer_date"].strftime("%Y-%m-%d %H:%M"),
-        "expires": ctx["acceptance_deadline"].strftime("%Y-%m-%d %H:%M"), "buyer": ctx["buyer_names"],
+        "id": "A", "status": "active", "received": (live["date"] if live else ctx["offer_date"]).strftime("%Y-%m-%d %H:%M"),
+        "expires": expires.strftime("%Y-%m-%d %H:%M"), "expires_estimated": estimated, "buyer": ctx["buyer_names"],
         "buyer_agent": ctx["cooperating_associate"], "buyer_brokerage": ctx["cooperating_broker"],
         "contract_form": form, "form_revision": cf.VERIFIED[FAMILY[form]], "price": price, "financing": ctx["financing"],
         "down_pct": None if ctx["financing"] == "cash" else round(1 - (loan or 0) / price, 4), "loan_amount": loan,
         "approval": "preapproval" if "pre_approval" in letters_ else "pof_verified" if "proof_of_funds" in letters_ else "none",
-        "deposit": (ctx["deposit_initial"] or 0) + (ctx["additional_deposit"] or 0),
-        "seller_concessions": 0, "closing_date": ctx["closing_date"].isoformat(), "title_by": ctx["title_by"],
-        "inspection_days": (values.get("K") or values.get("L") or {}).get("inspection_days") or ctx["inspection_days"] or 15,
-        "loan_approval_days": None if ctx["financing"] == "cash" else ctx["loan_approval_days"] or 30,
+        "deposit": (ctx["deposit_initial"] or 0) + (additional or 0),
+        "seller_concessions": 0, "closing_date": closing.isoformat(), "title_by": ctx["title_by"],
+        "inspection_days": changes.get("inspection_days") or (values.get("K") or values.get("L") or {}).get("inspection_days")
+        or ctx["inspection_days"] or 15,
+        "loan_approval_days": None if ctx["financing"] == "cash" else
+        changes.get("loan_approval_days") or ctx["loan_approval_days"] or 30,
         "riders": codes,
     }
+    prior = []
+    for c in counters:
+        if c is live:
+            continue
+        ch = c.get("changes") or {}
+        terms = {"price": c.get("price"), "closing_date": _d(c["closing"]).isoformat() if c.get("closing") else None,
+                 "inspection_days": ch.get("inspection_days"), "loan_approval_days": ch.get("loan_approval_days"),
+                 "deposit": (ctx["deposit_initial"] or 0) + ch["additional_deposit"] if "additional_deposit" in ch else None}
+        prior.append({"by": c["by"], "note": f"Counter Offer #{c['number']}" if c["method"] == "co" else "Counter on the contract",
+                      **{k: v for k, v in terms.items() if v is not None}})
+    if prior:
+        offer["prior_counters"] = prior
+    seen = []
+    for d in docs:  # the addenda as printed, and CO-3 once however many counters there are
+        if d["role"] in ("addendum", "counter") and d["family"] not in seen:
+            seen.append(d["family"])
+    offer["addenda"] = [form_title(f) for f in seen] or None
+    gg = values.get("GG") or bb or {}
+    if bb_form == "GG":  # a compensation agreement between the brokers: the listing broker pays from its own fee
+        offer["buyer_broker_paid_by"] = "listing_broker" if gg.get("between", "brokers") == "brokers" else "seller"
     lender = (letters_.get("pre_approval") or {}).get("lender")
     if lender:
         offer["lender"] = lender[0] if isinstance(lender, (list, tuple)) else lender
@@ -1098,18 +1169,18 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock):
         offer["appraisal_contingency"] = True
     if "AGA" in addenda:
         a = addenda["AGA"]
-        offer.update(appraisal_form="aga", appraisal_gap=a.get("gap_amount") or round(price * 0.03, -3))
+        offer.update(appraisal_form="aga", appraisal_gap=a.get("gap_amount") or round(ctx["price"] * 0.03, -3))
         for k_from, k_to in (("valuation_days", "aga_valuation_days"), ("renegotiate_days", "aga_renegotiate_days")):
             if a.get(k_from):
                 offer[k_to] = a[k_from]
     if "EAC" in addenda:
         a = addenda["EAC"]
-        offer["escalation"] = {"cap": a.get("maximum_price") or round(price * 1.05, -3),
+        offer["escalation"] = {"cap": a.get("maximum_price") or round(ctx["price"] * 1.05, -3),
                                "increment": a.get("escalation_amount") or 2500, "proof": True}
     if "X" in codes:
         offer["kickout"] = True
     if "U" in codes:
-        offer.update({k: values["U"][k] for k in ("rent_back_days", "rent_back_monthly") if values["U"].get(k)})
+        offer.update({k: values["U"][k] for k in ("rent_back_days", "rent_back_monthly") if values["U"].get(k) is not None})  # $0 rent is a term
     if "C" in codes:
         offer["seller_financing"] = values["C"]["seller_financing"]
     # Rider dates become days from the offer (the listing file counts them from the Effective Date, not known yet).
@@ -1124,5 +1195,13 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock):
     listing = {"address": ctx["property_address"], "state": "FL", "county": ctx["county"], "list_price": ctx["list_price"],
                "year_built": ctx["year_built"], "property_type": ctx["property_type"],
                "flood_disclosure": any(d["family"] == "FD" for d in docs)}
-    return {"analysis_date": ctx["offer_date"].date().isoformat(), "listing": listing, "seller": {"name": ctx["seller_names"]},
+    # The association fee from Rider A or B, per month; 0 when the package shows no association at all.
+    assoc = next((values[c] for c in ("A", "B") if c in codes), None)
+    if assoc is not None and assoc.get("fee"):
+        per = {"quarter": 3, "quarterly": 3, "year": 12, "annual": 12, "annually": 12}.get(str(assoc.get("fee_period")).lower(), 1)
+        listing["hoa_monthly"] = round(assoc["fee"] / per, 2)
+    elif assoc is None and not mock["property_facts"]["hoa"] and ctx["property_type"] != "condo":
+        listing["hoa_monthly"] = 0
+    analysis = max([c["date"] for c in counters] or [ctx["offer_date"]])
+    return {"analysis_date": analysis.date().isoformat(), "listing": listing, "seller": {"name": ctx["seller_names"]},
             "offers": [{k: v for k, v in offer.items() if v is not None}], "mock": mock}
