@@ -312,6 +312,55 @@ class AuditMethod(unittest.TestCase):
             self.run_(R)
 
 
+class CompsFirst(unittest.TestCase):
+    """CMA-110 (the median before the range exists, an outlier rule) and CMA-112 (the adjusted spread)."""
+
+    def run_cli(self, R):
+        import contextlib
+        import io
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "report.json")
+            with open(path, "w") as f:
+                json.dump(R, f)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = compute.main([path])
+            written = os.listdir(tmp)
+        return code, json.loads(out.getvalue()), written
+
+    def test_median_from_comps_alone(self):
+        full = report()
+        market, homes = compute.load_inputs(copy.deepcopy(full))
+        C = compute.compute(copy.deepcopy(full), market, homes)
+        R = {k: full[k] for k in ("subject", "comps", "export", "as_of")}
+        code, out, written = self.run_cli(R)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["stage"], "comps")
+        self.assertEqual(out["median_adjusted"], C["median_adjusted"])
+        self.assertEqual((out["adjusted_min"], out["adjusted_max"]), (C["adjusted_min"], C["adjusted_max"]))
+        self.assertEqual(out["asking_vs_median"], full["subject"]["list_price"] - C["median_adjusted"])
+        self.assertEqual(written, ["report.json"])  # no handoff without a range
+
+    def test_adjusted_spread_in_full_output(self):
+        R = report()
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        values = [c["adjusted"] for c in R["comps"]["cards"]]
+        self.assertEqual((C["adjusted_min"], C["adjusted_max"]), (min(values), max(values)))
+
+    def test_outlier_is_named(self):
+        R = report()
+        market, homes = compute.load_inputs(R)
+        self.assertFalse(any("Outliers" in w for w in compute.compute(copy.deepcopy(R), market, homes)["warnings"]))
+        card = R["comps"]["cards"][0]
+        card["adjustments"].append({"label": "Test", "amount": 80000})
+        warnings = compute.compute(R, market, homes)["warnings"]
+        hits = [w for w in warnings if "Outliers" in w]
+        self.assertEqual(len(hits), 1, warnings)
+        self.assertTrue(hits[0].startswith(card["address"]))
+        self.assertIn("above the other comps' median", hits[0])
+
+
 class StatsWithoutAnExportRow(unittest.TestCase):
     def test_facts_rank_the_comps(self):
         """A home from a property report with no export row: its facts rank the candidates, lat/lon set distances."""

@@ -273,6 +273,7 @@ def compute(R, market, homes):
         warnings, assumptions = cma.derive_comps(R["comps"]), []  # adjusted values and summary rows from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
+    warnings += cma.outlier_warnings(R["comps"]["cards"])  # CMA-110
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
     if scope:

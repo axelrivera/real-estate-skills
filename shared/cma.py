@@ -8,12 +8,14 @@ import json
 import math
 import os
 import re
+import statistics
 
 from . import finance, mls
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
 ADJ_NET_LIMIT, ADJ_GROSS_LIMIT = 0.15, 0.25  # common appraisal guidelines, as shares of the comp's sale price
+OUTLIER_SHARE = 0.10  # CMA-110: an adjusted value this far from the other comps' median is an outlier (method.md)
 esc = html.escape
 
 
@@ -510,6 +512,23 @@ def derive_comps(comps):
         out.append([where, sold, conc, value])
     comps["summary_rows"] = sorted(out, key=lambda r: -r[3])
     return warnings
+
+
+def outlier_warnings(cards, share=OUTLIER_SHARE):
+    """CMA-110: comps whose adjusted value is more than `share` away from the median of the other comps, so the same
+    comp set is always judged the same way (method.md, Outliers). Needs at least three comps."""
+    values = [c.get("adjusted") for c in cards]
+    if len(values) < 3 or not all(isinstance(v, (int, float)) for v in values):
+        return []
+    out = []
+    for i, c in enumerate(cards):
+        others = statistics.median(values[:i] + values[i + 1:])
+        if abs(values[i] - others) > share * others:
+            out.append(f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
+                       f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. Replace it with "
+                       "the next candidate, or keep it only if it's one of the closest matches and say why in method_note "
+                       "(method.md, Outliers).")
+    return out
 
 
 def report_notices(C):

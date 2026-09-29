@@ -42,6 +42,7 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 
 - Subtract seller-paid buyer costs from the sale price, dollar for dollar.
 - List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
+- **Outliers.** After adjusting, a comp more than 10% above or below the median of the other comps (compute.py names it) is an outlier: replace it with the next candidate. Keep it only when it's one of the two closest matches in condition and location, say why in `method_note`, and don't let it set an end of the range. Decide once, before the range, so the same comps always give the same median.
 - Write each adjustment as a sentence with its dollar amount, to the seller: "It sold in April, when rates were lower: minus about $10,000."
 
 ## Range and Recommended Price

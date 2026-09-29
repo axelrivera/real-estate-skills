@@ -29,7 +29,9 @@ In the same message, ask the buyer questions the offer depends on: when they nee
 
 Local costs come from the listing's location, never from questions up front: read `references/local-costs.md`. Florida and Stellar MLS are built in; elsewhere, national estimates are labeled. For a PDF, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
 
-**Quick gut check** ("is it priced right? just tell me"): run stats.py, pick and adjust the comps, and still run compute.py for the median and range (the payment and tax blocks can be short). Answer in a few sentences; skip the full template unless asked.
+**Quick gut check** ("is it priced right? just tell me"): run stats.py, pick and adjust the comps, and write a report.json with only `subject` and `comps.cards`; compute.py then prints the median adjusted value, the spread and any outlier, without the range or offer plan. Answer in a few sentences: where the asking price sits against the median (from `asking_vs_median`), the one or two facts behind it (the history, the comps), and a rough opening. Skip the full template unless asked.
+
+**"Same report as last time":** the same format the agent got before (PDF or chat summary), rebuilt from this listing's new inputs. Nothing carries over from the earlier home but the format.
 
 ## 2. Read the Subject and the Market
 
@@ -53,7 +55,7 @@ Then compute:
 python3 scripts/compute.py report.json
 ```
 
-Fix every item in `warnings` (a credit over the program limit, a walk-away above the range, a tax estimated without millage) and re-run. It also saves `<address>.buyer.cma.json` next to report.json, the handoff an offer skill reads later in this conversation: a working file, never shown or offered to the agent.
+Fix every item in `warnings` (a credit over the program limit, a walk-away above the range, a tax estimated without millage, an outlier comp) and re-run. To set the range, run it first with only `subject` and `comps` (as in the gut check) for the median adjusted value. It also saves `<address>.buyer.cma.json` next to report.json, the handoff an offer skill reads later in this conversation: a working file, never shown or offered to the agent.
 
 ## 4. Deliver
 
