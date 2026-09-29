@@ -1,0 +1,292 @@
+{
+ "agent_notes": {
+  "count": 1
+ },
+ "chat_notes": {
+  "count": 0
+ },
+ "closing": {
+  "date": "2026-10-30",
+  "day": 35
+ },
+ "contingencies_end": {
+  "by_closing": false,
+  "contingency": true,
+  "critical": true,
+  "day": 31,
+  "done": false,
+  "done_display": null,
+  "key": "loan_approval",
+  "no_time": false,
+  "party": "Buyer",
+  "waits_on_approval": false,
+  "was": null,
+  "when": "2026-10-26 23:59"
+ },
+ "contingencies_waiting": {
+  "count": 0
+ },
+ "effective": {
+  "date": "2026-09-25"
+ },
+ "financing": "FHA",
+ "first_deadline": {
+  "by_closing": false,
+  "contingency": false,
+  "critical": true,
+  "day": 3,
+  "done": false,
+  "done_display": null,
+  "key": "deposit",
+  "no_time": false,
+  "party": "Buyer",
+  "short": "Deposit",
+  "waits_on_approval": false,
+  "was": null,
+  "when": "2026-09-28 23:59"
+ },
+ "flags": {
+  "count": 2
+ },
+ "history": {
+  "count": 0
+ },
+ "length_days": 35,
+ "moved": {
+  "count": 0
+ },
+ "ok": true,
+ "open_rights": {
+  "count": 3
+ },
+ "pending": [
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": true,
+   "date_display": "Pending",
+   "day": null,
+   "display": "Pending",
+   "done": false,
+   "done_display": null,
+   "key": "title_exam",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": null
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "date_display": "Pending",
+   "day": null,
+   "display": "Pending",
+   "done": false,
+   "done_display": null,
+   "key": "survey_notice",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": null
+  }
+ ],
+ "report_date": {
+  "date": "2026-09-26"
+ },
+ "rows": [
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": true,
+   "day": 3,
+   "done": false,
+   "done_display": null,
+   "key": "deposit",
+   "no_time": false,
+   "party": "Buyer",
+   "short": "Deposit",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-09-28 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 5,
+   "done": false,
+   "done_display": null,
+   "key": "loan_app",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-09-30 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": true,
+   "critical": true,
+   "day": 10,
+   "done": false,
+   "done_display": null,
+   "key": "inspection",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-05 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": true,
+   "critical": true,
+   "day": 10,
+   "done": false,
+   "done_display": null,
+   "key": "insurance",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-05 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 20,
+   "done": false,
+   "done_display": null,
+   "key": "title",
+   "no_time": false,
+   "party": "Seller",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-15 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 28,
+   "done": false,
+   "done_display": null,
+   "key": "insurance_bound",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-23 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": true,
+   "critical": true,
+   "day": 31,
+   "done": false,
+   "done_display": null,
+   "key": "loan_approval",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-26 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 31,
+   "done": false,
+   "done_display": null,
+   "key": "survey",
+   "no_time": false,
+   "party": "Buyer",
+   "short": "Survey",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-26 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": true,
+   "day": 32,
+   "done": false,
+   "done_display": null,
+   "key": "clear_to_close",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-27 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 34,
+   "done": false,
+   "done_display": null,
+   "key": "seller_terminate",
+   "no_time": false,
+   "party": "Seller",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-29 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 34,
+   "done": false,
+   "done_display": null,
+   "key": "walkthrough",
+   "no_time": true,
+   "party": "Buyer",
+   "short": "Walk-Through",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-29 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": true,
+   "day": 35,
+   "done": false,
+   "done_display": null,
+   "key": "closing",
+   "label": "Closing",
+   "no_time": false,
+   "party": "Both",
+   "short": "Closing",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-10-30 10:00"
+  }
+ ],
+ "rules": {
+  "lines": [
+   {
+    "label": "Counting"
+   },
+   {},
+   {},
+   {},
+   {},
+   {
+    "label": "Holidays"
+   }
+  ]
+ },
+ "sample": true,
+ "short_sale": null,
+ "side": "buyer",
+ "support": "full"
+}

@@ -1,0 +1,255 @@
+{
+ "comps_table": [
+  {},
+  {},
+  {},
+  {},
+  {}
+ ],
+ "credit": {
+  "buydown": {
+   "cost": 10272.6,
+   "covered": false,
+   "credit": 10000,
+   "full": 4046.38,
+   "price": 465000,
+   "year1": 3480.16,
+   "year2": 3756.56
+  },
+  "closing_cost_pct": 0.03,
+  "closing_costs_given": false,
+  "columns": [
+   {
+    "appraisal_room": 14800,
+    "bb_short": 0,
+    "cap": 13650.0,
+    "cash": 36400.0,
+    "closing_costs": 13650.0,
+    "credit": 0,
+    "extra": 0.0,
+    "loan": 432250.0,
+    "loan_taxes": 0,
+    "net": 455000,
+    "over_cap": false,
+    "over_costs": false,
+    "payback_years": null,
+    "payment": 3964.39,
+    "pi": 2861.27,
+    "price": 455000
+   },
+   {
+    "appraisal_room": 9800,
+    "bb_short": 0,
+    "cap": 13800.0,
+    "cash": 31800.0,
+    "closing_costs": 13800.0,
+    "credit": 5000,
+    "extra": 41.0,
+    "loan": 437000.0,
+    "loan_taxes": 0,
+    "net": 455000,
+    "over_cap": false,
+    "over_costs": false,
+    "payback_years": 9.35,
+    "payment": 4005.39,
+    "pi": 2892.71,
+    "price": 460000
+   },
+   {
+    "appraisal_room": 4800,
+    "bb_short": 0,
+    "cap": 13950.0,
+    "cash": 27200.0,
+    "closing_costs": 13950.0,
+    "credit": 10000,
+    "extra": 81.99,
+    "loan": 441750.0,
+    "loan_taxes": 0,
+    "net": 455000,
+    "over_cap": false,
+    "over_costs": false,
+    "payback_years": 9.35,
+    "payment": 4046.38,
+    "pi": 2924.15,
+    "price": 465000
+   }
+  ],
+  "down_pct": 0.05,
+  "loan_tax_labels": {
+   "count": 0
+  },
+  "program": "conventional",
+  "seller_cost_parts": {
+   "count": 1
+  },
+  "seller_cost_per_10k": 70
+ },
+ "current_bill": 2731,
+ "data_source": {
+  "as_of": "2026-09-22",
+  "export": true,
+  "mls": "Stellar"
+ },
+ "handoff": {
+  "as_of": "2026-09-22",
+  "comps": [
+   {
+    "adjusted": 492300,
+    "seller_paid": 0,
+    "sold_price": 505500
+   },
+   {
+    "adjusted": 483800,
+    "seller_paid": 0,
+    "sold_price": 495000
+   },
+   {
+    "adjusted": 469800,
+    "seller_paid": 500,
+    "sold_price": 427000
+   },
+   {
+    "adjusted": 438400,
+    "seller_paid": 12000,
+    "sold_price": 429000
+   },
+   {
+    "adjusted": 436200,
+    "seller_paid": 13071,
+    "sold_price": 465000
+   }
+  ],
+  "handoff": "cma",
+  "market": {
+   "active_count": 14,
+   "median_days_recent": 22.0,
+   "median_seller_paid_recent": 12100.0,
+   "months_supply": 3.5,
+   "sale_to_original_list_recent": 0.9386,
+   "share_with_seller_paid_costs_recent": 0.889,
+   "split_date": "2026-07-01"
+  },
+  "market_profile": {
+   "mls": "Stellar",
+   "state": "FL"
+  },
+  "offer_plan": {
+   "opening": 455000,
+   "target_high": 465000,
+   "target_low": 460000,
+   "walk_away": 470000
+  },
+  "recommended_list_price": null,
+  "side": "buyer",
+  "source": "buyer-cma",
+  "subject": {
+   "baths": 2,
+   "beds": 4,
+   "city": "Casselberry",
+   "county": "Seminole",
+   "list_price": 474900,
+   "pool": true,
+   "sqft": 1849,
+   "state": "FL",
+   "year_built": 1972
+  },
+  "value": {
+   "high": 480000,
+   "low": 455000,
+   "median_adjusted": 469800,
+   "midpoint": 467500
+  },
+  "version": 1
+ },
+ "market_notes": {
+  "count": 1
+ },
+ "median_adjusted": 469800,
+ "ok": true,
+ "payments": {
+  "alt_jurisdiction": {
+   "delta_monthly": -158.87,
+   "short": "Unincorporated"
+  },
+  "flood": {
+   "annual": null,
+   "required": "citizens_value",
+   "sfha": false
+  },
+  "insurance_annual": 3600,
+  "per_10k": 81.99,
+  "price": 474900,
+  "rate": 6.95,
+  "rows": [
+   {
+    "cash_down": 23745.0,
+    "flood": null,
+    "hoa": 0,
+    "ins": 300.0,
+    "loan": 451155.0,
+    "mi": 187.98,
+    "pi": 2986.41,
+    "tax": 653.17,
+    "total": 4127.56
+   },
+   {
+    "cash_down": 16621.5,
+    "flood": null,
+    "hoa": 0,
+    "ins": 300.0,
+    "loan": 466298.37,
+    "mi": 210.04,
+    "pi": 3086.65,
+    "tax": 653.17,
+    "total": 4249.86
+   },
+   {
+    "cash_down": 94980.0,
+    "flood": null,
+    "hoa": 0,
+    "ins": 300.0,
+    "loan": 379920.0,
+    "mi": 0.0,
+    "pi": 2514.87,
+    "tax": 653.17,
+    "total": 3468.04
+   }
+  ],
+  "tax_index": 1
+ },
+ "range": {
+  "high": 480000,
+  "low": 455000
+ },
+ "subject": {
+  "list_price": 474900
+ },
+ "taxes": [
+  {
+   "annual": 5931.54,
+   "estimated": false,
+   "monthly_display": "$494",
+   "problem": null,
+   "school_mills": 5.25,
+   "short": "Unincorporated",
+   "total_mills": 13.68
+  },
+  {
+   "annual": 7838.0,
+   "estimated": false,
+   "monthly_display": "$653",
+   "problem": null,
+   "school_mills": 5.25,
+   "short": "City",
+   "total_mills": 18.18
+  }
+ ],
+ "trend": {
+  "at_subject": 443061.34,
+  "r2": 0.8286,
+  "r2_key": "r2_most"
+ },
+ "warnings": {
+  "count": 0
+ }
+}

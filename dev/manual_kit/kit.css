@@ -1,0 +1,55 @@
+/* Mock input documents for the manual smoke-test kit. Never shipped. */
+@page { size: Letter; margin: 0.45in 0.45in 0.6in 0.45in; }
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 8.6pt; color: #1b1b1b; margin: 0; }
+h1 { font-size: 13pt; margin: 0 0 4px; }
+h2 { font-size: 9.5pt; margin: 12px 0 4px; padding: 3px 6px; background: #d9e2ec; border: 1px solid #b6c3d1; }
+h3 { font-size: 9pt; margin: 8px 0 3px; }
+table { border-collapse: collapse; width: 100%; }
+td, th { padding: 2px 5px; vertical-align: top; text-align: left; }
+.brandbar { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #22507a; padding-bottom: 4px; margin-bottom: 6px; }
+.brandbar .mls { font-weight: bold; color: #22507a; font-size: 11pt; }
+.brandbar .small { font-size: 7.5pt; color: #555; }
+.head { display: grid; grid-template-columns: 2.1in 1fr; gap: 10px; }
+.photo { border: 1px solid #999; background: #eceff2; display: flex; align-items: center; justify-content: center; color: #666; font-size: 8pt; text-align: center; }
+.photo.main { height: 1.55in; }
+.addr { font-size: 12pt; font-weight: bold; }
+.status { display: inline-block; font-weight: bold; padding: 1px 6px; border: 1px solid #22507a; color: #22507a; margin-right: 8px; }
+.price { font-size: 12pt; font-weight: bold; }
+.kv { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 14px; row-gap: 1px; }
+.kv.two { grid-template-columns: repeat(2, 1fr); }
+.kv div { display: flex; gap: 4px; border-bottom: 1px dotted #ccc; padding: 1px 0; }
+.kv b { white-space: nowrap; color: #333; }
+.grid th { background: #eef2f6; border: 1px solid #c7d0da; font-size: 8pt; }
+.grid td { border: 1px solid #d5dbe2; }
+.block { margin-bottom: 8px; }
+.blockhead { font-weight: bold; margin: 6px 0 2px; }
+.photos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.photos .photo { height: 2.6in; }
+.remarks { border: 1px solid #ccc; padding: 5px 7px; line-height: 1.35; }
+.pagebreak { page-break-before: always; }
+.tabhead { margin-top: 10px; font-size: 10.5pt; font-weight: bold; color: #22507a; border-bottom: 1px solid #22507a; }
+
+/* Listing flyer */
+.flyer { font-size: 11pt; }
+.flyer .top { background: #1f3b57; color: #fff; padding: 14px 18px; }
+.flyer .top .h { font-size: 22pt; font-weight: bold; }
+.flyer .top .p { font-size: 26pt; font-weight: bold; margin-top: 4px; }
+.flyer .hero { height: 3.6in; margin: 12px 0; font-size: 12pt; }
+.flyer .facts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 10px 0; }
+.flyer .facts div { border: 1px solid #c9d3dd; padding: 6px; text-align: center; }
+.flyer .facts b { display: block; font-size: 13pt; }
+.flyer p { line-height: 1.45; }
+.flyer ul { margin: 6px 0 0 18px; padding: 0; }
+.flyer .agent { margin-top: 14px; border-top: 2px solid #1f3b57; padding-top: 8px; display: flex; justify-content: space-between; }
+
+/* Purchase agreement */
+.rpa { font-family: "Times New Roman", Times, serif; font-size: 10.5pt; line-height: 1.4; }
+.rpa h1 { text-align: center; font-size: 15pt; margin-bottom: 2px; }
+.rpa .sub { text-align: center; font-size: 9pt; margin-bottom: 12px; }
+.rpa p { margin: 0 0 7px; text-align: justify; }
+.rpa .fill { font-family: "Courier New", monospace; font-weight: bold; color: #10306b; border-bottom: 1px solid #333; padding: 0 3px; }
+.rpa .sig { margin-top: 16px; width: 100%; }
+.rpa .sig td { padding: 10px 6px 2px; border-bottom: 1px solid #333; width: 50%; }
+.rpa .sig .name { font-family: "Brush Script MT", "Segoe Script", cursive; font-size: 15pt; color: #10306b; }
+.rpa .sig .label td { border: 0; font-size: 8.5pt; padding-top: 1px; }

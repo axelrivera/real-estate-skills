@@ -12,12 +12,13 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test style-check lint-skills py311 sync check-sync forms-check mock-contracts runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test golden style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium and Node modules (nvm)"
 	@echo "make hooks          Install the git pre-commit hook (shared/ copies must be in sync)"
 	@echo "make test           Run unit tests in dev/tests/"
+	@echo "make golden         Rewrite dev/golden/ from the current code (review the diff; make test fails until it matches)"
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
 	@echo "make lint-skills    Check every SKILL.md: frontmatter, description length, Guardrails first, paths"
 	@echo "make py311          Check shipped Python for 3.11 (the Cowork runtime)"
@@ -25,6 +26,7 @@ help:
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
 	@echo "make forms-check    Compare the FR/BAR form PDFs in sources/ with dev/forms/frbar-forms.json (ARGS=\"--accept CR-7_L\")"
 	@echo "make mock-contracts Build every mock FR/BAR contract package in dev/mock_contracts/scenarios/ into $(OUT)/mock-contracts/ (ARGS=\"--answer-key --scanned\")"
+	@echo "make manual-kit     Build the manual smoke-test kit into $(OUT)/manual-test/ (local only; see docs/manual-testing.md)"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
@@ -53,6 +55,9 @@ style-check:
 test:
 	@PATH="$$PATH:$(LO_BIN)" $(PY) -m unittest discover -s dev/tests  # LibreOffice, when installed, for the deck-PDF check
 
+golden:
+	@$(PY) dev/golden.py --update
+
 lint-skills:
 	@$(PY) dev/lint_skills.py
 
@@ -78,6 +83,10 @@ mock-contracts:
 	@for f in dev/mock_contracts/scenarios/*.json; do \
 		$(PY) dev/mock_contracts/build.py $$f $(ARGS) || exit 1; \
 	done
+
+# Manual smoke-test kit into $(OUT)/manual-test/ (local only: the contract packages need the FR/BAR PDFs in sources/). See docs/manual-testing.md.
+manual-kit:
+	@$(NVM) $(DEV_ENV) $(PY) dev/manual_kit/build.py
 
 runtime-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/runtime-check/scripts/check.py
@@ -107,6 +116,7 @@ samples:
 		$(PY) skills/seller-offer-review/scripts/render.py dev/samples/seller-offer-review-single.json --format all \
 		--out samples/seller-offer-review --profile dev/samples/profile.md
 	@$(PY) dev/samples_readme.py
+	@$(PY) dev/samples_diff.py --revert || true  # keep only real changes; build-time stamps alone are restored
 
 package: check-sync test lint-skills py311 style-check
 	@$(PY) dev/package.py plugin

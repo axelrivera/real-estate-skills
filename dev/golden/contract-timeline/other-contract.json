@@ -1,0 +1,160 @@
+{
+ "agent_notes": {
+  "count": 1
+ },
+ "chat_notes": {
+  "count": 1
+ },
+ "closing": {
+  "date": "2026-12-22",
+  "day": 32
+ },
+ "contingencies_end": {
+  "by_closing": false,
+  "contingency": true,
+  "critical": true,
+  "day": 21,
+  "done": false,
+  "done_display": null,
+  "key": "financing",
+  "no_time": false,
+  "party": "Buyer",
+  "short": "Financing",
+  "waits_on_approval": false,
+  "was": null,
+  "when": "2026-12-11 23:59"
+ },
+ "contingencies_waiting": {
+  "count": 0
+ },
+ "effective": {
+  "date": "2026-11-20"
+ },
+ "financing": "Conventional",
+ "first_deadline": {
+  "by_closing": false,
+  "contingency": false,
+  "critical": true,
+  "day": 3,
+  "done": false,
+  "done_display": null,
+  "key": "earnest_money",
+  "no_time": false,
+  "party": "Buyer",
+  "waits_on_approval": false,
+  "was": null,
+  "when": "2026-11-23 23:59"
+ },
+ "flags": {
+  "count": 2
+ },
+ "history": {
+  "count": 0
+ },
+ "length_days": 32,
+ "moved": {
+  "count": 0
+ },
+ "ok": true,
+ "open_rights": {
+  "count": 0
+ },
+ "pending": {
+  "count": 0
+ },
+ "report_date": {
+  "date": "2026-09-26"
+ },
+ "rows": [
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": true,
+   "day": 3,
+   "done": false,
+   "done_display": null,
+   "key": "earnest_money",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-11-23 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": true,
+   "critical": true,
+   "day": 7,
+   "done": false,
+   "done_display": null,
+   "key": "walkaway_period",
+   "no_time": false,
+   "party": "Buyer",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-11-27 17:00"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": false,
+   "day": 20,
+   "done": false,
+   "done_display": null,
+   "key": "title_commitment",
+   "no_time": false,
+   "party": "Seller",
+   "short": "Title",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-12-10 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": true,
+   "critical": true,
+   "day": 21,
+   "done": false,
+   "done_display": null,
+   "key": "financing",
+   "no_time": false,
+   "party": "Buyer",
+   "short": "Financing",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-12-11 23:59"
+  },
+  {
+   "by_closing": false,
+   "contingency": false,
+   "critical": true,
+   "day": 32,
+   "done": false,
+   "done_display": null,
+   "key": "closing",
+   "label": "Closing",
+   "no_time": false,
+   "party": "Both",
+   "short": "Closing",
+   "source": "Contract",
+   "waits_on_approval": false,
+   "was": null,
+   "when": "2026-12-22 14:00"
+  }
+ ],
+ "rules": {
+  "lines": [
+   {
+    "label": "Counting"
+   },
+   {},
+   {
+    "label": "Holidays"
+   }
+  ]
+ },
+ "sample": true,
+ "short_sale": null,
+ "side": "buyer",
+ "support": "best_effort"
+}
