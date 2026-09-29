@@ -34,6 +34,8 @@ Find where the contract defines time (a "Time", "Computation of Time", "Days" or
 
 Record what the contract says. When it's silent on one of these, ask the agent; don't assume Florida's rules, because that's what quietly moves a deadline by a day. If a single deadline has its own time or rollover rule (a period that ends at 5:00 PM on its last day and is never extended), record it on that deadline rather than for the whole contract.
 
+The contract timeline needs only how days are counted (`day_count`) to run. Leave out any other rule you haven't read or been told: the script uses the neutral reading until the agent answers (nothing skipped or moved, the federal holidays, no time of day on the dates), lists each open rule in an agent note, and the report marks it "to confirm". Never fill one in to make the run work.
+
 ## 3. Terms by Function
 
 Look for each of these by what it does, not by what a given state calls it:
@@ -65,4 +67,4 @@ Handwritten or initialed changes override typed text; flag anything illegible in
 
 - **Quick question** about one date: answer, and state in the same reply the rule you used and the reading to confirm ("7 days after Nov 20, ending 5:00 PM, not extended; confirm your form says the same").
 - **Full timeline or review:** before running, list the key readings back to the agent in plain words ("Due diligence: 7 days after the Effective Date, ends Nov 27 at 5 PM; buyer may cancel for any reason") and ask them to confirm. Anything you had to interpret goes in the notes.
-- **Chat disclaimer.** The scripts return `support: "best_effort"` and the line to use in `chat_notes` (the timeline adds it to `agent_notes`). Say it once, in chat, in your own short words: only Florida FR/BAR contracts are fully supported, this contract was read on a best-effort basis, and the agent should check every date and term against the signed contract, with a real estate attorney licensed in the property's state for anything that matters. **Never put it in a PDF, calendar file, worksheet or markdown report:** those go to clients and into transaction files.
+- **Chat disclaimer.** The scripts return `support: "best_effort"` and the line to use in `chat_notes` (only there: the timeline keeps it out of `agent_notes`, which can reach a markdown timeline). Say it once, in chat, in your own short words: only Florida FR/BAR contracts are fully supported, this contract was read on a best-effort basis, and the agent should check every date and term against the signed contract, with a real estate attorney licensed in the property's state for anything that matters. **Never put it in a PDF, calendar file, worksheet or markdown report:** those go to clients and into transaction files.
