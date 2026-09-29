@@ -64,7 +64,7 @@ Each skill's test prompts live in `dev/evals/<skill>/evals.json` with their inpu
 3. Grade each run against `expected_output` into `with_skill/grading.json`, and review with the skill-creator's `eval-viewer/generate_review.py out/evals/iteration-N --static out/evals/iteration-N/review.html`.
 4. Fix what `friction.md` and the grades reveal (skill text, references, scripts), add a test for each script fix, and re-run the evals that changed.
 
-**Contract packages.** Evals for the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) use mock FR/BAR packages ([mock-contracts.md](mock-contracts.md)), which are never committed: they contain Florida Realtors' form text. The eval entry names the starter instead, `"mock_package": "<starter>"` (add `"mock_scanned": true` for the scanned copy), and lists the package's files by name in `files`.
+**Contract packages.** Evals for the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) use mock FR/BAR packages ([mock-contracts.md](mock-contracts.md)), which are never committed: they contain Florida Realtors' form text. The eval entry names the starter instead, `"mock_package": "<starter>"` (add `"mock_scanned": true` for the scanned copy), and lists the package's files by name in `files`. A package dated after the runner's default day (2026-09-26) sets `"today"` to a day after its last document, and the task passes it on.
 
 1. Build the starters with `make mock-contracts ARGS="--answer-key"` (add `--scanned` when an eval wants the scan).
 2. Copy only the package's PDFs from `out/mock-contracts/<starter>/` into the eval's `inputs/`. Never copy `key/`: it holds the answers.

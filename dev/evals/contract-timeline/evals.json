@@ -38,6 +38,7 @@
       "id": 6,
       "prompt": "Tern Island condo: we're executed and just signed an extension and another addendum. can you give me the updated deadlines for my buyer?",
       "mock_package": "condo-asis-amended",
+      "today": "2026-10-12",
       "expected_output": "Reads the package: AS IS condo, cash; the offer was countered once (CO-3 #1 at $284,500) and the buyer's signature on it Wed Sep 23 is the Effective Date. Riders A (association approval required), P (built 1974) and GG. Records the EA-4 (closing extended to Fri Nov 6, inspection 5 more days: 10 to 15, ends Thu Oct 8) and the ACSP-4 (condo documents, milestone summary and SIRS received Oct 2; $1,500 seller credit) as amendments, not by rewriting the contract. Condo rescission window from the documents' receipt, lead-based paint 10 days, association approval rows, closing Nov 6. Deal file matches key/410-Tern-Island-Cir-Answer-Key.json",
       "files": [
         "out/mock-contracts/condo-asis-amended/410-Tern-Island-Cir-Contract.pdf"

@@ -56,7 +56,7 @@ def pre_approval(ctx, v, rng):
     if isinstance(lender, (list, tuple)):
         lender, street = lender
     street = street or f"{rng.randint(100, 999)} Commerce Center Dr"
-    officer = v.get("loan_officer") or f"{rng.choice(sc.FIRST)} {rng.choice(sc.LAST)}"
+    officer = v.get("loan_officer") or sc.fresh_name(rng, ctx["used_names"])
     issued = sc._dt(v["date"])
     program = {"fha": "FHA", "va": "VA", "usda": "USDA", "conventional": "Conventional", "other": "Portfolio"}.get(ctx["financing"], "Conventional")
     term = ctx["term_years"] or 30
@@ -83,7 +83,7 @@ def pre_approval(ctx, v, rng):
 
 def proof_of_funds(ctx, v, rng):
     bank = v.get("bank") or rng.choice(BANKS)
-    officer = v.get("officer") or f"{rng.choice(sc.FIRST)} {rng.choice(sc.LAST)}"
+    officer = v.get("officer") or sc.fresh_name(rng, ctx["used_names"])
     issued = sc._dt(v["date"])
     needed = v.get("needed") or ctx["funds_needed"]
     balance = v.get("balance") or int(round(needed * rng.uniform(1.12, 1.4), -3))
@@ -103,7 +103,7 @@ def proof_of_funds(ctx, v, rng):
 def escrow_receipt(ctx, v, rng):
     received = sc._dt(v["date"])
     file_no = v.get("file_number") or f"{received.year % 100:02d}-{rng.randint(1000, 9999)}"
-    officer = v.get("officer") or f"{rng.choice(sc.FIRST)} {rng.choice(sc.LAST)}"
+    officer = v.get("officer") or sc.fresh_name(rng, ctx["used_names"])
     amount = v["amount"]
     doc = pymupdf.open()
     body = (f"<p>{sc.mdy(received)}</p><p>{ctx['cooperating_associate']}, {ctx['cooperating_broker']}<br>"

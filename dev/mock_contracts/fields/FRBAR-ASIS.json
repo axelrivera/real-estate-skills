@@ -118,7 +118,7 @@
   },
   "tenants": {
    "at": "L72",
-   "check": "tenants"
+   "check": "tenants or 'U' in riders"
   },
   "assign_released": {
    "at": "L83",

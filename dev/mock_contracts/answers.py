@@ -58,15 +58,34 @@ def _kind(b):
     return None
 
 
+NUMBERED = re.compile(r"(?:^|\s)(?:\d+\)|\([a-z]\))\s")
+FOLLOW_UP = re.compile(r"^if\s+(yes|no)\b", re.I)
+
+
+def _own(question):
+    """The row's own question: the text after its last "3)" or "(c)" marker (a row's text starts back at the
+    previous row, so it can carry the tail of the question before it)."""
+    marks = list(NUMBERED.finditer(question))
+    return question[marks[-1].end():].strip() if marks else question.strip()
+
+
 def choose(found, words_by_page, overrides=None, default=None):
-    """[(check blank, question, answer)] for every yes/no row: the box to check on each."""
+    """[(check blank, question, answer)] for every yes/no row: the box to check on each. A follow-up ("If yes, was
+    the claim paid?") is left blank unless the row before it was answered that way, as a seller fills the form."""
     overrides = {k.lower(): v for k, v in (overrides or {}).items()}
     out = []
+    last = None
     for page, boxes, question in _rows(found, words_by_page):
         q = question.lower()
-        answer = next((v for k, v in overrides.items() if k in q), None) or default or ("yes" if GOOD.search(q) else "no")
+        given = next((v for k, v in overrides.items() if k in q), None)
+        follow = FOLLOW_UP.match(_own(question))
+        if follow and given is None and last != follow.group(1).lower():
+            last = None
+            continue
+        answer = given or default or ("yes" if GOOD.search(q) else "no")
         answer = {"don't know": "dont_know", "unknown": "dont_know"}.get(str(answer).lower(), str(answer).lower())
         box = next((b for k, b in boxes if k == answer), None)
         if box is not None:
             out.append((box, question, answer))
+        last = answer
     return out

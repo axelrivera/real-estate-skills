@@ -422,6 +422,36 @@ class Packages(unittest.TestCase):
         self.assertEqual(key["contract"]["inspection_days"], 15)  # blank: the form default
         self.assertEqual(key["mock"]["unattached_rider"], "E")
 
+    def test_generated_people_never_share_a_name(self):
+        """No two made-up people share a first name or surname (a shared surname reads as a relative: Rider AA)."""
+        for seed in ("a", "b", "c", "d"):
+            S = sc.build({"name": seed, "form": "as_is", "property": {"hoa": True}})
+            c = S["ctx"]
+            people = c["buyers"] + c["sellers"] + [c["listing_associate"], c["cooperating_associate"]]
+            people += [v["contact"] for d in S["documents"] if d.get("code") == "B" for v in [d["values"]]]
+            words = [w for n in people for w in n.split()]
+            self.assertEqual(len(words), len(set(words)), people)
+
+    def test_follow_up_questions_follow_their_answer(self):
+        """'If yes, was the claim paid?' stays blank when no claim was made, and is Yes with a paid claim."""
+        import answers
+        path, found, _ = fields.form_blanks("SPDR")
+        words = {i + 1: [w[:5] for w in p.get_text("words")] for i, p in enumerate(pymupdf.open(path))}
+        picked = {answers._own(q): a for _, q, a in answers.choose(found, words, {})}
+        self.assertNotIn("If yes, was the claim paid?", picked)
+        S = sc.build({"name": "sink", "form": "as_is", "property": {"sinkhole_claim": True}})
+        given = next(d for d in S["documents"] if d["family"] == "SPDR")["values"]["answers"]
+        picked = {answers._own(q): a for _, q, a in answers.choose(found, words, given)}
+        self.assertEqual(picked["If yes, was the claim paid?"], "yes")
+
+    def test_rent_back_checks_para_6b(self):
+        S = sc.build({"name": "u6b", "form": "as_is", "financing": "cash", "riders": ["U"]})
+        pdf, _ = build.render_document(S["documents"][0], 0, S, set())
+        _, found, m = fields.form_blanks("FRBAR-ASIS")
+        b = fields.resolve(found, m["fields"]["tenants"]["at"])[0]
+        self.assertIn("X", [w[4] for w in pdf[b["page"] - 1].get_text("words", clip=pymupdf.Rect(b["rect"]))])
+        self.assertNotIn("tenants", S["key"]["contract"])  # a seller's rent-back isn't a tenancy
+
     def test_scanned_copy_has_no_text_layer(self):
         r = self.build({"name": "scan", "form": "as_is", "financing": "cash"}, scan=True)
         scan = pymupdf.open(r["scanned"])

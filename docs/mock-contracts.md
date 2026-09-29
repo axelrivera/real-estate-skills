@@ -5,7 +5,7 @@ A development tool that builds realistic FR/BAR contract packages as one PDF: ev
 - **Claude Code only, never shipped.** The skill lives in `.claude/skills/mock-contract/` and the code in `dev/mock_contracts/`. `make package` includes neither.
 - **Local only.** It fills the real FR/BAR PDFs in the git-ignored `sources/Contracts/FARBAR/` and uses PyMuPDF, which the sandbox doesn't have.
 - **Outputs go to `out/mock-contracts/<id>/`** (git-ignored, removed by `make clean`). The PDFs contain Florida Realtors' form text, so they are never committed. The same goes for `samples/` and `dev/evals/`: copy a package into an eval run folder under `out/` instead.
-- **Fictional data only.** Every person, brokerage, street, tax ID and legal description the tool makes up is fictional. Use the same rule for anything you type into a spec. Cities, ZIP codes and counties are real (the rules need the county); with a made-up street, no address is real. The builder removes the "Licensed to dotloop, Inc. and ..." line from the source PDFs, which names the real account the forms came from.
+- **Fictional data only.** Every person, brokerage, street, tax ID and legal description the tool makes up is fictional, and no two made-up people share a first name or surname (a shared surname reads as a relative). Use the same rule for anything you type into a spec. Cities, ZIP codes and counties are real (the rules need the county); with a made-up street, no address is real. The builder removes the "Licensed to dotloop, Inc. and ..." line from the source PDFs, which names the real account the forms came from.
 - **Every value in the answer key is on the PDF.** A value the spec gives a rider, addendum, disclosure, counter or amendment must have a blank that prints it, or the build stops ([The Value Guard](#the-value-guard)). A skill that reads the package correctly always matches its key.
 
 ## Contents
@@ -135,7 +135,7 @@ Only what passes between the buyer's side and the seller's side. Brokerage relat
 
 **Disclosure answers.** `disclosures` sets values per form: `{"SPDR": {"occupancy": "tenant", "answers": {"water intrusion": "yes", "roof": "dont_know"}, "fill": {...}}}`.
 
-- Every yes/no question gets a plausible default (`answers.py`). Questions about good condition ("structurally sound", "in working condition") get Yes; everything else gets No. The property's facts come first, so a disclosure never contradicts a rider: with `hoa` the SPDR's association question is Yes, and with `sinkhole_claim` so is its claim question.
+- Every yes/no question gets a plausible default (`answers.py`). A follow-up ("If yes, was the claim paid?") is left blank unless the question before it was answered that way. Questions about good condition ("structurally sound", "in working condition") get Yes; everything else gets No. The property's facts come first, so a disclosure never contradicts a rider: with `hoa` the SPDR's association question is Yes, and with `sinkhole_claim` so is its claim question.
 - MISIRS-2 has its own defaults: not exempt, Phase 1 done, Phase 2 not required, SIRS done.
 - An answer matches any question containing its text: `yes`, `no` or `dont_know`. `default_answer` changes the default for every question on the form.
 - Other keys:
@@ -297,7 +297,7 @@ Values the mapped riders read:
 | G (Short Sale) | `short_sale_application_days`, `short_sale_approval_days`, `short_sale_closing_days`, `backup_offers` (`a` no back-up offers, `b` back-ups allowed) |
 | S (Lease Purchase/Option) | `lease_type` (`purchase`, `option`), `attorney_fees_by` (`buyer`, `seller`, `split`) |
 | T (Pre-Closing Occupancy) | `pre_closing_agreement_days`, `expense` (`seller`, `buyer`, `split`), `possession_date` (14 days before closing), `rent` (0.55% of price a month) |
-| U (Post-Closing Occupancy) | `post_closing_agreement_days_before`, `expense`, `rent_back_days` (30), `rent_back_monthly` (0.55% of price) |
+| U (Post-Closing Occupancy) | `post_closing_agreement_days_before`, `expense`, `rent_back_days` (30), `rent_back_monthly` (0.55% of price). Also checks the contract's Para. 6(b) (occupancy after Closing); the key records no tenants |
 | V (Sale of Buyer's Property) | `buyer_property` (a fictional street in the same city), `sale_contingency_date` (7 days before closing, with a note), `under_contract` (false) |
 | W (Back-Up Contract) | `backup_notice_date` (14 days after the offer, with a note) |
 | X (Kick-Out) | `kickout_deposit` (the initial deposit) |

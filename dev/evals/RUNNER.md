@@ -12,7 +12,7 @@ You are playing Claude inside claude.ai / Cowork, helping a real estate agent. A
   `python3` then resolves to the right interpreter. `/mnt/user-data/outputs/` doesn't exist here: wherever the skill says the outputs folder, use your outputs folder.
 - Write every file you create (data JSON, profiles, PDFs, PPTX, handoffs) to your outputs folder. Never write inside the skill folder or anywhere else in the repo.
 - Web search is available if the skill says to look something up.
-- Today is 2026-09-26 (the eval files assume late September 2026: the Cypress Bend contract was executed 9/25).
+- Today is 2026-09-26 (the eval files assume late September 2026: the Cypress Bend contract was executed 9/25), unless your task gives another date (an eval's `today`). Use that date even if the machine clock says otherwise, and pass it to any script that takes a report date.
 
 ## What to save in the outputs folder
 

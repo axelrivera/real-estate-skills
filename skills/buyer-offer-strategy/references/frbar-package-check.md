@@ -56,19 +56,21 @@ A blank with a printed default is not an issue: record the default and say so. A
 
 **Printed defaults (both forms unless noted):** initial deposit 3 days after the Effective Date; additional deposit 10 days; counteroffer acceptance 2 days after delivery; Loan Approval Period 30 days and loan application 5 days; inspection period 15 days; repair limits 1.5% of price each (Standard only); Title Evidence Deadline 15 days before closing (5 when cash); flood elevation cancel right 20 days; buyer may not assign; special assessment installments option (a). Rider defaults are in each rider's block in `frbar-riders.md` (for example Rider F's appraisal date is 10 days before closing, Rider H's date the earlier of 30 days after the Effective Date or 10 before closing, Rider I 20 days, Rider M 15 days, Rider G 90 days).
 
-**No default (ask):** Effective Date, Closing Date, escrow agent, purchase price and deposit amounts, loan type, the Para. 9(c) box for who designates the title agent, home warranty, Rider V's sale date, Rider W's notice date, Rider R's final action date, Riders Y and Z's attorney dates, Rider E's appraisal repair cap, Rider H's premium caps, the Rider GG signer box. A partial copy or a summary isn't a blank: ask for the page.
+**No default (ask):** Effective Date, Closing Date, escrow agent, purchase price and deposit amounts, loan type, the Para. 9(c) box for who designates the title agent, home warranty, Rider V's sale date, Rider W's notice date, Rider R's final action date, Riders Y and Z's attorney dates, Rider E's appraisal repair cap, Rider H's premium caps, the Rider GG signer box, Rider A's and Rider B's association approval box ("is" or "is not required"), Rider A's right of first refusal boxes and its nondeveloper disclosure box (5(a) or 5(b)). A partial copy or a summary isn't a blank: ask for the page.
 
 ## Consistency
 
 - Deposits plus the loan amount plus the balance due at closing equal the price.
 - The loan amount matches the down payment and loan type in Para. 8(b).
+- The buyer's pre-approval covers the price and loan as finally agreed: a counter that raised the price often leaves the letter at the offer's numbers. Ask for an updated letter (an agent note on a timeline, a contract issue on an offer review).
 - Loan approval, appraisal and every contingency date fall before closing.
 - Rider dates fit the contract: Rider V's sale date on or before closing; Rider G's closing is 45 days after approval, which overrides a fixed Para. 4 date; Rider W's Effective Date is the seller's notice date; Rider U's agreement is due 10 days before closing.
 - Para. 20 Additional Terms don't contradict the printed paragraphs or riders (riders and addenda govern printed text; say which you used).
 - A counteroffer (CO-3) changes only what it lists; everything else stays as in the offer, and the Effective Date comes from the final acceptance.
+- The seller's disclosures agree with the riders and the property's facts (an SPDR that says no mandatory association while Rider B is attached, or no CCCL while CCCLA-3 is included). A contradiction is a question for the listing side, not a reason to drop the rider.
 
 ## Signatures, Initials and Delivery
 
-- Every buyer and seller named in Para. 1 has signed; every handwritten or struck change is initialed by all parties.
+- Every buyer and seller named in Para. 1 has signed; every handwritten or struck change is initialed by all parties. When the offer was accepted through a CO-3, the offer's pages and riders carry only the offering party's signatures and initials: that's normal, the counter's signatures make them binding, and it isn't a defect.
 - The Effective Date is when the last party signed or initialed **and delivered** the final offer or counteroffer; record the evidence.
 - Every rider and addendum is initialed or signed as the form requires (Rider P needs the licensees' signatures too; Rider BB takes effect only when both parties initial it).

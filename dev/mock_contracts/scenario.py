@@ -185,6 +185,15 @@ def initials_of(name):
     return "".join(p[0] for p in re.split(r"[\s-]+", name) if p and p[0].isalpha()).upper()[:3]
 
 
+def fresh_name(rng, used):
+    """A fictional "First Last" whose first name and surname no one else in the package has (a shared surname
+    reads as a relative, which a skill may rightly flag as a Rider AA question). `used` is updated."""
+    first = rng.choice([n for n in FIRST if n not in used] or FIRST)
+    last = rng.choice([n for n in LAST if n not in used] or LAST)
+    used.update((first, last))
+    return f"{first} {last}"
+
+
 def _weekday(d):
     while d.weekday() >= 5 or sd.holiday_name(d):
         d += timedelta(days=1)
@@ -339,9 +348,10 @@ def build(spec):
     _check_values(spec, form)
 
     # Parties and property.
-    buyers = spec.get("buyers") or [f"{rng.choice(FIRST)} {rng.choice(LAST)}"]
-    taken = {n.split()[-1] for n in ([buyers] if isinstance(buyers, str) else buyers)}  # sellers never share the buyers' surname
-    sellers = spec.get("sellers") or [f"{rng.choice(FIRST)} {rng.choice([n for n in LAST if n not in taken])}"]
+    named = [spec.get("buyers"), spec.get("sellers"), *(spec.get("brokers") or {}).values()]
+    used = {w for g in named for n in ([g] if isinstance(g, str) else g or []) for w in str(n).split()}
+    buyers = spec.get("buyers") or [fresh_name(rng, used)]
+    sellers = spec.get("sellers") or [fresh_name(rng, used)]
     buyers, sellers = [buyers] if isinstance(buyers, str) else buyers, [sellers] if isinstance(sellers, str) else sellers
     prop = dict(spec.get("property") or {})
     prop.setdefault("county", spec.get("county") or "Seminole")
@@ -535,7 +545,8 @@ def build(spec):
             values.setdefault("association", f"{sub} {kind} Association, Inc.")
             values.setdefault("management_company", rng.choice(["Tidewater Community Management", "Keystone Association Services",
                                                                 "Pelican Bay Property Management"]))
-            values.setdefault("contact", f"{rng.choice(FIRST)} {rng.choice(LAST)}")
+            if not values.get("contact"):
+                values["contact"] = fresh_name(rng, used)
             values.setdefault("phone", f"({area}) 555-{rng.randint(200, 299):04d}")
             values.setdefault("email", "manager@" + re.sub(r"[^a-z]", "", sub.lower()) + "hoa.example")
             values.setdefault("website", re.sub(r"[^a-z]", "", sub.lower()) + "hoa.example")
@@ -582,11 +593,13 @@ def build(spec):
     escrow.setdefault("address", f"{rng.randint(100, 2999)} {rng.choice(['Commerce Pkwy', 'Market St', 'Center Ave'])}, "
                                  f"{city}, FL {zipc}")
     escrow.setdefault("phone", f"({area}) 555-{rng.randint(100, 199):04d}")
-    escrow.setdefault("email", "escrow@" + re.sub(r"[^a-z]", "", escrow["name"].lower().replace("title", "")[:14]) + "title.example")
+    escrow.setdefault("email", "escrow@" + re.sub(r"[^a-z]", "", escrow["name"].split()[0].lower()) + "title.example")
     brokers = dict(spec.get("brokers") or {})
-    brokers.setdefault("listing_associate", f"{rng.choice(FIRST)} {rng.choice(LAST)}")
+    if not brokers.get("listing_associate"):
+        brokers["listing_associate"] = fresh_name(rng, used)
     brokers.setdefault("listing_broker", rng.choice(BROKERAGES))
-    brokers.setdefault("cooperating_associate", f"{rng.choice(FIRST)} {rng.choice(LAST)}")
+    if not brokers.get("cooperating_associate"):
+        brokers["cooperating_associate"] = fresh_name(rng, used)
     brokers.setdefault("cooperating_broker", rng.choice([b for b in BROKERAGES if b != brokers["listing_broker"]]))
 
     ctx = Ctx(
@@ -621,6 +634,7 @@ def build(spec):
         if ctx["counter_on_contract"] else []
     ctx["repair_limit_amounts"] = cf.repair_limits(price, {"repair_limits": ctx["repair_limits"]}) if form == cf.STANDARD else {}
     ctx["area_code"], ctx["escrow_city_line"] = area, f"{city}, FL {zipc}"
+    ctx["used_names"] = used  # letters.py draws its officers from what's left
     rider_a = next((v for c, v in riders if c == "A"), {})
     ctx["condo_association"] = rider_a.get("association") or f"{sub} Condominium Association, Inc."
     ctx["condo_name"] = rider_a.get("community", sub) + " Condominium"
@@ -676,7 +690,7 @@ def build(spec):
         # Answers that follow the property's facts, so a disclosure never contradicts a rider; the spec's own win.
         facts = {"membership in a homeowner": "yes"} if f == "SPDR" and prop.get("hoa") else {}
         if f == "SPDR" and prop.get("sinkhole_claim"):
-            facts["insurance claim for sinkhole damage"] = "yes"
+            facts.update({"insurance claim for sinkhole damage": "yes", "was the claim paid": "yes"})
         if f == "SPDR" and prop.get("coastal"):
             facts["seaward of the coastal construction control line"] = "yes"
         values["answers"] = {**DEFAULT_ANSWERS.get(f, {}), **facts, **(values.get("answers") or {})}

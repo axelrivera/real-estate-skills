@@ -34,7 +34,7 @@ Never block the task over saving: the profile still works for the rest of this c
 
 ## Working Files
 
-The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, the profile and its project instructions) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply.
+The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, the profile and its project instructions) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply. Working files last for the conversation: in a later conversation, rebuild them from the documents the agent uploads again (the executed contract and its amendments, the offers), never from a file the agent was asked to keep.
 
 ## CMA Handoffs
 

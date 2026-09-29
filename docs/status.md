@@ -1,17 +1,38 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-29 (version 0.11.0: full FR/BAR contract support, riders and addenda, best effort for every other contract; 0.10.2: outlier-proof trend line; 0.10.1: quieter scatterplot background; 0.10.0: the listing presentation with a PDF copy, measured layout and copy that follows the listing, one-hue brand palette; 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: contract fixes from the mock-package evals; 0.11.0: full FR/BAR contract support, riders and addenda, best effort for every other contract; 0.10.2: outlier-proof trend line; 0.10.1: quieter scatterplot background; 0.10.0: the listing presentation with a PDF copy, measured layout and copy that follows the listing, one-hue brand palette; 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
 ## Done (committed on `main`)
 
 | Area | What |
 |---|---|
-| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.11.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
+| Scaffold | One plugin (`real-estate`, repo root) in the one-plugin marketplace `real-estate-skills` at 0.12.0, docs, CLAUDE.md, Makefile, `.venv` + nvm dev env pinned to sandbox versions, pre-commit sync check |
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard and rider routing, verified revisions, chat-only support notes), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`, the FR/BAR library `frbar-contract.md`, `frbar-riders.md`, `frbar-addenda.md`, `frbar-package-check.md`, and `other-contracts.md`). See [development.md](development.md#shared-code) |
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
 | Tests | `make test` (453 passing on 2026-09-29; the deck-PDF check runs when LibreOffice is installed); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-29): Fixes From the Mock-Package Evals and Version 0.12.0
+
+- **contract-timeline:**
+  - Short sales (Rider G) get a two-phase timeline: dated rows from the Effective Date, and every other period "N days after short sale approval" until `short_sale_approval_received` is set. Closing follows Para. 6, and the PDF builds without a closing date.
+  - Deadlines already met (`completed`, such as a deposit shown by the escrow receipt) show as done and drop out of the calendar.
+  - Holidays are named in rollover notes, the timeline strip labels no longer overlap, and the walk-through shows no 11:59 PM.
+  - The inspection wording fits a condo unit, custom rows can be due "by Closing", and the report date can be set (`--date`).
+  - Duplicate default notes are dropped.
+  - New guidance: unexecuted offers, missing delivery evidence, a counter on the contract, and documents that disagree.
+- **seller-offer-review:**
+  - Expired offers are caught (Blocking, or High when delivery is unknown), and the next step never names a past date.
+  - Counters never go above the seller's last counter (`prior_counters`), and a buyer counter that drops earlier terms is flagged.
+  - FR/BAR Para. 9(c) sets who pays the owner's title policy.
+  - The pre-approval price cap is checked, and Rider GG paid from the listing fee isn't double counted.
+  - With no appraisal rider, the appraisal is part of loan approval.
+  - The Standard repair reserve is exactly the limit.
+  - Engine flags and hand-written issues no longer duplicate.
+- **Also:** proof of funds (`proof_of_funds`) is checked against the cash the offer needs; agent-written issues replace an engine flag only when they're about the same topic; the timeline's first deadline includes rows both sides owe; a blank association approval box on Rider A or B is treated as required and flagged; a pre-approval that expires before closing is noted (timeline) or flagged Med (offer review).
+- **Verified:** six evals re-run on mock packages (`out/evals/iteration-mock-2/`): every contract-timeline deal file matched its key on every computed deadline, including the scanned short sale before approval.
+- **Both:** working files (deal and listing files) are never handed to the agent; a later conversation rebuilds them from the documents (`saved-files.md`). Shared FR/BAR references cover the EA-4 "additional days" count, counters on the contract, CO-3 acceptance, and disclosures that contradict a rider.
 
 ## This pass (2026-09-29): Mock Contract Packages (Dev Only, No Version Bump)
 
