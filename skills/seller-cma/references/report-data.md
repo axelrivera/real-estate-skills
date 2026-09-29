@@ -19,6 +19,7 @@
 | `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, relative to where you run the scripts). See `deck-content.md`; `competition` takes 1–3 cards, `scatter_takeaway` only when there is an export |
 | `preliminary` | Optional `true` to mark the report Preliminary yourself (compute.py also sets it when a cost has no value at all) |
 | `labels` | Optional overrides of fixed wording |
+| `reprice` | Only for the agent's own current listing, priced again: `{current_price, days_on_market}` (*numbers*). Adds the Stay at Current Price check and the "Before We Reprice" headings. Never for another brokerage's listing |
 
 The agent's name, team, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json; only the fields the profile has are shown.
 
@@ -71,7 +72,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 | Field | Notes |
 |---|---|
 | `intro` | Frames the options as estimates; says whether the nets are close |
-| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer. `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
+| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer (a reprice puts "Stay at Current Price" first, at `reprice.current_price`, and sets `recommended_index` to match). `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
 | `recommended_index` | The recommended row (usually 1); its `list_price` must equal `recommendation.list_price` |
 | `note` | The assumption behind any difference between options (shown after "*Before paying off any mortgage.") |
 | `net_intro` | Optional sentence above the net sheet |

@@ -26,8 +26,8 @@ SKILL = os.path.join(ROOT, "skills", "seller-cma")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 
-compute, seller_render, deck, handoff, profiles = load(
-    "seller-cma", "compute", "render", "deck", "_shared.handoff", "_shared.profiles")
+compute, seller_render, deck, handoff, profiles, stats_mod = load(
+    "seller-cma", "compute", "render", "deck", "_shared.handoff", "_shared.profiles", "stats")
 
 FIXTURE = os.path.join(ROOT, "dev", "fixtures", "seller-cma", "hickorywood.json")
 PROTOTYPE_NETS = [422719, 421781, 424905]  # 517-Hickorywood-Seller-CMA.pdf, page 6
@@ -170,6 +170,98 @@ class Costs(unittest.TestCase):
         self.assertEqual(row(C, "total")["label"], "Estimated Cash at Closing")
         base = PROTOTYPE_NETS[0] + TITLE_FEE_CHANGE
         self.assertEqual(round(C["strategies"][0]["net"]), base - 299 - 450 - 210000)
+
+
+class Reprice(unittest.TestCase):
+    """CMA-108: a home listed right now is a question first; the agent's own listing is priced as a reprice."""
+
+    STATS = os.path.join(SKILL, "scripts", "stats.py")
+
+    def stats(self, rows):
+        import contextlib
+        import csv
+        import io
+        with open(os.path.join(ROOT, "dev", "samples", "mls-export.csv"), newline="") as f:
+            data = list(csv.reader(f))
+        head, body = data[0], data[1:]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "export.csv")
+            with open(path, "w", newline="") as f:
+                csv.writer(f).writerows([head] + [r for r in body if r[3] != "517 LARKWOOD AVE"] + rows)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                stats_mod.main([path, "--address", "517 LARKWOOD AVE", "--sqft", "1849", "--state", "FL",
+                                "--county", "Seminole"])
+        return json.loads(out.getvalue())
+
+    def row(self, status):
+        return ["0.00", "X7000001", status, "517 LARKWOOD AVE", "FERNWOOD PARK UNIT 2", "1849", "$474,900", "", "",
+                "$484,900", "", "4", "2", "1972", "Private", "36", "", "0.22", "", ""]
+
+    def test_listed_now_says_confirm_first(self):
+        for status in ("ACT", "PND"):
+            r = self.stats([self.row(status)])
+            self.assertTrue(r["listed_now"], status)
+            note = next(n for n in r["market_notes"] if "listed right now" in n)
+            self.assertIn("$474,900, 36 days on market", note)
+            self.assertIn("Confirm whose listing it is", note)
+            self.assertFalse(any("new listing" in n for n in r["market_notes"]))
+
+    def test_past_rows_are_history(self):
+        sold = self.row("SLD")
+        sold[7:9] = ["$289,000", "06/14/2019"]
+        r = self.stats([sold])
+        self.assertFalse(r["listed_now"])
+        self.assertTrue(any("not a current one" in n for n in r["market_notes"]))
+        self.assertFalse(self.stats([])["listed_now"])
+
+    def test_sample_export_is_not_a_current_listing(self):
+        """EVAL-9: the committed sample's subject row is a past sale, so a real run wouldn't stop and ask."""
+        import contextlib
+        import io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            stats_mod.main([os.path.join(ROOT, "dev", "samples", "mls-export.csv"), "--address", "517 LARKWOOD AVE",
+                            "--sqft", "1849", "--state", "FL", "--county", "Seminole"])
+        self.assertFalse(json.loads(out.getvalue())["listed_now"])
+
+    def reprice(self):
+        R = report()
+        stay = {"label": "Stay at $489,900", "list_price": 489900, "expected_sale": 462000, "time": "60–120 days",
+                "seller_credit": 10000, "note": "Has sat 74 days at this price"}
+        R["pricing"]["strategies"].insert(0, stay)
+        R["pricing"]["recommended_index"] = 2
+        R["reprice"] = {"current_price": 489900, "days_on_market": 74}
+        return R
+
+    def test_reprice_needs_the_stay_option(self):
+        R = self.reprice()
+        R["pricing"]["strategies"].pop(0)
+        R["pricing"]["recommended_index"] = 1
+        with self.assertRaises(compute.ReportError) as e:
+            run(R)
+        self.assertIn("Stay at Current Price", str(e.exception))
+        R = self.reprice()
+        R["reprice"].pop("days_on_market")
+        with self.assertRaises(compute.ReportError):
+            run(R)
+
+    def test_reprice_output_and_wording(self):
+        R = self.reprice()
+        C, homes = run(R)
+        self.assertEqual(C["reprice"], {"current_price": 489900, "current_price_display": "$489,900", "days_on_market": 74,
+                                        "stay_index": 0})
+        self.assertEqual(C["first_steps_heading"], "Before We Reprice")
+        self.assertEqual(len(C["strategies"]), 4)
+        self.assertTrue(C["strategies"][2]["recommended"])
+        doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
+        self.assertIn("Before We Reprice", doc)
+        self.assertNotIn("Before We List", doc)
+        R["pricing"]["strategies"][3]["expected_sale"] = 461000  # the competing-offer option (last) may sell above list
+        run(R)
+        C, _ = run(report())
+        self.assertIsNone(C["reprice"])
+        self.assertEqual(C["first_steps_heading"], "Before We List")
 
 
 class Warnings(unittest.TestCase):

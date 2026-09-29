@@ -4,7 +4,7 @@
 
 **Recommended List Price: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{recommendation.expected_sale}}
 
-{{recommendation.paragraph, shortened to 2 sentences}}
+{{"Listed at {reprice.current_price_display} for {reprice.days_on_market} days without a sale." when compute.py's reprice is set}} {{recommendation.paragraph, shortened to 2 sentences}}
 
 **Why This Price:**
 - {{summary_page.why[0]}}
@@ -25,7 +25,7 @@
 
 \*{{"Before mortgage payoff" or, with a payoff, "Cash at closing after your payoff"}}. Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
 
-**Before We List:**
+**{{first_steps_heading}}:**
 1. {{summary_page.first_steps[0]}}
 2. {{summary_page.first_steps[1]}}
 3. {{summary_page.first_steps[2]}}
