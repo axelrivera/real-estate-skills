@@ -10,7 +10,7 @@
     {
       "id": 2,
       "prompt": "quick gut check, is 517 Hickorywood priced right? just tell me in chat, no pdf needed",
-      "expected_output": "Markdown mode from the template: range, asking position, 2-3 findings, opening/target/walk-away, costs line; no JSON or code block in the reply; numbers from compute.py, not mental math",
+      "expected_output": "A gut check in chat (SKILL.md: a few sentences, the full template skipped unless asked): the supported range and where the asking price sits in it, 2-3 findings that are factually correct (price changes counted from the history, not estimated), and an opening, target and walk-away; no JSON or code block in the reply; the median and range come from compute.py, not mental math",
       "files": ["dev/evals/buyer-cma/files/listing-517-hickorywood.md", "dev/evals/buyer-cma/files/history-517-hickorywood.md", "dev/evals/buyer-cma/files/export-spring-oaks.csv"]
     },
     {
