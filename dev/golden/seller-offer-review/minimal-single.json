@@ -17,6 +17,7 @@
     "count": 0
    },
    "buyer_broker_pct": 0.025,
+   "close": "2026-10-28",
    "close_days": 35,
    "closing_days": 35,
    "contract_form": "as_is",
@@ -32,6 +33,7 @@
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
+    "close": "2026-10-28",
     "deposit": null,
     "home_warranty": 0,
     "inspection_days": 7,
@@ -46,6 +48,7 @@
    "expires_raw": null,
    "financed": true,
    "financing": "fha",
+   "firm_date": "2026-10-28",
    "flags": [
     {
      "sev": "Med",
@@ -70,6 +73,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -136,6 +140,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -202,6 +207,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -314,6 +320,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -455,6 +462,7 @@
   "count": 0
  },
  "listing": {
+  "analysis_date": "2026-09-23",
   "annual_tax": 7002,
   "bill_paid": null,
   "cma_high": 389000,
@@ -600,6 +608,7 @@
     "count": 0
    },
    "buyer_broker_pct": 0.025,
+   "close": "2026-10-28",
    "close_days": 35,
    "closing_days": 35,
    "contract_form": "as_is",
@@ -615,6 +624,7 @@
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
+    "close": "2026-10-28",
     "deposit": null,
     "home_warranty": 0,
     "inspection_days": 7,
@@ -629,6 +639,7 @@
    "expires_raw": null,
    "financed": true,
    "financing": "fha",
+   "firm_date": "2026-10-28",
    "flags": [
     {
      "sev": "Med",
@@ -653,6 +664,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -719,6 +731,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -785,6 +798,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -897,6 +911,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -978,6 +993,7 @@
     "count": 0
    },
    "buyer_broker_pct": 0.025,
+   "close": "2026-10-28",
    "close_days": 35,
    "closing_days": 35,
    "contract_form": "as_is",
@@ -993,6 +1009,7 @@
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
+    "close": "2026-10-28",
     "deposit": null,
     "home_warranty": 0,
     "inspection_days": 7,
@@ -1007,6 +1024,7 @@
    "expires_raw": null,
    "financed": true,
    "financing": "fha",
+   "firm_date": "2026-10-28",
    "flags": [
     {
      "sev": "Med",
@@ -1031,6 +1049,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -1097,6 +1116,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -1163,6 +1183,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -1275,6 +1296,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-10-28",
     "holding": -583,
     "lines": [
      [
@@ -1358,6 +1380,7 @@
     "value": 1145
    }
   ],
+  "close": "2026-10-28",
   "holding": -583,
   "lines": [
    [

@@ -76,6 +76,7 @@
    ],
    "buyer_broker_form": "GG",
    "buyer_broker_pct": 0.025,
+   "close": "2026-11-02",
    "close_days": 37,
    "closing_date": "2026-11-02",
    "contract_form": "as_is",
@@ -104,6 +105,7 @@
    "counter_terms": {
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
+    "close": "2026-11-02",
     "deposit": 20000,
     "home_warranty": 0,
     "inspection_days": 7,
@@ -117,6 +119,7 @@
    "expires_raw": "2026-09-23 17:00",
    "financed": true,
    "financing": "conventional",
+   "firm_date": "2026-11-01",
    "flags": [
     {
      "check": "signed",
@@ -158,6 +161,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -224,6 +228,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -290,6 +295,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -410,6 +416,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -474,6 +481,7 @@
   }
  ],
  "listing": {
+  "analysis_date": "2026-09-26",
   "annual_tax": 9072,
   "bill_paid": null,
   "cma_high": 504000,
@@ -601,6 +609,7 @@
    ],
    "buyer_broker_form": "GG",
    "buyer_broker_pct": 0.025,
+   "close": "2026-11-02",
    "close_days": 37,
    "closing_date": "2026-11-02",
    "contract_form": "as_is",
@@ -629,6 +638,7 @@
    "counter_terms": {
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
+    "close": "2026-11-02",
     "deposit": 20000,
     "home_warranty": 0,
     "inspection_days": 7,
@@ -642,6 +652,7 @@
    "expires_raw": "2026-09-23 17:00",
    "financed": true,
    "financing": "conventional",
+   "firm_date": "2026-11-01",
    "flags": [
     {
      "check": "signed",
@@ -683,6 +694,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -749,6 +761,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -815,6 +828,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -935,6 +949,7 @@
       "value": 1145
      }
     ],
+    "close": "2026-11-02",
     "holding": -925,
     "lines": [
      [
@@ -1021,6 +1036,7 @@
     "value": 1145
    }
   ],
+  "close": "2026-10-26",
   "holding": -750,
   "lines": [
    [

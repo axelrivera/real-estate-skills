@@ -33,9 +33,14 @@ class FrozenDate(_dt.date):
         return cls(TODAY.year, TODAY.month, TODAY.day)
 
 
+_REAL_DATE = _dt.date
+
+
 def freeze_clock():
+    """Point every loaded module's `date` (from `from datetime import date`) at FrozenDate, leaving the datetime
+    module itself alone so later lookups still find the real class."""
     for mod in list(sys.modules.values()):
-        if getattr(mod, "date", None) is _dt.date:
+        if mod is not _dt and getattr(mod, "date", None) is _REAL_DATE:
             mod.date = FrozenDate
 
 
