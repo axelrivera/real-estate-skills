@@ -58,13 +58,15 @@ It prints every value already formatted: the page-1 summary, the options side by
 
 ## 3. Deliver
 
-**Quick question** ("what should we offer?"): build the buyer file from what the agent gave and run `strategy.py` anyway (the numbers come from it), but make no files. The reply has, in at most three short paragraphs (about 150 words):
+**Quick question** ("what should we offer?"): build the buyer file from what the agent gave and run `strategy.py` anyway (the numbers come from it), but make no files. The reply has, in at most three short paragraphs (under about 200 words):
 
 - the recommended price, deposit, concessions and key periods, with the outlook and the competition level it assumed;
-- the price's reason from the Price row of `summary.terms`: with no CMA the price stays at list ("list stands in for value"), never "at value", and the appraisal gap is a question ("how much of a low appraisal could the buyer cover in cash?");
+- the price's reason from the Price row of `summary.terms`: with no CMA the price stays at list ("list stands in for value"), never "at value";
 - "Preliminary" when `summary.preliminary` is set, naming what was assumed;
-- one question covering the first two entries of `to_confirm` (the script puts an inferred competition read first, then the rest by impact; leave the value range to the CMA tip);
+- **exactly one question**, covering the first two entries of `to_confirm` other than the value range (the script puts an inferred competition read first, then the rest by impact; the value range is left to the CMA tip). With no CMA the appraisal-gap question ("how much of a low appraisal could the buyer cover in cash?") folds into that same question, never a second one;
 - one line offering the report, with a tip that a buyer CMA sharpens the price.
+
+**Only the fair-housing part** (the agent asks to include a buyer letter, a family photo or a note about the buyers, with no buyer file or offer terms in this conversation): don't run the scripts or ask for the buyer's finances. Answer in chat: the one-sentence reason from `references/fair-housing.md` (When the Agent Asks for It), then offer the cover note on the terms with the terms left in [brackets] for the agent to fill from the offer they chose. If they want the numbers filled, ask for the offer terms.
 
 **Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
 
