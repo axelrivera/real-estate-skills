@@ -1,6 +1,6 @@
 # report.json
 
-`assets/example-report.json` is a complete, approved report: copy it and replace every value. Body-text strings may contain `<strong>` and `<em>`, nothing else. Money fields marked *number* are plain numbers (no `$` or commas).
+`assets/example-report.json` is a complete, approved report: copy it and replace every value. Body-text strings may contain `<strong>` and `<em>`, nothing else. Money fields marked *number* are plain numbers (no `$` or commas). Any string may quote a computed number with a placeholder (SKILL.md step 3 lists them); the scripts fill it everywhere and warn on any `{name}` they don't know.
 
 ## Contents
 
@@ -28,6 +28,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 | `mls_address` | Exactly as in the export's address column |
 | `city`, `state`, `county` | `state` and `county` pick the market's tax rules, millage and MLS format |
 | `locality` | "City, ST ZIP · Subdivision · County · MLS #". Keep the parts in this order, separated by " · ": page 1 puts the city line under the address and the rest at the right |
+| `mls_number` | Optional: the listing's MLS number, when `locality` doesn't carry it. compute.py warns when the export's current row or the history's newest row has another |
 | `list_price`, `sqft` | *numbers* |
 | `latitude`, `longitude` | Optional *numbers*: only when the export has no Distance column and no row for the home (distances are measured from its own row otherwise) |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
@@ -48,7 +49,20 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 ## history (whenever there's more than the current listing)
 
-`heading` (a finding), `intro`, `rows` (`[date, event, price]` strings, price like "$474,500" or "—"), `after`.
+`heading` (a finding), `intro`, `events`, `after`. The gut check needs `events` too: the history's counts come only from them.
+
+`events`: one per row of the MLS history grid, in the grid's order (newest first), copied as they are, never re-sorted by hand: compute.py warns when a row is out of date order and counts it by its date.
+
+| Field | Notes |
+|---|---|
+| `date` | `YYYY-MM-DD` |
+| `mls` | The row's MLS number |
+| `change` | `listed`, `price`, `off_market`, `back_on`, `pending`, `sold`, `canceled`, `expired` or `withdrawn`, or the MLS's code (Stellar: NEW, DECR, INCR, TOM, BOM, PNC, SLD, CANC, EXP, WDN; the 360 grid's `->ACT` is `listed`, `ACT->PND` is `pending`, a price move is `price`). A row that moves both status and price ("INCR … (BOM)") is the status change with the new `price` |
+| `price` | *number*, the asking price after the row, when it shows one. Any price that differs from the one before it counts as a cut or an increase |
+| `dom` | Optional *number*: the grid's days on market at that row. A listing's latest `dom` replaces the calendar count of its active days |
+| `note` | Optional wording for the report's row (default: "Price cut", "Went under contract"…) |
+
+A past sale from the public records is a `sold` event with no `mls`. compute.py prints `history`: `price_cuts`, `price_increases`, `price_cut_total`, `price_cut_pct` (of the first list price), `failed_contracts` (a pending followed by anything but a sale), `active_days` (days listed for sale, not off the market or under contract, across every MLS number, the current one to `as_of`), and builds the report's table from the events. `rows` (`[date, event, price]` strings) replaces that table only when you need wording the events can't give; the counts still come from `events`.
 
 ## offer_plan
 
@@ -60,7 +74,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 ## comps
 
-`intro`, `method_note`, `cards` (3–6: `address`, `sold_price` *number*, `seller_concessions` *number* (what the seller paid toward the buyer's costs, 0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), `meta`, 2–3 `bullets` that explain the same adjustments in words), `summary_paragraph`. compute.py computes each adjusted value (sale price − concessions + adjustments) and builds the summary table from the cards; never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
+`intro`, `method_note`, `cards` (3–6: `address`, `sold_price` *number*, `seller_concessions` *number* (what the seller paid toward the buyer's costs, 0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), `meta`, 2–3 `bullets` that explain the same adjustments in words), `summary_paragraph`. At the comps-only stage (the gut check, or the first run to set the range) a card needs only `address`, `sold_price`, `seller_concessions` and `adjustments`; `meta`, `bullets` and the other `comps` fields are optional until the full report. compute.py computes each adjusted value (sale price − concessions + adjustments) and builds the summary table from the cards; never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
 
 ## scatter (standard)
 
@@ -77,9 +91,10 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 ## costs
 
 - This home's own cost numbers, when you have them (see `local-costs.md`): `transfer_tax_rate`, `transfer_tax_payer`, `title_payer`, `title_estimate_pct`, `title_fees`, `buyer_closing_cost_pct`, `tax_rate`, `insurance_rate` (fractions: `0.007` for 0.7%). They replace the built-in and national values.
-- `taxes`: `heading`, `intro`, `current_bill` and `current_year` (optional: leave out when there's no bill for the home, as with new construction or a land-only bill), `purchase_price`, `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes the row name "Your Bill if the Home Is …" and `short` fills "If … Instead", so write them in Title Case: "in Unincorporated Seminole County", "City"), `note`, `after_paragraph` (escrow warning).
+- `buyer_cash`: optional *number*, what the buyer has for the down payment and closing. compute.py warns, and the report flags the figure, wherever cash to close or a down payment is more than that.
+- `taxes`: `heading`, `intro`, `current_bill` and `current_year` (optional: leave out when there's no bill for the home, as with new construction or a land-only bill), `purchase_price` (optional: the payment's price by default), `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes the row name "Your Bill if the Home Is …" and `short` fills "If … Instead", so write them in Title Case: "in Unincorporated Seminole County", "City"), `note`, `after_paragraph` (escrow warning).
 - `insurance`: `paragraph`.
-- `payment`: `intro`, `price`, `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index`, `scenarios` (`{label, type, down_pct}`, `label` a Title Case column header like "Conventional, 5% Down", `down_pct` a fraction: 0.05 for 5%; put the buyer's own program first, since page 1's payment tile shows the first scenario), optional `hoa_cdd_monthly`, optional `flood_zone` (else the Flood Zone fact), optional `flood_insurance_annual` (a quote; without one the Flood Insurance row reads "Get a Quote" and the total leaves it out, never $0), optional `note` (compute.py adds the flood rule to it).
+- `payment`: `intro`, `price` (optional: leave it out and the payment is figured at the offer plan's target, the middle of `target_low` to `target_high`; page 1's tile and the table header name the price as Target, Asking, Opening Offer or Walk-Away), `rate` (percent), `insurance_annual` (placeholder), `tax_jurisdiction_index` (optional: with two jurisdictions and no confirmed district, leave it out and the payment uses the higher bill, labeled Estimate), `scenarios` (`{label, type, down_pct}`, `label` a Title Case column header like "Conventional, 5% Down", `down_pct` a fraction: 0.05 for 5%; put the buyer's own program first, since page 1's payment tile shows the first scenario), optional `hoa_cdd_monthly`, optional `flood_zone` (else the Flood Zone fact), optional `flood_insurance_annual` (a quote; without one the Flood Insurance row reads "Get a Quote" and the total leaves it out, never $0), optional `note` (compute.py adds the flood rule to it).
 - `credit_scenarios`: `intro`, `loan_type`, `down_pct` (fraction), `closing_costs` or `closing_cost_pct` (fraction; the lender's figure, taxes included. Without either, the market's `buyer_closing_cost_pct` is used and its loan taxes are added on the loan amount: Florida note stamps 0.35% and intangible tax 0.2%), `scenarios` (2–4 `{price, credit}`), `after_paragraph`, optional `buydown` `{price, credit}`, optional `buyer_broker_agreement_pct` and `seller_pays_buyer_broker_pct` (fractions: when the seller pays less than the buyer's agreement, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" row and counts in cash to close). See `offer-plan.md`.
 
 ## watch

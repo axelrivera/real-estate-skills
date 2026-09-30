@@ -10,6 +10,17 @@ One opening offer, a target and a walk-away. They're a negotiating plan for this
 - **Credit alternative:** when the buyer is cash-tight, a price-plus-credit option with about the same price minus credit as the opening offer. It must match one of the credit scenarios.
 - **Conditions:** what the plan assumes (the roof, a failed contract's cause, no competing offers…), so the buyer knows which answers would change it.
 
+## The Rough Plan (Gut Check)
+
+Before there's a supported range, compute.py's `rough` gives the gut check's numbers from the adjusted comps alone, all called rough in the reply:
+
+- **Rough range:** the adjusted comps' span, lowest to highest adjusted value.
+- **Rough opening:** the median adjusted value minus half the market's typical range width (`cma.typical_range_width`; 5% of the median where none is built in), rounded down to $1,000. That's the bottom of a typical range centered on the median, where the full plan normally opens.
+- **Rough walk-away:** the median adjusted value, rounded down to $1,000 (at or below the median, as above).
+- **Rough target:** halfway between the two, to the nearest $1,000.
+
+None goes above the asking price (`capped_at_asking` says when the median is higher). The rough plan leaves out leverage, the market's sale-to-list and the buyer's situation: say so in one line, and let the full report set the real plan.
+
 ## Negotiating Points
 
 2–4 bullets after the ladder, each opening with a bold finding: room to negotiate, credits vs. price, appraisal risk. Frame them as analysis, not orders, and don't repeat the offer numbers.

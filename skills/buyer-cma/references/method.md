@@ -2,13 +2,14 @@
 
 ## The Subject
 
-Pull the ten facts for the fact grid (see `report-data.md`) from the property report, using the county's figures where the MLS and public records disagree (`listing-sheet.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, listing agent related to the owner, As-Is contract, proof of funds required, "may be temporarily off market".
+Pull the ten facts for the fact grid (see `report-data.md`) from the property report, using the county's figures where the MLS and public records disagree (`listing-sheet.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, As-Is contract, "may be temporarily off market". What only Realtor Remarks or private notes say (the listing agent is related to the owner, proof of funds required, showing instructions) stays with the agent: never in the report, but a watch item for the agent in the chat reply (`listing-sheet.md`, What Stays with the Agent).
 
 ## The Listing History
 
 The MLS history grid lists every change across MLS numbers, newest first: read it bottom to top. For the 360 property view's grid (status moves like `ACT->PND`, price moves like `895000.00->839000`) and checking closings against the public-record sale history, see `listing-sheet.md`. The status codes and what they mean are in the MLS layer (`mls_format.history_codes`; for Stellar: NEW, DECR/INCR, TOM/BOM, PNC, SLD, CANC/EXP/WDN).
 
-- A new MLS number resets days on market. Look for older numbers below it and report the true timeline: first list date, total active days across all listings, every price change.
+- A new MLS number resets days on market. Look for older numbers below it and report the true timeline: first list date, total active days across all listings, every price change. Enter every row as `history.events` (`report-data.md`): compute.py counts the cuts, increases, failed contracts and active days, and the report quotes them with placeholders (`{price_cuts}`, `{active_days}`), never a hand count.
+- A row out of date order in the grid, or an MLS number that isn't the listing's (in the history or the export), is warned. Don't guess which date or listing is right: ask the agent in the reply, and count it as compute.py did until they answer.
 - A pending followed by anything other than a sale means a contract failed. That's a question for the listing agent, not an assumption about the house.
 - Repeated off/back-on-market pairs usually mean a seller managing showings or pausing to reset.
 - A price increase after a failed contract is a signal worth naming.
@@ -48,4 +49,4 @@ The supported range is a judgment around the median adjusted value, typically ab
 
 ## The Scatterplot
 
-The script marks the comp cards' sales as Comparable Sales (matched to the export by street address, so write each card's address as the export has it), draws the other sales and the listings, computes the size-only trend line and notes how many homes were left off the chart for size. Pick 1–3 callouts, usually the top-selling comp and the strongest active competitor.
+The script marks the comp cards' sales as Comparable Sales (matched to the export by street address, so write each card's address as the export has it), draws the other sales and the listings, computes the size-only trend line and notes how many homes were left off the chart for size. Pick 1–3 callouts, usually the top-selling comp and the strongest active competitor. Each label goes on its `side` unless it would cover a marker or another label; then the script moves it and says so, and names any label it couldn't clear.

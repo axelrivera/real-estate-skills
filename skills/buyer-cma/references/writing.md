@@ -13,7 +13,7 @@ Every number gets a sentence saying what it means for this buyer. Short sentence
 Page 1 summary → the home → bottom line (+ history, offer plan, negotiating points) → comps → scatterplot → competition → market → costs (taxes, insurance, payment, price vs. credit) → watch items and questions → method.
 
 - **Bottom line:** the range, then where asking sits within it and why, in 3–4 sentences. The section the buyer reads first.
-- **History:** a finding as the heading ("On the Market Since January"), the table, then what it adds up to and the question it raises.
+- **History:** a finding as the heading ("On the Market Since January"), the table (built from `history.events`), then what it adds up to and the question it raises. Quote the counts with their placeholders ("{active_days} of active marketing, with {price_cuts}"), never a number you counted.
 - **Competition:** 5–9 rows: actives, pendings, and any expired or canceled listing that shows what the market rejected. The notes column says why each one matters to this buyer.
 - **Market:** the table from stats.py, then 3–5 bullets that each tie a number to the offer.
 - **Costs:** the seller's bill against the buyer's estimate, the escrow warning, insurance drivers, the payment table, price vs. credit.

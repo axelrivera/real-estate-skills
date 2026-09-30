@@ -23,5 +23,7 @@ Era flags worth raising when the year fits: 1965–1973 aluminum branch wiring; 
 
 - **Rate:** the latest Freddie Mac weekly 30-year average. Cite the week in the chat reply and state it in the report.
 - **Scenarios:** default Conventional 5%, FHA 3.5%, Conventional 20% (`type`: `conventional`, `fha`, `va`, `usda`). Mortgage insurance, FHA upfront premium and program limits come from the shared lending estimates; the report's note states them. The lender's numbers always win.
-- `tax_jurisdiction_index` picks the jurisdiction the table uses; with two, the other appears as a comparison row.
+- **Price:** the payment is figured at the offer plan's target unless you set `price` (the buyer asked to see asking, say). Page 1's tile and the table header name which price it is, so the buyer never reads an asking-price payment as theirs.
+- **Which tax:** `tax_jurisdiction_index` picks the jurisdiction the table uses; with two, the other appears as a comparison row. Until the parcel's district is confirmed, leave it out: the payment uses the higher bill, and the row and note say it's an estimate and which bill it uses. A tax from the fallback rate (no millage) is labeled Estimate the same way (`local-costs.md`).
+- **The buyer's cash:** with `buyer_cash` set, every down payment and cash to close above it is flagged in the report and warned. Show a scenario that fits (a larger credit, a lower price, another program) rather than leaving only the flag.
 - The script computes the table and "every $10,000 off the price lowers the payment by about…". Never hand-calculate payments.

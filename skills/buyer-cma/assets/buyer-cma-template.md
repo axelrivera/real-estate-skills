@@ -2,12 +2,14 @@
 
 **Suggested Opening Offer: {{offer_plan.opening}}** · Target {{offer_plan.target}} · Walk Away Above {{offer_plan.walk_away}}
 
-**Supported Value Range: {{range.display}}.** Asking {{subject.list_price_display}} is {{range.asking_position}}. {{bottom_line.paragraph, shortened to 2 sentences}}
+**Supported Value Range: {{range.display}}.** Asking {{subject.list_price_display}} is {{range.asking_position}}. {{bottom_line_paragraph, shortened to 2 sentences}}
 
 **Why:**
 - {{summary_page.why[0]}}
 - {{summary_page.why[1]}}
 - {{summary_page.why[2]}}
+
+{{when history is not null: "**History:** listed {{history.display.first_listed}}; {{history.display.price_cuts}} ({{history.display.price_cut_total}}), {{history.display.price_increases}}, {{history.display.failed_contracts}}; {{history.display.active_days}} actively for sale." Leave out a part that reads "no …" unless it matters}}
 
 **Comps, Adjusted to This Home** (median {{median_adjusted_display}}):
 
@@ -15,7 +17,7 @@
 |---|---|---|
 | {{each comps_table: address | sold_display | adjusted_display}} |
 
-**What It Will Cost:** estimated tax {{taxes[payments.tax_index].annual_display}}/yr{{" (Estimate from the market's average rate)" when taxes[payments.tax_index].estimated}}{{ (the listing shows current_bill_display), left out when current_bill_display is null}}; {{payments.rows[0].label}}: about {{payments.rows[0].total_display}}/mo with {{payments.rows[0].cash_down_display}} down. {{payments.flood.note, shortened: when payments.flood.annual is null say the total leaves out flood insurance until there's a quote; never write $0 or that flood insurance isn't required}} {{one line on price vs. credit when there are credit scenarios}}
+**What It Will Cost:** estimated tax {{taxes[payments.tax_index].annual_display}}/yr{{" (Estimate from the market's average rate)" when payments.tax_basis.estimated; " (Estimate: the {{payments.tax_basis.short}} bill, until the district is confirmed)" when payments.tax_basis.unconfirmed}}{{ (the listing shows current_bill_display), left out when current_bill_display is null}}; at {{payments.price_display}} ({{payments.price_basis: the target, the asking price…}}), {{payments.rows[0].label}}: about {{payments.rows[0].total_display}}/mo with {{payments.rows[0].cash_down_display}} down. {{when any payments.rows[].cash_short or credit.columns[].cash_short: one line saying which figure is more than the buyer's {{payments.buyer_cash_display}}, and by how much}} {{payments.flood.note, shortened: when payments.flood.annual is null say the total leaves out flood insurance until there's a quote; never write $0 or that flood insurance isn't required}} {{one line on price vs. credit when there are credit scenarios}}
 
 **Check Before Offering:**
 1. {{summary_page.check_first[0]}}
