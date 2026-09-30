@@ -986,6 +986,10 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
         contract["title_evidence_days_before"] = ctx["title_evidence_days"]
     if ctx["tenants"]:
         contract["tenants"] = True
+    if any(d["type"] == "blank-default" for d in defects):  # the day blanks the package leaves empty (deal-file.md)
+        contract["blanks"] = ["deposit_days", "inspection_days", "title_evidence_days_before"] + \
+            (["additional_deposit_days"] if ctx["additional_deposit"] else []) + \
+            (["loan_application_days", "loan_approval_days"] if ctx["financing"] != "cash" else [])
     for code, values in riders:  # rider days and dates the rider prints, under the deal file's names (frbar.md)
         printed = printed_keys(f"CR-7_{code}")
         for k, v in values.items():
