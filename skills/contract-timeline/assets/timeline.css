@@ -26,3 +26,7 @@ tr.mine td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 tr.done td{color:var(--muted)}
 tr.done td:first-child b{font-weight:600}
 tr.pend td:first-child{white-space:normal}
+/* TL-205: the amendment note is information, not a status: brand accent, never a status hue */
+.note-brand{margin-top:6px;border-left:4px solid var(--brand);color:var(--brand-ink);padding:3px 10px;font-size:8.4pt}
+/* TL-211: the Prepared date never breaks mid-date */
+.prep .nw{white-space:nowrap}

@@ -67,18 +67,31 @@ class FrbarDates(unittest.TestCase):
         self.assertIn("preapproval_expires", r["note_keys"])
         self.assertEqual(len(r["flags"]), len(r["flag_keys"]))  # every flag the script adds has a key
 
-    def test_first_deadline_prefers_the_clients_own_rows(self):
-        """TL-104: a compensation agreement the brokers sign isn't the buyer's first step while the buyer has one; a row
-        both sides owe is the first deadline only when the client's side has none left."""
+    def test_first_deadline_is_the_earliest_open_critical_contract_deadline(self):
+        """TL-204: the earliest open critical contract deadline, whoever owes it (a critical Both row counts, the
+        non-critical Loan Application doesn't); never a lender target; with no critical row left, the earliest
+        contract deadline."""
         d = fixture("buyer-fha.json")
         d["contract"]["riders"] = list(d["contract"].get("riders") or []) + ["GG"]
         d["completed"] = {"deposit": "2026-09-26"}
         r = timeline.analyze(d)
-        self.assertEqual((r["first_deadline"]["key"], r["first_deadline"]["party"]), ("loan_app", "Buyer"))
+        self.assertEqual((r["first_deadline"]["key"], r["first_deadline"]["critical"]), ("compensation_cancel", True))
+        d["contract"]["riders"] = ["E", "H"]
+        self.assertEqual(timeline.analyze(d)["first_deadline"]["key"], "inspection")  # not loan_app (Sep 30)
         o = fixture("other-contract.json")
         o["side"] = "seller"
-        o["deadlines"][3]["party"] = "both"  # no seller row: the first row both sides owe
-        self.assertEqual(timeline.analyze(o)["first_deadline"]["key"], "title_commitment")
+        o["deadlines"][0]["party"] = "both"
+        self.assertEqual(timeline.analyze(o)["first_deadline"]["key"], "earnest_money")  # a Both row isn't skipped
+        # the lender's critical Closing Disclosure (Oct 27) is never it: the closing is
+        late = fixture("buyer-fha.json")
+        late["report_date"] = "2026-10-27"
+        late["completed"] = {k: "2026-10-01" for k in ("deposit", "inspection", "insurance", "loan_approval")}
+        r = timeline.analyze(late)
+        self.assertFalse(r["first_deadline"]["lender"])
+        self.assertEqual(r["first_deadline"]["key"], "closing")
+        # no critical row open: the earliest open contract deadline, still not a lender target
+        late["completed"]["closing"] = "2026-10-01"
+        self.assertEqual(timeline.analyze(late)["first_deadline"]["key"], "seller_terminate")
 
     def test_past_deadlines_are_to_confirm(self):
         """TL-104: a deadline before the report date and not done is "Past, Confirm", never the first deadline, and
@@ -223,8 +236,15 @@ class Amendments(unittest.TestCase):
         """TL-21: a blank the form fills reads as its value, and dates read as dates. The moved dates and `was` of
         seller-amended.json are pinned by golden."""
         summary = timeline.analyze(fixture("seller-amended.json"))["history"][0]["summary"]
-        self.assertIn("30 (form default)", summary)
+        self.assertIn("30 days (form default)", summary)
         self.assertIn("Dec 11, 2026", summary)
+        # TL-215: the fields read as the report's labels, not the deal file's names
+        self.assertIn("Loan Approval Period: 30 days (form default) → 38 days", summary)
+        self.assertIn("Closing Date:", summary)
+        self.assertNotIn("_", summary)
+        self.assertNotIn("loan approval days", summary)
+        self.assertEqual(timeline._field_label("rofr_days"), "ROFR")
+        self.assertEqual(timeline._field_value("price", 412000), "$412,000")
 
     def test_hoa_received_starts_review_window(self):
         deal = fixture("seller-amended.json")
@@ -587,7 +607,7 @@ class Completed(unittest.TestCase):
         rows = by_key(r)
         self.assertTrue(rows["deposit"]["done"])
         self.assertEqual(rows["deposit"]["done_display"], "Done Sep 26")
-        self.assertEqual(r["first_deadline"]["key"], "loan_app")
+        self.assertEqual(r["first_deadline"]["key"], "inspection")  # TL-204: the next critical row, not the Loan Application
         self.assertIn("Done Sep 26", timeline_render.build_html(r, {}, False))
         text = timeline_render.ics(r)
         self.assertNotIn("Initial Escrow Deposit", text)
@@ -889,6 +909,166 @@ class Audit0929(unittest.TestCase):
         """TL-106"""
         doc = timeline_render.build_html(timeline.analyze(fixture("buyer-fha.json")), {}, sample=True)
         self.assertIn('<div class="tbl brk"><table class="kd">', doc)
+
+
+class SecondPass(unittest.TestCase):
+    """TL-201 to TL-221 (audit 2026-09-29, second pass)."""
+
+    def test_revision_note_quotes_the_footer_only_when_read_from_it(self):
+        """TL-201"""
+        d = fixture("buyer-fha.json")
+        d["contract"]["form_revision"] = "Rev. 6/24"
+        notes = timeline.analyze(d)["chat_notes"]
+        self.assertTrue(any("revision given" in n for n in notes))
+        self.assertFalse(any("footer reads" in n for n in notes))
+        d["contract"]["form_revision_source"] = "footer"
+        self.assertTrue(any("footer reads" in n for n in timeline.analyze(d)["chat_notes"]))
+
+    def test_summary_says_after_that_once(self):
+        """TL-202"""
+        for side in ("buyer", "seller"):
+            d = fixture("buyer-fha.json")
+            d["side"] = side
+            r = timeline.analyze(d)
+            self.assertTrue(r["open_rights"])
+            doc = timeline_render.build_html(r, {}, sample=True)
+            lead = doc.split('<div class="why">')[1].split("</div>")[0]
+            self.assertNotIn("after that", lead)
+            self.assertEqual(lead.count("After that"), 1)
+            self.assertIn("rights that stay open:", lead)
+
+    def test_financing_consistency_notes(self):
+        """TL-203: Rider F fields with only Rider E are named, not dropped silently; the cash title default on a
+        financed deal is questioned."""
+        d = fixture("buyer-fha.json")
+        d["contract"]["appraisal_days"] = 21
+        d["contract"]["title_evidence_days_before"] = 5
+        r = timeline.analyze(d)
+        self.assertIn("appraisal_without_rider_f", r["note_keys"])
+        self.assertIn("title_days_financing", r["note_keys"])
+        self.assertNotIn("appraisal_due", by_key(r))
+        d["contract"]["title_evidence_days_before"] = 15
+        del d["contract"]["appraisal_days"]
+        r = timeline.analyze(d)
+        self.assertNotIn("title_days_financing", r["note_keys"])
+        self.assertNotIn("appraisal_without_rider_f", r["note_keys"])
+
+    def test_amendment_note_uses_the_brand_color(self):
+        """TL-205"""
+        doc = timeline_render.build_html(timeline.analyze(fixture("seller-amended.json")), {}, sample=True)
+        self.assertIn('class="note-brand"', doc)
+        self.assertNotIn('class="note-good"', doc)
+
+    def test_money_check(self):
+        """TL-208: deposits + loan + balance vs. price, and the pre-approval vs. the loan."""
+        d = fixture("buyer-fha.json")  # $365,000; $11,000 deposit from deposit_amount_str
+        d["contract"].update(loan_amount=348000, balance_to_close=6000, preapproval_amount=350000)
+        r = timeline.analyze(d)
+        self.assertNotIn("money_mismatch", r["note_keys"])
+        self.assertNotIn("preapproval_below_loan", r["note_keys"])
+        d["contract"].update(price=372000, preapproval_amount=340000)  # a counter moved the price, not the loan
+        r = timeline.analyze(d)
+        self.assertIn("money_mismatch", r["note_keys"])
+        self.assertIn("preapproval_below_loan", r["note_keys"])
+        d["contract"].pop("balance_to_close")
+        d["contract"]["loan_amount"] = 362000  # no balance given: $11,000 + $362,000 passes the $372,000 price
+        self.assertIn("money_mismatch", timeline.analyze(d)["note_keys"])
+        with self.assertRaisesRegex(timeline.DealError, "loan_amount"):
+            timeline.money_check({"loan_amount": "a lot"}, 365000)
+
+    def test_rider_u_and_para_6b(self):
+        """TL-209: Rider U alone says why Para. 6(b)'s windows aren't dated; a tenant dates them."""
+        d = fixture("buyer-fha.json")
+        d["contract"]["riders"] = ["E", "U"]
+        self.assertIn("rider_u_6b", timeline.analyze(d)["note_keys"])
+        d["contract"]["tenants"] = True
+        r = timeline.analyze(d)
+        self.assertNotIn("rider_u_6b", r["note_keys"])
+        rows = by_key(r)
+        self.assertEqual(rows["lease_disclosure"]["when"], "2026-09-30 23:59")  # 5 days after Fri Sep 25
+        self.assertIsNone(rows["lease_review"]["when"])  # runs from the receipt of the leases
+
+    def test_rider_gg_rolled_start_note(self):
+        """TL-210: day 3 on a Sunday rolls to Monday; the cancel window counts from Monday, and the note gives the
+        reading from Sunday."""
+        d = fixture("buyer-fha.json")
+        d["contract"].update(effective_date="2026-09-24", riders=["E", "GG"])
+        r = timeline.analyze(d)
+        rows = by_key(r)
+        self.assertEqual(rows["compensation_agreement"]["when"][:10], "2026-09-28")
+        self.assertEqual(rows["compensation_cancel"]["when"][:10], "2026-10-01")
+        self.assertIn("gg_rolled_start", r["note_keys"])
+        self.assertTrue(any("Wed Sep 30" in n for n in r["agent_notes"]))
+        d["contract"]["effective_date"] = "2026-09-25"  # day 3 is a Monday: nothing to read two ways
+        self.assertNotIn("gg_rolled_start", timeline.analyze(d)["note_keys"])
+
+    def test_small_fixes(self):
+        """TL-211: Check lines end with a period and aren't repeated; an agent note that restates a script note is
+        dropped; the short sale copy row reads once as a receipt; the Prepared date doesn't wrap."""
+        d = fixture("buyer-fha.json")
+        d["flags"] = ["Loan approval deadline is within 5 days of closing: little room if financing slips"]
+        d["contract"]["preapproval_expires"] = "2026-10-20"
+        d["agent_notes"] = ["The buyer's pre-approval expires Oct 20, 2026, before closing: ask the lender to update it"]
+        r = timeline.analyze(d)
+        self.assertTrue(all(f.endswith(".") for f in r["flags"]))
+        self.assertEqual(len(r["flags"]), len({f.lower() for f in r["flags"]}))
+        self.assertEqual(sum("pre-approval" in n for n in r["agent_notes"]), 1)
+        s = timeline.analyze(fixture("short-sale.json"))
+        self.assertEqual(by_key(s)["short_sale_copy"]["rule"], "Runs from the seller's receipt of the short sale approval")
+        self.assertIn('<span class="nw">', timeline_render.build_html(r, {}, sample=True))
+
+    def test_preapproval_expiry_on_a_pending_short_sale(self):
+        """TL-212: no closing date yet, so the expiry is compared with the approval deadline plus the closing days."""
+        d = fixture("short-sale.json")
+        d["contract"]["preapproval_expires"] = "2026-12-16"
+        r = timeline.analyze(d)
+        self.assertIn("preapproval_expires", r["note_keys"])
+        self.assertTrue(any("Nov 1, 2026" in n for n in r["agent_notes"]))  # Dec 16 minus 45 days
+        d["contract"]["preapproval_expires"] = "2027-02-01"
+        self.assertNotIn("preapproval_expires", timeline.analyze(d)["note_keys"])
+
+    def test_extension_gives_both_readings(self):
+        """TL-214: 8 days from Fri Sep 25 is Sat Oct 3, rolled to Mon Oct 5. An amendment to 13 days: Thu Oct 8 (safe,
+        used); 5 days added to Mon Oct 5 is Sat Oct 10, rolled past Columbus Day to Tue Oct 13 (the note)."""
+        d = fixture("buyer-fha.json")
+        d["contract"]["inspection_days"] = 8
+        d["amendments"] = [{"date": "2026-09-26", "description": "EA-4", "changes": {"inspection_days": 13}}]
+        r = timeline.analyze(d)
+        self.assertEqual(by_key(r)["inspection"]["when"][:10], "2026-10-08")
+        self.assertIn("extension_reading:inspection", r["note_keys"])
+        self.assertTrue(any("Tue Oct 13" in n and "Thu Oct 8" in n for n in r["agent_notes"]))
+        d["contract"]["inspection_days"] = 10  # Mon Oct 5 didn't roll: one reading
+        d["amendments"][0]["changes"]["inspection_days"] = 15
+        self.assertNotIn("extension_reading:inspection", timeline.analyze(d)["note_keys"])
+
+    def test_header_chip_lists_riders_on_both_forms(self):
+        """TL-216, TL-217"""
+        self.assertEqual(timeline.analyze(fixture("buyer-fha.json"))["contract_label"], "AS IS · Riders E, H")
+        s = fixture("standard-riders.json")
+        r = timeline.analyze(s)
+        self.assertTrue(r["contract_label"].startswith("Standard"))
+        self.assertIn("Rider", r["contract_label"])
+        self.assertFalse(any("STANDARD" in x["source"] for x in r["rows"] + r["pending"]))
+
+    def test_strip_tick_labels_clear_the_leaders(self):
+        """TL-218: no tick label sits on a leader running down to a label below the line."""
+        import re
+        for name in ("standard-riders.json", "seller-amended.json", "buyer-fha.json"):
+            t = timeline.analyze(fixture(name))
+            svg = timeline_render.strip(t, {"Buyer": "#111", "Seller": "#222", "Both": "#333"})
+            mid = float(re.search(r'y1="([\d.]+)"', svg).group(1))
+            inside = []  # points of every leader inside the tick labels' row (mid + 5 to mid + 15)
+            for pts in re.findall(r'<polyline points="([^"]+)"', svg):
+                xy = [tuple(map(float, p.split(","))) for p in pts.split()]
+                for (x1, y1), (x2, y2) in zip(xy, xy[1:]):
+                    for i in range(101):
+                        px, py = x1 + (x2 - x1) * i / 100, y1 + (y2 - y1) * i / 100
+                        if mid + 5 <= py <= mid + 15:
+                            inside.append(px)
+            ticks = list(map(float, re.findall(r'<text x="([\d.]+)"[^>]*class="tk"', svg)))
+            self.assertTrue(ticks)
+            for x in ticks:
+                self.assertFalse(any(abs(px - x) <= 12 for px in inside), (name, x))
 
 
 if __name__ == "__main__":

@@ -125,11 +125,26 @@ def strip(t, colors):
     mid = 16 + levels * STEP
     H = mid + 26 + levels * STEP + 4
     s = [f'<svg viewBox="0 0 {W} {H}" class="strip"><line x1="{L}" x2="{W - R}" y1="{mid}" y2="{mid}" stroke="var(--grey-light)" stroke-width="3"/>']
+    # TL-218: a leader running down to a label below the line crosses the tick labels' row; a tick label it would cross
+    # is left out (the tick mark stays), so no date sits on a line
+    crossed = []  # the x span of each such leader inside the tick labels' row (mid + 5 to mid + 15)
+    for m, (side, lv, x0) in zip(marks, spots):
+        if side == "down":
+            x, ly = m["x"], mid + 21 + lv * STEP  # as drawn below: down to the label, bending halfway when it slid
+            reach = min(max(x, x0 + 3), x0 + m["w"] - 3)
+            if abs(x0 + m["w"] / 2 - x) > 1:
+                knee = (ly + mid) / 2
+                reach = x + (reach - x) * max(0.0, (mid + 15 - knee) / (ly - knee))
+            else:
+                reach = x
+            crossed.append((min(x, reach), max(x, reach)))
     d = eff
     while d <= end:
         x = X(d)
-        s.append(f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{mid - 4}" y2="{mid + 4}" stroke="var(--grey-light)"/>'
-                 f'<text x="{x:.1f}" y="{mid + 13}" class="tk" text-anchor="middle">{d:%b %-d}</text>')
+        tw = len(f"{d:%b %-d}") * 4.4 / 2 + 2  # half the tick label's width at 8px, plus a gap
+        s.append(f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{mid - 4}" y2="{mid + 4}" stroke="var(--grey-light)"/>')
+        if not any(a - tw <= x <= b + tw for a, b in crossed):
+            s.append(f'<text x="{x:.1f}" y="{mid + 13}" class="tk" text-anchor="middle">{d:%b %-d}</text>')
         d += timedelta(days=7)
     lines, dots, labels = [], [], []
     for m, (side, lv, x0) in zip(marks, spots):
@@ -167,7 +182,7 @@ def party_pill(party, colors, ink=None):
 
 
 def prepared_block(t, agent):
-    lines = [f'Prepared for <b>{esc(t["client"])}</b> · {esc(t["report_date"]["long"])}']
+    lines = [f'Prepared for <b>{esc(t["client"])}</b> · <span class="nw">{esc(t["report_date"]["long"])}</span>']
     if agent.get("name"):
         lines.append(f'<b>{esc(agent["name"])}</b>')
         org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
@@ -195,7 +210,8 @@ def build_html(t, agent, sample):
     waiting = t.get("contingencies_waiting") or []
     ss = t.get("short_sale")
     still = t.get("open_rights") or []
-    open_txt = (" These rights stay open after that: " + esc(join_words([sentence_case(x) for x in still])) + ".") if still else ""
+    still_txt = esc(join_words([sentence_case(x) for x in still]))
+    open_txt = f" These rights stay open: {still_txt}." if still else ""
     if waiting:  # Rider G before the approval: the contingency periods haven't started
         firm_label = "Your Contingencies End" if side == "buyer" else "Buyer Can Cancel Until"
         whose = "Your" if side == "buyer" else "The buyer's"
@@ -203,14 +219,16 @@ def build_html(t, agent, sample):
                 "receives the short sale approval; until then, only the dates counted from the Effective Date are set.")
     elif side == "buyer":
         firm_label = "Your Contingencies End"
+        # TL-202: one "after that", with the rights that stay open as the exception
         lead = (f'Your main protections run through <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}).'
-                + open_txt + (" Otherwise the deposit is at risk after that." if still else " After that the deposit is at risk.")
+                + (f" After that the deposit is at risk, except under the rights that stay open: {still_txt}." if still
+                   else " After that the deposit is at risk.")
                 if firm else "No buyer contingencies: the deposit is at risk from the start." + open_txt)
     else:
         firm_label = "Buyer Can Cancel Until"
         lead = (f'The buyer\'s main contingencies end <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}).'
-                + open_txt + (" Otherwise the deal is firm unless the buyer defaults." if still else
-                              " After that the deal is firm unless the buyer defaults.")
+                + (f" After that the deal is firm unless the buyer defaults, except for the rights that stay open: {still_txt}."
+                   if still else " After that the deal is firm unless the buyer defaults.")
                 if firm else "No buyer contingencies: the deal is firm once the deposit is in." + open_txt)
     if first:  # TL-104: the full label, from the report date
         lead += f' Next deadline: {esc(first["label"])}, {esc(first["date_display"])} ({day_label(first)}).'
@@ -254,7 +272,7 @@ def build_html(t, agent, sample):
         f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["pending"])
     pending = ""
     flags = "".join(f'<div class="note-caution"><b>Check:</b> {esc(f)}</div>' for f in t["flags"])
-    amended = (f'<div class="note-good"><b>Includes {n} amendment{"s" if n != 1 else ""}.</b> Dates that moved show '
+    amended = (f'<div class="note-brand"><b>Includes {n} amendment{"s" if n != 1 else ""}.</b> Dates that moved show '
                '"was". See the amendment history for details.</div>') if n else ""
     legend = "".join(f'<span><i style="background:{colors[k]};border-radius:50%"></i>{k}</span>' for k in ("Buyer", "Seller", "Both"))
 
