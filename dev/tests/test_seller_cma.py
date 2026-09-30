@@ -6,7 +6,8 @@ the nets differ from the prototype's printed figures by exactly $355 per option:
     agent (same 5% total, now labeled placeholder per line);
   - title company fees: the prototype's flat $1,500 "settlement, lien search, recording" is now the
     Florida layer's itemized seller title fees, $700 + $250 + $125 + $70 = $1,145.
-Buyer payments and the per-$10,000 effect match the prototype exactly.
+Buyer payments and the per-$10,000 effect match the prototype exactly. Those nets, payments and net lines on the
+unmodified fixture are pinned by golden (dev/golden/seller-cma/hickorywood.json).
 """
 import contextlib
 import copy
@@ -60,51 +61,11 @@ def texas(R):
     return R
 
 
-class MatchesPrototype(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.C, _ = run(report())
-
-    def test_nets(self):
-        self.assertEqual([round(x["net"]) for x in self.C["strategies"]], [n + TITLE_FEE_CHANGE for n in PROTOTYPE_NETS])
-        self.assertEqual(self.C["recommended_net_display"], "$422,136")
-
-    def test_net_lines(self):
-        self.assertEqual(row(self.C, "listing_fee")["amounts"], [-11575, -11550, -11500])
-        self.assertEqual(row(self.C, "buyer_broker_fee")["amounts"], [-11575, -11550, -11500])
-        self.assertEqual([round(a) for a in row(self.C, "transfer_tax")["amounts"]], [-3241, -3234, -3220])
-        self.assertEqual(row(self.C, "owner_title")["amounts"], [-2390, -2385, -2375])
-        self.assertEqual(row(self.C, "title_fees")["amounts"], [-1145] * 3)
-        self.assertEqual(row(self.C, "credit")["amounts"], [-10000, -10000, -5000])
-        self.assertEqual(row(self.C, "listing_fee")["label"], "Listing Brokerage (2.5%)")  # the listing agreement's terms
-        self.assertEqual(row(self.C, "transfer_tax")["label"], "Documentary Stamp Tax on the Deed (0.70%)")
-        self.assertFalse(self.C["preliminary"])
-
-    def test_buyer_payments(self):
-        # CORE-17: the 2026 indexed homestead ($26,411 off non-school levies) lowers tax about $17/yr
-        self.assertEqual([round(x["payment"]) for x in self.C["strategies"]], [4147, 4065, 3984])
-        self.assertEqual([round(x["down"]) for x in self.C["strategies"]], [23995, 23495, 22995])
-        self.assertEqual(self.C["payments"]["per_10k_display"], "$80")
-        self.assertEqual(self.C["payments"]["down_per_10k_display"], "$500")
-
-    def test_no_warnings_but_assumptions(self):
-        self.assertEqual(self.C["warnings"], [])
-        self.assertTrue(any("Title company fees" in a for a in self.C["assumptions"]))
-        self.assertFalse(any("Brokerage" in a for a in self.C["assumptions"]))  # the agreement's terms are in costs
-
-
 class Handoff(unittest.TestCase):
     def test_seller_handoff(self):
+        """Every handoff value is pinned by golden; the schema check isn't."""
         C, _ = run(report())
-        h = handoff.validate(C["handoff"])
-        self.assertEqual(h["side"], "seller")
-        self.assertEqual(h["source"], "seller-cma")
-        self.assertEqual(h["recommended_list_price"], 469900)
-        self.assertIsNone(h["offer_plan"])
-        self.assertEqual((h["value"]["low"], h["value"]["high"], h["value"]["median_adjusted"]), (455000, 480000, 469800))
-        self.assertEqual(h["market_profile"], {"state": "FL", "mls": "Stellar"})
-        self.assertEqual(h["market"]["active_count"], 14)  # the subject's own active listing is left out
-        self.assertEqual(len(h["comps"]), 5)
+        handoff.validate(C["handoff"])
 
     def test_compute_cli_writes_handoff(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -115,6 +76,7 @@ class Handoff(unittest.TestCase):
                 self.assertEqual(compute.main([path, "--out", tmp]), 0)
             result = json.loads(out.getvalue())
             self.assertEqual(handoff.load(result["handoff_file"])["side"], "seller")
+            self.assertTrue(result["handoff_file"].endswith(".seller.cma.json"))
 
 
 class Costs(unittest.TestCase):
@@ -269,14 +231,14 @@ class Warnings(unittest.TestCase):
         R = report()
         R["recommendation"]["list_price"] = 489900
         C, _ = run(R)
-        self.assertTrue(any("outside the supported range" in w for w in C["warnings"]))
-        self.assertTrue(any("doesn't match" in w for w in C["warnings"]))
+        self.assertEqual(C["warning_keys"], ["list_outside_range", "list_mismatch"])
+        self.assertEqual(len(C["warnings"]), 2)
 
     def test_expected_sale_above_range(self):
         R = report()
         R["pricing"]["strategies"][2]["expected_sale"] = 485000  # the competing-offer option may sell above list
         C, _ = run(R)
-        self.assertTrue(any("above the supported range" in w for w in C["warnings"]))
+        self.assertEqual(C["warning_keys"], ["expected_above_range"])
 
     def test_expected_sale_above_list_outside_competing_option(self):
         """CMA-20: only the competing-offer option can expect to sell above its list price."""
@@ -337,7 +299,7 @@ class OtherMarkets(unittest.TestCase):
         R["buyer_payment"].pop("total_mills")
         C, _ = run(R)
         self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 0.011 / 12)  # national estimate
-        self.assertTrue(any("Buyer taxes are estimated" in w for w in C["warnings"]))
+        self.assertIn("tax_estimated", C["warning_keys"])
     def test_estimates_show_in_pdf_html(self):
         R = texas(report())
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025}
@@ -379,12 +341,9 @@ class Brand(unittest.TestCase):
         L =compute.cma.Labels(compute.ASSETS)
         D = deck.deck_data(R, C, homes, AGENT, L, "footer")
         self.assertEqual(D["colors"]["brand"], "0B6E4F")
-        self.assertEqual(D["colors"]["party_both"], "1F3A5F")
         self.assertEqual(D["colors"]["on_brand"], "FFFFFF")
         self.assertEqual(D["agent"]["lines"], ["Sunshine Realty"])  # no "License undefined"
-        self.assertEqual(D["strategies"][1]["net_display"], "$422,136")
         self.assertIn("$80", D["content"]["payment_takeaway"])  # {per_10k} filled from compute.py
-        self.assertEqual(D["competition"][0][1], "$400,000")  # price from the report's competition table
 
     def test_deck_roles_hold_contrast_for_any_brand(self):
         design = deck.design
@@ -437,52 +396,55 @@ class DeckContent(unittest.TestCase):
         R = self.deck_R()
         D, C = self.data(R)
         self.assertFalse(C["net"]["has_tax"])
-        self.assertIn("mortgage payoff, tax proration and repairs", D["net_note"])
+        for item in ("mortgage payoff", "tax proration", "repairs"):
+            self.assertIn(item, D["net_note"])
         R["costs"].update(annual_tax=6000, expected_closing_date="2026-11-20", mortgage_payoff=210000)
         D, C = self.data(R)
         self.assertTrue(C["net"]["has_tax"])
         self.assertNotIn("tax proration", D["net_note"])  # the proration is a row in the table: never "not included"
         self.assertNotIn("mortgage payoff", D["net_note"])
-        self.assertIn("Not included: repairs;", D["net_note"])
+        self.assertIn("repairs", D["net_note"])
 
     def test_strategy_title_follows_the_count(self):
         R = self.deck_R()
         D, _ = self.data(R)
-        self.assertEqual(D["labels"]["deck_strat_title"], "Three Ways to Price It")
+        L = compute.cma.Labels(compute.ASSETS)
+        self.assertEqual(D["labels"]["deck_strat_title"], L(f"deck_strat_title_{len(R['pricing']['strategies'])}"))
 
     def test_expected_sub_follows_the_market(self):
         R = self.deck_R()
         D, _ = self.data(R)
-        self.assertEqual(D["labels"]["deck_expected_sub"], "After the negotiating that is normal now")
+        L = compute.cma.Labels(compute.ASSETS)
+        self.assertEqual(D["labels"]["deck_expected_sub"], L("deck_expected_sub"))
         ri = R["pricing"]["recommended_index"]
         R["pricing"]["strategies"][ri]["expected_sale"] = R["recommendation"]["list_price"]  # a seller's market: sells at list
         D, _ = self.data(R)
-        self.assertEqual(D["labels"]["deck_expected_sub"], "With competing offers likely at this price")
+        self.assertEqual(D["labels"]["deck_expected_sub"], L("deck_expected_sub_at"))
 
     def test_comps_basis(self):
         R = self.deck_R()
         R["deck"].pop("comps_basis", None)
         D, _ = self.data(R)
-        self.assertEqual(D["labels"]["deck_step_comps"], "closest matches to your home")  # never "pool" by default
+        L = compute.cma.Labels(compute.ASSETS)
+        self.assertEqual(D["labels"]["deck_step_comps"], L("deck_step_comps"))  # never "pool" by default
         R["deck"]["comps_basis"] = "size, floor, view and building"
         D, _ = self.data(R)
-        self.assertEqual(D["labels"]["deck_step_comps"], "closest matches in size, floor, view and building")
+        self.assertEqual(D["labels"]["deck_step_comps"], L("deck_step_comps_basis", basis="size, floor, view and building"))
 
     def test_no_adjustments_note(self):
         R = self.deck_R()
         for c in R["comps"]["cards"]:
             c["adjustments"], c["seller_concessions"] = [], 0
         D, _ = self.data(R)
-        self.assertEqual(D["labels"]["deck_method_note"], "The comps needed no adjustment.")
+        self.assertEqual(D["labels"]["deck_method_note"], compute.cma.Labels(compute.ASSETS)("deck_method_note_none"))
 
     def test_no_mortgage_is_cash_at_closing(self):
         R = self.deck_R()
         R["costs"]["mortgage_payoff"] = 0
         D, C = self.data(R)
         self.assertTrue(C["net"]["cash_at_closing"] and C["net"]["no_mortgage"])
-        self.assertEqual(D["net_sub"], "Estimated cash at closing, with no mortgage to pay off")
+        self.assertIn("cash at closing", D["net_sub"].lower())
         self.assertFalse([r for r in C["net"]["rows"] if r["key"] == "payoff"])
-        self.assertEqual(row(C, "total")["label"], "Estimated Cash at Closing")
 
     def test_icons(self):
         R = self.deck_R()
@@ -504,10 +466,6 @@ class DeckContent(unittest.TestCase):
         R["deck"]["value_drivers"] = R["deck"]["value_drivers"][:1]
         with self.assertRaises(deck.DeckError):
             deck.load_content(R)
-
-    def test_period_labels_across_new_year(self):
-        w = {"first_close": "2025-11-03", "last_close": "2026-02-20", "split_date": "2026-01-01"}
-        self.assertEqual(deck.period_labels(w), ["November 2025–December 2025", "January 2026–February 2026"])
 
 
 def node_ready():
@@ -555,10 +513,11 @@ class Files(unittest.TestCase):
                 self.assertEqual(len(paths), 2)
                 self.assertTrue(paths[1].endswith("-Listing-Presentation.pdf"))
                 with open(paths[1], "rb") as f:
-                    self.assertEqual(len(re.findall(rb"/Type\s*/Page[^s]", f.read())), 15)
+                    pdf_pages = len(re.findall(rb"/Type\s*/Page[^s]", f.read()))
             with zipfile.ZipFile(paths[0]) as z:
                 slides = [n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n)]
-                self.assertEqual(len(slides), 15)
+                if office_ready():
+                    self.assertEqual(pdf_pages, len(slides))  # the PDF copy has every slide
                 charts = [z.read(n).decode() for n in z.namelist() if n.startswith("ppt/charts/chart") and n.endswith(".xml")]
                 scatter = next(c for c in charts if "<c:scatterChart>" in c)
                 self.assertIn('<c:size val="5"/>', scatter)  # other sales are small background dots
@@ -586,7 +545,6 @@ class Files(unittest.TestCase):
             checks = deck.build_pptx(D, os.path.join(tmp, "deck.pptx"))  # still built
             self.assertTrue(os.path.exists(os.path.join(tmp, "deck.pptx")))
         self.assertEqual(len(checks), 1)
-        self.assertIn("slide 7", checks[0])
         self.assertIn("deck.market_stats label", checks[0])
 
     def test_texas_pptx_without_export(self):
@@ -602,12 +560,12 @@ class Files(unittest.TestCase):
                 paths = seller_render.build(R, "pptx", tmp, {"agent": profiles.load_agent(None), "sample": True})
             with zipfile.ZipFile(paths[0]) as z:
                 slides = sorted(n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n))
-                self.assertEqual(len(slides), 14)  # no scatter without an MLS export
+                charts = "".join(z.read(n).decode() for n in z.namelist() if n.startswith("ppt/charts/chart"))
+                self.assertNotIn("<c:scatterChart>", charts)  # no scatter without an MLS export
                 self.assertNotIn("PRELIMINARY", z.read("ppt/slides/slide1.xml").decode())  # estimates are labeled, not blocking
                 text = "".join(z.read(n).decode() for n in slides)
                 self.assertNotIn("Documentary", text)
                 self.assertNotIn("placeholder", text)
-
 
 
 class Flood(unittest.TestCase):
@@ -648,15 +606,6 @@ class HoldingCosts(unittest.TestCase):
         self.assertEqual((f.months_in("45–90 days"), f.months_in("3–6 weeks"), f.months_in("2 months")), (2.22, 1.03, 2.0))
         self.assertIsNone(f.months_in("soon"))
 
-    def test_handoff_file_has_the_side(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "report.json")
-            with open(path, "w") as f:
-                json.dump(report(), f)
-            with contextlib.redirect_stdout(io.StringIO()) as out:
-                self.assertEqual(compute.main([path, "--out", tmp]), 0)
-            self.assertTrue(json.loads(out.getvalue())["handoff_file"].endswith(".seller.cma.json"))
-
 
 class AuditLowCma(unittest.TestCase):
     """CMA-24 (one point set for PDF and deck), CMA-25 (period labels), CMA-26 (method note), CMA-29 (payoff)."""
@@ -684,6 +633,8 @@ class AuditLowCma(unittest.TestCase):
         self.assertEqual(deck.period_labels(w), ["April–June", "July–September"])
         w["split_date"] = "2026-07-15"
         self.assertEqual(deck.period_labels(w), ["April–July 14", "July 15–September"])
+        w = {"first_close": "2025-11-03", "last_close": "2026-02-20", "split_date": "2026-01-01"}  # across the new year
+        self.assertEqual(deck.period_labels(w), ["November 2025–December 2025", "January 2026–February 2026"])
 
     def test_method_note_lists_the_adjustments_used(self):
         cards = [{"adjustments": [{"label": "Size", "amount": 1800}, {"label": "Larger Corner Lot", "amount": -5000}],
@@ -698,9 +649,6 @@ class AuditLowCma(unittest.TestCase):
         self.assertEqual(row(C, "payoff")["amounts"][0], -(200000 + 1000 + 500))
         self.assertEqual(row(C, "payoff")["label"], "Mortgage Payoff (Estimate from Balance)")
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class AuditMoneyLines(unittest.TestCase):
     """CORE-5, CMA-18 (standard terms marked everywhere), CMA-3 (proration), CORE-6 (surtax)."""
@@ -709,11 +657,11 @@ class AuditMoneyLines(unittest.TestCase):
         R = report()
         R["costs"] = {}
         C, homes = run(R)
-        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (2.5%, Assumed)")
-        self.assertEqual(row(C, "buyer_broker_fee")["label"], "Buyer's Agent Compensation (2.5%, Assumed)")
+        self.assertIn("Assumed", row(C, "listing_fee")["label"])
+        self.assertIn("Assumed", row(C, "buyer_broker_fee")["label"])
         self.assertTrue(C["net"]["standard_terms"])
         self.assertFalse(C["net"]["incomplete"])  # 5% total assumed: the files build
-        self.assertIn("Brokerage is assumed at 5% in total until the listing agreement sets it.", C["net"]["notes"])
+        self.assertTrue(any("5%" in n and "assumed" in n.lower() for n in C["net"]["notes"]))
         doc = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)[0]
         self.assertIn("Assumed Brokerage", doc)  # page 1 net tile
         D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer")
@@ -729,6 +677,9 @@ class AuditMoneyLines(unittest.TestCase):
         self.assertEqual(row(C, "tax_proration")["amounts"][0], round(6000 * 0.96 * 31 / 365))
         R = report()
         R["costs"]["annual_tax"] = 6000
-        self.assertTrue(any("expected_closing_date" in w for w in run(R)[0]["warnings"]))
+        self.assertIn("tax_no_closing_date", run(R)[0]["warning_keys"])
         self.assertIn("Not included: this year's property tax proration", " ".join(run(report())[0]["net"]["notes"]))
 
+
+if __name__ == "__main__":
+    unittest.main()

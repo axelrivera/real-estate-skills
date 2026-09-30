@@ -142,9 +142,9 @@ class AppraisalForm(unittest.TestCase):
 
     def test_aga_with_rider_f_or_fha_is_flagged(self):
         _, o = offer("as_is", riders=["F", "Appraisal Gap Addendum"], appraisal_gap=5000, financing="conventional", down_pct=0.2)
-        self.assertTrue(any("not to use them together" in f["issue"] for f in o["flags"]))
+        self.assertIn("aga_with_rider_F", [f["topic"] for f in o["flags"]])
         _, o = offer("as_is", riders=["E", "AGA-1"], appraisal_gap=5000, financing="fha", down_pct=0.035)
-        self.assertTrue(any("FHA offer" in f["issue"] for f in o["flags"]))
+        self.assertIn("aga_loan_type", [f["topic"] for f in o["flags"]])
 
 
 class RiderWindowsAndPay(unittest.TestCase):
@@ -180,8 +180,8 @@ class RiderWindowsAndPay(unittest.TestCase):
         kw = dict(financing="fha", down_pct=0.035, seller_concessions=16000, buyer_broker_pct=0.025, price=400000)
         _, gg = offer("as_is", riders=["E", "GG"], **kw)
         _, ff = offer("as_is", riders=["E", "FF"], **kw)
-        self.assertFalse(any("exceed" in f["issue"] for f in gg["flags"]))
-        self.assertTrue(any("Rider FF broker credit" in f["issue"] for f in ff["flags"]))
+        self.assertNotIn("concessions_cap", [f["topic"] for f in gg["flags"]])
+        self.assertIn("concessions_cap", [f["topic"] for f in ff["flags"]])  # the credit is what puts it over
 
 
 class SellerEngine(unittest.TestCase):
