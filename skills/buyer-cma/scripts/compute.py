@@ -105,6 +105,16 @@ def _short(need, have):
     return round(need - have) if isinstance(have, (int, float)) and have and need > have + 1 else None
 
 
+CASH_TIGHT = 0.05  # CMA-217: cash to close within 5% of the buyer's cash leaves no room for a surprise
+
+
+def _tight(need, have):
+    """How much the buyer would have left when `need` fits but uses all but CASH_TIGHT of `have`, else None."""
+    if not isinstance(have, (int, float)) or not have or need > have + 1 or need < have * (1 - CASH_TIGHT):
+        return None
+    return max(round(have - need), 0)
+
+
 def flood_line(R, market):
     """CMA-6: the payment's flood insurance line. A quote (`costs.payment.flood_insurance_annual`) is counted; without
     one the row reads "get a quote" and the total leaves it out, never $0. The zone is `costs.payment.flood_zone`,
@@ -148,6 +158,7 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
                "over_cap": cap is not None and credit > price * cap + 1, "over_costs": credit > cc + 1,
                "appraisal_room": median_adjusted - price, "closing_costs": cc, "loan_taxes": sum(t["amount"] for t in taxes)}
         col["cash_short"] = _short(col["cash"], R["costs"].get("buyer_cash"))  # CMA-204
+        col["cash_left"] = _tight(col["cash"], R["costs"].get("buyer_cash"))  # CMA-217
         base = base or col
         col["extra"] = col["payment"] - base["payment"]
         saved = base["cash"] - col["cash"]
@@ -222,14 +233,21 @@ def history_stats(R, as_of):
         if price is not None and (not isinstance(price, (int, float)) or isinstance(price, bool)):
             raise ReportError(f"history.events[{i}].price must be a plain number (474900), not {price!r}.")
         rows.append({"i": i, "date": when, "mls": str(e.get("mls") or "").strip().upper() or None, "change": change,
-                     "price": price, "dom": e.get("dom")})
+                     "price": price, "dom": e.get("dom"), "cdom": e.get("cdom")})
     # the grid's order: newest first normally; any row that breaks the direction is out of date order
     newest_first = rows[0]["date"] >= rows[-1]["date"]
-    for a, b in zip(rows, rows[1:]):
-        if (b["date"] > a["date"]) if newest_first else (b["date"] < a["date"]):
-            notes.append(("history_order", f"history.events[{b['i']}] ({b['date']:%b %-d, %Y}) is out of date order in the "
-                          f"grid, next to {a['date']:%b %-d, %Y}. Check that row's date with the MLS before quoting it; it "
+    out_of_order = order_breaks(rows, newest_first)
+    for group in out_of_order:
+        if len(group) == 1:
+            r = rows[group[0]]
+            notes.append(("history_order", f"history.events[{r['i']}] ({r['date']:%b %-d, %Y}) is out of date order in the "
+                          "grid: without it the rest is in order. Check that row's date with the MLS before quoting it; it "
                           "was counted by its date."))
+        else:
+            a, b = rows[group[0]], rows[group[1]]
+            notes.append(("history_order", f"history.events[{a['i']}] ({a['date']:%b %-d, %Y}) and history.events[{b['i']}] "
+                          f"({b['date']:%b %-d, %Y}) are out of date order with each other in the grid: one of them is "
+                          "likely mistyped. Check both dates with the MLS before quoting them; each was counted by its date."))
     rows.sort(key=lambda r: (r["date"], -r["i"] if newest_first else r["i"]))
     subject_mls = subject_mls_number(R["subject"])
     newest_mls = next((r["mls"] for r in reversed(rows) if r["mls"]), None)
@@ -237,9 +255,11 @@ def history_stats(R, as_of):
         notes.append(("history_mls_mismatch", f"The newest history row is MLS {newest_mls}, but the listing is MLS "
                       f"{subject_mls}: check that the history is this home's current listing."))
     # the price changes: any row whose price differs from the asking price before it (a new listing restarts it)
-    cuts, increases, asking, first_price, first_listed = [], [], None, None, None
+    cuts, increases, asking, first_price, first_listed, last_contract = [], [], None, None, None, None
     for r in rows:
         r["delta"] = 0
+        if HISTORY_CHANGES[r["change"]] == "pending":  # CMA-214: the asking price when it last went under contract
+            last_contract = (r["date"], r["price"] if r["price"] is not None else asking)
         if r["change"] in HISTORY_NEW:
             asking = r["price"] if r["price"] is not None else asking
             first_price, first_listed = first_price or r["price"], first_listed or r["date"]
@@ -274,6 +294,14 @@ def history_stats(R, as_of):
         if status == "active" and since:
             days += max((stop - since).days, 0)
         with_dom = [r for r in lst["rows"] if isinstance(r.get("dom"), (int, float))]
+        with_cdom = [r for r in lst["rows"] if isinstance(r.get("cdom"), (int, float))]
+        if not with_dom and with_cdom:  # CMA-212: on the first listing CDOM is its DOM; later it spans (and may reset)
+            if n == 0:
+                with_dom = [{**r, "dom": r["cdom"]} for r in with_cdom]
+            else:
+                notes.append(("history_cdom", f"history.events[{with_cdom[-1]['i']}] has a cdom, which spans earlier "
+                              "listings and resets after a gap off the market: put that listing's own DOM in dom. Its "
+                              "days were counted by the calendar."))
         if with_dom:  # the MLS's own count wins, plus the days since while it's still for sale
             last = with_dom[-1]
             days = last["dom"] + (max((stop - last["date"]).days, 0) if status == "active" else 0)
@@ -293,8 +321,13 @@ def history_stats(R, as_of):
         "price_cuts": len(cuts), "price_increases": len(increases), "price_cut_total": total_cut,
         "price_cut_pct": round(total_cut / first_price, 4) if first_price and total_cut else 0,
         "price_increase_total": sum(increases), "failed_contracts": failed, "active_days": active_days,
+        "out_of_order": out_of_order,  # CMA-216: event indices, grouped
         "timeline": timeline,
     }
+    ask_now = R["subject"].get("list_price") or asking
+    if last_contract and last_contract[1] is not None and ask_now is not None:
+        stats.update(last_contract_date=last_contract[0].isoformat(), last_contract_price=last_contract[1],
+                     vs_last_contract=ask_now - last_contract[1])
     stats["display"] = {
         "price_cuts": _plural(len(cuts), "price cut"), "price_cut_count": str(len(cuts)),
         "price_increases": _plural(len(increases), "price increase"),
@@ -302,7 +335,29 @@ def history_stats(R, as_of):
         "failed_contracts": _plural(failed, "failed contract"), "active_days": _plural(active_days, "day"),
         "first_listed": f"{first_listed:%B %-d, %Y}",
     }
+    if "vs_last_contract" in stats:  # CMA-214: "$400 above", "$2,000 below" or "equal to" the last contract's asking
+        d = stats["vs_last_contract"]
+        stats["display"].update(last_contract_price=money(stats["last_contract_price"]),
+                                vs_last_contract=f"{money(abs(d))} {'above' if d > 0 else 'below'}" if d else "equal to")
     return stats, notes
+
+
+def order_breaks(rows, newest_first):
+    """CMA-216: the rows that break the grid's date order, as index groups into `rows`. Where dropping one row of an
+    out-of-order pair puts its neighbors back in order and dropping the other doesn't, that row alone; where either
+    would (or neither), both, since the dates can't say which one is mistyped."""
+    def ok(a, b):
+        return a["date"] >= b["date"] if newest_first else a["date"] <= b["date"]
+    groups = []
+    for j in range(len(rows) - 1):
+        if ok(rows[j], rows[j + 1]):
+            continue
+        drop_a = j == 0 or ok(rows[j - 1], rows[j + 1])  # without rows[j]
+        drop_b = j + 2 >= len(rows) or ok(rows[j], rows[j + 2])  # without rows[j + 1]
+        group = [j] if drop_a and not drop_b else [j + 1] if drop_b and not drop_a else [j, j + 1]
+        if not groups or not set(group) & set(groups[-1]):
+            groups.append(group)
+    return groups
 
 
 def subject_mls_number(s):
@@ -331,12 +386,14 @@ def rough_plan(R, market, median, lo, hi):
     span. Rough walk-away: the median adjusted value, rounded down to $1,000 (offer-plan.md: at or below the median).
     Rough opening: the median minus half the market's typical range width (5% of the median where none is built in),
     rounded down to $1,000: the bottom of a typical range centered on the median, where offer-plan.md opens. Rough
-    target: halfway between, to the nearest $1,000. None goes above the asking price."""
+    target: halfway between, to the nearest $1,000. None goes above the asking price. The range is rounded outward to
+    $1,000, like the plan (CMA-215)."""
     ask = R["subject"]["list_price"]
     width = market.get("cma.typical_range_width") or 0.05 * median
     walk = min(math.floor(median / 1000) * 1000, ask)
     opening = min(math.floor((median - width / 2) / 1000) * 1000, walk)
     target = min(max(round((opening + walk) / 2000) * 1000, opening), walk)
+    lo, hi = math.floor(lo / 1000) * 1000, math.ceil(hi / 1000) * 1000  # CMA-215: rough, so to $1,000, outward
     return {"range": {"low": lo, "high": hi, "display": f"{money(lo)} – {money(hi)}"},
             "opening": opening, "target": target, "walk_away": walk, "typical_width": width,
             "capped_at_asking": walk == ask and math.floor(median / 1000) * 1000 > ask,
@@ -352,7 +409,7 @@ def placeholder_values(median_adjusted, hist, credit=None):
     """CMA-203: every {name} report wording may use, filled in every field (not just page 1). With price-vs-credit
     scenarios, {credit_cash_per_5k} and {credit_monthly_per_5k}: what each $5,000 of credit saves at closing and adds
     to the monthly payment, from the first two scenarios with different credits."""
-    values = {"median_adjusted": money(median_adjusted), **((hist or {}).get("display") or {})}
+    values = {"median_adjusted": money(median_adjusted), **((hist or {}).get("display") or {})}  # CMA-214: + last contract
     cols = (credit or {}).get("columns") or []
     step = next((c for c in cols[1:] if c["credit"] != cols[0]["credit"]), None)
     if step:
@@ -544,10 +601,20 @@ def compute(R, market, homes):
             warn("cash_short", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
                  f"{money(c['cash'])}, {money(c['cash_short'])} more than the buyer's {money(cash)}: say so, and show a "
                  "scenario that fits (a larger credit, a lower price or another loan program).")
-    first = ((pay or {}).get("rows") or [{}])[0]  # the buyer's own program; the other columns are comparisons, flagged only
+    for c in (credit or {}).get("columns", []):
+        if c.get("cash_left") is not None:
+            warn("cash_tight", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
+                 f"{money(c['cash'])}, leaving only {money(c['cash_left'])} of the buyer's {money(cash)}: say so, and "
+                 "have the lender confirm the closing costs before the offer.")
+    rows = (pay or {}).get("rows") or [{}]
+    first = rows[0]  # the buyer's own program
     if first.get("cash_short"):
         warn("cash_short", f"The {first['label']} down payment alone ({money(first['cash_down'])}) is more than the "
              f"buyer's {money(cash)}.")
+    for r in rows[1:]:  # CMA-217: a comparison the buyer can't afford is noise; replace it with one that fits
+        if r.get("cash_short"):
+            warn("scenario_over_cash", f"The {r['label']} scenario needs {money(r['cash_down'])} down, more than the "
+                 f"buyer's {money(cash)}: drop it or replace it with a program that fits (costs.md).")
     hist, notes = history_stats(R, R.get("as_of") or date.today().isoformat())  # CMA-201, CMA-208
     for key, text in notes:
         warn(key, text)

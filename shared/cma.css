@@ -79,6 +79,7 @@ ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--brand);padding-
 .scatter .subj{fill:var(--subject);stroke:var(--bg);stroke-width:2}
 .scatter .lbl-subj{font-size:13px;font-weight:700;fill:var(--subject)}
 .scatter .lbl{font-size:12px;fill:var(--text)}
+.scatter .leader{stroke:var(--muted);stroke-width:.75}
 .scatter .lbl,.scatter .lbl-subj,.scatter .lbl-band{paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
 footer{margin-top:22px;padding-top:10px;border-top:2px solid var(--brand);font-size:9pt;color:var(--muted)}
 footer b{color:var(--text)}

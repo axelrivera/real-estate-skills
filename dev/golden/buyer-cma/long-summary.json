@@ -27,6 +27,7 @@
     "bb_short": 0,
     "cap": 13650.0,
     "cash": 36400.0,
+    "cash_left": null,
     "cash_short": null,
     "closing_costs": 13650.0,
     "credit": 0,
@@ -46,6 +47,7 @@
     "bb_short": 0,
     "cap": 13800.0,
     "cash": 31800.0,
+    "cash_left": null,
     "cash_short": null,
     "closing_costs": 13800.0,
     "credit": 5000,
@@ -65,6 +67,7 @@
     "bb_short": 0,
     "cap": 13950.0,
     "cash": 27200.0,
+    "cash_left": null,
     "cash_short": null,
     "closing_costs": 13950.0,
     "credit": 10000,
@@ -187,7 +190,12 @@
   "failed_contracts": 1,
   "first_list_price": 483900,
   "first_listed": "2026-01-16",
+  "last_contract_date": "2026-04-11",
+  "last_contract_price": 474500,
   "listings": 2,
+  "out_of_order": {
+   "count": 0
+  },
   "price_cut_pct": 0.0401,
   "price_cut_total": 19400,
   "price_cuts": 4,
@@ -288,7 +296,8 @@
     "note": null,
     "price": 474900
    }
-  ]
+  ],
+  "vs_last_contract": 400
  },
  "market_notes": {
   "count": 1

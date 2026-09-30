@@ -243,7 +243,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     placer.boxes.append(box)
     o.append(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>')
     o.append(placer.place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()),
-                          "lbl-subj", 14, 13, bold=True))
+                          "lbl-subj", 14, 13, bold=True, droppable=True))
     points = {}
     for h in sold:
         points[" ".join(h["address"].upper().split())] = (h["living_area"], h["close_price"])
@@ -259,6 +259,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
             "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
             "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
             "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
+            "labels_leader": placer.leaders, "labels_dropped": placer.dropped,  # CMA-218
             "crowded_labels": placer.clashing}
     return "\n".join(o), info
 
@@ -288,9 +289,13 @@ class _LabelPlacer:
     something that counts, so the render can say so, and `clashing` the ones that overlap another label."""
 
     NUDGES = (0, -10, 10)  # a left or right label may sit a line higher or lower beside its point
+    # CMA-218: when no side beside the point is clear, the label may sit farther off with a thin line back to it
+    LEADER_STEPS = (28, 42, 58)
+    LEADER_DIRS = ((1, 0), (-1, 0), (0, -1), (0, 1), (1, -1), (-1, -1), (1, 1), (-1, 1))
 
     def __init__(self, marks, bounds):
         self.marks, self.bounds, self.boxes, self.moved, self.overlapping, self.clashing = marks, bounds, [], [], [], []
+        self.leaders, self.dropped = [], []
 
     @staticmethod
     def box(px, py, side, text, gap, size, bold=False):
@@ -311,7 +316,38 @@ class _LabelPlacer:
         big += 2 * (x0 < bx0 - 4 or x1 > bx1 + 4 or y0 < by0 - 4 or y1 > by1 + 4)
         return big, len(covered) - sum(1 for r in covered if r >= 6)
 
-    def place(self, px, py, side, text, cls, gap, size, bold=False):
+    def _line_hits(self, px, py, ax, ay):
+        """Markers that count (comps, listings, the subject) the leader line from (px, py) to (ax, ay) runs through."""
+        vx, vy = ax - px, ay - py
+        n = 0
+        for cx, cy, r in self.marks:
+            if r < 6 or (cx, cy) == (px, py):
+                continue
+            t = max(0.0, min(1.0, ((cx - px) * vx + (cy - py) * vy) / (vx * vx + vy * vy)))
+            n += (px + t * vx - cx) ** 2 + (py + t * vy - cy) ** 2 < r * r
+        return n
+
+    def leader(self, px, py, text, gap, size, bold=False):
+        """(anchor x, anchor y, side, box) for a label set farther off its point, clear of everything that counts, or
+        None. The nearest clear spot wins, then the one grazing the fewest background dots."""
+        best = None
+        for step, dist in enumerate(self.LEADER_STEPS):
+            for i, (dx, dy) in enumerate(self.LEADER_DIRS):
+                k = dist / math.hypot(dx, dy)
+                ax, ay = px + dx * k, py + dy * k
+                side = "right" if dx > 0 else "left" if dx < 0 else "above" if dy < 0 else "below"
+                b = self.box(ax, ay, side, text, 3, size, bold)
+                big, small = self.hits(b, (px, py))
+                big += self._line_hits(px, py, ax, ay)
+                if not big and (best is None or (step, small, i) < best[0]):
+                    best = ((step, small, i), (ax, ay, side, b))
+            if best:
+                return best[1]
+        return None
+
+    def place(self, px, py, side, text, cls, gap, size, bold=False, droppable=False):
+        """The label's SVG. With `droppable` (the subject, which the legend names), a label with no clear spot even
+        on a leader line is left off and listed in `dropped`, rather than printed over a marker."""
         side = side if side in SIDES else "right"
         order = [side] + [s for s in SIDES if s != side]
         options = [(s, dy) for dy in self.NUDGES for s in order if dy == 0 or s in ("left", "right")]
@@ -320,6 +356,19 @@ class _LabelPlacer:
             big, small = self.hits(self.box(px, py + dy, s, text, gap, size, bold), (px, py))
             scored.append((big, small, i, s, dy))
         big, _, _, best, dy = min(scored)
+        if big:  # CMA-218: nothing beside the point is clear; try farther off with a leader line, then drop the subject's
+            lead = self.leader(px, py, text, gap, size, bold)
+            if lead:
+                ax, ay, lside, b = lead
+                self.leaders.append((text, lside))
+                self.boxes.append(b)
+                d = math.hypot(ax - px, ay - py)
+                ux, uy = (ax - px) / d, (ay - py) / d
+                return (f'<line x1="{px + ux * 9:.1f}" y1="{py + uy * 9:.1f}" x2="{ax - ux * 2:.1f}" y2="{ay - uy * 2:.1f}" '
+                        f'class="leader"/>' + _label(ax, ay, lside, text, cls, 3))
+            if droppable:
+                self.dropped.append(text)
+                return ""
         if (best, dy) != (side, 0):
             self.moved.append((text, side, best + ("" if not dy else ", a line higher" if dy < 0 else ", a line lower")))
         if big:

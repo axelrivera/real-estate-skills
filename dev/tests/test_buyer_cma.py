@@ -468,7 +468,11 @@ class GutCheck(unittest.TestCase):
     def test_rough_plan(self):
         out = self.comps_only()
         rough, median = out["rough"], out["median_adjusted"]
-        self.assertEqual((rough["range"]["low"], rough["range"]["high"]), (out["adjusted_min"], out["adjusted_max"]))
+        # CMA-215: the adjusted span, rounded outward to $1,000 like the rest of the rough plan
+        self.assertEqual((rough["range"]["low"], rough["range"]["high"]),
+                         (out["adjusted_min"] // 1000 * 1000, -(-out["adjusted_max"] // 1000) * 1000))
+        self.assertTrue(rough["range"]["low"] <= out["adjusted_min"] and rough["range"]["high"] >= out["adjusted_max"])
+        self.assertTrue(all(p.strip().endswith(",000") for p in rough["range"]["display"].split("–")))
         self.assertEqual(rough["walk_away"], median // 1000 * 1000)  # at or below the median
         self.assertEqual(rough["opening"], (median - 25000 / 2) // 1000 * 1000)  # Florida's typical range width, halved
         self.assertTrue(rough["opening"] <= rough["target"] <= rough["walk_away"])
@@ -590,7 +594,7 @@ class ScatterLabels(unittest.TestCase):
         buyer_render.build_html(copy.deepcopy(R), C, homes, {})
         # the fixture's subject label grazes only a background sale dot on the left; a line higher it would cover the
         # band's label, so it stays, and nothing that counts is covered
-        self.assertEqual(C["scatter_labels"], {"moved": [], "overlapping": []})
+        self.assertEqual(C["scatter_labels"], {"moved": [], "overlapping": [], "leader": [], "dropped": []})
 
     def test_another_label_counts(self):
         (cma,) = load("buyer-cma", "_shared.cma")
@@ -599,6 +603,112 @@ class ScatterLabels(unittest.TestCase):
         placer.place(100, 104, "right", "1471 Sedgefield", "lbl", 10, 12)  # a second point just below the first
         self.assertEqual(len(placer.moved), 1)
         self.assertEqual(placer.overlapping, [])
+
+
+class ThirdPass(unittest.TestCase):
+    """Eval iteration 4 fixes (CMA-212 to CMA-221)."""
+
+    def run_(self, change=None, events=None, locality_mls="O6433709"):
+        R = report()
+        if events is not None:
+            R["history"]["events"] = copy.deepcopy(events)
+            R["subject"]["locality"] = R["subject"]["locality"].rsplit("MLS ", 1)[0] + "MLS " + locality_mls
+        if change:
+            change(R)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def test_cdom_on_the_first_listing_counts_as_its_dom(self):
+        """CMA-212: the grid's "CDOM at cancel: 83" as cdom on the first listing gives 83 + 36, not the calendar's count."""
+        events = copy.deepcopy(EVAL_GRID)
+        events[3].pop("dom")
+        _, C = self.run_(events=events)
+        self.assertEqual(C["history"]["active_days"], 11 + 37 + 19 + 36)  # the calendar count, as the eval run got
+        events[3]["cdom"] = 83
+        _, C = self.run_(events=events)
+        self.assertEqual(C["history"]["active_days"], 83 + 36)
+        self.assertNotIn("history_cdom", C["warning_keys"])
+
+    def test_cdom_on_a_later_listing_warns(self):
+        """CMA-212: a later listing's CDOM spans the earlier one (and may reset), so it isn't used as its DOM."""
+        events = copy.deepcopy(EVAL_GRID)
+        events[0]["cdom"] = 119
+        _, C = self.run_(events=events)
+        self.assertIn("history_cdom", C["warning_keys"])
+        self.assertEqual(C["history"]["active_days"], 83 + 36)
+
+    def test_asking_vs_the_last_contract(self):
+        """CMA-214: asking $474,900 is $400 above the $474,500 it was listed at when the April contract was signed."""
+        R, C = self.run_(lambda R: R["subject"].__setitem__("list_price", 474900), events=EVAL_GRID)
+        h = C["history"]
+        self.assertEqual((h["last_contract_date"], h["last_contract_price"], h["vs_last_contract"]), ("2026-04-11", 474500, 400))
+        self.assertEqual(C["placeholders"]["vs_last_contract"], "$400 above")
+        self.assertEqual(C["placeholders"]["last_contract_price"], "$474,500")
+        R, C = self.run_(lambda R: R["subject"].__setitem__("list_price", 470000), events=EVAL_GRID)
+        self.assertEqual(C["placeholders"]["vs_last_contract"], "$4,500 below")
+        no_contract = [e for e in EVAL_GRID if e["change"] != "PNC"]
+        R, C = self.run_(lambda R: R["offer"]["bullets"].append("Asking is {vs_last_contract} the last contract."),
+                         events=no_contract)
+        self.assertNotIn("vs_last_contract", C["history"])
+        self.assertIn("unfilled_placeholder", C["warning_keys"])
+
+    def test_order_warning_names_the_rows_that_break_it(self):
+        """CMA-216: the eval grid's Feb 7 and Mar 5 rows are out of order with each other; either could be the typo, so
+        both are named, Feb 7 first. A row whose removal alone restores the order is named alone."""
+        _, C = self.run_(events=EVAL_GRID)
+        self.assertEqual(C["history"]["out_of_order"], [[7, 8]])
+        text = C["warnings"][C["warning_keys"].index("history_order")]
+        self.assertIn("history.events[7]", text)
+        self.assertIn("history.events[8]", text)
+        events = sorted(EVAL_GRID, key=lambda e: e["date"], reverse=True)
+        events[4] = {**events[4], "date": "2026-01-20"}  # the May 21 row typed as Jan 20
+        _, C = self.run_(events=events)
+        self.assertEqual(C["history"]["out_of_order"], [[4]])
+        self.assertEqual(C["warning_keys"].count("history_order"), 1)
+
+    def test_cash_tight_and_unaffordable_scenarios(self):
+        """CMA-217: cash to close within 5% of the buyer's cash warns cash_tight; a comparison scenario whose down
+        payment alone is over the buyer's cash warns scenario_over_cash."""
+        R, C = self.run_()
+        need = C["credit"]["columns"][0]["cash"]
+        R, C = self.run_(lambda R: R["costs"].__setitem__("buyer_cash", round(need + 500)))
+        self.assertEqual(C["credit"]["columns"][0]["cash_left"], round(round(need + 500) - need))
+        self.assertIn("cash_tight", C["warning_keys"])
+        self.assertIn("scenario_over_cash", C["warning_keys"])  # Conventional, 20% Down
+        self.assertEqual(C["warning_keys"].count("scenario_over_cash"), 1)
+        R, C = self.run_(lambda R: R["costs"].__setitem__("buyer_cash", 200000))
+        self.assertNotIn("cash_tight", C["warning_keys"])
+        self.assertNotIn("scenario_over_cash", C["warning_keys"])
+
+    def test_leader_line_when_no_side_is_clear(self):
+        """CMA-218: a label boxed in on every side sits farther off with a thin line to its point."""
+        (cma,) = load("buyer-cma", "_shared.cma")
+        ring = [(70, 100, 6.5), (130, 100, 6.5), (140, 80, 6.5), (140, 120, 6.5)]  # beside, above and below are covered
+        placer = cma._LabelPlacer([(100, 100, 10)] + ring, (0, 0, 400, 400))
+        svg = placer.place(100, 100, "left", "517 Hickorywood", "lbl-subj", 14, 13, bold=True, droppable=True)
+        self.assertEqual(len(placer.leaders), 1)
+        self.assertEqual((placer.overlapping, placer.dropped), ([], []))
+        self.assertIn('class="leader"', svg)
+
+    def test_subject_label_dropped_when_even_a_leader_fails(self):
+        """CMA-218: with no clear spot anywhere, the subject's label is left off (the legend names it); a callout
+        without `droppable` still prints and is reported as overlapping."""
+        (cma,) = load("buyer-cma", "_shared.cma")
+        grid = [(x, y, 6.5) for x in range(0, 401, 12) for y in range(0, 401, 12)]
+        placer = cma._LabelPlacer([(100, 100, 10)] + grid, (0, 0, 400, 400))
+        self.assertEqual(placer.place(100, 100, "left", "517 Hickorywood", "lbl-subj", 14, 13, bold=True, droppable=True), "")
+        self.assertEqual(placer.dropped, ["517 Hickorywood"])
+        self.assertTrue(placer.place(200, 200, "right", "622 Spring Oaks", "lbl", 10, 12))
+        self.assertEqual(placer.overlapping, ["622 Spring Oaks"])
+
+    def test_no_profile_is_a_chat_check_only(self):
+        """CMA-221: render names the missing name and brokerage for the chat; the PDF leaves them out."""
+        self.assertIn("no profile", buyer_render.profile_check(profiles.load_agent(None)))
+        self.assertIsNone(buyer_render.profile_check({"name": "Dana Reyes", "brokerage": "Lakeside Realty"}))
+        self.assertIn("profile incomplete", buyer_render.profile_check({"name": "Dana Reyes"}))
+        R, C = self.run_()
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], profiles.load_agent(None))
+        self.assertNotIn("no profile", doc)
 
 
 class CreditPlaceholders(unittest.TestCase):

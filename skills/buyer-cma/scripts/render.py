@@ -227,7 +227,8 @@ def body(R, C, homes, agent, L):
     if sc and homes:
         svg, info = cma.scatter(homes, sc, s["sqft"], s["list_price"], s.get("mls_address", s["address"]), (bl["low"], bl["high"]), L,
                                 [cd["address"] for cd in R["comps"]["cards"]])
-        C["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"]}  # CMA-205
+        C["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"],  # CMA-205
+                               "leader": info["labels_leader"], "dropped": info["labels_dropped"]}  # CMA-218
         trend =money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
@@ -326,6 +327,16 @@ def build_html(R, C, homes, agent):
     return doc.replace("<html>", '<html lang="en">', 1), L
 
 
+def profile_check(agent):
+    """CMA-221 (as seller-cma's CMA-263): a chat reminder when the name or brokerage is missing, or None. Never printed
+    in the PDF: it simply leaves the missing parts out."""
+    gaps = [w for w, f in (("agent name", "name"), ("brokerage", "brokerage")) if not agent.get(f)]
+    if not gaps:
+        return None
+    return (f"{'no profile' if len(gaps) == 2 else 'profile incomplete'}: {' and '.join(gaps)} missing, so the PDF "
+            "carries none. Ask the agent for them (or use their saved profile with --profile) and render again.")
+
+
 def build(R, fmt, out_dir, ctx):
     market, homes = compute.load_inputs(R, ctx.get("mls"), ctx.get("data_file"))
     C = compute.compute(R, market, homes)
@@ -348,11 +359,19 @@ def build(R, fmt, out_dir, ctx):
     labels = C.get("scatter_labels") or {}
     for text, asked, used in labels.get("moved", []):
         print(f"Chart label {text!r}: asked for {asked}, placed {used} to clear the markers (information).", file=sys.stderr)
+    for text, side in labels.get("leader", []):
+        print(f"Chart label {text!r}: no clear spot beside its point, so it sits farther off to the {side} with a thin "
+              "line to it (information).", file=sys.stderr)
+    for text in labels.get("dropped", []):
+        print(f"Chart label {text!r} left off: no clear spot even on a line, and the legend names the home "
+              "(information).", file=sys.stderr)
     for text in labels.get("overlapping", []):
         print(f"Check: chart label {text!r} still overlaps a marker or another label: shorten it or pick another side.",
               file=sys.stderr)
     for w in C["warnings"]:
         print(f"Check: {w}", file=sys.stderr)
+    if profile_check(agent):
+        print(f"Check: {profile_check(agent)}", file=sys.stderr)
     return [path]
 
 
