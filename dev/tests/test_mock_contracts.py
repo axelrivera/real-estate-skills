@@ -27,6 +27,10 @@ if HAVE_TOOLS:
     import scenario as sc  # noqa: E402
 
 
+# Slow tier: the tests over ~2.5 s run only with RUN_SLOW=1 (make package / make release set it; RUN_SLOW=1 make test).
+SLOW = unittest.skipUnless(os.environ.get("RUN_SLOW") == "1", "slow tier: set RUN_SLOW=1 to run it")
+
+
 def spec(name):
     with open(os.path.join(MOCK, "scenarios", f"{name}.json")) as f:
         return json.load(f)
@@ -521,12 +525,14 @@ class Packages(unittest.TestCase):
         self.assertIn("X", [w[4] for w in pdf[b["page"] - 1].get_text("words", clip=pymupdf.Rect(b["rect"]))])
         self.assertNotIn("tenants", S["key"]["contract"])  # a seller's rent-back isn't a tenancy
 
+    @SLOW
     def test_scanned_copy_has_no_text_layer(self):
         r = self.build({"name": "scan", "form": "as_is", "financing": "cash"}, scan=True)
         scan = pymupdf.open(r["scanned"])
         self.assertEqual(len(scan), r["pages"])
         self.assertEqual(scan[0].get_text().strip(), "")
 
+    @SLOW
     def test_every_scenario_builds(self):
         for f in sorted(os.listdir(os.path.join(MOCK, "scenarios"))):
             with self.subTest(scenario=f):
@@ -534,6 +540,7 @@ class Packages(unittest.TestCase):
                 self.assertGreater(r["pages"], 10)
                 self.assertTrue(os.path.exists(r["answer_key"]))
 
+    @SLOW
     def test_keys_render_through_the_skills(self):
         """Every starter's key is the file its skill reads: a deal file renders through contract-timeline, an offer's
         listing file through seller-offer-review."""

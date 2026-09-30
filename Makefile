@@ -126,6 +126,9 @@ samples:
 	@$(PY) dev/samples_readme.py
 	@$(PY) dev/samples_diff.py --revert || true  # keep only real changes; build-time stamps alone are restored
 
+# make test skips the slow mock-contract tests; a build runs them (RUN_SLOW=1 make test does too)
+export RUN_SLOW
+package package-skills: RUN_SLOW = 1
 package: check-sync test lint-skills py311 style-check
 	@$(PY) dev/package.py plugin
 
