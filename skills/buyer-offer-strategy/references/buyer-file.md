@@ -44,7 +44,7 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 | `deadline` | offers due ("2026-09-25 17:00" or "Fri Sep 25 · 5 PM"; the report prints both as "Fri Sep 25 · 5 PM"); the expected Effective Date is the day after. A weekday alone ("Friday 5pm") is the next one after `analysis_date`: state the date in chat | — |
 | `backup` | seller already has an accepted contract | — |
 
-Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM is over 1.5× the median or the price was cut.
+Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM is over 1.5× the median or the price was cut. The Market Read names the signals that set it and what the others read ("from 9 days on market vs. 34 median; sale-to-list 98.1% reads normal").
 
 ## listing_side
 
@@ -66,10 +66,10 @@ Top level, next to `buyer`. `rate` (interest rate as a **percent**: `6.5` for 6.
 | `cash_available` | down payment + 4% of list | **high** |
 | `reserve_floor` | $2,000 | med |
 | `max_payment` | none | — |
-| `closing_cost_pct` | market buyer closing costs + 0.5% prepaids (Florida 3.5%); cash: half the market figure; no market: 3.5% / 1.5% | low |
+| `closing_cost_pct` | market buyer closing costs + 0.5% prepaids; cash: half the market figure; no market: 3.5% / 1.5%. The market's loan taxes (Florida: documentary stamps on the note and intangible tax) are added on top, and the report says "of price plus loan taxes" | low |
 | `approval` | `preapproval` (`pof_verified` for cash). Values: `none`, `prequal`, `preapproval`, `du_approved` (pre-approval with an automated DU/LP approval), `full_uw` (underwriter approval), `pof_verified` (cash) | — |
 | `lender_called` | false. True only when the agent says they talked to the lender: it prints "lender confirmed" on the worksheet | — |
-| `insurance_quote` | false. True when the buyer already has a quote for this address; only a quote in hand is scored (a planned one is a to-do) | — |
+| `insurance_quote` | false, unless `costs.insurance_annual` is given: a premium entered there counts as a quote in hand (set `false` when that number is only an estimate). True when the buyer already has a quote for this address; `"planned"` only when the agent says one is coming. Only a quote in hand is scored; a planned one is a to-do | — |
 | `va_later_use`, `va_exempt` | VA only: a later use of the benefit (higher funding fee under 5% down), or exempt from the fee | false |
 | `lender_min_close_days` | 35 financed / 21 cash | — |
 | `agent_track` | `average`: how a listing agent would rate the buyer's agent | — |

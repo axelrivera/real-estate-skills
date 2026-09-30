@@ -132,16 +132,6 @@ def page1(r, s):
 <div class="fine" style="margin-top:4px">*Seller net before mortgage payoff, as a listing agent would calculate it. Outlook is an estimate from the offer's terms and market signals; other offers and the seller's priorities are unknown. Not legal or financial advice.</div>'''
 
 
-RESP = {"Price": "Inside the value range; the appraisal won't support much more",
-        "Seller Concessions": "These cover closing costs your cash can't; could trade part of them for price",
-        "Escrow Deposit": "Can go higher: refundable during the inspection period and adds no cost",
-        "Inspection Period": "Needed for a full inspection; offer to share reports quickly",
-        "Appraisal Gap Coverage": "Limited by your reserve; any more is your call",
-        "Loan Approval": "Provide the full pre-approval letter", "Closing Date": "Match it if the lender confirms",
-        "Buyer-Broker Compensation": "Per the buyer-broker agreement; discuss before submitting",
-        "Home Warranty": "Already not requested", "Escrow / Title Agent": "Fine: seller's title company"}
-
-
 def details(r, res):
     B, O = r["B"], r["O"]
     K = list(O)
@@ -189,15 +179,16 @@ def details(r, res):
     floor = B["buyer"]["reserve_floor"]
     cr += f'<tr class="total2"><td>Left in Reserve (of {money(B["buyer"]["cash_available"])})</td>' + "".join(
         f'<td class="n {"worst" if r["cash"][k]["reserve"] < floor else "best"}">{acct(r["cash"][k]["reserve"])}</td>' for k in K) + "</tr>"
-    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.deposit_risk(O[k])[0]:%b %-d} · {money(O[k]["deposit"])}</td>' for k in K) + "</tr>"
-    if any(ST.appraisal_until(O[k], B) for k in K):  # OFR-210: the appraisal protection on its own row
-        cr += '<tr><td>Low-Appraisal Protection</td>' + "".join(f'<td class="n">{esc(ST.appraisal_until(O[k], B) or "—")}</td>' for k in K) + "</tr>"
+    # OFR-219: the date as the contract's weekend and holiday rule leaves it
+    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}</td>' for k in K) + "</tr>"
+    if any(ST.appraisal_until(O[k], B, r["costs"]) for k in K):  # OFR-210: the appraisal protection on its own row
+        cr += '<tr><td>Low-Appraisal Protection</td>' + "".join(f'<td class="n">{esc(ST.appraisal_until(O[k], B, r["costs"]) or "—")}</td>' for k in K) + "</tr>"
     M, V = B["market"], B["value"]
     mk = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' if not V.get("assumed") else "Not provided",
            V.get("source") if not V.get("assumed") else None),  # the source on its own line, so the range never wraps
           ("Sale-to-List", f'{M["sale_to_list"] * 100:.1f}%' if M.get("sale_to_list") else "—"), ("Months of Supply", M.get("months_supply") or "—"),
           ("Median Days on Market", M.get("median_dom") or "—"), ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
-          ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"), ("Market Read", B["competition"]["heat"].title())]
+          ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"), ("Market Read", B["competition"]["heat"].title(), B["competition"].get("heat_basis"))]  # OFR-226: and why
     if V.get("median_adjusted"):
         mk.insert(1, ("Median Adjusted Comp", money(V["median_adjusted"])))
     plan = B.get("cma_offer_plan") or {}
@@ -206,8 +197,10 @@ def details(r, res):
                    + (f' · walk away {money(plan["walk_away"])}' if plan.get("walk_away") else "")))
     mkt = "".join(f"<tr><td>{m[0]}</td><td><b>{esc(str(m[1]))}</b>"
                   + (f"<br><small>{esc(str(m[2]))}</small>" if len(m) > 2 and m[2] else "") + "</td></tr>" for m in mk)
-    pb = "".join(f'<tr><td>{esc(t)}</td><td>{esc(a)}</td><td class="caution">{esc(b)}</td><td>{esc(RESP.get(t, "Discuss with the buyer"))}</td></tr>'
-                 for t, a, b, _ in rec["counter_rows"] if t != "Time for Acceptance") or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
+    # OFR-214: an ask past one of the buyer's limits is answered with that limit (strategy.pushback)
+    pb = "".join(f'<tr><td>{esc(p["term"])}</td><td>{esc(p["yours"])}</td><td class="caution">{esc(p["ask"])}</td>'
+                 f'<td{" class=risk" if p["breaks"] else ""}>{esc(p["response"])}</td></tr>'
+                 for p in res["pushback"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
     if r["missing"]:
         asum = ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th><th>Where</th><th>What Was Assumed</th></tr></thead><tbody>'
                 + "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{a["impact"].title()}</span></td><td>{esc(a["scope"].title())}</td><td>{esc(a["why"])}</td></tr>'
@@ -238,7 +231,7 @@ def details(r, res):
  <div><h2>6 · Likely Pushback <span class="h2s">On the Recommended Offer</span></h2><div class="tbl"><table><colgroup><col style="width:24%"><col style="width:19%"><col style="width:19%"></colgroup>
  <thead><tr><th>Term</th><th>Yours</th><th>They May Ask</th><th>Response</th></tr></thead><tbody>{pb}</tbody></table></div></div></div>
 <h2>7 · Assumptions &amp; Data to Confirm</h2>{asum}
-<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {B["buyer"]["closing_cost_pct"]:.1%} of price; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div>'''
+<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {esc(ST.closing_cost_basis(B))}; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div>'''
 
 
 def options_html(r, agent, sample):
