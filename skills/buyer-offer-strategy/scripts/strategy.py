@@ -30,6 +30,8 @@ NATIONAL_INSURANCE_RATE = 0.009
 NATIONAL_CLOSING_PCT = {"financed": 0.035, "cash": 0.015}
 PREPAIDS_PCT = 0.005  # prepaid interest, insurance and escrows on top of the market's closing costs (financed)
 OFFER_QUESTIONS = ("contract_name", "escalation_accepted")  # OFR-222: shape the offer itself, so asked first in to_confirm
+# OFR-239: a listing agent's highest-and-best call, as the agent words it in competition.note
+HIGHEST_AND_BEST = re.compile(r"highest\s*(?:and|&)\s*best", re.I)
 
 
 def _d(v):
@@ -58,6 +60,8 @@ def apply_cma(B, h):
                 "hoa_monthly", "flood_zone", "dom", "annual_tax"):
         if s.get(key) not in (None, "") and P.get(key) in (None, ""):
             P[key] = s[key]
+            if key == "dom":  # OFR-242: the handoff's days on market were counted on its as_of date, so age them
+                B["_dom_aged"] = age_dom(P, s["dom"], h.get("as_of"), _d(B.get("analysis_date")) or date.today())
     # CMA-111: the tax the CMA computed for the buyer (millage and homestead), so both reports show the same payment
     if K.get("tax_rate") is None and K.get("total_mills") is None and s.get("total_mills") is not None:
         for key in ("school_mills", "total_mills", "homestead"):
@@ -88,6 +92,19 @@ def apply_cma(B, h):
     if h.get("offer_plan") and not B.get("cma_offer_plan"):
         B["cma_offer_plan"] = h["offer_plan"]
     return B
+
+
+def age_dom(P, dom, as_of, today):
+    """OFR-242: days on market from a CMA handoff, moved forward by the days since its as_of date. Sets P['dom'] and
+    returns (the handoff's figure, its date, days added) when it moved, else None."""
+    try:
+        since = (today - _d(as_of)).days if as_of else 0
+    except ValueError:
+        return None
+    if since <= 0 or not isinstance(dom, (int, float)):
+        return None
+    P["dom"] = dom + since
+    return dom, _d(as_of), since
 
 
 def prepare(B, A, market=None):
@@ -175,9 +192,17 @@ def prepare(B, A, market=None):
     BU["lender_min_close_days"] = BU.get("lender_min_close_days") or (21 if fin == "cash" else 35)
     BU.setdefault("agent_track", "average")
     B["payment_assumed"] = []  # OFR-228: the payment inputs that are estimates, named when the payment limit sets the price
+    # OFR-241: the skill looks up the latest Freddie Mac weekly 30-year rate when the agent gives none (costs.rate with
+    # costs.rate_source naming the week); the built-in rate is only the offline fallback, labeled Assumed
     if K.get("rate") is None:
         B["payment_assumed"].append(f"an assumed {DEFAULT_RATE:g}% rate")
-    K["rate"] = oe.given(K, "rate", DEFAULT_RATE, A, "costs", f"Interest rate not provided: assumed {DEFAULT_RATE}% (use the lender's quote)", "low")
+    elif K.get("rate_source"):
+        B["payment_assumed"].append(f"a {K['rate']:g}% rate ({K['rate_source']})")
+        A.add("costs", "rate_source", K["rate"], f"Interest rate: {K['rate']:g}%, the {K['rate_source']}, not a lender's "
+              "quote: use the buyer's quote when there is one", "low")
+    K["rate"] = oe.given(K, "rate", DEFAULT_RATE, A, "costs", f"Interest rate not given and not looked up: Assumed "
+                         f"{DEFAULT_RATE:g}%, the offline fallback (use the lender's quote, else the latest Freddie Mac "
+                         "weekly 30-year rate)", "low")
     if not 1 <= K["rate"] < 20:
         raise oe.OfferError(f"costs.rate is {K['rate']}: write the interest rate as a percent, 6.5 for 6.5%.")
     if K.get("insurance_annual") is not None and BU.get("insurance_quote") is None:
@@ -214,8 +239,10 @@ def prepare(B, A, market=None):
     elif P.get("annual_tax") in (None, ""):
         # OFR-201: the seller's proration uses the same rate as the buyer's payment, never a second (fallback) rate
         B["seller_annual_tax"] = round(tax["annual"])
-        A.add("property", "annual_tax", B["seller_annual_tax"], f"Seller's tax bill not given: the seller's proration uses the "
-              f"same tax as the payment ({tax['basis']}, {money(B['seller_annual_tax'])}/yr at list). Get the bill: the "
+        # OFR-243: an estimate from the buyer's rate at the list price, labeled so on the net sheet, not the seller's bill
+        A.add("property", "annual_tax", B["seller_annual_tax"], f"Seller's tax bill not given: the seller's proration is "
+              f"an estimate, the buyer's tax rate ({tax['basis']}) applied to the list price ({money(B['seller_annual_tax'])}/yr), "
+              "not the seller's actual bill, which can differ (another exemption or assessed value). Get the bill: the "
               "proration moves the seller's net", "med")
     if K.get("tax_rate") is None and tax["annual"] is not None and K.get("homestead") is None:  # OFR-124
         A.add("costs", "homestead", True, "Property tax assumes the buyer files for the homestead exemption (a primary "
@@ -236,6 +263,7 @@ def prepare(B, A, market=None):
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
     LS["listing_fee_pct"] = LS.get("listing_fee_pct")
     B["analysis_date"] = today
+    weekday_deadlines(B, today, A)  # OFR-244: "Friday 5 PM" to a date, before any date counts from it
     B["effective_date"] = effective_date(B, today, A)  # OFR-123: dates count from the expected acceptance
     # One contract form for the options, the listing-side scoring and the worksheet: AS IS and Standard math never mix.
     W = B.get("worksheet") or {}
@@ -307,6 +335,44 @@ def deadline_date(text, today):
     except ValueError:
         return None
     return d if d >= today - timedelta(days=31) else date(today.year + 1, d.month, d.day)  # a January deadline in December
+
+
+_WEEKDAY = re.compile(r"\b(mon|tue|wed|thu|fri|sat|sun)(?:day|s|sday|nesday|rsday|urday|r|rs)?\b\.?", re.I)
+_WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+_TIME = re.compile(r"\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\b\.?", re.I)
+
+
+def weekday_date(text, today):
+    """OFR-244: a deadline given only as a weekday ("Friday 5pm", "Fri 6 PM") as (date, (hour, minute) or None): the
+    next such day from `today` (today counts). None when the text has a full date, or no weekday."""
+    s = str(text or "")
+    if deadline_date(s, today) or not _WEEKDAY.search(s):
+        return None
+    wd = _WEEKDAYS.index(_WEEKDAY.search(s).group(1).lower())
+    d = today + timedelta(days=(wd - today.weekday()) % 7)
+    m = _TIME.search(s)
+    if m:
+        return d, (int(m.group(1)) % 12 + (12 if m.group(3).lower() == "p" else 0), int(m.group(2) or 0))
+    m = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", s)  # "Friday 17:00"
+    return d, ((int(m.group(1)), int(m.group(2))) if m else None)
+
+
+def weekday_deadlines(B, today, A):
+    """OFR-244: a weekday-only offer deadline or Time for Acceptance becomes "YYYY-MM-DD HH:MM". When the day it resolves
+    to is more than 5 days out (so today is the day after that weekday), the agent may have meant the one just passed:
+    the resolved date is recorded as an assumption to confirm."""
+    for scope, holder, key, name in (("competition", B.get("competition") or {}, "deadline", "Offer deadline"),
+                                     ("worksheet", B.get("worksheet") or {}, "acceptance_deadline", "Time for Acceptance")):
+        hit = weekday_date(holder.get(key), today)
+        if not hit:
+            continue
+        (d, t), given_ = hit, holder[key]
+        holder[key] = f"{d}" + (f" {t[0]:02d}:{t[1]:02d}" if t else "")
+        ahead = (d - today).days
+        if ahead > 5:
+            last = d - timedelta(days=7)
+            A.add(scope, "deadline", holder[key], f"{name} \"{given_}\" read as {d:%a %b} {d.day}, {ahead} days out. If the "
+                  f"listing agent meant {last:%a %b} {last.day}, it has already passed: confirm the date", "med")
 
 
 _ISO_WHEN = re.compile(r"(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}):(\d{2}))?")
@@ -531,7 +597,26 @@ def aga_valuation(t, fin):
 
 def run_engine(B, costs, variants):
     R = oe.analyze(engine_data(B, variants), market=costs.market)
+    if B["property"].get("annual_tax") in (None, ""):
+        mark_estimate(R, "tax")  # OFR-243: no seller's bill, so the proration is an estimate on every net sheet
     return R, {o["id"]: o for o in R["offers"]}
+
+
+def mark_estimate(x, key):
+    """OFR-243: mark as Estimate the label of every net-sheet line `key` ((key, label, amount) tuples) in the engine
+    result `x`, in place: "Property Tax Proration (Jan 1 to Closing, Estimate)"."""
+    def marked(label):
+        return label[:-1] + ", Estimate)" if label.endswith(")") else label + " (Estimate)"
+
+    if isinstance(x, dict):
+        if isinstance(x.get("lines"), list):
+            x["lines"] = [(ln[0], marked(ln[1]), *ln[2:])
+                          if isinstance(ln, tuple) and ln[0] == key and "Estimate" not in ln[1] else ln for ln in x["lines"]]
+        for v in x.values():
+            mark_estimate(v, key)
+    elif isinstance(x, list):
+        for v in x:
+            mark_estimate(v, key)
 
 
 def ci(o, target_net, lp):
@@ -811,6 +896,10 @@ def analyze(B_in, market=None, cma=None):
         A.add("value", "cma_side", "other side", B0["_cma_side_note"], "high")
     if B0.get("_cma_address_note"):  # CMA-102
         A.add("value", "cma_address", "another property", B0["_cma_address_note"], "high")
+    if B0.get("_dom_aged"):  # OFR-242
+        was, as_of, since = B0["_dom_aged"]
+        A.add("property", "dom", B0["property"]["dom"], f"Days on market: {B0['property']['dom']}, the CMA's {was} as of "
+              f"{as_of:%b} {as_of.day} plus the {since} day{'s' if since != 1 else ''} since", "low")
     B, costs = prepare(B0, A, market)
     lvl = B["competition"]["level"]
     rec, why = build_offer(B, costs)
@@ -819,17 +908,13 @@ def analyze(B_in, market=None, cma=None):
         rec[k] = v
         why[k] = "Agent's choice"
     if B["contract_form"] not in cf.FRBAR:  # OFR-222: a best-effort contract's own questions, asked before cost details
-        BU_ = B["buyer"]
         if not (B.get("worksheet") or {}).get("contract_name"):
             A.add("worksheet", "contract_name", None, "Contract form not named: ask which form (and version) the offer goes "
                   "on; the worksheet finds each entry by its name", "med")
-        if rec.get("escalation") or (lvl >= 2 and BU_["financing"] in ("cash", "conventional") and BU_["down_pct"] >= 0.10):
-            A.add("competition", "escalation_accepted", None, "Ask the listing agent whether they accept an escalation "
-                  "clause or want one flat number; not every contract has an escalation form", "med")
     if "payment" in why.get("price", ""):  # the payment limit sets the price, so its inputs matter most
-        for a in A.items:
-            if a["field"] in ("rate", "insurance_annual", "property_tax") and a["impact"] == "low":
-                a["impact"] = "med" if a["field"] != "rate" else "high"
+        for a in A.items:  # OFR-241: an assumed rate is high; a looked-up weekly rate (rate_source) is med
+            if a["field"] in ("rate", "rate_source", "insurance_annual", "property_tax") and a["impact"] == "low":
+                a["impact"] = "high" if a["field"] == "rate" else "med"
     promoted = fuller = None
     for _ in range(2):  # "best" = strongest outlook inside the limits at the lowest cost that reaches it
         variants, lc_why = option_set(B, costs, rec)
@@ -844,6 +929,10 @@ def analyze(B_in, market=None, cma=None):
             variants, lc_why = [("recommended", rec), ("stronger", fuller)], {}
             R, O = run_engine(B, costs, variants)
             break
+    # OFR-240: the escalation question only when the offer escalates; with one flat number it would contradict the advice
+    if B["contract_form"] not in cf.FRBAR and rec.get("escalation"):
+        A.add("competition", "escalation_accepted", None, "Ask the listing agent whether they accept an escalation "
+              "clause or want one flat number; not every contract has an escalation form", "med")
     lp = B["property"]["list_price"]
     tgt = O["recommended"]["target"]["net_adj"]
     limits = profiles.loan_limits()  # OFR-11: jumbo and FHA limits
@@ -937,7 +1026,28 @@ def analyze(B_in, market=None, cma=None):
     res["constraints"] = cons
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
+    res["reply_lines"] = reply_lines(B, rec)
     return res
+
+
+def highest_and_best(C):
+    """OFR-239: the listing agent called for highest and best (`competition.highest_and_best`, or said so in the note)."""
+    hb = C.get("highest_and_best")
+    return bool(hb) if hb is not None else bool(HIGHEST_AND_BEST.search(str(C.get("note") or "")))
+
+
+def reply_lines(B, rec):
+    """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `flat_number` (a
+    highest-and-best round with no escalation: why one flat number) and `contract_terms` (a contract that isn't FR/BAR:
+    the form-specific terms come from the agent's contract, never from Florida's rules)."""
+    out = []
+    if highest_and_best(B["competition"]) and not rec.get("escalation"):
+        out.append({"key": "flat_number", "text": "In a highest-and-best round many listing agents want one flat number, so "
+                    f"{money(rec['price'])} goes in as the single price, with no escalation clause."})
+    if B["contract_form"] not in cf.FRBAR:
+        out.append({"key": "contract_terms", "text": "Any option fee, and the appraisal terms of the financing addendum, "
+                    "come from your contract: fill them from your forms, not from this analysis."})
+    return out
 
 
 # --- formatted views (shared by the markdown template and the PDF) ---------------
@@ -1511,14 +1621,24 @@ def result(r, variant=None):
         "worksheet": worksheet(r, variant),
         # OFR-212: what to ask first, in the order the chat's one question uses: the listing agent's competition read (the
         # most valuable input, offer-rules.md) when it was inferred, then the rest by impact. OFR-222: within an impact,
-        # the questions that shape the offer itself (the contract form, escalation) come before cost details
-        "to_confirm": [a["why"] for a in sorted(r["missing"], key=lambda a: ((a["scope"], a["field"]) != ("competition", "level"),
-                                                                            oe.IMPACT_ORDER[a["impact"]], a["field"] not in OFFER_QUESTIONS))
+        # the questions that shape the offer itself (the contract form, escalation) come before cost details. OFR-244: a
+        # weekday deadline that may already have passed comes right after the competition read
+        "to_confirm": [a["why"] for a in sorted(r["missing"], key=lambda a: (confirm_tier(a), oe.IMPACT_ORDER[a["impact"]],
+                                                                            a["field"] not in OFFER_QUESTIONS))
                        if a["impact"] in ("high", "med")][:4],
+        # OFR-239: lines the chat reply carries outside its length cap ([{key, text}])
+        "reply_lines": r.get("reply_lines") or [],
         "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in r["missing"]],
         "market_notes": list(r["costs"].notes),
         **cf.support([B["contract_form"]]),  # chat only: the best-effort line for a contract that isn't FR/BAR
     }
+
+
+def confirm_tier(a):
+    """to_confirm's first sort key: the inferred competition read (0), a weekday deadline to confirm (1), the rest (2)."""
+    if (a["scope"], a["field"]) == ("competition", "level"):
+        return 0
+    return 1 if a["field"] == "deadline" else 2
 
 
 def main(argv=None):

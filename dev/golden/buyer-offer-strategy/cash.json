@@ -3754,6 +3754,9 @@
   "price": 402000,
   "seller_concessions": 0
  },
+ "reply_lines": {
+  "count": 0
+ },
  "sample": true,
  "target": 378751,
  "terms": {

@@ -16,6 +16,8 @@
 
 {{each summary.absent: "No " + option + " Option: " + why, one line each; skip when empty}}
 
+{{each reply_lines: text, one line each; skip when empty}}
+
 **Your Exposure (Recommended):** {{each summary.exposure: label + " " + value, joined with " · "}}
 
 {{each summary.constraints: "**Limit:** " + text}}

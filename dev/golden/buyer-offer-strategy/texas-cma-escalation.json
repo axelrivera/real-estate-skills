@@ -3316,12 +3316,6 @@
    "scope": "buyer"
   },
   {
-   "field": "escalation_accepted",
-   "impact": "med",
-   "scope": "competition",
-   "value": null
-  },
-  {
    "field": "offer_norms",
    "impact": "med",
    "scope": "listing"
@@ -3404,12 +3398,6 @@
    "scope": "buyer"
   },
   {
-   "field": "escalation_accepted",
-   "impact": "med",
-   "scope": "competition",
-   "value": null
-  },
-  {
    "field": "offer_norms",
    "impact": "med",
    "scope": "listing"
@@ -3477,6 +3465,14 @@
   "price": 632000,
   "seller_concessions": 0
  },
+ "reply_lines": [
+  {
+   "key": "flat_number"
+  },
+  {
+   "key": "contract_terms"
+  }
+ ],
  "sample": true,
  "stronger_dropped": true,
  "target": 561839,

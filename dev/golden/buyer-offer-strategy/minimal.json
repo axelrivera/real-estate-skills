@@ -5647,6 +5647,9 @@
  },
  "promoted": null,
  "promoted_from": null,
+ "reply_lines": {
+  "count": 0
+ },
  "sample": true,
  "target": 395042,
  "terms": {

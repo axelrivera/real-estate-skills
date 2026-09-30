@@ -675,6 +675,13 @@ class Audit20260929Third(unittest.TestCase):
         r = analyze_data(d)
         order = {a["why"]: a["field"] for a in r["missing"]}
         firsts = [order[w] for w in strategy.result(r)["to_confirm"][:2]]
+        self.assertEqual(firsts[0], "contract_name")
+        d["cma"]["offer_plan"]["walk_away"] = 640000  # OFR-240: the escalation question comes with an escalation
+        d["overrides"] = {"inspection_days": 10}  # keeps the rule-built (escalating) offer from being softened
+        r = analyze_data(d)
+        self.assertTrue(r["terms"]["recommended"].get("escalation"))
+        order = {a["why"]: a["field"] for a in r["missing"]}
+        firsts = [order[w] for w in strategy.result(r)["to_confirm"][:2]]
         self.assertEqual(firsts, ["contract_name", "escalation_accepted"])
         self.assertNotIn("contract_name", [a["field"] for a in analyze("fha-competitive.json")["missing"]])
 
@@ -757,6 +764,85 @@ class Audit20260930(unittest.TestCase):
         r = analyze("fha-competitive.json")
         html = buyer_render.details(r, strategy.result(r))
         self.assertEqual(html.count('class="pb"'), 1)  # one break before the detail pages, none forced inside them
+
+
+class Audit20260930Iter6(unittest.TestCase):
+    """Eval iteration 6 findings (OFR-239 to OFR-244)."""
+    TX = fixture("texas-cma-escalation.json")
+    GAP = fixture("fha-competitive.json")
+
+    def test_reply_lines_outside_the_cap(self):  # OFR-239
+        r = analyze_data(copy.deepcopy(self.TX))  # highest and best, one flat number
+        res = strategy.result(r)
+        self.assertEqual([x["key"] for x in res["reply_lines"]], ["flat_number", "contract_terms"])
+        self.assertIn(strategy.money(r["terms"]["recommended"]["price"]), res["reply_lines"][0]["text"])
+        d = copy.deepcopy(self.TX)
+        d["competition"]["note"] = "Listing agent: 6 offers in"
+        self.assertEqual([x["key"] for x in strategy.result(analyze_data(d))["reply_lines"]], ["contract_terms"])
+        d["competition"]["highest_and_best"] = True  # the field wins over the note
+        self.assertIn("flat_number", [x["key"] for x in strategy.analyze(d, cma=strategy.load_cma(d))["reply_lines"]])
+        d = copy.deepcopy(self.TX)
+        d["cma"]["offer_plan"]["walk_away"], d["overrides"] = 640000, {"inspection_days": 10}  # escalating: no flat number
+        self.assertTrue(analyze_data(d)["terms"]["recommended"].get("escalation"))
+        self.assertEqual([x["key"] for x in analyze_data(d)["reply_lines"]], ["contract_terms"])
+        self.assertEqual(analyze("fha-competitive.json")["reply_lines"], [])  # FR/BAR, no highest and best
+
+    def test_no_escalation_question_without_escalation(self):  # OFR-240
+        r = analyze_data(copy.deepcopy(self.TX))
+        self.assertFalse(r["terms"]["recommended"].get("escalation"))
+        self.assertNotIn("escalation_accepted", [a["field"] for a in r["missing"]])
+
+    def test_looked_up_rate_is_labeled(self):  # OFR-241
+        d = copy.deepcopy(self.GAP)
+        d["costs"]["rate"], d["costs"]["rate_source"] = 7.0, "Freddie Mac weekly 30-year average, week of Sep 24, 2026"
+        r = strategy.analyze(d)
+        self.assertIn("payment", r["why"]["price"])  # the payment limit sets the price
+        self.assertIn("week of Sep 24", r["why"]["price"])
+        a = {x["field"]: x for x in r["missing"]}
+        self.assertEqual(a["rate_source"]["impact"], "med")  # looked up, not assumed: not Preliminary on its own
+        self.assertNotIn("rate", a)
+        d["costs"].pop("rate"), d["costs"].pop("rate_source"), d["costs"].pop("insurance_annual")
+        a = {x["field"]: x for x in strategy.analyze(d)["missing"]}
+        self.assertEqual(a["rate"]["value"], strategy.DEFAULT_RATE)  # the offline fallback, high when it sets the price
+        self.assertEqual(a["rate"]["impact"], "high")
+        self.assertIn("Assumed", a["rate"]["why"])
+
+    def test_handoff_days_on_market_are_aged(self):  # OFR-242
+        d = copy.deepcopy(self.TX)
+        del d["property"]["dom"]
+        d["cma"]["subject"]["dom"] = 4
+        d["analysis_date"] = "2026-09-26"  # handoff as of 9/22
+        r = analyze_data(d)
+        self.assertEqual(r["B"]["property"]["dom"], 8)
+        self.assertEqual({a["field"]: a["value"] for a in r["missing"]}["dom"], 8)
+        self.assertNotIn("dom", [a["field"] for a in analyze_data(copy.deepcopy(self.TX))["missing"]])  # given in the file
+
+    def test_estimated_seller_tax_is_labeled(self):  # OFR-243
+        d = copy.deepcopy(self.GAP)
+        del d["property"]["annual_tax"]
+        r = strategy.analyze(d)
+        tax = [ln[1] for ln in r["O"]["recommended"]["ns"]["lines"] if ln[0] == "tax"]
+        self.assertTrue(tax and tax[0].endswith("Estimate)"))
+        self.assertIn("annual_tax", [a["field"] for a in r["missing"]])
+        tax = [ln[1] for ln in analyze("fha-competitive.json")["O"]["recommended"]["ns"]["lines"] if ln[0] == "tax"]
+        self.assertNotIn("Estimate", tax[0])  # the seller's bill was given
+
+    def test_weekday_deadline(self):  # OFR-244
+        sat = strategy.date(2026, 9, 26)
+        self.assertEqual(strategy.weekday_date("Friday 5pm", sat), (strategy.date(2026, 10, 2), (17, 0)))
+        self.assertEqual(strategy.weekday_date("Mon 17:30", sat), (strategy.date(2026, 9, 28), (17, 30)))
+        self.assertIsNone(strategy.weekday_date("Fri Sep 25 · 5 PM", sat))  # a full date is used as given
+        d = copy.deepcopy(self.GAP)
+        d["analysis_date"], d["competition"]["deadline"] = "2026-09-26", "Friday 5pm"
+        r = strategy.analyze(d)
+        self.assertEqual(r["B"]["competition"]["deadline"], "2026-10-02 17:00")
+        self.assertEqual(r["B"]["effective_date"], strategy.date(2026, 10, 3))
+        a = {x["field"]: x for x in r["missing"]}
+        self.assertEqual(a["deadline"]["value"], "2026-10-02 17:00")
+        first = strategy.result(r)["to_confirm"][0]
+        self.assertEqual(first, a["deadline"]["why"])  # asked first: it may already have passed
+        d["analysis_date"] = "2026-09-29"  # Tuesday: Friday is 3 days out, no question
+        self.assertNotIn("deadline", [x["field"] for x in strategy.analyze(d)["missing"]])
 
 
 if __name__ == "__main__":
