@@ -360,6 +360,7 @@
   "tax_index": 1
  },
  "placeholders": {
+  "credit_monthly_per_5k": "$41",
   "price_cut_count": "4",
   "price_cut_pct": "4.0%"
  },

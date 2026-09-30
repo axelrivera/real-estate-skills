@@ -504,7 +504,7 @@
      "credit": 10000
     }
    ],
-   "after_paragraph": "Each $5,000 of credit saves you about $4,600 at closing and costs about $40 a month. That's worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term. All three prices sit below the median adjusted comp, so the appraisal should support any of them.",
+   "after_paragraph": "Each $5,000 of credit saves you about {credit_cash_per_5k} at closing and costs about {credit_monthly_per_5k} a month. That's worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term. All three prices sit below the median adjusted comp, so the appraisal should support any of them.",
    "buydown": {
     "price": 580000,
     "credit": 10000

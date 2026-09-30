@@ -601,5 +601,19 @@ class ScatterLabels(unittest.TestCase):
         self.assertEqual(placer.overlapping, [])
 
 
+class CreditPlaceholders(unittest.TestCase):
+    """The credit trade-off quoted from the scenarios, not typed: each $5,000 of credit's cash saved and monthly cost."""
+
+    def test_filled_from_the_scenarios(self):
+        R = report()
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        cols = C["credit"]["columns"]
+        per = 5000 / (cols[1]["credit"] - cols[0]["credit"])
+        self.assertEqual(C["placeholders"]["credit_monthly_per_5k"], f"${round((cols[1]['payment'] - cols[0]['payment']) * per):,}")
+        self.assertEqual(C["placeholders"]["credit_cash_per_5k"], f"${round((cols[0]['cash'] - cols[1]['cash']) * per, -2):,.0f}")
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+
+
 if __name__ == "__main__":
     unittest.main()

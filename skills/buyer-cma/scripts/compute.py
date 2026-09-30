@@ -348,9 +348,18 @@ PLACEHOLDER = re.compile(r"\{(\w+)\}")
 RENDER_PLACEHOLDERS = ("trend_at_subject", "r2_share")  # filled by render.py from the chart
 
 
-def placeholder_values(median_adjusted, hist):
-    """CMA-203: every {name} report wording may use, filled in every field (not just page 1)."""
-    return {"median_adjusted": money(median_adjusted), **((hist or {}).get("display") or {})}
+def placeholder_values(median_adjusted, hist, credit=None):
+    """CMA-203: every {name} report wording may use, filled in every field (not just page 1). With price-vs-credit
+    scenarios, {credit_cash_per_5k} and {credit_monthly_per_5k}: what each $5,000 of credit saves at closing and adds
+    to the monthly payment, from the first two scenarios with different credits."""
+    values = {"median_adjusted": money(median_adjusted), **((hist or {}).get("display") or {})}
+    cols = (credit or {}).get("columns") or []
+    step = next((c for c in cols[1:] if c["credit"] != cols[0]["credit"]), None)
+    if step:
+        scale = 5000 / (step["credit"] - cols[0]["credit"])
+        values.update(credit_cash_per_5k=money(round((cols[0]["cash"] - step["cash"]) * scale, -2)),
+                      credit_monthly_per_5k=money(round((step["payment"] - cols[0]["payment"]) * scale)))
+    return values
 
 
 def unfilled_placeholders(R, known, path="$"):
@@ -543,7 +552,7 @@ def compute(R, market, homes):
     for key, text in notes:
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
-    values = placeholder_values(median_adjusted, hist)  # CMA-203
+    values = placeholder_values(median_adjusted, hist, credit)  # CMA-203
     warn("unfilled_placeholder", *placeholder_warnings(R, values, RENDER_PLACEHOLDERS))
 
     fit = mls.trend([h for h in homes if not mls.same_address(h["address"], s.get("mls_address", s["address"]))],
