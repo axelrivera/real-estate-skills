@@ -1,8 +1,8 @@
 # Status and handoff
 
-Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: contract fixes from the mock-package evals; 0.11.0: full FR/BAR contract support, riders and addenda, best effort for every other contract; 0.10.2: outlier-proof trend line; 0.10.1: quieter scatterplot background; 0.10.0: the listing presentation with a PDF copy, measured layout and copy that follows the listing, one-hue brand palette; 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
+Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: contract fixes from the mock-package evals and the pre-release audit; 0.11.0 was never released on its own and ships inside the 0.12.0 release; 0.11.0: full FR/BAR contract support, riders and addenda, best effort for every other contract; 0.10.2: outlier-proof trend line; 0.10.1: quieter scatterplot background; 0.10.0: the listing presentation with a PDF copy, measured layout and copy that follows the listing, one-hue brand palette; 0.9.0: project instructions and the agent guide; 0.8.0: the MLS 360 property report as the subject input, no JSON handed to agents, seller CMA builds the PDF unless the presentation is asked for; 0.7.0: one onboarding skill and one profile file; one plugin, `real-estate`, in repo `real-estate-skills`; audit Phases 1 to 3 done). Read this first when resuming, together with [CLAUDE.md](../CLAUDE.md), [architecture.md](architecture.md), [skill-guidelines.md](skill-guidelines.md), [development.md](development.md) and [migration-plan.md](migration-plan.md).
 
-## Done (committed on `main`)
+## Done
 
 | Area | What |
 |---|---|
@@ -11,7 +11,34 @@ Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: 
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
 | Tests | `make test` (453 passing on 2026-09-29; the deck-PDF check runs when LibreOffice is installed); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
-| Evals | Iteration 1 run for all 7 skills (21 prompts): 108/117 expectations passed (92%) before fixes; fixes applied. Iteration 2 re-ran the three most-changed evals (seller-cma Texas, buyer-offer-strategy minimal, TREC option period): fixes held, small follow-ups applied. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+| Evals | 37 prompts across the 6 skills (agent-profile 7, buyer-cma 3, buyer-offer-strategy 4, contract-timeline 10, seller-cma 6, seller-offer-review 7), including 8 on mock FR/BAR packages and 5 fair-housing prompts. Iteration 1: 92% of expectations. Iteration 2 (audit 2026-09-29, all 36 then): 227/257 (88.3%), 27 of the 30 failures from eval definitions, since fixed. Iteration 3: see the audit pass below. Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
+
+## This pass (2026-09-29): Pre-Release Audit Fixes, Still Version 0.12.0
+
+The full audit before shipping ([audits/2026-09-29.md](audits/2026-09-29.md)) found 6 High, about 40 Medium and about 60 Low items; all are fixed in this pass unless listed under Won't Fix there. 0.11.0 was never released on its own: the 0.12.0 release carries both. **Breaking for agents who relied on it:** the Texas contract rules (TREC rows, option fee, Texas holiday calendar) were removed in 0.11.0; every contract outside FR/BAR is now best effort. What agents will notice:
+
+- **Fair housing:** the check before any file is written now also stops pregnancy and children ("expecting their first baby"), marital status and religion tied to people ("attend the church", "church community"), while "near a church" or "Church Street" still pass. The profile's Voice and Disclaimers are checked too.
+- **Offer pricing:**
+  - An escalation cap below the offer's own price no longer lowers the price.
+  - A seller's last counter is the ceiling even above list, and a buyer counter between list and it meets partway.
+  - Without a CMA, an offer above list is never countered down: the price stands and the counter asks for appraisal-gap coverage.
+  - Every counter has a Time for Acceptance row, including the one that revives an expired offer.
+- **buyer-offer-strategy:** options are scored alone (not against each other); dates count from the expected Effective Date (new optional `expected_effective_date`); the built-in city millage is used; AGA-1 is never written for USDA; an escalation above value comes with AGA-1 rather than a promise; the Stronger option names only what it changed.
+- **seller-offer-review:** title fees follow the Para. 9(c) box (including (iii), Miami-Dade and Broward); a missing box, tax rate or contract form is flagged at the right impact; a free rent-back counts; Rider K's walk-away date is its inspection end; the HOA line uses each state's name; lapsed offers are described as facts, not legal conclusions.
+- **Both offer skills:** the default inspection period is the form's 15 days; FR/BAR form names written differently are still recognized; AGA-1 windows stop at closing; a CMA for another home is flagged; the CMA handoff now carries the home's tax, flood zone, HOA and roof facts, so the offer's payments match the CMA's.
+- **contract-timeline:**
+  - The next deadline is the first one not done and not past; passed ones show "Past, Confirm" and stay out of the calendar.
+  - Rider names written with hyphens map correctly, and "Condominium Association" is Rider A; an unknown rider name gets a note.
+  - Short sale approvals received late are flagged; dates that roll onto closing day are due by closing time.
+  - New rows: the Rider E election to proceed, the seller's existing title evidence (9(c)), separate homeowner's and flood insurance under Rider H, the seller's copy of a short sale approval.
+  - A future Effective Date or amendment gets a note, and a confirmed hypothetical is labeled What-If.
+  - Calendar events carry a time zone, a daytime reminder and a sequence number, so re-imports update them.
+  - No tool instructions on the PDF, and the best-effort note never reaches the markdown report.
+  - Another state's contract needs only its day count; rules it doesn't state are marked to confirm, never invented.
+- **CMAs:** a flood zone written "To confirm" is treated as unknown (it used to print a false insurance note); a home listed right now is confirmed first, and the agent's own listing is built as a reprice with a "Stay at Current Price" option; outside Florida the net sheet uses neutral terms; gut checks get the median before a range; an outlier rule; the examples moved to their own made-up home without agent-only remarks.
+- **Profile:** an unquoted color code is caught instead of silently falling back to the default blue.
+- **Guide and manual:** the agent guide covers 0.10 to 0.12, and the PDF manual is now built from it (`make manual`).
+- **Dev only:** golden output tests (`make golden`), `make samples` keeps only real changes, the release checklist and the manual test kit (`make manual-kit`), packaging from tracked files only, release notes from this file, a real Python 3.11 check through uv, a fixed eval set and mock answer keys.
 
 ## This pass (2026-09-29): Fixes From the Mock-Package Evals and Version 0.12.0
 
@@ -31,6 +58,7 @@ Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: 
   - The Standard repair reserve is exactly the limit.
   - Engine flags and hand-written issues no longer duplicate.
 - **Also:** proof of funds (`proof_of_funds`) is checked against the cash the offer needs; agent-written issues replace an engine flag only when they're about the same topic; the timeline's first deadline includes rows both sides owe; a blank association approval box on Rider A or B is treated as required and flagged; a pre-approval that expires before closing is noted (timeline) or flagged Med (offer review).
+- **Also in 0.12.0:** check-one boxes left blank get no default; Rider U with Para. 6(b) checked only for the rent-back; the counter shown for reference that would revive an expired offer; offer review flags a pre-approval that expires before closing; evals can set `today`.
 - **Verified:** six evals re-run on mock packages (`out/evals/iteration-mock-2/`): every contract-timeline deal file matched its key on every computed deadline, including the scanned short sale before approval.
 - **Both:** working files (deal and listing files) are never handed to the agent; a later conversation rebuilds them from the documents (`saved-files.md`). Shared FR/BAR references cover the EA-4 "additional days" count, counters on the contract, CO-3 acceptance, and disclosures that contradict a rider.
 
@@ -165,9 +193,6 @@ User testing found the onboarding too technical: two profile skills with no dire
 - **Loose judgment rules** that make runs vary: time adjustments (1–2% per quarter), undocumented-systems adjustments, expected sale per pricing option. method.md now anchors the expected sale on the adjusted comps; the rest is still judgment.
 - **Page-1 dot plot labels** can overlap the price line; there's no setting to move them (the scatter has `side`).
 - **Seller review backup counter:** the plan can show a backup counter at list that would net more than the recommended offer (it's conditional on the first offer failing); consider wording it as "if B falls through".
-- **Rent-back / occupancy terms** in an offer aren't scored; record them as custom `flags` for now.
-- **Texas title rates** below $100k are a lookup table; the per-$1,000 tier format approximates them.
-- **State holidays** (Texas) aren't in the built-in holiday list; add them to a deal's `rules.holidays`.
 - **Escalation cap vs. the CMA's walk-away:** buyer-offer-strategy can set a cap above a buyer CMA's walk-away price without comment; it should say so.
 - **Unknown seller credit** on a comp is recorded as 0 in the handoff.
 - **Deck slide 6** (market stats): long values can overlap their period label; keep values short.
@@ -192,7 +217,7 @@ User testing found the onboarding too technical: two profile skills with no dire
 | | | Disclaimers, brokerage, EHO | CORE-3, CORE-4, CMA-16, FH-6 | Done |
 | | | Fair-housing check | FH-1, FH-2, FH-3 | Done |
 | | | Condo and flood | CMA-5, CMA-6, OFR-26 | Done |
-| 2. Medium (done 2026-09-24, validated) | 0.4.0 | Market data and checks | CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning), CORE-20, CORE-21 | Open |
+| 2. Medium (done 2026-09-24, validated) | 0.4.0 | Market data and checks | CORE-7, CORE-9, CORE-11 to CORE-17, CORE-19 (warning), CORE-20, CORE-21 | Done |
 | | | CMA method and charts | CMA-7 to CMA-12, CMA-14, CMA-15, CMA-17, CMA-20, CMA-22 | Done |
 | | | Offer pricing and programs | OFR-7 to OFR-12, OFR-18, OFR-25, OFR-30 | Done |
 | | | Offer benchmarks and review UX | OFR-15, OFR-16, OFR-20, OFR-24, OFR-28 | Done |
@@ -217,9 +242,9 @@ Won't fix: (none yet).
 
 ## Remaining work, in order
 
-1. **Audit fixes**, phases 1 to 4 above.
-2. **User testing** in claude.ai and Cowork: `make package` → upload `dist/real-estate-<version>.plugin` (desktop app), `make package-skills` → upload `dist/skills/*.zip` (claude.ai), or add the marketplace `axelrivera/real-estate-skills` (Cowork). Check that all 6 skills appear as `real-estate:*`. Check the onboarding ("set me up") and saved files in Cowork: with a working folder, `agent-profile` writes `.claude/real-estate/profile.md` and a new session's `seller-cma` uses it without an upload; with no folder, and in claude.ai, the hand-over line appears instead. The user will give feedback after this pass.
-3. **Evals iteration 2** after the user's feedback (the audit's phase 4 covers the changed skills): re-run the changed skills with [dev/evals/RUNNER.md](../dev/evals/RUNNER.md), compare with iteration 1 (`--previous-workspace`).
+1. **Manual smoke test** of the 0.12.0 build per [manual-testing.md](manual-testing.md) (`make package manual-kit`; uninstall the old `core` and `transactions` plugins first). The user runs it and hands back `out/manual-test/results.md`; failures become fixes before the pull request into `main`.
+2. **Release** per [release-checklist.md](release-checklist.md).
+3. **Broker review** of `shared/references/fair-housing.md` (see Open items).
 4. **Yearly refreshes:** Florida millage when the year's rates are final (October); loan limits in `shared/markets/loan-limits.md` when FHFA and HUD publish the next year's (late November); the indexed homestead exemption in `fl.md` (January).
 5. **Later / optional:** New skills and scope extensions (more state and MLS layers, the offer outcome log, trigger-description optimization) are in [roadmap.md](roadmap.md).
 
@@ -228,7 +253,7 @@ Won't fix: (none yet).
 - Skills must be self-contained; `shared/` is copied into each skill's `scripts/_shared/` by `make sync` and committed.
 - Markdown output comes from `assets/` templates filled by Claude; scripts only do math, parsing, validation and PDF/PPTX rendering.
 - Every skill has markdown and file modes from the same data JSON; core profile skills are markdown only.
-- Brand colors from the profile (one primary or buyer/seller split); status colors fixed; subject accents distinct from brand.
+- Brand colors from the profile (one primary or buyer/seller split); status colors fixed; the subject home is black, never a second hue.
 - One profile file (`profile.md`): who the agent is; only name and brokerage required; never print placeholders. No logos on reports.
 - Market data in layers: state (FL) and MLS (Stellar, FL + PR) are separate; never fill Florida values for other states; each value carries its source. Per-deal costs go in the deal's data file.
 - Every `*_pct` is a fraction (0.025 = 2.5%); interest `rate` is a percent.
