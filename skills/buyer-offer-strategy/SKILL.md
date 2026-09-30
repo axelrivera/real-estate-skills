@@ -39,14 +39,14 @@ One JSON file per property the buyer is pursuing, in a temporary folder, never t
 - **Value range and market stats:** use the CMA, in this order:
   1. A buyer CMA's `.cma.json` from earlier in this conversation (`references/saved-files.md`): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats. A seller-side CMA is flagged: its range was built for the other party.
   2. Any other CMA (a CMA PDF from an earlier conversation, another tool's PDF, notes): read the low, high and any market stats, confirm them with the agent in one line, and put them in `value` and `market`.
-  3. Nothing: list price stands in for value and the answer is Preliminary.
+  3. Nothing: list price stands in for value, so the price stays at list (never called "at value"), the appraisal gap is a question for the buyer, and the answer is Preliminary.
 - **Buyer:** loan type and down payment, first-time buyer or not, max price, cash available, reserve floor, max payment.
 - **Listing-agent intel:** competition level, offer deadline (dates count from the day after it, or from `expected_effective_date`), buyer-broker pay offered, seller priorities. This is the most valuable input; if it's unknown, run with the inferred level and say so in one line.
 - **Worksheet details:** buyer names, escrow agent, HOA name, personal property. Never invent names, legal descriptions or parcel IDs: missing ones print as red blanks.
 
 **Minimum to run:** list price and cash available.
 
-Local costs come from the property's location (`references/local-costs.md`): Florida's are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Don't ask about them up front; a lender's figures or a looked-up transfer tax go in `property.costs`.
+Local costs come from the property's location (`references/local-costs.md`): Florida's are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Don't ask about them up front; seller-side figures (a title quote, a looked-up transfer tax) go in `property.costs`, and the buyer's rate, insurance and tax rate in the top-level `costs` block.
 
 ## 2. Run and Review
 
@@ -58,7 +58,15 @@ It prints every value already formatted: the page-1 summary, the options side by
 
 ## 3. Deliver
 
-**Quick question** ("what should we offer?"): two or three sentences from the output, no files; the one question can cover the top two missing inputs (usually the listing agent's competition read and the loan type), and offer the report in one line, with a tip that a buyer CMA sharpens the price. **Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
+**Quick question** ("what should we offer?"): build the buyer file from what the agent gave and run `strategy.py` anyway (the numbers come from it), but make no files. The reply has, in at most three short paragraphs (about 150 words):
+
+- the recommended price, deposit, concessions and key periods, with the outlook and the competition level it assumed;
+- the price's reason from the Price row of `summary.terms`: with no CMA the price stays at list ("list stands in for value"), never "at value", and the appraisal gap is a question ("how much of a low appraisal could the buyer cover in cash?");
+- "Preliminary" when `summary.preliminary` is set, naming what was assumed;
+- one question covering the first two entries of `to_confirm` (the script puts an inferred competition read first, then the rest by impact; leave the value range to the CMA tip);
+- one line offering the report, with a tip that a buyer CMA sharpens the price.
+
+**Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
 
 ```
 python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma file.cma.json] [--option stronger] [--profile profile.md]
@@ -66,7 +74,7 @@ python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma fil
 
 `all` (the default) saves both PDFs in the agent's buyer-side brand colors; `--profile` puts the agent's name and colors on them (found as `references/saved-files.md` describes). The worksheet uses the file's `chosen_option` (else recommended); when the buyer hasn't chosen, build it for the recommended option and say it will be redone if they pick another. Check the rider list against the facts (the insurance rider can be skipped when a quote is in hand). Contract entries and riders: `references/worksheet.md`; for FR/BAR, what each rider and addendum requires is in `references/frbar-riders.md` and `references/frbar-addenda.md` (check the package against `references/frbar-package-check.md`, and `references/frbar-contract.md` for any paragraph); for any other contract, `references/other-contracts.md`. If rendering fails, say so and give the markdown answer.
 
-In chat: the recommended offer (price, key terms, outlook) in one or two sentences; the choice the buyer faces ("Stronger costs $2,000 more and doesn't change the outlook; lower-cost saves $3,570 but drops to At Risk"); the top missing input as one question (usually the listing agent's competition read). The buyer file stays in the temporary folder and is never handed over (`references/saved-files.md`); in a later conversation, rebuild it from what the agent gives again.
+In chat: the recommended offer (price, key terms, outlook) in one or two sentences; the choice the buyer faces ("Stronger costs $2,000 more and doesn't change the outlook; lower-cost saves $3,570 but drops to At Risk"), or, when an option is missing, why (`summary.absent`); the top missing input as one question (the first entry of `to_confirm`). The buyer file stays in the temporary folder and is never handed over (`references/saved-files.md`); in a later conversation, rebuild it from what the agent gives again.
 
 ## Package Rules
 

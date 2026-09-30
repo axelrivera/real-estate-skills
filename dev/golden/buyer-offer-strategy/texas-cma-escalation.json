@@ -116,6 +116,7 @@
   },
   "repair_limits": null,
   "sample": true,
+  "seller_annual_tax": 12078,
   "value": {
    "cma_high": 632000,
    "cma_low": 598000,
@@ -256,7 +257,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -266,8 +267,8 @@
     "missing": {
      "count": 0
     },
-    "net": 571422,
-    "net_adj": 570922,
+    "net": 567039,
+    "net_adj": 566539,
     "price": 615000
    },
    "ns_counter": {
@@ -328,7 +329,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -338,8 +339,8 @@
     "missing": {
      "count": 0
     },
-    "net": 571422,
-    "net_adj": 570922,
+    "net": 567039,
+    "net_adj": 566539,
     "price": 615000
    },
    "ns_down": {
@@ -400,7 +401,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -410,12 +411,12 @@
     "missing": {
      "count": 0
     },
-    "net": 571422,
-    "net_adj": 570922,
+    "net": 567039,
+    "net_adj": 566539,
     "price": 615000
    },
    "price": 615000,
-   "rank_value": 563602.0,
+   "rank_value": 559219.0,
    "repair_label": null,
    "repair_reserve": 0,
    "repairs_owed": false,
@@ -520,7 +521,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -530,8 +531,8 @@
     "missing": {
      "count": 0
     },
-    "net": 566722,
-    "net_adj": 566222,
+    "net": 562339,
+    "net_adj": 561839,
     "price": 610000
    },
    "title_by": "seller",
@@ -669,7 +670,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -679,8 +680,8 @@
     "missing": {
      "count": 0
     },
-    "net": 587402,
-    "net_adj": 586902,
+    "net": 583019,
+    "net_adj": 582519,
     "price": 632000
    },
    "ns_counter": {
@@ -741,7 +742,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -751,8 +752,8 @@
     "missing": {
      "count": 0
     },
-    "net": 587402,
-    "net_adj": 586902,
+    "net": 583019,
+    "net_adj": 582519,
     "price": 632000
    },
    "ns_down": {
@@ -813,7 +814,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -823,12 +824,12 @@
     "missing": {
      "count": 0
     },
-    "net": 587402,
-    "net_adj": 586902,
+    "net": 583019,
+    "net_adj": 582519,
     "price": 632000
    },
    "price": 632000,
-   "rank_value": 577142.0,
+   "rank_value": 572759.0,
    "repair_label": null,
    "repair_reserve": 0,
    "repairs_owed": false,
@@ -933,7 +934,7 @@
      ],
      [
       "tax",
-      -5478
+      -9861
      ],
      [
       "payoff",
@@ -943,8 +944,8 @@
     "missing": {
      "count": 0
     },
-    "net": 566722,
-    "net_adj": 566222,
+    "net": 562339,
+    "net_adj": 561839,
     "price": 610000
    },
    "title_by": "seller",
@@ -1085,7 +1086,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1095,8 +1096,8 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "ns_counter": {
@@ -1157,7 +1158,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1167,8 +1168,8 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "ns_down": {
@@ -1229,7 +1230,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1239,12 +1240,12 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "price": 615000,
-    "rank_value": 563602.0,
+    "rank_value": 559219.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -1349,7 +1350,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1359,8 +1360,8 @@
      "missing": {
       "count": 0
      },
-     "net": 566722,
-     "net_adj": 566222,
+     "net": 562339,
+     "net_adj": 561839,
      "price": 610000
     },
     "title_by": "seller",
@@ -1498,7 +1499,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1508,8 +1509,8 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "ns_counter": {
@@ -1570,7 +1571,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1580,8 +1581,8 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "ns_down": {
@@ -1642,7 +1643,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1652,12 +1653,12 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "price": 632000,
-    "rank_value": 577142.0,
+    "rank_value": 572759.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -1762,7 +1763,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -1772,8 +1773,8 @@
      "missing": {
       "count": 0
      },
-     "net": 566722,
-     "net_adj": 566222,
+     "net": 562339,
+     "net_adj": 561839,
      "price": 610000
     },
     "title_by": "seller",
@@ -1783,12 +1784,6 @@
    }
   ],
   "assumptions": [
-   {
-    "field": "annual_tax",
-    "impact": "med",
-    "scope": "listing",
-    "value": 6710
-   },
    {
     "field": "offer_norms",
     "impact": "med",
@@ -1842,7 +1837,7 @@
   },
   "listing": {
    "analysis_date": "2026-09-26",
-   "annual_tax": 6710,
+   "annual_tax": 12078,
    "baths": 2,
    "beds": 3,
    "bill_paid": null,
@@ -1917,12 +1912,6 @@
     "field": "inspection_walkaway",
     "impact": "high",
     "value": true
-   },
-   {
-    "field": "annual_tax",
-    "impact": "med",
-    "scope": "listing",
-    "value": 6710
    },
    {
     "field": "offer_norms",
@@ -2091,7 +2080,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2101,8 +2090,8 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "ns_counter": {
@@ -2163,7 +2152,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2173,8 +2162,8 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "ns_down": {
@@ -2235,7 +2224,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2245,12 +2234,12 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "price": 615000,
-    "rank_value": 563602.0,
+    "rank_value": 559219.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -2355,7 +2344,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2365,8 +2354,8 @@
      "missing": {
       "count": 0
      },
-     "net": 566722,
-     "net_adj": 566222,
+     "net": 562339,
+     "net_adj": 561839,
      "price": 610000
     },
     "title_by": "seller",
@@ -2504,7 +2493,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2514,8 +2503,8 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "ns_counter": {
@@ -2576,7 +2565,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2586,8 +2575,8 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "ns_down": {
@@ -2648,7 +2637,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2658,12 +2647,12 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "price": 632000,
-    "rank_value": 577142.0,
+    "rank_value": 572759.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -2768,7 +2757,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2778,8 +2767,8 @@
      "missing": {
       "count": 0
      },
-     "net": 566722,
-     "net_adj": 566222,
+     "net": 562339,
+     "net_adj": 561839,
      "price": 610000
     },
     "title_by": "seller",
@@ -2919,7 +2908,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -2929,8 +2918,8 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "ns_counter": {
@@ -2991,7 +2980,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3001,8 +2990,8 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "ns_down": {
@@ -3063,7 +3052,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3073,12 +3062,12 @@
      "missing": {
       "count": 0
      },
-     "net": 587402,
-     "net_adj": 586902,
+     "net": 583019,
+     "net_adj": 582519,
      "price": 632000
     },
     "price": 632000,
-    "rank_value": 577142.0,
+    "rank_value": 572759.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -3183,7 +3172,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3193,8 +3182,8 @@
      "missing": {
       "count": 0
      },
-     "net": 566722,
-     "net_adj": 566222,
+     "net": 562339,
+     "net_adj": 561839,
      "price": 610000
     },
     "title_by": "seller",
@@ -3332,7 +3321,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3342,8 +3331,8 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "ns_counter": {
@@ -3404,7 +3393,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3414,8 +3403,8 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "ns_down": {
@@ -3476,7 +3465,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3486,12 +3475,12 @@
      "missing": {
       "count": 0
      },
-     "net": 571422,
-     "net_adj": 570922,
+     "net": 567039,
+     "net_adj": 566539,
      "price": 615000
     },
     "price": 615000,
-    "rank_value": 563602.0,
+    "rank_value": 559219.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -3596,7 +3585,7 @@
       ],
       [
        "tax",
-       -5478
+       -9861
       ],
       [
        "payoff",
@@ -3606,8 +3595,8 @@
      "missing": {
       "count": 0
      },
-     "net": 566722,
-     "net_adj": 566222,
+     "net": 562339,
+     "net_adj": 561839,
      "price": 610000
     },
     "title_by": "seller",
@@ -3686,7 +3675,7 @@
     ],
     [
      "tax",
-     -5478
+     -9861
     ],
     [
      "payoff",
@@ -3696,8 +3685,8 @@
    "missing": {
     "count": 0
    },
-   "net": 566722,
-   "net_adj": 566222,
+   "net": 562339,
+   "net_adj": 561839,
    "price": 610000
   }
  },
@@ -3712,6 +3701,12 @@
    "field": "flood_insurance_annual",
    "impact": "low",
    "scope": "costs"
+  },
+  {
+   "field": "annual_tax",
+   "impact": "med",
+   "scope": "property",
+   "value": 12078
   },
   {
    "field": "homestead",
@@ -3729,12 +3724,6 @@
    "field": "buyer_broker_agreement_pct",
    "impact": "med",
    "scope": "buyer"
-  },
-  {
-   "field": "annual_tax",
-   "impact": "med",
-   "scope": "listing",
-   "value": 6710
   },
   {
    "field": "offer_norms",
@@ -3841,15 +3830,15 @@
  },
  "missing": [
   {
+   "field": "annual_tax",
+   "impact": "med",
+   "scope": "property",
+   "value": 12078
+  },
+  {
    "field": "buyer_broker_agreement_pct",
    "impact": "med",
    "scope": "buyer"
-  },
-  {
-   "field": "annual_tax",
-   "impact": "med",
-   "scope": "listing",
-   "value": 6710
   },
   {
    "field": "offer_norms",
@@ -3921,7 +3910,7 @@
   "seller_concessions": 0
  },
  "sample": true,
- "target": 566222,
+ "target": 561839,
  "terms": {
   "recommended": {
    "appraisal_days": 21,

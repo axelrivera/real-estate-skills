@@ -8,11 +8,13 @@
 |---|---|---|
 | {{t.term}} | **{{t.offer}}**{{" (Agent)" when t.agent}} | {{t.why}} |
 
-**Your Options**
+**{{summary.options_title}}**
 
 | Option | Price | Outlook | Seller Net | Worst-Case Cash | Reserve | What Changes |
 |---|---|---|---|---|---|---|
 | {{o.option}} | {{o.price}} | {{o.outlook}} | {{o.seller_net}} | {{o.worst_cash}} | {{o.reserve}} | {{o.what}} |
+
+{{each summary.absent: "No " + option + " Option: " + why, one line each; skip when empty}}
 
 **Your Exposure (Recommended):** {{each summary.exposure: label + " " + value, joined with " · "}}
 
