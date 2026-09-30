@@ -13,7 +13,7 @@ Give only the steps for where the agent is now, as a short numbered list with th
 | Cowork, not in a project | Set Up a Project in Cowork |
 | Cowork, inside a project | Already in a Cowork Project |
 
-If you can't tell, give the claude.ai steps and add one line: "Using Cowork in the desktop app? Tell me and I'll give you those steps."
+You can tell only from what the conversation shows: a Cowork working folder or task, or claude.ai Project files or instructions. A guess about the surface doesn't count. When nothing shows it, give the claude.ai steps and always add one line: "Using Cowork in the desktop app? Tell me and I'll give you those steps."
 
 When the Project's instructions already start with "Real Estate Assistant for" and the name hasn't changed, skip the instructions step and give only the profile step (or nothing, when the saved profile was updated in place).
 

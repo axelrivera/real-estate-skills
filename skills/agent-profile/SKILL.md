@@ -9,13 +9,15 @@ Sets the agent up in about two minutes and saves `profile.md`: who they are and 
 
 It holds nothing about markets or costs. Each skill takes the location from the listing and uses built-in local values or labeled estimates, and the agent corrects them on the report if they want to.
 
+**Costs and commission.** When the agent asks to save costs, fees or commission terms here, save none of them. Add one line at the end of the reply: the profile never holds costs; each report assumes 5% total commission and local estimates, labels them, and takes their own numbers when they give them on that report. When that's the whole request, that line is the answer, plus one line offering to set up the profile if none exists.
+
 The agent is usually not technical and often a little nervous about setup. Keep YAML, JSON, field names and color codes out of replies unless they ask; talk about colors by name ("Navy").
 
 ## Guardrails
 
 These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
 
-- **Fair housing.** Every other skill writes in the voice saved here, so the voice and disclaimers never target or exclude people by a protected class ("first-time buyers" or "relocation" is fine; "young families" is not). Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any state or local class the agent mentions. Read `references/fair-housing.md` before saving a voice or disclaimers. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **Fair housing.** Every other skill writes in the voice saved here, so the voice and disclaimers never target or exclude people by a protected class ("first-time buyers" or "relocation" is fine; "young families" is not). Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any state or local class the agent mentions. Read `references/fair-housing.md` before saving a voice or disclaimers. If the agent asks for wording that breaks this, propose the compliant version, say why in one sentence, and save it only once they confirm (step 4); don't lecture or flag innocent wording like "family room".
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 
@@ -23,12 +25,13 @@ These apply to everything this skill writes: files, chat replies, and text the a
 
 Look for a file that starts with `profile: agent` in the places `references/saved-files.md` lists: the conversation, Project files, then the saved folder in the agent's Cowork working folder.
 
-If there is one, this is an update, not an interview. Change only what the agent asks, keep the rest (and their formatting, such as how they write their phone), then go to step 5. When they only ask how to set up a Project, skip to step 6. A move to a new brokerage often changes the team name, email, website and disclaimers too: ask about those in one line instead of changing them.
+If there is one, this is an update, not an interview. Change only what the agent asks and keep the rest. Write new values in the style the saved file already uses, not as typed: a new phone typed 321-555-0142 goes in as "(321) 555-0142" when the saved phone reads "(407) 555-0100". Then go to step 5. When they only ask how to set up a Project, skip the profile and go to step 6, which still writes `project-instructions.md` (step 5) when the conversation doesn't have one. A move to a new brokerage often changes the team name, email, website and disclaimers too: ask about those in one line instead of changing them.
 
 ## 2. The Interview
 
 Two rounds, one message each, at most three questions per round. Short rounds feel easy, and the second can react to the first.
 
+- **The cap counts everything you ask in the message:** Round 1 leftovers, a color confirmation, a voice confirmation, the licensed-name check. Fold leftovers into the next round; merge related ones into one numbered line (team with contact details; the licensed name with the documents question). When more than three are still open, ask confirmations first, then the numbered questions below in order, and hold the rest for the next message. Never exceed the cap.
 - **Every question can be skipped,** and "not sure" is an answer. Say so once, in the opener.
 - **Fill-in-the-blank with examples in the question,** so it's close to multiple choice and answerable from memory in one line.
 - **Messy answers are fine.** Take what they give, never ask the same thing twice, and drop any question they already answered (in their first message, an upload, or a file).
@@ -45,7 +48,9 @@ Two rounds, one message each, at most three questions per round. Short rounds fe
 >
 > One reply is perfect, short and messy is fine.
 
-Once name and brokerage are known, write the file (step 5) before sending Round 2, and say so in one line ("Saved. One more quick round."). A profile they can use now beats a finished questionnaire.
+**Brokerage name.** A franchise brand or short form ("Keller Williams", "Coldwell Banker", "RE/MAX", "Premier Sotheby's") is often not the licensed name. Save it as given, never guess the entity, and confirm the licensed name in the next round, merged with question 5, using the neutral example from question 1 ("for example 'Lakeshore Realty Group, LLC'"), not a guessed name.
+
+Once name and brokerage are known, write the file (step 5) before sending Round 2. This mid-interview reply is: "Saved. One more quick round." plus the Round 2 questions, then the one line on keeping the file from `references/saved-files.md` for where the agent is (in Cowork with a working folder, the path instead). No Project steps and no project instructions yet; those come with the final hand-over. A profile they can use now beats a finished questionnaire.
 
 **Round 2: Your Look and Sound.**
 
@@ -53,7 +58,7 @@ Once name and brokerage are known, write the file (step 5) before sending Round 
 > 5. Anything your brokerage requires on documents? (for example "Each office independently owned and operated"). Skip if not sure: ____
 > 6. How would a client describe the way you talk? Direct, no fluff | warm and patient | calm and numbers-first | high-energy | like a friend who knows the business. Pick one or say it your way. If you like, paste an email you've written: ____
 
-If they sent colors, read them first (step 3) and confirm them in your reply.
+If they sent colors, read them first (step 3) and confirm them in your reply; the confirmation takes question 4's place.
 
 ## 3. Brand Colors
 
@@ -62,6 +67,8 @@ Read `references/brand-colors.md` before this step. In short: take an image, a w
 ## 4. Voice
 
 Write the Voice section from their Round 2 pick, how they actually typed their answers, and the email they pasted, in their words over marketing words: two to four lines covering the tone, a phrase or two they really use, and anything to avoid. Skipped means no Voice section; the skills then write plainly.
+
+When their wording breaks fair housing (see Guardrails), keep what's legitimate: the niche as a kind of client or deal ("first-time and move-up buyers"), the area ("the Sanford area") and the tone ("plain-spoken"). Propose the compliant version in the reply, say why in one sentence, and ask them to confirm it (a confirmation, counted in the cap). Never save a rewritten Voice before they confirm it: save the rest of the profile without the Voice section until then.
 
 ## 5. Write the File
 
@@ -82,14 +89,17 @@ python3 scripts/check_profile.py <path to profile.md>
 
 Fix anything under `problems` and check again. Pass on `warnings` in plain words.
 
-**Project instructions.** When the interview is done (after Round 2, or when they stop answering), fill in `assets/project-instructions-template.md` and save it as `project-instructions.md` next to the profile. It names only the agent; everything else comes from the profile, so the two never disagree. Keep it as written: it's what makes a Project use the skills and the profile. On an update, rewrite it only when the name changed. Don't write it after Round 1 alone: the agent is still mid-interview.
+**Project instructions.** When the interview is done (after Round 2, or when they stop answering), fill in `assets/project-instructions-template.md` and save it as `project-instructions.md` next to the profile. It names only the agent; everything else comes from the profile, so the two never disagree. Keep it as written: it's what makes a Project use the skills and the profile. On an update, rewrite it only when the name changed, but write it when none exists yet (no `project-instructions.md` in the conversation and no Project instructions starting with "Real Estate Assistant for"), so the hand-over has something to paste. Don't write it after Round 1 alone: the agent is still mid-interview.
 
 ## 6. Hand It Over
 
-Present both files with a short summary in plain words: who, which details are saved, which colors. Say where the profile is kept, as `references/saved-files.md` describes.
+This is the final hand-over, after the interview or an update. Present both files (the profile and `project-instructions.md`, including one written just now on an update or a Project-only request). The reply holds, in this order, and nothing else:
 
-Then recommend a Project in one sentence ("Put both files in a Project and every chat there starts knowing who you are.") and give the steps for where the agent is now, from `references/project-setup.md`. Those steps replace the one line on keeping the file. Skip them when this chat is already in a Project that has the instructions and only the profile changed; then just say to replace profile.md in the Project files, or that it was updated in place.
+1. What's saved, in plain words: who, which details, which colors (on an update, only what changed). One or two sentences.
+2. Where the profile is kept, as `references/saved-files.md` describes.
+3. A Project in one sentence ("Put both files in a Project and every chat there starts knowing who you are.") and the steps for where the agent is now, from `references/project-setup.md`. They replace the one line on keeping the file. When the conversation doesn't show where the agent is (a Cowork working folder or task, or claude.ai Project files), give the claude.ai steps and always add the Cowork line; never assume the surface. Skip the steps when this chat is already in a Project that has the instructions and only the profile changed; then just say to replace profile.md in the Project files, or that it was updated in place.
+4. Any `warnings` from the check and the one-line brokerage question on a move, if they apply.
+5. One next step: "Try it: send me a listing and ask for a CMA."
+6. The costs line (see the top), only when they asked to save costs or commission.
 
-End with one next step: "Try it: send me a listing and ask for a CMA."
-
-If the agent asks to save local costs or commission terms here, say they don't need to: every report estimates them from the listing, labels the estimates, and takes their numbers when they share them on that report.
+Keep it to what a phone screen shows: at most about 200 words besides the numbered steps, no file contents, field names or color codes.
