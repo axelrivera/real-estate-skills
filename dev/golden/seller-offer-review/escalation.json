@@ -819,6 +819,9 @@
   {
    "_appraisal_basis": "E",
    "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
    "aga_named": false,
    "appraisal_contingency": false,
    "appraisal_days": 44,
@@ -2173,6 +2176,9 @@
   {
    "_appraisal_basis": "E",
    "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
    "aga_named": false,
    "appraisal_contingency": false,
    "appraisal_days": 44,
@@ -3400,6 +3406,9 @@
   {
    "_appraisal_basis": "E",
    "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
    "aga_named": false,
    "appraisal_contingency": false,
    "appraisal_days": 44,

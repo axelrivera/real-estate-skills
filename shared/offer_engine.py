@@ -23,7 +23,7 @@ from . import contract_forms as cf, finance, profiles
 
 FIN_LABEL = {k: v["label"] for k, v in finance.LOAN_PROGRAMS.items()}
 APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full underwritten approval",
-                  "du_approved": "Pre-approval (DU/LP approved)", "preapproval": "Pre-approval letter",
+                  "du_approved": "Automated underwriting approval (DU/LP)", "preapproval": "Pre-approval letter",
                   "prequal": "Pre-qualification only", "none": "No approval provided"}
 CRITERIA = [  # key, label, weight
     ("financing", "Financing Type & Down Payment", 20),
@@ -117,6 +117,14 @@ def state_of(listing):
     return st if st in profiles.STATES else None
 
 
+def frbar_form(o):
+    """True when an offer in the file names an FR/BAR form (contract_forms decides which names are FR/BAR)."""
+    try:
+        return cf.normalize(o.get("contract_form")) in cf.FRBAR
+    except cf.FormError:
+        return False  # prepare_offer reports it
+
+
 # Deal-specific cost overrides in the listing file's `costs` block, mapped to market paths.
 COST_KEYS = profiles.DEAL_COSTS
 
@@ -131,6 +139,7 @@ class Costs:
         self.market = market
         self.over = {}
         self.box = {}  # an offer's contract terms over the market's values, keeping the market's source (offer_costs)
+        self.state_assumed = False  # OFR-253: no state given, so Florida was taken from the FR/BAR contract
         for key, value in (deal_costs or {}).items():
             path = COST_KEYS.get(key)
             if path is None or value is None:
@@ -163,7 +172,9 @@ class Costs:
         """Plain words for where a value came from: 'Florida default', 'national estimate', 'this listing'."""
         src = self.source(path)
         state = profiles.STATES.get(self.state or "", self.state or "market")
-        return {"deal": "this listing", "estimate": "national estimate", "state": f"{state} default",
+        # OFR-253: a Florida value is labeled Assumed wherever it's described when the state came from the contract form
+        default = f"Assumed {state} default" if self.state_assumed else f"{state} default"
+        return {"deal": "this listing", "estimate": "national estimate", "state": default,
                 "county": "county default", "mls": "MLS default",
                 "national": f"none in {state}; confirm local taxes with the title company"}.get(src, "market default")
 
@@ -308,9 +319,11 @@ def prepare_listing(data, A, costs):
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", 0,
                                          "Listing brokerage fee not provided: left out of the net", "high")
         else:
+            # OFR-259: one figure, called the default commission (it's the same in every state); analyze() rewrites it
+            # when the listing broker pays the buyer's broker, so it matches the net sheet's one total line
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", lf,
-                                         f"Listing brokerage fee not provided: assumed {pct(lf)} ({costs.described('brokerage.listing_fee_pct')}; "
-                                         "5% total with the buyer's agent)", "med")
+                                         f"Listing brokerage fee not provided: assumed {pct(lf)} for the listing side "
+                                         "(default commission)", "med")
     S["offered_buyer_broker_pct"] = S.get("offered_buyer_broker_pct")
     S["default_buyer_broker_pct"] = (S["offered_buyer_broker_pct"] if S["offered_buyer_broker_pct"] is not None
                                      else costs.get("brokerage.buyer_broker_fee_pct"))  # 2.5% national estimate
@@ -360,6 +373,20 @@ def cost_notes(costs, L):
         notes.append(f"Title company fees {money(sum(fees.values()))} ({costs.described('closing_costs.seller_title_fees')}; "
                      "the title company's quote wins)")
     return notes
+
+
+def title_fee_note(L, costs, offers):
+    """OFR-260: the title-fee note quotes what the net sheets charge. An offer's Para. 9(c) box can change which searches
+    the seller pays (box_title_fees), so the market's own total may not be the net sheet's."""
+    amounts = sorted({-v for o in offers for k, _, v in o["ns"]["lines"] if k == "settle"})
+    i = next((i for i, n in enumerate(L["cost_notes"]) if n.startswith("Title company fees ")), None)
+    if i is None or not amounts:
+        return
+    what = money(amounts[0]) if len(amounts) == 1 else f"{money(amounts[0])} to {money(amounts[-1])} by offer"
+    L["cost_notes"][i] = (f"Title company fees {what} ({costs.described('closing_costs.seller_title_fees')}"
+                          + ("; the Para. 9(c) box sets which searches the seller pays" if any(box_title_fees(o, costs) is not None
+                                                                                                  for o in offers) else "")
+                          + "; the title company's quote wins)")
 
 
 # --- offer labels --------------------------------------------------------------
@@ -514,6 +541,10 @@ def prepare_offer(o, L, S, A):
     o["status"] = o.get("status", "active")
     o["expires_raw"] = o.get("expires")
     o["expires"] = fmt_when(o.get("expires"))
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(o["expires_raw"] or "").strip()):  # OFR-263: a date with no time
+        o["expires"] += ", end of day"
+        A.add(sc, "expires", "end of day", "Time for acceptance has a date but no time (a counter's \"2 days after "
+              "delivery\" names no hour): read as the end of that day. Confirm the time on the form", "med")
     o["lapsed"] = lapsed(o, L["analysis_date"])
     o["expires_today"] = expires_today(o, L["analysis_date"])
     o["buyer"] = (o.get("buyer") or "").strip()
@@ -537,6 +568,10 @@ def prepare_offer(o, L, S, A):
     o["seller_concessions"] = given(o, "seller_concessions", 0, A, sc, "Seller concessions not provided: assumed $0", "high")
     # Rider GG signed broker to broker: the listing broker pays the buyer's broker from its own fee (listing agreement)
     o["bb_from_listing"] = str(o.get("buyer_broker_paid_by") or "").lower().replace("_", " ") in ("listing broker", "listing")
+    if o["bb_from_listing"]:  # OFR-259: read from Rider GG's signer box or the listing agreement; the agent confirms it
+        A.add(sc, "buyer_broker_paid_by", "listing broker", "Buyer's broker paid by the listing broker from its own fee "
+              "(Rider GG signed broker to broker, or the listing agreement), so it's left out of the seller's net. Confirm "
+              "the listing agreement says so", "med")
     if o["bb_from_listing"] and o.get("buyer_broker_pct") is None and o.get("buyer_broker_amount") is None:
         # Not a cost to the seller, so not an assumption: the default share only sizes an assumed listing fee.
         o["buyer_broker_pct"], o["bb_tag"] = S["default_buyer_broker_pct"] or 0, None
@@ -548,7 +583,7 @@ def prepare_offer(o, L, S, A):
                                           "Buyer-broker compensation not stated: left out of the net", "high")
         else:
             offered = S["offered_buyer_broker_pct"] is not None
-            src = "what the seller offered" if offered else "national estimate"
+            src = "what the seller offered" if offered else "default commission"  # OFR-259: same wording as the listing fee
             o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: assumed {pct(bb)} ({src})",
                                           "high" if offered else "med")
     else:
@@ -729,6 +764,9 @@ def risk_days(o):
                *(days for _, days, _ in o.get("rider_windows") or ()))
 
 
+REPAIR_CREDIT_STEP = 500  # OFR-254: the downside's post-inspection credit is rounded to the nearest $500 (documented)
+
+
 def repair_reserve(o, L):
     """The downside case's repair cost to the seller, by form.
 
@@ -741,8 +779,8 @@ def repair_reserve(o, L):
     if o["repairs_owed"]:  # the contract's cap, never rounded above it
         return o["repair_limits"]["general"], "Repairs up to the General Repair Limit (Standard)"
     if o["contract_form"] in cf.FRBAR or not L["frbar_market"] or L.get("repair_reserve_deal"):
-        if L["repair_reserve_pct"]:
-            return rnd(L["repair_reserve_pct"] * o["price"], 500), "Post-Inspection Repair Credit (Est.)"
+        if L["repair_reserve_pct"]:  # OFR-254: the market's share of price to the nearest $500 (0.7% of $382,000 = $2,500)
+            return rnd(L["repair_reserve_pct"] * o["price"], REPAIR_CREDIT_STEP), "Post-Inspection Repair Credit (Est.)"
     return 0, None
 
 
@@ -1125,6 +1163,21 @@ def contract_checks(o, L):
         add("Med", f"Loan amount {money(loan)} doesn't match {pct(o['down_pct'])} down on {money(o['price'])}.",
             "Ask the buyer's agent to correct the financing figures.", "terms",
             "Please correct the loan amount or down payment in the financing section.", "loan_amount")
+    bal = o.get("balance_to_close")  # OFR-261: Para. 2(e); with the deposits and the loan it must add up to the price
+    if bal is not None and o["deposit"] is not None and (loan or not o["financed"]):
+        total = o["deposit"] + (loan or 0) + bal
+        if abs(total - o["price"]) > 100:
+            add("Med", f"The deposit ({money(o['deposit'])})" + (f", loan amount ({money(loan)})" if loan else "")
+                + f" and balance to close ({money(bal)}) add up to {money(total)}, not the {money(o['price'])} price: a "
+                "counter likely changed the price without restating them.",
+                "Restate the loan amount and balance to close at the new price in the seller's response.", "terms",
+                f"Please confirm the loan amount and balance to close at the {money(o['price'])} price.", "loan_amount")
+    changed = buyer_changes(o)
+    if changed:  # OFR-261: a term the buyer's counter changed that no seller counter asked about
+        add("Med", "The buyer's counter changes terms no seller counter addressed: " + "; ".join(
+                f"{name} {was} to {now}" for name, was, now, _ in changed) + ".",
+            "Confirm the seller accepts the change, or restate the original terms in the seller's response.", "terms",
+            None, "buyer_changes")
     if o["financed"] and o["loan_approval_days"] and o["loan_approval_days"] > o["close_days"]:
         add("Med", f"Loan approval period ({o['loan_approval_days']} days) ends after closing ({o['close_days']} days).",
             "Ask for a loan approval date before closing.", "terms", "Can the loan approval date move before closing?")
@@ -1151,6 +1204,7 @@ TOPIC_WORDS = {
     "lead_paint": r"lead[- ](based )?paint",
     "loan_amount": r"loan amount",
     "flood_disclosure": r"flood disclosure|FD-2|689\.302",
+    "buyer_changes": r"(buyer'?s counter|counter offer \d|CO ?#?\d) (moves|moved|changes|changed) (the )?closing",
 }
 
 
@@ -1217,6 +1271,28 @@ def chain_gaps(o):
             want = _d(want)
         if (now != want) if better == "same" else (now > want) if better == "lower" else (now < want):
             out.append((name, _term_text(key, want), _term_text(key, now), key))
+    return out
+
+
+def buyer_changes(o):
+    """Terms the live offer changed from the original offer (the first entry in `prior_counters`, when it's `by: buyer`)
+    that no seller counter stated: (name, before, now, key). OFR-261: a buyer's counter that moves the closing date the
+    seller never countered is a change the seller hasn't answered. Counted like chain_gaps: a weaker term for the seller,
+    or any move of the closing date."""
+    history = o.get("prior_counters") or []
+    first = history[0] if history and history[0].get("by") == "buyer" else None  # the original offer comes first
+    if not first:
+        return []
+    seller = [c for c in history if (c.get("by") or "seller") == "seller"]
+    out = []
+    for key, name, better in CHAIN_TERMS:
+        was, now = first.get(key), (o.get("close") if key == "closing_date" else o.get(key))
+        if was is None or now is None or any(c.get(key) is not None for c in seller):
+            continue  # a term the seller countered is chain_gaps' job
+        if better == "same":
+            was = _d(was)
+        if (now != was) if better == "same" else (now > was) if better == "lower" else (now < was):
+            out.append((name, _term_text(key, was), _term_text(key, now), key))
     return out
 
 
@@ -1449,9 +1525,11 @@ def acceptance_row(o, L):
     while due.weekday() >= 5:
         due += timedelta(days=1)
     was = o.get("expires") or "Not stated"
-    why = ("The offer's own deadline has passed: this sets a new one" if o.get("lapsed") else
+    # OFR-262: an estimated deadline (counted from the signature date) has only likely passed, never as a fact
+    why = ("The offer's own deadline has passed: this sets a new one" if o.get("lapsed") == "passed" else
+           "The offer's own deadline has likely passed: this sets a new one" if o.get("lapsed") == "likely" else
            "A firm deadline for the buyer to answer the counter")
-    return ("Time for Acceptance", f"Passed ({was})" if o.get("lapsed") == "passed" else was,
+    return ("Time for Acceptance", {"passed": f"Passed ({was})", "likely": f"Likely passed ({was})"}.get(o.get("lapsed"), was),
             f"{due:%a %b %-d}, 5:00 PM", why)
 
 
@@ -1539,9 +1617,11 @@ def analyze_offer(o, L, S, costs):
 
 def target_net(L, S, costs, close, o=None):
     """A clean offer at list: no concessions, the agreed (or market) buyer-broker fee, same closing date. With an offer,
-    on that offer's title terms (its Para. 9(c) box), so "vs. target" compares like with like (OFR-103)."""
+    on that offer's title terms (its Para. 9(c) box), so "vs. target" compares like with like (OFR-103), and with the
+    same commission lines: when the listing broker pays the buyer's broker, one total line (OFR-259)."""
     bb = S["default_buyer_broker_pct"] or 0
-    return net_sheet(L["list_price"], 0, bb, 0, close, L, S, offer_costs(o, costs) if o else costs)
+    return net_sheet(L["list_price"], 0, bb, 0, close, L, S, offer_costs(o, costs) if o else costs,
+                     bb_from_listing=bool(o and o.get("bb_from_listing")))
 
 
 def single_recommendation(o, tgt, priority="balanced"):
@@ -1592,14 +1672,26 @@ def analyze(data, market=None, cma=None):
     check_fractions(data)
     if cma:
         data = apply_cma(data, cma)
-    costs = load_costs(data.get("listing") or {}, market)
+    listing = data.get("listing") or {}
+    # OFR-253: with no state, an FR/BAR contract means Florida (its costs, labeled Assumed); anything else gets national
+    # estimates. The assumption says which, so its text and the net sheet always agree.
+    no_state = market is None and not state_of(listing)
+    frbar = no_state and any(frbar_form(o) for o in data.get("offers") or [])
+    if frbar:
+        market = profiles.load_market(state="FL", county=listing.get("county"))
+    costs = load_costs(listing, market)
+    costs.state_assumed = frbar
     A = Assume()
     if data.get("_cma_side_note"):
         A.add("listing", "cma_side", "other side", data["_cma_side_note"], "high")
     if data.get("_cma_address_note"):  # CMA-102
         A.add("listing", "cma_address", "another property", data["_cma_address_note"], "high")
-    if market is None and not state_of(data.get("listing") or {}):
-        A.add("listing", "state", costs.state, "Property's state not given: Florida costs assumed", "high")
+    if frbar:
+        A.add("listing", "state", "FL", "Property's state not given: the offer is on a Florida Realtors/Florida Bar "
+              "contract, so Florida costs are used (Assumed). Confirm the property is in Florida", "high")
+    elif no_state:
+        A.add("listing", "state", None, "Property's state not given: national cost estimates are used (no state's local "
+              "costs, and no Florida rules without an FR/BAR contract). Give the state for local costs", "high")
     L, S = prepare_listing(data, A, costs)
     offers = [prepare_offer(o, L, S, A) for o in data.get("offers") or []]
     if not offers:
@@ -1608,6 +1700,7 @@ def analyze(data, market=None, cma=None):
     label_offers(offers)
     for o in offers:
         analyze_offer(o, L, S, costs)
+    title_fee_note(L, costs, [o for o in offers if o["status"] in ACTIVE] or offers)
     for o in offers:
         if o["title_payer_by_contract"] and o["status"] in ACTIVE:
             L["cost_notes"].append(f"{o['label']}: owner's title policy paid by the {o['title_payer']}, who chooses the closing "
@@ -1618,6 +1711,10 @@ def analyze(data, market=None, cma=None):
               "Closing in November or December: whether the seller has paid this year's tax bill wasn't given. Assumed not "
               "paid (the seller credits the buyer from Jan 1); if it's paid, the buyer credits the seller instead", "med")
     _missing_market(costs, offers[0]["ns"], A)
+    estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)
+    if L["hoa_monthly"] is None and estoppel:  # OFR-255: charged when the HOA is unknown, so say so
+        A.add("listing", "hoa_monthly", "unknown", f"HOA not stated: the {estoppel[0]} ({money(estoppel[1])}) is charged in "
+              "case there is one. Say whether there's an HOA (0 if none)", "low")
     live_offers = [o for o in offers if o["status"] in ACTIVE]
     active = [o for o in live_offers if not o["blocking"]]
     for o in live_offers:
@@ -1650,30 +1747,54 @@ def analyze(data, market=None, cma=None):
                 o["action"], o["action_reason"] = "BACKUP", f"Strong enough to hold as backup to {top['ref']}"
             else:
                 o["action"] = "DECLINE"
-                why = []
-                if o["sale_contingency_days"]:
-                    why.append("sale-of-home contingency")
-                if o["approval"] in ("prequal", "none") and o["financed"]:
-                    why.append("pre-qual only")
-                if S["deadline"] and o["close"] > S["deadline"]:
-                    why.append(f"closes past {S['deadline']:%b %-d} deadline")
-                if not why:
-                    why.append("nets less than the recommended offer after costs and risk")
+                keys, why = decline_reasons(o, top, S)
                 text = "; ".join(why)
-                o["action_reason"] = text[:1].upper() + text[1:]
+                o["action_reason"], o["action_reason_keys"] = text[:1].upper() + text[1:], keys
         for o in ranked:
             if o.get("recommendation"):
                 o["action"] = o["recommendation"].upper()
     live = {f"offer {o['id']}" for o in active + res["incomplete"]}
-    if S["listing_fee_assumed"] and any(o.get("bb_from_listing") for o in active + res["incomplete"]):
-        for a in A.items:  # OFR-127: one commission wording next to the net sheet's total fee
+    by_listing = [bool(o.get("bb_from_listing")) for o in active + res["incomplete"]]
+    if S["listing_fee_assumed"] and any(by_listing):
+        for a in A.items:  # OFR-127, OFR-259: the commission wording matches the net sheet's lines
             if a["field"] == "listing_fee_pct" and a["value"]:
-                a["why"] += (f". Where the listing broker pays the buyer's broker, the net sheet shows the total fee "
-                             f"({pct(a['value'] + (S['default_buyer_broker_pct'] or 0))})")
+                total = pct(a["value"] + (S["default_buyer_broker_pct"] or 0))
+                a["why"] = (f"Listing brokerage fee not provided: assumed {total} in total (default commission); the "
+                            "listing broker pays the buyer's broker from it" if all(by_listing) else
+                            a["why"] + f"; where the listing broker pays the buyer's broker, the net sheet shows the {total} "
+                            "total on one line")
     items = [a for a in A.items if not a["scope"].startswith("offer ") or a["scope"] in live]
     res["assumptions"] = merge_assumptions(items)
     res["missing"] = sorted(res["assumptions"], key=lambda a: IMPACT_ORDER[a["impact"]])
     return res
+
+
+def decline_reasons(o, top, S):
+    """(keys, phrases) for a declined offer, against the recommended one. OFR-252: with no term to name, the reason
+    cites what ranks it lower (certainty, or the net if the appraisal and inspection go badly), never "nets less" next to
+    a higher as-offered net."""
+    found = []
+    if o["sale_contingency_days"]:
+        found.append(("sale_contingency", "sale-of-home contingency"))
+    if o["approval"] in ("prequal", "none") and o["financed"]:
+        found.append(("prequal", "pre-qual only"))
+    if S["deadline"] and o["close"] > S["deadline"]:
+        found.append(("past_deadline", f"closes past {S['deadline']:%b %-d} deadline"))
+    if not found:
+        net, top_net = o["ns"]["net_adj"], top["ns"]["net_adj"]
+        sure, top_sure = o["score"]["total"], top["score"]["total"]
+        less_sure = f"less certain to close ({sure}/100 vs. {top_sure}/100)"
+        down_gap = top["ns_down"]["net_adj"] - o["ns_down"]["net_adj"]
+        if net > top_net and sure < top_sure:
+            found.append(("more_net_less_certain", f"nets {money(net - top_net)} more as offered but is {less_sure}"))
+        elif net > top_net:
+            found.append(("more_net_lower_downside", f"nets {money(net - top_net)} more as offered but "
+                          + (f"{money(down_gap)} less if the appraisal and inspection go badly" if down_gap > 0
+                             else "ranks lower once risk is counted")))
+        else:
+            found.append(("nets_less", f"nets {money(top_net - net)} less than the recommended offer"
+                          + (f" and is {less_sure}" if sure < top_sure else "")))
+    return [k for k, _ in found], [w for _, w in found]
 
 
 def merge_assumptions(items):
@@ -1696,10 +1817,12 @@ def scopes(a):
     return [a["scope"], *(a.get("also") or [])]
 
 
-def preliminary_inputs(R, offer_id=None):
+def preliminary_inputs(R, offer_id=None, name_offer=None):
     """High-impact inputs still assumed (for the Preliminary banner), in plain names, deduplicated.
 
-    In multi mode only the listing, the seller and the offer in question count.
+    In multi mode only the listing, the seller and the offer in question count. `name_offer` ('offer B' -> a label):
+    with several offers in the file, an offer's input names the offers it's missing for (OFR-266), "contract form
+    (Park · Coldwell Banker, Díaz · eXp)", so one offer's gap never reads as every offer's.
     """
     names = {"cma_low / cma_high": "CMA range", "payoff": "mortgage payoff", "listing_fee_pct": "listing fee",
              "seller_concessions": "seller concessions", "buyer_broker_pct": "buyer-broker comp.",
@@ -1711,6 +1834,9 @@ def preliminary_inputs(R, offer_id=None):
         if a["impact"] != "high" or (want is not None and not want.intersection(scopes(a))):
             continue
         n = names.get(a["field"], a["field"].replace("_", " "))
+        offers = [s for s in scopes(a) if s.startswith("offer ")]
+        if name_offer and offers and len(R["offers"]) > 1:
+            n += f" ({', '.join(name_offer(s) for s in offers)})"
         if n not in out:
             out.append(n)
     return out

@@ -45,11 +45,11 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | Field | Default if Missing | Impact |
 |---|---|---|
 | `address` | — | — |
-| `state`, `county` | state read from the address ("…, FL 32750"); neither → Florida assumed | high |
+| `state`, `county` | state read from the address ("…, FL 32750"). Neither: an offer on an FR/BAR contract means Florida (its costs, labeled Assumed); otherwise national estimates, never Florida's. Either way it's listed as an assumption | high |
 | `list_price` | **required** | — |
 | `beds`, `baths`, `sqft`, `year_built` | shown as "—" | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
-| `hoa_monthly` | unknown → HOA estoppel still charged; `0` = no HOA | low |
+| `hoa_monthly` | unknown → HOA estoppel still charged, listed as an assumption; `0` = no HOA | low |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional) | from `--cma`; else both = list price, appraisal risk measured vs. list | **high** |
@@ -80,7 +80,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 |---|---|---|
 | `name` | "Seller" | — |
 | `payoff` | 0; nets labeled **before payoff** | **high** |
-| `listing_fee_pct` | 2.5% assumed (5% total with the buyer's agent) | med |
+| `listing_fee_pct` | 2.5% assumed for the listing side (default commission, 5% total); when the listing broker pays the buyer's broker, 5% in total on one line | med |
 | `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say assume 2.5% | med |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
@@ -94,9 +94,9 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `id` | "A", "B", …: an internal key, next letter for each new offer | "A" | — |
 | `label` | the offer's name in the report, when the agent wants something other than the default (see Offer Names) | agent and brokerage | — |
 | `status` | `active` `backup` `declined` `expired` `accepted` | `active` | — |
-| `expires` | `YYYY-MM-DD HH:MM`: when the offer lapses (the time for acceptance). Before `analysis_date`: a Blocking issue (lapsed) | — | — |
+| `expires` | `YYYY-MM-DD HH:MM`: when the offer lapses (the time for acceptance). Before `analysis_date`: a Blocking issue (lapsed). When the form gives a date but no time (a CO-3 counter's "2 days after delivery"), give the date alone: it's read as the end of that day and listed as an assumption. Never invent a time | — | med when the time is missing |
 | `expires_estimated` | `true` when `expires` is counted from the signature date because the delivery date isn't known (a counter "2 days after delivery"): a passed date is then a High issue and a question, not Blocking | false | — |
-| `prior_counters` | earlier counters on this offer, oldest first: `[{"by": "seller", "price": 629000, "inspection_days": 10, "note": "Counter 1"}, {"by": "buyer", ...}]`. Terms: `price`, `inspection_days`, `loan_approval_days`, `deposit`, `seller_concessions`, `appraisal_gap`, `closing_date`. The engine never counters above the seller's last price or asks for weaker terms than the seller's last counter, and raises a High issue for terms of that counter the live offer doesn't carry | none | — |
+| `prior_counters` | earlier counters on this offer, oldest first: `[{"by": "seller", "price": 629000, "inspection_days": 10, "note": "Counter 1"}, {"by": "buyer", ...}]`. Terms: `price`, `inspection_days`, `loan_approval_days`, `deposit`, `seller_concessions`, `appraisal_gap`, `closing_date`. The engine never counters above the seller's last price or asks for weaker terms than the seller's last counter, and raises a High issue for terms of that counter the live offer doesn't carry. When a buyer's counter is live, put the original offer first as `{"by": "buyer", "note": "Original offer", ...}` with the terms the buyer's counter changed: a change no seller counter addressed (a later closing date) is raised as a Med issue | none | — |
 | `received` | `YYYY-MM-DD HH:MM`, for the record (not scored) | — | — |
 | `buyer` | name(s) on the contract; shown once, as contract identification | not shown | — |
 | `buyer_agent`, `buyer_brokerage` | the buyer's agent and their brokerage, as on the contract | name falls back to price and financing | — |
@@ -125,7 +125,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `aga_valuation_days`, `aga_renegotiate_days` | AGA-1 blanks | 30, 3 | — |
 | `gap_funds` | financed waiver only: $ documented beyond down payment and closing costs | 0 when waived | med |
 | `sale_contingency_days`, `kickout` | days, bool; Rider X in `riders` sets `kickout` | 0, false | — |
-| `buyer_broker_paid_by` | `listing_broker` when the listing broker pays the buyer's broker from its own fee (Rider GG signed by the Seller's Broker, or the listing agreement says so): no buyer-broker line in the seller's net, and an assumed listing fee becomes the market's total (5%). Set `seller.listing_fee_pct` to the total fee in the listing agreement | `seller` | — |
+| `buyer_broker_paid_by` | `listing_broker` when the listing broker pays the buyer's broker from its own fee (Rider GG signed by the Seller's Broker, or the listing agreement says so): no buyer-broker line in the seller's net (the Seller's Target too), no buyer-broker row in the Terms Review, and an assumed listing fee becomes the market's total (5%) on one line. Listed as an assumption for the agent to confirm. Set `seller.listing_fee_pct` to the total fee in the listing agreement | `seller` | med |
 | `buyer_broker_form` | FR/BAR: `FF` when the buyer's broker is paid as a seller credit (Rider FF, also read from `riders`), which counts toward the loan program's concession limit; `GG` or blank for a separate compensation agreement | GG | — |
 | `insurance_days`, `mold_days`, `drywall_days`, `rezoning_days`, `attorney_days` (Rider Z: to the buyer's attorney-approval date, a walk-away until then) | days from the Effective Date for a rider's cancel window when the rider's date or days are filled in (`frbar-riders.md`) | each rider's default; Z and R have none and are flagged | — |
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
@@ -137,6 +137,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `seller_financing` | Rider C: the note amount the seller carries (paid over time, not cash at closing) | 0 | — |
 | `assessment_payoff` | Rider EE or the CDD addendum: an assessment balance the seller agrees to pay at closing | 0; flagged when Rider EE is attached | — |
 | `loan_amount` | $ from the financing paragraph | none; checked against the down payment when given | — |
+| `balance_to_close` | $ the balance due at closing (FR/BAR Para. 2(e)) of the live terms. With the deposit and loan amount it must add up to the price; a counter that changed the price without restating them is raised (`loan_amount`) | none; not checked | — |
 | `escalation` | `{cap, increment, proof}`; the offer is scored at the price it reaches against the other offers | none | — |
 | `personal_property`, `occupancy`, `other_terms` | text | — | — |
 | `insurance_quote` | `true` (a quote in hand, scored), `false` (none yet), or `"planned"` (the buyer's agent says one is coming: noted, not scored until it's in hand) | unknown | — |
@@ -171,7 +172,7 @@ Market costs come from the listing's state and county (`local-costs.md`): Florid
 ## Offers Over Time
 
 - **New offer:** append it (next letter as `id`); the mode switches to multi on its own.
-- **Buyer counters back:** the buyer's counter becomes the offer's terms (only what would govern if signed), and the seller's counter goes in `prior_counters`. The engine never counters above the seller's last price or asks for less than the seller's last terms, and flags terms the buyer's counter dropped.
+- **Buyer counters back:** the buyer's counter becomes the offer's terms (only what would govern if signed), and the seller's counter goes in `prior_counters`, after the original offer's changed terms (`by: "buyer"`). The engine never counters above the seller's last price or asks for less than the seller's last terms, flags terms the buyer's counter dropped, and flags terms it changed that the seller never countered. Record the counter's loan amount and balance to close as the form now reads them.
 - **Counter rejected, offer expired or withdrawn:** `status` `declined` / `expired`. It leaves the ranking but stays in the file.
 - **A buyer agrees to back up:** `status: "backup"`. **Counter accepted:** `status: "accepted"`, and offer a contract timeline for the deadlines.
 - **A later conversation:** the file doesn't carry over; rebuild it from the offers the agent uploads again.

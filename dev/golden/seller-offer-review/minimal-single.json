@@ -476,6 +476,12 @@
    "field": "title_by",
    "impact": "med",
    "value": "seller"
+  },
+  {
+   "field": "hoa_monthly",
+   "impact": "low",
+   "scope": "listing",
+   "value": "unknown"
   }
  ],
  "incomplete": {
@@ -613,6 +619,12 @@
    "field": "loan_approval_days",
    "impact": "low",
    "value": 30
+  },
+  {
+   "field": "hoa_monthly",
+   "impact": "low",
+   "scope": "listing",
+   "value": "unknown"
   }
  ],
  "mode": "single",

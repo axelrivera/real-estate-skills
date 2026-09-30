@@ -68,6 +68,9 @@
   "lower_cost": {
    "_appraisal_basis": "F",
    "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
    "aga_named": false,
    "agent_track": "average",
    "appraisal_days": 39,
@@ -2149,6 +2152,9 @@
    {
     "_appraisal_basis": "F",
     "action": "DECLINE",
+    "action_reason_keys": [
+     "nets_less"
+    ],
     "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 39,
@@ -3565,6 +3571,9 @@
    {
     "_appraisal_basis": "F",
     "action": "DECLINE",
+    "action_reason_keys": [
+     "nets_less"
+    ],
     "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 39,
@@ -4816,6 +4825,9 @@
    {
     "_appraisal_basis": "F",
     "action": "DECLINE",
+    "action_reason_keys": [
+     "nets_less"
+    ],
     "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 39,

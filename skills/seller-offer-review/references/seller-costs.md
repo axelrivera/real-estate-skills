@@ -12,7 +12,7 @@ Each cost line in the net sheet comes from the first of: the listing file (this 
 | HOA Estoppel Letter | $299 (charged when the HOA is unknown or dues > 0) | HOA Status Letter, $250, labeled Estimate |
 | Tax Proration | tax bill, else 1.8% of list price (a medium-impact assumption: ask for the bill); paid in arrears, prorated through the day before closing allowing the 4% early-payment discount (FR/BAR Standard K). Unpaid bill: the seller credits the buyer from Jan 1. Paid (`listing.current_tax_bill_paid`, asked for November and December closings): the buyer credits the seller to Dec 31 | tax bill, else 1.1% of list price (national estimate); arrears |
 | Holding Costs | insurance 0.7%/yr + HOA + $250 utilities + 4.5% interest on the payoff, per month (tax is in the proration, never counted twice) | insurance 0.5%/yr + HOA + $250 utilities + interest (national estimates) |
-| Inspection Credit (Downside Only) | about 0.7% of price when the buyer has an inspection period | left out, flagged |
+| Inspection Credit (Downside Only) | 0.7% of price, rounded to the nearest $500, when the buyer has an inspection period | left out, flagged |
 
 ## When the Agent Has Better Numbers
 

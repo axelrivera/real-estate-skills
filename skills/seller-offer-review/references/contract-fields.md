@@ -10,10 +10,11 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 | `price` | Para. 2 (purchase price) |
 | `deposit` | Para. 2(a) initial + 2(b) additional deposit, added together. Note the escrow agent and due dates |
 | `financing`, `loan_amount` | Para. 2(c) financing amount and Para. 8 (type, LTV / loan amount). Rider E → `fha` / `va`. Para. 8(a) cash checked → `cash` |
+| `balance_to_close` | Para. 2(e), the balance due at closing, as the live terms read (a counter that changed the price may have left it unchanged) |
 | `loan_approval_days` | Para. 8(b) (30 days when blank) |
 | `closing_date` | Para. 4 (Rider G moves it to 45 days after short sale approval) |
-| `expires` | Para. 3 (time for acceptance). A counteroffer's own acceptance date; when it's blank and the time runs from delivery ("2 days after delivery") and the delivery date isn't known, count from the signature date and set `expires_estimated: true` |
-| `prior_counters` | Earlier counteroffers (CO-3), oldest first, with `by` and the terms each states. The live offer's fields are the terms that would govern if signed: a counter carries only what it restates, and anything else stays as in the original offer |
+| `expires` | Para. 3 (time for acceptance). A counteroffer's own acceptance date; when it's blank and the time runs from delivery ("2 days after delivery") and the delivery date isn't known, count from the signature date and set `expires_estimated: true`. No time on the form: give the date alone (read as the end of that day) |
+| `prior_counters` | Earlier counteroffers (CO-3), oldest first, with `by` and the terms each states. When a buyer's counter is live, first the original offer (`by: "buyer"`) with the terms the buyer's counter changed. The live offer's fields are the terms that would govern if signed: a counter carries only what it restates, and anything else stays as in the original offer |
 | `occupancy` | Para. 6; Riders T and U |
 | `personal_property` | Para. 1 (items included / excluded) |
 | `seller_concessions`, `home_warranty` | Para. 9 and additional terms (Para. 20). Seller-paid closing costs are often a dollar amount or % in additional terms. None anywhere in the document: record `0` |

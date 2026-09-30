@@ -16,7 +16,8 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (only when `riders` is listed) | High (F: Med) |
 | `rider_GG` | Rider GG attached: the compensation agreement isn't seen yet | Med |
 | `lead_paint` | built before 1978 with no lead-based paint disclosure (Rider P) | High |
-| `loan_amount` | `loan_amount` doesn't match the down payment | Med |
+| `loan_amount` | `loan_amount` doesn't match the down payment; or the deposit, `loan_amount` and `balance_to_close` don't add up to the price (a counter changed the price without restating the loan and balance) | Med |
+| `buyer_changes` | the buyer's counter changed a term from the buyer's original terms (the first `by: "buyer"` entry in `prior_counters`) that no seller counter stated: a later closing date, a longer period, a smaller deposit, more concessions | Med |
 | `inspection_period` | an inspection period of 15 days or more | Med |
 | `flood_disclosure` | the market requires the seller's flood disclosure and `listing.flood_disclosure` isn't `true` | Med |
 
@@ -48,7 +49,7 @@ This is a completeness check, not a legal opinion. Never tell the agent a contra
 - A required disclosure is missing: lead-based paint for homes built before 1978 (federal). In Florida, the HOA disclosure summary (without it the buyer may cancel within 3 days after receiving it) and the seller's flood disclosure (FD-2, s. 689.302, at or before signing; set `listing.flood_disclosure` once it's given).
 - A condo: the condo rider, and for an FHA or VA offer the project's approval. The buyer's rescission windows start when they receive the association documents, the milestone summary and the SIRS, so deliver them right away (`condo.md`).
 - The rider checklist and the attached riders disagree.
-- **Delivery date unknown:** a deadline counted from delivery (a counteroffer "2 days after delivery" with no acceptance date) is counted from the signature date. Set `expires` to that date and `expires_estimated: true`: if it has passed, it's a High issue and a question for the buyer's agent (when was it delivered?), not Blocking.
+- **Delivery date unknown:** a deadline counted from delivery (a counteroffer "2 days after delivery" with no acceptance date) is counted from the signature date. Set `expires` to that date, with no time when the form names none (the engine reads it as the end of the day and lists the assumption), and `expires_estimated: true`: if it has passed, it's a High issue and a question for the buyer's agent (when was it delivered?), not Blocking.
 - A counteroffer that doesn't restate a term from an earlier counter: under FR/BAR CO-3 only what the counter states carries, so the original offer's term governs. Record the governing terms in the offer and the seller's counters in `prior_counters`; the engine raises it (`counter_chain`).
 
 Some of these are the listing side's job (the seller's HOA and lead-paint disclosures): write the fix for the agent, and leave `request` out so it doesn't go to the buyer's agent.
@@ -63,7 +64,7 @@ A blank that the form fills in is not an issue: record the form's value and say 
 
 ## Consistency
 
-- Deposit plus loan amount plus balance due at closing equals the price.
+- Deposit plus loan amount plus balance due at closing equals the price: record `balance_to_close` (Para. 2(e)) and the engine checks it.
 - The loan amount matches the down payment.
 - The loan approval and appraisal deadlines fall before closing.
 - Additional terms don't contradict the main paragraphs (they usually govern: note which one you used).
