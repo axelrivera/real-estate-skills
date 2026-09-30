@@ -294,10 +294,15 @@ def body(R, C, homes, agent, L):
 
     w = R["watch"]
     b += [f'<h2>{L("h_watch")}</h2>', ul(w["items"], "plain watch"),
-          f'<h3>{L("h_questions")}</h3>', '<ol class="qs">' + "".join(f"<li>{q}</li>" for q in w["questions"]) + "</ol>",
-          f'<h2>{L("h_method")}</h2>'] + [f"<p>{p}</p>" for p in R["method"]]
-    b.append(footer_block(agent, R, L))
+          f'<h3>{L("h_questions")}</h3>', '<ol class="qs">' + "".join(f"<li>{q}</li>" for q in w["questions"]) + "</ol>"]
     return b
+
+
+def closing(R, C, agent, L):
+    """How This Was Prepared, the footer and the closing notices kept together, so the notices never sit alone on a
+    last page (CMA-276, as seller-cma)."""
+    return ('<div class="kg sec">' + f'<h2>{L("h_method")}</h2>' + "".join(f"<p>{p}</p>" for p in R["method"])
+            + footer_block(agent, R, L) + render.notices(agent, cma.report_notices(C)) + "</div>")
 
 
 def theme_css(agent):
@@ -321,7 +326,7 @@ def build_html(R, C, homes, agent):
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
-               cma.group_blocks(body(R, C, homes, agent, L)) + render.notices(agent, cma.report_notices(C)) + "</div>")
+               cma.group_blocks(body(R, C, homes, agent, L)) + closing(R, C, agent, L) + "</div>")
     title = f'{L("doc_label")}: {R["subject"]["address"]}'
     doc = render.page(content, css=cma.css(), title=title, theme_css=vars_css)
     return doc.replace("<html>", '<html lang="en">', 1), L
@@ -354,8 +359,11 @@ def build(R, fmt, out_dir, ctx):
         print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
     elif info["summary_page"]["fit_level"]:
         print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
-    if info["moved"]:
+    pages = cma.page_fill(path)  # CMA-274: how full each printed page is, from the PDF
+    if pages is None and info["moved"]:  # no pdftotext here: the old information line
         print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
+    for c in cma.page_checks(pages or [], "the watch items, the questions or the method"):
+        print(f"Check: {c}", file=sys.stderr)
     labels = C.get("scatter_labels") or {}
     for text, asked, used in labels.get("moved", []):
         print(f"Chart label {text!r}: asked for {asked}, placed {used} to clear the markers (information).", file=sys.stderr)

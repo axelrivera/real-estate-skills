@@ -12,9 +12,6 @@ then layout notes and checks on stderr.
 """
 import html
 import os
-import re
-import shutil
-import subprocess
 import sys
 from datetime import date
 
@@ -309,52 +306,12 @@ def _build(R, fmt, out_dir, ctx):
     return written
 
 
-# CMA-274, CMA-276: how full each printed page is, read back from the PDF (the layout measured before printing can
-# drift a few pixels from Chromium's print layout, enough to push a block to the next page)
-PAGE_TOP, PAGE_BOTTOM = 0.45 * 72, 792 - 0.55 * 72  # the content area in PDF points (cma.PAGE_MARGINS, Letter)
-HALF_EMPTY = 0.5  # a page before a kept-together block that ends above half the page leaves a gap worth fixing
-LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines
-_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
-
-
-def page_fill(pdf):
-    """[(fill, first line)] per page: how far down the content area the text reaches (0 to 1) and the page's first
-    line, from pdftotext -bbox. None when pdftotext isn't available."""
-    tool = shutil.which("pdftotext")
-    if not tool:
-        return None
-    try:
-        out = subprocess.run([tool, "-bbox", pdf, "-"], capture_output=True, text=True, timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
-        return None
-    pages = []
-    for chunk in out.split("<page ")[1:]:
-        words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
-                 if float(y1) <= PAGE_BOTTOM + 1]  # the running footer sits below the content area
-        if not words:
-            pages.append((0.0, ""))
-            continue
-        bottom = max(w[2] for w in words)
-        top = min(w[1] for w in words)
-        first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
-        pages.append((max(0.0, (bottom - PAGE_TOP) / (PAGE_BOTTOM - PAGE_TOP)), first[:60]))
-    return pages
+# CMA-274, CMA-276: page fill read back from the printed PDF (shared/cma.py)
+page_fill = cma.page_fill
 
 
 def page_checks(pages):
-    """Checks for pages 2 onward: one that ends above half the page before a block that moved on, and a last page
-    holding only a few closing lines."""
-    checks = []
-    for i in range(1, len(pages) - 1):
-        fill, _ = pages[i]
-        if fill < HALF_EMPTY:
-            checks.append(f"Page {i + 1} is only {fill:.0%} full: the next block (\"{pages[i + 1][1]}\") didn't fit and "
-                          f"starts page {i + 2}. Shorten the wording before it on page {i + 1} or in that block (its intro, "
-                          "a comp bullet, a note) so it fits, then render again.")
-    if len(pages) > 2 and pages[-1][0] < LONE_TAIL:
-        checks.append(f"The last page (page {len(pages)}) holds only a few closing lines (\"{pages[-1][1]}\"): shorten "
-                      "the needs list, the launch steps or the method so they fit on the page before, then render again.")
-    return checks
+    return cma.page_checks(pages, "the needs list, the launch steps or the method")
 
 
 def main(argv=None):
