@@ -11,7 +11,7 @@
       "id": 2,
       "prompt": "We signed an extension on Cypress Bend, here's the amendment. What moved?",
       "today": "2026-10-21",
-      "expected_output": "Adds the amendment to the existing deal file (doesn't rebuild), re-runs, says closing moved Oct 30 → Fri Nov 6 and loan approval moved from Mon Oct 26 to 37 days (Sun Nov 1, rolled to Mon Nov 2, end of day, no 5 PM cutoff); dates counted back from closing move with it; delivers the updated PDF (the amendment is dated Oct 20, before today)",
+      "expected_output": "Adds the amendment to the existing deal file (doesn't rebuild), re-runs, says closing moved Oct 30 → Fri Nov 6 and loan approval moved from Mon Oct 26 to 37 days (Sun Nov 1, rolled to Mon Nov 2, end of day, no 5 PM cutoff); dates counted back from closing move with it; delivers the updated PDF (the amendment is dated Oct 20, before today); the file's appraisal_days without Rider F and 5-day title evidence on an FHA deal are asked about in the same reply, not fixed silently and not a reason to hold the PDF",
       "files": ["dev/evals/contract-timeline/files/deal-cypress-bend.json", "dev/evals/contract-timeline/files/amendment-1.md"]
     },
     {
