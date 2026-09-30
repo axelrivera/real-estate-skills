@@ -40,7 +40,7 @@ Days until firm are counted from acceptance, since no Effective Date exists yet:
 
 ## Rider K on the Standard Form
 
-When the agent asks how a Standard + Rider K offer compares with a plain Standard offer, explain both sides from `frbar-riders.md` (K):
+When the agent asks how a Standard + Rider K offer compares with a plain Standard offer, explain both sides from `frbar-riders.md` (K). Run only the offer as written: the plain Standard side is described in words from these points, never from a second listing file or hand math. The reply is a comparison (about 350 words, SKILL.md Deliver), not a quick answer:
 
 - **Rider K firms the deal sooner on condition.** The buyer may cancel for any reason until the inspection period ends (15 days if blank), then takes the property as is. A plain Standard offer has no walk-away, but its repair process runs past the inspection period: the seller's repair estimates (10 days) and the election (5 days), and either party may cancel when repairs exceed a limit. So condition risk ends at day N under Rider K and at about N + 15 on the plain Standard form.
 - **The seller owes no repairs.** Rider K deletes the Para. 9(a) repair, WDO and permit limits (blank limits don't matter), so the downside uses the post-inspection credit estimate, not the General Repair Limit.

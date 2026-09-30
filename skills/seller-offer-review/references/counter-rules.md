@@ -8,7 +8,7 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 4. **Concessions above the norm** (Florida 1.5% of price) → counter at half.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
 6. **Deposit under the norm** (Florida 3%) → the norm on the counter price for financed offers, at least 5% for cash.
-7. **Inspection period over the norm** (Florida 7 days) → the norm, paired with the seller sharing the insurance inspection reports up front (Florida: 4-point and wind-mitigation).
+7. **Inspection period over the norm** (Florida 7 days) → the norm, paired with the seller sharing the insurance inspection reports up front (Florida: 4-point and wind-mitigation). Only when the offer states the period: an assumed one (the form's blank default) gets no row; a Low flag asks the agent to confirm the days instead. The counter never changes a term nobody gave.
 8. **Sale-of-home contingency** → cap at 21 days with a 72-hour kick-out.
 9. **Pre-qual or no approval** → full pre-approval within 3 days. **Counter price above the pre-approval letter's cap** (`approval_max_price`) → an updated letter at the counter price within 3 days.
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.
@@ -25,6 +25,8 @@ When the seller has already countered (`prior_counters`), the draft builds on th
 - If the agent's own counter goes above the seller's last price or asks for less than the seller's last terms, say why in its `rows`.
 
 A buyer's counter that drops a term the seller countered (under FR/BAR CO-3 only what a counter restates carries) is raised as a High issue (`counter_chain`), and the draft restates the term.
+
+A term the buyer's counter changed that no seller counter addressed (`buyer_changes`, a later closing date) gets its own row: "accept it, or restate" the earlier term, so the seller decides it instead of accepting it silently; the net assumes it's accepted. When the loan amount and balance to close still add up to an earlier price (`loan_amount`), the draft has a row restating them at the counter price.
 
 ## One Live Contract at a Time
 

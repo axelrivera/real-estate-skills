@@ -29,6 +29,8 @@
 
 **Top Risks:** {{each summary.risks: risk.issue}}
 
+{{when summary.terms_reason:}} **Terms Reason:** {{summary.terms_reason}}
+
 <!-- multi mode -->
 **{{summary.title}}.** {{summary.why}}
 
@@ -40,12 +42,16 @@
 
 {{summary.plan_note}}
 
+{{when summary.terms_reason:}} **Terms Reason:** {{summary.terms_reason}}
+
 <!-- both modes -->
 **Options:** {{each summary.options: "**" + option + "**" + (" (recommended)" when recommended) + ": " + net + " · " + certainty + " · " + what}}
 
 {{summary.preliminary, when present}}
 
 **Next Step:** {{summary.next_step}}
+
+**Estimated:** {{estimated_costs, joined with commas; skip when empty}}
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 

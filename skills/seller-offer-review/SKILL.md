@@ -32,6 +32,7 @@ One JSON file per property, in a temporary folder, never the outputs folder (`re
 - **Contract or offer uploaded:** read all of it, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly); `references/contract-fields.md` says where each field lives. FR/BAR: `references/frbar-riders.md`, `references/frbar-addenda.md` and `references/frbar-contract.md`; any other contract: `references/other-contracts.md`. Check it's complete with `references/contract-check.md` (and `references/frbar-package-check.md`) and record what the engine doesn't raise in `contract_issues`. No seller-paid costs in it: `seller_concessions: 0`. A counteroffer chain: the terms that would govern if signed, and the seller's earlier counters in `prior_counters`. A condo: also `references/condo.md`.
 - **Pre-approval letter or proof of funds:** `approval`, `lender`, and the letter's caps in `approval_max_price` / `approval_max_loan`.
 - **Offer described in chat:** take what's given.
+- **Another state's paid or free termination period** (a Texas option period, a due-diligence or attorney-review period): record it as `inspection_days`, leave `inspection_walkaway` out unless the agent confirmed the contract lets the buyer cancel for any reason in it (the engine then records a high-impact assumption that it does), and put any option or due-diligence fee in `other_terms`. Say in chat that the period was treated as a walk-away window.
 
 Record only what the documents or the agent say: the engine's default is labeled, a guess isn't. Buyer letters, photos and personal details never go in the file or the report.
 
@@ -46,19 +47,23 @@ python3 scripts/review.py listing.json [--cma file.cma.json] [--mode single|mult
 It prints every value already formatted: the page-1 summary, each offer's net sheet, and the assumptions ranked by impact. Read it critically before answering; the rules are a first draft and the agent's judgment wins.
 
 - **Scores** follow `references/scoring-rubric.md`. When the agent knows something the contract can't show (the lender call went badly), set `scores.<criterion>` with a `why`.
-- **Counters** follow `references/counter-rules.md`. Check the counter is realistic for this buyer: with a CMA, a price above the value range is countered back to its top; without one the price stands and the counter asks for gap coverage; FHA and VA buyers are never asked for gap coverage.
+- **Counters** follow `references/counter-rules.md`. Check the counter is realistic for this buyer: with a CMA, a price above the value range is countered back to its top; without one the price stands and the counter asks for gap coverage; FHA and VA buyers are never asked for gap coverage. The counter never changes a term nobody gave (an assumed inspection period): ask the agent to confirm it instead. When a buyer's counter changed a term the seller never answered, or left the loan amount and balance to close at an earlier price, the counter has a row for it; keep those rows.
 - **Overrides:** `counter`, `recommendation` or `status` in the offer when the agent decides differently. Never change a number to make the recommendation look better.
 
 ## 3. Deliver
 
-Pick the reply by what the agent asked for; every number comes from the output.
+Pick the reply by what the agent asked for; every number comes from the output. Caps are for the prose; tables, and the one line each Blocking or High issue takes, don't count toward them.
 
 | Asked For | The Reply Contains | Cap |
 |---|---|---|
-| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; the top missing inputs as one question; the PDF offered in one line | about 200 words, no tables. A lapsed offer (`summary.revive`) adds its reference counter table: the table is part of the quick answer and doesn't count toward the words |
-| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty), the net with payoff status, one line with the recommendation and counter, the estimates the agent can replace (a title quote, the tax bill), the PDF offered in one line | one table plus about 100 words |
+| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix, one line each (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; every line of `estimated_costs` in one short "Estimated:" line; the top missing inputs as one question; the PDF offered in one line | about 200 words, no tables. A lapsed offer (`summary.revive`) adds its reference counter table and the net as written, labeled reference only |
+| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty), the net with payoff status, one line with the recommendation and counter, `estimated_costs` in one line with what replaces them (a title quote, the tax bill), the PDF offered in one line | one table plus about 150 words |
+| **Comparison question** (Rider K vs. a plain Standard offer, AS IS vs. Standard, cash vs. financed) | the quick-question lines, then the comparison below | about 350 words |
+| **Re-rank request** ("rank B first", "the seller likes B") | the ranking the terms support, one sentence on why, and the terms reason in `ranking_reason`; a new PDF when the ranking or the plan changed | about 150 words |
 | **Full review in chat** | `assets/offer-review-template.md`, filled in | the template |
-| **A report for the seller** | the PDF below, then the chat lines under it | — |
+| **A report for the seller** | the PDF below, then the chat lines under it | about 120 words |
+
+**Top risks** come from `summary.risks` and `offers[].biggest_risk`, deal risks first (a passed deadline, sale contingency, financing, appraisal gap). The seller's flood disclosure is a listing-side reminder: it's last in the flags and on the checklist, never the biggest risk; in chat, mention it in a clause at most.
 
 **A report for the seller:**
 
@@ -70,9 +75,13 @@ python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|mult
 
 With the PDF, the chat says: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs as one line. Offer the other format in one line.
 
-**Rider K questions** ("how does Rider K compare to a normal Standard offer?"): explain it with Rider K on the Standard Form in `references/scoring-rubric.md`: it firms the deal sooner than the Standard repair windows, the seller owes no repairs, why the scores may match, and its red flags.
+**Rider K questions** ("how does Rider K compare to a normal Standard offer?"): run the offer as written only; there's no second listing file for a plain Standard version. Explain the difference from Rider K on the Standard Form in `references/scoring-rubric.md`: it firms the deal sooner than the Standard repair windows, the seller owes no repairs (so the downside has the inspection credit, not the General Repair Limit), why the scores may match, and its red flags. Quote only numbers from the output; describe the plain Standard side in words.
 
-**Time for acceptance passed:** the review is CONTRACT INCOMPLETE and shows, as reference, what a seller counter with a new time for acceptance could look like (`summary.revive`). State the fact (the offer's own deadline has passed), never whether it can still be accepted, and never a send-by date in the past. Only likely passed (delivery date unknown): ask when it was delivered.
+**Time for acceptance passed:** the review is CONTRACT INCOMPLETE and shows, as reference, what a seller counter with a new time for acceptance could look like (`summary.revive`). State the fact (the offer's own deadline has passed), never whether it can still be accepted, and never a send-by date in the past. The quick answer still gives the net as written and the certainty, labeled reference only. Only likely passed (delivery date unknown): ask when it was delivered.
+
+**Year built:** when `to_confirm` asks for it (riders were read from an FR/BAR package and the year is missing), ask for it in the missing-inputs question: a home built before 1978 needs the lead-based paint disclosure (Rider P) before accepting.
+
+**Terms reason:** when the seller saw a buyer letter, or wants an offer the ranking doesn't put first, write the terms reason for the pick in the listing file's `ranking_reason` (price, terms, financing, timing; never the buyer). It prints on the report as Terms Reason.
 
 ## Rules That Protect the Seller and the Agent
 

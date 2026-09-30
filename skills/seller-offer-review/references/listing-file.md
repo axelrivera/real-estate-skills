@@ -36,6 +36,7 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
 | `listing`, `offers` | required |
 | `seller` | `{}` |
 | `cma` | optional: a `cma-handoff v1` record pasted in, instead of passing `--cma`. Besides the value range it can carry the subject's `annual_tax`, `hoa_monthly`, `flood_zone` and `roof_year`, used where the listing doesn't say. A handoff for another address is flagged (high) |
+| `ranking_reason` | optional: the terms reason for the pick, in one or two sentences (price, terms, financing, contingencies, timing; never the buyer), when the seller saw a buyer letter or picks an offer the ranking doesn't put first (`fair-housing.md`). Printed on the report as Terms Reason and in `summary.terms_reason` |
 | `sample` | `true` only for demo data (prints SAMPLE DATA) |
 
 The agent's name, brokerage and brand colors come from the agent's profile (`--profile`), not from this file.
@@ -47,7 +48,7 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `address` | — | — |
 | `state`, `county` | state read from the address ("…, FL 32750"). Neither: an offer on an FR/BAR contract means Florida (its costs, labeled Assumed); otherwise national estimates, never Florida's. Either way it's listed as an assumption | high |
 | `list_price` | **required** | — |
-| `beds`, `baths`, `sqft`, `year_built` | shown as "—" | — |
+| `beds`, `baths`, `sqft`, `year_built` | shown as "—". Without `year_built` the lead-based paint check can't run; when riders were read from an FR/BAR package it's asked for (med). Take it from the tax record or MLS | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
 | `hoa_monthly` | unknown → HOA estoppel still charged, listed as an assumption; `0` = no HOA | low |
 | `hoa_approval_required` | false | low |
@@ -116,7 +117,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
 | `form_revision`, `form_revision_source` | FR/BAR revision as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). `form_revision_source`: `"footer"` when you read it from the form's footer; leave it out when it came from anywhere else, and record the revision as given | none; a revision other than the verified one adds a chat note, quoting "the footer reads" only for `"footer"` | — |
 | `repair_limits` | Standard only (alone or with Rider L): `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |
-| `inspection_walkaway` | Other contracts only: `true` when the buyer may cancel for any reason in the period, `false` for a repair or objection process only | assumed `true` and flagged | **high** |
+| `inspection_walkaway` | Other contracts only: `true` when the buyer may cancel for any reason in the period, `false` for a repair or objection process only. A paid or free termination period (a Texas option period, a due-diligence period) goes in `inspection_days`; set this only when the agent confirmed the contract's terms, else leave it out so the assumption is recorded. Its fee goes in `other_terms` | assumed `true` and flagged | **high** |
 | `inspection_days` | days | FR/BAR: 15 (Para. 12(a), and Riders K and L, when blank); any other contract: 10 | med |
 | `loan_approval_days` | days | 30 (financed) | low |
 | `appraisal_contingency` | days to the end of the buyer's appraisal notice, `true` or `false`. Rider F: the rider's date plus 3 days. FR/BAR with no Rider F, E or AGA-1: leave it out (Para. 8(b) makes the appraisal part of Loan Approval) | Rider F attached: its default (10 days before closing, plus 3); FR/BAR financed with no appraisal rider: the loan approval period, no assumption; otherwise 21 days if financed | med |
@@ -155,7 +156,7 @@ A single-offer review carries the name too (under the headline and in the PDF fi
 - `scores`: `{"appraisal": {"score": 2, "why": "Appraisers here run low"}, "agent": 5}`. Keys: `financing` `approval` `appraisal` `contingency` `deposit` `timeline` `property` `agent`. Marked "Agent" in the report.
 - `counter`: any computed term (`price`, `seller_concessions`, `appraisal_gap`, `deposit`, `inspection_days`, `home_warranty`, `buyer_broker_pct`, `closing_date`), or the whole table as `rows: [[term, offered, counter, why], …]`. The counter net and certainty recompute from the terms, so keep rows and terms consistent.
 - `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE`.
-- `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`. Values `Yes` `No` `Pending` `N/A`.
+- `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`, and `flood` (the seller's flood disclosure, where the market requires one; `listing.flood_disclosure: true` ticks it). Values `Yes` `No` `Pending` `N/A`.
 - `flags`: extra flags `[{"sev": "High", "issue": "…", "fix": "…"}]`.
 - `contract_issues`: what reading the contract found, per `contract-check.md`: `[{"sev": "Blocking", "issue": "…", "fix": "…", "request": "…", "check": "signed", "topic": "expired"}]`. `topic` (optional) names the engine check the issue covers (`contract-check.md` lists them); the engine then drops its own flag for it and keeps yours at the higher of the two levels. Without `topic`, the issue's words are matched. `sev` is `Blocking` `High` `Med` `Low`. A **Blocking** issue takes the offer out of the recommendation and the ranking until it's fixed; remove it from the file once the corrected contract arrives. `request` goes to the buyer's agent questions (leave it out when the fix is on the listing side); `check` puts the issue on that checklist line (`signed`, `riders`, `terms`).
 
