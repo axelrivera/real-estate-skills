@@ -385,7 +385,8 @@ def build(R, fmt, out_dir, ctx):
         print(f"Check: {c}", file=sys.stderr)
     labels = C.get("scatter_labels") or {}
     for text, asked, used in labels.get("moved", []):
-        print(f"Chart label {text!r}: asked for {asked}, placed {used} to clear the markers (information).", file=sys.stderr)
+        where = f"still {used}" if used.split(",")[0] == asked else f"placed {used}, not {asked},"
+        print(f"Chart label {text!r}: {where} to clear the markers (information).", file=sys.stderr)
     for text, side in labels.get("leader", []):
         print(f"Chart label {text!r}: no clear spot beside its point, so it sits farther off to the {side} with a thin "
               "line to it (information).", file=sys.stderr)
