@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 4
+  "count": 5
  },
  "chat_notes": {
   "count": 0
@@ -72,8 +72,19 @@
      "key": "flood_elevation"
     }
    ]
+  },
+  {
+   "note_key": "insurance_days_reading",
+   "rows": [
+    {
+     "key": "insurance"
+    }
+   ]
   }
  ],
+ "joined_agent_notes": {
+  "count": 0
+ },
  "length_days": 35,
  "merged_agent_notes": {
   "count": 0
@@ -88,6 +99,7 @@
   "waiting_on_receipt",
   "flood_zone_unknown",
   "rider_h_boxes",
+  "insurance_days_reading",
   "default:title"
  ],
  "ok": true,
@@ -311,7 +323,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": true,
+   "critical": false,
    "day": 32,
    "done": false,
    "done_display": null,

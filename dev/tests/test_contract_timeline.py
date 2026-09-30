@@ -1394,5 +1394,65 @@ class FourthPass(unittest.TestCase):
         self.assertEqual(text.count("BEGIN:VEVENT"), len(t["rows"]))
 
 
+class FifthPass(unittest.TestCase):
+    """Eval iteration 6 fixes (TL-256 to TL-259)."""
+
+    def test_lender_rows_are_never_critical(self):
+        """TL-256: the Closing Disclosure is a lender's target: no star on the client's table, no calendar reminder."""
+        t = timeline.analyze(fixture("buyer-fha.json"))
+        rows = by_key(t)
+        self.assertTrue(rows["clear_to_close"]["lender"])
+        self.assertFalse(rows["clear_to_close"]["critical"])
+        self.assertFalse(any(r["critical"] for r in t["rows"] if r["lender"]))
+        self.assertNotIn("Closing Disclosure ★", timeline_render.ics(t, lender_dates=True))
+
+    def test_default_note_says_not_given_unless_known_blank(self):
+        """TL-257: a term missing from the deal file is "not given"; "blank" only when `blanks` says the copy showed it."""
+        d = fixture("buyer-fha.json")
+        d["contract"].pop("deposit_days")
+        r = timeline.analyze(d)
+        title = by_key(r)["title"]
+        self.assertIn("default:title", r["note_keys"])
+        notes = {k: r["agent_notes"][i] for i, k in enumerate(r["note_keys"])}
+        self.assertIn("not given", notes["default:title"])
+        self.assertIn("not given", notes["default:deposit"])
+        self.assertEqual(title["date_display"], "Thu Oct 15")
+        d["contract"]["blanks"] = ["title_evidence_days_before"]
+        r = timeline.analyze(d)
+        notes = {k: r["agent_notes"][i] for i, k in enumerate(r["note_keys"])}
+        self.assertIn("deadline blank", notes["default:title"])
+        self.assertIn("not given", notes["default:deposit"])
+        self.assertEqual(r["warning_keys"], [])  # `blanks` is a known field
+
+    def test_rider_h_days_note_gives_both_readings(self):
+        """TL-258: days written in Rider H's date blank don't say which way they count: the note and if_changed give
+        the date counted back from closing too; `insurance_days_before` records that reading."""
+        d = fixture("buyer-fha.json")  # insurance_days 10: Mon Oct 5 after the Effective Date, Tue Oct 20 before closing
+        r = timeline.analyze(d)
+        self.assertIn("insurance_days_reading", r["note_keys"])
+        alt = next(x for x in r["if_changed"] if x["note_key"] == "insurance_days_reading")
+        self.assertEqual([(x["key"], x["date_display"]) for x in alt["rows"]], [("insurance", "Tue Oct 20")])
+        self.assertEqual(by_key(r)["insurance"]["date_display"], "Mon Oct 5")
+        d["contract"]["insurance_days_before"] = d["contract"].pop("insurance_days")
+        r = timeline.analyze(d)
+        self.assertEqual(by_key(r)["insurance"]["date_display"], "Tue Oct 20")
+        self.assertNotIn("insurance_days_reading", r["note_keys"])
+        self.assertEqual(r["warning_keys"], [])
+
+    def test_agent_note_keyed_to_a_row_joins_it(self):
+        """TL-259: an agent note keyed to a deadline no script note covers merges with the row: one line with its date."""
+        d = fixture("buyer-fha.json")
+        d["contract"]["riders"] = list(d["contract"]["riders"]) + ["GG"]
+        d["agent_notes"] = [{"key": "compensation_agreement", "text": "It isn't in the package. Has it been signed?"},
+                            {"key": "compensation_agreement", "text": "Ask the listing agent."}]
+        r = timeline.analyze(d)
+        self.assertEqual(r["joined_agent_notes"], ["compensation_agreement"])
+        lines = [n for n in r["agent_notes"] if "Has it been signed" in n]
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].startswith("Buyer's Broker Compensation Agreement Signed (Mon Sep 28): "))
+        self.assertIn("Ask the listing agent.", lines[0])
+        self.assertFalse(any(n == "Ask the listing agent." for n in r["agent_notes"]))
+
+
 if __name__ == "__main__":
     unittest.main()

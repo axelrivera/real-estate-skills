@@ -53,6 +53,9 @@
    ]
   }
  ],
+ "joined_agent_notes": {
+  "count": 0
+ },
  "length_days": null,
  "merged_agent_notes": {
   "count": 0
@@ -327,7 +330,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": true,
+   "critical": false,
    "date_display": "Pending",
    "day": null,
    "display": "Pending",

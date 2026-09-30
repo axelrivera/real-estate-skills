@@ -73,6 +73,9 @@
    ]
   }
  ],
+ "joined_agent_notes": {
+  "count": 0
+ },
  "length_days": 35,
  "merged_agent_notes": {
   "count": 0
@@ -432,7 +435,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": true,
+   "critical": false,
    "day": 32,
    "done": false,
    "done_display": null,

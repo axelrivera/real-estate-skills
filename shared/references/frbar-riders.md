@@ -381,7 +381,7 @@ This file is long: jump to the rider you need by its letter, and read only the r
 - **Cancel Rights:** Buyer, under (a) or (b), by written notice by the deadline; Deposit refunded.
 - **Money Effects:** None directly; the premium cap bounds the buyer's insurance cost, which drives the monthly payment.
 - **Changes to the Contract:** Flood right is in addition to the Para. 10(d) flood zone and elevation right (20 days after Effective Date if blank).
-- **Red Flags:** Box unchecked means no right for that coverage; cap blank leaves the trigger undefined (ask); both $ and % filled with no rule for which controls (ask); a short closing makes Closing − 10 the operative deadline.
+- **Red Flags:** Box unchecked means no right for that coverage; cap blank leaves the trigger undefined (ask); both $ and % filled with no rule for which controls (ask); a short closing makes Closing − 10 the operative deadline; days written in the date blank ("10 days") with no "after Effective Date" or "prior to Closing": the blank asks for a date and the default counts both ways, so the rider doesn't say which (ask; until answered, the buyer acts by the earlier date and the seller treats the right as open through the later one).
 - **Skill Use:**
   - Timeline: add each checked item at the earlier of ED + 30 or Closing − 10, next to the Para. 10(d) flood deadline.
   - Seller review: count as a buyer walk-away until that date; lower certainty for coastal or older roofs.
