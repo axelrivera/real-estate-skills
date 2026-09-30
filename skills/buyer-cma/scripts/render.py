@@ -66,6 +66,17 @@ def cash_flag(short, pay, L):
             '</span>' if short else "")
 
 
+def cash_fit_note(first, C, L):
+    """CMA-295: under page 1's cash-to-close row, when the buyer's own program runs over their cash, the credit table's
+    option that fits (compute.py's cash_fit), so the flag carries its answer."""
+    fit = C.get("cash_fit")
+    if not (first.get("cash_short") and fit):
+        return ""
+    key = "sum_cash_fit" if fit["credit"] else "sum_cash_fit_price"
+    return ('<div class="note">' + L(key, cash=C["payments"]["buyer_cash_display"], price=money(fit["price"]),
+                                     credit=money(fit["credit"]), amt=money(fit["cash"])) + "</div>")
+
+
 def pay_closing_note(pay, L):
     """CMA-223: what the payment table's closing costs are, on the credit table's basis."""
     cl = pay["closing"]
@@ -151,7 +162,8 @@ def summary_page(R, C, agent, L):
     trs = "".join(f'<tr class="{"rec" if i == 1 else ""}"><td>{a}</td><td class="n">{v}</td></tr>' for i, (a, v) in enumerate(rows))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_costs")}</div><div class="tbl"><table><tbody>{trs}</tbody></table></div>'
-             f'<div class="note">{L("sum_costs_note", price=money(pay["price"]))}</div></div></div>')
+             + cash_fit_note(first, C, L)
+             + f'<div class="note">{L("sum_costs_note", price=money(pay["price"]))}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_check")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["check_first"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
@@ -179,7 +191,7 @@ def credit_section(R, C, L):
         [L("cr_extra")] + [("+" + money(c["extra"])) if c["extra"] > 0.5 else L("cr_none") for c in cols],
         [L("cr_payback")] + [L("cr_years", n=f"{c['payback_years']:.0f}") if c["payback_years"] else L("cr_none") for c in cols],
         [L("cr_cap", program=prog, down=f'{cr["down_pct"] * 100:g}')] + [money(c["cap"]) if c["cap"] is not None else L("cr_none") for c in cols],
-        [L("cr_appr", median=money(C["median_adjusted"]))] + [money(c["appraisal_room"]) for c in cols],
+        [L("cr_appr", median=C["median_adjusted_display"])] + [money(c["appraisal_room"]) for c in cols],
     ]
     head = [L("cr_head")] + [money(c["price"]) + (" + " + money(c["credit"]) if c["credit"] else "") for c in cols]
     cc = L("cr_cc_est", amt=money(cs["closing_costs"])) if cr["closing_costs_given"] else L("cr_cc_pct", pct=f'{cr["closing_cost_pct"] * 100:g}')

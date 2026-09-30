@@ -24,7 +24,7 @@
   "closing_costs_given": false,
   "columns": [
    {
-    "appraisal_room": 21800.0,
+    "appraisal_room": 21800,
     "bb_short": 0,
     "cap": 13650.0,
     "cash": 36400.0,
@@ -44,7 +44,7 @@
     "price": 455000
    },
    {
-    "appraisal_room": 16800.0,
+    "appraisal_room": 16800,
     "bb_short": 0,
     "cap": 13800.0,
     "cash": 31800.0,
@@ -64,7 +64,7 @@
     "price": 460000
    },
    {
-    "appraisal_room": 11800.0,
+    "appraisal_room": 11800,
     "bb_short": 0,
     "cap": 13950.0,
     "cash": 27200.0,

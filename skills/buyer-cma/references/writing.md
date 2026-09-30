@@ -24,7 +24,7 @@ Page 1 summary → the home → bottom line (+ history, offer plan, negotiating 
 
 The flyer for buyers who won't read the report. Someone who reads only page 1 knows the opening offer with target and walk-away, the range and where asking sits, the key numbers, the comps at a glance, what the home really costs them, the three things to check, and the next step.
 
-Exactly three `key_stats`, three `why` bullets (under ~25 words each), three `check_first` items; a headline under ~25 words. The dot plot, tax and payment figures and the payment tile are computed, so never type those numbers into `summary_page`.
+Exactly three `key_stats`, three `why` bullets (under about 25 words each), three `check_first` items; a headline under about 25 words. Write "about", never a tilde, for an approximate number. The dot plot, tax and payment figures and the payment tile are computed, so never type those numbers into `summary_page`.
 
 ## After Rendering
 

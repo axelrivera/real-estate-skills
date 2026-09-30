@@ -480,10 +480,16 @@ PLACEHOLDER = re.compile(r"\{(\w+)\}")
 RENDER_PLACEHOLDERS = ("trend_at_subject", "r2_share")  # filled by render.py from the chart
 
 
+def median_rounded(median_adjusted, count):
+    """CMA-234: an even number of comps has a midpoint median ($472,612.50): rounded to the nearest $100, as seller-cma
+    does (CMA-265); an odd count's median is a comp's own adjusted value, kept to the dollar. CMA-294: every figure
+    quoted from the median (the credit table's room below it) uses this value, so the report shows one median."""
+    step = 1 if count % 2 else 100
+    return round(median_adjusted / step) * step
+
+
 def median_display(median_adjusted, count):
-    """CMA-234: an even number of comps has a midpoint median ($472,612.50): shown to the nearest $100, as seller-cma
-    does (CMA-265); an odd count's median is a comp's own adjusted value, shown to the dollar."""
-    return money(median_adjusted, 1 if count % 2 else 100)
+    return money(median_rounded(median_adjusted, count))
 
 
 def placeholder_values(median_adjusted, hist, credit=None, count=1):
@@ -521,6 +527,35 @@ def placeholder_warnings(R, values, extra=()):
     return [f"{p} has {name}, which no script fills: it would print as typed. Use one of "
             f"{', '.join('{' + k + '}' for k in sorted(set(values) | set(extra)))}, or write the words."
             for p, name in unfilled_placeholders(R, set(values) | set(extra))]
+
+
+def range_warnings(bl, values, market):
+    """CMA-296: the supported range against the adjusted comps (method.md). `range_wide`: wider than twice the market's
+    typical width (`cma.typical_range_width`; 5% of the median where none is built in). `range_one_comp`: an end past
+    the second-highest or second-lowest adjusted value (the highest or lowest with 3 comps or fewer), rounded outward
+    to $5,000, so a single comp sets it."""
+    if not values:
+        return []
+    v = sorted(values)
+    median = statistics.median(v)
+    typical = market.get("cma.typical_range_width") or 0.05 * median
+    out = []
+    width = bl["high"] - bl["low"]
+    if width > 2 * typical + 1:
+        out.append(("range_wide", f"The range is {money(width)} wide, more than twice the typical {money(typical, 1000)}: "
+                    "the comps disagree more than a range can absorb. Replace the weakest match (the largest adjustments, "
+                    "the farthest or oldest sale) and re-run, or keep it and say in the bottom line why it's this wide."))
+    lo, hi = (v[1], v[-2]) if len(v) >= 4 else (v[0], v[-1])
+    lo_ok, hi_ok = math.floor(lo / 5000) * 5000, math.ceil(hi / 5000) * 5000
+    if bl["high"] > hi_ok:
+        out.append(("range_one_comp", f"The top of the range ({money(bl['high'])}) is above {money(hi_ok)}, the "
+                    f"{'second-highest' if len(v) >= 4 else 'highest'} adjusted comp ({money(hi)}) rounded up: one sale "
+                    f"sets it. Bring it to {money(hi_ok)} or below."))
+    if bl["low"] < lo_ok:
+        out.append(("range_one_comp", f"The bottom of the range ({money(bl['low'])}) is below {money(lo_ok)}, the "
+                    f"{'second-lowest' if len(v) >= 4 else 'lowest'} adjusted comp ({money(lo)}) rounded down: one sale "
+                    f"sets it. Bring it to {money(lo_ok)} or above."))
+    return out
 
 
 def comp_count_warnings(cards):
@@ -667,7 +702,8 @@ def compute(R, market, homes):
         elif j["estimated"]:
             warn("tax_estimated", f"Tax for {j['label']} is estimated at {j['basis']}; find the millage if you can.")
     pay = payments(R, market, tax_rows) if all(j["annual"] is not None for j in tax_rows) else None
-    credit = credit_scenarios(R, market, tax_rows, median_adjusted) if pay else None
+    credit = credit_scenarios(R, market, tax_rows, median_rounded(median_adjusted, len(R["comps"]["cards"]))) \
+        if pay else None  # CMA-294: the room below the median as the report quotes it
     for c in (credit or {}).get("columns", []):
         if c["over_cap"]:
             warn("credit_over_cap", f"The {money(c['credit'])} credit at {money(c['price'])} is over the loan program's limit: fix the scenario.")
@@ -676,6 +712,8 @@ def compute(R, market, homes):
     ca = op.get("credit_alt")
     if ca and credit and not any(c["price"] == ca["price"] and c["credit"] == ca["credit"] for c in credit["columns"]):
         warn("credit_alt_mismatch", "offer_plan.credit_alt doesn't match any price-vs-credit scenario.")
+    for key, text in range_warnings(bl, [c["adjusted"] for c in R["comps"]["cards"]], market):  # CMA-296
+        warn(key, text)
     if op["walk_away"] > bl["high"]:
         warn("walk_away_above_range", "The walk-away price is above the supported range: only if the buyer accepts appraisal-gap risk, and say so.")
     cash = R["costs"].get("buyer_cash")  # CMA-204: what the buyer has for down payment and closing
@@ -788,7 +826,8 @@ def compute(R, market, homes):
         "payments": pay,
         "credit": credit,
         # CMA-235: the credit option that fits the buyer's cash, named by the cash_short warning
-        "cash_fit": {k: cash_fit[k] for k in ("price", "credit", "cash")} if cash_fit else None,
+        "cash_fit": {**{k: cash_fit[k] for k in ("price", "credit", "cash")},  # CMA-295: the chat template quotes it
+                     **{k + "_display": money(cash_fit[k]) for k in ("price", "credit", "cash")}} if cash_fit else None,
         "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "handoff": h,

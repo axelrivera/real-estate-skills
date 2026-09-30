@@ -894,5 +894,78 @@ class FifthPass(unittest.TestCase):
         self.assertNotIn("scenario_over_cash", C["warning_keys"])
 
 
+class SixthPass(unittest.TestCase):
+    """Eval iteration 7 fixes (CMA-294 to CMA-297)."""
+
+    run_ = FourthPass.run_
+
+    @staticmethod
+    def six(R):
+        """A sixth comp that makes the median a midpoint (not a whole $100)."""
+        extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "meta": "", "bullets": [],
+                 "adjustments": [{"label": "Test", "amount": 0}]}
+        R["comps"]["cards"].append(extra)
+        mid = sorted(c["sold_price"] - (c.get("seller_concessions") or 0) + sum(a["amount"] for a in c["adjustments"])
+                     for c in R["comps"]["cards"][:-1])[2]
+        extra["sold_price"] = mid + 123
+
+    def test_credit_table_quotes_the_rounded_median(self):
+        """CMA-294: the credit table's median and its room below it use the median as the report quotes it."""
+        R, C = self.run_(self.six)
+        self.assertNotEqual(C["median_adjusted"] % 100, 0)
+        shown = compute.median_rounded(C["median_adjusted"], len(R["comps"]["cards"]))
+        self.assertEqual(shown % 100, 0)
+        for col in C["credit"]["columns"]:
+            self.assertEqual(col["appraisal_room"], shown - col["price"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn(f"Room Below the Median Adjusted Comp ({C['median_adjusted_display']})", doc)
+        self.assertNotIn(compute.money(C["median_adjusted"]), doc)
+
+    def test_page_one_names_the_fitting_credit(self):
+        """CMA-295: when the buyer's own program runs over their cash, page 1 names the credit option that fits."""
+        def fha(cash):
+            def change(R):
+                FourthPass.fha_buyer(cash)(R)
+                R["costs"]["credit_scenarios"]["scenarios"].append({"price": 470000, "credit": 10000})
+                R["offer_plan"]["credit_alt"] = {"price": 470000, "credit": 10000}
+            return change
+        R, C = self.run_(fha(30000))
+        self.assertTrue(C["payments"]["rows"][0]["cash_short"])
+        self.assertEqual(C["cash_fit"]["price_display"], "$470,000")
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        page1 = doc[doc.index('class="onepage"'):doc.index("Details, sources, and assumptions")]
+        self.assertIn("To fit your $30,000:</strong> $470,000 with a $10,000 seller credit", page1)
+        R, C = self.run_(fha(200000))  # the buyer's program fits: no pointer
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertNotIn("To fit your", doc)
+
+    def test_range_width_and_one_comp_end(self):
+        """CMA-296: a range end past the second-highest or second-lowest adjusted comp (rounded outward to $5,000), or
+        a range wider than twice the typical width, warns."""
+        _, C = self.run_()
+        self.assertFalse({"range_wide", "range_one_comp"} & set(C["warning_keys"]))
+
+        def top(R):
+            R["bottom_line"]["high"] = 495000
+        _, C = self.run_(top)
+        self.assertEqual(C["warning_keys"].count("range_one_comp"), 1)
+        self.assertNotIn("range_wide", C["warning_keys"])
+
+        def wide(R):
+            R["bottom_line"]["low"] = 400000
+            R["offer_plan"]["opening"] = 400000
+        _, C = self.run_(wide)
+        self.assertIn("range_wide", C["warning_keys"])
+        self.assertEqual(C["warning_keys"].count("range_one_comp"), 1)  # the low end, below $435,000
+
+    def test_payback_says_about_not_a_tilde(self):
+        """CMA-297: the credit table's payback years read "about N years" in a client PDF, never "~N years"."""
+        R, C = self.run_()
+        self.assertTrue(any(c["payback_years"] for c in C["credit"]["columns"]))
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertRegex(doc, r"about \d+ years")
+        self.assertNotRegex(doc, r"~\d")
+
+
 if __name__ == "__main__":
     unittest.main()

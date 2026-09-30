@@ -55,7 +55,7 @@ Then compute:
 python3 scripts/compute.py report.json
 ```
 
-Fix every item in `warnings` (a credit over the program limit, a walk-away above the range, a tax estimated without millage, an outlier comp, cash to close (in the payment table or a credit scenario) over the buyer's cash or within 5% of it, a payment scenario the buyer's cash can't cover, an unfilled placeholder) and re-run; a history row out of order or an MLS number mismatch is a question for the agent, so name it in the reply. To set the range, run it first with only `subject` and `comps` (as in the gut check) for the median adjusted value. It also saves `<address>.buyer.cma.json` next to report.json, the handoff an offer skill reads later in this conversation: a working file, never shown or offered to the agent.
+Fix every item in `warnings` (a credit over the program limit, a walk-away above the range, a range one comp sets an end of or wider than the method allows, a tax estimated without millage, an outlier comp, cash to close (in the payment table or a credit scenario) over the buyer's cash or within 5% of it, a payment scenario the buyer's cash can't cover, an unfilled placeholder) and re-run; a history row out of order or an MLS number mismatch is a question for the agent, so name it in the reply. To set the range, run it first with only `subject` and `comps` (as in the gut check) for the median adjusted value. It also saves `<address>.buyer.cma.json` next to report.json, the handoff an offer skill reads later in this conversation: a working file, never shown or offered to the agent.
 
 ## 4. Deliver
 
