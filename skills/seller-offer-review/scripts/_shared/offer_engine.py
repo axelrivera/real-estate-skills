@@ -130,6 +130,7 @@ class Costs:
     def __init__(self, market, deal_costs=None):
         self.market = market
         self.over = {}
+        self.box = {}  # an offer's contract terms over the market's values, keeping the market's source (offer_costs)
         for key, value in (deal_costs or {}).items():
             path = COST_KEYS.get(key)
             if path is None or value is None:
@@ -151,6 +152,8 @@ class Costs:
     def get(self, path, default=None):
         if path in self.over:
             return self.over[path]
+        if path in self.box:
+            return self.box[path]
         return self.market.get(path, default)
 
     def source(self, path):
@@ -774,7 +777,8 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         "title": "Owner's Title Policy" + (" (Quote)" if "(Quote)" in found.get("title", ("",))[0] else
                                            " (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
         "settle": "Title Company Fees",
-        "estoppel": "HOA Estoppel",
+        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Status Letter")
+        "estoppel": costs.get("closing_costs.hoa_estoppel_label") or "HOA Status Letter",
     }
     tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
     tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
@@ -1454,12 +1458,12 @@ def offer_costs(o, costs):
     if o.get("title_payer") not in (None, costs.get("closing_costs.owner_title.payer")):
         over["closing_costs.owner_title.payer"] = o["title_payer"]
     fees = box_title_fees(o, costs)
-    if fees is not None:
-        over["closing_costs.seller_title_fees"] = fees
-    if not over:
+    if not over and fees is None:
         return costs
     c = copy.copy(costs)
     c.over = {**costs.over, **over}
+    # the box picks which of the market's fees apply; they stay the market's (labeled estimates, not a quote)
+    c.box = {**costs.box, **({"closing_costs.seller_title_fees": fees} if fees is not None else {})}
     return c
 
 

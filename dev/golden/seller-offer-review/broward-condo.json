@@ -1,7 +1,9 @@
 {
  "active": [
   {
+   "_appraisal_basis": "E",
    "action": "BACKUP",
+   "aga_named": false,
    "appraisal_days": 44,
    "appraisal_form": "E",
    "appraisal_gap": 0,
@@ -9,6 +11,7 @@
    "appraisal_protected": true,
    "appraisal_risk": true,
    "appraisal_waived": false,
+   "appraised": true,
    "approval": "du_approved",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -21,10 +24,14 @@
    "close_days": 44,
    "closing_date": "2026-11-06",
    "contract_form": "as_is",
+   "counter_risk_days": 44,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     },
@@ -40,6 +47,7 @@
     "deposit": 15000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 30,
     "price": 487000,
     "sale_contingency_days": 0,
     "seller_concessions": 6000
@@ -48,6 +56,7 @@
    "down_pct": 0.035,
    "downside_price": 485000,
    "expires_raw": "2026-09-24 20:00",
+   "expires_today": false,
    "financed": true,
    "financing": "fha",
    "firm_date": "2026-11-06",
@@ -78,6 +87,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
@@ -407,10 +417,13 @@
    },
    "title_by": "buyer",
    "title_payer": "buyer",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 10
   },
   {
+   "_appraisal_basis": null,
    "action": "ACCEPT",
+   "aga_named": false,
    "appraisal_days": 21,
    "appraisal_form": null,
    "appraisal_gap": 0,
@@ -418,6 +431,7 @@
    "appraisal_protected": false,
    "appraisal_risk": true,
    "appraisal_waived": false,
+   "appraised": true,
    "approval": "full_uw",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -430,10 +444,14 @@
    "close_days": 37,
    "closing_date": "2026-10-30",
    "contract_form": "as_is",
+   "counter_risk_days": 21,
    "counter_rows": [
     [
      "Price"
-    ]
+    ],
+    {
+     "count": 4
+    }
    ],
    "counter_score": 80,
    "counter_terms": {
@@ -443,6 +461,7 @@
     "deposit": 25000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 21,
     "price": 485000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
@@ -451,6 +470,7 @@
    "down_pct": 0.2,
    "downside_price": 480000,
    "expires_raw": "2026-09-25 12:00",
+   "expires_today": false,
    "financed": true,
    "financing": "conventional",
    "firm_date": "2026-10-14",
@@ -469,6 +489,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
@@ -800,7 +821,8 @@
    },
    "title_by": "buyer",
    "title_payer": "buyer",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 7
   }
  ],
  "assumptions": [
@@ -812,6 +834,14 @@
   {
    "field": "appraisal_contingency",
    "impact": "med"
+  },
+  {
+   "also": {
+    "count": 1
+   },
+   "field": "title_by",
+   "impact": "med",
+   "value": "buyer"
   },
   {
    "field": "current_tax_bill_paid",
@@ -872,6 +902,7 @@
   },
   "norms_source": "market",
   "property_type": "condo",
+  "repair_reserve_deal": false,
   "repair_reserve_pct": 0.007,
   "sqft": 1240,
   "state": "FL",
@@ -889,6 +920,14 @@
    "impact": "med"
   },
   {
+   "also": {
+    "count": 1
+   },
+   "field": "title_by",
+   "impact": "med",
+   "value": "buyer"
+  },
+  {
    "field": "current_tax_bill_paid",
    "impact": "med",
    "scope": "listing",
@@ -903,7 +942,9 @@
  "mode": "multi",
  "offers": [
   {
+   "_appraisal_basis": "E",
    "action": "BACKUP",
+   "aga_named": false,
    "appraisal_days": 44,
    "appraisal_form": "E",
    "appraisal_gap": 0,
@@ -911,6 +952,7 @@
    "appraisal_protected": true,
    "appraisal_risk": true,
    "appraisal_waived": false,
+   "appraised": true,
    "approval": "du_approved",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -923,10 +965,14 @@
    "close_days": 44,
    "closing_date": "2026-11-06",
    "contract_form": "as_is",
+   "counter_risk_days": 44,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     },
@@ -942,6 +988,7 @@
     "deposit": 15000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 30,
     "price": 487000,
     "sale_contingency_days": 0,
     "seller_concessions": 6000
@@ -950,6 +997,7 @@
    "down_pct": 0.035,
    "downside_price": 485000,
    "expires_raw": "2026-09-24 20:00",
+   "expires_today": false,
    "financed": true,
    "financing": "fha",
    "firm_date": "2026-11-06",
@@ -980,6 +1028,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
@@ -1309,10 +1358,13 @@
    },
    "title_by": "buyer",
    "title_payer": "buyer",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 10
   },
   {
+   "_appraisal_basis": null,
    "action": "ACCEPT",
+   "aga_named": false,
    "appraisal_days": 21,
    "appraisal_form": null,
    "appraisal_gap": 0,
@@ -1320,6 +1372,7 @@
    "appraisal_protected": false,
    "appraisal_risk": true,
    "appraisal_waived": false,
+   "appraised": true,
    "approval": "full_uw",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -1332,10 +1385,14 @@
    "close_days": 37,
    "closing_date": "2026-10-30",
    "contract_form": "as_is",
+   "counter_risk_days": 21,
    "counter_rows": [
     [
      "Price"
-    ]
+    ],
+    {
+     "count": 4
+    }
    ],
    "counter_score": 80,
    "counter_terms": {
@@ -1345,6 +1402,7 @@
     "deposit": 25000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 21,
     "price": 485000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
@@ -1353,6 +1411,7 @@
    "down_pct": 0.2,
    "downside_price": 480000,
    "expires_raw": "2026-09-25 12:00",
+   "expires_today": false,
    "financed": true,
    "financing": "conventional",
    "firm_date": "2026-10-14",
@@ -1371,6 +1430,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
@@ -1702,12 +1762,15 @@
    },
    "title_by": "buyer",
    "title_payer": "buyer",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 7
   }
  ],
  "ranked": [
   {
+   "_appraisal_basis": null,
    "action": "ACCEPT",
+   "aga_named": false,
    "appraisal_days": 21,
    "appraisal_form": null,
    "appraisal_gap": 0,
@@ -1715,6 +1778,7 @@
    "appraisal_protected": false,
    "appraisal_risk": true,
    "appraisal_waived": false,
+   "appraised": true,
    "approval": "full_uw",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -1727,10 +1791,14 @@
    "close_days": 37,
    "closing_date": "2026-10-30",
    "contract_form": "as_is",
+   "counter_risk_days": 21,
    "counter_rows": [
     [
      "Price"
-    ]
+    ],
+    {
+     "count": 4
+    }
    ],
    "counter_score": 80,
    "counter_terms": {
@@ -1740,6 +1808,7 @@
     "deposit": 25000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 21,
     "price": 485000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
@@ -1748,6 +1817,7 @@
    "down_pct": 0.2,
    "downside_price": 480000,
    "expires_raw": "2026-09-25 12:00",
+   "expires_today": false,
    "financed": true,
    "financing": "conventional",
    "firm_date": "2026-10-14",
@@ -1766,6 +1836,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
@@ -2097,10 +2168,13 @@
    },
    "title_by": "buyer",
    "title_payer": "buyer",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 7
   },
   {
+   "_appraisal_basis": "E",
    "action": "BACKUP",
+   "aga_named": false,
    "appraisal_days": 44,
    "appraisal_form": "E",
    "appraisal_gap": 0,
@@ -2108,6 +2182,7 @@
    "appraisal_protected": true,
    "appraisal_risk": true,
    "appraisal_waived": false,
+   "appraised": true,
    "approval": "du_approved",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -2120,10 +2195,14 @@
    "close_days": 44,
    "closing_date": "2026-11-06",
    "contract_form": "as_is",
+   "counter_risk_days": 44,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     },
@@ -2139,6 +2218,7 @@
     "deposit": 15000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 30,
     "price": 487000,
     "sale_contingency_days": 0,
     "seller_concessions": 6000
@@ -2147,6 +2227,7 @@
    "down_pct": 0.035,
    "downside_price": 485000,
    "expires_raw": "2026-09-24 20:00",
+   "expires_today": false,
    "financed": true,
    "financing": "fha",
    "firm_date": "2026-11-06",
@@ -2177,6 +2258,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
@@ -2506,7 +2588,8 @@
    },
    "title_by": "buyer",
    "title_payer": "buyer",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 10
   }
  ],
  "sample": true,

@@ -31,6 +31,7 @@
    "school_mills": 5.25,
    "total_mills": 16.35
   },
+  "effective_date": "2026-09-24",
   "flood": {
    "annual": null,
    "required": "citizens_value",
@@ -69,7 +70,9 @@
  },
  "O": {
   "recommended": {
+   "_appraisal_basis": null,
    "action": "BACKUP",
+   "aga_named": false,
    "agent_track": "average",
    "appraisal_days": 0,
    "appraisal_form": null,
@@ -78,6 +81,7 @@
    "appraisal_protected": false,
    "appraisal_risk": false,
    "appraisal_waived": false,
+   "appraised": false,
    "approval": "pof_verified",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -88,13 +92,17 @@
    "buyer": "Buyer",
    "buyer_broker_pct": 0.025,
    "close": "2026-10-26",
-   "close_days": 33,
-   "closing_days": 33,
+   "close_days": 32,
+   "closing_days": 32,
    "contract_form": "as_is",
+   "counter_risk_days": 7,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     }
@@ -107,6 +115,7 @@
     "deposit": 12000,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 0,
     "price": 402000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
@@ -116,9 +125,10 @@
    "downside_price": 394000,
    "expires": null,
    "expires_raw": null,
+   "expires_today": false,
    "financed": false,
    "financing": "cash",
-   "firm_date": "2026-10-03",
+   "firm_date": "2026-10-04",
    "flags": [
     {
      "sev": "Med",
@@ -132,6 +142,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "recommended",
    "inspection_assumed": false,
@@ -152,7 +163,7 @@
      }
     ],
     "close": "2026-10-26",
-    "holding": -550,
+    "holding": -533,
     "lines": [
      [
       "price",
@@ -207,7 +218,7 @@
      "count": 0
     },
     "net": 364276,
-    "net_adj": 363726,
+    "net_adj": 363743,
     "price": 394000
    },
    "ns_counter": {
@@ -219,7 +230,7 @@
      }
     ],
     "close": "2026-10-26",
-    "holding": -550,
+    "holding": -533,
     "lines": [
      [
       "price",
@@ -274,7 +285,7 @@
      "count": 0
     },
     "net": 371780,
-    "net_adj": 371230,
+    "net_adj": 371247,
     "price": 402000
    },
    "ns_down": {
@@ -286,7 +297,7 @@
      }
     ],
     "close": "2026-10-26",
-    "holding": -550,
+    "holding": -533,
     "lines": [
      [
       "price",
@@ -341,11 +352,11 @@
      "count": 0
     },
     "net": 361276,
-    "net_adj": 360726,
+    "net_adj": 360743,
     "price": 394000
    },
    "price": 394000,
-   "rank_value": 357036.0,
+   "rank_value": 357053.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": [
@@ -366,6 +377,7 @@
    "risk_days": 10,
    "risk_days_ex_appraisal": 10,
    "sale_contingency_days": 0,
+   "same_buyer": "buyer",
    "score": {
     "band": [
      "hi",
@@ -405,7 +417,7 @@
      }
     ],
     "close": "2026-10-26",
-    "holding": -550,
+    "holding": -533,
     "lines": [
      [
       "price",
@@ -460,15 +472,18 @@
      "count": 0
     },
     "net": 379284,
-    "net_adj": 378734,
+    "net_adj": 378751,
     "price": 410000
    },
    "title_by": "seller",
    "title_payer": "seller",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 10
   },
   "stronger": {
+   "_appraisal_basis": null,
    "action": "COUNTER",
+   "aga_named": false,
    "agent_track": "average",
    "appraisal_days": 0,
    "appraisal_form": null,
@@ -477,6 +492,7 @@
    "appraisal_protected": false,
    "appraisal_risk": false,
    "appraisal_waived": false,
+   "appraised": false,
    "approval": "pof_verified",
    "bb_credit": false,
    "bb_from_listing": false,
@@ -486,14 +502,18 @@
    },
    "buyer": "Buyer",
    "buyer_broker_pct": 0.025,
-   "close": "2026-10-14",
+   "close": "2026-10-15",
    "close_days": 21,
    "closing_days": 21,
    "contract_form": "as_is",
+   "counter_risk_days": 7,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     }
@@ -502,10 +522,11 @@
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "deposit": 20500,
     "home_warranty": 0,
     "inspection_days": 7,
+    "loan_approval_days": 0,
     "price": 406000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
@@ -515,9 +536,10 @@
    "downside_price": 402000,
    "expires": null,
    "expires_raw": null,
+   "expires_today": false,
    "financed": false,
    "financing": "cash",
-   "firm_date": "2026-10-03",
+   "firm_date": "2026-10-04",
    "flags": [
     {
      "sev": "Med",
@@ -531,6 +553,7 @@
     }
    ],
    "gap_cover": 0,
+   "gap_intent_only": false,
    "home_warranty": 0,
    "id": "stronger",
    "inspection_assumed": false,
@@ -550,7 +573,7 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "holding": -350,
     "lines": [
      [
@@ -595,7 +618,7 @@
      ],
      [
       "tax",
-      -3912
+      -3925
      ],
      [
       "payoff",
@@ -605,8 +628,8 @@
     "missing": {
      "count": 0
     },
-    "net": 371944,
-    "net_adj": 371594,
+    "net": 371931,
+    "net_adj": 371581,
     "price": 402000
    },
    "ns_counter": {
@@ -617,7 +640,7 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "holding": -350,
     "lines": [
      [
@@ -662,7 +685,7 @@
      ],
      [
       "tax",
-      -3912
+      -3925
      ],
      [
       "payoff",
@@ -672,8 +695,8 @@
     "missing": {
      "count": 0
     },
-    "net": 375696,
-    "net_adj": 375346,
+    "net": 375683,
+    "net_adj": 375333,
     "price": 406000
    },
    "ns_down": {
@@ -684,7 +707,7 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "holding": -350,
     "lines": [
      [
@@ -729,7 +752,7 @@
      ],
      [
       "tax",
-      -3912
+      -3925
      ],
      [
       "payoff",
@@ -739,12 +762,12 @@
     "missing": {
      "count": 0
     },
-    "net": 368944,
-    "net_adj": 368594,
+    "net": 368931,
+    "net_adj": 368581,
     "price": 402000
    },
    "price": 402000,
-   "rank_value": 365724.0,
+   "rank_value": 365711.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": [
@@ -765,6 +788,7 @@
    "risk_days": 10,
    "risk_days_ex_appraisal": 10,
    "sale_contingency_days": 0,
+   "same_buyer": "buyer",
    "score": {
     "band": [
      "hi",
@@ -803,7 +827,7 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "holding": -350,
     "lines": [
      [
@@ -848,7 +872,7 @@
      ],
      [
       "tax",
-      -3912
+      -3925
      ],
      [
       "payoff",
@@ -858,19 +882,22 @@
     "missing": {
      "count": 0
     },
-    "net": 379448,
-    "net_adj": 379098,
+    "net": 379435,
+    "net_adj": 379085,
     "price": 410000
    },
    "title_by": "seller",
    "title_payer": "seller",
-   "title_payer_by_contract": false
+   "title_payer_by_contract": false,
+   "walkaway_days": 10
   }
  },
  "R": {
   "active": [
    {
+    "_appraisal_basis": null,
     "action": "BACKUP",
+    "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 0,
     "appraisal_form": null,
@@ -879,6 +906,7 @@
     "appraisal_protected": false,
     "appraisal_risk": false,
     "appraisal_waived": false,
+    "appraised": false,
     "approval": "pof_verified",
     "bb_credit": false,
     "bb_from_listing": false,
@@ -889,13 +917,17 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-10-26",
-    "close_days": 33,
-    "closing_days": 33,
+    "close_days": 32,
+    "closing_days": 32,
     "contract_form": "as_is",
+    "counter_risk_days": 7,
     "counter_rows": [
      [
       "Price"
      ],
+     {
+      "count": 4
+     },
      {
       "count": 4
      }
@@ -908,6 +940,7 @@
      "deposit": 12000,
      "home_warranty": 0,
      "inspection_days": 7,
+     "loan_approval_days": 0,
      "price": 402000,
      "sale_contingency_days": 0,
      "seller_concessions": 0
@@ -917,9 +950,10 @@
     "downside_price": 394000,
     "expires": null,
     "expires_raw": null,
+    "expires_today": false,
     "financed": false,
     "financing": "cash",
-    "firm_date": "2026-10-03",
+    "firm_date": "2026-10-04",
     "flags": [
      {
       "sev": "Med",
@@ -933,6 +967,7 @@
      }
     ],
     "gap_cover": 0,
+    "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -953,7 +988,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -1008,7 +1043,7 @@
       "count": 0
      },
      "net": 364276,
-     "net_adj": 363726,
+     "net_adj": 363743,
      "price": 394000
     },
     "ns_counter": {
@@ -1020,7 +1055,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -1075,7 +1110,7 @@
       "count": 0
      },
      "net": 371780,
-     "net_adj": 371230,
+     "net_adj": 371247,
      "price": 402000
     },
     "ns_down": {
@@ -1087,7 +1122,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -1142,11 +1177,11 @@
       "count": 0
      },
      "net": 361276,
-     "net_adj": 360726,
+     "net_adj": 360743,
      "price": 394000
     },
     "price": 394000,
-    "rank_value": 357036.0,
+    "rank_value": 357053.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1167,6 +1202,7 @@
     "risk_days": 10,
     "risk_days_ex_appraisal": 10,
     "sale_contingency_days": 0,
+    "same_buyer": "buyer",
     "score": {
      "band": [
       "hi",
@@ -1206,7 +1242,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -1261,15 +1297,18 @@
       "count": 0
      },
      "net": 379284,
-     "net_adj": 378734,
+     "net_adj": 378751,
      "price": 410000
     },
     "title_by": "seller",
     "title_payer": "seller",
-    "title_payer_by_contract": false
+    "title_payer_by_contract": false,
+    "walkaway_days": 10
    },
    {
+    "_appraisal_basis": null,
     "action": "COUNTER",
+    "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 0,
     "appraisal_form": null,
@@ -1278,6 +1317,7 @@
     "appraisal_protected": false,
     "appraisal_risk": false,
     "appraisal_waived": false,
+    "appraised": false,
     "approval": "pof_verified",
     "bb_credit": false,
     "bb_from_listing": false,
@@ -1287,14 +1327,18 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "close_days": 21,
     "closing_days": 21,
     "contract_form": "as_is",
+    "counter_risk_days": 7,
     "counter_rows": [
      [
       "Price"
      ],
+     {
+      "count": 4
+     },
      {
       "count": 4
      }
@@ -1303,10 +1347,11 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "deposit": 20500,
      "home_warranty": 0,
      "inspection_days": 7,
+     "loan_approval_days": 0,
      "price": 406000,
      "sale_contingency_days": 0,
      "seller_concessions": 0
@@ -1316,9 +1361,10 @@
     "downside_price": 402000,
     "expires": null,
     "expires_raw": null,
+    "expires_today": false,
     "financed": false,
     "financing": "cash",
-    "firm_date": "2026-10-03",
+    "firm_date": "2026-10-04",
     "flags": [
      {
       "sev": "Med",
@@ -1332,6 +1378,7 @@
      }
     ],
     "gap_cover": 0,
+    "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -1351,7 +1398,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -1396,7 +1443,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -1406,8 +1453,8 @@
      "missing": {
       "count": 0
      },
-     "net": 371944,
-     "net_adj": 371594,
+     "net": 371931,
+     "net_adj": 371581,
      "price": 402000
     },
     "ns_counter": {
@@ -1418,7 +1465,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -1463,7 +1510,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -1473,8 +1520,8 @@
      "missing": {
       "count": 0
      },
-     "net": 375696,
-     "net_adj": 375346,
+     "net": 375683,
+     "net_adj": 375333,
      "price": 406000
     },
     "ns_down": {
@@ -1485,7 +1532,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -1530,7 +1577,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -1540,12 +1587,12 @@
      "missing": {
       "count": 0
      },
-     "net": 368944,
-     "net_adj": 368594,
+     "net": 368931,
+     "net_adj": 368581,
      "price": 402000
     },
     "price": 402000,
-    "rank_value": 365724.0,
+    "rank_value": 365711.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1566,6 +1613,7 @@
     "risk_days": 10,
     "risk_days_ex_appraisal": 10,
     "sale_contingency_days": 0,
+    "same_buyer": "buyer",
     "score": {
      "band": [
       "hi",
@@ -1604,7 +1652,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -1649,7 +1697,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -1659,13 +1707,14 @@
      "missing": {
       "count": 0
      },
-     "net": 379448,
-     "net_adj": 379098,
+     "net": 379435,
+     "net_adj": 379085,
      "price": 410000
     },
     "title_by": "seller",
     "title_payer": "seller",
-    "title_payer_by_contract": false
+    "title_payer_by_contract": false,
+    "walkaway_days": 10
    }
   ],
   "assumptions": [
@@ -1690,13 +1739,21 @@
     "impact": "med",
     "scope": "seller",
     "value": "none"
+   },
+   {
+    "also": {
+     "count": 1
+    },
+    "field": "title_by",
+    "impact": "med",
+    "value": "seller"
    }
   ],
   "incomplete": {
    "count": 0
   },
   "listing": {
-   "analysis_date": "2026-09-23",
+   "analysis_date": "2026-09-24",
    "annual_tax": 5200,
    "baths": 2,
    "beds": 3,
@@ -1745,6 +1802,7 @@
    },
    "norms_source": "market",
    "property_type": null,
+   "repair_reserve_deal": false,
    "repair_reserve_pct": 0.007,
    "roof_year": 2019,
    "sqft": 1640,
@@ -1776,6 +1834,14 @@
     "value": "none"
    },
    {
+    "also": {
+     "count": 1
+    },
+    "field": "title_by",
+    "impact": "med",
+    "value": "seller"
+   },
+   {
     "field": "holding_monthly",
     "impact": "low",
     "scope": "seller"
@@ -1784,7 +1850,9 @@
   "mode": "multi",
   "offers": [
    {
+    "_appraisal_basis": null,
     "action": "BACKUP",
+    "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 0,
     "appraisal_form": null,
@@ -1793,6 +1861,7 @@
     "appraisal_protected": false,
     "appraisal_risk": false,
     "appraisal_waived": false,
+    "appraised": false,
     "approval": "pof_verified",
     "bb_credit": false,
     "bb_from_listing": false,
@@ -1803,13 +1872,17 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-10-26",
-    "close_days": 33,
-    "closing_days": 33,
+    "close_days": 32,
+    "closing_days": 32,
     "contract_form": "as_is",
+    "counter_risk_days": 7,
     "counter_rows": [
      [
       "Price"
      ],
+     {
+      "count": 4
+     },
      {
       "count": 4
      }
@@ -1822,6 +1895,7 @@
      "deposit": 12000,
      "home_warranty": 0,
      "inspection_days": 7,
+     "loan_approval_days": 0,
      "price": 402000,
      "sale_contingency_days": 0,
      "seller_concessions": 0
@@ -1831,9 +1905,10 @@
     "downside_price": 394000,
     "expires": null,
     "expires_raw": null,
+    "expires_today": false,
     "financed": false,
     "financing": "cash",
-    "firm_date": "2026-10-03",
+    "firm_date": "2026-10-04",
     "flags": [
      {
       "sev": "Med",
@@ -1847,6 +1922,7 @@
      }
     ],
     "gap_cover": 0,
+    "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -1867,7 +1943,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -1922,7 +1998,7 @@
       "count": 0
      },
      "net": 364276,
-     "net_adj": 363726,
+     "net_adj": 363743,
      "price": 394000
     },
     "ns_counter": {
@@ -1934,7 +2010,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -1989,7 +2065,7 @@
       "count": 0
      },
      "net": 371780,
-     "net_adj": 371230,
+     "net_adj": 371247,
      "price": 402000
     },
     "ns_down": {
@@ -2001,7 +2077,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -2056,11 +2132,11 @@
       "count": 0
      },
      "net": 361276,
-     "net_adj": 360726,
+     "net_adj": 360743,
      "price": 394000
     },
     "price": 394000,
-    "rank_value": 357036.0,
+    "rank_value": 357053.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2081,6 +2157,7 @@
     "risk_days": 10,
     "risk_days_ex_appraisal": 10,
     "sale_contingency_days": 0,
+    "same_buyer": "buyer",
     "score": {
      "band": [
       "hi",
@@ -2120,7 +2197,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -2175,15 +2252,18 @@
       "count": 0
      },
      "net": 379284,
-     "net_adj": 378734,
+     "net_adj": 378751,
      "price": 410000
     },
     "title_by": "seller",
     "title_payer": "seller",
-    "title_payer_by_contract": false
+    "title_payer_by_contract": false,
+    "walkaway_days": 10
    },
    {
+    "_appraisal_basis": null,
     "action": "COUNTER",
+    "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 0,
     "appraisal_form": null,
@@ -2192,6 +2272,7 @@
     "appraisal_protected": false,
     "appraisal_risk": false,
     "appraisal_waived": false,
+    "appraised": false,
     "approval": "pof_verified",
     "bb_credit": false,
     "bb_from_listing": false,
@@ -2201,14 +2282,18 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "close_days": 21,
     "closing_days": 21,
     "contract_form": "as_is",
+    "counter_risk_days": 7,
     "counter_rows": [
      [
       "Price"
      ],
+     {
+      "count": 4
+     },
      {
       "count": 4
      }
@@ -2217,10 +2302,11 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "deposit": 20500,
      "home_warranty": 0,
      "inspection_days": 7,
+     "loan_approval_days": 0,
      "price": 406000,
      "sale_contingency_days": 0,
      "seller_concessions": 0
@@ -2230,9 +2316,10 @@
     "downside_price": 402000,
     "expires": null,
     "expires_raw": null,
+    "expires_today": false,
     "financed": false,
     "financing": "cash",
-    "firm_date": "2026-10-03",
+    "firm_date": "2026-10-04",
     "flags": [
      {
       "sev": "Med",
@@ -2246,6 +2333,7 @@
      }
     ],
     "gap_cover": 0,
+    "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -2265,7 +2353,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2310,7 +2398,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2320,8 +2408,8 @@
      "missing": {
       "count": 0
      },
-     "net": 371944,
-     "net_adj": 371594,
+     "net": 371931,
+     "net_adj": 371581,
      "price": 402000
     },
     "ns_counter": {
@@ -2332,7 +2420,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2377,7 +2465,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2387,8 +2475,8 @@
      "missing": {
       "count": 0
      },
-     "net": 375696,
-     "net_adj": 375346,
+     "net": 375683,
+     "net_adj": 375333,
      "price": 406000
     },
     "ns_down": {
@@ -2399,7 +2487,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2444,7 +2532,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2454,12 +2542,12 @@
      "missing": {
       "count": 0
      },
-     "net": 368944,
-     "net_adj": 368594,
+     "net": 368931,
+     "net_adj": 368581,
      "price": 402000
     },
     "price": 402000,
-    "rank_value": 365724.0,
+    "rank_value": 365711.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2480,6 +2568,7 @@
     "risk_days": 10,
     "risk_days_ex_appraisal": 10,
     "sale_contingency_days": 0,
+    "same_buyer": "buyer",
     "score": {
      "band": [
       "hi",
@@ -2518,7 +2607,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2563,7 +2652,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2573,18 +2662,21 @@
      "missing": {
       "count": 0
      },
-     "net": 379448,
-     "net_adj": 379098,
+     "net": 379435,
+     "net_adj": 379085,
      "price": 410000
     },
     "title_by": "seller",
     "title_payer": "seller",
-    "title_payer_by_contract": false
+    "title_payer_by_contract": false,
+    "walkaway_days": 10
    }
   ],
   "ranked": [
    {
+    "_appraisal_basis": null,
     "action": "COUNTER",
+    "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 0,
     "appraisal_form": null,
@@ -2593,6 +2685,7 @@
     "appraisal_protected": false,
     "appraisal_risk": false,
     "appraisal_waived": false,
+    "appraised": false,
     "approval": "pof_verified",
     "bb_credit": false,
     "bb_from_listing": false,
@@ -2602,14 +2695,18 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-14",
+    "close": "2026-10-15",
     "close_days": 21,
     "closing_days": 21,
     "contract_form": "as_is",
+    "counter_risk_days": 7,
     "counter_rows": [
      [
       "Price"
      ],
+     {
+      "count": 4
+     },
      {
       "count": 4
      }
@@ -2618,10 +2715,11 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "deposit": 20500,
      "home_warranty": 0,
      "inspection_days": 7,
+     "loan_approval_days": 0,
      "price": 406000,
      "sale_contingency_days": 0,
      "seller_concessions": 0
@@ -2631,9 +2729,10 @@
     "downside_price": 402000,
     "expires": null,
     "expires_raw": null,
+    "expires_today": false,
     "financed": false,
     "financing": "cash",
-    "firm_date": "2026-10-03",
+    "firm_date": "2026-10-04",
     "flags": [
      {
       "sev": "Med",
@@ -2647,6 +2746,7 @@
      }
     ],
     "gap_cover": 0,
+    "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -2666,7 +2766,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2711,7 +2811,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2721,8 +2821,8 @@
      "missing": {
       "count": 0
      },
-     "net": 371944,
-     "net_adj": 371594,
+     "net": 371931,
+     "net_adj": 371581,
      "price": 402000
     },
     "ns_counter": {
@@ -2733,7 +2833,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2778,7 +2878,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2788,8 +2888,8 @@
      "missing": {
       "count": 0
      },
-     "net": 375696,
-     "net_adj": 375346,
+     "net": 375683,
+     "net_adj": 375333,
      "price": 406000
     },
     "ns_down": {
@@ -2800,7 +2900,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2845,7 +2945,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2855,12 +2955,12 @@
      "missing": {
       "count": 0
      },
-     "net": 368944,
-     "net_adj": 368594,
+     "net": 368931,
+     "net_adj": 368581,
      "price": 402000
     },
     "price": 402000,
-    "rank_value": 365724.0,
+    "rank_value": 365711.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2881,6 +2981,7 @@
     "risk_days": 10,
     "risk_days_ex_appraisal": 10,
     "sale_contingency_days": 0,
+    "same_buyer": "buyer",
     "score": {
      "band": [
       "hi",
@@ -2919,7 +3020,7 @@
        "value": 1145
       }
      ],
-     "close": "2026-10-14",
+     "close": "2026-10-15",
      "holding": -350,
      "lines": [
       [
@@ -2964,7 +3065,7 @@
       ],
       [
        "tax",
-       -3912
+       -3925
       ],
       [
        "payoff",
@@ -2974,16 +3075,19 @@
      "missing": {
       "count": 0
      },
-     "net": 379448,
-     "net_adj": 379098,
+     "net": 379435,
+     "net_adj": 379085,
      "price": 410000
     },
     "title_by": "seller",
     "title_payer": "seller",
-    "title_payer_by_contract": false
+    "title_payer_by_contract": false,
+    "walkaway_days": 10
    },
    {
+    "_appraisal_basis": null,
     "action": "BACKUP",
+    "aga_named": false,
     "agent_track": "average",
     "appraisal_days": 0,
     "appraisal_form": null,
@@ -2992,6 +3096,7 @@
     "appraisal_protected": false,
     "appraisal_risk": false,
     "appraisal_waived": false,
+    "appraised": false,
     "approval": "pof_verified",
     "bb_credit": false,
     "bb_from_listing": false,
@@ -3002,13 +3107,17 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-10-26",
-    "close_days": 33,
-    "closing_days": 33,
+    "close_days": 32,
+    "closing_days": 32,
     "contract_form": "as_is",
+    "counter_risk_days": 7,
     "counter_rows": [
      [
       "Price"
      ],
+     {
+      "count": 4
+     },
      {
       "count": 4
      }
@@ -3021,6 +3130,7 @@
      "deposit": 12000,
      "home_warranty": 0,
      "inspection_days": 7,
+     "loan_approval_days": 0,
      "price": 402000,
      "sale_contingency_days": 0,
      "seller_concessions": 0
@@ -3030,9 +3140,10 @@
     "downside_price": 394000,
     "expires": null,
     "expires_raw": null,
+    "expires_today": false,
     "financed": false,
     "financing": "cash",
-    "firm_date": "2026-10-03",
+    "firm_date": "2026-10-04",
     "flags": [
      {
       "sev": "Med",
@@ -3046,6 +3157,7 @@
      }
     ],
     "gap_cover": 0,
+    "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -3066,7 +3178,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -3121,7 +3233,7 @@
       "count": 0
      },
      "net": 364276,
-     "net_adj": 363726,
+     "net_adj": 363743,
      "price": 394000
     },
     "ns_counter": {
@@ -3133,7 +3245,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -3188,7 +3300,7 @@
       "count": 0
      },
      "net": 371780,
-     "net_adj": 371230,
+     "net_adj": 371247,
      "price": 402000
     },
     "ns_down": {
@@ -3200,7 +3312,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -3255,11 +3367,11 @@
       "count": 0
      },
      "net": 361276,
-     "net_adj": 360726,
+     "net_adj": 360743,
      "price": 394000
     },
     "price": 394000,
-    "rank_value": 357036.0,
+    "rank_value": 357053.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3280,6 +3392,7 @@
     "risk_days": 10,
     "risk_days_ex_appraisal": 10,
     "sale_contingency_days": 0,
+    "same_buyer": "buyer",
     "score": {
      "band": [
       "hi",
@@ -3319,7 +3432,7 @@
       }
      ],
      "close": "2026-10-26",
-     "holding": -550,
+     "holding": -533,
      "lines": [
       [
        "price",
@@ -3374,12 +3487,13 @@
       "count": 0
      },
      "net": 379284,
-     "net_adj": 378734,
+     "net_adj": 378751,
      "price": 410000
     },
     "title_by": "seller",
     "title_payer": "seller",
-    "title_payer_by_contract": false
+    "title_payer_by_contract": false,
+    "walkaway_days": 10
    }
   ],
   "sample": false,
@@ -3403,7 +3517,7 @@
     }
    ],
    "close": "2026-10-26",
-   "holding": -550,
+   "holding": -533,
    "lines": [
     [
      "price",
@@ -3458,7 +3572,7 @@
     "count": 0
    },
    "net": 379284,
-   "net_adj": 378734,
+   "net_adj": 378751,
    "price": 410000
   }
  },
@@ -3481,8 +3595,14 @@
    "scope": "costs"
   },
   {
+   "field": "expected_effective_date",
+   "impact": "low",
+   "scope": "buyer",
+   "value": "2026-09-24"
+  },
+  {
    "field": "contract_form",
-   "impact": "med",
+   "impact": "high",
    "scope": "buyer",
    "value": "as_is"
   },
@@ -3558,7 +3678,7 @@
  "chosen": "recommended",
  "ci": {
   "recommended": 72.7,
-  "stronger": 84.29
+  "stronger": 84.26
  },
  "constraints": {
   "count": 0
@@ -3574,7 +3694,7 @@
  "missing": [
   {
    "field": "contract_form",
-   "impact": "med",
+   "impact": "high",
    "scope": "buyer",
    "value": "as_is"
   },
@@ -3599,6 +3719,12 @@
    "field": "flood_insurance_annual",
    "impact": "low",
    "scope": "costs"
+  },
+  {
+   "field": "expected_effective_date",
+   "impact": "low",
+   "scope": "buyer",
+   "value": "2026-09-24"
   }
  ],
  "overrides": {
@@ -3609,13 +3735,25 @@
   "stronger": 789
  },
  "promoted": "lower_cost",
+ "promoted_from": {
+  "appraisal_gap": 0,
+  "buyer_broker_pct": 0.025,
+  "closing_days": 21,
+  "contract_form": "as_is",
+  "deposit": 20500,
+  "home_warranty": 0,
+  "inspection_days": 10,
+  "insurance_quote": "planned",
+  "price": 402000,
+  "seller_concessions": 0
+ },
  "sample": true,
- "target": 378734,
+ "target": 378751,
  "terms": {
   "recommended": {
    "appraisal_gap": 0,
    "buyer_broker_pct": 0.025,
-   "closing_days": 33,
+   "closing_days": 32,
    "contract_form": "as_is",
    "deposit": 12000,
    "home_warranty": 0,

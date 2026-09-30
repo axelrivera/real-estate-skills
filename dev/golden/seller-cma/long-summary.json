@@ -73,9 +73,14 @@
    "baths": 2,
    "beds": 4,
    "county": "Seminole",
+   "flood_zone": "X",
+   "hoa_monthly": 0,
+   "homestead": true,
    "pool": true,
+   "school_mills": 5.25,
    "sqft": 1849,
    "state": "FL",
+   "total_mills": 17.57,
    "year_built": 1972
   },
   "value": {

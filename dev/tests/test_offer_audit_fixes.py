@@ -226,6 +226,14 @@ class Money(unittest.TestCase):
         self.assertEqual(line(R["offers"][0]["ns"], "listing"), -20000)  # 5% total, not 2.5% + the 3% ask
         self.assertIn("5%", fields(R)["listing_fee_pct"]["why"])
 
+    def test_estoppel_line_uses_the_markets_name(self):  # CMA-109 follow-up
+        def label(o):
+            return next(lab for k, lab, _ in o["ns"]["lines"] if k == "estoppel")
+        self.assertEqual(label(first(offer(), listing={"hoa_monthly": 120})), "HOA Estoppel Letter")
+        tx = first(offer(contract_form="TREC 20-18", inspection_walkaway=True),
+                   listing={"address": "1 Test St, Austin, TX 78757", "state": "TX", "county": "Travis", "hoa_monthly": 120})
+        self.assertEqual(label(tx), "HOA Status Letter")
+
     def test_tax_estimate_is_medium_impact(self):  # OFR-128
         R = run(offer(), listing={"annual_tax": None})
         self.assertEqual(fields(R)["annual_tax"]["impact"], "med")
@@ -278,9 +286,9 @@ class CmaHandoff(unittest.TestCase):
 
 class WalkAway(unittest.TestCase):
     def test_any_reason_window_is_named(self):  # OFR-121
-        import importlib
-        sys.path.insert(0, os.path.join(ROOT, "skills", "seller-offer-review", "scripts"))
-        review = importlib.import_module("review")
+        sys.path.insert(0, os.path.dirname(__file__))
+        from skill_import import load
+        review, = load("seller-offer-review", "review")
         o = first(offer(contract_form="standard", riders=["K"]))
         until, note = review.walk_away(o)
         self.assertEqual(o["walkaway_days"], 10)

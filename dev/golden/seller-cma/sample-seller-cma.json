@@ -68,9 +68,14 @@
    "beds": 4,
    "city": "Casselberry",
    "county": "Seminole",
+   "flood_zone": "X",
+   "hoa_monthly": 0,
+   "homestead": true,
    "pool": true,
+   "school_mills": 5.25,
    "sqft": 1849,
    "state": "FL",
+   "total_mills": 18.18,
    "year_built": 1972
   },
   "value": {
