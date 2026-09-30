@@ -1032,7 +1032,8 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
         overrides = {EA_OVERRIDES[k]: _d(a[k]).isoformat() for k in EA_OVERRIDES if a.get(k)} if a["form"] == "EA" else {}
         title = "Extension Addendum" if a["form"] == "EA" else f"Addendum No. {a['number']}"
         # An amendment that moves no deadline (a credit, a repair) still goes on the record, saying so.
-        entry = {"date": a["date"].date().isoformat(), "description": a.get("description") or
+        entry = {"date": a["date"].date().isoformat(), "name": form_title(a["form"]) if a["form"] == "EA" else title,
+                 "description": a.get("description") or
                  (title if changes or overrides else f"{title} (no deadline changes)"), "changes": changes}
         if overrides:
             entry["date_overrides"] = overrides
