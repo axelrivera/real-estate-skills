@@ -1513,6 +1513,8 @@ class SeventhPass(unittest.TestCase):
         L = compute.labels(report())
         text = compute.price_history(L, relist={"failed_price": 474900, "status": "pending", "days_on_market": 36,
                                                 "original_price": 484900})
-        self.assertIn("current listing", text)
-        self.assertNotIn("ended unsold", text)
+        self.assertIn("went under contract after 36 days, but the sale didn't close", text)
+        self.assertNotIn("hasn't sold", text)
+        text = compute.price_history(L, relist={"failed_price": 474900, "status": "active"})
+        self.assertEqual(text, "The listing at $474,900 didn't sell.")
 

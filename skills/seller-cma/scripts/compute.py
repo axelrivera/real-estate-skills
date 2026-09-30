@@ -145,8 +145,10 @@ def price_history(L, reprice=None, relist=None):
         return L("history_reprice_cut" if cut else "history_reprice", original=money(cut or 0),
                  current=money(reprice["current_price"]), days=f'{reprice["days_on_market"]:g}')
     after = L("history_after_days", days=f'{relist["days_on_market"]:g}') if relist.get("days_on_market") is not None else ""
-    if str(relist.get("status") or "").lower() in ("active", "pending"):  # CMA-303: a live listing the agent treats as failed
-        return L("history_listed_cut" if relist.get("original_price") else "history_listed",
+    status = str(relist.get("status") or "").lower()
+    if status in ("active", "pending"):  # CMA-303: a live listing the agent treats as failed; a pending one went under contract
+        key = "history_pending" if status == "pending" else "history_listed"
+        return L(key + "_cut" if relist.get("original_price") else key,
                  original=money(relist.get("original_price") or 0), failed=money(relist["failed_price"]), after=after)
     return L("history_relist_cut" if relist.get("original_price") else "history_relist",
              original=money(relist.get("original_price") or 0), failed=money(relist["failed_price"]), after=after)
