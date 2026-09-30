@@ -763,6 +763,24 @@ def page_fill(pdf):
     return pages
 
 
+CALLOUT_REASONS = {"size": "left off the chart for its size (scatter.min_size_ratio / max_size_ratio)",
+                   "price": "left off the chart as priced far off the trend",
+                   "not_in_export": "not found in the export (use the export's spelling of the address)"}
+
+
+def callout_checks(info):
+    """CMA-299: one Check per scatter callout whose home isn't on the chart, naming it and why (the chart plots sales
+    and active listings only, within the size range and near the trend)."""
+    out = []
+    for label, address, reason in info.get("callouts_dropped") or []:
+        why = CALLOUT_REASONS.get(reason) or (
+            f"{reason}, and the chart plots only sales and active listings" if reason not in ("sold", "active")
+            else "missing its size or price in the export")
+        out.append(f"The scatter callout {label!r} ({address}) isn't on the chart: {why}. Drop the callout or point it at "
+                   "a plotted home, then render again.")
+    return out
+
+
 def page_checks(pages, tail_hint="the last sections"):
     """Checks for pages 2 onward: one that ends above half the page before a block that moved on, and a last page
     holding only a few closing lines."""

@@ -595,6 +595,17 @@ class ScatterLabels(unittest.TestCase):
         # the fixture's subject label grazes only a background sale dot on the left; a line higher it would cover the
         # band's label, so it stays, and nothing that counts is covered
         self.assertEqual(C["scatter_labels"], {"moved": [], "overlapping": [], "leader": [], "dropped": []})
+        self.assertEqual(C["callout_checks"], [])  # the fixture's callouts are all plotted
+
+    def test_unplotted_callout_is_a_check(self):
+        """CMA-302: a callout for a home the chart doesn't plot is named, not dropped silently."""
+        R = report()
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        R["scatter"]["callouts"] = R["scatter"]["callouts"] + [{"address": "1 NOWHERE LN", "label": "Missing", "side": "left"}]
+        buyer_render.build_html(copy.deepcopy(R), C, homes, {})
+        self.assertEqual(len(C["callout_checks"]), 1)
+        self.assertIn("1 NOWHERE LN", C["callout_checks"][0])
 
     def test_another_label_counts(self):
         (cma,) = load("buyer-cma", "_shared.cma")

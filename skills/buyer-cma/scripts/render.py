@@ -255,6 +255,7 @@ def body(R, C, homes, agent, L):
                                 [cd["address"] for cd in R["comps"]["cards"]])
         C["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"],  # CMA-205
                                "leader": info["labels_leader"], "dropped": info["labels_dropped"]}  # CMA-218
+        C["callout_checks"] = cma.callout_checks(info)  # CMA-302: a callout whose home isn't plotted
         trend =money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
@@ -408,6 +409,8 @@ def build(R, fmt, out_dir, ctx):
     for text in labels.get("overlapping", []):
         print(f"Check: chart label {text!r} still overlaps a marker or another label: shorten it or pick another side.",
               file=sys.stderr)
+    for c in C.get("callout_checks", []):
+        print(f"Check: {c}", file=sys.stderr)
     for w in C["warnings"]:
         print(f"Check: {w}", file=sys.stderr)
     if profile_check(agent):

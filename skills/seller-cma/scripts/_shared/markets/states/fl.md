@@ -183,7 +183,7 @@ cma:                                  # calibrated on Central Florida (Seminole 
     full_vs_partial_renovation: 30000
     documented_recent_systems: -5000
     lot_or_water_premium: [-10000, -5000]
-    market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last ~6 weeks
+    market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last 6 weeks or so
 
 county_overrides:
   Miami-Dade:                          # FR/BAR 9(c)(iii) regional provision: buyer pays the owner's policy; the seller
