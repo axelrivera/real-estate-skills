@@ -18,6 +18,7 @@ Never use Florida's numbers for another state.
 - **Read the listing first:** the tax bill, HOA dues, county, property type and flood zone are usually on the MLS sheet.
 - **Transfer tax outside Florida:** the states with no state transfer tax (AK, AZ, ID, IN, KS, LA, MS, MO, MT, ND, NM, OR, TX, UT, WY) are built in as none, with a note to confirm local taxes; skip the search there. Elsewhere, search for the state's deed transfer tax. Use a rate only from a trusted source (the state's revenue department, the statute, or the county recorder or clerk) and cite it in your reply. Put it in that `costs` block as `transfer_tax_rate`, with `transfer_tax_payer` when the buyer pays or it's split, and `transfer_tax_label` for its local name in Title Case. When the sources disagree, the tax is layered or tiered, or no trusted source turns up, leave it out and let the national estimate stand, labeled.
 - **Commission:** without terms from the agent, reports assume 5% in total (2.5% listing, 2.5% buyer's agent), labeled "Assumed".
+- **Homestead outside Florida:** only Florida's homestead exemptions are built in. Elsewhere a buyer's taxes assume no exemption, and the payment note says so (payments may run high where the exemption is large, as in Texas). Never estimate another state's exemption: say in the reply that payments leave it out.
 
 ## Property Tax at Closing
 
