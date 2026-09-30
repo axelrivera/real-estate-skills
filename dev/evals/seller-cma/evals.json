@@ -40,7 +40,7 @@
     {
       "id": 7,
       "prompt": "The sellers at 517 Hickorywood want to talk to me about listing. Seller notes and my export are attached. Can you run a seller CMA?",
-      "expected_output": "Sees the home shows as Pending in the export ($474,900, 36 days on market, first listed at $484,900) and stops before any pricing: builds no PDF and no report.json pricing. Tells the agent the home shows as pending and asks which applies: their own listing (a reprice), a listing that has ended or is ending (then asks whether to treat its price as a failed listing that caps the options, or as public record only with no cap), or another brokerage's live listing (not priced; offers to run it when that listing ends). Never solicits or prices a live listing with another brokerage; short reply; nothing else presented (no JSON)",
+      "expected_output": "Sees the home shows as Pending in the export ($474,900, 36 days on market, first listed at $484,900) and stops before any pricing: builds no PDF and no report.json pricing. Tells the agent the home shows as pending and asks which applies: their own listing (a reprice), a listing that has ended or is ending (then asks whether to treat its price as a failed listing that caps the options, or as public record only with no cap), or another brokerage's live listing (not priced; offers to run it when that listing ends). Asks only this question for now (no other intake questions until it's answered); never solicits or prices a live listing with another brokerage; short reply; nothing else presented (no JSON)",
       "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks-pending.csv"]
     },
     {
