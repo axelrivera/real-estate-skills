@@ -220,7 +220,7 @@ def details(r, res):
 <h2>2 · How the Listing Agent Will See Each Option <span class="h2s">Seller Net Sheet, Before Mortgage Payoff</span></h2>
 <div class="tbl"><table><colgroup><col style="width:32%"></colgroup><thead><tr><th>Line Item</th>{hdrn}<th class="n">Clean Offer at List</th></tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span>{esc(cost_basis)}</span></div>
-<h2 class="pb">3 · Strength Scorecard <span class="h2s">The Same Criteria a Listing Agent Uses · 1 = Weak · 5 = Strong</span></h2>
+<h2>3 · Strength Scorecard <span class="h2s">The Same Criteria a Listing Agent Uses · 1 = Weak · 5 = Strong</span></h2>
 <div class="tbl"><table><colgroup><col style="width:27%"><col style="width:7%">{"".join('<col style="width:8%">' for _ in K)}</colgroup>
 <thead><tr><th>Criterion</th><th class="n">Weight</th>{"".join(f'<th class="c">{x}</th>' for x in labels)}<th>Recommended: Why</th></tr></thead><tbody>{sc}</tbody></table></div>
 <h2>4 · Your Cash &amp; Risk</h2>

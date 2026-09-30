@@ -48,6 +48,9 @@
     "rate": 0.002
    }
   ],
+  "payment_assumed": {
+   "count": 2
+  },
   "property": {
    "county": "Orange",
    "hoa_monthly": 0,
@@ -62,6 +65,9 @@
    "cma_low": 429000,
    "mid": 429000.0,
    "point": 429000.0
+  },
+  "words": {
+   "appraisal_addendum": null
   }
  },
  "O": {

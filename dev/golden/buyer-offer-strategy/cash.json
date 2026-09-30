@@ -45,6 +45,9 @@
   "loan_taxes": {
    "count": 0
   },
+  "payment_assumed": {
+   "count": 1
+  },
   "property": {
    "annual_tax": 5200,
    "baths": 2,
@@ -67,6 +70,9 @@
    "cma_low": 392000,
    "mid": 402000.0,
    "point": 402000.0
+  },
+  "words": {
+   "appraisal_addendum": null
   }
  },
  "O": {

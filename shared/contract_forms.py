@@ -198,6 +198,21 @@ def inspection_walkaway(form, item=None):
     return terms(form, item)["walkaway"]
 
 
+def term_words(form):
+    """OFR-234: what an offer's terms are called on this form, for labels and reasons. The FR/BAR forms' own words
+    (Inspection Period, a deposit refundable in it); for any other contract, generic words that fit most forms (a Texas
+    TREC contract's option period, an appraisal right in its financing addendum), never Florida's names.
+
+    {'inspection_label', 'inspection', 'deposit_refund', 'appraisal_addendum'}; appraisal_addendum is None on FR/BAR
+    (its riders are named by letter: appraisal_form())."""
+    if form in FRBAR:
+        return {"inspection_label": "Inspection Period", "inspection": "inspection period",
+                "deposit_refund": "refundable during inspection", "appraisal_addendum": None}
+    return {"inspection_label": "Inspection or Option Period", "inspection": "inspection or option period",
+            "deposit_refund": "refundable during the inspection or option period (per your contract)",
+            "appraisal_addendum": "Appraisal Protection (Per Your Contract's Addendum)"}
+
+
 def repair_limits(price, item=None):
     """Standard contract repair limits in dollars. `repair_limits` in the file may give each as dollars (6000)
     or a share of price (0.02); a blank one is the form's 1.5%."""

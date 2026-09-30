@@ -102,6 +102,9 @@
    "months_supply": 2.4,
    "sale_to_list": 0.992
   },
+  "payment_assumed": {
+   "count": 0
+  },
   "property": {
    "baths": 2,
    "beds": 3,

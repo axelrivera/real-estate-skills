@@ -104,6 +104,16 @@ class Module(unittest.TestCase):
         with self.assertRaises(cf.FormError):
             cf.repair_limits(400000, {"repair_limits": {"general": "lots"}})
 
+    def test_term_words(self):  # OFR-234: FR/BAR's names on FR/BAR only; generic words on anything else
+        for form in cf.FRBAR:
+            self.assertEqual(cf.term_words(form)["inspection_label"], "Inspection Period")
+            self.assertIsNone(cf.term_words(form)["appraisal_addendum"])
+        for form in (cf.OTHER, None):
+            w = cf.term_words(form)
+            self.assertNotEqual(w["inspection_label"], "Inspection Period")
+            self.assertIn("option period", w["inspection"])
+            self.assertTrue(w["appraisal_addendum"])
+
 
 class AppraisalForm(unittest.TestCase):
     """Rider F vs. the Appraisal Gap Addendum (AGA-1): each offer is scored on its own form's window."""

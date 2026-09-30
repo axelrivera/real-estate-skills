@@ -59,6 +59,9 @@
    "months_supply": 7.5,
    "sale_to_list": 0.965
   },
+  "payment_assumed": {
+   "count": 0
+  },
   "property": {
    "annual_tax": 8200,
    "baths": 2,
@@ -82,6 +85,9 @@
    "cma_low": 470000,
    "mid": 482500.0,
    "point": 482500.0
+  },
+  "words": {
+   "appraisal_addendum": null
   },
   "worksheet": {
    "contract_form": "as_is"

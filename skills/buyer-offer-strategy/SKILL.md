@@ -21,7 +21,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **Private financial details.** Pre-approval letters, proof of funds and bank statements carry account numbers, loan numbers and sometimes Social Security numbers: never copy those into the data file, the chat or a report (write "Account ending 1234" at most). Keep only the amounts and the lender's name the analysis needs. The Offer Options report holds the buyer's limits and cash: it's for the buyer only, and its footer says so; never send it to the listing side (the worksheet holds only offer terms).
-- **Contract support.** Only Florida FR/BAR contracts (AS IS and Standard, with their CR-7 riders and addenda) are fully supported. For any other contract the script output has `support: "best_effort"` and the line to use in `chat_notes`: say it once in chat, in your own short words. The same goes for a note that an FR/BAR contract isn't the revision the rules were checked against. Never put either in a PDF, calendar file, worksheet or markdown report.
+- **Contract support.** Only Florida FR/BAR contracts (AS IS and Standard, with their CR-7 riders and addenda) are fully supported. For any other contract the script output has `support: "best_effort"` and the line in `chat_notes`: pass it on once in chat, word for word, in its own paragraph. The same goes for a note that an FR/BAR contract isn't the revision the rules were checked against. Never put either in a PDF, calendar file, worksheet or markdown report. On another contract the script uses generic words (an "inspection or option period", appraisal protection per the contract's addendum); an option fee, a financing addendum's appraisal terms and anything else form-specific come from the agent's contract on a best-effort basis: ask for them or name them in chat, never fill them from Florida's rules.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
 ## Principles
@@ -43,6 +43,7 @@ One JSON file per property the buyer is pursuing, in a temporary folder, never t
 - **Buyer:** loan type and down payment, first-time buyer or not, max price, cash available, reserve floor, max payment.
 - **Listing-agent intel:** competition level, offer deadline (dates count from the day after it, or from `expected_effective_date`), buyer-broker pay offered, seller priorities. This is the most valuable input; if it's unknown, run with the inferred level and say so in one line.
 - **Worksheet details:** buyer names, escrow agent, HOA name, personal property. Never invent names, legal descriptions or parcel IDs: missing ones print as red blanks.
+- **Lender:** `lender_called` when the agent talked to the lender about the financing; `lender_confirmed_timeline` only when the lender confirmed the closing timeline too (it ticks the checklist's closing box). A call about the loan isn't a confirmed date.
 
 **Minimum to run:** list price and cash available.
 
@@ -58,15 +59,20 @@ It prints every value already formatted: the page-1 summary, the options side by
 
 ## 3. Deliver
 
-**Quick question** ("what should we offer?"): build the buyer file from what the agent gave and run `strategy.py` anyway (the numbers come from it), but make no files. The reply has, in at most three short paragraphs (under about 200 words):
+**Chat or files.** Make files only when the agent asks for the report, the worksheet or the package. A question ("what should we offer?", "should we escalate?") gets the quick answer in chat, even when a CMA and full buyer inputs came with it; its last line offers the files.
 
+**Quick answer:** build the buyer file from what the agent gave and run `strategy.py` anyway (the numbers come from it), but make no files. The reply must contain:
+
+- the answer to the agent's question first when they asked one (escalate or not: the Escalation row of `summary.terms`);
 - the recommended price, deposit, concessions and key periods, with the outlook and the competition level it assumed;
-- the price's reason from the Price row of `summary.terms`: with no CMA the price stays at list ("list stands in for value"), never "at value";
-- "Preliminary" when `summary.preliminary` is set, naming what was assumed;
-- **exactly one question**, covering the first two entries of `to_confirm` other than the value range (the script puts an inferred competition read first, then the rest by impact; the value range is left to the CMA tip). With no CMA the appraisal-gap question ("how much of a low appraisal could the buyer cover in cash?") folds into that same question, never a second one;
-- one line offering the report, with a tip that a buyer CMA sharpens the price.
+- the price's reason from the Price row of `summary.terms`: with no CMA the price stays at list ("list stands in for value"), never "at value"; when the payment limit set it, the reason names the assumed rate or insurance it rests on;
+- "Preliminary" when `summary.preliminary` is set, naming what it says was assumed (the max price with its assumed amount);
+- **one question with at most two parts:** the first two entries of `to_confirm` other than the value range (the script puts an inferred competition read first, then the rest by impact; the value range is left to the CMA tip). With no CMA, the appraisal-gap question ("how much of a low appraisal could the buyer cover in cash?") replaces the second entry; everything else waits for the report's assumptions;
+- one line offering the report, with a tip that a buyer CMA sharpens the price (no tip when a CMA was used).
 
-**Only the fair-housing part** (the agent asks to include a buyer letter, a family photo or a note about the buyers, with no buyer file or offer terms in this conversation): don't run the scripts or ask for the buyer's finances. Answer in chat: the one-sentence reason from `references/fair-housing.md` (When the Agent Asks for It), then offer the cover note on the terms with the terms left in [brackets] for the agent to fill from the offer they chose. If they want the numbers filled, ask for the offer terms.
+Keep it to about three short paragraphs (220 words at most). When it runs over, drop in this order: payment and cash figures, the alternative options, the CMA tip. Outside the cap and never dropped: the best-effort line from `chat_notes`, word for word. `market_notes` are for you: put one in the reply (one line) only when it changes a number in the answer, such as a transfer tax or rate assumed for another state; the rest stay in the report's assumptions. When the answer quotes a payment and the agent gave a tax rate, add that the payment assumes no homestead exemption unless that rate already includes one (`references/local-costs.md`).
+
+**Only the fair-housing part** (the agent asks to include a buyer letter, a family photo or a note about the buyers, and asks for no offer, report or worksheet; an attached CMA doesn't change this): don't run the scripts or ask for the buyer's finances. Answer in chat: the one-sentence reason from `references/fair-housing.md` (When the Agent Asks for It), then the cover note on the terms with the property's address filled in when it's known (from the request or the CMA) and every term left in [brackets] for the agent to fill from the offer they chose; a CMA's suggested prices aren't the buyer's offer. Write "The buyers" when the agent mentions more than one. If they want the numbers filled, ask for the offer terms.
 
 **Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
 
@@ -76,7 +82,7 @@ python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma fil
 
 `all` (the default) saves both PDFs in the agent's buyer-side brand colors; `--profile` puts the agent's name and colors on them (found as `references/saved-files.md` describes). The worksheet uses the file's `chosen_option` (else recommended); when the buyer hasn't chosen, build it for the recommended option and say it will be redone if they pick another. Check the rider list against the facts (the insurance rider can be skipped when a quote is in hand). Contract entries and riders: `references/worksheet.md`; for FR/BAR, what each rider and addendum requires is in `references/frbar-riders.md` and `references/frbar-addenda.md` (check the package against `references/frbar-package-check.md`, and `references/frbar-contract.md` for any paragraph); for any other contract, `references/other-contracts.md`. If rendering fails, say so and give the markdown answer.
 
-In chat: the recommended offer (price, key terms, outlook) in one or two sentences; the choice the buyer faces ("Stronger costs $2,000 more and doesn't change the outlook; lower-cost saves $3,570 but drops to At Risk"), or, when an option is missing, why (`summary.absent`); the top missing input as one question (the first entry of `to_confirm`). The buyer file stays in the temporary folder and is never handed over (`references/saved-files.md`); in a later conversation, rebuild it from what the agent gives again.
+In chat: the recommended offer (price, key terms, outlook) in one or two sentences; the choice the buyer faces ("Stronger costs $2,000 more and doesn't change the outlook; lower-cost saves $3,570 but drops to At Risk"), or, when an option is missing, why (`summary.absent`); the top missing inputs as one question with at most two parts (the first two entries of `to_confirm`), and the best-effort line from `chat_notes` word for word when there is one. The buyer file stays in the temporary folder and is never handed over (`references/saved-files.md`); in a later conversation, rebuild it from what the agent gives again.
 
 ## Package Rules
 

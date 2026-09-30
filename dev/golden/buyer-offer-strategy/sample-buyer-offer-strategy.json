@@ -59,6 +59,9 @@
    "sale_to_list": 0.981,
    "share_with_seller_costs": "44%"
   },
+  "payment_assumed": {
+   "count": 0
+  },
   "property": {
    "annual_tax": 4600,
    "baths": 2,
@@ -81,6 +84,9 @@
    "cma_low": 355000,
    "mid": 363500.0,
    "point": 363500.0
+  },
+  "words": {
+   "appraisal_addendum": null
   }
  },
  "O": {
