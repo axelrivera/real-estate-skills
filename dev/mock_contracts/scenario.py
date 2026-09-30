@@ -1122,9 +1122,16 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
         or ctx["inspection_days"] or 15,
         "loan_approval_days": None if ctx["financing"] == "cash" else
         changes.get("loan_approval_days") or ctx["loan_approval_days"] or 30,
-        "riders": codes,
+        "riders": codes, "balance_to_close": ctx["balance_to_close"],  # as the form reads it: a CO-3 leaves Para. 2(e)
     }
     prior = []
+    if live is not None:  # the original offer first, with the terms the buyer's counter changed
+        orig = {"price": ctx["price"], "closing_date": ctx["closing_date"].isoformat(),
+                "inspection_days": ctx["inspection_days"], "loan_approval_days": ctx["loan_approval_days"],
+                "deposit": (ctx["deposit_initial"] or 0) + (ctx["additional_deposit"] or 0)}
+        changed = {k: v for k, v in orig.items() if v is not None and offer.get(k) != v}
+        if changed:
+            prior.append({"by": "buyer", "note": "Original offer", **changed})
     for c in counters:
         if c is live:
             continue

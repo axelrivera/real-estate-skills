@@ -278,15 +278,18 @@ class Packages(unittest.TestCase):
 
     def test_buyer_counter_is_the_live_offer(self):
         """A pending buyer counter is what the seller reviews: the original offer with only that counter's terms (CO-3),
-        the seller's earlier counter in prior_counters, and the review dated the day of the last counter."""
+        the original offer and the seller's earlier counter in prior_counters, the balance to close as the form reads it,
+        and the review dated the day of the last counter."""
         key = sc.build(spec("standard-buyer-counter-pending"))["key"]
         offer = key["offers"][0]
         self.assertEqual((offer["price"], offer["closing_date"], offer["inspection_days"]), (619500, "2026-11-16", 15))
-        self.assertEqual(offer["prior_counters"], [{"by": "seller", "note": "Counter Offer #1", "price": 629000,
-                                                    "inspection_days": 10}])
+        self.assertEqual(offer["prior_counters"], [  # the original offer first, with the terms the buyer's counter changed
+            {"by": "buyer", "note": "Original offer", "price": 610000, "closing_date": "2026-10-27"},
+            {"by": "seller", "note": "Counter Offer #1", "price": 629000, "inspection_days": 10}])
         self.assertEqual((key["analysis_date"], offer["received"]), ("2026-09-23", "2026-09-23 14:27"))
         self.assertEqual((offer["expires"], offer["expires_estimated"]), ("2026-09-25 23:59", True))  # 2 days after delivery
         self.assertEqual(offer["addenda"], ["Counter Offer (CO-3)"])
+        self.assertIn("balance_to_close", offer)
 
     def test_offer_key_carries_hoa_broker_payer_and_addenda(self):
         key = sc.build(spec("asis-offer-aga"))["key"]
