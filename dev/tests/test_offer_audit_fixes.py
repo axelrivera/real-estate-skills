@@ -232,7 +232,7 @@ class Money(unittest.TestCase):
         self.assertEqual(label(first(offer(), listing={"hoa_monthly": 120})), "HOA Estoppel Letter")
         tx = first(offer(contract_form="TREC 20-18", inspection_walkaway=True),
                    listing={"address": "1 Test St, Austin, TX 78757", "state": "TX", "county": "Travis", "hoa_monthly": 120})
-        self.assertEqual(label(tx), "HOA Documents")
+        self.assertEqual(label(tx), "HOA Documents (Estimate)")  # OFR-309: a national estimate says so
 
     def test_tax_estimate_is_medium_impact(self):  # OFR-128
         R = run(offer(), listing={"annual_tax": None})
@@ -289,10 +289,11 @@ class WalkAway(unittest.TestCase):
         sys.path.insert(0, os.path.dirname(__file__))
         from skill_import import load
         review, = load("seller-offer-review", "review")
-        o = first(offer(contract_form="standard", riders=["K"]))
-        until, note = review.walk_away(o)
+        R = run(offer(contract_form="standard", riders=["K"]))
+        o = R["offers"][0]
+        until, note = review.walk_away(o, R["costs"])
         self.assertEqual(o["walkaway_days"], 10)
-        self.assertIn("Oct 3", note)
+        self.assertIn("Oct 5", note)  # OFR-300: Sat Oct 3 rolls to Mon Oct 5 (FR/BAR)
         self.assertIn("As Is Rider (K)", note)
 
 

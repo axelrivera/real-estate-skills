@@ -428,7 +428,7 @@ class Audit20260929Second(unittest.TestCase):
         o = R["offers"][0]
         self.assertEqual(review.downside_hits(o), ["inspection"])
         s = review.result(R)["summary"]
-        self.assertEqual(next(k for k in s["kpis"] if k["label"] == "Downside Net")["note"], review.downside_note(o))
+        self.assertEqual(next(k for k in s["kpis"] if k["label"] == "Downside Net")["note"], review.downside_note(o, R["listing"]))
         doc, _, _ = review_render.build_html(R, {}, sample=False)
         self.assertNotIn("<b>Downside</b>: appraisal at", doc)
         R = review.analyze(fixture("four-offers.json"))  # Lee: over the CMA high, no gap coverage
@@ -479,15 +479,15 @@ class Audit20260929Second(unittest.TestCase):
         s = review.result(review.analyze(fixture("minimal-single.json")))["summary"]
         self.assertEqual(s["title"], "Counter the $382K FHA Offer")
 
-    def test_preliminary_names_the_offers(self):  # OFR-266
+    def test_preliminary_names_the_offers(self):  # OFR-266 (OFR-306: a ranking-deciding input, not the form)
         data = fixture("four-offers.json")
         for o in data["offers"][1:]:
-            o.pop("contract_form", None)
+            o.pop("seller_concessions", None)
         R = review.analyze(data)
         text = review.preliminary(R, R["ranked"][0]["id"], multi=True)
         top = R["ranked"][0]
-        self.assertIn(f"contract form ({top['label']}", text)
-        self.assertNotIn("Morales", text)  # its form was given
+        self.assertIn(f"seller concessions ({top['label']}", text)
+        self.assertNotIn("Morales", text)  # its concessions were given
 
 
 class EvalIteration4(unittest.TestCase):
@@ -685,6 +685,111 @@ class EvalIteration5(unittest.TestCase):
                                                         [(40, 88, 90, 110)])
         self.assertEqual((x, anchor), (407, "end"))
         self.assertEqual(review_render.target_label_spot("Target", 100, 45, 407, [])[2], "start")
+
+
+class EvalIteration6(unittest.TestCase):
+    """Fixes from eval iteration 6 (OFR-299 to OFR-309)."""
+
+    def test_rider_gg_asks_for_the_compensation_agreement(self):  # OFR-299
+        R = review.analyze(fixture("expired-aga.json"))  # Rider GG, no amount in the package
+        fields = [a["field"] for a in review.confirm_items(R)]
+        self.assertIn("compensation_agreement", fields)
+        self.assertNotIn("buyer_broker_pct", [a["field"] for a in R["missing"]])  # folded into the one ask
+        self.assertTrue(any("signed compensation agreement (the amount)" in t for t in review.to_confirm(R)))
+        data = fixture("expired-aga.json")
+        data["offers"][0]["buyer_broker_pct"] = 0.025  # the amount was given
+        self.assertNotIn("compensation_agreement", [a["field"] for a in review.analyze(data)["missing"]])
+        self.assertNotIn("compensation_agreement", [a["field"] for a in review.analyze(fixture("four-offers.json"))["missing"]])
+
+    def test_walk_away_rolls_off_a_weekend(self):  # OFR-300
+        R = review.analyze(fixture("expired-aga.json"))  # AGA-1 window ends Sun Nov 1
+        o = R["offers"][0]
+        self.assertEqual(review.firm_day(o, R["costs"]), (review.oe.date(2026, 11, 2), review.oe.date(2026, 11, 1)))
+        self.assertTrue(review.result(R)["summary"]["certainty"]["walk_away_until"].startswith("Mon Nov 2"))
+        tx = review.analyze(fixture("texas-single.json"))  # no rollover rule for another state's contract: the date stays
+        self.assertEqual(review.oe.rolled(review.oe.date(2026, 11, 1), tx["costs"]), (review.oe.date(2026, 11, 1), None))
+
+    def test_downside_names_an_appraisal_risk_that_costs_nothing(self):  # OFR-301
+        out = review.result(review.analyze(fixture("expired-aga.json")))  # AGA-1, under list, no CMA
+        d = out["offers"][0]
+        self.assertEqual((d["downside_counts"], d["downside_checked"]), (["inspection"], ["appraisal", "inspection"]))
+        self.assertIn("appraisal", d["downside_note"])
+        d = review.result(review.analyze(fixture("texas-single.json")))["offers"][0]
+        self.assertEqual(d["downside_checked"], ["appraisal"])
+
+    def test_closing_given_as_days_is_shown_as_written(self):  # OFR-302
+        data = fixture("minimal-single.json")
+        data["analysis_date"] = "2026-09-26"  # "close in 35 days": about Sat Oct 31, a date the buyer never wrote
+        o = review.analyze(data)["offers"][0]
+        row = next(r for r in o["counter_rows"] if r[0] == "Closing Date")
+        self.assertEqual(row[1], o["close_terms"])
+        self.assertTrue(o["close_terms"].startswith("35 days after acceptance"))
+        self.assertIsNone(review.analyze(fixture("expired-aga.json"))["offers"][0]["close_terms"])  # a date was given
+
+    def test_tax_estimate_says_list_price(self):  # OFR-303
+        R = review.analyze(fixture("minimal-single.json"))
+        self.assertIn("of list price", R["listing"]["tax_estimate"])
+        est = review.result(R)["estimated_costs"]
+        self.assertTrue(any(e.startswith("tax proration at 1.8% of list price") for e in est))
+
+    def test_biggest_risk_agrees_with_the_threat(self):  # OFR-304
+        R = review.analyze(fixture("minimal-single.json"))  # only Low flags; FHA financing scores 2
+        o = R["offers"][0]
+        self.assertEqual(review.threat(o), "Financing")
+        self.assertEqual(review.biggest_risk(o)["key"], "threat:financing")
+        self.assertEqual(review.result(R)["offers"][0]["biggest_risk_key"], "threat:financing")
+        R = review.analyze(fixture("four-offers.json"))
+        lee = next(o for o in R["offers"] if o["id"] == "D")  # a High sale contingency outranks the threat
+        self.assertEqual(review.biggest_risk(lee)["key"], "sale_contingency")
+
+    def test_respond_by_names_the_offer_the_plan_acts_on(self):  # OFR-305
+        R = review.analyze(fixture("four-offers.json"))  # only the declined Morales offer has a time for acceptance
+        s = review.result(R)["summary"]
+        top = R["ranked"][0]
+        self.assertEqual((s["respond_by"], s["respond_by_offer"]), ("No time stated", top["label"]))
+        data = fixture("four-offers.json")
+        data["offers"][1]["expires"] = "2026-09-26 20:00"  # Park, the offer the plan accepts
+        s = review.result(review.analyze(data))["summary"]
+        self.assertEqual(s["respond_by_offer"], top["label"])
+        self.assertIn("Sep 26", s["respond_by"])
+
+    def test_assumed_form_is_marked_per_offer(self):  # OFR-306
+        data = fixture("four-offers.json")
+        for o in data["offers"][1:]:
+            o.pop("contract_form", None)
+        R = review.analyze(data)
+        s = review.result(R, "multi")["summary"]
+        self.assertIsNone(s["preliminary"])  # the form alone doesn't decide the ranking
+        marks = {r["key"]: r["form_assumed"] for r in s["ranked"]}
+        self.assertEqual(marks, {"A": False, "B": True, "C": True, "D": True})
+        doc, _, _ = review_render.build_html(R, {}, sample=False, mode="multi")
+        self.assertIn("(form assumed)", doc)
+        self.assertNotIn('class="prelim"', doc)
+        top = R["ranked"][0]  # the offer's own review still says it's preliminary
+        self.assertTrue(review.result(R, "single", top["id"])["summary"]["preliminary"])
+
+    def test_listing_tax_rate_or_millage(self):  # OFR-307
+        data = fixture("texas-single.json")
+        data["listing"].pop("annual_tax")
+        self.assertEqual(review.analyze(data)["listing"]["annual_tax"], round(610000 * 0.011))  # national estimate
+        data["listing"]["tax_rate"] = 0.02
+        self.assertEqual(review.analyze(data)["listing"]["annual_tax"], 12200)
+        data["listing"].pop("tax_rate")
+        data["listing"]["total_mills"] = 20.464
+        self.assertEqual(review.analyze(data)["listing"]["annual_tax"], round(610000 * 20.464 / 1000))
+        data["listing"]["total_mills"] = 0.020464  # a fraction, not mills
+        with self.assertRaises(review.oe.OfferError):
+            review.analyze(data)
+
+    def test_hoa_fee_is_an_estimate_unless_known(self):  # OFR-309
+        def estoppel(d):
+            o = review.analyze(d)["offers"][0]
+            return next((lab for k, lab, v in o["ns"]["lines"] if k == "estoppel" and v), None)
+        data = fixture("texas-single.json")
+        self.assertIsNone(estoppel(data))  # hoa_monthly 0: no HOA, no charge
+        data["listing"].pop("hoa_monthly")
+        self.assertEqual(estoppel(data), "HOA Documents (Estimate)")
+        self.assertEqual(estoppel(fixture("expired-aga.json")), "HOA Estoppel Letter")  # an HOA, Florida's built-in fee
 
 
 class RevisionSource(unittest.TestCase):

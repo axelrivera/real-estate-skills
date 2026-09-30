@@ -42,15 +42,15 @@
    "value": "none"
   },
   {
-   "field": "buyer_broker_pct",
-   "impact": "med",
-   "value": 0.025
-  },
-  {
    "field": "current_tax_bill_paid",
    "impact": "med",
    "scope": "listing",
    "value": false
+  },
+  {
+   "field": "compensation_agreement",
+   "impact": "med",
+   "value": null
   }
  ],
  "incomplete": [
@@ -88,6 +88,7 @@
    "buyer_broker_pct": 0.025,
    "close": "2026-11-02",
    "close_days": 37,
+   "close_terms": null,
    "closing_date": "2026-11-02",
    "contract_form": "as_is",
    "contract_issues": [
@@ -588,15 +589,15 @@
    "value": "none"
   },
   {
-   "field": "buyer_broker_pct",
-   "impact": "med",
-   "value": 0.025
-  },
-  {
    "field": "current_tax_bill_paid",
    "impact": "med",
    "scope": "listing",
    "value": false
+  },
+  {
+   "field": "compensation_agreement",
+   "impact": "med",
+   "value": null
   },
   {
    "field": "holding_monthly",
@@ -640,6 +641,7 @@
    "buyer_broker_pct": 0.025,
    "close": "2026-11-02",
    "close_days": 37,
+   "close_terms": null,
    "closing_date": "2026-11-02",
    "contract_form": "as_is",
    "contract_issues": [

@@ -368,7 +368,7 @@ def gantt(o, R):
              + "".join(f'<td class="gantt {gx(i)} {"on-close" if i == ci else ""}"><div></div></td>' for i in range(ncell)) + "</tr>")
     legend = ('<div class="legend"><span><i class="hot"></i>Cancel for Any Reason</span><span><i class="warm"></i>Cancel if Financing/Appraisal Fails</span>'
               '<span><i class="closei"></i>Closing</span>' + ('<span><i class="dl"></i>Seller Deadline</span>' if dl else "")
-              + f'<span>Firm after day <b>{o["risk_days"]}</b> ({o["firm_date"]:%b %-d}).</span></div>')
+              + f'<span>Firm after day <b>{o["risk_days"]}</b> ({review.firm_day(o, R["costs"])[0]:%b %-d}).</span></div>')
     return f'<div class="tbl"><table style="table-layout:fixed"><thead>{hdr}</thead><tbody>{body}</tbody></table></div>{legend}'
 
 
@@ -580,6 +580,11 @@ KEY_TERMS = [("Financing", ("Financing",)), ("Approval / Funds", ("Approval", "P
              ("Closing", ("Closing Date",))]
 
 
+# OFR-306: an offer whose contract form was assumed carries a small mark instead of a Preliminary banner on the whole page
+FORM_MARK = ' <span class="sm">(form assumed)</span>'
+FORM_NOTE = " <b>Form assumed</b> = the contract form wasn't given; see Assumptions &amp; Data to Confirm."
+
+
 def multi_html(R, v):
     """The decision summary: one row per offer, so it reads the same with 2 offers or 12. Detail lives in each single review."""
     L = R["listing"]
@@ -588,7 +593,7 @@ def multi_html(R, v):
     band = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
     pill = {"Accept": "rec", "Counter": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
     rows = "".join(
-        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b></td>'
+        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b>{FORM_MARK if r.get("form_assumed") else ""}</td>'
         f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
         f'<td class="n">{r["price"]}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
         f'<td class="c {band[r["band_class"]]}"><b>{r["score"]}</b></td><td class="n">{r["risk_days"]}{"" if r["risk_days"] == "—" else " d"}</td><td class="n">{r["close"]}</td>'
@@ -596,7 +601,7 @@ def multi_html(R, v):
     decision = f'''<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
  <table class="rank"><colgroup><col style="width:3%"><col style="width:19%"><col style="width:10%"><col style="width:9%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
  <thead><tr><th></th><th>Offer</th><th>Financing</th><th class="c">Action</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Walk</th><th class="n">Close</th><th>Terms / Reason</th></tr></thead><tbody>{rows}</tbody></table>
- <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away. {esc(v["plan_note"])}</div></div>'''
+ <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away.{FORM_NOTE if any(r.get("form_assumed") for r in v["ranked"]) else ""} {esc(v["plan_note"])}</div></div>'''
     if len(R["active"]) <= CHART_MAX:
         chart = (f'<div><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
                  '<span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span>'
@@ -615,7 +620,7 @@ def multi_html(R, v):
             hit = next((t[k] for k in keys if k in t), None)
             word = STATUS_WORD.get(hit[3], "") if hit else ""  # OFR-28: the status in words, not only by color
             cells += (f'<td class="{hit[3]}">{hit[1]}' + (f' <span class="sm">({word})</span>' if word else "") + "</td>") if hit else "<td>—</td>"
-        risk = next(iter(review.deal_flags(o)), None)  # OFR-274: a listing-side reminder is never the biggest risk
+        risk = review.biggest_risk(o)  # OFR-274, OFR-304: the same answer as the review's biggest_risk
         risk = (f'<span class="pill {risk["sev"].lower()}">{risk["sev"]}</span> {esc(risk["issue"])}' if risk else "None major")
         body += f'<tr><td><b>{esc(o["key"])}</b> · <b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
     ctr = ""

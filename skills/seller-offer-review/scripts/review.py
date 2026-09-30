@@ -51,6 +51,7 @@ def analyze(data, market=None, cma=None):
     label_title_fees(R)
     ask_year_built(R)
     ask_hoa_rider(R)
+    ask_compensation_agreement(R)
     R["ranking_reason"] = str(data.get("ranking_reason") or "").strip() or None  # OFR-279
     return R
 
@@ -164,6 +165,34 @@ def ask_year_built(R):
     R["missing"].insert(meds[0] if meds else len(R["missing"]), a)
 
 
+def ask_compensation_agreement(R):
+    """OFR-299: Rider GG puts the buyer's broker compensation in a separate compensation agreement. When the package
+    doesn't give the amount, the review asks for the signed agreement (it's in ALWAYS_ASK), folding in the offer's
+    assumed buyer-broker share so the question is asked once."""
+    for o in R["active"] + R["incomplete"]:
+        if o.get("bb_tag") == "Requested" or not any(f.get("topic") == "rider_GG" for f in o["flags"]):
+            continue
+        sc = f"offer {o['id']}"
+        old = next((a for a in R["missing"] if a["field"] == "buyer_broker_pct" and sc in oe.scopes(a)), None)
+        if old:
+            left = [s for s in oe.scopes(old) if s != sc]
+            if left:  # still assumed for other offers: keep it for them
+                old["scope"], old["also"] = left[0], left[1:]
+            else:
+                R["missing"].remove(old)
+                if old in R["assumptions"]:
+                    R["assumptions"].remove(old)
+        net = ("the listing broker pays it from its fee" if o.get("bb_from_listing") else
+               f"the net assumes {oe.pct(o['buyer_broker_pct'])}" if old and old["value"] else "it isn't in the net")
+        a = {"scope": sc, "field": "compensation_agreement", "value": None,
+             "impact": old["impact"] if old else "med",
+             "why": f"Rider GG: the buyer's broker compensation is in a separate agreement that isn't in the package ({net}). "
+                    "Send the signed compensation agreement (the amount)"}
+        R["assumptions"].append(a)
+        R["missing"].append(a)
+    R["missing"].sort(key=lambda a: oe.IMPACT_ORDER[a["impact"]])
+
+
 def ask_hoa_rider(R):
     """OFR-291: on an HOA or condo property, an FR/BAR offer whose rider list wasn't read (no `riders`, or only letters its
     terms imply) gets an assumption asking about the HOA or condo rider instead of a flag, so every offer is checked the
@@ -219,12 +248,15 @@ def estimated_costs(R, offers):
         out.append(f"title company fees {money(amounts[0])}" + (f" to {money(amounts[-1])}" if len(amounts) > 1 else "")
                    + f" ({src('closing_costs.seller_title_fees')})")
     tax = next((a for a in R["missing"] if a["field"] == "annual_tax" and isinstance(a["value"], (int, float))), None)
-    if tax and "tax" in lines:
-        fr = costs.get("property_tax.fallback_rate")
-        out.append(f"tax proration at {fr * 100:g}% of price ({src('property_tax.fallback_rate')})" if fr else
+    if tax and "tax" in lines:  # OFR-303: worded as the math is ("of list price", or the listing's own rate)
+        out.append(f"tax proration at {L['tax_estimate']}" if L.get("tax_estimate") else
                    f"tax proration on an estimated {money(tax['value'])} bill")
-    if L["hoa_monthly"] is None and "estoppel" in lines:
-        out.append(f"{words(lines['estoppel'])} (charged in case there's an HOA)")
+    if "estoppel" in lines:  # OFR-309: an HOA fee is charged only with an HOA or when it's unknown
+        name = words(lines["estoppel"].split(" (")[0])
+        if L["hoa_monthly"] is None:
+            out.append(f"{name} (estimate, charged in case there's an HOA)")
+        elif "(Estimate)" in lines["estoppel"]:
+            out.append(f"{name} (estimate)")
     if not L.get("repair_reserve_deal") and any(not o["repairs_owed"] and any(k == "repair" and v for k, _, v in o["ns_down"]["lines"])
                                                 for o in offers):  # a Standard form's repair limits are contract terms
         out.append("post-inspection credit in the downside (estimate)")
@@ -271,9 +303,28 @@ def listed_assumptions(R, multi=False):
             or a.get("also")]
 
 
+# OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in the
+# data note and the assumptions), and the contract form, which each offer carries as its own "form assumed" mark
+SAME_FOR_EVERY_OFFER = {"payoff", "listing_fee_pct", "state", "title_payer", "deed transfer tax", "who pays owner's title",
+                        "owner's title rate", "title company fees"}
+MARKED_PER_OFFER = {"contract_form"}
+
+
+def ranking_deciding(a):
+    return a["field"] not in SAME_FOR_EVERY_OFFER | MARKED_PER_OFFER
+
+
+def form_assumed(R, o):
+    """OFR-306: True when this offer's contract form was assumed (a high-impact input the comparison marks per offer)."""
+    return any(a["field"] in MARKED_PER_OFFER and f"offer {o['id']}" in oe.scopes(a) for a in R["missing"])
+
+
 def preliminary(R, offer_id=None, multi=False):
+    """The Preliminary line, or None. OFR-306: the comparison carries it only when an input that could change the
+    ranking is assumed; a single review, whenever one of its high-impact inputs is."""
     # OFR-266: an offer's missing input names the offers it's missing for
-    need = oe.preliminary_inputs(R, offer_id, name_offer=lambda s: where(R, s))
+    need = oe.preliminary_inputs({**R, "missing": [a for a in R["missing"] if ranking_deciding(a)]} if multi else R,
+                                 None if multi else offer_id, name_offer=lambda s: where(R, s))
     if not need:
         return None
     n = len(listed_assumptions(R, multi))
@@ -307,8 +358,9 @@ def where(R, scope, also=()):
 
 
 # OFR-287: offer terms the review assumed and the counter won't touch (an assumed inspection period, a missing deposit),
-# and the lead-paint check, are always asked after the high-impact gaps, even past the limit
-ALWAYS_ASK = ("inspection_days", "deposit", "year_built")
+# the lead-paint check and Rider GG's compensation agreement (OFR-299) are always asked after the high-impact gaps,
+# even past the limit
+ALWAYS_ASK = ("inspection_days", "deposit", "year_built", "compensation_agreement")
 
 
 def confirm_items(R, limit=4):
@@ -325,35 +377,66 @@ def to_confirm(R, limit=4):
     return [a["why"] for a in confirm_items(R, limit)]
 
 
-def threat(o):
+THREAT_LABEL = {"appraisal": "Appraisal", "contingency": "Contingencies", "timeline": "Closing date", "approval": "Loan approval",
+                "financing": "Financing", "deposit": "Low deposit", "property": "Insurance / condition", "agent": "Buyer's agent"}
+# OFR-304: a certainty criterion's score as a flag severity (4 and 5 are no threat)
+THREAT_SEV = {1: "High", 2: "Med", 3: "Low"}
+SEV_RANK = {"Blocking": 0, "High": 1, "Med": 2, "Low": 3}
+
+
+def threat_key(o):
+    """The certainty criterion that costs the most points (weight × shortfall), or None when every one scores 4+."""
     weights = {k: w for k, _, w in oe.CRITERIA}
     prio = ["appraisal", "contingency", "timeline", "approval", "financing", "deposit", "property", "agent"]
     s = o["score"]["scores"]
     worst = min(prio, key=lambda k: (-weights[k] * (5 - s[k]), prio.index(k)))
-    if s[worst] >= 4:
-        return "None major"
-    return {"appraisal": "Appraisal", "contingency": "Contingencies", "timeline": "Closing date", "approval": "Loan approval",
-            "financing": "Financing", "deposit": "Low deposit", "property": "Insurance / condition", "agent": "Buyer's agent"}[worst]
+    return None if s[worst] >= 4 else worst
 
 
-def walk_away(o):
+def threat(o):
+    k = threat_key(o)
+    return THREAT_LABEL[k] if k else "None major"
+
+
+def biggest_risk(o):
+    """OFR-304: the one biggest risk, so it never disagrees with the certainty's threat: the top deal flag (listing-side
+    reminders never count), unless the threat's criterion score is a higher severity (score 1 High, 2 Med, 3 Low); then
+    the threat, with the scorecard's reason. {sev, issue, key} or None: `key` is the flag's topic, or `threat:<criterion>`."""
+    flag = next(iter(deal_flags(o)), None)
+    k = threat_key(o)
+    sev = THREAT_SEV.get(o["score"]["scores"][k]) if k else None
+    if sev and (flag is None or SEV_RANK[sev] < SEV_RANK.get(flag["sev"], 2)):
+        return {"sev": sev, "issue": f"{THREAT_LABEL[k]} ({o['score']['why'][k].rstrip('.')}).", "key": f"threat:{k}"}
+    return {"sev": flag["sev"], "issue": flag["issue"], "key": flag.get("topic")} if flag else None
+
+
+def firm_day(o, costs):
+    """OFR-300: (the day the buyer's last cancel right really ends, the day it moved from or None): the last day of the
+    longest window, rolled off a weekend or holiday by the market's contract rule (offer_engine.rolled)."""
+    return oe.rolled(o["firm_date"], costs)
+
+
+def walk_away(o, costs):
     """(until, note): when the buyer's last cancel right ends, counted from acceptance (the Effective Date isn't set
     yet): the longest open window (OFR-267), AGA-1's included. AGA-1's renegotiation window only opens when the
     valuation plus the gap is below the price, so the note says the days after the other windows close are that
     condition. OFR-121: when the inspection walk-away (AS IS, Rider K or L) ends sooner, the note says until when the
-    buyer may cancel for any reason."""
+    buyer may cancel for any reason. OFR-300: each date is rolled off a weekend or holiday as the contract rolls it."""
     ex = o.get("risk_days_ex_appraisal", o["risk_days"])
     notes = []
     wd = o.get("walkaway_days") or 0
     if wd and wd < o["risk_days"]:
         start = o["firm_date"] - timedelta(days=o["risk_days"])
-        notes.append(f"For any reason until {start + timedelta(days=wd):%b %-d} ({wd}-day inspection period"
+        end, _ = oe.rolled(start + timedelta(days=wd), costs)
+        notes.append(f"For any reason until {end:%b %-d} ({wd}-day inspection period"
                      + (f", {o['contract_label']}" if o["contract_form"] in oe.cf.FRBAR else "")
                      + "); after that only under the loan, appraisal or rider terms.")
     if o.get("appraisal_form") == "aga" and ex < o["risk_days"] == o["appraisal_days"]:
-        first = o["firm_date"] - timedelta(days=o["risk_days"] - ex)
+        first, _ = oe.rolled(o["firm_date"] - timedelta(days=o["risk_days"] - ex), costs)
         notes.append(f"After {first:%b %-d} ({ex} days) only if the valuation plus the gap comes in below the price (AGA-1).")
-    return f"{o['firm_date']:%a %b %-d} ({o['risk_days']} days from acceptance)", " ".join(notes) or None
+    until, was = firm_day(o, costs)
+    moved = f"; {was:%a %b %-d} moves to the next business day" if was else ""
+    return f"{until:%a %b %-d} ({o['risk_days']} days from acceptance{moved})", " ".join(notes) or None
 
 
 def downside_hits(o):
@@ -362,15 +445,26 @@ def downside_hits(o):
     return [k for k, on in (("appraisal", o["downside_price"] < o["price"]), ("inspection", bool(o["repair_reserve"]))) if on]
 
 
-def downside_note(o):
-    """'if the appraisal and inspection go badly', or only the part that applies to this offer."""
+def downside_checked(o):
+    """OFR-301: what the downside case tests for this offer, whether or not it costs anything: 'appraisal' whenever the
+    offer carries appraisal risk (a financed offer, AGA-1 or Rider F), 'inspection' when there's a repair cost."""
+    return [k for k, on in (("appraisal", bool(o["appraisal_risk"])), ("inspection", bool(o["repair_reserve"]))) if on]
+
+
+def downside_note(o, L, short=False):
+    """'if the appraisal and inspection go badly', or only the part that applies to this offer. OFR-301: an appraisal
+    risk that costs nothing at the value line is named too, so the seller never reads it as no appraisal risk."""
     hits = downside_hits(o)
     if hits == ["appraisal", "inspection"]:
         return "if the appraisal and inspection go badly"
     if hits == ["appraisal"]:
         return "if the appraisal comes in low"
+    free = "appraisal" in downside_checked(o) and "appraisal" not in hits and not short
+    at = "at the top of the value range" if L["cma_provided"] else "at list price"
     if hits == ["inspection"]:
-        return "if the inspection goes badly"
+        return "if the inspection goes badly" + (f"; an appraisal {at} wouldn't cut the price" if free else "")
+    if free:
+        return f"same as offered: an appraisal {at} wouldn't cut the price, and no inspection cost applies"
     return "same as offered: no appraisal or inspection cost applies"
 
 
@@ -399,11 +493,12 @@ def deadline_note(S):
     return f"a {dl:%A}: close by {oe.prior_weekday(dl):%a %b %-d}"
 
 
-def certainty(o, S):
+def certainty(o, S, costs):
     dl = S["deadline"]
+    wa = walk_away(o, costs)
     return {
         "score": o["score"]["total"], "band": o["score"]["band"][1], "band_class": o["score"]["band"][0],
-        "walk_away_until": walk_away(o)[0], "walk_away_note": walk_away(o)[1],
+        "walk_away_until": wa[0], "walk_away_note": wa[1],
         "deposit": f"{money(o['deposit'])} ({o['deposit'] / o['price']:.1%})" if o["deposit"] is not None else "not provided",
         "closing": (f"{o['close']:%b %-d} vs. {dl:%b %-d} deadline" + (f" ({deadline_note(S)})" if deadline_note(S) else "") if dl else
                     f"{o['close']:%b %-d} ({o['close_days']} days)"),
@@ -423,7 +518,7 @@ def incomplete_view(R, o):
 
     An offer whose only Blocking issue is a passed time for acceptance can be revived by a seller counter, so the view
     also carries what that counter could look like (`revive`), labeled as reference, never as a recommendation."""
-    S = R["seller"]
+    S, L = R["seller"], R["listing"]
     issues = "; ".join(f["issue"].rstrip(".") for f in o["blocking"])
     fixes = [f for f in o["flags"] if f.get("contract") and f["sev"] in ("Blocking", "High")]
     expired_only = all(f.get("topic") == "expired" or "expired" in (f.get("agent_topics") or ()) for f in o["blocking"])
@@ -454,9 +549,9 @@ def incomplete_view(R, o):
         "counter": None, "compare": None, "revive": revive,
         "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
                  {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
-                 {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": downside_note(o), "tone": "risk"},
+                 {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": downside_note(o, L), "tone": "risk"},
                  {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": "list price, clean terms", "tone": ""}],
-        "certainty": certainty(o, S),
+        "certainty": certainty(o, S, R["costs"]),
         "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"] if not f.get("contract")][:3],  # contract issues are in fixes
         "terms_reason": R.get("ranking_reason"),
         "options": [],
@@ -526,7 +621,7 @@ def single_view(R, o):
     kpis = [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
             {"label": f"Net as Offered{pre}", "value": money(ao), "note": f"{signed(ao - tgt)} vs. target",
              "tone": "risk" if ao < tgt else "good"},
-            {"label": "Downside Net", "value": money(dn), "note": downside_note(o), "tone": "risk"}]
+            {"label": "Downside Net", "value": money(dn), "note": downside_note(o, L), "tone": "risk"}]
     if act == "COUNTER":
         kpis.append({"label": "Net with Our Counter", "value": money(cn), "tone": "good",
                      "note": f"{signed(cn - ao)} vs. as offered" if cn >= ao else f"{signed(cn - dn)} vs. downside; protects the price"})
@@ -535,7 +630,7 @@ def single_view(R, o):
 
     score = o["score"]["total"]
     opts = [{"option": "Accept as Written", "net": money(ao), "certainty": f"{score}/100", "status": "good" if score >= 80 else "risk",
-             "what": "Deal as signed" if score >= 80 else f"Realistic net closer to {money(dn)} {downside_note(o)}" if dn < ao
+             "what": "Deal as signed" if score >= 80 else f"Realistic net closer to {money(dn)} {downside_note(o, L, short=True)}" if dn < ao
              else "Deal as signed, with its risks in view (see the risk flags)",  # OFR-258: never "closer to" the same net
              "recommended": act == "ACCEPT"}]
     if o["counter_rows"]:
@@ -562,7 +657,7 @@ def single_view(R, o):
         "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "compare": compare, "kpis": kpis,
-        "certainty": certainty(o, S),
+        "certainty": certainty(o, S, R["costs"]),
         "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"][:3]],  # OFR-274: reminders only fill a spare slot
         "terms_reason": R.get("ranking_reason"),
         "options": opts,
@@ -575,10 +670,12 @@ def single_view(R, o):
 # --- multiple offers ---------------------------------------------------------
 
 def first_expiry(R):
-    """(when, offer label) of the first offer to expire."""
-    ex = [o for o in R["active"] + R["incomplete"] if o.get("expires_raw") and not o.get("lapsed")]
+    """(when, offer label) of the first deadline among the offers the plan acts on now (OFR-305: the ones it counters or
+    accepts), never a declined or backup offer's, so the Respond By box can't read as "answer the declined offer"."""
+    acted = [o for o in R["ranked"] if o["action"] in ("ACCEPT", "COUNTER")]
+    ex = [o for o in acted if o.get("expires_raw") and not o.get("lapsed")]
     if not ex:  # OFR-120: no deadline in the files is a fact to state, not a place to look
-        return "No time stated", None
+        return "No time stated", (acted[0]["label"] if acted else None)
     def when(o):  # OFR-263: a date alone is the end of that day
         s = str(o["expires_raw"]).strip()
         return s if len(s) > 10 else f"{s} 23:59"
@@ -639,13 +736,14 @@ def multi_view(R):
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
                "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
                "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],
-               "terms": terms[o["id"]]} for i, o in enumerate(rk)]
+               "terms": terms[o["id"]], "form_assumed": form_assumed(R, o)} for i, o in enumerate(rk)]
     ranked += [{"rank": "—", "offer": o["label"], "key": o["key"],
                 "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                 "price": money(o["price"]), "net": "—", "downside": "—", "score": "—", "band_class": "na", "risk_days": "—",
                 "close": f"{o['close']:%b %-d}", "action": "Incomplete", "status": "risk",
                 # OFR-120: only the first letter goes lowercase, so dates and times keep their case
-                "terms": "Contract can't be reviewed as written: " + low_first(o["blocking"][0]["issue"].rstrip("."))}
+                "terms": "Contract can't be reviewed as written: " + low_first(o["blocking"][0]["issue"].rstrip(".")),
+                "form_assumed": form_assumed(R, o)}
                for o in R["incomplete"]]
 
     most_certain = max(R["active"], key=lambda o: (o["score"]["total"], o["ns_down"]["net_adj"]))
@@ -700,19 +798,23 @@ def net_sheet_rows(cols):
     return rows
 
 
-def offer_detail(o):
+def offer_detail(o, R):
+    costs, L = R["costs"], R["listing"]
+    br = biggest_risk(o)
     cols = [("As Offered", o["ns"]), ("Downside", o["ns_down"])]
     if o["counter_rows"]:
         cols.append(("Counter", o["ns_counter"]))
     return {
         "id": o["id"], "label": o["label"], "buyer": o["buyer"], "buyer_agent": o.get("buyer_agent") or "", "price": money(o["price"]), "financing": fin_str(o),
         "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]), "counter_net": money(o["ns_counter"]["net_adj"]),
-        "downside_note": downside_note(o), "downside_counts": downside_hits(o),  # OFR-258
+        "downside_note": downside_note(o, L), "downside_counts": downside_hits(o),  # OFR-258
+        "downside_checked": downside_checked(o),  # OFR-301
         "score": o["score"]["total"], "band": o["score"]["band"][1], "action": o.get("action"),
-        "close": f"{o['close']:%a %b %-d}", "firm_date": f"{o['firm_date']:%a %b %-d}",
+        "close": f"{o['close']:%a %b %-d}", "firm_date": f"{firm_day(o, costs)[0]:%a %b %-d}",
         "flags": [f"{f['sev']}: {f['issue']} {f['fix']}" for f in o["flags"]],
         "flag_keys": [f["topic"] for f in o["flags"] if f.get("topic")],
-        "biggest_risk": next((f"{f['sev']}: {f['issue']}" for f in deal_flags(o)), None),  # OFR-274
+        "biggest_risk": f"{br['sev']}: {br['issue']}" if br else None,  # OFR-274, OFR-304
+        "biggest_risk_key": br["key"] if br else None,
         "net_sheet": {"columns": [c for c, _ in cols],
                       "rows": [{"label": r["label"], "values": [money(v) for v in r["values"]]} for r in net_sheet_rows(cols)]
                       + [{"label": "Holding Costs Until Closing", "values": [money(c["holding"]) for _, c in cols]},
@@ -735,7 +837,7 @@ def result(R, mode="auto", offer_id=None):
         "deadline_note": (f"The seller's {R['seller']['deadline']:%b %-d} deadline is {deadline_note(R['seller'])}."  # OFR-296
                           if deadline_note(R["seller"]) else None),
         "summary": view,
-        "offers": [offer_detail(x) for x in offers],
+        "offers": [offer_detail(x, R) for x in offers],
         "to_confirm": to_confirm(R),
         "estimated_costs": estimated_costs(R, offers),  # OFR-272: named in one line in every quick answer
         "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"], a.get("also") or ()), "what": a["why"]} for a in R["missing"]],

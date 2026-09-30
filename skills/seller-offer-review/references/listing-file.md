@@ -51,11 +51,12 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `beds`, `baths`, `sqft`, `year_built` | shown as "—". Without `year_built` the lead-based paint check can't run; when riders were read from an FR/BAR package it's asked for (med). Take it from the tax record or MLS | — |
 | `built_before_1978` | `true` or `false` from the seller's property disclosure ("Was the Property built before 1978?") when the year isn't known: it runs the lead-based paint check, so the year isn't asked | asked with `year_built` | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
-| `hoa_monthly` | unknown → HOA estoppel still charged, listed as an assumption; `0` = no HOA | low |
+| `hoa_monthly` | unknown → the HOA estoppel or documents fee is still charged, labeled Estimate and listed as an assumption; `0` = no HOA, no fee | low |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional: the CMA's midpoint or median adjusted comp price) | from `--cma`; else both = list price, appraisal risk measured vs. list. A range given here (not by `--cma`) comes back as `value_range_confirm`, the one line the reply uses to confirm it | **high** |
-| `annual_tax` | market fallback rate × list price (Florida 1.8%); no rate → proration left out | low / med |
+| `annual_tax` | the listing's `total_mills` or `tax_rate` × list price, else the market fallback rate × list price (Florida 1.8%, elsewhere the 1.1% national estimate); no rate → proration left out. Each is labeled on the report | low / med |
+| `total_mills`, `tax_rate` | optional, used only without `annual_tax`: the adopted rate you looked up per `local-costs.md`, in mills (`20.464`; a Texas rate per $100 of value times 10), or as a share of value (`0.0205`). Applied to the list price with no exemptions | med |
 | `current_tax_bill_paid` | `true` once the seller paid this year's bill; else false, and asked for Nov and Dec closings | med |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`). Missing: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
 | `flood_disclosure` | `true` once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer; else flagged for the listing side where the market requires it | — |

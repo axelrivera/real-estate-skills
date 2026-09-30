@@ -19,7 +19,7 @@ import math
 import re
 from datetime import date, datetime, timedelta
 
-from . import contract_forms as cf, finance, profiles
+from . import contract_forms as cf, dates, finance, profiles
 
 FIN_LABEL = {k: v["label"] for k, v in finance.LOAN_PROGRAMS.items()}
 APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full underwritten approval",
@@ -83,6 +83,15 @@ def prior_weekday(d):
     while d.weekday() >= 5:
         d -= timedelta(days=1)
     return d
+
+
+def rolled(d, costs):
+    """OFR-300: (the day a contract period ending on `d` really ends, the day it moved from or None). The market's
+    contract rule (`contract.weekend_holiday_rollover`, FR/BAR: the next business day) moves a weekend or federal
+    holiday, as the timeline and the buyer's deposit-risk date do; without the rule the date stays."""
+    if dates.is_business_day(d) or costs.get("contract.weekend_holiday_rollover") != "next_business_day":
+        return d, None
+    return dates.next_business_day(d), d
 
 
 class Assume:
@@ -252,6 +261,24 @@ def apply_cma(data, h):
 NATIONAL_NORMS = {"deposit_pct": 0.01, "concessions_pct": 0.03, "inspection_days": 10, "loan_approval_days": 30}
 
 
+def listing_tax(L, lp, costs):
+    """(finance.property_tax result, source) for a listing with no tax bill, on the list price. OFR-307: the listing's
+    own `total_mills` (an adopted rate, as local-costs.md says to look up) or `tax_rate` (a share of value) wins over the
+    market's fallback rate; neither applies an exemption. OFR-303: the basis says "list price", as the math uses it."""
+    mills, rate = L.get("total_mills"), L.get("tax_rate")
+    if mills is not None:
+        if isinstance(mills, bool) or not isinstance(mills, (int, float)) or not 1 <= mills <= 100:
+            raise OfferError(f"listing.total_mills is {mills!r}: write it in mills (dollars per $1,000 of value), like "
+                             "20.464 for a 2.0464% rate.")
+        tax = finance.property_tax(lp, costs, total_mills=mills, homestead=False)
+        return {**tax, "basis": f"{mills:g} mills on the list price, no exemptions"}, "the listing's millage"
+    if rate is not None:  # a fraction, checked with the other rates (finance.check_units)
+        return {"annual": lp * rate, "basis": f"{rate * 100:g}% of list price", "estimated": True}, "the listing's tax rate"
+    tax = finance.property_tax(lp, costs)
+    basis = tax["basis"].removeprefix("about ").replace("of price", "of list price")
+    return {**tax, "basis": basis}, costs.described("property_tax.fallback_rate")
+
+
 def prepare_listing(data, A, costs):
     L, S = dict(data.get("listing") or {}), dict(data.get("seller") or {})
     if not L.get("list_price"):
@@ -268,11 +295,12 @@ def prepare_listing(data, A, costs):
     L["cma_mid"] = L.get("cma_mid") or (L["cma_low"] + L["cma_high"]) / 2
 
     if L.get("annual_tax") in (None, ""):
-        tax = finance.property_tax(lp, costs)
+        tax, src = listing_tax(L, lp, costs)
         if tax["annual"] is not None:
             L["annual_tax"] = round(tax["annual"])
+            L["tax_estimate"] = f"{tax['basis']} ({src})"  # OFR-303: the quick answer's "Estimated:" line says the same
             A.add("listing", "annual_tax", L["annual_tax"],
-                  f"Tax bill not provided: estimated at {tax['basis'].removeprefix('about ')} ({costs.described('property_tax.fallback_rate')}); "
+                  f"Tax bill not provided: estimated at {tax['basis']} ({src}); "
                   "the proration moves the net by thousands, so get the bill", "med")  # OFR-128
         else:
             L["annual_tax"] = None
@@ -675,11 +703,15 @@ def prepare_offer(o, L, S, A):
     o["sale_contingency_days"] = o.get("sale_contingency_days") or 0
     o["kickout"] = bool(o.get("kickout")) or "X" in o["rider_codes"]
     eff = L["analysis_date"]
+    o["close_terms"] = None  # OFR-302: how the buyer wrote a closing given as days, or that none was given
     if o.get("closing_date"):
         o["close"] = _d(o["closing_date"])
     else:
-        days = o.get("closing_days") or A.add(sc, "closing_days", 45 if o["financed"] else 30, "Closing date not provided", "med")
+        given_days = o.get("closing_days")
+        days = given_days or A.add(sc, "closing_days", 45 if o["financed"] else 30, "Closing date not provided", "med")
         o["close"] = eff + timedelta(days=days)
+        o["close_terms"] = (f"{days} days after acceptance, about {o['close']:%a %b %-d}" if given_days else
+                            f"Not given (assumed about {o['close']:%a %b %-d})")
     o["close_days"] = (o["close"] - eff).days
     # FR/BAR Para. 9(c): the party who designates the Closing Agent pays the owner's policy, so the contract's box sets
     # who pays it on this offer; a title_payer the agent put in the listing's costs still wins
@@ -844,8 +876,10 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         "title": "Owner's Title Policy" + (" (Quote)" if "(Quote)" in found.get("title", ("",))[0] else
                                            " (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
         "settle": "Title Company Fees",
-        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Documents", CMA-262)
-        "estoppel": costs.get("closing_costs.hoa_estoppel_label") or "HOA Documents",
+        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Documents", CMA-262). OFR-309:
+        # labeled Estimate when the fee is a national estimate or charged only in case there's an HOA
+        "estoppel": (costs.get("closing_costs.hoa_estoppel_label") or "HOA Documents")
+                    + (" (Estimate)" if L["hoa_monthly"] is None or "(Estimate)" in found.get("estoppel", ("",))[0] else ""),
     }
     tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
     tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
@@ -1524,7 +1558,7 @@ def propose_counter(o, L, S):
     new_close = prior_weekday(new_close)
     if new_close != o["close"]:
         t["close"] = new_close
-        rows.append(("Closing Date", f"{o['close']:%a %b %-d}", f"{new_close:%a %b %-d}",
+        rows.append(("Closing Date", o.get("close_terms") or f"{o['close']:%a %b %-d}", f"{new_close:%a %b %-d}",
                      "Meets the seller's deadline" if S["deadline"] and o["close"] > S["deadline"] else
                      RESTATE if last.get("closing_date") and new_close == _d(last["closing_date"]) else "Weekend closings may not fund"))
     # rule 12 only where choosing title and paying for it are separate: under FR/BAR Para. 9(c) the buyer who
