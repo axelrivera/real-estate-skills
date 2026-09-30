@@ -149,7 +149,7 @@
      "contract": true,
      "request": null,
      "sev": "Med",
-     "topic": null
+     "topic": "rider_GG"
     }
    ],
    "gap_cover": 15000,
@@ -695,7 +695,7 @@
      "contract": true,
      "request": null,
      "sev": "Med",
-     "topic": null
+     "topic": "rider_GG"
     }
    ],
    "gap_cover": 15000,

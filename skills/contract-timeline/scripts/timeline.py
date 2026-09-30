@@ -1071,61 +1071,76 @@ def analyze(deal, side=None):
     # flags print on the report as "Check:" lines; agent_notes stay in chat (defaults used, assumptions to confirm)
     flags = list(deal.get("flags") or [])
     agent_notes = []  # the script's own; the agent's are merged in at the end without repeats
+    # TEST-2: a stable key for each flag and note the script adds (flag_keys, note_keys), so tests and golden can
+    # tell which one fired without matching the sentence; the printed text is unchanged
+    flag_keys, note_keys = [], []
+
+    def flag(key, text):
+        flags.append(text)
+        flag_keys.append(key)
+
+    def note(key, text):
+        agent_notes.append(text)
+        note_keys.append(key)
     sup = cf.support([current_contract["contract_form"] if frbar else cf.OTHER],
                      [(current_contract["contract_form"], current_contract.get("form_revision"))] if frbar else [])
     # chat_notes (the best-effort and revision notes) stay in chat_notes only: agent_notes can reach a template (TL-107)
     if rules.get("_tz_note"):  # TL-108: a question for the agent, not a line for the client
-        agent_notes.append(rules["_tz_note"])
+        note("time_zone_split", rules["_tz_note"])
     if frbar:  # TL-101: a rider name that isn't a CR-7 rider adds no dates, so say so rather than drop it silently
         unread = cf.rider_codes(current_contract.get("riders"))[1]
         if unread:
-            agent_notes.append(f"Not read as a CR-7 rider: {', '.join(map(str, unread))}. Its dates aren't in the timeline: "
+            note("rider_not_read", f"Not read as a CR-7 rider: {', '.join(map(str, unread))}. Its dates aren't in the timeline: "
                                "record the rider by its letter (\"G\") or add its dates to deadlines, and re-run")
     if rules.get("_unknown"):  # TL-121: asked, never invented
-        agent_notes.append("The contract's time rules as recorded don't say " + "; ".join(UNKNOWN_TEXT[k] for k in rules["_unknown"])
+        note("rules_unknown", "The contract's time rules as recorded don't say " + "; ".join(UNKNOWN_TEXT[k] for k in rules["_unknown"])
                            + ". Ask the agent what the contract says, add each to rules and re-run")
     if eff > today and not deal.get("what_if"):  # TL-119
-        agent_notes.append(f"The Effective Date ({eff:%b %-d, %Y}) is after the report date ({today:%b %-d, %Y}): confirm the "
+        note("effective_after_report", f"The Effective Date ({eff:%b %-d, %Y}) is after the report date ({today:%b %-d, %Y}): confirm the "
                            "contract is signed and delivered, or set what_if for a hypothetical timeline (labeled What-If)")
     for i, h in enumerate(history, 1):
         if _d(h.get("date")) and _d(h["date"]) > today:
-            agent_notes.append(f"Amendment {i} ({h.get('description') or 'no description'}) is dated "
+            note("amendment_after_report", f"Amendment {i} ({h.get('description') or 'no description'}) is dated "
                                f"{_date_text(h['date'])}, after the report date: confirm it was signed before relying on it")
     past = [r for r in rows if r["past"]]
     if past:  # TL-104
-        agent_notes.append("Before the report date and not recorded as done: " + ", ".join(
+        note("past_not_done", "Before the report date and not recorded as done: " + ", ".join(
             f"{r['label']} ({r['date_display']})" for r in past) + ". Confirm each was met and record it in completed "
             "(the report shows them as Past, Confirm and the calendar leaves them out)")
     waiting_on = [r["label"] for r in current if r["basis"] == "event" and not r["when"]]
     if waiting_on:  # FH-102: the report says "dated once the receipt is recorded"; the instruction is the agent's
-        agent_notes.append("Waiting on a receipt date: " + ", ".join(waiting_on) + ". Record each date when it happens "
+        note("waiting_on_receipt", "Waiting on a receipt date: " + ", ".join(waiting_on) + ". Record each date when it happens "
                            "and re-run")
-    agent_notes += [r["agent_note"] for r in current if r.get("agent_note")]
+    for r in current:
+        if r.get("agent_note"):
+            note("blank:" + r["key"], r["agent_note"])
     if closing_row and closing_row["note"]:
-        flags.append(closing_row["note"][:1].upper() + closing_row["note"][1:])
+        flag("closing_note", closing_row["note"][:1].upper() + closing_row["note"][1:])
     if frbar and (current_contract.get("financing") in ("fha", "va") or "E" in cf.rider_codes(current_contract.get("riders"))[0]):
-        flags.append("FHA/VA rider: the buyer isn't obligated to close if the appraisal comes in below the price, and that "
+        flag("fha_va_appraisal", "FHA/VA rider: the buyer isn't obligated to close if the appraisal comes in below the price, and that "
                      "protection runs to closing. The buyer's choice to go ahead anyway is due within 3 days after receiving "
                      "the appraisal")
     if str(current_contract.get("association_approval")).lower() == "unknown":  # the rider's "is / is not" box left blank
-        flags.append("The rider's association approval box is blank: these dates assume approval is required. Confirm with "
+        flag("assoc_box_blank", "The rider's association approval box is blank: these dates assume approval is required. Confirm with "
                      "the association")
-        agent_notes.append("Association approval box blank on the rider (no default): assumed required; ask the listing agent "
+        note("assoc_box_blank", "Association approval box blank on the rider (no default): assumed required; ask the listing agent "
                            "or the association")
     exp = current_contract.get("preapproval_expires")
     if exp and closing_row and _d(exp) < _d(closing_row["when"]):
-        agent_notes.append(f"The buyer's pre-approval expires {_date_text(exp)}, before closing: ask the lender to extend or "
+        note("preapproval_expires", f"The buyer's pre-approval expires {_date_text(exp)}, before closing: ask the lender to extend or "
                            "update it")
     approval = next((r for r in dated if r["key"] == "loan_approval"), None)
     if closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]):
-        flags.append("Loan approval period ends after closing: extend closing or shorten the loan approval period in writing")
+        flag("loan_approval_after_closing", "Loan approval period ends after closing: extend closing or shorten the loan approval period in writing")
     elif closing_row and approval and _d(approval["when"]) > _d(closing_row["when"]) - timedelta(days=5):
-        flags.append("Loan approval deadline is within 5 days of closing: little room if financing slips")
+        flag("loan_approval_near_closing", "Loan approval deadline is within 5 days of closing: little room if financing slips")
     if closing_row:
         late = [r["label"] for r in contingent if r["key"] != "loan_approval" and r["when"] > closing_row["when"]]
         if late:
-            flags.append(", ".join(late) + " ends after closing: amend the dates in writing")
-    agent_notes += [r["default"] for r in current if r.get("default")]
+            flag("after_closing", ", ".join(late) + " ends after closing: amend the dates in writing")
+    for r in current:
+        if r.get("default"):
+            note("default:" + r["key"], r["default"])
     short_sale = frbar and "G" in cf.rider_codes(current_contract.get("riders"))[0]
     approval = _d(current_contract.get("short_sale_approval_received")) if short_sale else None
     if short_sale:
@@ -1134,40 +1149,42 @@ def analyze(deal, side=None):
             deadline = ss_row["when"].date()
             expires = forward(deadline, 30, rules)[0].date()
             if approval > expires:
-                flags.append(f"The short sale approval was received {approval:%b %-d, %Y}, after the Contract Expiration "
+                flag("short_sale_after_expiration", f"The short sale approval was received {approval:%b %-d, %Y}, after the Contract Expiration "
                              f"Date ({expires:%b %-d, %Y}): under Rider G, Para. 4 the contract ended automatically unless "
                              "the deadline was extended in writing. Confirm the contract is still in effect")
             elif approval > deadline:
-                flags.append(f"The short sale approval was received {approval:%b %-d, %Y}, after the Short Sale Approval "
+                flag("short_sale_after_deadline", f"The short sale approval was received {approval:%b %-d, %Y}, after the Short Sale Approval "
                              f"Deadline ({deadline:%b %-d, %Y}): until then either party could cancel. Confirm neither "
                              "party canceled, or that the deadline was extended in writing")
         backup = str(current_contract.get("short_sale_backup") or "").strip().lower()  # TL-122: Rider G Para. 7
-        agent_notes.append("Rider G Para. 7(b): the seller may accept back-up contracts conditioned on this one failing"
+        note("short_sale_backup", "Rider G Para. 7(b): the seller may accept back-up contracts conditioned on this one failing"
                            if backup == "b" else
                            "Rider G Para. 7(a): the seller may not accept back-up offers while this contract is in effect"
                            + ("" if backup == "a" else " (neither box recorded: option (a) applies when neither is checked)"))
         if current_contract.get("closing_date") and not (current_contract.get("date_overrides") or {}).get("closing"):
-            agent_notes.append(f"Para. 4 closing date ({_date_text(current_contract['closing_date'])}) is replaced by the "
+            note("short_sale_closing_replaced", f"Para. 4 closing date ({_date_text(current_contract['closing_date'])}) is replaced by the "
                                "short sale rider: closing is "
                                f"{_plural(int(current_contract.get('short_sale_closing_days') or 45), 'day')} after the "
                                "buyer receives the approval (Rider G, Para. 6)")
         if not approval:
-            agent_notes.append("Short sale approval not received yet: every period except the deposit and the short sale "
+            note("short_sale_waiting", "Short sale approval not received yet: every period except the deposit and the short sale "
                                "rows waits for it (Rider G, Para. 5). Record short_sale_approval_received when it arrives "
                                "and re-run")
         if "GG" in cf.rider_codes(current_contract.get("riders"))[0]:
-            agent_notes.append("Rider GG is counted from the Effective Date, as its own words say; Rider G Para. 5 "
+            note("short_sale_gg", "Rider GG is counted from the Effective Date, as its own words say; Rider G Para. 5 "
                                "(all other periods run from the approval) could be read to move it. Confirm which reading the parties use")
     if not closing_row:
         if not short_sale:
-            agent_notes.append("No closing date given: dates counted back from closing are left out")
+            note("no_closing_date", "No closing date given: dates counted back from closing are left out")
     elif not current_contract.get("closing_time"):
-        agent_notes.append(f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
+        note("closing_time_assumed", f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
     if frbar and not current_contract.get("title_by"):
-        agent_notes.append("Who designates the closing agent (Para. 9(c)) isn't recorded: the title evidence row shows "
+        note("title_by_unknown", "Who designates the closing agent (Para. 9(c)) isn't recorded: the title evidence row shows "
                            "the seller. Set title_by and re-run if the buyer designates")
-    agent_notes += [n for n in market.notes if "MLS" not in n and "transfer tax" not in n  # costs don't matter here
-                    and not (deal.get("rules") and n.startswith("Nothing is built in for"))]  # the contract's rules are given
+    for n in market.notes:
+        if ("MLS" not in n and "transfer tax" not in n  # costs don't matter here
+                and not (deal.get("rules") and n.startswith("Nothing is built in for"))):  # the contract's rules are given
+            note("market", n)
     topics = [r["default_topic"] for r in current if r.get("default") and r.get("default_topic")]
     topics += ["closing time"] if closing_row and not current_contract.get("closing_time") else []
     agent_notes = _dedupe_notes(list(deal.get("agent_notes") or []), agent_notes, topics)
@@ -1211,6 +1228,8 @@ def analyze(deal, side=None):
             for h in history],
         "flags": flags,
         "agent_notes": agent_notes,
+        "flag_keys": flag_keys,  # one per flag the script added (the agent's own flags have none)
+        "note_keys": note_keys,  # one per note the script added, before repeats of the agent's notes are dropped
         **sup,
         "rules": {
             "family": "FR/BAR contract definitions" if frbar else "the contract's definitions",

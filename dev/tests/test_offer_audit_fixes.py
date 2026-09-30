@@ -50,7 +50,7 @@ class Escalation(unittest.TestCase):
         R = run(offer(price=405000, escalation={"increment": 2000, "cap": 402000, "proof": "copy"}), offer(id="B", price=404000))
         a = R["offers"][0]
         self.assertEqual((a["price_base"], a["price"], a["escalated"]), (405000, 405000, False))
-        self.assertTrue(any("402,000" in i for _, i, _ in a["escalation_issues"]))
+        self.assertTrue(any("402,000" in i for _, i, _, _ in a["escalation_issues"]))
 
     def test_same_buyer_variants_dont_escalate_against_each_other(self):  # OFR-101
         esc = {"increment": 1000, "cap": 420000, "proof": "copy"}
@@ -107,7 +107,7 @@ class Appraisal(unittest.TestCase):
         o = first(offer(financing="usda", down_pct=0, appraisal_form="aga", appraisal_gap=5000, price=415000))
         self.assertNotEqual(o["appraisal_form"], "aga")
         self.assertEqual(o["gap_cover"], 0)
-        self.assertTrue(any("AGA-1" in f["issue"] and "USDA" in f["issue"] for f in o["flags"]))
+        self.assertIn("aga_loan_type", [f["topic"] for f in o["flags"]])
 
     def test_aga_rules_live_in_contract_forms(self):  # ENG-15
         self.assertTrue(cf.aga_named({"addenda": ["Appraisal Gap Addendum (AGA-1)"]}))
@@ -120,7 +120,7 @@ class Appraisal(unittest.TestCase):
         o = first(offer(appraisal_form="aga", appraisal_gap=5000, closing_date="2026-10-23", price=415000))
         self.assertEqual(o["appraisal_days"], o["close_days"])
         self.assertEqual(o["aga_window_full"], 36)
-        self.assertTrue(any("AGA-1" in f["issue"] and "past" in f["issue"] for f in o["flags"]))
+        self.assertIn("aga_window_past_closing", [f["topic"] for f in o["flags"]])
         self.assertEqual(cf.aga_valuation_days(21), 15)
 
     def test_rider_f_and_h_windows_on_a_short_close(self):  # ENG-13, ENG-14

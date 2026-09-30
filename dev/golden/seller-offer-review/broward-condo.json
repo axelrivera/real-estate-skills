@@ -71,7 +71,7 @@
      "check": "terms",
      "contract": true,
      "sev": "High",
-     "topic": null
+     "topic": "condo_project_approval"
     },
     {
      "sev": "Med",
@@ -83,7 +83,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     }
    ],
    "gap_cover": 0,
@@ -485,7 +485,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     }
    ],
    "gap_cover": 0,
@@ -1012,7 +1012,7 @@
      "check": "terms",
      "contract": true,
      "sev": "High",
-     "topic": null
+     "topic": "condo_project_approval"
     },
     {
      "sev": "Med",
@@ -1024,7 +1024,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     }
    ],
    "gap_cover": 0,
@@ -1426,7 +1426,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     }
    ],
    "gap_cover": 0,
@@ -1832,7 +1832,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     }
    ],
    "gap_cover": 0,
@@ -2242,7 +2242,7 @@
      "check": "terms",
      "contract": true,
      "sev": "High",
-     "topic": null
+     "topic": "condo_project_approval"
     },
     {
      "sev": "Med",
@@ -2254,7 +2254,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     }
    ],
    "gap_cover": 0,

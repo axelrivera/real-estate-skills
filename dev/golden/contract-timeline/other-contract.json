@@ -49,6 +49,9 @@
   "was": null,
   "when": "2026-11-23 23:59"
  },
+ "flag_keys": {
+  "count": 0
+ },
  "flags": {
   "count": 2
  },
@@ -60,6 +63,9 @@
   "count": 0
  },
  "newly_dated": {
+  "count": 0
+ },
+ "note_keys": {
   "count": 0
  },
  "ok": true,

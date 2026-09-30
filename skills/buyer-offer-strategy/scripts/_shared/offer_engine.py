@@ -402,12 +402,14 @@ def apply_escalations(offers, L):
             continue
         inc, cap, issues = e.get("increment"), e.get("cap"), []
         if not cap:
-            issues.append(("High", "Escalation clause with no cap.", "Ask for the cap in writing before relying on the clause."))
+            issues.append(("High", "Escalation clause with no cap.", "Ask for the cap in writing before relying on the clause.",
+                           "escalation_cap"))
         if not inc:
-            issues.append(("Med", "Escalation clause with no increment.", "Ask for the increment over a competing offer."))
+            issues.append(("Med", "Escalation clause with no increment.", "Ask for the increment over a competing offer.",
+                           "escalation_increment"))
         if e.get("proof") is None:
             issues.append(("Med", "The escalation clause doesn't say how a competing offer is proven.",
-                           "Require a redacted copy of the competing offer's signature page and price terms."))
+                           "Require a redacted copy of the competing offer's signature page and price terms.", "escalation_proof"))
         # OFR-101: offers with the same `same_buyer` key are one buyer's alternatives, never each other's competition
         others = [base[id(x)] for x in live if x is not o and not (o.get("same_buyer") and x.get("same_buyer") == o["same_buyer"])]
         o["price_base"] = p0 = o["price"]
@@ -417,7 +419,8 @@ def apply_escalations(offers, L):
         if cap and cap <= p0:
             issues.append(("Med", f"The escalation cap ({money(cap)}) is at or below the offer's own price ({money(p0)}): "
                                   "the clause can't raise the price.",
-                           "Ask the buyer's agent which figure was meant; until then the offer stands at its price."))
+                           "Ask the buyer's agent which figure was meant; until then the offer stands at its price.",
+                           "escalation_cap_at_price"))
         o["price"], o["escalated"] = eff, eff > p0
         o["escalation_note"] = (f"Escalates to {money(eff)} from {money(p0)} (cap {money(cap)})" if eff > p0 else
                                 f"Escalation cap {money(cap)} is at or below the price, so the clause does nothing" if cap and cap <= p0 else
@@ -429,8 +432,9 @@ def apply_escalations(offers, L):
         if cap and o["appraisal_risk"] and cap > appraisal_line(L) + o["gap_cover"]:
             issues.append(("Med", f"The cap ({money(cap)}) is above what the value range and gap coverage support "
                                   f"({money(appraisal_line(L) + o['gap_cover'])}).",
-                           "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling."))
-        o["escalation_issues"] = issues
+                           "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling.",
+                           "escalation_cap_over_value"))
+        o["escalation_issues"] = issues  # (sev, issue, fix, topic)
 
 
 def label_offers(offers):
@@ -1093,7 +1097,7 @@ def contract_checks(o, L):
         if "F" in (o.get("rider_codes") or []):
             add("Med", "Appraisal Gap Addendum (AGA-1) with the Appraisal Contingency Rider (F): AGA-1 says not to use them together.",
                 "Ask which governs a low appraisal; counter with one of them.", "riders",
-                "Which appraisal terms govern: the Appraisal Gap Addendum or the Appraisal Contingency Rider?")
+                "Which appraisal terms govern: the Appraisal Gap Addendum or the Appraisal Contingency Rider?", "aga_with_rider_F")
         if not cf.aga_fits(o["financing"]):  # ENG-10: FHA, VA and USDA
             add("Med", f"Appraisal Gap Addendum (AGA-1) on a {FIN_LABEL[o['financing']]} offer: AGA-1 is for conventional or "
                        "cash offers" + (", and the FHA/VA rider's protection runs to closing anyway." if o["appraisal_protected"]
@@ -1101,7 +1105,7 @@ def contract_checks(o, L):
                 "Treat the gap as stated intent only." if o["appraisal_protected"] else
                 "Ask for the gap terms in Additional Terms or a form that fits the loan; until then it isn't counted.",
                 "terms", None if o["appraisal_protected"] else "Please restate the appraisal gap terms on a form that fits "
-                "the loan type (AGA-1 is for conventional or cash offers).")
+                "the loan type (AGA-1 is for conventional or cash offers).", "aga_loan_type")
         if not o["appraisal_gap"]:
             add("Med", "Appraisal Gap Addendum (AGA-1) without a Gap Amount.", "Ask for the Gap Amount.", "terms",
                 "Please fill in the Gap Amount on the Appraisal Gap Addendum.")
@@ -1109,12 +1113,13 @@ def contract_checks(o, L):
         if full and full > o["close_days"]:  # OFR-106
             add("Med", f"AGA-1's valuation and renegotiation periods ({full} days) run past the {o['close_days']}-day closing.",
                 "Fill the valuation days so the periods end before closing (and before loan approval on a financed offer).",
-                "terms", "Can the Appraisal Gap Addendum's valuation period be shortened so it ends before closing?")
+                "terms", "Can the Appraisal Gap Addendum's valuation period be shortened so it ends before closing?",
+                "aga_window_past_closing")
     if L["condo"] and o["financing"] in ("fha", "va"):
         fin = FIN_LABEL[o["financing"]]
         add("High", f"{fin} loan on a condo: the project must be {fin}-approved.",
             "Confirm the project's approval before accepting; an unapproved project can't close with this loan.", "terms",
-            f"Please confirm the lender has verified the condo project's {fin} approval.")
+            f"Please confirm the lender has verified the condo project's {fin} approval.", "condo_project_approval")
     loan = o.get("loan_amount")
     if loan and o["financed"] and abs(loan - o["price"] * (1 - o["down_pct"])) > max(1000, .01 * o["price"]):
         add("Med", f"Loan amount {money(loan)} doesn't match {pct(o['down_pct'])} down on {money(o['price'])}.",
@@ -1165,11 +1170,12 @@ def dedupe_flags(F):
     mine = [f for f in F if f.get("agent_topics")]
     out = []
     for f in F:
-        cover = [m for m in mine if f.get("topic") and f["topic"] in m["agent_topics"]]
+        cover = [m for m in mine if f.get("topic") and f["topic"] in m["agent_topics"] and not f.get("agent_topics")]
         if not cover:
             out.append(f)
             continue
         for m in cover:
+            m["topic"] = m.get("topic") or f["topic"]  # the agent's issue carries the engine's topic it replaces (TEST-2)
             if order.get(f["sev"], 1) < order.get(m["sev"], 1):
                 m["sev"] = f["sev"]
                 if f["sev"] in ("Blocking", "High") and not m.get("request") and f.get("request"):
@@ -1234,7 +1240,7 @@ def flags_for(o, L, S):
     if o["appraisal_protected"] and o["appraisal_gap"]:
         add("Med", f"{FIN_LABEL[o['financing']]} appraisal gap clause ({money(o['appraisal_gap'])}): the buyer can still cancel "
                    "if the appraisal is low (amendatory clause), so it shows intent only.",
-            "Ask for proof of funds for the gap; don't count it in the net.")
+            "Ask for proof of funds for the gap; don't count it in the net.", "fha_gap_intent")
     cap = finance.concession_cap(o["financing"], o["down_pct"])  # OFR-12
     credit = round(o["buyer_broker_pct"] * o["price"]) if o.get("bb_credit") else 0  # Rider FF: a seller credit to the buyer
     if cap is not None and o["seller_concessions"] + credit > cap * o["price"] + 1:
@@ -1245,7 +1251,7 @@ def flags_for(o, L, S):
                     f"{pct(cap)} at {pct(o['down_pct'])} down ({money(cap * o['price'])}): {money(over)} can't be used.",
             "Counter the concessions down to the limit, or the price down by the excess." if not credit else
             "Pay the buyer's broker under Rider GG (a separate compensation agreement) instead of a credit, or counter the "
-            "concessions down; confirm with the buyer's lender how it counts the credit.")
+            "concessions down; confirm with the buyer's lender how it counts the credit.", "concessions_cap")
     if o["financed"]:
         note = finance.loan_limit_note(o.get("loan_amount") or finance.loan_amount(o["price"], o["financing"], o["down_pct"]),
                                        o["financing"], L["loan_limits"], L.get("state"), L.get("county"))
@@ -1285,7 +1291,7 @@ def flags_for(o, L, S):
         if cr.get("rescission"):
             add("Med", "Condo: " + cr["rescission"].rstrip(".") + ".",
                 "Deliver the association documents" + (", the milestone summary and the SIRS" if cr.get("sirs_milestone") else "")
-                + " right after acceptance: the deal isn't firm until the buyer's windows pass.")
+                + " right after acceptance: the deal isn't firm until the buyer's windows pass.", "condo_rescission")
     if S["deadline"] and o["close"] > S["deadline"]:
         add("High", f"Closing {o['close']:%b %-d} is after the seller's {S['deadline']:%b %-d} deadline.", "Counter the closing date.")
     if o["close"].weekday() >= 5:
@@ -1303,8 +1309,8 @@ def flags_for(o, L, S):
     if any(t in o["buyer"].upper() for t in (" LLC", " INC", " TRUST", " CORP")):
         add("Low", "Entity buyer.", "Confirm signer authority and that funds are in the entity's name.")
     if o.get("escalation"):
-        for sev, issue, fix in o.get("escalation_issues") or []:
-            add(sev, issue, fix)
+        for sev, issue, fix, topic in o.get("escalation_issues") or []:
+            add(sev, issue, fix, topic)
         add("Low", o["escalation_note"] + ".", "Confirm the competing offer's price terms before signing.")
     if L.get("hoa_approval_required"):
         add("Low", "HOA approval required.", "Confirm the association's approval timeline fits the closing date.")

@@ -46,6 +46,9 @@
   "waits_on_approval": false,
   "when": "2026-12-03 23:59"
  },
+ "flag_keys": {
+  "count": 0
+ },
  "flags": {
   "count": 0
  },
@@ -82,6 +85,13 @@
  "newly_dated": {
   "count": 0
  },
+ "note_keys": [
+  "past_not_done",
+  "waiting_on_receipt",
+  "default:title",
+  "closing_time_assumed",
+  "title_by_unknown"
+ ],
  "ok": true,
  "open_rights": {
   "count": 3

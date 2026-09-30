@@ -30,6 +30,9 @@
   "was": null,
   "when": "2026-09-28 23:59"
  },
+ "flag_keys": [
+  "fha_va_appraisal"
+ ],
  "flags": {
   "count": 1
  },
@@ -43,6 +46,15 @@
  "newly_dated": {
   "count": 0
  },
+ "note_keys": [
+  "past_not_done",
+  "waiting_on_receipt",
+  "default:title",
+  "short_sale_backup",
+  "short_sale_closing_replaced",
+  "short_sale_waiting",
+  "short_sale_gg"
+ ],
  "ok": true,
  "open_rights": {
   "count": 3

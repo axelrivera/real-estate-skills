@@ -48,6 +48,9 @@
   "was": null,
   "when": "2026-10-15 23:59"
  },
+ "flag_keys": [
+  "loan_approval_near_closing"
+ ],
  "flags": {
   "count": 1
  },
@@ -61,6 +64,10 @@
  "newly_dated": {
   "count": 0
  },
+ "note_keys": [
+  "waiting_on_receipt",
+  "default:title"
+ ],
  "ok": true,
  "open_rights": {
   "count": 2

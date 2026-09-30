@@ -175,7 +175,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     },
     {
      "check": "terms",
@@ -605,7 +605,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "condo_rescission"
     },
     {
      "check": "terms",
@@ -1045,7 +1045,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "condo_rescission"
      },
      {
       "check": "terms",
@@ -1475,7 +1475,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "condo_rescission"
      },
      {
       "check": "terms",
@@ -2071,7 +2071,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "condo_rescission"
      },
      {
       "check": "terms",
@@ -2501,7 +2501,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "condo_rescission"
      },
      {
       "check": "terms",
@@ -2933,7 +2933,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "condo_rescission"
      },
      {
       "check": "terms",
@@ -3370,7 +3370,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "condo_rescission"
      },
      {
       "check": "terms",

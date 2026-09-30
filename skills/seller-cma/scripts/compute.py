@@ -244,6 +244,17 @@ def payments(R, market):
 
 # --- everything ----------------------------------------------------------------
 
+def _warner():
+    """(warnings, keys, warn): warn(key, *texts) adds each text with a stable key, so a test can tell which warning
+    fired without matching its sentence (TEST-2); `warning_keys` runs parallel to `warnings`."""
+    texts, keys = [], []
+
+    def warn(key, *items):
+        texts.extend(items)
+        keys.extend([key] * len(items))
+    return texts, keys, warn
+
+
 def compute(R, market, homes):
     _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
              "comps.cards", "pricing.strategies", "buyer_payment.rate", "buyer_payment.insurance_annual")
@@ -269,25 +280,27 @@ def compute(R, market, homes):
         raise ReportError("pricing.recommended_index doesn't point at a strategy.")
     if not R["comps"]["cards"]:
         raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
+    warnings, warning_keys, warn = _warner()
+    assumptions = []
     try:
-        warnings, assumptions = cma.derive_comps(R["comps"]), []  # adjusted values and summary rows from their parts
+        warn("derive_comps", *cma.derive_comps(R["comps"]))  # adjusted values and summary rows from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
-    warnings += cma.outlier_warnings(R["comps"]["cards"])  # CMA-110
+    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))  # CMA-110
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
     if scope:
-        warnings.append(scope)
+        warn("adjustment_scope", scope)
     n = len(R["comps"]["cards"])
     if n < 3:
-        warnings.append(f"Only {n} comp{'s' if n > 1 else ''}: the range rests on thin support. Widen the search if you can, "
+        warn("thin_comps", f"Only {n} comp{'s' if n > 1 else ''}: the range rests on thin support. Widen the search if you can, "
                         "and say so in the report.")
 
     if not rec["low"] <= rec["list_price"] <= rec["high"]:
-        warnings.append(f"The recommended list price {money(rec['list_price'])} is outside the supported range "
+        warn("list_outside_range", f"The recommended list price {money(rec['list_price'])} is outside the supported range "
                         f"{money(rec['low'])} – {money(rec['high'])}: move it inside, or widen the range and say why.")
     if strategies[ri]["list_price"] != rec["list_price"]:
-        warnings.append("The recommended strategy's list price doesn't match recommendation.list_price.")
+        warn("list_mismatch", "The recommended strategy's list price doesn't match recommendation.list_price.")
     three = len(strategies) - (stay is not None) == 3  # the three strategies, besides a reprice's Stay at Current Price
     for i, x in enumerate(strategies[:-1] if three else strategies):  # CMA-20
         if x["expected_sale"] > x["list_price"]:  # only the competing-offer option (the last of three) may sell above list
@@ -297,17 +310,17 @@ def compute(R, market, homes):
         raise ReportError("recommendation.low is above recommendation.high.")
     for x in strategies:
         if x["expected_sale"] > rec["high"]:
-            warnings.append(f"The expected sale {money(x['expected_sale'])} is above the supported range: "
+            warn("expected_above_range", f"The expected sale {money(x['expected_sale'])} is above the supported range: "
                             "an appraisal risk to explain, or lower it.")
 
     net = net_sheet(R, market, L)
-    warnings += net["warnings"]  # CORE-9: a title quote below the published rate
+    warn("title_quote", *net["warnings"])  # CORE-9: a title quote below the published rate
     if net["incomplete"]:
-        warnings.append("No brokerage terms: the nets leave out the commission, so they'd overstate what the seller walks away with. "
+        warn("no_brokerage", "No brokerage terms: the nets leave out the commission, so they'd overstate what the seller walks away with. "
                         "Ask the agent for the listing fee and buyer's agent compensation (0 is fine) in costs, then re-run. "
                         "render.py won't build the files until then.")
     if net["missing"]:
-        warnings.append("Preliminary: the market has no value for " + ", ".join(net["missing"]) +
+        warn("preliminary", "Preliminary: the market has no value for " + ", ".join(net["missing"]) +
                         ". Ask the agent and re-run; the report is marked Preliminary until then.")
     brokerage = [a["text"] for a in net["assumed"] if a["key"] in ("listing_fee", "buyer_broker_fee")]
     if brokerage:
@@ -323,7 +336,7 @@ def compute(R, market, homes):
         assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". " + lookup)
     costs_in = R.get("costs") or {}
     if costs_in.get("annual_tax") and not net["has_tax"]:
-        warnings.append("costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
+        warn("tax_no_closing_date", "costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
                         "closing_date per pricing option) to include the tax proration.")
     if any(a["key"] == "title_fees" and not a.get("estimate") for a in net["assumed"]):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
@@ -333,15 +346,15 @@ def compute(R, market, homes):
     if bp.get("total_mills") is None and bp.get("district"):
         problem = finance.millage_row(market, s.get("county"), bp["district"])[1]
         if problem:
-            warnings.append(problem)
+            warn("tax_problem", problem)
     if pay is None:
-        warnings.append("No millage or tax rate for the buyer-payment estimate: give buyer_payment.school_mills and total_mills "
+        warn("tax_no_rate", "No millage or tax rate for the buyer-payment estimate: give buyer_payment.school_mills and total_mills "
                         "(or a district in the built-in millage).")
     elif pay["homestead"] and not market.get("property_tax.primary_residence_exemptions"):
-        warnings.append("Buyer taxes assume a homestead, but this market has no exemptions on file, so none are applied: "
+        warn("homestead_no_exemptions", "Buyer taxes assume a homestead, but this market has no exemptions on file, so none are applied: "
                         "set buyer_payment.homestead to false and say so, or give the tax with the exemption applied.")
     if pay and pay["tax_estimated"]:
-        warnings.append(f"Buyer taxes are estimated at {pay['tax_basis']}; find the millage for the home's taxing district if you can.")
+        warn("tax_estimated", f"Buyer taxes are estimated at {pay['tax_basis']}; find the millage for the home's taxing district if you can.")
 
     address = s.get("mls_address", s["address"])
     others = [h for h in homes if not mls.same_address(h["address"], address)]
@@ -437,6 +450,7 @@ def compute(R, market, homes):
         "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
+        "warning_keys": warning_keys,
         "assumptions": assumptions,
         "market_notes": market.notes,
     }

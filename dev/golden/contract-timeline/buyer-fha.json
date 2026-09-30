@@ -49,6 +49,10 @@
   "was": null,
   "when": "2026-09-28 23:59"
  },
+ "flag_keys": [
+  "fha_va_appraisal",
+  "loan_approval_near_closing"
+ ],
  "flags": {
   "count": 2
  },
@@ -62,6 +66,10 @@
  "newly_dated": {
   "count": 0
  },
+ "note_keys": [
+  "waiting_on_receipt",
+  "default:title"
+ ],
  "ok": true,
  "open_rights": {
   "count": 3

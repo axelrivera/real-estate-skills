@@ -162,16 +162,28 @@ def comp_count_warnings(cards):
             "and say so in the report."] if len(cards) < 3 else []
 
 
+def _warner():
+    """(warnings, keys, warn): warn(key, *texts) adds each text with a stable key, so a test can tell which warning
+    fired without matching its sentence (TEST-2); `warning_keys` runs parallel to `warnings`."""
+    texts, keys = [], []
+
+    def warn(key, *items):
+        texts.extend(items)
+        keys.extend([key] * len(items))
+    return texts, keys, warn
+
+
 def comps_first(R, market):
     """CMA-110: the adjusted comps alone, before the range and offer plan exist, for a gut check or to set the range
     from: the median adjusted value, the spread and the outlier and adjustment warnings. Writes no handoff."""
     _require(R, "subject.address", "subject.list_price", "comps.cards")
-    warnings = comp_count_warnings(R["comps"]["cards"])
+    warnings, warning_keys, warn = _warner()
+    warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
     try:
-        warnings += cma.derive_comps(R["comps"])
+        warn("derive_comps", *cma.derive_comps(R["comps"]))
     except ValueError as e:
         raise ReportError(str(e)) from e
-    warnings += cma.outlier_warnings(R["comps"]["cards"])
+    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
     s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
     return {
@@ -185,6 +197,7 @@ def comps_first(R, market):
         "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
         "warnings": warnings,
+        "warning_keys": warning_keys,
         "market_notes": market.notes,
     }
 
@@ -215,12 +228,13 @@ def compute(R, market, homes):
                               "opening, then target, then walk-away, from low to high.")
     if bl["low"] > bl["high"]:
         raise ReportError("bottom_line.low is above bottom_line.high.")
-    warnings = comp_count_warnings(R["comps"]["cards"])
+    warnings, warning_keys, warn = _warner()
+    warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
     try:
-        warnings += cma.derive_comps(R["comps"])  # adjusted values and summary rows computed from their parts
+        warn("derive_comps", *cma.derive_comps(R["comps"]))  # adjusted values and summary rows computed from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
-    warnings += cma.outlier_warnings(R["comps"]["cards"])
+    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
     for i, r in enumerate((R.get("competition") or {}).get("rows", [])):
         if len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool) for j in (2, 3)):
             raise ReportError(f"competition.rows[{i}] should be [address, status, price, sqft, pool, days, notes], "
@@ -228,27 +242,27 @@ def compute(R, market, homes):
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), s["list_price"])  # CMA-10
     if scope:
-        warnings.append(scope)
+        warn("adjustment_scope", scope)
     tax_rows = taxes(R, market)
     for j in tax_rows:
         if j["problem"]:
-            warnings.append(j["problem"])
+            warn("tax_problem", j["problem"])
         if j["annual"] is None:
-            warnings.append(f"No millage or tax rate for {j['label']}: add school_mills and total_mills.")
+            warn("tax_no_rate", f"No millage or tax rate for {j['label']}: add school_mills and total_mills.")
         elif j["estimated"]:
-            warnings.append(f"Tax for {j['label']} is estimated at {j['basis']}; find the millage if you can.")
+            warn("tax_estimated", f"Tax for {j['label']} is estimated at {j['basis']}; find the millage if you can.")
     pay = payments(R, market, tax_rows) if all(j["annual"] is not None for j in tax_rows) else None
     credit = credit_scenarios(R, market, tax_rows, median_adjusted) if pay else None
     for c in (credit or {}).get("columns", []):
         if c["over_cap"]:
-            warnings.append(f"The {money(c['credit'])} credit at {money(c['price'])} is over the loan program's limit: fix the scenario.")
+            warn("credit_over_cap", f"The {money(c['credit'])} credit at {money(c['price'])} is over the loan program's limit: fix the scenario.")
         elif c["over_costs"]:
-            warnings.append(f"The {money(c['credit'])} credit at {money(c['price'])} exceeds the closing costs: fix the scenario.")
+            warn("credit_over_costs", f"The {money(c['credit'])} credit at {money(c['price'])} exceeds the closing costs: fix the scenario.")
     ca = op.get("credit_alt")
     if ca and credit and not any(c["price"] == ca["price"] and c["credit"] == ca["credit"] for c in credit["columns"]):
-        warnings.append("offer_plan.credit_alt doesn't match any price-vs-credit scenario.")
+        warn("credit_alt_mismatch", "offer_plan.credit_alt doesn't match any price-vs-credit scenario.")
     if op["walk_away"] > bl["high"]:
-        warnings.append("The walk-away price is above the supported range: only if the buyer accepts appraisal-gap risk, and say so.")
+        warn("walk_away_above_range", "The walk-away price is above the supported range: only if the buyer accepts appraisal-gap risk, and say so.")
 
     fit = mls.trend([h for h in homes if not mls.same_address(h["address"], s.get("mls_address", s["address"]))],
                     s["sqft"], (R.get("scatter") or {}).get("fit_size_ratio", 1.6)) if homes else None
@@ -316,6 +330,7 @@ def compute(R, market, homes):
         "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
+        "warning_keys": warning_keys,
         "market_notes": market.notes,
     }
 
