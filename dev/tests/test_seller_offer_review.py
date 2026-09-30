@@ -288,7 +288,8 @@ class LapsedOffers(unittest.TestCase):
 
     def test_aga_window_is_a_condition(self):
         c = review.result(review.analyze(fixture("expired-aga.json")))["summary"]["certainty"]
-        self.assertIn("Oct 26", c["walk_away_until"])  # risk_days 36 / 30 are pinned by golden
+        self.assertIn("Nov 1", c["walk_away_until"])  # OFR-267: the longest window (36 days), pinned by golden
+        self.assertIn("Oct 26", c["walk_away_note"])  # the other windows end at 30 days
         self.assertIn("gap", c["walk_away_note"])
 
 
@@ -331,6 +332,162 @@ class AuditPlanWording(unittest.TestCase):
         self.assertIn("once that contract is fully signed", out["summary"]["next_step"] if "next_step" in out["summary"] else text)
         self.assertNotIn("request a backup contract", text)
         self.assertIn("written authorization", text)
+
+
+def assumption_fields(R):
+    return {a["field"]: a for a in R["assumptions"]}
+
+
+class Audit20260929Second(unittest.TestCase):
+    """Second-pass fixes (OFR-251 to OFR-268), asserted on keys and numbers rather than prose."""
+
+    def test_backup_keeps_its_own_price(self):  # OFR-251
+        R = review.analyze(fixture("four-offers.json"))
+        backup = next(o for o in R["ranked"] if o["action"] == "BACKUP")
+        row = next(r for r in review.multi_view(R)["ranked"] if r["key"] == backup["key"])
+        self.assertNotEqual(backup["counter_terms"]["price"], backup["price"])  # the counter would ask for more
+        self.assertNotIn(review.money(backup["counter_terms"]["price"]), row["terms"])
+        self.assertNotIn("$", row["terms"])
+
+    def test_decline_reason_cites_certainty_when_it_nets_more(self):  # OFR-252
+        close = review.oe._d("2026-11-07")
+        top = {"ns": {"net_adj": 146209}, "ns_down": {"net_adj": 143209}, "score": {"total": 84}}
+        o = {"sale_contingency_days": 0, "approval": "du_approved", "financed": True, "close": close,
+             "ns": {"net_adj": 146694}, "ns_down": {"net_adj": 139942}, "score": {"total": 55}}
+        S = {"deadline": review.oe._d("2026-11-15")}
+        keys, why = review.oe.decline_reasons(o, top, S)
+        self.assertEqual(keys, ["more_net_less_certain"])
+        self.assertIn("55/100", why[0])
+        keys, _ = review.oe.decline_reasons(dict(o, score={"total": 90}), top, S)
+        self.assertEqual(keys, ["more_net_lower_downside"])
+        keys, _ = review.oe.decline_reasons(dict(o, ns={"net_adj": 140000}), top, S)
+        self.assertEqual(keys, ["nets_less"])
+        R = review.analyze(fixture("four-offers.json"))
+        self.assertEqual(next(o for o in R["offers"] if o["id"] == "D")["action_reason_keys"],
+                         ["sale_contingency", "prequal", "past_deadline"])
+
+    def test_no_state_follows_the_contract_form(self):  # OFR-253
+        data = fixture("minimal-single.json")
+        data["listing"]["address"] = "1207 Palmetto Way"
+        data["offers"][0]["contract_form"] = "standard"
+        R = review.analyze(data)
+        self.assertEqual((R["listing"]["state"], assumption_fields(R)["state"]["value"]), ("FL", "FL"))
+        self.assertTrue(R["costs"].state_assumed)
+        self.assertIn("transfer", [k for k, _, v in R["offers"][0]["ns"]["lines"] if v])
+        self.assertTrue(any("Assumed Florida" in n for n in R["listing"]["cost_notes"]))
+        self.assertFalse(R["market_notes"])  # no "don't assume Florida" note next to Florida costs
+        data["offers"][0].pop("contract_form")
+        R = review.analyze(data)
+        self.assertIsNone(R["listing"]["state"])
+        self.assertIsNone(assumption_fields(R)["state"]["value"])
+        self.assertFalse(R["costs"].state_assumed)
+        self.assertEqual(R["costs"].source("closing_costs.deed_transfer_tax_rate"), "estimate")
+
+    def test_unknown_hoa_estoppel_is_an_assumption(self):  # OFR-255
+        R = review.analyze(fixture("minimal-single.json"))
+        self.assertEqual(assumption_fields(R)["hoa_monthly"]["impact"], "low")
+        data = fixture("minimal-single.json")
+        data["listing"]["hoa_monthly"] = 0
+        self.assertNotIn("hoa_monthly", assumption_fields(review.analyze(data)))
+
+    def test_multi_counts_match_the_table(self):  # OFR-257
+        data = fixture("four-offers.json")
+        for o in data["offers"]:
+            o.pop("title_by", None)
+        R = review.analyze(data)
+        listed = review.listed_assumptions(R, multi=True)
+        self.assertIn("title_by", [a["field"] for a in listed])  # shared by several offers, so the comparison lists it
+        v = review.multi_view(R)
+        self.assertTrue(v["data_note"].startswith(f"{len(listed)} input"))
+        doc, _, _ = review_render.build_html(R, {}, sample=False, mode="multi")
+        table = doc.split("Assumptions &amp; Data to Confirm</h2>")[-1]
+        self.assertEqual(table.count('<span class="pill '), len(listed))
+
+    def test_approval_label_by_level(self):  # OFR-256
+        self.assertNotIn("Pre-approval", review.oe.APPROVAL_LABEL["du_approved"])
+        self.assertIn("DU/LP", review.oe.APPROVAL_LABEL["du_approved"])
+
+    def test_listing_broker_pays_the_buyers_broker(self):  # OFR-259
+        data = fixture("expired-aga.json")
+        data["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
+        R = review.analyze(data)
+        o = R["offers"][0]
+        target = {k: v for k, _, v in o["target"]["lines"]}
+        offered = {k: v for k, _, v in o["ns"]["lines"]}
+        self.assertEqual(target["bb"], 0)  # one total line in every column, the Seller's Target too
+        self.assertAlmostEqual(target["listing"] / 504000, offered["listing"] / 489000, places=4)
+        self.assertNotIn("Buyer-Broker Comp.", [r[0] for r in review_render.term_rows(o, R)])
+        A = assumption_fields(R)
+        self.assertEqual(A["buyer_broker_paid_by"]["impact"], "med")
+        self.assertIn("5%", A["listing_fee_pct"]["why"])
+        self.assertNotIn("2.5%", A["listing_fee_pct"]["why"])
+        self.assertNotIn("national", A["listing_fee_pct"]["why"])
+
+    def test_downside_says_what_it_counts(self):  # OFR-258
+        R = review.analyze(fixture("minimal-single.json"))  # no CMA, under list, AS IS: inspection only
+        o = R["offers"][0]
+        self.assertEqual(review.downside_hits(o), ["inspection"])
+        s = review.result(R)["summary"]
+        self.assertEqual(next(k for k in s["kpis"] if k["label"] == "Downside Net")["note"], review.downside_note(o))
+        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        self.assertNotIn("<b>Downside</b>: appraisal at", doc)
+        R = review.analyze(fixture("four-offers.json"))  # Lee: over the CMA high, no gap coverage
+        self.assertEqual(review.downside_hits(next(o for o in R["offers"] if o["id"] == "D")), ["appraisal", "inspection"])
+
+    def test_title_fee_note_matches_the_net_sheet(self):  # OFR-260
+        for name in ("four-offers.json", "counter-chain-standard.json", "expired-aga.json"):
+            R = review.analyze(fixture(name))
+            note = next(n for n in R["listing"]["cost_notes"] if n.startswith("Title company fees"))
+            for o in R["active"] + R["incomplete"]:
+                fee = -next(v for k, _, v in o["ns"]["lines"] if k == "settle")
+                self.assertIn(review.money(fee), note, name)
+
+    def test_counter_money_and_buyer_changes(self):  # OFR-261
+        data = fixture("counter-chain-standard.json")
+        o = data["offers"][0]
+        o["balance_to_close"] = 128500  # left at the $610,000 original: 24,000 + 457,500 + 128,500
+        o["prior_counters"].insert(0, {"by": "buyer", "note": "Original offer", "price": 610000, "closing_date": "2026-10-27"})
+        R = review.analyze(data)
+        keys = [f.get("topic") for f in R["offers"][0]["flags"]]
+        self.assertIn("loan_amount", keys)
+        self.assertIn("buyer_changes", keys)
+        o["balance_to_close"] = 619500 - 24000 - 457500
+        o["prior_counters"][0]["closing_date"] = "2026-11-16"
+        keys = [f.get("topic") for f in review.analyze(data)["offers"][0]["flags"]]
+        self.assertNotIn("loan_amount", keys)
+        self.assertNotIn("buyer_changes", keys)
+
+    def test_estimated_deadline_row_says_likely(self):  # OFR-262
+        R = review.analyze(fixture("counter-chain-standard.json"))
+        row = R["offers"][0]["counter_rows"][-1]
+        self.assertEqual(row[0], "Time for Acceptance")
+        self.assertTrue(row[1].startswith("Likely passed ("))
+        self.assertIn("likely passed", row[3])
+
+    def test_date_only_expiry_is_end_of_day_and_assumed(self):  # OFR-263
+        data = fixture("counter-chain-standard.json")
+        data["offers"][0]["expires"] = "2026-09-25"
+        R = review.analyze(data)
+        self.assertTrue(R["offers"][0]["expires"].endswith("end of day"))
+        self.assertEqual(R["offers"][0]["lapsed"], "likely")
+        self.assertIn("expires", assumption_fields(R))
+
+    def test_next_step_and_title(self):  # OFR-264, OFR-265
+        for name in ("minimal-single.json", "four-offers.json", "expired-aga.json", "counter-chain-standard.json"):
+            s = review.result(review.analyze(fixture(name)))["summary"]
+            self.assertTrue(s["next_step"][:1].isupper(), name)
+        s = review.result(review.analyze(fixture("minimal-single.json")))["summary"]
+        self.assertEqual(s["title"], "Counter the $382K FHA Offer")
+
+    def test_preliminary_names_the_offers(self):  # OFR-266
+        data = fixture("four-offers.json")
+        for o in data["offers"][1:]:
+            o.pop("contract_form", None)
+        R = review.analyze(data)
+        text = review.preliminary(R, R["ranked"][0]["id"], multi=True)
+        top = R["ranked"][0]
+        self.assertIn(f"contract form ({top['label']}", text)
+        self.assertNotIn("Morales", text)  # its form was given
 
 
 if __name__ == "__main__":

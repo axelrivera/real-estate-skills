@@ -90,7 +90,8 @@ def fine(R):
     costs = "; ".join(L["cost_notes"])
     tax = f"tax proration assumes {money(L['annual_tax'])}/yr paid in arrears" if L["annual_tax"] else "no tax proration included"
     ref = "top of the value range (CMA high)" if L["cma_provided"] else "list price"  # OFR-4: appraisal_line
-    credit = (f" and an inspection credit of about {L['repair_reserve_pct'] * 100:.1f}% of price when the buyer has an inspection period"
+    credit = (f" and an inspection credit of {L['repair_reserve_pct'] * 100:.1f}% of price (to the nearest $500) when the buyer "
+              "has an inspection period"  # OFR-254
               if L["repair_reserve_pct"] else "")
     if any(o["repairs_owed"] and o["repair_reserve"] for o in R["offers"]):
         credit += (" (on the Standard form, repairs up to its General Repair Limit instead)" if credit else
@@ -193,9 +194,10 @@ def term_rows(o, R):
     rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", f"≤{pctx(cn)} of price{est}",
                  "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
     ob = S["offered_buyer_broker_pct"]
-    rows.append(("Buyer-Broker Comp.", f"{oe.pct(o['buyer_broker_pct'], 2)} ({money(round(o['price'] * o['buyer_broker_pct']))})",
-                 f"{oe.pct(ob)} per listing agmt." if ob is not None else "Not set",
-                 "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
+    if not o.get("bb_from_listing"):  # OFR-259: paid by the listing broker from its fee, it isn't a seller cost to rate
+        rows.append(("Buyer-Broker Comp.", f"{oe.pct(o['buyer_broker_pct'], 2)} ({money(round(o['price'] * o['buyer_broker_pct']))})",
+                     f"{oe.pct(ob)} per listing agmt." if ob is not None else "Not set",
+                     "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
     form = f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FRBAR else ""  # the label comes from contract_forms
@@ -312,7 +314,7 @@ def checkbox(v):
 
 def assumptions_table(R, multi=False):
     """Every assumption; in the comparison, only the listing's and each offer's high-impact ones (the rest are in the single reviews)."""
-    items = [a for a in R["missing"] if not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"]
+    items = review.listed_assumptions(R, multi)  # OFR-257: the same list the data note counts
     if not items:
         return '<p class="sm">No assumptions: every key input was provided.</p>'
     lab = {"high": "High", "med": "Med", "low": "Low"}
@@ -451,17 +453,22 @@ def single_html(R, o, v):
     lq = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(lender_questions(o, R)))
     qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the contract{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
-    credit = ("" if not o["repair_reserve"] else f" + {money(o['repair_reserve'])} in repairs (the contract's General Repair Limit)"
-              if o["repairs_owed"] else f" + {money(o['repair_reserve'])} inspection credit")
-    if o["ns_down"]["net_adj"] == o["ns"]["net_adj"]:  # OFR-127: say why the two columns match
-        credit += (". It matches As Offered: the price is inside the value range" if o["appraisal_risk"] else
-                   ". It matches As Offered: no appraisal contingency") + (" and there's no repair figure for this market"
-                                                                          if not o["repair_reserve"] else "")
+    repairs = ("" if not o["repair_reserve"] else f"{money(o['repair_reserve'])} in repairs (the contract's General Repair Limit)"
+               if o["repairs_owed"] else f"{money(o['repair_reserve'])} inspection credit")
+    # OFR-258: the appraisal part only when a low appraisal cuts this price; an offer at or under the line isn't cut
+    if "appraisal" in review.downside_hits(o):
+        caption = f"appraisal at {ref}{gap}" + (f" + {repairs}" if repairs else "")
+    elif repairs:
+        caption = f"{repairs}; " + (f"the price is at or under {ref}, so a low appraisal isn't counted" if o["appraisal_risk"]
+                                    else "no appraisal contingency")
+    else:  # OFR-127: say why the two columns match
+        caption = ("it matches As Offered: the price is at or under " + ref if o["appraisal_risk"] else
+                   "it matches As Offered: no appraisal contingency") + ", and there's no repair figure for this market"
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
     details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
 <h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
 <div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
-<div class="legend"><span><b>Downside</b>: appraisal at {ref}{gap}{credit}.</span>
+<div class="legend"><span><b>Downside</b>: {caption}.</span>
 <span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
 <h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
 <h2 class="pb">3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>

@@ -3,9 +3,9 @@
 
 ## Offer Review: {{property}} (List {{list_price}})
 
-<!-- single mode; when summary.action is INCOMPLETE, write only the headline, why, the fixes as a list ("issue: fix") and the next step: no counter, options or recommendation.
+<!-- single mode; when summary.action is INCOMPLETE, write only the title, why, the fixes as a list ("issue: fix") and the next step: no counter, options or recommendation.
      Exception, an offer whose time for acceptance has passed (summary.revive is present): a seller counter would set a new time for acceptance, so after the fixes also give the "What a Counter Could Look Like" block below. It's reference, never a recommendation. -->
-**{{summary.headline}}: {{summary.offer_label}}.** {{summary.why}}
+**{{summary.title}}.** {{summary.why}}
 
 {{when summary.counter:}}
 **Our Counter** ({{summary.counter.summary}}):
@@ -30,7 +30,7 @@
 **Top Risks:** {{each summary.risks: risk.issue}}
 
 <!-- multi mode -->
-**{{summary.headline}}: {{summary.offer_label}}.** {{summary.why}}
+**{{summary.title}}.** {{summary.why}}
 
 **The Plan** ({{summary.plan_summary}}):
 
@@ -49,7 +49,7 @@
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 
-<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = if the appraisal and inspection go badly. Estimates only; the title company's settlement statement governs. Commissions are negotiable and not set by law. Not legal advice.</sub>
+<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = {{offers[].downside_note for the offer shown; in multi mode "if the appraisal and inspection go badly"}}. Estimates only; the title company's settlement statement governs. Commissions are negotiable and not set by law. Not legal advice.</sub>
 
 {{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}
 
