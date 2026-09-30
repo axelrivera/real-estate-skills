@@ -993,6 +993,11 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
             if k in printed and name and k.endswith(("_days", "_date", "_days_before")) and not k.startswith("approval") \
                     and v not in (None, ""):
                 contract[name] = _d(v).isoformat() if k.endswith("_date") else v
+        if code == "H":  # which Rider H boxes are checked (frbar.md `insurance_coverage`), and (b)'s own date
+            hw, fl = values.get("homeowners") is not False, bool(values.get("flood"))
+            contract["insurance_coverage"] = "both" if hw and fl else "flood" if fl else "homeowners"
+            if fl and values.get("flood_date"):
+                contract["flood_insurance_date"] = _d(values["flood_date"]).isoformat()
         if code == "P":  # Rider P checks "Waived the opportunity" unless the buyer received a risk assessment
             contract["lbp_waived"] = values.get("risk_assessment") != "received"
         for flag in DEAL_FLAGS:  # yes/no boxes the rider prints (Rider N's CCCL request, Rider A's)
@@ -1004,6 +1009,11 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
                 contract["association_apply_days"] = values["approval_initiate_days"]
             if values.get("approval_days"):
                 contract["association_approval_days_before"] = values["approval_days"]
+    zone = (spec.get("property") or {}).get("flood_zone")
+    if zone:
+        contract["flood_zone"] = zone
+    elif any(d["family"] in ("SPDR", "SPDC") for d in docs):  # the disclosure answers "no" to the flood hazard area
+        contract["flood_zone"] = "none"
     offer_addenda = [d for d in docs if d["role"] == "addendum"]
     if offer_addenda:
         contract["addenda"] = [form_title(d["family"]) for d in offer_addenda]
