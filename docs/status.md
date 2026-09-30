@@ -10,10 +10,18 @@ Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: 
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard and rider routing, verified revisions, chat-only support notes), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`, the FR/BAR library `frbar-contract.md`, `frbar-riders.md`, `frbar-addenda.md`, `frbar-package-check.md`, and `other-contracts.md`). See [development.md](development.md#shared-code) |
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test` (753 on 2026-09-30, 3 slow mock-contract checks skipped unless `RUN_SLOW=1`; the deck-PDF check runs when LibreOffice is installed); golden snapshots of every fixture (`make golden`); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test` (783 on 2026-09-30, 3 slow mock-contract checks skipped unless `RUN_SLOW=1`; the deck-PDF check runs when LibreOffice is installed); golden snapshots of every fixture (`make golden`); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | 37 prompts across the 6 skills (agent-profile 7, buyer-cma 3, buyer-offer-strategy 4, contract-timeline 10, seller-cma 6, seller-offer-review 7), including 8 on mock FR/BAR packages and 5 fair-housing prompts. Iteration 1: 92% of expectations. Iteration 2 (audit 2026-09-29, all 36 then): 227/257 (88.3%), 27 of the 30 failures from eval definitions, since fixed. Iteration 3 (after the first fixes): 240/254 (94.5%); its findings are fixed in the second pass ([audit](audits/2026-09-29.md#second-pass-eval-iteration-3-2026-09-29)). Iterations 4 and 5: 252/261 (96.6%) and 254/261 (97.3%), with fixes after each ([audit](audits/2026-09-29.md#third-pass-eval-iterations-4-and-5-2026-09-29-to-09-30)). Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
-## This pass (2026-09-30): Third Audit Pass From Eval Iterations 4 and 5, Still Version 0.12.0
+## This pass (2026-09-30): Fourth Audit Pass From the Targeted Iteration 6, Still Version 0.12.0
+
+Details in [the audit](audits/2026-09-29.md#fourth-pass-targeted-iterations-6-and-7-2026-09-30). What agents will notice:
+
+- **buyer-offer-strategy:** the reply always carries the lines that matter (why listing agents want one flat number, and that option fees come from your contract outside Florida); the mortgage rate is the latest Freddie Mac weekly rate unless you give one; a deadline you give as a weekday is turned into a date and confirmed.
+- **seller-offer-review:** with Rider GG and no amount, you're asked for the signed compensation agreement; weekend dates roll per the contract; the "Respond By" box names an offer the plan acts on; outside Florida you can give the tax rate.
+- **contract-timeline:** lender estimates are never starred; notes say "not given" unless a blank was seen on the signed copy.
+- **Both CMAs:** comp addresses print in normal capitalization; the seller's reprice shows the listing's price history; the buyer's cash warning names the credit option that fits.
+
 
 Fixes for what two more full eval runs found; details in [the audit](audits/2026-09-29.md#third-pass-eval-iterations-4-and-5-2026-09-29-to-09-30). What agents will notice:
 
