@@ -10,17 +10,23 @@ Where the work stands and what's left. Last updated 2026-09-29 (version 0.12.0: 
 | `shared/` | `design`, `profiles` + `markets/` (Florida state layer, Stellar MLS layer, national estimates), `render`, `report.css`, `dates`, `finance`, `handoff` (cma-handoff v1), `mls`, `cma` + `cma.css`, `offer_engine`, `contract_forms` (FR/BAR AS IS vs. Standard and rider routing, verified revisions, chat-only support notes), `prose` (em dash and fair-housing check), `references/` (`fair-housing.md`, `condo.md`, `saved-files.md`, the FR/BAR library `frbar-contract.md`, `frbar-riders.md`, `frbar-addenda.md`, `frbar-package-check.md`, and `other-contracts.md`). See [development.md](development.md#shared-code) |
 | Profile | `agent-profile` (markdown only): a two-round interview that saves one file, `profile.md` (who the agent is), in `.claude/real-estate/` in the Cowork working folder (`shared/references/saved-files.md`). `market-profile` was removed on 2026-09-24 |
 | Deal work | `contract-timeline`, `buyer-cma`, `seller-cma` (PDF + deck), `seller-offer-review`, `buyer-offer-strategy` |
-| Tests | `make test` (783 on 2026-09-30, 3 slow mock-contract checks skipped unless `RUN_SLOW=1`; the deck-PDF check runs when LibreOffice is installed); golden snapshots of every fixture (`make golden`); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
+| Tests | `make test` (799 on 2026-09-30, 3 slow mock-contract checks skipped unless `RUN_SLOW=1`; the deck-PDF check runs when LibreOffice is installed); golden snapshots of every fixture (`make golden`); `make package` runs every check first. Every fixture in `dev/fixtures/` renders with `make outputs` |
 | Evals | 37 prompts across the 6 skills (agent-profile 7, buyer-cma 3, buyer-offer-strategy 4, contract-timeline 10, seller-cma 6, seller-offer-review 7), including 8 on mock FR/BAR packages and 5 fair-housing prompts. Iteration 1: 92% of expectations. Iteration 2 (audit 2026-09-29, all 36 then): 227/257 (88.3%), 27 of the 30 failures from eval definitions, since fixed. Iteration 3 (after the first fixes): 240/254 (94.5%); its findings are fixed in the second pass ([audit](audits/2026-09-29.md#second-pass-eval-iteration-3-2026-09-29)). Iterations 4 and 5: 252/261 (96.6%) and 254/261 (97.3%), with fixes after each ([audit](audits/2026-09-29.md#third-pass-eval-iterations-4-and-5-2026-09-29-to-09-30)). Runner: [dev/evals/RUNNER.md](../dev/evals/RUNNER.md); procedure in [development.md](development.md#evals) |
 
-## This pass (2026-09-30): Fourth Audit Pass From the Targeted Iteration 6, Still Version 0.12.0
+## This pass (2026-09-30): Fourth Audit Pass From the Targeted Iterations 6 and 7, Still Version 0.12.0
 
-Details in [the audit](audits/2026-09-29.md#fourth-pass-targeted-iterations-6-and-7-2026-09-30). What agents will notice:
+Details in [the audit](audits/2026-09-29.md#fourth-pass-targeted-iterations-6-and-7-2026-09-30). Iteration 7 re-ran the four evals iteration 6 missed: 31/31. What agents will notice:
 
 - **buyer-offer-strategy:** the reply always carries the lines that matter (why listing agents want one flat number, and that option fees come from your contract outside Florida); the mortgage rate is the latest Freddie Mac weekly rate unless you give one; a deadline you give as a weekday is turned into a date and confirmed.
 - **seller-offer-review:** with Rider GG and no amount, you're asked for the signed compensation agreement; weekend dates roll per the contract; the "Respond By" box names an offer the plan acts on; outside Florida you can give the tax rate.
 - **contract-timeline:** lender estimates are never starred; notes say "not given" unless a blank was seen on the signed copy.
 - **Both CMAs:** comp addresses print in normal capitalization; the seller's reprice shows the listing's price history; the buyer's cash warning names the credit option that fits.
+- **From iteration 7:**
+  - **seller-offer-review:** a counter never promises inspection reports the buyer is ordering; an appraisal gap window that runs to closing is flagged; a November or December closing says the tax bill is assumed unpaid and names the early-payment discount.
+  - **buyer-offer-strategy:** outside Florida, the chat note fits an offer still being written, the 10-day inspection or option period is marked as a default to check locally, and the deposit-at-risk date asks you to confirm it against your contract; page 1 no longer overflows when only one option shows.
+  - **buyer-cma:** page 1 points to the credit option that fits when cash runs short; one outlying comp no longer sets an end of the range; "about", never "~".
+  - **seller-cma:** a listing that ended unsold more than 12 months ago is history, not a price cap; page 1 and the pricing table show nets after holding costs, the same basis as the reply and the deck; a reprice's Stay price is filled by the rule on the first run.
+  - **Both CMAs:** a chart callout for a home the chart doesn't plot is named instead of dropped silently.
 
 
 Fixes for what two more full eval runs found; details in [the audit](audits/2026-09-29.md#third-pass-eval-iterations-4-and-5-2026-09-29-to-09-30). What agents will notice:
@@ -219,13 +225,10 @@ User testing found the onboarding too technical: two profile skills with no dire
 ## Open items (judgment calls and smaller gaps from the evals)
 
 - **Broker review of `shared/references/fair-housing.md`** before release: it applies HUD's rules as the skills understand them and is not legal advice.
-- **Fair-housing evals** (the new id in each of the five skills above) haven't been run; include them in iteration 2.
 
 - **Eval anchoring:** the CMA example reports and the CMA evals use the same property (517 Hickorywood). Runners noticed and rebuilt from the inputs, but a second example property (or evals on a different home) would test the skills more honestly.
 - **Loose judgment rules** that make runs vary: time adjustments (1–2% per quarter), undocumented-systems adjustments, expected sale per pricing option. method.md now anchors the expected sale on the adjusted comps; the rest is still judgment.
 - **Page-1 dot plot labels** can overlap the price line; there's no setting to move them (the scatter has `side`).
-- **Seller review backup counter:** the plan can show a backup counter at list that would net more than the recommended offer (it's conditional on the first offer failing); consider wording it as "if B falls through".
-- **Escalation cap vs. the CMA's walk-away:** buyer-offer-strategy can set a cap above a buyer CMA's walk-away price without comment; it should say so.
 - **Unknown seller credit** on a comp is recorded as 0 in the handoff.
 - **Deck slide 6** (market stats): long values can overlap their period label; keep values short.
 - **Eval set:** the grader's expectations could be copied into `evals.json` as assertions for iteration 2.
