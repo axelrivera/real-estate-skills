@@ -434,7 +434,7 @@ def apply_escalations(offers, L):
 
 
 def label_offers(offers):
-    """Set label ('Morales · Keller Williams'), ref ('the Morales (Keller Williams) offer') and key ('A') on each offer.
+    """Set label ('Morales · Palmetto Coast Realty'), ref ('the Morales (Palmetto Coast Realty) offer') and key ('A') on each offer.
 
     Label order: the agent's `label`; else the buyer's agent's surname and brokerage; else price and financing
     ('$432K FHA'). Offers that would share a label get the price and financing added, then the key.
@@ -1443,7 +1443,8 @@ def acceptance_row(o, L):
     while due.weekday() >= 5:
         due += timedelta(days=1)
     was = o.get("expires") or "Not stated"
-    why = ("A new deadline revives the lapsed offer" if o.get("lapsed") else "A firm deadline for the buyer to answer the counter")
+    why = ("The offer's own deadline has passed: this sets a new one" if o.get("lapsed") else
+           "A firm deadline for the buyer to answer the counter")
     return ("Time for Acceptance", f"Passed ({was})" if o.get("lapsed") == "passed" else was,
             f"{due:%a %b %-d}, 5:00 PM", why)
 

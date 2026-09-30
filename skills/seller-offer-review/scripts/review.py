@@ -149,7 +149,7 @@ def walk_away(o):
 def respond_by(o):
     """The time for acceptance, or that it has passed (never a past date to beat)."""
     if not o.get("expires"):
-        return "See contract"
+        return "No time stated"  # OFR-120: a fact, not a place to look
     return f"Passed ({o['expires']})" if o.get("lapsed") == "passed" else \
         f"Likely passed ({o['expires']})" if o.get("lapsed") == "likely" else o["expires"]
 
