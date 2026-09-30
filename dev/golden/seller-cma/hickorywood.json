@@ -85,6 +85,9 @@
   },
   "version": 1
  },
+ "market_note_keys": [
+  "mls_assumed"
+ ],
  "market_notes": {
   "count": 1
  },
@@ -254,6 +257,7 @@
    }
   ],
   "standard_terms": false,
+  "tax_assumed": false,
   "totals": [
    423074.0,
    422136.0,

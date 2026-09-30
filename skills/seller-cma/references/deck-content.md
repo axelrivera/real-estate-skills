@@ -39,7 +39,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `market_title` | Optional slide title in Title Case; default "How the Market Has Changed" |
 | `market_periods` | Optional `[earlier, recent]` for the subtitle ("April–June"); default from the split date |
 | `market_period_labels` | Optional short tags on each card; default "Earlier" / "Now" |
-| `market_stats` | 2–4 `[label, earlier value, recent value, icon]`, labels in Title Case, from stats.py (plus the rate change) |
+| `market_stats` | 2–4 `[label, earlier value, recent value, icon]`, labels in Title Case, from stats.py (plus the rate change only when you found a sourced earlier rate; otherwise leave that card out). Without an export there are no two periods: write 2–4 one-value cards, `[label, value, icon]`, from the sales you were given (median adjusted value, price per sq ft, the share with seller credits), never a split you'd have to invent |
 | `competition` | 1–3 `[address, status line, one-line why]`, only real competitors; the address must be in the report's competition rows (the price comes from there) |
 | `launch_plan` | 3–6 `[short heading, one line, icon]`, headings in Title Case |
 | `needs_short` | Up to 5 short items from `needs` |

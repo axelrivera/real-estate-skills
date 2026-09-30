@@ -272,7 +272,7 @@ class OtherMarkets(unittest.TestCase):
         R = texas(report())
         R["costs"]["hoa"] = True
         C, _ = run(R)
-        self.assertEqual(row(C, "estoppel")["label"], "HOA Status Letter (Estimate)")
+        self.assertEqual(row(C, "estoppel")["label"], "HOA Documents (Estimate)")
         estimates = next(a for a in C["assumptions"] if a.startswith("National estimates"))
         self.assertNotIn("transfer tax", estimates)
         R = texas(report())
@@ -482,7 +482,7 @@ def node_ready():
 
 
 def office_ready():
-    return bool(shutil.which("soffice") or shutil.which("libreoffice"))
+    return bool(deck.find_office())
 
 
 class Files(unittest.TestCase):
@@ -679,6 +679,260 @@ class AuditMoneyLines(unittest.TestCase):
         R["costs"]["annual_tax"] = 6000
         self.assertIn("tax_no_closing_date", run(R)[0]["warning_keys"])
         self.assertIn("Not included: this year's property tax proration", " ".join(run(report())[0]["net"]["notes"]))
+
+
+class SecondPass(unittest.TestCase):
+    """Second-pass audit fixes (CMA-251 to CMA-263)."""
+
+    def reprice(self, current=479900):
+        R = report()
+        stay = {"label": "Stay at Current Price", "list_price": current, "expected_sale": 458000, "time": "2–4 months",
+                "seller_credit": 10000, "note": "Has sat 60 days"}
+        R["pricing"]["strategies"] = [stay] + R["pricing"]["strategies"][1:]  # no top-of-range option: cuts only
+        R["reprice"] = {"current_price": current, "days_on_market": 60}
+        return R
+
+    def test_reprice_wording_is_a_new_price(self):
+        """CMA-251: a reprice's page 1, verdict and deck say New List Price, never Recommended List Price."""
+        R = self.reprice()
+        C, homes = run(R)
+        self.assertEqual(C["recommended_index"], 1)
+        self.assertEqual(len(C["strategies"]), 3)
+        L = compute.labels(R)
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertEqual(L("sum_rec"), "NEW LIST PRICE")
+        self.assertIn(L("sum_rec"), doc)
+        self.assertNotIn("RECOMMENDED LIST PRICE", doc)
+        self.assertNotIn("Recommended List Price", doc)
+        R["pricing"]["strategies"][-1]["expected_sale"] = 461000  # the competing-offer option (last) may sell above list
+        run(R)
+
+    def test_reprice_never_raises_the_price_unless_asked(self):
+        """CMA-251: Stay at Current Price plus cuts only; an increase needs reprice.allow_increase."""
+        R = self.reprice(current=469900)  # the current price inside the range: a top-of-range option would be a raise
+        R["pricing"]["strategies"] = [R["pricing"]["strategies"][0]] + report()["pricing"]["strategies"]
+        R["pricing"]["recommended_index"] = 2
+        R["pricing"]["strategies"][2]["list_price"] = 464900
+        R["recommendation"]["list_price"] = 464900
+        with self.assertRaisesRegex(compute.ReportError, "cuts only"):
+            run(R)
+        R["reprice"]["allow_increase"] = True
+        run(R)
+
+    def stats(self, rows, *extra, head_extra=()):
+        import csv
+        with open(os.path.join(ROOT, "dev", "samples", "mls-export.csv"), newline="") as f:
+            data = list(csv.reader(f))
+        head = data[0] + list(head_extra)
+        body = [r + [""] * len(head_extra) for r in data[1:] if r[3] != "517 LARKWOOD AVE"]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "export.csv")
+            with open(path, "w", newline="") as f:
+                csv.writer(f).writerows([head] + body + rows)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                stats_mod.main([path, "--address", "517 LARKWOOD AVE", "--sqft", "1849", "--mls", "Stellar", *extra])
+        return json.loads(out.getvalue())
+
+    def subject_row(self, status, extra=()):
+        return ["0.00", "X7000001", status, "517 LARKWOOD AVE", "FERNWOOD PARK UNIT 2", "1849", "$474,900", "", "",
+                "$484,900", "", "4", "2", "1972", "Private", "36", "", "0.22", "", ""] + list(extra)
+
+    def test_own_listing_confirms_then_reprices(self):
+        """CMA-251: when the agent already said it's their listing, the note says confirm, then reprice."""
+        r = self.stats([self.subject_row("ACT")], "--state", "FL", "--county", "Seminole", "--own-listing")
+        self.assertEqual(r["listed_now_action"], "reprice")
+        self.assertIn("confirm, then reprice", " ".join(r["market_notes"]))
+        self.assertNotIn("stop and ask", " ".join(r["market_notes"]))
+        r = self.stats([self.subject_row("ACT")], "--state", "FL", "--county", "Seminole")
+        self.assertEqual(r["listed_now_action"], "ask")
+
+    def test_location_from_the_export_row(self):
+        """CMA-257: no county given: the export's own row for the home names it; without one, ask."""
+        r = self.stats([self.subject_row("EXP", ("Altamonte Springs", "Seminole"))], head_extra=("City", "CountyOrParish"))
+        self.assertEqual(r["subject_location"], {"city": "Altamonte Springs", "county": "Seminole"})
+        r = self.stats([self.subject_row("EXP")])
+        self.assertIsNone(r["subject_location"])
+        self.assertIn("ask the agent for the city and county", " ".join(r["market_notes"]))
+
+    def test_undated_failed_listing_is_flagged(self):
+        """CMA-260: an expired listing with no dates in the export is named, with a note to ask when it ran."""
+        r = self.stats([self.subject_row("EXP")], "--state", "FL", "--county", "Seminole")
+        self.assertEqual(r["undated_history"], ["517 LARKWOOD AVE (expired at $474,900)"])
+        self.assertEqual(self.stats([], "--state", "FL", "--county", "Seminole")["undated_history"], [])
+
+    def test_december_closing_assumes_the_bill_unpaid(self):
+        """CMA-254: one rule: the seller's share, the bill assumed unpaid (labeled), a credit back only when paid."""
+        R = report()
+        R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-15")
+        C, _ = run(R)
+        tax = row(C, "tax_proration")
+        self.assertTrue(C["net"]["tax_assumed"])
+        self.assertEqual(tax["label"], compute.labels(R)("net_tax_proration_assumed"))
+        self.assertLess(tax["amounts"][0], 0)  # a cost to the seller
+        self.assertTrue(any("current_tax_bill_paid" in a for a in C["assumptions"]))
+        R["costs"]["current_tax_bill_paid"] = True
+        C, _ = run(R)
+        self.assertFalse(C["net"]["tax_assumed"])
+        self.assertGreater(row(C, "tax_proration")["amounts"][0], 0)  # the buyer credits back Dec 15 to Dec 31
+        R = report()
+        R["costs"].update(annual_tax=6000, expected_closing_date="2026-09-15")  # before bills go out: no assumption
+        self.assertFalse(run(R)[0]["net"]["tax_assumed"])
+
+    def test_holding_note_states_the_loan_rate_and_tax(self):
+        """CMA-255: the note names the interest rate and payoff, says when there's no loan, and never claims the tax
+        is in a proration that was left out."""
+        R = report()
+        C, _ = run(R)
+        L = compute.labels(R)
+        note = next(n for n in C["net"]["notes"] if n.startswith("Holding costs"))
+        self.assertIn(L("net_holding_loan_unknown"), note)
+        self.assertIn(L("net_holding_tax_out"), note)
+        self.assertNotIn(L("net_holding_tax_in"), note)
+        R["costs"].update(mortgage_payoff=210000, annual_tax=6000, expected_closing_date="2026-12-15")
+        note = next(n for n in run(R)[0]["net"]["notes"] if n.startswith("Holding costs"))
+        self.assertIn(L("net_holding_loan_assumed", payoff="$210,000", rate="4.5"), note)
+        self.assertIn(L("net_holding_tax_in"), note)
+        R["costs"]["mortgage_rate"] = 6.25
+        C, _ = run(R)
+        self.assertIn(L("net_holding_loan_rate", payoff="$210,000", rate="6.25"),
+                      next(n for n in C["net"]["notes"] if n.startswith("Holding")))
+
+    def test_preliminary_reason_is_the_data(self):
+        """CMA-258: the Preliminary line says why: the report's own reason, or the costs that are missing."""
+        R = report()
+        R["preliminary"] = "the tax bill and the roof date are still to be confirmed, so the figures may change."
+        C, homes = run(R)
+        self.assertEqual(C["preliminary_reason"],
+                         "The tax bill and the roof date are still to be confirmed, so the figures may change.")
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(C["preliminary_reason"], doc)
+        self.assertNotIn("closing costs for this market are still missing", doc)
+        C, _ = run(report())
+        self.assertEqual((C["preliminary"], C["preliminary_reason"]), (False, ""))
+
+    def test_no_export_drops_mls_notes_and_fills_key_stats(self):
+        """CMA-259, CMA-261: no export: no notes about which MLS, and page 1's empty stat tiles come from the comps."""
+        R = texas(report())
+        R["mls"] = "Unlock MLS"
+        R["summary_page"].pop("key_stats")
+        C, homes = run(R)
+        self.assertFalse({"mls_not_built_in", "mls_assumed", "mls_not_given"} & set(C["market_note_keys"]))
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        L = compute.labels(R)
+        self.assertIn(L("sum_stat_median", n=C["n_comps"]), doc)
+        self.assertIn(L("sum_stat_comps"), doc)
+        self.assertIn("mls_assumed", run(report())[0]["market_note_keys"])  # with an export the MLS matters
+
+    def test_no_export_deck_takes_one_value_market_cards(self):
+        """CMA-261: without an export the deck's market cards can hold one value each (no invented earlier period)."""
+        with open(os.path.join(ROOT, "dev", "fixtures", "seller-cma", "deck", "hickorywood-deck.json")) as f:
+            content = json.load(f)
+        content["market_stats"] = [["Median Adjusted Value", "$450K", "chart"], ["Sales with Seller Credits", "2 of 3"]]
+        R = texas(report())
+        R["deck"] = content
+        self.assertEqual(deck.load_content(R)["market_stats"][1], ["Sales with Seller Credits", "2 of 3"])
+        C, homes = run(R)
+        D = deck.deck_data(R, C, homes, AGENT, compute.labels(R), "footer")
+        self.assertTrue(D["market"]["one_period"])
+        content["market_stats"].append(["Days to Contract", "40", "22"])
+        with self.assertRaisesRegex(deck.DeckError, "mixes"):
+            deck.load_content(R)
+
+    def test_net_subtitle_ends_in_a_noun(self):
+        """CMA-258 (template text): the assumed-brokerage subtitle no longer ends in "agreement's"."""
+        R = report()
+        R["costs"] = {}
+        C, homes = run(R)
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+        self.assertFalse(D["net_sub"].endswith("agreement's"))
+
+    def test_no_profile_is_a_chat_check_only(self):
+        """CMA-263: render names the missing name and brokerage for the chat; the PDF leaves them out."""
+        self.assertIn("no profile", seller_render.profile_check(profiles.load_agent(None)))
+        self.assertIsNone(seller_render.profile_check(AGENT))
+        self.assertIn("profile incomplete", seller_render.profile_check({**AGENT, "brokerage": None}))
+        R = report()
+        C, homes = run(R)
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, profiles.load_agent(None))
+        self.assertNotIn("no profile", doc)
+
+    def test_finds_libreoffice_off_path(self):
+        """CMA-256: soffice not on PATH: the macOS app bundle and Linux install paths are tried."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = os.path.join(tmp, "soffice")
+            with open(fake, "w") as f:
+                f.write("#!/bin/sh\n")
+            os.chmod(fake, 0o755)
+            which, paths = deck.shutil.which, deck.OFFICE_PATHS
+            try:
+                deck.shutil.which = lambda name: None
+                deck.OFFICE_PATHS = ("/nonexistent/soffice", fake)
+                self.assertEqual(deck.find_office(), fake)
+                deck.OFFICE_PATHS = ("/nonexistent/soffice",)
+                self.assertIsNone(deck.find_office())
+            finally:
+                deck.shutil.which, deck.OFFICE_PATHS = which, paths
+        self.assertIn("/Applications/LibreOffice.app/Contents/MacOS/soffice", deck.OFFICE_PATHS)
+
+
+class ChartLabels(unittest.TestCase):
+    """CMA-252, CMA-253: chart labels stay off markers and each other; a chart that nearly fits shrinks."""
+
+    def test_scatter_labels_avoid_each_other(self):
+        R = report()
+        _, homes = run(R)
+        cma = compute.cma
+        sc = {**R["scatter"], "subject_label": "Your Home", "subject_label_pos": "right"}
+        # a callout at the subject's own price and nearly its size, asked for on the subject label's side
+        near = next(h for h in homes if h["status"] == "SOLD" and h.get("living_area")
+                    and 0 < h["living_area"] - 1849 < 120 and h["address"] != R["subject"]["mls_address"])
+        near["close_price"] = R["recommendation"]["list_price"]
+        sc["callouts"] = [{"address": near["address"], "label": "Twin Sale", "side": "left"}]
+        svg, info = cma.scatter(homes, sc, 1849, R["recommendation"]["list_price"], R["subject"]["mls_address"],
+                                (R["recommendation"]["low"], R["recommendation"]["high"]), compute.labels(R),
+                                [cd["address"] for cd in R["comps"]["cards"]])
+        self.assertEqual(info["crowded_labels"], [])
+        texts = re.findall(r'<text x="([\d.]+)" y="([\d.]+)"(?: text-anchor="(\w+)")? class="(lbl[\w-]*)">([^<]+)</text>', svg)
+        self.assertEqual({t[3] for t in texts}, {"lbl", "lbl-subj", "lbl-band"})
+        boxes = []
+        for x, y, anchor, cls, text in texts:
+            size = 13 if cls == "lbl-subj" else 12
+            w = cma._text_w(text, size, bold=cls != "lbl")
+            x0 = float(x) - (w if anchor == "end" else w / 2 if anchor == "middle" else 0)
+            boxes.append((x0, float(y) - size * 0.8, x0 + w, float(y) + size * 0.2))
+        for i, a in enumerate(boxes):
+            for b in boxes[i + 1:]:
+                self.assertFalse(a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3], (a, b))
+
+    def test_dot_label_moves_off_the_price_line(self):
+        cards = [{"address": "1 A St", "adjusted": 448000}, {"address": "2 B St", "adjusted": 470000}]
+        svg = compute.cma.dotplot(cards, 440000, 460000, 449900, "Recommended")
+        self.assertRegex(svg, r'text-anchor="end" class="dp-val">\$448K')  # the line at $449,900 would strike it
+        self.assertRegex(svg, r'<text x="[\d.]+" y="[\d.]+" class="dp-val">\$470K')
+
+    def test_scatter_shrinks_rather_than_leave_a_gap(self):
+        """CMA-252: a chart group that almost fits the rest of a page shrinks its chart instead of moving."""
+        cma, render = compute.cma, seller_render.render
+        svg = '<svg viewBox="0 0 760 470" class="scatter"><rect width="760" height="470"/></svg>'
+
+        def layout(filler):
+            doc = render.page(f'<div class="wrap"><div style="height:{filler}px"></div>'
+                              f'<div class="kg"><h3>Chart</h3><div class="chart-box">{svg}</div>'
+                              '<div style="height:260px"></div></div></div>', css=cma.css())
+
+            def measure(pg):
+                cma.paginate(pg)
+                return pg.evaluate("() => { const g = document.querySelector('.kg');"
+                                   "return {pb: g.classList.contains('pb'), w: g.querySelector('svg').style.width}; }")
+            with tempfile.TemporaryDirectory() as tmp:
+                return render.html_to_pdf(doc, os.path.join(tmp, "x.pdf"), margins=cma.PAGE_MARGINS, before_print=measure)
+        near = layout(300)
+        self.assertFalse(near["pb"])
+        self.assertTrue(near["w"].endswith("px"))
+        far = layout(640)  # a third of the page left: too little to shrink into, so it moves
+        self.assertTrue(far["pb"])
+        self.assertEqual(far["w"], "")
 
 
 if __name__ == "__main__":

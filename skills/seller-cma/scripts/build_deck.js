@@ -118,7 +118,7 @@ async function icon(name, color, size = 256) {
     const longest = Math.max(...[D.agent.name, ...D.agent.lines, D.prepared_date].filter(Boolean).map(t => textW(t, 12)));
     const size = longest > 8.5 ? Math.max(9, 12 * 8.5 / longest) : 12;
     s.addText(lines, { x: M, y: 3.75, w: 8.5, h: 1.2, fontFace: FONT, fontSize: size, color: ON_DARK, margin: 0, paraSpaceAfter: 2, valign: 'top', isTextBox: true });
-    if (D.preliminary) s.addText(T.deck_preliminary, { x: 5.5, y: 0.95, w: 4.0, h: 0.5, fontFace: FONT, fontSize: 11, bold: true, color: ON, align: 'right', margin: 0, isTextBox: true });
+    if (D.preliminary) s.addText(D.preliminary, { x: 5.5, y: 0.95, w: 4.0, h: 0.5, fontFace: FONT, fontSize: 11, bold: true, color: ON, align: 'right', margin: 0, isTextBox: true });
     notes(s, T.deck_title_note);
   }
 
@@ -208,7 +208,10 @@ async function icon(name, color, size = 256) {
       tx(s, c.address, { x: M, y, w: 3.6, h: 0.24, size: 12, min: 10, bold: true, color: INK });
       tx(s, c.line, { x: M, y: y + 0.22, w: 3.6, h: 0.22, size: 9.5, min: 8.5, color: MUTED, what: 'deck.comp_lines' });
       s.addShape(pres.shapes.OVAL, { x: X(c.adjusted) - 0.09, y: y + 0.13, w: 0.18, h: 0.18, fill: { color: MARK }, line: { color: WHITE, width: 1 } });
-      s.addText(c.adjusted_k, { x: X(c.adjusted) + 0.12, y: y + 0.08, w: 0.7, h: 0.26, fontFace: FONT, fontSize: 10, color: INK, margin: 0, isTextBox: true });
+      // CMA-253: a value the recommended-price line would strike through goes on the dot's left
+      const xr = X(D.rec.list_price), struck = xr >= X(c.adjusted) + 0.08 && xr <= X(c.adjusted) + 0.55;
+      s.addText(c.adjusted_k, { x: struck ? X(c.adjusted) - 0.82 : X(c.adjusted) + 0.12, y: y + 0.08, w: 0.7, h: 0.26, fontFace: FONT, fontSize: 10,
+        color: INK, margin: 0, align: struck ? 'right' : 'left', isTextBox: true });
     });
     const shaded = fmt(T.deck_shaded, { low: D.rec.low_k, high: D.rec.high_k });
     const size = fit(shaded + C.comps_takeaway, W - 2 * M, 0.55, { size: 12, min: 10, lines: 2, what: 'deck.comps_takeaway' });
@@ -252,12 +255,16 @@ async function icon(name, color, size = 256) {
     const s = content('market'); title(s, D.market.title, D.market.subtitle);
     const [early, now] = D.market.period_labels;
     const k = C.market_stats.length, gap = 0.25, cw = (W - 2 * M - gap * (k - 1)) / k, y = 1.45, iw = cw - 0.4;
-    const big = Math.min(...C.market_stats.map(m => fit(m[2], iw, 0.5, { size: 28, min: 18, bold: true, what: 'deck.market_stats recent value' })));
+    const big = Math.min(...C.market_stats.map(m => fit(D.market.one_period ? m[1] : m[2], iw, 0.5, { size: 28, min: 18, bold: true, what: 'deck.market_stats recent value' })));
     for (let i = 0; i < k; i++) {
       const m = C.market_stats[i], x = M + i * (cw + gap);
       card(s, x, y, cw, 2.65, TINT);
       await circleIcon(s, D.icons.market_stats[i], x + 0.2, y + 0.2, 0.45);
       tx(s, m[0], { x: x + 0.2, y: y + 0.75, w: iw, h: 0.42, size: 12, min: 10, lines: 2, bold: true, color: INK, valign: 'top', what: 'deck.market_stats label' });
+      if (D.market.one_period) {  // CMA-261: no export, one value per card (no earlier period to compare)
+        s.addText(m[1], { x: x + 0.2, y: y + 1.5, w: iw, h: 0.7, fontFace: FONT, fontSize: big, bold: true, color: BRAND, margin: 0, valign: 'middle', isTextBox: true });
+        continue;
+      }
       s.addText(early, { x: x + 0.2, y: y + 1.27, w: iw, h: 0.2, fontFace: FONT, fontSize: 9, color: MUTED, margin: 0, isTextBox: true });
       tx(s, m[1], { x: x + 0.2, y: y + 1.46, w: iw, h: 0.3, size: 15, min: 11, color: MUTED, what: 'deck.market_stats earlier value' });
       s.addText(now, { x: x + 0.2, y: y + 1.86, w: iw, h: 0.2, fontFace: FONT, fontSize: 9, bold: true, color: STRONG, margin: 0, isTextBox: true });

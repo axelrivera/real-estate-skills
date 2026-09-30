@@ -3,11 +3,12 @@
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" --sqft 1849 [--pool]
         [--subdivision "SPRING OAKS"] [--type single_family] [--lat 28.67 --lon -81.40]
         [--state FL --county Seminole] [--columns columns.json]
-        [--split-date 2026-07-01]
+        [--split-date 2026-07-01] [--as-of 2026-09-26] [--own-listing]
 
 Every row with the seller's address (old listings, prior sales, a current listing) is dropped
 before anything is counted, and its size, pool and subdivision come from the seller, not the export.
-When one of those rows is active or pending, `listed_now` is true: confirm whose listing it is first. Prints JSON: sold stats for the whole window and
+When one of those rows is active or pending, `listed_now` is true: confirm whose listing it is first
+(`--own-listing` when the agent already said it's theirs: `listed_now_action` is then "reprice", else "ask"). Prints JSON: sold stats for the whole window and
 for an earlier and a recent period, inventory and months of supply, the subdivision's median $/sq ft,
 ranked comp candidates with remarks, and the competition. Numbers only: picking and adjusting comps
 is a judgment made from this output.
@@ -40,6 +41,8 @@ def main(argv=None):
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
+    ap.add_argument("--own-listing", action="store_true",
+                    help="the agent already said the home is their own current listing (a reprice)")
     a = ap.parse_args(argv)
     try:
         market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
@@ -51,6 +54,15 @@ def main(argv=None):
         out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit, exclude_address=a.address)
         out["market_notes"] = list(market.notes) + list(homes.notes)
         out["subject_rows"] = [mls._summary(h) for h in own]  # the home's own history: a current listing needs a word with the agent
+        # CMA-257: the home's city and county from its own row, when the export has them and none were given
+        where = {k: next((str(h[k]).strip() for h in own if str(h.get(k) or "").strip()), None) for k in ("city", "county", "zip")}
+        out["subject_location"] = {k: v for k, v in where.items() if v} or None
+        if not a.county:
+            out["market_notes"].append(
+                f"No county given: the export's own row for the home says {', '.join(out['subject_location'].values())}. "
+                "Use it (re-run with --county and --state) and say so in your reply." if where["county"] else
+                "No county given, and the export has no county for the home: ask the agent for the city and county "
+                "(they set the closing costs and taxes); never infer them from subdivision names.")
         # CMA-108: a current listing is a question for the agent before any pricing, never a go-ahead
         listed = [h for h in own if h["status"] in ("ACTIVE", "PENDING")]
         out["listed_now"] = bool(listed)
@@ -60,12 +72,27 @@ def main(argv=None):
                 f"The home is listed right now ({h['status'].lower()}"
                 + (f" at {money(h['current_price'])}" if h.get("current_price") else "")
                 + (f", {h['days_on_market']:g} days on market" if h.get("days_on_market") is not None else "")
-                + "). Confirm whose listing it is before pricing: stop and ask the agent. Only their own listing "
-                "is priced, as a reprice; never another brokerage's.")
+                + ("). The agent says it's their own listing: confirm, then reprice (set reprice in report.json with "
+                   "this price and days on market)." if a.own_listing else
+                   "). Confirm whose listing it is before pricing: stop and ask the agent, unless they already said "
+                   "it's their own (then re-run with --own-listing). Only their own listing is priced, as a reprice; "
+                   "never another brokerage's."))
+            out["listed_now_action"] = "reprice" if a.own_listing else "ask"  # CMA-251
         elif own:
             out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address (see subject_rows): "
                                        "past sales or listings, not a current one. An expired, withdrawn or canceled "
                                        "listing is a failed price to name in the report.")
+        # CMA-260: a failed listing with no dates can't be placed in time: say so, and ask rather than guess
+        undated = [h for h in own if h["status"] in ("EXPIRED", "CANCELED", "WITHDRAWN")
+                   and not any(h.get(k) for k in ("contract_date", "close_date"))]
+        out["undated_history"] = [mls._summary(h)["address"] + f" ({h['status'].lower()}"
+                                  + (f" at {money(h['current_price'])}" if h.get("current_price") else "") + ")" for h in undated]
+        if undated:
+            out["market_notes"].append(
+                "The export has no dates for the home's earlier " + " and ".join(sorted({h["status"].lower() for h in undated}))
+                + " listing: ask the agent when it was listed and when it ended (the property report's history shows it). "
+                "Until then, name it as a failed price without a date, and don't say whether it came before or after "
+                "the seller's updates.")
         out["ok"] = True
     except (profiles.ProfileError, mls.ExportError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}

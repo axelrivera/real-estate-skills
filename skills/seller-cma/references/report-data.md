@@ -17,9 +17,9 @@
 | `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
 | `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
 | `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, relative to where you run the scripts). See `deck-content.md`; `competition` takes 1–3 cards, `scatter_takeaway` only when there is an export |
-| `preliminary` | Optional `true` to mark the report Preliminary yourself (compute.py also sets it when a cost has no value at all) |
+| `preliminary` | Optional: mark the report Preliminary yourself with the reason as a short sentence ("the home's condition and the tax bill are still to be confirmed, so the figures may change."), or `true` for a general reason. compute.py also sets it when a cost has no value at all, with that reason; page 1 and the chat reply use `preliminary_reason` |
 | `labels` | Optional overrides of fixed wording |
-| `reprice` | Only for the agent's own current listing, priced again: `{current_price, days_on_market}` (*numbers*). Adds the Stay at Current Price check and the "Before We Reprice" headings. Never for another brokerage's listing |
+| `reprice` | Only for the agent's own current listing, priced again: `{current_price, days_on_market}` (*numbers*). Adds the Stay at Current Price check, "New List Price" wording and the "Before We Reprice" headings. The other options must be price cuts; `allow_increase: true` only when the agent asked to price it higher. Never for another brokerage's listing |
 
 The agent's name, team, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json; only the fields the profile has are shown.
 
@@ -42,7 +42,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 
 ## summary_page (write it last)
 
-`label` (default "Seller Summary"), `expected_sale` (short phrase, "Low-to-mid $460,000s"; the deck uses it too), `headline` (≤ ~20 words), `key_stats` (exactly 3 `[value, label]`, labels in Title Case: the median adjusted comp, the recent sale-to-list ratio, days to contract now), `why` (exactly 3, ≤ ~25 words each: the comps, the market, the competition), `first_steps` (exactly 3 `[heading, one line]` from `prep`, headings in Title Case), `next_step`. The dot plot, the options table and the net tile are computed; never type those numbers here.
+`label` (default "Seller Summary"), `expected_sale` (short phrase, "Low-to-mid $460,000s"; the deck uses it too), `headline` (≤ ~20 words), `key_stats` (3 `[value, label]`, labels in Title Case: the median adjusted comp, the recent sale-to-list ratio, days to contract now; without an export, only what the sales you were given support, or none: page 1 fills the empty tiles with the median adjusted value, the adjusted span and the number of comps), `why` (exactly 3, ≤ ~25 words each: the comps, the market, the competition), `first_steps` (exactly 3 `[heading, one line]` from `prep`, headings in Title Case), `next_step`. The dot plot, the options table and the net tile are computed; never type those numbers here.
 
 ## recommendation
 
@@ -73,7 +73,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 | Field | Notes |
 |---|---|
 | `intro` | Frames the options as estimates; says whether the nets are close |
-| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer (a reprice puts "Stay at Current Price" first, at `reprice.current_price`, and sets `recommended_index` to match). `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
+| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer (a reprice has no top-of-range option: "Stay at Current Price" first, at `reprice.current_price`, then the recommended cut and the competing-offer price, all below the current price). `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
 | `recommended_index` | The recommended row (usually 1); its `list_price` must equal `recommendation.list_price` |
 | `note` | The assumption behind any difference between options (shown after "*Before paying off any mortgage.") |
 | `net_intro` | Optional sentence above the net sheet |
@@ -81,7 +81,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 
 ## costs
 
-All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; without them 2.5% each is assumed and labeled), `transfer_tax_rate` (the state's rate from a trusted source; `0` where there is none), `transfer_tax_payer` (`seller`, `buyer` or `split`), `transfer_tax_label`, `title_payer`, `title_estimate_pct`, `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true/false), `mortgage_payoff` (*number*, from a payoff statement) or `mortgage_balance` + `mortgage_rate` (percent; an estimate: a month's interest and a $500 cushion are added), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
+All optional; see `costs.md`. `listing_fee_pct`, `buyer_broker_fee_pct` (fractions: `0.025` for 2.5%; without them 2.5% each is assumed and labeled), `transfer_tax_rate` (the state's rate from a trusted source; `0` where there is none), `transfer_tax_payer` (`seller`, `buyer` or `split`), `transfer_tax_label`, `title_payer`, `title_estimate_pct`, `annual_tax`, `expected_closing_date` (`YYYY-MM-DD`; or `closing_date` on a pricing option), `current_tax_bill_paid` (true only when the agent says the seller paid this year's bill; leave it out otherwise: after bills go out it's assumed unpaid and labeled so), `mortgage_payoff` (*number*, from a payoff statement, or a figure the seller gave, labeled "Your Estimate") or `mortgage_balance` + `mortgage_rate` (percent; an estimate: a month's interest and a $500 cushion are added; `mortgage_rate` also sets the holding costs' loan interest, else 4.5% is assumed and stated), `title_fees` (the title company's quote: a total or `{name: amount}`; replaces the built-in fees), `hoa` (true/false), `hoa_monthly` (for holding costs), `other` (`[{label, amount}]`).
 
 ## buyer_payment
 

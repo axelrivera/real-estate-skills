@@ -24,7 +24,7 @@ Page 1 summary → the home → the bottom line and what it means → comparable
 
 ## Page 1 (Write It Last)
 
-The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. Exactly three `key_stats`, three `why` bullets, three `first_steps`. Anything page 1 says must be supported later in the report.
+The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. Three `key_stats` (without an export, page 1 fills any you leave out from the comps), three `why` bullets, three `first_steps`. Anything page 1 says must be supported later in the report.
 
 ## After Rendering
 

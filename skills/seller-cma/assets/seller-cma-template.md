@@ -1,8 +1,8 @@
 ## {{subject.address}}: Pricing Your Home
 
-{{"**Preliminary:** some local closing costs are still missing, so the net figures will change." when compute.py's preliminary is true}}
+{{"**Preliminary:** " + compute.py's preliminary_reason, when preliminary is true}}
 
-**Recommended List Price: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{recommendation.expected_sale}}
+**{{"New List Price" when compute.py's reprice is set, else "Recommended List Price"}}: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{recommendation.expected_sale}}
 
 {{"Listed at {reprice.current_price_display} for {reprice.days_on_market} days without a sale." when compute.py's reprice is set}} {{recommendation.paragraph, shortened to 2 sentences}}
 
@@ -32,6 +32,6 @@
 
 **Next Step:** {{summary_page.next_step}}
 
-_Broker's opinion of value, not an appraisal, and not for lending purposes. Sales data: {{data_source.mls}} MLS as of {{data_source.as_of}}, deemed reliable but not guaranteed. Net figures are estimates; the closing agent provides exact figures. Commissions are negotiable and not set by law._
+_Broker's opinion of value, not an appraisal, and not for lending purposes. Sales data: {{"{data_source.mls} MLS" when data_source.export is true, else "the sales provided"}} as of {{data_source.as_of}}, deemed reliable but not guaranteed. Net figures are estimates; the closing agent provides exact figures. Commissions are negotiable and not set by law._
 
 {{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}

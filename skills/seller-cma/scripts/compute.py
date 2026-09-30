@@ -24,6 +24,7 @@ NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_s
 
 PAYOFF_CUSHION = 500  # payoff and recording fees on top of a statement balance (an estimate; the payoff letter governs)
 CONTRACT_TO_CLOSE_MONTHS = 1  # a typical financed contract-to-close period, added to each option's time to contract
+TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money = finance.money
 
@@ -43,7 +44,14 @@ def _date(v, name):
 
 
 # CMA-108: the agent's own current listing, priced again. Its wording, unless report.json's `labels` says otherwise.
-REPRICE_LABELS = {"sum_first": "Before We Reprice", "h_prep": "Before We Reprice", "deck_launch_title": "Relaunch Plan"}
+# CMA-251: the price it recommends is a new list price, never a first one.
+REPRICE_LABELS = {"sum_first": "Before We Reprice", "h_prep": "Before We Reprice", "deck_launch_title": "Relaunch Plan",
+                  "sum_rec": "NEW LIST PRICE", "verdict_price": "Reprice to {price}",
+                  "verdict_caption": "New List Price · Supported Value Range {low} – {high}",
+                  "dot_rec": "New Price {price}", "deck_dot_rec": "New Price {price}", "subject_row": "Your Home (New List Price)",
+                  "lg_subject": "{subject}, New List Price", "tip_asking": "new list price", "deck_series_subject": "Your Home, New Price",
+                  "h_pricing": "Choosing the New Price", "deck_rec_title": "Our Recommendation: A New Price",
+                  "deck_rec_label": "New List Price", "deck_step_rec": "new list price"}
 
 
 def labels(R):
@@ -64,6 +72,12 @@ def check_reprice(R, strategies):
     if stay is None:
         raise ReportError(f"A reprice keeps staying at the current {money(rp['current_price'])} as an option: add a "
                           "\"Stay at Current Price\" strategy at that list price, before the others.")
+    # CMA-251: the other options are price cuts. A higher price only when the agent asked for one (`allow_increase`).
+    up = [x for x in strategies if x["list_price"] > rp["current_price"]]
+    if up and not rp.get("allow_increase"):
+        raise ReportError(f"A reprice offers Stay at Current Price and price cuts only: {money(up[0]['list_price'])} is above "
+                          f"the current {money(rp['current_price'])}. Replace it with a cut (a top-of-range option doesn't "
+                          "apply to a reprice), or set reprice.allow_increase if the agent asked to price it higher.")
     return stay
 
 
@@ -91,7 +105,7 @@ def pct_text(fraction):
 # --- net sheet ---------------------------------------------------------------
 
 # Plain words for costs the market doesn't have, in a note a homeowner reads (not every state has each one).
-MISSING_WORDS = {"deed transfer tax": "transfer tax (or confirmation there is none)", "HOA estoppel fee": "HOA status letter fee",
+MISSING_WORDS = {"deed transfer tax": "transfer tax (or confirmation there is none)", "HOA estoppel fee": "HOA documents fee",
                  "who pays owner's title": "who customarily pays the owner's title policy", "listing fee": "listing brokerage fee",
                  "buyer's agent fee": "buyer's agent compensation"}
 
@@ -119,6 +133,11 @@ def net_sheet(R, market, L):
                                other_costs=sum(o["amount"] for o in others), title_fees=title_fees,
                                annual_tax=annual_tax, closing=closing, bill_paid=bill_paid, prop_type=s.get("property_type"))
         cols.append(n)
+    # CMA-254: one rule for a closing after this year's bill is out: unless the agent says the seller paid it, the bill
+    # is assumed unpaid, so the seller's share (Jan 1 to closing) is charged, and the line says it's assumed
+    bill_month = market.get("property_tax.bill_month") or TAX_BILL_MONTH
+    closings = [_date(x.get("closing_date") or costs.get("expected_closing_date"), "expected_closing_date") for x in strategies]
+    tax_assumed = bool(annual_tax) and bill_paid is None and any(c and c.month >= bill_month for c in closings)
     first = cols[0]
     assumed_keys = {a["key"] for a in first["assumed"]}
 
@@ -130,6 +149,8 @@ def net_sheet(R, market, L):
             return line["label"]  # the market's own name and rate ("Documentary stamp tax on the deed (0.70%)")
         if key == "owner_title":
             return L("net_owner_title_est" if rate else "net_owner_title")
+        if key == "tax_proration" and tax_assumed:
+            return L("net_tax_proration_assumed")
         return L(f"net_{key}") if f"net_{key}" in L.text else line["label"]
 
     # Rows by line key, not position: a line such as the seller credit exists only in the options that have one.
@@ -150,7 +171,9 @@ def net_sheet(R, market, L):
     totals = [c["net"] if cash else c["net_before_payoff"] for c in cols]
     rows.append({"key": "total", "label": L("net_total_cash" if cash else "net_total"), "amounts": totals})
     # CMA-7: a slower option costs more to hold (loan interest, HOA, insurance, utilities; tax is in the proration)
-    monthly, left_out = finance.holding_monthly(strategies[0]["list_price"], market, payoff, costs.get("hoa_monthly"))
+    # CMA-255: interest at the seller's rate when given, else the planning rate, stated in the note either way
+    loan_rate = costs["mortgage_rate"] / 100 if costs.get("mortgage_rate") else finance.PAYOFF_INTEREST
+    monthly, left_out = finance.holding_monthly(strategies[0]["list_price"], market, payoff, costs.get("hoa_monthly"), loan_rate)
     months = [x.get("months_to_contract") if x.get("months_to_contract") is not None else finance.months_in(x.get("time"))
               for x in strategies]
     holding = None
@@ -162,8 +185,14 @@ def net_sheet(R, market, L):
         r["display"] = [money(a) for a in r["amounts"]]
 
     notes, key_notes = [], []  # key_notes: the ones a slide must still show (the deck keeps the rest for speaker notes)
+    has_tax = any(l["key"] == "tax_proration" for c in cols for l in c["lines"])
     if holding:
-        notes.append(L("net_holding_note", monthly=money(monthly, 10), close=f"{CONTRACT_TO_CLOSE_MONTHS:g}")
+        # CMA-255: say what the loan interest rests on, and whether property tax is anywhere in the table
+        loan = (L("net_holding_loan_none") if payoff == 0 else L("net_holding_loan_unknown") if payoff is None else
+                L("net_holding_loan_rate" if costs.get("mortgage_rate") else "net_holding_loan_assumed",
+                  rate=f"{loan_rate * 100:g}", payoff=money(payoff)))
+        notes.append(L("net_holding_note", monthly=money(monthly, 10), close=f"{CONTRACT_TO_CLOSE_MONTHS:g}", loan=loan,
+                       tax=L("net_holding_tax_in" if has_tax else "net_holding_tax_out"))
                      + (" " + L("net_holding_left_out", items=" and ".join(left_out)) if left_out else ""))
     standard_terms = bool(assumed_keys & {"listing_fee", "buyer_broker_fee"})
     if standard_terms:
@@ -173,9 +202,10 @@ def net_sheet(R, market, L):
     if any(l["key"] in ("listing_fee", "buyer_broker_fee") for c in cols for l in c["lines"]):
         notes.append(finance.COMMISSION_NOTE)
         key_notes.append(notes[-1])
-    has_tax = any(l["key"] == "tax_proration" for c in cols for l in c["lines"])
     if not has_tax and market.get("property_tax.paid") == "arrears":
         notes.append(L("net_tax_note"))
+    if tax_assumed and has_tax:
+        notes.append(L("net_tax_assumed_note"))
     fees = market.get("closing_costs.seller_title_fees")
     if "title_fees" in assumed_keys and market.source("closing_costs.seller_title_fees") != "estimate":
         items = ", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())
@@ -192,6 +222,7 @@ def net_sheet(R, market, L):
             "after_holding": [t - h for t, h in zip(totals, holding)] if holding else None, "notes": notes, "key_notes": key_notes, "missing": shown, "assumed": first["assumed"],
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
             "payoff": payoff, "cash_at_closing": cash, "no_mortgage": payoff == 0, "standard_terms": standard_terms, "has_tax": has_tax,
+            "tax_assumed": tax_assumed and has_tax,
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
 
 
@@ -269,7 +300,7 @@ def compute(R, market, homes):
     strategies = p["strategies"]
     if not 1 <= len(strategies) <= 4:
         raise ReportError("pricing.strategies should have 3 options (top of range, recommended, competing-offer price), "
-                          "or 4 for a reprice (Stay at Current Price first).")
+                          "or for a reprice Stay at Current Price first, then the recommended cut and the competing-offer price.")
     for x in strategies:
         for k in ("list_price", "expected_sale"):
             if not isinstance(x.get(k), (int, float)):
@@ -301,8 +332,9 @@ def compute(R, market, homes):
                         f"{money(rec['low'])} – {money(rec['high'])}: move it inside, or widen the range and say why.")
     if strategies[ri]["list_price"] != rec["list_price"]:
         warn("list_mismatch", "The recommended strategy's list price doesn't match recommendation.list_price.")
-    three = len(strategies) - (stay is not None) == 3  # the three strategies, besides a reprice's Stay at Current Price
-    for i, x in enumerate(strategies[:-1] if three else strategies):  # CMA-20
+    # the last option is the competing-offer price: of three strategies, or of a reprice's Stay plus two or three cuts
+    competing = len(strategies) == 3 if stay is None else len(strategies) >= 3
+    for i, x in enumerate(strategies[:-1] if competing else strategies):  # CMA-20
         if x["expected_sale"] > x["list_price"]:  # only the competing-offer option (the last of three) may sell above list
             raise ReportError(f"pricing.strategies[{i}] expects to sell at {money(x['expected_sale'])}, above its "
                               f"{money(x['list_price'])} list price. Only the competing-offer option (the last) can.")
@@ -338,6 +370,10 @@ def compute(R, market, homes):
     if costs_in.get("annual_tax") and not net["has_tax"]:
         warn("tax_no_closing_date", "costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
                         "closing_date per pricing option) to include the tax proration.")
+    if net["tax_assumed"]:  # CMA-254
+        assumptions.append("This year's property tax bill is assumed unpaid at closing, so the net charges the seller's share "
+                           "(Jan 1 to closing). If the seller has already paid it, set costs.current_tax_bill_paid to true: the "
+                           "buyer then credits back the rest of the year.")
     if any(a["key"] == "title_fees" and not a.get("estimate") for a in net["assumed"]):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
 
@@ -383,6 +419,12 @@ def compute(R, market, homes):
         window, n_sold, max_dist = None, None, None
 
     preliminary = bool(net["missing"]) or bool(R.get("preliminary"))
+    # CMA-258: the reason comes from the data: costs the market is missing, and/or the reason report.json gives
+    own = R.get("preliminary")
+    reasons = ([L("prelim_costs", items=", ".join(net["missing"]))] if net["missing"] else []) + (
+        [own.strip()] if isinstance(own, str) and own.strip() else [L("prelim_inputs")] if own and not net["missing"] else [])
+    preliminary_reason = " ".join(r[0].upper() + r[1:] for r in reasons)
+    preliminary_short = L("prelim_short_costs" if net["missing"] else "prelim_short_inputs") if preliminary else ""
     as_of = R.get("as_of") or date.today().isoformat()
     c_in, bp_in = R.get("costs") or {}, R.get("buyer_payment") or {}
     school_m, total_m, homestead = buyer_tax_rates(R, market) if bp_in else (None, None, None)
@@ -422,10 +464,14 @@ def compute(R, market, homes):
         strat_out.append(row)
     nets = net["after_holding"] or [x["net"] for x in strat_out]  # CMA-7: compare options after holding costs
     data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
+    market_notes = [(n, c) for n, c in zip(market.notes, market.note_codes)
+                    if homes or c not in ("mls_assumed", "mls_not_built_in", "mls_not_given")]
     return {
         "data_source": data_source,
         "ok": True,
         "preliminary": preliminary,
+        "preliminary_reason": preliminary_reason,
+        "preliminary_short": preliminary_short,
         "subject": {"address": s["address"]},
         "recommendation": {"list_price": rec["list_price"], "list_price_display": money(rec["list_price"]),
                            "low": rec["low"], "high": rec["high"],
@@ -452,7 +498,9 @@ def compute(R, market, homes):
         "warnings": warnings,
         "warning_keys": warning_keys,
         "assumptions": assumptions,
-        "market_notes": market.notes,
+        # CMA-259: without an export nothing reads the MLS, so notes about which MLS (assumed, not built in) are noise
+        "market_notes": [n for n, c in market_notes],
+        "market_note_keys": [c for n, c in market_notes],
     }
 
 

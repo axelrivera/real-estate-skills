@@ -7,6 +7,7 @@
 build_deck.js only lays out what it is given: it never computes a price, net or payment, and it has no
 colors of its own (they come from shared/design, starting from the agent's brand).
 """
+import glob
 import json
 import math
 import os
@@ -52,6 +53,12 @@ class DeckError(ValueError):
     """The deck can't be built; the message is written for the agent."""
 
 
+def one_period(item, R):
+    """A no-export market stat with one value, [label, value] plus an optional icon (CMA-261)."""
+    return (not R.get("export") and isinstance(item, list)
+            and (len(item) == 2 or len(item) == 3 and item[2] in ICONS))
+
+
 def load_content(R):
     """The deck wording: report.json's `deck` (an object, or a path to a JSON file)."""
     c = R.get("deck")
@@ -66,8 +73,13 @@ def load_content(R):
     problems = [f"deck.{key} is missing" for key, typ in required.items() if not isinstance(c.get(key), typ)]
     problems += [f"deck.{key} needs {lo} to {hi} items" for key, (lo, hi) in COUNTS.items()
                  if isinstance(c.get(key), list) and not lo <= len(c[key]) <= hi]
-    for key, n, _ in ICON_FIELDS:
+    stats = [m for m in c.get("market_stats") or [] if isinstance(m, list)]
+    if len({one_period(m, R) for m in stats}) > 1:
+        problems.append("deck.market_stats mixes one-value and two-period items: use one form for all")
+    for key, n0, _ in ICON_FIELDS:
         for item in c.get(key) or []:
+            # CMA-261: without an export, a market stat can be one value ([label, value]) instead of two periods
+            n = 2 if key == "market_stats" and one_period(item, R) else n0
             if not isinstance(item, list) or len(item) not in (n, n + 1):
                 problems.append(f"each deck.{key} item is {n} texts plus an optional icon name")
                 break
@@ -203,6 +215,7 @@ def deck_data(R, C, homes, agent, L, footer):
     periods = content.get("market_periods")
     if not periods and window:
         periods = period_labels(window)
+    single = bool(content["market_stats"]) and all(one_period(m, R) for m in content["market_stats"])
 
     L_deck = {key: v for key, v in L.text.items() if key.startswith("deck_")}
     words = adjustment_words(R["comps"]["cards"])
@@ -220,7 +233,8 @@ def deck_data(R, C, homes, agent, L, footer):
     program = L("prog_" + pay["loan_type"])
     program = program if program.isupper() else program.lower()  # "FHA", "VA"; "conventional" mid-sentence
     L_deck["deck_pay_sub"] = L("deck_pay_sub", program=program, down=f'{pay["down_pct"] * 100:g}')
-    icons = {key: [ICONS[item[n] if len(item) > n else fallback] for item in content.get(key) or []]
+    width = lambda key, item, n: 2 if key == "market_stats" and one_period(item, R) else n
+    icons = {key: [ICONS[item[width(key, item, n)] if len(item) > width(key, item, n) else fallback] for item in content.get(key) or []]
              for key, n, fallback in ICON_FIELDS}
     org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
     if agent.get("license"):
@@ -241,7 +255,7 @@ def deck_data(R, C, homes, agent, L, footer):
     return {
         "colors": colors,
         "labels": L_deck,
-        "preliminary": C["preliminary"],
+        "preliminary": L("deck_preliminary", why=C["preliminary_short"]) if C["preliminary"] else "",
         "agent": {"name": agent.get("name") or "", "lines": [x for x in (org, contact) if x],
                   "short": " · ".join(x for x in (agent.get("name"), agent.get("phone"), agent.get("email")) if x)},
         "footer": footer,
@@ -255,7 +269,9 @@ def deck_data(R, C, homes, agent, L, footer):
         "method": {"n_sold": C.get("n_sold") or len(R["comps"].get("summary_rows") or R["comps"]["cards"]),"sold_line": sold_line, "n_comps": C["n_comps"],
                    "adj_range": f'{k(C["adjusted_min"])}–{k(C["adjusted_max"])}', "adj_median": C["median_adjusted_display"]},
         "market": {"title": content.get("market_title") or L("deck_market_title"),
-                   "subtitle": L("deck_market_sub", early=periods[0], recent=periods[1]) if periods else "",
+                   "subtitle": (L("deck_market_sub_one") if single else
+                                L("deck_market_sub", early=periods[0], recent=periods[1]) if periods else ""),
+                   "one_period": single,
                    "period_labels": content.get("market_period_labels") or [L("deck_period_early"), L("deck_period_recent")]},
         "comps": [{"address": c["address"], "adjusted": c["adjusted"], "adjusted_k": k(c["adjusted"]),
                    "line": content["comp_lines"].get(c["address"], "")} for c in R["comps"]["cards"]],
@@ -344,9 +360,24 @@ def build_pptx(D, path):
     return [l[len("Check: "):] for l in r.stderr.splitlines() if l.startswith("Check: ")]
 
 
+# CMA-256: where LibreOffice installs when `soffice` isn't on PATH (macOS app bundle, Linux packages and snaps)
+OFFICE_PATHS = ("/Applications/LibreOffice.app/Contents/MacOS/soffice", "/usr/bin/soffice", "/usr/bin/libreoffice",
+                "/usr/lib/libreoffice/program/soffice", "/opt/libreoffice/program/soffice", "/usr/local/bin/soffice",
+                "/snap/bin/libreoffice")
+
+
+def find_office():
+    """The LibreOffice command: on PATH first, then the usual install paths. None when there isn't one."""
+    found = shutil.which("soffice") or shutil.which("libreoffice")
+    if found:
+        return found
+    extra = sorted(glob.glob("/opt/libreoffice*/program/soffice"))  # versioned installs (/opt/libreoffice24.8)
+    return next((p for p in (*OFFICE_PATHS, *extra) if os.path.isfile(p) and os.access(p, os.X_OK)), None)
+
+
 def pptx_to_pdf(pptx, pdf):
     """A PDF copy of the slides through LibreOffice (headless, its own profile). None when it isn't available."""
-    office = shutil.which("soffice") or shutil.which("libreoffice")
+    office = find_office()
     if not office:
         return None
     with tempfile.TemporaryDirectory() as tmp:

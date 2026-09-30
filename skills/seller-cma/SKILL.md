@@ -29,21 +29,23 @@ The agent usually uploads the home's **MLS property report** (Stellar's Cross Pr
 
 The scripts drop every export row with the home's address, and its facts come from the property report and the seller. stats.py lists those rows in `subject_rows`, and the property report's status line and history show the same. An expired, withdrawn or canceled listing in the history is a failed price: name it and how long it sat. For an old relist, ask before adding the history.
 
-**Listed right now** (stats.py's `listed_now`, or an active or pending status on the property report): stop before any pricing and ask whose listing it is. Build nothing until the agent answers.
+**Listed right now** (stats.py's `listed_now`, or an active or pending status on the property report): stop before any pricing and ask whose listing it is. Build nothing until the agent answers. When the agent already said it's their own listing, don't ask again: pass `--own-listing` to stats.py, confirm the current price and days on market, and reprice.
 
-- **The agent's own listing:** build it as a reprice. Set `reprice` in report.json (`current_price`, `days_on_market`); the report names the price that hasn't sold and how long it has sat, adds a "Stay at Current Price" option before the three strategies (compute.py requires it), and its headings read "Before We Reprice".
+- **The agent's own listing:** build it as a reprice. Set `reprice` in report.json (`current_price`, `days_on_market`); the report names the price that hasn't sold and how long it has sat, and reads "New List Price" and "Before We Reprice". The options are "Stay at Current Price" first (compute.py requires it), then price cuts only, never an increase unless the agent asks for one (`method.md`).
 - **Another brokerage's listing:** don't build it. The agent must not solicit a home listed with someone else; offer to run it when that listing ends.
 
-For a PDF or deck, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message.
+For a PDF or deck, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes), or ask for the two in the same message. If there's no answer, build without them (the files leave them out, never a placeholder) and say so in the reply; render.py prints the reminder.
 
-**No MLS export** (the agent typed a few comps): skip stats.py, write the comps and competition from what you were given, and build the market table and key stats from those sales and the rate; say in the method that the market numbers come from a short list. The scatter slide is left out on its own.
+**No MLS export** (the agent typed a few comps): skip stats.py, write the comps and competition from what you were given, and build the market table from those sales and the rate; say in the method that the market numbers come from a short list. Never invent an earlier period: leave `key_stats` out (page 1 fills them from the comps) and write one-value market cards for the deck (`references/deck-content.md`). The scatter slide is left out on its own.
 
-Local costs come from the home's location: read `references/local-costs.md`. Florida and Stellar MLS are built in; elsewhere, national estimates are labeled Estimate (never Florida's numbers), and you look up the state's transfer tax from a trusted source.
+**Location.** The city and county set the costs, taxes and MLS. With only a street address, take them from stats.py's `subject_location` (the export's own row for the home) and say so; if it has none, ask. Never infer them from subdivision names.
+
+Local costs come from the home's location: read `references/local-costs.md`, including its one rule for the property tax at closing (a closing after bills go out assumes this year's bill unpaid unless the agent says it's paid). Florida and Stellar MLS are built in; elsewhere, national estimates are labeled Estimate (never Florida's numbers), and you look up the state's transfer tax from a trusted source.
 
 ## 2. Read the Market
 
 ```
-python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" [--type <property_type>] [--lat <lat> --lon <lon>] --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD]
+python3 scripts/stats.py export.csv --address "<address as in the export>" --sqft <sqft> [--pool] --subdivision "<name>" [--type <property_type>] [--lat <lat> --lon <lon>] --state <ST> --county <county> [--mls <MLS>] [--columns columns.json] [--split-date YYYY-MM-DD] [--as-of YYYY-MM-DD] [--own-listing]
 ```
 
 Pick a split date so "recent" is roughly the last 2–3 months. When the export has no Distance column (a zip or subdivision search), distances come from Latitude and Longitude: pass the home's `--lat`/`--lon` (and `latitude`/`longitude` in report.json) when it has no row of its own in the export. For an MLS that isn't built in, map the export's headers to the field names in `references/report-data.md` and pass them with `--columns` (and as `export_columns` in report.json). Search the web for the latest Freddie Mac 30-year rate, the county's current millage when there's none built in for the home's taxing district, and outside Florida the state's transfer tax. Cite them in your reply.
@@ -70,7 +72,16 @@ Fix every item in `warnings` (a recommended price outside the range, a missing t
   ```
   python3 scripts/render.py report.json [--profile profile.md]   # the PDF; the profile puts the agent's name and colors on it
   ```
-  Build the listing presentation only when the agent asked for it in the request ("listing presentation", "deck", "slides", "PowerPoint"): then write `deck` and use `--format all`. Otherwise deliver the PDF and offer the presentation in one line; if they say yes, write `deck` and run `--format pptx` (the PDF is already made). The presentation comes as the editable PPTX plus a PDF copy of the slides (a backup that opens anywhere); deliver both. Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); flip a chart callout's `side` if a label overlaps; a slide line that says text doesn't fit names the `deck` field to shorten before you rebuild. Look at every page (and slide, from the deck's PDF) before presenting; `references/deck-content.md` explains how to check the deck. If the deck can't be built (no Node), say so plainly and deliver the PDF.
+  Build the listing presentation only when the agent asked for it in the request ("listing presentation", "deck", "slides", "PowerPoint"): then write `deck` and use `--format all`. Otherwise deliver the PDF and offer the presentation in one line; if they say yes, write `deck` and run `--format pptx` (the PDF is already made). The presentation comes as the editable PPTX plus a PDF copy of the slides (a backup that opens anywhere); deliver both. Read what it prints: page 1 must fit on one page (shorten the summary wording, never drop an element); chart labels move clear of markers on their own, and if it says labels still crowd, drop a callout or shorten its label; a slide line that says text doesn't fit names the `deck` field to shorten before you rebuild. Look at every page (and slide, from the deck's PDF) before presenting; `references/deck-content.md` explains how to check the deck. If the deck can't be built (no Node), say so plainly and deliver the PDF.
 - **Summary in chat:** fill in `assets/seller-cma-template.md` from report.json and compute.py's output (numbers only from the output, already formatted). Never paste JSON or code blocks into a reply: the agent isn't technical, and seller-offer-review reads the handoff file compute.py saved.
 
-Either way, reply briefly: the recommended price and range, the one or two facts driving it, how the three strategies compare, and what the agent can replace to sharpen the nets (brokerage terms, estimated costs, payoff, title company quote), as `references/local-costs.md` shows, plus any placeholder (update dates, flood zone). Say "Preliminary" plainly if compute.py marked it so. Offer the other format in one line. Keep the chat reply short when files are delivered (about 150 words): the files carry the detail, and a long reply repeating them gets skimmed.
+Either way, the reply holds, in this order:
+
+1. The recommended (or new) price and range, and the one or two facts driving it.
+2. How the options compare, in a line or two.
+3. What the agent can replace to sharpen the nets (brokerage terms, estimated costs, payoff, title company quote), as `references/local-costs.md` shows, and each assumption compute.py listed (an unpaid tax bill, the holding-cost interest rate).
+4. Anything to confirm: placeholders (update dates, flood zone), a missing name or brokerage, questions for the seller.
+5. "Preliminary" and compute.py's `preliminary_reason`, when it's marked so.
+6. The other format, offered in one line.
+
+When files are delivered, keep it to short bullets under about 250 words: the files carry the detail, and a long reply repeating them gets skimmed. A chat-only answer can run longer, since the template is the answer.

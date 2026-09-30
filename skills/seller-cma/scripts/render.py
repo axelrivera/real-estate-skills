@@ -56,7 +56,13 @@ def summary_page(R, C, agent, L):
     tile = L("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
     if C["net"]["standard_terms"]:  # CMA-18: every place a net shows says the brokerage isn't the listing agreement's yet
         tile += f" ({L('sum_standard_terms')})"
-    stats = list(sp["key_stats"])[:3] + [[C["recommended_net_display"], tile]]
+    stats = list(sp.get("key_stats") or [])[:3]
+    # CMA-261: without an export there's no sale-to-list ratio or days-on-market trend: the comps fill the empty tiles
+    fallback = [[C["median_adjusted_display"], L("sum_stat_median", n=C["n_comps"])],
+                [f'{k(C["adjusted_min"])}–{k(C["adjusted_max"])}', L("sum_stat_span")],
+                [str(C["n_comps"]), L("sum_stat_comps")]]
+    stats += [f for f in fallback if f[1] not in {x[1] for x in stats}][:3 - len(stats)]
+    stats += [[C["recommended_net_display"], tile]]
     left = agent_block(agent, L)
     tags = f'<span class="tag prelim">{L("preliminary")}</span><br>' if C["preliminary"] else ""
     o = ['<div class="onepage">',
@@ -83,7 +89,7 @@ def summary_page(R, C, agent, L):
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
-    note = L("sum_disclaimer") + (" " + L("sum_preliminary") if C["preliminary"] else "")
+    note = L("sum_disclaimer") + (" " + L("sum_preliminary", reason=C["preliminary_reason"]) if C["preliminary"] else "")
     o.append(f'<div class="note" style="margin-top:6px">{note}</div></div>')
     return "".join(o)
 
@@ -150,7 +156,10 @@ def body(R, C, homes, agent, L):
         sc = {"subject_label": L("subject_label"), **sc}
         svg, info = cma.scatter(homes, sc, s["sqft"], rec["list_price"], s.get("mls_address", s["address"]), (rec["low"], rec["high"]), L,
                                 [cd["address"] for cd in R["comps"]["cards"]])
-        trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
+        if info.get("crowded_labels"):  # CMA-253: labels are placed clear of markers; these had no clear side
+            C.setdefault("render_checks", []).append(
+                "Scatter labels still crowd (" + ", ".join(info["crowded_labels"]) + "): drop a callout or shorten its label.")
+        trend =money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
               '<div class="chart-box">' + cma.scatter_legend(L, sc["subject_label"], info["counts"]) + svg + "</div>"]
@@ -204,6 +213,16 @@ def footer_label(R, C, agent, L, doc_label, sample):
     return label
 
 
+def profile_check(agent):
+    """CMA-263: a chat reminder when the name or brokerage is missing, or None. Never printed in the files: they
+    simply leave the missing parts out."""
+    gaps = [w for w, f in (("agent name", "name"), ("brokerage", "brokerage")) if not agent.get(f)]
+    if not gaps:
+        return None
+    return (f"{'no profile' if len(gaps) == 2 else 'profile incomplete'}: {' and '.join(gaps)} missing, so the files "
+            "carry none. Ask the agent for them (or use their saved profile with --profile) and render again.")
+
+
 def build(R, fmt, out_dir, ctx):
     try:
         return _build(R, fmt, out_dir, ctx)
@@ -226,12 +245,16 @@ def _build(R, fmt, out_dir, ctx):
     if first:
         for w in C["warnings"]:
             print(f"Check: {w}", file=sys.stderr)
+        if profile_check(agent):
+            print(f"Check: {profile_check(agent)}", file=sys.stderr)
     if fmt == "pdf":
         doc, L = build_html(R, C, homes, agent)
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Seller CMA", ext="pdf"))
         info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(footer_label(R, C, agent, L, L("doc_label"), sample)),
                                   before_print=cma.paginate)
         written.append(path)
+        for c in C.get("render_checks", []):
+            print(f"Check: {c}", file=sys.stderr)
         if not info["summary_page"]["fits"]:
             print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
         elif info["summary_page"]["fit_level"]:
