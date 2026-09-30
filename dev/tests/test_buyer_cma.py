@@ -725,5 +725,98 @@ class CreditPlaceholders(unittest.TestCase):
         self.assertNotIn("unfilled_placeholder", C["warning_keys"])
 
 
+class FourthPass(unittest.TestCase):
+    """Eval iteration 5 fixes (CMA-223 to CMA-230)."""
+
+    def run_(self, change=None):
+        R = report()
+        if change:
+            change(R)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    @staticmethod
+    def fha_buyer(cash):
+        """Eval 1: FHA 3.5% as the buyer's own program, paid at the $464,000 target, no lender closing figure."""
+        def change(R):
+            R["costs"]["buyer_cash"] = cash
+            R["costs"]["payment"]["price"] = 464000
+            R["costs"]["payment"]["scenarios"] = [{"label": "FHA, 3.5% Down", "type": "fha", "down_pct": 0.035},
+                                                  {"label": "Conventional, 3% Down", "type": "conventional", "down_pct": 0.03}]
+            cs = R["costs"]["credit_scenarios"]
+            cs.update(loan_type="fha", down_pct=0.035, scenarios=[{"price": 464000, "credit": 0}, {"price": 469000, "credit": 5000}])
+            cs.pop("closing_cost_pct")
+            cs.pop("buydown")
+        return change
+
+    def test_payment_table_cash_to_close(self):
+        """CMA-223: the payment table's cash to close (down payment plus closing costs, the credit table's basis) is
+        checked against the buyer's cash, not just the down payment."""
+        _, C = self.run_(self.fha_buyer(30000))
+        first, col = C["payments"]["rows"][0], C["credit"]["columns"][0]
+        self.assertEqual(first["cash_to_close"], first["cash_down"] + first["closing_costs"])
+        self.assertAlmostEqual(first["cash_to_close"], col["cash"])  # same price, no credit: the same basis
+        self.assertIsNone(first["down_short"])  # the down payment alone fits
+        self.assertEqual(first["cash_short"], round(first["cash_to_close"] - 30000))
+        self.assertIn("cash_short", C["warning_keys"])
+        need = first["cash_to_close"]
+        R, C = self.run_(self.fha_buyer(round(need + 500)))
+        self.assertEqual(C["payments"]["rows"][0]["cash_left"], round(round(need + 500) - need))
+        self.assertIn("cash_tight", C["warning_keys"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("Cash to Close (FHA, 3.5% Down)", doc)
+
+    def test_payment_note_appends(self):
+        """CMA-226: costs.payment.note adds to the default assumptions (rate, mortgage insurance, per $10,000)."""
+        R, C = self.run_(lambda R: R["costs"]["payment"].__setitem__("note", "Financing is assumed until the buyer confirms."))
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("Financing is assumed until the buyer confirms.", doc)
+        self.assertIn("Every $10,000 off the price", doc)
+        self.assertIn("Cash to close is the down payment plus closing costs", doc)
+
+    def test_assumed_financing_is_labeled_once(self):
+        """CMA-227: `assumed: true` labels the scenario once; "Assumed" or parentheses in the label warn."""
+        R, C = self.run_(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__("assumed", True))
+        self.assertEqual(C["payments"]["rows"][0]["label"], "Conventional, 5% Down, Assumed")
+        self.assertNotIn("scenario_label", C["warning_keys"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("Cash to Close (Conventional, 5% Down, Assumed)", doc)
+        self.assertNotIn("Assumed))", doc)
+        _, C = self.run_(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__("label", "Conventional, 5% Down (Assumed)"))
+        self.assertIn("scenario_label", C["warning_keys"])
+
+    def test_undated_off_and_on_pairs(self):
+        """CMA-229: a row that says it happened more than once warns when the count can't include it (no DOM); days_on
+        or days_off puts the undated pairs in the calendar count."""
+        events = copy.deepcopy(EVAL_GRID)
+        events[3].pop("dom")
+        events[9]["note"] = "Taken off the market (off and on twice through Mar 5)"
+
+        def with_events(ev):
+            def change(R):
+                R["history"]["events"] = copy.deepcopy(ev)
+                R["subject"]["locality"] = R["subject"]["locality"].rsplit("MLS ", 1)[0] + "MLS O6433709"
+            return change
+        _, C = self.run_(with_events(events))
+        self.assertIn("history_repeat", C["warning_keys"])
+        self.assertEqual(C["history"]["active_days"], 11 + 37 + 19 + 36)
+        events[9]["days_on"] = 10
+        _, C = self.run_(with_events(events))
+        self.assertNotIn("history_repeat", C["warning_keys"])
+        self.assertEqual(C["history"]["active_days"], 11 + 37 + 19 + 36 + 10)
+        events[9].pop("days_on")
+        events[3]["dom"] = 83  # the MLS's DOM already counts the pairs
+        _, C = self.run_(with_events(events))
+        self.assertNotIn("history_repeat", C["warning_keys"])
+
+    def test_fractional_days_in_the_market_table(self):
+        """CMA-230: a median of an even count ("7.5 days") is rounded to a whole day, half up."""
+        _, C = self.run_(lambda R: R["market"]["rows"][2].__setitem__(2, "7.5 days"))
+        self.assertIn("market_days_rounding", C["warning_keys"])
+        self.assertIn("8 days", C["warnings"][C["warning_keys"].index("market_days_rounding")])
+        _, C = self.run_()
+        self.assertNotIn("market_days_rounding", C["warning_keys"])
+
+
 if __name__ == "__main__":
     unittest.main()

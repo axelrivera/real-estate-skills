@@ -311,6 +311,13 @@
   },
   "buyer_cash": null,
   "buyer_cash_display": null,
+  "closing": {
+   "lender_amount": null,
+   "loan_tax_labels": {
+    "count": 0
+   },
+   "pct": 0.03
+  },
   "flood": {
    "annual": null,
    "required": "citizens_value",
@@ -323,11 +330,17 @@
   "rate": 6.95,
   "rows": [
    {
+    "assumed": false,
     "cash_down": 23745.0,
+    "cash_left": null,
     "cash_short": null,
+    "cash_to_close": 37992.0,
+    "closing_costs": 14247.0,
+    "down_short": null,
     "flood": null,
     "hoa": 0,
     "ins": 300.0,
+    "lender_closing_costs": false,
     "loan": 451155.0,
     "mi": 187.98,
     "pi": 2986.41,
@@ -335,11 +348,17 @@
     "total": 4105.94
    },
    {
+    "assumed": false,
     "cash_down": 16621.5,
+    "cash_left": null,
     "cash_short": null,
+    "cash_to_close": 30868.5,
+    "closing_costs": 14247.0,
+    "down_short": null,
     "flood": null,
     "hoa": 0,
     "ins": 300.0,
+    "lender_closing_costs": false,
     "loan": 466298.37,
     "mi": 210.04,
     "pi": 3086.65,
@@ -347,11 +366,17 @@
     "total": 4228.25
    },
    {
+    "assumed": false,
     "cash_down": 94980.0,
+    "cash_left": null,
     "cash_short": null,
+    "cash_to_close": 109227.0,
+    "closing_costs": 14247.0,
+    "down_short": null,
     "flood": null,
     "hoa": 0,
     "ins": 300.0,
+    "lender_closing_costs": false,
     "loan": 379920.0,
     "mi": 0.0,
     "pi": 2514.87,

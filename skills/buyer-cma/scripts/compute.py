@@ -62,6 +62,34 @@ def taxes(R, market):
     return out
 
 
+ASSUMED = ", Assumed"  # CMA-227: a scenario with `assumed: true` is labeled once, never nested in parentheses
+
+
+def buyer_closing_costs(R, market, price, program, down, loan):
+    """CMA-223: the buyer's closing costs at `price`, on one basis for the payment table and the credit table: the
+    lender's figure (`credit_scenarios.closing_costs`) for the credit table's own program and down payment, else
+    `closing_cost_pct` of the price, else the market's share of the price plus its loan taxes on `loan` (CORE-16).
+    Returns (amount, the itemized loan taxes, whether it's the lender's figure)."""
+    cs = R["costs"].get("credit_scenarios") or {}
+    own = (finance.program(cs.get("loan_type", "conventional")) == program
+           and abs(_frac(cs, "down_pct", "costs.credit_scenarios", 0.05) - down) < 1e-9)
+    if cs.get("closing_costs") and own:
+        return cs["closing_costs"], [], True
+    pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
+    taxes = finance.loan_taxes(loan, market) if pct is None and program != "cash" else []
+    if pct is None:
+        pct = market.get("closing_costs.buyer_closing_cost_pct") or 0.03
+    return price * pct + sum(t["amount"] for t in taxes), taxes, False
+
+
+def broker_fee_short(R, price):
+    """CMA-4: what the buyer pays their own broker at `price` when the seller pays less than the agreement."""
+    cs = R["costs"].get("credit_scenarios") or {}
+    agreement = _frac(cs, "buyer_broker_agreement_pct", "costs.credit_scenarios")
+    seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
+    return finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
+
+
 def payments(R, market, tax_rows):
     pay = R["costs"]["payment"]
     ji = pay.get("tax_jurisdiction_index", 0)
@@ -80,8 +108,15 @@ def payments(R, market, tax_rows):
         sc["down_pct"] = _frac(sc, "down_pct", f"costs.payment.scenarios[{i}]")
         r = finance.monthly_payment(price, sc["type"], sc["down_pct"], pay["rate"], tax_at(price),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
-        rows.append({"label": sc["label"], **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"]),
-                     "cash_short": _short(r["cash_down"], cash)})
+        # CMA-223: cash to close per scenario (down payment + closing costs + any broker fee), as the credit table has it
+        cc, _, lender = buyer_closing_costs(R, market, price, finance.program(sc["type"]), sc["down_pct"], r["loan"])
+        to_close = r["cash_down"] + cc + broker_fee_short(R, price)
+        rows.append({"label": sc["label"] + (ASSUMED if sc.get("assumed") else ""), "assumed": bool(sc.get("assumed")),
+                     **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"]),
+                     "closing_costs": cc, "lender_closing_costs": lender,
+                     "cash_to_close": to_close, "cash_to_close_display": money(to_close),
+                     "down_short": _short(r["cash_down"], cash), "cash_short": _short(to_close, cash),
+                     "cash_left": _tight(to_close, cash)})
     first = pay["scenarios"][0]
     lower = finance.monthly_payment(price - 10000, first["type"], first["down_pct"], pay["rate"], tax_at(price - 10000),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
@@ -94,8 +129,13 @@ def payments(R, market, tax_rows):
     tax_basis = {"short": tj["short"], "unconfirmed": len(tax_rows) == 2, "estimated": bool(tj["estimated"]),
                  "basis": tj["basis"], "higher": len(tax_rows) == 2 and (tj["annual"] or 0) >= (tax_rows[1 - ji]["annual"] or 0)}
     tax_basis["label_estimate"] = tax_basis["unconfirmed"] or tax_basis["estimated"]
+    cs = R["costs"].get("credit_scenarios") or {}
+    given_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
+    closing = {"pct": given_pct if given_pct is not None else market.get("closing_costs.buyer_closing_cost_pct") or 0.03,
+               "loan_tax_labels": [t["label"] for t in finance.loan_taxes(1, market)] if given_pct is None else [],
+               "lender_amount": cs.get("closing_costs")}
     return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R), "rate": pay["rate"],
-            "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood,
+            "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood, "closing": closing,
             "per_10k": rows[0]["total"] - lower["total"], "alt_jurisdiction": alt, "tax_index": ji, "tax_basis": tax_basis,
             "buyer_cash": cash, "buyer_cash_display": money(cash) if cash else None}
 
@@ -140,7 +180,6 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     if closing_pct is None:
         closing_pct = market.get("closing_costs.buyer_closing_cost_pct") or 0.03
     cap = finance.concession_cap(program, down)
-    agreement = _frac(cs, "buyer_broker_agreement_pct", "costs.credit_scenarios")  # CMA-4: the buyer's own agreement
     seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
     cols, base = [], None
     for x in cs["scenarios"]:
@@ -149,9 +188,8 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         tax = finance.property_tax(price, market, j["school_mills"], j["total_mills"], R["costs"]["taxes"].get("homestead", True))["annual"] or 0
         p = finance.monthly_payment(price, program, down, pay["rate"], tax, pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0),
                                     flood_annual=flood_line(R, market)["annual"])
-        taxes = finance.loan_taxes(p["loan"], market) if itemize else []
-        cc = cs["closing_costs"] if cs.get("closing_costs") else price * closing_pct + sum(t["amount"] for t in taxes)
-        bb_short = finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
+        cc, taxes, _ = buyer_closing_costs(R, market, price, program, down, p["loan"])  # CMA-223: the payment table's basis
+        bb_short = broker_fee_short(R, price)
         col = {"price": price, "credit": credit, "net": price - credit, "loan": p["loan"], "bb_short": bb_short,
                "cash": p["cash_down"] + cc - min(credit, cc) + bb_short, "payment": p["total"], "pi": p["pi"],
                "cap": price * cap if cap is not None else None,
@@ -194,6 +232,19 @@ HISTORY_CHANGES = {
 HISTORY_NEW = ("listed", "new")
 HISTORY_KIND = {"new": "listed", "decr": "price", "incr": "price", "tom": "off_market", "bom": "back_on", "pnc": "pending",
                 "sld": "sold", "canc": "canceled", "exp": "expired", "wdn": "withdrawn"}
+# CMA-229: a row whose note says it happened more than once ("off and on twice") hides undated off/on pairs
+FRACTIONAL_DAYS = re.compile(r"\b(\d+\.\d+)\s*days?\b", re.I)  # CMA-230: "7.5 days" from a median of an even count
+HISTORY_REPEATED =re.compile(r"\b(twice|three times|\d+ times|several|multiple|more than once|repeatedly)\b", re.I)
+
+
+def _days(e, i, key):
+    """CMA-229: an event's `days_off` or `days_on` (days in undated off/on pairs the row sums up), 0 when not given."""
+    v = e.get(key)
+    if v is None:
+        return 0
+    if not isinstance(v, (int, float)) or isinstance(v, bool) or v < 0:
+        raise ReportError(f"history.events[{i}].{key} must be a whole number of days (12), not {v!r}.")
+    return v
 
 
 def _plural(n, word):
@@ -206,7 +257,8 @@ def history_stats(R, as_of):
     home was actively for sale across every MLS number. Returns (stats or None, [(warning key, text)]).
 
     Each event is {date: YYYY-MM-DD, mls, change, price (the asking price after it, when the row shows one), dom (the
-    grid's days on market at that row, when it shows one), note (optional wording for the report's row)}, in the
+    grid's days on market at that row, when it shows one), days_off / days_on (days off or back on the market in
+    undated off/on pairs the row sums up, CMA-229), note (optional wording for the report's row)}, in the
     grid's order. `timeline` is the same events oldest first, for the report's table. A price that differs from the asking
     price before it is a cut or an increase, whatever the row's code. A listing's active days are its latest `dom`
     (plus the days since, while it's still for sale), else counted by the calendar from its status changes; the
@@ -233,7 +285,9 @@ def history_stats(R, as_of):
         if price is not None and (not isinstance(price, (int, float)) or isinstance(price, bool)):
             raise ReportError(f"history.events[{i}].price must be a plain number (474900), not {price!r}.")
         rows.append({"i": i, "date": when, "mls": str(e.get("mls") or "").strip().upper() or None, "change": change,
-                     "price": price, "dom": e.get("dom"), "cdom": e.get("cdom")})
+                     "price": price, "dom": e.get("dom"), "cdom": e.get("cdom"),
+                     "days_off": _days(e, i, "days_off"), "days_on": _days(e, i, "days_on"),
+                     "repeated": bool(HISTORY_REPEATED.search(str(e.get("note") or "")))})
     # the grid's order: newest first normally; any row that breaks the direction is out of date order
     newest_first = rows[0]["date"] >= rows[-1]["date"]
     out_of_order = order_breaks(rows, newest_first)
@@ -305,6 +359,15 @@ def history_stats(R, as_of):
         if with_dom:  # the MLS's own count wins, plus the days since while it's still for sale
             last = with_dom[-1]
             days = last["dom"] + (max((stop - last["date"]).days, 0) if status == "active" else 0)
+        else:  # CMA-229: the MLS's DOM already counts undated off/on pairs; the calendar needs days_off / days_on
+            days = max(days - sum(r["days_off"] for r in lst["rows"]) + sum(r["days_on"] for r in lst["rows"]), 0)
+            for r in lst["rows"]:
+                if r["repeated"] and not (r["days_off"] or r["days_on"]):
+                    notes.append(("history_repeat", f"history.events[{r['i']}]'s note says it happened more than once, "
+                                  "but the undated off/on pairs aren't in the count: the calendar counts the whole stretch "
+                                  "as off (or on), so its active days may be off. Add the listing's DOM from the grid as "
+                                  "dom, each pair as dated off_market and back_on events, or the days in days_off / "
+                                  "days_on (report-data.md)."))
         active_days += days
     total_cut, first_listed = sum(cuts), first_listed or rows[0]["date"]
     timeline = []
@@ -608,11 +671,27 @@ def compute(R, market, homes):
                  "have the lender confirm the closing costs before the offer.")
     rows = (pay or {}).get("rows") or [{}]
     first = rows[0]  # the buyer's own program
-    if first.get("cash_short"):
-        warn("cash_short", f"The {first['label']} down payment alone ({money(first['cash_down'])}) is more than the "
-             f"buyer's {money(cash)}.")
+    if first.get("cash_short"):  # CMA-223: the payment table's cash to close, not just the down payment
+        warn("cash_short", f"At {money(pay['price'])}, cash to close in the {first['label']} column (down payment plus "
+             f"closing costs) is about {money(first['cash_to_close'])}, {money(first['cash_short'])} more than the buyer's {money(cash)}: "
+             "say so, and show a scenario that fits (a seller credit, a lower price or another loan program).")
+    elif first.get("cash_left") is not None:
+        warn("cash_tight", f"At {money(pay['price'])}, cash to close in the {first['label']} column is about "
+             f"{money(first['cash_to_close'])}, leaving only {money(first['cash_left'])} of the buyer's {money(cash)}: "
+             "say so, and have the lender confirm the closing costs before the offer.")
+    for i, row in enumerate((R.get("market") or {}).get("rows") or []):  # CMA-230: whole days, half up
+        for cell in row[1:]:
+            m = FRACTIONAL_DAYS.search(str(cell))
+            if m:
+                warn("market_days_rounding", f"market.rows[{i}] reads {cell!r}: round days to a whole day, half up "
+                     f"({m.group(1)} days to {math.floor(float(m.group(1)) + 0.5)} days).")
+    for i, sc in enumerate(R["costs"]["payment"].get("scenarios") or []):  # CMA-227: "Assumed" is a field, not label text
+        if "assum" in str(sc.get("label", "")).lower() or "(" in str(sc.get("label", "")):
+            warn("scenario_label", f"costs.payment.scenarios[{i}].label is {sc['label']!r}: write the loan only "
+                 "(\"Conventional, 5% Down\", no parentheses) and set \"assumed\": true when the financing is assumed; "
+                 "the report adds \"Assumed\" once.")
     for r in rows[1:]:  # CMA-217: a comparison the buyer can't afford is noise; replace it with one that fits
-        if r.get("cash_short"):
+        if r.get("down_short"):
             warn("scenario_over_cash", f"The {r['label']} scenario needs {money(r['cash_down'])} down, more than the "
                  f"buyer's {money(cash)}: drop it or replace it with a program that fits (costs.md).")
     hist, notes = history_stats(R, R.get("as_of") or date.today().isoformat())  # CMA-201, CMA-208

@@ -11,7 +11,7 @@ The MLS history grid lists every change across MLS numbers, newest first: read i
 - A new MLS number resets days on market. Look for older numbers below it and report the true timeline: first list date, total active days across all listings, every price change. Enter every row as `history.events` (`report-data.md`): compute.py counts the cuts, increases, failed contracts and active days, and the report quotes them with placeholders (`{price_cuts}`, `{active_days}`), never a hand count.
 - A row out of date order in the grid, or an MLS number that isn't the listing's (in the history or the export), is warned. Don't guess which date or listing is right: ask the agent in the reply, and count it as compute.py did until they answer.
 - A pending followed by anything other than a sale means a contract failed. That's a question for the listing agent, not an assumption about the house.
-- Repeated off/back-on-market pairs usually mean a seller managing showings or pausing to reset.
+- Repeated off/back-on-market pairs usually mean a seller managing showings or pausing to reset. A row that sums up undated pairs ("off and on twice") is entered as `report-data.md` describes (Undated off/on pairs).
 - A price increase after a failed contract is a signal worth naming.
 
 A relist at a higher price than a listing that failed (canceled, expired or withdrawn) is a finding too: the market already passed at the lower price.
@@ -22,7 +22,7 @@ Search the address: earlier syndicated remarks sometimes claim things (a "brand-
 
 For a condo, choose and adjust comps by `condo.md` instead of the rules below.
 
-From `stats.py`'s `sold_candidates`, pick 3–6 sales:
+From `stats.py`'s `sold_candidates`, pick the closest 4 to 6 sales (3 only when no more qualify: compute.py warns below 3), taking them in the ranking's order and skipping only the ones the rules below rule out, so the same export gives the same comps and the same median:
 
 - same subdivision first, then an immediately comparable neighborhood within about a mile;
 - within about 20% of the subject's size, same pool status, similar age and construction, closed within about 6 months.
@@ -35,12 +35,12 @@ Each candidate carries `flags`: `distressed` (REO, short sale, auction) and `new
 
 Judge each comp's condition from its remarks (renovated, partially updated, maintained, needs work), and say that condition adjustments are judgment calls based on listing text.
 
-Default rates come from the built-in market (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the subject can't match, –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has softened and 0 for sales in the last ~6 weeks). Outside the built-in market, derive the rates from paired sales in the export, scaled to the price, and say so. Explain any departure in `method_note`.
+Default rates come from the built-in market (`cma.adjustments`; built in for Florida: about $75/sq ft for differences under ~300 sq ft, $25,000 for a private pool, $40,000–45,000 full renovation vs. dated, ~$30,000 full vs. partial, –$5,000 for documented recent systems the subject can't match, –$5,000 to –$10,000 for a noticeably better lot or water, 1–2% per quarter when the market has shifted, set as below, and 0 for sales in the last ~6 weeks). Outside the built-in market, derive the rates from paired sales in the export, scaled to the price, and say so. Explain any departure in `method_note`.
 
 The built-in rates are flat dollars from Central Florida sales in one price band (`cma.calibrated_for`). compute.py warns when the home is outside that area or band: then derive the rates from paired sales in the export, or use the agent's, and scale flat amounts (a pool, a renovation) to the price. There are no built-in rates for garage spaces, bedroom or bath count, age, view, or size differences over about 300 sq ft: derive those from paired sales and say so, or leave the difference to the range and explain it.
 
 - Subtract seller-paid buyer costs from the sale price, dollar for dollar.
-- Apply a time adjustment only when the data shows the market has shifted since the sale.
+- **Time (market shift).** Set one rate from stats.py's split: the change in median sale-to-original-list from `sold_early` to `sold_recent`. Under 1 point: no time adjustment. 1 to 3 points: 1% per quarter. Over 3 points: 2% per quarter. Apply it to every comp that closed more than about 6 weeks before `as_of`, prorated by months since the sale (4.5 months at 1% per quarter is 1.5%), rounded to the nearest $1,000: minus when the ratio fell (a softer market), plus when it rose. Name both ratios and the rate in `method_note`. A split with fewer than about 5 sales on either side is too thin to read: use no time adjustment and say so. The gut check uses the same rate.
 - List each comp's adjustments in the report data (`sold_price`, `seller_concessions`, `adjustments`); compute.py does the arithmetic and fills the card and the summary table from the same numbers. More than about 15% net or 25% gross of the sale price (common appraisal guidelines) means a weak comp: replace it, or explain why it stays.
 - **Outliers.** After adjusting, a comp more than 10% above or below the median of the other comps (compute.py names it) is an outlier: replace it with the next candidate. Keep it only when it's one of the two closest matches in condition and location, say why in `method_note`, and don't let it set an end of the range. Decide once, before the range, so the same comps always give the same median.
 - Write each adjustment as a sentence with its dollar amount: "It sold in April, when rates were lower and homes were moving faster: minus about $10,000." Not "Time adj –2%."

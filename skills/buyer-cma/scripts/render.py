@@ -66,6 +66,18 @@ def cash_flag(short, pay, L):
             '</span>' if short else "")
 
 
+def pay_closing_note(pay, L):
+    """CMA-223: what the payment table's closing costs are, on the credit table's basis."""
+    cl = pay["closing"]
+    cc = L("cr_cc_pct", pct=f'{cl["pct"] * 100:g}')
+    if cl["loan_tax_labels"]:
+        cc += L("pay_cc_taxes", names=" and ".join(x.lower() for x in cl["loan_tax_labels"]))
+    lender = [r["label"] for r in pay["rows"] if r.get("lender_closing_costs")]
+    if lender:
+        cc += L("pay_cc_lender", label=lender[0], amt=money(cl["lender_amount"]))
+    return L("pay_cc_note", cc=cc)
+
+
 def tax_row_label(R, pay, L):
     """CMA-204: the payment's tax row, labeled Estimate when the district is unconfirmed or the rate is a fallback."""
     key = "pay_tax_est" if pay["tax_basis"]["label_estimate"] else "pay_tax"
@@ -109,7 +121,8 @@ def summary_page(R, C, agent, L):
     sc0 = R["costs"]["payment"]["scenarios"][0]
     stats = list(sp["key_stats"])[:3] + [[money(first["total"]),
                                            L("sum_payment_tile", price=money(pay["price"]), basis=basis_label(pay, L),
-                                             down=f"{sc0['down_pct'] * 100:g}")]]
+                                             down=f"{sc0['down_pct'] * 100:g}")
+                                           + (L("assumed_suffix") if first.get("assumed") else "")]]  # CMA-227
     tgt = k(op["target_low"]) + (f"–{k(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
     left = agent_block(agent, L)
     o = ['<div class="onepage">',
@@ -132,8 +145,9 @@ def summary_page(R, C, agent, L):
               short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))  # CMA-204
     rows = [[L("sum_tax_now"), money(bill) + L("per_year") if bill else L("not_available")],
             [yours, "≈ " + money(tax["annual"], 100) + L("per_year")],
-            [L("sum_pay_row", label=sc0["label"]), money(first["total"]) + L("per_month")],
-            [L("sum_cash_row", label=sc0["label"]), money(first["cash_down"]) + cash_flag(first.get("cash_short"), pay, L)]]
+            [L("sum_pay_row", label=first["label"]), money(first["total"]) + L("per_month")],
+            [L("sum_cash_row", label=first["label"]),  # CMA-223: cash to close, with its closing costs
+             money(first["cash_to_close"]) + cash_flag(first.get("cash_short"), pay, L)]]
     trs = "".join(f'<tr class="{"rec" if i == 1 else ""}"><td>{a}</td><td class="n">{v}</td></tr>' for i, (a, v) in enumerate(rows))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_costs")}</div><div class="tbl"><table><tbody>{trs}</tbody></table></div>'
@@ -265,7 +279,9 @@ def body(R, C, homes, agent, L):
     b += [f'<h3>{L("h_insurance")}</h3>', f'<p>{R["costs"]["insurance"]["paragraph"]}</p>']
 
     rows_p = pay["rows"]
-    prow = [[L("pay_cash")] + [money(r["cash_down"]) + cash_flag(r.get("cash_short"), pay, L) for r in rows_p],
+    prow = [[L("pay_cash")] + [money(r["cash_down"]) for r in rows_p],
+            [L("pay_closing")] + [money(r["closing_costs"]) for r in rows_p],  # CMA-223
+            [L("pay_cash_close")] + [money(r["cash_to_close"]) + cash_flag(r.get("cash_short"), pay, L) for r in rows_p],
             [L("pay_pi")] + [money(r["pi"]) for r in rows_p],
             [tax_row_label(R, pay, L)] + [money(r["tax"]) for r in rows_p],
             [L("pay_ins")] + [money(r["ins"]) for r in rows_p],
@@ -280,10 +296,13 @@ def body(R, C, homes, agent, L):
     progs = finance.LOAN_PROGRAMS
     conv_down = next((sc["down_pct"] for sc in R["costs"]["payment"]["scenarios"]
                       if finance.program(sc["type"]) == "conventional" and sc["down_pct"] < 0.2), 0.05)  # OFR-25
-    pay_note = R["costs"]["payment"].get("note") or L(
+    pay_note = L(
         "pay_note", rate=f'{pay["rate"]:.2f}', ins=money(pay["insurance_annual"]),
         pmi=f'{finance.annual_mi_rate("conventional", conv_down) * 100:g}', pmi_down=f"{conv_down * 100:g}",
         mip=f'{progs["fha"]["annual_mi"] * 100:.2f}', ufmip=f'{progs["fha"]["upfront_fee"] * 100:.2f}', per10k=money(pay["per_10k"], 5))
+    pay_note += " " + pay_closing_note(pay, L)
+    if R["costs"]["payment"].get("note"):  # CMA-226: the agent's note adds to the assumptions, never replaces them
+        pay_note += " " + R["costs"]["payment"]["note"]
     pay_note += tax_which_note(pay, L) + " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one
     b += [f'<h3>{L("h_payment")}</h3>', f'<p>{R["costs"]["payment"]["intro"]}</p>',
           table([L("pay_header", price=money(pay["price"]), basis=basis_label(pay, L))] + [r["label"] for r in rows_p], prow,

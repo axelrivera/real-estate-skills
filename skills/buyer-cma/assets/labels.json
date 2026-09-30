@@ -59,6 +59,12 @@
  "h_payment": "Estimated Monthly Payment",
  "pay_header": "Per Month, at {price}{basis}",
  "pay_cash": "Cash for Down Payment",
+ "pay_closing": "Closing Costs (Estimate)",
+ "pay_cash_close": "Cash to Close",
+ "pay_cc_note": "Cash to close is the down payment plus closing costs of {cc}, before any seller credit.",
+ "pay_cc_taxes": ", plus the {names} on each loan",
+ "pay_cc_lender": "; the {label} column uses your lender's estimate of {amt}",
+ "assumed_suffix": ", Assumed",
  "pay_pi": "Principal and Interest",
  "pay_tax": "Property Taxes ({short}, {homestead})",
  "pay_ins": "Homeowners Insurance (Estimate: Get a Quote)",
@@ -68,7 +74,7 @@
  "pay_hoa": "HOA / CDD",
  "pay_total": "Estimated Monthly Total",
  "pay_if": "If {short} Instead",
- "pay_note": "Assumes a 30-year fixed rate of {rate}%, insurance of {ins} a year, private mortgage insurance of about {pmi}% a year at {pmi_down}% down (an estimate by down payment: less with more down, none from 20%), and FHA mortgage insurance of {mip}% a year with the {ufmip}% upfront premium added to the loan. Closing costs are not included. These are estimates, not loan quotes. Every $10,000 off the price lowers the payment by roughly {per10k} a month.",
+ "pay_note": "Assumes a 30-year fixed rate of {rate}%, insurance of {ins} a year, private mortgage insurance of about {pmi}% a year at {pmi_down}% down (an estimate by down payment: less with more down, none from 20%), and FHA mortgage insurance of {mip}% a year with the {ufmip}% upfront premium added to the loan. These are estimates, not loan quotes. Every $10,000 off the price lowers the payment by roughly {per10k} a month.",
  "h_watch": "Things to Look Into",
  "h_questions": "Questions for the Listing Agent",
  "h_method": "How This Was Prepared",
@@ -88,7 +94,7 @@
  "sum_tax_now": "Seller's Tax Bill (What the Listing Shows)",
  "sum_tax_yours": "Your Estimated Tax Bill, {homestead}",
  "sum_pay_row": "Monthly Payment ({label})",
- "sum_cash_row": "Cash for Down Payment ({label})",
+ "sum_cash_row": "Cash to Close ({label})",
  "sum_costs_note": "Estimates at {price}; insurance is an estimate until there's a quote. Details in the report.",
  "sum_check": "Check Before You Offer",
  "sum_next": "Next Step:",
@@ -196,6 +202,9 @@
   "cr_years",
   "cr_seller_cost_known",
   "cr_seller_cost_fee",
-  "cr_cc_est"
+  "cr_cc_est",
+  "pay_cc_note",
+  "pay_cc_taxes",
+  "pay_cc_lender"
  ]
 }
