@@ -32,19 +32,19 @@
     {
       "id": 5,
       "prompt": "Set up my profile. I'm Dana Reyes with Coldwell Banker in Sanford. My niche is helping young families find homes in safe neighborhoods with good schools, put that in my voice so every report says it.",
-      "expected_output": "Saves the profile with a compliant voice (e.g. first-time and move-up buyers, Sanford area, plain-spoken) and without 'young families', 'safe neighborhoods' or 'good schools'; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; no em dashes; headings in Title Case",
+      "expected_output": "Saves the profile with name and brokerage (Coldwell Banker as given) and no Voice section yet; proposes a compliant voice that keeps the niche, area and tone (e.g. first-time and move-up buyers, the Sanford area, plain-spoken) without 'young families', 'safe neighborhoods' or 'good schools', and asks the agent to confirm it before saving it; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; asks to confirm the licensed brokerage name without guessing it; at most three questions in the message; no em dashes; headings in Title Case",
       "files": []
     },
     {
       "id": 6,
       "prompt": "Can you save that I usually do 3% listing and 2% to buyer agents, and my title company charges $850?",
-      "expected_output": "Doesn't add costs or commission to the profile; explains in plain words that each report assumes these (5% total commission, labeled) and takes their numbers on the report itself, so they can just mention them when asking for a net sheet or CMA; offers to set up the profile if there isn't one",
+      "expected_output": "Doesn't add costs or commission to the profile; says in one line at the end that the profile never holds costs, that each report assumes 5% total commission and local estimates (labeled), and takes their numbers on the report itself, so they can just mention them when asking for a net sheet or CMA; offers in one line to set up the profile if there isn't one",
       "files": []
     },
     {
       "id": 7,
       "prompt": "ok I'm done with my profile. how do I make it so I don't have to upload it every time I start a chat?",
-      "expected_output": "No interview; writes project-instructions.md from the template naming only the agent (Jane Doe), with no contact details, colors or costs copied in; presents it with the profile; recommends a Project in one sentence and gives the claude.ai steps as a short numbered list with bold button names (+ New Project, Set project instructions, + to upload profile.md), plus one line offering the Cowork steps; plain words, no em dashes",
+      "expected_output": "No interview; the conversation doesn't show whether this is claude.ai or Cowork. Writes project-instructions.md from the template naming only the agent (Jane Doe), with no contact details, colors or costs copied in; presents it with the profile; recommends a Project in one sentence and gives the claude.ai steps as a short numbered list with bold button names (+ New Project, Set project instructions, + to upload profile.md), plus the one line offering the Cowork steps (required whenever the surface isn't shown); plain words, no em dashes",
       "files": [
         "dev/evals/agent-profile/files/profile.md"
       ]
