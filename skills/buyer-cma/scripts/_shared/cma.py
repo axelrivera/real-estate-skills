@@ -202,7 +202,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
 
     o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">',
          f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>',
-         f'<text x="{Lm + 8}" y="{y(band[1]) - 6:.1f}" class="lbl-band">{esc(L("band"))} {k(band[0])}–{k(band[1])}</text>']
+         ]
     for v in _ticks(Y0, Y1, ystep):
         o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
                  f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{k(v)}</text>')
@@ -230,7 +230,33 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
-    o.append(_label(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()), "lbl-subj", 14))
+    # CMA-253: labels go where they cover no marker and no other label: the band's label in the first free corner,
+    # a point's label on the side asked for, else the side covering least (`crowded_labels`: ones that overlap a label)
+    marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
+    marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
+    placed, crowded, area = [], [], (Lm, T, W - R, H - B)
+    band_text = f'{L("band")} {k(band[0])}–{k(band[1])}'
+    band_w = _text_w(band_text, 12, bold=True)
+    spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
+             for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
+    bx, by, anchor, box = next((sp for sp in spots if not _hits(sp[3], marks, [])), spots[0])
+    placed.append(box)
+    o.append(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>')
+
+    def place(px, py, side, text, cls, gap, size, bold=False):
+        own = [m for m in marks if abs(m[0] - px) > 0.5 or abs(m[1] - py) > 0.5]  # its own marker never blocks it
+        tries = []
+        for v in [side] + [v for v in ("right", "left", "above", "below") if v != side]:
+            b = _label_box(px, py, v, text, gap, size, bold)
+            out = not (area[0] <= b[0] and b[2] <= area[2] and area[1] <= b[1] and b[3] <= area[3])
+            tries.append((10 * out + _hits(b, own, placed, count=True), len(tries), v, b))
+        score, _, v, b = min(tries)
+        if score >= 3:  # no side clear of other labels (a haloed label over a marker still reads)
+            crowded.append(text)
+        placed.append(b)
+        o.append(_label(px, py, v, text, cls, gap))
+
+    place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()), "lbl-subj", 14, 13, True)
     points = {}
     for h in sold:
         points[" ".join(h["address"].upper().split())] = (h["living_area"], h["close_price"])
@@ -240,12 +266,36 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         p = points.get(" ".join(co["address"].upper().split()))
         if not p:
             continue
-        o.append(_label(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10))
+        place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12)
     o.append("</svg>")
     info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
-            "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
+            "excluded": excluded, "n_sold": len(sold), "n_active": len(act), "crowded_labels": crowded,
             "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0}}
     return "\n".join(o), info
+
+
+def _text_w(text, size, bold=False):
+    """About how wide a chart label draws (sans-serif letters and digits average ~0.56 em, bold ~0.6)."""
+    return len(text) * size * (0.6 if bold else 0.56)
+
+
+def _label_box(px, py, side, text, gap, size, bold=False):
+    """(x0, y0, x1, y1) that _label's text covers."""
+    w = _text_w(text, size, bold)
+    if side in ("above", "below"):
+        ty = py - gap - 2 if side == "above" else py + gap + 10
+        return (px - w / 2, ty - size * 0.8, px + w / 2, ty + size * 0.2)
+    x0 = px - gap - w if side == "left" else px + gap
+    return (x0, py + 4 - size * 0.8, x0 + w, py + 4 + size * 0.2)
+
+
+def _hits(box, marks, boxes, count=False):
+    """Whether `box` covers a marker (cx, cy, r) or overlaps another label's box; with `count`, how many it does
+    (a label counts as three markers)."""
+    x0, y0, x1, y1 = box
+    n = sum((min(max(cx, x0), x1) - cx) ** 2 + (min(max(cy, y0), y1) - cy) ** 2 < r * r for cx, cy, r in marks)
+    n += 3 * sum(x0 < b[2] and b[0] < x1 and y0 < b[3] and b[1] < y1 for b in boxes)
+    return n if count else n > 0
 
 
 def _label(px, py, side, text, cls, gap):
@@ -346,11 +396,17 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
     if xs is not None:
         o.append(f'<line x1="{xs:.1f}" x2="{xs:.1f}" y1="{T - 8}" y2="{T + row * len(cs) + 2}" class="dp-second"/>'
                  f'<text x="{xs + shift[s_pos]:.1f}" y="{T - 16}" text-anchor="{s_pos}" class="dp-second-lbl">{esc(second[1])}</text>')
+    lines = [v for v in (xm, xs) if v is not None]
     for i, c in enumerate(cs):
-        cy = T + i * row + row / 2 - 4
+        cy, cx, val = T + i * row + row / 2 - 4, x(c["adjusted"]), k(c["adjusted"])
+        w = _text_w(val, 12)
+        # CMA-253: a value label that a price line would strike through goes on the dot's left, when that side is clear
+        left = (any(cx + 8 <= v <= cx + 12 + w for v in lines) and cx - 12 - w > Lm
+                and not any(cx - 12 - w <= v <= cx - 8 for v in lines))
+        anchor = ' text-anchor="end"' if left else ""
         o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(c["address"])}</text>'
-                 f'<circle cx="{x(c["adjusted"]):.1f}" cy="{cy:.1f}" r="6" class="dp-dot"/>'
-                 f'<text x="{x(c["adjusted"]) + 10:.1f}" y="{cy + 4:.1f}" class="dp-val">{k(c["adjusted"])}</text>')
+                 f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="6" class="dp-dot"/>'
+                 f'<text x="{cx - 10 if left else cx + 10:.1f}" y="{cy + 4:.1f}"{anchor} class="dp-val">{val}</text>')
     o.append("</svg>")
     return "".join(o)
 
@@ -446,7 +502,16 @@ PAGINATE_JS = """(pageH) => {
     }
     let brk = false;
     if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH) brk = true;
-    else if (pos > 5 && keepOK && pos + h > pageH) brk = true;
+    else if (pos > 5 && keepOK && pos + h > pageH) {
+      // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
+      // half the page empty; it moves only when less than 40% of the page is left or it would need to shrink more.
+      const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + 6;
+      const sr = svg ? svg.getBoundingClientRect() : null;
+      if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
+        svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
+        el.classList.add('shrunk');
+      } else brk = true;
+    }
     if (brk) { el.classList.add('pb'); shift += pageH - pos; moved.push((el.innerText || '').split('\\n')[0].slice(0, 50)); }
   }
   return { moved, onepageH: window.__onepageH || 0, pageH, fit };

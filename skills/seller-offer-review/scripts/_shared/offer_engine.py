@@ -819,8 +819,8 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         "title": "Owner's Title Policy" + (" (Quote)" if "(Quote)" in found.get("title", ("",))[0] else
                                            " (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
         "settle": "Title Company Fees",
-        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Status Letter")
-        "estoppel": costs.get("closing_costs.hoa_estoppel_label") or "HOA Status Letter",
+        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Documents", CMA-262)
+        "estoppel": costs.get("closing_costs.hoa_estoppel_label") or "HOA Documents",
     }
     tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
     tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)

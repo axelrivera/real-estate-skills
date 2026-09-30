@@ -33,6 +33,7 @@ closing_costs:
 
 property_tax:
   paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing (until the seller pays the bill in Nov)
+  bill_month: 11                      # bills go out Nov 1; a closing from then on assumes it unpaid unless told
   early_payment_discount: 0.04        # 4% for November payment; FR/BAR Standard K prorates allowing the maximum discount
   reassessed_on_sale: true            # capped assessments reset for the buyer
   fallback_rate: 0.018                # annual tax as share of price when no bill is available

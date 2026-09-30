@@ -61,6 +61,8 @@ mls_format:
     address: [UnparsedAddress, Address]
     unit: [UnitNumber, Unit Number]
     zip: [PostalCode, Zip]
+    city: [City, PostalCity]
+    county: [CountyOrParish, County]
     subdivision: [SubdivisionName, Legal Subdivision Name]
     distance: [Distance]
     latitude: [Latitude]

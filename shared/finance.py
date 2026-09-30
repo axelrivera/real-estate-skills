@@ -116,13 +116,15 @@ def transfer_tax_warning(market):
 PAYOFF_INTEREST = 0.045  # seller's mortgage interest for holding-cost estimates (national planning figure)
 
 
-def holding_monthly(price, market, payoff=0, hoa_monthly=0):
+def holding_monthly(price, market, payoff=0, hoa_monthly=0, rate=None):
     """A seller's monthly cost of owning the home while it's for sale: loan interest, HOA, insurance and utilities
     from the market's `holding_costs`. Property tax is left out: it's in the tax proration already (OFR-13).
+    Loan interest is on `payoff` at `rate` (a fraction; default PAYOFF_INTEREST).
     Returns (monthly, [names of parts the market doesn't have])."""
     ins_rate = market.get("holding_costs.insurance_rate") if market is not None else None
     utilities = market.get("holding_costs.utilities_monthly") if market is not None else None
-    parts, left_out = [hoa_monthly or 0, (payoff or 0) * PAYOFF_INTEREST / 12], []
+    rate = PAYOFF_INTEREST if rate is None else rate
+    parts, left_out = [hoa_monthly or 0, (payoff or 0) * rate / 12], []
     if ins_rate is None:
         left_out.append("insurance")
     else:
@@ -512,7 +514,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     if has_hoa:
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
-            name = (market.get("closing_costs.hoa_estoppel_label") if market is not None else None) or "HOA Status Letter"
+            name = (market.get("closing_costs.hoa_estoppel_label") if market is not None else None) or "HOA Documents"
             add("estoppel", name + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""), estoppel)
     if credit:
         add("credit", "Seller Credit to Buyer", credit)

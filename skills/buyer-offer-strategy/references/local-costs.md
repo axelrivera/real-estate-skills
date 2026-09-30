@@ -19,6 +19,15 @@ Never use Florida's numbers for another state.
 - **Transfer tax outside Florida:** the states with no state transfer tax (AK, AZ, ID, IN, KS, LA, MS, MO, MT, ND, NM, OR, TX, UT, WY) are built in as none, with a note to confirm local taxes; skip the search there. Elsewhere, search for the state's deed transfer tax. Use a rate only from a trusted source (the state's revenue department, the statute, or the county recorder or clerk) and cite it in your reply. Put it in that `costs` block as `transfer_tax_rate`, with `transfer_tax_payer` when the buyer pays or it's split, and `transfer_tax_label` for its local name in Title Case. When the sources disagree, the tax is layered or tiered, or no trusted source turns up, leave it out and let the national estimate stand, labeled.
 - **Commission:** without terms from the agent, reports assume 5% in total (2.5% listing, 2.5% buyer's agent), labeled "Assumed".
 
+## Property Tax at Closing
+
+Where property tax is paid in arrears (Florida, Texas and most states), every net sheet follows one rule, so two runs of the same home never differ by the tax bill:
+
+- **The seller's share only.** The net charges this year's tax from January 1 to the day before closing, credited to the buyer. Never the whole year's bill.
+- **After this year's bills go out** (Florida: November 1): assume the bill is still unpaid at closing, unless the agent says the seller paid it. The line is labeled "Bill Assumed Unpaid", and your reply says so.
+- **The seller already paid it** (the agent says so: `current_tax_bill_paid` true): the seller paid the whole year, so the net shows the buyer's credit back to the seller from closing to December 31.
+- **No tax bill or no closing date:** the proration is left out, and the net sheet says it isn't included (nothing else claims it's in the proration).
+
 ## After the First Report
 
 End the reply with the few estimates that move the numbers most, in plain words, and what replaces each one:

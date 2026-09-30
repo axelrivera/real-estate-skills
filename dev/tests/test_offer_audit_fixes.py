@@ -232,7 +232,7 @@ class Money(unittest.TestCase):
         self.assertEqual(label(first(offer(), listing={"hoa_monthly": 120})), "HOA Estoppel Letter")
         tx = first(offer(contract_form="TREC 20-18", inspection_walkaway=True),
                    listing={"address": "1 Test St, Austin, TX 78757", "state": "TX", "county": "Travis", "hoa_monthly": 120})
-        self.assertEqual(label(tx), "HOA Status Letter")
+        self.assertEqual(label(tx), "HOA Documents")
 
     def test_tax_estimate_is_medium_impact(self):  # OFR-128
         R = run(offer(), listing={"annual_tax": None})

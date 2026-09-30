@@ -394,7 +394,8 @@ def _summary(h, size_diff=None):
             "lot_acres", "days_on_market", "sale_terms")
     extra = ("property_type", "half_baths", "stories", "floor_number", "construction", "garage_spaces", "waterfront",
              "water_frontage", "water_access", "water_view", "flood_zone", "senior_community", "land_lease",
-             "total_annual_fees", "annual_cdd_fee", "furnished", "sale_provisions")  # only when the export has them
+             "total_annual_fees", "annual_cdd_fee", "furnished", "sale_provisions",
+             "city", "county", "zip")  # only when the export has them
     s = {k: (str(h[k]) if isinstance(h.get(k), date) else h.get(k)) for k in keys if k in h}
     s.update({k: h[k] for k in extra if h.get(k) not in (None, "")})
     s["remarks"] = str(h.get("remarks", ""))[:700]
