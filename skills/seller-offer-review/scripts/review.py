@@ -523,7 +523,9 @@ def result(R, mode="auto", offer_id=None):
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
         # chat only (never on the report): the best-effort line for a contract that isn't FR/BAR, and revision notes
-        **oe.cf.support([x["contract_form"] for x in checked], [(x["contract_form"], x.get("form_revision")) for x in checked]),
+        **oe.cf.support([x["contract_form"] for x in checked],  # TL-201: "the footer reads" only when read from it
+                        [(x["contract_form"], x.get("form_revision"), str(x.get("form_revision_source") or "").lower() == "footer")
+                         for x in checked]),
     }
 
 

@@ -114,7 +114,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else 2.5% assumed | **high** when the seller offered, med when assumed |
 | `home_warranty` | $ seller pays | 0 | — |
 | `contract_form` | `as_is` `standard` (FR/BAR), or the form's name for any other contract | Florida: `as_is`, flagged as an assumption; elsewhere `other` | **high** in Florida |
-| `form_revision` | FR/BAR footer as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26") | none; a revision other than the verified one adds a chat note | — |
+| `form_revision`, `form_revision_source` | FR/BAR revision as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). `form_revision_source`: `"footer"` when you read it from the form's footer; leave it out when it came from anywhere else, and record the revision as given | none; a revision other than the verified one adds a chat note, quoting "the footer reads" only for `"footer"` | — |
 | `repair_limits` | Standard only (alone or with Rider L): `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |
 | `inspection_walkaway` | Other contracts only: `true` when the buyer may cancel for any reason in the period, `false` for a repair or objection process only | assumed `true` and flagged | **high** |
 | `inspection_days` | days | FR/BAR: 15 (Para. 12(a), and Riders K and L, when blank); any other contract: 10 | med |

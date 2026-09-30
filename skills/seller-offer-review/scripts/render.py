@@ -655,7 +655,8 @@ def build(data, fmt, out_dir, ctx):
         print(f"Assumed [{a['impact']}] {a['why']}", file=sys.stderr)
     offers = R["active"] + R.get("incomplete", [])
     for note in oe.cf.support([o["contract_form"] for o in offers],
-                              [(o["contract_form"], o.get("form_revision")) for o in offers])["chat_notes"]:
+                              [(o["contract_form"], o.get("form_revision"),
+                                str(o.get("form_revision_source") or "").lower() == "footer") for o in offers])["chat_notes"]:
         print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
     return paths
 

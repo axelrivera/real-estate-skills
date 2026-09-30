@@ -17,6 +17,7 @@ Read this for any purchase contract that isn't the Florida Realtors/Florida Bar 
 - **No built-in state rules.** The skills carry no rules for any other state's forms. Time rules, holidays, deadlines and cancel rights come only from the contract in front of you and from the agent.
 - **Cite the contract.** Every term you record names the paragraph or section it came from, in the contract's own numbering.
 - **Ask, don't guess.** When the contract is silent or unclear on something that moves a date or money (whether an inspection period lets the buyer cancel for any reason, whether a period counts business days), ask the agent in one line, or record your reading as a high-impact assumption and say so.
+- **Quick questions give both counts.** When a quick date question doesn't say whether the period counts calendar or business days and the contract isn't in hand, answer with both dates and say which one the contract decides.
 
 ## 1. Identify the Form
 

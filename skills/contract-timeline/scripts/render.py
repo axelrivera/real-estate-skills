@@ -433,7 +433,7 @@ def build(deal, fmt, out_dir, ctx):
     for flag in t["flags"]:
         print(f"Check (on the report): {flag}", file=sys.stderr)
     for note in t["agent_notes"] + t.get("chat_notes", []):
-        print(f"For the agent (not printed): {note}", file=sys.stderr)
+        print(f"For the agent, in chat only (not in the PDF): {note}", file=sys.stderr)
     return [path]
 
 

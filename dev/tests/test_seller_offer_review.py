@@ -490,5 +490,18 @@ class Audit20260929Second(unittest.TestCase):
         self.assertNotIn("Morales", text)  # its form was given
 
 
+class RevisionSource(unittest.TestCase):
+    """TL-201 carried to the seller side: "the footer reads" only for a revision read from the footer."""
+
+    def test_footer_quoted_only_when_read_from_it(self):
+        data = fixture("minimal-single.json")
+        data["offers"][0].update(contract_form="as_is", form_revision="FloridaRealtors/FloridaBar-ASIS-6x Rev. 9/22")
+        given = review.result(review.analyze(data))["chat_notes"]
+        data["offers"][0]["form_revision_source"] = "footer"
+        footer = review.result(review.analyze(data))["chat_notes"]
+        self.assertTrue(any("revision given" in n for n in given) and not any("footer reads" in n for n in given))
+        self.assertTrue(any("footer reads" in n for n in footer))
+
+
 if __name__ == "__main__":
     unittest.main()

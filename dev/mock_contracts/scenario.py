@@ -960,7 +960,7 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
     else:
         source = None
     contract = {
-        "form_family": "frbar", "contract_form": form, "form_revision": cf.VERIFIED[FAMILY[form]],
+        "form_family": "frbar", "contract_form": form, "form_revision": cf.VERIFIED[FAMILY[form]], "form_revision_source": "footer",
         "property": ctx["property_address"], "buyer": ctx["buyer_names"], "seller": ctx["seller_names"], "price": price,
         "financing": ctx["financing"], "effective_date": effective.date().isoformat() if effective else None,
         "effective_date_source": source, "closing_date": closing.isoformat(),
