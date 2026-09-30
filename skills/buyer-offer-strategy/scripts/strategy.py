@@ -1105,13 +1105,7 @@ def deposit_risk(o):
     return first, (o["firm_date"] if o["risk_days"] > ex else None)
 
 
-def rolled(d, costs):
-    """OFR-219: (the date a period ending on `d` really ends, the day it was moved from or None). The market's contract
-    rule (`contract.weekend_holiday_rollover`, FR/BAR: the next business day) moves a weekend or federal holiday;
-    without one the date stays, and `risk_after` says to check the contract."""
-    if dates.is_business_day(d) or costs.get("contract.weekend_holiday_rollover") != "next_business_day":
-        return d, None
-    return dates.next_business_day(d), d
+rolled = oe.rolled  # OFR-219: the contract's weekend and holiday rule, shared with seller-offer-review (OFR-300)
 
 
 def risk_after(o, costs):

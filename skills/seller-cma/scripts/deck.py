@@ -274,7 +274,7 @@ def deck_data(R, C, homes, agent, L, footer):
                                 L("deck_market_sub", early=periods[0], recent=periods[1]) if periods else ""),
                    "one_period": single,
                    "period_labels": content.get("market_period_labels") or [L("deck_period_early"), L("deck_period_recent")]},
-        "comps": [{"address": c["address"], "adjusted": c["adjusted"], "adjusted_k": k(c["adjusted"]),
+        "comps": [{"address": cma.display_address(c["address"]), "adjusted": c["adjusted"], "adjusted_k": k(c["adjusted"]),
                    "line": content["comp_lines"].get(c["address"], "")} for c in R["comps"]["cards"]],
         "competition": cards,
         "scatter": scatter_data(homes, R, C, L) if homes else None,
