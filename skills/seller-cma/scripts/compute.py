@@ -82,6 +82,58 @@ def check_reprice(R, strategies):
     return stay
 
 
+FAILED = ("EXPIRED", "CANCELED", "WITHDRAWN")  # a listing that ended without a sale: its price is a failed price
+
+
+def check_relist(R, strategies, homes, stay):
+    """CMA-277: a relist after the home's own listing expired, was canceled or withdrawn. The market has already said no
+    at that price, so no option lists above it unless the agent gave a reason (`relist.reason_above`). The failed
+    listing is report.json's `relist`, else the lowest-priced failed listing of the home in the export. Returns
+    {failed_price, status, days_on_market, source} or None. A reprice has its own rule (check_reprice)."""
+    if stay is not None:
+        return None
+    rl, source = R.get("relist"), "report"
+    if rl is not None and not (isinstance(rl, dict) and isinstance(rl.get("failed_price"), (int, float))):
+        raise ReportError("relist needs failed_price as a number (the last price of the home's listing that expired, was "
+                          "canceled or withdrawn), with optional status and days_on_market.")
+    if not rl:
+        address = R["subject"].get("mls_address", R["subject"]["address"])
+        failed = [h for h in homes if h["status"] in FAILED and h.get("current_price")
+                  and mls.same_address(h["address"], address)]
+        if not failed:
+            return None
+        h = min(failed, key=lambda h: h["current_price"])
+        rl, source = {"failed_price": h["current_price"], "status": h["status"].lower(),
+                      "days_on_market": h.get("days_on_market")}, "export"
+    up = [x for x in strategies if x["list_price"] > rl["failed_price"]]
+    if up and not str(rl.get("reason_above") or "").strip():
+        raise ReportError(
+            f"This home's earlier listing ended unsold at {money(rl['failed_price'])}"
+            + (" (from the export)" if source == "export" else "") + f", and {money(up[0]['list_price'])} is above it. "
+            "No option lists above a price the market already turned down: cap the top-of-range option at "
+            f"{money(rl['failed_price'])} or drop it (method.md, A Relist). If the agent gave a reason to go higher, put "
+            "it in relist.reason_above.")
+    return {"failed_price": rl["failed_price"], "status": rl.get("status"), "days_on_market": rl.get("days_on_market"),
+            "source": source}
+
+
+def stay_expected(R, homes, rp, median_adjusted, split_date):
+    """CMA-280: the Stay at Current Price option's expected sale, net of seller-paid costs: the current price times the
+    recent sale-to-original-list ratio of sales that sat at least as long as this listing has (the days-on-market
+    adjustment; all recent sales when fewer than 3 did), or the median adjusted value if lower. None without an export.
+    Returns (value, ratio, n)."""
+    address = R["subject"].get("mls_address", R["subject"]["address"])
+    split = _date(split_date, "split_date")
+    sold = [h for h in homes if h["status"] == "SOLD" and h.get("original_list_price") and h.get("close_price")
+            and not mls.same_address(h["address"], address) and (not split or (h.get("close_date") and h["close_date"] >= split))]
+    slow = [h for h in sold if (h.get("days_on_market") or 0) >= rp["days_on_market"]]
+    pool = slow if len(slow) >= 3 else sold
+    if not pool:
+        return None, None, 0
+    ratio = statistics.median((h["close_price"] - (h.get("seller_paid") or 0)) / h["original_list_price"] for h in pool)
+    return min(rp["current_price"] * ratio, median_adjusted), round(ratio, 4), len(pool)
+
+
 def _require(R, *paths):
     for path in paths:
         node = R
@@ -246,6 +298,23 @@ def net_sheet(R, market, L):
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
 
 
+def state_hint(R, market, L, ri, net):
+    """CMA-282: with no state for the home but an MLS built in for exactly one built-in state (Stellar: Florida), what
+    that state's costs would change: its transfer tax line against the estimate, and the recommended option's net.
+    None otherwise (a known state, no MLS, or an MLS spanning several built-in states)."""
+    if market.state or not market.mls:
+        return None
+    states = [st for st in (market.get("coverage") or {}) if st in profiles._layers("state")]
+    if len(states) != 1:
+        return None
+    other = profiles.load_market(state=states[0], mls=market.mls).with_deal(R.get("costs"))
+    alt = net_sheet(R, other, L)
+    line = lambda n: next((r["label"] for r in n["rows"] if r["key"] == "transfer_tax"), L("hint_no_transfer_tax"))
+    diff = (alt["after_holding"] or alt["totals"])[ri] - (net["after_holding"] or net["totals"])[ri]
+    return {"state": states[0], "state_name": profiles.STATES.get(states[0], states[0]), "transfer_tax_label": line(alt),
+            "estimate_label": line(net), "net_difference": diff, "net_difference_about": about(diff)}
+
+
 # --- buyer payments ----------------------------------------------------------
 
 def buyer_tax_rates(R, market):
@@ -301,16 +370,23 @@ def payments(R, market):
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
-def placeholder_values(R, median_display, recommended_net, spread, pay, trend, L):
+def placeholder_values(R, median_display, recommended_net, spread, spread_about, pay, trend, L, relist=None):
     """CMA-265: every {name} the report and deck wording may use, filled in every field (not just page 1). The
-    chart's two ({trend_at_subject}, {r2_share}) only with an export."""
-    rec = R["recommendation"]
+    chart's two ({trend_at_subject}, {r2_share}) only with an export. CMA-278: the rounded spread, the adjusted span,
+    a reprice's {current_price} and a relist's {failed_price}, each only when there is one."""
+    rec, cards = R["recommendation"], R["comps"]["cards"]
     values = {"median_adjusted": median_display, "list_price": money(rec["list_price"]), "low": money(rec["low"]),
-              "high": money(rec["high"]), "net_spread": spread, "recommended_net": recommended_net}
+              "high": money(rec["high"]), "net_spread": spread, "net_spread_about": spread_about,
+              "recommended_net": recommended_net, "adjusted_min": money(min(c["adjusted"] for c in cards)),
+              "adjusted_max": money(max(c["adjusted"] for c in cards))}
     if pay:
         values["per_10k"] = pay["per_10k_display"]
     if trend:
         values.update(trend_at_subject=trend["at_subject_display"], r2_share=L(trend["r2_key"]))
+    if R.get("reprice"):
+        values["current_price"] = money(R["reprice"]["current_price"])
+    if relist:
+        values["failed_price"] = money(relist["failed_price"])
     return values
 
 
@@ -333,6 +409,35 @@ def placeholder_warnings(R, values):
     names = ", ".join("{" + k + "}" for k in values)
     return [f"{p} has {name}, which no script fills here, so it would print as typed. Use one of {names}, or write the words."
             for p, name in unfilled_placeholders(R, set(values))]
+
+
+DOLLARS = re.compile(r"\$\s?(\d[\d,]*)(?:\.\d+)?\s*([kK]\b)?")
+
+
+def driver_amount_warnings(R):
+    """CMA-284: a dollar figure in a deck value driver ("worth about $25,000") must be one of the report's comp
+    adjustments (to within 2% or $500), or nothing in the report supports it."""
+    content = R.get("deck")
+    if isinstance(content, str):
+        try:
+            with open(content, encoding="utf-8") as f:
+                content = json.load(f)
+        except (OSError, ValueError):
+            return []  # render.py names a missing or broken deck file
+    if not isinstance(content, dict):
+        return []
+    amounts = [abs(a["amount"]) for c in R["comps"]["cards"] for a in c.get("adjustments") or []
+               if isinstance(a, dict) and isinstance(a.get("amount"), (int, float)) and a["amount"]]
+    out = []
+    for i, item in enumerate(content.get("value_drivers") or []):
+        for text in (item[:2] if isinstance(item, list) else []):
+            for m in DOLLARS.finditer(str(text)):
+                v = float(m.group(1).replace(",", "")) * (1000 if m.group(2) else 1)
+                if not any(abs(v - a) <= max(500, 0.02 * a) for a in amounts):
+                    out.append(f"$.deck.value_drivers[{i}] says {m.group(0).strip()}, but no comp adjustment in the report is "
+                               "that amount. A value driver's dollar figure must come from a comp adjustment (deck-content.md): "
+                               "use that amount, or say what the feature does without a number.")
+    return out
 
 
 # --- everything ----------------------------------------------------------------
@@ -368,13 +473,14 @@ def compute(R, market, homes):
             if not isinstance(x.get(k), (int, float)):
                 raise ReportError(f"Every pricing strategy needs {k} as a number.")
     stay = check_reprice(R, strategies)
+    relist = check_relist(R, strategies, homes, stay)  # CMA-277
     ri = p.get("recommended_index", 1)
     if not 0 <= ri < len(strategies):
         raise ReportError("pricing.recommended_index doesn't point at a strategy.")
     if not R["comps"]["cards"]:
         raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
     warnings, warning_keys, warn = _warner()
-    assumptions = []
+    assumptions, assumption_keys, assume = _warner()  # CMA-286: keyed like the warnings
     try:
         warn("derive_comps", *cma.derive_comps(R["comps"]))  # adjusted values and summary rows from their parts
     except ValueError as e:
@@ -417,9 +523,15 @@ def compute(R, market, homes):
         warn("preliminary", "Preliminary: the market has no value for " + ", ".join(net["missing"]) +
                         ". Ask the agent and re-run; the report is marked Preliminary until then.")
     brokerage = [a["text"] for a in net["assumed"] if a["key"] in ("listing_fee", "buyer_broker_fee")]
-    if brokerage:
-        assumptions.append("Brokerage is assumed (" + ", ".join(brokerage) + "), marked on every page and slide that shows "
-                           "a net. The agent can give the listing agreement's terms to update it.")
+    if brokerage and stay is not None:
+        # CMA-286: the agent's own listing already has a listing agreement: its commission replaces the assumption
+        assume("brokerage_listing_agreement",
+               "Brokerage is assumed (" + ", ".join(brokerage) + "), labeled Assumed on every net. This is the agent's own "
+               "listing, so the listing agreement already sets the commission: ask for it in the reply (costs.listing_fee_pct "
+               "and buyer_broker_fee_pct) and re-run.")
+    elif brokerage:
+        assume("brokerage_assumed", "Brokerage is assumed (" + ", ".join(brokerage) + "), marked on every page and slide "
+               "that shows a net. The agent can give the listing agreement's terms to update it.")
     estimated = [a["text"] for a in net["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimated:
         # CMA-109: the transfer tax lookup only when the net used the estimate (never in a no-transfer-tax state)
@@ -427,32 +539,41 @@ def compute(R, market, homes):
                   "if the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest."
                   if any(a["key"] == "transfer_tax" and a.get("estimate") for a in net["assumed"]) else
                   "A title quote (costs.title_fees, title_estimate_pct) replaces them.")
-        assumptions.append("National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". " + lookup)
+        assume("estimates", "National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". " + lookup)
     costs_in = R.get("costs") or {}
     if costs_in.get("annual_tax") and not net["has_tax"]:
         warn("tax_no_closing_date", "costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
                         "closing_date per pricing option) to include the tax proration.")
     if net["tax_assumed"]:  # CMA-254
-        assumptions.append("This year's property tax bill is assumed unpaid at closing, so the net charges the seller's share "
-                           "(Jan 1 to closing). If the seller has already paid it, set costs.current_tax_bill_paid to true: the "
-                           "buyer then credits back the rest of the year.")
+        assume("tax_bill_unpaid", "This year's property tax bill is assumed unpaid at closing, so the net charges the seller's share "
+               "(Jan 1 to closing). If the seller has already paid it, set costs.current_tax_bill_paid to true: the "
+               "buyer then credits back the rest of the year.")
     if any(a["key"] == "title_fees" and not a.get("estimate") for a in net["assumed"]):
-        assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
+        assume("title_fees_built_in", "Title company fees are the built-in typical charges; use the title company's quote when there is one.")
     # CMA-269: the payoff and the holding interest rate are assumptions too, not only lines in the net notes
     if net["payoff"] and net["payoff_estimated"]:
-        assumptions.append(f"The mortgage payoff ({money(net['payoff'])}) is estimated from the loan balance, plus a month's "
-                           "interest and fees. The lender's payoff statement (costs.mortgage_payoff) replaces it.")
+        assume("payoff_estimated", f"The mortgage payoff ({money(net['payoff'])}) is estimated from the loan balance, plus a "
+               "month's interest and fees. The lender's payoff statement (costs.mortgage_payoff) replaces it.")
     elif net["payoff"]:
-        assumptions.append(f"The mortgage payoff ({money(net['payoff'])}) is the seller's estimate, labeled Your Estimate. "
-                           "The lender's payoff statement replaces it.")
+        assume("payoff_seller", f"The mortgage payoff ({money(net['payoff'])}) is the seller's estimate, labeled Your "
+               "Estimate. The lender's payoff statement replaces it.")
     if net["holding_rate_assumed"]:
-        assumptions.append(f"Holding costs charge loan interest at an assumed {net['holding_rate'] * 100:g}% a year on the "
-                           "payoff. The seller's own rate (costs.mortgage_rate) replaces it.")
+        assume("holding_rate", f"Holding costs charge loan interest at an assumed {net['holding_rate'] * 100:g}% a year on "
+               "the payoff. The seller's own rate (costs.mortgage_rate) replaces it.")
     # CMA-268: a state with county rules (Florida: who pays the owner's title policy, the Miami-Dade surtax) needs the county
     if market.get("county_overrides") and not s.get("county"):
         warn("no_county", f"No county for this {market.state} home: closing costs here depend on the county (who pays the "
                           "owner's title policy, surtaxes), so the state's defaults were used. Take subject.county from the "
                           "listing or ask the agent, then re-run.")
+    # CMA-282: no state, but the MLS is built in for one: the nets stay on national estimates (Preliminary), and the
+    # reply says what that state's costs would change, so the agent sees why the county matters
+    hint = state_hint(R, market, L, ri, net)
+    if hint:
+        assume("state_unknown", f"No state or county for this home, so the nets use national estimates and the report is "
+               f"Preliminary. The export is {market.mls} MLS, built in for {hint['state_name']}: if this is "
+               f"{hint['state_name']}, the net sheet uses {hint['transfer_tax_label']} instead of {hint['estimate_label']}, "
+               f"and the recommended option nets {hint['net_difference_about']} {'more' if hint['net_difference'] > 0 else 'less'}. "
+               "Say so in the reply and ask for the city and county.")
 
     pay, tax_info = payments(R, market)
     bp = R["buyer_payment"]
@@ -465,7 +586,7 @@ def compute(R, market, homes):
                         "(or a district in the built-in millage).")
     elif not pay["homestead_applied"] and not pay["tax_estimated"]:
         # CMA-270: the payment note says the taxes assume no homestead exemption; tell the agent why payments may run high
-        assumptions.append("Buyer payments assume no homestead exemption" + (
+        assume("no_homestead", "Buyer payments assume no homestead exemption" + (
             f": none is built in for {market.state or 'this state'}, so they may run high for a buyer who files one. "
             "The payment note says so; mention it in the reply."
             if pay["homestead"] else " (buyer_payment.homestead is false)."))
@@ -498,13 +619,17 @@ def compute(R, market, homes):
     else:
         window, n_sold, max_dist = None, None, None
 
-    preliminary = bool(net["missing"]) or bool(R.get("preliminary"))
+    no_state = not market.state  # CMA-282: costs are national estimates until the state and county are known
+    preliminary = bool(net["missing"]) or bool(R.get("preliminary")) or no_state
     # CMA-258: the reason comes from the data: costs the market is missing, and/or the reason report.json gives
     own = R.get("preliminary")
-    reasons = ([L("prelim_costs", items=", ".join(net["missing"]))] if net["missing"] else []) + (
-        [own.strip()] if isinstance(own, str) and own.strip() else [L("prelim_inputs")] if own and not net["missing"] else [])
+    reasons = ([L("prelim_no_state")] if no_state else []) + (
+        [L("prelim_costs", items=", ".join(net["missing"]))] if net["missing"] else []) + (
+        [own.strip()] if isinstance(own, str) and own.strip() else
+        [L("prelim_inputs")] if own and not net["missing"] and not no_state else [])
     preliminary_reason = " ".join(r[0].upper() + r[1:] for r in reasons)
-    preliminary_short = L("prelim_short_costs" if net["missing"] else "prelim_short_inputs") if preliminary else ""
+    preliminary_short = L("prelim_short_no_state" if no_state else "prelim_short_costs" if net["missing"]
+                          else "prelim_short_inputs") if preliminary else ""
     as_of = R.get("as_of") or date.today().isoformat()
     c_in, bp_in = R.get("costs") or {}, R.get("buyer_payment") or {}
     school_m, total_m, homestead = buyer_tax_rates(R, market) if bp_in else (None, None, None)
@@ -548,15 +673,49 @@ def compute(R, market, homes):
         x["net_vs_recommended"] = d
         x["net_vs_recommended_about"] = "" if x["recommended"] else (
             L("about_same") if abs(d) < 250 else L("about_more" if d > 0 else "about_less", amount=about(d)))
+    # CMA-280: a slower, higher option shouldn't come out ahead of the recommended one on its own assumptions
+    for i, x in enumerate(strat_out):
+        if i == ri or nets[i] <= nets[ri]:
+            continue
+        if i == stay:
+            warn("stay_nets_more", f"Stay at Current Price nets {about(nets[i] - nets[ri])} more than the recommended cut after "
+                 "holding costs. Check its expected sale against reprice.stay_expected_sale (method.md, A Reprice) and its "
+                 "time; if it still nets more, say in pricing.note that the cut buys time and certainty, not a higher net.")
+        elif stay is None and x["list_price"] > strat_out[ri]["list_price"]:
+            warn("top_nets_more", f"The {x['list_price_display']} option nets {about(nets[i] - nets[ri])} more than the "
+                 "recommended one after holding costs. A top-of-range price takes longer and usually sells near the middle "
+                 "of the range anyway (method.md): lower its expected sale or lengthen its time, or explain in pricing.note.")
+    reprice_out = None
+    if stay is not None:
+        rp = R["reprice"]
+        reprice_out = {"current_price": rp["current_price"], "current_price_display": money(rp["current_price"]),
+                       "days_on_market": rp["days_on_market"], "stay_index": stay}
+        # CMA-280: Stay's expected sale by one rule (method.md), with the Stay option's own seller credit added back
+        value, ratio, n = stay_expected(R, homes, rp, median_adjusted, (window or {}).get("split_date"))
+        if value is not None:
+            x = strategies[stay]
+            gross = round((value + (x.get("seller_credit") or 0)) / 1000) * 1000
+            reprice_out.update(stay_expected_sale=gross, stay_expected_sale_display=money(gross), stay_ratio=ratio,
+                               stay_ratio_sales=n)
+            if x["expected_sale"] > gross:
+                warn("stay_expected_high", f"Stay at Current Price expects {money(x['expected_sale'])}, above "
+                     f"{money(gross)} from the rule (the current price times the {ratio:.1%} recent sale-to-original-list "
+                     "ratio of sales that sat as long, or the median adjusted value if lower, plus its seller credit). "
+                     "Use the rule's figure, or say in pricing.note why this listing would do better.")
     # CMA-265: an even number of comps has a midpoint median ($468,437.50): shown to the nearest $100
     median_display = money(median_adjusted, 1 if len(R["comps"]["cards"]) % 2 else 100)
     trend = {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
              "r2_key": mls.r2_key(fit["r2"])} if fit else None
-    values = placeholder_values(R, median_display, strat_out[ri]["net_display"], money(max(nets) - min(nets)), pay, trend, L)
+    values = placeholder_values(R, median_display, strat_out[ri]["net_display"], money(max(nets) - min(nets)),
+                                about(max(nets) - min(nets)), pay, trend, L, relist)
     warn("unfilled_placeholder", *placeholder_warnings(R, values))
+    warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
     data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
+    # CMA-279: an export read with the MLS's own built-in columns shows which MLS it is: "assumed" is noise then
+    known_layout = bool(homes) and not R.get("export_columns") and bool(market.get("mls_format.cma_export_columns"))
     market_notes = [(n, c) for n, c in zip(market.notes, market.note_codes)
-                    if homes or c not in ("mls_assumed", "mls_not_built_in", "mls_not_given")]
+                    if (homes or c not in ("mls_assumed", "mls_not_built_in", "mls_not_given"))
+                    and not (known_layout and c == "mls_assumed")]
     return {
         "data_source": data_source,
         "ok": True,
@@ -573,8 +732,9 @@ def compute(R, market, homes):
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
         "n_comps": len(R["comps"]["cards"]),
         "strategies": strat_out, "recommended_index": ri,
-        "reprice": {"current_price": R["reprice"]["current_price"], "current_price_display": money(R["reprice"]["current_price"]),
-                    "days_on_market": R["reprice"]["days_on_market"], "stay_index": stay} if stay is not None else None,
+        "reprice": reprice_out,
+        # CMA-277: the home's earlier listing that ended unsold: no option lists above it without a reason
+        "relist": {**relist, "failed_price_display": money(relist["failed_price"])} if relist else None,
         "first_steps_heading": L("sum_first"),  # "Before We List", or "Before We Reprice"
         "recommended_net_display": strat_out[ri]["net_display"],
         "net_spread": max(nets) - min(nets), "net_spread_display": money(max(nets) - min(nets)),
@@ -595,6 +755,8 @@ def compute(R, market, homes):
         "warnings": warnings,
         "warning_keys": warning_keys,
         "assumptions": assumptions,
+        "assumption_keys": assumption_keys,
+        "state_hint": hint,  # CMA-282
         # CMA-259: without an export nothing reads the MLS, so notes about which MLS (assumed, not built in) are noise
         "market_notes": [n for n, c in market_notes],
         "market_note_keys": [c for n, c in market_notes],

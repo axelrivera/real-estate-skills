@@ -14,12 +14,13 @@
 | `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
 | `export` | Path to the MLS export CSV (absolute, or relative to report.json's folder; keep them together in the temporary folder) (chart, trend line, deck method step, handoff market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
-| `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
+| `mls` | The MLS name: stats.py's `mls` (same as `--mls`). Without it compute.py assumes the one built in for the county |
 | `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
 | `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, relative to where you run the scripts). See `deck-content.md`; `competition` takes 1–3 cards, `scatter_takeaway` only when there is an export |
 | `preliminary` | Optional: mark the report Preliminary yourself with the reason as a short sentence ("the home's condition and the tax bill are still to be confirmed, so the figures may change."), or `true` for a general reason. compute.py also sets it when a cost has no value at all, with that reason; page 1 and the chat reply use `preliminary_reason` |
 | `labels` | Optional overrides of fixed wording |
-| `reprice` | Only for the agent's own current listing, priced again: `{current_price, days_on_market}` (*numbers*). Adds the Stay at Current Price check, "New List Price" wording and the "Before We Reprice" headings. The other options must be price cuts; `allow_increase: true` only when the agent asked to price it higher. Never for another brokerage's listing |
+| `reprice` | Only for the agent's own current listing, priced again: `{current_price, days_on_market}` (*numbers*). Adds the Stay at Current Price check, "New List Price" wording and the "Before We Reprice" headings. The other options must be price cuts; `allow_increase: true` only when the agent asked to price it higher. Never for another brokerage's listing. compute.py gives Stay's expected sale by the rule in `method.md` (`reprice.stay_expected_sale`) |
+| `relist` | When the home's own earlier listing expired, was canceled or withdrawn: stats.py's `relist` (`failed_price` *number*, optional `status`, `days_on_market`). No option may list above `failed_price` unless `reason_above` gives the agent's reason (`method.md`, A Relist); compute.py also finds it in the export when this is left out |
 
 The agent's name, team, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json; only the fields the profile has are shown.
 
@@ -54,7 +55,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 
 ## comps
 
-`intro`, `method_note`, `cards` (3–6, written to the seller: `address`, `sold_price` *number*, `seller_concessions` *number* (what the seller paid toward the buyer's costs, 0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), `meta`, `bullets` that explain the same adjustments in words), `summary_paragraph` (quote the median as `{median_adjusted}`, never typed). compute.py computes each adjusted value (sale price − concessions + adjustments) and builds the summary table (plus the "Your Home (Recommended List)" row); never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
+`intro`, `method_note`, `cards` (3–6, written to the seller: `address`, `sold_price` *number*, `seller_concessions` *number* (what the seller paid toward the buyer's costs, 0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), `meta`, `bullets` that explain the same adjustments in words), `summary_paragraph` (quote the median as `{median_adjusted}` and the span as `{adjusted_min}` to `{adjusted_max}`, never typed). compute.py computes each adjusted value (sale price − concessions + adjustments) and builds the summary table (plus the "Your Home (Recommended List)" row); never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
 
 ## scatter
 
@@ -73,7 +74,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 | Field | Notes |
 |---|---|
 | `intro` | Frames the options as estimates; says whether the nets are close |
-| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer (a reprice has no top-of-range option: "Stay at Current Price" first, at `reprice.current_price`, then the recommended cut and the competing-offer price, all below the current price). `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
+| `strategies` | 3 of `{label, list_price, expected_sale, time, seller_credit, note}` (*numbers* for the money), in order: top of the range, recommended, competing-offer (a reprice has no top-of-range option: "Stay at Current Price" first, at `reprice.current_price`, then the recommended cut and the competing-offer price, all below the current price; a relist caps the top-of-range option at `relist.failed_price` or drops it). `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it for holding costs. Only the competing-offer option may have `expected_sale` above its list price |
 | `recommended_index` | The recommended row (usually 1); its `list_price` must equal `recommendation.list_price` |
 | `note` | The assumption behind any difference between options (shown after "*Before paying off any mortgage.") |
 | `net_intro` | Optional sentence above the net sheet |

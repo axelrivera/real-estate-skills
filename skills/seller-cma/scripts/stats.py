@@ -71,6 +71,7 @@ def main(argv=None):
                    "private_pool": a.pool, "subdivision": a.subdivision, **({"property_type": a.type} if a.type else {})}
         out = mls.market_stats(homes, subject, split_date=a.split_date, as_of=a.as_of, limit=a.limit, exclude_address=a.address)
         out["market_notes"] = list(market.notes) + list(homes.notes)
+        out["mls"] = market.mls  # CMA-279: copy to report.json's `mls`, so compute.py reads the same MLS
         out["subject_rows"] = [mls._summary(h) for h in own]  # the home's own history: a current listing needs a word with the agent
         # CMA-257: the home's city and county from its own row, when the export has them and none were given
         where = {k: next((str(h[k]).strip() for h in own if str(h.get(k) or "").strip()), None) for k in ("city", "county", "zip")}
@@ -100,6 +101,18 @@ def main(argv=None):
             out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address (see subject_rows): "
                                        "past sales or listings, not a current one. An expired, withdrawn or canceled "
                                        "listing is a failed price to name in the report.")
+        # CMA-277: the home's own listing that ended unsold caps the pricing options (method.md, A Relist): copy to
+        # report.json's `relist`. The lowest such price when there are several.
+        failed = [h for h in own if h["status"] in ("EXPIRED", "CANCELED", "WITHDRAWN") and h.get("current_price")]
+        if failed and not listed:
+            h = min(failed, key=lambda h: h["current_price"])
+            out["relist"] = {k: v for k, v in {"failed_price": h["current_price"], "status": h["status"].lower(),
+                                                "days_on_market": h.get("days_on_market"),
+                                                "original_price": h.get("original_list_price")}.items() if v is not None}
+            out["market_notes"].append(
+                f"The home's earlier listing ended unsold at {money(h['current_price'])} ({h['status'].lower()}): a relist. "
+                "No pricing option goes above that price unless the agent gives a reason (method.md, A Relist); set "
+                "relist in report.json from this output.")
         # CMA-260: a failed listing with no dates can't be placed in time: say so, and ask rather than guess
         undated = [h for h in own if h["status"] in ("EXPIRED", "CANCELED", "WITHDRAWN")
                    and not any(h.get(k) for k in ("contract_date", "close_date"))]
@@ -108,9 +121,9 @@ def main(argv=None):
         if undated:
             out["market_notes"].append(
                 "The export has no dates for the home's earlier " + " and ".join(sorted({h["status"].lower() for h in undated}))
-                + " listing: ask the agent when it was listed and when it ended (the property report's history shows it). "
-                "Until then, name it as a failed price without a date, and don't say whether it came before or after "
-                "the seller's updates.")
+                + " listing. Name it in the report as a failed price without dates, and ask for its dates in your "
+                "reply (when it was listed and when it ended; the property report's history shows them). Don't say whether "
+                "it came before or after the seller's updates.")
         out["ok"] = True
     except mls.ExportError as e:
         # CMA-268: no MLS given (none assumed without a county), but the headers are a built-in MLS's export

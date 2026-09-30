@@ -1,6 +1,9 @@
 {
  "adjusted_max": 492300,
  "adjusted_min": 436200,
+ "assumption_keys": [
+  "title_fees_built_in"
+ ],
  "assumptions": {
   "count": 1
  },
@@ -86,11 +89,11 @@
   },
   "version": 1
  },
- "market_note_keys": [
-  "mls_assumed"
- ],
+ "market_note_keys": {
+  "count": 0
+ },
  "market_notes": {
-  "count": 1
+  "count": 0
  },
  "max_distance": 0.92,
  "median_adjusted": 469800,
@@ -325,7 +328,9 @@
   "low": 455000
  },
  "recommended_index": 1,
+ "relist": null,
  "reprice": null,
+ "state_hint": null,
  "strategies": [
   {
    "down": 23995.0,
@@ -393,11 +398,12 @@
   "r2": 0.8286,
   "r2_key": "r2_most"
  },
- "warning_keys": {
-  "count": 0
- },
+ "warning_keys": [
+  "top_nets_more",
+  "driver_amount"
+ ],
  "warnings": {
-  "count": 0
+  "count": 2
  },
  "window": {
   "as_of": "2026-09-22",

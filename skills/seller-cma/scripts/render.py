@@ -202,9 +202,18 @@ def scatter_checks(info):
                       "callout or shorten its label, then render again.")
     moved = [m for m in info.get("labels_moved") or [] if m[0] not in (info.get("labels_overlapping") or [])]
     if moved:
-        notes.append("Scatter labels placed on another side than asked, to stay clear of markers (information; the "
-                     "side is a preference): " + "; ".join(f"{t} ({a} to {u})" for t, a, u in moved) + ".")
+        notes.append("Scatter labels moved to stay clear of markers (information; the side is a preference): "
+                     + "; ".join(f"{t} ({_moved_words(a, u)})" for t, a, u in moved) + ".")
     return checks, notes
+
+
+def _moved_words(asked, used):
+    """CMA-285: 'left to right', 'right to left, a line lower', or 'still left, a line lower' when only the line moved
+    (the placer gives the side used, plus any line shift after a comma)."""
+    side, _, shift = used.partition(", ")
+    if side == asked:
+        return f"still {side}" + (f", {shift}" if shift else "")
+    return f"{asked} to {used}"
 
 
 def theme_css(agent):
@@ -289,7 +298,7 @@ def _build(R, fmt, out_dir, ctx):
         pages = page_fill(path)
         if pages is None and info["moved"]:  # no pdftotext here: the old information line
             print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
-        for c in page_checks(pages or []):
+        for c in page_checks(pages or [], L):
             print(f"Check: {c}", file=sys.stderr)
     elif fmt == "pptx":
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Listing Presentation", ext="pptx"))
@@ -310,8 +319,31 @@ def _build(R, fmt, out_dir, ctx):
 page_fill = cma.page_fill
 
 
-def page_checks(pages):
-    return cma.page_checks(pages, "the needs list, the launch steps or the method")
+METHOD_ALONE = 0.5  # CMA-285: a last page this empty that starts at How This Was Prepared holds only the method
+METHOD_CUT = 0.2  # ... flagged when cutting at most this share of a page would bring it back to the page before
+
+
+def page_checks(pages, L=None):
+    """The shared page checks, plus two for this report (CMA-285): the comp summary table starting a page apart from its
+    comp cards, and a last page that holds only the method section."""
+    checks = cma.page_checks(pages, "the needs list, the launch steps or the method")
+    if not L or not pages:
+        return checks
+    squash = lambda t: " ".join(str(t).split()).lower()
+    table_head = squash(" ".join(L(k) for k in ("th_sale", "th_sold_for", "th_seller_paid", "th_adjusted")))
+    for i, (_, first) in enumerate(pages[1:], start=1):
+        if squash(first).startswith(table_head):
+            checks.append(f"The comp summary table starts page {i + 1}, apart from its comp cards on page {i}. Shorten the "
+                          "comp cards' bullets or the comps intro so the table fits under the cards, then render again.")
+    fill, first = pages[-1]
+    over = pages[-2][0] + fill - 1 if len(pages) > 2 else 1  # how much the two pages hold beyond one page
+    # only when a modest cut brings the method back: a full page before it can't take a third of a page more
+    if cma.LONE_TAIL <= fill < METHOD_ALONE and over <= METHOD_CUT and squash(first).startswith(squash(L("h_method"))):
+        checks.append(f"The last page (page {len(pages)}) holds only How This Was Prepared ({fill:.0%} full), and page "
+                      f"{len(pages) - 1} is {pages[-2][0]:.0%} full. Cut about {max(over, 0.03) + 0.03:.0%} of a page from the "
+                      "needs list, the before-we-list steps or the method paragraphs so it fits on the page before, then "
+                      "render again.")
+    return checks
 
 
 def main(argv=None):

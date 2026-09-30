@@ -211,8 +211,8 @@ class Reprice(unittest.TestCase):
     def test_reprice_output_and_wording(self):
         R = self.reprice()
         C, homes = run(R)
-        self.assertEqual(C["reprice"], {"current_price": 489900, "current_price_display": "$489,900", "days_on_market": 74,
-                                        "stay_index": 0})
+        self.assertLessEqual({"current_price": 489900, "current_price_display": "$489,900", "days_on_market": 74,
+                              "stay_index": 0}.items(), C["reprice"].items())
         self.assertEqual(C["first_steps_heading"], "Before We Reprice")
         self.assertEqual(len(C["strategies"]), 4)
         self.assertTrue(C["strategies"][2]["recommended"])
@@ -822,7 +822,12 @@ class SecondPass(unittest.TestCase):
         L = compute.labels(R)
         self.assertIn(L("sum_stat_median", n=C["n_comps"]), doc)
         self.assertIn(L("sum_stat_comps"), doc)
-        self.assertIn("mls_assumed", run(report())[0]["market_note_keys"])  # with an export the MLS matters
+        # CMA-279: with an export read by the MLS's own columns, the MLS isn't in doubt; a mapped export keeps the note
+        self.assertNotIn("mls_assumed", run(report())[0]["market_note_keys"])
+        R = report()
+        R["export_columns"] = {"address": "Address", "status": "Status", "living_area": "Heated Area",
+                               "close_price": "Close Price", "current_price": "Current Price", "close_date": "Close Date"}
+        self.assertIn("mls_assumed", run(R)[0]["market_note_keys"])
 
     def test_no_export_deck_takes_one_value_market_cards(self):
         """CMA-261: without an export the deck's market cards can hold one value each (no invented earlier period)."""
@@ -1106,6 +1111,183 @@ class ThirdPass(unittest.TestCase):
         self.assertIn(L("h_method"), tail)
         self.assertIn('<div class="notices">', tail)
         self.assertIn("<footer>", tail)
+
+
+EVAL_EXPORT = os.path.join(ROOT, "dev", "evals", "seller-cma", "files", "export-spring-oaks.csv")  # the home expired at $474,900
+
+
+class FourthPass(unittest.TestCase):
+    """Eval iteration 5 fixes (CMA-277 to CMA-286)."""
+
+    def test_relist_caps_the_options(self):
+        """CMA-277: after the home's own listing ended unsold, no option lists above that price without a reason."""
+        R = report()
+        R["relist"] = {"failed_price": 474900, "status": "expired", "days_on_market": 92}
+        with self.assertRaisesRegex(compute.ReportError, "relist.reason_above"):
+            run(R)  # the fixture's top-of-range option is $479,900
+        R["relist"]["reason_above"] = "The kitchen and baths were redone after that listing ended."
+        self.assertEqual(run(R)[0]["relist"]["failed_price"], 474900)
+        R = report()
+        R["relist"] = {"failed_price": 474900}
+        R["pricing"]["strategies"][0]["list_price"] = 474900  # capped at the failed price
+        C, _ = run(R)
+        self.assertEqual((C["relist"]["source"], C["placeholders"]["failed_price"]), ("report", "$474,900"))
+
+    def test_relist_found_in_the_export(self):
+        """CMA-277: without `relist`, compute.py finds the home's expired listing in the export; stats.py prints it."""
+        R = report()
+        R["export"] = EVAL_EXPORT
+        with self.assertRaises(compute.ReportError):
+            run(R)
+        R["pricing"]["strategies"][0]["list_price"] = 474900
+        C, _ = run(R)
+        self.assertEqual((C["relist"]["failed_price"], C["relist"]["status"], C["relist"]["source"]), (474900, "expired", "export"))
+        self.assertIsNone(run(report())[0]["relist"])  # the fixture's export has the home active, not failed
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            stats_mod.main([EVAL_EXPORT, "--address", "517 HICKORYWOOD AVE", "--sqft", "1849", "--mls", "Stellar",
+                            "--state", "FL", "--county", "Seminole"])
+        r = json.loads(out.getvalue())
+        self.assertEqual((r["relist"]["failed_price"], r["relist"]["status"], r["mls"]), (474900, "expired", "Stellar"))
+        self.assertNotIn("relist", SecondPass.stats(None, [SecondPass.subject_row(None, "ACT")], "--own-listing"))
+
+    def test_reprice_is_not_a_relist(self):
+        """CMA-277: a reprice has its own rule (Stay plus cuts), so an earlier failed listing isn't checked again."""
+        R = SecondPass.reprice(None, current=474900)
+        R["relist"] = {"failed_price": 469900}
+        self.assertIsNone(run(R)[0]["relist"])
+
+    def test_new_placeholders(self):
+        """CMA-278: the rounded spread, the adjusted span, a reprice's current price and a relist's failed price."""
+        R = report()
+        R["comps"]["summary_paragraph"] = ("They run from {adjusted_min} to {adjusted_max}; the options are within "
+                                           "{net_spread_about}.")
+        C, homes = run(R)
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(f"They run from {compute.money(C['adjusted_min'])} to {compute.money(C['adjusted_max'])}; the options "
+                      f"are within {C['net_spread_about']}.", doc)
+        R["means"] = ["It has sat at {current_price}.", "It expired at {failed_price}."]
+        self.assertEqual(run(R)[0]["warning_keys"].count("unfilled_placeholder"), 2)  # neither a reprice nor a relist
+        R = SecondPass.reprice(None)
+        R["means"] = ["It has sat at {current_price}."]
+        C, _ = run(R)
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        self.assertEqual(C["placeholders"]["current_price"], "$479,900")
+
+    def test_higher_option_netting_more_warns(self):
+        """CMA-280: the top-of-range option, or a reprice's Stay, netting more than the recommended one is a warning."""
+        self.assertFalse({"top_nets_more", "stay_nets_more"} & set(run(report())[0]["warning_keys"]))
+        R = report()
+        R["pricing"]["strategies"][0]["expected_sale"] = 470000
+        self.assertIn("top_nets_more", run(R)[0]["warning_keys"])
+        R = SecondPass.reprice(None)
+        R["pricing"]["strategies"][0]["expected_sale"] = 475000
+        R["pricing"]["strategies"][0]["time"] = "1–2 months"
+        self.assertIn("stay_nets_more", run(R)[0]["warning_keys"])
+
+    def test_stay_expected_sale_rule(self):
+        """CMA-280: Stay's expected sale by one rule (current price × the ratio of sales that sat as long, or the median
+        adjusted value if lower, plus its credit); a higher one warns."""
+        R = SecondPass.reprice(None)
+        C, _ = run(R)
+        rp = C["reprice"]
+        credit = R["pricing"]["strategies"][0]["seller_credit"]
+        expected = min(479900 * rp["stay_ratio"], C["median_adjusted"]) + credit
+        self.assertAlmostEqual(rp["stay_expected_sale"], expected, delta=600)
+        self.assertGreaterEqual(rp["stay_ratio_sales"], 3)
+        R["pricing"]["strategies"][0]["expected_sale"] = rp["stay_expected_sale"] + 5000
+        self.assertIn("stay_expected_high", run(R)[0]["warning_keys"])
+        R["pricing"]["strategies"][0]["expected_sale"] = rp["stay_expected_sale"]
+        self.assertNotIn("stay_expected_high", run(R)[0]["warning_keys"])
+        R = texas(SecondPass.reprice(None))  # no export: nothing to derive it from
+        self.assertNotIn("stay_expected_sale", run(R)[0]["reprice"])
+
+    def test_template_net_matches_the_comparison(self):
+        """CMA-281: the chat template's Est. Net column is on the same basis (after holding) as the comparison line."""
+        with open(os.path.join(SKILL, "assets", "seller-cma-template.md")) as f:
+            template = f.read()
+        self.assertIn("net_after_holding_display", template)
+        self.assertNotRegex(template, r"expected_sale_display, net_display")
+        C, _ = run(report())
+        self.assertEqual([x["net_after_holding"] - C["strategies"][C["recommended_index"]]["net_after_holding"]
+                          for x in C["strategies"]], [x["net_vs_recommended"] for x in C["strategies"]])
+
+    def test_no_state_with_a_state_mls(self):
+        """CMA-282: no state, a Stellar export: national estimates, Preliminary, and what Florida would change."""
+        R = report()
+        for k in ("state", "county"):
+            R["subject"].pop(k)
+        R["mls"] = "Stellar"
+        C, _ = run(R)
+        self.assertTrue(C["preliminary"])
+        self.assertEqual(C["state_hint"]["state"], "FL")
+        self.assertIn("state_unknown", C["assumption_keys"])
+        self.assertIn("0.70%", C["state_hint"]["transfer_tax_label"])
+        self.assertNotEqual(C["state_hint"]["transfer_tax_label"], C["state_hint"]["estimate_label"])
+        C, _ = run(report())
+        self.assertIsNone(C["state_hint"])
+        self.assertNotIn("state_unknown", C["assumption_keys"])
+
+    def test_texas_default_homestead_takes_nothing_off(self):
+        """CMA-283: buyer_payment.homestead left at its default (true) never applies Florida's exemption to Texas."""
+        R = texas(report())
+        R["buyer_payment"].pop("homestead", None)
+        default = run(R)[0]["payments"]
+        R["buyer_payment"]["homestead"] = False
+        self.assertEqual([r["payment"] for r in default["rows"]], [r["payment"] for r in run(R)[0]["payments"]["rows"]])
+        self.assertFalse(default["homestead_applied"])
+        R = report()  # Florida: the exemption lowers the payment
+        home = run(R)[0]["payments"]["rows"]
+        R["buyer_payment"]["homestead"] = False
+        self.assertGreater(run(R)[0]["payments"]["rows"][0]["payment"], home[0]["payment"])
+
+    def test_value_driver_dollars_come_from_adjustments(self):
+        """CMA-284: a value driver's dollar figure must be one of the report's comp adjustments."""
+        R = report()
+        with open(R["deck"]) as f:
+            R["deck"] = json.load(f)
+        self.assertNotIn("driver_amount", run(R)[0]["warning_keys"])
+        R["deck"]["value_drivers"][1][1] = "Worth about $25,000 against similar homes without one."
+        self.assertEqual(run(R)[0]["warning_keys"].count("driver_amount"), 1)
+        R["deck"]["value_drivers"][1][1] = "Worth $30,000 to $45,000 against the partly updated sales."
+        self.assertNotIn("driver_amount", run(R)[0]["warning_keys"])
+
+    def test_render_checks(self):
+        """CMA-285: 'still left, a line lower' for a label that only moved a line; the comp table apart from its cards
+        and a method-only last page are Checks (the last only when a modest cut brings it back)."""
+        _, notes = seller_render.scatter_checks({"labels_moved": [("Your Home", "left", "left, a line lower"),
+                                                                  ("749 Cedar Ln W", "below", "right")]})
+        self.assertIn("Your Home (still left, a line lower)", notes[0])
+        self.assertIn("749 Cedar Ln W (below to right)", notes[0])
+        self.assertNotIn("left to left", notes[0])
+        L = compute.labels(report())
+        head = " ".join(L(k) for k in ("th_sale", "th_sold_for", "th_seller_paid", "th_adjusted"))
+        pages = [(0.9, "Seller Summary"), (0.8, "The Home"), (0.97, head), (0.77, "Before We List"), (0.37, L("h_method"))]
+        checks = seller_render.page_checks(pages, L)
+        self.assertEqual(len(checks), 2)
+        self.assertIn("page 3", checks[0])
+        self.assertIn("page 5", checks[1])
+        pages[3] = (0.93, "Before We List")  # a full page before it: no cut would bring the method back
+        self.assertEqual(len(seller_render.page_checks(pages, L)), 1)
+        self.assertEqual(seller_render.page_checks(pages), cma_page_checks(pages))
+
+    def test_reprice_asks_for_the_listing_agreement(self):
+        """CMA-286: a reprice without brokerage terms assumes 5% and asks for the listing agreement's commission."""
+        R = SecondPass.reprice(None)
+        R["costs"] = {}  # no terms given
+        C, _ = run(R)
+        self.assertIn("brokerage_listing_agreement", C["assumption_keys"])
+        self.assertNotIn("brokerage_assumed", C["assumption_keys"])
+        R = report()
+        R["costs"] = {}
+        self.assertIn("brokerage_assumed", run(R)[0]["assumption_keys"])
+        R = SecondPass.reprice(None)  # the fixture's own terms
+        self.assertFalse({"brokerage_listing_agreement", "brokerage_assumed"} & set(run(R)[0]["assumption_keys"]))
+        self.assertEqual(len(C["assumptions"]), len(C["assumption_keys"]))
+
+
+def cma_page_checks(pages):
+    return seller_render.cma.page_checks(pages, "the needs list, the launch steps or the method")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
 {
  "adjusted_max": 492300,
  "adjusted_min": 436200,
+ "assumption_keys": [
+  "title_fees_built_in"
+ ],
  "assumptions": {
   "count": 1
  },
@@ -85,11 +88,11 @@
   },
   "version": 1
  },
- "market_note_keys": [
-  "mls_assumed"
- ],
+ "market_note_keys": {
+  "count": 0
+ },
  "market_notes": {
-  "count": 1
+  "count": 0
  },
  "max_distance": 0.92,
  "median_adjusted": 469800,
@@ -97,7 +100,7 @@
  "n_sold": 33,
  "net": {
   "after_holding": [
-   421368.0,
+   420954.0,
    421060.0,
    424486.0
   ],
@@ -128,7 +131,7 @@
   ],
   "has_tax": false,
   "holding": [
-   1706,
+   2120,
    1076,
    774
   ],
@@ -238,7 +241,7 @@
    },
    {
     "amounts": [
-     -1706,
+     -2120,
      -1076,
      -774
     ],
@@ -249,7 +252,7 @@
    },
    {
     "amounts": [
-     421368.0,
+     420954.0,
      421060.0,
      424486.0
     ],
@@ -271,7 +274,7 @@
   }
  },
  "net_basis": "after_holding",
- "net_spread": 3426.0,
+ "net_spread": 3532.0,
  "ok": true,
  "payments": {
   "down_pct": 0.05,
@@ -324,15 +327,17 @@
   "low": 455000
  },
  "recommended_index": 1,
+ "relist": null,
  "reprice": null,
+ "state_hint": null,
  "strategies": [
   {
    "down": 23995.0,
    "expected_sale": 463000,
    "list_price": 479900,
    "net": 423074.0,
-   "net_after_holding": 421368.0,
-   "net_vs_recommended": 308.0,
+   "net_after_holding": 420954.0,
+   "net_vs_recommended": -106.0,
    "payment": 4146.69,
    "recommended": false,
    "seller_credit": 10000

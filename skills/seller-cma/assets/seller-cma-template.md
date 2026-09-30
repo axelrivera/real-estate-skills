@@ -4,7 +4,7 @@
 
 **{{"New List Price" when compute.py's reprice is set, else "Recommended List Price"}}: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{recommendation.expected_sale}}
 
-{{"Listed at {reprice.current_price_display} for {reprice.days_on_market} days without a sale." when compute.py's reprice is set}} {{recommendation.paragraph, shortened to 2 sentences}}
+{{"Listed at {reprice.current_price_display} for {reprice.days_on_market} days without a sale." when compute.py's reprice is set}}{{"The last listing ended unsold at {relist.failed_price_display}." when compute.py's relist is set}} {{recommendation.paragraph, shortened to 2 sentences}}
 
 **Why This Price:**
 - {{summary_page.why[0]}}
@@ -21,9 +21,11 @@
 
 | List At | Time to Contract | Expected Sale | Est. Net* | Buyer's Payment |
 |---|---|---|---|---|
-| {{each strategies: list_price_display (★ when recommended), time, expected_sale_display, net_display (or "pending brokerage terms" when net.incomplete is true: never show a net without the commission), payment_display/mo}} |
+| {{each strategies: list_price_display (★ when recommended), time, expected_sale_display, net_after_holding_display (the basis the comparison line below uses; "pending brokerage terms" when net.incomplete is true: never show a net without the commission), payment_display/mo}} |
 
-\*{{"Before mortgage payoff" or, with a payoff, "Cash at closing after your payoff"}}. Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
+\*{{"Before mortgage payoff" or, with a payoff, "Cash at closing after your payoff"}}{{", less estimated holding costs until closing" when compute.py's net_basis is "after_holding"}}. Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
+
+{{one line comparing the options, on the table's basis: each other strategy's net_vs_recommended_about, and net_spread_about}}
 
 **{{first_steps_heading}}:**
 1. {{summary_page.first_steps[0]}}
