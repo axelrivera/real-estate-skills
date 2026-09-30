@@ -11,6 +11,7 @@ This is how the skills apply the rules, not legal advice. The agent's broker is 
 - Wording
 - Topics With Their Own Rule
 - Choosing Between Buyers
+- Buyer Letters and Photos
 - When the Agent Asks for It
 - Sources
 
@@ -60,12 +61,20 @@ For seller-side offer reviews. Judge every offer only on price, terms, financing
 - **Loan type is a term, not a person.** Explain what it changes (appraisal standards, required repairs, timelines, seller-paid costs) and price that into the comparison. Don't describe the buyer through it.
 - **Where the market lists source of income or military or veteran status,** don't recommend refusing a loan type outright; compare its terms and suggest the agent confirm with their broker.
 - **Letters, photos and personal details** from buyers are not read, summarized or scored. Say they were set aside.
+- **When the terms ranking matches a request on a protected ground.** If the seller asked for something about the buyer ("we'd like a young family to have it", "not an investor from overseas") and the offer that ranks first on terms happens to fit it, still rank and recommend on terms only. Never mention the request in the report, write the terms reason for the pick (net after the appraisal risk, certainty, closing date), and tell the agent in one sentence that the request can't be a factor, so the file shows the choice rests on terms.
+- **When the seller has already seen a letter or photo.** It can't be unseen, so the review sets it aside and ranks on terms only, as always. Record the terms reason for the pick in the report, suggest the agent remind the seller that the decision has to rest on the terms, and let the agent's broker decide whether the letter stays in the transaction file.
 
-For buyer-side offers: no personal letters, photos or buyer background in the offer package.
+## Buyer Letters and Photos
+
+For buyer-side offers: no personal letters, photos or buyer background in the offer package. A letter or photo tells the seller who the buyer is: race, color, religion, national origin, familial status (the kids, a pregnancy), disability and more, none of which the seller may weigh. That's why many listing agents refuse to pass letters on and some brokerages ban them. The Offer Package Worksheet's checklist has a "Do Not Include" row for them.
+
+**The compliant alternative is a cover note on the terms,** from the buyer's agent to the listing agent: what's offered, what's attached and what the buyer can flex on. Nothing about who the buyers are or how they'd live in the home. For example:
+
+> Attached is our offer on 1532 Cypress Bend Dr: $358,000, FHA with 3.5% down and DU approval (letter attached), an $11,000 escrow deposit within 3 days, a 10-day inspection period and closing on November 9. The buyer can move the closing date to fit your seller's plans. Proof of funds for the deposit and closing costs is attached. Please confirm receipt, and let me know if your seller would like anything adjusted.
 
 ## When the Agent Asks for It
 
-Don't write the problem version. Say in one sentence why (fair housing, briefly, no lecture), then give the compliant version that still makes the point: "I'll leave out 'great for families' because it can read as a familial-status preference under fair housing rules; here it is with the features that make that case: four bedrooms, a fenced yard and a cul-de-sac." If the agent insists, keep doing the rest of the work without that part. Don't flag innocent wording (like "family room") or accuse the agent of anything.
+Don't write the problem version. Say in one sentence why (fair housing, briefly, no lecture), then give the compliant version that still makes the point: "I'll leave out 'great for families' because it can read as a familial-status preference under fair housing rules; here it is with the features that make that case: four bedrooms, a fenced yard and a cul-de-sac." For a buyer letter or family photo: "I'll leave out the letter and the photo: they tell the seller about the buyer's family and background, which fair housing rules keep out of the decision, and many listing agents won't pass them on. Here's a cover note on the terms instead," then the note (see Buyer Letters and Photos). If the agent insists, keep doing the rest of the work without that part. Don't flag innocent wording (like "family room") or accuse the agent of anything.
 
 ## Sources
 

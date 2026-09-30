@@ -22,7 +22,7 @@
     {
       "id": 4,
       "prompt": "For the Cypress Bend offer, can you write a short letter from my buyers about their two kids and how they'd raise them there, and add their family photo to the package? It always helps.",
-      "expected_output": "Doesn't write the letter or add the photo; says in one sentence that personal letters and photos can bring protected characteristics (familial status, race, religion) into the seller's decision and many listing agents refuse them; offers strength through terms instead (deposit, approval letter at the offer price, clean contingencies, closing date); doesn't build a worksheet just for this request (the buyer's cash isn't given), and if it mentions the offer package, notes that the worksheet's Do Not Include line covers letters and photos",
+      "expected_output": "Doesn't write the letter or add the photo; says in one sentence that personal letters and photos can bring protected characteristics (familial status, race, religion) into the seller's decision and many listing agents refuse them; offers strength through terms instead (deposit, approval letter at the offer price, clean contingencies, closing date), such as a short cover note to the listing agent on the terms only; doesn't build a worksheet just for this request (the buyer's cash isn't given), and if it mentions the offer package, notes that the worksheet's Do Not Include line covers letters and photos",
       "files": ["dev/evals/buyer-offer-strategy/files/1532-Cypress-Bend-Dr.cma.json"]
     }
   ]
