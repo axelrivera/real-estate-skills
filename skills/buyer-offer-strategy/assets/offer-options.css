@@ -14,7 +14,7 @@
 /* outlook bands: Strong / Competitive / At risk / Unlikely */
 .pill.b-strong{background:var(--good-bg);color:var(--good-strong);box-shadow:inset 0 0 0 1px var(--good-base)} .pill.b-comp{background:var(--good-bg);color:var(--good-strong)}
 .pill.b-risk{background:var(--caution-bg);color:var(--caution-strong)} .pill.b-unl{background:var(--risk-bg);color:var(--risk-strong)}
-.exp td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt}
+.exp{table-layout:fixed;width:100%} .exp td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt} .exp td:first-child{width:50%;padding-right:8px} .exp td.n{white-space:normal}
 .absent{margin:3px 2px 0;font-size:7.6pt;color:var(--muted)} .absent b{color:var(--text);font-weight:600}
 .limit{margin-top:6px;border-left:4px solid var(--risk-base);color:var(--risk-strong);padding:3px 10px;font-size:8.4pt}
 .compact .big2{font-size:18pt} .compact .hero .hr{font-size:7.6pt;padding:5px 10px} .compact .hero .hr b{font-size:10pt}

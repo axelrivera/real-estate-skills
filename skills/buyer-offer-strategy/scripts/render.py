@@ -316,7 +316,7 @@ def build(data, fmt, out_dir, ctx):
                                  footer_html=render.footer(f"Offer Options · Prepared for {r['B']['buyer'].get('name') or 'the Buyer'} · "
                                                            f"Not for the Listing Side · {street}"))  # OFR-32
         if top > PAGE1_LIMIT:
-            print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten override notes.", file=sys.stderr)
+            print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten the longest notes or reasons.", file=sys.stderr)
     else:
         doc, W = worksheet_html(r, ctx["agent"], sample, option)
         path = os.path.join(out_dir, render.filename(street, "Offer Package", ext="pdf"))

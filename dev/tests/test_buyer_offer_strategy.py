@@ -197,6 +197,14 @@ class Pdf(unittest.TestCase):
                 with open(p, "rb") as f:
                     self.assertEqual(f.read(4), b"%PDF")
 
+    def test_page_one_fits_every_fixture(self):
+        # OFR-317: with one option, the exposure labels squeezed to a word per line and page 1 overflowed
+        for name in sorted(os.listdir(FIXTURES)):
+            err = io.StringIO()
+            with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                buyer_render.main([os.path.join(FIXTURES, name), "--out", tmp, "--format", "options"])
+            self.assertNotIn("overflows", err.getvalue(), name)
+
 
 class FloodCddCondo(unittest.TestCase):
     """OFR-26, CMA-6, CMA-5: flood insurance and CDD are payment lines; condos get their documents and checks."""
