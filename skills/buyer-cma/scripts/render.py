@@ -230,9 +230,9 @@ def body(R, C, homes, agent, L):
     c = R["comps"]
     b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{c["method_note"]}</p>',
           '<div class="comps2">' + "".join(
-              f'<div class="comp"><div class="comp-h"><b>{esc(cd["address"])}</b><span class="adj">{L("adjusted")} {money(cd["adjusted"])}</span></div>'
+              f'<div class="comp"><div class="comp-h"><b>{esc(cma.display_address(cd["address"]))}</b><span class="adj">{L("adjusted")} {money(cd["adjusted"])}</span></div>'
               f'<div class="meta">{cd["meta"]}</div>{ul(cd["bullets"], "")}</div>' for cd in c["cards"]) + "</div>"]
-    rows = [[r[0], money(r[1]), money(r[2]), money(r[3])] for r in c["summary_rows"]]
+    rows = [[cma.display_address(r[0]), money(r[1]), money(r[2]), money(r[3])] for r in c["summary_rows"]]  # CMA-233
     rows.append([c.get("subject_row_label", L("subject_row")), money(s["list_price"]), "—", f'{L("range_word")} {k(bl["low"])}–{k(bl["high"])}'])
     b += [table([L("th_sale"), L("th_sold_for"), L("th_seller_paid"), L("th_adjusted")], rows, num_cols=(1, 2, 3),
                 row_classes={len(rows) - 1: "subj"}), f'<p>{c["summary_paragraph"]}</p>']
@@ -253,7 +253,7 @@ def body(R, C, homes, agent, L):
     cp = R["competition"]
     b += [f'<h2>{L("h_competition")}</h2>', f'<p>{cp["intro"]}</p>',
           table([L("th_address"), L("th_status"), L("th_price"), L("th_sqft"), L("th_pool"), L("th_days"), L("th_notes")],
-                [[r[0], r[1], money(r[2]), f"{int(r[3]):,}", r[4], r[5], r[6]] for r in cp["rows"]], num_cols=(2, 3, 5))]
+                [[cma.display_address(r[0]), r[1], money(r[2]), f"{int(r[3]):,}", r[4], r[5], r[6]] for r in cp["rows"]], num_cols=(2, 3, 5))]
     m = R["market"]
     b += [f'<h2>{L("h_market")}</h2>', f'<p>{m["intro"]}</p>',
           table(m["columns"], m["rows"], num_cols=tuple(range(1, len(m["columns"])))), ul(m["bullets"])]

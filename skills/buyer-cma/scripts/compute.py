@@ -90,6 +90,18 @@ def broker_fee_short(R, price):
     return finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
 
 
+def fitting_credit(credit, cash, credit_alt=None):
+    """CMA-235: the price-vs-credit column whose cash to close fits the buyer's cash (`buyer_cash`), for the cash_short
+    warning to name: offer_plan.credit_alt when it fits, else the fitting column with the lowest net price. None
+    without buyer_cash or when no column fits."""
+    if not cash:
+        return None
+    fits = [c for c in (credit or {}).get("columns", []) if not c.get("cash_short") and c["cash"] <= cash]
+    alt = next((c for c in fits if credit_alt and c["price"] == credit_alt.get("price")
+                and c["credit"] == credit_alt.get("credit")), None)
+    return alt or min(fits, key=lambda c: (c["net"], c["price"]), default=None)
+
+
 def payments(R, market, tax_rows):
     pay = R["costs"]["payment"]
     ji = pay.get("tax_jurisdiction_index", 0)
@@ -468,11 +480,19 @@ PLACEHOLDER = re.compile(r"\{(\w+)\}")
 RENDER_PLACEHOLDERS = ("trend_at_subject", "r2_share")  # filled by render.py from the chart
 
 
-def placeholder_values(median_adjusted, hist, credit=None):
+def median_display(median_adjusted, count):
+    """CMA-234: an even number of comps has a midpoint median ($472,612.50): shown to the nearest $100, as seller-cma
+    does (CMA-265); an odd count's median is a comp's own adjusted value, shown to the dollar."""
+    return money(median_adjusted, 1 if count % 2 else 100)
+
+
+def placeholder_values(median_adjusted, hist, credit=None, count=1):
     """CMA-203: every {name} report wording may use, filled in every field (not just page 1). With price-vs-credit
     scenarios, {credit_cash_per_5k} and {credit_monthly_per_5k}: what each $5,000 of credit saves at closing and adds
-    to the monthly payment, from the first two scenarios with different credits."""
-    values = {"median_adjusted": money(median_adjusted), **((hist or {}).get("display") or {})}  # CMA-214: + last contract
+    to the monthly payment, from the first two scenarios with different credits. `count`: the number of comps, for
+    the median's rounding (CMA-234)."""
+    values = {"median_adjusted": median_display(median_adjusted, count),
+              **((hist or {}).get("display") or {})}  # CMA-214: + last contract
     cols = (credit or {}).get("columns") or []
     step = next((c for c in cols[1:] if c["credit"] != cols[0]["credit"]), None)
     if step:
@@ -541,21 +561,21 @@ def comps_first(R, market, homes=()):
     for key, text in notes:
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
-    fills = placeholder_values(median_adjusted, hist)  # CMA-203
+    fills = placeholder_values(median_adjusted, hist, count=len(values))  # CMA-203
     warn("unfilled_placeholder", *placeholder_warnings(R, fills, RENDER_PLACEHOLDERS))
     return {
         "ok": True, "stage": "comps",
         "next": "Set bottom_line (the range around the median) and offer_plan, add costs, then run compute.py again "
                 "for the payments, the credit scenarios and the handoff.",
         "subject": {"address": s["address"], "list_price": s["list_price"], "list_price_display": money(s["list_price"])},
-        "median_adjusted": median_adjusted, "median_adjusted_display": money(median_adjusted),
+        "median_adjusted": median_adjusted, "median_adjusted_display": fills["median_adjusted"],
         "adjusted_min": min(values), "adjusted_max": max(values),
         "asking_vs_median": s["list_price"] - median_adjusted,
         "asking_vs_median_display": money(abs(s["list_price"] - median_adjusted)),
         "rough": rough_plan(R, market, median_adjusted, min(values), max(values)),  # CMA-202: the gut check's numbers
         "history": hist,
         "placeholders": fills,
-        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+        "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
         "warnings": warnings,
         "warning_keys": warning_keys,
@@ -659,11 +679,16 @@ def compute(R, market, homes):
     if op["walk_away"] > bl["high"]:
         warn("walk_away_above_range", "The walk-away price is above the supported range: only if the buyer accepts appraisal-gap risk, and say so.")
     cash = R["costs"].get("buyer_cash")  # CMA-204: what the buyer has for down payment and closing
+    cash_fit = fitting_credit(credit, cash, ca)
+    # CMA-235: when the credit table already shows an option that fits, the warning names it instead of asking for one
+    fits = (f"The price-vs-credit table already shows one that fits: {money(cash_fit['price'])} with a "
+            f"{money(cash_fit['credit'])} credit, about {money(cash_fit['cash'])} to close. Say so, and name that option "
+            "in the reply.") if cash_fit else None
     for c in (credit or {}).get("columns", []):
         if c.get("cash_short"):
             warn("cash_short", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
-                 f"{money(c['cash'])}, {money(c['cash_short'])} more than the buyer's {money(cash)}: say so, and show a "
-                 "scenario that fits (a larger credit, a lower price or another loan program).")
+                 f"{money(c['cash'])}, {money(c['cash_short'])} more than the buyer's {money(cash)}. " + (fits or
+                 "Say so, and show a scenario that fits (a larger credit, a lower price or another loan program)."))
     for c in (credit or {}).get("columns", []):
         if c.get("cash_left") is not None:
             warn("cash_tight", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
@@ -673,8 +698,8 @@ def compute(R, market, homes):
     first = rows[0]  # the buyer's own program
     if first.get("cash_short"):  # CMA-223: the payment table's cash to close, not just the down payment
         warn("cash_short", f"At {money(pay['price'])}, cash to close in the {first['label']} column (down payment plus "
-             f"closing costs) is about {money(first['cash_to_close'])}, {money(first['cash_short'])} more than the buyer's {money(cash)}: "
-             "say so, and show a scenario that fits (a seller credit, a lower price or another loan program).")
+             f"closing costs) is about {money(first['cash_to_close'])}, {money(first['cash_short'])} more than the buyer's {money(cash)}. "
+             + (fits or "Say so, and show a scenario that fits (a seller credit, a lower price or another loan program)."))
     elif first.get("cash_left") is not None:
         warn("cash_tight", f"At {money(pay['price'])}, cash to close in the {first['label']} column is about "
              f"{money(first['cash_to_close'])}, leaving only {money(first['cash_left'])} of the buyer's {money(cash)}: "
@@ -691,14 +716,15 @@ def compute(R, market, homes):
                  "(\"Conventional, 5% Down\", no parentheses) and set \"assumed\": true when the financing is assumed; "
                  "the report adds \"Assumed\" once.")
     for r in rows[1:]:  # CMA-217: a comparison the buyer can't afford is noise; replace it with one that fits
-        if r.get("down_short"):
-            warn("scenario_over_cash", f"The {r['label']} scenario needs {money(r['cash_down'])} down, more than the "
-                 f"buyer's {money(cash)}: drop it or replace it with a program that fits (costs.md).")
+        if r.get("cash_short"):  # CMA-236: on cash to close, the same test as the cash_short warning, not the down payment
+            warn("scenario_over_cash", f"The {r['label']} scenario needs about {money(r['cash_to_close'])} to close "
+                 f"({money(r['cash_down'])} down plus closing costs), more than the buyer's {money(cash)}: drop it or "
+                 "replace it with a program that fits (costs.md).")
     hist, notes = history_stats(R, R.get("as_of") or date.today().isoformat())  # CMA-201, CMA-208
     for key, text in notes:
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
-    values = placeholder_values(median_adjusted, hist, credit)  # CMA-203
+    values = placeholder_values(median_adjusted, hist, credit, len(R["comps"]["cards"]))  # CMA-203
     warn("unfilled_placeholder", *placeholder_warnings(R, values, RENDER_PLACEHOLDERS))
 
     fit = mls.trend([h for h in homes if not mls.same_address(h["address"], s.get("mls_address", s["address"]))],
@@ -749,7 +775,7 @@ def compute(R, market, homes):
         "range": {"low": bl["low"], "high": bl["high"], "display": f"{money(bl['low'])} – {money(bl['high'])}",
                   "asking_position": "above the range" if s["list_price"] > bl["high"] else
                   "below the range" if s["list_price"] < bl["low"] else "inside the range"},
-        "median_adjusted": median_adjusted, "median_adjusted_display": money(median_adjusted),
+        "median_adjusted": median_adjusted, "median_adjusted_display": values["median_adjusted"],
         "adjusted_min": min(c["adjusted"] for c in R["comps"]["cards"]),  # CMA-112: the spread, as seller-cma gives it
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
         "offer_plan": {"opening": money(op["opening"]), "walk_away": money(op["walk_away"]),
@@ -761,6 +787,8 @@ def compute(R, market, homes):
         "current_bill_display": money(R["costs"]["taxes"]["current_bill"]) if R["costs"]["taxes"].get("current_bill") else None,
         "payments": pay,
         "credit": credit,
+        # CMA-235: the credit option that fits the buyer's cash, named by the cash_short warning
+        "cash_fit": {k: cash_fit[k] for k in ("price", "credit", "cash")} if cash_fit else None,
         "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "handoff": h,
@@ -769,7 +797,7 @@ def compute(R, market, homes):
         # the chat template's wording, with every {placeholder} filled as the PDF fills it
         "summary_page": cma.fill(R.get("summary_page") or {}, values),
         "bottom_line_paragraph": cma.fill(bl.get("paragraph", ""), values),
-        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+        "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
         "warning_keys": warning_keys,

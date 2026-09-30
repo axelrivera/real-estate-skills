@@ -818,5 +818,81 @@ class FourthPass(unittest.TestCase):
         self.assertNotIn("market_days_rounding", C["warning_keys"])
 
 
+class FifthPass(unittest.TestCase):
+    """Eval iteration 6 fixes (CMA-233 to CMA-236)."""
+
+    run_ = FourthPass.run_
+
+    def test_uppercase_comp_addresses_print_in_title_case(self):
+        """CMA-233: an export's UPPERCASE address prints in title case on the dot plot, the comp cards, the summary
+        table and the chat's comps table; matching to the export (the chart's comp markers) ignores case."""
+        (cma,) = load("buyer-cma", "_shared.cma")
+        self.assertEqual(cma.display_address("436 SUMMIT DR"), "436 Summit Dr")
+        self.assertEqual(cma.display_address("120 NE 1ST ST, APT #4A, LONGWOOD, FL"), "120 NE 1st St, Apt #4A, Longwood, FL")
+        self.assertEqual(cma.display_address("745 Little Wekiva Cir"), "745 Little Wekiva Cir")  # already display case
+
+        def upper(R):
+            for c in R["comps"]["cards"]:
+                c["address"] = c["address"].upper()
+        R, C = self.run_(upper)
+        self.assertTrue(all(r["address"] == cma.display_address(r["address"].upper()) for r in C["comps_table"]))
+        self.assertTrue(all(not r["address"].isupper() for r in C["comps_table"]))
+        _, homes = compute.load_inputs(R)
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, homes, {})
+        for card in R["comps"]["cards"]:
+            self.assertNotIn(card["address"], doc)
+            self.assertIn(cma.display_address(card["address"]), doc)
+        self.assertIn('class="m-comp', doc)  # still matched to the export's rows
+
+    def test_even_count_median_rounds_to_100(self):
+        """CMA-234: an even number of comps has a midpoint median, quoted to the nearest $100 as seller-cma does."""
+        def six(R):
+            extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "meta": "", "bullets": [],
+                     "adjustments": [{"label": "Test", "amount": 0}]}
+            R["comps"]["cards"].append(extra)
+            mid = sorted(c["sold_price"] - (c.get("seller_concessions") or 0) + sum(a["amount"] for a in c["adjustments"])
+                         for c in R["comps"]["cards"][:-1])[2]
+            extra["sold_price"] = mid + 123  # the new median is the midpoint, mid + 61.50
+        _, C = self.run_(six)
+        self.assertNotEqual(C["median_adjusted"] % 100, 0)
+        self.assertEqual(C["median_adjusted_display"], compute.money(C["median_adjusted"], 100))
+        self.assertEqual(C["placeholders"]["median_adjusted"], C["median_adjusted_display"])
+        _, C = self.run_()  # five comps: the median is one comp's own value, to the dollar
+        self.assertEqual(C["median_adjusted_display"], compute.money(C["median_adjusted"]))
+
+    def test_cash_short_names_the_fitting_credit_option(self):
+        """CMA-235: when the credit table already has a price and credit that fit the buyer's cash, compute.py returns
+        it as cash_fit (credit_alt first) and the cash_short warning names it."""
+        def fha(cash, alt=None):
+            base = FourthPass.fha_buyer(cash)
+
+            def change(R):
+                base(R)
+                R["costs"]["credit_scenarios"]["scenarios"].append({"price": 470000, "credit": 10000})
+                R["offer_plan"]["credit_alt"] = alt or {"price": 470000, "credit": 10000}
+            return change
+        _, C = self.run_(fha(30000))
+        self.assertIn("cash_short", C["warning_keys"])
+        self.assertEqual((C["cash_fit"]["price"], C["cash_fit"]["credit"]), (470000, 10000))
+        self.assertLessEqual(C["cash_fit"]["cash"], 30000)
+        _, C = self.run_(fha(5000))  # nothing fits
+        self.assertIsNone(C["cash_fit"])
+        self.assertIn("cash_short", C["warning_keys"])
+
+    def test_comparison_scenario_over_cash_to_close(self):
+        """CMA-236: a comparison scenario is dropped on cash to close (as the cash_short warning tests it), not on the
+        down payment alone."""
+        def conv5(R):
+            FourthPass.fha_buyer(30000)(R)
+            R["costs"]["payment"]["scenarios"][1] = {"label": "Conventional, 5% Down", "type": "conventional", "down_pct": 0.05}
+        _, C = self.run_(conv5)
+        row = C["payments"]["rows"][1]
+        self.assertIsNone(row["down_short"])  # $23,200 down fits $30,000
+        self.assertTrue(row["cash_short"])  # but not once closing costs are added
+        self.assertEqual(C["warning_keys"].count("scenario_over_cash"), 1)
+        _, C = self.run_(FourthPass.fha_buyer(30000))  # Conventional 3% fits
+        self.assertNotIn("scenario_over_cash", C["warning_keys"])
+
+
 if __name__ == "__main__":
     unittest.main()

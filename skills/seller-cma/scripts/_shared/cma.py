@@ -133,6 +133,33 @@ def page_one_values(C):
 
 # --- scatterplot ---------------------------------------------------------------
 
+_KEEP_UPPER = {"N", "S", "E", "W", "NE", "NW", "SE", "SW", "US", "SR", "CR", "PO"}
+_ORDINAL = re.compile(r"^(\d+)(ST|ND|RD|TH)([,.]?)$")
+
+
+def display_address(address):
+    """CMA-233: an address as the report prints it. An all-caps export address ("436 SUMMIT DR") reads in title case
+    ("436 Summit Dr"), with directions and road prefixes kept upper case (NE, SR), ordinals as "1st", unit codes with a
+    digit ("#4A", "12B") and state codes after a comma as typed. An address with any lower-case letter was written for
+    display and is left alone. Matching to the export (scatter, comp cards) uses _street(), which ignores case."""
+    text = str(address)
+    if any(ch.islower() for ch in text):
+        return text
+    out, after_comma = [], False
+    for word in text.split(" "):
+        bare = word.rstrip(",.")
+        m = _ORDINAL.match(word)
+        if m:
+            word = m.group(1) + m.group(2).lower() + m.group(3)
+        elif bare in _KEEP_UPPER or any(ch.isdigit() for ch in bare) or (after_comma and len(bare) == 2 and bare.isalpha()):
+            pass
+        else:
+            word = re.sub(r"[A-Z]+", lambda p: p.group(0).capitalize(), word)
+        after_comma = after_comma or word.endswith(",")
+        out.append(word)
+    return " ".join(out)
+
+
 def _street(address):
     """Match key for an address: the part before the first comma, upper case, spaces collapsed."""
     return " ".join(str(address).split(",")[0].upper().split())
@@ -220,17 +247,17 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
                  f'x2="{x(xb):.1f}" y2="{y(fit["intercept"] + fit["slope"] * xb):.1f}" class="trend"/>')
     def sale(h):
         o.append(shape(cat(h), x(h["living_area"]), y(h["close_price"]), False,
-                       f'{h["address"].title()}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
+                       f'{display_address(h["address"])}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
 
     for h in pts["sold"]:  # background first, comps and the subject on top
         sale(h)
     for h in act:
         o.append(shape("active", x(h["living_area"]), y(h["current_price"]), True,
-                       f'{h["address"].title()}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
+                       f'{display_address(h["address"])}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
     for h in pts["comp"]:
         sale(h)
     sx, sy, d = x(subject_sqft), y(subject_price), 10
-    o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
+    o.append(f'<g><title>{esc(display_address(subject_address))}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
     # CMA-205, CMA-253: labels step aside from the markers (and each other) instead of printing over them; the band's
     # label goes in the first corner clear of markers
@@ -244,7 +271,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     bx, by, anchor, box = next((sp for sp in spots if not _hits(sp[3], marks, [])), spots[0])
     placer.boxes.append(box)
     o.append(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>')
-    o.append(placer.place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()),
+    o.append(placer.place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", display_address(subject_address)),
                           "lbl-subj", 14, 13, bold=True, droppable=True))
     points = {}
     for h in sold:
@@ -488,7 +515,7 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
         left = (any(cx + 8 <= v <= cx + 12 + w for v in lines) and cx - 12 - w > Lm
                 and not any(cx - 12 - w <= v <= cx - 8 for v in lines))
         anchor = ' text-anchor="end"' if left else ""
-        o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(c["address"])}</text>'
+        o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(display_address(c["address"]))}</text>'
                  f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="6" class="dp-dot"/>'
                  f'<text x="{cx - 10 if left else cx + 10:.1f}" y="{cy + 4:.1f}"{anchor} class="dp-val">{val}</text>')
     o.append("</svg>")
