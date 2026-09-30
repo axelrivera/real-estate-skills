@@ -5,7 +5,7 @@ The gate every release passes before the pull request from `develop` into `main`
 ## 1. Automated Checks
 
 - [ ] `make package` passes (it runs check-sync, test, lint-skills, py311 and style-check first).
-- [ ] `make test` shows no skipped mock-contract tests (needs PyMuPDF and `sources/Contracts/FARBAR/`).
+- [ ] `RUN_SLOW=1 make test` shows no skipped mock-contract tests (needs PyMuPDF and `sources/Contracts/FARBAR/`); `make package` runs this tier too.
 - [ ] `make forms-check` reports no revised, new or removed forms, or each one is handled per [Updating a Contract Form](development.md#updating-a-contract-form).
 - [ ] `make mock-contracts ARGS="--answer-key --scanned"` builds every starter.
 - [ ] `make outputs` renders every fixture.
