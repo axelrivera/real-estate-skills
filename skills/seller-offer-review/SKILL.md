@@ -35,7 +35,7 @@ One JSON file per property, in a temporary folder, never the outputs folder (`re
 
 Record only what the documents or the agent say: the engine's default is labeled, a guess isn't. Buyer letters, photos and personal details never go in the file or the report.
 
-**Value range:** a seller CMA's `.cma.json` from earlier in this conversation goes in with `--cma`; any other CMA's low and high, confirmed with the agent in one line, go in `listing.cma_low` / `cma_high`; with none, appraisal risk is measured against list price and the answer is Preliminary. **Market costs:** the engine takes them from the listing's state and county (`references/local-costs.md`, `references/seller-costs.md`); outside Florida, look up the state's transfer tax and put it in `listing.costs`. Details for both are in Value Range and Costs in `references/listing-file.md`.
+**Value range:** a seller CMA's `.cma.json` from earlier in this conversation goes in with `--cma`; any other CMA's low and high, confirmed with the agent in one line, go in `listing.cma_low` / `cma_high`; with none, appraisal risk is measured against list price and the answer is Preliminary. **Market costs:** the engine takes them from the listing's state and county (`references/local-costs.md`, `references/seller-costs.md`); with no state anywhere, an FR/BAR contract means Florida (labeled Assumed), anything else national estimates; outside Florida, look up the state's transfer tax and put it in `listing.costs`. Details for both are in Value Range and Costs in `references/listing-file.md`.
 
 ## 2. Run and Review
 
@@ -51,7 +51,16 @@ It prints every value already formatted: the page-1 summary, each offer's net sh
 
 ## 3. Deliver
 
-**Quick question** ("should we take it?"): two or three sentences from the output; a Blocking or High issue is named with its fix, never a plain "yes" past one. **Full review in chat:** fill in `assets/offer-review-template.md`. **A report for the seller:**
+Pick the reply by what the agent asked for; every number comes from the output.
+
+| Asked For | The Reply Contains | Cap |
+|---|---|---|
+| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; the top missing inputs as one question; the PDF offered in one line | about 200 words, no tables. A lapsed offer (`summary.revive`) adds its reference counter table: the table is part of the quick answer and doesn't count toward the words |
+| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty), the net with payoff status, one line with the recommendation and counter, the estimates the agent can replace (a title quote, the tax bill), the PDF offered in one line | one table plus about 100 words |
+| **Full review in chat** | `assets/offer-review-template.md`, filled in | the template |
+| **A report for the seller** | the PDF below, then the chat lines under it | — |
+
+**A report for the seller:**
 
 ```
 python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet] [--profile profile.md]
@@ -59,7 +68,9 @@ python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|mult
 
 `--profile` puts the agent's name and colors on it (`references/saved-files.md`). The PDF goes to the outputs folder; if it can't render, give the markdown review. `--packet` (every offer's report): the comparison plus a single review of each active offer.
 
-In chat: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs as one line. Offer the other format in one line.
+With the PDF, the chat says: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs as one line. Offer the other format in one line.
+
+**Rider K questions** ("how does Rider K compare to a normal Standard offer?"): explain it with Rider K on the Standard Form in `references/scoring-rubric.md`: it firms the deal sooner than the Standard repair windows, the seller owes no repairs, why the scores may match, and its red flags.
 
 **Time for acceptance passed:** the review is CONTRACT INCOMPLETE and shows, as reference, what a seller counter with a new time for acceptance could look like (`summary.revive`). State the fact (the offer's own deadline has passed), never whether it can still be accepted, and never a send-by date in the past. Only likely passed (delivery date unknown): ask when it was delivered.
 

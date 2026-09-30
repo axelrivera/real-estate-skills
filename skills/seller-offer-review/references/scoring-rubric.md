@@ -15,7 +15,7 @@ The score estimates how likely an offer is to close on its terms. Eight criteria
 
 ## Downside Case
 
-The price if the appraisal lands at the CMA high, the top of the supported range (plus the gap cover above), minus the seller's repair cost for the contract's form: on FR/BAR AS IS, the market's typical post-inspection credit (Florida: about 0.7% of price); on the FR/BAR Standard, the General Repair Limit the seller owes (1.5% of price if blank, never rounded above it); on another contract, only a credit the agent gives for this listing (`listing.costs.inspection_credit_reserve_pct`; never Florida's AS IS figure). Cash offers keep their price. Without a figure, the downside leaves repairs out and says so.
+The price if the appraisal lands at the CMA high, the top of the supported range (plus the gap cover above), minus the seller's repair cost for the contract's form: on FR/BAR AS IS, the market's typical post-inspection credit (Florida: 0.7% of price, rounded to the nearest $500); on the FR/BAR Standard, the General Repair Limit the seller owes (1.5% of price if blank, never rounded above it); on another contract, only a credit the agent gives for this listing (`listing.costs.inspection_credit_reserve_pct`; never Florida's AS IS figure). Cash offers keep their price. Without a figure, the downside leaves repairs out and says so.
 
 ## Ranking (Multiple Offers)
 
@@ -23,7 +23,8 @@ Risk-adjusted value = downside net − (100 − score)/100 × penalty × list pr
 
 - The top offer gets Accept or Counter. **Accept** when the score is 80+ and either the net is within 1% of the seller's target (a clean offer at list) or the counter would gain less than a small share of price: a strong offer isn't worth risking over a small gain. The share follows the seller's priority: certainty 1%, balanced and speed 0.5%, price 0.25%. An offer below 80 is also accepted when no counter rule applies; the report then says so without calling it strong. Same test in single mode.
 - The second becomes **Backup** if its score is 60+.
-- The rest are **Decline**, with a reason.
+- The rest are **Decline**, with a reason: a sale contingency, a pre-qualification only, or a closing past the seller's deadline; otherwise what ranks it lower. An offer that nets more as offered is declined for being less certain (both scores named) or for a lower downside net, never for "netting less".
+- A backup keeps its own price in the plan ("offer a backup position"); its counter is drafted only if the first deal falls through.
 
 ## When to Override
 
@@ -35,4 +36,13 @@ An escalating offer is scored, netted and ranked at the price it would reach: th
 
 ## Walk-Away Date
 
-Days until firm are counted from acceptance, since no Effective Date exists yet: the timeline assumes the analysis date is the Effective Date and says so. When the buyer's walk-away for any reason (AS IS, or Rider K or L on the Standard form) ends sooner than the other windows, the report adds that date as a note: after it, the buyer can cancel only under the loan, appraisal or rider terms. On an AGA-1 offer whose appraisal window is the longest, the report shows the date the other windows end and gives AGA-1's window as a condition: it only opens when the valuation plus the gap comes in below the price. The score still counts the full window.
+Days until firm are counted from acceptance, since no Effective Date exists yet: the timeline assumes the analysis date is the Effective Date and says so. When the buyer's walk-away for any reason (AS IS, or Rider K or L on the Standard form) ends sooner than the other windows, the report adds that date as a note: after it, the buyer can cancel only under the loan, appraisal or rider terms. The date is always the end of the longest open window, AGA-1's included. On an AGA-1 offer whose appraisal window is the longest, the note gives the date the other windows end: after it the buyer can cancel only if the valuation plus the gap comes in below the price.
+
+## Rider K on the Standard Form
+
+When the agent asks how a Standard + Rider K offer compares with a plain Standard offer, explain both sides from `frbar-riders.md` (K):
+
+- **Rider K firms the deal sooner on condition.** The buyer may cancel for any reason until the inspection period ends (15 days if blank), then takes the property as is. A plain Standard offer has no walk-away, but its repair process runs past the inspection period: the seller's repair estimates (10 days) and the election (5 days), and either party may cancel when repairs exceed a limit. So condition risk ends at day N under Rider K and at about N + 15 on the plain Standard form.
+- **The seller owes no repairs.** Rider K deletes the Para. 9(a) repair, WDO and permit limits (blank limits don't matter), so the downside uses the post-inspection credit estimate, not the General Repair Limit.
+- **The score can match.** Days until firm take the longest window; when loan approval (30 days) is longer than both, Rider K and plain Standard score the same. Say so, and point to the walk-away note and the downside net, where they differ.
+- **Rider K red flags to name:** the Para. 9(a) 125% escrow (for repairs the seller can't finish before closing) isn't deleted and may not cover the as-is maintenance duty (ask); with Rider E (FHA/VA), its appraisal repair cap still binds the seller; there's no permit cooperation clause like the AS IS form's Para. 12(c); other riders' inspection clocks (M, P) still run; the buyer pays lender-required repairs, which can stall an FHA or VA loan; Rider K on the AS IS form is RESERVED (the review stops).
