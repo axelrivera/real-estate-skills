@@ -38,7 +38,7 @@ Appraisal risk starts at the top of the CMA range. With a CMA, a price above it 
 
 ## Multiple Offers
 
-Only the top-ranked offer gets a counter. The backup is offered a backup position (Back-Up Contract rider) only after the primary contract is fully signed, and gets its own counter only if the first deal falls through. The plan always says only one counter goes out at a time.
+Only the top-ranked offer gets a counter. The backup is offered a backup position (Back-Up Contract rider) only after the primary contract is fully signed, and gets its own counter only if the first deal falls through. The plan always says only one counter or acceptance goes out at a time, an acceptance plan too.
 
 ## Overrides
 

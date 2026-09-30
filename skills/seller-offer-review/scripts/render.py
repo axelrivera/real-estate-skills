@@ -76,7 +76,8 @@ def snapshot(R):
     items.append(f"CMA {oe.short_price(L['cma_low'])}–{oe.short_price(L['cma_high'])}" if L["cma_provided"] else '<b class="rt">CMA not provided</b>')
     items.append(f"payoff {money(S['payoff'])}" if S["payoff_known"] else '<b class="rt">payoff not provided</b>')
     if S["deadline"]:
-        items.append(f"seller's deadline {S['deadline']:%a %b %-d}")
+        note = review.deadline_note(S)  # OFR-296: a weekend deadline names the last business day
+        items.append(f"seller's deadline {S['deadline']:%a %b %-d}" + (f" ({note})" if note else ""))
     return '<div class="divrow factrow"><div>' + "".join(f"<span>{x}</span>" for x in items) + "</div></div>"
 
 
@@ -126,15 +127,15 @@ def options_table(opts, widths=(24, 13, 15)):
         f'{" <span class=sm>(Recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
         f'<td class="c">{esc(x["certainty"])}</td><td class="{x["status"]}">{esc(x["what"])}</td></tr>' for x in opts)
     cols = "".join(f'<col style="width:{w}%">' for w in widths)
-    return (f'<h2>Your Options</h2><div class="tbl"><table><colgroup>{cols}</colgroup>'
+    return (f'<h2>Your Options</h2><div class="tbl opts"><table><colgroup>{cols}</colgroup>'
             f'<thead><tr><th>Option</th><th class="n">Net After Holding</th><th class="c">Certainty</th><th>What Happens</th></tr></thead>'
             f'<tbody>{rows}</tbody></table></div>')
 
 
 def closing_block(v):
     pre = f'<div class="prelim">{md(v["preliminary"])}</div>' if v["preliminary"] else ""
-    if v.get("terms_reason"):  # OFR-279: the agent's terms reason for the pick, on the record
-        pre = f'<div class="nextstep"><b>Terms Reason:</b> {esc(v["terms_reason"])}</div>' + pre
+    if v.get("terms_reason"):  # OFR-279: the agent's terms reason for the pick; OFR-292: moves to page 2 when page 1 is full
+        pre = f'<div class="nextstep treason"><b>Terms Reason:</b> {esc(v["terms_reason"])}</div>' + pre
     return (f'{pre}<div class="nextstep"><b>Next Step:</b> {esc(v["next_step"])} {"The detail follows on the next pages." if v["mode"] == "single" else "Key terms follow on the next page."}</div>'
             f'<div class="fine" style="margin-top:4px">{md(v["data_note"])} Estimates only; not legal or financial advice.</div>')
 
@@ -225,7 +226,7 @@ def term_rows(o, R):
     st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
     rb, rent = o.get("rent_back_days"), o.get("rent_back_monthly")  # OFR-281: a rent-back is a closing term
     rb = (f" + {rb}-day rent-back" + (" (free)" if rent == 0 else f" ({money(rent)}/mo)" if rent else "")) if rb else ""
-    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}", f"On/before {dl:%b %-d}" if dl else "—", st,
+    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}", f"On/before {oe.prior_weekday(dl):%b %-d}" if dl else "—", st,
                  "Weekend date; confirm funding" if o["close"].weekday() >= 5 else ""))
     tb, cust = o["title_by"], L["title_customary_payer"]
     if tb or cust:
@@ -472,7 +473,7 @@ def single_html(R, o, v):
         caption = ("it matches As Offered: the price is at or under " + ref if o["appraisal_risk"] else
                    "it matches As Offered: no appraisal contingency") + ", and there's no repair figure for this market"
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
-    details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
+    details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div><div class="treason-slot"></div>
 <h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
 <div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span><b>Downside</b>: {caption}.</span>
@@ -530,18 +531,45 @@ def scatter(R, W=300, H=230):
     for x in range(int(xmin), 101, 10):
         svg.append(f'<text x="{xs(x)}" y="{H - B + 12}" text-anchor="middle" class="ax">{x}</text>')
     svg.append(f'<text x="{(Lm + W - Rm) / 2}" y="{H - 3}" text-anchor="middle" class="ax">Certainty Score →</text>')
-    svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
-               f'<text x="{Lm + 3}" y="{ys(tgt) - 3}" class="ax" style="fill:var(--good-strong)">Target {money(tgt)} (Clean Offer at List)</text>')
     rank = {r["id"]: i + 1 for i, r in enumerate(R["ranked"])}
+    marks, boxes = [], [(xs(99) - 45, ys(y1) + 2, xs(99), ys(y1) + 12)]  # boxes: what the Target label must not cover
     for o in offs:
         c = col[o["action"]]
         x, a, b = xs(o["score"]["total"]), ys(o["ns"]["net_adj"]), ys(o["ns_down"]["net_adj"])
         right = o["score"]["total"] > 90
-        svg.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
-                   f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
-                   f'<text x="{x - 9 if right else x + 9}" y="{(a + b) / 2 + 4}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{ink[o["action"]]}">{esc(o["key"])} #{rank.get(o["id"], "")}</text>')
+        text = f"{o['key']} #{rank.get(o['id'], '')}"
+        tx, ty = (x - 9 if right else x + 9), (a + b) / 2 + 4
+        tw = text_width(text, 11)
+        boxes += [(x - 6, min(a, b) - 6, x + 6, max(a, b) + 6), (tx - tw if right else tx, ty - 10, tx if right else tx + tw, ty + 2)]
+        marks.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
+                     f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
+                     f'<text x="{tx}" y="{ty}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{ink[o["action"]]}">{esc(text)}</text>')
+    label = f"Target {money(tgt)} (Clean Offer at List)"
+    lx, ly, anchor = target_label_spot(label, ys(tgt), Lm + 3, W - Rm - 3, boxes)  # OFR-296: never over a point's label
+    svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
+               f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" class="ax" style="fill:var(--good-strong)">{esc(label)}</text>')
+    svg += marks
     svg.append("</svg>")
     return "".join(svg)
+
+
+def text_width(text, size):
+    """Rough rendered width of chart text in SVG units (about 0.56 em a character at the report's sans-serif)."""
+    return len(text) * size * 0.56
+
+
+def target_label_spot(label, y, left, right, boxes):
+    """(x, y, anchor) for the Target line's label: above or below the line, at the left or right end, whichever covers
+    the fewest chart marks and point labels (the first free spot in that order)."""
+    w = text_width(label, 10)
+
+    def overlap(b):
+        x0, y0, x1, y1 = b
+        return sum(max(0, min(x1, c[2]) - max(x0, c[0])) * max(0, min(y1, c[3]) - max(y0, c[1])) for c in boxes)
+    spots = [(left, y - 3, "start", (left, y - 12, left + w, y - 1)), (right, y - 3, "end", (right - w, y - 12, right, y - 1)),
+             (left, y + 11, "start", (left, y + 2, left + w, y + 13)), (right, y + 11, "end", (right - w, y + 2, right, y + 13))]
+    x, ty, anchor, _ = min(spots, key=lambda s: overlap(s[3]))  # min keeps the first of equals
+    return x, ty, anchor
 
 
 STATUS_WORD = {"caution": "Watch", "risk": "Weak"}
@@ -597,7 +625,7 @@ def multi_html(R, v):
                + "".join(f'<tr><td>{esc(a)}</td><td>{esc(b)}</td><td class="good"><b>{esc(c)}</b></td><td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
                + "</tbody></table></div>")
     details = f'''<div class="pb"></div><div class="dh">Key Terms Side by Side</div>
-{snapshot(R)}
+{snapshot(R)}<div class="treason-slot"></div>
 <h2>Key Terms <span class="h2s">Favorable · Watch · Weak</span></h2>
 <div class="tbl"><table class="kt"><colgroup><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:9%"></colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
 <div class="legend"><span>Each offer's single review has its full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
@@ -626,13 +654,37 @@ def build_html(R, agent, sample=False, mode="auto", offer_id=None):
     return doc, mode, o
 
 
+# OFR-292: page 1's blocks that grow with the data, named in the overflow warning (the tallest ones first)
+PAGE1_BLOCKS = ((".p1 .hero .why", "the recommendation text"), (".p1 .ctr", "the counter or plan table"),
+                (".p1 .kpis", "the key numbers"), (".p1 .two", "the certainty, risks and chart row"),
+                (".p1 .opts", "the options table"), (".p1 .prelim", "the Preliminary line"),
+                (".p1 .treason", "the Terms Reason"))
+
+
 def fit_page_one(pg, limit=PAGE1_LIMIT):
-    """Measure page 1; switch to the compact layout when it would spill onto page 2."""
-    top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
+    """Measure page 1 and fit it: first the compact layout, then (OFR-292) the Terms Reason moves to the top of page 2.
+    Returns (top, blocks): where page 2 starts and, when page 1 still spills, its data-driven blocks by height."""
+    measure = "() => document.querySelector('.pb').getBoundingClientRect().top"
+    top = pg.evaluate(measure)
     if top > limit:
         pg.evaluate("() => document.body.classList.add('compact')")
-        top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
-    return top
+        top = pg.evaluate(measure)
+    if top > limit:
+        pg.evaluate("() => { const r = document.querySelector('.p1 .treason'), s = document.querySelector('.treason-slot');"
+                    " if (r && s) s.appendChild(r); }")
+        top = pg.evaluate(measure)
+    blocks = []
+    if top > limit:
+        heights = pg.evaluate("(sels) => sels.map(s => { const e = document.querySelector(s);"
+                              " return e ? e.getBoundingClientRect().height : 0; })", [s for s, _ in PAGE1_BLOCKS])
+        blocks = sorted(((h, name) for h, (_, name) in zip(heights, PAGE1_BLOCKS) if h), reverse=True)
+    return top, blocks
+
+
+def overflow_warning(name, top, limit, blocks):
+    """OFR-292: the warning names page 1's tallest data-driven blocks, not a guess."""
+    what = ", ".join(f"{n} ({h:.0f}px)" for h, n in blocks[:2]) or "page 1's content"
+    return f"{name}: page 1 overflows by {top - limit:.0f}px; the tallest blocks are {what}. Shorten the text that fills them."
 
 
 def write_pdf(R, agent, sample, mode, offer_id, out_dir):
@@ -642,10 +694,10 @@ def write_pdf(R, agent, sample, mode, offer_id, out_dir):
     path = os.path.join(out_dir, name)
     label = f"Single Offer Review · Seller Side · {street} · {o['label']}" if mode == "single" else f"Multiple Offer Review · Seller Side · {street}"
     limit = PAGE1_LIMIT_WIDE if mode == "multi" else PAGE1_LIMIT
-    top = render.html_to_pdf(doc, path, footer_html=render.footer(label), landscape=mode == "multi",
-                             before_print=lambda pg: fit_page_one(pg, limit))
+    top, blocks = render.html_to_pdf(doc, path, footer_html=render.footer(label), landscape=mode == "multi",
+                                     before_print=lambda pg: fit_page_one(pg, limit))
     if top > limit:
-        print(f"{name}: page 1 overflows by {top - limit:.0f}px; shorten the counter notes or custom flags.", file=sys.stderr)
+        print(overflow_warning(name, top, limit, blocks), file=sys.stderr)
     return path
 
 

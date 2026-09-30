@@ -50,6 +50,7 @@ def analyze(data, market=None, cma=None):
         order_flags(o)
     label_title_fees(R)
     ask_year_built(R)
+    ask_hoa_rider(R)
     R["ranking_reason"] = str(data.get("ranking_reason") or "").strip() or None  # OFR-279
     return R
 
@@ -150,7 +151,7 @@ def ask_year_built(R):
     """OFR-280: with riders read from an FR/BAR package, the lead-based paint check needs the year built; without it
     the check can't run, so the review asks for it."""
     L = R["listing"]
-    if L.get("year_built"):
+    if L.get("year_built") or L.get("built_before_1978") in (True, False):  # OFR-295: the seller disclosure answers it
         return
     live = R["active"] + R["incomplete"]
     if not any(o["contract_form"] in oe.cf.FRBAR and o.get("rider_codes") for o in live):
@@ -163,6 +164,27 @@ def ask_year_built(R):
     R["missing"].insert(meds[0] if meds else len(R["missing"]), a)
 
 
+def ask_hoa_rider(R):
+    """OFR-291: on an HOA or condo property, an FR/BAR offer whose rider list wasn't read (no `riders`, or only letters its
+    terms imply) gets an assumption asking about the HOA or condo rider instead of a flag, so every offer is checked the
+    same way and recording a rent-back's Rider U changes nothing."""
+    L = R["listing"]
+    if not (L["condo"] or L.get("hoa_monthly")):
+        return
+    unread = [o for o in R["active"] + R["incomplete"] if o["contract_form"] in oe.cf.FRBAR and not oe.riders_known(o)]
+    if not unread:
+        return
+    which = "condo rider (A)" if L["condo"] else "HOA or condo rider (A or B)"
+    a = {"scope": f"offer {unread[0]['id']}", "field": "riders", "value": "not checked", "impact": "med",
+         "why": f"Riders not listed: whether the {which} is attached wasn't checked. Confirm it's in the contract, with the "
+                "HOA disclosure"}
+    if len(unread) > 1:
+        a["also"] = [f"offer {o['id']}" for o in unread[1:]]
+    R["assumptions"].append(a)
+    lows = [i for i, x in enumerate(R["missing"]) if x["impact"] == "low"]
+    R["missing"].insert(lows[0] if lows else len(R["missing"]), a)
+
+
 def estimated_costs(R, offers):
     """OFR-272: every cost line the net rests on that is a default or an estimate, in short
     phrases, so the quick answer can name them all in one line."""
@@ -173,7 +195,16 @@ def estimated_costs(R, offers):
     out = []
     lines = {k: lab for o in offers for k, lab, v in o["ns"]["lines"] if v}
     bb_assumed = any(a["field"] == "buyer_broker_pct" for a in R["missing"])
-    if S["listing_fee_assumed"] or bb_assumed:
+    by_listing = [o for o in offers if o.get("bb_from_listing")]
+    if S["listing_fee_assumed"] and by_listing:
+        # OFR-293: the net sheet charges the market's total on one line when the listing broker pays the buyer's broker
+        total = oe.pct(S["listing_fee_pct"] + (S["default_buyer_broker_pct"] or 0))
+        mixed = len(by_listing) < len(offers)
+        out.append(f"commission ({total} total, the listing broker pays the buyer's broker"
+                   + (f"; on the other offers listing {oe.pct(S['listing_fee_pct'])}"
+                      + (f" and buyer's broker {oe.pct(S['default_buyer_broker_pct'] or 0)}" if bb_assumed and "bb" in lines else "")
+                      if mixed else "") + ", assumed)")
+    elif S["listing_fee_assumed"] or bb_assumed:
         what = [f"listing {oe.pct(S['listing_fee_pct'])}" if S["listing_fee_assumed"] else None,
                 "buyer's broker " + oe.pct(S["default_buyer_broker_pct"] or 0) if bb_assumed and "bb" in lines else None]
         out.append("commission (" + ", ".join(w for w in what if w) + ", assumed)")
@@ -275,9 +306,23 @@ def where(R, scope, also=()):
     return ", ".join(one(s) for s in [scope, *also])
 
 
+# OFR-287: offer terms the review assumed and the counter won't touch (an assumed inspection period, a missing deposit),
+# and the lead-paint check, are always asked after the high-impact gaps, even past the limit
+ALWAYS_ASK = ("inspection_days", "deposit", "year_built")
+
+
+def confirm_items(R, limit=4):
+    """The assumptions that would change the answer most, for the chat reply: the high-impact gaps (up to `limit`), the
+    assumed offer terms in ALWAYS_ASK, then other medium-impact gaps while there's room."""
+    asked = [a for a in R["missing"] if a["impact"] in ("high", "med")]
+    terms = [a for a in asked if a["field"] in ALWAYS_ASK]
+    high = [a for a in asked if a["impact"] == "high" and a not in terms][:limit]
+    med = [a for a in asked if a["impact"] == "med" and a not in terms][:max(0, limit - len(high) - len(terms))]
+    return high + terms + med
+
+
 def to_confirm(R, limit=4):
-    """The inputs that would change the answer most (high and medium impact), for the chat reply."""
-    return [a["why"] for a in R["missing"] if a["impact"] in ("high", "med")][:limit]
+    return [a["why"] for a in confirm_items(R, limit)]
 
 
 def threat(o):
@@ -346,13 +391,22 @@ def respond_by(o):
         f"Likely passed ({o['expires']})" if o.get("lapsed") == "likely" else o["expires"]
 
 
+def deadline_note(S):
+    """OFR-296: a seller's deadline on a weekend isn't a closing day: the last business day before it is ('' otherwise)."""
+    dl = S["deadline"]
+    if not dl or dl.weekday() < 5:
+        return ""
+    return f"a {dl:%A}: close by {oe.prior_weekday(dl):%a %b %-d}"
+
+
 def certainty(o, S):
     dl = S["deadline"]
     return {
         "score": o["score"]["total"], "band": o["score"]["band"][1], "band_class": o["score"]["band"][0],
         "walk_away_until": walk_away(o)[0], "walk_away_note": walk_away(o)[1],
         "deposit": f"{money(o['deposit'])} ({o['deposit'] / o['price']:.1%})" if o["deposit"] is not None else "not provided",
-        "closing": (f"{o['close']:%b %-d} vs. {dl:%b %-d} deadline" if dl else f"{o['close']:%b %-d} ({o['close_days']} days)"),
+        "closing": (f"{o['close']:%b %-d} vs. {dl:%b %-d} deadline" + (f" ({deadline_note(S)})" if deadline_note(S) else "") if dl else
+                    f"{o['close']:%b %-d} ({o['close_days']} days)"),
         "closing_ok": (o["close"] <= dl) if dl else True,
         "threat": threat(o),
     }
@@ -417,7 +471,7 @@ def counter_what(vs_offer, vs_downside, certainty, act):
     net = (f"{signed(vs_offer)} net vs. as offered" if vs_offer >= 0 else
            f"{signed(vs_offer)} on paper, {signed(vs_downside)} vs. the realistic downside")
     sure = ("more certain to close" if certainty > 0 else "less certain to close" if certainty < 0 else "same certainty")
-    text = f"{net}; {sure} ({certainty:+d} points)" if certainty else f"{net}; {sure}"
+    text = f"{net}; {sure} ({'+' if certainty > 0 else '−'}{abs(certainty)} points)" if certainty else f"{net}; {sure}"  # OFR-290
     return text if act == "COUNTER" else text + ", and it risks losing a strong offer"
 
 def single_view(R, o):
@@ -573,8 +627,9 @@ def multi_view(R):
     if act == "COUNTER":
         summary += f" ({signed(top_net - top['ns']['net_adj'])} vs. as offered"
         summary += f", {signed(top_net - top['ns_down']['net_adj'])} vs. downside)" if top_net < top["ns"]["net_adj"] else ")"
-    note = ("Only one counter goes out at a time, so the seller can't end up with two accepted contracts. " if act == "COUNTER" else "")
-    note += ("With the seller's written authorization, other buyers' agents are told the seller is "
+    # OFR-289: every plan says it (counter-rules.md), an acceptance plan too: one counter or acceptance at a time
+    note = "Only one counter or acceptance goes out at a time, so the seller can't end up with two accepted contracts. "
+    note +=("With the seller's written authorization, other buyers' agents are told the seller is "
              f"{'responding to' if act == 'COUNTER' else 'moving forward with'} another offer (NAR Standard of Practice 1-15); "
              "nothing is declined until the seller approves.")
 
@@ -674,6 +729,11 @@ def result(R, mode="auto", offer_id=None):
     return {
         "ok": True, "mode": mode, "property": L.get("address") or "", "list_price": money(L["list_price"]),
         "value_range": f"{money(L['cma_low'])}–{money(L['cma_high'])}" if L["cma_provided"] else "not provided",
+        # OFR-288: a range the agent gave (not a --cma handoff) is confirmed in one chat line
+        "value_range_confirm": (f"Using your CMA's {money(L['cma_low'])}–{money(L['cma_high'])} range."
+                                if L["cma_provided"] and not L.get("cma_source") else None),
+        "deadline_note": (f"The seller's {R['seller']['deadline']:%b %-d} deadline is {deadline_note(R['seller'])}."  # OFR-296
+                          if deadline_note(R["seller"]) else None),
         "summary": view,
         "offers": [offer_detail(x) for x in offers],
         "to_confirm": to_confirm(R),

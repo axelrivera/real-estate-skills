@@ -241,7 +241,7 @@ class CounterWording(unittest.TestCase):
     def test_counter_says_what_changes(self):
         """OFR-16: net and certainty in the Counter row come from the actual deltas."""
         s = review.counter_what(2500, 6000, -2, "COUNTER")
-        self.assertTrue("+$2,500" in s and "-2 points" in s and "less certain" in s, s)
+        self.assertTrue("+$2,500" in s and "−2 points" in s and "less certain" in s, s)  # OFR-290: a true minus
         s = review.counter_what(-3000, 4000, 5, "COUNTER")
         self.assertTrue("−$3,000" in s and "+$4,000" in s and "+5 points" in s and "more certain" in s, s)
         self.assertIn("strong offer", review.counter_what(800, 800, 0, "ACCEPT"))
@@ -569,6 +569,122 @@ class EvalIteration4(unittest.TestCase):
         why = review.multi_view(review.analyze(fixture("four-offers.json")))["why"]
         if "as backup" in why:
             self.assertIn("after the primary contract is fully signed", why)
+
+
+def heron_lake_summary():
+    """Eval 2 and 4's Heron Lake file: four offers from a summary (no riders read), the seller's Sunday deadline."""
+    data = fixture("four-offers.json")
+    for o in data["offers"]:
+        o.pop("riders", None)
+        if o["id"] != "A":
+            o.pop("contract_form", None)
+    data["offers"][2].update(rent_back_days=30, rent_back_monthly=0)
+    return data
+
+
+class EvalIteration5(unittest.TestCase):
+    """Fixes from eval iteration 5 (OFR-287 to OFR-296)."""
+
+    def test_assumed_inspection_and_deposit_are_asked(self):  # OFR-287
+        R = review.analyze(fixture("minimal-single.json"))
+        fields = [a["field"] for a in review.confirm_items(R)]
+        self.assertIn("inspection_days", fields)
+        self.assertIn("deposit", fields)
+        self.assertEqual([a["field"] for a in review.confirm_items(R)[:4]],
+                         [a["field"] for a in R["missing"] if a["impact"] == "high"][:4])  # the high gaps still lead
+        data = fixture("minimal-single.json")
+        data["offers"][0].update(inspection_days=10, deposit=10000)
+        fields = [a["field"] for a in review.confirm_items(review.analyze(data))]
+        self.assertNotIn("inspection_days", fields)
+        self.assertNotIn("deposit", fields)
+
+    def test_value_range_is_confirmed_in_one_line(self):  # OFR-288
+        out = review.result(review.analyze(fixture("four-offers.json")))
+        self.assertEqual(out["value_range_confirm"], "Using your CMA's $415,000–$428,000 range.")
+        self.assertIsNone(review.result(review.analyze(fixture("minimal-single.json")))["value_range_confirm"])
+
+    def test_every_plan_says_one_at_a_time(self):  # OFR-289
+        R = review.analyze(fixture("four-offers.json"))
+        s = review.multi_view(R)
+        self.assertEqual(s["action"], "ACCEPT")
+        self.assertIn("one counter or acceptance goes out at a time", s["plan_note"])
+
+    def test_hoa_rider_check_ignores_rider_bookkeeping(self):  # OFR-291
+        plain = heron_lake_summary()
+        with_u = heron_lake_summary()
+        with_u["offers"][2]["riders"] = ["U"]
+        a, b = (review.result(review.analyze(d), mode="multi") for d in (plain, with_u))
+        for out in (a, b):
+            c = next(o for o in out["offers"] if o["id"] == "C")
+            self.assertNotIn("rider_B", c["flag_keys"])
+            self.assertIn("riders", [x["field"] for x in review.analyze(plain)["missing"]])
+        self.assertEqual([(o["id"], o["score"]) for o in a["offers"]], [(o["id"], o["score"]) for o in b["offers"]])
+        C = next(o for o in review.analyze(plain)["offers"] if o["id"] == "C")
+        self.assertIn("U", [w[0] for w in C["rider_windows"]])  # the rent-back's agreement window counts without the letter
+        read = heron_lake_summary()
+        read["offers"][1]["riders"] = []  # the contract has no riders: the HOA rider is missing
+        B = next(o for o in review.result(review.analyze(read), mode="multi")["offers"] if o["id"] == "B")
+        self.assertIn("rider_B", B["flag_keys"])
+
+    def test_terms_reason_leaves_page_one_when_full(self):  # OFR-292
+        data = heron_lake_summary()
+        data["ranking_reason"] = "Ranked on terms only: 20% down, full underwriting, a $10,000 gap and an Oct 26 closing."
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()) as err:
+            path = review_render.main([self._write(tmp, data), "--out", tmp])[0]
+            with open(path, "rb") as f:
+                import re
+                pages = len(re.findall(rb"/Type\s*/Page[^s]", f.read()))
+        self.assertEqual(pages, 2, err.getvalue())
+        self.assertNotIn("overflows", err.getvalue())
+        msg = review_render.overflow_warning("x.pdf", 1010, 989, [(40.0, "the Terms Reason"), (120.0, "the plan")][::-1])
+        self.assertIn("the plan (120px)", msg)
+        self.assertNotIn("custom flags", msg)
+
+    @staticmethod
+    def _write(tmp, data):
+        p = os.path.join(tmp, "listing.json")
+        with open(p, "w") as f:
+            json.dump(data, f)
+        return p
+
+    def test_commission_line_matches_the_net_sheet(self):  # OFR-293
+        data = fixture("expired-aga.json")
+        data["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
+        R = review.analyze(data)
+        est = review.estimated_costs(R, R["offers"])
+        self.assertTrue(est[0].startswith("commission (5% total"), est)
+        listing = next(lab for k, lab, _ in R["offers"][0]["ns"]["lines"] if k == "listing")
+        self.assertIn("5%", listing)
+
+    def test_title_fees_wording_is_the_same_by_county(self):  # OFR-294
+        for county in ("Seminole", "Collier"):
+            data = fixture("minimal-single.json")
+            data["listing"].update(state="FL", county=county)
+            R = review.analyze(data)
+            self.assertEqual(R["costs"].described("closing_costs.seller_title_fees"), "Florida default", county)
+
+    def test_seller_disclosure_answers_the_lead_paint_check(self):  # OFR-295
+        data = fixture("counter-chain-standard.json")
+        data["listing"]["built_before_1978"] = False
+        R = review.analyze(data)
+        self.assertNotIn("year_built", [a["field"] for a in R["missing"]])
+        self.assertNotIn("lead_paint", [f.get("topic") for f in R["offers"][0]["flags"]])
+        data["listing"]["built_before_1978"] = True
+        self.assertIn("lead_paint", [f.get("topic") for f in review.analyze(data)["offers"][0]["flags"]])
+
+    def test_weekend_deadline_and_chart_label(self):  # OFR-296
+        R = review.analyze(fixture("four-offers.json"))  # Nov 15, 2026 is a Sunday
+        self.assertEqual(review.deadline_note(R["seller"]), "a Sunday: close by Fri Nov 13")
+        self.assertIn("close by Fri Nov 13", review.result(R)["deadline_note"])
+        data = fixture("four-offers.json")
+        data["seller"]["deadline"] = "2026-11-13"
+        self.assertIsNone(review.result(review.analyze(data))["deadline_note"])
+        # a point label at the left end of the Target line pushes the Target label to the right end
+        x, _, anchor = review_render.target_label_spot("Target $149,590 (Clean Offer at List)", 100, 45, 407,
+                                                        [(40, 88, 90, 110)])
+        self.assertEqual((x, anchor), (407, "end"))
+        self.assertEqual(review_render.target_label_spot("Target", 100, 45, 407, [])[2], "start")
 
 
 class RevisionSource(unittest.TestCase):

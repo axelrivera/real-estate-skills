@@ -440,6 +440,10 @@
    "impact": "med",
    "scope": "listing",
    "value": false
+  },
+  {
+   "field": "riders",
+   "impact": "med"
   }
  ],
  "incomplete": {
@@ -527,6 +531,10 @@
    "impact": "med",
    "scope": "listing",
    "value": false
+  },
+  {
+   "field": "riders",
+   "impact": "med"
   },
   {
    "field": "holding_monthly",

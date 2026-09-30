@@ -91,6 +91,7 @@ td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow
 .compact .kpis b{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
 .compact .p1 td{padding-top:1.4px;padding-bottom:1.4px} .compact .rank td{font-size:8.2pt} .compact .rank td.rk{font-size:11pt}
 .compact .ctr .note{padding:3px 10px;font-size:7.4pt} .compact .legend.okey{font-size:7pt} .compact h2{margin:5px 0 2px} .compact .prelim{padding:3px 8px;font-size:7.8pt;margin-top:4px}
+.compact .scat{height:170px} .compact .nextstep{margin-top:4px;padding:3px 10px;font-size:8.2pt} /* OFR-292: room for four offers */
 
 /* the comparison prints landscape */
 .wide .snap div b{white-space:nowrap} .wide .rank .pill,.wide .rank td:nth-child(3){white-space:nowrap} .wide .legend.okey{grid-template-columns:1fr 1fr 1fr}

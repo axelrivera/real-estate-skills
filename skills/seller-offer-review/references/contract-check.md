@@ -13,9 +13,9 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `approval_expires` | the pre-approval letter expires before closing | Med |
 | `proof_of_funds` | `proof_of_funds` is below the down payment plus the appraisal gap the buyer covers | High |
 | `counter_chain` | the live offer is weaker than the seller's last counter in `prior_counters` on inspection, loan approval, deposit, concessions or gap, or has another closing date | High |
-| `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (only when `riders` is listed) | High (F: Med) |
+| `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (every offer whose rider list was read; on FR/BAR an unread list is an assumption instead, `listing-file.md`) | High (F: Med) |
 | `rider_GG` | Rider GG attached: the compensation agreement isn't seen yet | Med |
-| `lead_paint` | built before 1978 with no lead-based paint disclosure (Rider P) | High |
+| `lead_paint` | built before 1978 (`year_built`, or `built_before_1978` from the seller disclosure) with no lead-based paint disclosure (Rider P) | High |
 | `loan_amount` | `loan_amount` doesn't match the down payment; or the deposit, `loan_amount` and `balance_to_close` don't add up to the price (a counter changed the price without restating the loan and balance) | Med |
 | `buyer_changes` | the buyer's counter changed a term from the buyer's original terms (the first `by: "buyer"` entry in `prior_counters`) that no seller counter stated: a later closing date, a longer period, a smaller deposit, more concessions | Med |
 | `inspection_period` | an inspection period of 15 days or more | Med |

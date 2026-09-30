@@ -171,6 +171,9 @@ class Costs:
     def described(self, path):
         """Plain words for where a value came from: 'Florida default', 'national estimate', 'this listing'."""
         src = self.source(path)
+        if src == "mixed" and path not in self.over:  # OFR-294: a county's own title fee over the state's is still built in
+            subs = {s for p, s in self.market.sources.items() if p.startswith(path + ".")}
+            src = "state" if subs <= {"state", "county"} else src
         state = profiles.STATES.get(self.state or "", self.state or "market")
         # OFR-253: a Florida value is labeled Assumed wherever it's described when the state came from the contract form
         default = f"Assumed {state} default" if self.state_assumed else f"{state} default"
@@ -697,6 +700,28 @@ def prepare_offer(o, L, S, A):
     return o
 
 
+def implied_riders(o):
+    """OFR-291: CR-7 letters the offer's own fields already imply: on FR/BAR a rent-back is Rider U. Recording the letter
+    or not changes nothing: the rent-back agreement's window counts either way, and a list holding only it doesn't show
+    the whole list was read. (FHA without Rider E, or a sale contingency without Rider V, is an issue, not implied.)"""
+    return ["U"] if o["contract_form"] in cf.FRBAR and o.get("rent_back_days") else []
+
+
+def riders_known(o):
+    """True when the offer's rider list was read (`riders` given, [] for none), so a missing rider can be flagged. A list
+    of only the letters the offer's terms imply doesn't count (implied_riders)."""
+    if o.get("riders") is None:
+        return False
+    codes, others = cf.rider_codes(o["riders"])
+    return bool(others) or not codes or any(c not in implied_riders(o) for c in codes)
+
+
+def rider_item(o):
+    """The offer with its implied riders added, for contract_forms' rider windows (OFR-291)."""
+    extra = [c for c in implied_riders(o) if c not in (o.get("rider_codes") or [])]
+    return {**o, "riders": list(o.get("riders") or []) + extra} if extra else o
+
+
 def set_windows(o):
     """The windows that depend on the closing date (Rider F's blank date, AGA-1 capped at closing, FHA/VA to closing,
     Rider H and U), then risk_days. Run again when a counter moves closing (ENG-14)."""
@@ -706,7 +731,7 @@ def set_windows(o):
     if basis == "aga":  # OFR-106: AGA-1's own periods can run past closing; the window stops there, and it's flagged
         o["aga_window_full"] = cf.appraisal_window("aga", o["close_days"], o, cap=False)
     o["appraisal_risk"] = o["appraised"] and bool(o["appraisal_days"] or o["appraisal_waived"])
-    o["rider_windows"], _ = cf.rider_windows(o["contract_form"], o, o["close_days"])
+    o["rider_windows"], _ = cf.rider_windows(o["contract_form"], rider_item(o), o["close_days"])
     o["risk_days"] = risk_days(o)
     o["risk_days_ex_appraisal"] = risk_days({**o, "appraisal_days": 0})  # AGA-1's window applies only on a low valuation
     o["walkaway_days"] = o["inspection_days"] if o["inspection_walkaway"] else 0  # OFR-121: cancel for any reason
@@ -734,7 +759,7 @@ def rider_money(o, A, sc):
     o["short_sale"] = "G" in codes
     # Cancel windows the riders add (insurance, mold, drywall, occupancy and compensation agreements, attorney approval):
     # they count toward "days until firm" like the inspection period (contract_forms.rider_windows)
-    _, missing = cf.rider_windows(o["contract_form"], o, o["close_days"])  # the windows themselves: set_windows()
+    _, missing = cf.rider_windows(o["contract_form"], rider_item(o), o["close_days"])  # the windows themselves: set_windows()
     for code in missing:
         A.add(sc, f"rider_{code}", "not counted", f"{cf.rider_name(code)} attached without its date: its cancel window isn't "
               "counted, so the offer may be less firm than it scores. Get the date from the rider", "med")
@@ -1079,6 +1104,16 @@ def contract_checks(o, L):
             "Restate them in the seller's response (the counter below does).", "terms", None, "counter_chain")
 
     riders = o.get("riders") or []
+    # OFR-291: the HOA check runs on every offer whose rider list was read; an unread list is an assumption instead
+    if riders_known(o):
+        if L["condo"] and not _has_rider(riders, "A"):
+            add("High", "The property is a condo but no condo rider is attached.",
+                "Ask for the signed condo rider, and deliver the association documents as soon as it's signed.", "riders",
+                "Please attach the signed condominium rider.", "rider_A")
+        elif L.get("hoa_monthly") and not _has_rider(riders, "A", "B"):
+            add("High", "The property has an HOA but no HOA or condo rider is attached.",
+                "Add the HOA or condo rider, and give the buyer the required HOA disclosure, before accepting.", "riders",
+                topic="rider_B")
     if riders:
         if o["financing"] in ("fha", "va") and not _has_rider(riders, "E"):
             add("High", f"{FIN_LABEL[o['financing']]} financing without an FHA/VA rider.", "Ask for the signed FHA/VA financing rider.", "riders",
@@ -1092,14 +1127,6 @@ def contract_checks(o, L):
                 and not _has_rider(riders, "F"):
             add("Med", "Appraisal period stated without an appraisal rider.", "Ask which appraisal terms apply, and for the rider.", "riders",
                 "Which appraisal terms apply? Please send the appraisal rider.", "rider_F")
-        if L["condo"] and not _has_rider(riders, "A"):
-            add("High", "The property is a condo but no condo rider is attached.",
-                "Ask for the signed condo rider, and deliver the association documents as soon as it's signed.", "riders",
-                "Please attach the signed condominium rider.", "rider_A")
-        elif L.get("hoa_monthly") and not _has_rider(riders, "A", "B"):
-            add("High", "The property has an HOA but no HOA or condo rider is attached.",
-                "Add the HOA or condo rider, and give the buyer the required HOA disclosure, before accepting.", "riders",
-                topic="rider_B")
         codes = o.get("rider_codes") or []
         if "G" in codes:
             add("High", "Short sale (Rider G): the contract isn't firm until the seller's lender approves it (90 days after the "
@@ -1127,8 +1154,10 @@ def contract_checks(o, L):
                 "Get the signed agreement (due 3 days after the Effective Date if blank) and put its amount in the net.", "terms",
                 "Please send the compensation agreement for the seller's review.", "rider_GG")
         yb = L.get("year_built")
-        if yb and yb < 1978 and not _has_rider(riders, "P"):
-            add("High", f"Built {yb}: no lead-based paint disclosure attached (federally required before 1978).",
+        pre78 = yb < 1978 if yb else L.get("built_before_1978") is True  # OFR-295: the seller disclosure's answer
+        if pre78 and not _has_rider(riders, "P"):
+            add("High", (f"Built {yb}" if yb else "Built before 1978") + ": no lead-based paint disclosure attached "
+                "(federally required before 1978).",
                 "Complete the lead-based paint disclosure with the seller and have the buyer sign it before accepting.", "riders",
                 topic="lead_paint")
     if o.get("aga_named"):  # AGA-1's name and the loans it fits are contract_forms' rules (ENG-15)

@@ -49,11 +49,12 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `state`, `county` | state read from the address ("…, FL 32750"). Neither: an offer on an FR/BAR contract means Florida (its costs, labeled Assumed); otherwise national estimates, never Florida's. Either way it's listed as an assumption | high |
 | `list_price` | **required** | — |
 | `beds`, `baths`, `sqft`, `year_built` | shown as "—". Without `year_built` the lead-based paint check can't run; when riders were read from an FR/BAR package it's asked for (med). Take it from the tax record or MLS | — |
+| `built_before_1978` | `true` or `false` from the seller's property disclosure ("Was the Property built before 1978?") when the year isn't known: it runs the lead-based paint check, so the year isn't asked | asked with `year_built` | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
 | `hoa_monthly` | unknown → HOA estoppel still charged, listed as an assumption; `0` = no HOA | low |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
-| `cma_low`, `cma_high` (`cma_mid` optional) | from `--cma`; else both = list price, appraisal risk measured vs. list | **high** |
+| `cma_low`, `cma_high` (`cma_mid` optional: the CMA's midpoint or median adjusted comp price) | from `--cma`; else both = list price, appraisal risk measured vs. list. A range given here (not by `--cma`) comes back as `value_range_confirm`, the one line the reply uses to confirm it | **high** |
 | `annual_tax` | market fallback rate × list price (Florida 1.8%); no rate → proration left out | low / med |
 | `current_tax_bill_paid` | `true` once the seller paid this year's bill; else false, and asked for Nov and Dec closings | med |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`). Missing: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
@@ -110,7 +111,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `proof_of_funds` | $ the buyer's proof of funds verifies (bank letter or statement). Below the down payment plus any appraisal gap the buyer covers, it's a High issue | none | — |
 | `approval_max_price`, `approval_max_loan` | the caps printed on the pre-approval letter. A price (or loan) above them is a High issue, and a counter above the price cap asks for an updated letter | none | — |
 | `lender_called` | bool | false → approval score capped at 3 | — |
-| `deposit` | total escrow $ | unknown → scored 3 | med |
+| `deposit` | total escrow $ | unknown → scored 3, and always in `to_confirm` | med |
 | `seller_concessions` | $; `0` when the contract or offer you read has no seller-paid closing costs or concessions | 0 | **high** |
 | `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else 2.5% assumed | **high** when the seller offered, med when assumed |
 | `home_warranty` | $ seller pays | 0 | — |
@@ -118,7 +119,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `form_revision`, `form_revision_source` | FR/BAR revision as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). `form_revision_source`: `"footer"` when you read it from the form's footer; leave it out when it came from anywhere else, and record the revision as given | none; a revision other than the verified one adds a chat note, quoting "the footer reads" only for `"footer"` | — |
 | `repair_limits` | Standard only (alone or with Rider L): `{general, wdo, permit}` in dollars or as a share of price | 1.5% each (Para. 9(a)) | — |
 | `inspection_walkaway` | Other contracts only: `true` when the buyer may cancel for any reason in the period, `false` for a repair or objection process only. A paid or free termination period (a Texas option period, a due-diligence period) goes in `inspection_days`; set this only when the agent confirmed the contract's terms, else leave it out so the assumption is recorded. Its fee goes in `other_terms` | assumed `true` and flagged | **high** |
-| `inspection_days` | days | FR/BAR: 15 (Para. 12(a), and Riders K and L, when blank); any other contract: 10 | med |
+| `inspection_days` | days | FR/BAR: 15 (Para. 12(a), and Riders K and L, when blank); any other contract: 10. An assumed period is never countered and is always in `to_confirm` | med |
 | `loan_approval_days` | days | 30 (financed) | low |
 | `appraisal_contingency` | days to the end of the buyer's appraisal notice, `true` or `false`. Rider F: the rider's date plus 3 days. FR/BAR with no Rider F, E or AGA-1: leave it out (Para. 8(b) makes the appraisal part of Loan Approval) | Rider F attached: its default (10 days before closing, plus 3); FR/BAR financed with no appraisal rider: the loan approval period, no assumption; otherwise 21 days if financed | med |
 | `appraisal_gap` | $ the buyer covers (FHA/VA: recorded, credited 0) | 0 | — |
@@ -132,8 +133,8 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |
 | `title_by` | the Para. 9(c) box, who designates the closing agent: `seller` (i), `buyer` (ii), `buyer_regional` (iii, the Miami-Dade/Broward regional provision; the seller still pays the title search up to `title_search_cap`, $200 if blank, and the lien search). The box also decides which title searches are in the seller's net (`seller-costs.md`). Missing: local custom, listed as an assumption. FR/BAR Para. 9(c): that party also pays the owner's policy ((i) `seller`; (ii) and (iii) `buyer`), so the net follows the contract unless `listing.costs.title_payer` is set | the local custom | — |
 | `addenda` | names of the attached addenda, as printed ("Appraisal Gap Addendum (AGA-1)", "Counter Offer (CO-3)"): the AGA-1 name sets `appraisal_form: aga` | none | — |
-| `riders` | CR-7 letters or names, as attached ("K", "FHA/VA Financing"). Rider K or L on the Standard form changes the inspection terms; I, K, L on AS IS stop the review (RESERVED) | none; rider checks run only when listed | — |
-| `rent_back_days`, `rent_back_monthly` | Rider U: days the seller stays after closing and the monthly rent the seller pays | not in the net; flagged when Rider U is attached. `0` rent is a free rent-back, in the net at $0 | med |
+| `riders` | CR-7 letters or names, the whole list as the contract's rider checkboxes show it ("K", "FHA/VA Financing"); `[]` when none is checked. Leave it out when you haven't seen the rider list (an offer summary). Rider K or L on the Standard form changes the inspection terms; I, K, L on AS IS stop the review (RESERVED) | none. Rider checks run only when listed. On an HOA or condo property, an FR/BAR offer whose list wasn't read (left out, or only Rider U, which a rent-back already implies) gets an assumption asking about the HOA or condo rider; a read list without it is a High issue | med |
+| `rent_back_days`, `rent_back_monthly` | Rider U: days the seller stays after closing and the monthly rent the seller pays. On FR/BAR a rent-back is Rider U, so its agreement window counts whether or not "U" is in `riders` | not in the net; flagged when Rider U is attached. `0` rent is a free rent-back, in the net at $0 | med |
 | `drywall_waived` | Rider M: `true` when the buyer waived the drywall inspection, so its cancel window isn't counted | false | — |
 | `seller_financing` | Rider C: the note amount the seller carries (paid over time, not cash at closing) | 0 | — |
 | `assessment_payoff` | Rider EE or the CDD addendum: an assessment balance the seller agrees to pay at closing | 0; flagged when Rider EE is attached | — |
@@ -165,7 +166,7 @@ A single-offer review carries the name too (under the headline and in the PDF fi
 The value range sets where appraisal risk starts. Use the CMA, in this order:
 
 1. A seller CMA's `.cma.json` from earlier in this conversation (`saved-files.md`): pass it with `--cma`. Its low, high and midpoint become the appraisal range, and its subject facts (tax bill, HOA dues, flood zone, roof year) fill what the listing doesn't say. A buyer-side CMA, or one for another address, is flagged high: confirm it before relying on it.
-2. Any other CMA (a PDF from an earlier conversation, another tool's report, notes, a pasted range): read the low and high, confirm them with the agent in one line, and put them in `listing.cma_low` / `cma_high`.
+2. Any other CMA (the agent's own attached CMA, a PDF from an earlier conversation, another tool's report, notes, a pasted range): read the low and high, put them in `listing.cma_low` / `cma_high`, and confirm them in one line of the reply (`value_range_confirm`: "Using your CMA's $415,000–$428,000 range.") without waiting for an answer.
 3. Nothing: leave them out. Appraisal risk is measured against list price, the answer is Preliminary, and a price over list is never countered down (the counter asks for gap coverage instead).
 
 Market costs come from the listing's state and county (`local-costs.md`): Florida closing costs, title rates and tax proration are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Outside Florida, look up the state's transfer tax from a trusted source and put it in `listing.costs`. Without terms, commission is 5% total. `seller-costs.md` explains each line and takes a title company quote.

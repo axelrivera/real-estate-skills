@@ -840,6 +840,13 @@
    "impact": "med",
    "scope": "listing",
    "value": false
+  },
+  {
+   "also": {
+    "count": 1
+   },
+   "field": "riders",
+   "impact": "med"
   }
  ],
  "incomplete": {
@@ -930,6 +937,13 @@
    "impact": "med",
    "scope": "listing",
    "value": false
+  },
+  {
+   "also": {
+    "count": 1
+   },
+   "field": "riders",
+   "impact": "med"
   },
   {
    "field": "holding_monthly",

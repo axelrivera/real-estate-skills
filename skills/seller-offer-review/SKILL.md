@@ -16,7 +16,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **Private financial details.** Pre-approval letters, proof of funds and bank statements carry account and loan numbers and sometimes Social Security numbers: never copy those into the data file, the chat or a report ("Account ending 1234" at most). Keep only the amounts and the lender's name. The listing file holds the seller's payoff: the review is for the seller, never for a buyer's agent.
-- **Contract support.** Only Florida FR/BAR contracts (AS IS and Standard, with their CR-7 riders and addenda) are fully supported. For any other contract the script output has `support: "best_effort"` and the line to use in `chat_notes`: say it once in chat, in your own short words. The same goes for a note that an FR/BAR contract isn't the revision the rules were checked against. Never put either in a PDF or markdown report.
+- **Contract support.** Only Florida FR/BAR contracts (AS IS and Standard, with their CR-7 riders and addenda) are fully supported. For any other contract the script output has `support: "best_effort"` and the line to use in `chat_notes`: relay it once in chat, word for word (it names what is fully supported), outside the reply's cap. The same goes for a note that an FR/BAR contract isn't the revision the rules were checked against. Never put either in a PDF or markdown report.
 - **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
 
 ## Never Block on Missing Data
@@ -31,12 +31,12 @@ One JSON file per property, in a temporary folder, never the outputs folder (`re
 
 - **Contract or offer uploaded:** read all of it, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly); `references/contract-fields.md` says where each field lives. FR/BAR: `references/frbar-riders.md`, `references/frbar-addenda.md` and `references/frbar-contract.md`; any other contract: `references/other-contracts.md`. Check it's complete with `references/contract-check.md` (and `references/frbar-package-check.md`) and record what the engine doesn't raise in `contract_issues`. No seller-paid costs in it: `seller_concessions: 0`. A counteroffer chain: the terms that would govern if signed, and the seller's earlier counters in `prior_counters`. A condo: also `references/condo.md`.
 - **Pre-approval letter or proof of funds:** `approval`, `lender`, and the letter's caps in `approval_max_price` / `approval_max_loan`.
-- **Offer described in chat:** take what's given.
+- **Offer described in chat or in a summary:** take what's given. Leave `riders` out unless you saw the contract's rider list (a rent-back goes in `rent_back_days`, which already implies Rider U); the review then asks about the HOA rider instead of flagging it.
 - **Another state's paid or free termination period** (a Texas option period, a due-diligence or attorney-review period): record it as `inspection_days`, leave `inspection_walkaway` out unless the agent confirmed the contract lets the buyer cancel for any reason in it (the engine then records a high-impact assumption that it does), and put any option or due-diligence fee in `other_terms`. Say in chat that the period was treated as a walk-away window.
 
 Record only what the documents or the agent say: the engine's default is labeled, a guess isn't. Buyer letters, photos and personal details never go in the file or the report.
 
-**Value range:** a seller CMA's `.cma.json` from earlier in this conversation goes in with `--cma`; any other CMA's low and high, confirmed with the agent in one line, go in `listing.cma_low` / `cma_high`; with none, appraisal risk is measured against list price and the answer is Preliminary. **Market costs:** the engine takes them from the listing's state and county (`references/local-costs.md`, `references/seller-costs.md`); with no state anywhere, an FR/BAR contract means Florida (labeled Assumed), anything else national estimates; outside Florida, look up the state's transfer tax and put it in `listing.costs`. Details for both are in Value Range and Costs in `references/listing-file.md`.
+**Value range:** a seller CMA's `.cma.json` from earlier in this conversation goes in with `--cma`; any other CMA's low and high (the agent's own attached CMA too) go in `listing.cma_low` / `cma_high`, and the reply says `value_range_confirm` in one line ("Using your CMA's $415,000–$428,000 range.") without waiting for an answer; with none, appraisal risk is measured against list price and the answer is Preliminary. **Market costs:** the engine takes them from the listing's state and county (`references/local-costs.md`, `references/seller-costs.md`); with no state anywhere, an FR/BAR contract means Florida (labeled Assumed), anything else national estimates; outside Florida, look up the state's transfer tax and put it in `listing.costs`. Details for both are in Value Range and Costs in `references/listing-file.md`.
 
 ## 2. Run and Review
 
@@ -52,14 +52,16 @@ It prints every value already formatted: the page-1 summary, each offer's net sh
 
 ## 3. Deliver
 
-Pick the reply by what the agent asked for; every number comes from the output. Caps are for the prose; tables, and the one line each Blocking or High issue takes, don't count toward them.
+Pick the reply by what the agent asked for; every number comes from the output.
+
+**What counts toward a cap:** the prose. Outside it: tables (a net sheet, a lapsed offer's reference counter), the one line each Blocking or High issue takes, the `chat_notes` line and the one-line `value_range_confirm`. **When it doesn't fit,** cut in this order: the why behind the recommendation to one clause, the "Estimated:" line to the cost names without figures, then the comparison to its two biggest differences. Never cut the net and certainty, a Blocking or High line, the counter's changed terms, the plan, or the missing-inputs question.
 
 | Asked For | The Reply Contains | Cap |
 |---|---|---|
-| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix, one line each (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; every line of `estimated_costs` in one short "Estimated:" line; the top missing inputs as one question; the PDF offered in one line | about 200 words, no tables. A lapsed offer (`summary.revive`) adds its reference counter table and the net as written, labeled reference only |
-| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty), the net with payoff status, one line with the recommendation and counter, `estimated_costs` in one line with what replaces them (a title quote, the tax bill), the PDF offered in one line | one table plus about 150 words |
-| **Comparison question** (Rider K vs. a plain Standard offer, AS IS vs. Standard, cash vs. financed) | the quick-question lines, then the comparison below | about 350 words |
-| **Re-rank request** ("rank B first", "the seller likes B") | the ranking the terms support, one sentence on why, and the terms reason in `ranking_reason`; a new PDF when the ranking or the plan changed | about 150 words |
+| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix, one line each (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; every line of `estimated_costs` in one short "Estimated:" line; the top missing inputs (`to_confirm`) as one question; the PDF offered in one line. A lapsed offer (`summary.revive`) adds its reference counter table and the net as written, labeled reference only | about 200 words, no tables but the lapsed offer's (outside the cap) |
+| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty; keep the Counter column when countering), the net with payoff status, one line with the recommendation and counter, `estimated_costs` in one line with what replaces them (a title quote, the tax bill), the PDF offered in one line | one table plus about 150 words |
+| **Comparison question** (Rider K vs. a plain Standard offer, AS IS vs. Standard, cash vs. financed) | the quick-question lines, then the comparison below in three or four short points | about 450 words |
+| **Re-rank request** ("rank B first", "the seller likes B") | the fair-housing sentence when a letter or personal detail came in, the ranking the terms support with one sentence on why, and the terms reason in `ranking_reason`; a new PDF when the ranking, the plan or the terms reason changed, or when there's no PDF yet in this conversation | about 200 words |
 | **Full review in chat** | `assets/offer-review-template.md`, filled in | the template |
 | **A report for the seller** | the PDF below, then the chat lines under it | about 120 words |
 
@@ -73,13 +75,15 @@ python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|mult
 
 `--profile` puts the agent's name and colors on it (`references/saved-files.md`). The PDF goes to the outputs folder; if it can't render, give the markdown review. `--packet` (every offer's report): the comparison plus a single review of each active offer.
 
-With the PDF, the chat says: the recommendation with the net and certainty; the counter or the plan per offer; then the top missing inputs as one line. Offer the other format in one line.
+With the PDF, the chat says: the recommendation with the net and certainty; the counter or the plan per offer, with 2+ offers ending on the first sentence of `summary.plan_note` (one counter or acceptance at a time); then the top missing inputs as one line. Offer the other format in one line.
+
+**Dates:** a `deadline_note` (the seller's deadline falls on a weekend) goes in the reply in a clause. The counter's closing date already moves to the prior Friday and its time for acceptance to a weekday.
 
 **Rider K questions** ("how does Rider K compare to a normal Standard offer?"): run the offer as written only; there's no second listing file for a plain Standard version. Explain the difference from Rider K on the Standard Form in `references/scoring-rubric.md`: it firms the deal sooner than the Standard repair windows, the seller owes no repairs (so the downside has the inspection credit, not the General Repair Limit), why the scores may match, and its red flags. Quote only numbers from the output; describe the plain Standard side in words.
 
 **Time for acceptance passed:** the review is CONTRACT INCOMPLETE and shows, as reference, what a seller counter with a new time for acceptance could look like (`summary.revive`). State the fact (the offer's own deadline has passed), never whether it can still be accepted, and never a send-by date in the past. The quick answer still gives the net as written and the certainty, labeled reference only. Only likely passed (delivery date unknown): ask when it was delivered.
 
-**Year built:** when `to_confirm` asks for it (riders were read from an FR/BAR package and the year is missing), ask for it in the missing-inputs question: a home built before 1978 needs the lead-based paint disclosure (Rider P) before accepting.
+**Year built:** when `to_confirm` asks for it (riders were read from an FR/BAR package and the year is missing), ask for it in the missing-inputs question: a home built before 1978 needs the lead-based paint disclosure (Rider P) before accepting. When the seller's property disclosure in the package answers "built before 1978?", record `listing.built_before_1978` instead and don't ask.
 
 **Terms reason:** when the seller saw a buyer letter, or wants an offer the ranking doesn't put first, write the terms reason for the pick in the listing file's `ranking_reason` (price, terms, financing, timing; never the buyer). It prints on the report as Terms Reason.
 

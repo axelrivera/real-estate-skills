@@ -14,7 +14,7 @@ This is a completeness check, not a legal opinion. Say what is missing or incons
 
 ## Form and Riders
 
-- **The form is named on page 1 and in every footer.** "AS IS Residential Contract for Sale and Purchase" (FloridaRealtors/FloridaBar-ASIS-7x) or "Residential Contract for Sale and Purchase" (FloridaRealtors/FloridaBar – 7x). A package mixing pages of both, or a footer revision other than the verified one, is an issue to raise.
+- **The form is named on page 1 and in every footer.** "AS IS Residential Contract for Sale and Purchase" (FloridaRealtors/FloridaBar-ASIS-7x) or "Residential Contract for Sale and Purchase" (FloridaRealtors/FloridaBar – 7x). A package mixing pages of both, or a footer revision other than the verified one, is an issue to raise. The revision code decides: copyright years that differ between pages or forms of the set (© 2024 on one page, © 2026 on the rest, same Rev.) are printed that way on the real forms, so don't flag them.
 - **Riders I, K and L on an AS IS contract:** RESERVED on that form. The package can't be read as written; ask which form and riders were intended.
 - **Riders K and L together on a Standard contract:** they replace the inspection terms in different ways. Ask which governs.
 - **Para. 19 checklist vs. attached riders:** every checked rider is attached and initialed by all parties, and every attached rider is checked. A rider "counts" only with every party's initials.

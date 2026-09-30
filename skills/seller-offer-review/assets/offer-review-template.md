@@ -3,6 +3,8 @@
 
 ## Offer Review: {{property}} (List {{list_price}})
 
+{{value_range_confirm, when present}} {{deadline_note, when present}}
+
 <!-- single mode; when summary.action is INCOMPLETE, write only the title, why, the fixes as a list ("issue: fix") and the next step: no counter, options or recommendation.
      Exception, an offer whose time for acceptance has passed (summary.revive is present): a seller counter would set a new time for acceptance, so after the fixes also give the "What a Counter Could Look Like" block below. It's reference, never a recommendation. -->
 **{{summary.title}}.** {{summary.why}}
@@ -40,7 +42,7 @@
 |---|---|---|---|---|---|---|---|---|---|
 | {{r.rank}} | {{r.offer}} ({{r.financing}}) | {{r.action}} | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days}} days | {{r.close}} | {{r.terms}} |
 
-{{summary.plan_note}}
+{{summary.plan_note}} <!-- always there: one counter or acceptance goes out at a time -->
 
 {{when summary.terms_reason:}} **Terms Reason:** {{summary.terms_reason}}
 
