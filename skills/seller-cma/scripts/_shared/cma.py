@@ -230,33 +230,20 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
-    # CMA-253: labels go where they cover no marker and no other label: the band's label in the first free corner,
-    # a point's label on the side asked for, else the side covering least (`crowded_labels`: ones that overlap a label)
+    # CMA-205, CMA-253: labels step aside from the markers (and each other) instead of printing over them; the band's
+    # label goes in the first corner clear of markers
     marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
     marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
-    placed, crowded, area = [], [], (Lm, T, W - R, H - B)
+    placer = _LabelPlacer(marks, (Lm, T, W - R, H - B))
     band_text = f'{L("band")} {k(band[0])}–{k(band[1])}'
     band_w = _text_w(band_text, 12, bold=True)
     spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
              for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
     bx, by, anchor, box = next((sp for sp in spots if not _hits(sp[3], marks, [])), spots[0])
-    placed.append(box)
+    placer.boxes.append(box)
     o.append(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>')
-
-    def place(px, py, side, text, cls, gap, size, bold=False):
-        own = [m for m in marks if abs(m[0] - px) > 0.5 or abs(m[1] - py) > 0.5]  # its own marker never blocks it
-        tries = []
-        for v in [side] + [v for v in ("right", "left", "above", "below") if v != side]:
-            b = _label_box(px, py, v, text, gap, size, bold)
-            out = not (area[0] <= b[0] and b[2] <= area[2] and area[1] <= b[1] and b[3] <= area[3])
-            tries.append((10 * out + _hits(b, own, placed, count=True), len(tries), v, b))
-        score, _, v, b = min(tries)
-        if score >= 3:  # no side clear of other labels (a haloed label over a marker still reads)
-            crowded.append(text)
-        placed.append(b)
-        o.append(_label(px, py, v, text, cls, gap))
-
-    place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()), "lbl-subj", 14, 13, True)
+    o.append(placer.place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()),
+                          "lbl-subj", 14, 13, bold=True))
     points = {}
     for h in sold:
         points[" ".join(h["address"].upper().split())] = (h["living_area"], h["close_price"])
@@ -266,27 +253,19 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         p = points.get(" ".join(co["address"].upper().split()))
         if not p:
             continue
-        place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12)
+        o.append(placer.place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12))
     o.append("</svg>")
     info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
-            "excluded": excluded, "n_sold": len(sold), "n_active": len(act), "crowded_labels": crowded,
-            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0}}
+            "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
+            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
+            "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
+            "crowded_labels": placer.overlapping}
     return "\n".join(o), info
 
 
 def _text_w(text, size, bold=False):
     """About how wide a chart label draws (sans-serif letters and digits average ~0.56 em, bold ~0.6)."""
     return len(text) * size * (0.6 if bold else 0.56)
-
-
-def _label_box(px, py, side, text, gap, size, bold=False):
-    """(x0, y0, x1, y1) that _label's text covers."""
-    w = _text_w(text, size, bold)
-    if side in ("above", "below"):
-        ty = py - gap - 2 if side == "above" else py + gap + 10
-        return (px - w / 2, ty - size * 0.8, px + w / 2, ty + size * 0.2)
-    x0 = px - gap - w if side == "left" else px + gap
-    return (x0, py + 4 - size * 0.8, x0 + w, py + 4 + size * 0.2)
 
 
 def _hits(box, marks, boxes, count=False):
@@ -296,6 +275,57 @@ def _hits(box, marks, boxes, count=False):
     n = sum((min(max(cx, x0), x1) - cx) ** 2 + (min(max(cy, y0), y1) - cy) ** 2 < r * r for cx, cy, r in marks)
     n += 3 * sum(x0 < b[2] and b[0] < x1 and y0 < b[3] and b[1] < y1 for b in boxes)
     return n if count else n > 0
+
+
+SIDES = ("left", "right", "above", "below")
+
+
+class _LabelPlacer:
+    """CMA-205: puts each chart label on the requested side of its point unless the label's box would cover a marker,
+    another label or the plot's edge; then on the side (nudged up or down a line beside the point) that covers the
+    least. Covering a comp, a listing, the subject or another label counts; grazing a small background sale dot
+    counts less and isn't reported. `moved` lists (label, asked, used) and `overlapping` the labels that still cover
+    something that counts, so the render can say so."""
+
+    NUDGES = (0, -10, 10)  # a left or right label may sit a line higher or lower beside its point
+
+    def __init__(self, marks, bounds):
+        self.marks, self.bounds, self.boxes, self.moved, self.overlapping = marks, bounds, [], [], []
+
+    @staticmethod
+    def box(px, py, side, text, gap, size, bold=False):
+        w, h = len(text) * size * (0.6 if bold else 0.55), size
+        if side in ("above", "below"):
+            base = py - gap - 2 if side == "above" else py + gap + 10
+            return px - w / 2, base - 0.8 * h, px + w / 2, base + 0.2 * h
+        x0 = px - gap - w if side == "left" else px + gap
+        return x0, py + 4 - 0.8 * h, x0 + w, py + 4 + 0.2 * h
+
+    def hits(self, b, own):
+        """(what the box covers that counts, background dots it grazes)."""
+        x0, y0, x1, y1 = b
+        covered = [r for cx, cy, r in self.marks if (cx, cy) != own and
+                   (max(x0, min(cx, x1)) - cx) ** 2 + (max(y0, min(cy, y1)) - cy) ** 2 < r * r]
+        big = sum(1 for r in covered if r >= 6) + sum(1 for o in self.boxes if x0 < o[2] and o[0] < x1 and y0 < o[3] and o[1] < y1)
+        bx0, by0, bx1, by1 = self.bounds
+        big += 2 * (x0 < bx0 - 4 or x1 > bx1 + 4 or y0 < by0 - 4 or y1 > by1 + 4)
+        return big, len(covered) - sum(1 for r in covered if r >= 6)
+
+    def place(self, px, py, side, text, cls, gap, size, bold=False):
+        side = side if side in SIDES else "right"
+        order = [side] + [s for s in SIDES if s != side]
+        options = [(s, dy) for dy in self.NUDGES for s in order if dy == 0 or s in ("left", "right")]
+        scored = []
+        for i, (s, dy) in enumerate(options):
+            big, small = self.hits(self.box(px, py + dy, s, text, gap, size, bold), (px, py))
+            scored.append((big, small, i, s, dy))
+        big, _, _, best, dy = min(scored)
+        if (best, dy) != (side, 0):
+            self.moved.append((text, side, best + ("" if not dy else ", a line higher" if dy < 0 else ", a line lower")))
+        if big:
+            self.overlapping.append(text)
+        self.boxes.append(self.box(px, py + dy, best, text, gap, size, bold))
+        return _label(px, py + dy, best, text, cls, gap)
 
 
 def _label(px, py, side, text, cls, gap):
