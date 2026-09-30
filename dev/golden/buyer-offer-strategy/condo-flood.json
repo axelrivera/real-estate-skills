@@ -87,7 +87,8 @@
    "point": 482500.0
   },
   "words": {
-   "appraisal_addendum": null
+   "appraisal_addendum": null,
+   "deposit_risk_confirm": null
   },
   "worksheet": {
    "contract_form": "as_is"

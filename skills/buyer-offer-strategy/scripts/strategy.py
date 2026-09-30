@@ -706,6 +706,8 @@ def build_offer(B, costs):
     reports = " + 4-point" if costs.state == "FL" else ""
     why["inspection_days"] = (f"Room for a full inspection{reports}" + (" on an older home" if yb and old else " (year built unknown)" if not yb else "")
                               if t["inspection_days"] == 10 else "Short window to compete; newer home")
+    if B["contract_form"] not in cf.FRBAR:  # OFR-315: no other state's periods are built in, so the length is assumed
+        why["inspection_days"] += "; a generic default: confirm what's usual locally for this contract"
     if fin != "cash":
         t["loan_approval_days"] = 21 if (fin == "conventional" and lvl >= 2) else 30
         why["loan_approval_days"] = "Lender standard" if t["loan_approval_days"] == 30 else "Faster approval to compete"
@@ -911,6 +913,13 @@ def analyze(B_in, market=None, cma=None):
         if not (B.get("worksheet") or {}).get("contract_name"):
             A.add("worksheet", "contract_name", None, "Contract form not named: ask which form (and version) the offer goes "
                   "on; the worksheet finds each entry by its name", "med")
+        if "inspection_days" not in ov:  # OFR-315: the chat carries it as a reply line; the report lists it here
+            A.add("worksheet", "inspection_days", rec["inspection_days"], f"Inspection or option period: "
+                  f"{rec['inspection_days']} days is a generic default, not a local rule. Confirm what's usual for this "
+                  "contract in this market", "low")
+        # OFR-316: the deposit's risk date is counted from this offer's own periods, never from another form's rules
+        A.add("worksheet", "deposit_risk", None, "Deposit at Risk After is counted from this offer's inspection or option, "
+              "loan approval and appraisal periods: confirm when your contract makes the deposit nonrefundable", "low")
     if "payment" in why.get("price", ""):  # the payment limit sets the price, so its inputs matter most
         for a in A.items:  # OFR-241: an assumed rate is high; a looked-up weekly rate (rate_source) is med
             if a["field"] in ("rate", "rate_source", "insurance_annual", "property_tax") and a["impact"] == "low":
@@ -1038,8 +1047,9 @@ def highest_and_best(C):
 
 def reply_lines(B, rec):
     """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `flat_number` (a
-    highest-and-best round with no escalation: why one flat number) and `contract_terms` (a contract that isn't FR/BAR:
-    the form-specific terms come from the agent's contract, never from Florida's rules)."""
+    highest-and-best round with no escalation: why one flat number), `contract_terms` (a contract that isn't FR/BAR:
+    the form-specific terms come from the agent's contract, never from Florida's rules) and `inspection_period` (the
+    same contract with the period's length not set by the agent: it's a generic default to check locally, OFR-315)."""
     out = []
     if highest_and_best(B["competition"]) and not rec.get("escalation"):
         out.append({"key": "flat_number", "text": "In a highest-and-best round many listing agents want one flat number, so "
@@ -1047,6 +1057,10 @@ def reply_lines(B, rec):
     if B["contract_form"] not in cf.FRBAR:
         out.append({"key": "contract_terms", "text": "Any option fee, and the appraisal terms of the financing addendum, "
                     "come from your contract: fill them from your forms, not from this analysis."})
+        if "inspection_days" not in (B.get("overrides") or {}) and rec.get("inspection_days"):
+            out.append({"key": "inspection_period", "text": f"The {rec['inspection_days']}-day inspection or option period "
+                        "is a generic default, not a local rule: confirm what's usual for this contract in this market "
+                        "(some markets expect a short option period in multiple offers) before the offer goes out."})
     return out
 
 
@@ -1109,13 +1123,17 @@ rolled = oe.rolled  # OFR-219: the contract's weekend and holiday rule, shared w
 
 
 def risk_after(o, costs):
-    """OFR-219: (the date the deposit is at risk after, rolled per the contract rule; a short note or None)."""
+    """OFR-219: (the date the deposit is at risk after, rolled per the contract rule; a short note or None). OFR-316: on
+    a contract that isn't FR/BAR the date is counted from the offer's own periods, so the note asks the agent to confirm
+    when the contract releases the deposit (contract_forms.term_words)."""
     d, was = rolled(deposit_risk(o)[0], costs)
+    notes = [cf.term_words(o["contract_form"])["deposit_risk_confirm"]]
     if was:
-        return d, f"rolled from {was:%a %b} {was.day}"
-    if not dates.is_business_day(d):
-        return d, f"a {dates.holiday_name(d) or f'{d:%A}'}: check whether the contract extends it"
-    return d, None
+        notes.append(f"rolled from {was:%a %b} {was.day}")
+    elif not dates.is_business_day(d):
+        notes.append(f"a {dates.holiday_name(d) or f'{d:%A}'}: check whether the contract extends it")
+    notes = [n for n in notes if n]
+    return d, "; ".join(notes) or None
 
 
 def risk_after_text(o, B, costs):
@@ -1435,7 +1453,9 @@ def worksheet(r, variant=None):
     ]
     rows.append((para("12"), B["words"]["inspection_label"], f"**{t['inspection_days']} days**",
                  f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting" if frbar else
-                 "Book the inspector before submitting; find the contract's inspection or walk-away period and its notice rules"))
+                 "Book the inspector before submitting; find the contract's inspection or walk-away period and its notice rules"
+                 + ("" if "inspection_days" in (B.get("overrides") or {}) else
+                    "; the length is a generic default: confirm local practice")))  # OFR-315
     if terms["repairs_owed"]:
         lim = cf.repair_limits(price, {"repair_limits": B.get("repair_limits")})
         rows.append((para("9"), "Repair Limits", f"General **{money(lim['general'])}** · WDO **{money(lim['wdo'])}** · "
@@ -1624,7 +1644,8 @@ def result(r, variant=None):
         "reply_lines": r.get("reply_lines") or [],
         "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in r["missing"]],
         "market_notes": list(r["costs"].notes),
-        **cf.support([B["contract_form"]]),  # chat only: the best-effort line for a contract that isn't FR/BAR
+        # chat only: the best-effort line for a contract that isn't FR/BAR, worded for an offer being written (OFR-314)
+        **cf.support([B["contract_form"]], drafting=True),
     }
 
 

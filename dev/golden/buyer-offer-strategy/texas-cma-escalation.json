@@ -3316,6 +3316,18 @@
    "scope": "buyer"
   },
   {
+   "field": "inspection_days",
+   "impact": "low",
+   "scope": "worksheet",
+   "value": 10
+  },
+  {
+   "field": "deposit_risk",
+   "impact": "low",
+   "scope": "worksheet",
+   "value": null
+  },
+  {
    "field": "offer_norms",
    "impact": "med",
    "scope": "listing"
@@ -3442,6 +3454,18 @@
    "impact": "low",
    "scope": "buyer",
    "value": "2026-09-26"
+  },
+  {
+   "field": "inspection_days",
+   "impact": "low",
+   "scope": "worksheet",
+   "value": 10
+  },
+  {
+   "field": "deposit_risk",
+   "impact": "low",
+   "scope": "worksheet",
+   "value": null
   }
  ],
  "overrides": {
@@ -3471,6 +3495,9 @@
   },
   {
    "key": "contract_terms"
+  },
+  {
+   "key": "inspection_period"
   }
  ],
  "sample": true,

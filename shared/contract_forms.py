@@ -203,12 +203,16 @@ def term_words(form):
     (Inspection Period, a deposit refundable in it); for any other contract, generic words that fit most forms (a Texas
     TREC contract's option period, an appraisal right in its financing addendum), never Florida's names.
 
-    {'inspection_label', 'inspection', 'deposit_refund', 'appraisal_addendum'}; appraisal_addendum is None on FR/BAR
-    (its riders are named by letter: appraisal_form())."""
+    {'inspection_label', 'inspection', 'deposit_refund', 'appraisal_addendum', 'deposit_risk_confirm'};
+    appraisal_addendum is None on FR/BAR (its riders are named by letter: appraisal_form()), and so is
+    deposit_risk_confirm (the engine's windows follow the form and riders)."""
     if form in FRBAR:
         return {"inspection_label": "Inspection Period", "inspection": "inspection period",
-                "deposit_refund": "refundable during inspection", "appraisal_addendum": None}
+                "deposit_refund": "refundable during inspection", "appraisal_addendum": None, "deposit_risk_confirm": None}
     return {"inspection_label": "Inspection or Option Period", "inspection": "inspection or option period",
+            # OFR-316: the engine counts the deposit's risk date from the offer's own periods; on another contract the
+            # agent confirms when that form makes the deposit nonrefundable (no other state's rules are built in)
+            "deposit_risk_confirm": "counted from this offer's periods: confirm when your contract releases the deposit",
             "deposit_refund": "refundable during the inspection or option period (per your contract)",
             "appraisal_addendum": "Appraisal Protection (Per Your Contract's Addendum)"}
 
@@ -260,17 +264,22 @@ def revision_note(form, printed, from_footer=True):
 BEST_EFFORT_NOTE = ("Only Florida FR/BAR contracts are fully supported. This contract was read on a best-effort basis: check "
                     "every date and term against the signed contract, and have a real estate attorney licensed in the "
                     "property's state confirm anything that matters.")
+# OFR-314: the buyer side writes an offer that isn't signed yet, so its line points at the form being filled in
+BEST_EFFORT_OFFER_NOTE = ("Only Florida FR/BAR contracts are fully supported. This offer was built on a best-effort basis for "
+                          "another contract form: check every term and date against that form before the offer goes out, "
+                          "and have a real estate attorney licensed in the property's state confirm anything that matters.")
 
 
-def support(forms, revisions=()):
+def support(forms, revisions=(), drafting=False):
     """What the skill tells the agent in chat, never on a report: {'support': 'full' | 'best_effort', 'chat_notes': [...]}.
 
     `forms` are normalized forms ('as_is', 'standard', 'other'; None is ignored). Any 'other' contract makes the run
-    best effort and adds BEST_EFFORT_NOTE. `revisions` are (form, printed footer) pairs, or (form, revision,
-    from_footer) when the caller knows whether the revision was read from the footer; a revision that isn't the
-    verified one adds its revision_note()."""
+    best effort and adds BEST_EFFORT_NOTE, or BEST_EFFORT_OFFER_NOTE when `drafting` (an offer still being written, not
+    a signed contract). `revisions` are (form, printed footer) pairs, or (form, revision, from_footer) when the caller
+    knows whether the revision was read from the footer; a revision that isn't the verified one adds its
+    revision_note()."""
     forms = [f for f in forms if f]
-    notes = [BEST_EFFORT_NOTE] if OTHER in forms else []
+    notes = [BEST_EFFORT_OFFER_NOTE if drafting else BEST_EFFORT_NOTE] if OTHER in forms else []
     for form, printed, *source in revisions:
         note = revision_note(form, printed, *source)
         if note and note not in notes:

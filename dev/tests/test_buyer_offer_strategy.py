@@ -774,11 +774,12 @@ class Audit20260930Iter6(unittest.TestCase):
     def test_reply_lines_outside_the_cap(self):  # OFR-239
         r = analyze_data(copy.deepcopy(self.TX))  # highest and best, one flat number
         res = strategy.result(r)
-        self.assertEqual([x["key"] for x in res["reply_lines"]], ["flat_number", "contract_terms"])
+        self.assertEqual([x["key"] for x in res["reply_lines"]], ["flat_number", "contract_terms", "inspection_period"])
         self.assertIn(strategy.money(r["terms"]["recommended"]["price"]), res["reply_lines"][0]["text"])
         d = copy.deepcopy(self.TX)
         d["competition"]["note"] = "Listing agent: 6 offers in"
-        self.assertEqual([x["key"] for x in strategy.result(analyze_data(d))["reply_lines"]], ["contract_terms"])
+        self.assertEqual([x["key"] for x in strategy.result(analyze_data(d))["reply_lines"]],
+                         ["contract_terms", "inspection_period"])  # OFR-315: the period is still a default
         d["competition"]["highest_and_best"] = True  # the field wins over the note
         self.assertIn("flat_number", [x["key"] for x in strategy.analyze(d, cma=strategy.load_cma(d))["reply_lines"]])
         d = copy.deepcopy(self.TX)
@@ -843,6 +844,44 @@ class Audit20260930Iter6(unittest.TestCase):
         self.assertEqual(first, a["deadline"]["why"])  # asked first: it may already have passed
         d["analysis_date"] = "2026-09-29"  # Tuesday: Friday is 3 days out, no question
         self.assertNotIn("deadline", [x["field"] for x in strategy.analyze(d)["missing"]])
+
+
+
+class Audit20260930Iter7(unittest.TestCase):
+    """Eval iteration 7 on a contract that isn't FR/BAR (OFR-314 to OFR-316)."""
+
+    def setUp(self):
+        d = fixture("texas-cma-escalation.json")
+        self.d = d
+        self.r = strategy.analyze(copy.deepcopy(d), cma=strategy.load_cma(d))
+
+    def test_best_effort_line_fits_an_offer_being_written(self):  # OFR-314
+        out = strategy.result(self.r)
+        self.assertEqual(out["chat_notes"], [strategy.cf.BEST_EFFORT_OFFER_NOTE])
+        self.assertNotIn(strategy.cf.BEST_EFFORT_NOTE, out["chat_notes"])
+
+    def test_option_period_is_a_default_to_confirm(self):  # OFR-315
+        keys = [x["key"] for x in self.r["reply_lines"]]
+        self.assertIn("inspection_period", keys)
+        self.assertIn("inspection_days", [a["field"] for a in self.r["missing"]])
+        d = copy.deepcopy(self.d)
+        d["overrides"] = {"inspection_days": 4}  # the agent set it: no longer a default
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertNotIn("inspection_period", [x["key"] for x in r["reply_lines"]])
+        self.assertNotIn("inspection_days", [a["field"] for a in r["missing"]])
+        fl = analyze("fha-competitive.json")  # FR/BAR: the form's own period, nothing to confirm
+        self.assertNotIn("inspection_period", [x["key"] for x in fl["reply_lines"]])
+
+    def test_deposit_risk_date_marked_to_confirm(self):  # OFR-316
+        o = self.r["O"]["recommended"]
+        self.assertEqual(o["contract_form"], strategy.cf.OTHER)
+        _, note = strategy.risk_after(o, self.r["costs"])
+        self.assertIn(strategy.cf.term_words(strategy.cf.OTHER)["deposit_risk_confirm"], note)
+        self.assertIn("deposit_risk", [a["field"] for a in self.r["missing"]])
+        fl = analyze("fha-competitive.json")
+        _, note = strategy.risk_after(fl["O"]["recommended"], fl["costs"])
+        self.assertIsNone(strategy.cf.term_words(fl["O"]["recommended"]["contract_form"])["deposit_risk_confirm"])
+        self.assertNotIn("confirm when your contract", note or "")
 
 
 if __name__ == "__main__":

@@ -96,6 +96,10 @@ class Module(unittest.TestCase):
         self.assertIn("revision given", cf.revision_note("as_is", "Rev. 6/24", False))
         self.assertNotIn("footer", cf.revision_note("as_is", "Rev. 6/24", False))
         self.assertIn("revision given", cf.support(["as_is"], [("as_is", "Rev. 6/24", False)])["chat_notes"][0])
+        # OFR-314: an offer still being written gets the buyer-side line, never "the signed contract"
+        self.assertEqual(cf.support([cf.OTHER], drafting=True)["chat_notes"], [cf.BEST_EFFORT_OFFER_NOTE])
+        self.assertEqual(cf.support([cf.OTHER])["chat_notes"], [cf.BEST_EFFORT_NOTE])
+        self.assertEqual(cf.support(["as_is"], drafting=True)["chat_notes"], [])
 
     def test_repair_limits(self):
         self.assertEqual(cf.repair_limits(400000), {"general": 6000, "wdo": 6000, "permit": 6000})

@@ -180,7 +180,9 @@ def details(r, res):
     cr += f'<tr class="total2"><td>Left in Reserve (of {money(B["buyer"]["cash_available"])})</td>' + "".join(
         f'<td class="n {"worst" if r["cash"][k]["reserve"] < floor else "best"}">{acct(r["cash"][k]["reserve"])}</td>' for k in K) + "</tr>"
     # OFR-219: the date as the contract's weekend and holiday rule leaves it
-    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}</td>' for k in K) + "</tr>"
+    # OFR-316: on a contract that isn't FR/BAR the date is counted from the offer's periods: marked to confirm
+    confirm = " (confirm)" if B["words"]["deposit_risk_confirm"] else ""
+    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}{confirm}</td>' for k in K) + "</tr>"
     if any(ST.appraisal_until(O[k], B, r["costs"]) for k in K):  # OFR-210: the appraisal protection on its own row
         cr += '<tr><td>Low-Appraisal Protection</td>' + "".join(f'<td class="n">{esc(ST.appraisal_until(O[k], B, r["costs"]) or "—")}</td>' for k in K) + "</tr>"
     M, V = B["market"], B["value"]
@@ -323,7 +325,7 @@ def build(data, fmt, out_dir, ctx):
               file=sys.stderr)
     if not ctx.get("chat_noted"):  # OFR-203: once per run, not once per file
         ctx["chat_noted"] = True
-        for note in oe.cf.support([r["B"]["contract_form"]])["chat_notes"]:
+        for note in oe.cf.support([r["B"]["contract_form"]], drafting=True)["chat_notes"]:
             print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
     return [path]
 
