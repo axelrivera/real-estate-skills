@@ -427,12 +427,20 @@ def multi_view(R):
 
 def net_sheet_rows(cols):
     """[{label, values[]}] for columns of net sheets; rows that are zero everywhere are skipped (except price and concessions)."""
+    # Rows by line key, not position: a rider money line (rent-back, seller financing, an assessment payoff) can be on
+    # one column and not another (the Seller's Target never has one), and a missing line reads as 0.
+    order, labels = [], {}
+    for _, c in cols:
+        for key, label, _ in c["lines"]:
+            if key not in labels:
+                labels[key] = label
+                order.append(key)
     rows = []
-    for i, (key, label, _) in enumerate(cols[0][1]["lines"]):
-        vals = [c["lines"][i][2] for _, c in cols]
+    for key in order:
+        vals = [next((amt for k, _, amt in c["lines"] if k == key), 0) for _, c in cols]
         if key not in ("price", "conc") and all(v == 0 for v in vals):
             continue
-        rows.append({"key": key, "label": label, "values": vals})
+        rows.append({"key": key, "label": labels[key], "values": vals})
     return rows
 
 

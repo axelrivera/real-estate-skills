@@ -151,10 +151,14 @@ def details(r, res):
     side += f"<tr><td>{pay_label}</td>" + "".join(f'<td>${r["payment"][k]:,}</td>' for k in K) + "</tr>"
     cols = [(ST.OPTION_LABEL[k], O[k]["ns"]) for k in K] + [("Clean Offer at List", tgt)]
     ns = ""
-    for i, (key, label, _) in enumerate(cols[0][1]["lines"]):
+    labels = {}
+    for _, c in cols:  # by line key, not position: a rider line can be on one column and not another
+        for key, label, _ in c["lines"]:
+            labels.setdefault(key, label)
+    for key, label in labels.items():
         if key == "payoff":
             continue
-        vals = [c["lines"][i][2] for _, c in cols]
+        vals = [next((amt for k, _, amt in c["lines"] if k == key), 0) for _, c in cols]
         if all(v == 0 for v in vals):
             continue
         ns += f"<tr><td>{esc(label)}</td>" + "".join(f'<td class="n {"neg" if v < 0 else ""}">{acct(v)}</td>' for v in vals) + "</tr>"
