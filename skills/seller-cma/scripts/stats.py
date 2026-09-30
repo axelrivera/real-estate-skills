@@ -3,13 +3,15 @@
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" --sqft 1849 [--pool]
         [--subdivision "SPRING OAKS"] [--type single_family] [--lat 28.67 --lon -81.40]
         [--state FL --county Seminole] [--columns columns.json]
-        [--split-date 2026-07-01] [--as-of 2026-09-26] [--own-listing]
+        [--split-date 2026-07-01] [--as-of 2026-09-26] [--own-listing | --listed-as failed|history]
 
 Every row with the seller's address (old listings, prior sales, a current listing) is dropped
 before anything is counted, and its size, pool and subdivision come from the seller, not the export.
-When one of those rows is active or pending, `listed_now` is true: confirm whose listing it is first
-(`--own-listing` when the agent already said it's theirs: `listed_now_action` is then "reprice", else "ask", and `reprice` holds the price, days on market and original
-price to copy into report.json). Prints JSON: sold stats for the whole window and
+When one of those rows is active or pending, `listed_now` is true: tell the agent and ask first. `listed_now_action` is
+"ask" until they choose: "reprice" (`--own-listing`: their own listing; `reprice` holds the price, days on market and
+original price to copy into report.json), "relist" (`--listed-as failed`: that listing has ended or is ending, and its
+price caps the options like an expired one; `relist` holds it) or "history" (`--listed-as history`: public record only,
+no cap). A failed listing sets `relist` only when it ended within the last 12 months or has no dates. Prints JSON: sold stats for the whole window and
 for an earlier and a recent period, inventory and months of supply, the subdivision's median $/sq ft,
 ranked comp candidates with remarks, and the competition. Numbers only: picking and adjusting comps
 is a judgment made from this output.
@@ -61,7 +63,12 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
     ap.add_argument("--own-listing", action="store_true",
                     help="the agent already said the home is their own current listing (a reprice)")
+    ap.add_argument("--listed-as", choices=("failed", "history"),
+                    help="the agent's choice for a live listing that isn't theirs and has ended or is ending: 'failed' "
+                         "caps the options at its price like an expired listing; 'history' uses it as public record only")
     a = ap.parse_args(argv)
+    if a.own_listing and a.listed_as:
+        ap.error("pass --own-listing or --listed-as, not both")
     market = None
     try:
         market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
@@ -97,10 +104,17 @@ def main(argv=None):
                 + ("). The agent says it's their own listing: confirm, then reprice (copy this output's reprice to "
                    "report.json: the price, days on market and original price). Leave Stay at Current Price's "
                    "expected_sale out: compute.py fills it by the rule (method.md, A Reprice)." if a.own_listing else
-                   "). Confirm whose listing it is before pricing: stop and ask the agent, unless they already said "
-                   "it's their own (then re-run with --own-listing). Only their own listing is priced, as a reprice; "
-                   "never another brokerage's."))
-            out["listed_now_action"] = "reprice" if a.own_listing else "ask"  # CMA-251
+                   "). The agent chose to treat it as a failed listing: its price caps the options like an expired "
+                   "one (copy this output's relist to report.json; method.md, A Relist)." if a.listed_as == "failed" else
+                   "). The agent chose to use it as public record only: name it in the report as history; it sets "
+                   "no cap." if a.listed_as == "history" else
+                   "). Stop before pricing: tell the agent the home shows as " + h["status"].lower() + " and ask which "
+                   "applies. Their own listing: a reprice (re-run with --own-listing). A listing that has ended or is "
+                   "ending (a pending sale that fell through, a listing about to expire): treat its price as a failed "
+                   "listing that caps the options (--listed-as failed) or as public record only (--listed-as history). "
+                   "Another brokerage's listing that's still live is never priced."))
+            out["listed_now_action"] = ("reprice" if a.own_listing else {"failed": "relist", "history": "history"}.get(
+                a.listed_as, "ask"))  # CMA-251, CMA-303
             if a.own_listing and h.get("current_price"):
                 # CMA-287: copy to report.json's `reprice`; the original price shows the listing's price history (a cut)
                 out["reprice"] = {k: v for k, v in {"current_price": h["current_price"], "days_on_market": h.get("days_on_market"),
@@ -111,14 +125,24 @@ def main(argv=None):
                                        "listing is a failed price to name in the report.")
         # CMA-277: the home's own listing that ended unsold caps the pricing options (method.md, A Relist): copy to
         # report.json's `relist`. The lowest such price when there are several.
-        failed = [h for h in own if h["status"] in ("EXPIRED", "CANCELED", "WITHDRAWN") and h.get("current_price")]
-        if failed and not listed:
+        as_of = mls._as_date(a.as_of, "--as-of") or mls._as_date(out.get("window", {}).get("as_of"), "as_of")
+        ended = [h for h in own if h["status"] in ("EXPIRED", "CANCELED", "WITHDRAWN") and h.get("current_price")]
+        failed = [h for h in ended if mls.ended_within(h, as_of)]  # CMA-303: older than 12 months is history only
+        if len(failed) < len(ended):
+            out["market_notes"].append(
+                f"{len(ended) - len(failed)} earlier listing(s) of the home ended more than 12 months ago: name them in the "
+                "report as history; they set no cap (method.md, A Relist).")
+        if a.listed_as == "failed":  # CMA-303: the agent treats the live listing as failed: its price counts too
+            failed += [h for h in listed[:1] if h.get("current_price")]
+        if failed and (not listed or a.listed_as == "failed"):
             h = min(failed, key=lambda h: h["current_price"])
             out["relist"] = {k: v for k, v in {"failed_price": h["current_price"], "status": h["status"].lower(),
                                                 "days_on_market": h.get("days_on_market"),
                                                 "original_price": h.get("original_list_price")}.items() if v is not None}
+            live = h["status"] in ("ACTIVE", "PENDING")
             out["market_notes"].append(
-                f"The home's earlier listing ended unsold at {money(h['current_price'])} ({h['status'].lower()}"
+                f"The home's {'current listing, treated as failed, stands' if live else 'earlier listing ended unsold'} "
+                f"at {money(h['current_price'])} ({h['status'].lower()}"
                 + (f", first listed at {money(h['original_list_price'])}"
                    if (h.get("original_list_price") or 0) > h["current_price"] else "") + "): a relist. "
                 "No pricing option goes above that price unless the agent gives a reason (method.md, A Relist); set "

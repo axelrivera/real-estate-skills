@@ -246,6 +246,8 @@
  "history_relist": "The earlier listing ended unsold at {failed}{after}.",
  "history_relist_cut": "The earlier listing started at {original}, was cut to {failed} and ended unsold{after}.",
  "history_after_days": " after {days} days",
+ "history_listed": "The current listing at {failed} hasn't sold{after}.",
+ "history_listed_cut": "The current listing started at {original}, was cut to {failed} and hasn't sold{after}.",
  "pay_no_homestead": "Taxes assume no homestead exemption; a buyer who files one would pay less.",
  "pay_no_homestead_built_in": "Taxes assume no homestead exemption (none is built in for this state); a buyer who files one would pay less.",
  "deck_pay_sub_no_homestead": "Estimated monthly payment, {program} loan with {down}% down, taxes with no homestead exemption",
@@ -301,6 +303,8 @@
   "history_reprice_cut",
   "history_relist",
   "history_relist_cut",
-  "history_after_days"
+  "history_after_days",
+  "history_listed",
+  "history_listed_cut"
  ]
 }

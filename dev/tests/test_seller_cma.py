@@ -166,7 +166,8 @@ class Reprice(unittest.TestCase):
             self.assertTrue(r["listed_now"], status)
             note = next(n for n in r["market_notes"] if "listed right now" in n)
             self.assertIn("$474,900, 36 days on market", note)
-            self.assertIn("Confirm whose listing it is", note)
+            self.assertEqual(r["listed_now_action"], "ask")
+            self.assertNotIn("relist", r)
             self.assertFalse(any("new listing" in n for n in r["market_notes"]))
 
     def test_past_rows_are_history(self):
@@ -1467,3 +1468,51 @@ def cma_page_checks(pages):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SeventhPass(unittest.TestCase):
+    """CMA-303: a live listing that isn't the agent's is the agent's choice (failed or history); failed listings older
+    than 12 months set no cap in the scripts either."""
+
+    def test_live_listing_as_failed(self):
+        r = SecondPass.stats(None, [SecondPass.subject_row(None, "PND")], "--state", "FL", "--county", "Seminole",
+                             "--listed-as", "failed")
+        self.assertEqual(r["listed_now_action"], "relist")
+        self.assertEqual((r["relist"]["failed_price"], r["relist"]["status"], r["relist"]["original_price"]),
+                         (474900, "pending", 484900))
+        self.assertNotIn("reprice", r)
+
+    def test_live_listing_as_history(self):
+        r = SecondPass.stats(None, [SecondPass.subject_row(None, "ACT")], "--state", "FL", "--county", "Seminole",
+                             "--listed-as", "history")
+        self.assertEqual(r["listed_now_action"], "history")
+        self.assertNotIn("relist", r)
+        self.assertNotIn("reprice", r)
+
+    def test_one_choice_only(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            SecondPass.stats(None, [SecondPass.subject_row(None, "ACT")], "--own-listing", "--listed-as", "failed")
+
+    def test_old_failed_listing_sets_no_cap(self):
+        old = SecondPass.subject_row(None, "EXP")
+        old[8] = "09/30/2017"
+        r = SecondPass.stats(None, [old], "--state", "FL", "--county", "Seminole", "--as-of", "2026-09-26")
+        self.assertNotIn("relist", r)
+        recent = SecondPass.subject_row(None, "EXP")
+        recent[8] = "03/15/2026"
+        r = SecondPass.stats(None, [recent], "--state", "FL", "--county", "Seminole", "--as-of", "2026-09-26")
+        self.assertEqual(r["relist"]["failed_price"], 474900)
+
+    def test_ended_within(self):
+        from datetime import date
+        self.assertTrue(compute.mls.ended_within({"close_date": date(2026, 1, 5)}, date(2026, 9, 26)))
+        self.assertFalse(compute.mls.ended_within({"close_date": date(2017, 9, 30)}, date(2026, 9, 26)))
+        self.assertTrue(compute.mls.ended_within({}, date(2026, 9, 26)))  # undated counts
+
+    def test_live_failed_price_history_wording(self):
+        L = compute.labels(report())
+        text = compute.price_history(L, relist={"failed_price": 474900, "status": "pending", "days_on_market": 36,
+                                                "original_price": 484900})
+        self.assertIn("current listing", text)
+        self.assertNotIn("ended unsold", text)
+

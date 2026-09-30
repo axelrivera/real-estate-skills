@@ -274,6 +274,13 @@ def _as_date(value, name):
         raise ExportError(f"{name} should be a date like 2026-07-01, not {value!r}.") from None
 
 
+def ended_within(h, as_of, days=365):
+    """CMA-303: whether a listing row ended within `days` of `as_of` (a failed listing older than a year is history,
+    not a price cap). A row with no dates counts: it can't be placed in time, so it's treated as recent."""
+    ended = h.get("close_date") or h.get("contract_date")
+    return ended is None or as_of is None or (as_of - ended).days <= days
+
+
 def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=None, limit=15):
     """Sold stats (all, earlier, recent), inventory, months of supply, subdivision stats, comp candidates, competition.
 

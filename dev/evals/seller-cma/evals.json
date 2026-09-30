@@ -36,6 +36,18 @@
       "prompt": "517 Hickorywood is my listing and it's been sitting for over a month with no offers. Seller notes and a fresh export attached. Should we reduce the price? I'd like a CMA PDF I can walk the sellers through.",
       "expected_output": "Sees the home is listed right now (Active in the export) and, since the agent says it's their own listing, doesn't stop to ask whose it is: treats it as a reprice. Names the current price as the failed price ($474,900 after a cut from $484,900, 36 days on market, no offers) as the most important pricing fact; comps and range from stats.py and compute.py with the subject excluded; the pricing options include staying at the current price ('Stay at Current Price') next to the reduced prices, each with the seller's estimated net, and the recommendation says why the market didn't respond at $474,900; builds the CMA PDF (page 1 fits); short chat reply; nothing else presented (no JSON)",
       "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks-active.csv"]
+    },
+    {
+      "id": 7,
+      "prompt": "The sellers at 517 Hickorywood want to talk to me about listing. Seller notes and my export are attached. Can you run a seller CMA?",
+      "expected_output": "Sees the home shows as Pending in the export ($474,900, 36 days on market, first listed at $484,900) and stops before any pricing: builds no PDF and no report.json pricing. Tells the agent the home shows as pending and asks which applies: their own listing (a reprice), a listing that has ended or is ending (then asks whether to treat its price as a failed listing that caps the options, or as public record only with no cap), or another brokerage's live listing (not priced; offers to run it when that listing ends). Never solicits or prices a live listing with another brokerage; short reply; nothing else presented (no JSON)",
+      "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks-pending.csv"]
+    },
+    {
+      "id": 8,
+      "prompt": "517 Hickorywood went pending with another brokerage, but the buyer's financing fell through and that listing agreement ended yesterday. The sellers just signed with me. My export still shows it pending at $474,900. Treat that price as a failed listing. Seller notes and export attached; I need a CMA PDF for the listing appointment.",
+      "expected_output": "Doesn't stop to ask: the agent already said the other listing ended and chose to treat it as a failed listing (stats.py with --listed-as failed; relist in report.json from stats.py). Names the $474,900 price (first listed at $484,900, 36 days on market) as a price that didn't hold; no pricing option lists above $474,900 unless a reason is given; not a reprice (no 'Stay at Current Price' option, no 'New List Price' wording); comps and range from stats.py and compute.py with the subject excluded; builds the CMA PDF (page 1 fits); short chat reply that names the failed price; nothing else presented (no JSON)",
+      "files": ["dev/evals/seller-cma/files/seller-notes-517-hickorywood.md", "dev/evals/seller-cma/files/export-spring-oaks-pending.csv"]
     }
   ]
 }
