@@ -731,6 +731,9 @@ def build(spec):
             values.setdefault("lender", rng.choice(LENDERS))  # chosen here so the answer key can name the lender
         else:
             values.setdefault("bank", rng.choice(BANKS))
+        if kind == "proof_of_funds":  # set here, on its own stream, so the answer key can carry the verified balance
+            values.setdefault("balance", int(round(ctx["funds_needed"] * random.Random(
+                f"{name or digest}|pof-balance").uniform(1.12, 1.4), -3)))
         docs.append({"family": kind, "role": "letter", "values": values})
     for c in counters:
         if c["method"] == "co":
@@ -1156,6 +1159,9 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
     lender = pa.get("lender")
     if lender:
         offer["lender"] = lender[0] if isinstance(lender, (list, tuple)) else lender
+    pof = letters_.get("proof_of_funds") or {}
+    if pof.get("balance"):
+        offer["proof_of_funds"] = pof["balance"]
     if pa:  # what the letter prints (letters.py): its caps and its 90-day expiry
         offer["approval_max_price"] = pa.get("price_cap") or ctx["price"]
         if pa.get("loan_cap") or ctx["loan_amount"]:
@@ -1171,8 +1177,6 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
             offer["buyer_broker_pct"] = bb["percent"] / 100
         elif bb.get("amount"):
             offer["buyer_broker_amount"] = bb["amount"]
-        else:
-            offer["buyer_broker_pct"] = 0.025
     elif bb_form == "FF":
         offer["buyer_broker_form"] = "FF"
         if bb.get("percent"):
@@ -1209,6 +1213,8 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
     listing = {"address": ctx["property_address"], "state": "FL", "county": ctx["county"], "list_price": ctx["list_price"],
                "year_built": ctx["year_built"], "property_type": ctx["property_type"],
                "flood_disclosure": any(d["family"] == "FD" for d in docs)}
+    if any(d["family"] in ("SPDR", "SPDC") for d in docs):  # the disclosure's "built before 1978?" answer
+        listing["built_before_1978"] = ctx["year_built"] < 1978
     # The association fee from Rider A or B, per month; 0 when the package shows no association at all.
     assoc = next((values[c] for c in ("A", "B") if c in codes), None)
     if assoc is not None and assoc.get("fee"):
