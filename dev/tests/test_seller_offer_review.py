@@ -490,6 +490,87 @@ class Audit20260929Second(unittest.TestCase):
         self.assertNotIn("Morales", text)  # its form was given
 
 
+class EvalIteration4(unittest.TestCase):
+    """Fixes from eval iteration 4 (OFR-272 to OFR-282)."""
+
+    def test_quick_answer_names_every_estimated_cost(self):  # OFR-272
+        out = review.result(review.analyze(fixture("minimal-single.json")))
+        est = " ".join(out["estimated_costs"])
+        for word in ("commission", "documentary stamp", "owner's title", "title company fees", "tax proration at 1.8%"):
+            self.assertIn(word, est)
+        given = review.result(review.analyze(fixture("four-offers.json")), mode="multi")["estimated_costs"]
+        self.assertFalse([e for e in given if e.startswith(("commission", "tax proration"))])  # given in the file
+
+    def test_assumed_inspection_period_is_confirmed_not_countered(self):  # OFR-273
+        R = review.analyze(fixture("minimal-single.json"))
+        o = R["offers"][0]
+        self.assertNotIn("Inspection Period", [r[0] for r in o["counter_rows"]])
+        self.assertEqual(o["counter_terms"]["inspection_days"], o["inspection_days"])
+        f = next(f for f in o["flags"] if f.get("topic") == "inspection_period")
+        self.assertEqual(f["sev"], "Low")
+        data = fixture("minimal-single.json")
+        data["offers"][0]["inspection_days"] = 15  # given: still countered
+        self.assertIn("Inspection Period", [r[0] for r in review.analyze(data)["offers"][0]["counter_rows"]])
+
+    def test_deal_risks_lead_and_the_flood_reminder_goes_last(self):  # OFR-274
+        out = review.result(review.analyze(fixture("minimal-single.json")))
+        o = out["offers"][0]
+        self.assertEqual(o["flag_keys"][-1], "flood_disclosure")
+        self.assertNotIn("flood", (o["biggest_risk"] or "").lower())
+        lee = next(x for x in review.result(review.analyze(fixture("four-offers.json")), mode="multi")["offers"]
+                   if x["id"] == "D")
+        self.assertEqual(lee["flag_keys"][0], "sale_contingency")
+        self.assertTrue(lee["biggest_risk"].startswith("High: Contingent on sale"))
+        doc, _, _ = review_render.build_html(review.analyze(fixture("minimal-single.json")), {}, sample=False)
+        self.assertIn("flood disclosure given to the buyer", doc)  # on the checklist instead
+
+    def test_counter_restates_loan_and_answers_the_buyers_changes(self):  # OFR-275, OFR-276
+        data = fixture("counter-chain-standard.json")
+        o = data["offers"][0]
+        o.update(balance_to_close=128500)
+        o["prior_counters"].insert(0, {"by": "buyer", "note": "Original offer", "price": 610000, "closing_date": "2026-10-27"})
+        rows = review.analyze(data)["offers"][0]["counter_rows"]
+        terms = [r[0] for r in rows]
+        self.assertIn("Loan Amount and Balance to Close", terms)
+        self.assertIn("Closing Date", terms)
+        self.assertEqual(terms[-1], "Time for Acceptance")
+        close = next(r for r in rows if r[0] == "Closing Date")
+        self.assertIn("accept", close[2])
+
+    def test_national_title_fees_are_labeled_estimate(self):  # OFR-277
+        out = review.result(review.analyze(fixture("texas-single.json")))
+        labels = [r["label"] for r in out["offers"][0]["net_sheet"]["rows"]]
+        self.assertIn("Title Company Fees (Estimate)", labels)
+        fl = review.result(review.analyze(fixture("minimal-single.json")))
+        self.assertIn("Title Company Fees", [r["label"] for r in fl["offers"][0]["net_sheet"]["rows"]])
+
+    def test_ranking_reason_is_on_the_report(self):  # OFR-279
+        data = fixture("four-offers.json")
+        data["ranking_reason"] = "Park's conventional 20% down offer closes before the seller's deadline with no sale contingency."
+        R = review.analyze(data)
+        self.assertEqual(review.multi_view(R)["terms_reason"], data["ranking_reason"])
+        doc, _, _ = review_render.build_html(R, {}, sample=False, mode="multi")
+        self.assertIn("Terms Reason:", doc)
+
+    def test_year_built_is_asked_with_frbar_riders(self):  # OFR-280
+        data = fixture("counter-chain-standard.json")
+        self.assertIn("year_built", [a["field"] for a in review.analyze(data)["missing"]])
+        data["listing"]["year_built"] = 1995
+        self.assertNotIn("year_built", [a["field"] for a in review.analyze(data)["missing"]])
+        self.assertNotIn("year_built", [a["field"] for a in review.analyze(fixture("minimal-single.json"))["missing"]])
+
+    def test_rent_back_shows_as_a_term(self):  # OFR-281
+        data = fixture("four-offers.json")
+        data["offers"][2].update(rent_back_days=30, rent_back_monthly=0)
+        doc, _, _ = review_render.build_html(review.analyze(data), {}, sample=False, mode="multi")
+        self.assertIn("30-day rent-back (free)", doc)
+
+    def test_backup_waits_for_the_signed_primary(self):  # OFR-282
+        why = review.multi_view(review.analyze(fixture("four-offers.json")))["why"]
+        if "as backup" in why:
+            self.assertIn("after the primary contract is fully signed", why)
+
+
 class RevisionSource(unittest.TestCase):
     """TL-201 carried to the seller side: "the footer reads" only for a revision read from the footer."""
 

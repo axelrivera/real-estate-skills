@@ -43,7 +43,161 @@ def load_cma(data, cma_path=None):
 
 
 def analyze(data, market=None, cma=None):
-    return oe.analyze(data, market=market, cma=cma)
+    R = oe.analyze(data, market=market, cma=cma)
+    for o in R["offers"]:
+        confirm_assumed_inspection(o, R["listing"])
+        counter_restatements(o)
+        order_flags(o)
+    label_title_fees(R)
+    ask_year_built(R)
+    R["ranking_reason"] = str(data.get("ranking_reason") or "").strip() or None  # OFR-279
+    return R
+
+
+# --- after the engine ----------------------------------------------------------
+
+# Listing-side reminders (the seller's own paperwork), not risks in the offer: listed last, never a top risk (OFR-274)
+HOUSEKEEPING = {"flood_disclosure"}
+# Deal-specific risks first, within a severity level: a passed time for acceptance (whether there's an offer to answer),
+# sale contingency, then financing, then appraisal gap, then the seller's deadline (OFR-274). Flags without a topic get one here, so the order and flag_keys use keys, not words.
+RISK_ORDER = ("expired", "sale_contingency", "financing", "appraisal_gap", "past_deadline")
+
+
+def risk_topic(o, f):
+    if f.get("topic"):
+        t = f["topic"]
+        return {"approval_cap": "financing", "concessions_cap": "financing", "fha_gap_intent": "appraisal_gap"}.get(t, t)
+    issue = f["issue"]
+    if o["sale_contingency_days"] and issue.startswith("Contingent on sale"):
+        return "sale_contingency"
+    if issue.startswith("Buyer has only a pre-qualification") or "can't be FHA" in issue:
+        return "financing"
+    if o["appraisal_risk"] and issue.startswith("Price is ") and " over " in issue:
+        return "appraisal_gap"
+    if issue.startswith("Closing ") and "deadline" in issue:
+        return "past_deadline"
+    return None
+
+
+def order_flags(o):
+    """Blocking, then High, Med, Low; within a level the deal-specific risks lead; listing-side reminders go last."""
+    sev = {"Blocking": -1, "High": 0, "Med": 1, "Low": 2}
+    for f in o["flags"]:
+        f["topic"] = f.get("topic") or risk_topic(o, f)
+    rank = {t: i for i, t in enumerate(RISK_ORDER)}
+    o["flags"] = sorted(o["flags"], key=lambda f: (f.get("topic") in HOUSEKEEPING, sev.get(f["sev"], 1),
+                                                     rank.get(risk_topic(o, f), len(RISK_ORDER))))
+
+
+def deal_flags(o):
+    """The flags that are risks in the offer itself (no listing-side reminders)."""
+    return [f for f in o["flags"] if f.get("topic") not in HOUSEKEEPING]
+
+
+def confirm_assumed_inspection(o, L):
+    """OFR-273: an inspection period nobody gave is never countered; the flag asks to confirm it instead."""
+    if not o.get("inspection_assumed"):
+        return
+    for f in o["flags"]:
+        if f.get("topic") == "inspection_period" and not f.get("agent_topics"):
+            f["sev"] = "Low"
+            f["issue"] = f"Inspection period not given: {o['inspection_days']} days assumed."
+            f["fix"] = (f"Confirm the days in the contract; if it's over {L['norms']['inspection_days']}, counter to 7–10 "
+                        "days.")
+
+
+CHANGE_ROW = {"inspection_days": "Inspection Period", "loan_approval_days": "Loan Approval Period", "deposit": "Escrow Deposit",
+              "seller_concessions": "Seller Concessions", "appraisal_gap": "Appraisal Gap Coverage", "closing_date": "Closing Date"}
+
+
+def counter_restatements(o):
+    """Rows a counter carries so it answers everything the review raised (OFR-275, OFR-276): the loan amount and
+    balance to close restated at the new price, and each term the buyer's counter changed that no seller counter
+    answered (accept it or restate it). Only on a counter the engine already drafted; they change no number."""
+    rows = o["counter_rows"]
+    if not rows:
+        return
+    have = {r[0] for r in rows}
+    extra = []
+    for name, was, now, key in oe.buyer_changes(o):
+        term = CHANGE_ROW.get(key, cap(name))
+        if term not in have:
+            extra.append((term, f"{now} (was {was})", f"{now} (accept), or restate {was}",
+                          "The buyer's counter changed it and no seller counter answered it"))
+    loan, bal, dep = o.get("loan_amount"), o.get("balance_to_close"), o["deposit"]
+    if bal is not None and dep is not None and (loan or not o["financed"]):
+        total = dep + (loan or 0) + bal
+        price = o["counter_terms"]["price"]
+        if abs(total - o["price"]) > 100:  # the engine's loan_amount issue: a counter changed the price without them
+            extra.append(("Loan Amount and Balance to Close" if loan else "Balance to Close", f"Add up to {money(total)}",
+                          f"Restated at {money(price)}", "They still add up to an earlier price"))
+    if extra:
+        last = rows[-1] if rows[-1][0] == "Time for Acceptance" else None
+        o["counter_rows"] = [r for r in rows if r is not last] + extra + ([last] if last else [])
+
+
+def label_title_fees(R):
+    """OFR-277: title company fees from national estimates say so on the net sheet, like the owner's policy line."""
+    if R["costs"].source("closing_costs.seller_title_fees") != "estimate":
+        return
+    sheets = [R["target"]] + [s for o in R["offers"] for s in (o["ns"], o["ns_down"], o["ns_counter"], o["target"])]
+    for s in sheets:
+        s["lines"] = [(k, lab + " (Estimate)" if k == "settle" and "(Estimate)" not in lab else lab, v)
+                      for k, lab, v in s["lines"]]
+
+
+def ask_year_built(R):
+    """OFR-280: with riders read from an FR/BAR package, the lead-based paint check needs the year built; without it
+    the check can't run, so the review asks for it."""
+    L = R["listing"]
+    if L.get("year_built"):
+        return
+    live = R["active"] + R["incomplete"]
+    if not any(o["contract_form"] in oe.cf.FRBAR and o.get("rider_codes") for o in live):
+        return
+    a = {"scope": "listing", "field": "year_built", "value": None, "impact": "med",
+         "why": "Year built not given: the lead-based paint check (a home built before 1978 needs the disclosure signed "
+                "before accepting) can't run. Give the year built"}
+    R["assumptions"].insert(0, a)
+    meds = [i for i, x in enumerate(R["missing"]) if x["impact"] != "high"]
+    R["missing"].insert(meds[0] if meds else len(R["missing"]), a)
+
+
+def estimated_costs(R, offers):
+    """OFR-272: every cost line the net rests on that is a default or an estimate, in short
+    phrases, so the quick answer can name them all in one line."""
+    L, S, costs = R["listing"], R["seller"], R["costs"]
+    def words(label):  # "HOA Estoppel Letter" -> "HOA estoppel letter"
+        return " ".join(w if w.isupper() else w.lower() for w in label.split())
+
+    out = []
+    lines = {k: lab for o in offers for k, lab, v in o["ns"]["lines"] if v}
+    bb_assumed = any(a["field"] == "buyer_broker_pct" for a in R["missing"])
+    if S["listing_fee_assumed"] or bb_assumed:
+        what = [f"listing {oe.pct(S['listing_fee_pct'])}" if S["listing_fee_assumed"] else None,
+                "buyer's broker " + oe.pct(S["default_buyer_broker_pct"] or 0) if bb_assumed and "bb" in lines else None]
+        out.append("commission (" + ", ".join(w for w in what if w) + ", assumed)")
+    src = lambda path: costs.described(path)  # noqa: E731
+    rate = costs.get("closing_costs.deed_transfer_tax_rate")
+    if rate and "transfer" in lines and costs.source("closing_costs.deed_transfer_tax_rate") != "deal":
+        out.append(f"{words(lines['transfer'].split(' (')[0])} {rate * 100:.2f}% ({src('closing_costs.deed_transfer_tax_rate')})")
+    if "title" in lines and "(Quote)" not in lines["title"]:
+        out.append(f"owner's title policy ({'promulgated rate' if 'Promulgated' in lines['title'] else 'estimate'})")
+    if "settle" in lines and costs.source("closing_costs.seller_title_fees") != "deal":
+        amounts = sorted({-v for o in offers for k, _, v in o["ns"]["lines"] if k == "settle"})
+        out.append(f"title company fees {money(amounts[0])}" + (f" to {money(amounts[-1])}" if len(amounts) > 1 else "")
+                   + f" ({src('closing_costs.seller_title_fees')})")
+    tax = next((a for a in R["missing"] if a["field"] == "annual_tax" and isinstance(a["value"], (int, float))), None)
+    if tax and "tax" in lines:
+        fr = costs.get("property_tax.fallback_rate")
+        out.append(f"tax proration at {fr * 100:g}% of price ({src('property_tax.fallback_rate')})" if fr else
+                   f"tax proration on an estimated {money(tax['value'])} bill")
+    if L["hoa_monthly"] is None and "estoppel" in lines:
+        out.append(f"{words(lines['estoppel'])} (charged in case there's an HOA)")
+    if not L.get("repair_reserve_deal") and any(not o["repairs_owed"] and any(k == "repair" and v for k, _, v in o["ns_down"]["lines"])
+                                                for o in offers):  # a Standard form's repair limits are contract terms
+        out.append("post-inspection credit in the downside (estimate)")
+    return out
 
 
 def pick(R, mode="auto", offer_id=None):
@@ -250,6 +404,7 @@ def incomplete_view(R, o):
                  {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": "list price, clean terms", "tone": ""}],
         "certainty": certainty(o, S),
         "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"] if not f.get("contract")][:3],  # contract issues are in fixes
+        "terms_reason": R.get("ranking_reason"),
         "options": [],
         "preliminary": None,
         "next_step": cap(nxt),  # OFR-264: a sentence after "Next Step:"
@@ -354,7 +509,8 @@ def single_view(R, o):
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S),
-        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"][:3]],
+        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"][:3]],  # OFR-274: reminders only fill a spare slot
+        "terms_reason": R.get("ranking_reason"),
         "options": opts,
         "preliminary": preliminary(R, o["id"] if multi_ctx else None),
         "next_step": cap(nxt),  # OFR-264
@@ -390,7 +546,7 @@ def multi_view(R):
         reason = (reason[:1].lower() + reason[1:]) if reason else "more risk"
         lead += f" The highest price ({hi_price['label']}, {money(hi_price['price'])}) ranks #{rk.index(hi_price) + 1}: {reason}."
     if backup:
-        lead += f" Keep {backup['ref']} as backup."
+        lead += f" Keep {backup['ref']} as backup after the primary contract is fully signed."  # OFR-282
     if R["incomplete"]:
         n = len(R["incomplete"])
         names = ", ".join(x["label"] for x in R["incomplete"])
@@ -464,6 +620,7 @@ def multi_view(R):
         "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
         "preliminary": preliminary(R, top["id"], multi=True), "next_step": cap(nxt), "data_note": data_note(R, multi=True),
         "target_net": money(R["target"]["net_adj"]),
+        "terms_reason": R.get("ranking_reason"),  # OFR-279: the agent's terms reason for the pick, shown on the report
     }
 
 
@@ -500,6 +657,7 @@ def offer_detail(o):
         "close": f"{o['close']:%a %b %-d}", "firm_date": f"{o['firm_date']:%a %b %-d}",
         "flags": [f"{f['sev']}: {f['issue']} {f['fix']}" for f in o["flags"]],
         "flag_keys": [f["topic"] for f in o["flags"] if f.get("topic")],
+        "biggest_risk": next((f"{f['sev']}: {f['issue']}" for f in deal_flags(o)), None),  # OFR-274
         "net_sheet": {"columns": [c for c, _ in cols],
                       "rows": [{"label": r["label"], "values": [money(v) for v in r["values"]]} for r in net_sheet_rows(cols)]
                       + [{"label": "Holding Costs Until Closing", "values": [money(c["holding"]) for _, c in cols]},
@@ -519,6 +677,7 @@ def result(R, mode="auto", offer_id=None):
         "summary": view,
         "offers": [offer_detail(x) for x in offers],
         "to_confirm": to_confirm(R),
+        "estimated_costs": estimated_costs(R, offers),  # OFR-272: named in one line in every quick answer
         "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"], a.get("also") or ()), "what": a["why"]} for a in R["missing"]],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],

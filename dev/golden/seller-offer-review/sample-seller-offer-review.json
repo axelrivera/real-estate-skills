@@ -468,11 +468,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "inspection_period"
     },
     {
      "sev": "Med",
-     "topic": "inspection_period"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1412,11 +1412,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "inspection_period"
     },
     {
      "sev": "Med",
-     "topic": "inspection_period"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -2219,11 +2219,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "inspection_period"
     },
     {
      "sev": "Med",
-     "topic": "inspection_period"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -2557,6 +2557,7 @@
    "walkaway_days": 15
   }
  ],
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": "2026-11-20",

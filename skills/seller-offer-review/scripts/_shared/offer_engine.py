@@ -1467,7 +1467,7 @@ def propose_counter(o, L, S):
         if o["inspection_days"] > last["inspection_days"]:
             t["inspection_days"] = last["inspection_days"]
             rows.append(("Inspection Period", f"{o['inspection_days']} days", f"{last['inspection_days']} days", RESTATE))
-    elif o["inspection_days"] > N["inspection_days"]:
+    elif o["inspection_days"] > N["inspection_days"] and not o.get("inspection_assumed"):  # OFR-273: never counter an assumed term
         t["inspection_days"] = N["inspection_days"]
         rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""),
                      f"{N['inspection_days']} days",

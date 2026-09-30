@@ -129,14 +129,14 @@
      "topic": null
     },
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "check": "terms",
      "contract": true,
      "sev": "Med",
      "topic": "loan_amount"
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -663,14 +663,14 @@
      "topic": null
     },
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "check": "terms",
      "contract": true,
      "sev": "Med",
      "topic": "loan_amount"
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1010,6 +1010,7 @@
  "ranked": {
   "count": 0
  },
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": null,

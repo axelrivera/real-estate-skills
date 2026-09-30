@@ -4,6 +4,12 @@
  },
  "assumptions": [
   {
+   "field": "year_built",
+   "impact": "med",
+   "scope": "listing",
+   "value": null
+  },
+  {
    "impact": "high",
    "scope": "listing"
   },
@@ -558,6 +564,12 @@
    "scope": "seller"
   },
   {
+   "field": "year_built",
+   "impact": "med",
+   "scope": "listing",
+   "value": null
+  },
+  {
    "field": "annual_tax",
    "impact": "med",
    "scope": "listing",
@@ -1041,6 +1053,7 @@
  "ranked": {
   "count": 0
  },
+ "ranking_reason": null,
  "sample": false,
  "seller": {
   "deadline": null,

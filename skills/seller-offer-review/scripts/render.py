@@ -133,6 +133,8 @@ def options_table(opts, widths=(24, 13, 15)):
 
 def closing_block(v):
     pre = f'<div class="prelim">{md(v["preliminary"])}</div>' if v["preliminary"] else ""
+    if v.get("terms_reason"):  # OFR-279: the agent's terms reason for the pick, on the record
+        pre = f'<div class="nextstep"><b>Terms Reason:</b> {esc(v["terms_reason"])}</div>' + pre
     return (f'{pre}<div class="nextstep"><b>Next Step:</b> {esc(v["next_step"])} {"The detail follows on the next pages." if v["mode"] == "single" else "Key terms follow on the next page."}</div>'
             f'<div class="fine" style="margin-top:4px">{md(v["data_note"])} Estimates only; not legal or financial advice.</div>')
 
@@ -221,7 +223,9 @@ def term_rows(o, R):
                  "risk" if sc else "good", ""))
     dl = S["deadline"]
     st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
-    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days)", f"On/before {dl:%b %-d}" if dl else "—", st,
+    rb, rent = o.get("rent_back_days"), o.get("rent_back_monthly")  # OFR-281: a rent-back is a closing term
+    rb = (f" + {rb}-day rent-back" + (" (free)" if rent == 0 else f" ({money(rent)}/mo)" if rent else "")) if rb else ""
+    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}", f"On/before {dl:%b %-d}" if dl else "—", st,
                  "Weekend date; confirm funding" if o["close"].weekday() >= 5 else ""))
     tb, cust = o["title_by"], L["title_customary_payer"]
     if tb or cust:
@@ -283,7 +287,7 @@ def lender_questions(o, R):
     return Q
 
 
-def checklist(o):
+def checklist(o, R):
     C = o.get("checklist") or {}
     found = {}  # contract problems noted on the matching line ("signed", "riders", "terms")
     for f in o["flags"]:
@@ -298,6 +302,9 @@ def checklist(o):
              ("insurance", "Buyer has insurance quote on this address", "N/A" if not fin else ({True: "Yes", False: "No"}.get(o.get("insurance_quote"), "Unknown"))),
              ("bb", "Buyer-broker compensation request reviewed with seller", "Pending"),
              ("net", "Seller's net sheet reviewed with seller", "Pending")]
+    L = R["listing"]
+    if L.get("flood_disclosure_rule"):  # OFR-274: the listing side's reminder lives here, not among the offer's risks
+        items.append(("flood", "Seller's flood disclosure given to the buyer", "Yes" if L.get("flood_disclosure") else "Pending"))
     out = []
     for k, lab, dflt in items:
         v = C.get(k, dflt)
@@ -449,7 +456,7 @@ def single_html(R, o, v):
     fl = "".join(f'<tr><td class="c"><span class="pill {f["sev"].lower()}">{f["sev"]}</span></td><td>{esc(f["issue"])}</td><td>{esc(f["fix"])}</td></tr>'
                  for f in o["flags"]) or '<tr><td colspan="3">No significant risks found.</td></tr>'
     vf = "".join(f'<tr><td class="c">{checkbox(b)}</td><td>{esc(a)}</td><td class="sm" style="color:var(--text)">{esc(c)}</td></tr>'
-                 for a, b, c in checklist(o))
+                 for a, b, c in checklist(o, R))
     lq = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(lender_questions(o, R)))
     qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the contract{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
@@ -580,7 +587,7 @@ def multi_html(R, v):
             hit = next((t[k] for k in keys if k in t), None)
             word = STATUS_WORD.get(hit[3], "") if hit else ""  # OFR-28: the status in words, not only by color
             cells += (f'<td class="{hit[3]}">{hit[1]}' + (f' <span class="sm">({word})</span>' if word else "") + "</td>") if hit else "<td>—</td>"
-        risk = o["flags"][0] if o["flags"] else None
+        risk = next(iter(review.deal_flags(o)), None)  # OFR-274: a listing-side reminder is never the biggest risk
         risk = (f'<span class="pill {risk["sev"].lower()}">{risk["sev"]}</span> {esc(risk["issue"])}' if risk else "None major")
         body += f'<tr><td><b>{esc(o["key"])}</b> · <b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
     ctr = ""

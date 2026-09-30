@@ -74,15 +74,15 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
-     "sev": "Med",
      "topic": "escalation_cap_over_value"
     },
     {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 5000,
@@ -1431,15 +1431,15 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
-     "sev": "Med",
      "topic": "escalation_cap_over_value"
     },
     {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 5000,
@@ -2661,15 +2661,15 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
-     "sev": "Med",
      "topic": "escalation_cap_over_value"
     },
     {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 5000,
@@ -3816,6 +3816,7 @@
    "walkaway_days": 10
   }
  ],
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": null,

@@ -31,9 +31,6 @@
     ],
     {
      "count": 4
-    },
-    {
-     "count": 4
     }
    ],
    "counter_score": 63,
@@ -43,7 +40,7 @@
     "close": "2026-10-28",
     "deposit": null,
     "home_warranty": 0,
-    "inspection_days": 7,
+    "inspection_days": 15,
     "loan_approval_days": 30,
     "price": 386000,
     "sale_contingency_days": 0,
@@ -60,12 +57,12 @@
    "firm_date": "2026-10-28",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
+     "sev": "Low",
+     "topic": "inspection_period"
     },
     {
      "sev": "Med",
-     "topic": "inspection_period"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -660,9 +657,6 @@
     ],
     {
      "count": 4
-    },
-    {
-     "count": 4
     }
    ],
    "counter_score": 63,
@@ -672,7 +666,7 @@
     "close": "2026-10-28",
     "deposit": null,
     "home_warranty": 0,
-    "inspection_days": 7,
+    "inspection_days": 15,
     "loan_approval_days": 30,
     "price": 386000,
     "sale_contingency_days": 0,
@@ -689,12 +683,12 @@
    "firm_date": "2026-10-28",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
+     "sev": "Low",
+     "topic": "inspection_period"
     },
     {
      "sev": "Med",
-     "topic": "inspection_period"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1060,9 +1054,6 @@
     ],
     {
      "count": 4
-    },
-    {
-     "count": 4
     }
    ],
    "counter_score": 63,
@@ -1072,7 +1063,7 @@
     "close": "2026-10-28",
     "deposit": null,
     "home_warranty": 0,
-    "inspection_days": 7,
+    "inspection_days": 15,
     "loan_approval_days": 30,
     "price": 386000,
     "sale_contingency_days": 0,
@@ -1089,12 +1080,12 @@
    "firm_date": "2026-10-28",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
+     "sev": "Low",
+     "topic": "inspection_period"
     },
     {
      "sev": "Med",
-     "topic": "inspection_period"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1428,6 +1419,7 @@
    "walkaway_days": 15
   }
  ],
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": null,

@@ -79,11 +79,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "condo_rescission"
     },
     {
      "sev": "Med",
-     "topic": "condo_rescission"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -481,11 +481,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "condo_rescission"
     },
     {
      "sev": "Med",
-     "topic": "condo_rescission"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1020,11 +1020,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "condo_rescission"
     },
     {
      "sev": "Med",
-     "topic": "condo_rescission"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1422,11 +1422,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "condo_rescission"
     },
     {
      "sev": "Med",
-     "topic": "condo_rescission"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1828,11 +1828,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "condo_rescission"
     },
     {
      "sev": "Med",
-     "topic": "condo_rescission"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -2250,11 +2250,11 @@
     },
     {
      "sev": "Med",
-     "topic": "flood_disclosure"
+     "topic": "condo_rescission"
     },
     {
      "sev": "Med",
-     "topic": "condo_rescission"
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -2592,6 +2592,7 @@
    "walkaway_days": 10
   }
  ],
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": "2026-11-30",

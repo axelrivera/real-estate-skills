@@ -1391,6 +1391,7 @@
    "walkaway_days": 7
   }
  ],
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": null,

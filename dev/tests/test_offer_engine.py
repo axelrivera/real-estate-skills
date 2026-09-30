@@ -63,8 +63,8 @@ class MatchesPrototype(unittest.TestCase):
         # Audit: 4% early-payment discount in the proration (OFR-14) and no tax in holding costs (OFR-13)
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349279, 346779, 353011))
         self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))  # FHA: appraisal protected to closing
-        # OFR-122: every counter sets its own time for acceptance
-        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period", "Time for Acceptance"])
+        # OFR-122: every counter sets its own time for acceptance; OFR-273: the assumed inspection period isn't countered
+        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Time for Acceptance"])
         self.assertEqual(R["seller"]["holding_monthly"], 500)  # HOA and loan interest; tax is in the proration (OFR-13)
 
     def test_two_offers_accept(self):

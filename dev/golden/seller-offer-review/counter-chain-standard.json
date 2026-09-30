@@ -453,6 +453,12 @@
  ],
  "assumptions": [
   {
+   "field": "year_built",
+   "impact": "med",
+   "scope": "listing",
+   "value": null
+  },
+  {
    "impact": "high",
    "scope": "listing"
   },
@@ -564,6 +570,12 @@
    "field": "payoff",
    "impact": "high",
    "scope": "seller"
+  },
+  {
+   "field": "year_built",
+   "impact": "med",
+   "scope": "listing",
+   "value": null
   },
   {
    "field": "annual_tax",
@@ -1505,6 +1517,7 @@
    "walkaway_days": 0
   }
  ],
+ "ranking_reason": null,
  "sample": false,
  "seller": {
   "deadline": null,

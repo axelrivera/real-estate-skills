@@ -77,7 +77,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "appraisal_gap"
     },
     {
      "sev": "Med",
@@ -89,19 +89,19 @@
     },
     {
      "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Low",
      "topic": null
     },
     {
      "sev": "Med",
      "topic": "flood_disclosure"
-    },
-    {
-     "sev": "Low",
-     "topic": null
-    },
-    {
-     "sev": "Low",
-     "topic": null
     }
    ],
    "gap_cover": 0,
@@ -500,12 +500,12 @@
    "firm_date": "2026-10-14",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 10000,
@@ -904,12 +904,12 @@
    "firm_date": "2026-09-28",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1329,27 +1329,23 @@
    "flags": [
     {
      "sev": "High",
-     "topic": null
+     "topic": "sale_contingency"
     },
     {
      "sev": "High",
-     "topic": null
+     "topic": "appraisal_gap"
     },
     {
      "sev": "High",
-     "topic": null
+     "topic": "past_deadline"
+    },
+    {
+     "sev": "Med",
+     "topic": "financing"
     },
     {
      "sev": "Med",
      "topic": null
-    },
-    {
-     "sev": "Med",
-     "topic": null
-    },
-    {
-     "sev": "Med",
-     "topic": "flood_disclosure"
     },
     {
      "sev": "Med",
@@ -1368,6 +1364,10 @@
     {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -1885,7 +1885,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "appraisal_gap"
     },
     {
      "sev": "Med",
@@ -1897,19 +1897,19 @@
     },
     {
      "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Low",
      "topic": null
     },
     {
      "sev": "Med",
      "topic": "flood_disclosure"
-    },
-    {
-     "sev": "Low",
-     "topic": null
-    },
-    {
-     "sev": "Low",
-     "topic": null
     }
    ],
    "gap_cover": 0,
@@ -2308,12 +2308,12 @@
    "firm_date": "2026-10-14",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 10000,
@@ -2712,12 +2712,12 @@
    "firm_date": "2026-09-28",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -3137,27 +3137,23 @@
    "flags": [
     {
      "sev": "High",
-     "topic": null
+     "topic": "sale_contingency"
     },
     {
      "sev": "High",
-     "topic": null
+     "topic": "appraisal_gap"
     },
     {
      "sev": "High",
-     "topic": null
+     "topic": "past_deadline"
+    },
+    {
+     "sev": "Med",
+     "topic": "financing"
     },
     {
      "sev": "Med",
      "topic": null
-    },
-    {
-     "sev": "Med",
-     "topic": null
-    },
-    {
-     "sev": "Med",
-     "topic": "flood_disclosure"
     },
     {
      "sev": "Med",
@@ -3176,6 +3172,10 @@
     {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -3576,12 +3576,12 @@
    "firm_date": "2026-10-14",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 10000,
@@ -3980,12 +3980,12 @@
    "firm_date": "2026-09-28",
    "flags": [
     {
-     "sev": "Med",
-     "topic": "flood_disclosure"
-    },
-    {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -4398,7 +4398,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "appraisal_gap"
     },
     {
      "sev": "Med",
@@ -4410,19 +4410,19 @@
     },
     {
      "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Low",
      "topic": null
     },
     {
      "sev": "Med",
      "topic": "flood_disclosure"
-    },
-    {
-     "sev": "Low",
-     "topic": null
-    },
-    {
-     "sev": "Low",
-     "topic": null
     }
    ],
    "gap_cover": 0,
@@ -4846,27 +4846,23 @@
    "flags": [
     {
      "sev": "High",
-     "topic": null
+     "topic": "sale_contingency"
     },
     {
      "sev": "High",
-     "topic": null
+     "topic": "appraisal_gap"
     },
     {
      "sev": "High",
-     "topic": null
+     "topic": "past_deadline"
+    },
+    {
+     "sev": "Med",
+     "topic": "financing"
     },
     {
      "sev": "Med",
      "topic": null
-    },
-    {
-     "sev": "Med",
-     "topic": null
-    },
-    {
-     "sev": "Med",
-     "topic": "flood_disclosure"
     },
     {
      "sev": "Med",
@@ -4885,6 +4881,10 @@
     {
      "sev": "Low",
      "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
     }
    ],
    "gap_cover": 0,
@@ -5225,6 +5225,7 @@
    "walkaway_days": 15
   }
  ],
+ "ranking_reason": null,
  "sample": true,
  "seller": {
   "deadline": "2026-11-15",
