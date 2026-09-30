@@ -4,11 +4,46 @@ Read this when an FR/BAR AS IS or Standard contract lists riders in Para. 19, or
 
 ## Contents
 
-- Verified Against
-- Reading Riders
-- Rider Index
-- Riders A to P
-- Riders Q to GG
+This file is long: jump to the rider you need by its letter, and read only the riders the contract lists.
+
+- [Verified Against](#verified-against)
+- [Reading Riders](#reading-riders)
+- [Rider Index](#rider-index)
+- [Riders A to P](#riders-a-to-p)
+  - [A. Condominium Rider](#a-condominium-rider)
+  - [B. Homeowners' Association/Community Disclosure Rider](#b-homeowners-associationcommunity-disclosure-rider)
+  - [C. Seller Financing Rider](#c-seller-financing-rider)
+  - [D. Assumption of Existing Mortgage Rider](#d-assumption-of-existing-mortgage-rider)
+  - [E. FHA/VA Rider](#e-fhava-rider)
+  - [F. Appraisal Contingency Rider](#f-appraisal-contingency-rider)
+  - [G. Short Sale Approval Contingency Rider](#g-short-sale-approval-contingency-rider)
+  - [H. Homeowner's/Flood Insurance Rider](#h-homeownersflood-insurance-rider)
+  - [I. Mold Inspection Rider](#i-mold-inspection-rider)
+  - [J. Interest-Bearing Account Rider](#j-interest-bearing-account-rider)
+  - [K. As Is Rider](#k-as-is-rider)
+  - [L. Right to Inspect and Right to Cancel Rider](#l-right-to-inspect-and-right-to-cancel-rider)
+  - [M. Defective Drywall Rider](#m-defective-drywall-rider)
+  - [N. Coastal Construction Control Line Rider](#n-coastal-construction-control-line-rider)
+  - [O. Insulation Disclosure for New Residence Rider](#o-insulation-disclosure-for-new-residence-rider)
+  - [P. Lead-Based Paint Disclosure Rider (Pre-1978 Housing)](#p-lead-based-paint-disclosure-rider-pre-1978-housing)
+- [Riders Q to GG](#riders-q-to-gg)
+  - [Q. Housing for Older Persons Rider](#q-housing-for-older-persons-rider)
+  - [R. Rezoning Contingency Rider](#r-rezoning-contingency-rider)
+  - [S. Lease Purchase/Lease Option Rider](#s-lease-purchaselease-option-rider)
+  - [T. Pre-Closing Occupancy by Buyer Rider](#t-pre-closing-occupancy-by-buyer-rider)
+  - [U. Post-Closing Occupancy by Seller Rider](#u-post-closing-occupancy-by-seller-rider)
+  - [V. Sale of Buyer's Property Rider](#v-sale-of-buyers-property-rider)
+  - [W. Back-Up Contract Rider](#w-back-up-contract-rider)
+  - [X. Kick-Out Clause Rider](#x-kick-out-clause-rider)
+  - [Y. Seller's Attorney Approval Rider](#y-sellers-attorney-approval-rider)
+  - [Z. Buyer's Attorney Approval Rider](#z-buyers-attorney-approval-rider)
+  - [AA. Licensee Disclosure of Personal Interest in Property Rider](#aa-licensee-disclosure-of-personal-interest-in-property-rider)
+  - [BB. Binding Arbitration Rider](#bb-binding-arbitration-rider)
+  - [CC. Miami-Dade County Special Taxing District Disclosure Rider](#cc-miami-dade-county-special-taxing-district-disclosure-rider)
+  - [DD. Seasonal and Vacation Rentals After Closing Rider](#dd-seasonal-and-vacation-rentals-after-closing-rider)
+  - [EE. Qualifying Improvements Rider](#ee-qualifying-improvements-rider)
+  - [FF. Credit Related to Buyer's Broker Compensation Rider](#ff-credit-related-to-buyers-broker-compensation-rider)
+  - [GG. Seller's Agreement with Respect to Buyer's Broker Compensation Rider](#gg-sellers-agreement-with-respect-to-buyers-broker-compensation-rider)
 
 ## Verified Against
 
@@ -576,7 +611,7 @@ Read this when an FR/BAR AS IS or Standard contract lists riders in Para. 19, or
 - **Money Effects:** Seller pays Buyer monthly rent in advance (reduces Seller's net; offsets Buyer's carrying cost). Agreement preparation cost per the checkbox. The rider creates no escrow, holdback or security deposit; any holdback from Seller's proceeds for damage or late move-out must be written into the Post-Closing Agreement. Seller's Para. 12 repair obligations (Standard form) end at Closing; Seller's Para. 11 maintenance duty continues until possession.
 - **Changes to the Contract:** Overrides Para. 6(a) delivery of possession, keys and removal of personal items at Closing (Para. 6(b) itself cross-refers to Rider U). Para. 6(b) is usually checked for the Seller's post-closing occupancy; that is not a tenancy: record no tenants (no estoppel or lease rows) unless a separate lease exists. Extends Para. 11 maintenance past Closing until possession is delivered. Confirms Para. 12 repair, replacement, treatment and remedy obligations do not extend past Closing. Walk-through (Standard L, Para. 12) happens before Seller moves out, so condition at move-out is not covered by the Contract.
 - **Red Flags:** Days after Closing or rent blank. No holdback or security deposit for damage or holdover. No holdover rent or daily penalty. Risk of loss after Closing is not addressed in the rider: Buyer owns the Property while Seller occupies it; confirm insurance (Buyer's owner policy and Seller's renter's coverage) in the agreement. Lender occupancy rules: an owner-occupied loan may limit how long Seller can stay; ask Buyer's lender. The deadline is keyed to Closing Date; if Closing moves, confirm whether the deadline moves with it (ask the agent).
-- **Skill Use:** Timeline: add "Closing Date minus N days (default 10): Post-Closing Agreement delivered", a Seller move-out row at Closing + N days, and a note that the final walk-through does not cover move-out condition. Seller offer review: count the rent-back rent as a cost to Seller (days x monthly rent / 30 as an estimate, labeled "Estimate") and any holdback as delayed proceeds; a rent-back offered by Buyer is a strong non-price term. Buyer offer builder: offering a rent-back can win a deal; recommend a holdback from Seller's proceeds, a holdover charge, a clear move-out date within the lender's occupancy rules, and insurance terms in the agreement.
+- **Skill Use:** Timeline: add "Closing Date minus N days (default 10): Post-Closing Agreement delivered", a Seller move-out row at Closing + N days, and a note that the final walk-through does not cover move-out condition. When Para. 6(b) is checked only for this stay, its 5-day lease disclosure and cancel windows aren't dated; tell the agent why. Seller offer review: count the rent-back rent as a cost to Seller (days x monthly rent / 30 as an estimate, labeled "Estimate") and any holdback as delayed proceeds; a rent-back offered by Buyer is a strong non-price term. Buyer offer builder: offering a rent-back can win a deal; recommend a holdback from Seller's proceeds, a holdover charge, a clear move-out date within the lender's occupancy rules, and insurance terms in the agreement.
 
 ### V. Sale of Buyer's Property Rider
 
@@ -749,4 +784,4 @@ Read this when an FR/BAR AS IS or Standard contract lists riders in Para. 19, or
 - **Money Effects:** The amount and how it is paid come from the separate Compensation Agreement. At Closing the contract's broker section instructs the Closing Agent to pay brokerage fees per the separate brokerage and cooperative agreements, so the payment usually appears as a Seller-paid (or listing-broker-paid) commission line, not a credit to Buyer. If Seller signs it, Seller's net falls by that amount; if Seller's Broker signs it, the listing broker usually pays from its own fee (check the listing agreement).
 - **Changes to the Contract:** Adds a Buyer-side contingency and cancel right. Does not itself state or change any compensation; the contract's broker section still says it does not modify any offer of compensation.
 - **Red Flags:** Signer box unchecked. Compensation Agreement not in the file by day 3. The same compensation also given as a credit under Rider FF (double counting). Amount unknown to Seller at acceptance: net cannot be computed until the agreement is seen.
-- **Skill Use:** Timeline: add "Day N (default 3): compensation agreement signed and delivered" and "Day N + 3: Buyer's last day to cancel if it was not". Seller offer review: ask for the Compensation Agreement amount; subtract it from net if Seller pays; treat the Deposit as refundable until day N + 3 and certainty as lower until the agreement is signed. Buyer offer builder: have the Compensation Agreement drafted and ready to sign with the offer so the contingency clears at once; choose GG (fee paid to the broker) or FF (credit to the buyer), not both for the same money.
+- **Skill Use:** Timeline: add "Day N (default 3): compensation agreement signed and delivered" and "Day N + 3: Buyer's last day to cancel if it was not". The 3 days count from the Time Period's end as extended past a weekend or holiday (the later, buyer-favorable date); when it rolled, give the agent the reading from the unextended day too. Seller offer review: ask for the Compensation Agreement amount; subtract it from net if Seller pays; treat the Deposit as refundable until day N + 3 and certainty as lower until the agreement is signed. Buyer offer builder: have the Compensation Agreement drafted and ready to sign with the offer so the contingency clears at once; choose GG (fee paid to the broker) or FF (credit to the buyer), not both for the same money.
