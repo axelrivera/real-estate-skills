@@ -1071,5 +1071,21 @@ class SecondPass(unittest.TestCase):
                 self.assertFalse(any(abs(px - x) <= 12 for px in inside), (name, x))
 
 
+class AdditionalDeposit(unittest.TestCase):
+    """The Additional Deposit row comes from the number, the words or the period: a deal file with only the numeric
+    amount used to lose this critical deadline without a word."""
+
+    def test_numeric_amount_alone_makes_the_row(self):
+        deal = fixture("standard-riders.json")
+        c = deal["contract"]
+        for k in ("additional_deposit_amount_str", "additional_deposit_amount", "additional_deposit_days"):
+            c.pop(k, None)
+        self.assertNotIn("add_deposit", by_key(timeline.analyze(deal)))
+        c["additional_deposit_amount"] = 10000
+        row = by_key(timeline.analyze(deal))["add_deposit"]
+        self.assertTrue(row["critical"])
+        self.assertIn("$10,000", row["action"])
+
+
 if __name__ == "__main__":
     unittest.main()

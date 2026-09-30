@@ -228,10 +228,12 @@ def frbar_deadlines(c):
         source="Para. 2(a)", party="Buyer", critical=True,
         action=f"Deliver {c.get('deposit_amount_str') or 'the initial deposit'} to {c.get('escrow_agent') or 'the escrow agent'}; get a receipt",
         if_missed="Buyer in default; seller may cancel")
-    if c.get("additional_deposit_amount_str"):
+    add_amount = c.get("additional_deposit_amount_str") or (  # the words as written, else the number
+        f"${c['additional_deposit_amount']:,.0f}" if isinstance(c.get("additional_deposit_amount"), (int, float)) else None)
+    if add_amount or c.get("additional_deposit_amount") or c.get("additional_deposit_days"):
         add(key="add_deposit", label="Additional Deposit Due", short="Additional Deposit", basis="after",
             days=c.get("additional_deposit_days", 10), source="Para. 2(b)", party="Buyer", critical=True,
-            action=f"Deliver the additional deposit ({c['additional_deposit_amount_str']})",
+            action=f"Deliver the additional deposit ({add_amount})" if add_amount else "Deliver the additional deposit",
             if_missed="Buyer in default; seller may cancel")
     if financed:
         add(key="loan_app", label="Loan Application", short="Loan App", basis="after", days=c.get("loan_application_days", 5),
