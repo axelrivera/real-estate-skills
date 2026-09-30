@@ -225,9 +225,11 @@ def _rev(text):
             (int(date.group(1)), int(date.group(2)) % 100) if date else None)
 
 
-def revision_note(form, printed):
+def revision_note(form, printed, from_footer=True):
     """A sentence for the chat reply when the contract's printed revision isn't the one the built-in rules were
-    verified against, else None. Never printed on a report: it tells the agent what to double-check."""
+    verified against, else None. Never printed on a report: it tells the agent what to double-check.
+    `from_footer=False` (TL-201): the revision came from somewhere else (a header, a summary, the agent), so the note
+    quotes it as the revision given, never as what the footer reads."""
     key = _VERIFIED_FOR.get(form)
     if not key or not printed:
         return None
@@ -235,8 +237,9 @@ def revision_note(form, printed):
     ver, date = _rev(printed)
     if (ver is None or ver == want_ver) and (date is None or date == want_date):
         return None
-    return (f"This contract's footer reads \"{printed}\"; the built-in FR/BAR rules were checked against "
-            f"\"{VERIFIED[key]}\". Confirm the deposit, inspection, financing and closing paragraphs against the signed form.")
+    said = f"This contract's footer reads \"{printed}\"" if from_footer else f"The revision given for this contract is \"{printed}\""
+    return (f"{said}; the built-in FR/BAR rules were checked against \"{VERIFIED[key]}\". Confirm the deposit, "
+            "inspection, financing and closing paragraphs against the signed form.")
 
 
 BEST_EFFORT_NOTE = ("Only Florida FR/BAR contracts are fully supported. This contract was read on a best-effort basis: check "
@@ -248,12 +251,13 @@ def support(forms, revisions=()):
     """What the skill tells the agent in chat, never on a report: {'support': 'full' | 'best_effort', 'chat_notes': [...]}.
 
     `forms` are normalized forms ('as_is', 'standard', 'other'; None is ignored). Any 'other' contract makes the run
-    best effort and adds BEST_EFFORT_NOTE. `revisions` are (form, printed footer) pairs; a revision that isn't the
+    best effort and adds BEST_EFFORT_NOTE. `revisions` are (form, printed footer) pairs, or (form, revision,
+    from_footer) when the caller knows whether the revision was read from the footer; a revision that isn't the
     verified one adds its revision_note()."""
     forms = [f for f in forms if f]
     notes = [BEST_EFFORT_NOTE] if OTHER in forms else []
-    for form, printed in revisions:
-        note = revision_note(form, printed)
+    for form, printed, *source in revisions:
+        note = revision_note(form, printed, *source)
         if note and note not in notes:
             notes.append(note)
     return {"support": "best_effort" if OTHER in forms else "full", "chat_notes": notes}

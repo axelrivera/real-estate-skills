@@ -91,6 +91,11 @@ class Module(unittest.TestCase):
         self.assertIsNone(cf.revision_note("as_is", None))
         self.assertIn("checked against", cf.revision_note("as_is", "ASIS-8 Rev. 1/27"))
         self.assertIn("checked against", cf.revision_note("standard", "FloridaRealtors/FloridaBar-7x Rev. 10/24"))
+        # TL-201: a revision that didn't come from the footer is never quoted as the footer
+        self.assertIn("footer reads", cf.revision_note("as_is", "ASIS-8 Rev. 1/27"))
+        self.assertIn("revision given", cf.revision_note("as_is", "Rev. 6/24", False))
+        self.assertNotIn("footer", cf.revision_note("as_is", "Rev. 6/24", False))
+        self.assertIn("revision given", cf.support(["as_is"], [("as_is", "Rev. 6/24", False)])["chat_notes"][0])
 
     def test_repair_limits(self):
         self.assertEqual(cf.repair_limits(400000), {"general": 6000, "wdo": 6000, "permit": 6000})
