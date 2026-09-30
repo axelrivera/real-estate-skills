@@ -259,7 +259,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
             "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
             "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
             "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
-            "crowded_labels": placer.overlapping}
+            "crowded_labels": placer.clashing}
     return "\n".join(o), info
 
 
@@ -285,12 +285,12 @@ class _LabelPlacer:
     another label or the plot's edge; then on the side (nudged up or down a line beside the point) that covers the
     least. Covering a comp, a listing, the subject or another label counts; grazing a small background sale dot
     counts less and isn't reported. `moved` lists (label, asked, used) and `overlapping` the labels that still cover
-    something that counts, so the render can say so."""
+    something that counts, so the render can say so, and `clashing` the ones that overlap another label."""
 
     NUDGES = (0, -10, 10)  # a left or right label may sit a line higher or lower beside its point
 
     def __init__(self, marks, bounds):
-        self.marks, self.bounds, self.boxes, self.moved, self.overlapping = marks, bounds, [], [], []
+        self.marks, self.bounds, self.boxes, self.moved, self.overlapping, self.clashing = marks, bounds, [], [], [], []
 
     @staticmethod
     def box(px, py, side, text, gap, size, bold=False):
@@ -324,7 +324,10 @@ class _LabelPlacer:
             self.moved.append((text, side, best + ("" if not dy else ", a line higher" if dy < 0 else ", a line lower")))
         if big:
             self.overlapping.append(text)
-        self.boxes.append(self.box(px, py + dy, best, text, gap, size, bold))
+        b = self.box(px, py + dy, best, text, gap, size, bold)
+        if any(b[0] < o[2] and o[0] < b[2] and b[1] < o[3] and o[1] < b[3] for o in self.boxes):
+            self.clashing.append(text)
+        self.boxes.append(b)
         return _label(px, py + dy, best, text, cls, gap)
 
 
