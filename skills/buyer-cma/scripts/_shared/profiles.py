@@ -307,6 +307,20 @@ def _county_key(county):
     return re.sub(r"[^a-z]", "", re.sub(r"\bsaint\b", "st", k))
 
 
+def county_for_city(state, city):
+    """The county a city is in, read from the state layer's built-in millage districts ("Orlando (St. Johns WMD)" is
+    in Orange), or None when the state has no layer, no district is named for the city, or districts in more than
+    one county are. Only for a listing that gives a city but no county: a county the agent gave always wins."""
+    code = state_code(state)
+    layer = _layers("state").get(code) if code else None
+    if not layer or not str(city or "").strip():
+        return None
+    want = str(city).strip().lower()
+    counties = {str(r.get("county")) for r in (layer.get("property_tax") or {}).get("millage") or []
+                if str(r.get("district", "")).split(" (")[0].strip().lower() == want and r.get("county")}
+    return counties.pop() if len(counties) == 1 else None
+
+
 def _strip_layer_keys(layer):
     return {k: v for k, v in layer.items()
             if k not in ("layer", "name", "aliases", "as_of", "schema", "profile", "counties")}

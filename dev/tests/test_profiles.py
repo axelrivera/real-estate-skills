@@ -211,5 +211,14 @@ class AuditMarketData(unittest.TestCase):
         self.assertEqual(len(m.notes), len(m.note_codes))
 
 
+class CountyForCity(unittest.TestCase):
+    def test_built_in_districts_name_the_county(self):  # OFR-213
+        self.assertEqual(p.county_for_city("FL", "Orlando"), "Orange")  # two districts, one county
+        self.assertEqual(p.county_for_city("Florida", "casselberry"), "Seminole")
+        self.assertIsNone(p.county_for_city("FL", "Miami"))  # no built-in district
+        self.assertIsNone(p.county_for_city("TX", "Austin"))  # no state layer
+        self.assertIsNone(p.county_for_city(None, "Orlando"))
+
+
 if __name__ == "__main__":
     unittest.main()
