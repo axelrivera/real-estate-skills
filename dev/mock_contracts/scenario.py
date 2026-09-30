@@ -1152,9 +1152,15 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
     gg = values.get("GG") or bb or {}
     if bb_form == "GG":  # a compensation agreement between the brokers: the listing broker pays from its own fee
         offer["buyer_broker_paid_by"] = "listing_broker" if gg.get("between", "brokers") == "brokers" else "seller"
-    lender = (letters_.get("pre_approval") or {}).get("lender")
+    pa = letters_.get("pre_approval") or {}
+    lender = pa.get("lender")
     if lender:
         offer["lender"] = lender[0] if isinstance(lender, (list, tuple)) else lender
+    if pa:  # what the letter prints (letters.py): its caps and its 90-day expiry
+        offer["approval_max_price"] = pa.get("price_cap") or ctx["price"]
+        if pa.get("loan_cap") or ctx["loan_amount"]:
+            offer["approval_max_loan"] = pa.get("loan_cap") or ctx["loan_amount"]
+        offer["approval_expires"] = (_dt(pa["date"]).date() + timedelta(days=90)).isoformat()
     if ctx["warranty_by"] == "seller" and ctx["warranty_max"]:
         offer["home_warranty"] = ctx["warranty_max"]
     if form == cf.STANDARD and ctx["repair_limits"]:
