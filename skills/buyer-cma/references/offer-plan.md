@@ -14,7 +14,7 @@ One opening offer, a target and a walk-away. They're a negotiating plan for this
 
 Before there's a supported range, compute.py's `rough` gives the gut check's numbers from the adjusted comps alone, all called rough in the reply:
 
-- **Rough range:** the adjusted comps' span, lowest to highest adjusted value.
+- **Rough range:** the adjusted comps' span, lowest to highest adjusted value, rounded outward to $1,000.
 - **Rough opening:** the median adjusted value minus half the market's typical range width (`cma.typical_range_width`; 5% of the median where none is built in), rounded down to $1,000. That's the bottom of a typical range centered on the median, where the full plan normally opens.
 - **Rough walk-away:** the median adjusted value, rounded down to $1,000 (at or below the median, as above).
 - **Rough target:** halfway between the two, to the nearest $1,000.
