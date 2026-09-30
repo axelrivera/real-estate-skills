@@ -14,6 +14,7 @@ ranked comp candidates with remarks, and the competition. Numbers only: picking 
 is a judgment made from this output.
 """
 import argparse
+import csv
 import json
 import os
 import sys
@@ -22,6 +23,22 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import finance, mls, profiles  # noqa: E402
 
 money = finance.money
+NEEDED = ("address", "status", "living_area", "close_price", "current_price")  # the columns mls.load requires
+
+
+def builtin_layout(path):
+    """The built-in MLS (its short name, "Stellar") whose export columns this CSV has, or None."""
+    try:
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            headers = set(next(csv.reader(f), []))
+    except (OSError, UnicodeDecodeError):
+        return None
+    for layer in profiles._layers("mls").values():
+        cols = (layer.get("mls_format") or {}).get("cma_export_columns") or {}
+        names = {k: [v] if isinstance(v, str) else list(v or []) for k, v in cols.items()}
+        if cols and all(any(h in headers for h in names.get(k, [])) for k in NEEDED):
+            return layer["mls"]
+    return None
 
 
 def main(argv=None):
@@ -44,6 +61,7 @@ def main(argv=None):
     ap.add_argument("--own-listing", action="store_true",
                     help="the agent already said the home is their own current listing (a reprice)")
     a = ap.parse_args(argv)
+    market = None
     try:
         market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
         homes = mls.load(a.export, market, mls.columns_arg(a.columns))
@@ -94,7 +112,15 @@ def main(argv=None):
                 "Until then, name it as a failed price without a date, and don't say whether it came before or after "
                 "the seller's updates.")
         out["ok"] = True
-    except (profiles.ProfileError, mls.ExportError, OSError) as e:
+    except mls.ExportError as e:
+        # CMA-268: no MLS given (none assumed without a county), but the headers are a built-in MLS's export
+        unmapped = market is not None and not market.get("mls_format.cma_export_columns")
+        known = builtin_layout(a.export) if unmapped and not (a.mls or a.columns) else None
+        out = {"ok": False, "problems": [
+            f"No MLS was given{' for ' + a.county if a.county else ''}, and none is assumed without a county, but this "
+            f"export has {known}'s columns. If it's a {known} export, re-run with --mls {known} (and --state and "
+            "--county from the listing)." if known else str(e)]}
+    except (profiles.ProfileError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}
     print(json.dumps(out, indent=2, default=str, ensure_ascii=False))
     return 0 if out["ok"] else 1

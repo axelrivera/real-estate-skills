@@ -12,6 +12,9 @@ then layout notes and checks on stderr.
 """
 import html
 import os
+import re
+import shutil
+import subprocess
 import sys
 from datetime import date
 
@@ -50,7 +53,7 @@ def footer_block(agent, R, L):
 
 def summary_page(R, C, agent, L):
     s, rec = R["subject"], R["recommendation"]
-    sp = cma.fill(R["summary_page"], cma.page_one_values(C))
+    sp = R["summary_page"]  # placeholders already filled (build_html)
     strats, ri = C["strategies"], C["recommended_index"]
     cash, free = C["net"]["cash_at_closing"], C["net"]["no_mortgage"]
     tile = L("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
@@ -78,9 +81,11 @@ def summary_page(R, C, agent, L):
          f'<div class="sp-h">{L("sum_comps_h")} <span style="font-weight:400;color:var(--muted)">· {L("sum_shaded")}</span></div>',
          '<div class="sp-dot">' + cma.dotplot(R["comps"]["cards"], rec["low"], rec["high"], rec["list_price"],
                                              L("dot_rec", price=money(rec["list_price"]))) + "</div>"]
-    rows = "".join(f'<tr class="{"rec" if x["recommended"] else ""}"><td>{x["list_price_display"]}{" ★" if x["recommended"] else ""}</td>'
+    stay = (C.get("reprice") or {}).get("stay_index")  # CMA-273: the Stay row reads "Stay at $474,900", as in the full table
+    rows = "".join(f'<tr class="{"rec" if x["recommended"] else ""}"><td>'
+                   f'{L("sum_stay", price=x["list_price_display"]) if i == stay else x["list_price_display"]}{" ★" if x["recommended"] else ""}</td>'
                    f'<td>{x["time"]}</td><td class="n">{x["expected_sale_display"]}</td><td class="n">{x["net_display"]}</td></tr>'
-                   for x in strats)
+                   for i, x in enumerate(strats))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_options")}</div><div class="tbl"><table><thead><tr>'
              f'<th>{L("th_list_at")}</th><th>{L("th_time_short")}</th><th class="n">{L("th_expected")}</th>'
@@ -120,6 +125,8 @@ def payments_section(R, C, L):
                                basis=pay["tax_basis"], ins=money(pay["insurance_annual"]), mi=mi)
     if pay["tax_estimated"]:
         note += " " + L("tax_estimated", basis=pay["tax_basis"])
+    elif not pay["homestead_applied"] and not bp.get("note"):  # CMA-270: say the taxes carry no homestead exemption (Texas isn't built in)
+        note += " " + L("pay_no_homestead_built_in" if pay["homestead"] else "pay_no_homestead")
     note += " " + pay["flood"]["note"]
     return [f'<h3>{L("h_payments")}</h3>',
             f'<p>{L("pay_intro", per10k=pay["per_10k_display"], down10k=pay["down_per_10k_display"])}</p>',
@@ -156,16 +163,14 @@ def body(R, C, homes, agent, L):
         sc = {"subject_label": L("subject_label"), **sc}
         svg, info = cma.scatter(homes, sc, s["sqft"], rec["list_price"], s.get("mls_address", s["address"]), (rec["low"], rec["high"]), L,
                                 [cd["address"] for cd in R["comps"]["cards"]])
-        if info.get("crowded_labels"):  # CMA-253: labels are placed clear of markers; these had no clear side
-            C.setdefault("render_checks", []).append(
-                "Scatter labels still crowd (" + ", ".join(info["crowded_labels"]) + "): drop a callout or shorten its label.")
-        trend =money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
-        share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
-        b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
+        checks, notes = scatter_checks(info)
+        C.setdefault("render_checks", []).extend(checks)
+        C.setdefault("render_notes", []).extend(notes)
+        b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"]}</p>',
               '<div class="chart-box">' + cma.scatter_legend(L, sc["subject_label"], info["counts"]) + svg + "</div>"]
         b += [n for n in (cma.excluded_note(info["excluded"], L), cma.trend_caption(info, rec["list_price"], L)) if n]
         if sc.get("after_paragraph"):
-            b.append(f'<p>{sc["after_paragraph"].replace("{trend_at_subject}", trend).replace("{r2_share}", share)}</p>')
+            b.append(f'<p>{sc["after_paragraph"]}</p>')
 
     cp = R["competition"]
     b += [f'<h2>{L("h_competition")}</h2>', f'<p>{cp["intro"]}</p>',
@@ -179,10 +184,30 @@ def body(R, C, homes, agent, L):
     b += payments_section(R, C, L)
 
     b += [f'<h2>{L("h_prep")}</h2>', f'<p>{R["prep"]["intro"]}</p>', ul(R["prep"]["items"], "plain watch"),
-          f'<h3>{L("h_needs")}</h3>', '<ol class="qs">' + "".join(f"<li>{q}</li>" for q in R["needs"]) + "</ol>",
-          f'<h2>{L("h_method")}</h2>'] + [f"<p>{x}</p>" for x in R["method"]]
-    b.append(footer_block(agent, R, L))
+          f'<h3>{L("h_needs")}</h3>', '<ol class="qs">' + "".join(f"<li>{q}</li>" for q in R["needs"]) + "</ol>"]
     return b
+
+
+def closing(R, C, agent, L):
+    """CMA-276: How This Was Prepared, the footer and the closing notices kept together, so the notices never sit
+    alone on a last page."""
+    return ('<div class="kg sec">' + f'<h2>{L("h_method")}</h2>' + "".join(f"<p>{x}</p>" for x in R["method"])
+            + footer_block(agent, R, L) + render.notices(agent, cma.report_notices(C)) + "</div>")
+
+
+def scatter_checks(info):
+    """CMA-267: (checks, information): chart labels that still cover a marker (the subject's included) or another
+    label, and labels placed on another side than asked because that side was crowded."""
+    checks, notes = [], []
+    if info.get("labels_overlapping") or info.get("crowded_labels"):
+        names = list(dict.fromkeys([*(info.get("labels_overlapping") or []), *(info.get("crowded_labels") or [])]))
+        checks.append("Scatter labels still cover a marker or another label (" + ", ".join(names) + "): drop that "
+                      "callout or shorten its label, then render again.")
+    moved = [m for m in info.get("labels_moved") or [] if m[0] not in (info.get("labels_overlapping") or [])]
+    if moved:
+        notes.append("Scatter labels placed on another side than asked, to stay clear of markers (information; the "
+                     "side is a preference): " + "; ".join(f"{t} ({a} to {u})" for t, a, u in moved) + ".")
+    return checks, notes
 
 
 def theme_css(agent):
@@ -194,10 +219,12 @@ def theme_css(agent):
 
 def build_html(R, C, homes, agent):
     L = compute.labels(R)
+    # CMA-265: every {placeholder} in the wording, filled in every field (compute.py warns on any it can't fill)
+    R = {**cma.fill({key: v for key, v in R.items() if key != "labels"}, C["placeholders"]), "labels": R.get("labels")}
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
-               cma.group_blocks(body(R, C, homes, agent, L)) + render.notices(agent, cma.report_notices(C)) + "</div>")
+               cma.group_blocks(body(R, C, homes, agent, L)) + closing(R, C, agent, L) + "</div>")
     title = f'{L("doc_label")}: {R["subject"]["address"]}'
     doc = render.page(content, css=cma.css(), title=title, theme_css=vars_css)
     return doc.replace("<html>", '<html lang="en">', 1), L
@@ -231,6 +258,7 @@ def build(R, fmt, out_dir, ctx):
 
 
 def _build(R, fmt, out_dir, ctx):
+    R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")  # the deck alone (--format pptx) needs it too
     market, homes = compute.load_inputs(R, ctx.get("mls"), ctx.get("data_file"))
     C = compute.compute(R, market, homes)
     if C["payments"] is None:
@@ -255,12 +283,17 @@ def _build(R, fmt, out_dir, ctx):
         written.append(path)
         for c in C.get("render_checks", []):
             print(f"Check: {c}", file=sys.stderr)
+        for n in C.get("render_notes", []):
+            print(n, file=sys.stderr)
         if not info["summary_page"]["fits"]:
             print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
         elif info["summary_page"]["fit_level"]:
             print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
-        if info["moved"]:
+        pages = page_fill(path)
+        if pages is None and info["moved"]:  # no pdftotext here: the old information line
             print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
+        for c in page_checks(pages or []):
+            print(f"Check: {c}", file=sys.stderr)
     elif fmt == "pptx":
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Listing Presentation", ext="pptx"))
         D = deck.deck_data(R, C, homes, agent, L, footer_label(R, C, agent, L, "", sample))
@@ -274,6 +307,54 @@ def _build(R, fmt, out_dir, ctx):
         else:
             print("Check: the presentation PDF couldn't be made here (no LibreOffice); the PPTX is unaffected.", file=sys.stderr)
     return written
+
+
+# CMA-274, CMA-276: how full each printed page is, read back from the PDF (the layout measured before printing can
+# drift a few pixels from Chromium's print layout, enough to push a block to the next page)
+PAGE_TOP, PAGE_BOTTOM = 0.45 * 72, 792 - 0.55 * 72  # the content area in PDF points (cma.PAGE_MARGINS, Letter)
+HALF_EMPTY = 0.5  # a page before a kept-together block that ends above half the page leaves a gap worth fixing
+LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines
+_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
+
+
+def page_fill(pdf):
+    """[(fill, first line)] per page: how far down the content area the text reaches (0 to 1) and the page's first
+    line, from pdftotext -bbox. None when pdftotext isn't available."""
+    tool = shutil.which("pdftotext")
+    if not tool:
+        return None
+    try:
+        out = subprocess.run([tool, "-bbox", pdf, "-"], capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    pages = []
+    for chunk in out.split("<page ")[1:]:
+        words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
+                 if float(y1) <= PAGE_BOTTOM + 1]  # the running footer sits below the content area
+        if not words:
+            pages.append((0.0, ""))
+            continue
+        bottom = max(w[2] for w in words)
+        top = min(w[1] for w in words)
+        first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
+        pages.append((max(0.0, (bottom - PAGE_TOP) / (PAGE_BOTTOM - PAGE_TOP)), first[:60]))
+    return pages
+
+
+def page_checks(pages):
+    """Checks for pages 2 onward: one that ends above half the page before a block that moved on, and a last page
+    holding only a few closing lines."""
+    checks = []
+    for i in range(1, len(pages) - 1):
+        fill, _ = pages[i]
+        if fill < HALF_EMPTY:
+            checks.append(f"Page {i + 1} is only {fill:.0%} full: the next block (\"{pages[i + 1][1]}\") didn't fit and "
+                          f"starts page {i + 2}. Shorten the wording before it on page {i + 1} or in that block (its intro, "
+                          "a comp bullet, a note) so it fits, then render again.")
+    if len(pages) > 2 and pages[-1][0] < LONE_TAIL:
+        checks.append(f"The last page (page {len(pages)}) holds only a few closing lines (\"{pages[-1][1]}\"): shorten "
+                      "the needs list, the launch steps or the method so they fit on the page before, then render again.")
+    return checks
 
 
 def main(argv=None):

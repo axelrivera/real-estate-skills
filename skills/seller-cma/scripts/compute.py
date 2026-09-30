@@ -11,6 +11,7 @@ seller-offer-review skill reads) next to report.json, in the working folder, nev
 import argparse
 import json
 import os
+import re
 import statistics
 import sys
 from datetime import date
@@ -102,6 +103,19 @@ def pct_text(fraction):
     return f"{fraction * 100:g}"
 
 
+def _and(items):
+    """'a', 'a and b', 'a, b and c'."""
+    items = [i for i in items if i]
+    return ", ".join(items[:-1]) + " and " + items[-1] if len(items) > 1 else "".join(items)
+
+
+def about(amount):
+    """CMA-272: a difference rounded for a chat reply, to the nearest $500 under $5,000 and $1,000 above: 'about
+    $7,000' for $6,796. The reply quotes it instead of rounding by hand."""
+    step = 500 if abs(amount) < 5000 else 1000
+    return "about " + money(abs(amount), step)
+
+
 # --- net sheet ---------------------------------------------------------------
 
 # Plain words for costs the market doesn't have, in a note a homeowner reads (not every state has each one).
@@ -188,9 +202,14 @@ def net_sheet(R, market, L):
     has_tax = any(l["key"] == "tax_proration" for c in cols for l in c["lines"])
     if holding:
         # CMA-255: say what the loan interest rests on, and whether property tax is anywhere in the table
-        loan = (L("net_holding_loan_none") if payoff == 0 else L("net_holding_loan_unknown") if payoff is None else
-                L("net_holding_loan_rate" if costs.get("mortgage_rate") else "net_holding_loan_assumed",
-                  rate=f"{loan_rate * 100:g}", payoff=money(payoff)))
+        # CMA-266: name only the costs actually counted (no HOA line for a home without one)
+        parts = [L(f"net_holding_part_{p}") for p, used in (("hoa", bool(costs.get("hoa_monthly"))),
+                                                             ("insurance", "insurance" not in left_out),
+                                                             ("utilities", "utilities" not in left_out)) if used]
+        if payoff:
+            parts.insert(0, L("net_holding_loan_rate" if costs.get("mortgage_rate") else "net_holding_loan_assumed",
+                              rate=f"{loan_rate * 100:g}", payoff=money(payoff)))
+        loan = _and(parts) + ("" if payoff else "; " + L("net_holding_loan_none" if payoff == 0 else "net_holding_loan_unknown"))
         notes.append(L("net_holding_note", monthly=money(monthly, 10), close=f"{CONTRACT_TO_CLOSE_MONTHS:g}", loan=loan,
                        tax=L("net_holding_tax_in" if has_tax else "net_holding_tax_out"))
                      + (" " + L("net_holding_left_out", items=" and ".join(left_out)) if left_out else ""))
@@ -221,7 +240,8 @@ def net_sheet(R, market, L):
             "totals": totals, "rows": rows, "holding": holding,
             "after_holding": [t - h for t, h in zip(totals, holding)] if holding else None, "notes": notes, "key_notes": key_notes, "missing": shown, "assumed": first["assumed"],
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
-            "payoff": payoff, "cash_at_closing": cash, "no_mortgage": payoff == 0, "standard_terms": standard_terms, "has_tax": has_tax,
+            "payoff": payoff, "payoff_estimated": payoff_est, "cash_at_closing": cash,
+            "holding_rate_assumed": bool(holding and payoff and not costs.get("mortgage_rate")), "holding_rate": loan_rate, "no_mortgage": payoff == 0, "standard_terms": standard_terms, "has_tax": has_tax,
             "tax_assumed": tax_assumed and has_tax,
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
 
@@ -270,7 +290,49 @@ def payments(R, market):
             "down_per_10k": 10000 * down, "down_per_10k_display": money(10000 * down),
             "loan_type": loan_type, "down_pct": down, "rate": bp["rate"],
             "insurance_annual": bp["insurance_annual"], "flood": flood, "school_mills": school, "total_mills": total,
-            "homestead": homestead, "tax_basis": tax_info["basis"], "tax_estimated": tax_info["estimated"]}, tax_info
+            "homestead": homestead, "tax_basis": tax_info["basis"], "tax_estimated": tax_info["estimated"],
+            # CMA-270: a homestead exemption lowers the tax only where the market has one built in (not Texas yet)
+            "homestead_applied": bool(homestead and total is not None
+                                      and market.get("property_tax.primary_residence_exemptions"))}, tax_info
+
+
+# --- placeholders ----------------------------------------------------------------
+
+PLACEHOLDER = re.compile(r"\{(\w+)\}")
+
+
+def placeholder_values(R, median_display, recommended_net, spread, pay, trend, L):
+    """CMA-265: every {name} the report and deck wording may use, filled in every field (not just page 1). The
+    chart's two ({trend_at_subject}, {r2_share}) only with an export."""
+    rec = R["recommendation"]
+    values = {"median_adjusted": median_display, "list_price": money(rec["list_price"]), "low": money(rec["low"]),
+              "high": money(rec["high"]), "net_spread": spread, "recommended_net": recommended_net}
+    if pay:
+        values["per_10k"] = pay["per_10k_display"]
+    if trend:
+        values.update(trend_at_subject=trend["at_subject_display"], r2_share=L(trend["r2_key"]))
+    return values
+
+
+def unfilled_placeholders(R, known, path="$"):
+    """(path, {name}) for every placeholder in the report's wording that no script fills: it would print as typed."""
+    out = []
+    if isinstance(R, str):
+        out += [(path, m.group(0)) for m in PLACEHOLDER.finditer(R) if m.group(1) not in known]
+    elif isinstance(R, list):
+        for i, v in enumerate(R):
+            out += unfilled_placeholders(v, known, f"{path}[{i}]")
+    elif isinstance(R, dict):
+        for key, v in R.items():
+            if key not in ("labels", "export_columns"):
+                out += unfilled_placeholders(v, known, f"{path}.{key}")
+    return out
+
+
+def placeholder_warnings(R, values):
+    names = ", ".join("{" + k + "}" for k in values)
+    return [f"{p} has {name}, which no script fills here, so it would print as typed. Use one of {names}, or write the words."
+            for p, name in unfilled_placeholders(R, set(values))]
 
 
 # --- everything ----------------------------------------------------------------
@@ -376,6 +438,21 @@ def compute(R, market, homes):
                            "buyer then credits back the rest of the year.")
     if any(a["key"] == "title_fees" and not a.get("estimate") for a in net["assumed"]):
         assumptions.append("Title company fees are the built-in typical charges; use the title company's quote when there is one.")
+    # CMA-269: the payoff and the holding interest rate are assumptions too, not only lines in the net notes
+    if net["payoff"] and net["payoff_estimated"]:
+        assumptions.append(f"The mortgage payoff ({money(net['payoff'])}) is estimated from the loan balance, plus a month's "
+                           "interest and fees. The lender's payoff statement (costs.mortgage_payoff) replaces it.")
+    elif net["payoff"]:
+        assumptions.append(f"The mortgage payoff ({money(net['payoff'])}) is the seller's estimate, labeled Your Estimate. "
+                           "The lender's payoff statement replaces it.")
+    if net["holding_rate_assumed"]:
+        assumptions.append(f"Holding costs charge loan interest at an assumed {net['holding_rate'] * 100:g}% a year on the "
+                           "payoff. The seller's own rate (costs.mortgage_rate) replaces it.")
+    # CMA-268: a state with county rules (Florida: who pays the owner's title policy, the Miami-Dade surtax) needs the county
+    if market.get("county_overrides") and not s.get("county"):
+        warn("no_county", f"No county for this {market.state} home: closing costs here depend on the county (who pays the "
+                          "owner's title policy, surtaxes), so the state's defaults were used. Take subject.county from the "
+                          "listing or ask the agent, then re-run.")
 
     pay, tax_info = payments(R, market)
     bp = R["buyer_payment"]
@@ -386,9 +463,12 @@ def compute(R, market, homes):
     if pay is None:
         warn("tax_no_rate", "No millage or tax rate for the buyer-payment estimate: give buyer_payment.school_mills and total_mills "
                         "(or a district in the built-in millage).")
-    elif pay["homestead"] and not market.get("property_tax.primary_residence_exemptions"):
-        warn("homestead_no_exemptions", "Buyer taxes assume a homestead, but this market has no exemptions on file, so none are applied: "
-                        "set buyer_payment.homestead to false and say so, or give the tax with the exemption applied.")
+    elif not pay["homestead_applied"] and not pay["tax_estimated"]:
+        # CMA-270: the payment note says the taxes assume no homestead exemption; tell the agent why payments may run high
+        assumptions.append("Buyer payments assume no homestead exemption" + (
+            f": none is built in for {market.state or 'this state'}, so they may run high for a buyer who files one. "
+            "The payment note says so; mention it in the reply."
+            if pay["homestead"] else " (buyer_payment.homestead is false)."))
     if pay and pay["tax_estimated"]:
         warn("tax_estimated", f"Buyer taxes are estimated at {pay['tax_basis']}; find the millage for the home's taxing district if you can.")
 
@@ -463,6 +543,17 @@ def compute(R, market, homes):
                        down=pay["rows"][i]["down"], down_display=pay["rows"][i]["down_display"])
         strat_out.append(row)
     nets = net["after_holding"] or [x["net"] for x in strat_out]  # CMA-7: compare options after holding costs
+    for x, v in zip(strat_out, nets):  # CMA-272: each option against the recommended one, rounded for the reply
+        d = v - nets[ri]
+        x["net_vs_recommended"] = d
+        x["net_vs_recommended_about"] = "" if x["recommended"] else (
+            L("about_same") if abs(d) < 250 else L("about_more" if d > 0 else "about_less", amount=about(d)))
+    # CMA-265: an even number of comps has a midpoint median ($468,437.50): shown to the nearest $100
+    median_display = money(median_adjusted, 1 if len(R["comps"]["cards"]) % 2 else 100)
+    trend = {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
+             "r2_key": mls.r2_key(fit["r2"])} if fit else None
+    values = placeholder_values(R, median_display, strat_out[ri]["net_display"], money(max(nets) - min(nets)), pay, trend, L)
+    warn("unfilled_placeholder", *placeholder_warnings(R, values))
     data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
     market_notes = [(n, c) for n, c in zip(market.notes, market.note_codes)
                     if homes or c not in ("mls_assumed", "mls_not_built_in", "mls_not_given")]
@@ -477,7 +568,7 @@ def compute(R, market, homes):
                            "low": rec["low"], "high": rec["high"],
                            "range_display": f"{money(rec['low'])} – {money(rec['high'])}",
                            "expected_sale": (R.get("summary_page") or {}).get("expected_sale", "")},
-        "median_adjusted": median_adjusted, "median_adjusted_display": money(median_adjusted),
+        "median_adjusted": median_adjusted, "median_adjusted_display": median_display,
         "adjusted_min": min(c["adjusted"] for c in R["comps"]["cards"]),
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
         "n_comps": len(R["comps"]["cards"]),
@@ -487,10 +578,16 @@ def compute(R, market, homes):
         "first_steps_heading": L("sum_first"),  # "Before We List", or "Before We Reprice"
         "recommended_net_display": strat_out[ri]["net_display"],
         "net_spread": max(nets) - min(nets), "net_spread_display": money(max(nets) - min(nets)),
+        "net_spread_about": about(max(nets) - min(nets)),  # CMA-272: the reply's rounded figure
+        # CMA-264: which net the spread (and the deck's net chart) compares: after holding costs when they're counted
+        "net_basis": "after_holding" if net["after_holding"] else "net",
         "net": net,
         "payments": pay,
-        "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
-                  "r2_key": mls.r2_key(fit["r2"])} if fit else None,
+        "trend": trend,
+        "placeholders": values,
+        # the chat template's wording, with every {placeholder} filled as the PDF fills it
+        "summary_page": cma.fill(R.get("summary_page") or {}, values),
+        "recommendation_paragraph": cma.fill(rec.get("paragraph", ""), values),
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,
         "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}

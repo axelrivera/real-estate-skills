@@ -32,7 +32,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `document_items` | 0–2 `[heading, one line, icon]`, headings in Title Case: upgrades this home has that need paperwork to count (a roof or permits the seller controls). None is fine: the box is left out |
 | `comp_lines` | `{comp card address: "why it matters, under 45 characters"}` |
 | `*_takeaway` | One or two short sentences: the single point of that slide |
-| `sold_line` | Optional; default "sales within a mile since April", from the export's distances and dates |
+| `sold_line` | Optional; default "sales within a mile since April", from the export's distances and dates. Without an export the slide starts at the comps (no separate "sales reviewed" step); write `sold_line` only when you reviewed more sales than you used |
 | `comps_basis` | Optional; what the comps were matched on, for step 2 ("size, pool, age and neighborhood"; "size, floor, view and building" for a condo). Default "closest matches to your home" |
 | `expected_sub` | Optional line under the expected sale. Default: "After the negotiating that is normal now" when the expected sale is below list, "With competing offers likely at this price" when it's at or above |
 | `scatter_title` | Optional scatter slide title in Title Case ("Where Your Unit Fits in the Building") |
@@ -47,7 +47,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `adjustments_summary` | One sentence with the adjustment rates used (from `method_note`); it goes in the appendix's speaker notes |
 | `notes` | Speaker notes keyed `recommendation, method, drivers, comps, scatter, market, competition, strategies, nets, payments, launch, next`: where each number comes from and what the agent should say |
 
-**Placeholders.** Never type a computed number. Write `{list_price}`, `{per_10k}`, `{net_spread}`, `{recommended_net}`, `{median_adjusted}`, `{trend_at_subject}`, `{low}` or `{high}` and the builder fills them in ("Every $10,000 is about {per_10k} a month").
+**Placeholders.** Never type a computed number. Write `{list_price}`, `{per_10k}`, `{net_spread}`, `{recommended_net}`, `{median_adjusted}`, `{trend_at_subject}`, `{low}` or `{high}` and the builder fills them in ("Every $10,000 is about {per_10k} a month"). They're the same placeholders as the report's (`report-data.md`). `{net_spread}` and the net slide's bars compare the options after holding costs when they're counted (the subtitle says so), matching the net sheet's last row; `{recommended_net}` is the recommended option's net before holding costs, as page 1 shows it, so don't put it on the net slide.
 
 **Icons.** The last element of a driver, paperwork item, market stat or launch step names its icon, so the picture matches what the text says: `kitchen`, `renovation`, `repairs`, `tools`, `paint`, `pool`, `bedroom`, `bath`, `water`, `waterfront`, `view`, `parking`, `garage`, `lot`, `yard`, `location`, `size`, `layout`, `building`, `home`, `roof`, `solar`, `energy`, `ac`, `heating`, `security`, `insurance`, `document`, `permit`, `contract`, `inspection`, `photos`, `marketing`, `sign`, `showings`, `staging`, `cleaning`, `price`, `money`, `dollar`, `percent`, `time`, `calendar`, `trend`, `chart`, `inventory`, `negotiation`, `star`, `check`. Left out, it's a neutral star, document, chart or check.
 

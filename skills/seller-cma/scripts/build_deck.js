@@ -145,7 +145,7 @@ async function icon(name, color, size = 256) {
     const s = content('how we priced it'); title(s, T.deck_method_title, T.deck_method_sub);
     const m = D.method;
     const steps = [[String(m.n_sold), m.sold_line], [String(m.n_comps), T.deck_step_comps],
-                   [m.adj_range, T.deck_step_adjusted], [m.adj_median, T.deck_step_median]];
+                   [m.adj_range, T.deck_step_adjusted], [m.adj_median, T.deck_step_median]].slice(m.n_sold == null ? 1 : 0);
     const top = 1.45, pitch = 0.74, d = 0.34, vx = M + 0.55, vw = 5.75 - vx;
     const size = Math.min(...steps.map(st => fit(st[0], vw, 0.38, { size: 22, min: 16, bold: true, what: 'step value' })));
     s.addShape(pres.shapes.LINE, { x: M + d / 2, y: top + d / 2, w: 0, h: pitch * (steps.length - 1), line: { color: LINE, width: 1.5 } });
@@ -154,9 +154,9 @@ async function icon(name, color, size = 256) {
       s.addShape(pres.shapes.OVAL, { x: M, y, w: d, h: d, fill: { color: TINT }, line: { color: MARK, width: 1 } });
       s.addText(String(i + 1), { x: M, y, w: d, h: d, fontFace: FONT, fontSize: 11, bold: true, color: STRONG, align: 'center', valign: 'middle', margin: 0, isTextBox: true });
       s.addText(st[0], { x: vx, y: y - 0.04, w: vw, h: 0.38, fontFace: FONT, fontSize: size, bold: true, color: BRAND, valign: 'middle', margin: 0, isTextBox: true });
-      tx(s, st[1], { x: vx, y: y + 0.34, w: vw, h: 0.24, size: 12, min: 10, color: INK, valign: 'top', what: i === 0 ? 'the sold line (deck.sold_line)' : 'step caption' });
+      tx(s, st[1], { x: vx, y: y + 0.34, w: vw, h: 0.24, size: 12, min: 10, color: INK, valign: 'top', what: i === 0 && m.n_sold != null ? 'the sold line (deck.sold_line)' : 'step caption' });
     });
-    const rx = 6.2, rw = W - M - rx, ry = top - 0.05, rh = pitch * (steps.length - 1) + 0.68;
+    const rx = 6.2, rw = W - M - rx, ry = top - 0.05, rh = pitch * 3 + 0.68;  // the card keeps its height with three steps (no export)
     card(s, rx, ry, rw, rh, BRAND);
     tx(s, T.deck_rec_label, { x: rx + 0.3, y: ry + 0.3, w: rw - 0.6, h: 0.3, size: 13, min: 11, color: ON });
     tx(s, D.rec.list_display, { x: rx + 0.3, y: ry + 0.65, w: rw - 0.6, h: 0.8, size: 40, min: 28, bold: true, color: ON, valign: 'middle' });

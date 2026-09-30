@@ -138,6 +138,8 @@
    1076,
    774
   ],
+  "holding_rate": 0.045,
+  "holding_rate_assumed": false,
   "incomplete": false,
   "key_notes": {
    "count": 1
@@ -150,6 +152,7 @@
    "count": 4
   },
   "payoff": null,
+  "payoff_estimated": false,
   "rows": [
    {
     "amounts": [
@@ -273,6 +276,7 @@
    "count": 0
   }
  },
+ "net_basis": "after_holding",
  "net_spread": 3426.0,
  "ok": true,
  "payments": {
@@ -285,6 +289,7 @@
    "sfha": false
   },
   "homestead": true,
+  "homestead_applied": true,
   "insurance_annual": 3600,
   "loan_type": "conventional",
   "per_10k": 81.48,
@@ -314,6 +319,10 @@
   "tax_estimated": false,
   "total_mills": 17.57
  },
+ "placeholders": {
+  "per_10k": "$80",
+  "r2_share": "most"
+ },
  "preliminary": false,
  "recommendation": {
   "high": 480000,
@@ -329,6 +338,7 @@
    "list_price": 479900,
    "net": 423074.0,
    "net_after_holding": 421368.0,
+   "net_vs_recommended": 308.0,
    "payment": 4146.69,
    "recommended": false,
    "seller_credit": 10000
@@ -339,6 +349,7 @@
    "list_price": 469900,
    "net": 422136.0,
    "net_after_holding": 421060.0,
+   "net_vs_recommended": 0.0,
    "payment": 4065.2,
    "recommended": true,
    "seller_credit": 10000
@@ -349,11 +360,39 @@
    "list_price": 459900,
    "net": 425260.0,
    "net_after_holding": 424486.0,
+   "net_vs_recommended": 3426.0,
    "payment": 3983.72,
    "recommended": false,
    "seller_credit": 5000
   }
  ],
+ "summary_page": {
+  "first_steps": [
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "key_stats": [
+   {
+    "count": 2
+   },
+   [
+    "95.2%"
+   ],
+   {
+    "count": 2
+   }
+  ],
+  "why": {
+   "count": 3
+  }
+ },
  "trend": {
   "at_subject": 443061.34,
   "r2": 0.8286,

@@ -177,11 +177,7 @@ def deck_data(R, C, homes, agent, L, footer):
     content = load_content(R)
     rec, s = R["recommendation"], R["subject"]
     pay, net = C["payments"], C["net"]
-    values = {"list_price": money(rec["list_price"]), "low": money(rec["low"]), "high": money(rec["high"]),
-              "per_10k": pay["per_10k_display"] if pay else "", "median_adjusted": C["median_adjusted_display"],
-              "net_spread": C["net_spread_display"], "recommended_net": C["recommended_net_display"],
-              "trend_at_subject": C["trend"]["at_subject_display"] if C["trend"] else ""}
-    content = _fill(content, values)
+    content = _fill(content, C["placeholders"])  # CMA-265: the same values the report fills (compute.py)
     notes = content.get("notes") or {}
     content["notes"] = {key: notes.get(key, "") for key in NOTE_KEYS}
 
@@ -232,7 +228,9 @@ def deck_data(R, C, homes, agent, L, footer):
         L_deck["deck_scatter_title"] = content["scatter_title"]
     program = L("prog_" + pay["loan_type"])
     program = program if program.isupper() else program.lower()  # "FHA", "VA"; "conventional" mid-sentence
-    L_deck["deck_pay_sub"] = L("deck_pay_sub", program=program, down=f'{pay["down_pct"] * 100:g}')
+    # CMA-270: without a homestead exemption applied, the payments say so
+    L_deck["deck_pay_sub"] = L("deck_pay_sub" if pay["homestead_applied"] or pay["tax_estimated"] else "deck_pay_sub_no_homestead",
+                               program=program, down=f'{pay["down_pct"] * 100:g}')
     width = lambda key, item, n: 2 if key == "market_stats" and one_period(item, R) else n
     icons = {key: [ICONS[item[width(key, item, n)] if len(item) > width(key, item, n) else fallback] for item in content.get(key) or []]
              for key, n, fallback in ICON_FIELDS}
@@ -266,7 +264,10 @@ def deck_data(R, C, homes, agent, L, footer):
                 "list_display": money(rec["list_price"]), "range_display": f'{k(rec["low"])} – {k(rec["high"])}',
                 "low_k": k(rec["low"]), "high_k": k(rec["high"])},
         "expected_sale": content.get("expected_sale") or R["summary_page"]["expected_sale"],
-        "method": {"n_sold": C.get("n_sold") or len(R["comps"].get("summary_rows") or R["comps"]["cards"]),"sold_line": sold_line, "n_comps": C["n_comps"],
+        # CMA-271: without an export the sales reviewed are the comps: one step says it, not two ("3 reviewed", "3 closest")
+        "method": {"n_sold": None if not window and not content.get("sold_line") else
+                   C.get("n_sold") or len(R["comps"].get("summary_rows") or R["comps"]["cards"]),
+                   "sold_line": sold_line, "n_comps": C["n_comps"],
                    "adj_range": f'{k(C["adjusted_min"])}–{k(C["adjusted_max"])}', "adj_median": C["median_adjusted_display"]},
         "market": {"title": content.get("market_title") or L("deck_market_title"),
                    "subtitle": (L("deck_market_sub_one") if single else
@@ -279,12 +280,13 @@ def deck_data(R, C, homes, agent, L, footer):
         "scatter": scatter_data(homes, R, C, L) if homes else None,
         "strategies": [{"list_price": x["list_price"], "list_display": x["list_price_display"], "label": L("deck_list", price=x["list_price_display"]),
                         "time": x["time"], "expected_display": x["expected_sale_display"], "credit_display": x["seller_credit_display"],
-                        "note": x["note"], "net": round(x["net"]), "net_display": x["net_display"],
+                        # CMA-264: the net chart compares the options on the spread's basis (after holding costs)
+                        "note": x["note"], "net": round(x["net_after_holding"]), "net_display": x["net_after_holding_display"],
                         "payment_display": L("deck_per_month", amount=x["payment_display"]),
                         "down_display": L("deck_down", amount=x["down_display"], pct=f'{pay["down_pct"] * 100:g}')} for x in C["strategies"]],
         "recommended_index": C["recommended_index"],
         "icons": icons,
-        "net_sub": L("deck_cash_free_sub" if free else "deck_cash_sub" if cash else "deck_net_sub") + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else ""),
+        "net_sub": net_sub(C, L),
         "net_spread_display": C["net_spread_display"],
         "net_rows": [[r["label"]] + r["display"] for r in net["rows"]],
         "net_note": net_note,
@@ -297,6 +299,15 @@ def deck_data(R, C, homes, agent, L, footer):
         "appendix_note": comps_note,
         "appendix_speaker": comps_speaker,
     }
+
+
+def net_sub(C, L):
+    """The net slide's subtitle: which net the bars and the spread show (CMA-264: after holding costs when counted)."""
+    net = C["net"]
+    basis = L("deck_cash_free_sub" if net["no_mortgage"] else "deck_cash_sub" if net["cash_at_closing"] else "deck_net_sub")
+    if C["net_basis"] == "after_holding":
+        basis = L("deck_net_after_holding_sub", basis=basis)
+    return basis + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else "")
 
 
 def contrast_roles(colors):

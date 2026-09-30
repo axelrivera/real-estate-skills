@@ -935,5 +935,178 @@ class ChartLabels(unittest.TestCase):
         self.assertEqual(far["w"], "")
 
 
+class ThirdPass(unittest.TestCase):
+    """Eval iteration 4 fixes (CMA-264 to CMA-276)."""
+
+    def test_net_slide_bars_and_spread_share_one_basis(self):
+        """CMA-264: the net chart's bars and the spread tile compare the same nets (after holding costs), and say so."""
+        R = report()
+        R["costs"]["mortgage_payoff"] = 210000
+        C, homes = run(R)
+        self.assertEqual(C["net_basis"], "after_holding")
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+        bars = [x["net"] for x in D["strategies"]]
+        self.assertEqual(max(bars) - min(bars), round(C["net_spread"]))
+        self.assertEqual(D["net_spread_display"], C["net_spread_display"])
+        self.assertIn("after holding costs", D["net_sub"])
+
+    def test_placeholders_fill_every_field(self):
+        """CMA-265: {median_adjusted} fills beyond page 1; an unknown {name} warns; an even count's median is rounded."""
+        R = report()
+        R["comps"]["summary_paragraph"] = "The adjusted values center on about {median_adjusted}."
+        C, homes = run(R)
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(f"center on about {C['median_adjusted_display']}.", doc)
+        self.assertNotIn("{median_adjusted}", doc)
+        R["means"] = ["A sale at {typo_price} would appraise."]
+        C, _ = run(R)
+        self.assertEqual(C["warning_keys"].count("unfilled_placeholder"), 1)
+        self.assertIn("$.means[0]", C["warnings"][C["warning_keys"].index("unfilled_placeholder")])
+        R = report()
+        R["comps"]["cards"] = R["comps"]["cards"][:4]
+        C, _ = run(R)
+        self.assertEqual(C["median_adjusted_display"], compute.money(C["median_adjusted"], 100))
+
+    def test_holding_note_names_only_counted_costs(self):
+        """CMA-266: no HOA dues, no HOA in the holding note."""
+        R = report()
+        note = lambda C: next(n for n in C["net"]["notes"] if n.startswith("Holding costs"))
+        self.assertNotIn("HOA", note(run(R)[0]))
+        R["costs"]["hoa_monthly"] = 120
+        self.assertIn("HOA", note(run(R)[0]))
+
+    def test_scatter_label_checks(self):
+        """CMA-267: a label still covering a marker is a Check; a label moved off its asked side is information."""
+        checks, notes = seller_render.scatter_checks(
+            {"labels_overlapping": ["749 Cedar Ln W"], "crowded_labels": [],
+             "labels_moved": [("749 Cedar Ln W", "below", "right"), ("Your Home", "right", "left")]})
+        self.assertEqual(len(checks), 1)
+        self.assertIn("749 Cedar Ln W", checks[0])
+        self.assertEqual(len(notes), 1)
+        self.assertNotIn("749 Cedar", notes[0])  # already named in the check
+        self.assertEqual(seller_render.scatter_checks({"labels_overlapping": [], "labels_moved": []}), ([], []))
+
+    def test_scatter_callout_side_is_passed(self):
+        """CMA-267: a callout's side reaches the label placer: any move is reported from the side asked for."""
+        R = report()
+        _, homes = run(R)
+        sc = {**R["scatter"], "subject_label": "Your Home"}
+        args = (1849, R["recommendation"]["list_price"], R["subject"]["mls_address"],
+                (R["recommendation"]["low"], R["recommendation"]["high"]), compute.labels(R),
+                [cd["address"] for cd in R["comps"]["cards"]])
+        for side in ("left", "right", "above", "below"):
+            sc["callouts"] = [{**R["scatter"]["callouts"][0], "side": side}]
+            _, info = compute.cma.scatter(homes, sc, *args)
+            label = sc["callouts"][0]["label"]
+            self.assertTrue(all(m[1] == side for m in info["labels_moved"] if m[0] == label))
+
+    def test_stellar_export_without_mls(self):
+        """CMA-268: a Stellar export with no --mls (no county, so none assumed) says to pass --mls Stellar."""
+        export = os.path.join(ROOT, "dev", "evals", "seller-cma", "files", "export-spring-oaks.csv")
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(stats_mod.main([export, "--address", "517 HICKORYWOOD AVE", "--sqft", "1849", "--state", "FL"]), 1)
+        self.assertIn("--mls Stellar", json.loads(out.getvalue())["problems"][0])
+        self.assertEqual(stats_mod.builtin_layout(export), "Stellar")
+
+    def test_florida_without_county_warns(self):
+        """CMA-268: Florida costs depend on the county (title payer), so a missing county is a warning."""
+        R = report()
+        self.assertNotIn("no_county", run(R)[0]["warning_keys"])
+        R["subject"].pop("county")
+        R["mls"] = "Stellar"
+        self.assertIn("no_county", run(R)[0]["warning_keys"])
+        self.assertNotIn("no_county", run(texas(report()))[0]["warning_keys"])
+
+    def test_payoff_and_holding_rate_are_assumptions(self):
+        """CMA-269: the seller's payoff estimate and the assumed holding interest rate are listed in assumptions."""
+        R = report()
+        self.assertFalse([a for a in run(R)[0]["assumptions"] if "payoff" in a])
+        R["costs"]["mortgage_payoff"] = 210000
+        A = run(R)[0]["assumptions"]
+        self.assertTrue(any("Your Estimate" in a for a in A))
+        self.assertTrue(any("assumed 4.5%" in a for a in A))
+        R["costs"]["mortgage_rate"] = 6.25
+        self.assertFalse(any("assumed 4.5%" in a for a in run(R)[0]["assumptions"]))
+
+    def test_no_homestead_is_labeled(self):
+        """CMA-270: outside Florida no exemption is applied, and the payment note says so."""
+        R = texas(report())
+        R["buyer_payment"].pop("note")  # the note script writes (a report's own note says it itself)
+        C, homes = run(R)
+        self.assertFalse(C["payments"]["homestead_applied"])
+        self.assertTrue(any("no homestead exemption" in a for a in C["assumptions"]))
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(compute.labels(R)("pay_no_homestead_built_in"), doc)
+        self.assertTrue(run(report())[0]["payments"]["homestead_applied"])
+
+    def test_no_export_method_slide_counts_once(self):
+        """CMA-271: without an export the method slide starts at the comps (no separate 'sales reviewed' step)."""
+        with open(os.path.join(ROOT, "dev", "fixtures", "seller-cma", "deck", "hickorywood-deck.json")) as f:
+            content = json.load(f)
+        content["market_stats"] = [["Median Adjusted Value", "$450K", "chart"], ["Sales with Seller Credits", "2 of 3"]]
+        R = texas(report())
+        R["deck"] = content
+        C, homes = run(R)
+        self.assertIsNone(deck.deck_data(R, C, homes, AGENT, compute.labels(R), "footer")["method"]["n_sold"])
+        R = report()
+        C, homes = run(R)
+        self.assertIsNotNone(deck.deck_data(R, C, homes, AGENT, compute.labels(R), "footer")["method"]["n_sold"])
+
+    def test_rounded_differences_for_the_reply(self):
+        """CMA-272: rounded differences come from compute, to $500 under $5,000 and $1,000 above."""
+        self.assertEqual(compute.about(6796), "about $7,000")
+        self.assertEqual(compute.about(-3976), "about $4,000")
+        self.assertEqual(compute.about(2240), "about $2,000")
+        R = report()
+        R["costs"]["mortgage_payoff"] = 210000
+        C, _ = run(R)
+        self.assertEqual(C["strategies"][C["recommended_index"]]["net_vs_recommended_about"], "")
+        for x in C["strategies"]:
+            if not x["recommended"] and abs(x["net_vs_recommended"]) >= 250:
+                self.assertIn(compute.about(x["net_vs_recommended"]), x["net_vs_recommended_about"])
+        self.assertEqual(C["net_spread_about"], compute.about(C["net_spread"]))
+
+    def test_page_one_stay_row_is_labeled(self):
+        """CMA-273: page 1's options table reads 'Stay at $479,900' for a reprice's first option."""
+        R = SecondPass.reprice(None)
+        C, homes = run(R)
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(compute.labels(R)("sum_stay", price="$479,900"), doc.split('<div class="pb">')[0])
+
+    def test_page_checks(self):
+        """CMA-274, CMA-276: a page under half full before a moved block, and a last page with a few lines, are Checks."""
+        full = (0.9, "x")
+        self.assertEqual(seller_render.page_checks([full, full, full]), [])
+        checks = seller_render.page_checks([full, (0.34, "a"), (0.9, "Where Your Home Fits"), (0.1, "Sales data")])
+        self.assertEqual(len(checks), 2)
+        self.assertIn("Page 2 is only 34% full", checks[0])
+        self.assertIn("Where Your Home Fits", checks[0])
+        self.assertIn("last page (page 4)", checks[1])
+
+    def test_page_fill_reads_the_pdf(self):
+        """CMA-274: page fill and first lines come from the printed PDF."""
+        render = seller_render.render
+        if not shutil.which("pdftotext"):
+            self.skipTest("pdftotext isn't installed here")
+        doc = render.page('<div style="height:300px">Top line</div><div style="break-before:page">Second page</div>')
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "x.pdf")
+            render.html_to_pdf(doc, path, margins=compute.cma.PAGE_MARGINS)
+            pages = seller_render.page_fill(path)
+        self.assertEqual([p[1] for p in pages], ["Top line", "Second page"])
+        self.assertLess(pages[1][0], 0.1)
+
+    def test_notices_stay_with_the_method(self):
+        """CMA-276: the closing notices are kept together with How This Was Prepared, never alone on a page."""
+        R = report()
+        C, homes = run(R)
+        doc, L = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        tail = doc[doc.rindex('<div class="kg sec">'):]
+        self.assertIn(L("h_method"), tail)
+        self.assertIn('<div class="notices">', tail)
+        self.assertIn("<footer>", tail)
+
+
 if __name__ == "__main__":
     unittest.main()
