@@ -471,6 +471,19 @@ def case_seller_cma(pdf, checks):
     return stats, comp
 
 
+def history_events(h):
+    """The 360 report's history grid as buyer-cma `events` (report-data.md), newest first, as the grid lists it."""
+    change = {"->ACT": "listed", "ACT->PND": "pending", "PND->SLD": "sold"}
+    out = []
+    for block in h["report_360"]["history"]:
+        for date_, kind, move, price, dom in block["rows"]:
+            m, d_, y = date_.split("/")
+            out.append({"date": f"{y}-{m}-{d_}", "mls": block["mls"],
+                        "change": "price" if kind == "Price Change" else change[move],
+                        "price": int(price.replace("$", "").replace(",", "")), "dom": int(dom)})
+    return out
+
+
 def case_buyer_cma(pdf, checks):
     h = D["buyer_home"]
     d = os.path.join(OUT, "03-buyer-cma")
@@ -500,6 +513,7 @@ def case_buyer_cma(pdf, checks):
     base["offer_plan"].update(ref["offer_plan"])
     base["comps"]["cards"] = [{**c, "meta": "", "bullets": ["Reference comp."]} for c in ref["comps"]]
     base["scatter"]["callouts"] = []
+    base["history"] = {"heading": "Price History", "intro": "The full history:", "after": "", "events": history_events(h)}
     base["costs"]["taxes"].update({**ref["taxes"], "purchase_price": h["list_price"]})
     base["costs"]["payment"].update({**ref["payment"], "price": h["list_price"], "tax_jurisdiction_index": 0})
     base["costs"]["credit_scenarios"].update(ref["credit_scenarios"])
@@ -523,6 +537,9 @@ def case_buyer_cma(pdf, checks):
         f"(listed {hist[-1][0]} at {hist[-1][3]}).",
         f"- **Two price cuts:** {hist[1][0]} to {hist[1][3]}, then {hist[0][0]} to {hist[0][3]}. Earlier sale: "
         "$262,000 in May 2015.",
+        f"- **Counted by compute.py:** {comp['history']['price_cuts']} price cuts, {comp['history']['price_increases']} "
+        f"increases, {money(comp['history']['price_cut_total'])} cut in all, {comp['history']['active_days']} active "
+        "days. The report and reply must use these counts, never a hand count.",
         f"- Facts: {h['beds']} beds, {h['baths']} baths, {h['sqft']:,} sq ft, built {h['year_built']}, screened pool, "
         "lot 0.27 acre, HOA $420 a year, flood zone X, roof 2010 (a watch item: insurers ask about roofs this age).",
         "- Tax: 2025 bill $4,095.13 with the seller's homestead. Tax Area C1 (City of Casselberry). The buyer's bill "
