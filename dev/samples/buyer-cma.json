@@ -49,7 +49,7 @@
     "X (lower risk)"
    ]
   ],
-  "summary": "This is a renovated pool home: new kitchen with stone counters, updated baths, new flooring, and a resurfaced pool. The house is vacant and owned by a trust, and the listing agent is related to the owner. The seller wants offers on the As-Is contract with proof of funds or a pre-approval letter.",
+  "summary": "This is a renovated pool home: new kitchen with stone counters, updated baths, new flooring, and a resurfaced pool. The house is vacant and owned by a trust.",
   "summary_facts": "4 bed · 2 bath · 1,849 sq ft · pool · built 1972",
   "state": "FL",
   "county": "Seminole",
@@ -106,64 +106,80 @@
  "history": {
   "heading": "On the Market Since January",
   "intro": "The current listing shows 36 days on the market. That number only counts the second listing. The full history:",
-  "rows": [
-   [
-    "Jan 16, 2026",
-    "First listed",
-    "$483,900"
-   ],
-   [
-    "Jan 22",
-    "Price cut",
-    "$479,900"
-   ],
-   [
-    "Jan 27 – Mar 5",
-    "Taken off the market twice, put back each time",
-    "—"
-   ],
-   [
-    "Feb 7",
-    "Price cut",
-    "$474,500"
-   ],
-   [
-    "Apr 11",
-    "Went under contract",
-    "$474,500 asking"
-   ],
-   [
-    "May 17",
-    "Contract fell apart; taken off the market",
-    "—"
-   ],
-   [
-    "May 21",
-    "Back on market at a <em>higher</em> price",
-    "$484,900"
-   ],
-   [
-    "Jun 9",
-    "Listing canceled",
-    "—"
-   ],
-   [
-    "Aug 17",
-    "Relisted as a new listing, which reset the day count",
-    "$484,900"
-   ],
-   [
-    "Aug 31",
-    "Price cut",
-    "$478,900"
-   ],
-   [
-    "Sep 16",
-    "Price cut",
-    "$474,900"
-   ]
-  ],
-  "after": "That adds up to about 119 days of active marketing across two listings, spread over eight months, plus one failed contract. The market has had a long look at this home in the $475,000–$485,000 range, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the April contract fell apart before writing an offer."
+  "after": "That adds up to {active_days} of active marketing across two listings, spread over eight months, plus one failed contract. The market has had a long look at this home in the $475,000–$485,000 range, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the April contract fell apart before writing an offer.",
+  "events": [
+   {
+    "date": "2026-09-16",
+    "mls": "X9033709",
+    "change": "price",
+    "price": 474900
+   },
+   {
+    "date": "2026-08-31",
+    "mls": "X9033709",
+    "change": "price",
+    "price": 478900
+   },
+   {
+    "date": "2026-08-17",
+    "mls": "X9033709",
+    "change": "listed",
+    "price": 484900
+   },
+   {
+    "date": "2026-06-09",
+    "mls": "X9031102",
+    "change": "canceled",
+    "dom": 83
+   },
+   {
+    "date": "2026-05-21",
+    "mls": "X9031102",
+    "change": "back_on",
+    "price": 484900
+   },
+   {
+    "date": "2026-05-17",
+    "mls": "X9031102",
+    "change": "off_market",
+    "note": "Contract fell apart; taken off the market"
+   },
+   {
+    "date": "2026-04-11",
+    "mls": "X9031102",
+    "change": "pending",
+    "price": 474500
+   },
+   {
+    "date": "2026-03-05",
+    "mls": "X9031102",
+    "change": "back_on"
+   },
+   {
+    "date": "2026-02-07",
+    "mls": "X9031102",
+    "change": "price",
+    "price": 474500
+   },
+   {
+    "date": "2026-01-27",
+    "mls": "X9031102",
+    "change": "off_market",
+    "note": "Taken off the market (off and on twice through Mar 5)"
+   },
+   {
+    "date": "2026-01-22",
+    "mls": "X9031102",
+    "change": "price",
+    "price": 479900
+   },
+   {
+    "date": "2026-01-16",
+    "mls": "X9031102",
+    "change": "listed",
+    "price": 483900
+   }
+  ]
  },
  "offer_plan": {
   "intro": "Our recommendation for your offer, based on the comparable sales, the market, and this home's history. These three numbers are a negotiating plan, not a value opinion, so we'll adjust them together if anything changes.",

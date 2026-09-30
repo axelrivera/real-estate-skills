@@ -3,14 +3,17 @@
     python3 scripts/compute.py report.json [--out DIR]
 
 Prints JSON: taxes, payment scenarios, price-vs-credit scenarios, buydown, scatter trend, the
-offer plan and range, formatted for the markdown template, plus `warnings` to fix. With only `subject` and
-`comps` in report.json (no bottom_line, offer_plan or costs yet), it prints the adjusted comps alone: the median,
-the spread and the outlier warnings, to set the range from or answer a gut check. Also writes <address>.buyer.cma.json (the CMA handoff the
+offer plan and range, the listing history's counts, formatted for the markdown template, plus `warnings` to fix.
+With only `subject`, `comps` (and `history`) in report.json (no bottom_line, offer_plan or costs yet), it prints the
+adjusted comps alone: the median, the spread, the outlier warnings and a rough plan, to set the range from or answer a
+gut check. Also writes <address>.buyer.cma.json (the CMA handoff the
 offer skills read) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF.
 """
 import argparse
 import json
+import math
 import os
+import re
 import statistics
 import sys
 from datetime import date
@@ -62,7 +65,7 @@ def taxes(R, market):
 def payments(R, market, tax_rows):
     pay = R["costs"]["payment"]
     ji = pay.get("tax_jurisdiction_index", 0)
-    price = pay["price"]
+    price, cash = pay["price"], R["costs"].get("buyer_cash")
 
     def tax_at(p, index=ji):
         j = tax_rows[index]
@@ -77,15 +80,29 @@ def payments(R, market, tax_rows):
         sc["down_pct"] = _frac(sc, "down_pct", f"costs.payment.scenarios[{i}]")
         r = finance.monthly_payment(price, sc["type"], sc["down_pct"], pay["rate"], tax_at(price),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
-        rows.append({"label": sc["label"], **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"])})
+        rows.append({"label": sc["label"], **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"]),
+                     "cash_short": _short(r["cash_down"], cash)})
     first = pay["scenarios"][0]
     lower = finance.monthly_payment(price - 10000, first["type"], first["down_pct"], pay["rate"], tax_at(price - 10000),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
         alt = {"short": tax_rows[1 - ji]["short"], "delta_monthly": (tax_at(price, 1 - ji) - tax_at(price)) / 12}
-    return {"price": price, "rate": pay["rate"], "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood,
-            "per_10k": rows[0]["total"] - lower["total"], "alt_jurisdiction": alt, "tax_index": ji}
+    tj = tax_rows[ji]
+    # CMA-204: which tax the payment uses. Two jurisdictions mean the district isn't confirmed: the payment uses the
+    # one at tax_jurisdiction_index (the higher bill by default), labeled Estimate, as is a fallback-rate estimate.
+    tax_basis = {"short": tj["short"], "unconfirmed": len(tax_rows) == 2, "estimated": bool(tj["estimated"]),
+                 "basis": tj["basis"], "higher": len(tax_rows) == 2 and (tj["annual"] or 0) >= (tax_rows[1 - ji]["annual"] or 0)}
+    tax_basis["label_estimate"] = tax_basis["unconfirmed"] or tax_basis["estimated"]
+    return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R), "rate": pay["rate"],
+            "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood,
+            "per_10k": rows[0]["total"] - lower["total"], "alt_jurisdiction": alt, "tax_index": ji, "tax_basis": tax_basis,
+            "buyer_cash": cash, "buyer_cash_display": money(cash) if cash else None}
+
+
+def _short(need, have):
+    """How much more cash `need` takes than the buyer has (CMA-204), or None when it fits or `have` isn't given."""
+    return round(need - have) if isinstance(have, (int, float)) and have and need > have + 1 else None
 
 
 def flood_line(R, market):
@@ -130,6 +147,7 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
                "cap": price * cap if cap is not None else None,
                "over_cap": cap is not None and credit > price * cap + 1, "over_costs": credit > cc + 1,
                "appraisal_room": median_adjusted - price, "closing_costs": cc, "loan_taxes": sum(t["amount"] for t in taxes)}
+        col["cash_short"] = _short(col["cash"], R["costs"].get("buyer_cash"))  # CMA-204
         base = base or col
         col["extra"] = col["payment"] - base["payment"]
         saved = base["cash"] - col["cash"]
@@ -154,6 +172,208 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     return out
 
 
+# CMA-201: history.events, one per row of the MLS history grid. `change` is a plain word or the MLS's code (Stellar's
+# NEW, DECR, INCR, TOM, BOM, PNC, SLD, CANC, EXP, WDN); what each does to the listing's status.
+HISTORY_CHANGES = {
+    "listed": "active", "new": "active", "price": None, "decr": None, "incr": None,
+    "off_market": "off", "tom": "off", "back_on": "active", "bom": "active",
+    "pending": "pending", "pnc": "pending", "sold": "sold", "sld": "sold",
+    "canceled": "ended", "canc": "ended", "expired": "ended", "exp": "ended", "withdrawn": "ended", "wdn": "ended",
+}
+HISTORY_NEW = ("listed", "new")
+HISTORY_KIND = {"new": "listed", "decr": "price", "incr": "price", "tom": "off_market", "bom": "back_on", "pnc": "pending",
+                "sld": "sold", "canc": "canceled", "exp": "expired", "wdn": "withdrawn"}
+
+
+def _plural(n, word):
+    return f"{n:,} {word}" + ("" if n == 1 else "s") if n else f"no {word}s"
+
+
+def history_stats(R, as_of):
+    """CMA-201, CMA-208: the listing history counted from `history.events` instead of by hand: price cuts and
+    increases, the total cut in dollars and as a share of the first list price, failed contracts, and the days the
+    home was actively for sale across every MLS number. Returns (stats or None, [(warning key, text)]).
+
+    Each event is {date: YYYY-MM-DD, mls, change, price (the asking price after it, when the row shows one), dom (the
+    grid's days on market at that row, when it shows one), note (optional wording for the report's row)}, in the
+    grid's order. `timeline` is the same events oldest first, for the report's table. A price that differs from the asking
+    price before it is a cut or an increase, whatever the row's code. A listing's active days are its latest `dom`
+    (plus the days since, while it's still for sale), else counted by the calendar from its status changes; the
+    current listing runs to `as_of`. Rows out of date order in the grid and an MLS number that doesn't match the
+    subject's are warned, never silently fixed."""
+    h = R.get("history") or {}
+    events, notes = h.get("events"), []
+    if not events:
+        if h.get("rows"):
+            notes.append(("history_no_events", "history.rows has no history.events: add one event per row of the MLS "
+                          "history grid so the script counts the price changes and active days (report-data.md)."))
+        return None, notes
+    rows = []
+    for i, e in enumerate(events):
+        change = str(e.get("change", "")).strip().lower().replace(" ", "_")
+        if change not in HISTORY_CHANGES:
+            raise ReportError(f"history.events[{i}].change is {e.get('change')!r}: use listed, price, off_market, back_on, "
+                              "pending, sold, canceled, expired or withdrawn (or the MLS code, such as DECR).")
+        try:
+            when = date.fromisoformat(str(e.get("date")))
+        except ValueError:
+            raise ReportError(f"history.events[{i}].date is {e.get('date')!r}: write it as YYYY-MM-DD.") from None
+        price = e.get("price")
+        if price is not None and (not isinstance(price, (int, float)) or isinstance(price, bool)):
+            raise ReportError(f"history.events[{i}].price must be a plain number (474900), not {price!r}.")
+        rows.append({"i": i, "date": when, "mls": str(e.get("mls") or "").strip().upper() or None, "change": change,
+                     "price": price, "dom": e.get("dom")})
+    # the grid's order: newest first normally; any row that breaks the direction is out of date order
+    newest_first = rows[0]["date"] >= rows[-1]["date"]
+    for a, b in zip(rows, rows[1:]):
+        if (b["date"] > a["date"]) if newest_first else (b["date"] < a["date"]):
+            notes.append(("history_order", f"history.events[{b['i']}] ({b['date']:%b %-d, %Y}) is out of date order in the "
+                          f"grid, next to {a['date']:%b %-d, %Y}. Check that row's date with the MLS before quoting it; it "
+                          "was counted by its date."))
+    rows.sort(key=lambda r: (r["date"], -r["i"] if newest_first else r["i"]))
+    subject_mls = subject_mls_number(R["subject"])
+    newest_mls = next((r["mls"] for r in reversed(rows) if r["mls"]), None)
+    if subject_mls and newest_mls and newest_mls != subject_mls:
+        notes.append(("history_mls_mismatch", f"The newest history row is MLS {newest_mls}, but the listing is MLS "
+                      f"{subject_mls}: check that the history is this home's current listing."))
+    # the price changes: any row whose price differs from the asking price before it (a new listing restarts it)
+    cuts, increases, asking, first_price, first_listed = [], [], None, None, None
+    for r in rows:
+        r["delta"] = 0
+        if r["change"] in HISTORY_NEW:
+            asking = r["price"] if r["price"] is not None else asking
+            first_price, first_listed = first_price or r["price"], first_listed or r["date"]
+            continue
+        if r["price"] is None or HISTORY_CHANGES[r["change"]] == "sold":  # a sale price isn't an asking price
+            continue
+        if asking is not None and r["price"] != asking:
+            r["delta"] = r["price"] - asking
+            (cuts if r["delta"] < 0 else increases).append(abs(r["delta"]))
+        asking = r["price"]
+    # active days and failed contracts, listing by listing
+    listings, current = [], None
+    for r in rows:
+        if r["change"] in HISTORY_NEW or current is None or (r["mls"] and current["mls"] and r["mls"] != current["mls"]):
+            current = {"mls": r["mls"], "rows": []}
+            listings.append(current)
+        current["mls"] = current["mls"] or r["mls"]
+        current["rows"].append(r)
+    end = date.fromisoformat(as_of)
+    active_days, failed = 0, 0
+    for n, lst in enumerate(listings):
+        status, since, days, stop = None, None, 0, listings[n + 1]["rows"][0]["date"] if n + 1 < len(listings) else end
+        for r in lst["rows"]:
+            new = HISTORY_CHANGES[r["change"]]
+            if status == "pending" and new not in (None, "pending", "sold"):
+                failed += 1
+            if new is None:
+                continue
+            if status == "active" and since:
+                days += (r["date"] - since).days
+            status, since = new, r["date"] if new == "active" else None
+        if status == "active" and since:
+            days += max((stop - since).days, 0)
+        with_dom = [r for r in lst["rows"] if isinstance(r.get("dom"), (int, float))]
+        if with_dom:  # the MLS's own count wins, plus the days since while it's still for sale
+            last = with_dom[-1]
+            days = last["dom"] + (max((stop - last["date"]).days, 0) if status == "active" else 0)
+        active_days += days
+    total_cut, first_listed = sum(cuts), first_listed or rows[0]["date"]
+    timeline = []
+    for r in rows:  # oldest first, for the report's table (render.py words each kind from labels.json)
+        kind = HISTORY_KIND.get(r["change"], r["change"])
+        if kind == "price":
+            kind = "price_cut" if r["delta"] < 0 else "price_increase" if r["delta"] > 0 else "price"
+        timeline.append({"date": r["date"].isoformat(), "kind": kind, "price": r["price"], "delta": r["delta"],
+                         "mls": r["mls"], "note": events[r["i"]].get("note")})
+    stats = {
+        "events": len(rows), "first_listed": first_listed.isoformat(),
+        "listings": sum(1 for lst in listings if any(HISTORY_CHANGES[r["change"]] == "active" for r in lst["rows"])),
+        "first_list_price": first_price, "current_price": asking,
+        "price_cuts": len(cuts), "price_increases": len(increases), "price_cut_total": total_cut,
+        "price_cut_pct": round(total_cut / first_price, 4) if first_price and total_cut else 0,
+        "price_increase_total": sum(increases), "failed_contracts": failed, "active_days": active_days,
+        "timeline": timeline,
+    }
+    stats["display"] = {
+        "price_cuts": _plural(len(cuts), "price cut"), "price_cut_count": str(len(cuts)),
+        "price_increases": _plural(len(increases), "price increase"),
+        "price_cut_total": money(total_cut), "price_cut_pct": f"{stats['price_cut_pct'] * 100:.1f}%",
+        "failed_contracts": _plural(failed, "failed contract"), "active_days": _plural(active_days, "day"),
+        "first_listed": f"{first_listed:%B %-d, %Y}",
+    }
+    return stats, notes
+
+
+def subject_mls_number(s):
+    """The listing's MLS number: `subject.mls_number`, else the "MLS #" part of `subject.locality`."""
+    if s.get("mls_number"):
+        return str(s["mls_number"]).strip().upper()
+    m = re.search(r"\bMLS\s*#?\s*([A-Z]{0,3}\d{5,})", str(s.get("locality") or ""), re.I)
+    return m.group(1).upper() if m else None
+
+
+def export_mls_warning(R, homes):
+    """CMA-208: the export's current (active or pending) row for the subject carries a different MLS number than the
+    listing. An old sale or expired listing of the same home has its own number, so only a current row counts."""
+    s, number = R["subject"], subject_mls_number(R["subject"])
+    row = next((h for h in homes if h["status"] in ("ACTIVE", "PENDING")
+                and mls.same_address(h["address"], s.get("mls_address", s["address"]))), None)
+    theirs = str((row or {}).get("mls_number") or "").strip().upper()
+    if number and theirs and theirs != number:
+        return [f"The export's row for {s.get('mls_address', s['address'])} is MLS {theirs}, but the listing is MLS {number}: "
+                "the export may predate the relist. Check its days on market and price against the listing before quoting them."]
+    return []
+
+
+def rough_plan(R, market, median, lo, hi):
+    """CMA-202: the gut check's rough numbers, before any range or offer plan exists. Rough range: the adjusted comps'
+    span. Rough walk-away: the median adjusted value, rounded down to $1,000 (offer-plan.md: at or below the median).
+    Rough opening: the median minus half the market's typical range width (5% of the median where none is built in),
+    rounded down to $1,000: the bottom of a typical range centered on the median, where offer-plan.md opens. Rough
+    target: halfway between, to the nearest $1,000. None goes above the asking price."""
+    ask = R["subject"]["list_price"]
+    width = market.get("cma.typical_range_width") or 0.05 * median
+    walk = min(math.floor(median / 1000) * 1000, ask)
+    opening = min(math.floor((median - width / 2) / 1000) * 1000, walk)
+    target = min(max(round((opening + walk) / 2000) * 1000, opening), walk)
+    return {"range": {"low": lo, "high": hi, "display": f"{money(lo)} – {money(hi)}"},
+            "opening": opening, "target": target, "walk_away": walk, "typical_width": width,
+            "capped_at_asking": walk == ask and math.floor(median / 1000) * 1000 > ask,
+            "display": {"opening": money(opening), "target": money(target), "walk_away": money(walk)},
+            "label": "Rough: from the adjusted comps alone, before the full analysis"}
+
+
+PLACEHOLDER = re.compile(r"\{(\w+)\}")
+RENDER_PLACEHOLDERS = ("trend_at_subject", "r2_share")  # filled by render.py from the chart
+
+
+def placeholder_values(median_adjusted, hist):
+    """CMA-203: every {name} report wording may use, filled in every field (not just page 1)."""
+    return {"median_adjusted": money(median_adjusted), **((hist or {}).get("display") or {})}
+
+
+def unfilled_placeholders(R, known, path="$"):
+    """(path, {name}) for every placeholder in the report's wording that no script fills: it would print as typed."""
+    out = []
+    if isinstance(R, str):
+        out += [(path, m.group(0)) for m in PLACEHOLDER.finditer(R) if m.group(1) not in known]
+    elif isinstance(R, list):
+        for i, v in enumerate(R):
+            out += unfilled_placeholders(v, known, f"{path}[{i}]")
+    elif isinstance(R, dict):
+        for key, v in R.items():
+            if key not in ("labels", "export_columns"):
+                out += unfilled_placeholders(v, known, f"{path}.{key}")
+    return out
+
+
+def placeholder_warnings(R, values, extra=()):
+    return [f"{p} has {name}, which no script fills: it would print as typed. Use one of "
+            f"{', '.join('{' + k + '}' for k in sorted(set(values) | set(extra)))}, or write the words."
+            for p, name in unfilled_placeholders(R, set(values) | set(extra))]
+
+
 def comp_count_warnings(cards):
     """No comps is an error; fewer than 3 is thin support and a warning."""
     if not cards:
@@ -173,9 +393,11 @@ def _warner():
     return texts, keys, warn
 
 
-def comps_first(R, market):
+def comps_first(R, market, homes=()):
     """CMA-110: the adjusted comps alone, before the range and offer plan exist, for a gut check or to set the range
-    from: the median adjusted value, the spread and the outlier and adjustment warnings. Writes no handoff."""
+    from: the median adjusted value, the spread and the outlier and adjustment warnings. Writes no handoff. With
+    `history.events` it also counts the history (CMA-201), and `rough` holds the gut check's rough range, opening,
+    target and walk-away (CMA-202)."""
     _require(R, "subject.address", "subject.list_price", "comps.cards")
     warnings, warning_keys, warn = _warner()
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
@@ -186,6 +408,12 @@ def comps_first(R, market):
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
     s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
+    hist, notes = history_stats(R, R.get("as_of") or date.today().isoformat())  # CMA-201, CMA-208
+    for key, text in notes:
+        warn(key, text)
+    warn("export_mls_mismatch", *export_mls_warning(R, homes))
+    fills = placeholder_values(median_adjusted, hist)  # CMA-203
+    warn("unfilled_placeholder", *placeholder_warnings(R, fills, RENDER_PLACEHOLDERS))
     return {
         "ok": True, "stage": "comps",
         "next": "Set bottom_line (the range around the median) and offer_plan, add costs, then run compute.py again "
@@ -194,6 +422,10 @@ def comps_first(R, market):
         "median_adjusted": median_adjusted, "median_adjusted_display": money(median_adjusted),
         "adjusted_min": min(values), "adjusted_max": max(values),
         "asking_vs_median": s["list_price"] - median_adjusted,
+        "asking_vs_median_display": money(abs(s["list_price"] - median_adjusted)),
+        "rough": rough_plan(R, market, median_adjusted, min(values), max(values)),  # CMA-202: the gut check's numbers
+        "history": hist,
+        "placeholders": fills,
         "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
         "warnings": warnings,
@@ -202,7 +434,38 @@ def comps_first(R, market):
     }
 
 
+def target_price(op):
+    """The offer plan's target: the middle of target_low to target_high, else the one given, else the opening."""
+    lo, hi = op.get("target_low"), op.get("target_high")
+    if lo is not None and hi is not None:
+        return (lo + hi) / 2
+    return lo if lo is not None else hi if hi is not None else op.get("opening")
+
+
+def price_basis(price, R):
+    """CMA-204: which of the plan's prices the payment is figured at, so page 1 can say so."""
+    op, ask = R.get("offer_plan") or {}, R["subject"]["list_price"]
+    lo, hi = op.get("target_low"), op.get("target_high")
+    if price == ask:
+        return "asking"
+    if lo is not None and (hi or lo) >= price >= lo or price == target_price(op):
+        return "target"
+    return {op.get("opening"): "opening", op.get("walk_away"): "walk_away"}.get(price)
+
+
+def default_prices(R):
+    """CMA-204: without `costs.payment.price` the payment is figured at the offer plan's target, not the asking price;
+    without `costs.taxes.purchase_price` the tax estimate uses the payment's price, so page 1's numbers agree."""
+    costs = R.get("costs") or {}
+    pay, t = costs.get("payment"), costs.get("taxes")
+    if isinstance(pay, dict) and pay.get("price") in (None, "") and R.get("offer_plan", {}).get("opening") is not None:
+        pay["price"] = target_price(R["offer_plan"])
+    if isinstance(t, dict) and t.get("purchase_price") in (None, "") and isinstance(pay, dict) and pay.get("price"):
+        t["purchase_price"] = pay["price"]
+
+
 def compute(R, market, homes):
+    default_prices(R)
     _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
              "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
@@ -212,10 +475,10 @@ def compute(R, market, homes):
         except ValueError as e:
             raise ReportError(str(e)) from e
     market = market.with_deal(R.get("costs"))  # this home's own numbers (the state's transfer tax, a tax rate)
-    n_juris, ji = len(R["costs"]["taxes"].get("jurisdictions") or []), R["costs"]["payment"].get("tax_jurisdiction_index", 0)
+    n_juris, ji = len(R["costs"]["taxes"].get("jurisdictions") or []), R["costs"]["payment"].get("tax_jurisdiction_index")
     if not n_juris:
         raise ReportError("costs.taxes.jurisdictions needs at least one entry.")
-    if not isinstance(ji, int) or isinstance(ji, bool) or not 0 <= ji < n_juris:
+    if ji is not None and (not isinstance(ji, int) or isinstance(ji, bool) or not 0 <= ji < n_juris):
         raise ReportError(f"costs.payment.tax_jurisdiction_index is {ji!r}: it must be 0 to {n_juris - 1}, the "
                           "position of the jurisdiction the payment uses in costs.taxes.jurisdictions.")
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
@@ -244,6 +507,9 @@ def compute(R, market, homes):
     if scope:
         warn("adjustment_scope", scope)
     tax_rows = taxes(R, market)
+    if ji is None:  # CMA-204: with the district unconfirmed, the payment uses the higher bill (the conservative one)
+        ji = max(range(n_juris), key=lambda i: (tax_rows[i]["annual"] or 0, -i))
+        R["costs"]["payment"]["tax_jurisdiction_index"] = ji
     for j in tax_rows:
         if j["problem"]:
             warn("tax_problem", j["problem"])
@@ -263,6 +529,22 @@ def compute(R, market, homes):
         warn("credit_alt_mismatch", "offer_plan.credit_alt doesn't match any price-vs-credit scenario.")
     if op["walk_away"] > bl["high"]:
         warn("walk_away_above_range", "The walk-away price is above the supported range: only if the buyer accepts appraisal-gap risk, and say so.")
+    cash = R["costs"].get("buyer_cash")  # CMA-204: what the buyer has for down payment and closing
+    for c in (credit or {}).get("columns", []):
+        if c.get("cash_short"):
+            warn("cash_short", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
+                 f"{money(c['cash'])}, {money(c['cash_short'])} more than the buyer's {money(cash)}: say so, and show a "
+                 "scenario that fits (a larger credit, a lower price or another loan program).")
+    first = ((pay or {}).get("rows") or [{}])[0]  # the buyer's own program; the other columns are comparisons, flagged only
+    if first.get("cash_short"):
+        warn("cash_short", f"The {first['label']} down payment alone ({money(first['cash_down'])}) is more than the "
+             f"buyer's {money(cash)}.")
+    hist, notes = history_stats(R, R.get("as_of") or date.today().isoformat())  # CMA-201, CMA-208
+    for key, text in notes:
+        warn(key, text)
+    warn("export_mls_mismatch", *export_mls_warning(R, homes))
+    values = placeholder_values(median_adjusted, hist)  # CMA-203
+    warn("unfilled_placeholder", *placeholder_warnings(R, values, RENDER_PLACEHOLDERS))
 
     fit = mls.trend([h for h in homes if not mls.same_address(h["address"], s.get("mls_address", s["address"]))],
                     s["sqft"], (R.get("scatter") or {}).get("fit_size_ratio", 1.6)) if homes else None
@@ -327,6 +609,11 @@ def compute(R, market, homes):
         "trend": {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                   "r2_key": mls.r2_key(fit["r2"])} if fit else None,
         "handoff": h,
+        "history": hist,
+        "placeholders": values,
+        # the chat template's wording, with every {placeholder} filled as the PDF fills it
+        "summary_page": cma.fill(R.get("summary_page") or {}, values),
+        "bottom_line_paragraph": cma.fill(bl.get("paragraph", ""), values),
         "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
@@ -360,7 +647,7 @@ def main(argv=None):
     try:
         market, homes = load_inputs(R, a.mls, a.report)
         if not any(R.get(k) for k in ("bottom_line", "offer_plan", "costs")):  # CMA-110: comps only, no range yet
-            result = comps_first(R, market)
+            result = comps_first(R, market, homes)
         else:
             result = compute(R, market, homes)
             path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)), handoff.filename(R["subject"]["address"], "buyer"))

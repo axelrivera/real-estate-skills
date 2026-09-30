@@ -26,6 +26,7 @@
     "bb_short": 0,
     "cap": 13650.0,
     "cash": 36400.0,
+    "cash_short": null,
     "closing_costs": 13650.0,
     "credit": 0,
     "extra": 0.0,
@@ -44,6 +45,7 @@
     "bb_short": 0,
     "cap": 13800.0,
     "cash": 31800.0,
+    "cash_short": null,
     "closing_costs": 13800.0,
     "credit": 5000,
     "extra": 40.74,
@@ -62,6 +64,7 @@
     "bb_short": 0,
     "cap": 13950.0,
     "cash": 27200.0,
+    "cash_short": null,
     "closing_costs": 13950.0,
     "credit": 10000,
     "extra": 81.48,
@@ -167,6 +170,120 @@
   },
   "version": 1
  },
+ "history": {
+  "active_days": 119,
+  "current_price": 474900,
+  "display": {
+   "price_cut_count": "4",
+   "price_cut_pct": "4.0%"
+  },
+  "events": 12,
+  "failed_contracts": 1,
+  "first_list_price": 483900,
+  "first_listed": "2026-01-16",
+  "listings": 2,
+  "price_cut_pct": 0.0401,
+  "price_cut_total": 19400,
+  "price_cuts": 4,
+  "price_increase_total": 10400,
+  "price_increases": 1,
+  "timeline": [
+   {
+    "date": "2026-01-16",
+    "delta": 0,
+    "kind": "listed",
+    "mls": "O6371102",
+    "note": null,
+    "price": 483900
+   },
+   {
+    "date": "2026-01-22",
+    "delta": -4000,
+    "kind": "price_cut",
+    "mls": "O6371102",
+    "note": null,
+    "price": 479900
+   },
+   {
+    "date": "2026-01-27",
+    "delta": 0,
+    "kind": "off_market",
+    "mls": "O6371102",
+    "price": null
+   },
+   {
+    "date": "2026-02-07",
+    "delta": -5400,
+    "kind": "price_cut",
+    "mls": "O6371102",
+    "note": null,
+    "price": 474500
+   },
+   {
+    "date": "2026-03-05",
+    "delta": 0,
+    "kind": "back_on",
+    "mls": "O6371102",
+    "note": null,
+    "price": null
+   },
+   {
+    "date": "2026-04-11",
+    "delta": 0,
+    "kind": "pending",
+    "mls": "O6371102",
+    "note": null,
+    "price": 474500
+   },
+   {
+    "date": "2026-05-17",
+    "delta": 0,
+    "kind": "off_market",
+    "mls": "O6371102",
+    "price": null
+   },
+   {
+    "date": "2026-05-21",
+    "delta": 10400,
+    "kind": "back_on",
+    "mls": "O6371102",
+    "note": null,
+    "price": 484900
+   },
+   {
+    "date": "2026-06-09",
+    "delta": 0,
+    "kind": "canceled",
+    "mls": "O6371102",
+    "note": null,
+    "price": null
+   },
+   {
+    "date": "2026-08-17",
+    "delta": 0,
+    "kind": "listed",
+    "mls": "O6448292",
+    "note": null,
+    "price": 484900
+   },
+   {
+    "date": "2026-08-31",
+    "delta": -6000,
+    "kind": "price_cut",
+    "mls": "O6448292",
+    "note": null,
+    "price": 478900
+   },
+   {
+    "date": "2026-09-16",
+    "delta": -4000,
+    "kind": "price_cut",
+    "mls": "O6448292",
+    "note": null,
+    "price": 474900
+   }
+  ]
+ },
  "market_notes": {
   "count": 1
  },
@@ -177,6 +294,8 @@
    "delta_monthly": -137.26,
    "short": "Unincorporated"
   },
+  "buyer_cash": null,
+  "buyer_cash_display": null,
   "flood": {
    "annual": null,
    "required": "citizens_value",
@@ -185,10 +304,12 @@
   "insurance_annual": 3600,
   "per_10k": 81.48,
   "price": 474900,
+  "price_basis": "asking",
   "rate": 6.95,
   "rows": [
    {
     "cash_down": 23745.0,
+    "cash_short": null,
     "flood": null,
     "hoa": 0,
     "ins": 300.0,
@@ -200,6 +321,7 @@
    },
    {
     "cash_down": 16621.5,
+    "cash_short": null,
     "flood": null,
     "hoa": 0,
     "ins": 300.0,
@@ -211,6 +333,7 @@
    },
    {
     "cash_down": 94980.0,
+    "cash_short": null,
     "flood": null,
     "hoa": 0,
     "ins": 300.0,
@@ -221,7 +344,18 @@
     "total": 3446.42
    }
   ],
+  "tax_basis": {
+   "estimated": false,
+   "higher": true,
+   "label_estimate": true,
+   "short": "City",
+   "unconfirmed": true
+  },
   "tax_index": 1
+ },
+ "placeholders": {
+  "price_cut_count": "4",
+  "price_cut_pct": "4.0%"
  },
  "range": {
   "high": 480000,
@@ -229,6 +363,33 @@
  },
  "subject": {
   "list_price": 474900
+ },
+ "summary_page": {
+  "check_first": [
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "key_stats": [
+   {
+    "count": 2
+   },
+   [
+    "96.5%"
+   ],
+   {
+    "count": 2
+   }
+  ],
+  "why": {
+   "count": 3
+  }
  },
  "taxes": [
   {

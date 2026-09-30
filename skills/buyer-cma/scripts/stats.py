@@ -3,6 +3,7 @@
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" [--state FL --county Seminole]
         [--columns columns.json] [--split-date 2026-07-01]
         [--sqft 1849 --pool --subdivision "SPRING OAKS" --type single_family --lat 28.67 --lon -81.41]
+        [--mls-number O6433709]
 
 The subject's facts come from its own row in the export. When it has none (a listing sheet or property report
 without an export row), give them as flags so the comp candidates are ranked; a flag also overrides the row.
@@ -38,6 +39,7 @@ def main(argv=None):
     ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
     ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
+    ap.add_argument("--mls-number", help="the listing's MLS number: warns when the export's current row for the home has another")
     a = ap.parse_args(argv)
     try:
         market = profiles.load_market(state=a.state, county=a.county, mls=a.mls)
@@ -60,6 +62,14 @@ def main(argv=None):
                                        "spelling, or give the home's facts (--sqft, --pool, --subdivision, --lat/--lon).")
         elif not row:
             out["market_notes"].append("The subject isn't in the export: comps are ranked from the facts given.")
+        out["warnings"], out["warning_keys"] = [], []
+        current = next((h for h in homes if h["status"] in ("ACTIVE", "PENDING") and mls.same_address(h["address"], a.address)), None)
+        theirs = str((current or {}).get("mls_number") or "").strip().upper()
+        if a.mls_number and theirs and theirs != a.mls_number.strip().upper():  # CMA-208
+            out["warnings"].append(f"The export's current row for {a.address} is MLS {theirs}, but the listing is MLS "
+                                   f"{a.mls_number.strip().upper()}: the export may predate the relist. Check its days on "
+                                   "market and price against the listing before quoting them.")
+            out["warning_keys"].append("export_mls_mismatch")
         out["ok"] = True
     except (profiles.ProfileError, mls.ExportError, OSError) as e:
         out = {"ok": False, "problems": [str(e)]}

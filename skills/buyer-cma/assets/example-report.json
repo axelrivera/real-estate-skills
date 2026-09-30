@@ -62,7 +62,7 @@
  },
  "summary_page": {
   "label": "Buyer Summary",
-  "headline": "Open at the bottom of what recent sales support. Four price cuts since May give you room to negotiate.",
+  "headline": "Open at the bottom of what recent sales support: with {price_cuts} since May, you have room to negotiate.",
   "key_stats": [
    [
     "{median_adjusted}",
@@ -73,14 +73,14 @@
     "Sale Price vs. Original Asking for Nearby Homes Since July"
    ],
    [
-    "112 days",
-    "On the Market Since May, with Four Price Cuts"
+    "{active_days}",
+    "On the Market Since May, with {price_cut_count} Price Cuts"
    ]
   ],
   "why": [
-   "The five closest Cattail Crossing pool sales, adjusted to this home, center on about $581,400.",
+   "The five closest Cattail Crossing pool sales, adjusted to this home, center on about {median_adjusted}.",
    "The market cooled since spring: homes now sell about 4% under asking, and three in four sellers pay part of buyers' costs.",
-   "112 days on the market and $35,000 in price cuts give you room to negotiate price or a seller credit."
+   "{active_days} on the market and {price_cut_total} in price cuts give you room to negotiate price or a seller credit."
   ],
   "check_first": [
    [
@@ -105,51 +105,59 @@
   "paragraph": "The asking price of $589,900 sits in the upper part of what recent sales support. It's inside the range, but it isn't a bargain. The two sales that support this price closed before July, when mortgage rates were lower and homes were selling faster. The summer sales and this home's own price cuts point toward the middle of the range."
  },
  "history": {
-  "heading": "Four Price Cuts Since May",
+  "heading": "{price_cut_count} Price Cuts Since May",
   "intro": "The listing shows 112 days on the market. That number doesn't show the price cuts or the three weeks the home was off the market. The full history:",
-  "rows": [
-   [
-    "Aug 14, 2019",
-    "Sold (previous sale, public record)",
-    "$358,000"
-   ],
-   [
-    "May 8, 2026",
-    "First listed",
-    "$624,900"
-   ],
-   [
-    "Jun 5",
-    "Price cut",
-    "$609,900"
-   ],
-   [
-    "Jun 26",
-    "Price cut",
-    "$599,900"
-   ],
-   [
-    "Jul 10 – Aug 3",
-    "Taken off the market; new roof installed, per the listing",
-    "—"
-   ],
-   [
-    "Aug 4",
-    "Back on the market",
-    "$599,900"
-   ],
-   [
-    "Aug 29",
-    "Price cut",
-    "$594,900"
-   ],
-   [
-    "Sep 12",
-    "Price cut",
-    "$589,900"
-   ]
-  ],
-  "after": "That adds up to 112 days of active marketing over four and a half months, with $35,000 in price cuts and no contract. The market has had a long look at this home between $590,000 and $625,000, and no buyer has gone under contract. The new roof answers one question buyers had, but we need its permit and final inspection before writing an offer."
+  "after": "That adds up to {active_days} of active marketing over four and a half months, with {price_cut_total} in price cuts and no contract. The market has had a long look at this home between $590,000 and $625,000, and no buyer has gone under contract. The new roof answers one question buyers had, but we need its permit and final inspection before writing an offer.",
+  "events": [
+   {
+    "date": "2026-09-12",
+    "mls": "O6519247",
+    "change": "price",
+    "price": 589900
+   },
+   {
+    "date": "2026-08-29",
+    "mls": "O6519247",
+    "change": "price",
+    "price": 594900
+   },
+   {
+    "date": "2026-08-04",
+    "mls": "O6519247",
+    "change": "back_on",
+    "price": 599900
+   },
+   {
+    "date": "2026-07-10",
+    "mls": "O6519247",
+    "change": "off_market",
+    "note": "Taken off the market; new roof installed, per the listing"
+   },
+   {
+    "date": "2026-06-26",
+    "mls": "O6519247",
+    "change": "price",
+    "price": 599900
+   },
+   {
+    "date": "2026-06-05",
+    "mls": "O6519247",
+    "change": "price",
+    "price": 609900
+   },
+   {
+    "date": "2026-05-08",
+    "mls": "O6519247",
+    "change": "listed",
+    "price": 624900
+   },
+   {
+    "date": "2019-08-14",
+    "change": "sold",
+    "price": 358000,
+    "note": "Sold (previous sale, public record)"
+   }
+  ]
  },
  "offer_plan": {
   "intro": "Our recommendation for your offer, based on the comparable sales, the market, and this home's history. These three numbers are a negotiating plan, not a value opinion, so we'll adjust them together if anything changes.",
@@ -157,7 +165,7 @@
   "target_low": 574000,
   "target_high": 578000,
   "walk_away": 580000,
-  "why_opening": "The bottom of the supported range, backed by the comps. After 112 days and four price cuts, the seller has reason to counter rather than ignore it.",
+  "why_opening": "The bottom of the supported range, backed by the comps. After {active_days} and {price_cuts}, the seller has reason to counter rather than ignore it.",
   "why_target": "Where the summer sales and the typical 4% negotiation suggest this home settles.",
   "why_walk_away": "Just under the median of the adjusted comps. Above it you'd be paying spring prices and risking a low appraisal you'd have to cover in cash.",
   "credit_alt": {
@@ -287,7 +295,7 @@
     ]
    }
   ],
-  "summary_paragraph": "The adjusted values run from about $572,000 to $595,000, with a median of $581,400. We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales support the same picture: 1409 Arrowroot Way (updated, pool) sold for $566,000 in May, and 1586 Buttonbush Dr (renovated, no pool) sold for $552,000 in June."
+  "summary_paragraph": "The adjusted values run from about $572,000 to $595,000, with a median of {median_adjusted}. We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales support the same picture: 1409 Arrowroot Way (updated, pool) sold for $566,000 in May, and 1586 Buttonbush Dr (renovated, no pool) sold for $552,000 in June."
  },
  "scatter": {
   "heading": "The Whole Neighborhood at a Glance",
@@ -432,7 +440,6 @@
    "intro": "The listing shows $5,212 in taxes. That's the 2025 bill, based on the current owner's capped assessment and homestead exemption. In Florida, a home's taxable value is reset when it sells, so your bill will be based on roughly what you pay. You also get to file for your own homestead exemption.",
    "current_bill": 5212,
    "current_year": 2025,
-   "purchase_price": 589900,
    "homestead": true,
    "jurisdictions": [
     {
@@ -457,11 +464,9 @@
    "paragraph": "The main things that drive the cost for this house are the new roof (insurers will want its permit date), the 1998 AC and water heater if they're original, wind-mitigation features, and the pool. The flood zone (X) is outside the high-risk area, but Citizens requires flood coverage on many policies (and on every Citizens policy from January 2027), so get a flood quote with the homeowners quote. Get a real quote during your inspection period, after the 4-point and wind-mitigation inspections. The payment estimates below use $4,200 a year as a placeholder, not a quote."
   },
   "payment": {
-   "intro": "Three common ways to finance this home at the full asking price. Your lender will give you exact numbers.",
-   "price": 589900,
+   "intro": "Three common ways to finance this home at the target price. Your lender will give you exact numbers.",
    "rate": 6.95,
    "insurance_annual": 4200,
-   "tax_jurisdiction_index": 1,
    "scenarios": [
     {
      "label": "Conventional, 5% Down",
@@ -504,7 +509,8 @@
     "price": 580000,
     "credit": 10000
    }
-  }
+  },
+  "buyer_cash": 50000
  },
  "watch": {
   "items": [

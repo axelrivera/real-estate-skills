@@ -55,6 +55,52 @@ def homestead_label(R, L):
     return L("with_homestead") if R["costs"]["taxes"].get("homestead", True) else L("no_homestead")
 
 
+def basis_label(pay, L):
+    """CMA-204: " (Target)" or " (Asking)": which of the plan's prices the payment is figured at."""
+    return L("basis_" + pay["price_basis"]) if pay.get("price_basis") else ""
+
+
+def cash_flag(short, pay, L):
+    """CMA-204: beside a cash figure that's more than the buyer has."""
+    return (f'<br><span class="flag" style="font-size:8.5pt">{L("cash_short", amt=money(short), cash=pay["buyer_cash_display"])}'
+            '</span>' if short else "")
+
+
+def tax_row_label(R, pay, L):
+    """CMA-204: the payment's tax row, labeled Estimate when the district is unconfirmed or the rate is a fallback."""
+    key = "pay_tax_est" if pay["tax_basis"]["label_estimate"] else "pay_tax"
+    return L(key, short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))
+
+
+def tax_which_note(pay, L):
+    """CMA-204: which tax the payment uses, when that isn't settled (local-costs.md: say what's estimated)."""
+    tb = pay["tax_basis"]
+    if tb["estimated"]:
+        return " " + L("pay_tax_which_rate", basis=tb["basis"])
+    if tb["unconfirmed"]:
+        return " " + L("pay_tax_which_higher" if tb["higher"] else "pay_tax_which", short=tb["short"])
+    return ""
+
+
+def history_rows(h, hist, L):
+    """The history table: the rows as written, else built from history.events (CMA-201), so no price is typed."""
+    if h.get("rows"):
+        return h["rows"]
+    out, year, n_listed = [], None, 0
+    for e in (hist or {}).get("timeline", []):
+        d = date.fromisoformat(e["date"])
+        when = f"{d:%b %-d, %Y}" if d.year != year else f"{d:%b %-d}"
+        year = d.year
+        kind = e["kind"]
+        if kind == "listed":
+            n_listed += 1
+            kind = "relisted" if n_listed > 1 else "listed"
+        elif kind == "back_on" and e["delta"]:
+            kind = "back_on_higher" if e["delta"] > 0 else "back_on_lower"
+        out.append([when, e.get("note") or L("hist_" + kind), money(e["price"]) if e["price"] is not None else "—"])
+    return out
+
+
 def summary_page(R, C, agent, L):
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
     sp = cma.fill(R["summary_page"], cma.page_one_values(C))
@@ -62,7 +108,8 @@ def summary_page(R, C, agent, L):
     first = pay["rows"][0]
     sc0 = R["costs"]["payment"]["scenarios"][0]
     stats = list(sp["key_stats"])[:3] + [[money(first["total"]),
-                                           L("sum_payment_tile", price=money(pay["price"]), down=f"{sc0['down_pct'] * 100:g}")]]
+                                           L("sum_payment_tile", price=money(pay["price"]), basis=basis_label(pay, L),
+                                             down=f"{sc0['down_pct'] * 100:g}")]]
     tgt = k(op["target_low"]) + (f"–{k(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
     left = agent_block(agent, L)
     o = ['<div class="onepage">',
@@ -81,10 +128,12 @@ def summary_page(R, C, agent, L):
                                              (op["opening"], L("dot_offer", price=money(op["opening"])))) + "</div>"]
     tax = C["taxes"][pay["tax_index"]]
     bill = R["costs"]["taxes"].get("current_bill")
+    yours = L("sum_tax_yours_est" if pay["tax_basis"]["label_estimate"] else "sum_tax_yours",
+              short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))  # CMA-204
     rows = [[L("sum_tax_now"), money(bill) + L("per_year") if bill else L("not_available")],
-            [L("sum_tax_yours", homestead=homestead_label(R, L)), "≈ " + money(tax["annual"], 100) + L("per_year")],
+            [yours, "≈ " + money(tax["annual"], 100) + L("per_year")],
             [L("sum_pay_row", label=sc0["label"]), money(first["total"]) + L("per_month")],
-            [L("sum_cash_row", label=sc0["label"]), money(first["cash_down"])]]
+            [L("sum_cash_row", label=sc0["label"]), money(first["cash_down"]) + cash_flag(first.get("cash_short"), pay, L)]]
     trs = "".join(f'<tr class="{"rec" if i == 1 else ""}"><td>{a}</td><td class="n">{v}</td></tr>' for i, (a, v) in enumerate(rows))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_costs")}</div><div class="tbl"><table><tbody>{trs}</tbody></table></div>'
@@ -111,7 +160,7 @@ def credit_section(R, C, L):
         [L("cr_net")] + [money(c["net"]) for c in cols],
         [L("cr_loan")] + [money(c["loan"]) for c in cols],
         *([[L("cr_bb_short")] + [money(c["bb_short"]) for c in cols]] if any(c["bb_short"] for c in cols) else []),
-        [f'<strong>{L("cr_cash")}</strong>'] + [f'<strong>{money(c["cash"])}</strong>' for c in cols],
+        [f'<strong>{L("cr_cash")}</strong>'] + [f'<strong>{money(c["cash"])}</strong>' + cash_flag(c.get("cash_short"), C["payments"], L) for c in cols],
         [L("cr_pmt")] + [money(c["payment"]) for c in cols],
         [L("cr_extra")] + [("+" + money(c["extra"])) if c["extra"] > 0.5 else L("cr_none") for c in cols],
         [L("cr_payback")] + [L("cr_years", n=f"{c['payback_years']:.0f}") if c["payback_years"] else L("cr_none") for c in cols],
@@ -125,7 +174,8 @@ def credit_section(R, C, L):
                 names=" and ".join(x.lower() for x in cr["loan_tax_labels"]))
     out = [f'<h3>{L("h_credit")}</h3>', f'<p>{cs["intro"]}</p>',
            table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"}),
-           f'<p class="note">{L("cr_note", cc=cc)}{seller_cost_note(cr, L)}</p>']
+           f'<p class="note">{L("cr_note", cc=cc)}{seller_cost_note(cr, L)}'
+           + (" " + L("cash_note", cash=C["payments"]["buyer_cash_display"]) if C["payments"].get("buyer_cash") else "") + "</p>"]
     if cs.get("after_paragraph"):
         out.append(f'<p>{cs["after_paragraph"]}</p>')
     b = cr.get("buydown")
@@ -148,7 +198,7 @@ def body(R, C, homes, agent, L):
     if R.get("history"):
         h = R["history"]
         b += [f'<h3>{h["heading"]}</h3>', f'<p>{h["intro"]}</p>',
-              table([L("th_date"), L("th_event"), L("th_price")], h["rows"], num_cols=(2,))]
+              table([L("th_date"), L("th_event"), L("th_price")], history_rows(h, C.get("history"), L), num_cols=(2,))]
         if h.get("after"):
             b.append(f'<p>{h["after"]}</p>')
     target = money(op["target_low"]) + (f"–{money(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
@@ -177,7 +227,8 @@ def body(R, C, homes, agent, L):
     if sc and homes:
         svg, info = cma.scatter(homes, sc, s["sqft"], s["list_price"], s.get("mls_address", s["address"]), (bl["low"], bl["high"]), L,
                                 [cd["address"] for cd in R["comps"]["cards"]])
-        trend = money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
+        C["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"]}  # CMA-205
+        trend =money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
               '<div class="chart-box">' + cma.scatter_legend(L, sc.get("subject_label", s["address"]), info["counts"]) + svg + "</div>"]
@@ -213,10 +264,9 @@ def body(R, C, homes, agent, L):
     b += [f'<h3>{L("h_insurance")}</h3>', f'<p>{R["costs"]["insurance"]["paragraph"]}</p>']
 
     rows_p = pay["rows"]
-    short = C["taxes"][pay["tax_index"]]["short"]
-    prow = [[L("pay_cash")] + [money(r["cash_down"]) for r in rows_p],
+    prow = [[L("pay_cash")] + [money(r["cash_down"]) + cash_flag(r.get("cash_short"), pay, L) for r in rows_p],
             [L("pay_pi")] + [money(r["pi"]) for r in rows_p],
-            [L("pay_tax", short=short, homestead=homestead_label(R, L))] + [money(r["tax"]) for r in rows_p],
+            [tax_row_label(R, pay, L)] + [money(r["tax"]) for r in rows_p],
             [L("pay_ins")] + [money(r["ins"]) for r in rows_p],
             [L("pay_flood")] + [money(r["flood"]) if r["flood"] is not None else L("pay_flood_quote") for r in rows_p],
             [L("pay_mi")] + [money(r["mi"]) for r in rows_p],
@@ -233,9 +283,9 @@ def body(R, C, homes, agent, L):
         "pay_note", rate=f'{pay["rate"]:.2f}', ins=money(pay["insurance_annual"]),
         pmi=f'{finance.annual_mi_rate("conventional", conv_down) * 100:g}', pmi_down=f"{conv_down * 100:g}",
         mip=f'{progs["fha"]["annual_mi"] * 100:.2f}', ufmip=f'{progs["fha"]["upfront_fee"] * 100:.2f}', per10k=money(pay["per_10k"], 5))
-    pay_note += " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one
+    pay_note += tax_which_note(pay, L) + " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one
     b += [f'<h3>{L("h_payment")}</h3>', f'<p>{R["costs"]["payment"]["intro"]}</p>',
-          table([L("pay_header", price=money(pay["price"]))] + [r["label"] for r in rows_p], prow,
+          table([L("pay_header", price=money(pay["price"]), basis=basis_label(pay, L))] + [r["label"] for r in rows_p], prow,
                 num_cols=tuple(range(1, len(rows_p) + 1)), row_classes=classes),
           f'<p class="note">{pay_note}</p>']
     if C["credit"]:
@@ -256,8 +306,17 @@ def theme_css(agent):
     return design.css_vars(t), t
 
 
+def fill_values(C, L):
+    """CMA-203: every {placeholder} the report's wording may use, filled in every field, not just page 1."""
+    values = dict(C.get("placeholders") or cma.page_one_values(C))
+    if C.get("trend"):
+        values.update(trend_at_subject=C["trend"]["at_subject_display"], r2_share=L(C["trend"]["r2_key"]))
+    return values
+
+
 def build_html(R, C, homes, agent):
     L = cma.Labels(ASSETS, R.get("labels"))
+    R = {**cma.fill({k: v for k, v in R.items() if k != "labels"}, fill_values(C, L)), "labels": R.get("labels")}
     R.setdefault("prepared_date", f"{date.today():%B %-d, %Y}")
     vars_css, _ = theme_css(agent)
     content = ('<div class="wrap">' + summary_page(R, C, agent, L) + '<div class="pb"></div>' +
@@ -286,6 +345,12 @@ def build(R, fmt, out_dir, ctx):
         print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
     if info["moved"]:
         print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
+    labels = C.get("scatter_labels") or {}
+    for text, asked, used in labels.get("moved", []):
+        print(f"Chart label {text!r}: asked for {asked}, placed {used} to clear the markers (information).", file=sys.stderr)
+    for text in labels.get("overlapping", []):
+        print(f"Check: chart label {text!r} still overlaps a marker or another label: shorten it or pick another side.",
+              file=sys.stderr)
     for w in C["warnings"]:
         print(f"Check: {w}", file=sys.stderr)
     return [path]

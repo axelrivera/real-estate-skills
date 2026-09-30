@@ -363,5 +363,243 @@ class AuditBuyerBrokerShortfall(unittest.TestCase):
         self.assertIn("Broker Fee (Not Paid by Seller)", doc)
 
 
+EVAL_GRID = [  # dev/evals/buyer-cma/files/history-517-hickorywood.md as the grid lists it: newest first, Feb 7 misplaced
+    {"date": "2026-09-16", "mls": "O6433709", "change": "DECR", "price": 474900},
+    {"date": "2026-08-31", "mls": "O6433709", "change": "DECR", "price": 478900},
+    {"date": "2026-08-17", "mls": "O6433709", "change": "NEW", "price": 484900},
+    {"date": "2026-06-09", "mls": "O6371102", "change": "CANC", "dom": 83},
+    {"date": "2026-05-21", "mls": "O6371102", "change": "BOM", "price": 484900},  # "INCR ... (BOM)": back on, higher
+    {"date": "2026-05-17", "mls": "O6371102", "change": "TOM"},
+    {"date": "2026-04-11", "mls": "O6371102", "change": "PNC", "price": 474500},
+    {"date": "2026-02-07", "mls": "O6371102", "change": "DECR", "price": 474500},
+    {"date": "2026-03-05", "mls": "O6371102", "change": "BOM"},
+    {"date": "2026-01-27", "mls": "O6371102", "change": "TOM"},
+    {"date": "2026-01-22", "mls": "O6371102", "change": "DECR", "price": 479900},
+    {"date": "2026-01-16", "mls": "O6371102", "change": "NEW", "price": 483900},
+]
+
+
+class History(unittest.TestCase):
+    """CMA-201 (the price changes and active days counted by the script) and CMA-208 (out-of-order rows and MLS
+    numbers that don't match are warned)."""
+
+    def run_(self, events, locality_mls="O6448292"):
+        R = report()
+        R["history"]["events"] = copy.deepcopy(events)
+        R["subject"]["locality"] = R["subject"]["locality"].rsplit("MLS ", 1)[0] + "MLS " + locality_mls
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def test_four_cuts_and_one_increase(self):
+        """The eval's history: 4 cuts and 1 increase (runs typed "five cuts"), 83 + 36 active days, 1 failed contract."""
+        _, C = self.run_(EVAL_GRID, "O6433709")
+        h = C["history"]
+        self.assertEqual((h["price_cuts"], h["price_increases"]), (4, 1))
+        self.assertEqual(h["price_cut_total"], 4000 + 5400 + 6000 + 4000)
+        self.assertEqual(h["price_increase_total"], 10400)
+        self.assertEqual(h["price_cut_pct"], round(19400 / 483900, 4))
+        self.assertEqual(h["failed_contracts"], 1)
+        self.assertEqual(h["active_days"], 83 + 36)  # the CANC row's DOM, then Aug 17 to as_of Sep 22
+        self.assertEqual(h["listings"], 2)
+        self.assertEqual(C["placeholders"]["price_cuts"], "4 price cuts")
+        self.assertEqual(C["placeholders"]["price_increases"], "1 price increase")
+
+    def test_out_of_order_row_and_mls_mismatch_warn(self):
+        _, C = self.run_(EVAL_GRID, "O6433709")
+        self.assertEqual(C["warning_keys"].count("history_order"), 1)
+        self.assertIn("export_mls_mismatch", C["warning_keys"])  # the export's active row is O6448292
+        self.assertNotIn("history_mls_mismatch", C["warning_keys"])  # the newest row is the listing's number
+        fixed = sorted(EVAL_GRID, key=lambda e: e["date"], reverse=True)
+        _, C = self.run_(fixed, "O6448292")
+        self.assertNotIn("history_order", C["warning_keys"])
+        self.assertNotIn("export_mls_mismatch", C["warning_keys"])
+        self.assertIn("history_mls_mismatch", C["warning_keys"])  # the history's newest row is O6433709
+        self.assertEqual(C["history"]["price_cuts"], 4)  # same counts once sorted
+
+    def test_calendar_days_without_dom(self):
+        events = [e for e in EVAL_GRID if e["change"] != "CANC"] + [{"date": "2026-06-09", "mls": "O6371102", "change": "CANC"}]
+        events.sort(key=lambda e: e["date"], reverse=True)
+        _, C = self.run_(events, "O6433709")
+        # Jan 16-27 (11), Mar 5-Apr 11 (37), May 21-Jun 9 (19), Aug 17-Sep 22 (36): pending and off-market days don't count
+        self.assertEqual(C["history"]["active_days"], 11 + 37 + 19 + 36)
+
+    def test_rows_built_from_events(self):
+        R, C = self.run_(sorted(EVAL_GRID, key=lambda e: e["date"], reverse=True), "O6433709")
+        R["history"].pop("rows", None)
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("Back on the market at a higher price", doc)
+        self.assertIn("Relisted as a new listing", doc)
+
+    def test_rows_without_events_warn(self):
+        R = report()
+        R["history"].pop("events")
+        R["history"]["rows"] = [["Jan 16, 2026", "First listed", "$483,900"]]
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        self.assertIn("history_no_events", C["warning_keys"])
+        self.assertIsNone(C["history"])
+
+    def test_bad_change_is_an_error(self):
+        with self.assertRaises(compute.ReportError):
+            self.run_([{"date": "2026-01-16", "change": "relisted?"}])
+
+    def test_stats_mls_number(self):
+        import contextlib
+        import io
+        export = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-spring-oaks.csv")
+        for number, keys in (("O6433709", ["export_mls_mismatch"]), ("O6448292", [])):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                buyer_stats.main([export, "--address", "517 HICKORYWOOD AVE", "--state", "FL", "--county", "Seminole",
+                                  "--mls-number", number])
+            self.assertEqual(json.loads(out.getvalue())["warning_keys"], keys)
+
+
+class GutCheck(unittest.TestCase):
+    """CMA-202: a rough range (the adjusted span) and a rough opening, target and walk-away from the median."""
+
+    def comps_only(self, **subject):
+        full = report()
+        R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of")}
+        R["subject"].update(subject)
+        R["export"] = full["export"]
+        market, homes = compute.load_inputs(R)
+        return compute.comps_first(R, market, homes)
+
+    def test_rough_plan(self):
+        out = self.comps_only()
+        rough, median = out["rough"], out["median_adjusted"]
+        self.assertEqual((rough["range"]["low"], rough["range"]["high"]), (out["adjusted_min"], out["adjusted_max"]))
+        self.assertEqual(rough["walk_away"], median // 1000 * 1000)  # at or below the median
+        self.assertEqual(rough["opening"], (median - 25000 / 2) // 1000 * 1000)  # Florida's typical range width, halved
+        self.assertTrue(rough["opening"] <= rough["target"] <= rough["walk_away"])
+        self.assertEqual(out["history"]["price_cuts"], 4)  # the gut check counts the history too
+        self.assertEqual(out["warning_keys"], [])
+
+    def test_never_above_asking(self):
+        out = self.comps_only(list_price=440000)
+        rough = out["rough"]
+        self.assertEqual(rough["walk_away"], 440000)
+        self.assertTrue(rough["capped_at_asking"])
+        self.assertLessEqual(rough["opening"], rough["target"])
+
+
+class Placeholders(unittest.TestCase):
+    """CMA-203: {median_adjusted} and the history's placeholders fill every field; an unknown one warns."""
+
+    def test_filled_everywhere(self):
+        R = report()
+        R["comps"]["summary_paragraph"] = "The median is {median_adjusted}, after {price_cuts}."
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, homes, {})
+        self.assertIn(f"The median is {C['median_adjusted_display']}, after 4 price cuts.", doc)
+        self.assertNotIn("{median_adjusted}", doc)
+        self.assertEqual(C["summary_page"]["key_stats"][0][0], C["median_adjusted_display"])  # the chat template's copy
+
+    def test_unknown_placeholder_warns(self):
+        R = report()
+        R["watch"]["items"][0] += " {median_value}"
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        self.assertEqual(C["warning_keys"], ["unfilled_placeholder"])
+        self.assertIn("$.watch.items[0]", C["warnings"][0])
+
+
+class PaymentBasis(unittest.TestCase):
+    """CMA-204: the payment at the plan's target (or says which price), the buyer's cash, and which tax it uses."""
+
+    def run_(self, change=None):
+        R = report()
+        if change:
+            change(R)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def test_target_by_default(self):
+        def change(R):
+            R["costs"]["payment"].pop("price")
+            R["costs"]["taxes"].pop("purchase_price")
+        R, C = self.run_(change)
+        op = R["offer_plan"]
+        self.assertEqual(C["payments"]["price"], (op["target_low"] + op["target_high"]) / 2)
+        self.assertEqual(C["payments"]["price_basis"], "target")
+        self.assertEqual(R["costs"]["taxes"]["purchase_price"], C["payments"]["price"])  # page 1's tax and payment agree
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("(Target), 5% Down", doc)
+
+    def test_asking_says_so(self):
+        R, C = self.run_()
+        self.assertEqual(C["payments"]["price_basis"], "asking")
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("(Asking)", doc)
+
+    def test_cash_short(self):
+        R, C = self.run_(lambda R: R["costs"].__setitem__("buyer_cash", 30000))
+        cols = C["credit"]["columns"]
+        short = [c for c in cols if c["cash"] > 30000]
+        self.assertTrue(short)
+        self.assertTrue(all(c["cash_short"] == round(c["cash"] - 30000) for c in short))
+        rows = C["payments"]["rows"]
+        self.assertTrue(rows[2]["cash_short"])  # 20% down: flagged in the table, but a comparison, so not warned
+        self.assertEqual(C["warning_keys"].count("cash_short"), len(short) + bool(rows[0]["cash_short"]))
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("over your $30,000", doc)
+        _, C = self.run_(lambda R: R["costs"].__setitem__("buyer_cash", 200000))
+        self.assertNotIn("cash_short", C["warning_keys"])
+
+    def test_unconfirmed_district_uses_the_higher_bill(self):
+        R, C = self.run_(lambda R: R["costs"]["payment"].pop("tax_jurisdiction_index"))
+        annual = [t["annual"] for t in C["taxes"]]
+        self.assertEqual(C["payments"]["tax_index"], annual.index(max(annual)))
+        tb = C["payments"]["tax_basis"]
+        self.assertTrue(tb["unconfirmed"] and tb["higher"] and tb["label_estimate"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("Estimate)", doc)
+        self.assertIn("the higher of the two", doc)
+
+    def test_one_confirmed_district_is_not_an_estimate(self):
+        def change(R):
+            R["costs"]["taxes"]["jurisdictions"] = R["costs"]["taxes"]["jurisdictions"][:1]
+            R["costs"]["payment"]["tax_jurisdiction_index"] = 0
+        _, C = self.run_(change)
+        self.assertFalse(C["payments"]["tax_basis"]["label_estimate"])
+
+
+class ScatterLabels(unittest.TestCase):
+    """CMA-205: a label steps to another side rather than print over a marker."""
+
+    def test_label_moves_off_a_marker(self):
+        (cma,) = load("buyer-cma", "_shared.cma")
+        placer = cma._LabelPlacer([(100, 100, 10), (60, 104, 6.5)], (0, 0, 400, 400))  # a comp just left of the subject
+        svg = placer.place(100, 100, "left", "517 Hickorywood", "lbl-subj", 14, 13, bold=True)
+        self.assertEqual(placer.moved, [("517 Hickorywood", "left", "right")])
+        self.assertEqual(placer.overlapping, [])
+        self.assertIn('text-anchor="start"', svg)
+
+    def test_clear_side_is_kept(self):
+        (cma,) = load("buyer-cma", "_shared.cma")
+        placer = cma._LabelPlacer([(100, 100, 10)], (0, 0, 400, 400))
+        placer.place(100, 100, "below", "517 Hickorywood", "lbl-subj", 14, 13)
+        self.assertEqual(placer.moved, [])
+
+    def test_render_reports_the_move(self):
+        R = report()
+        market, homes = compute.load_inputs(R)
+        C = compute.compute(R, market, homes)
+        buyer_render.build_html(copy.deepcopy(R), C, homes, {})
+        # the fixture's subject label grazes only a background sale dot on the left; a line higher it would cover the
+        # band's label, so it stays, and nothing that counts is covered
+        self.assertEqual(C["scatter_labels"], {"moved": [], "overlapping": []})
+
+    def test_another_label_counts(self):
+        (cma,) = load("buyer-cma", "_shared.cma")
+        placer = cma._LabelPlacer([], (0, 0, 400, 400))
+        placer.place(100, 100, "right", "1512 Buttonbush Dr", "lbl", 10, 12)
+        placer.place(100, 104, "right", "1471 Sedgefield", "lbl", 10, 12)  # a second point just below the first
+        self.assertEqual(len(placer.moved), 1)
+        self.assertEqual(placer.overlapping, [])
+
+
 if __name__ == "__main__":
     unittest.main()
