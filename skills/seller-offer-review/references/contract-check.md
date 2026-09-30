@@ -21,7 +21,7 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `inspection_period` | an inspection period of 15 days or more | Med |
 | `flood_disclosure` | the market requires the seller's flood disclosure and `listing.flood_disclosure` isn't `true` | Med |
 
-Also raised, with no topic because they have nothing to duplicate: rider risks (short sale, attorney approval, a sale contingency without a kick-out, an assessment with no payoff agreement, a mortgage assumption), AGA-1 conflicts (with Rider F; on an FHA, VA or USDA offer, which AGA-1 doesn't fit; a periods total that runs past closing), a free-text pre-approval expiry (recorded as an assumption), FHA/VA condo approval, loan approval after closing, and the Standard form's repair limits.
+Also raised, with no topic because they have nothing to duplicate: rider risks (short sale, attorney approval, a sale contingency without a kick-out, an assessment with no payoff agreement, a mortgage assumption), AGA-1 conflicts (with Rider F; on an FHA, VA or USDA offer, which AGA-1 doesn't fit; a periods total that runs past closing, or ends within 3 days of it, `aga_window_at_closing`), a free-text pre-approval expiry (recorded as an assumption), FHA/VA condo approval, loan approval after closing, and the Standard form's repair limits.
 
 This is a completeness check, not a legal opinion. Never tell the agent a contract is or isn't binding; say it can't be reviewed as written, and point questions about validity to a real estate attorney licensed in the property's state.
 

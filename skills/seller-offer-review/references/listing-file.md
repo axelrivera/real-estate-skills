@@ -51,6 +51,7 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `beds`, `baths`, `sqft`, `year_built` | shown as "—". Without `year_built` the lead-based paint check can't run; when riders were read from an FR/BAR package it's asked for (med). Take it from the tax record or MLS | — |
 | `built_before_1978` | `true` or `false` from the seller's property disclosure ("Was the Property built before 1978?") when the year isn't known: it runs the lead-based paint check, so the year isn't asked | asked with `year_built` | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
+| `insurance_reports` | `true` only when the seller has current insurance inspection reports to share (Florida: 4-point and wind mitigation). A counter that shortens the inspection period offers them only then | false: never offered | — |
 | `hoa_monthly` | unknown → the HOA estoppel or documents fee is still charged, labeled Estimate and listed as an assumption; `0` = no HOA, no fee | low |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |

@@ -183,7 +183,8 @@
     },
     "net": 148794,
     "net_adj": 145194,
-    "price": 432000
+    "price": 432000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -250,7 +251,8 @@
     },
     "net": 151606,
     "net_adj": 148086,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -317,7 +319,8 @@
     },
     "net": 142042,
     "net_adj": 138442,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "price": 432000,
    "rank_value": 109754.5,
@@ -435,7 +438,8 @@
     },
     "net": 154778,
     "net_adj": 151178,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": true
    },
    "title_by": "buyer",
    "title_payer": "buyer",
@@ -588,7 +592,8 @@
     },
     "net": 147751,
     "net_adj": 145351,
-    "price": 420000
+    "price": 420000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -655,7 +660,8 @@
     },
     "net": 150550,
     "net_adj": 148150,
-    "price": 423000
+    "price": 423000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -722,7 +728,8 @@
     },
     "net": 144751,
     "net_adj": 142351,
-    "price": 420000
+    "price": 420000,
+    "tax_bill_assumed": false
    },
    "price": 420000,
    "rank_value": 133426.0,
@@ -840,7 +847,8 @@
     },
     "net": 152416,
     "net_adj": 150016,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -989,7 +997,8 @@
     },
     "net": 135909,
     "net_adj": 134229,
-    "price": 405000
+    "price": 405000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -1056,7 +1065,8 @@
     },
     "net": 154669,
     "net_adj": 152989,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -1123,7 +1133,8 @@
     },
     "net": 132909,
     "net_adj": 131229,
-    "price": 405000
+    "price": 405000,
+    "tax_bill_assumed": false
    },
    "price": 405000,
    "rank_value": 131229.0,
@@ -1239,7 +1250,8 @@
     },
     "net": 152544,
     "net_adj": 150864,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1448,7 +1460,8 @@
     },
     "net": 158785,
     "net_adj": 153985,
-    "price": 440000
+    "price": 440000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -1515,7 +1528,8 @@
     },
     "net": 149917,
     "net_adj": 145837,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -1582,7 +1596,8 @@
     },
     "net": 144649,
     "net_adj": 139849,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "price": 440000,
    "rank_value": 104786.5,
@@ -1701,7 +1716,8 @@
     },
     "net": 151990,
     "net_adj": 147190,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1740,7 +1756,7 @@
   "cma_provided": true,
   "condo": false,
   "cost_notes": {
-   "count": 4
+   "count": 5
   },
   "county": "Seminole",
   "deposit_norm": 0.03,
@@ -1749,6 +1765,7 @@
   "frbar_market": true,
   "hoa_approval_required": false,
   "hoa_monthly": 85,
+  "insurance_reports": false,
   "list_price": 425000,
   "loan_limits": {
    "as_of": "2026-09-24",
@@ -1783,6 +1800,7 @@
   "roof_year": 2012,
   "sqft": 1684,
   "state": "FL",
+  "tax_bill_month": 11,
   "tax_in_arrears": true,
   "title_customary_payer": "seller",
   "title_payer_deal": false,
@@ -1992,7 +2010,8 @@
     },
     "net": 148794,
     "net_adj": 145194,
-    "price": 432000
+    "price": 432000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -2059,7 +2078,8 @@
     },
     "net": 151606,
     "net_adj": 148086,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -2126,7 +2146,8 @@
     },
     "net": 142042,
     "net_adj": 138442,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "price": 432000,
    "rank_value": 109754.5,
@@ -2244,7 +2265,8 @@
     },
     "net": 154778,
     "net_adj": 151178,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": true
    },
    "title_by": "buyer",
    "title_payer": "buyer",
@@ -2397,7 +2419,8 @@
     },
     "net": 147751,
     "net_adj": 145351,
-    "price": 420000
+    "price": 420000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -2464,7 +2487,8 @@
     },
     "net": 150550,
     "net_adj": 148150,
-    "price": 423000
+    "price": 423000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -2531,7 +2555,8 @@
     },
     "net": 144751,
     "net_adj": 142351,
-    "price": 420000
+    "price": 420000,
+    "tax_bill_assumed": false
    },
    "price": 420000,
    "rank_value": 133426.0,
@@ -2649,7 +2674,8 @@
     },
     "net": 152416,
     "net_adj": 150016,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -2798,7 +2824,8 @@
     },
     "net": 135909,
     "net_adj": 134229,
-    "price": 405000
+    "price": 405000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -2865,7 +2892,8 @@
     },
     "net": 154669,
     "net_adj": 152989,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -2932,7 +2960,8 @@
     },
     "net": 132909,
     "net_adj": 131229,
-    "price": 405000
+    "price": 405000,
+    "tax_bill_assumed": false
    },
    "price": 405000,
    "rank_value": 131229.0,
@@ -3048,7 +3077,8 @@
     },
     "net": 152544,
     "net_adj": 150864,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -3257,7 +3287,8 @@
     },
     "net": 158785,
     "net_adj": 153985,
-    "price": 440000
+    "price": 440000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -3324,7 +3355,8 @@
     },
     "net": 149917,
     "net_adj": 145837,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -3391,7 +3423,8 @@
     },
     "net": 144649,
     "net_adj": 139849,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "price": 440000,
    "rank_value": 104786.5,
@@ -3510,7 +3543,8 @@
     },
     "net": 151990,
     "net_adj": 147190,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -3665,7 +3699,8 @@
     },
     "net": 147751,
     "net_adj": 145351,
-    "price": 420000
+    "price": 420000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -3732,7 +3767,8 @@
     },
     "net": 150550,
     "net_adj": 148150,
-    "price": 423000
+    "price": 423000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -3799,7 +3835,8 @@
     },
     "net": 144751,
     "net_adj": 142351,
-    "price": 420000
+    "price": 420000,
+    "tax_bill_assumed": false
    },
    "price": 420000,
    "rank_value": 133426.0,
@@ -3917,7 +3954,8 @@
     },
     "net": 152416,
     "net_adj": 150016,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -4066,7 +4104,8 @@
     },
     "net": 135909,
     "net_adj": 134229,
-    "price": 405000
+    "price": 405000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -4133,7 +4172,8 @@
     },
     "net": 154669,
     "net_adj": 152989,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -4200,7 +4240,8 @@
     },
     "net": 132909,
     "net_adj": 131229,
-    "price": 405000
+    "price": 405000,
+    "tax_bill_assumed": false
    },
    "price": 405000,
    "rank_value": 131229.0,
@@ -4316,7 +4357,8 @@
     },
     "net": 152544,
     "net_adj": 150864,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -4506,7 +4548,8 @@
     },
     "net": 148794,
     "net_adj": 145194,
-    "price": 432000
+    "price": 432000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -4573,7 +4616,8 @@
     },
     "net": 151606,
     "net_adj": 148086,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -4640,7 +4684,8 @@
     },
     "net": 142042,
     "net_adj": 138442,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "price": 432000,
    "rank_value": 109754.5,
@@ -4758,7 +4803,8 @@
     },
     "net": 154778,
     "net_adj": 151178,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": true
    },
    "title_by": "buyer",
    "title_payer": "buyer",
@@ -4967,7 +5013,8 @@
     },
     "net": 158785,
     "net_adj": 153985,
-    "price": 440000
+    "price": 440000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -5034,7 +5081,8 @@
     },
     "net": 149917,
     "net_adj": 145837,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -5101,7 +5149,8 @@
     },
     "net": 144649,
     "net_adj": 139849,
-    "price": 428000
+    "price": 428000,
+    "tax_bill_assumed": true
    },
    "price": 440000,
    "rank_value": 104786.5,
@@ -5220,7 +5269,8 @@
     },
     "net": 151990,
     "net_adj": 147190,
-    "price": 425000
+    "price": 425000,
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -5306,6 +5356,7 @@
   },
   "net": 152090,
   "net_adj": 147850,
-  "price": 425000
+  "price": 425000,
+  "tax_bill_assumed": true
  }
 }

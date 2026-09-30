@@ -147,6 +147,12 @@
     {
      "check": "terms",
      "contract": true,
+     "sev": "Med",
+     "topic": "aga_window_at_closing"
+    },
+    {
+     "check": "terms",
+     "contract": true,
      "request": null,
      "sev": "Med",
      "topic": null
@@ -236,7 +242,8 @@
     },
     "net": 449886,
     "net_adj": 448961,
-    "price": 489000
+    "price": 489000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -303,7 +310,8 @@
     },
     "net": 457390,
     "net_adj": 456465,
-    "price": 497000
+    "price": 497000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -370,7 +378,8 @@
     },
     "net": 446386,
     "net_adj": 445461,
-    "price": 489000
+    "price": 489000,
+    "tax_bill_assumed": true
    },
    "price": 489000,
    "received": "2026-09-21 19:05",
@@ -491,7 +500,8 @@
     },
     "net": 463956,
     "net_adj": 463031,
-    "price": 504000
+    "price": 504000,
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -509,12 +519,13 @@
   "cma_provided": false,
   "condo": false,
   "cost_notes": {
-   "count": 3
+   "count": 4
   },
   "deposit_norm": 0.03,
   "flood_disclosure": true,
   "frbar_market": true,
   "hoa_monthly": 225,
+  "insurance_reports": false,
   "list_price": 504000,
   "loan_limits": {
    "as_of": "2026-09-24",
@@ -547,6 +558,7 @@
   "repair_reserve_deal": false,
   "repair_reserve_pct": 0.007,
   "state": "FL",
+  "tax_bill_month": 11,
   "tax_in_arrears": true,
   "title_customary_payer": "seller",
   "title_payer_deal": false
@@ -700,6 +712,12 @@
     {
      "check": "terms",
      "contract": true,
+     "sev": "Med",
+     "topic": "aga_window_at_closing"
+    },
+    {
+     "check": "terms",
+     "contract": true,
      "request": null,
      "sev": "Med",
      "topic": null
@@ -789,7 +807,8 @@
     },
     "net": 449886,
     "net_adj": 448961,
-    "price": 489000
+    "price": 489000,
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -856,7 +875,8 @@
     },
     "net": 457390,
     "net_adj": 456465,
-    "price": 497000
+    "price": 497000,
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -923,7 +943,8 @@
     },
     "net": 446386,
     "net_adj": 445461,
-    "price": 489000
+    "price": 489000,
+    "tax_bill_assumed": true
    },
    "price": 489000,
    "received": "2026-09-21 19:05",
@@ -1044,7 +1065,8 @@
     },
     "net": 463956,
     "net_adj": 463031,
-    "price": 504000
+    "price": 504000,
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1133,6 +1155,7 @@
   },
   "net": 464123,
   "net_adj": 463373,
-  "price": 504000
+  "price": 504000,
+  "tax_bill_assumed": false
  }
 }

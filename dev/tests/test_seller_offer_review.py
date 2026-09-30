@@ -499,7 +499,9 @@ class EvalIteration4(unittest.TestCase):
         for word in ("commission", "documentary stamp", "owner's title", "title company fees", "tax proration at 1.8%"):
             self.assertIn(word, est)
         given = review.result(review.analyze(fixture("four-offers.json")), mode="multi")["estimated_costs"]
-        self.assertFalse([e for e in given if e.startswith(("commission", "tax proration"))])  # given in the file
+        self.assertFalse([e for e in given if e.startswith(("commission", "tax proration at", "tax proration on"))])  # given
+        # OFR-313: a November closing with no word on this year's bill still says it's assumed unpaid
+        self.assertIn("tax proration with this year's bill assumed unpaid", given)
 
     def test_assumed_inspection_period_is_confirmed_not_countered(self):  # OFR-273
         R = review.analyze(fixture("minimal-single.json"))
@@ -790,6 +792,45 @@ class EvalIteration6(unittest.TestCase):
         data["listing"].pop("hoa_monthly")
         self.assertEqual(estoppel(data), "HOA Documents (Estimate)")
         self.assertEqual(estoppel(fixture("expired-aga.json")), "HOA Estoppel Letter")  # an HOA, Florida's built-in fee
+
+
+class EvalIteration7(unittest.TestCase):
+    """Fixes from eval iteration 7 (OFR-311 to OFR-313), on the lapsed AGA-1 offer of eval 6."""
+
+    def test_counter_offers_reports_only_when_the_seller_has_them(self):  # OFR-311
+        def why(d):
+            rows = review.result(review.analyze(d))["summary"]["revive"]["rows"]
+            return next(r["why"] for r in rows if r["term"] == "Inspection Period")
+        data = fixture("expired-aga.json")
+        self.assertNotIn("4-point", why(data))
+        self.assertFalse(review.analyze(data)["listing"]["insurance_reports"])
+        data["listing"]["insurance_reports"] = True
+        self.assertIn("4-point", why(data))
+
+    def test_aga_window_ending_at_closing_is_flagged(self):  # OFR-312
+        o = review.analyze(fixture("expired-aga.json"))["offers"][0]
+        self.assertEqual((o["aga_window_full"], o["close_days"]), (36, 37))
+        self.assertIn("aga_window_at_closing", [f["topic"] for f in o["flags"]])
+        self.assertNotIn("aga_window_past_closing", [f["topic"] for f in o["flags"]])
+        data = fixture("expired-aga.json")
+        data["offers"][0]["closing_date"] = "2026-11-20"  # 55 days: the window ends well before closing
+        o = review.analyze(data)["offers"][0]
+        self.assertFalse({"aga_window_at_closing", "aga_window_past_closing"} & {f["topic"] for f in o["flags"]})
+
+    def test_november_proration_says_bill_assumed_unpaid_and_discount(self):  # OFR-313
+        data = fixture("expired-aga.json")
+        R = review.analyze(data)
+        o = R["offers"][0]
+        self.assertTrue(o["ns"]["tax_bill_assumed"])
+        self.assertTrue(next(lab for k, lab, _ in o["ns"]["lines"] if k == "tax").endswith("Bill Assumed Unpaid)"))
+        out = review.result(R)
+        self.assertTrue(any("early-payment discount" in c and "assumed unpaid" in c for c in out["estimated_costs"]))
+        self.assertTrue(any("early-payment discount" in n for n in out["cost_notes"]))
+        data["listing"]["current_tax_bill_paid"] = False  # known unpaid: no assumption in the label
+        self.assertFalse(review.analyze(data)["offers"][0]["ns"]["tax_bill_assumed"])
+        data = fixture("expired-aga.json")
+        data["offers"][0]["closing_date"] = "2026-10-30"  # before this year's bills go out
+        self.assertFalse(review.analyze(data)["offers"][0]["ns"]["tax_bill_assumed"])
 
 
 class RevisionSource(unittest.TestCase):

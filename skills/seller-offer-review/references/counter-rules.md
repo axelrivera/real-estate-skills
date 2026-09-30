@@ -8,7 +8,7 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 4. **Concessions above the norm** (Florida 1.5% of price) → counter at half.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
 6. **Deposit under the norm** (Florida 3%) → the norm on the counter price for financed offers, at least 5% for cash.
-7. **Inspection period over the norm** (Florida 7 days) → the norm, paired with the seller sharing the insurance inspection reports up front (Florida: 4-point and wind-mitigation). Only when the offer states the period: an assumed one (the form's blank default) gets no row; a Low flag asks the agent to confirm the days instead. The counter never changes a term nobody gave.
+7. **Inspection period over the norm** (Florida 7 days) → the norm. The row offers the seller's insurance inspection reports up front (Florida: 4-point and wind-mitigation) only when the listing file says the seller has them (`listing.insurance_reports`); never promise reports the buyer is ordering. Only when the offer states the period: an assumed one (the form's blank default) gets no row; a Low flag asks the agent to confirm the days instead. The counter never changes a term nobody gave.
 8. **Sale-of-home contingency** → cap at 21 days with a 72-hour kick-out.
 9. **Pre-qual or no approval** → full pre-approval within 3 days. **Counter price above the pre-approval letter's cap** (`approval_max_price`) → an updated letter at the counter price within 3 days.
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.

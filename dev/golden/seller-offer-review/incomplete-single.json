@@ -216,7 +216,8 @@
     },
     "net": 189131,
     "net_adj": 188023,
-    "price": 345000
+    "price": 345000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -283,7 +284,8 @@
     },
     "net": 194497,
     "net_adj": 193389,
-    "price": 347000
+    "price": 347000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -350,7 +352,8 @@
     },
     "net": 186631,
     "net_adj": 185523,
-    "price": 345000
+    "price": 345000,
+    "tax_bill_assumed": false
    },
    "price": 345000,
    "repair_reserve": 2500,
@@ -465,7 +468,8 @@
     },
     "net": 199863,
     "net_adj": 198755,
-    "price": 349000
+    "price": 349000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -485,7 +489,7 @@
   "cma_provided": true,
   "condo": false,
   "cost_notes": {
-   "count": 3
+   "count": 4
   },
   "county": "Seminole",
   "deposit_norm": 0.03,
@@ -493,6 +497,7 @@
   "flood_zone": "X",
   "frbar_market": true,
   "hoa_monthly": 45,
+  "insurance_reports": false,
   "list_price": 349000,
   "loan_limits": {
    "as_of": "2026-09-24",
@@ -527,6 +532,7 @@
   "roof_year": 2019,
   "sqft": 1410,
   "state": "FL",
+  "tax_bill_month": 11,
   "tax_in_arrears": true,
   "title_customary_payer": "seller",
   "title_payer_deal": false,
@@ -750,7 +756,8 @@
     },
     "net": 189131,
     "net_adj": 188023,
-    "price": 345000
+    "price": 345000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -817,7 +824,8 @@
     },
     "net": 194497,
     "net_adj": 193389,
-    "price": 347000
+    "price": 347000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -884,7 +892,8 @@
     },
     "net": 186631,
     "net_adj": 185523,
-    "price": 345000
+    "price": 345000,
+    "tax_bill_assumed": false
    },
    "price": 345000,
    "repair_reserve": 2500,
@@ -999,7 +1008,8 @@
     },
     "net": 199863,
     "net_adj": 198755,
-    "price": 349000
+    "price": 349000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1088,6 +1098,7 @@
   },
   "net": 199917,
   "net_adj": 198967,
-  "price": 349000
+  "price": 349000,
+  "tax_bill_assumed": false
  }
 }

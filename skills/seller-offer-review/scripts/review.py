@@ -248,9 +248,15 @@ def estimated_costs(R, offers):
         out.append(f"title company fees {money(amounts[0])}" + (f" to {money(amounts[-1])}" if len(amounts) > 1 else "")
                    + f" ({src('closing_costs.seller_title_fees')})")
     tax = next((a for a in R["missing"] if a["field"] == "annual_tax" and isinstance(a["value"], (int, float))), None)
+    discount = costs.get("property_tax.early_payment_discount")
+    unpaid = any(o["ns"].get("tax_bill_assumed") for o in offers)  # OFR-313: local-costs.md, the reply says so
+    extra = ((f", less the {discount * 100:g}% early-payment discount" if discount else "")
+             + (", this year's bill assumed unpaid" if unpaid else ""))
     if tax and "tax" in lines:  # OFR-303: worded as the math is ("of list price", or the listing's own rate)
-        out.append(f"tax proration at {L['tax_estimate']}" if L.get("tax_estimate") else
-                   f"tax proration on an estimated {money(tax['value'])} bill")
+        out.append((f"tax proration at {L['tax_estimate']}" if L.get("tax_estimate") else
+                    f"tax proration on an estimated {money(tax['value'])} bill") + extra)
+    elif unpaid and "tax" in lines:
+        out.append("tax proration with this year's bill assumed unpaid")
     if "estoppel" in lines:  # OFR-309: an HOA fee is charged only with an HOA or when it's unknown
         name = words(lines["estoppel"].split(" (")[0])
         if L["hoa_monthly"] is None:

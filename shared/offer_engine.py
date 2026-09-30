@@ -258,6 +258,7 @@ def apply_cma(data, h):
 
 # --- listing / seller ----------------------------------------------------------
 
+TAX_BILL_MONTH = 11  # when a market doesn't say (`property_tax.bill_month`): a closing from November assumes the bill unpaid
 NATIONAL_NORMS = {"deposit_pct": 0.01, "concessions_pct": 0.03, "inspection_days": 10, "loan_approval_days": 30}
 
 
@@ -312,6 +313,7 @@ def prepare_listing(data, A, costs):
     if paid is None and L["annual_tax"]:
         A.add("listing", "tax_paid", "arrears", "How property tax is paid here wasn't given: assumed in arrears (seller credits the buyer from Jan 1)", "low")
     L["bill_paid"] = L.get("current_tax_bill_paid")  # this year's bill already paid by the seller (Florida: from November)
+    L["tax_bill_month"] = costs.get("property_tax.bill_month") or TAX_BILL_MONTH  # this year's bills go out (Florida: Nov 1)
     L["property_type"] = L.get("property_type")
     L["condo"] = finance.property_type(L["property_type"]) == "condo"  # CMA-5: condo rider, project approval, rescission
     L["condo_rules"] = costs.get("condo") or {}
@@ -328,6 +330,8 @@ def prepare_listing(data, A, costs):
     L["loan_limits"] = profiles.loan_limits()
     L["frbar_market"] = cf.frbar_market(costs.get("contract.forms"))
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
+    # OFR-311: only a seller who has these reports can share them; never offered when the listing file doesn't say so
+    L["insurance_reports"] = L.get("insurance_reports") is True
     # OFR-15: one set of benchmarks for the review and the counter, from the market; national planning norms otherwise
     L["norms"] = {**NATIONAL_NORMS, **{k: v for k, v in (costs.get("offer_norms") or {}).items() if v is not None}}
     if costs.get("offer_norms.deposit_pct") is None and costs.get("contract.typical_deposit_pct") is not None:
@@ -403,6 +407,10 @@ def cost_notes(costs, L):
     if fees:
         notes.append(f"Title company fees {money(sum(fees.values()))} ({costs.described('closing_costs.seller_title_fees')}; "
                      "the title company's quote wins)")
+    discount = costs.get("property_tax.early_payment_discount")
+    if discount and L.get("annual_tax") and L.get("tax_in_arrears"):  # OFR-313: the proration's discount, said out loud
+        notes.append(f"Property tax prorated from Jan 1 to the day before closing, allowing the {discount * 100:g}% "
+                     f"early-payment discount ({costs.described('property_tax.early_payment_discount')})")
     return notes
 
 
@@ -883,6 +891,10 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     }
     tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
     tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
+    # OFR-313 (local-costs.md): after this year's bills go out, an unpaid bill is an assumption, and the line says so
+    tax_bill_assumed = tax > 0 and L["bill_paid"] is None and close.month >= L["tax_bill_month"]
+    if tax_bill_assumed and tax_label.endswith(")"):
+        tax_label = tax_label[:-1] + ", Bill Assumed Unpaid)"
     lines = [("price", "Offer Price", price), ("conc", "Seller-Paid Closing Costs / Concessions", -conc),
              ("repair", repair_label or "Post-Inspection Repair Credit (Est.)", -repair)]
     for key in ("listing", "bb", "transfer", "surtax", "title", "settle", "estoppel"):
@@ -896,7 +908,7 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     months = max(0, (close - L["analysis_date"]).days) / 30
     holding = -round(S["holding_monthly"] * months)
     return {"lines": lines, "net": net, "holding": holding, "net_adj": net + holding, "close": close, "price": price,
-            "missing": base["missing"], "assumed": base["assumed"]}
+            "missing": base["missing"], "assumed": base["assumed"], "tax_bill_assumed": tax_bill_assumed}
 
 
 def appraisal_line(L):
@@ -1064,6 +1076,8 @@ def score_offer(o, L, S):
 # legally valid is for an attorney; the skill only says it can't review it as written.
 
 CONTRACT_SEV = ("Blocking", "High", "Med", "Low")
+# OFR-312: an AGA-1 window ending this close to closing (a weekend or holiday roll can land it on closing day) is flagged
+AGA_NEAR_CLOSING_DAYS = 3
 
 
 def _has_rider(riders, *codes):
@@ -1216,6 +1230,14 @@ def contract_checks(o, L):
                 "Fill the valuation days so the periods end before closing (and before loan approval on a financed offer).",
                 "terms", "Can the Appraisal Gap Addendum's valuation period be shortened so it ends before closing?",
                 "aga_window_past_closing")
+        elif full and full >= o["close_days"] - AGA_NEAR_CLOSING_DAYS:  # OFR-312: ends on, or a weekend roll from, closing
+            fit = (f" A {cf.aga_valuation_days(o['loan_approval_days'])}-day valuation period ends them with loan approval "
+                   f"(day {o['loan_approval_days']})." if o["financed"] and o["loan_approval_days"] < full else "")
+            add("Med", f"AGA-1's valuation and renegotiation periods ({full} days) end at the {o['close_days']}-day closing: "
+                       "the buyer can cancel on a low valuation until about closing day.",
+                "Fill the valuation days so the periods end well before closing." + fit, "terms",
+                "Can the Appraisal Gap Addendum's valuation period be shortened so it ends well before closing?",
+                "aga_window_at_closing")
     if L["condo"] and o["financing"] in ("fha", "va"):
         fin = FIN_LABEL[o["financing"]]
         add("High", f"{fin} loan on a condo: the project must be {fin}-approved.",
@@ -1534,8 +1556,8 @@ def propose_counter(o, L, S):
         t["inspection_days"] = N["inspection_days"]
         rows.append(("Inspection Period", f"{o['inspection_days']} days" + (" (assumed)" if o.get("inspection_assumed") else ""),
                      f"{N['inspection_days']} days",
-                     (f"Shorter walk-away window; seller shares the {L['reports']}" if o["inspection_walkaway"] else
-                      f"Repair notices sooner; seller shares the {L['reports']}")))
+                     ("Shorter walk-away window" if o["inspection_walkaway"] else "Repair notices sooner")
+                     + (f"; seller shares the {L['reports']}" if L["insurance_reports"] else "")))
     if o["financed"] and last.get("loan_approval_days") and o["loan_approval_days"] > last["loan_approval_days"]:
         t["loan_approval_days"] = last["loan_approval_days"]  # OFR-108: the counter's net and score use it too
         rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", f"{last['loan_approval_days']} days", RESTATE))
@@ -1769,7 +1791,7 @@ def analyze(data, market=None, cma=None):
             L["cost_notes"].append(f"{o['label']}: owner's title policy paid by the {o['title_payer']}, who chooses the closing "
                                    "agent under the contract")
     if L["bill_paid"] is None and L["annual_tax"] and L["tax_in_arrears"] \
-            and any(o["close"].month >= 11 for o in offers if o["status"] in ACTIVE):
+            and any(o["close"].month >= L["tax_bill_month"] for o in offers if o["status"] in ACTIVE):
         A.add("listing", "current_tax_bill_paid", False,
               "Closing in November or December: whether the seller has paid this year's tax bill wasn't given. Assumed not "
               "paid (the seller credits the buyer from Jan 1); if it's paid, the buyer credits the seller instead", "med")

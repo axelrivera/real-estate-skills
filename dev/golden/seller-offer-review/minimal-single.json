@@ -141,7 +141,8 @@
     },
     "net": 351272,
     "net_adj": 350689,
-    "price": 382000
+    "price": 382000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -208,7 +209,8 @@
     },
     "net": 355024,
     "net_adj": 354441,
-    "price": 386000
+    "price": 386000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -275,7 +277,8 @@
     },
     "net": 348772,
     "net_adj": 348189,
-    "price": 382000
+    "price": 382000,
+    "tax_bill_assumed": false
    },
    "price": 382000,
    "rank_value": 333796.0,
@@ -388,7 +391,8 @@
     },
     "net": 357838,
     "net_adj": 357255,
-    "price": 389000
+    "price": 389000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -494,12 +498,13 @@
   "cma_provided": false,
   "condo": false,
   "cost_notes": {
-   "count": 3
+   "count": 4
   },
   "deposit_norm": 0.03,
   "flood_disclosure": null,
   "frbar_market": true,
   "hoa_monthly": null,
+  "insurance_reports": false,
   "list_price": 389000,
   "loan_limits": {
    "as_of": "2026-09-24",
@@ -532,6 +537,7 @@
   "repair_reserve_deal": false,
   "repair_reserve_pct": 0.007,
   "state": "FL",
+  "tax_bill_month": 11,
   "tax_in_arrears": true,
   "title_customary_payer": "seller",
   "title_payer_deal": false
@@ -767,7 +773,8 @@
     },
     "net": 351272,
     "net_adj": 350689,
-    "price": 382000
+    "price": 382000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -834,7 +841,8 @@
     },
     "net": 355024,
     "net_adj": 354441,
-    "price": 386000
+    "price": 386000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -901,7 +909,8 @@
     },
     "net": 348772,
     "net_adj": 348189,
-    "price": 382000
+    "price": 382000,
+    "tax_bill_assumed": false
    },
    "price": 382000,
    "rank_value": 333796.0,
@@ -1014,7 +1023,8 @@
     },
     "net": 357838,
     "net_adj": 357255,
-    "price": 389000
+    "price": 389000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1164,7 +1174,8 @@
     },
     "net": 351272,
     "net_adj": 350689,
-    "price": 382000
+    "price": 382000,
+    "tax_bill_assumed": false
    },
    "ns_counter": {
     "assumed": [
@@ -1231,7 +1242,8 @@
     },
     "net": 355024,
     "net_adj": 354441,
-    "price": 386000
+    "price": 386000,
+    "tax_bill_assumed": false
    },
    "ns_down": {
     "assumed": [
@@ -1298,7 +1310,8 @@
     },
     "net": 348772,
     "net_adj": 348189,
-    "price": 382000
+    "price": 382000,
+    "tax_bill_assumed": false
    },
    "price": 382000,
    "rank_value": 333796.0,
@@ -1411,7 +1424,8 @@
     },
     "net": 357838,
     "net_adj": 357255,
-    "price": 389000
+    "price": 389000,
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1497,6 +1511,7 @@
   },
   "net": 357838,
   "net_adj": 357255,
-  "price": 389000
+  "price": 389000,
+  "tax_bill_assumed": false
  }
 }
