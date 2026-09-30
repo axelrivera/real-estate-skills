@@ -28,6 +28,13 @@ CONTRACT_TO_CLOSE_MONTHS = 1  # a typical financed contract-to-close period, add
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money = finance.money
+ADJUSTED_STEP = 100  # CMA-289: adjusted values show to $100 (a comp's odd seller credit gives $433,729); math stays exact
+NEAR_RECOMMENDED = 0.01  # CMA-288: a higher option within 1% of the recommended price isn't a distinct strategy
+
+
+def adjusted_money(v):
+    """CMA-289: an adjusted comp value (or the median, span or placeholder built from them) for display: $433,700."""
+    return money(v, ADJUSTED_STEP)
 
 
 class ReportError(ValueError):
@@ -69,6 +76,9 @@ def check_reprice(R, strategies):
     if not isinstance(rp, dict) or not all(isinstance(rp.get(k), (int, float)) for k in ("current_price", "days_on_market")):
         raise ReportError("reprice needs current_price and days_on_market as numbers (the price that hasn't sold and how "
                           "long it has been listed).")
+    if rp.get("original_price") is not None and not isinstance(rp["original_price"], (int, float)):
+        raise ReportError("reprice.original_price should be a number: the price the listing started at (the export's "
+                          "Original List Price).")
     stay = next((i for i, x in enumerate(strategies) if x["list_price"] == rp["current_price"]), None)
     if stay is None:
         raise ReportError(f"A reprice keeps staying at the current {money(rp['current_price'])} as an option: add a "
@@ -104,7 +114,7 @@ def check_relist(R, strategies, homes, stay):
             return None
         h = min(failed, key=lambda h: h["current_price"])
         rl, source = {"failed_price": h["current_price"], "status": h["status"].lower(),
-                      "days_on_market": h.get("days_on_market")}, "export"
+                      "days_on_market": h.get("days_on_market"), "original_price": h.get("original_list_price")}, "export"
     up = [x for x in strategies if x["list_price"] > rl["failed_price"]]
     if up and not str(rl.get("reason_above") or "").strip():
         raise ReportError(
@@ -113,8 +123,29 @@ def check_relist(R, strategies, homes, stay):
             "No option lists above a price the market already turned down: cap the top-of-range option at "
             f"{money(rl['failed_price'])} or drop it (method.md, A Relist). If the agent gave a reason to go higher, put "
             "it in relist.reason_above.")
+    original = rl.get("original_price") if isinstance(rl.get("original_price"), (int, float)) else own_original(
+        R, homes, FAILED, rl["failed_price"])  # CMA-287: the listing's first price, for its price history
     return {"failed_price": rl["failed_price"], "status": rl.get("status"), "days_on_market": rl.get("days_on_market"),
-            "source": source}
+            "original_price": original if original and original > rl["failed_price"] else None, "source": source}
+
+
+def own_original(R, homes, statuses, price):
+    """CMA-287: the Original List Price of the home's own export row with one of `statuses` at `price`, or None."""
+    address = R["subject"].get("mls_address", R["subject"]["address"])
+    return next((h["original_list_price"] for h in homes if h["status"] in statuses and h.get("current_price") == price
+                 and h.get("original_list_price") and mls.same_address(h["address"], address)), None)
+
+
+def price_history(L, reprice=None, relist=None):
+    """CMA-287: the listing's price history in one sentence (first price, the cut, the price now or when it ended, and
+    days on market), for the report's Bottom Line and the reply."""
+    if reprice:
+        cut = reprice.get("original_price")
+        return L("history_reprice_cut" if cut else "history_reprice", original=money(cut or 0),
+                 current=money(reprice["current_price"]), days=f'{reprice["days_on_market"]:g}')
+    after = L("history_after_days", days=f'{relist["days_on_market"]:g}') if relist.get("days_on_market") is not None else ""
+    return L("history_relist_cut" if relist.get("original_price") else "history_relist",
+             original=money(relist.get("original_price") or 0), failed=money(relist["failed_price"]), after=after)
 
 
 def stay_expected(R, homes, rp, median_adjusted, split_date):
@@ -370,15 +401,16 @@ def payments(R, market):
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
-def placeholder_values(R, median_display, recommended_net, spread, spread_about, pay, trend, L, relist=None):
+def placeholder_values(R, median_display, recommended_net, spread, spread_about, pay, trend, L, relist=None, reprice=None):
     """CMA-265: every {name} the report and deck wording may use, filled in every field (not just page 1). The
     chart's two ({trend_at_subject}, {r2_share}) only with an export. CMA-278: the rounded spread, the adjusted span,
-    a reprice's {current_price} and a relist's {failed_price}, each only when there is one."""
+    a reprice's {current_price} and a relist's {failed_price}, each only when there is one. CMA-287: {original_price},
+    the price a reprice's or relist's listing started at, when it was cut since. CMA-289: adjusted values to $100."""
     rec, cards = R["recommendation"], R["comps"]["cards"]
     values = {"median_adjusted": median_display, "list_price": money(rec["list_price"]), "low": money(rec["low"]),
               "high": money(rec["high"]), "net_spread": spread, "net_spread_about": spread_about,
-              "recommended_net": recommended_net, "adjusted_min": money(min(c["adjusted"] for c in cards)),
-              "adjusted_max": money(max(c["adjusted"] for c in cards))}
+              "recommended_net": recommended_net, "adjusted_min": adjusted_money(min(c["adjusted"] for c in cards)),
+              "adjusted_max": adjusted_money(max(c["adjusted"] for c in cards))}
     if pay:
         values["per_10k"] = pay["per_10k_display"]
     if trend:
@@ -387,6 +419,9 @@ def placeholder_values(R, median_display, recommended_net, spread, spread_about,
         values["current_price"] = money(R["reprice"]["current_price"])
     if relist:
         values["failed_price"] = money(relist["failed_price"])
+    original = (reprice or {}).get("original_price") or (relist or {}).get("original_price")
+    if original:
+        values["original_price"] = money(original)
     return values
 
 
@@ -501,7 +536,8 @@ def compute(R, market, homes):
     if strategies[ri]["list_price"] != rec["list_price"]:
         warn("list_mismatch", "The recommended strategy's list price doesn't match recommendation.list_price.")
     # the last option is the competing-offer price: of three strategies, or of a reprice's Stay plus two or three cuts
-    competing = len(strategies) == 3 if stay is None else len(strategies) >= 3
+    # CMA-288: or of two, once a relist drops the top option: the last one when it's below the recommended one
+    competing = len(strategies) - 1 != ri and strategies[-1]["list_price"] < strategies[ri]["list_price"]
     for i, x in enumerate(strategies[:-1] if competing else strategies):  # CMA-20
         if x["expected_sale"] > x["list_price"]:  # only the competing-offer option (the last of three) may sell above list
             raise ReportError(f"pricing.strategies[{i}] expects to sell at {money(x['expected_sale'])}, above its "
@@ -685,11 +721,33 @@ def compute(R, market, homes):
             warn("top_nets_more", f"The {x['list_price_display']} option nets {about(nets[i] - nets[ri])} more than the "
                  "recommended one after holding costs. A top-of-range price takes longer and usually sells near the middle "
                  "of the range anyway (method.md): lower its expected sale or lengthen its time, or explain in pricing.note.")
+        elif x["list_price"] < strat_out[ri]["list_price"] and not p.get("competing_offer_upside"):
+            # CMA-290: the lower, competing-offer option coming out ahead makes it the better choice on paper, unless
+            # pricing.note says that net rests on competing offers (`competing_offer_upside`)
+            warn("bottom_nets_more", f"The {x['list_price_display']} option nets {about(nets[i] - nets[ri])} more than the "
+                 "recommended one after holding costs, though it only works if competing offers show up (method.md, The "
+                 "Three Pricing Strategies). Check its expected sale and seller credit against the recent sale-to-list and "
+                 "seller-paid data. If it still nets more, recommend it, or say in pricing.note that its net depends on "
+                 "competing offers and set pricing.competing_offer_upside to true.")
+    # CMA-288: a higher option within about 1% of the recommended price (a relist cap just above it) isn't a distinct
+    # strategy: drop it, leaving the recommended and competing-offer options
+    for i, x in enumerate(strat_out):
+        if i != ri and i != stay and 0 < x["list_price"] - strat_out[ri]["list_price"] <= NEAR_RECOMMENDED * strat_out[ri]["list_price"]:
+            warn("top_near_recommended", f"The {x['list_price_display']} option is within 1% of the recommended "
+                 f"{strat_out[ri]['list_price_display']}, so it isn't a distinct strategy"
+                 + (f" (the relist cap at {money(relist['failed_price'])} leaves no room above it)" if relist else "")
+                 + ". Drop it and set pricing.recommended_index to 0, leaving the recommended and competing-offer options "
+                 "(method.md, A Relist).")
     reprice_out = None
     if stay is not None:
         rp = R["reprice"]
+        # CMA-287: the price the listing started at (report.json, else the export's own row), shown when it was cut
+        original = rp.get("original_price") or own_original(R, homes, ("ACTIVE", "PENDING"), rp["current_price"])
+        original = original if original and original > rp["current_price"] else None
         reprice_out = {"current_price": rp["current_price"], "current_price_display": money(rp["current_price"]),
-                       "days_on_market": rp["days_on_market"], "stay_index": stay}
+                       "days_on_market": rp["days_on_market"], "stay_index": stay, "original_price": original,
+                       "original_price_display": money(original) if original else None}
+        reprice_out["price_history"] = price_history(L, reprice=reprice_out)
         # CMA-280: Stay's expected sale by one rule (method.md), with the Stay option's own seller credit added back
         value, ratio, n = stay_expected(R, homes, rp, median_adjusted, (window or {}).get("split_date"))
         if value is not None:
@@ -700,14 +758,16 @@ def compute(R, market, homes):
             if x["expected_sale"] > gross:
                 warn("stay_expected_high", f"Stay at Current Price expects {money(x['expected_sale'])}, above "
                      f"{money(gross)} from the rule (the current price times the {ratio:.1%} recent sale-to-original-list "
-                     "ratio of sales that sat as long, or the median adjusted value if lower, plus its seller credit). "
-                     "Use the rule's figure, or say in pricing.note why this listing would do better.")
+                     "ratio of sales that sat as long, or the median adjusted value if lower, with Stay's seller credit "
+                     f"already added back). Use {money(gross)} as Stay's expected_sale without adding the credit "
+                     "again, or say in pricing.note why this listing would do better.")
     # CMA-265: an even number of comps has a midpoint median ($468,437.50): shown to the nearest $100
-    median_display = money(median_adjusted, 1 if len(R["comps"]["cards"]) % 2 else 100)
+    # CMA-289: and like every adjusted value, to $100 with an odd number too ($433,729 reads as falsely precise)
+    median_display = adjusted_money(median_adjusted)
     trend = {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
              "r2_key": mls.r2_key(fit["r2"])} if fit else None
     values = placeholder_values(R, median_display, strat_out[ri]["net_display"], money(max(nets) - min(nets)),
-                                about(max(nets) - min(nets)), pay, trend, L, relist)
+                                about(max(nets) - min(nets)), pay, trend, L, relist, reprice_out)
     warn("unfilled_placeholder", *placeholder_warnings(R, values))
     warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
     data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
@@ -734,7 +794,9 @@ def compute(R, market, homes):
         "strategies": strat_out, "recommended_index": ri,
         "reprice": reprice_out,
         # CMA-277: the home's earlier listing that ended unsold: no option lists above it without a reason
-        "relist": {**relist, "failed_price_display": money(relist["failed_price"])} if relist else None,
+        "relist": {**relist, "failed_price_display": money(relist["failed_price"]),
+                   "original_price_display": money(relist["original_price"]) if relist["original_price"] else None,
+                   "price_history": price_history(L, relist=relist)} if relist else None,  # CMA-287
         "first_steps_heading": L("sum_first"),  # "Before We List", or "Before We Reprice"
         "recommended_net_display": strat_out[ri]["net_display"],
         "net_spread": max(nets) - min(nets), "net_spread_display": money(max(nets) - min(nets)),
@@ -750,7 +812,7 @@ def compute(R, market, homes):
         "recommendation_paragraph": cma.fill(rec.get("paragraph", ""), values),
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,
-        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": adjusted_money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
         "warnings": warnings,
         "warning_keys": warning_keys,

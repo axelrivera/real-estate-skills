@@ -22,6 +22,7 @@ from _shared import cma, design, finance, render  # noqa: E402
 
 ASSETS = compute.ASSETS
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
+adj = compute.adjusted_money  # CMA-289: adjusted values to $100
 esc = html.escape
 
 
@@ -136,21 +137,24 @@ def payments_section(R, C, L):
 def body(R, C, homes, agent, L):
     """The report after page 1, as a list of top-level blocks (grouped for pagination afterwards)."""
     s, rec = R["subject"], R["recommendation"]
+    # CMA-287: a reprice's or relist's price history (first price, the cut, days on market), named with the verdict
+    history = (C.get("reprice") or C.get("relist") or {}).get("price_history")
     b = [f'<h2>{L("h_home")}</h2>',
          '<div class="facts">' + "".join(f"<div><span>{a}</span><b>{v}</b></div>" for a, v in s["facts"]) + "</div>",
          f'<p>{s["summary"]}</p>',
          f'<h2>{L("h_bottom")}</h2>',
          f'<div class="verdict"><div class="range">{L("verdict_price", price=money(rec["list_price"]))}</div>'
-         f'<div class="mid">{L("verdict_caption", low=money(rec["low"]), high=money(rec["high"]))}</div><p>{rec["paragraph"]}</p></div>']
+         f'<div class="mid">{L("verdict_caption", low=money(rec["low"]), high=money(rec["high"]))}</div>'
+         + (f'<p class="note">{esc(history)}</p>' if history else "") + f'<p>{rec["paragraph"]}</p></div>']
     if R.get("means"):
         b += [f'<h3>{L("h_means")}</h3>', ul(R["means"])]
 
     c = R["comps"]
     b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{c["method_note"]}</p>',
           '<div class="comps2">' + "".join(
-              f'<div class="comp"><div class="comp-h"><b>{esc(cd["address"])}</b><span class="adj">{L("adjusted")} {money(cd["adjusted"])}</span></div>'
+              f'<div class="comp"><div class="comp-h"><b>{esc(cd["address"])}</b><span class="adj">{L("adjusted")} {adj(cd["adjusted"])}</span></div>'
               f'<div class="meta">{cd["meta"]}</div>{ul(cd["bullets"], "")}</div>' for cd in c["cards"]) + "</div>"]
-    rows = [[r[0], money(r[1]), money(r[2]), money(r[3])] for r in c["summary_rows"]]
+    rows = [[r[0], money(r[1]), money(r[2]), adj(r[3])] for r in c["summary_rows"]]
     rows.append([c.get("subject_row_label", L("subject_row")), money(rec["list_price"]), "—", f'{L("range_word")} {k(rec["low"])}–{k(rec["high"])}'])
     b += [table([L("th_sale"), L("th_sold_for"), L("th_seller_paid"), L("th_adjusted")], rows, num_cols=(1, 2, 3),
                 row_classes={len(rows) - 1: "subj"}), f'<p>{c["summary_paragraph"]}</p>']

@@ -366,6 +366,7 @@
  "pricing": {
   "intro": "Three realistic options. Expected sale prices and timelines are our estimates from recent sales, not guarantees. All three are likely to net within a few thousand dollars of each other, so the real difference is time and risk.",
   "recommended_index": 1,
+  "competing_offer_upside": true,
   "strategies": [
    {
     "label": "List at $594,900",

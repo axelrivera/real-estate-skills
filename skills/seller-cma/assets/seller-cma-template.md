@@ -4,7 +4,7 @@
 
 **{{"New List Price" when compute.py's reprice is set, else "Recommended List Price"}}: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{recommendation.expected_sale}}
 
-{{"Listed at {reprice.current_price_display} for {reprice.days_on_market} days without a sale." when compute.py's reprice is set}}{{"The last listing ended unsold at {relist.failed_price_display}." when compute.py's relist is set}} {{recommendation.paragraph, shortened to 2 sentences}}
+{{compute.py's reprice.price_history when reprice is set, or relist.price_history when relist is set}} {{recommendation.paragraph, shortened to 2 sentences}}
 
 **Why This Price:**
 - {{summary_page.why[0]}}

@@ -8,7 +8,8 @@
 Every row with the seller's address (old listings, prior sales, a current listing) is dropped
 before anything is counted, and its size, pool and subdivision come from the seller, not the export.
 When one of those rows is active or pending, `listed_now` is true: confirm whose listing it is first
-(`--own-listing` when the agent already said it's theirs: `listed_now_action` is then "reprice", else "ask"). Prints JSON: sold stats for the whole window and
+(`--own-listing` when the agent already said it's theirs: `listed_now_action` is then "reprice", else "ask", and `reprice` holds the price, days on market and original
+price to copy into report.json). Prints JSON: sold stats for the whole window and
 for an earlier and a recent period, inventory and months of supply, the subdivision's median $/sq ft,
 ranked comp candidates with remarks, and the competition. Numbers only: picking and adjusting comps
 is a judgment made from this output.
@@ -91,12 +92,18 @@ def main(argv=None):
                 f"The home is listed right now ({h['status'].lower()}"
                 + (f" at {money(h['current_price'])}" if h.get("current_price") else "")
                 + (f", {h['days_on_market']:g} days on market" if h.get("days_on_market") is not None else "")
-                + ("). The agent says it's their own listing: confirm, then reprice (set reprice in report.json with "
-                   "this price and days on market)." if a.own_listing else
+                + (f", first listed at {money(h['original_list_price'])}"
+                   if (h.get("original_list_price") or 0) > (h.get("current_price") or 0) else "")
+                + ("). The agent says it's their own listing: confirm, then reprice (copy this output's reprice to "
+                   "report.json: the price, days on market and original price)." if a.own_listing else
                    "). Confirm whose listing it is before pricing: stop and ask the agent, unless they already said "
                    "it's their own (then re-run with --own-listing). Only their own listing is priced, as a reprice; "
                    "never another brokerage's."))
             out["listed_now_action"] = "reprice" if a.own_listing else "ask"  # CMA-251
+            if a.own_listing and h.get("current_price"):
+                # CMA-287: copy to report.json's `reprice`; the original price shows the listing's price history (a cut)
+                out["reprice"] = {k: v for k, v in {"current_price": h["current_price"], "days_on_market": h.get("days_on_market"),
+                                                    "original_price": h.get("original_list_price")}.items() if v is not None}
         elif own:
             out["market_notes"].append(f"Left out {len(own)} row(s) for the seller's own address (see subject_rows): "
                                        "past sales or listings, not a current one. An expired, withdrawn or canceled "
@@ -110,7 +117,9 @@ def main(argv=None):
                                                 "days_on_market": h.get("days_on_market"),
                                                 "original_price": h.get("original_list_price")}.items() if v is not None}
             out["market_notes"].append(
-                f"The home's earlier listing ended unsold at {money(h['current_price'])} ({h['status'].lower()}): a relist. "
+                f"The home's earlier listing ended unsold at {money(h['current_price'])} ({h['status'].lower()}"
+                + (f", first listed at {money(h['original_list_price'])}"
+                   if (h.get("original_list_price") or 0) > h["current_price"] else "") + "): a relist. "
                 "No pricing option goes above that price unless the agent gives a reason (method.md, A Relist); set "
                 "relist in report.json from this output.")
         # CMA-260: a failed listing with no dates can't be placed in time: say so, and ask rather than guess

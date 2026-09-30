@@ -232,6 +232,11 @@
  "about_more": "{amount} more",
  "about_less": "{amount} less",
  "sum_stay": "Stay at {price}",
+ "history_reprice": "Listed at {current} for {days} days without a sale.",
+ "history_reprice_cut": "First listed at {original}, cut to {current}: {days} days on the market without a sale.",
+ "history_relist": "The earlier listing ended unsold at {failed}{after}.",
+ "history_relist_cut": "The earlier listing started at {original}, was cut to {failed} and ended unsold{after}.",
+ "history_after_days": " after {days} days",
  "pay_no_homestead": "Taxes assume no homestead exemption; a buyer who files one would pay less.",
  "pay_no_homestead_built_in": "Taxes assume no homestead exemption (none is built in for this state); a buyer who files one would pay less.",
  "deck_pay_sub_no_homestead": "Estimated monthly payment, {program} loan with {down}% down, taxes with no homestead exemption",
@@ -282,6 +287,11 @@
   "pay_no_homestead",
   "pay_no_homestead_built_in",
   "deck_pay_sub_no_homestead",
-  "deck_net_after_holding_sub"
+  "deck_net_after_holding_sub",
+  "history_reprice",
+  "history_reprice_cut",
+  "history_relist",
+  "history_relist_cut",
+  "history_after_days"
  ]
 }

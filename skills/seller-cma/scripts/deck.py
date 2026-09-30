@@ -291,7 +291,7 @@ def deck_data(R, C, homes, agent, L, footer):
         "net_rows": [[r["label"]] + r["display"] for r in net["rows"]],
         "net_note": net_note,
         "net_speaker": net_speaker,
-        "appendix_comps": [[r[0], money(r[1]), money(r[2]), money(r[3])] for r in R["comps"]["summary_rows"]],
+        "appendix_comps": [[r[0], money(r[1]), money(r[2]), money(r[3], 100)] for r in R["comps"]["summary_rows"]],  # CMA-289
         "subject_row": [R["comps"].get("subject_row_label", L("subject_row")), money(rec["list_price"]), "—",
                         f'{L("range_word")} {k(rec["low"])}–{k(rec["high"])}'],
         "table_head": [L("th_sale"), L("th_sold_for"), L("th_seller_paid"), L("th_adjusted")],

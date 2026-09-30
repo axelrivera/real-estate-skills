@@ -1286,6 +1286,104 @@ class FourthPass(unittest.TestCase):
         self.assertEqual(len(C["assumptions"]), len(C["assumption_keys"]))
 
 
+EVAL_ACTIVE = os.path.join(ROOT, "dev", "evals", "seller-cma", "files", "export-spring-oaks-active.csv")  # listed at $474,900
+
+
+class FifthPass(unittest.TestCase):
+    """Eval iteration 6 fixes (CMA-287 to CMA-292)."""
+
+    def test_reprice_price_history(self):
+        """CMA-287: stats.py prints the reprice with the original price; compute.py carries it (from report.json or the
+        export) into the price history, the {original_price} placeholder and the Bottom Line."""
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            stats_mod.main([EVAL_ACTIVE, "--address", "517 HICKORYWOOD AVE", "--sqft", "1849", "--mls", "Stellar",
+                            "--state", "FL", "--county", "Seminole", "--own-listing"])
+        r = json.loads(out.getvalue())
+        self.assertEqual(r["reprice"], {"current_price": 474900, "days_on_market": 36, "original_price": 484900})
+        R = SecondPass.reprice(None, current=474900)
+        R["export"] = EVAL_ACTIVE
+        R["reprice"]["days_on_market"] = 36  # no original_price: found in the export's own row
+        R["means"] = ["It started at {original_price}."]
+        C, homes = run(R)
+        self.assertEqual((C["reprice"]["original_price"], C["placeholders"]["original_price"]), (484900, "$484,900"))
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        self.assertIn("$484,900", C["reprice"]["price_history"])
+        self.assertIn("$474,900", C["reprice"]["price_history"])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(C["reprice"]["price_history"], doc)
+        R = SecondPass.reprice(None, current=474900)
+        R.pop("export")
+        R["reprice"]["original_price"] = 484900  # given, with no export
+        self.assertEqual(run(R)[0]["reprice"]["original_price"], 484900)
+        R["reprice"]["original_price"] = 474900  # no cut: no history of one
+        C, _ = run(R)
+        self.assertIsNone(C["reprice"]["original_price"])
+        self.assertNotIn("original_price", C["placeholders"])
+
+    def test_relist_price_history(self):
+        """CMA-287: a relist's original price comes from the export when report.json's relist leaves it out."""
+        R = report()
+        R["export"] = EVAL_EXPORT
+        R["relist"] = {"failed_price": 474900, "status": "expired", "days_on_market": 92}
+        R["pricing"]["strategies"][0]["list_price"] = 474900
+        C, _ = run(R)
+        self.assertEqual((C["relist"]["original_price"], C["placeholders"]["original_price"]), (484900, "$484,900"))
+        self.assertIn("92", C["relist"]["price_history"])
+
+    def test_top_option_near_the_recommendation(self):
+        """CMA-288: a relist cap that leaves the top option within 1% of the recommended price warns; two options don't."""
+        R = report()
+        R["relist"] = {"failed_price": 474900}
+        R["pricing"]["strategies"][0]["list_price"] = 472900
+        self.assertIn("top_near_recommended", run(R)[0]["warning_keys"])
+        R["pricing"]["strategies"][0]["list_price"] = 474900  # just over 1% above $469,900
+        self.assertNotIn("top_near_recommended", run(R)[0]["warning_keys"])
+        R["pricing"]["strategies"].pop(0)
+        R["pricing"]["recommended_index"] = 0
+        C, _ = run(R)
+        self.assertNotIn("top_near_recommended", C["warning_keys"])
+        self.assertEqual(len(C["strategies"]), 2)
+
+    def test_adjusted_values_round_to_100(self):
+        """CMA-289: adjusted values show to $100 in the placeholders, table and cards; the math stays exact."""
+        R = report()  # 621 Little Wekiva Rd has a $13,071 seller credit; a round size adjustment leaves $436,229
+        R["comps"]["cards"][4]["adjustments"][2]["amount"] = -1200
+        R["comps"]["summary_paragraph"] = "From {adjusted_min} to {adjusted_max}, median {median_adjusted}."
+        C, homes = run(R)
+        exact = [c["adjusted"] for c in R["comps"]["cards"]]
+        self.assertTrue(any(v % 100 for v in exact))
+        self.assertEqual(C["adjusted_min"], min(exact))
+        for v in [C["placeholders"][k] for k in ("adjusted_min", "adjusted_max", "median_adjusted")] + [
+                r["adjusted_display"] for r in C["comps_table"]]:
+            self.assertTrue(v.endswith("00"), v)
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        for v in exact:
+            if v % 100:
+                self.assertNotIn(compute.money(v), doc)
+                self.assertIn(compute.money(v, 100), doc)
+
+    def test_bottom_option_netting_more_warns(self):
+        """CMA-290: the competing-offer option netting more than the recommended one warns, unless pricing.note says
+        its net rests on competing offers (competing_offer_upside)."""
+        R = report()
+        self.assertNotIn("bottom_nets_more", run(R)[0]["warning_keys"])  # the fixture's note says so
+        R["pricing"].pop("competing_offer_upside")
+        self.assertIn("bottom_nets_more", run(R)[0]["warning_keys"])
+        R["pricing"]["strategies"][2].update(expected_sale=452000, seller_credit=10000)
+        self.assertNotIn("bottom_nets_more", run(R)[0]["warning_keys"])
+
+    def test_stay_rule_wording_and_rate_citation(self):
+        """CMA-290, CMA-291, CMA-292: method.md says the Stay figure already includes the credit and covers a cut inside
+        one search bracket; the rate is cited from Freddie Mac's PMMS page."""
+        with open(os.path.join(SKILL, "references", "method.md")) as f:
+            method = f.read()
+        self.assertIn("with the credit already in it", method)
+        self.assertNotIn("plus Stay's seller credit", method)
+        self.assertIn("A cut inside the same search bracket", method)
+        with open(os.path.join(SKILL, "SKILL.md")) as f:
+            self.assertIn("freddiemac.com/pmms", f.read())
+
+
 def cma_page_checks(pages):
     return seller_render.cma.page_checks(pages, "the needs list, the launch steps or the method")
 
