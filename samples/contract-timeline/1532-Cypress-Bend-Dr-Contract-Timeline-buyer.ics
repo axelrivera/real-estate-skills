@@ -25,7 +25,7 @@ END:VTIMEZONE
 BEGIN:VEVENT
 UID:deposit-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20260928
 DTEND;VALUE=DATE:20260929
 SUMMARY:Initial Escrow Deposit Due ★
@@ -41,7 +41,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:loan_app-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20260930
 DTEND;VALUE=DATE:20261001
 SUMMARY:Loan Application
@@ -53,7 +53,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:inspection-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261005
 DTEND;VALUE=DATE:20261006
 SUMMARY:Inspection Period Ends (Right to Cancel) ★
@@ -71,7 +71,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:insurance-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261005
 DTEND;VALUE=DATE:20261006
 SUMMARY:Insurance Contingency Ends ★
@@ -89,7 +89,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:title-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261015
 DTEND;VALUE=DATE:20261016
 SUMMARY:Title Evidence Delivered
@@ -98,21 +98,9 @@ DESCRIPTION:Who: Seller. Title commitment delivered to the buyer. If missed
  urce: Para. 9(c). Ends at 11:59 PM.
 END:VEVENT
 BEGIN:VEVENT
-UID:insurance_bound-2b6d687aca@contract-timeline
-SEQUENCE:0
-DTSTAMP:20260930T001057Z
-DTSTART;VALUE=DATE:20261023
-DTEND;VALUE=DATE:20261024
-SUMMARY:Homeowner's Insurance Bound (Lender Target)
-DESCRIPTION:Who: Buyer. Bind the policy and send the declarations page to t
- he lender. If missed: The lender may not be ready to fund on time. Rule: 
- 7 days before Closing. Source: Lender's usual target\, not a contract dat
- e. Ends at 11:59 PM.
-END:VEVENT
-BEGIN:VEVENT
 UID:loan_approval-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261026
 DTEND;VALUE=DATE:20261027
 SUMMARY:Loan Approval Period Ends ★
@@ -129,7 +117,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:survey-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261026
 DTEND;VALUE=DATE:20261027
 SUMMARY:Survey Deadline
@@ -138,26 +126,9 @@ DESCRIPTION:Who: Buyer. If the buyer wants a survey\, have it done by this
  re Closing. Source: Para. 9(d). Ends at 11:59 PM.
 END:VEVENT
 BEGIN:VEVENT
-UID:clear_to_close-2b6d687aca@contract-timeline
-SEQUENCE:0
-DTSTAMP:20260930T001057Z
-DTSTART;VALUE=DATE:20261027
-DTEND;VALUE=DATE:20261028
-SUMMARY:Clear to Close / Closing Disclosure ★
-DESCRIPTION:Who: Buyer. Buyer receives and signs the Closing Disclosure at 
- least 3 business days before closing. If missed: Closing must move. Rule:
-  3 days before Closing (TRID business days). Source: Lender (TRID 3-busin
- ess-day rule). Ends at 11:59 PM.
-BEGIN:VALARM
-ACTION:DISPLAY
-DESCRIPTION:Clear to Close / Closing Disclosure
-TRIGGER:-PT15H
-END:VALARM
-END:VEVENT
-BEGIN:VEVENT
 UID:seller_terminate-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261029
 DTEND;VALUE=DATE:20261030
 SUMMARY:Seller's Right to Terminate (No Loan Notice)
@@ -170,7 +141,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:walkthrough-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;VALUE=DATE:20261029
 DTEND;VALUE=DATE:20261030
 SUMMARY:Final Walk-Through
@@ -182,7 +153,7 @@ END:VEVENT
 BEGIN:VEVENT
 UID:closing-2b6d687aca@contract-timeline
 SEQUENCE:0
-DTSTAMP:20260930T001057Z
+DTSTAMP:20260930T053018Z
 DTSTART;TZID=America/New_York:20261030T100000
 DTEND;TZID=America/New_York:20261030T103000
 SUMMARY:Closing ★

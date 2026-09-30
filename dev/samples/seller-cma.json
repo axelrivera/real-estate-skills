@@ -419,26 +419,24 @@
  "prep": {
   "intro": "These steps cost little and remove the questions that slow Florida buyers down or cost sellers money at the negotiating table.",
   "items": [
-   "<strong>Document the roof.</strong> Have the permit and completion date ready to share. Roof age decides whether a buyer can insure the home, so a documented new roof is one of the most valuable facts in the listing.",
+   "<strong>Document the roof.</strong> Roof age decides whether a buyer can insure the home, so a permitted new roof is one of the listing's most valuable facts.",
    "<strong>Get a pre-listing inspection, 4-point, and wind-mitigation report.</strong> Buyers can get insurance quotes before they offer, and you learn about any issue before a buyer uses it to renegotiate.",
    "<strong>Gather the renovation permits.</strong> Kitchen, bath, electrical, and plumbing work. Unpermitted work can surface during the buyer's due diligence and delay or derail a sale.",
-   "<strong>Check the public record.</strong> Make sure the property appraiser's record matches the four bedrooms and two baths we will advertise.",
-   "<strong>Make it easy to show.</strong> Lockbox access through the standard showing system with short notice gets the most buyers through in the first weeks.",
+   "<strong>Make it easy to show.</strong> Lockbox access with short notice gets the most buyers through in the first weeks.",
    "<strong>Decide on a seller-credit budget now.</strong> Most recent sales included one. A credit toward a temporary rate buydown lowers a buyer's payment far more in the first years than the same amount off the price.",
-   "<strong>Agree on a review point.</strong> If there are steady showings but no offer after about three weeks, we revisit the price with fresh data rather than waiting."
+   "<strong>Agree on a review point.</strong> Steady showings but no offer after about three weeks means we revisit the price."
   ]
  },
  "needs": [
-  "The roof permit and replacement date, plus any existing 4-point or wind-mitigation report.",
+  "The roof and renovation permits, plus any existing 4-point or wind-mitigation report.",
   "The age of the AC, water heater, and pool equipment, and the dates of the kitchen, bath, and flooring work.",
   "The electrical panel brand, whether the home has aluminum branch wiring, and whether the plumbing has been updated. Both are common questions for homes built in the early 1970s.",
-  "Copies of any permits for the renovation work.",
   "Anything you know that affects the home's value or condition, such as past leaks, insurance claims, or repairs. Florida law requires sellers to disclose known material defects.",
   "Your estimated mortgage payoff, so we can turn the net estimates into cash at closing.",
   "When you would like to close, and whether the home will be occupied or vacant during showings."
  ],
  "method": [
-  "This analysis uses the property details and current tax bill you provided; a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 17, 2026, plus current active, pending, and expired listings); and the Freddie Mac weekly mortgage rate survey for September 17, 2026. Florida documentary stamp tax and owner's title insurance are calculated at the state's standard rates.",
+  "This analysis uses the property details and tax bill you provided, a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 17, 2026, plus current listings), and the Freddie Mac rate survey for September 17, 2026.",
   "This is a broker's opinion of value based on comparable sales. It is not an appraisal. Expected sale prices, timelines, costs, and net proceeds are estimates for planning, not guarantees; your closing agent will provide exact figures. Condition adjustments are based on listing descriptions of the comparable homes and on the updates you described, and will be refined once we see your records. Market conditions change, so this analysis should be refreshed if the home is not listed within a few weeks."
  ],
  "export": "dev/samples/mls-export.csv",
