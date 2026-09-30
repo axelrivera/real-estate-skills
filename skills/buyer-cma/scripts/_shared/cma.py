@@ -562,6 +562,9 @@ PAGINATE_JS = """(pageH) => {
   const wrap = document.querySelector('.wrap');
   const base = wrap.getBoundingClientRect().top;
   let shift = 0; const moved = [];
+  // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
+  // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
+  const SAFE = 16;
   for (const el of Array.from(wrap.children)) {
     const r = el.getBoundingClientRect();
     const mt = parseFloat(getComputedStyle(el).marginTop) || 0;
@@ -578,16 +581,16 @@ PAGINATE_JS = """(pageH) => {
         rows[k] = Math.max(rows[k] || 0, cr.height); });
       Object.keys(rows).map(Number).sort((a, b) => a - b).forEach(top => {
         const tt = top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
-        if (pp > 5 && pp + rows[top] > pageH) shift += pageH - pp;
+        if (pp > 5 && pp + rows[top] > pageH - SAFE) shift += pageH - pp;
       });
       continue;
     }
     let brk = false;
     if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH) brk = true;
-    else if (pos > 5 && keepOK && pos + h > pageH) {
+    else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
       // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
       // half the page empty; it moves only when less than 40% of the page is left or it would need to shrink more.
-      const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + 6;
+      const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + SAFE;
       const sr = svg ? svg.getBoundingClientRect() : null;
       if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
         svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
