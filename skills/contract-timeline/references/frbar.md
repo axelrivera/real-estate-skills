@@ -15,8 +15,8 @@ For the FR/BAR AS IS and Standard contracts. Set `"form_family": "frbar"` and `"
 | Field | Where to Look | Blank = Form Default |
 |---|---|---|
 | `effective_date` | Para. 3(b): when the last party signed or initialed **and delivered** the final offer or counteroffer | No default (ask) |
-| `deposit_days`, `deposit_amount_str` | Para. 2(a) | 3 days |
-| `additional_deposit_days`, `additional_deposit_amount_str` | Para. 2(b). A blank amount means no additional deposit: leave both out | 10 days, only when an amount is written |
+| `deposit_days`; `deposit_amount` (number) or `deposit_amount_str` (as written), either one | Para. 2(a) | 3 days |
+| `additional_deposit_days`; `additional_deposit_amount` (number) or `additional_deposit_amount_str` (as written), either one | Para. 2(b). The row appears when either amount or the days are given; a blank amount means no additional deposit: leave them all out | 10 days, only when an amount is written |
 | `financing`, `loan_application_days`, `loan_approval_days` | Para. 8 | 5 days, 30 days |
 | `closing_date`, `closing_time` | Para. 4 (extensions in Para. 5). The form has no closing time; use the one the parties or title company set | No default; time 10:00 AM (agent note) |
 | `possession_*` | Para. 6 | At closing |
@@ -74,7 +74,7 @@ Two phases. **Phase 1**, from the Effective Date: the initial deposit, the selle
 
 Addenda: an Extension Addendum (EA-4) or any amendment goes in `amendments` (`changes` for fields, `date_overrides` for specific dates). An extension that adds N days to a period: add N to that period's days in `changes` (the safe reading in `frbar-addenda.md`, EA-4); when the original end had rolled past a weekend or holiday, the script adds an agent note with the later reading (the N days added to the rolled end), so don't compute it by hand. The Appraisal Gap (AGA-1), Escalation (EAC-1) and CDD (CDDA-2) addenda set no timeline row of their own beyond what `frbar-addenda.md` lists; add a `deadlines` entry for any date one of them creates.
 
-A term the contract leaves blank takes the default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every default you use goes in `agent_notes`, not in `flags`, which print on the client's report, except the ones the script reports itself: title evidence, Rider F's appraisal date, Rider H's insurance date, the closing time and `title_by` (`deal-file.md`, Script Notes, lists them all).
+A term the contract leaves blank takes the default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every default you use goes in `agent_notes`, not in `flags`, which print on the client's report, except the ones the script reports itself: the deposit, additional deposit, loan application, loan approval and inspection (or Rider K or L) periods, title evidence, Rider F's appraisal date, Rider H's insurance date, the closing time and `title_by` (`deal-file.md`, Script Notes, lists them all). Leave those blanks out of the deal file rather than writing the default in, so the script can say it used one.
 
 ## Checks Before Running
 
@@ -88,7 +88,7 @@ Built in for Florida (Standard F of both forms):
 
 - Calendar days, where the property is located; Day 1 is the day after the Effective Date. There is no short-period rule: a 3-day deposit period counts weekends.
 - The form sets no time of day: a period runs to the end of its last day.
-- Any period or date that ends on a Saturday, Sunday or national legal holiday (5 U.S.C. 6103(a), including observed days) extends to the next business day, including dates counted back from closing and the Closing Date itself.
+- Any period or date that ends on a Saturday, Sunday or national legal holiday (5 U.S.C. 6103(a), including observed days) extends to the next business day, including dates counted back from closing and the Closing Date itself. A date counted back from closing therefore moves later, closer to closing; the script adds a Check line with the business day before as the safe date.
 - The condominium rescission windows count business days (Rider A). Closing Disclosure: 3 business days before closing (TRID).
 
 Verify these against the form version on the contract. If they differ, put the difference in the deal file's `rules`.

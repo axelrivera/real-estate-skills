@@ -69,9 +69,10 @@ def _place(marks, W, levels, strict, budget=20000):
                 continue
             if l2 == lv and not (x1 + 4 < a or x0 > b + 4):
                 return False
-            if strict and l2 < lv and a - 3 <= x <= b + 3:  # this leader would cross a nearer label
+            # TL-228: leaders keep 6px clear of a label's ends, so a leader never looks like it runs into the text
+            if strict and l2 < lv and a - 6 <= x <= b + 6:  # this leader would cross a nearer label
                 return False
-            if strict and l2 > lv and x0 - 3 <= mx <= x1 + 3:  # this label would sit on a farther leader
+            if strict and l2 > lv and x0 - 6 <= mx <= x1 + 6:  # this label would sit on a farther leader
                 return False
         return True
 
@@ -113,15 +114,36 @@ def strip(t, colors):
     groups = {}  # deadlines on the same day share one marker and one label
     for row in dated:
         groups.setdefault(_when(row).date(), []).append(row)
-    marks = []
-    for rows in groups.values():
-        row = next((r for r in rows if r["key"] == "closing"), None) or next((r for r in rows if r["critical"]), rows[0])
+    def label(rows, compact):
+        """TL-228: a done deadline isn't named as if it were open: the label names the open rows on that day, or reads
+        "Done" when every row is. `compact` names one row and counts the rest ("Loan Approval +1")."""
+        open_rows = [r for r in rows if not r.get("done")]
+        named = open_rows or rows
+        row = (next((r for r in named if r["key"] == "closing"), None) or next((r for r in named if r["critical"]), None)
+               or named[0])
         when = _when(row)
-        names = row["short"] if len(rows) == 1 else f'{row["short"]} +{len(rows) - 1}' if len(rows) > 2 else \
-            " / ".join(r["short"] for r in rows)
-        text = f'{names} · {when:%-m/%-d}'
-        marks.append(dict(rows=rows, row=row, when=when, x=X(when), text=text, w=_label_width(text)))
-    spots, levels = place_labels([(m["x"], m["w"]) for m in marks], W)
+        if not open_rows:
+            return row, f'{row["short"]} · Done'
+        n = len(open_rows)
+        names = row["short"] if n == 1 else f'{row["short"]} +{n - 1}' if n > 2 or compact else \
+            " / ".join(r["short"] for r in open_rows)
+        return row, f'{names} · {when:%-m/%-d}'
+
+    def layout(compact):
+        marks = []
+        for rows in groups.values():
+            row, text = label(rows, compact)
+            when = _when(row)
+            marks.append(dict(rows=rows, row=row, when=when, x=X(when), text=text, w=_label_width(text)))
+        return marks, place_labels([(m["x"], m["w"]) for m in marks], W)
+
+    # full names when they fit on one level a side; a crowded strip names one deadline per day and counts the rest
+    # when that takes fewer levels
+    marks, (spots, levels) = layout(False)
+    if levels > 1:
+        tight = layout(True)
+        if tight[1][1] < levels:
+            marks, (spots, levels) = tight
     mid = 16 + levels * STEP
     H = mid + 26 + levels * STEP + 4
     s = [f'<svg viewBox="0 0 {W} {H}" class="strip"><line x1="{L}" x2="{W - R}" y1="{mid}" y2="{mid}" stroke="var(--grey-light)" stroke-width="3"/>']
@@ -169,7 +191,7 @@ def strip(t, colors):
 
 
 def pending_text(r):
-    """What a pending row shows in the date column: its rule, short ("10 days after short sale approval")."""
+    """What a pending row shows under its name: its rule, short ("10 days after short sale approval")."""
     rule = r["rule"] if len(r["rule"]) <= 64 else r["rule"].split(" (")[0]
     return rule if len(rule) <= 64 else "On event"
 
@@ -265,10 +287,11 @@ def build_html(t, agent, sample):
         f'<td>{esc(r["label"])}{star(r)}'
         f'{(" <span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}{done_pill(r)}</td>'
         f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["rows"])
-    # dates that wait for an event (a receipt, the short sale approval) close the table with their rule instead of a date
+    # dates that wait for an event (a receipt, the short sale approval) close the table: "Pending" in the narrow date
+    # column, and what starts the clock under the deadline's name (TL-224)
     key_rows += "".join(
-        f'<tr class="pend {row_class(r)}"><td class="n"><i class="sm">{esc(pending_text(r))}</i></td><td class="n">—</td>'
-        f'<td>{esc(r["label"])}{star(r)}</td>'
+        f'<tr class="pend {row_class(r)}"><td class="n"><i>Pending</i></td><td class="n">—</td>'
+        f'<td>{esc(r["label"])}{star(r)} <i class="sm pr">· {esc(pending_text(r))}</i></td>'
         f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["pending"])
     pending = ""
     flags = "".join(f'<div class="note-caution"><b>Check:</b> {esc(f)}</div>' for f in t["flags"])
@@ -294,7 +317,8 @@ def build_html(t, agent, sample):
         f'<td>{esc(r["party"])}</td><td class="sm">{esc(r["rule"])}{("<br><i>" + esc(r["note"]) + "</i>") if r["note"] else ""}</td>'
         f'<td class="sm">{esc(r["action"])}</td><td class="sm">{esc(r["if_missed"])}</td></tr>' for r in t["rows"] + t["pending"])
     if t["history"]:
-        hist = "".join(f'<tr><td class="c"><b>#{i}</b></td><td>{esc(h.get("date_display") or "—")}</td><td>{esc(h["description"])}</td>'
+        hist = "".join(f'<tr><td class="c"><b>#{i}</b></td><td>{esc(h.get("date_display") or "—")}</td>'
+                       f'<td>{"<b>" + esc(h["name"]) + "</b><br>" if h.get("name") else ""}{esc(h["description"])}</td>'
                        f'<td class="sm">{esc(h["summary"])}</td></tr>' for i, h in enumerate(t["history"], 1))
         hist_html = ('<h2>Amendment History <span class="h2s">moved dates show the original as "was"</span></h2>'
                      '<div class="tbl"><table><colgroup><col style="width:5%"><col style="width:12%"><col style="width:33%"></colgroup>'

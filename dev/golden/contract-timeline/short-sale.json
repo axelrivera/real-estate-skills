@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 8
+  "count": 11
  },
  "chat_notes": {
   "count": 0
@@ -51,6 +51,9 @@
   "past_not_done",
   "waiting_on_receipt",
   "rider_u_6b",
+  "default:deposit",
+  "default:loan_app",
+  "default:loan_approval",
   "default:title",
   "short_sale_backup",
   "short_sale_closing_replaced",
@@ -516,5 +519,11 @@
  "side": "buyer",
  "support": "full",
  "time_zone": "ET",
+ "warning_keys": {
+  "count": 0
+ },
+ "warnings": {
+  "count": 0
+ },
  "what_if": false
 }

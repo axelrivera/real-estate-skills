@@ -201,6 +201,17 @@ def _clock(t):
 
 # --- FR/BAR deadline list ----------------------------------------------------
 
+def _loan_type(c):
+    """'FHA' or 'VA' from the financing; 'FHA/VA' when the rider is attached but the loan type isn't recorded."""
+    return {"fha": "FHA", "va": "VA"}.get(c.get("financing"), "FHA/VA")
+
+
+def _blank_default(c, field, text, topic):
+    """TL-229: `default` and `default_topic` for a row whose period is blank in the deal file, so the script's agent note
+    says which form default it used; {} when the contract gives the days."""
+    return {} if c.get(field) is not None else {"default": text, "default_topic": topic}
+
+
 def frbar_deadlines(c):
     """Deadlines for an FR/BAR AS IS or Standard contract, from its fields (blank = form default).
 
@@ -218,26 +229,37 @@ def frbar_deadlines(c):
     walkaway, repairs_owed, rider = t["walkaway"], t["repairs_owed"], t["inspection_rider"]
     cite = lambda para: f"{cf.rider_name(rider)}, {para}" if rider else None  # noqa: E731
     unit = bool(c.get("condo") or has("A"))  # a condo unit: the building is the association's
+    insp_default = _blank_default(c, "inspection_days", (
+        f"{cf.rider_name(rider)} period blank: used the rider default, 15 days after the Effective Date" if rider else
+        "Inspection Period blank (Para. 12(a)): used the form default, 15 days after the Effective Date"), "inspection")
     out = []
 
     def add(**k):
         k.setdefault("contingency", False)
         out.append(k)
 
+    amount = c.get("deposit_amount_str") or (  # TL-236: the words as written, else the number
+        f"${c['deposit_amount']:,.0f}" if isinstance(c.get("deposit_amount"), (int, float)) else None)
     add(key="deposit", label="Initial Escrow Deposit Due", short="Deposit", basis="after", days=c.get("deposit_days", 3),
         source="Para. 2(a)", party="Buyer", critical=True,
-        action=f"Deliver {c.get('deposit_amount_str') or 'the initial deposit'} to {c.get('escrow_agent') or 'the escrow agent'}; get a receipt",
-        if_missed="Buyer in default; seller may cancel")
+        action=f"Deliver {amount or 'the initial deposit'} to {c.get('escrow_agent') or 'the escrow agent'}; get a receipt",
+        if_missed="Buyer in default; seller may cancel",
+        **_blank_default(c, "deposit_days", "Initial deposit days blank (Para. 2(a)): used the form default, 3 days after "
+                         "the Effective Date", "deposit"))
     add_amount = c.get("additional_deposit_amount_str") or (  # the words as written, else the number
         f"${c['additional_deposit_amount']:,.0f}" if isinstance(c.get("additional_deposit_amount"), (int, float)) else None)
     if add_amount or c.get("additional_deposit_amount") or c.get("additional_deposit_days"):
         add(key="add_deposit", label="Additional Deposit Due", short="Additional Deposit", basis="after",
             days=c.get("additional_deposit_days", 10), source="Para. 2(b)", party="Buyer", critical=True,
+            **_blank_default(c, "additional_deposit_days", "Additional deposit days blank (Para. 2(b)): used the form "
+                             "default, 10 days after the Effective Date", "additional deposit"),
             action=f"Deliver the additional deposit ({add_amount})" if add_amount else "Deliver the additional deposit",
             if_missed="Buyer in default; seller may cancel")
     if financed:
         add(key="loan_app", label="Loan Application", short="Loan App", basis="after", days=c.get("loan_application_days", 5),
             source="Para. 8(b)", party="Buyer", critical=False,
+            **_blank_default(c, "loan_application_days", "Loan application days blank (Para. 8(b)): used the form "
+                             "default, 5 days after the Effective Date", "loan application"),
             action="Apply for the loan and provide the lender's written confirmation if requested",
             if_missed="Buyer may lose financing protections")
     if c.get("seller_has_title_evidence"):  # TL-116: Para. 9(c) of both forms
@@ -253,7 +275,7 @@ def frbar_deadlines(c):
     if walkaway and not repairs_owed:
         # AS IS, or Standard + Rider K (which deletes Paras. 9(a) limits, 11 and 12): a walk-away, 15 days if blank.
         add(key="inspection", label="Inspection Period Ends (Right to Cancel)", short="Inspection Ends",
-            basis="after", days=c.get("inspection_days", 15), source=cite("Para. 2") or "Para. 12(a)",
+            basis="after", days=c.get("inspection_days", 15), **insp_default, source=cite("Para. 2") or "Para. 12(a)",
             party="Buyer", critical=True, contingency=True,
             action=("Complete inspections of the unit (the insurer may ask for a 4-point on the unit); deliver written "
                     "cancellation notice before the deadline if not proceeding" if unit else
@@ -266,14 +288,14 @@ def frbar_deadlines(c):
         # Rider L replaces it with a Right To Inspect Period (15 days if blank) that adds a walk-away and keeps repairs.
         if walkaway:  # Standard + Rider L: a walk-away that keeps the repair obligation
             add(key="inspection", label="Right to Inspect Period Ends (Cancel or Repair Notices)", short="Inspection Ends",
-                basis="after", days=c.get("inspection_days", 15), source=cite("Para. 1"),
+                basis="after", days=c.get("inspection_days", 15), **insp_default, source=cite("Para. 1"),
                 party="Buyer", critical=True, contingency=True,
                 action="Deliver written cancellation notice if not proceeding; otherwise deliver written notice of General "
                        "Repair Items, the WDO report and open or unpermitted work to keep the seller's repair obligation",
                 if_missed="Right to cancel ends; the seller owes no repairs for items not inspected and reported")
         else:
             add(key="inspection", label="Inspection Period Ends (Repair Notices Due)", short="Repair Notices",
-                basis="after", days=c.get("inspection_days", 15), source="Para. 12(a)-(d)", party="Buyer", critical=True,
+                basis="after", days=c.get("inspection_days", 15), **insp_default, source="Para. 12(a)-(d)", party="Buyer", critical=True,
                 action="Deliver written notice of General Repair Items, the WDO report if it found anything, and any open or "
                        "unpermitted work to the seller",
                 if_missed="Buyer waives the seller's obligation to repair, treat or permit anything not reported")
@@ -317,6 +339,8 @@ def frbar_deadlines(c):
     if financed:
         add(key="loan_approval", label="Loan Approval Period Ends", short="Loan Approval", basis="after",
             days=c.get("loan_approval_days", 30), source="Para. 8(b)", party="Buyer", critical=True, contingency=True,
+            **_blank_default(c, "loan_approval_days", "Loan Approval Period blank (Para. 8(b)): used the form default, "
+                             "30 days after the Effective Date", "loan approval"),
             action="Deliver written loan approval, or written notice to cancel or proceed, before the deadline",
             if_missed="Buyer's right to cancel for financing ends; deposit at risk")
         add(key="seller_terminate", label="Seller's Right to Terminate (No Loan Notice)", short="Seller May Terminate",
@@ -376,7 +400,8 @@ def frbar_deadlines(c):
     # appraisal (Para. 5). Appraisal repairs over the seller's cap start a 3-day seller election, then 3 days for the
     # buyer's (Para. 3(b) or 4(b)); those rows appear once the overage notice is recorded.
     if c.get("financing") in ("fha", "va") or fha_va:
-        add(key="fha_va_election", label="FHA/VA Low-Appraisal Election to Proceed", short="FHA/VA Election",
+        loan = _loan_type(c)  # TL-233: "VA" on a VA deal, never "FHA/VA"
+        add(key="fha_va_election", label=f"{loan} Low-Appraisal Election to Proceed", short=f"{loan} Election",
             basis="event", received=c.get("appraisal_received"), what="the appraisal", days=3,
             source="FHA/VA Rider (E), Para. 5", party="Buyer", critical=False,
             action="If the appraised value is below the price and the buyer wants to go ahead anyway, deliver the written "
@@ -422,7 +447,9 @@ def frbar_deadlines(c):
         add(key="assoc_approval", label="Association Approval Deadline", short="Association Approval", basis="before",
             days=c.get("association_approval_days_before", 5), source="Condominium / HOA rider", party="Buyer",
             critical=True, contingency=True, action="Written association approval in hand",
-            if_missed="The contract's approval contingency applies")
+            # TL-232: Rider A Para. 1 ends the contract automatically; Rider B Part B Para. 1 lets the buyer terminate
+            if_missed="The contract terminates automatically and the deposit is refunded to the buyer" if unit else
+            "The buyer may terminate in writing and the deposit is refunded (not automatic)")
     title_days = c.get("title_evidence_days_before")
     title_by = str(c.get("title_by") or "").strip().lower()
     if title_by not in ("", "seller", "buyer"):
@@ -646,9 +673,20 @@ def apply_amendments(contract, amendments):
         before = {k: c.get(k) for k in a.get("changes", {})}
         c.update(a.get("changes", {}))
         c.setdefault("date_overrides", {}).update(a.get("date_overrides", {}))
-        history.append({"date": a.get("date"), "description": a.get("description", ""),
+        history.append({"date": a.get("date"), "description": a.get("description", ""), "name": a.get("name") or "",
                         "changes": a.get("changes", {}), "before": before, "date_overrides": a.get("date_overrides", {})})
     return c, history
+
+
+_ORDINALS = ("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth")
+
+
+def _amendment_name(h, i):
+    """TL-231: an amendment as the agent knows it: its form or title when recorded ("Extension Addendum (EA-4)"), else
+    its place in signing order ("The first amendment"), never "Amendment 1", which reads as a form's own number."""
+    if h.get("name"):
+        return f"The {h['name']}" if not re.match(r"^(the|an?)\s", h["name"], re.I) else h["name"][:1].upper() + h["name"][1:]
+    return f"The {_ORDINALS[i - 1] if i <= len(_ORDINALS) else f'#{i}'} amendment"
 
 
 OPEN_RIGHT_KEYS = ("hoa_docs", "condo_docs", "title_exam", "survey_notice")
@@ -863,6 +901,9 @@ def compute(c, extra_deadlines, rules, frbar):
         elif basis == "before":
             r["when"], r["note"] = backward(closing, int(days), rules, x.get("business", False),
                                             closing_dt.time() if by_closing else at, roll)
+            counted = closing - timedelta(days=int(days))
+            if not x.get("business") and r["when"].date() > counted:  # TL-226: extended forward, closer to closing
+                r["rolled_from"] = counted
             r["rule"] = ("By Closing" if by_closing and int(days) == 0 else "Closing day" if int(days) == 0 else
                          f"{_plural(int(days), 'day')} before Closing" + (" (TRID business days)" if x.get("business") == "trid"
                                                                          else " (business days)" if x.get("business") else ""))
@@ -923,6 +964,7 @@ def compute(c, extra_deadlines, rules, frbar):
         if override:
             r["when"], r["note"] = _override(override, rules, roll)
             r["rule"] = "Specific date in contract / amendment"
+            r.pop("rolled_from", None)
         if x.get("cap_at_closing") and r["when"] and closing_dt and r["when"] > closing_dt:
             r["when"] = closing_dt
             r["note"] = "; ".join(n for n in (r.get("note"), "the right ends at closing") if n)
@@ -1088,12 +1130,13 @@ def money_check(c, price):
     if price and loan is not None and balance is not None:  # every part of Para. 2 is known: it must equal the price
         total = deposits + loan + balance
         if abs(total - price) >= 1:
-            out.append(("money_mismatch", f"The deposits, loan and balance to close add up to ${total:,.0f}, not the "
-                        f"${price:,.0f} price: check Para. 2 against the last counteroffer or amendment and ask the agent "
-                        "which figures are current"))
+            # TL-234: worded to the agent, who can answer it (a counter often changes the price but not Para. 2)
+            out.append(("money_mismatch", f"Para. 2 doesn't add up: the deposits, loan and balance to close total "
+                        f"${total:,.0f}, but the price is ${price:,.0f}. A counteroffer or amendment may have changed the "
+                        "price without updating Para. 2. Which figures are current?"))
     elif price and loan and deposits + loan > price:  # no balance given: the parts known can't pass the price
-        out.append(("money_mismatch", f"The deposits and the ${loan:,.0f} loan add up to ${deposits + loan:,.0f}, more "
-                    f"than the ${price:,.0f} price: check Para. 2 and ask the agent which figures are current"))
+        out.append(("money_mismatch", f"Para. 2 doesn't add up: the deposits and the ${loan:,.0f} loan total "
+                    f"${deposits + loan:,.0f}, more than the ${price:,.0f} price. Which figures are current?"))
     pre = num["preapproval_amount"]
     if pre is not None and num["loan_amount"] and pre < num["loan_amount"]:
         out.append(("preapproval_below_loan", f"The pre-approval (${pre:,.0f}) is below the ${num['loan_amount']:,.0f} "
@@ -1105,7 +1148,7 @@ def money_check(c, price):
     return out
 
 
-def consistency_notes(c, current, rules, eff, note):
+def consistency_notes(c, current, rules, eff, note, side="buyer"):
     """FR/BAR agent notes for recorded terms that don't fit together or that the rows leave out on purpose."""
     codes = cf.rider_codes(c.get("riders"))[0]
     financed = c.get("financing", "conventional") != "cash"
@@ -1141,10 +1184,14 @@ def consistency_notes(c, current, rules, eff, note):
         if agreement["when"].date() != day:
             other = forward(day, int(cancel["days"]), rules)[0]
             if other.date() != cancel["when"].date():
-                note("gg_rolled_start", f"Rider GG: the agreement period's last day, {day:%a %b %-d}, rolled to "
-                     f"{agreement['when']:%a %b %-d}, and the buyer's 3-day cancel window counts from that date (ends "
-                     f"{cancel['when']:%a %b %-d}). Counted from {day:%a %b %-d} it would end {other:%a %b %-d}. Confirm "
-                     "which reading the parties use")
+                # TL-235: one reading used plus the date that is safe for the agent's side, never two dates side by side
+                safe = (f"To be safe, the buyer should deliver any cancellation by {other:%a %b %-d}, the earlier "
+                        f"reading (counted from {day:%a %b %-d})" if side == "buyer" else
+                        f"The buyer could argue for the later date, so treat the buyer's right as open through "
+                        f"{cancel['when']:%a %b %-d}")
+                note("gg_rolled_start", f"Rider GG: the buyer's cancel window ends {cancel['when']:%a %b %-d}, counted from "
+                     f"the agreement deadline as extended ({day:%a %b %-d} to {agreement['when']:%a %b %-d}); the timeline "
+                     f"uses this reading. {safe}")
 
 
 # TL-214: the deal-file field an extension changes, and the row it dates (counted from the Effective Date)
@@ -1181,10 +1228,49 @@ def extension_readings(history, current, rules, eff, frbar):
             if later.date() == safe.date():
                 continue
             out.append((f"extension_reading:{key}",
-                        f"Amendment {i} moves the {_field_label(field)} from {old} to {new} days after the Effective Date: it ends "
+                        f"{_amendment_name(h, i)} moves the {_field_label(field)} from {old} to {new} days after the Effective Date: it ends "
                         f"{safe:%a %b %-d} (the safe reading, used). If the amendment adds the {new - old} days to the "
                         f"original end as extended ({old_end:%a %b %-d}) instead, it ends {later:%a %b %-d}. Confirm "
                         "which reading the parties intend"))
+    return out
+
+
+# TL-230: every contract field the script or contract_forms reads (deal-file.md, frbar.md). Anything else is most likely
+# a typo that would drop a deadline silently, so it comes back as a warning to fix.
+KNOWN_CONTRACT_KEYS = frozenset("""
+    form_family form contract_form contract_name form_revision form_revision_source effective_date effective_date_source
+    closing_date closing_time closing_source possession_date possession_time possession_note possession_source
+    property buyer seller price escrow_agent deposit_amount deposit_amount_str deposit_days additional_deposit_amount
+    additional_deposit_amount_str additional_deposit_days loan_amount other_amount balance_to_close preapproval_amount
+    preapproval_price preapproval_expires financing loan_application_days loan_approval_days date_overrides riders
+    counter_chain title_by title_evidence_days_before title_commitment_received title_defect_notice survey_days_before
+    survey_received seller_has_title_evidence seller_has_survey inspection_days inspection_walkaway repair_limits
+    repair_notice_delivered repair_estimates_received open_permits walkthrough_days_before flood_zone flood_elevation_days
+    tenants leases_received fincen_report insurance_bound_days_before cd_days_before condo condo_docs_received
+    condo_docs_before_contract developer_sale rofr rofr_days association_approval association_apply_days
+    association_approval_days_before hoa hoa_docs_received hoa_disclosure_before_contract appraisal_received
+    appraisal_repairs_notice_received seller_repair_election_received appraisal_date appraisal_days
+    short_sale_application_days short_sale_approval_days short_sale_approval_seller_received short_sale_approval_received
+    short_sale_closing_days short_sale_backup insurance_date insurance_days insurance_flood flood_insurance_date
+    insurance_homeowners mold_days drywall_days drywall_waived cccl_requested year_built lead_paint_days lbp_waived
+    rezoning_date pre_closing_agreement_days post_closing_agreement_days_before seller_occupancy_days
+    sale_contingency_date backup_notice_date kickout_notice_received seller_attorney_date buyer_attorney_date
+    management_agreements_received compensation_agreement_days
+""".split())
+
+
+def unknown_key_warnings(deal):
+    """TL-230: (key, text) naming contract fields (and amendment changes) the script doesn't read."""
+    out = []
+    places = [("contract", deal.get("contract") or {})] + [
+        (f"amendments[{i}].changes", a.get("changes") or {}) for i, a in enumerate(deal.get("amendments") or [])
+        if isinstance(a, dict)]
+    for where, fields in places:
+        bad = sorted(k for k in fields if k not in KNOWN_CONTRACT_KEYS)
+        if bad:
+            out.append(("unknown_key", f"{where} has {', '.join(map(repr, bad))}, which the script doesn't read (a typo "
+                        "drops a deadline without a word). Fix the field name from references/deal-file.md or "
+                        "references/frbar.md, or remove it, and re-run"))
     return out
 
 
@@ -1262,7 +1348,7 @@ def analyze(deal, side=None):
     open_rights = [r["short"] for r in rows if r["key"] in OPEN_RIGHT_KEYS
                    and (r["when"] is None or not firm or r["when"] > firm["when"])]
     if current_contract.get("financing") in ("fha", "va"):
-        open_rights.append("FHA/VA appraisal clause (to closing)")
+        open_rights.append(f"{_loan_type(current_contract)} appraisal clause (to closing)")
     # TL-104, TL-204: the next deadline from the report date: the earliest open contract deadline marked critical, whoever
     # owes it (Buyer, Seller or Both), else the earliest open contract deadline. A lender's target (insurance bound, the
     # Closing Disclosure) is never it; done and past rows never are.
@@ -1275,6 +1361,7 @@ def analyze(deal, side=None):
     # TEST-2: a stable key for each flag and note the script adds (flag_keys, note_keys), so tests and golden can
     # tell which one fired without matching the sentence; the printed text is unchanged
     flag_keys, note_keys = [], []
+    warnings = unknown_key_warnings(deal)
 
     def flag(key, text):
         text = _sentence(text)  # TL-211: a Check line is a sentence, and the agent's own flag isn't printed twice
@@ -1298,15 +1385,22 @@ def analyze(deal, side=None):
         if unread:
             note("rider_not_read", f"Not read as a CR-7 rider: {', '.join(map(str, unread))}. Its dates aren't in the timeline: "
                                "record the rider by its letter (\"G\") or add its dates to deadlines, and re-run")
-    if rules.get("_unknown"):  # TL-121: asked, never invented
-        note("rules_unknown", "The contract's time rules as recorded don't say " + "; ".join(UNKNOWN_TEXT[k] for k in rules["_unknown"])
-                           + ". Ask the agent what the contract says, add each to rules and re-run")
+    # TL-227: the end-of-day question says "no time of day" only for the dates that show none; when every deadline
+    # sets its own time (a period that ends at 5:00 PM), the contract's end of day changes nothing and isn't asked
+    unknown = [k for k in rules.get("_unknown") or []
+               if k != "end_time" or any(r.get("no_time") for r in current if r["when"])]
+    timed = any(r["when"] and not r.get("no_time") and r["basis"] not in ("closing", "possession", "pending_closing")
+                for r in current)
+    if unknown:  # TL-121: asked, never invented
+        note("rules_unknown", "The contract's time rules as recorded don't say " + "; ".join(
+            "when a day ends (dates without their own time show the day only)" if k == "end_time" and timed else
+            UNKNOWN_TEXT[k] for k in unknown) + ". Ask the agent what the contract says, add each to rules and re-run")
     if eff > today and not deal.get("what_if"):  # TL-119
         note("effective_after_report", f"The Effective Date ({eff:%b %-d, %Y}) is after the report date ({today:%b %-d, %Y}): confirm the "
                            "contract is signed and delivered, or set what_if for a hypothetical timeline (labeled What-If)")
     for i, h in enumerate(history, 1):
         if _d(h.get("date")) and _d(h["date"]) > today:
-            note("amendment_after_report", f"Amendment {i} ({h.get('description') or 'no description'}) is dated "
+            note("amendment_after_report", f"{_amendment_name(h, i)} ({h.get('description') or 'no description'}) is dated "
                                f"{_date_text(h['date'])}, after the report date: confirm it was signed before relying on it")
     past = [r for r in rows if r["past"]]
     if past:  # TL-104
@@ -1323,9 +1417,11 @@ def analyze(deal, side=None):
     if closing_row and closing_row["note"]:
         flag("closing_note", closing_row["note"][:1].upper() + closing_row["note"][1:])
     if frbar and (current_contract.get("financing") in ("fha", "va") or "E" in cf.rider_codes(current_contract.get("riders"))[0]):
-        flag("fha_va_appraisal", "FHA/VA rider: the buyer isn't obligated to close if the appraisal comes in below the price, and that "
-                     "protection runs to closing. The buyer's choice to go ahead anyway is due within 3 days after receiving "
-                     "the appraisal")
+        loan = _loan_type(current_contract)
+        value = {"VA": "the VA's reasonable value", "FHA": "the FHA appraisal"}.get(loan, "the appraisal")
+        flag("fha_va_appraisal", f"FHA/VA rider{f' ({loan} loan)' if loan != 'FHA/VA' else ''}: the buyer isn't obligated "
+                     f"to close if {value} comes in below the price, and that protection runs to closing. The buyer's choice "
+                     "to go ahead anyway is due within 3 days after receiving the appraisal")
     if str(current_contract.get("association_approval")).lower() == "unknown":  # the rider's "is / is not" box left blank
         flag("assoc_box_blank", "The rider's association approval box is blank: these dates assume approval is required. Confirm with "
                      "the association")
@@ -1347,7 +1443,7 @@ def analyze(deal, side=None):
     for key, text in money_check(current_contract, _price(current_contract.get("price"))):
         note(key, text)
     if frbar:
-        consistency_notes(current_contract, current, rules, eff, note)
+        consistency_notes(current_contract, current, rules, eff, note, side)
         for key, text in extension_readings(history, current, rules, eff, frbar):
             note(key, text)
     approval = next((r for r in dated if r["key"] == "loan_approval"), None)
@@ -1359,6 +1455,20 @@ def analyze(deal, side=None):
         late = [r["label"] for r in contingent if r["key"] != "loan_approval" and r["when"] > closing_row["when"]]
         if late:
             flag("after_closing", ", ".join(late) + " ends after closing: amend the dates in writing")
+    # TL-226: a date counted back from closing that fell on a weekend or holiday extends to the next business day
+    # (FR/BAR Standard F, read literally), closer to closing; the safe course is the business day before
+    open_keys = {r["key"] for r in rows if not r["done"] and not r["past"]}
+    rolled = [r for r in current if r.get("rolled_from") and r["key"] in open_keys and not r.get("lender")
+              and not r.get("no_time")]
+    if rolled and closing_dt:
+        extra = rules["_extra_holidays"]
+        groups = {}  # (safe date, date used): labels
+        for r in rolled:
+            groups.setdefault((dates.previous_business_day(r["rolled_from"], extra), r["when"].date()), []).append(r["label"])
+        parts = [f"{' and '.join(labels) if len(labels) < 3 else ', '.join(labels[:-1]) + ' and ' + labels[-1]} by "
+                 f"{safe:%a %b %-d}, not {used:%a %b %-d}" for (safe, used), labels in groups.items()]
+        flag("before_closing_rolled", "Counted back from closing, a date on a weekend or holiday moves to the next "
+             "business day, closer to closing. To be safe: " + "; ".join(parts))
     for r in current:
         if r.get("default"):
             note("default:" + r["key"], r["default"])
@@ -1429,7 +1539,9 @@ def analyze(deal, side=None):
                     "long": f"{_d(closing_row['when']):%b %-d, %Y}", "short": f"{_d(closing_row['when']):%b %-d}"}
         if closing_row else None,
         "length_days": closing_row["day"] if closing_row else None,
-        "moved": [{"label": r["label"], "now": r["display"], "was": r["was"]} for r in rows if r["was"]],
+        # TL-238: the closing first when it moved (the date the agent asks about), then the rest in date order
+        "moved": [{"label": r["label"], "now": r["display"], "was": r["was"]}
+                  for r in sorted((r for r in rows if r["was"]), key=lambda r: r["key"] != "closing")],
         # TL-113: rows an amendment dated for the first time (a short sale approval recorded by amendment)
         "newly_dated": [{"label": r["label"], "now": r["display"]} for r in rows
                         if r["when"] and history and was.get(r["key"]) is None],
@@ -1448,6 +1560,8 @@ def analyze(deal, side=None):
             for h in history],
         "flags": flags,
         "agent_notes": agent_notes,
+        "warnings": [text for _, text in warnings],  # for Claude to fix in the deal file; never passed on
+        "warning_keys": [key for key, _ in warnings],
         "flag_keys": flag_keys,  # one per flag the script added (the agent's own flags have none)
         "note_keys": note_keys,  # one per note the script added, before repeats of the agent's notes are dropped
         **sup,

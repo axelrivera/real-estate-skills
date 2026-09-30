@@ -487,7 +487,7 @@ class AuditWording(unittest.TestCase):
 
     def test_open_rights_after_contingencies(self):
         r = timeline.analyze(fixture("buyer-fha.json"))  # FHA: the appraisal clause runs to closing
-        self.assertIn("FHA/VA appraisal clause (to closing)", r["open_rights"])
+        self.assertIn("FHA appraisal clause (to closing)", r["open_rights"])  # TL-233: the loan type
         self.assertIn("Title Defects", r["open_rights"])
         # both views name the rights that stay open, so neither reads as firm once the main contingencies end
         tr = timeline_render
@@ -1085,6 +1085,139 @@ class AdditionalDeposit(unittest.TestCase):
         row = by_key(timeline.analyze(deal))["add_deposit"]
         self.assertTrue(row["critical"])
         self.assertIn("$10,000", row["action"])
+
+
+class ThirdPass(unittest.TestCase):
+    """Eval iteration 4 findings (TL-223 to TL-238)."""
+
+    COLORS = {"Buyer": "#111", "Seller": "#222", "Both": "#333"}
+
+    def test_pending_rows_say_pending_in_the_date_cell(self):
+        """TL-224: the date column reads "Pending"; the rule moves under the deadline's name."""
+        r = timeline.analyze(fixture("buyer-fha.json"))
+        self.assertTrue(r["pending"])
+        doc = timeline_render.build_html(r, {}, sample=True)
+        self.assertIn('<td class="n"><i>Pending</i></td>', doc)
+        self.assertIn("· Runs from receipt of", doc)
+
+    def test_before_closing_roll_toward_closing_is_flagged(self):
+        """TL-226: survey 5 days before a Fri Oct 30 closing is Sun Oct 25, extended to Mon Oct 26 (Standard F); the
+        Check line gives Fri Oct 23 as the safe date. An override clears it."""
+        d = fixture("buyer-fha.json")
+        r = timeline.analyze(d)
+        self.assertEqual(by_key(r)["survey"]["when"][:10], "2026-10-26")
+        self.assertIn("before_closing_rolled", r["flag_keys"])
+        self.assertIn("Fri Oct 23", r["flags"][r["flag_keys"].index("before_closing_rolled")])
+        d["contract"]["date_overrides"] = {"survey": "2026-10-23"}
+        self.assertNotIn("before_closing_rolled", timeline.analyze(d)["flag_keys"])
+
+    def test_end_of_day_question_only_when_a_date_shows_no_time(self):
+        """TL-227: a deadline that sets its own time (5:00 PM) doesn't need the contract's end of day."""
+        d = {"side": "buyer", "state": "OH", "report_date": "2026-11-01",
+             "contract": {"form_family": "other", "form": "Purchase Agreement", "effective_date": "2026-11-20"},
+             "rules": {"day_count": "calendar"},
+             "deadlines": [{"key": "dd", "label": "Due Diligence Ends", "basis": "after", "days": 7, "party": "Buyer",
+                            "time": "17:00"}]}
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("rules_unknown")]
+        self.assertNotIn("when a day ends", note)
+        d["deadlines"].append({"key": "x", "label": "Other Deadline", "basis": "after", "days": 3, "party": "Buyer"})
+        r = timeline.analyze(d)
+        self.assertIn("when a day ends", r["agent_notes"][r["note_keys"].index("rules_unknown")])
+
+    def test_blank_periods_get_default_notes(self):
+        """TL-229: deposit, loan application, loan approval and inspection (or Rider L) blanks each get a note."""
+        d = fixture("buyer-fha.json")
+        for k in ("deposit_days", "loan_application_days", "loan_approval_days", "inspection_days"):
+            d["contract"].pop(k)
+        keys = timeline.analyze(d)["note_keys"]
+        for k in ("default:deposit", "default:loan_app", "default:loan_approval", "default:inspection"):
+            self.assertIn(k, keys)
+        self.assertNotIn("default:inspection", timeline.analyze(fixture("buyer-fha.json"))["note_keys"])
+        d = fixture("standard-riders.json")
+        d["contract"]["riders"] = ["L"]
+        d["contract"].pop("inspection_days", None)
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("default:inspection")]
+        self.assertIn("(L)", note)
+
+    def test_unknown_contract_keys_warn(self):
+        """TL-230: a misspelled field comes back as a warning, in the contract and in an amendment's changes."""
+        d = fixture("buyer-fha.json")
+        self.assertEqual(timeline.analyze(d)["warnings"], [])
+        d["contract"]["inspection_dayz"] = 7
+        d["amendments"] = [{"date": "2026-09-28", "changes": {"closing_dat": "2026-11-06"}}]
+        r = timeline.analyze(d)
+        self.assertEqual(r["warning_keys"], ["unknown_key", "unknown_key"])
+        self.assertIn("inspection_dayz", r["warnings"][0])
+        self.assertIn("closing_dat", r["warnings"][1])
+
+    def test_amendment_named_by_its_form(self):
+        """TL-231: never "Amendment 1"; the name when given, else its place in signing order."""
+        d = fixture("buyer-fha.json")
+        d["amendments"] = [{"date": "2026-12-01", "description": "Extend", "changes": {}}]
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("amendment_after_report")]
+        self.assertTrue(note.startswith("The first amendment"))
+        d["amendments"][0]["name"] = "Extension Addendum (EA-4)"
+        r = timeline.analyze(d)
+        self.assertTrue(r["agent_notes"][r["note_keys"].index("amendment_after_report")].startswith(
+            "The Extension Addendum (EA-4)"))
+        self.assertEqual(r["history"][0]["name"], "Extension Addendum (EA-4)")
+
+    def test_rider_wording(self):
+        """TL-232: Rider A approval missed ends the contract; TL-233: a VA deal says VA, not FHA/VA."""
+        d = fixture("buyer-fha.json")
+        d["contract"].update(riders=["A", "E"], association_approval=True, financing="va")
+        rows = by_key(timeline.analyze(d))
+        self.assertIn("terminates automatically", rows["assoc_approval"]["if_missed"])
+        self.assertTrue(rows["fha_va_election"]["label"].startswith("VA "))
+        d["contract"].update(riders=["B", "E"], hoa=True)
+        self.assertIn("not automatic", by_key(timeline.analyze(d))["assoc_approval"]["if_missed"])
+
+    def test_money_note_asks_the_agent(self):
+        """TL-234: the note is a question the agent can answer, not an instruction to Claude."""
+        d = fixture("buyer-fha.json")
+        d["contract"].update(loan_amount=350000, balance_to_close=1000)
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("money_mismatch")]
+        self.assertTrue(note.endswith("?"))
+        self.assertNotIn("ask the agent", note)
+
+    def test_gg_rolled_note_gives_one_reading_and_the_safe_date(self):
+        """TL-235: Juniper Hollow: GG's agreement day Sun Sep 27 rolls to Mon Sep 28; the window used ends Thu Oct 1 and
+        the buyer's safe date is Wed Sep 30; the seller view treats the right as open through Oct 1."""
+        d = fixture("buyer-fha.json")
+        d["contract"].update(effective_date="2026-09-24", riders=["E", "H", "GG"])
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("gg_rolled_start")]
+        self.assertIn("ends Thu Oct 1", note)
+        self.assertIn("by Wed Sep 30", note)
+        r = timeline.analyze(d, "seller")
+        self.assertIn("open through Thu Oct 1", r["agent_notes"][r["note_keys"].index("gg_rolled_start")])
+
+    def test_deposit_action_from_number(self):
+        """TL-236: the initial deposit's amount comes from the number when the words aren't given."""
+        d = fixture("buyer-fha.json")
+        d["contract"].pop("deposit_amount_str")
+        d["contract"]["deposit_amount"] = 11000
+        self.assertIn("$11,000", by_key(timeline.analyze(d))["deposit"]["action"])
+
+    def test_moved_lists_closing_first(self):
+        """TL-238: the closing leads the moved list; the rest stay in date order."""
+        d = fixture("buyer-fha.json")
+        d["amendments"] = [{"date": "2026-09-28", "changes": {"closing_date": "2026-11-06", "loan_approval_days": 37}}]
+        moved = timeline.analyze(d)["moved"]
+        self.assertEqual(moved[0]["label"], "Closing")
+        self.assertGreater(len(moved), 2)
+
+    def test_strip_done_rows_read_as_done(self):
+        """TL-228: a done deposit isn't labeled like an open deadline on the strip."""
+        d = fixture("buyer-fha.json")
+        d["completed"] = {"deposit": "2026-09-26"}
+        svg = timeline_render.strip(timeline.analyze(d), self.COLORS)
+        self.assertIn("Deposit · Done", svg)
+        self.assertNotIn("Deposit · 9/28", svg)
 
 
 if __name__ == "__main__":

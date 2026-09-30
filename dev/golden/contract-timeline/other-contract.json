@@ -188,5 +188,11 @@
  "side": "buyer",
  "support": "best_effort",
  "time_zone": null,
+ "warning_keys": {
+  "count": 0
+ },
+ "warnings": {
+  "count": 0
+ },
  "what_if": false
 }
