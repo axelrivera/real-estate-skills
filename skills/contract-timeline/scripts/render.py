@@ -1,6 +1,7 @@
 """Contract timeline PDF (buyer or seller view).
 
     python3 scripts/render.py deal.json [--format pdf|ics|all] [--profile profile.md] [--date YYYY-MM-DD] [--out DIR]
+                              [--lender-dates]
 
 Page 1: the contract period, when the contingencies end, a timeline strip and every key date.
 Page 2: every deadline with its source, rule, action and consequence; amendment history; how the
@@ -397,11 +398,12 @@ def _vtimezone(tzid):
             "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU", "END:STANDARD", "END:VTIMEZONE"]
 
 
-def ics(t):
+def ics(t, lender_dates=False):
     """TL-20: the closing calendar as an .ics file. End-of-day deadlines are all-day events; the rest are timed in the
     property's time zone (TZID) when it's known; critical ones get a reminder the day before (at 9:00 AM for an
     all-day event). SEQUENCE counts the amendments, so a re-imported calendar replaces the older events. Deadlines
-    already done or past (TL-104) are left out."""
+    already done or past (TL-104) are left out, and so are the lender's targets (TL-252: insurance bound, the Closing
+    Disclosure), which are estimates, not contract dates; `lender_dates` adds them, titled "Lender Target"."""
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # when the file was made, in UTC (RFC 5545)
     what_if = "What-If: " if t.get("what_if") else ""  # TL-119: a hypothetical timeline says so in the calendar too
     tzid = TZIDS.get(t.get("time_zone") or "", t.get("time_zone") if t.get("time_zone") in VTIMEZONES else None)
@@ -413,6 +415,9 @@ def ics(t):
     for r in t["rows"]:
         if r.get("done") or r.get("past"):  # already met, or to confirm: nothing to remind anyone about
             continue
+        if r.get("lender") and not lender_dates:
+            continue
+        lender = "Lender Target: " if r.get("lender") else ""
         when = datetime.strptime(r["when"], "%Y-%m-%d %H:%M")
         event = r.get("no_time")  # an event on a day (the walk-through), not a deadline at a time
         all_day = event or when.strftime("%H:%M") == "23:59"
@@ -426,9 +431,9 @@ def ics(t):
                                     "Due by Closing." if r.get("by_closing") else "") if x)
         lines += ["BEGIN:VEVENT", f"UID:{r['key']}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline",
                   f"SEQUENCE:{len(t.get('history') or [])}", f"DTSTAMP:{now}", start, end,
-                  f"SUMMARY:{_ics_text(what_if + r['label'] + (' ★' if r['critical'] else ''))}",
+                  f"SUMMARY:{_ics_text(what_if + lender + r['label'] + (' ★' if r['critical'] and not lender else ''))}",
                   f"DESCRIPTION:{_ics_text(desc)}"]
-        if r["critical"]:  # the day before: 9:00 AM for an all-day event (its start is midnight), else 24 hours ahead
+        if r["critical"] and not lender:  # the day before: 9:00 AM for an all-day event (its start is midnight), else 24 hours ahead
             lines += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_ics_text(r['label'])}",
                       "TRIGGER:-PT15H" if all_day else "TRIGGER:-P1D", "END:VALARM"]
         lines.append("END:VEVENT")
@@ -443,7 +448,7 @@ def build(deal, fmt, out_dir, ctx):
     if fmt == "ics":
         path = os.path.join(out_dir, render.filename(t["property"].split(",")[0], "Contract Timeline", t["side"], ext="ics"))
         with open(path, "w", encoding="utf-8", newline="") as f:
-            f.write(ics(t))
+            f.write(ics(t, ctx.get("lender_dates")))
         return [path]
     if not t["closing"] and not t.get("short_sale"):  # a short sale before approval has no closing date yet
         raise timeline.DealError("The report needs the closing date: add contract.closing_date and re-run.")
@@ -463,6 +468,8 @@ def build(deal, fmt, out_dir, ctx):
 
 def extra_args(ap):
     ap.add_argument("--date", help="the report's Prepared date, YYYY-MM-DD (default: the deal file's report_date, else today)")
+    ap.add_argument("--lender-dates", action="store_true",
+                    help="add the lender's targets (insurance bound, Closing Disclosure) to the calendar, titled Lender Target")
 
 
 if __name__ == "__main__":

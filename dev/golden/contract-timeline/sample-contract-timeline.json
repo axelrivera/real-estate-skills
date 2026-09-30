@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 2
+  "count": 4
  },
  "chat_notes": {
   "count": 0
@@ -10,6 +10,7 @@
   "day": 35
  },
  "contingencies_end": {
+  "broker": false,
   "by_closing": false,
   "contingency": true,
   "critical": true,
@@ -34,6 +35,7 @@
  },
  "financing": "FHA",
  "first_deadline": {
+  "broker": false,
   "by_closing": false,
   "contingency": false,
   "critical": true,
@@ -62,7 +64,20 @@
  "history": {
   "count": 0
  },
+ "if_changed": [
+  {
+   "note_key": "flood_zone_unknown",
+   "rows": [
+    {
+     "key": "flood_elevation"
+    }
+   ]
+  }
+ ],
  "length_days": 35,
+ "merged_agent_notes": {
+  "count": 0
+ },
  "moved": {
   "count": 0
  },
@@ -71,6 +86,8 @@
  },
  "note_keys": [
   "waiting_on_receipt",
+  "flood_zone_unknown",
+  "rider_h_boxes",
   "default:title"
  ],
  "ok": true,
@@ -79,6 +96,7 @@
  },
  "pending": [
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -98,6 +116,7 @@
    "when": null
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": true,
@@ -117,6 +136,7 @@
    "when": null
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -136,11 +156,13 @@
    "when": null
   }
  ],
+ "repair_limits": null,
  "report_date": {
   "date": "2026-09-26"
  },
  "rows": [
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": true,
@@ -159,6 +181,7 @@
    "when": "2026-09-28 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -176,6 +199,7 @@
    "when": "2026-09-30 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": true,
    "critical": true,
@@ -193,6 +217,7 @@
    "when": "2026-10-05 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": true,
    "critical": true,
@@ -210,6 +235,7 @@
    "when": "2026-10-05 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -227,6 +253,7 @@
    "when": "2026-10-15 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -244,6 +271,7 @@
    "when": "2026-10-23 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": true,
    "critical": true,
@@ -261,6 +289,7 @@
    "when": "2026-10-26 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -279,6 +308,7 @@
    "when": "2026-10-26 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": true,
@@ -296,6 +326,7 @@
    "when": "2026-10-27 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -313,6 +344,7 @@
    "when": "2026-10-29 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": false,
@@ -331,6 +363,7 @@
    "when": "2026-10-29 23:59"
   },
   {
+   "broker": false,
    "by_closing": false,
    "contingency": false,
    "critical": true,
