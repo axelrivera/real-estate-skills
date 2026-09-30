@@ -8,11 +8,11 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 
 | Topic | Raised When | Level |
 |---|---|---|
-| `expired` | `expires` is before `analysis_date` (with `expires_estimated`: likely passed) | Blocking (High when estimated) |
+| `expired` | `expires` is before `analysis_date` (with `expires_estimated`: likely passed); or it falls on `analysis_date` (it ends today) | Blocking (High when estimated or today) |
 | `approval_cap` | the price is above `approval_max_price`, or the loan above `approval_max_loan` | High |
 | `approval_expires` | the pre-approval letter expires before closing | Med |
 | `proof_of_funds` | `proof_of_funds` is below the down payment plus the appraisal gap the buyer covers | High |
-| `counter_chain` | the live offer is weaker than the seller's last counter in `prior_counters` on inspection, loan approval, deposit, concessions or gap | High |
+| `counter_chain` | the live offer is weaker than the seller's last counter in `prior_counters` on inspection, loan approval, deposit, concessions or gap, or has another closing date | High |
 | `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (only when `riders` is listed) | High (F: Med) |
 | `rider_GG` | Rider GG attached: the compensation agreement isn't seen yet | Med |
 | `lead_paint` | built before 1978 with no lead-based paint disclosure (Rider P) | High |
@@ -20,7 +20,7 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `inspection_period` | an inspection period of 15 days or more | Med |
 | `flood_disclosure` | the market requires the seller's flood disclosure and `listing.flood_disclosure` isn't `true` | Med |
 
-Also raised, with no topic because they have nothing to duplicate: rider risks (short sale, attorney approval, a sale contingency without a kick-out, an assessment with no payoff agreement, a mortgage assumption), AGA-1 conflicts, FHA/VA condo approval, loan approval after closing, and the Standard form's repair limits.
+Also raised, with no topic because they have nothing to duplicate: rider risks (short sale, attorney approval, a sale contingency without a kick-out, an assessment with no payoff agreement, a mortgage assumption), AGA-1 conflicts (with Rider F; on an FHA, VA or USDA offer, which AGA-1 doesn't fit; a periods total that runs past closing), a free-text pre-approval expiry (recorded as an assumption), FHA/VA condo approval, loan approval after closing, and the Standard form's repair limits.
 
 This is a completeness check, not a legal opinion. Never tell the agent a contract is or isn't binding; say it can't be reviewed as written, and point questions about validity to a real estate attorney licensed in the property's state.
 
@@ -38,7 +38,7 @@ This is a completeness check, not a legal opinion. Never tell the agent a contra
 - Pages are missing, or a rider the contract says is attached isn't there.
 - The purchase price, the property or the parties are blank or don't match the listing.
 - Handwritten or struck changes aren't initialed by every buyer.
-- The time for acceptance has already passed (automatic from `expires`). A seller counter with a new time for acceptance revives a lapsed offer, so the reply may show what that counter could look like, labeled as reference.
+- The time for acceptance has already passed (automatic from `expires`). State the fact (the offer's own deadline has passed), never whether it can still be accepted; a seller counter sets a new time for acceptance, so the reply may show what that counter could look like, labeled as reference.
 - Two parts of the contract give different prices, deposits or financing and you can't tell which governs.
 
 ## High

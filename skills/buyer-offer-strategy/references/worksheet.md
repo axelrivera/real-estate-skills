@@ -18,8 +18,8 @@ Only FR/BAR is built in. For any other form, the worksheet lists the same entrie
 | Rider (FR/BAR) | Trigger | Suggested Inputs |
 |---|---|---|
 | FHA/VA Financing Rider (E) | financing fha or va | appraised-value threshold = price; fill the appraisal repair cap (no default) |
-| Appraisal Contingency Rider (F) | conventional or usda, no appraisal gap | value threshold = price; appraisal date (blank = 10 days before closing, notice within 3 days after) |
-| Appraisal Gap Addendum (AGA-1) | conventional, usda or cash with an appraisal gap | Gap Amount; valuation within 30 days (default); 3 days to agree on new terms. Not used with Rider F |
+| Appraisal Contingency Rider (F) | conventional or usda without AGA-1 (a USDA gap goes in Additional Terms with Rider F) | value threshold = price; appraisal date (blank = 10 days before closing, notice within 3 days after) |
+| Appraisal Gap Addendum (AGA-1) | conventional or cash with an appraisal gap (the form's own scope: never FHA, VA or USDA) | Gap Amount; valuation days filled so AGA-1's periods (valuation + 3 + 3) end with the Loan Approval Period, or by closing for cash (30 days, the form's default, when that fits); 3 days to agree on new terms. Not used with Rider F |
 | Homeowners' Association/Community Disclosure Rider (B) | `hoa_monthly` > 0 or `hoa_name` | association, dues, approval required, special assessments; the seller's disclosure summary before the buyer signs |
 | Condominium Rider (A) | `property.type` = condo | association, approval, milestone inspection and SIRS status, documents requested |
 | Lead-Based Paint Disclosure Rider (P) | built before 1978 | disclosure and 10-day risk-assessment opportunity (buyer may waive) |
@@ -36,7 +36,7 @@ Other contracts get the same list with generic names ("Appraisal Contingency Add
 
 ## Additional Terms (Draft Language)
 
-Only when they apply: seller-paid closing costs (unused amounts aren't paid to the buyer), appraisal gap when AGA-1 doesn't apply (an FHA/VA offer, where it's stated intent only, or another contract: the buyer pays up to $X of any shortfall; beyond that the appraisal protection applies), seller-provided reports within 2 days (in Florida the 4-point and wind-mitigation reports speed up the insurance quote), escalation (only when the addendum isn't used).
+Only when they apply: seller-paid closing costs (unused amounts aren't paid to the buyer), appraisal gap when AGA-1 doesn't apply (an FHA/VA offer, where it's stated intent only; a USDA offer, with Rider F; or another contract: the buyer pays up to $X of any shortfall; beyond that the appraisal protection applies), seller-provided reports within 2 days (in Florida the 4-point and wind-mitigation reports speed up the insurance quote), escalation (only when the addendum isn't used).
 
 ## Package Checklist
 

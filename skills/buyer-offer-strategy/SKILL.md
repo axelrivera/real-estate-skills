@@ -17,6 +17,7 @@ Two files from one analysis:
 These apply to everything this skill writes: files, chat replies, and text the agent may forward to a client.
 
 - **Fair housing.** No personal letters, photos or buyer background in the package, and reasons, pushback and clause language are about terms. Describe the property, the numbers and the terms, never people: not who the home suits, who should buy, or who lives nearby. No claims about safety, crime, school quality or who makes up an area. The protected classes are race, color, religion, sex, disability, familial status and national origin, plus sexual orientation, gender identity and any listed in the market's `fair_housing.extra_protected_classes`. Read `references/fair-housing.md` before writing reasons, pushback or clause language. If the agent asks for wording that breaks this, write the compliant version and say why in one sentence; don't lecture or flag innocent wording like "family room".
+- **People by name, never by pronoun.** In chat, call the parties "the buyer", "the seller" or by their names; never guess a pronoun from a name.
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **Private financial details.** Pre-approval letters, proof of funds and bank statements carry account numbers, loan numbers and sometimes Social Security numbers: never copy those into the data file, the chat or a report (write "Account ending 1234" at most). Keep only the amounts and the lender's name the analysis needs. The Offer Options report holds the buyer's limits and cash: it's for the buyer only, and its footer says so; never send it to the listing side (the worksheet holds only offer terms).
@@ -40,7 +41,7 @@ One JSON file per property the buyer is pursuing, in a temporary folder, never t
   2. Any other CMA (a CMA PDF from an earlier conversation, another tool's PDF, notes): read the low, high and any market stats, confirm them with the agent in one line, and put them in `value` and `market`.
   3. Nothing: list price stands in for value and the answer is Preliminary.
 - **Buyer:** loan type and down payment, first-time buyer or not, max price, cash available, reserve floor, max payment.
-- **Listing-agent intel:** competition level, offer deadline, buyer-broker pay offered, seller priorities. This is the most valuable input; if it's unknown, run with the inferred level and say so in one line.
+- **Listing-agent intel:** competition level, offer deadline (dates count from the day after it, or from `expected_effective_date`), buyer-broker pay offered, seller priorities. This is the most valuable input; if it's unknown, run with the inferred level and say so in one line.
 - **Worksheet details:** buyer names, escrow agent, HOA name, personal property. Never invent names, legal descriptions or parcel IDs: missing ones print as red blanks.
 
 **Minimum to run:** list price and cash available.
@@ -65,7 +66,7 @@ python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma fil
 
 `all` (the default) saves both PDFs in the agent's buyer-side brand colors; `--profile` puts the agent's name and colors on them (found as `references/saved-files.md` describes). The worksheet uses the file's `chosen_option` (else recommended); when the buyer hasn't chosen, build it for the recommended option and say it will be redone if they pick another. Check the rider list against the facts (the insurance rider can be skipped when a quote is in hand). Contract entries and riders: `references/worksheet.md`; for FR/BAR, what each rider and addendum requires is in `references/frbar-riders.md` and `references/frbar-addenda.md` (check the package against `references/frbar-package-check.md`, and `references/frbar-contract.md` for any paragraph); for any other contract, `references/other-contracts.md`. If rendering fails, say so and give the markdown answer.
 
-In chat: the recommended offer (price, key terms, outlook) in one or two sentences; the choice the buyer faces ("Stronger costs $2,000 more and doesn't change the outlook; lower-cost saves $3,570 but drops to At Risk"); the top missing input as one question (usually the listing agent's competition read). Hand back the updated buyer file for next time.
+In chat: the recommended offer (price, key terms, outlook) in one or two sentences; the choice the buyer faces ("Stronger costs $2,000 more and doesn't change the outlook; lower-cost saves $3,570 but drops to At Risk"); the top missing input as one question (usually the listing agent's competition read). The buyer file stays in the temporary folder and is never handed over (`references/saved-files.md`); in a later conversation, rebuild it from what the agent gives again.
 
 ## Package Rules
 

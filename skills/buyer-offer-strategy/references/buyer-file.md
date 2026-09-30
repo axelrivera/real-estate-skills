@@ -11,7 +11,11 @@ One JSON file per property the buyer is pursuing. Only `property.list_price` is 
 }
 ```
 
-Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the handoff pasted into the file as `"cma": {...}`. It fills `property` facts, `value` (low, high, midpoint, median adjusted) and `market` stats, only where the file doesn't already say.
+Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the handoff pasted into the file as `"cma": {...}`. It fills `property` facts (with the HOA dues, flood zone, roof year and the seller's tax bill when the CMA has them), `value` (low, high, midpoint, median adjusted), `market` stats and the tax the CMA computed for the buyer (`costs.total_mills`, `school_mills`, `homestead`), only where the file doesn't already say, so both reports show the same payment. A handoff for another address, or a seller-side one, is flagged high.
+
+## Top Level
+
+`analysis_date` (default today), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`.
 
 ## property
 
@@ -36,7 +40,7 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 |---|---|---|
 | `level` | 0 only offer · 1 one competing · 2 two–three · 3 cash or 4+ | inferred from market heat (hot → 2, normal → 1, soft → 0), flagged |
 | `note` | what the listing agent said | — |
-| `deadline` | offers due | — |
+| `deadline` | offers due ("2026-09-25 17:00" or "Fri Sep 25 · 5 PM"); the expected Effective Date is the day after | — |
 | `backup` | seller already has an accepted contract | — |
 
 Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM is over 1.5× the median or the price was cut.
@@ -47,7 +51,7 @@ Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM i
 
 ## costs (Buyer's Payment)
 
-`rate` (interest rate as a **percent**: `6.5` for 6.5%, like lenders quote it; default 6.5), `tax_rate` (optional: annual tax as a share of price, `0.0198`, when you have a plain rate rather than millage), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions; without millage, the market's fallback rate; neither → payment leaves tax out, flagged), `flood_insurance_annual` (a quote; without one the payment leaves flood out, labeled "Before Flood Insurance", and the assumptions say whether a lender or Citizens requires it: never 0).
+`rate` (interest rate as a **percent**: `6.5` for 6.5%, like lenders quote it; default 6.5), `tax_rate` (optional: annual tax as a share of price, `0.0198`, when you have a plain rate rather than millage), `insurance_annual` (default: the market's buyer insurance rate × price, at least $2,500; Florida 0.9%, else a national 0.9% estimate), `total_mills`, `school_mills`, `homestead` (tax with the market's homestead exemptions, default true and listed as an assumption: a second home or rental pays more), `district` (the taxing district's name or the property record's tax-area code, looked up in the built-in millage like the CMA skills). Without millage or a district, the built-in district matching the address's city is used when exactly one matches (flagged: confirm the parcel is inside city limits); else the market's fallback rate; neither → payment leaves tax out, flagged. `flood_insurance_annual` (a quote; without one the payment leaves flood out, labeled "Before Flood Insurance", and the assumptions say whether a lender or Citizens requires it: never 0).
 
 ## buyer
 
@@ -84,4 +88,4 @@ The agent's call on any recommended term: `price`, `seller_concessions`, `deposi
 
 ## worksheet
 
-`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id`, `hoa_name`, `personal_property`, `acceptance_deadline`, `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name for any contract that isn't FR/BAR; read on a best-effort basis). Missing names print as red blanks.
+`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id`, `hoa_name`, `personal_property`, `acceptance_deadline` (the Time for Acceptance; default the expected Effective Date at 5:00 PM, past the offers-due deadline), `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name for any contract that isn't FR/BAR; read on a best-effort basis). Missing names print as red blanks.

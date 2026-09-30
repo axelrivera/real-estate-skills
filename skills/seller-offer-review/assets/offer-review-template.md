@@ -4,7 +4,7 @@
 ## Offer Review: {{property}} (List {{list_price}})
 
 <!-- single mode; when summary.action is INCOMPLETE, write only the headline, why, the fixes as a list ("issue: fix") and the next step: no counter, options or recommendation.
-     Exception, an offer whose time for acceptance has passed (summary.revive is present): a seller counter can revive it, so after the fixes also give the "What a Counter Could Look Like" block below. It's reference, never a recommendation. -->
+     Exception, an offer whose time for acceptance has passed (summary.revive is present): a seller counter would set a new time for acceptance, so after the fixes also give the "What a Counter Could Look Like" block below. It's reference, never a recommendation. -->
 **{{summary.headline}}: {{summary.offer_label}}.** {{summary.why}}
 
 {{when summary.counter:}}

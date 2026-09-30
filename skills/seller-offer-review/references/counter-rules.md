@@ -2,9 +2,9 @@
 
 The engine drafts a counter from the rules below. The benchmarks (deposit, concessions, inspection, loan approval) are the market's `offer_norms`, the same ones the Terms Review shows (Florida: 3%, 1.5%, 7 days, 21 days); without them, national planning norms are used (1%, 3%, 10 days, 30 days) and flagged. Each rule adds a row (term, offered, counter, why) only when it applies. The goal is a better net **and** less risk, not simply a higher price. Review the draft for realism before answering.
 
-1. **Price above value with an unfunded appraisal gap** (financed, price > CMA high, gap < price − CMA high) → counter at CMA high. A price the appraisal won't support is a renegotiation waiting to happen. This can lower the paper net, so the report compares the counter with both the as-offered and the downside net; the honest comparison is the downside.
+1. **Price above value with an unfunded appraisal gap** (an appraisal contingency, price > CMA high, gap < price − CMA high) → counter at CMA high. A price the appraisal won't support is a renegotiation waiting to happen. This can lower the paper net, so the report compares the counter with both the as-offered and the downside net; the honest comparison is the downside. **Only with a CMA:** without one, list price only stands in for the value, so the price is never countered down; rule 3 asks for gap coverage and the row says a CMA would firm up the value.
 2. **Price below list** → meet partway (rounded up to $1,000). With a CMA and a price under the CMA low, counter at list.
-3. **Appraisal gap:** financed (not FHA or VA), and the counter price is above the CMA high → ask the buyer to cover the difference, rounded up to $1,000.
+3. **Appraisal gap:** an appraisal contingency (not FHA or VA, whose rider lets the buyer walk), and the counter price is above the CMA high (list price without a CMA) → ask the buyer to cover the difference, rounded up to $1,000.
 4. **Concessions above the norm** (Florida 1.5% of price) → counter at half.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
 6. **Deposit under the norm** (Florida 3%) → the norm on the counter price for financed offers, at least 5% for cash.
@@ -14,13 +14,14 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
+13. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM. Change it to what the seller wants.
 
 ## Negotiation History
 
 When the seller has already countered (`prior_counters`), the draft builds on the seller's last counter instead of starting over:
 
-- **Price** never goes above the seller's last counter price. Below it, meet partway between the offer and that price (rounded up to $1,000, never above it); rule 1 still applies, capped at the same price.
-- **Terms the seller already asked for** (inspection and loan approval days, deposit, concessions, gap coverage) are restated as the seller last countered them when the offer is weaker, with the why "Restates the seller's last counter". The draft doesn't go back to a harder ask than the seller's last counter: that retracts a concession and stalls the deal. Terms the offer already meets get no row.
+- **Price** never goes above the seller's last counter price, which is the ceiling even when it's above list. Below it, meet partway between the offer and that price (rounded up to $1,000, never above it). An offer above it with an unfunded gap is countered back to the seller's last price, never below it (rule 1 doesn't cut under the seller's own counter); rule 3 asks for gap coverage above the value range.
+- **Terms the seller already asked for** (inspection and loan approval days, deposit, concessions, gap coverage, closing date) are restated as the seller last countered them when the offer is weaker, with the why "Restates the seller's last counter". The draft doesn't go back to a harder ask than the seller's last counter: that retracts a concession and stalls the deal. Terms the offer already meets get no row.
 - If the agent's own counter goes above the seller's last price or asks for less than the seller's last terms, say why in its `rows`.
 
 A buyer's counter that drops a term the seller countered (under FR/BAR CO-3 only what a counter restates carries) is raised as a High issue (`counter_chain`), and the draft restates the term.
@@ -31,7 +32,7 @@ Never recommend two live counters or a backup request while the primary deal isn
 
 ## Appraisal Terms
 
-Appraisal risk starts at the top of the CMA range. A price above it is countered back to it rather than asking for gap money the buyer may not have. FHA and VA offers are never asked for gap coverage: the rider lets the buyer walk if the appraisal is low, so a gap clause shows intent only. A financed offer that waives the appraisal is credited only up to the buyer's documented cash beyond the down payment and closing costs (`gap_funds`).
+Appraisal risk starts at the top of the CMA range. With a CMA, a price above it is countered back to it rather than asking for gap money the buyer may not have; without one, the price stands and the counter asks for gap coverage. FHA and VA offers are never asked for gap coverage: the rider lets the buyer walk if the appraisal is low, so a gap clause shows intent only. A financed offer that waives the appraisal is credited only up to the buyer's documented cash beyond the down payment and closing costs (`gap_funds`).
 
 ## Multiple Offers
 

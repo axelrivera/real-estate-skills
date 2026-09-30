@@ -31,6 +31,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 | `list_price`, `sqft` | *numbers* |
 | `latitude`, `longitude` | Optional *numbers*: only when the export has no Distance column and no row for the home (distances are measured from its own row otherwise) |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
+| `roof_year`, `hoa_monthly` | Optional, for the handoff: the offer skills' insurance and HOA checks. The handoff also carries the current bill, the payment's millage and homestead, and the flood zone (a FEMA code only) |
 | `subdivision` | As in the export (improves the handoff's comp ranking) |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. A condo follows `condo.md` (comps, adjustments, association questions) |
 | `facts` | Ten `[label, value]` in this order, labels in Title Case: List Price, Price per Sq Ft, Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone |

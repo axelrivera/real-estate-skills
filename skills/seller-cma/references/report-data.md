@@ -35,6 +35,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 | `sqft` | *number*, heated area from the seller or public record |
 | `latitude`, `longitude` | Optional *numbers*: the home's location, for distances when the export has no Distance column and no row for the home |
 | `beds`, `baths`, `year_built`, `pool`, `hoa`, `subdivision` | For the handoff, the comp ranking and the estoppel line (`pool`, `hoa` true/false) |
+| `roof_year` | Optional, for the handoff: the offer review's insurance check. The handoff also carries `costs.annual_tax`, `costs.hoa_monthly`, the buyer-payment millage and the flood zone (a FEMA code only) |
 | `facts` | Ten `[label, value]`, labels in Title Case: Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone, Current Taxes, Recent Updates |
 | `summary` | 2–3 sentences: the home and its updates "as described by you", and what the report does |
 | `summary_facts` | One line for page 1 ("4 bed · 2 bath · 1,849 sq ft · pool · built 1972") |
