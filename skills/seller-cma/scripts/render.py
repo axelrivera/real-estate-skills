@@ -54,7 +54,8 @@ def summary_page(R, C, agent, L):
     sp = R["summary_page"]  # placeholders already filled (build_html)
     strats, ri = C["strategies"], C["recommended_index"]
     cash, free = C["net"]["cash_at_closing"], C["net"]["no_mortgage"]
-    tile = L("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile", price=money(rec["list_price"]))
+    held = "_holding" if C["net_basis"] == "after_holding" else ""  # CMA-298: nets after holding costs, as the reply quotes them
+    tile = L(("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile") + held, price=money(rec["list_price"]))
     if C["net"]["standard_terms"]:  # CMA-18: every place a net shows says the brokerage isn't the listing agreement's yet
         tile += f" ({L('sum_standard_terms')})"
     stats = list(sp.get("key_stats") or [])[:3]
@@ -82,13 +83,13 @@ def summary_page(R, C, agent, L):
     stay = (C.get("reprice") or {}).get("stay_index")  # CMA-273: the Stay row reads "Stay at $474,900", as in the full table
     rows = "".join(f'<tr class="{"rec" if x["recommended"] else ""}"><td>'
                    f'{L("sum_stay", price=x["list_price_display"]) if i == stay else x["list_price_display"]}{" ★" if x["recommended"] else ""}</td>'
-                   f'<td>{x["time"]}</td><td class="n">{x["expected_sale_display"]}</td><td class="n">{x["net_display"]}</td></tr>'
+                   f'<td>{x["time"]}</td><td class="n">{x["expected_sale_display"]}</td><td class="n">{x["net_after_holding_display"]}</td></tr>'
                    for i, x in enumerate(strats))
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_options")}</div><div class="tbl"><table><thead><tr>'
              f'<th>{L("th_list_at")}</th><th>{L("th_time_short")}</th><th class="n">{L("th_expected")}</th>'
              f'<th class="n">{L("th_est_cash" if cash else "th_est_net")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
-             f'<div class="note">{L("sum_options_note_free" if free else "sum_options_note_cash" if cash else "sum_options_note")}</div></div></div>')
+             f'<div class="note">{L(("sum_options_note_free" if free else "sum_options_note_cash" if cash else "sum_options_note") + held)}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
@@ -100,12 +101,13 @@ def summary_page(R, C, agent, L):
 def pricing_section(R, C, L):
     p, strats, net = R["pricing"], C["strategies"], C["net"]
     cash = net["cash_at_closing"]
-    cash_note = L("pricing_note_free" if net["no_mortgage"] else "pricing_note_cash")
+    held = "_holding" if C["net_basis"] == "after_holding" else ""  # CMA-298: the same nets as page 1 and the reply
+    cash_note = L(("pricing_note_free" if net["no_mortgage"] else "pricing_note_cash") + held)
     b = [f'<h2>{L("h_pricing")}</h2>', f'<p>{p["intro"]}</p>',
          table([L("th_strategy"), L("th_time"), L("th_expected"), L("th_cash" if cash else "th_net"), L("th_expect")],
-               [[f'<strong style="white-space:nowrap">{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_display"], x["note"]] for x in strats],
+               [[f'<strong style="white-space:nowrap">{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_after_holding_display"], x["note"]] for x in strats],
                num_cols=(2, 3), row_classes={C["recommended_index"]: "total"}),
-         f'<p class="note">{(cash_note if cash else L("pricing_note"))} {p.get("note", "")}</p>',
+         f'<p class="note">{(cash_note if cash else L("pricing_note" + held))} {p.get("note", "")}</p>',
          f'<h3>{L("h_net")}</h3>', f'<p>{p.get("net_intro") or L("net_intro")}</p>']
     rows = [[r["label"]] + r["display"] for r in net["rows"]]
     b.append(table([L("th_at_closing")] + [x["label"] for x in strats], rows, num_cols=tuple(range(1, len(strats) + 1)),
@@ -166,7 +168,11 @@ def body(R, C, homes, agent, L):
                                 [cd["address"] for cd in R["comps"]["cards"]])
         checks, notes = scatter_checks(info)
         C.setdefault("render_checks", []).extend(checks)
+        C.setdefault("render_check_keys", []).extend(["scatter_labels"] * len(checks))
         C.setdefault("render_notes", []).extend(notes)
+        dropped = callout_checks(info)  # CMA-299
+        C["render_checks"].extend(dropped)
+        C["render_check_keys"].extend(["callout_not_plotted"] * len(dropped))
         b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"]}</p>',
               '<div class="chart-box">' + cma.scatter_legend(L, sc["subject_label"], info["counts"]) + svg + "</div>"]
         b += [n for n in (cma.excluded_note(info["excluded"], L), cma.trend_caption(info, rec["list_price"], L)) if n]
@@ -209,6 +215,24 @@ def scatter_checks(info):
         notes.append("Scatter labels moved to stay clear of markers (information; the side is a preference): "
                      + "; ".join(f"{t} ({_moved_words(a, u)})" for t, a, u in moved) + ".")
     return checks, notes
+
+
+CALLOUT_REASONS = {"size": "left off the chart for its size (scatter.min_size_ratio / max_size_ratio)",
+                   "price": "left off the chart as priced far off the trend",
+                   "not_in_export": "not found in the export (use the export's spelling of the address)"}
+
+
+def callout_checks(info):
+    """CMA-299: one Check per scatter callout whose home isn't on the chart, naming it and why (the chart plots sales
+    and active listings only, within the size range and near the trend)."""
+    out = []
+    for label, address, reason in info.get("callouts_dropped") or []:
+        why = CALLOUT_REASONS.get(reason) or (
+            f"{reason}, and the chart plots only sales and active listings" if reason not in ("sold", "active")
+            else "missing its size or price in the export")
+        out.append(f"The scatter callout {label!r} ({address}) isn't on the chart: {why}. Drop the callout or point it at "
+                   "a plotted home, then render again.")
+    return out
 
 
 def _moved_words(asked, used):

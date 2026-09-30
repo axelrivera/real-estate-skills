@@ -165,6 +165,16 @@ def stay_expected(R, homes, rp, median_adjusted, split_date):
     return min(rp["current_price"] * ratio, median_adjusted), round(ratio, 4), len(pool)
 
 
+def stay_rule(R, homes, x, median_adjusted, split_date):
+    """CMA-280, CMA-300: the Stay option `x`'s expected sale by the rule, with its own seller credit added back (the ratio
+    is net of seller-paid costs, and the net sheet takes the credit off), to the nearest $1,000. Returns
+    {gross, ratio, n}, or None without an export."""
+    value, ratio, n = stay_expected(R, homes, R["reprice"], median_adjusted, split_date)
+    if value is None:
+        return None
+    return {"gross": round((value + (x.get("seller_credit") or 0)) / 1000) * 1000, "ratio": ratio, "n": n}
+
+
 def _require(R, *paths):
     for path in paths:
         node = R
@@ -504,10 +514,12 @@ def compute(R, market, homes):
         raise ReportError("pricing.strategies should have 3 options (top of range, recommended, competing-offer price), "
                           "or for a reprice Stay at Current Price first, then the recommended cut and the competing-offer price.")
     for x in strategies:
-        for k in ("list_price", "expected_sale"):
-            if not isinstance(x.get(k), (int, float)):
-                raise ReportError(f"Every pricing strategy needs {k} as a number.")
+        if not isinstance(x.get("list_price"), (int, float)):
+            raise ReportError("Every pricing strategy needs list_price as a number.")
     stay = check_reprice(R, strategies)
+    for i, x in enumerate(strategies):  # CMA-300: a reprice's Stay may leave expected_sale out; the rule fills it below
+        if not isinstance(x.get("expected_sale"), (int, float)) and not (i == stay and x.get("expected_sale") is None):
+            raise ReportError("Every pricing strategy needs expected_sale as a number.")
     relist = check_relist(R, strategies, homes, stay)  # CMA-277
     ri = p.get("recommended_index", 1)
     if not 0 <= ri < len(strategies):
@@ -522,7 +534,42 @@ def compute(R, market, homes):
         raise ReportError(str(e)) from e
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))  # CMA-110
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
-    scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
+    address = s.get("mls_address", s["address"])
+    others = [h for h in homes if not mls.same_address(h["address"], address)]
+    fit = mls.trend(others, s["sqft"], (R.get("scatter") or {}).get("fit_size_ratio", 1.6)) if others else None
+
+    stats = {}
+    if others:
+        st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
+                                      "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
+                                      **({"property_type": s["property_type"]} if s.get("property_type") else {})},
+                              split_date=R.get("split_date"),
+                              exclude_address=address, as_of=R.get("as_of"))
+        recent = st["sold_recent"]
+        stats = {k: v for k, v in {
+            "split_date": st["window"]["split_date"],
+            "sale_to_original_list_recent": recent.get("median_sale_to_original_list"),
+            "median_days_recent": recent.get("median_days_on_market"),
+            "share_with_seller_paid_costs_recent": recent.get("share_with_seller_paid_costs"),
+            "median_seller_paid_recent": recent.get("median_seller_paid_when_paid"),
+            "months_supply": st["months_supply_at_recent_pace"],
+            "active_count": st["active_count"]}.items() if v is not None}
+        window = st["window"]
+        n_sold = st["sold_all"]["n"]
+        max_dist = max((h["distance"] for h in others if h["status"] == "SOLD" and h.get("distance") is not None), default=None)
+    else:
+        window, n_sold, max_dist = None, None, None
+    # CMA-300: Stay at Current Price's expected sale by the one rule (method.md, A Reprice). Left out of report.json, it's
+    # filled from the rule, so the first run never guesses it
+    rule = stay_rule(R, homes, strategies[stay], median_adjusted, (window or {}).get("split_date")) if stay is not None else None
+    stay_filled = stay is not None and strategies[stay].get("expected_sale") is None
+    if stay_filled:
+        if not rule:
+            raise ReportError("Stay at Current Price needs expected_sale as a number: without an MLS export there are no sales "
+                              "to apply the rule to, so apply it to the sales you were given (method.md, A Reprice).")
+        strategies[stay]["expected_sale"] = rule["gross"]
+
+    scope =cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
     if scope:
         warn("adjustment_scope", scope)
     n = len(R["comps"]["cards"])
@@ -629,32 +676,6 @@ def compute(R, market, homes):
     if pay and pay["tax_estimated"]:
         warn("tax_estimated", f"Buyer taxes are estimated at {pay['tax_basis']}; find the millage for the home's taxing district if you can.")
 
-    address = s.get("mls_address", s["address"])
-    others = [h for h in homes if not mls.same_address(h["address"], address)]
-    fit = mls.trend(others, s["sqft"], (R.get("scatter") or {}).get("fit_size_ratio", 1.6)) if others else None
-
-    stats = {}
-    if others:
-        st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
-                                      "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
-                                      **({"property_type": s["property_type"]} if s.get("property_type") else {})},
-                              split_date=R.get("split_date"),
-                              exclude_address=address, as_of=R.get("as_of"))
-        recent = st["sold_recent"]
-        stats = {k: v for k, v in {
-            "split_date": st["window"]["split_date"],
-            "sale_to_original_list_recent": recent.get("median_sale_to_original_list"),
-            "median_days_recent": recent.get("median_days_on_market"),
-            "share_with_seller_paid_costs_recent": recent.get("share_with_seller_paid_costs"),
-            "median_seller_paid_recent": recent.get("median_seller_paid_when_paid"),
-            "months_supply": st["months_supply_at_recent_pace"],
-            "active_count": st["active_count"]}.items() if v is not None}
-        window = st["window"]
-        n_sold = st["sold_all"]["n"]
-        max_dist = max((h["distance"] for h in others if h["status"] == "SOLD" and h.get("distance") is not None), default=None)
-    else:
-        window, n_sold, max_dist = None, None, None
-
     no_state = not market.state  # CMA-282: costs are national estimates until the state and county are known
     preliminary = bool(net["missing"]) or bool(R.get("preliminary")) or no_state
     # CMA-258: the reason comes from the data: costs the market is missing, and/or the reason report.json gives
@@ -749,12 +770,10 @@ def compute(R, market, homes):
                        "original_price_display": money(original) if original else None}
         reprice_out["price_history"] = price_history(L, reprice=reprice_out)
         # CMA-280: Stay's expected sale by one rule (method.md), with the Stay option's own seller credit added back
-        value, ratio, n = stay_expected(R, homes, rp, median_adjusted, (window or {}).get("split_date"))
-        if value is not None:
-            x = strategies[stay]
-            gross = round((value + (x.get("seller_credit") or 0)) / 1000) * 1000
+        if rule:  # CMA-300: the rule was applied above, and fills Stay's expected_sale when report.json leaves it out
+            x, gross, ratio = strategies[stay], rule["gross"], rule["ratio"]
             reprice_out.update(stay_expected_sale=gross, stay_expected_sale_display=money(gross), stay_ratio=ratio,
-                               stay_ratio_sales=n)
+                               stay_ratio_sales=rule["n"], stay_expected_filled=stay_filled)
             if x["expected_sale"] > gross:
                 warn("stay_expected_high", f"Stay at Current Price expects {money(x['expected_sale'])}, above "
                      f"{money(gross)} from the rule (the current price times the {ratio:.1%} recent sale-to-original-list "
@@ -766,7 +785,8 @@ def compute(R, market, homes):
     median_display = adjusted_money(median_adjusted)
     trend = {"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
              "r2_key": mls.r2_key(fit["r2"])} if fit else None
-    values = placeholder_values(R, median_display, strat_out[ri]["net_display"], money(max(nets) - min(nets)),
+    # CMA-298: the recommended net, like every option compare, after holding costs (page 1, the reply and the deck agree)
+    values = placeholder_values(R, median_display, strat_out[ri]["net_after_holding_display"], money(max(nets) - min(nets)),
                                 about(max(nets) - min(nets)), pay, trend, L, relist, reprice_out)
     warn("unfilled_placeholder", *placeholder_warnings(R, values))
     warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
@@ -798,7 +818,7 @@ def compute(R, market, homes):
                    "original_price_display": money(relist["original_price"]) if relist["original_price"] else None,
                    "price_history": price_history(L, relist=relist)} if relist else None,  # CMA-287
         "first_steps_heading": L("sum_first"),  # "Before We List", or "Before We Reprice"
-        "recommended_net_display": strat_out[ri]["net_display"],
+        "recommended_net_display": strat_out[ri]["net_after_holding_display"],  # CMA-298: page 1's tile
         "net_spread": max(nets) - min(nets), "net_spread_display": money(max(nets) - min(nets)),
         "net_spread_about": about(max(nets) - min(nets)),  # CMA-272: the reply's rounded figure
         # CMA-264: which net the spread (and the deck's net chart) compares: after holding costs when they're counted

@@ -1384,6 +1384,83 @@ class FifthPass(unittest.TestCase):
             self.assertIn("freddiemac.com/pmms", f.read())
 
 
+class SixthPass(unittest.TestCase):
+    """Eval iteration 7 fixes (CMA-298 to CMA-301)."""
+
+    def test_pdf_nets_match_the_reply_basis(self):
+        """CMA-298: page 1, the pricing table and the tile show the nets the reply's differences compare (after holding)."""
+        R = SecondPass.reprice(None)
+        C, homes = run(R)
+        self.assertEqual(C["net_basis"], "after_holding")
+        ri = C["recommended_index"]
+        self.assertEqual(C["recommended_net_display"], C["strategies"][ri]["net_after_holding_display"])
+        self.assertEqual(C["placeholders"]["recommended_net"], C["strategies"][ri]["net_after_holding_display"])
+        doc, L = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        for x in C["strategies"]:
+            self.assertNotEqual(x["net_display"], x["net_after_holding_display"])
+            self.assertEqual(doc.count(f'<td class="n">{x["net_after_holding_display"]}</td>'), 3)  # page 1, pricing, net sheet's last row
+            self.assertEqual(doc.count(f'<td class="n">{x["net_display"]}</td>'), 1)  # the net sheet's total only
+        self.assertIn(L("sum_options_note_holding"), doc)
+        self.assertIn(L("pricing_note_holding"), doc)
+        self.assertIn(L("sum_net_tile_holding", price=C["recommendation"]["list_price_display"]), doc)
+        nets = [x["net_after_holding"] for x in C["strategies"]]
+        self.assertEqual([x["net_vs_recommended"] for x in C["strategies"]], [v - nets[ri] for v in nets])
+
+    def test_callout_off_the_chart_is_a_check(self):
+        """CMA-299: a callout whose home isn't plotted (pending, or not in the export) is named, never dropped silently."""
+        R = report()
+        C, homes = run(R)
+        comps = {" ".join(cd["address"].upper().split()) for cd in R["comps"]["cards"]}
+        pend = next(h for h in homes if h["status"] == "SOLD" and h.get("living_area")
+                    and " ".join(h["address"].upper().split()) not in comps)
+        pend["status"] = "PENDING"
+        R["scatter"]["callouts"] = R["scatter"]["callouts"][:1] + [
+            {"address": pend["address"], "label": "Pending Sale", "side": "right"},
+            {"address": "1 NOWHERE LN", "label": "Missing", "side": "left"}]
+        seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertEqual(C["render_check_keys"].count("callout_not_plotted"), 2)
+        self.assertEqual(len(C["render_checks"]), len(C["render_check_keys"]))
+        dropped = [c for c, k in zip(C["render_checks"], C["render_check_keys"]) if k == "callout_not_plotted"]
+        self.assertIn("Pending Sale", dropped[0])
+        self.assertIn("pending", dropped[0])
+        self.assertIn("not found in the export", dropped[1])
+        _, info = compute.cma.scatter(homes, {**R["scatter"], "subject_label": "Your Home"}, 1849,
+                                      R["recommendation"]["list_price"], R["subject"]["mls_address"],
+                                      (R["recommendation"]["low"], R["recommendation"]["high"]), compute.labels(R))
+        self.assertEqual([d[2] for d in info["callouts_dropped"]], ["pending", "not_in_export"])
+        R = report()  # the fixture's own callouts are all plotted
+        C, homes = run(R)
+        seller_render.build_html(R, C, homes, AGENT)
+        self.assertNotIn("callout_not_plotted", C.get("render_check_keys", []))
+
+    def test_stay_expected_sale_is_filled_by_the_rule(self):
+        """CMA-300: a reprice's Stay without expected_sale gets the rule's figure on the first run, no warning."""
+        R = SecondPass.reprice(None)
+        rule = run(copy.deepcopy(R))[0]["reprice"]["stay_expected_sale"]
+        R["pricing"]["strategies"][0].pop("expected_sale")
+        C, _ = run(R)
+        self.assertEqual(C["strategies"][0]["expected_sale"], rule)
+        self.assertTrue(C["reprice"]["stay_expected_filled"])
+        self.assertNotIn("stay_expected_high", C["warning_keys"])
+        R = texas(SecondPass.reprice(None))  # no export: nothing to fill it from
+        R["pricing"]["strategies"][0].pop("expected_sale")
+        with self.assertRaises(compute.ReportError):
+            run(R)
+        R = report()  # only a reprice's Stay may leave it out
+        R["pricing"]["strategies"][0].pop("expected_sale")
+        with self.assertRaises(compute.ReportError):
+            run(R)
+
+    def test_method_time_adjustment_base_and_no_tildes(self):
+        """CMA-301: the time adjustment's base is the sale price minus seller-paid costs; no "~" in the references."""
+        with open(os.path.join(SKILL, "references", "method.md")) as f:
+            self.assertIn("percentage of the sale price minus seller-paid costs", f.read())
+        for folder in ("references", "assets"):
+            for name in os.listdir(os.path.join(SKILL, folder)):
+                with open(os.path.join(SKILL, folder, name), encoding="utf-8") as f:
+                    self.assertNotIn("~", f.read(), name)
+
+
 def cma_page_checks(pages):
     return seller_render.cma.page_checks(pages, "the needs list, the launch steps or the method")
 

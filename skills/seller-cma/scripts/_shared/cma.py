@@ -201,8 +201,8 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     `comps`: the comp cards' addresses, drawn as comparable sales.
     `sc`: {callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
     Label sides: left, right, above or below.
-    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active and
-    counts {kind: n} for scatter_legend.
+    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active,
+    counts {kind: n} for scatter_legend, and callouts_dropped for callouts whose home isn't on the chart.
     """
     pts, excluded, fit = scatter_points(homes, sc, subject_sqft, subject_address, comps)
     sold, act = pts["comp"] + pts["sold"], pts["active"]
@@ -278,9 +278,18 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         points[" ".join(h["address"].upper().split())] = (h["living_area"], h["close_price"])
     for h in act:
         points.setdefault(" ".join(h["address"].upper().split()), (h["living_area"], h["current_price"]))
+    # CMA-299: a callout whose home isn't on the chart is reported with why, never dropped silently
+    off = {" ".join(e[0].upper().split()): e[3] for e in excluded}  # left off for size or price
+    status = {}
+    for h in homes:
+        status.setdefault(" ".join(str(h["address"]).upper().split()), str(h.get("status") or "").lower())
+    dropped_callouts = []
     for co in sc.get("callouts", []):
-        p = points.get(" ".join(co["address"].upper().split()))
-        if not p:
+        key = " ".join(co["address"].upper().split())
+        p = points.get(key)
+        if not p:  # (label, address, reason: size, price, the home's status such as pending, or not_in_export)
+            dropped_callouts.append((co.get("label") or co["address"], co["address"],
+                                     off.get(key) or status.get(key) or "not_in_export"))
             continue
         o.append(placer.place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12))
     o.append("</svg>")
@@ -289,7 +298,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
             "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
             "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
             "labels_leader": placer.leaders, "labels_dropped": placer.dropped,  # CMA-218
-            "crowded_labels": placer.clashing}
+            "crowded_labels": placer.clashing, "callouts_dropped": dropped_callouts}  # CMA-299
     return "\n".join(o), info
 
 

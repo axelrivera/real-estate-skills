@@ -95,7 +95,8 @@ def main(argv=None):
                 + (f", first listed at {money(h['original_list_price'])}"
                    if (h.get("original_list_price") or 0) > (h.get("current_price") or 0) else "")
                 + ("). The agent says it's their own listing: confirm, then reprice (copy this output's reprice to "
-                   "report.json: the price, days on market and original price)." if a.own_listing else
+                   "report.json: the price, days on market and original price). Leave Stay at Current Price's "
+                   "expected_sale out: compute.py fills it by the rule (method.md, A Reprice)." if a.own_listing else
                    "). Confirm whose listing it is before pricing: stop and ask the agent, unless they already said "
                    "it's their own (then re-run with --own-listing). Only their own listing is priced, as a reprice; "
                    "never another brokerage's."))
