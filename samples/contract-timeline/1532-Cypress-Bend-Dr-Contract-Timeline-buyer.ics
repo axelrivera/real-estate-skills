@@ -4,9 +4,28 @@ PRODID:-//real-estate-skills//contract-timeline//EN
 CALSCALE:GREGORIAN
 X-WR-CALNAME:Contract Timeline: 1532 Cypress Bend Dr\, Casselberry\, FL 327
  07
+X-WR-TIMEZONE:America/New_York
+BEGIN:VTIMEZONE
+TZID:America/New_York
+BEGIN:DAYLIGHT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+TZNAME:EDT
+DTSTART:20070311T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+TZNAME:EST
+DTSTART:20071104T020000
+RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU
+END:STANDARD
+END:VTIMEZONE
 BEGIN:VEVENT
 UID:deposit-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20260928
 DTEND;VALUE=DATE:20260929
 SUMMARY:Initial Escrow Deposit Due ★
@@ -16,12 +35,13 @@ DESCRIPTION:Who: Buyer. Deliver $11\,000 to Sample Title Co.\; get a receip
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Initial Escrow Deposit Due
-TRIGGER:-P1D
+TRIGGER:-PT15H
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:loan_app-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20260930
 DTEND;VALUE=DATE:20261001
 SUMMARY:Loan Application
@@ -32,7 +52,8 @@ DESCRIPTION:Who: Buyer. Apply for the loan and provide the lender's written
 END:VEVENT
 BEGIN:VEVENT
 UID:inspection-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261005
 DTEND;VALUE=DATE:20261006
 SUMMARY:Inspection Period Ends (Right to Cancel) ★
@@ -44,12 +65,13 @@ DESCRIPTION:Who: Buyer. Complete inspections (including 4-point and wind mi
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Inspection Period Ends (Right to Cancel)
-TRIGGER:-P1D
+TRIGGER:-PT15H
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:insurance-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261005
 DTEND;VALUE=DATE:20261006
 SUMMARY:Insurance Contingency Ends ★
@@ -61,12 +83,13 @@ DESCRIPTION:Who: Buyer. If the coverage the rider names (homeowner's\, floo
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Insurance Contingency Ends
-TRIGGER:-P1D
+TRIGGER:-PT15H
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:title-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261015
 DTEND;VALUE=DATE:20261016
 SUMMARY:Title Evidence Delivered
@@ -76,10 +99,11 @@ DESCRIPTION:Who: Seller. Title commitment delivered to the buyer. If missed
 END:VEVENT
 BEGIN:VEVENT
 UID:insurance_bound-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261023
 DTEND;VALUE=DATE:20261024
-SUMMARY:Homeowners Insurance Bound (Lender Target)
+SUMMARY:Homeowner's Insurance Bound (Lender Target)
 DESCRIPTION:Who: Buyer. Bind the policy and send the declarations page to t
  he lender. If missed: The lender may not be ready to fund on time. Rule: 
  7 days before Closing. Source: Lender's usual target\, not a contract dat
@@ -87,7 +111,8 @@ DESCRIPTION:Who: Buyer. Bind the policy and send the declarations page to t
 END:VEVENT
 BEGIN:VEVENT
 UID:loan_approval-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261026
 DTEND;VALUE=DATE:20261027
 SUMMARY:Loan Approval Period Ends ★
@@ -98,12 +123,13 @@ DESCRIPTION:Who: Buyer. Deliver written loan approval\, or written notice t
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Loan Approval Period Ends
-TRIGGER:-P1D
+TRIGGER:-PT15H
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:survey-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261026
 DTEND;VALUE=DATE:20261027
 SUMMARY:Survey Deadline
@@ -113,7 +139,8 @@ DESCRIPTION:Who: Buyer. If the buyer wants a survey\, have it done by this
 END:VEVENT
 BEGIN:VEVENT
 UID:clear_to_close-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261027
 DTEND;VALUE=DATE:20261028
 SUMMARY:Clear to Close / Closing Disclosure ★
@@ -124,12 +151,13 @@ DESCRIPTION:Who: Buyer. Buyer receives and signs the Closing Disclosure at
 BEGIN:VALARM
 ACTION:DISPLAY
 DESCRIPTION:Clear to Close / Closing Disclosure
-TRIGGER:-P1D
+TRIGGER:-PT15H
 END:VALARM
 END:VEVENT
 BEGIN:VEVENT
 UID:seller_terminate-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261029
 DTEND;VALUE=DATE:20261030
 SUMMARY:Seller's Right to Terminate (No Loan Notice)
@@ -141,7 +169,8 @@ DESCRIPTION:Who: Seller. If the buyer sent no loan approval or loan notice
 END:VEVENT
 BEGIN:VEVENT
 UID:walkthrough-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
 DTSTART;VALUE=DATE:20261029
 DTEND;VALUE=DATE:20261030
 SUMMARY:Final Walk-Through
@@ -152,9 +181,10 @@ DESCRIPTION:Who: Buyer. Walk the property the day before closing or on clos
 END:VEVENT
 BEGIN:VEVENT
 UID:closing-2b6d687aca@contract-timeline
-DTSTAMP:20260929T223003Z
-DTSTART:20261030T100000
-DTEND:20261030T103000
+SEQUENCE:0
+DTSTAMP:20260930T001057Z
+DTSTART;TZID=America/New_York:20261030T100000
+DTEND;TZID=America/New_York:20261030T103000
 SUMMARY:Closing ★
 DESCRIPTION:Who: Both. Sign\, fund and record\; keys and possession deliver
  ed. If missed: Default unless extended in writing. Rule: Closing date in 
