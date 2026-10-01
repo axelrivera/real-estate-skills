@@ -1,6 +1,6 @@
 ---
 name: seller-offer-review
-description: Reviews purchase offers on a listing for the seller's agent. For each offer it computes the seller's net (as offered and if the appraisal or inspection goes badly), a certainty score, risk flags and a counter; with two or more offers it ranks them and lays out a plan (counter, backup, decline). Answers in chat or as a seller-ready PDF. Use it whenever a listing agent says "we got an offer", "analyze this offer", "should my seller accept", "what should we counter", "net sheet for this offer", "compare these offers", "we got multiple offers", "should we call for highest and best", uploads a contract, pre-approval letter or offer summary, or another offer arrives on a listing that already has one. Works with just list price, offer price and financing. Florida FR/BAR contracts and costs are fully supported; other contracts get a best-effort read. Not for pricing a home before listing or writing a buyer's offer.
+description: Reviews purchase offers on a listing for the seller's agent. For each offer it computes the seller's net (as offered and if the appraisal or inspection goes badly), a certainty score, risk flags and a counter; with two or more offers it ranks them and lays out a plan (counter, backup, decline). Delivers a seller-ready PDF for each offer (plus a comparison with two or more) and a short chat answer, or chat only when asked. Use it whenever a listing agent says "we got an offer", "analyze this offer", "should my seller accept", "what should we counter", "net sheet for this offer", "compare these offers", "we got multiple offers", "should we call for highest and best", uploads a contract, pre-approval letter or offer summary, or another offer arrives on a listing that already has one. Works with just list price, offer price and financing. Florida FR/BAR contracts and costs are fully supported; other contracts get a best-effort read. Not for pricing a home before listing or writing a buyer's offer.
 ---
 
 # Seller Offer Review
@@ -53,30 +53,30 @@ It prints every value already formatted: the page-1 summary, each offer's net sh
 
 ## 3. Deliver
 
-Pick the reply by what the agent asked for; every number comes from the output.
+**Every review comes with the PDF** (render.py, below): one offer gets its single review; two or more active offers get the comparison plus a single review of each, so every offer has its own report before the big picture. Skip the PDF only when the agent asks for chat only ("just tell me", "in chat", "no PDF") or it can't render. Pick the chat reply that goes with it by what the agent asked for; every number comes from the output.
 
 **What counts toward a cap:** the prose. Outside it: tables (a net sheet, a lapsed offer's reference counter), the one line each Blocking or High issue takes, the `chat_notes` line and the one-line `value_range_confirm`. **When it doesn't fit,** cut in this order: the why behind the recommendation to one clause, the "Estimated:" line to the cost names without figures, then the comparison to its two biggest differences. Never cut the net and certainty, a Blocking or High line, the counter's changed terms, the plan, or the missing-inputs question.
 
 | Asked For | The Reply Contains | Cap |
 |---|---|---|
-| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix, one line each (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; every line of `estimated_costs` in one short "Estimated:" line; the top missing inputs (`to_confirm`) as one question; the PDF offered in one line. A lapsed offer (`summary.revive`) adds its reference counter table and the net as written, labeled reference only | about 200 words, no tables but the lapsed offer's (outside the cap) |
-| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty; keep the Counter column when countering), the net with payoff status, one line with the recommendation and counter, `estimated_costs` in one line with what replaces them (a title quote, the tax bill), the PDF offered in one line | one table plus about 150 words |
+| **Quick question** ("should we take it?", "what should my seller do?") | `summary.title` and the net with certainty; each Blocking or High issue with its fix, one line each (never a plain "yes" past one); when countering, the changed terms in one line; with 2+ offers, the plan in one line per offer; every line of `estimated_costs` in one short "Estimated:" line; the top missing inputs (`to_confirm`) as one question. A lapsed offer (`summary.revive`) adds its reference counter table and the net as written, labeled reference only | about 200 words, no tables but the lapsed offer's (outside the cap) |
+| **Quick net sheet** ("net sheet please", "what would my seller net?") | the offer's net sheet table from `offers[].net_sheet` (drop the Downside column when `downside_counts` is empty; keep the Counter column when countering), the net with payoff status, one line with the recommendation and counter, `estimated_costs` in one line with what replaces them (a title quote, the tax bill) | one table plus about 150 words |
 | **Comparison question** (Rider K vs. a plain Standard offer, AS IS vs. Standard, cash vs. financed) | the quick-question lines, then the comparison below in three or four short points | about 450 words |
 | **Re-rank request** ("rank B first", "the seller likes B") | the fair-housing sentence when a letter or personal detail came in, the ranking the terms support with one sentence on why, and the terms reason in `ranking_reason`; a new PDF when the ranking, the plan or the terms reason changed, or when there's no PDF yet in this conversation | about 200 words |
-| **Full review in chat** | `assets/offer-review-template.md`, filled in | the template |
-| **A report for the seller** | the PDF below, then the chat lines under it | about 60 words plus 25 per offer (85 with one offer, 160 with four), tables outside |
+| **Full review in chat** (asked for in chat, no PDF) | `assets/offer-review-template.md`, filled in | the template |
+| **A report for the seller** (no specific question) | the chat lines under the PDF, below | about 60 words plus 25 per offer (85 with one offer, 160 with four), tables outside |
 
 **Top risks** come from `summary.risks` and `offers[].biggest_risk`. `biggest_risk` is the top deal flag unless the certainty's `threat` is more severe (its criterion scoring 1 is High, 2 Med, 3 Low); then it is the threat, so the two never disagree. Deal risks come first (a passed deadline, sale contingency, financing, appraisal gap). The seller's flood disclosure is a listing-side reminder: it's last in the flags and on the checklist, never the biggest risk; in chat, mention it in a clause at most.
 
-**A report for the seller:**
+**The PDF:**
 
 ```
-python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet] [--profile profile.md]
+python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--profile profile.md]
 ```
 
-`--profile` puts the agent's name and colors on it (`references/saved-files.md`). In the comparison, an offer whose contract form was assumed carries "(form assumed)"; the Preliminary line appears only when an input that could change the ranking is assumed (`summary.preliminary`), and each offer's single review still has its own. The PDF goes to the outputs folder; if it can't render, give the markdown review. `--packet` (every offer's report): the comparison plus a single review of each active offer.
+`--profile` puts the agent's name and colors on it (`references/saved-files.md`). In the comparison, an offer whose contract form was assumed carries "(form assumed)"; the Preliminary line appears only when an input that could change the ranking is assumed (`summary.preliminary`), and each offer's single review still has its own. The PDF goes to the outputs folder; if it can't render, give the markdown review. With two or more active offers it writes the comparison and each offer's single review (rank order); deliver them all, and when an offer arrives later, run it again so every offer's review is current. `--offer ID` renders one offer's review alone.
 
-With the PDF, the chat says: the recommendation with the net and certainty; the counter or the plan per offer, with 2+ offers ending on the first sentence of `summary.plan_note` (one counter or acceptance at a time); then the top missing inputs as one line. Offer the other format in one line.
+With the PDF, the chat says: the recommendation with the net and certainty; the counter or the plan per offer, with 2+ offers ending on the first sentence of `summary.plan_note` (one counter or acceptance at a time); then the top missing inputs as one line. Offer the full review in chat in one line.
 
 **Dates:** a `deadline_note` (the seller's deadline falls on a weekend) goes in the reply in a clause. The counter's closing date already moves to the prior Friday and its time for acceptance to a weekday; a closing the buyer gave as days shows as written ("35 days after acceptance, about Sat Oct 31"). `walk_away_until` already moves off a weekend or holiday where the market's contract rule does (FR/BAR: the next business day).
 

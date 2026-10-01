@@ -258,7 +258,7 @@ Reviews the offers on your listing. It works two ways, depending on how many off
 - **Upload:** each offer (the contract with every rider, addendum and counteroffer), plus pre-approval letters or proof of funds.
 - **Best inputs:** a seller CMA from the same chat, the seller's payoff, and what matters most to them (price, speed, certainty).
 - **Minimum:** list price, and each offer's price and financing type.
-- **You get:** a seller-ready PDF, or the review in chat.
+- **You get:** a seller-ready PDF for each offer, plus a side-by-side comparison PDF when there are two or more, with a short answer in chat. When a new offer arrives, every offer's PDF is redone so they all agree. Say "just in chat" if you don't want the PDFs.
 
 **Counters, deadlines and incomplete offers:**
 

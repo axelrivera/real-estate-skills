@@ -193,12 +193,17 @@ class Pdf(unittest.TestCase):
         single, _, _ = review_render.build_html(review.analyze(fixture("minimal-single.json")), {}, sample=False)
         self.assertNotIn("@page{size:Letter landscape}", single)
 
-    def test_packet(self):
+    def test_comparison_comes_with_each_single_review(self):
+        """OFR-318: a comparison always comes with a single review of every active offer, each its own PDF."""
         with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            paths = review_render.main([os.path.join(FIXTURES, "two-offers-accept.json"), "--packet", "--out", tmp])
+            paths = review_render.main([os.path.join(FIXTURES, "two-offers-accept.json"), "--out", tmp])
         self.assertEqual([os.path.basename(p) for p in paths],
                          ["2250-Oak-Hollow-Ct-Multiple-Offer-Review.pdf", "2250-Oak-Hollow-Ct-512K-Conventional-Offer-Review.pdf",
                           "2250-Oak-Hollow-Ct-519K-VA-Offer-Review.pdf"])
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            paths = review_render.main([os.path.join(FIXTURES, "two-offers-accept.json"), "--mode", "single",
+                                        "--offer", "B", "--out", tmp])
+        self.assertEqual(len(paths), 1)  # one offer asked for: just its review
 
     def test_lender_call_is_a_step_not_a_flag(self):
         data = fixture("minimal-single.json")

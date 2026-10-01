@@ -1,13 +1,14 @@
 """Offer review PDF for the seller (listing side): one offer, or every active offer compared.
 
-    python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--packet]
+    python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID]
                               [--profile profile.md] [--sample] [--out DIR]
 
 Single review: page 1 is a self-contained executive summary (the recommendation, the counter, key
 numbers, certainty and the seller's options); the pages after it hold the net sheet, contingency
 timeline, terms review, scorecard, risk flags, checklist, questions and assumptions.
 Comparison: a two-page landscape decision summary, one row per offer (plan and ranking, chart up to 6 offers,
-key terms side by side). --packet renders the comparison plus a single review of every active offer.
+key terms side by side). A comparison always comes with a single review of every active offer, each its own PDF
+(OFR-318: the comparison is the big picture; each offer's detail is in its own review).
 Colors follow the agent's seller-side brand color.
 """
 import html
@@ -707,10 +708,12 @@ def write_pdf(R, agent, sample, mode, offer_id, out_dir):
 
 
 def build(data, fmt, out_dir, ctx):
-    """One PDF; with --packet and 2+ active offers, the comparison plus a single review of each active offer, in rank order."""
+    """A single review; or with 2+ active offers, the comparison plus a single review of each active offer, in rank
+    order (OFR-318)."""
     R = review.analyze(data, cma=review.load_cma(data, ctx.get("cma")))
     sample = ctx.get("sample") or R["sample"]
-    if ctx.get("packet") and len(R["active"]) >= 2:
+    mode, _ = review.pick(R, ctx.get("mode") or "auto", ctx.get("offer"))
+    if mode == "multi" and len(R["active"]) >= 2:
         paths = [write_pdf(R, ctx["agent"], sample, "multi", None, out_dir)]
         paths += [write_pdf(R, ctx["agent"], sample, "single", o["id"], out_dir) for o in R["ranked"]]
     else:
@@ -729,7 +732,6 @@ def options(ap):
     ap.add_argument("--cma", help="cma-handoff v1 file (.cma.json or markdown with the block)")
     ap.add_argument("--mode", choices=["auto", "single", "multi"], default="auto")
     ap.add_argument("--offer", help="offer id for a single review while others are active")
-    ap.add_argument("--packet", action="store_true", help="with 2+ offers: the comparison plus a single review of every active offer")
 
 
 def main(argv=None):
