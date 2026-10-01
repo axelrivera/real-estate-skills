@@ -56,7 +56,10 @@ Do this first. It takes about two minutes and every report after it carries your
 4. You get two files:
    - **profile.md**: who you are. The other skills read it.
    - **project-instructions.md**: a short prompt for a Claude Project.
-5. Follow the steps Claude gives you to create a **Project** with both files. From then on, start your real estate work inside that Project and Claude knows who you are without being asked.
+5. Claude's reply explains how to use profile.md. It works any of these ways:
+   - in a **Project**'s files (the easiest: follow the steps Claude gives you, and every chat in that Project knows who you are),
+   - in your Cowork working folder,
+   - uploaded or pasted at the start of any chat.
 
 To change something later, just say it: "My new number is 407-555-0100", "I moved to LPT Realty", "Use navy for my reports."
 

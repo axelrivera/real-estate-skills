@@ -32,7 +32,7 @@ When the Project's instructions already start with "Real Estate Assistant for" a
 ## Set Up a Project in Cowork
 
 1. Open **Projects** in the left sidebar and click **+**.
-   - Your profile is already saved in this working folder: choose **Use an existing folder** and pick this folder.
+   - Your profile is saved in this working folder: choose **Use an existing folder** and pick this folder.
    - Otherwise: start from scratch, name it "Real Estate" and pick a folder on your computer for your real estate work.
    - You already set up a claude.ai Project this way: choose **Import from project**. The instructions and files come with it, so you can skip step 2.
 2. Paste everything from project-instructions.md into the project's **Instructions**.

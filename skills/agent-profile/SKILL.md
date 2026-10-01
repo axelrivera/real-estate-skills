@@ -93,13 +93,9 @@ Fix anything under `problems` and check again. Pass on `warnings` in plain words
 
 ## 6. Hand It Over
 
-This is the final hand-over, after the interview or an update. Present `project-instructions.md` (including one written just now on an update or a Project-only request) and the profile when it changed; an unchanged profile isn't handed back. The reply holds, in this order, and nothing else:
+This is the final hand-over, after the interview or an update. Present `project-instructions.md` (including one written just now on an update or a Project-only request) and the profile when it changed; an unchanged profile isn't handed back. Write the reply from `assets/handover-template.md`, in its order and nothing else. The reply is where the agent learns how to use the profile, so "Using your profile" is always there: where Claude finds it now (`references/saved-files.md`) and the other ways it works. The Project instructions only tell a Project's chats to use it.
 
-1. What's saved, in plain words: who, which details, which colors (on an update, only what changed; on a Project-only request, that the profile is unchanged). One or two sentences.
-2. Where the profile is kept, as `references/saved-files.md` describes, only when item 3 gives no Project steps.
-3. A Project in one sentence ("Put both files in a Project and every chat there starts knowing who you are.") and the steps for where the agent is now, from `references/project-setup.md`. When the conversation doesn't show where the agent is (a Cowork working folder or task, or claude.ai Project files), give the claude.ai steps and always add the Cowork line; never assume the surface. Skip the steps when this chat is already in a Project that has the instructions and only the profile changed; then just say to replace profile.md in the Project files, or that it was updated in place.
-4. Any `warnings` from the check and the one-line brokerage question on a move, if they apply.
-5. One next step: "Try it: send me a listing and ask for a CMA." Leave it out on a Project-only request, and while the licensed brokerage name is still open (then the next step is answering that).
-6. The costs line (see the top), only when they asked to save costs or commission.
+- **Project steps** (`references/project-setup.md`): the steps for where the agent is now. When the conversation doesn't show where the agent is (a Cowork working folder or task, or claude.ai Project files), give the claude.ai steps and always add the Cowork line; never assume the surface. Skip them when this chat is already in a Project that has the instructions and only the profile changed; then "Using your profile" says to replace profile.md in the Project files, or that it was updated in place.
+- **Try it:** leave it out on a Project-only request, and while the licensed brokerage name is still open.
 
 Keep it to what a phone screen shows: at most about 200 words besides the numbered steps, no file contents, field names or color codes.
