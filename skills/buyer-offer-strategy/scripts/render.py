@@ -142,11 +142,11 @@ def details(r, res):
     hdr = "".join(f"<th>{x}</th>" for x in labels)
     hdrn = "".join(f'<th class="n">{x}</th>' for x in labels)
     side = ""
-    for row in res["side_by_side"]:
+    for row in res["side_by_side"]:  # OFR-360: the payment row comes last and is never amber
         vals = row["values"]
-        side += f"<tr><td>{esc(row['term'])}</td>" + "".join(f'<td class="{"" if i == 0 or v == vals[0] else "caution"}">{esc(v)}</td>' for i, v in enumerate(vals)) + "</tr>"
-    pay_label = "Est. Monthly Payment" + (" (Before Flood Insurance)" if B["flood"]["annual"] is None else "")
-    side += f"<tr><td>{pay_label}</td>" + "".join(f'<td>${r["payment"][k]:,}</td>' for k in K) + "</tr>"
+        side += f"<tr><td>{esc(row['term'])}</td>" + "".join(
+            f"<td>{esc(v)}</td>" if row["key"] == "payment" else f'<td class="{"" if i == 0 or v == vals[0] else "caution"}">{esc(v)}</td>'
+            for i, v in enumerate(vals)) + "</tr>"
     cols = [(ST.OPTION_LABEL[k], O[k]["ns"]) for k in K] + [("Clean Offer at List", tgt)]
     ns = ""
     line_labels = {}
@@ -186,20 +186,8 @@ def details(r, res):
     cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}{confirm}</td>' for k in K) + "</tr>"
     if any(ST.appraisal_until(O[k], B, r["costs"]) for k in K):  # OFR-210: the appraisal protection on its own row
         cr += '<tr><td>Low-Appraisal Protection</td>' + "".join(f'<td class="n">{esc(ST.appraisal_until(O[k], B, r["costs"]) or "—")}</td>' for k in K) + "</tr>"
-    M, V = B["market"], B["value"]
-    mk = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' if not V.get("assumed") else "Not provided",
-           V.get("source") if not V.get("assumed") else None),  # the source on its own line, so the range never wraps
-          ("Sale-to-List", f'{M["sale_to_list"] * 100:.1f}%' if M.get("sale_to_list") else "—"), ("Months of Supply", M.get("months_supply") or "—"),
-          ("Median Days on Market", M.get("median_dom") or "—"), ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
-          ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"), ("Market Read", B["competition"]["heat"].title(), B["competition"].get("heat_basis"))]  # OFR-226: and why
-    if V.get("median_adjusted"):
-        mk.insert(1, ("Median Adjusted Comp", money(V["median_adjusted"])))
-    plan = B.get("cma_offer_plan") or {}
-    if plan.get("target_low") and plan.get("target_high"):
-        mk.append(("CMA Offer Plan", f'target {money(plan["target_low"])}–{money(plan["target_high"])}'
-                   + (f' · walk away {money(plan["walk_away"])}' if plan.get("walk_away") else "")))
-    mkt = "".join(f"<tr><td>{m[0]}</td><td><b>{esc(str(m[1]))}</b>"
-                  + (f"<br><small>{esc(str(m[2]))}</small>" if len(m) > 2 and m[2] else "") + "</td></tr>" for m in mk)
+    mkt = "".join(f"<tr><td>{m['label']}</td><td><b>{esc(m['value'])}</b>"  # OFR-359: rows shared with the markdown answer
+                  + (f"<br><small>{esc(m['note'])}</small>" if m["note"] else "") + "</td></tr>" for m in res["market_check"])
     # OFR-214: an ask past one of the buyer's limits is answered with that limit (strategy.pushback)
     pb = "".join(f'<tr><td>{esc(p["term"])}</td><td>{esc(p["yours"])}</td><td class="caution">{esc(p["ask"])}</td>'
                  f'<td{" class=risk" if p["breaks"] else ""}>{esc(p["response"])}</td></tr>'

@@ -78,7 +78,7 @@ Keep it to about three short paragraphs (220 words at most). When it runs over, 
 
 **Only the fair-housing part** (the agent asks to include a buyer letter, a family photo or a note about the buyers, and asks for no offer, report or worksheet; an attached CMA doesn't change this): don't run the scripts or ask for the buyer's finances. Answer in chat: the one-sentence reason from `references/fair-housing.md` (When the Agent Asks for It), then the cover note on the terms with the property's address filled in when it's known (from the request or the CMA) and every term left in [brackets] for the agent to fill from the offer they chose; a CMA's suggested prices aren't the buyer's offer. Write "The buyers" when the agent mentions more than one. If they want the numbers filled, ask for the offer terms.
 
-**Full answer in chat:** fill in `assets/offer-strategy-template.md`. **Files:**
+**Full answer in chat** (the agent wants the whole analysis in chat, or rendering failed): fill in `assets/offer-strategy-template.md`, the same page 1 as the report, ending with the agent's disclaimers; its later sections (side by side, market check, pushback, assumptions, the worksheet) only when asked. **Files:**
 
 ```
 python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma file.cma.json] [--option stronger] [--profile profile.md]

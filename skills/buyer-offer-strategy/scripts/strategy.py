@@ -1773,16 +1773,46 @@ def worksheet(r, variant=None):
             "blanks": sum(x.count("[") for x in [c for _, _, c, _ in rows] + [b for _, b, _ in riders])}
 
 
+def side_by_side(r):
+    """The options side by side, one row per term ({key, term, values}), then the payment row (key "payment", OFR-360):
+    it follows from the terms, so the PDF never marks it amber as a term that differs."""
+    B, O = r["B"], r["O"]
+    rows = [{"key": key, "term": labl, "values": [term_val(key, r["terms"][k], B) for k in O]} for key, labl in term_keys(B)
+            if not (key == "escalation" and not any(r["terms"][k].get("escalation") for k in O))
+            and not (key in ("loan_approval_days", "appraisal_gap") and B["buyer"]["financing"] == "cash")]
+    pay = "Est. Monthly Payment" + (" (Before Flood Insurance)" if B["flood"]["annual"] is None else "")
+    return rows + [{"key": "payment", "term": pay, "values": [f"${r['payment'][k]:,}" for k in O]}]
+
+
+def market_check(B):
+    """OFR-359: the Market Check rows as [{label, value, note}], the same for the PDF and the markdown answer."""
+    M, V = B["market"], B["value"]
+    rows = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' if not V.get("assumed") else "Not provided",
+             V.get("source") if not V.get("assumed") else None),  # the source on its own line, so the range never wraps
+            ("Sale-to-List", f'{M["sale_to_list"] * 100:.1f}%' if M.get("sale_to_list") else "—"),
+            ("Months of Supply", M.get("months_supply") or "—"), ("Median Days on Market", M.get("median_dom") or "—"),
+            ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
+            ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"),
+            ("Market Read", B["competition"]["heat"].title(), B["competition"].get("heat_basis"))]  # OFR-226: and why
+    if V.get("median_adjusted"):
+        rows.insert(1, ("Median Adjusted Comp", money(V["median_adjusted"])))
+    plan = B.get("cma_offer_plan") or {}
+    if plan.get("target_low") and plan.get("target_high"):
+        rows.append(("CMA Offer Plan", f'target {money(plan["target_low"])}–{money(plan["target_high"])}'
+                     + (f' · walk away {money(plan["walk_away"])}' if plan.get("walk_away") else "")))
+    return [{"label": m[0], "value": str(m[1]), "note": str(m[2]) if len(m) > 2 and m[2] else None} for m in rows]
+
+
 def result(r, variant=None):
     s = summary(r)
     B = r["B"]
     V, M = B["value"], B["market"]
     return {
         "ok": True, "property": B["property"].get("address") or "", "list_price": money(B["property"]["list_price"]),
-        "value_range": f"{money(V['cma_low'])}–{money(V['cma_high'])}", "summary": s,
-        "side_by_side": [{"term": labl, "values": [term_val(key, r["terms"][k], B) for k in r["O"]]} for key, labl in term_keys(B)
-                         if not (key == "escalation" and not any(r["terms"][k].get("escalation") for k in r["O"]))
-                         and not (key in ("loan_approval_days", "appraisal_gap") and B["buyer"]["financing"] == "cash")],
+        # OFR-356: null when no CMA gave a range (list price stands in for value), never "$429,000–$429,000"
+        "value_range": None if V.get("assumed") else f"{money(V['cma_low'])}–{money(V['cma_high'])}", "summary": s,
+        "side_by_side": side_by_side(r),
+        "market_check": market_check(B),
         "market": {"sale_to_list": f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else None,
                    "months_supply": M.get("months_supply"), "median_dom": M.get("median_dom"),
                    "median_adjusted": money(V["median_adjusted"]) if V.get("median_adjusted") else None, "read": B["competition"]["heat"],

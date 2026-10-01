@@ -1015,5 +1015,56 @@ class ManualTestFixes(unittest.TestCase):
         self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 1.4, "median_dom": 23})[0], "soft")
 
 
+class MarkdownParity(unittest.TestCase):
+    """OFR-350..361: the markdown template carries what the PDFs print, from keys strategy.result() outputs."""
+
+    TEMPLATE = os.path.join(ROOT, "skills", "buyer-offer-strategy", "assets", "offer-strategy-template.md")
+
+    def test_value_range_is_null_without_a_cma(self):  # OFR-356
+        self.assertIsNone(strategy.result(analyze("minimal.json"))["value_range"])
+        self.assertEqual(strategy.result(analyze("texas-cma-escalation.json"))["value_range"], "$598,000–$632,000")
+
+    def test_side_by_side_ends_with_the_payment(self):  # OFR-360
+        r = analyze("condo-flood.json")
+        rows = strategy.result(r)["side_by_side"]
+        self.assertEqual(rows[-1]["key"], "payment")
+        self.assertEqual(rows[-1]["values"], [f"${r['payment'][k]:,}" for k in r["O"]])
+        self.assertNotIn("payment", [x["key"] for x in rows[:-1]])
+
+    def test_market_check_rows(self):  # OFR-359
+        rows = strategy.result(analyze("minimal.json"))["market_check"]
+        self.assertEqual(rows[0], {"label": "Value Range", "value": "Not provided", "note": None})
+        labels = [m["label"] for m in strategy.result(analyze("texas-cma-escalation.json"))["market_check"]]
+        self.assertIn("Median Adjusted Comp", labels)
+        self.assertEqual(labels[-2:], ["Market Read", "CMA Offer Plan"])
+
+    def test_template_paths_exist(self):  # OFR-350..361: every summary./worksheet. path and loop field is in the output
+        import re
+        with open(self.TEMPLATE, encoding="utf-8") as f:
+            text = f.read()
+        res = strategy.result(analyze("minimal.json"))
+        for root, key in re.findall(r"\b(summary|worksheet)\.([a-z_]+)", text):
+            self.assertIn(key, res[root], f"{root}.{key}")
+        loops = {"t": res["summary"]["terms"], "o": res["summary"]["options"], "b": res["summary"]["bands"],
+                 "row": res["side_by_side"], "m": res["market_check"], "p": res["pushback"],
+                 "a": strategy.result(analyze("fha-competitive.json"))["assumptions"]}
+        for var, key in re.findall(r"\b(t|o|b|row|m|p|a)\.([a-z_]+)", text):
+            self.assertIn(key, loops[var][0], f"{var}.{key}")
+        for key in ("property", "list_price", "value_range", "reply_lines", "to_confirm", "side_by_side", "market_check",
+                    "pushback", "assumptions", "chat_notes"):
+            self.assertIn(key, text)
+            self.assertIn(key, res)
+
+    def test_template_package_statuses(self):  # OFR-350: "Never" is a cross and "Yes" a ticked box, never all "- [ ]"
+        with open(self.TEMPLATE, encoding="utf-8") as f:
+            text = f.read()
+        statuses = {x["status"] for x in strategy.result(analyze("texas-cma-escalation.json"))["worksheet"]["package"]}
+        self.assertLessEqual({"Never", "Yes"}, statuses)
+        self.assertIn('status Never: "- ✕ "', text)
+        self.assertIn('status Yes, Done, True or ✓: "- [x] "', text)
+        for key in ("docs", "form_why", "software", "frbar"):  # OFR-352..354
+            self.assertIn("worksheet." + key, text)
+
+
 if __name__ == "__main__":
     unittest.main()

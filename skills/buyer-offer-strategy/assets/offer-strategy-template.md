@@ -1,26 +1,44 @@
-<!-- Fill from scripts/strategy.py output. Values come from the JSON as printed; never recompute them. -->
+<!-- Fill from scripts/strategy.py output. Values come from the JSON as printed; never recompute them.
+     The full answer is the block down to the disclaimers; the sections after it are on request only.
+     chat_notes (the best-effort line for a contract that isn't FR/BAR) goes in chat, word for word, in its own paragraph after the answer; never in a saved markdown report. -->
 
-## Offer Strategy: {{property}} (List {{list_price}})
+## Offer Options: {{property}} (List {{list_price}})
 
 **Recommended Offer:** {{summary.outlook}} with {{summary.competition}}. {{summary.why}}
 
+**Submit By:** {{summary.submit_by}} · **Competition:** {{summary.signal}} · **Your Limits:** {{summary.limits}}
+
+Strength **{{summary.strength}}/100** · Seller Net **{{summary.seller_net}}** · Your Worst-Case Cash **{{summary.worst_cash}}**
+
 | Term | Offer | Why |
 |---|---|---|
-| {{t.term}} | **{{t.offer}}**{{" (Agent)" when t.agent}} | {{t.why}} |
+| {{t.term}} | **{{t.offer}}**{{on the Price row only: " (value range " + value_range + ")", or " (value range not provided)" when value_range is null}} | {{t.why}}{{" (Agent)" when t.agent}} |
 
 **{{summary.options_title}}**
 
-| Option | Price | Outlook | Seller Net | Worst-Case Cash | Reserve | What Changes |
+| Option | Price | Outlook | Seller Net* | Worst Cash | Reserve | What Changes |
 |---|---|---|---|---|---|---|
 | {{o.option}} | {{o.price}} | {{o.outlook}} | {{o.seller_net}} | {{o.worst_cash}} | {{o.reserve}} | {{o.what}} |
 
-{{each summary.absent: "No " + option + " Option: " + why, one line each; skip when empty}}
+{{each summary.absent: "**No " + option + " Option:** " + why, one line each; skip when empty}}
 
-{{each reply_lines: text, one line each; skip when empty}}
+**How It Stacks Up** (By Competition Level)
 
-**Your Exposure (Recommended):** {{each summary.exposure: label + " " + value, joined with " · "}}
+| If the Seller Has… | {{each summary.option_labels, one column each}} |
+|---|---|
+| {{b.level}} | {{each b.values: value.band, one column each}} |
+
+{{each reply_lines except key "tight_reserve" (it's summary.cautions, below): text, one line each; skip when empty}}
+
+**Your Exposure: Recommended Offer**
+
+| Item | Amount |
+|---|---|
+| {{e[0], for each pair e in summary.exposure}} | {{e[1]}} |
 
 {{each summary.constraints: "**Limit:** " + text}}
+
+{{each summary.cautions: text, one line each; skip when empty}}
 
 {{summary.preliminary, when present}}
 
@@ -28,11 +46,80 @@
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 
-<sub>Financing: {{summary.financing}}. Seller net is before the seller's mortgage payoff, as a listing agent would calculate it. The outlook is an estimate, not a probability. Payments and closing costs are estimates; the lender's Loan Estimate governs.</sub>
+<sub>*Seller net before mortgage payoff, as a listing agent would calculate it. Outlook is an estimate from the offer's terms and market signals; other offers and the seller's priorities are unknown. Financing: {{summary.financing}}. Payments and closing costs are estimates; the lender's Loan Estimate governs. Not legal or financial advice.</sub>
 
-<!-- On request only:
-- "How does it stack up?": a table from summary.bands (rows = level, columns = summary.option_labels).
-- "Side by side": side_by_side[] as a table (term + one column per option).
-- "Contract entries / worksheet": worksheet.form_name, then worksheet.rows as "field: entry (note)" (paragraph first when worksheet.frbar), worksheet.riders, worksheet.clauses (quote the text as written), then worksheet.package as a checklist with "- [ ]". Text in [brackets] is a blank for the agent to fill.
-- Assumptions: assumptions[] as "impact · where · what".
-- Close with the agent's disclaimers from their profile, verbatim, when there are any. -->
+{{the agent's disclaimers from their profile, verbatim, one line each, then the brokerage's license, office address and phone in one line when the profile has them; skip when there are none}}
+
+<!-- On request only, each when the agent asks for it. An on-request answer given on its own (no full answer above it) ends with the same disclaimers line. -->
+
+### Options Side by Side
+
+| Term | {{each summary.option_labels, one column each}} |
+|---|---|
+| {{row.term}} | {{each row.values, one column each}} |
+
+<!-- side_by_side[] in order; its last row (key "payment") is the monthly payment. With one option, title it "Offer Terms". -->
+
+### Market Check
+
+| Item | Value |
+|---|---|
+| {{m.label}} | {{m.value}}{{" (" + m.note + ")" when m.note}} |
+
+<!-- One row per entry m of market_check[], in order. -->
+
+### Likely Pushback (On the Recommended Offer)
+
+| Term | Yours | They May Ask | Response |
+|---|---|---|---|
+| {{p.term}} | {{p.yours}} | {{p.ask}} | {{p.response}} |
+
+<!-- One row per entry p of pushback[]. When pushback is empty, write instead: "Nothing obvious: the offer already meets the listing-side benchmarks." -->
+
+### Assumptions & Data to Confirm
+
+| Impact | Where | What Was Assumed |
+|---|---|---|
+| {{a.impact in Title Case: High, Med, Low}} | {{a.where}} | {{a.what}} |
+
+<!-- One row per entry a of assumptions[]. When assumptions is empty, write instead: "All key inputs provided." -->
+
+<!-- On request only: the worksheet ("contract entries", "the worksheet", "the package"). It holds offer terms only, never the buyer's limits, cash or reserve, so the agent can forward it on its own. -->
+
+## Offer Package Worksheet: {{worksheet.option}} Offer at {{worksheet.price}}
+
+**Draft for the Agent.** Enter in {{worksheet.software}} and {{"verify every paragraph and rider against the current FR/BAR form version" when worksheet.frbar, else "match each entry to your contract by name (paragraph numbers vary by form)"}}. Text in [brackets] is a blank to fill. Suggested language is for broker review, not legal advice.
+
+**Contract Form:** {{worksheet.form_name}}. {{worksheet.form_why}}
+
+### Contract Entries
+
+| Para. | Field | Enter | Note |
+|---|---|---|---|
+| {{x.para}} | {{x.field}} | {{x.entry}} | {{x.note}} |
+
+<!-- The Para. column only when worksheet.frbar; otherwise Field | Enter | Note. -->
+
+### Riders to Attach (With Suggested Inputs)
+
+| Rider | Suggested Inputs | Why |
+|---|---|---|
+| {{x.rider}} | {{x.inputs}} | {{x.why}} |
+
+<!-- When worksheet.riders is empty, write instead: "No riders needed." -->
+
+### Additional Terms (Draft Language)
+
+{{each worksheet.clauses: "**" + title + ":** " + text, the text quoted as written; skip the heading when empty}}
+
+### Offer Package Checklist
+
+{{each group of worksheet.package, in order: "**" + group + "**", then one line per item:
+  status Yes, Done, True or ✓: "- [x] " + item
+  status Never: "- ✕ " + item (a thing to leave out, never a checkbox)
+  any other status: "- [ ] " + item
+  then " (" + note + ")" when the item has a note}}
+
+### Request from the Seller After Acceptance
+
+{{each worksheet.docs: "- [ ] " + doc}}
