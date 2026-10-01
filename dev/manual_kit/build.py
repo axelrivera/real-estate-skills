@@ -659,8 +659,12 @@ def strategy_summary(out, lim):
              f"## Recommended Offer (strategy.py): {s['outlook']}, Strength {s['strength']}/100", "",
              f"Value range from the handoff: {out['value_range']}. Competition: {s['competition']}.", "",
              table(["Term", "Offer", "Why"], [[t["term"], t["offer"].replace("**", ""), t["why"]] for t in s["terms"]]), "",
-             table(["Cash and Payment", "Amount"], [[a, b] for a, b in s["exposure"]]), "",
-             "## Options", "",
+             table(["Cash and Payment", "Amount"], [[a, b] for a, b in s["exposure"]]), ""]
+    notes = list(s.get("constraints") or []) + [x["text"] for x in out.get("reply_lines") or []
+                                               if x["text"] not in (s.get("constraints") or [])]
+    if notes:  # OFR-332 and the like: on page 1 and in the reply, word for word
+        lines += ["Page 1 and the reply must carry, word for word:", ""] + [f"- {n}" for n in notes] + [""]
+    lines += ["## Options", "",
              table(["Option", "Price", "Outlook", "Seller Net", "Worst-Case Cash", "Reserve", "What Changes"],
                    [[o["option"], o["price"], o["outlook"], o["seller_net"], o["worst_cash"], o["reserve"], o["what"]]
                     for o in s["options"]]), "",
