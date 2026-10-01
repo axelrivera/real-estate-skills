@@ -328,6 +328,11 @@ def build(spec, out_dir=None, answer_key=False, scan=False, extra_defects=()):
     if S.get("compensation"):  # Rider GG's compensation agreement travels on its own, not in the package
         result["compensation_agreement"] = os.path.join(out_dir, S["files"]["compensation"])
         render_compensation(S).save(result["compensation_agreement"], garbage=4, deflate=True)
+    officer = S["ctx"].get("pre_approval_officer")  # drawn while the letter rendered, so it's added to the key here
+    if officer and isinstance(S["key"].get("offers"), list):
+        for offer in S["key"]["offers"]:
+            if offer.get("approval_max_price"):  # the offer this package's pre-approval letter backs
+                offer.setdefault("loan_officer", officer)
     if answer_key:
         result["answer_key"] = os.path.join(out_dir, S["files"]["key"])
         with open(result["answer_key"], "w") as f:

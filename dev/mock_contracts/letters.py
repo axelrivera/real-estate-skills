@@ -57,6 +57,7 @@ def pre_approval(ctx, v, rng):
         lender, street = lender
     street = street or f"{rng.randint(100, 999)} Commerce Center Dr"
     officer = v.get("loan_officer") or sc.fresh_name(rng, ctx["used_names"])
+    ctx["pre_approval_officer"] = officer  # the answer key records who signed the letter (offers[].loan_officer)
     issued = sc._dt(v["date"])
     program = {"fha": "FHA", "va": "VA", "usda": "USDA", "conventional": "Conventional", "other": "Portfolio"}.get(ctx["financing"], "Conventional")
     term = ctx["term_years"] or 30
