@@ -78,7 +78,7 @@ Fill in `assets/profile-template.md`:
 - Only **name** and **brokerage** are required. Client files refuse to print the agent's name without the brokerage's licensed name (Florida rule 61J2-10.025 and most states). For an agent licensed in more than one state, or in a state that wants more on client materials, read `references/licensing.md`.
 - Write every number (license, phone) in double quotes: unquoted, `0123456` would be read as a different number. Write a double quote inside a value as `\"`.
 - The line under the heading is `Team · Brokerage`; without a team it's just the brokerage.
-- In `brand`, keep either `primary` (one color) or `buyer_primary` and `seller_primary` (two), with the color name as the comment. The Brand Colors section says it in words: "Navy for all reports."
+- In `brand`, keep either `primary` (one color) or `buyer_primary` and `seller_primary` (two), with the color name as the comment. The Brand Colors section says it in words: "Navy for all reports.", or with two colors "Navy for buyer reports, Burnt orange for seller reports."
 - Keep the template's headings as written (Title Case): the other skills find the sections by heading.
 
 Save it as `profile.md` where `references/saved-files.md` says. Then check it:

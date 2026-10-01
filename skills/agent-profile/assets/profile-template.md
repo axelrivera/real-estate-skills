@@ -27,7 +27,7 @@ Used as context by the real estate skills.
 
 ## Brand Colors
 
-{{color name}} for all reports.
+{{color name}} for all reports.{{or, with two colors: "{{buyer color}} for buyer reports, {{seller color}} for seller reports."}}
 
 ## Voice
 
@@ -35,4 +35,4 @@ Used as context by the real estate skills.
 
 ## Disclaimers
 
-{{disclaimers for documents}}
+{{each disclaimer for documents, verbatim, with a blank line between them}}

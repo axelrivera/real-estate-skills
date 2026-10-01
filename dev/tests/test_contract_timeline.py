@@ -1468,6 +1468,30 @@ class ManualSmoke(unittest.TestCase):
         self.assertTrue(lines["Before-Closing Dates"].startswith("Not stated in the contract: "))
         self.assertNotIn("to confirm", timeline_render.build_html(r, {}, sample=True))
 
+    def test_open_holiday_rule_reads_as_a_sentence(self):
+        """TL-272: with the holidays not stated, the Holidays line reads on from "Not stated in the contract:"."""
+        deal = fixture("other-contract.json")
+        deal["rules"] = {"day_count": "calendar"}
+        lines = {x["label"]: x["text"] for x in timeline.analyze(deal)["rules"]["lines"]}
+        self.assertTrue(lines["Holidays"].startswith("Not stated in the contract: the federal legal holidays"))
+        self.assertTrue(lines["Holidays"].endswith(" are used."))
+
+    def test_markdown_template_follows_the_pdf(self):
+        """TL-266 to TL-271: the markdown timeline carries what the PDF prints: the lender line and Not legal advice,
+        the open time rules, pending rows with star and party, the sample tag, the amendment history, row notes and
+        the report date; the Check heading only with flags."""
+        with open(os.path.join(ROOT, "skills", "contract-timeline", "assets", "timeline-template.md")) as f:
+            tpl = f.read()
+        for path in ("Lender dates are estimates.", "Not legal advice.", "rules.lines", "Not stated in the contract",
+                     '{{" ★" when critical}} ({{party}})', "Sample Data", "history", "row.note", "report_date.long",
+                     "closing.long", "Closing Not Set", "when flags has items", "brokerage_license",
+                     "except for the rights that stay open", "first_deadline.day"):
+            self.assertIn(path, tpl)
+        self.assertNotIn("rules_unknown", tpl)
+        r = timeline.analyze(fixture("seller-amended.json"))
+        self.assertTrue(r["history"] and all({"name", "description", "date_display", "summary"} <= set(h) for h in r["history"]))
+        self.assertTrue({"long"} <= set(r["report_date"]) and {"long"} <= set(r["closing"]))
+
     def test_lender_line_only_with_lender_rows(self):
         """TL-262: the footer's lender-estimate line prints only when the report has a lender's target."""
         other = timeline.analyze(fixture("other-contract.json"))

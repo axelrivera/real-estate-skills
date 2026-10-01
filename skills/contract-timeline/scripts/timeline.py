@@ -1864,9 +1864,11 @@ def rules_text(rules, eff):
         lines.append(("Closing Date", "A closing date on a weekend or holiday extends to the next business day."))
     if getattr(rules["_extra_holidays"], "base", "us_federal") == "none":
         lines.append(("Holidays", "Only the holidays the contract lists."))
+    elif "holidays" in unknown:  # TL-272: a sentence after "Not stated in the contract:", not a bare list
+        lines.append(("Holidays", to_confirm + "the federal legal holidays (5 U.S.C. 6103), including observed dates, "
+                      "are used" + ("; so are the holidays listed in the contract." if rules["_extra_holidays"] else ".")))
     else:
-        lines.append(("Holidays", (to_confirm if "holidays" in unknown else "") +
-                      "National legal holidays (5 U.S.C. 6103), including observed dates" +
+        lines.append(("Holidays", "National legal holidays (5 U.S.C. 6103), including observed dates" +
                       (", plus holidays listed in the contract." if rules["_extra_holidays"] else ".")))
     return [{"label": a, "text": b} for a, b in lines]
 

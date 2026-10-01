@@ -15,7 +15,7 @@ TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "profile-template.md")
 PLACEHOLDERS = {
     "full name": "name", "team name": "team", "brokerage": "brokerage", "license number": "license",
     "phone": "phone", "email": "email", "website": "website",
-    "how the agent writes": "voice", "disclaimers for documents": "disclaimers",
+    "how the agent writes": "voice", "each disclaimer for documents, verbatim, with a blank line between them": "disclaimers",
 }
 
 
@@ -182,6 +182,19 @@ class Template(unittest.TestCase):
         self.assertTrue(r["ok"], r)
         self.assertEqual(r["fields"], ["name", "brokerage"])
         self.assertTrue(r["colors"]["buyer"]["default"])
+
+    def test_two_colors_and_separate_disclaimers(self):
+        """CORE-213: the Brand Colors line has the two-color form, and disclaimers keep a blank line between them, so
+        the report notices (render.notice_lines splits on blank lines) print each as its own paragraph."""
+        with open(TEMPLATE) as f:
+            tpl = f.read()
+        self.assertIn("{{buyer color}} for buyer reports, {{seller color}} for seller reports.", tpl)
+        self.assertIn("with a blank line between them", tpl)
+        two = "Information deemed reliable but not guaranteed.\n\nEqual Housing Opportunity."
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = profiles.load_agent(write_profile(tmp, fill({**FULL, "disclaimers": two})))
+        self.assertEqual([p for p in agent["disclaimers"].split("\n\n") if p.strip()],
+                         ["Information deemed reliable but not guaranteed.", "Equal Housing Opportunity."])
 
     def test_quotes_survive(self):
         values = {"name": 'Ana "AJ" Peña', "brokerage": "#1 Realty, LLC"}
