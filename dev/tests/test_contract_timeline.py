@@ -1344,8 +1344,8 @@ class FourthPass(unittest.TestCase):
         self.assertIsNone(timeline.analyze(fixture("buyer-fha.json"))["repair_limits"])
 
     def test_agent_note_keyed_to_a_script_note_is_merged(self):
-        """TL-247: an agent note keyed to a script note (or to a deadline one covers) is dropped; script notes with the
-        same key are one line."""
+        """TL-247: an agent note keyed to a script note (or to a deadline a row-specific one covers) is dropped; script
+        notes with the same key are one line."""
         d = fixture("buyer-fha.json")
         d["contract"].update(loan_amount=358000, balance_to_close=1000)  # doesn't add up: money_mismatch
         d["report_date"] = "2026-10-02"  # the deposit is past and not done
@@ -1353,11 +1353,25 @@ class FourthPass(unittest.TestCase):
                             {"key": "deposit", "text": "No escrow receipt in the package: was the deposit delivered?"},
                             {"key": "other", "text": "The seller asked to keep the curtains."}, "A plain note."]
         r = timeline.analyze(d)
-        self.assertEqual(sorted(r["merged_agent_notes"]), ["deposit", "money_mismatch"])
+        self.assertEqual(r["merged_agent_notes"], ["money_mismatch"])
+        # the Past, Confirm note only lists the deposit: the agent's note says more (no receipt), so it joins its row
+        self.assertIn("deposit", r["joined_agent_notes"])
+        self.assertTrue(any("No escrow receipt" in n for n in r["agent_notes"]))
         self.assertIn("The seller asked to keep the curtains.", r["agent_notes"])
         self.assertIn("A plain note.", r["agent_notes"])
         self.assertFalse(any("balance wasn't updated" in n for n in r["agent_notes"]))
         self.assertEqual(len(r["note_keys"]), len(set(r["note_keys"])))
+
+    def test_agent_note_on_a_listed_row_is_kept(self):
+        """A note keyed to a row the Rider GG reading or Past, Confirm note only lists (evals 6, 8, 9: the compensation
+        agreement isn't in the package) reaches the agent, joined to its row."""
+        d = fixture("buyer-fha.json")
+        d["contract"]["riders"] = d["contract"]["riders"] + ["GG"]
+        d["report_date"] = "2026-10-02"
+        d["agent_notes"] = [{"key": "compensation_agreement", "text": "The compensation agreement isn't in the package: has it been signed?"}]
+        r = timeline.analyze(d)
+        self.assertNotIn("compensation_agreement", r["merged_agent_notes"])
+        self.assertTrue(any("isn't in the package" in n for n in r["agent_notes"]))
 
     def test_extension_reading_open_is_flagged(self):
         """TL-248: when the reading used has ended but the later one is still open on the report date, it's a Check

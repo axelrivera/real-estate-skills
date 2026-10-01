@@ -1549,7 +1549,9 @@ def analyze(deal, side=None):
     about = {}  # TL-247: note key -> the deadline keys it covers, so an agent's note keyed to one of them is merged away
 
     def note(key, text, rows=()):
-        about.setdefault(key, set()).update(rows)
+        """`rows` only lists the rows a note mentions (Past, Confirm, waiting on a receipt, a reading): an agent note
+        keyed to one of them still says something the script's doesn't, so it joins its row instead of being dropped."""
+        about.setdefault(key, set())
         if ":" in key:  # "default:inspection", "blank:rezoning", "extension_reading:inspection"
             about[key].add(key.split(":", 1)[1])
         if key in note_keys:  # TL-247: one line per key; a second note on the same key joins the first

@@ -1833,7 +1833,10 @@ def analyze(data, market=None, cma=None):
     close_ref = max((o["close"] for o in active), default=L["analysis_date"] + timedelta(days=30))
     # OFR-339: when the listing broker pays the buyer's broker on every active offer, so does the report's target;
     # otherwise the chart's target took the buyer's broker fee off on top of a listing fee that already covers it
-    res["target"] = target_net(L, S, costs, min(close_ref, S["deadline"] or close_ref),
+    # the report target closes on the latest active closing (or the seller's deadline); each offer's own target closes
+    # on that offer's date, so the two differ by the proration and holding costs: the chart label names its date
+    res["target_close"] = min(close_ref, S["deadline"] or close_ref)
+    res["target"] = target_net(L, S, costs, res["target_close"],
                                bb_from_listing=bool(active) and all(o.get("bb_from_listing") for o in active))
     for o in offers:
         o["target"] = target_net(L, S, costs, o["close"], o)

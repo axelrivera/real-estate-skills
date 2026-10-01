@@ -1515,5 +1515,6 @@
   "net_adj": 357255,
   "price": 389000,
   "tax_bill_assumed": false
- }
+ },
+ "target_close": "2026-10-28"
 }

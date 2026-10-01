@@ -370,11 +370,14 @@ def gantt(o, R):
             c += "dl"
         return c
 
+    start = o["firm_date"] - timedelta(days=o["risk_days"])  # acceptance, as page 1 counts (review.walk_away)
+
     def line(name, d, kind):
         if not d:
             return f'<tr><td>{name}</td><td class="n">—</td><td class="n">—</td>' + "".join(f'<td class="gantt {gx(i)}"></td>' for i in range(ncell)) + "</tr>"
         cells = "".join(f'<td class="gantt {gx(i)} {"on-" + kind if i * step < d else ""}"><div></div></td>' for i in range(ncell))
-        return f'<tr><td>{name}</td><td class="n">{d}</td><td class="n">{(L["analysis_date"] + timedelta(days=d)):%b %-d}</td>{cells}</tr>'
+        end, _ = oe.rolled(start + timedelta(days=d), R["costs"])  # off a weekend or holiday, as page 1 rolls it
+        return f'<tr><td>{name}</td><td class="n">{d}</td><td class="n">{end:%b %-d}</td>{cells}</tr>'
 
     body = line("Inspection (Right to Cancel)" if o["inspection_walkaway"] else "Inspection (Repair Notices)", o["inspection_days"],
                 "hot" if o["inspection_walkaway"] else "warm")
@@ -563,7 +566,7 @@ def scatter(R, W=300, H=230):
         marks.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
                      f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
                      f'<text x="{tx}" y="{ty}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{ink[o["action"]]}">{esc(text)}</text>')
-    label = f"Target {money(tgt)} (Clean Offer at List)"
+    label = f"Target {money(tgt)} (Clean Offer at List, Closing {R['target_close']:%b %-d})"
     lx, ly, anchor = target_label_spot(label, ys(tgt), Lm + 3, W - Rm - 3, boxes)  # OFR-296: never over a point's label
     svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
                f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" class="ax" style="fill:var(--good-strong)">{esc(label)}</text>')

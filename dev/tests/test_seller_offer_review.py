@@ -233,6 +233,17 @@ class Pdf(unittest.TestCase):
         self.assertIn("licensed in Texas", doc)
         self.assertNotIn("Florida", doc)
 
+    def test_contingency_chart_rolls_like_page_one(self):
+        """Eval 1 (iteration 9): the chart's Ends column showed Oct 11 while page 1 said Oct 13. Day 15 from Sep 26 is
+        Sun Oct 11 and Mon Oct 12 is Columbus Day, so both read Oct 13."""
+        d = fixture("minimal-single.json")
+        d["analysis_date"] = "2026-09-26"
+        doc, _, _ = review_render.build_html(review.analyze(d), {}, sample=False)
+        self.assertIn("For any reason until Oct 13", doc)
+        row = doc[doc.index("Inspection (Right to Cancel)"):][:200]
+        self.assertIn("Oct 13", row)
+        self.assertNotIn("Oct 11", row)
+
     def test_renders_a_pdf(self):
         with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             paths = review_render.main([os.path.join(FIXTURES, "minimal-single.json"), "--out", tmp])

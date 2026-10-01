@@ -82,6 +82,13 @@
       "files": [
         "out/mock-contracts/asis-offer-aga/2604-Sable-Palm-Way-Offer.pdf"
       ]
+    },
+    {
+      "id": 11,
+      "today": "2026-10-02",
+      "legacy_name": true, "prompt": "Executed yesterday (10/1) on 88 Willow Bend Dr in Sanford, Seminole County: FR/BAR AS IS, $412,000 conventional, no riders, built 2004, seller pays title. Deposit due in 3 days, loan application 5 days, 10 day inspection period, 30 day loan approval, closing 11/13/2026. When does my buyer's inspection period end and what's due before then?",
+      "expected_output": "Reads the old form name the agent typed as the FAR/BAR AS IS contract with full built-in rules (no best-effort disclaimer, no question about which form); runs the script rather than hand math; inspection period ends Tue Oct 13 at 11:59 PM (Day 10 is Sun Oct 11 and Mon Oct 12 is Columbus Day, so it moves to the next business day) and says so; before then the initial deposit is due Mon Oct 5 (Day 3 falls on a Sunday) and the loan application Tue Oct 6; answers in chat in a few lines and offers the full timeline PDF or calendar in one line; every mention of the form in the reply and any file says FAR/BAR, never the old name",
+      "files": []
     }
   ]
 }
