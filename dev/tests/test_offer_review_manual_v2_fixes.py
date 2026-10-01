@@ -102,5 +102,18 @@ class OtherOffersAssumptions(unittest.TestCase):  # OFR-346
         self.assertTrue(all(a in review.listed_assumptions(R, False, "B") for a in only_b))
 
 
+class SharedAssumptionWhere(unittest.TestCase):  # OFR-348
+    def test_single_review_names_only_its_offer(self):
+        R = review.analyze(data())
+        shared = [a for a in R["missing"] if a.get("also") and a["scope"].startswith("offer ")]
+        self.assertTrue(shared)
+        a = shared[0]
+        ids = [x[6:] for x in [a["scope"], *a["also"]] if x.startswith("offer ")]
+        others = [o["label"] for o in R["offers"] if o["id"] in ids[1:]]
+        html = render.assumptions_table(R, offer_id=ids[0])
+        self.assertFalse([lab for lab in others if lab in html])
+        self.assertTrue(all(lab in render.assumptions_table(R, multi=True) for lab in others))
+
+
 if __name__ == "__main__":
     unittest.main()

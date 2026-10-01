@@ -345,7 +345,12 @@ def assumptions_table(R, multi=False, offer_id=None):
     if not items:
         return '<p class="sm">No assumptions: every key input was provided.</p>'
     lab = {"high": "High", "med": "Med", "low": "Low"}
-    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.where(R, a["scope"], a.get("also") or ()))}</td>'
+    def place(a):  # OFR-348: a single review names only its own offer on an assumption shared with others
+        scopes = [a["scope"], *(a.get("also") or ())]
+        if offer_id and f"offer {offer_id}" in scopes:
+            scopes = [x for x in scopes if not x.startswith("offer ") or x == f"offer {offer_id}"]
+        return review.where(R, scopes[0], scopes[1:])
+    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(place(a))}</td>'
                    f'<td>{esc(a["why"])}</td></tr>' for a in items)
     return ('<div class="tbl split"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
             f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')

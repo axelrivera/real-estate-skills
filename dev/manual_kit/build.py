@@ -701,7 +701,8 @@ def case_offer_review(checks):
     offer_pdf = next(p for p in aga_pdfs if p.endswith("-Offer.pdf"))
     spec, same = second_offer_spec(aga_dir, offer_pdf, aga_key)
     b_dir, b_key, b_pdfs = build_package(rel(spec), "manual-kit-sable-palm-second-offer")
-    if listing_side(b_key) != listing_side(aga_key):
+    side = listing_side(aga_key)
+    if listing_side(b_key) != side:
         raise KitError("The two offer packages name different listing brokerages.")
     a_agent, b_agent = aga_key["offers"][0]["buyer_agent"], b_key["offers"][0]["buyer_agent"]
     if a_agent.split()[-1][:5] == b_agent.split()[-1][:5]:
@@ -760,6 +761,8 @@ def case_offer_review(checks):
                  ["Riders", ", ".join(a["riders"]), ", ".join(b["riders"])]]), "",
              f"Both packages carry the same parcel ({same['tax_id']}), HOA rider contact ({same['hoa_contact']}) and HOA "
              f"fee ({same['hoa']}).", "",
+             f"Both packages name {side[0]} ({side[1]}) as the listing side, not your brokerage: a flag asking you to "
+             "confirm the listing side is expected (the kit can't know your profile). It's a confirmation, not an error.", "",
              "## Step 1: Single Offer (review.py)", "",
              f"- Action: **{s1['action']}**. {s1['why']}",
              f"- Respond by {s1['respond_by']}.",
