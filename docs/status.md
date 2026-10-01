@@ -301,7 +301,7 @@ Won't fix: (none yet).
 
 ## Remaining work, in order
 
-1. **Manual smoke test** of the 0.12.0 build per [manual-testing.md](manual-testing.md) (`make package manual-kit`; uninstall the old `core` and `transactions` plugins first). The user runs it and hands back `out/manual-test/results.md`; failures become fixes before the pull request into `main`.
+1. **Manual smoke test:** done for 0.12.0 (three runs, 2026-09-30; see the audit). Deferred to after this release: a chat-only re-check of case 5 to confirm the seller offer review replies stay within their caps and a stated date isn't questioned (OFR-347, OFR-349: guidance changes a script can't prove). Run it with the next release's manual test.
 2. **Release** per [release-checklist.md](release-checklist.md).
 3. **Broker review** of `shared/references/fair-housing.md` (see Open items).
 4. **Yearly refreshes:** Florida millage when the year's rates are final (October); loan limits in `shared/markets/loan-limits.md` when FHFA and HUD publish the next year's (late November); the indexed homestead exemption in `fl.md` (January).
