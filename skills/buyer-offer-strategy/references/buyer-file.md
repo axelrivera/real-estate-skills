@@ -16,7 +16,7 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 
 ## Top Level
 
-`costs` (the buyer's payment inputs, below) is a top-level block like `buyer`, not `property.costs`. `analysis_date` (default today), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`.
+`costs` (the buyer's payment inputs, below) is a top-level block like `buyer`, not `property.costs`. `analysis_date` (default today; when the agent states today's date, use it and never question it against the computer's clock), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`.
 
 ## property
 

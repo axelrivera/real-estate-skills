@@ -32,7 +32,7 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
 
 | Field | Default |
 |---|---|
-| `analysis_date` | today (also the assumed acceptance date for timelines) |
+| `analysis_date` | today: the date the agent states, else the system date (also the assumed acceptance date for timelines) |
 | `listing`, `offers` | required |
 | `seller` | `{}` |
 | `cma` | optional: a `cma-handoff v1` record pasted in, instead of passing `--cma`. Besides the value range it can carry the subject's `annual_tax`, `hoa_monthly`, `flood_zone` and `roof_year`, used where the listing doesn't say. A handoff for another address is flagged (high) |
