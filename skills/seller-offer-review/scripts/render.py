@@ -504,11 +504,10 @@ def single_html(R, o, v):
 <thead><tr><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl}</tbody></table></div>
 <h2>6 · Verification Checklist</h2><div class="tbl"><table class="ck"><colgroup><col style="width:5%"><col style="width:45%"></colgroup>
 <thead><tr><th class="c">Done</th><th>Item</th><th>Notes</th></tr></thead><tbody>{vf}</tbody></table></div>
-<div class="two" style="margin-top:0">
- <div><h2>7 · Questions for the Buyer's Agent</h2><div class="tbl"><table class="qs"><colgroup><col style="width:7%"></colgroup>
- <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div></div>
- <div><h2>8 · Questions for the {"Loan Officer" if o["financed"] else "Bank"}</h2><div class="tbl"><table class="qs"><colgroup><col style="width:7%"></colgroup>
- <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{lq}</tbody></table></div></div></div>
+<h2>7 · Questions for the Buyer's Agent</h2><div class="tbl"><table class="qs"><colgroup><col style="width:5%"></colgroup>
+<thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div>
+<h2>8 · Questions for the {"Loan Officer" if o["financed"] else "Bank"}</h2><div class="tbl"><table class="qs"><colgroup><col style="width:5%"></colgroup>
+<thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{lq}</tbody></table></div>
 <h2>9 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
 {fine(R)}'''
     sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · Offer from {esc(o['label'])}"

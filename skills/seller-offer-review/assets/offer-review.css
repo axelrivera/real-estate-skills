@@ -64,7 +64,7 @@ tr.alt td{color:var(--muted);font-size:7.8pt}
 .gauge b{font-size:24pt;font-weight:900;line-height:1} .gauge span{font-size:9pt;color:var(--muted);margin-left:3px}
 .meter{height:9px;background:var(--brand-rule);border-radius:3px;margin-top:4px;overflow:hidden}
 .bar{height:100%} .bar.hi{background:var(--good-base)} .bar.mid{background:var(--caution-base)} .bar.lo{background:var(--risk-base)}
-table.facts2 td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt}
+table.facts2{table-layout:fixed;width:100%} table.facts2 td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt} table.facts2 td:first-child{width:42%;padding-right:8px} table.facts2 td.n{white-space:normal}
 tr.recrow td{font-weight:700} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--good-base)}
 .nextstep{margin-top:6px;border:1.5px solid var(--brand-deep);padding:5px 10px;border-radius:4px;font-size:8.6pt} .nextstep b:first-child{color:var(--brand-deep)}
 .prelim{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
