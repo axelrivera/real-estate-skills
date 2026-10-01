@@ -44,6 +44,9 @@
   {
    "field": "current_tax_bill_paid",
    "impact": "med",
+   "offers": [
+    "A"
+   ],
    "scope": "listing",
    "value": false
   },
@@ -525,6 +528,7 @@
   "deposit_norm": 0.03,
   "flood_disclosure": true,
   "frbar_market": true,
+  "hoa_conflict": null,
   "hoa_monthly": 225,
   "insurance_reports": false,
   "list_price": 504000,
@@ -604,6 +608,9 @@
   {
    "field": "current_tax_bill_paid",
    "impact": "med",
+   "offers": [
+    "A"
+   ],
    "scope": "listing",
    "value": false
   },

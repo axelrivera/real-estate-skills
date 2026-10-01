@@ -2649,6 +2649,9 @@
    {
     "field": "current_tax_bill_paid",
     "impact": "med",
+    "offers": [
+     "lower_cost"
+    ],
     "scope": "listing",
     "value": false
    }
@@ -2676,6 +2679,7 @@
    "flood_disclosure": null,
    "flood_zone": null,
    "frbar_market": true,
+   "hoa_conflict": null,
    "hoa_monthly": 0,
    "insurance_reports": false,
    "list_price": 429000,
@@ -2754,6 +2758,9 @@
    {
     "field": "current_tax_bill_paid",
     "impact": "med",
+    "offers": [
+     "lower_cost"
+    ],
     "scope": "listing",
     "value": false
    },
@@ -5478,6 +5485,9 @@
   {
    "field": "current_tax_bill_paid",
    "impact": "med",
+   "offers": [
+    "lower_cost"
+   ],
    "scope": "listing",
    "value": false
   }
@@ -5644,6 +5654,9 @@
   {
    "field": "current_tax_bill_paid",
    "impact": "med",
+   "offers": [
+    "lower_cost"
+   ],
    "scope": "listing",
    "value": false
   },

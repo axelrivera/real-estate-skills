@@ -61,7 +61,7 @@ def analyze(data, market=None, cma=None):
 # --- after the engine ----------------------------------------------------------
 
 # Listing-side reminders (the seller's own paperwork), not risks in the offer: listed last, never a top risk (OFR-274)
-HOUSEKEEPING = {"flood_disclosure"}
+HOUSEKEEPING = {"flood_disclosure", "hoa_conflict"}  # OFR-343: the HOA figure is the listing's to confirm
 # Deal-specific risks first, within a severity level: a passed time for acceptance (whether there's an offer to answer),
 # sale contingency, then financing, then appraisal gap, then the seller's deadline (OFR-274). Flags without a topic get one here, so the order and flag_keys use keys, not words.
 RISK_ORDER = ("expired", "backup_lapses", "sale_contingency", "financing", "appraisal_gap", "past_deadline")
@@ -124,13 +124,16 @@ def backup_lapses(R):
         if o["action"] != "BACKUP" or o.get("lapsed") or not when or when >= due:
             continue
         past = f"{due:%a %b %-d}, 5:00 PM"
+        # OFR-342: with highest and best pending, nothing is answered before the deadline, so only the extension fits
+        hold = (R.get("highest_and_best") or {}).get("pending")
         o["lapses_before"] = {"until": past, "ends": f"{when:%a %b %-d}, {when:%-I:%M %p}", "offer": top["label"],
                               "ref": top["ref"]}
         o["flags"].append({
             "sev": "Med", "topic": "backup_lapses",
             "issue": f"Its time for acceptance ({o['expires']}) ends before the counter to {top['label']} does ({past}): "
                      "as a backup it lapses before it can be used.",
-            "fix": f"Ask the buyer's agent to extend the time for acceptance past {past}, or answer this offer first."})
+            "fix": f"Ask the buyer's agent to extend the time for acceptance past {past}"
+                   + ("." if hold else ", or answer this offer first.")})
 
 
 def highest_and_best(raw, L):
@@ -357,12 +360,14 @@ def fin_str(o):
     return oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.1f}% down")
 
 
-def listed_assumptions(R, multi=False):
+def listed_assumptions(R, multi=False, offer_id=None):
     """The assumptions a report lists: all of them in a single review; in the comparison, the listing's and seller's,
     each offer's high-impact ones and any shared by several offers (the rest are in each offer's single review).
-    OFR-257: the counts in the Preliminary line and the data note come from this same list, so they match the table."""
-    return [a for a in R["missing"] if not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"
-            or a.get("also")]
+    OFR-257: the counts in the Preliminary line and the data note come from this same list, so they match the table.
+    OFR-344: `offer_id` (a single review of one of several offers) drops a listing assumption that applies only to
+    other offers (`offers`: the tax bill question for an offer closing in November or December)."""
+    return [a for a in R["missing"] if (not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"
+                                        or a.get("also")) and (offer_id is None or offer_id in a.get("offers", [offer_id]))]
 
 
 # OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in the
@@ -389,20 +394,20 @@ def preliminary(R, offer_id=None, multi=False):
                                  None if multi else offer_id, name_offer=lambda s: where(R, s))
     if not need:
         return None
-    n = len(listed_assumptions(R, multi))
+    n = len(listed_assumptions(R, multi, None if multi else offer_id))
     return (f"**Preliminary: based on limited data.** Add {', '.join(need)} to sharpen the numbers; "
             f"{n} input{'s are' if n != 1 else ' is'} assumed in total (listed at the end).")
 
 
-def data_note(R, multi=False):
+def data_note(R, multi=False, offer_id=None):
     bits = []
     if not R["seller"]["payoff_known"]:
         bits.append("Nets are **before mortgage payoff**.")
     if not R["listing"]["cma_provided"]:
         bits.append("No CMA yet: appraisal risk is measured against list price.")
-    shown = listed_assumptions(R, multi)
+    shown = listed_assumptions(R, multi, offer_id)
     n, hi = len(shown), sum(a["impact"] == "high" for a in shown)
-    more = " (each offer's single review lists the rest)" if len(shown) < len(R["missing"]) else ""
+    more = " (each offer's single review lists the rest)" if multi and len(shown) < len(R["missing"]) else ""
     bits.append(f"{n} input{'s' if n != 1 else ''} assumed ({hi} high-impact); see Assumptions & Data to Confirm{more}."
                 if n else "All key inputs provided.")
     return " ".join(bits)
@@ -712,6 +717,10 @@ def single_view(R, o):
            "BACKUP": "once the primary contract is fully signed, approve offering this buyer a backup position on the "
                      "Back-Up Contract rider, with a short notice date: the backup buyer can cancel until the seller's notice.",
            "DECLINE": "approve, and with your written OK I'll tell the buyer's agent the seller is moving forward with another offer."}[act]
+    held = next((x for x in R["ranked"][1:] if x.get("lapses_before")), None) if top is o else None
+    if act == "COUNTER" and held:  # OFR-344: the plan's order, the backup's extension asked for before the counter goes out
+        nxt = (f"approve the counter terms and I'll ask the buyer's agent on {held['ref']} to extend past "
+               f"{held['lapses_before']['until']}, then send the counter to the buyer's agent{expires}.")
     first = []
     hb = R.get("highest_and_best")
     if hb and hb["pending"]:  # OFR-320
@@ -736,7 +745,7 @@ def single_view(R, o):
         "options": opts,
         "preliminary": preliminary(R, o["id"] if multi_ctx else None),
         "next_step": cap(nxt),  # OFR-264
-        "data_note": data_note(R),
+        "data_note": data_note(R, offer_id=o["id"] if multi_ctx else None),
     }
 
 

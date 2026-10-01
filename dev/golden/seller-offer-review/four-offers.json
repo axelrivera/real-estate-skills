@@ -1737,6 +1737,10 @@
   {
    "field": "current_tax_bill_paid",
    "impact": "med",
+   "offers": [
+    "A",
+    "D"
+   ],
    "scope": "listing",
    "value": false
   }
@@ -1765,6 +1769,7 @@
   "flood_zone": "X",
   "frbar_market": true,
   "hoa_approval_required": false,
+  "hoa_conflict": null,
   "hoa_monthly": 85,
   "insurance_reports": false,
   "list_price": 425000,
@@ -1822,6 +1827,10 @@
   {
    "field": "current_tax_bill_paid",
    "impact": "med",
+   "offers": [
+    "A",
+    "D"
+   ],
    "scope": "listing",
    "value": false
   }

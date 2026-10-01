@@ -53,6 +53,7 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `roof_year` | no roof penalty in scoring | med (insurance) |
 | `insurance_reports` | `true` only when the seller has current insurance inspection reports to share (Florida: 4-point and wind mitigation). A counter that shortens the inspection period offers them only then | false: never offered | — |
 | `hoa_monthly` | unknown → the HOA estoppel or documents fee is still charged, labeled Estimate and listed as an assumption; `0` = no HOA, no fee | low |
+| `hoa_conflict` | text naming what disagrees ("$95 per quarter in one package, $95 per month in the other") when the offer packages, or a package and the listing, give different HOA assessments. Every offer gets a Low flag (topic `hoa_conflict`) and the report's chip reads "HOA to Confirm" instead of a figure. Keep `hoa_monthly` at the figure you trust most | none | — |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional: the CMA's midpoint or median adjusted comp price) | from `--cma`; else both = list price, appraisal risk measured vs. list. A range given here (not by `--cma`) comes back as `value_range_confirm`, the one line the reply uses to confirm it | **high** |
@@ -85,7 +86,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 |---|---|---|
 | `name` | "Seller" | — |
 | `payoff` | 0; nets labeled **before payoff** | **high** |
-| `listing_fee_pct` | 2.5% assumed for the listing side (default commission, 5% total); when the listing broker pays the buyer's broker, 5% in total on one line | med |
+| `listing_fee_pct` | 2.5% assumed for the listing side (default commission, 5% total); when the listing broker pays the buyer's broker, 5% in total on one line. Set it only when the agent or the listing agreement gives the fee; never fill in a default yourself, or the report shows it as a fact and drops the assumption | med |
 | `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say assume 2.5% | med |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
@@ -131,7 +132,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `aga_valuation_days`, `aga_renegotiate_days` | AGA-1 blanks | 30, 3 | — |
 | `gap_funds` | financed waiver only: $ documented beyond down payment and closing costs | 0 when waived | med |
 | `sale_contingency_days`, `kickout` | days, bool; Rider X in `riders` sets `kickout` | 0, false | — |
-| `buyer_broker_paid_by` | `listing_broker` when the listing broker pays the buyer's broker from its own fee (Rider GG signed by the Seller's Broker, or the listing agreement says so): no buyer-broker line in the seller's net (the Seller's Target too), no buyer-broker row in the Terms Review, and an assumed listing fee becomes the market's total (5%) on one line. Listed as an assumption for the agent to confirm. Set `seller.listing_fee_pct` to the total fee in the listing agreement | `seller` | med |
+| `buyer_broker_paid_by` | `listing_broker` when the listing broker pays the buyer's broker from its own fee (Rider GG signed by the Seller's Broker, or the listing agreement says so): no buyer-broker line in the seller's net (the Seller's Target too), no buyer-broker row in the Terms Review, and an assumed listing fee becomes the market's total (5%) on one line. Listed as an assumption for the agent to confirm. When the agent or the listing agreement gives the listing fee, set `seller.listing_fee_pct` to that total (it then covers both sides); otherwise leave it out, and the engine assumes the market's total and lists the assumption | `seller` | med |
 | `buyer_broker_form` | FR/BAR: `FF` when the buyer's broker is paid as a seller credit (Rider FF, also read from `riders`), which counts toward the loan program's concession limit; `GG` or blank for a separate compensation agreement | GG | — |
 | `insurance_days`, `mold_days`, `drywall_days`, `rezoning_days`, `attorney_days` (Rider Z: to the buyer's attorney-approval date, a walk-away until then) | days from the Effective Date for a rider's cancel window when the rider's date or days are filled in (`frbar-riders.md`) | each rider's default; Z and R have none and are flagged | — |
 | `closing_date` or `closing_days` | date, or days from `analysis_date` | 45 financed / 30 cash | med |

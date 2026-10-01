@@ -320,6 +320,7 @@ def prepare_listing(data, A, costs):
     L["flood_disclosure_rule"] = costs.get("flood.seller_disclosure")  # CMA-6: Florida s. 689.302
     L["flood_disclosure"] = L.get("flood_disclosure")  # true once the seller's disclosure has been given to the buyer
     L["hoa_monthly"] = L.get("hoa_monthly")
+    L["hoa_conflict"] = L.get("hoa_conflict") or None  # OFR-343: the offer packages disagree on the HOA assessment
     L["title_customary_payer"] = costs.get("closing_costs.owner_title.payer")
     L["title_payer_deal"] = costs.source("closing_costs.owner_title.payer") == "deal"  # the agent's title_payer wins
     if L["title_customary_payer"] is None:
@@ -1289,6 +1290,7 @@ TOPIC_WORDS = {
     "lead_paint": r"lead[- ](based )?paint",
     "loan_amount": r"loan amount",
     "flood_disclosure": r"flood disclosure|FD-2|689\.302",
+    "hoa_conflict": r"\bHOA\b[^.]*\b(assessments?|dues)\b|\b(assessments?|dues)\b[^.]*\bper (month|quarter|year)\b",
     "buyer_changes": r"(buyer'?s counter|counter offer \d|CO ?#?\d) (moves|moved|changes|changed) (the )?closing",
 }
 
@@ -1447,6 +1449,10 @@ def flags_for(o, L, S):
         add("Med", f"The seller's flood disclosure ({rule.get('statute', 'state law')}) isn't confirmed as given.",
             "Have the seller complete it (" + rule.get("asks", "flood history") + ") and give it to the buyer at or before signing.",
             "flood_disclosure")
+    if L["hoa_conflict"]:  # OFR-343: on every offer, since the listing's figure is the one in doubt
+        said = f" ({L['hoa_conflict'].strip().rstrip('.')})" if isinstance(L["hoa_conflict"], str) else ""
+        add("Low", f"The offer packages disagree on the HOA assessment{said}.",
+            "Confirm the assessment with the association and correct the HOA disclosure before acceptance.", "hoa_conflict")
     if L["condo"]:
         cr = L["condo_rules"]
         if cr.get("rescission"):
@@ -1711,13 +1717,16 @@ def analyze_offer(o, L, S, costs):
     return o
 
 
-def target_net(L, S, costs, close, o=None):
+def target_net(L, S, costs, close, o=None, bb_from_listing=None):
     """A clean offer at list: no concessions, the agreed (or market) buyer-broker fee, same closing date. With an offer,
     on that offer's title terms (its Para. 9(c) box), so "vs. target" compares like with like (OFR-103), and with the
-    same commission lines: when the listing broker pays the buyer's broker, one total line (OFR-259)."""
+    same commission lines: when the listing broker pays the buyer's broker, one total line (OFR-259). Without an offer,
+    `bb_from_listing` sets the commission lines (OFR-339: the report target matches the single reviews')."""
     bb = S["default_buyer_broker_pct"] or 0
+    if bb_from_listing is None:
+        bb_from_listing = bool(o and o.get("bb_from_listing"))
     return net_sheet(L["list_price"], 0, bb, 0, close, L, S, offer_costs(o, costs) if o else costs,
-                     bb_from_listing=bool(o and o.get("bb_from_listing")))
+                     bb_from_listing=bb_from_listing)
 
 
 def single_recommendation(o, tgt, priority="balanced"):
@@ -1801,11 +1810,12 @@ def analyze(data, market=None, cma=None):
         if o["title_payer_by_contract"] and o["status"] in ACTIVE:
             L["cost_notes"].append(f"{o['label']}: owner's title policy paid by the {o['title_payer']}, who chooses the closing "
                                    "agent under the contract")
-    if L["bill_paid"] is None and L["annual_tax"] and L["tax_in_arrears"] \
-            and any(o["close"].month >= L["tax_bill_month"] for o in offers if o["status"] in ACTIVE):
+    late = [o["id"] for o in offers if o["status"] in ACTIVE and o["close"].month >= L["tax_bill_month"]]
+    if L["bill_paid"] is None and L["annual_tax"] and L["tax_in_arrears"] and late:
         A.add("listing", "current_tax_bill_paid", False,
               "Closing in November or December: whether the seller has paid this year's tax bill wasn't given. Assumed not "
               "paid (the seller credits the buyer from Jan 1); if it's paid, the buyer credits the seller instead", "med")
+        A.items[-1]["offers"] = late  # OFR-344: a single review lists it only for an offer closing then
     _missing_market(costs, offers[0]["ns"], A)
     estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)
     if L["hoa_monthly"] is None and estoppel:  # OFR-255: charged when the HOA is unknown, so say so
@@ -1821,7 +1831,10 @@ def analyze(data, market=None, cma=None):
            "market_notes": [n for n in costs.notes if "MLS" not in n],  # offers don't use MLS files
            "sample": bool(data.get("sample"))}
     close_ref = max((o["close"] for o in active), default=L["analysis_date"] + timedelta(days=30))
-    res["target"] = target_net(L, S, costs, min(close_ref, S["deadline"] or close_ref))
+    # OFR-339: when the listing broker pays the buyer's broker on every active offer, so does the report's target;
+    # otherwise the chart's target took the buyer's broker fee off on top of a listing fee that already covers it
+    res["target"] = target_net(L, S, costs, min(close_ref, S["deadline"] or close_ref),
+                               bb_from_listing=bool(active) and all(o.get("bb_from_listing") for o in active))
     for o in offers:
         o["target"] = target_net(L, S, costs, o["close"], o)
     pen = RISK_PENALTY[S["priority"]]

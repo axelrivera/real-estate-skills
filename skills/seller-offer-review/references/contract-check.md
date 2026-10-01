@@ -20,6 +20,7 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `buyer_changes` | the buyer's counter changed a term from the buyer's original terms (the first `by: "buyer"` entry in `prior_counters`) that no seller counter stated: a later closing date, a longer period, a smaller deposit, more concessions | Med |
 | `inspection_period` | an inspection period of 15 days or more | Med |
 | `flood_disclosure` | the market requires the seller's flood disclosure and `listing.flood_disclosure` isn't `true` | Med |
+| `hoa_conflict` | `listing.hoa_conflict` is set: the packages disagree on the HOA assessment. Raised on every offer, never on one alone | Low |
 
 Also raised, with no topic because they have nothing to duplicate: rider risks (short sale, attorney approval, a sale contingency without a kick-out, an assessment with no payoff agreement, a mortgage assumption), AGA-1 conflicts (with Rider F; on an FHA, VA or USDA offer, which AGA-1 doesn't fit; a periods total that runs past closing, or ends within 3 days of it, `aga_window_at_closing`), a free-text pre-approval expiry (recorded as an assumption), FHA/VA condo approval, loan approval after closing, and the Standard form's repair limits.
 

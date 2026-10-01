@@ -69,6 +69,8 @@ def snapshot(R):
     input that makes the review Preliminary stays, in the risk color."""
     L, S = R["listing"], R["seller"]
     hoa = f"HOA {money(L['hoa_monthly'])}/mo" if L.get("hoa_monthly") else ("no HOA" if L.get("hoa_monthly") == 0 else None)
+    if hoa and L.get("hoa_conflict"):  # OFR-343: the risk flags dispute the figure, so the chip doesn't state it
+        hoa = "HOA to Confirm"
     facts = [f"{L['beds']} Bed" if L.get("beds") else None, f"{L['baths']} Bath" if L.get("baths") else None,
              f"{L['sqft']:,} Sq Ft" if L.get("sqft") else None, f"Built {L['year_built']}" if L.get("year_built") else None,
              f"Roof {L['roof_year']}" if L.get("roof_year") else None, hoa,
@@ -337,9 +339,9 @@ def checkbox(v):
     """The report is printed once: a box to tick by hand, already ticked when the file says it's done."""
     return '<span class="cb on">✓</span>' if v == "Yes" else '<span class="cb"></span>'
 
-def assumptions_table(R, multi=False):
+def assumptions_table(R, multi=False, offer_id=None):
     """Every assumption; in the comparison, only the listing's and each offer's high-impact ones (the rest are in the single reviews)."""
-    items = review.listed_assumptions(R, multi)  # OFR-257: the same list the data note counts
+    items = review.listed_assumptions(R, multi, offer_id)  # OFR-257: the same list the data note counts
     if not items:
         return '<p class="sm">No assumptions: every key input was provided.</p>'
     lab = {"high": "High", "med": "Med", "low": "Low"}
@@ -508,7 +510,7 @@ def single_html(R, o, v):
 <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div>
 <h2>8 · Questions for the {"Loan Officer" if o["financed"] else "Bank"}</h2><div class="tbl"><table class="qs"><colgroup><col style="width:5%"></colgroup>
 <thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{lq}</tbody></table></div>
-<h2>9 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R)}
+<h2>9 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, offer_id=o["id"] if R["mode"] == "multi" else None)}
 {fine(R)}'''
     sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · Offer from {esc(o['label'])}"
     snap = snapshot(R)
