@@ -28,7 +28,14 @@ h2 .h2s{font-weight:400;color:var(--muted);font-size:8pt;margin-left:6px}
 
 /* tables */
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+/* a short table stays on one page; a long one (render.html_to_pdf marks it .brk) runs on, whole rows only, its header
+   row repeated and its outline closed on each page, so it never leaves a page mostly blank */
 .tbl{border:1px solid var(--brand-rule);border-radius:5px;overflow:hidden;break-inside:avoid}
+.tbl.brk{break-inside:auto;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.tbl.brk tr{break-inside:avoid}
+/* never one row alone: the first two body rows start together and the last (often a total) keeps the row above it */
+.tbl.brk tbody tr:nth-child(2),.tbl.brk tbody tr:last-child{break-before:avoid}
+thead{display:table-header-group}
 th{color:var(--brand-ink);font-weight:700;text-align:left;padding:3px 6px;font-size:8pt;border-bottom:1.5px solid var(--brand)}
 td{padding:2.6px 6px;border-top:1px solid var(--brand-rule);vertical-align:top}
 thead+tbody tr:first-child td{border-top:none}
@@ -74,7 +81,7 @@ thead+tbody tr:first-child td{border-top:none}
 .crit{color:var(--risk-base);font-size:1.05em;line-height:1}
 .was{font-size:7pt;color:var(--muted);text-decoration:line-through}
 
-.fine{font-size:6.9pt;color:var(--muted);margin-top:6px;line-height:1.35}
+.fine{font-size:6.9pt;color:var(--muted);margin-top:6px;line-height:1.35;break-inside:avoid}
 
 /* closing notices: data source, not-advice lines, the agent's disclaimers (render.notices) */
 .notices{margin-top:10px;padding-top:4px;border-top:1px solid var(--brand-rule);font-size:7pt;line-height:1.3;color:var(--muted);break-inside:avoid}

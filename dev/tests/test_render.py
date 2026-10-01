@@ -104,6 +104,18 @@ class Pdf(unittest.TestCase):
             with open(path, "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
 
+    def test_long_tables_may_break(self):  # OFR-329: a long table runs on across pages; a short one stays whole
+        def tbl(rows, cls):
+            body = "".join(f"<tr><td>Row {i}</td><td>Value</td></tr>" for i in range(rows))
+            return f"<div class='tbl {cls}'><table><thead><tr><th>Item</th><th>Amount</th></tr></thead><tbody>{body}</tbody></table></div>"
+
+        theme = design.theme(None, "buyer")
+        doc = render.page(tbl(3, "short") + tbl(40, "long"), theme_css=design.css_vars(theme))
+        with tempfile.TemporaryDirectory() as tmp:
+            got = render.html_to_pdf(doc, os.path.join(tmp, "t.pdf"), before_print=lambda pg: pg.evaluate(
+                "() => [...document.querySelectorAll('.tbl')].map(t => [t.classList.contains('brk'), getComputedStyle(t).breakInside])"))
+        self.assertEqual(got, [[False, "avoid"], [True, "auto"]])
+
 
 if __name__ == "__main__":
     unittest.main()
