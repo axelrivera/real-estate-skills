@@ -118,6 +118,7 @@ def page1(r, s):
     exp = "".join(f'<tr><td>{esc(a)}</td><td class="n"><b class="{"rt" if a == "Left in Reserve" and s["reserve_short"] else ("gt" if a == "Left in Reserve" else "")}">'
                   f'{esc(b)}</b></td></tr>' for a, b in s["exposure"])
     limits = "".join(f'<div class="limit"><b>Limit:</b> {esc(c)}</div>' for c in s["constraints"])
+    limits += "".join(f'<div class="cnote">{esc(c)}</div>' for c in s.get("cautions") or [])  # OFR-338: inside the limits
     pre = f'<div class="prelim">{md(s["preliminary"])}</div>' if s["preliminary"] else ""
     absent = "".join(f'<div class="absent"><b>No {esc(a["option"])} Option:</b> {esc(a["why"])}</div>' for a in s["absent"])  # OFR-208
     return f'''{hero}{box}

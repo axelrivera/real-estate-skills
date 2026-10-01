@@ -137,7 +137,7 @@
    }
   ],
   "market": {
-   "median_dom": 23.0,
+   "median_dom": 23,
    "months_supply": 1.4,
    "sale_to_list": 0.9642,
    "share_with_seller_costs": "100%"
@@ -4019,7 +4019,7 @@
   "recommended": 45.33
  },
  "constraints": {
-  "count": 1
+  "count": 0
  },
  "limits": {
   "lower_cost": {
@@ -4109,6 +4109,12 @@
    "key": "tight_reserve"
   }
  ],
+ "reserve_alt": {
+  "cash_kept": 2744,
+  "payment_more": 24,
+  "price": 442000,
+  "seller_concessions": 3500
+ },
  "sample": false,
  "target": 430613,
  "terms": {

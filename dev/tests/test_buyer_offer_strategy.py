@@ -64,8 +64,9 @@ class MissingData(unittest.TestCase):
     def test_not_enough_cash_says_so(self):
         d = fixture("fha-competitive.json")
         d["buyer"]["cash_available"] = 9000
-        r = strategy.analyze(fixture("fha-competitive.json"))  # inside the floor; only the thin-cushion note (OFR-332)
-        self.assertEqual(r["constraints"], [r["reserve_tight"]])
+        r = strategy.analyze(fixture("fha-competitive.json"))  # inside the floor: a thin-cushion note (OFR-332), no limit
+        self.assertTrue(r["reserve_tight"])
+        self.assertEqual(r["constraints"], [])  # OFR-338: a caution, not a Limit line
         r = strategy.analyze(d)
         self.assertLess(r["cash"]["recommended"]["reserve"], 0)
         self.assertEqual(len(r["constraints"]), 1)  # the shortfall, said once
@@ -907,10 +908,51 @@ class ManualTestFixes(unittest.TestCase):
         """OFR-332: the cheapest offer that reaches the band keeps only $86 over the floor: page 1 and the reply say so
         and name the same-outlook offer that keeps more cash."""
         self.assertIn("tight_reserve", [l["key"] for l in self.r["reply_lines"]])
-        self.assertIn(self.r["reserve_tight"], self.r["constraints"])
         roomy = self.r["reached"]["roomy"]
         self.assertGreater(strategy.buyer_cash(self.r["B"], roomy)["reserve"], self.r["cash"]["recommended"]["reserve"] + 1000)
         self.assertIsNone(analyze("cash.json")["reserve_tight"])  # plenty of cushion: no line
+
+    def test_thin_cushion_line_carries_the_trade_off(self):
+        """OFR-334: the line names what the roomier offer costs a month and the cash it keeps, so the chat has nothing to
+        compute; the files keep the cheapest offer."""
+        alt, r = self.r["reserve_alt"], self.r
+        self.assertEqual(alt["price"], r["reached"]["roomy"]["price"])
+        self.assertEqual(alt["payment_more"], strategy.monthly_payment(r["B"], r["costs"], alt["price"])
+                         - strategy.monthly_payment(r["B"], r["costs"], r["terms"]["recommended"]["price"]))
+        self.assertGreater(alt["payment_more"], 0)
+        self.assertEqual(alt["cash_kept"], strategy.buyer_cash(r["B"], r["reached"]["roomy"])["reserve"]
+                         - r["cash"]["recommended"]["reserve"])
+        self.assertIn(strategy.money(alt["cash_kept"]), r["reserve_tight"])
+        self.assertIn(strategy.money(alt["payment_more"]), r["reserve_tight"])
+        self.assertLess(r["terms"]["recommended"]["price"], alt["price"])  # the report still recommends the cheapest
+
+    def test_thin_cushion_is_a_caution_not_a_limit(self):
+        """OFR-338: inside the limits, so page 1 prints it in the caution style, not a red "Limit:" line."""
+        s = strategy.summary(self.r)
+        self.assertNotIn(self.r["reserve_tight"], s["constraints"])
+        self.assertEqual(s["cautions"], [self.r["reserve_tight"]])
+        html = buyer_render.page1(self.r, s)
+        self.assertNotIn("<b>Limit:</b> Thin", html)
+        self.assertIn('<div class="cnote">Thin cushion', html)
+
+    def test_median_days_print_whole(self):  # OFR-336: the CMA's 23.0 prints as 23
+        self.assertEqual(self.r["B"]["market"]["median_dom"], 23)
+        self.assertIsInstance(self.r["B"]["market"]["median_dom"], int)
+        self.assertIn("<b>23</b>", buyer_render.snapshot(self.r))
+
+    def test_subject_days_and_cuts_from_the_handoff(self):
+        """OFR-335: a buyer-cma handoff carries the subject's days on market and price cuts; with them only there, the
+        report shows the Days on Market tile and the market read leads with days on market."""
+        d = fixture("one-competing-reach.json")
+        for k in ("dom", "price_cuts"):
+            d["cma"]["subject"][k] = d["property"].pop(k)
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        P, C = r["B"]["property"], r["B"]["competition"]
+        self.assertEqual((P["dom"], P["price_cuts"]), (78, 2))
+        self.assertEqual(C["heat"], "soft")
+        self.assertTrue(C["heat_basis"].startswith("on days on market (78 vs. 23 median)"))
+        self.assertIn("a price cut", C["heat_basis"])
+        self.assertIn("<span>Days on Market</span><b>78</b>", buyer_render.snapshot(r))
 
     def lvl_band(self, r, k="recommended"):
         return r["bands"][k][r["B"]["competition"]["level"]][0]

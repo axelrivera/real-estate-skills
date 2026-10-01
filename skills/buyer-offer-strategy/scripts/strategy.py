@@ -61,7 +61,7 @@ def apply_cma(B, h):
     s, v, mk = h.get("subject") or {}, h["value"], h.get("market") or {}
     B["_cma_address_note"] = oe.address_note(h, P.get("address"))  # CMA-102
     for key in ("address", "state", "county", "list_price", "beds", "baths", "sqft", "year_built", "roof_year",
-                "hoa_monthly", "flood_zone", "dom", "annual_tax"):
+                "hoa_monthly", "flood_zone", "dom", "price_cuts", "annual_tax"):  # OFR-335: the subject's DOM and cuts
         if s.get(key) not in (None, "") and P.get(key) in (None, ""):
             P[key] = s[key]
             if key == "dom":  # OFR-242: the handoff's days on market were counted on its as_of date, so age them
@@ -119,6 +119,9 @@ def prepare(B, A, market=None):
     M, C, LS, BU = B.setdefault("market", {}), B.setdefault("competition", {}), B.setdefault("listing_side", {}), B.setdefault("buyer", {})
     if not P.get("list_price"):
         raise oe.OfferError("The list price is needed (property.list_price).")
+    for D, key in ((M, "median_dom"), (P, "dom")):  # OFR-336: whole days, from a CMA handoff or the file ("23", never "23.0")
+        if isinstance(D.get(key), float):
+            D[key] = round(D[key])
     given_market = market
     city = city_of(P.get("address"))
     if market is None and not P.get("county") and city:  # OFR-213: the built-in tax districts name the city's county
@@ -1146,9 +1149,8 @@ def analyze(B_in, market=None, cma=None):
                     "gift funds, a lower price range, or a conversation with the lender about loan options.")
     elif rc["reserve"] < BU["reserve_floor"]:
         cons.append(f"Tight on cash: even the recommended offer leaves {money(rc['reserve'])}, below your {money(BU['reserve_floor'])} reserve floor.")
-    res["reserve_tight"] = tight_reserve(B, res, rc)  # OFR-332
-    if res["reserve_tight"]:
-        cons.append(res["reserve_tight"])
+    # OFR-332; OFR-338: a caution inside the limits, so it isn't one of the constraints (page 1's red Limit lines)
+    res["reserve_tight"] = tight_reserve(B, costs, res, rc)
     if rec["price"] < V["cma_low"] and "payment" in why.get("price", ""):
         cons.append(f"Your ${BU['max_payment']:,}/mo payment limit caps the price at {money(rec['price'])}, below the "
                     f"{money(V['cma_low'])}–{money(V['cma_high'])} value range. Expect this offer to be passed over unless the seller has no other interest.")
@@ -1171,9 +1173,10 @@ def highest_and_best(C):
 TIGHT_RESERVE = (1000, 0.10)  # OFR-332: a cushion under $1,000 or 10% of the floor, whichever is more, is thin
 
 
-def tight_reserve(B, res, rc):
+def tight_reserve(B, costs, res, rc):
     """OFR-332: one line when the recommended offer keeps the reserve floor with a thin cushion, naming the same-outlook
-    offer that keeps more cash when the search found one; else None."""
+    offer that keeps more cash when the search found one; else None. OFR-334: the line is neutral and carries the
+    trade-off (payment difference and cash kept), so the chat quotes it and never computes or picks between them."""
     floor = B["buyer"]["reserve_floor"]
     over = rc["reserve"] - floor
     if not 0 <= over < max(TIGHT_RESERVE[0], TIGHT_RESERVE[1] * floor):
@@ -1184,8 +1187,16 @@ def tight_reserve(B, res, rc):
     if roomy:
         keep = buyer_cash(B, roomy)["reserve"]
         if keep - rc["reserve"] >= TIGHT_RESERVE[0]:
-            line += (f" {money(roomy['price'])} with {money(roomy['seller_concessions']) if roomy['seller_concessions'] else 'no'}"
-                     f" seller concessions reaches the same outlook and keeps {money(keep)}.")
+            rec = res["terms"]["recommended"]
+            dpay = monthly_payment(B, costs, roomy["price"]) - monthly_payment(B, costs, rec["price"])
+            res["reserve_alt"] = {"price": roomy["price"], "seller_concessions": roomy["seller_concessions"],
+                                  "payment_more": dpay, "cash_kept": keep - rc["reserve"]}
+            pay = (f"costs {money(abs(dpay))} a month {'more' if dpay > 0 else 'less'}" if dpay else
+                   "has the same payment")
+            line += (f" Both are within your limits, and the choice is yours: {money(roomy['price'])} with "
+                     f"{money(roomy['seller_concessions']) if roomy['seller_concessions'] else 'no'} seller concessions "
+                     f"reaches the same outlook, {pay} and keeps {money(keep - rc['reserve'])} more cash "
+                     f"({money(keep)} left).")
     return line
 
 
@@ -1418,6 +1429,7 @@ def summary(r):
         "options_title": "Your Options" if len(O) > 1 else "Your Offer",
         "absent": [{"key": k, "option": OPTION_LABEL[k], "why": why_} for k, why_ in (r.get("absent") or {}).items()],
         "exposure": exposure, "constraints": r["constraints"], "preliminary": preliminary(r),
+        "cautions": [r["reserve_tight"]] if r.get("reserve_tight") else [],  # OFR-338: within the limits, not a Limit line
         "breaks_limits": broken,
         "next_step": next_step(B, deadline, len(O)),
     }

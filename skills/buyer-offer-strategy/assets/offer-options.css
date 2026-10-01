@@ -76,7 +76,7 @@ tr.alt td{color:var(--muted);font-size:7.8pt}
 table.facts2 td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt}
 tr.recrow td{font-weight:700} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--good-base)}
 .nextstep{margin-top:6px;border:1.5px solid var(--brand-deep);padding:5px 10px;border-radius:4px;font-size:8.6pt} .nextstep b:first-child{color:var(--brand-deep)}
-.prelim{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
+.prelim,.cnote{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
 .qs td:first-child{color:var(--brand-ink);font-weight:700;text-align:center}
 
 /* ranking and chart */
@@ -101,4 +101,4 @@ td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow
 .compact .hero .big{font-size:20pt} .compact .hero .why{font-size:8.3pt} .compact .hero .hl,.compact .hero .hr{padding:6px 10px}
 .compact .ctr td{padding:1.5px 7px;font-size:8.3pt} .compact .ctr td.now{font-size:8.8pt} .compact .ctr td.why2{font-size:7.4pt}
 .compact .kpis b{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
-.compact .p1 td{padding-top:1.8px;padding-bottom:1.8px} .compact h2{margin:6px 0 3px} .compact .prelim{padding:3px 8px;font-size:7.8pt;margin-top:4px}
+.compact .p1 td{padding-top:1.8px;padding-bottom:1.8px} .compact h2{margin:6px 0 3px} .compact .prelim,.compact .cnote{padding:3px 8px;font-size:7.8pt;margin-top:4px}
