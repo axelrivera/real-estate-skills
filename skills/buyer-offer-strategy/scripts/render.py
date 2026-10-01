@@ -181,7 +181,7 @@ def details(r, res):
     cr += f'<tr class="total2"><td>Left in Reserve (of {money(B["buyer"]["cash_available"])})</td>' + "".join(
         f'<td class="n {"worst" if r["cash"][k]["reserve"] < floor else "best"}">{acct(r["cash"][k]["reserve"])}</td>' for k in K) + "</tr>"
     # OFR-219: the date as the contract's weekend and holiday rule leaves it
-    # OFR-316: on a contract that isn't FR/BAR the date is counted from the offer's periods: marked to confirm
+    # OFR-316: on a contract that isn't FAR/BAR the date is counted from the offer's periods: marked to confirm
     confirm = " (confirm)" if B["words"]["deposit_risk_confirm"] else ""
     cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}{confirm}</td>' for k in K) + "</tr>"
     if any(ST.appraisal_until(O[k], B, r["costs"]) for k in K):  # OFR-210: the appraisal protection on its own row
@@ -260,7 +260,7 @@ def worksheet_html(r, agent, sample, variant=None):
         return f'<span class="cb{" on" if str(status).lower() in done else ""}"></span>'
     pk = "".join(f'<tr><td class="c">{box(x["status"])}</td><td class="src">{esc(x["group"])}</td><td>{esc(x["item"])}{hint(x["note"])}</td>'
                  '<td class="write"></td><td class="write"></td></tr>' for x in W["package"])
-    verify = ("verify every paragraph and rider against the current FR/BAR form version" if W["frbar"]
+    verify = ("verify every paragraph and rider against the current FAR/BAR form version" if W["farbar"]
               else "match each entry to your contract by name (paragraph numbers vary by form)")
     prep = f'Draft prepared {B["analysis_date"]:%B %-d, %Y}{agent_lines(agent)}'
     sub = f'{esc(B["property"].get("address") or "")} · {oe.FIN_LABEL[B["buyer"]["financing"]]} · {W["price"]} · {W["option"].lower()} offer'
@@ -278,7 +278,7 @@ def worksheet_html(r, agent, sample, variant=None):
 <div class="tbl pk"><table class="ws"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:48%"><col style="width:12%"></colgroup>
 <thead><tr><th class="c">✓</th><th>Group</th><th>Item</th><th>Date</th><th>Notes</th></tr></thead><tbody>{pk}</tbody></table></div>
 <h2>5 · Request from the Seller After Acceptance</h2><div class="tbl"><table class="docs"><tbody>{docs}</tbody></table></div>
-<div class="fine">Generated from the same analysis as the Offer Options report. {"Paragraph numbers follow the FR/BAR AS IS contract and may differ by form version. " if W["frbar"] else ""}Rider availability depends on your form set. Draft clause language must be reviewed by the agent and broker; consult a real estate attorney for legal questions.</div>'''
+<div class="fine">Generated from the same analysis as the Offer Options report. {"Paragraph numbers follow the FAR/BAR AS IS contract and may differ by form version. " if W["farbar"] else ""}Rider availability depends on your form set. Draft clause language must be reviewed by the agent and broker; consult a real estate attorney for legal questions.</div>'''
     theme = design.theme(agent.get("brand"), "buyer")
     return render.page(body + render.notices(agent), css=css("worksheet"), title="Offer Package Worksheet",
                        theme_css=design.css_vars(theme)), W

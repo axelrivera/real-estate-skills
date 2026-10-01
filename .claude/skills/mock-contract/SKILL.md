@@ -1,16 +1,16 @@
 ---
 name: mock-contract
-description: Development only (this repo, Claude Code). Builds a realistic mock FR/BAR contract package as one PDF (the AS IS or Standard contract with its riders, addenda, counter offers and amendments, filled in and signed Dotloop-style) at any stage, from a buyer-signed offer to an executed or amended contract, from a scenario described in chat or in a file. Optionally writes an answer key (a contract-timeline deal file once executed, a seller-offer-review listing file before), a scanned image-only copy, and deliberate defects (missing initials, conflicting or unattached riders, blanks left to defaults). Use it whenever the user asks for a mock, fake, sample or test contract, a contract package or PDF to test the contract skills with, "an executed AS IS with riders E and H", "a countered Standard contract", "an offer package with an appraisal gap", or a contract with specific defects. Never shipped; outputs stay in out/mock-contracts/.
+description: Development only (this repo, Claude Code). Builds a realistic mock FAR/BAR contract package as one PDF (the AS IS or Standard contract with its riders, addenda, counter offers and amendments, filled in and signed Dotloop-style) at any stage, from a buyer-signed offer to an executed or amended contract, from a scenario described in chat or in a file. Optionally writes an answer key (a contract-timeline deal file once executed, a seller-offer-review listing file before), a scanned image-only copy, and deliberate defects (missing initials, conflicting or unattached riders, blanks left to defaults). Use it whenever the user asks for a mock, fake, sample or test contract, a contract package or PDF to test the contract skills with, "an executed AS IS with riders E and H", "a countered Standard contract", "an offer package with an appraisal gap", or a contract with specific defects. Never shipped; outputs stay in out/mock-contracts/.
 ---
 
 # Mock Contract
 
-Builds mock FR/BAR contract packages for testing the contract-reading skills. The full reference (spec keys, flags, stages, defects, field maps) is [docs/mock-contracts.md](../../../docs/mock-contracts.md): read the sections you need before writing a spec.
+Builds mock FAR/BAR contract packages for testing the contract-reading skills. The full reference (spec keys, flags, stages, defects, field maps) is [docs/mock-contracts.md](../../../docs/mock-contracts.md): read the sections you need before writing a spec.
 
 ## Guardrails
 
 - **Fictional data only.** Never put a real person, brokerage, street address, MLS number or tax ID in a spec, even if the user pastes one from a real deal: swap in made-up values and say so. Real cities, ZIP codes and counties are fine with a made-up street.
-- **FR/BAR only.** Only the forms in `dev/forms/frbar-forms.json` have PDFs. Another state's contract, a builder's form or CRSP can't be built. Say so, and don't fake one.
+- **FAR/BAR only.** Only the forms in `dev/forms/farbar-forms.json` have PDFs. Another state's contract, a builder's form or CRSP can't be built. Say so, and don't fake one.
 - **Never default the contract form.** Ask AS IS or Standard when the user doesn't say.
 - **The rules come from `shared/contract_forms.py`.** If the builder refuses a rider combination, pass the reason on. Build it only if the user wants that flaw (the `rider-conflict` defect).
 - **Outputs stay in `out/mock-contracts/`.** Never write mock PDFs into `skills/`, `samples/`, `dev/evals/` or anywhere else that's committed: they contain Florida Realtors' form text. Specs may be committed in `dev/mock_contracts/scenarios/` when the user asks to keep one.

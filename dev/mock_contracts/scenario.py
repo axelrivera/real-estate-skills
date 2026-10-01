@@ -43,7 +43,7 @@ COUNTER_STRUCTURAL = {"by", "accepted", "changes", "seller_signs_offer", "method
 # Keys a form's values carry that another document prints: Rider A's community names the condo on RCD-8, and Rider
 # GG's agreement terms go on the CASSB-1 compensation agreement.
 PRINTED_ELSEWHERE = {"CR-7_A": ("community",), "CR-7_GG": ("CASSB",)}
-# Rider values the deal file (skills/contract-timeline/references/frbar.md) names differently; None: not a deal field.
+# Rider values the deal file (skills/contract-timeline/references/farbar.md) names differently; None: not a deal field.
 DEAL_FLAGS = ("cccl_requested", "rofr", "condo_docs_before_contract")  # yes/no rider boxes the deal file reads
 DEAL_NAMES = {"rent_back_days": "seller_occupancy_days", "short_sale_closing_days": None, "flood_date": None}
 # EA-4 "until" dates: the contract-timeline deadline each one overrides (deal-file.md date_overrides).
@@ -64,8 +64,8 @@ DEFAULT_ANSWERS = {"MISIRS": {"exempt from performing the milestone": "no", "pha
 
 
 def default_disclosures(ptype, prop, spec):
-    """The seller's disclosures a Florida resale package carries, from the property's facts (frbar-package-check.md,
-    frbar-addenda.md): the property disclosure (SPDC-2 for a condo, else SPDR-4x) and the statutory flood disclosure
+    """The seller's disclosures a Florida resale package carries, from the property's facts (farbar-package-check.md,
+    farbar-addenda.md): the property disclosure (SPDC-2 for a condo, else SPDR-4x) and the statutory flood disclosure
     (FD-2) always; the milestone/SIRS disclosure and the buyer's receipt of the condo documents for a condo; and the
     rest only when the facts call for them. Informational notices (SOD-2, HID-2, WFPN-3...) only when included."""
     out = ["SPDC" if ptype == "condo" else "SPDR", "FD"]
@@ -85,7 +85,7 @@ def default_disclosures(ptype, prop, spec):
         out.append("NMOB")
     return out  # riders the seller completes and signs at listing, before any offer
 FINANCING = ("cash", "conventional", "fha", "va", "usda", "other")
-FAMILY = {cf.AS_IS: "FRBAR-ASIS", cf.STANDARD: "FRBAR-STANDARD"}
+FAMILY = {cf.AS_IS: "FARBAR-ASIS", cf.STANDARD: "FARBAR-STANDARD"}
 ADDENDA_ORDER = ("AGA", "EAC", "CDDA", "COOP", "BBCCA", "SPRA", "AA", "CASSB")  # offer addenda, before counters
 DISCLOSURE_FORMS = ("SPDR", "SPDC", "SPDU", "FD", "SD", "SOD", "HID", "LBPL", "MISIRS", "MDSTS", "FIN", "WFPN", "TRID",
                     "SUP", "CCCLA", "NTA", "FND", "RCD", "EDRV", "MODS", "NMOB", "BWTIR", "BRR", "RC")
@@ -229,7 +229,7 @@ def form_title(family):
     """The printed name of a form from its file name: "Appraisal Gap Addendum (AGA-1)"."""
     f = manifest().get(family)
     if not f:
-        raise ScenarioError(f"{family} isn't in dev/forms/frbar-forms.json. Known forms: {', '.join(sorted(manifest()))}.")
+        raise ScenarioError(f"{family} isn't in dev/forms/farbar-forms.json. Known forms: {', '.join(sorted(manifest()))}.")
     return re.sub(r"-\d+\.pdf$|\.pdf$", "", f["file"].split("/")[-1])
 
 
@@ -292,7 +292,7 @@ def _check_values(spec, form):
 
 def _rider_defaults(code, values, v):
     """Mock values for the blanks a rider prints with no default of its own ("if left blank, then 10" blanks stay
-    blank). `v` holds what they're built from. Returns a note when the value is one frbar-package-check.md says to
+    blank). `v` holds what they're built from. Returns a note when the value is one farbar-package-check.md says to
     ask the agent for (the sale date on V, the dates on W and Z)."""
     price, rng = v["price"], v["rng"]
     if code == "C":
@@ -347,13 +347,13 @@ def build(spec):
             raise ScenarioError(f"Unknown defect {d['type']!r}. Known: {', '.join(DEFECTS)}.")
     has = lambda t: any(d["type"] == t for d in defects)  # noqa: E731
 
-    # Form: never defaulted (CLAUDE.md). Only the FR/BAR forms have PDFs to fill.
+    # Form: never defaulted (CLAUDE.md). Only the FAR/BAR forms have PDFs to fill.
     form = cf.normalize(spec.get("form"))
     if form is None:
-        raise ScenarioError("Which contract form: FR/BAR AS IS or Standard? Set `form` (the form is never defaulted).")
-    if form not in cf.FRBAR:
-        raise ScenarioError(f"{spec.get('form')!r} isn't an FR/BAR contract. Mock packages can only be built from the "
-                            "FR/BAR forms in sources/Contracts/FARBAR/ (AS IS or Standard).")
+        raise ScenarioError("Which contract form: FAR/BAR AS IS or Standard? Set `form` (the form is never defaulted).")
+    if form not in cf.FARBAR:
+        raise ScenarioError(f"{spec.get('form')!r} isn't a FAR/BAR contract. Mock packages can only be built from the "
+                            "FAR/BAR forms in sources/Contracts/FARBAR/ (AS IS or Standard).")
     stage = spec.get("stage") or ("amended" if spec.get("amendments") else "countered" if spec.get("counters") or spec.get("counter") else "executed")
     if stage not in STAGES:
         raise ScenarioError(f"stage must be one of {', '.join(STAGES)}.")
@@ -481,7 +481,7 @@ def build(spec):
         datetime.combine(base.date() + timedelta(days=2), datetime.min.time()).replace(hour=17)
     closing = _d(D["closing"]) if D.get("closing") else _weekday((effective or base).date() + timedelta(days=36))
 
-    # Riders: the scenario's, plus what the property's facts require (frbar-package-check.md).
+    # Riders: the scenario's, plus what the property's facts require (farbar-package-check.md).
     riders = rider_list(spec)
     codes = [c for c, _ in riders]
     # Buyer's broker compensation: every package carries it unless the spec says "none". Default: Rider GG with a
@@ -593,7 +593,7 @@ def build(spec):
         if closing < need:
             closing = _weekday(need)
     if appraisal == "aga" and ({"F", "E"} & set(codes)):
-        notes.append("AGA-1 with Rider F or E: frbar-package-check.md flags this combination (kept as asked).")
+        notes.append("AGA-1 with Rider F or E: farbar-package-check.md flags this combination (kept as asked).")
 
     days = {
         "inspection_days": None if blank_default else spec.get("inspection_days", 10 if form == cf.AS_IS else 15),
@@ -963,7 +963,7 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
     else:
         source = None
     contract = {
-        "form_family": "frbar", "contract_form": form, "form_revision": cf.VERIFIED[FAMILY[form]], "form_revision_source": "footer",
+        "form_family": "farbar", "contract_form": form, "form_revision": cf.VERIFIED[FAMILY[form]], "form_revision_source": "footer",
         "property": ctx["property_address"], "buyer": ctx["buyer_names"], "seller": ctx["seller_names"], "price": price,
         "financing": ctx["financing"], "effective_date": effective.date().isoformat() if effective else None,
         "effective_date_source": source, "closing_date": closing.isoformat(),
@@ -990,14 +990,14 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
         contract["blanks"] = ["deposit_days", "inspection_days", "title_evidence_days_before"] + \
             (["additional_deposit_days"] if ctx["additional_deposit"] else []) + \
             (["loan_application_days", "loan_approval_days"] if ctx["financing"] != "cash" else [])
-    for code, values in riders:  # rider days and dates the rider prints, under the deal file's names (frbar.md)
+    for code, values in riders:  # rider days and dates the rider prints, under the deal file's names (farbar.md)
         printed = printed_keys(f"CR-7_{code}")
         for k, v in values.items():
             name = DEAL_NAMES.get(k, k)
             if k in printed and name and k.endswith(("_days", "_date", "_days_before")) and not k.startswith("approval") \
                     and v not in (None, ""):
                 contract[name] = _d(v).isoformat() if k.endswith("_date") else v
-        if code == "H":  # which Rider H boxes are checked (frbar.md `insurance_coverage`), and (b)'s own date
+        if code == "H":  # which Rider H boxes are checked (farbar.md `insurance_coverage`), and (b)'s own date
             hw, fl = values.get("homeowners") is not False, bool(values.get("flood"))
             contract["insurance_coverage"] = "both" if hw and fl else "flood" if fl else "homeowners"
             if fl and values.get("flood_date"):
@@ -1058,7 +1058,7 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
     contract = base_contract  # the deal file keeps the contract as signed; amendments carry the changes
     deadlines = []
     aga = next((d["values"] for d in docs if d["family"] == "AGA"), None)
-    if aga is not None:  # frbar.md: AGA-1 sets no timeline row of its own, so its dates go in `deadlines`
+    if aga is not None:  # farbar.md: AGA-1 sets no timeline row of its own, so its dates go in `deadlines`
         valuation = aga.get("valuation_days") or cf.AGA_VALUATION_DAYS
         deadlines += [
             {"key": "aga_valuation", "label": "Appraisal Gap Valuation Due", "short": "Gap Valuation", "basis": "after",

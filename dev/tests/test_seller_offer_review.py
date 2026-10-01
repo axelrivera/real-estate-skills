@@ -146,7 +146,7 @@ class Analysis(unittest.TestCase):
         self.assertIn("national estimate", json.dumps(out))
         notes = out.pop("chat_notes")  # the chat-only best-effort line names Florida on purpose
         self.assertEqual(out["support"], "best_effort")
-        self.assertTrue(any("Only Florida FR/BAR contracts are fully supported" in n for n in notes))
+        self.assertTrue(any("Only Florida FAR/BAR contracts are fully supported" in n for n in notes))
         self.assertNotIn("Florida", json.dumps(out))
 
     def test_best_effort_line_never_on_the_report(self):
@@ -155,7 +155,7 @@ class Analysis(unittest.TestCase):
         self.assertNotIn("fully supported", doc)
         self.assertNotIn("best-effort", doc)
 
-    def test_frbar_offer_is_fully_supported(self):
+    def test_farbar_offer_is_fully_supported(self):
         out = review.result(review.analyze(fixture("two-offers-accept.json")))
         self.assertEqual((out["support"], out["chat_notes"]), ("full", []))
 
@@ -559,7 +559,7 @@ class EvalIteration4(unittest.TestCase):
         doc, _, _ = review_render.build_html(R, {}, sample=False, mode="multi")
         self.assertIn("Terms Reason:", doc)
 
-    def test_year_built_is_asked_with_frbar_riders(self):  # OFR-280
+    def test_year_built_is_asked_with_farbar_riders(self):  # OFR-280
         data = fixture("counter-chain-standard.json")
         self.assertIn("year_built", [a["field"] for a in review.analyze(data)["missing"]])
         data["listing"]["year_built"] = 1995

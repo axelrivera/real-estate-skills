@@ -57,6 +57,6 @@ The buyer's condo rights come from the market's `condo` section (Florida: s. 718
 
 - **Seller side:** deliver the association documents, the milestone summary and the SIRS with the offer or right after acceptance, because each clock starts when the buyer receives them. A deal isn't firm until those windows pass.
 - **Buyer side:** note the dates the documents arrive; the rights end at closing.
-- Attach the condo rider (FR/BAR CR-7x in Florida) and start the association application within the contract's deadline.
+- Attach the condo rider (FAR/BAR CR-7x in Florida) and start the association application within the contract's deadline.
 
 Outside a built-in market with a `condo` section (Florida), don't assume Florida's periods: ask the agent which rider and statute apply.

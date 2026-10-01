@@ -8,7 +8,9 @@ is printed, then checks:
   - labels (headings, table headers, tiles, legends) that aren't Title Case: listed for review, since
     sentence-style finding headings and fragments are accepted exceptions;
   - markdown headings in SKILL.md, references and templates that aren't Title Case (file names, field keys and
-    `code` keep their own spelling).
+    `code` keep their own spelling);
+  - the legacy form name (FR/BAR, frbar, FRBAR) in any tracked text file or report HTML: always an error. The forms are
+    FAR/BAR (farbar, FARBAR); a line that reads the old name as legacy input says "legacy" and is allowed.
 
 Usage: .venv/bin/python dev/style_check.py [skill ...]
 """
@@ -108,6 +110,22 @@ def render_fixtures(skills, tmp):
 
 WORD_DASH = re.compile(r"[A-Za-z,)] (?:--|\u2013) [A-Za-z(]")  # DOC-12: "--" or a spaced en dash between words
 HEADING = re.compile(r"^(#{1,4})\s+(.*)$")
+OLD_NAME = re.compile(r"\bfr ?/ ?bar\b|\bfrbar", re.I)  # the forms are FAR/BAR; "legacy" lines read the old name
+
+
+def old_name_errors():
+    """Tracked text files that still use the old form name outside a line marked legacy."""
+    out = []
+    files = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    for rel in filter(None, files.split("\0")):
+        try:
+            with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+                lines = f.readlines()
+        except (UnicodeDecodeError, FileNotFoundError, IsADirectoryError):
+            continue  # binaries (regenerated) and files deleted in the working tree
+        out += [f"old name {rel}:{i}: {line.strip()[:120]}" for i, line in enumerate(lines, 1)
+                if OLD_NAME.search(line) and "legacy" not in line.lower()]
+    return out
 
 
 def heading_errors(text):
@@ -118,7 +136,7 @@ def heading_errors(text):
 
 
 def main(argv):
-    findings = []
+    findings = old_name_errors()
     shipped = [p for p in glob.glob(os.path.join(ROOT, "skills", "**", "*"), recursive=True)
                if os.path.isfile(p) and "_shared" not in p and "__pycache__" not in p
                and p.endswith((".md", ".json", ".py", ".js", ".css"))]
@@ -156,6 +174,8 @@ def main(argv):
             for h in sorted(glob.glob(os.path.join(cap, "*.html"))):
                 with open(h, encoding="utf-8") as f:
                     doc = f.read()
+                if OLD_NAME.search(doc):
+                    findings.append(f"old name {name} {os.path.basename(h)}")
                 for node in BeautifulSoup(doc, "html.parser").find_all(string=PROSE_DASH):
                     findings.append(f"em dash  {name} {os.path.basename(h)}: {node.strip()[:100]}")
                 for where, text in label_texts(doc):
@@ -170,8 +190,9 @@ def main(argv):
     for line in findings:
         print(line)
     dashes = sum(line.startswith("em dash") for line in findings)
-    print(f"{dashes} em dash(es) (errors), {len(findings) - dashes} label(s) to review")
-    return 1 if dashes else 0
+    names = sum(line.startswith("old name") for line in findings)
+    print(f"{dashes} em dash(es) and {names} old form name(s) (errors), {len(findings) - dashes - names} label(s) to review")
+    return 1 if dashes or names else 0
 
 
 if __name__ == "__main__":

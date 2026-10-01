@@ -138,13 +138,13 @@ class Appraisal(unittest.TestCase):
 
 class Forms(unittest.TestCase):
     def test_form_names_and_footers(self):  # ENG-8
-        for text, want in (("FR/BAR Standard Contract", cf.STANDARD), ("FR/BAR ASIS-7x", cf.AS_IS),
+        for text, want in (("FAR/BAR Standard Contract", cf.STANDARD), ("FAR/BAR ASIS-7x", cf.AS_IS),
                            ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26", cf.AS_IS),
                            ("FloridaRealtors/FloridaBar – 7x Rev. 2/26", cf.STANDARD),
-                           ("FR/BAR Standard with the As Is Rider (K)", cf.STANDARD), ("TREC 20-18", cf.OTHER)):
+                           ("FAR/BAR Standard with the As Is Rider (K)", cf.STANDARD), ("TREC 20-18", cf.OTHER)):
             self.assertEqual(cf.normalize(text), want, text)
         with self.assertRaises(cf.FormError):
-            cf.normalize("FR/BAR contract")
+            cf.normalize("FAR/BAR contract")
 
     def test_inspection_blank_is_the_forms_15_days(self):  # ENG-7
         R = run({k: v for k, v in offer().items() if k != "inspection_days"})
@@ -293,7 +293,7 @@ class WalkAway(unittest.TestCase):
         o = R["offers"][0]
         until, note = review.walk_away(o, R["costs"])
         self.assertEqual(o["walkaway_days"], 10)
-        self.assertIn("Oct 5", note)  # OFR-300: Sat Oct 3 rolls to Mon Oct 5 (FR/BAR)
+        self.assertIn("Oct 5", note)  # OFR-300: Sat Oct 3 rolls to Mon Oct 5 (FAR/BAR)
         self.assertIn("As Is Rider (K)", note)
 
 

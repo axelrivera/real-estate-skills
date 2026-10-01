@@ -7,7 +7,7 @@ Prints JSON with every date already formatted (for the markdown template and the
 
 Time rules (day counting, any short-period rule, end of day, weekend/holiday rollover) come from the
 market's `contract` section (built in for Florida), overridden by the deal file's `rules`.
-FR/BAR contracts get their deadline list from the contract fields; any other contract lists its
+FAR/BAR contracts get their deadline list from the contract fields; any other contract lists its
 deadlines explicitly in `deadlines`.
 """
 import argparse
@@ -63,26 +63,26 @@ def _plural(n, word):
 
 # --- rules --------------------------------------------------------------------
 
-def _form_covered(market_contract, deal, frbar):
+def _form_covered(market_contract, deal, farbar):
     """True when the market's rules are for this deal's form. A market that names its `forms` (Florida:
-    the FR/BAR forms) doesn't cover another contract, such as a builder's or a commercial form."""
+    the FAR/BAR forms) doesn't cover another contract, such as a builder's or a commercial form."""
     forms = [str(f).lower() for f in market_contract.get("forms") or []]
     if not forms:
         return True
-    if frbar:
-        return any(f.startswith("fr/bar") for f in forms)
+    if farbar:
+        return cf.farbar_market(forms)
     form = str((deal.get("contract") or {}).get("form") or "").strip().lower()
     return bool(form) and form in forms
 
 
-def load_rules(deal, frbar=True):
+def load_rules(deal, farbar=True):
     """Built-in `contract` rules for the deal's state/county, then the deal file's `rules`."""
     if not deal.get("state"):
         raise DealError("The deal file needs the property's state (for example FL): time rules and holidays "
                         "depend on it. Ask the agent; don't assume Florida.")
     market = profiles.load_market(state=deal.get("state"), county=deal.get("county"))
     mc = market.get("contract") or {}
-    given = {**(mc if _form_covered(mc, deal, frbar) else {}), **(deal.get("rules") or {})}
+    given = {**(mc if _form_covered(mc, deal, farbar) else {}), **(deal.get("rules") or {})}
     given = {k: v for k, v in given.items() if v not in (None, "")}
     rules = {**RULE_DEFAULTS, **given}
     if "day_count" not in given:
@@ -202,7 +202,7 @@ def _clock(t):
     return "the end of" if t == time(23, 59) else f"{t:%-I:%M %p}"
 
 
-# --- FR/BAR deadline list ----------------------------------------------------
+# --- FAR/BAR deadline list ----------------------------------------------------
 
 def _loan_type(c):
     """'FHA' or 'VA' from the financing; 'FHA/VA' when the rider is attached but the loan type isn't recorded."""
@@ -244,8 +244,8 @@ def _blank_default(c, field, text, topic):
     return {} if c.get(field) is not None else {"default": text.replace("{blank}", _unset(c, field)), "default_topic": topic}
 
 
-def frbar_deadlines(c):
-    """Deadlines for an FR/BAR AS IS or Standard contract, from its fields (blank = form default).
+def farbar_deadlines(c):
+    """Deadlines for a FAR/BAR AS IS or Standard contract, from its fields (blank = form default).
 
     Checked against ASIS-7x Rev. 2/26 and its riders (see docs/audits/2026-09-23-verification.md). A row may
     carry `default` (a form default used for a blank, for agent_notes), `cap_at_closing` (a right that ends at
@@ -548,7 +548,7 @@ SHORT_SALE_PHASE1 = ("deposit", "short_sale_application", "short_sale_forms", "s
 
 def rider_rows(c, has, add):
     """Rows for the CR-7 riders and contract standards that set their own dates, beyond the core ones above. Every
-    default is the rider's own "if left blank" value (shared references frbar-riders.md and frbar-contract.md); a
+    default is the rider's own "if left blank" value (shared references farbar-riders.md and farbar-contract.md); a
     date blank with no default stays pending until the agent gives it."""
     if has("I"):  # Standard only (RESERVED on AS IS; contract_forms stops that combination)
         add(key="mold", label="Mold Inspection Period Ends", short="Mold Inspection", basis="after", days=c.get("mold_days", 20),
@@ -698,14 +698,14 @@ def rider_rows(c, has, add):
             if_missed="Closing may be delayed")
 
 
-def closing_rows(c, frbar):
-    default_source = "Para. 4 · possession Para. 6" if frbar else "Contract"
+def closing_rows(c, farbar):
+    default_source = "Para. 4 · possession Para. 6" if farbar else "Contract"
     rows = [dict(key="closing", label="Closing", short="Closing", basis="closing", source=c.get("closing_source", default_source),
                  party="Both", critical=True, contingency=False, action="Sign, fund and record; keys and possession delivered",
                  if_missed="Default unless extended in writing")]
     if c.get("possession_date") or c.get("possession_note"):
         rows.append(dict(key="possession", label="Possession", short="Possession", basis="possession",
-                         source=c.get("possession_source", "Para. 6" if frbar else "Contract"), party="Seller", critical=False, contingency=False,
+                         source=c.get("possession_source", "Para. 6" if farbar else "Contract"), party="Seller", critical=False, contingency=False,
                          action=c.get("possession_note") or "Seller vacates and delivers keys",
                          if_missed="Per the contract or occupancy agreement"))
     return rows
@@ -742,7 +742,7 @@ FORM_DEFAULTS = {"inspection_days": 15, "loan_approval_days": 30, "deposit_days"
                  "loan_application_days": 5, "lead_paint_days": 10, "flood_elevation_days": 20, "walkthrough_days_before": 1,
                  "survey_days_before": 5, "mold_days": 20, "drywall_days": 15, "short_sale_application_days": 10,
                  "short_sale_approval_days": 90, "pre_closing_agreement_days": 10, "post_closing_agreement_days_before": 10,
-                 "compensation_agreement_days": 3, "rofr_days": 5}  # FR/BAR and CR-7 blanks
+                 "compensation_agreement_days": 3, "rofr_days": 5}  # FAR/BAR and CR-7 blanks
 
 
 def _date_text(v):
@@ -761,10 +761,10 @@ def _value_text(v):
     return _date_text(v) if isinstance(v, str) and re.match(r"^\d{4}-\d{2}-\d{2}", v) else str(v)
 
 
-def _was(key, before, frbar):
+def _was(key, before, farbar):
     """TL-21: a blank that the form filled in reads as its value ("30 days (form default)"), not "blank"."""
     if before is None:
-        return f"{_field_value(key, FORM_DEFAULTS[key])} (form default)" if frbar and key in FORM_DEFAULTS else "not set"
+        return f"{_field_value(key, FORM_DEFAULTS[key])} (form default)" if farbar and key in FORM_DEFAULTS else "not set"
     return _field_value(key, before)
 
 
@@ -866,14 +866,14 @@ def _check_deadline(x, i):
         raise DealError(f"{name} has rollover {x['rollover']!r}: use true or false.")
 
 
-def compute(c, extra_deadlines, rules, frbar):
+def compute(c, extra_deadlines, rules, farbar):
     check_inputs(c, extra_deadlines)
     eff, extra = _d(c["effective_date"]), rules["_extra_holidays"]
     overrides = c.get("date_overrides") or {}
     closing_dt = None  # the closing everything counts back from: an override, then the contract date, rolled forward
     closing_note, closing_rule = "", "Closing date in contract"
     # Rider G: most periods, and the closing, count from the buyer's receipt of the short sale approval (Paras. 5, 6)
-    short_sale = frbar and "G" in cf.rider_codes(c.get("riders"))[0]
+    short_sale = farbar and "G" in cf.rider_codes(c.get("riders"))[0]
     approval = _d(c.get("short_sale_approval_received")) if short_sale else None
     ss_days = int(c.get("short_sale_closing_days") or 45)
     raw = overrides.get("closing") or (None if short_sale else c.get("closing_date"))
@@ -895,12 +895,12 @@ def compute(c, extra_deadlines, rules, frbar):
         closing_dt = datetime.combine(closing, _t(t))
     closing = closing_dt.date() if closing_dt else None
 
-    items = (frbar_deadlines(c) if frbar else []) + [
+    items = (farbar_deadlines(c) if farbar else []) + [
         dict(x, party=str(x["party"]).title(), contingency=x.get("contingency", False)) for x in extra_deadlines]
     if closing:
-        items += closing_rows(c, frbar)
+        items += closing_rows(c, farbar)
     elif short_sale:  # the closing waits for the approval: shown as pending, never dated from the Effective Date
-        items += [dict(closing_rows(c, frbar)[0], basis="pending_closing")]
+        items += [dict(closing_rows(c, farbar)[0], basis="pending_closing")]
     keys = [x["key"] for x in items]
     dup = sorted({k for k in keys if keys.count(k) > 1})
     if dup:  # TL-111: amendments, overrides and completed dates find a deadline by its key
@@ -1245,7 +1245,7 @@ def _dated(found):
 
 
 def consistency_notes(c, current, rules, eff, note, side="buyer", alt=None):
-    """FR/BAR agent notes for recorded terms that don't fit together or that the rows leave out on purpose.
+    """FAR/BAR agent notes for recorded terms that don't fit together or that the rows leave out on purpose.
 
     TL-241: `alt(note_key, condition, changes, keys)` re-runs the timeline with the answer changed and returns the rows
     it would give, so a note's question comes with the date that applies if the answer changes (the output's
@@ -1360,10 +1360,10 @@ EXTENDED_ROWS = {"inspection_days": "inspection", "loan_approval_days": "loan_ap
                  "pre_closing_agreement_days": "pre_closing_agreement"}
 
 
-def extension_readings(history, current, rules, eff, frbar):
+def extension_readings(history, current, rules, eff, farbar):
     """TL-214: (key, note, facts) for each amendment that lengthens a period whose original end had rolled past a weekend or
     holiday. The timeline uses the safe reading (the new day count from the Effective Date, rolled once: EA-4 in
-    frbar-addenda.md); adding the extra days to the rolled end gives a later date, which the note gives with both."""
+    farbar-addenda.md); adding the extra days to the rolled end gives a later date, which the note gives with both."""
     rows = {r["key"]: r for r in current}
     out = []
     overrides = {}
@@ -1373,7 +1373,7 @@ def extension_readings(history, current, rules, eff, frbar):
             key = EXTENDED_ROWS.get(field)
             r = rows.get(key)
             old = h["before"].get(field)
-            old = FORM_DEFAULTS.get(field) if old is None and frbar else old
+            old = FORM_DEFAULTS.get(field) if old is None and farbar else old
             if (not r or r["basis"] != "after" or r.get("from_key") or r.get("receipt_date") or r.get("from_approval")
                     or r.get("business") or key in overrides or not isinstance(new, int) or not isinstance(old, int)
                     or new <= old):
@@ -1394,7 +1394,7 @@ def extension_readings(history, current, rules, eff, frbar):
     return out
 
 
-# TL-230: every contract field the script or contract_forms reads (deal-file.md, frbar.md). Anything else is most likely
+# TL-230: every contract field the script or contract_forms reads (deal-file.md, farbar.md). Anything else is most likely
 # a typo that would drop a deadline silently, so it comes back as a warning to fix.
 KNOWN_CONTRACT_KEYS = frozenset("""
     form_family form contract_form contract_name blanks form_revision form_revision_source effective_date effective_date_source
@@ -1429,7 +1429,7 @@ def unknown_key_warnings(deal):
         if bad:
             out.append(("unknown_key", f"{where} has {', '.join(map(repr, bad))}, which the script doesn't read (a typo "
                         "drops a deadline without a word). Fix the field name from references/deal-file.md or "
-                        "references/frbar.md, or remove it, and re-run"))
+                        "references/farbar.md, or remove it, and re-run"))
     return out
 
 
@@ -1446,26 +1446,27 @@ def analyze(deal, side=None):
     today = _d(report["date"])
     form = cf.normalize(contract.get("contract_form"))
     family = contract.get("form_family")
-    frbar = family == "frbar" or (family is None and form in cf.FRBAR)
-    if frbar and form not in cf.FRBAR:
-        raise DealError("An FR/BAR contract needs contract_form: as_is or standard. Read the form's title (\"AS IS Residential "
+    family = "farbar" if family == "frbar" else family  # legacy name in deal files from 0.12 and earlier
+    farbar = family == "farbar" or (family is None and form in cf.FARBAR)
+    if farbar and form not in cf.FARBAR:
+        raise DealError("A FAR/BAR contract needs contract_form: as_is or standard. Read the form's title (\"AS IS Residential "
                         "Contract for Sale and Purchase\" or \"Residential Contract for Sale and Purchase\"): the two have "
                         "different inspection and repair deadlines.")
-    contract = {**contract, "contract_form": form}
-    if not frbar and not deal.get("deadlines"):
-        raise DealError("This contract isn't FR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
-    rules, market = load_rules(deal, frbar)
-    if frbar:
+    contract = {**contract, "contract_form": form, **({"form_family": family} if family else {})}
+    if not farbar and not deal.get("deadlines"):
+        raise DealError("This contract isn't FAR/BAR, so its deadlines have to be listed in the deal file's deadlines.")
+    rules, market = load_rules(deal, farbar)
+    if farbar:
         _check_riders(contract)
 
-    original = compute(copy.deepcopy(contract), deal.get("deadlines") or [], rules, frbar)
+    original = compute(copy.deepcopy(contract), deal.get("deadlines") or [], rules, farbar)
     current_contract, history = apply_amendments(contract, deal.get("amendments"))
     current_contract["contract_form"] = cf.normalize(current_contract.get("contract_form"))
-    if frbar and current_contract["contract_form"] not in cf.FRBAR:
+    if farbar and current_contract["contract_form"] not in cf.FARBAR:
         raise DealError("An amendment changes contract_form: use as_is or standard.")
-    if frbar:
+    if farbar:
         _check_riders(current_contract)
-    current = compute(current_contract, deal.get("deadlines") or [], rules, frbar)
+    current = compute(current_contract, deal.get("deadlines") or [], rules, farbar)
     was = {r["key"]: r["when"] for r in original}
     eff = _d(current_contract["effective_date"])
 
@@ -1559,13 +1560,13 @@ def analyze(deal, side=None):
         note_keys.append(key)
     # TL-201: the note quotes "the footer reads" only when the revision was read from the footer
     from_footer = str(current_contract.get("form_revision_source") or "").strip().lower() == "footer"
-    sup = cf.support([current_contract["contract_form"] if frbar else cf.OTHER],
+    sup = cf.support([current_contract["contract_form"] if farbar else cf.OTHER],
                      [(current_contract["contract_form"], current_contract.get("form_revision"), from_footer)]
-                     if frbar else [])
+                     if farbar else [])
     # chat_notes (the best-effort and revision notes) stay in chat_notes only: agent_notes can reach a template (TL-107)
     if rules.get("_tz_note"):  # TL-108: a question for the agent, not a line for the client
         note("time_zone_split", rules["_tz_note"])
-    if frbar:  # TL-101: a rider name that isn't a CR-7 rider adds no dates, so say so rather than drop it silently
+    if farbar:  # TL-101: a rider name that isn't a CR-7 rider adds no dates, so say so rather than drop it silently
         unread = cf.rider_codes(current_contract.get("riders"))[1]
         if unread:
             note("rider_not_read", f"Not read as a CR-7 rider: {', '.join(map(str, unread))}. Its dates aren't in the timeline: "
@@ -1583,7 +1584,7 @@ def analyze(deal, side=None):
     if eff > today and not deal.get("what_if"):  # TL-119
         # TL-243: what_if only matters for a file (the PDF or calendar). Without a closing date there's no report to label
         # (a quick question), so the note doesn't suggest it
-        reportable = bool(closing_dt) or (frbar and "G" in cf.rider_codes(current_contract.get("riders"))[0])
+        reportable = bool(closing_dt) or (farbar and "G" in cf.rider_codes(current_contract.get("riders"))[0])
         note("effective_after_report", f"The Effective Date ({eff:%b %-d, %Y}) is after the report date ({today:%b %-d, %Y}): confirm the "
                            "contract is signed and delivered" + (". For a hypothetical timeline delivered as a PDF or "
                                                                  "calendar, set what_if so they say What-If"
@@ -1606,7 +1607,7 @@ def analyze(deal, side=None):
             note("blank:" + r["key"], r["agent_note"])
     if closing_row and closing_row["note"]:
         flag("closing_note", closing_row["note"][:1].upper() + closing_row["note"][1:])
-    if frbar and (current_contract.get("financing") in ("fha", "va") or "E" in cf.rider_codes(current_contract.get("riders"))[0]):
+    if farbar and (current_contract.get("financing") in ("fha", "va") or "E" in cf.rider_codes(current_contract.get("riders"))[0]):
         loan = _loan_type(current_contract)
         value = {"VA": "the VA's reasonable value", "FHA": "the FHA appraisal"}.get(loan, "the appraisal")
         flag("fha_va_appraisal", f"FHA/VA rider{f' ({loan} loan)' if loan != 'FHA/VA' else ''}: the buyer isn't obligated "
@@ -1633,7 +1634,7 @@ def analyze(deal, side=None):
     for key, text in money_check(current_contract, _price(current_contract.get("price"))):
         note(key, text)
     price_now = _price(current_contract.get("price"))
-    limits = repair_limits(current_contract, price_now) if frbar else None
+    limits = repair_limits(current_contract, price_now) if farbar else None
     if limits and limits["blank"]:  # TL-245: the dollars come from here, never worked out by hand
         names = [REPAIR_LIMIT_NAMES[k] for k in limits["blank"]]
         amount = f"${limits[limits['blank'][0]]:,.0f}"  # every blank limit is the same 1.5% of the price
@@ -1642,7 +1643,7 @@ def analyze(deal, side=None):
             f"Para. 9(a)'s {' and '.join(names)} Limit{'s are' if len(names) > 1 else ' is'} blank, so "
             f"{'each is' if len(names) > 1 else 'it is'}") + f" 1.5% of the ${price_now:,.0f} price ({amount}). Is that "
             "what the parties intended?")
-    if frbar:
+    if farbar:
         def alt(note_key, condition, changes, keys):
             """TL-241: the rows `keys` if the answer to a note's question changes (a field set, or removed with None)."""
             c2 = copy.deepcopy(current_contract)
@@ -1652,7 +1653,7 @@ def analyze(deal, side=None):
                 else:
                     c2[k] = v
             try:
-                rows2 = compute(c2, deal.get("deadlines") or [], rules, frbar)
+                rows2 = compute(c2, deal.get("deadlines") or [], rules, farbar)
             except (DealError, cf.FormError):
                 return []
             cl = next((r["when"] for r in rows2 if r["key"] == "closing" and r["when"]), None)
@@ -1662,7 +1663,7 @@ def analyze(deal, side=None):
             return found
         consistency_notes(current_contract, current, rules, eff, note, side, alt)
         done_keys = {r["key"] for r in rows if r["done"]}
-        for key, text, x in extension_readings(history, current, rules, eff, frbar):
+        for key, text, x in extension_readings(history, current, rules, eff, farbar):
             note(key, text)
             # TL-248: the reading used has ended but the later one hasn't: the client sees it on the report too
             if x["key"] not in done_keys and x["safe"].date() < today <= x["later"].date():
@@ -1680,7 +1681,7 @@ def analyze(deal, side=None):
         if late:
             flag("after_closing", ", ".join(late) + " ends after closing: amend the dates in writing")
     # TL-226: a date counted back from closing that fell on a weekend or holiday extends to the next business day
-    # (FR/BAR Standard F, read literally), closer to closing; the safe course is the business day before
+    # (FAR/BAR Standard F, read literally), closer to closing; the safe course is the business day before
     open_keys = {r["key"] for r in rows if not r["done"] and not r["past"]}
     rolled = [r for r in current if r.get("rolled_from") and r["key"] in open_keys and not r.get("lender")
               and not r.get("no_time")]
@@ -1696,7 +1697,7 @@ def analyze(deal, side=None):
     for r in current:
         if r.get("default"):
             note("default:" + r["key"], r["default"])
-    short_sale = frbar and "G" in cf.rider_codes(current_contract.get("riders"))[0]
+    short_sale = farbar and "G" in cf.rider_codes(current_contract.get("riders"))[0]
     approval = _d(current_contract.get("short_sale_approval_received")) if short_sale else None
     if short_sale:
         ss_row = next((r for r in current if r["key"] == "short_sale_approval" and r["when"]), None)
@@ -1735,7 +1736,7 @@ def analyze(deal, side=None):
             note("no_closing_date", "No closing date given: dates counted back from closing are left out")
     elif not current_contract.get("closing_time"):
         note("closing_time_assumed", f"Closing time isn't stated in the contract: used {_t(rules['closing_time']):%-I:%M %p}")
-    if frbar and not current_contract.get("title_by"):
+    if farbar and not current_contract.get("title_by"):
         note("title_by_unknown", "Who designates the closing agent (Para. 9(c)) isn't recorded: the title evidence row shows "
                            "the seller. Set title_by and re-run if the buyer designates")
     for n in market.notes:
@@ -1760,7 +1761,7 @@ def analyze(deal, side=None):
         "what_if": bool(deal.get("what_if")),
         "time_zone": rules.get("_tz"),  # ET, CT or None (not known): the calendar's TZID
         "financing": FINANCING.get(contract.get("financing", ""), contract.get("financing") or None),
-        "contract_label": _contract_label(current_contract) if frbar else contract.get("form") or "Contract",
+        "contract_label": _contract_label(current_contract) if farbar else contract.get("form") or "Contract",
         "escrow_agent": contract.get("escrow_agent"),
         "effective": {"date": str(eff), "display": f"{eff:%b %-d, %Y}", "short": f"{eff:%b %-d}",
                       "source": contract.get("effective_date_source") or ""},
@@ -1785,7 +1786,7 @@ def analyze(deal, side=None):
         "rows": dated,
         "pending": _pending_order([r for r in rows if not r["when"]], {r["key"]: r for r in current}),
         "history": [{**h, "date_display": _date_text(h.get("date")), "summary": "; ".join(
-            [f"{_field_label(k)}: {_was(k, h['before'].get(k), frbar)} → {_field_value(k, v)}" for k, v in h["changes"].items()] +
+            [f"{_field_label(k)}: {_was(k, h['before'].get(k), farbar)} → {_field_value(k, v)}" for k, v in h["changes"].items()] +
             [f"{names.get(k, k.replace('_', ' '))} → {_value_text(v)}" for k, v in h["date_overrides"].items()])}
             for h in history],
         "flags": flags,
@@ -1799,14 +1800,14 @@ def analyze(deal, side=None):
         "if_changed": if_changed,  # TL-241: {note_key, if, rows}: the dates if the answer to that note's question changes
         **sup,
         "rules": {
-            "family": "FR/BAR contract definitions" if frbar else "the contract's definitions",
+            "family": "FAR/BAR contract definitions" if farbar else "the contract's definitions",
             "lines": rules_text(rules, eff),
         },
     }
 
 
 def _contract_label(c):
-    """TL-216: the header chip for an FR/BAR contract, with every rider on both forms: "AS IS · Riders E, H, GG",
+    """TL-216: the header chip for a FAR/BAR contract, with every rider on both forms: "AS IS · Riders E, H, GG",
     "Standard + Right to Inspect Rider (L) · Riders F, H". The inspection rider already named in the label isn't
     listed twice."""
     t = cf.terms(c["contract_form"], c)

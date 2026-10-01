@@ -18,8 +18,8 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make sync` | Copies `shared/` into `scripts/_shared/` of every skill that has a `scripts/` folder |
 | `make sync` copies only what each skill imports | Each skill's `scripts/_shared/` holds the shared modules its scripts import, what those import, and the data they read (markets for `profiles`, CSS for `render` and `cma`) |
 | `make check-sync` | Fails if any copy differs from `shared/`. Runs before `make package`; the pre-commit hook also compares what's staged |
-| `make forms-check` | Local only (the PDFs live in the git-ignored `sources/`): compares every FR/BAR form PDF in `sources/Contracts/FARBAR/` with `dev/forms/frbar-forms.json` and reports new, removed and changed forms with a text diff and what depends on each, plus revision citations in `shared/references/frbar-*.md` or `contract_forms.VERIFIED` that don't match. `make forms-check ARGS="--accept CR-7_L"` records a reviewed form. See [Updating a Contract Form](#updating-a-contract-form) |
-| `make mock-contracts` | Local only (fills the FR/BAR PDFs in the git-ignored `sources/`): builds every starter scenario in `dev/mock_contracts/scenarios/` into `out/mock-contracts/<name>/`, as one contract package PDF each, named after the property. `ARGS="--answer-key --scanned"` adds the answer key and a scanned copy. Any other scenario: ask the `mock-contract` skill in Claude Code. See [mock-contracts.md](mock-contracts.md) |
+| `make forms-check` | Local only (the PDFs live in the git-ignored `sources/`): compares every FAR/BAR form PDF in `sources/Contracts/FARBAR/` with `dev/forms/farbar-forms.json` and reports new, removed and changed forms with a text diff and what depends on each, plus revision citations in `shared/references/farbar-*.md` or `contract_forms.VERIFIED` that don't match. `make forms-check ARGS="--accept CR-7_L"` records a reviewed form. See [Updating a Contract Form](#updating-a-contract-form) |
+| `make mock-contracts` | Local only (fills the FAR/BAR PDFs in the git-ignored `sources/`): builds every starter scenario in `dev/mock_contracts/scenarios/` into `out/mock-contracts/<name>/`, as one contract package PDF each, named after the property. `ARGS="--answer-key --scanned"` adds the answer key and a scanned copy. Any other scenario: ask the `mock-contract` skill in Claude Code. See [mock-contracts.md](mock-contracts.md) |
 | `make test` | Runs the unit tests in `dev/tests/`. With LibreOffice installed (`LO_BIN`, added at the end of `PATH`) it also checks the listing presentation's PDF copy, with a 60-second conversion limit; without it that check is skipped. The mock-contract build checks (about 17 seconds) run only with `RUN_SLOW=1 make test`; `make package` and `make package-skills` set it |
 | Coverage | `.venv/bin/python -m coverage run --source=shared,skills -m unittest discover -s dev/tests`, then `.venv/bin/python -m coverage report --omit='*/_shared/*'`. Measure before and after removing tests; line coverage must not drop |
 | `make golden` | Rewrites `dev/golden/` (`dev/golden.py --update`): what each skill computes for its fixtures (numbers, dates, flags), with the clock frozen. `make test` fails until the snapshots match, so an engine change that moves a number is either approved here, with the `git diff dev/golden/` explained in the commit, or fixed |
@@ -80,7 +80,7 @@ Each skill's test prompts live in `dev/evals/<skill>/evals.json` with their inpu
 3. Grade each run against `expected_output` into `with_skill/grading.json`, and review with the skill-creator's `eval-viewer/generate_review.py out/evals/iteration-N --static out/evals/iteration-N/review.html`.
 4. Fix what `friction.md` and the grades reveal (skill text, references, scripts), add a test for each script fix, and re-run the evals that changed.
 
-**Contract packages.** Evals for the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) use mock FR/BAR packages ([mock-contracts.md](mock-contracts.md)), which are never committed: they contain Florida Realtors' form text. The eval entry names the starter instead, `"mock_package": "<starter>"` (add `"mock_scanned": true` for the scanned copy), and lists the package's files by name in `files`. A package dated after the runner's default day (2026-09-26) sets `"today"` to a day after its last document, and the task passes it on.
+**Contract packages.** Evals for the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) use mock FAR/BAR packages ([mock-contracts.md](mock-contracts.md)), which are never committed: they contain Florida Realtors' form text. The eval entry names the starter instead, `"mock_package": "<starter>"` (add `"mock_scanned": true` for the scanned copy), and lists the package's files by name in `files`. A package dated after the runner's default day (2026-09-26) sets `"today"` to a day after its last document, and the task passes it on.
 
 1. Build the starters with `make mock-contracts ARGS="--answer-key"` (add `--scanned` when an eval wants the scan).
 2. Copy only the package's PDFs from `out/mock-contracts/<starter>/` into the eval's `inputs/`. Never copy `key/`: it holds the answers.
@@ -109,9 +109,9 @@ dev/                     # dev tooling, never shipped
   runtime-check/         # diagnostic skill
   hooks/pre-commit       # runs check-sync
   sync_shared.py         # make sync / make check-sync
-  forms_check.py         # make forms-check: FR/BAR form PDFs vs. the manifest
-  forms/frbar-forms.json # the fully supported forms: revision, text hash, what depends on each (no form text)
-  mock_contracts/        # mock FR/BAR contract packages (make mock-contracts, the mock-contract skill): build.py, scenario.py,
+  forms_check.py         # make forms-check: FAR/BAR form PDFs vs. the manifest
+  forms/farbar-forms.json # the fully supported forms: revision, text hash, what depends on each (no form text)
+  mock_contracts/        # mock FAR/BAR contract packages (make mock-contracts, the mock-contract skill): build.py, scenario.py,
                          #   locate.py (finds blanks), fields.py + fields/ (field maps), stamp.py, fonts/, scenarios/
   tests/                 # unit tests (make test); skill_import.py loads each skill's scripts without name clashes
   preview_design.py      # palette preview (make preview-design)
@@ -144,7 +144,7 @@ samples/<skill>/         # committed preview files from make samples
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
 | `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` (or a fenced markdown block from older chat summaries; no longer written) |
-| `shared/contract_forms.py` | Which contract rules apply to which form and rider set: FR/BAR AS IS (inspection walk-away, post-inspection credit) vs. Standard (repair notices, repair limits), Riders K and L on the Standard form, RESERVED riders on AS IS, rider letters from names, the verified revisions and the chat-only support notes; any other contract gets no FR/BAR default. The offer engine, buyer-offer-strategy and contract-timeline route through it, so the forms' math never mixes |
+| `shared/contract_forms.py` | Which contract rules apply to which form and rider set: FAR/BAR AS IS (inspection walk-away, post-inspection credit) vs. Standard (repair notices, repair limits), Riders K and L on the Standard form, RESERVED riders on AS IS, rider letters from names, the verified revisions and the chat-only support notes; any other contract gets no FAR/BAR default. The offer engine, buyer-offer-strategy and contract-timeline route through it, so the forms' math never mixes |
 | `shared/offer_engine.py` | Offer analysis for both offer skills: listing and offer defaults with ranked assumptions, seller net sheet (via `finance.seller_net`), appraisal downside, certainty score, risk flags, counters, multi-offer ranking |
 | `shared/mls.py` | MLS export reader (columns from the MLS layer or `--columns`) and market statistics, trend line |
 | `shared/prose.py` | The render check: em dashes in prose and clear fair-housing phrases in the data file stop the render, naming each field |
@@ -157,11 +157,11 @@ After editing `shared/`, run `make test` and `make sync`, and commit the updated
 
 ## Updating a Contract Form
 
-Florida Realtors revises forms one at a time, a few times a year. Only the forms in `dev/forms/frbar-forms.json` are fully supported, and every rule the skills use for them was read from those exact PDFs, so a revision is handled like the original build, scoped to one form:
+Florida Realtors revises forms one at a time, a few times a year. Only the forms in `dev/forms/farbar-forms.json` are fully supported, and every rule the skills use for them was read from those exact PDFs, so a revision is handled like the original build, scoped to one form:
 
 1. Download the new PDF from Form Simplicity into `sources/Contracts/FARBAR/` (same folder and naming: the form code in parentheses), replacing the old file.
 2. Run `make forms-check`. It shows the form as CHANGED with a line diff against the last snapshot and lists what depends on it (`used_by`).
-3. Update the affected blocks in `shared/references/frbar-*.md`, including the "Verified Against" row. If a default, day count or paragraph changed, update `shared/contract_forms.py` (`VERIFIED` for the contracts), `skills/contract-timeline/scripts/timeline.py`, the offer engine and their tests.
+3. Update the affected blocks in `shared/references/farbar-*.md`, including the "Verified Against" row. If a default, day count or paragraph changed, update `shared/contract_forms.py` (`VERIFIED` for the contracts), `skills/contract-timeline/scripts/timeline.py`, the offer engine and their tests.
 4. `make forms-check ARGS="--accept <FAMILY>"` records the new text and revision, then `make test`, `make sync`, `make outputs`.
    If the form has a mock-contract field map (`dev/mock_contracts/fields/<FAMILY>.json`), re-anchor it and update its `revision` ([mock-contracts.md](mock-contracts.md#when-a-form-is-revised)); builds that use the form stop until you do.
 5. Version: patch for wording or citations, minor when a default or deadline changes what agents get.

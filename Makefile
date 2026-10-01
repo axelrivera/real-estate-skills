@@ -24,8 +24,8 @@ help:
 	@echo "make py311          Compile shipped Python with Python 3.11 (the Cowork runtime; uv's when not on PATH)"
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
-	@echo "make forms-check    Compare the FR/BAR form PDFs in sources/ with dev/forms/frbar-forms.json (ARGS=\"--accept CR-7_L\")"
-	@echo "make mock-contracts Build every mock FR/BAR contract package in dev/mock_contracts/scenarios/ into $(OUT)/mock-contracts/ (ARGS=\"--answer-key --scanned\")"
+	@echo "make forms-check    Compare the FAR/BAR form PDFs in sources/ with dev/forms/farbar-forms.json (ARGS=\"--accept CR-7_L\")"
+	@echo "make mock-contracts Build every mock FAR/BAR contract package in dev/mock_contracts/scenarios/ into $(OUT)/mock-contracts/ (ARGS=\"--answer-key --scanned\")"
 	@echo "make manual-kit     Build the manual smoke-test kit into $(OUT)/manual-test/ (local only; see docs/manual-testing.md)"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
@@ -80,14 +80,14 @@ check-sync:
 forms-check:
 	@$(PY) dev/forms_check.py $(ARGS)
 
-# Local only: fills the FR/BAR PDFs in the git-ignored sources/. Any other scenario: the mock-contract skill in
+# Local only: fills the FAR/BAR PDFs in the git-ignored sources/. Any other scenario: the mock-contract skill in
 # Claude Code, or dev/mock_contracts/build.py SPEC.json. See docs/mock-contracts.md.
 mock-contracts:
 	@for f in dev/mock_contracts/scenarios/*.json; do \
 		$(PY) dev/mock_contracts/build.py $$f $(ARGS) || exit 1; \
 	done
 
-# Manual smoke-test kit into $(OUT)/manual-test/ (local only: the contract packages need the FR/BAR PDFs in sources/). See docs/manual-testing.md.
+# Manual smoke-test kit into $(OUT)/manual-test/ (local only: the contract packages need the FAR/BAR PDFs in sources/). See docs/manual-testing.md.
 manual-kit:
 	@$(NVM) $(DEV_ENV) $(PY) dev/manual_kit/build.py
 

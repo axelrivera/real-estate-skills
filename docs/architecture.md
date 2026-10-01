@@ -44,18 +44,18 @@ The `_shared/` copies are **committed**. Adding the marketplace by URL clones th
 
 ## Contract support
 
-Only contracts that have been through PDF extraction and the forms manifest get built-in references. Today that is the Florida Realtors/Florida Bar AS IS and Standard contracts, all 33 CR-7 riders and the related Florida Realtors addenda and disclosures (`dev/forms/frbar-forms.json`, checked with `make forms-check`; see [development.md](development.md#updating-a-contract-form)). They're described in four shared references, organized by form rather than by skill, and synced into each skill that reads contracts:
+Only contracts that have been through PDF extraction and the forms manifest get built-in references. Today that is the Florida Realtors/Florida Bar AS IS and Standard contracts, all 33 CR-7 riders and the related Florida Realtors addenda and disclosures (`dev/forms/farbar-forms.json`, checked with `make forms-check`; see [development.md](development.md#updating-a-contract-form)). They're described in four shared references, organized by form rather than by skill, and synced into each skill that reads contracts:
 
 | Reference | Covers |
 |---|---|
-| `frbar-contract.md` | Both forms paragraph by paragraph, the Standards, every blank and default, every deadline, the AS IS vs. Standard differences |
-| `frbar-riders.md` | Riders A to GG: which form allows each (I, K, L are RESERVED on AS IS), blanks and defaults, deadlines, cancel rights, money effects, what each skill does with it |
-| `frbar-addenda.md` | Counteroffer, extension, escalation, appraisal gap, CDD, co-op, repair request, walk-through, disclosures, multiple offers, closing and escrow forms |
-| `frbar-package-check.md` | What a package must contain given the property's facts, which blanks have defaults, consistency checks |
+| `farbar-contract.md` | Both forms paragraph by paragraph, the Standards, every blank and default, every deadline, the AS IS vs. Standard differences |
+| `farbar-riders.md` | Riders A to GG: which form allows each (I, K, L are RESERVED on AS IS), blanks and defaults, deadlines, cancel rights, money effects, what each skill does with it |
+| `farbar-addenda.md` | Counteroffer, extension, escalation, appraisal gap, CDD, co-op, repair request, walk-through, disclosures, multiple offers, closing and escrow forms |
+| `farbar-package-check.md` | What a package must contain given the property's facts, which blanks have defaults, consistency checks |
 
-Each skill keeps a thin reference that maps those rules to its own data file (`contract-timeline/references/frbar.md`, `seller-offer-review/references/contract-fields.md`, `buyer-offer-strategy/references/worksheet.md`). The deterministic rules live in `shared/contract_forms.py`: the form, the rider letters, and what the riders do to the inspection terms (Standard + Rider K runs AS IS math; Standard + Rider L keeps the repair limits and adds a walk-away).
+Each skill keeps a thin reference that maps those rules to its own data file (`contract-timeline/references/farbar.md`, `seller-offer-review/references/contract-fields.md`, `buyer-offer-strategy/references/worksheet.md`). The deterministic rules live in `shared/contract_forms.py`: the form, the rider letters, and what the riders do to the inspection terms (Standard + Rider K runs AS IS math; Standard + Rider L keeps the repair limits and adds a walk-away).
 
-Every other contract (another state's form, a builder contract, the Florida Realtors CRSP) is read on a best-effort basis through one shared guide, `other-contracts.md`: terms found by function, no borrowed defaults, no built-in rules for any other state, every reading cited and confirmed with the agent. The scripts return `support: "best_effort"` and a `chat_notes` line; the skill says it in chat, never in a PDF, calendar file, worksheet or markdown report. A note that an FR/BAR contract isn't the verified revision follows the same rule.
+Every other contract (another state's form, a builder contract, the Florida Realtors CRSP) is read on a best-effort basis through one shared guide, `other-contracts.md`: terms found by function, no borrowed defaults, no built-in rules for any other state, every reading cited and confirmed with the agent. The scripts return `support: "best_effort"` and a `chat_notes` line; the skill says it in chat, never in a PDF, calendar file, worksheet or markdown report. A note that a FAR/BAR contract isn't the verified revision follows the same rule.
 
 ## Guardrails
 

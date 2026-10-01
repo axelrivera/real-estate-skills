@@ -48,7 +48,7 @@ class Holidays(unittest.TestCase):
         self.assertEqual(dates.add_business_days(date(2026, 10, 30), -3), date(2026, 10, 27))
 
 
-class FrbarDates(unittest.TestCase):
+class FarbarDates(unittest.TestCase):
     """Buyer FHA sample, AS IS, effective Fri 2026-09-25, closing Fri 2026-10-30. Hand-checked against ASIS-7x
     Rev. 2/26: calendar days, no short-period rule, a period ending on a weekend or holiday runs to the end of
     the next business day (Standard F), title evidence 15 days before closing when blank (Para. 9(c)). Every date on
@@ -199,7 +199,7 @@ class FrbarDates(unittest.TestCase):
         c["hoa_disclosure_before_contract"] = True
         self.assertNotIn("hoa_docs", by_key(timeline.analyze(deal)))
 
-    def test_new_frbar_rows(self):
+    def test_new_farbar_rows(self):
         """TL-12, TL-13, TL-23: survey and title notices from receipt, flood elevation, waived lead paint."""
         deal = fixture("buyer-fha.json")
         c = deal["contract"]
@@ -276,7 +276,7 @@ class OtherContracts(unittest.TestCase):
         self.assertNotIn("best-effort", doc)
         self.assertNotIn("fully supported", timeline_render.ics(r))
 
-    def test_frbar_revision_note_is_chat_only(self):
+    def test_farbar_revision_note_is_chat_only(self):
         deal = fixture("buyer-fha.json")
         deal["contract"]["form_revision"] = "FloridaRealtors/FloridaBar-ASIS-8 Rev. 1/27"
         r = timeline.analyze(deal)
@@ -307,8 +307,8 @@ class Required(unittest.TestCase):
         with self.assertRaisesRegex(timeline.DealError, "state"):
             timeline.analyze(deal)
 
-    def test_florida_builder_contract_gets_no_frbar_rules(self):
-        """TL-4: a Florida contract that isn't FR/BAR uses only the rules in the deal file."""
+    def test_florida_builder_contract_gets_no_farbar_rules(self):
+        """TL-4: a Florida contract that isn't FAR/BAR uses only the rules in the deal file."""
         deal = fixture("other-contract.json")
         deal.update(state="FL", county="Orange")
         deal["contract"]["form"] = "Builder Purchase Agreement"
@@ -368,7 +368,7 @@ class Pdf(unittest.TestCase):
 
 
 class Riders(unittest.TestCase):
-    """CR-7 rider rows, each checked against the rider's own "if left blank" text (shared/references/frbar-riders.md)."""
+    """CR-7 rider rows, each checked against the rider's own "if left blank" text (shared/references/farbar-riders.md)."""
 
     def deal(self, riders, form="standard", **contract):
         d = fixture("buyer-fha.json")  # Effective Date Fri Sep 25 2026, closing Fri Oct 30 2026
@@ -502,7 +502,7 @@ class AuditWording(unittest.TestCase):
 
 
 class TimeZones(unittest.TestCase):
-    """TL-19: FR/BAR times are local to the property."""
+    """TL-19: FAR/BAR times are local to the property."""
 
     def test_panhandle_prints_central(self):
         deal = fixture("buyer-fha.json")

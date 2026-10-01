@@ -74,7 +74,7 @@ def property_type(value):
 def tax_proration(annual_tax, closing, market=None, bill_paid=None):
     """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis'}, or None.
 
-    FR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
+    FAR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
     (`property_tax.early_payment_discount`, Florida 4%). Taxes paid in arrears (`property_tax.paid`): while the current
     bill is unpaid, the seller credits the buyer from Jan 1 (a cost); once the seller has paid it (Florida bills go out
     in November), the buyer credits the seller from closing to Dec 31 (`amount` negative, a credit to the seller).

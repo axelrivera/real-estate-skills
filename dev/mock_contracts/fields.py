@@ -2,7 +2,7 @@
 
 A map (fields/<FAMILY>.json) names blanks found by locate.py and says what goes in each:
 
-    {"family": "FRBAR-ASIS", "revision": "FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
+    {"family": "FARBAR-ASIS", "revision": "FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
      "fields": {
        "price":            {"at": "L27", "value": "money(price)"},
        "deposit_with_offer": {"at": "L30.1", "check": "deposit_with_offer"},
@@ -42,7 +42,7 @@ def load_map(family):
         m = json.load(f)
     want = manifest()[family]["revision"]
     if m.get("revision") != want:
-        raise MapError(f"fields/{family}.json was built for \"{m.get('revision')}\" but dev/forms/frbar-forms.json has "
+        raise MapError(f"fields/{family}.json was built for \"{m.get('revision')}\" but dev/forms/farbar-forms.json has "
                        f"\"{want}\". Re-anchor the map (docs/mock-contracts.md#when-a-form-is-revised).")
     return m
 
@@ -122,7 +122,7 @@ PRINT_LABEL = re.compile(r"(buyer|seller):\s*/$", re.I)  # "Seller: [signature] 
 
 
 def auto_roles(found):
-    """{role: [blank, ...]} for blanks every FR/BAR form shares, found by their printed labels:
+    """{role: [blank, ...]} for blanks every FAR/BAR form shares, found by their printed labels:
     'seller_names', 'buyer_names', 'property', 'effective_date', 'sign:buyer', 'sign:seller', 'date:buyer',
     'date:seller', 'print:buyer', 'print:seller' (a printed name next to the signature), 'initials:buyer',
     'initials:seller' (the footer or header initials slots, in order)."""

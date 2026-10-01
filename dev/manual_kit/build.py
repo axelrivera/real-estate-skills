@@ -3,12 +3,12 @@
     .venv/bin/python dev/manual_kit/build.py        # or: make manual-kit
 
 Makes every file a tester uploads (mock MLS 360 reports, a listing flyer, CMA exports, seller notes, a buyer CMA
-handoff, FR/BAR contract packages and an other-state agreement), one folder per case with the prompt to paste, and
+handoff, FAR/BAR contract packages and an other-state agreement), one folder per case with the prompt to paste, and
 an expected.md per case whose numbers come from running the skills' own scripts at build time. The mock data is in
 data.json (a real city, Casselberry in Seminole County; every street, name, brokerage and MLS number is made up).
 See docs/manual-testing.md.
 
-The FR/BAR packages come from dev/mock_contracts/build.py (local only: it needs the FR/BAR PDFs in sources/).
+The FAR/BAR packages come from dev/mock_contracts/build.py (local only: it needs the FAR/BAR PDFs in sources/).
 Scratch work goes to out/manual-kit-work/; both folders are removed and rebuilt on every run.
 """
 import csv
@@ -271,7 +271,7 @@ def agreement_html(a):
 # --- mock contract packages ------------------------------------------------------------
 
 def build_package(spec_path, name):
-    """Build a mock FR/BAR package with its answer key into WORK/pkg/<name>/ (deterministic: seeded by the name)."""
+    """Build a mock FAR/BAR package with its answer key into WORK/pkg/<name>/ (deterministic: seeded by the name)."""
     out = os.path.join(WORK, "pkg", name)
     run(["dev/mock_contracts/build.py", spec_path, "--answer-key", "--out", out], parse=False)
     key = next(os.path.join(out, "key", f) for f in os.listdir(os.path.join(out, "key")) if f.endswith("-Answer-Key.json"))
@@ -875,7 +875,7 @@ def case_other_state(pdf, checks):
              "Plain calendar count before the weekend rule, for reference (the rollover moves the earnest money and "
              "the inspection period to Monday):", "", table(["Deadline", "Period", "Raw Day"], plain), "",
              "## Must Not Happen", "",
-             "- No Florida rules, FR/BAR paragraphs or Florida costs.",
+             "- No Florida rules, FAR/BAR paragraphs or Florida costs.",
              "- The best-effort disclaimer appears in chat only: not in the PDF, the calendar file or a markdown report.",
              "", "## Checks", ""] + [f"- {c}" for c in checks]
     write(os.path.join(d, "expected.md"), "\n".join(lines))

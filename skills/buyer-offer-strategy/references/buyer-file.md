@@ -78,7 +78,7 @@ Top level, next to `buyer`. `rate` (interest rate as a **percent**: `6.5` for 6.
 | `buyer_broker_agreement_pct` | none (flagged): the rate in the buyer's own broker agreement. When the seller pays less, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" line in cash to close and counts in every limit | med |
 | `needs_sale` | false (adds the sale-of-buyer's-property rider and a kick-out clause; the options are scored with both) | — |
 | `sale_contingency_days` | 21 when `needs_sale` (flagged): days until the buyer's sale must close | med |
-| `buyer_broker_form` | FR/BAR: `GG` (a separate compensation agreement, the default) or `FF` (a seller credit to the buyer, which comes out of the loan program's concession limit) | — |
+| `buyer_broker_form` | FAR/BAR: `GG` (a separate compensation agreement, the default) or `FF` (a seller credit to the buyer, which comes out of the loan program's concession limit) | — |
 | `checklist` | package checklist statuses: `contract` `riders` `terms` `pre_approval` `funds` `insurance` `agency` `bb` `wire` `lead` `inspector` `lender_close` | Pending |
 
 ## overrides
@@ -91,4 +91,4 @@ The agent's call on any recommended term: `price`, `seller_concessions`, `deposi
 
 ## worksheet
 
-`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id`, `hoa_name`, `personal_property`, `acceptance_deadline` (the Time for Acceptance; default the expected Effective Date at 5:00 PM, past the offers-due deadline), `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name for any contract that isn't FR/BAR; read on a best-effort basis). Missing names print as red blanks.
+`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id`, `hoa_name`, `personal_property`, `acceptance_deadline` (the Time for Acceptance; default the expected Effective Date at 5:00 PM, past the offers-due deadline), `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name for any contract that isn't FAR/BAR; read on a best-effort basis). Missing names print as red blanks.

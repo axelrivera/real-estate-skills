@@ -210,7 +210,7 @@ def term_rows(o, R):
                      "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    form = f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FRBAR else ""  # the label comes from contract_forms
+    form = f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FARBAR else ""  # the label comes from contract_forms
     note = ("Buyer may cancel for any reason; seller still pays repairs up to the limits"
             if o["inspection_walkaway"] and o["repairs_owed"] else "Buyer may cancel for any reason" if o["inspection_walkaway"]
             else "Repair notices only; seller pays repairs up to the limits" if o["repairs_owed"] else "")
@@ -244,7 +244,7 @@ def term_rows(o, R):
             rows.append((lab, esc(o[key]), "—", "caution", ""))
     if o.get("riders"):
         # ENG-11: the form and rider label from contract_forms ("Standard + As Is Rider (K)"); riders are listed after it
-        form = f"{o['contract_label']} · " if o["contract_form"] in oe.cf.FRBAR else ""
+        form = f"{o['contract_label']} · " if o["contract_form"] in oe.cf.FARBAR else ""
         rows.append(("Contract / Riders", form + esc(", ".join(o["riders"])), "—", "good", ""))
     return rows
 

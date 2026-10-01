@@ -2,20 +2,20 @@
 
 The worksheet turns the chosen option into what the agent types into the contract and assembles for the package. It contains offer terms only: never the buyer's max price, cash or reserve. Suggested clause language is a starting draft for the agent and broker, not legal advice.
 
-## Florida (FR/BAR)
+## Florida (FAR/BAR)
 
-The worksheet follows the FR/BAR contract's paragraphs (1 parties and property, 2 price and deposits, 3 time for acceptance, 4 closing, 6 occupancy, 8 financing, 9 closing costs and title, 12 inspection), checked against the revisions in `frbar-contract.md`. Riders are named by their CR-7 letter; what each one does, its blanks and defaults are in `frbar-riders.md`, and the addenda (AGA-1, EAC-1, CDDA-2) in `frbar-addenda.md`.
+The worksheet follows the FAR/BAR contract's paragraphs (1 parties and property, 2 price and deposits, 3 time for acceptance, 4 closing, 6 occupancy, 8 financing, 9 closing costs and title, 12 inspection), checked against the revisions in `farbar-contract.md`. Riders are named by their CR-7 letter; what each one does, its blanks and defaults are in `farbar-riders.md`, and the addenda (AGA-1, EAC-1, CDDA-2) in `farbar-addenda.md`.
 
 - **AS IS** (default): the buyer can cancel for any reason during the inspection period; no seller repairs. The usual choice for competitive offers.
 - **Standard:** no inspection walk-away; the seller pays repairs up to the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank; set others in `worksheet.repair_limits`). Only when the buyer asks (a well-kept home, soft market, no competition). Set `worksheet.contract_form: "standard"` **before** running: the options are scored on the same form the worksheet prints, so a changed form means a re-run. Riders I, K and L exist only for the Standard form; never add them to an AS IS offer.
 
 ## Other Contracts
 
-Only FR/BAR is built in. For any other form, the worksheet lists the same entries by name with no paragraph numbers and generic addendum names. Put the form's name in `worksheet.contract_name` so it prints, read `other-contracts.md`, and walk the agent through where each entry goes in their form: deposit and its due date, the walk-away or inspection period and its notice rules, financing and appraisal terms, title. Ask before adding anything their form set doesn't have (an escalation clause, for example, only when the form and the listing agent allow it). The chat reply carries the best-effort line; the worksheet never does.
+Only FAR/BAR is built in. For any other form, the worksheet lists the same entries by name with no paragraph numbers and generic addendum names. Put the form's name in `worksheet.contract_name` so it prints, read `other-contracts.md`, and walk the agent through where each entry goes in their form: deposit and its due date, the walk-away or inspection period and its notice rules, financing and appraisal terms, title. Ask before adding anything their form set doesn't have (an escalation clause, for example, only when the form and the listing agent allow it). The chat reply carries the best-effort line; the worksheet never does.
 
 ## Riders: When Each Is Recommended
 
-| Rider (FR/BAR) | Trigger | Suggested Inputs |
+| Rider (FAR/BAR) | Trigger | Suggested Inputs |
 |---|---|---|
 | FHA/VA Financing Rider (E) | financing fha or va | appraised-value threshold = price; the Para. 2 seller's cap for lender-required appraisal repairs prints as a red blank (no default: a blank is ambiguous), with a note that on a contract that owes no other repairs it's new exposure for the seller |
 | Appraisal Contingency Rider (F) | conventional or usda without AGA-1 (a USDA gap goes in Additional Terms with Rider F) | value threshold = price; appraisal date (blank = 10 days before closing, notice within 3 days after) |

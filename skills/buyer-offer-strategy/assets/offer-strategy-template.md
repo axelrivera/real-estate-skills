@@ -1,6 +1,6 @@
 <!-- Fill from scripts/strategy.py output. Values come from the JSON as printed; never recompute them.
      The full answer is the block down to the disclaimers; the sections after it are on request only.
-     chat_notes (the best-effort line for a contract that isn't FR/BAR) goes in chat, word for word, in its own paragraph after the answer; never in a saved markdown report. -->
+     chat_notes (the best-effort line for a contract that isn't FAR/BAR) goes in chat, word for word, in its own paragraph after the answer; never in a saved markdown report. -->
 
 ## Offer Options: {{property}} (List {{list_price}})
 
@@ -88,7 +88,7 @@ Strength **{{summary.strength}}/100** Â· Seller Net **{{summary.seller_net}}** Â
 
 ## Offer Package Worksheet: {{worksheet.option}} Offer at {{worksheet.price}}
 
-**Draft for the Agent.** Enter in {{worksheet.software}} and {{"verify every paragraph and rider against the current FR/BAR form version" when worksheet.frbar, else "match each entry to your contract by name (paragraph numbers vary by form)"}}. Text in [brackets] is a blank to fill. Suggested language is for broker review, not legal advice.
+**Draft for the Agent.** Enter in {{worksheet.software}} and {{"verify every paragraph and rider against the current FAR/BAR form version" when worksheet.farbar, else "match each entry to your contract by name (paragraph numbers vary by form)"}}. Text in [brackets] is a blank to fill. Suggested language is for broker review, not legal advice.
 
 **Contract Form:** {{worksheet.form_name}}. {{worksheet.form_why}}
 
@@ -98,7 +98,7 @@ Strength **{{summary.strength}}/100** Â· Seller Net **{{summary.seller_net}}** Â
 |---|---|---|---|
 | {{x.para}} | {{x.field}} | {{x.entry}} | {{x.note}} |
 
-<!-- The Para. column only when worksheet.frbar; otherwise Field | Enter | Note. -->
+<!-- The Para. column only when worksheet.farbar; otherwise Field | Enter | Note. -->
 
 ### Riders to Attach (With Suggested Inputs)
 

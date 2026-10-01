@@ -22,7 +22,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 ## Buyer Offer Strategy
 
 - {{buyer-offer-strategy/*-Offer-Options.pdf}}. An FHA buyer competing with two other offers on a $365,000 listing. It shows the recommended offer inside the buyer's limits, the alternatives and what each changes and costs, and how the offer scores against the competition from the listing agent's side.
-- {{buyer-offer-strategy/*-Offer-Package.pdf}}. The worksheet for writing the recommended offer on the FR/BAR AS IS contract: contract entries by paragraph, riders, draft language for additional terms, the offer package checklist and what to request from the seller after acceptance.
+- {{buyer-offer-strategy/*-Offer-Package.pdf}}. The worksheet for writing the recommended offer on the FAR/BAR AS IS contract: contract entries by paragraph, riders, draft language for additional terms, the offer package checklist and what to request from the seller after acceptance.
 
 ## Contract Timeline
 

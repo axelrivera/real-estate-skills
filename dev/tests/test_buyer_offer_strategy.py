@@ -150,7 +150,7 @@ class HandoffAndOtherStates(unittest.TestCase):
         r = analyze("texas-cma-escalation.json")
         w = strategy.worksheet(r)
         text = json.dumps(w)
-        for florida in ("FR/BAR", "Form Simplicity", "4-point", "Florida"):
+        for florida in ("FAR/BAR", "Form Simplicity", "4-point", "Florida"):
             self.assertNotIn(florida, text)
         self.assertEqual(w["form_name"], "Sample Residential Purchase Agreement")
         self.assertTrue(all(row["para"] == "" for row in w["rows"]))
@@ -158,7 +158,7 @@ class HandoffAndOtherStates(unittest.TestCase):
 
     def test_florida_worksheet(self):
         w = strategy.worksheet(analyze("fha-competitive.json"))
-        self.assertTrue(w["frbar"])
+        self.assertTrue(w["farbar"])
         self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing Rider (E)", "Homeowner's/Flood Insurance Rider (H)",
                                                          "Seller's Agreement with Respect to Buyer's Broker Compensation Rider (GG)"])
         deposit = next(r for r in w["rows"] if r["field"] == "Initial Deposit")
@@ -285,7 +285,7 @@ class AuditPricing(unittest.TestCase):
         self.assertIn("$541,287", why)  # the 2026 FHA floor
 
 
-class FrbarGap(unittest.TestCase):
+class FarbarGap(unittest.TestCase):
     def test_conventional_gap_uses_aga_not_rider_f(self):
         """AGA-1 is for conventional or cash offers and isn't used with the Appraisal Contingency Rider (F)."""
         d = fixture("fha-competitive.json")
@@ -299,13 +299,13 @@ class FrbarGap(unittest.TestCase):
 
 
 class OtherContractWorksheet(unittest.TestCase):
-    """Only FR/BAR is built in: any other contract gets the generic entries by name, never another state's form rules."""
+    """Only FAR/BAR is built in: any other contract gets the generic entries by name, never another state's form rules."""
 
     def test_other_contract_rows_and_riders_are_generic(self):
         d = fixture("texas-cma-escalation.json")
         w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
         fields = [r["field"] for r in w["rows"]]
-        words = strategy.cf.term_words(strategy.cf.OTHER)  # OFR-234: generic words, never FR/BAR's
+        words = strategy.cf.term_words(strategy.cf.OTHER)  # OFR-234: generic words, never FAR/BAR's
         self.assertIn(words["inspection_label"], fields)
         self.assertNotIn("Inspection Period", fields)
         self.assertIn("Initial Deposit", fields)
@@ -662,7 +662,7 @@ class Audit20260929Third(unittest.TestCase):
             self.assertTrue(strategy.dates.is_business_day(eff + strategy.timedelta(days=t["closing_days"])), k)
         self.assertNotEqual(eff + strategy.timedelta(days=r["terms"]["lower_cost"]["closing_days"]),
                             strategy.date(2026, 11, 11))  # Veterans Day
-        r = analyze("minimal.json")  # FR/BAR: a period ending on a weekend rolls to the next business day
+        r = analyze("minimal.json")  # FAR/BAR: a period ending on a weekend rolls to the next business day
         d, note = strategy.risk_after(r["O"]["recommended"], r["costs"])
         self.assertTrue(strategy.dates.is_business_day(d))
         self.assertIsNotNone(note)
@@ -799,7 +799,7 @@ class Audit20260930Iter6(unittest.TestCase):
         d["cma"]["offer_plan"]["walk_away"], d["overrides"] = 640000, {"inspection_days": 10}  # escalating: no flat number
         self.assertTrue(analyze_data(d)["terms"]["recommended"].get("escalation"))
         self.assertEqual([x["key"] for x in analyze_data(d)["reply_lines"] if x["key"] != "tight_reserve"], ["contract_terms"])
-        self.assertEqual([x["key"] for x in analyze("fha-competitive.json")["reply_lines"]], ["tight_reserve"])  # FR/BAR, no highest and best; a thin cushion (OFR-332)
+        self.assertEqual([x["key"] for x in analyze("fha-competitive.json")["reply_lines"]], ["tight_reserve"])  # FAR/BAR, no highest and best; a thin cushion (OFR-332)
 
     def test_no_escalation_question_without_escalation(self):  # OFR-240
         r = analyze_data(copy.deepcopy(self.TX))
@@ -861,7 +861,7 @@ class Audit20260930Iter6(unittest.TestCase):
 
 
 class Audit20260930Iter7(unittest.TestCase):
-    """Eval iteration 7 on a contract that isn't FR/BAR (OFR-314 to OFR-316)."""
+    """Eval iteration 7 on a contract that isn't FAR/BAR (OFR-314 to OFR-316)."""
 
     def setUp(self):
         d = fixture("texas-cma-escalation.json")
@@ -882,7 +882,7 @@ class Audit20260930Iter7(unittest.TestCase):
         r = strategy.analyze(d, cma=strategy.load_cma(d))
         self.assertNotIn("inspection_period", [x["key"] for x in r["reply_lines"]])
         self.assertNotIn("inspection_days", [a["field"] for a in r["missing"]])
-        fl = analyze("fha-competitive.json")  # FR/BAR: the form's own period, nothing to confirm
+        fl = analyze("fha-competitive.json")  # FAR/BAR: the form's own period, nothing to confirm
         self.assertNotIn("inspection_period", [x["key"] for x in fl["reply_lines"]])
 
     def test_deposit_risk_date_marked_to_confirm(self):  # OFR-316
@@ -1062,7 +1062,7 @@ class MarkdownParity(unittest.TestCase):
         self.assertLessEqual({"Never", "Yes"}, statuses)
         self.assertIn('status Never: "- ✕ "', text)
         self.assertIn('status Yes, Done, True or ✓: "- [x] "', text)
-        for key in ("docs", "form_why", "software", "frbar"):  # OFR-352..354
+        for key in ("docs", "form_why", "software", "farbar"):  # OFR-352..354
             self.assertIn("worksheet." + key, text)
 
 

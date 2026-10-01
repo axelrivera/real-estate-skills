@@ -208,13 +208,13 @@ def label_title_fees(R):
 
 
 def ask_year_built(R):
-    """OFR-280: with riders read from an FR/BAR package, the lead-based paint check needs the year built; without it
+    """OFR-280: with riders read from a FAR/BAR package, the lead-based paint check needs the year built; without it
     the check can't run, so the review asks for it."""
     L = R["listing"]
     if L.get("year_built") or L.get("built_before_1978") in (True, False):  # OFR-295: the seller disclosure answers it
         return
     live = R["active"] + R["incomplete"]
-    if not any(o["contract_form"] in oe.cf.FRBAR and o.get("rider_codes") for o in live):
+    if not any(o["contract_form"] in oe.cf.FARBAR and o.get("rider_codes") for o in live):
         return
     a = {"scope": "listing", "field": "year_built", "value": None, "impact": "med",
          "why": "Year built not given: the lead-based paint check (a home built before 1978 needs the disclosure signed "
@@ -258,13 +258,13 @@ def ask_compensation_agreement(R):
 
 
 def ask_hoa_rider(R):
-    """OFR-291: on an HOA or condo property, an FR/BAR offer whose rider list wasn't read (no `riders`, or only letters its
+    """OFR-291: on an HOA or condo property, a FAR/BAR offer whose rider list wasn't read (no `riders`, or only letters its
     terms imply) gets an assumption asking about the HOA or condo rider instead of a flag, so every offer is checked the
     same way and recording a rent-back's Rider U changes nothing."""
     L = R["listing"]
     if not (L["condo"] or L.get("hoa_monthly")):
         return
-    unread = [o for o in R["active"] + R["incomplete"] if o["contract_form"] in oe.cf.FRBAR and not oe.riders_known(o)]
+    unread = [o for o in R["active"] + R["incomplete"] if o["contract_form"] in oe.cf.FARBAR and not oe.riders_known(o)]
     if not unread:
         return
     which = "condo rider (A)" if L["condo"] else "HOA or condo rider (A or B)"
@@ -528,7 +528,7 @@ def walk_away(o, costs):
         start = o["firm_date"] - timedelta(days=o["risk_days"])
         end, _ = oe.rolled(start + timedelta(days=wd), costs)
         notes.append(f"For any reason until {end:%b %-d} ({wd}-day inspection period"
-                     + (f", {o['contract_label']}" if o["contract_form"] in oe.cf.FRBAR else "")
+                     + (f", {o['contract_label']}" if o["contract_form"] in oe.cf.FARBAR else "")
                      + "); after that only under the loan, appraisal or rider terms.")
     if o.get("appraisal_form") == "aga" and ex < o["risk_days"] == o["appraisal_days"]:
         first, _ = oe.rolled(o["firm_date"] - timedelta(days=o["risk_days"] - ex), costs)
@@ -994,7 +994,7 @@ def result(R, mode="auto", offer_id=None):
                         for a in listed_assumptions(R, mode == "multi", sid)],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
-        # chat only (never on the report): the best-effort line for a contract that isn't FR/BAR, and revision notes
+        # chat only (never on the report): the best-effort line for a contract that isn't FAR/BAR, and revision notes
         **oe.cf.support([x["contract_form"] for x in checked],  # TL-201: "the footer reads" only when read from it
                         [(x["contract_form"], x.get("form_revision"), str(x.get("form_revision_source") or "").lower() == "footer")
                          for x in checked]),

@@ -1,9 +1,9 @@
 # Mock Contracts
 
-A development tool that builds realistic FR/BAR contract packages as one PDF: everything the buyer's and seller's sides exchange. That's the contract, riders, addenda, the seller's disclosures, the buyer's pre-approval or proof of funds, counter offers, escrow deposit receipts and amendments. All of it is filled in and signed Dotloop-style at any stage from a buyer-signed offer to an amended contract. Use them to test the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) on the kind of upload agents actually send.
+A development tool that builds realistic FAR/BAR contract packages as one PDF: everything the buyer's and seller's sides exchange. That's the contract, riders, addenda, the seller's disclosures, the buyer's pre-approval or proof of funds, counter offers, escrow deposit receipts and amendments. All of it is filled in and signed Dotloop-style at any stage from a buyer-signed offer to an amended contract. Use them to test the contract-reading skills (contract-timeline, seller-offer-review, buyer-offer-strategy) on the kind of upload agents actually send.
 
 - **Claude Code only, never shipped.** The skill lives in `.claude/skills/mock-contract/` and the code in `dev/mock_contracts/`. `make package` includes neither.
-- **Local only.** It fills the real FR/BAR PDFs in the git-ignored `sources/Contracts/FARBAR/` and uses PyMuPDF, which the sandbox doesn't have.
+- **Local only.** It fills the real FAR/BAR PDFs in the git-ignored `sources/Contracts/FARBAR/` and uses PyMuPDF, which the sandbox doesn't have.
 - **Outputs go to `out/mock-contracts/<id>/`** (git-ignored, removed by `make clean`). The PDFs contain Florida Realtors' form text, so they are never committed. The same goes for `samples/` and `dev/evals/`: copy a package into an eval run folder under `out/` instead.
 - **Fictional data only.** Every person, brokerage, street, tax ID and legal description the tool makes up is fictional, and no two made-up people share a first name or surname (a shared surname reads as a relative). Use the same rule for anything you type into a spec. Cities, ZIP codes and counties are real (the rules need the county); with a made-up street, no address is real. The builder removes the "Licensed to dotloop, Inc. and ..." line from the source PDFs, which names the real account the forms came from.
 - **Every value in the answer key is on the PDF.** A value the spec gives a rider, addendum, disclosure, counter or amendment must have a blank that prints it, or the build stops ([The Value Guard](#the-value-guard)). A skill that reads the package correctly always matches its key.
@@ -26,7 +26,7 @@ A development tool that builds realistic FR/BAR contract packages as one PDF: ev
 ## Setup
 
 1. Run `make setup`. Besides the sandbox mirror, it installs `dev/requirements-tools.txt` (PyMuPDF). For an existing `.venv`, run `.venv/bin/python -m pip install -r dev/requirements-tools.txt`.
-2. Put the FR/BAR PDFs in `sources/Contracts/FARBAR/`, laid out as `dev/forms/frbar-forms.json` lists them. Run `make forms-check` to confirm they match.
+2. Put the FAR/BAR PDFs in `sources/Contracts/FARBAR/`, laid out as `dev/forms/farbar-forms.json` lists them. Run `make forms-check` to confirm they match.
 
 `make lint-skills` fails if anything in `skills/` or `shared/` imports PyMuPDF.
 
@@ -43,7 +43,7 @@ Examples:
 - "Same as asis-fha-executed but leave the seller's initials off page 4 and don't attach the FHA rider."
 - "Three counters: the seller at $439k, the buyer at $432.5k with a 25-day loan approval, then the seller accepts restating both."
 
-The skill can use any form in `dev/forms/frbar-forms.json`: both contracts, the 33 CR-7 riders and the 35 addenda and disclosures. For a form without a field map it fills the common blanks automatically (parties, property, signatures, dates, initials). When the scenario needs that form's other blanks, it drafts a map (see [Field Maps](#field-maps)).
+The skill can use any form in `dev/forms/farbar-forms.json`: both contracts, the 33 CR-7 riders and the 35 addenda and disclosures. For a form without a field map it fills the common blanks automatically (parties, property, signatures, dates, initials). When the scenario needs that form's other blanks, it drafts a map (see [Field Maps](#field-maps)).
 
 To keep a scenario as a starter, ask the skill to save it. It goes to `dev/mock_contracts/scenarios/` and `make mock-contracts` builds it from then on.
 
@@ -210,7 +210,7 @@ A JSON file. Only `form` is required. A value that is missing gets a realistic m
 | Key | Type | Default | Notes |
 |---|---|---|---|
 | `name` | text | street, stage and spec hash | The output folder's name and the seed for mock values. Give one to keep a scenario under a fixed name |
-| `form` | text | **required** | `as_is` or `standard` (also "AS IS", "ASIS-7", "Standard"). Another contract is refused: only FR/BAR PDFs exist |
+| `form` | text | **required** | `as_is` or `standard` (also "AS IS", "ASIS-7", "Standard"). Another contract is refused: only FAR/BAR PDFs exist |
 | `stage` | text | from the rest | `offer`, `countered`, `executed` or `amended`. Without it: `amended` when there are amendments, `countered` when there are counters, else `executed` |
 | `side` | text | `buyer` | The answer key's `side` |
 | `buyers`, `sellers` | list or text | one fictional name each | Up to two of each get their own signature and initials slots |
@@ -232,7 +232,7 @@ A JSON file. Only `form` is required. A value that is missing gets a realistic m
 | `sale_of_buyers_property` | true/false | false | Adds Rider V |
 | `buyer_notice_address`, `seller_notice_address` | text | none | The notice lines by the signatures |
 | `brokers` | object | fictional | `listing_associate`, `listing_broker`, `cooperating_associate`, `cooperating_broker` |
-| `fill` | object | none | Raw blank values for the contract by form family: `{"FRBAR-ASIS": {"L141": "Survey"}}` (see [Field Maps](#field-maps)) |
+| `fill` | object | none | Raw blank values for the contract by form family: `{"FARBAR-ASIS": {"L141": "Survey"}}` (see [Field Maps](#field-maps)) |
 
 ### Property
 
@@ -304,16 +304,16 @@ Values the mapped riders read:
 | Z (Buyer's Attorney Approval) | `buyer_attorney_date` (5 days after the Effective Date, with a note) |
 | N (Coastal Construction Control Line) | `cccl_requested` (true: the buyer requests the affidavit or survey; false: the buyer waives it and CCCLA-3 is left out; unset: neither box, as the rider has no default) |
 
-A default is filled in only where the rider prints no default of its own; a blank that reads "if left blank, then 10" stays blank unless the spec sets it. The sale date on V and the dates on W and Z have no default in the rider: a real deal asks the agent (`frbar-package-check.md`), so the build notes the mock value it used.
+A default is filled in only where the rider prints no default of its own; a blank that reads "if left blank, then 10" stays blank unless the spec sets it. The sale date on V and the dates on W and Z have no default in the rider: a real deal asks the agent (`farbar-package-check.md`), so the build notes the mock value it used.
 
 Any rider also takes `fill` (blank ids or map field names, see [Field Maps](#field-maps)). The answer key takes only what the rider prints:
 
-- **Executed key:** a rider's days and dates go into `contract` under the deal file's names (`skills/contract-timeline/references/frbar.md`). Most keep their spec name; `rent_back_days` becomes `seller_occupancy_days`. So do the yes/no boxes the deal file reads: `cccl_requested` (N), `rofr` and `condo_docs_before_contract` (A), and `lbp_waived` (P: true unless `risk_assessment` is `received`).
+- **Executed key:** a rider's days and dates go into `contract` under the deal file's names (`skills/contract-timeline/references/farbar.md`). Most keep their spec name; `rent_back_days` becomes `seller_occupancy_days`. So do the yes/no boxes the deal file reads: `cccl_requested` (N), `rofr` and `condo_docs_before_contract` (A), and `lbp_waived` (P: true unless `risk_assessment` is `received`).
 - **Offer key:** the listing file's names (`skills/seller-offer-review/references/listing-file.md`): `rent_back_days` and `rent_back_monthly` (U), `seller_financing` (C), `kickout` (X), and `insurance_days` (H), `sale_contingency_days` (V) and `attorney_days` (Z) counted from the offer to the rider's date.
 
 ### Addenda and Disclosures
 
-`addenda` is a list of form codes (`"AGA"`, `"EAC-1"`) or objects (`{"form": "AGA", "gap_amount": 15000}`), in any family from `dev/forms/frbar-forms.json`. They are checked under Para. 19 "Other" by name.
+`addenda` is a list of form codes (`"AGA"`, `"EAC-1"`) or objects (`{"form": "AGA", "gap_amount": 15000}`), in any family from `dev/forms/farbar-forms.json`. They are checked under Para. 19 "Other" by name.
 
 | Form | Keys |
 |---|---|
@@ -414,7 +414,7 @@ In `out/mock-contracts/<id>/`:
 - **`<Street>-Offer.pdf` or `<Street>-Contract.pdf`** (always): the package in the order the documents change hands ([Package Contents](#package-contents)). The form text stays real text and the filled values are typed as text, so `pdftotext -layout` reads both, as it does on an agent's Dotloop export.
 - **`<Street>-Compensation-Agreement.pdf`** (with Rider GG): the CASSB-1 compensation agreement, on its own.
 - **`key/<Street>-Answer-Key.json`** (`--answer-key`): the ground truth, shaped for the skill that reads that stage.
-  - **Executed or amended** (`executed`, `amended`): contract-timeline's deal-file schema (`skills/contract-timeline/references/deal-file.md` and `frbar.md`). It holds `side`, `state`, `county`, `client`, `contract` (the contract as finally accepted, with the rider names), `deadlines` and `amendments` (each with its `changes`). `skills/contract-timeline/scripts/render.py` renders it directly.
+  - **Executed or amended** (`executed`, `amended`): contract-timeline's deal-file schema (`skills/contract-timeline/references/deal-file.md` and `farbar.md`). It holds `side`, `state`, `county`, `client`, `contract` (the contract as finally accepted, with the rider names), `deadlines` and `amendments` (each with its `changes`). `skills/contract-timeline/scripts/render.py` renders it directly.
     - With addenda it adds `contract.addenda` (their names). An Appraisal Gap Addendum adds two `deadlines` entries (valuation due, renegotiation ends), since contract-timeline sets no row of its own for AGA-1.
     - For a condo it adds `condo` and `condo_docs_received` (the RCD-8 date). For an HOA it adds `hoa` with `hoa_disclosure_before_contract`. Association approval comes from Riders A and B.
     - Each escrow receipt in the package is a deposit done: `completed` has `deposit` (and `add_deposit` for an additional deposit) with the receipt's date.
@@ -437,7 +437,7 @@ The key and spec sit in `key/`, apart from the documents, and are named after th
 
 ## Field Maps
 
-A field map, `dev/mock_contracts/fields/<FAMILY>.json`, names the blanks of one form and says what goes in each. Maps exist for FRBAR-ASIS, FRBAR-STANDARD, Riders A, B, C, D, E, F, FF, G, GG, H, K, L, N, P, S, T, U, V, W, X and Z, AGA, EAC, CDDA, NMOB, CCCLA, CO, EA, ACSP, SPDR, SPDC, FD, RCD, MISIRS and CASSB. On disclosures, the yes/no answer engine fills every question the map doesn't. Every other form gets only the automatic blanks until someone maps it.
+A field map, `dev/mock_contracts/fields/<FAMILY>.json`, names the blanks of one form and says what goes in each. Maps exist for FARBAR-ASIS, FARBAR-STANDARD, Riders A, B, C, D, E, F, FF, G, GG, H, K, L, N, P, S, T, U, V, W, X and Z, AGA, EAC, CDDA, NMOB, CCCLA, CO, EA, ACSP, SPDR, SPDC, FD, RCD, MISIRS and CASSB. On disclosures, the yes/no answer engine fills every question the map doesn't. Every other form gets only the automatic blanks until someone maps it.
 
 **How blanks are found.** `locate.py` reads each page with PyMuPDF. It takes the Dotloop field outlines left in the export, drawn rules, underscore runs, checkbox squares and box glyphs, and text areas. Each blank gets an id:
 
@@ -491,7 +491,7 @@ To use a value the guard refuses, map its blank (below) or put it in `fill` by b
 **Adding a map for a new form.**
 
 1. Run `locate.py FAMILY --draft` and `--debug out/mock-contracts/_drafts/FAMILY.pdf`, and look at the pages.
-2. Write `fields/FAMILY.json` with the form's revision from the manifest. Prefer `label`, `after` and `above` anchors, then `within`, and ids only on the contracts. An anchor is matched against the text `locate.py` prints, which is cut to about 30 characters on each side: keep anchors short. Name each value key after the field the reading skill uses (`skills/contract-timeline/references/frbar.md`, `skills/seller-offer-review/references/listing-file.md`), so the key feeds it directly. A rider's days and dates reach the key on their own; a yes/no box the deal file reads goes in `DEAL_FLAGS` in `scenario.py`.
+2. Write `fields/FAMILY.json` with the form's revision from the manifest. Prefer `label`, `after` and `above` anchors, then `within`, and ids only on the contracts. An anchor is matched against the text `locate.py` prints, which is cut to about 30 characters on each side: keep anchors short. Name each value key after the field the reading skill uses (`skills/contract-timeline/references/farbar.md`, `skills/seller-offer-review/references/listing-file.md`), so the key feeds it directly. A rider's days and dates reach the key on their own; a yes/no box the deal file reads goes in `DEAL_FLAGS` in `scenario.py`.
 3. Render `--debug` again (mapped blanks show in red with their names), build a scenario that uses the form, and look at the filled page.
 4. Add the form to `ROUND_TRIP` in `dev/tests/test_mock_contracts.py`, with a sample value for every key the map prints, and run `make test`. It checks that every anchor in every map still finds its blank, that the samples cover every key the map reads, and that each sample value is typed on the form.
 
@@ -502,7 +502,7 @@ A map records the revision it was built for. When `make forms-check ARGS="--acce
 ## Troubleshooting
 
 - **`ModuleNotFoundError: pymupdf`:** run `.venv/bin/python -m pip install -r dev/requirements-tools.txt`.
-- **"... is missing. The FR/BAR PDFs live in the git-ignored sources/":** copy the forms into `sources/Contracts/FARBAR/`, then run `make forms-check`.
+- **"... is missing. The FAR/BAR PDFs live in the git-ignored sources/":** copy the forms into `sources/Contracts/FARBAR/`, then run `make forms-check`.
 - **"... has no blank in fields/...":** the value guard. Map the blank, put the value in `fill`, or drop it ([The Value Guard](#the-value-guard)).
 - **"no blank matches ...":** an anchor lost its blank, after a detection change or a new revision. Run `locate.py FAMILY --debug` and fix the anchor.
 - **Text in the wrong place, or too small:** the blank is narrower than the value. Use a shorter value, flow it across several blanks (`at` as a list), or narrow the anchor. Values shrink to fit down to 5.5 points.

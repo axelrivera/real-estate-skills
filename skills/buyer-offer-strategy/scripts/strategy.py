@@ -284,19 +284,19 @@ def prepare(B, A, market=None):
         raise oe.OfferError(str(e)) from e
     if form is None:  # ENG-12: a missing form is a high-impact assumption (CLAUDE.md); OFR-126: plain words
         form = A.add("buyer", "contract_form", cf.AS_IS,
-                     "Contract form not chosen: planned on the FR/BAR AS IS, the usual form for a competitive offer. If the "
+                     "Contract form not chosen: planned on the FAR/BAR AS IS, the usual form for a competitive offer. If the "
                      "buyer will use the Standard form, say so: its repair limits and inspection rules change the numbers",
                      "high") \
-            if cf.frbar_market(costs.get("contract.forms")) else cf.OTHER
+            if cf.farbar_market(costs.get("contract.forms")) else cf.OTHER
     B["contract_form"] = form
-    B["words"] = cf.term_words(form)  # OFR-234: FR/BAR's names on FR/BAR, generic ones on any other contract
+    B["words"] = cf.term_words(form)  # OFR-234: FAR/BAR's names on FAR/BAR, generic ones on any other contract
     B["repair_limits"] = W.get("repair_limits") or BU.get("repair_limits")
-    # Buyer's broker pay requested from the seller, and how it's paid on an FR/BAR offer: Rider GG (a separate
+    # Buyer's broker pay requested from the seller, and how it's paid on a FAR/BAR offer: Rider GG (a separate
     # compensation agreement, the default) or Rider FF (a seller credit to the buyer, which uses the loan program's
     # concession room). contract_forms.buyer_broker_as_credit is the rule.
     B["bb_request"] = bb_request(B, costs)
     route = str(W.get("buyer_broker_form") or BU.get("buyer_broker_form") or "GG").upper()
-    B["buyer_broker_form"] = route if form in cf.FRBAR and B["bb_request"][0] else None
+    B["buyer_broker_form"] = route if form in cf.FARBAR and B["bb_request"][0] else None
     if BU.get("needs_sale") and not BU.get("sale_contingency_days"):
         A.add("buyer", "sale_contingency_days", 21, "Buyer needs to sell first, no sale deadline given: planned on 21 days with a "
               "kick-out clause. Set the date the buyer's sale can close", "med")
@@ -593,11 +593,11 @@ def engine_data(B, variants):
 
 
 def appraisal_kind(B, t):
-    """How an FR/BAR option protects the appraisal: 'aga' (a gap offer on the Appraisal Gap Addendum, only where AGA-1
+    """How a FAR/BAR option protects the appraisal: 'aga' (a gap offer on the Appraisal Gap Addendum, only where AGA-1
     fits the loan: contract_forms.aga_fits), 'F' (the Appraisal Contingency Rider, conventional or USDA), or None
     (FHA/VA's own rider, cash, or another contract). ENG-10: a USDA gap is written in Additional Terms with Rider F."""
     fin = B["buyer"]["financing"]
-    if B["contract_form"] not in cf.FRBAR:
+    if B["contract_form"] not in cf.FARBAR:
         return None
     if t.get("appraisal_gap") and cf.aga_fits(fin):
         return "aga"
@@ -722,7 +722,7 @@ def build_offer(B, costs):
     reports = " + 4-point" if costs.state == "FL" else ""
     why["inspection_days"] = (f"Room for a full inspection{reports}" + (" on an older home" if yb and old else " (year built unknown)" if not yb else "")
                               if t["inspection_days"] == 10 else "Short window to compete; newer home")
-    if B["contract_form"] not in cf.FRBAR:  # OFR-315: no other state's periods are built in, so the length is assumed
+    if B["contract_form"] not in cf.FARBAR:  # OFR-315: no other state's periods are built in, so the length is assumed
         why["inspection_days"] += "; a generic default: confirm what's usual locally for this contract"
     if fin != "cash":
         t["loan_approval_days"] = 21 if (fin == "conventional" and lvl >= 2) else 30
@@ -1025,7 +1025,7 @@ def analyze(B_in, market=None, cma=None):
     for k, v in ov.items():  # the agent's judgment wins; the report marks it
         rec[k] = v
         why[k] = "Agent's choice"
-    if B["contract_form"] not in cf.FRBAR:  # OFR-222: a best-effort contract's own questions, asked before cost details
+    if B["contract_form"] not in cf.FARBAR:  # OFR-222: a best-effort contract's own questions, asked before cost details
         if not (B.get("worksheet") or {}).get("contract_name"):
             A.add("worksheet", "contract_name", None, "Contract form not named: ask which form (and version) the offer goes "
                   "on; the worksheet finds each entry by its name", "med")
@@ -1061,7 +1061,7 @@ def analyze(B_in, market=None, cma=None):
             R, O = run_engine(B, costs, variants)
             break
     # OFR-240: the escalation question only when the offer escalates; with one flat number it would contradict the advice
-    if B["contract_form"] not in cf.FRBAR and rec.get("escalation"):
+    if B["contract_form"] not in cf.FARBAR and rec.get("escalation"):
         A.add("competition", "escalation_accepted", None, "Ask the listing agent whether they accept an escalation "
               "clause or want one flat number; not every contract has an escalation form", "med")
     lp = B["property"]["list_price"]
@@ -1202,14 +1202,14 @@ def tight_reserve(B, costs, res, rc):
 
 def reply_lines(B, rec):
     """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `flat_number` (a
-    highest-and-best round with no escalation: why one flat number), `contract_terms` (a contract that isn't FR/BAR:
+    highest-and-best round with no escalation: why one flat number), `contract_terms` (a contract that isn't FAR/BAR:
     the form-specific terms come from the agent's contract, never from Florida's rules) and `inspection_period` (the
     same contract with the period's length not set by the agent: it's a generic default to check locally, OFR-315)."""
     out = []
     if highest_and_best(B["competition"]) and not rec.get("escalation"):
         out.append({"key": "flat_number", "text": "In a highest-and-best round many listing agents want one flat number, so "
                     f"{money(rec['price'])} goes in as the single price, with no escalation clause."})
-    if B["contract_form"] not in cf.FRBAR:
+    if B["contract_form"] not in cf.FARBAR:
         out.append({"key": "contract_terms", "text": "Any option fee, and the appraisal terms of the financing addendum, "
                     "come from your contract: fill them from your forms, not from this analysis."})
         if "inspection_days" not in (B.get("overrides") or {}) and rec.get("inspection_days"):
@@ -1279,7 +1279,7 @@ rolled = oe.rolled  # OFR-219: the contract's weekend and holiday rule, shared w
 
 def risk_after(o, costs):
     """OFR-219: (the date the deposit is at risk after, rolled per the contract rule; a short note or None). OFR-316: on
-    a contract that isn't FR/BAR the date is counted from the offer's own periods, so the note asks the agent to confirm
+    a contract that isn't FAR/BAR the date is counted from the offer's own periods, so the note asks the agent to confirm
     when the contract releases the deposit (contract_forms.term_words)."""
     d, was = rolled(deposit_risk(o)[0], costs)
     notes = [cf.term_words(o["contract_form"])["deposit_risk_confirm"]]
@@ -1505,8 +1505,8 @@ def next_step(B, deadline, n_options=2):
 
 # --- offer package worksheet -------------------------------------------------------
 
-# CR-7 riders by letter and the Florida Realtors addenda by form number (shared/references/frbar-riders.md, frbar-addenda.md)
-FRBAR_RIDERS = {"fha_va": "FHA/VA Financing Rider (E)", "appraisal": "Appraisal Contingency Rider (F)",
+# CR-7 riders by letter and the Florida Realtors addenda by form number (shared/references/farbar-riders.md, farbar-addenda.md)
+FARBAR_RIDERS = {"fha_va": "FHA/VA Financing Rider (E)", "appraisal": "Appraisal Contingency Rider (F)",
                 "hoa": "Homeowners' Association/Community Disclosure Rider (B)", "condo": "Condominium Rider (A)",
                 "lead": "Lead-Based Paint Disclosure Rider (P)", "insurance": "Homeowner's/Flood Insurance Rider (H)",
                 "sale": "Sale of Buyer's Property Rider (V)", "kickout": "Kick-Out Clause Rider (X)", "backup": "Back-Up Contract Rider (W)",
@@ -1537,7 +1537,7 @@ def worksheet(r, variant=None):
     P, BU, C, W = B["property"], B["buyer"], B["competition"], B.get("worksheet") or {}
     t, o = r["terms"][variant], r["O"][variant]
     form = B["contract_form"]  # resolved once in prepare(), the same form the options were scored on
-    frbar = form in cf.FRBAR
+    farbar = form in cf.FARBAR
     terms = cf.terms(form, {"riders": [], "contract_name": W.get("contract_name")})  # ENG-11: the form's rules, one place
     fin = BU["financing"]
     financed = fin != "cash"
@@ -1545,7 +1545,7 @@ def worksheet(r, variant=None):
     loan = round(price * (1 - BU["down_pct"])) if financed else 0
     eff = B["effective_date"]  # OFR-123: every date counts from the expected Effective Date
     close = oe.prior_weekday(eff + timedelta(days=t["closing_days"]) if t.get("closing_days") else o["close"])
-    if frbar:
+    if farbar:
         form_name = cf.FORM_TITLES[form]
         form_why = ("Buyer may cancel for any reason during the inspection period; no seller repair obligation. Usual choice for competitive offers."
                     if terms["walkaway"] else "No inspection walk-away; the seller pays repairs up to the General Repair, WDO and "
@@ -1557,7 +1557,7 @@ def worksheet(r, variant=None):
     # OFR-123: the offer stays open past the listing agent's deadline, so the seller can answer (the Effective Date)
     deadline = deadline_label(W.get("acceptance_deadline"), long=True) or (
         f"{eff:%B} {eff.day}, {eff.year}, 5:00 PM" if offer_due or not C.get("deadline") else None)
-    para = (lambda p: p) if frbar else (lambda p: "")
+    para = (lambda p: p) if farbar else (lambda p: "")
     title_payer = costs.get("closing_costs.owner_title.payer")
     title_src = costs.described("closing_costs.owner_title.payer")
     reports = "4-point, wind-mitigation" if costs.state == "FL" else "insurance"
@@ -1570,8 +1570,8 @@ def worksheet(r, variant=None):
          "List anything the buyer expects to stay"),
         (para("2"), "Purchase Price", f"**{money(price)}**", ""),
         (para("2(a)"), "Initial Deposit",
-         f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar else f"**{money(t['deposit'])}**",
-         "" if frbar else "Due date per the contract"),
+         f"**{money(t['deposit'])}** within 3 days of Effective Date" if farbar else f"**{money(t['deposit'])}**",
+         "" if farbar else "Due date per the contract"),
         (para("2(a)"), "Escrow Agent", W.get("escrow_agent") or blank("title company name, address, phone"), ""),
         (para("2(b)"), "Additional Deposit", "None", "Keep the full deposit up front: it scores better"),
     ]
@@ -1579,7 +1579,7 @@ def worksheet(r, variant=None):
         rows.append((para("2(c) / 8"), "Financing", f"**{oe.FIN_LABEL[fin]}** · loan {money(loan)} ({1 - BU['down_pct']:.1%} LTV)",
                      "As chosen by the buyer and lender" + (" (ASSUMED: confirm before entering)" if BU.get("financing_source") == "assumed" else "")))
         rows.append((para("8(b)"), "Loan Approval Period", f"**{t.get('loan_approval_days', 30)} days**",
-                     "Loan application within 5 days (form default)" if frbar else ""))
+                     "Loan application within 5 days (form default)" if farbar else ""))
     else:
         rows.append((para("8"), "Financing", "**Cash** (no financing contingency)", "Attach proof of funds"))
     rows += [
@@ -1608,7 +1608,7 @@ def worksheet(r, variant=None):
         (para("9"), "Survey", "Buyer's expense (recommended)", "Lender may require"),
     ]
     rows.append((para("12"), B["words"]["inspection_label"], f"**{t['inspection_days']} days**",
-                 f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting" if frbar else
+                 f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting" if farbar else
                  "Book the inspector before submitting; find the contract's inspection or walk-away period and its notice rules"
                  + ("" if "inspection_days" in (B.get("overrides") or {}) else
                     "; the length is a generic default: confirm local practice")))  # OFR-315
@@ -1617,19 +1617,19 @@ def worksheet(r, variant=None):
         rows.append((para("9"), "Repair Limits", f"General **{money(lim['general'])}** · WDO **{money(lim['wdo'])}** · "
                      f"Permits **{money(lim['permit'])}**", "Para. 9(a); 1.5% of price each when left blank"))
 
-    names = FRBAR_RIDERS if frbar else dict(GENERIC_RIDERS, appraisal=B["words"]["appraisal_addendum"])
+    names = FARBAR_RIDERS if farbar else dict(GENERIC_RIDERS, appraisal=B["words"]["appraisal_addendum"])
     riders = []  # (name, inputs, why)
     yb, roof, fz = P.get("year_built"), P.get("roof_year"), (P.get("flood_zone") or "").upper()
     if fin in ("fha", "va"):
-        # OFR-209: the Para. 2 cap on seller-paid appraisal repairs has no default (frbar-riders.md, Rider E)
+        # OFR-209: the Para. 2 cap on seller-paid appraisal repairs has no default (farbar-riders.md, Rider E)
         repair_cap = (f" · Para. 2 seller's cap for lender-required appraisal repairs: {blank('$ amount, no default')}"
-                      if frbar else f" · seller's cap for lender-required repairs: {blank('$ amount')}")
+                      if farbar else f" · seller's cap for lender-required repairs: {blank('$ amount')}")
         cap_note = ("; fill the repair cap on purpose: a blank is ambiguous, and "
                     + ("the contract owes no other repairs, so it's new exposure for the seller: tell the listing agent"
-                       if not terms["repairs_owed"] else "it's in addition to the Para. 9(a) repair limits") if frbar else "")
+                       if not terms["repairs_owed"] else "it's in addition to the Para. 9(a) repair limits") if farbar else "")
         riders.append((names["fha_va"], f"Loan type: {fin.upper()} · appraised-value threshold: **{money(price)}**{repair_cap}",
                        "Required with FHA/VA loans (amendatory / escape clause)" + cap_note))
-    # FR/BAR: the Appraisal Gap Addendum is for conventional or cash offers and isn't used with the Appraisal Contingency
+    # FAR/BAR: the Appraisal Gap Addendum is for conventional or cash offers and isn't used with the Appraisal Contingency
     # Rider (AGA-1's own instructions), so a gap offer uses AGA-1 and no rider F (appraisal_kind, the same rule scored).
     aga = appraisal_kind(B, t) == "aga"
     if aga:
@@ -1640,7 +1640,7 @@ def worksheet(r, variant=None):
                                      + " · 3 days to agree on new terms if the gap isn't enough",
                        "The buyer covers a low appraisal up to the gap; beyond it the contract ends unless both agree to new terms"))
     elif fin in ("conventional", "usda"):
-        due = ("appraisal due: blank = **10 days before Closing**, buyer's notice within 3 days after" if frbar
+        due = ("appraisal due: blank = **10 days before Closing**, buyer's notice within 3 days after" if farbar
                else f"appraisal period: **{t.get('appraisal_days', 21)} days**")
         riders.append((names["appraisal"], f"Value threshold: **{money(price)}** · {due}",
                        "Protects the buyer if the appraisal is low" + ("; pair with gap language below" if t.get("appraisal_gap") else "")))
@@ -1678,7 +1678,7 @@ def worksheet(r, variant=None):
         riders.append((names["cdd"], f"Annual amount: {blank('amount')} · outstanding debt: {blank('amount')}", "Property is in a special district"))
     if P.get("short_sale"):
         riders.append((names["short_sale"], f"Lender approval period: {blank('days')}", "Listed as a short sale"))
-    if frbar and B.get("buyer_broker_form") and t.get("buyer_broker_pct"):
+    if farbar and B.get("buyer_broker_form") and t.get("buyer_broker_pct"):
         bb = money(round(t["buyer_broker_pct"] * price))
         if bb_as_credit(B):
             riders.append((names["bb_FF"], f"Credit: **{t['buyer_broker_pct']:.2%}** of price ({bb}) · if over the lender's limit: "
@@ -1698,7 +1698,7 @@ def worksheet(r, variant=None):
     if financed and t.get("appraisal_gap") and not aga:
         rider = names["fha_va"] if fin in ("fha", "va") else names["appraisal"]
         # OFR-234: another contract's appraisal right lives in its own addendum, so the clause points to it generically
-        rights = (f"Buyer's rights under the {rider}" if frbar or fin in ("fha", "va")
+        rights = (f"Buyer's rights under the {rider}" if farbar or fin in ("fha", "va")
                   else "Buyer's appraisal rights under the contract and its addenda")
         clauses.append(("Appraisal Gap",
                         f"If the appraised value is less than the Purchase Price, Buyer shall pay in cash up to {money(t['appraisal_gap'])} of the "
@@ -1735,7 +1735,7 @@ def worksheet(r, variant=None):
     fl = costs.state == "FL"
     rider_list = ", ".join(x[0].split(" (")[0] for x in riders) or "none"
     package = [  # (group, item, status, note)
-        ("Contract", f"{terms['title'] if frbar else 'Contract'} completed and initialed on every page", CK.get("contract", "Pending"), ""),
+        ("Contract", f"{terms['title'] if farbar else 'Contract'} completed and initialed on every page", CK.get("contract", "Pending"), ""),
         ("Contract", f"Riders attached and signed: {rider_list}", CK.get("riders", "Pending"), ""),
         ("Contract", "Additional terms reviewed by broker", CK.get("terms", "Pending"), ""),
         ("Buyer Docs", "Pre-approval letter at the offer price, not the max" if financed else "Proof of funds (recent statement in the buyer's name)",
@@ -1764,8 +1764,8 @@ def worksheet(r, variant=None):
         # OFR-206: a thing to leave out, so its box is never ticked (the renderer prints a cross, not a check)
         ("Do Not Include", "Personal letter, photos or buyer background", "Never", "Fair housing"),
     ]
-    return {"variant": variant, "option": OPTION_LABEL[variant], "price": money(price), "frbar": frbar, "form_name": form_name, "form_why": form_why,
-            "software": "Form Simplicity" if frbar else "your contract software",
+    return {"variant": variant, "option": OPTION_LABEL[variant], "price": money(price), "farbar": farbar, "form_name": form_name, "form_why": form_why,
+            "software": "Form Simplicity" if farbar else "your contract software",
             "rows": [{"para": a, "field": b, "entry": c, "note": d} for a, b, c, d in rows],
             "riders": [{"rider": a, "inputs": b, "why": c} for a, b, c in riders],
             "clauses": [{"title": a, "text": b} for a, b in clauses], "docs": docs,
@@ -1830,7 +1830,7 @@ def result(r, variant=None):
         "reply_lines": r.get("reply_lines") or [],
         "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in r["missing"]],
         "market_notes": list(r["costs"].notes),
-        # chat only: the best-effort line for a contract that isn't FR/BAR, worded for an offer being written (OFR-314)
+        # chat only: the best-effort line for a contract that isn't FAR/BAR, worded for an offer being written (OFR-314)
         **cf.support([B["contract_form"]], drafting=True),
     }
 

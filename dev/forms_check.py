@@ -1,15 +1,15 @@
-"""Check the FR/BAR form PDFs in sources/ against the committed manifest, so a revised form is never missed.
+"""Check the FAR/BAR form PDFs in sources/ against the committed manifest, so a revised form is never missed.
 
     python dev/forms_check.py                    # report new, removed and changed forms (make forms-check)
     python dev/forms_check.py --accept CR-7_L    # after updating the references: record that form's new text
     python dev/forms_check.py --accept-all       # record every form (first run, or after a full review)
 
-The manifest (dev/forms/frbar-forms.json) is the list of fully supported forms: one entry per form family with
+The manifest (dev/forms/farbar-forms.json) is the list of fully supported forms: one entry per form family with
 the revision printed in its footer, a hash of its text and the references and code that depend on it. It holds no
 form text (the forms are Florida Realtors' copyright). Text snapshots for diffs live next to the PDFs in
 sources/Contracts/_snapshots/, which is git-ignored like the rest of sources/.
 
-It also checks that every "Verified Against" table in shared/references/frbar-*.md and the VERIFIED map in
+It also checks that every "Verified Against" table in shared/references/farbar-*.md and the VERIFIED map in
 shared/contract_forms.py cite the manifest's revisions. See docs/development.md#updating-a-contract-form.
 """
 import argparse
@@ -24,7 +24,7 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 FORMS = os.path.join(ROOT, "sources", "Contracts", "FARBAR")
 SNAPSHOTS = os.path.join(ROOT, "sources", "Contracts", "_snapshots")
-MANIFEST = os.path.join(ROOT, "dev", "forms", "frbar-forms.json")
+MANIFEST = os.path.join(ROOT, "dev", "forms", "farbar-forms.json")
 REFERENCES = os.path.join(ROOT, "shared", "references")
 sys.path.insert(0, ROOT)
 
@@ -39,9 +39,9 @@ def family(filename):
     if rider:
         return f"CR-7_{rider.group(1)}"
     if re.fullmatch(r"\d+x?", code):  # "Residential Contract for Sale And Purchase (7).pdf"
-        return "FRBAR-STANDARD"
+        return "FARBAR-STANDARD"
     if code.upper().startswith("ASIS"):
-        return "FRBAR-ASIS"
+        return "FARBAR-ASIS"
     return re.sub(r"-\d+x?$", "", code).upper()
 
 
@@ -107,11 +107,11 @@ def snapshot_path(key):
 
 
 def cited_revisions():
-    """{family: [(file, revision)]} from the "Verified Against" tables in shared/references/frbar-*.md, whose rows
+    """{family: [(file, revision)]} from the "Verified Against" tables in shared/references/farbar-*.md, whose rows
     are | `FAMILY` | revision | ... |."""
     out = {}
     for name in sorted(os.listdir(REFERENCES)) if os.path.isdir(REFERENCES) else []:
-        if not (name.startswith("frbar-") and name.endswith(".md")):
+        if not (name.startswith("farbar-") and name.endswith(".md")):
             continue
         with open(os.path.join(REFERENCES, name), encoding="utf-8") as f:
             for line in f:

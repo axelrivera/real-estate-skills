@@ -8,7 +8,7 @@ A short smoke test of the installed plugin before each release: one happy path p
    ```bash
    make package manual-kit
    ```
-   The kit lands in `out/manual-test/` (git-ignored, rebuilt from scratch each run). It needs the local dev setup (`make setup`) and the FR/BAR PDFs in `sources/` for the contract packages ([mock-contracts.md](mock-contracts.md)).
+   The kit lands in `out/manual-test/` (git-ignored, rebuilt from scratch each run). It needs the local dev setup (`make setup`) and the FAR/BAR PDFs in `sources/` for the contract packages ([mock-contracts.md](mock-contracts.md)).
 2. In the desktop app, uninstall the old `core` and `transactions` plugins if they're still there, install `dist/real-estate-<version>.plugin`, and confirm the six `real-estate:*` skills are listed and nothing else from this repo.
 3. Create a fresh Cowork working folder for the run.
 
@@ -17,7 +17,7 @@ A short smoke test of the installed plugin before each release: one happy path p
 `out/manual-test/` has one folder per case, and each case runs on its own:
 
 - `prompt.md`: what to upload and the exact prompt to paste (with the "Today is" date the expected dates assume).
-- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), a buyer CMA handoff, mock FR/BAR packages, and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
+- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), a buyer CMA handoff, mock FAR/BAR packages, and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
 - `expected.md`: the facts to check, computed by the skills' own scripts when the kit was built. Value ranges and prices are Claude's judgment, so those come with a sanity band instead of an exact number.
 
 Never upload `expected.md`. Case 1 builds your real profile; every later case uses it.

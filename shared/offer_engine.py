@@ -87,7 +87,7 @@ def prior_weekday(d):
 
 def rolled(d, costs):
     """OFR-300: (the day a contract period ending on `d` really ends, the day it moved from or None). The market's
-    contract rule (`contract.weekend_holiday_rollover`, FR/BAR: the next business day) moves a weekend or federal
+    contract rule (`contract.weekend_holiday_rollover`, FAR/BAR: the next business day) moves a weekend or federal
     holiday, as the timeline and the buyer's deposit-risk date do; without the rule the date stays."""
     if dates.is_business_day(d) or costs.get("contract.weekend_holiday_rollover") != "next_business_day":
         return d, None
@@ -126,10 +126,10 @@ def state_of(listing):
     return st if st in profiles.STATES else None
 
 
-def frbar_form(o):
-    """True when an offer in the file names an FR/BAR form (contract_forms decides which names are FR/BAR)."""
+def farbar_form(o):
+    """True when an offer in the file names a FAR/BAR form (contract_forms decides which names are FAR/BAR)."""
     try:
-        return cf.normalize(o.get("contract_form")) in cf.FRBAR
+        return cf.normalize(o.get("contract_form")) in cf.FARBAR
     except cf.FormError:
         return False  # prepare_offer reports it
 
@@ -148,7 +148,7 @@ class Costs:
         self.market = market
         self.over = {}
         self.box = {}  # an offer's contract terms over the market's values, keeping the market's source (offer_costs)
-        self.state_assumed = False  # OFR-253: no state given, so Florida was taken from the FR/BAR contract
+        self.state_assumed = False  # OFR-253: no state given, so Florida was taken from the FAR/BAR contract
         for key, value in (deal_costs or {}).items():
             path = COST_KEYS.get(key)
             if path is None or value is None:
@@ -329,7 +329,7 @@ def prepare_listing(data, A, costs):
     for w in finance.seller_net(lp, costs)["warnings"]:  # CORE-9: a title quote below the published rate
         A.add("listing", "owner_title.quote", "check", w, "med")
     L["loan_limits"] = profiles.loan_limits()
-    L["frbar_market"] = cf.frbar_market(costs.get("contract.forms"))
+    L["farbar_market"] = cf.farbar_market(costs.get("contract.forms"))
     L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
     # OFR-311: only a seller who has these reports can share them; never offered when the listing file doesn't say so
     L["insurance_reports"] = L.get("insurance_reports") is True
@@ -639,9 +639,9 @@ def prepare_offer(o, L, S, A):
         raise OfferError(f"Offer {k}: {e}") from e
     if form is None:
         form = A.add(sc, "contract_form", cf.AS_IS,
-                     "Contract form not given: assumed FR/BAR AS IS. The Standard form has no inspection walk-away and makes "
+                     "Contract form not given: assumed FAR/BAR AS IS. The Standard form has no inspection walk-away and makes "
                      "the seller pay repairs up to its repair limits, so confirm which form was used", "high") \
-            if L["frbar_market"] else cf.OTHER
+            if L["farbar_market"] else cf.OTHER
     if form == cf.OTHER and raw_form and not o.get("contract_name"):  # OFR-113: keep the form's own name for the label
         o["contract_name"] = str(raw_form)
     o["contract_form"] = form
@@ -659,7 +659,7 @@ def prepare_offer(o, L, S, A):
                                          "Whether this contract's inspection period lets the buyer cancel for any reason "
                                          "wasn't given: assumed it does. Confirm it in the contract", "high")
     o["inspection_assumed"] = o.get("inspection_days") in (None, "")
-    blank = cf.inspection_days_default(form)  # ENG-7: the form's own blank (15 on FR/BAR), else the national 10 days
+    blank = cf.inspection_days_default(form)  # ENG-7: the form's own blank (15 on FAR/BAR), else the national 10 days
     o["inspection_days"] = given(o, "inspection_days", blank or NATIONAL_NORMS["inspection_days"], A, sc,
                                  f"Inspection period not provided: {blank} days, the form's default when blank" if blank else
                                  f"Inspection period not provided: assumed {NATIONAL_NORMS['inspection_days']} days", "med")
@@ -667,8 +667,8 @@ def prepare_offer(o, L, S, A):
         o, "loan_approval_days", 30, A, sc, "Loan approval period not provided: assumed 30 days", "low")
     ac = o.get("appraisal_contingency")
     fin = o["financing"]
-    o["aga_named"] = cf.aga_named(o) and form in cf.FRBAR  # read before appraisal_form below replaces the file's value
-    o["appraisal_form"] = aform = cf.appraisal_form(form, o, fin)  # FR/BAR: AGA-1 (where it fits the loan), F, E or none
+    o["aga_named"] = cf.aga_named(o) and form in cf.FARBAR  # read before appraisal_form below replaces the file's value
+    o["appraisal_form"] = aform = cf.appraisal_form(form, o, fin)  # FAR/BAR: AGA-1 (where it fits the loan), F, E or none
     o["appraisal_in_loan"] = o["financed"] and cf.appraisal_in_loan_approval(form, o, fin)
     aga = aform == "aga"  # AGA-1 on FHA, VA or USDA is flagged, not modeled (ENG-10)
     o["_appraisal_basis"] = None  # how the window is counted, so a counter that moves closing recounts it (ENG-14)
@@ -679,7 +679,7 @@ def prepare_offer(o, L, S, A):
               "default (appraisal 10 days before closing, then 3 days for the buyer's notice)", "low")
         ac, o["_appraisal_basis"] = True, "F"
     elif ac is None and o["appraisal_in_loan"]:
-        ac = o["loan_approval_days"] or True  # FR/BAR Para. 8(b)(2): the lender's appraisal is part of Loan Approval
+        ac = o["loan_approval_days"] or True  # FAR/BAR Para. 8(b)(2): the lender's appraisal is part of Loan Approval
     elif ac is None and o["financed"]:
         A.add(sc, "appraisal_contingency", "21 days", "Appraisal terms not provided: assumed a 21-day contingency (conservative)", "med")
         ac = 21
@@ -722,10 +722,10 @@ def prepare_offer(o, L, S, A):
         o["close_terms"] = (f"{days} days after acceptance, about {o['close']:%a %b %-d}" if given_days else
                             f"Not given (assumed about {o['close']:%a %b %-d})")
     o["close_days"] = (o["close"] - eff).days
-    # FR/BAR Para. 9(c): the party who designates the Closing Agent pays the owner's policy, so the contract's box sets
+    # FAR/BAR Para. 9(c): the party who designates the Closing Agent pays the owner's policy, so the contract's box sets
     # who pays it on this offer; a title_payer the agent put in the listing's costs still wins
     by_contract = cf.owner_title_payer(form, o)
-    if by_contract is None and form in cf.FRBAR and L["title_customary_payer"] in ("seller", "buyer") \
+    if by_contract is None and form in cf.FARBAR and L["title_customary_payer"] in ("seller", "buyer") \
             and not L["title_payer_deal"]:  # ENG-9: the box decides who pays the owner's policy
         A.add(sc, "title_by", L["title_customary_payer"], f"Para. 9(c) box not given: the owner's title policy is "
               f"charged to the {L['title_customary_payer']} by local custom. Check which box is marked; the party who "
@@ -742,10 +742,10 @@ def prepare_offer(o, L, S, A):
 
 
 def implied_riders(o):
-    """OFR-291: CR-7 letters the offer's own fields already imply: on FR/BAR a rent-back is Rider U. Recording the letter
+    """OFR-291: CR-7 letters the offer's own fields already imply: on FAR/BAR a rent-back is Rider U. Recording the letter
     or not changes nothing: the rent-back agreement's window counts either way, and a list holding only it doesn't show
     the whole list was read. (FHA without Rider E, or a sale contingency without Rider V, is an issue, not implied.)"""
-    return ["U"] if o["contract_form"] in cf.FRBAR and o.get("rent_back_days") else []
+    return ["U"] if o["contract_form"] in cf.FARBAR and o.get("rent_back_days") else []
 
 
 def riders_known(o):
@@ -779,7 +779,7 @@ def set_windows(o):
 
 
 def rider_money(o, A, sc):
-    """Net-sheet lines and certainty days from CR-7 riders (shared/references/frbar-riders.md), from the offer's fields.
+    """Net-sheet lines and certainty days from CR-7 riders (shared/references/farbar-riders.md), from the offer's fields.
 
     U: the rent-back rent the seller pays the buyer. C: the seller-financed note is paid over time, not cash at closing.
     EE and the CDD addendum: an assessment balance the seller agrees to pay off. Z and Y: an attorney-approval date is a
@@ -838,13 +838,13 @@ def repair_reserve(o, L):
 
     AS IS (and Standard + Rider K, which deletes the repair limits): the market's typical post-inspection credit.
     Standard (alone or with Rider L): the General Repair Limit the seller owes. Another contract: the market's figure
-    only when the market's rules aren't FR/BAR, or when the agent gave this listing's own figure (OFR-113); a built-in
+    only when the market's rules aren't FAR/BAR, or when the agent gave this listing's own figure (OFR-113); a built-in
     Florida AS IS figure never applies to another form."""
     if not o["inspection_days"]:
         return 0, None
     if o["repairs_owed"]:  # the contract's cap, never rounded above it
         return o["repair_limits"]["general"], "Repairs up to the General Repair Limit (Standard)"
-    if o["contract_form"] in cf.FRBAR or not L["frbar_market"] or L.get("repair_reserve_deal"):
+    if o["contract_form"] in cf.FARBAR or not L["farbar_market"] or L.get("repair_reserve_deal"):
         if L["repair_reserve_pct"]:  # OFR-254: the market's share of price to the nearest $500 (0.7% of $382,000 = $2,500)
             return rnd(L["repair_reserve_pct"] * o["price"], REPAIR_CREDIT_STEP), "Post-Inspection Repair Credit (Est.)"
     return 0, None
@@ -1344,7 +1344,7 @@ def _term_text(key, v):
 
 def chain_gaps(o):
     """Terms the seller's last counter asked for that the live offer is weaker on: (name, seller's, offer's, key).
-    Under a counter form that carries only what it restates (FR/BAR CO-3), a buyer's counter that doesn't restate them
+    Under a counter form that carries only what it restates (FAR/BAR CO-3), a buyer's counter that doesn't restate them
     leaves the original offer's terms, which the live offer's fields record."""
     last = last_seller_counter(o)
     if not last:
@@ -1589,7 +1589,7 @@ def propose_counter(o, L, S):
         rows.append(("Closing Date", o.get("close_terms") or f"{o['close']:%a %b %-d}", f"{new_close:%a %b %-d}",
                      "Meets the seller's deadline" if S["deadline"] and o["close"] > S["deadline"] else
                      RESTATE if last.get("closing_date") and new_close == _d(last["closing_date"]) else "Weekend closings may not fund"))
-    # rule 12 only where choosing title and paying for it are separate: under FR/BAR Para. 9(c) the buyer who
+    # rule 12 only where choosing title and paying for it are separate: under FAR/BAR Para. 9(c) the buyer who
     # designates the Closing Agent also pays the owner's policy, so there's nothing to counter
     if L["title_customary_payer"] == "seller" and o["title_by"] != "seller" and o.get("title_payer") == "seller":
         rows.append(("Escrow / Title Agent", "Buyer's title co.", "Seller's title co.", "Seller pays the owner's policy, so the seller picks title"))
@@ -1638,7 +1638,7 @@ def acceptance_row(o, L):
 # --- per-offer and listing-level analysis ------------------------------------
 
 def offer_costs(o, costs):
-    """The market's costs with this offer's Para. 9(c) box (FR/BAR) where the contract differs from local custom: who
+    """The market's costs with this offer's Para. 9(c) box (FAR/BAR) where the contract differs from local custom: who
     pays the owner's policy, and which title searches the seller pays (OFR-102). A title quote in the listing's costs
     always wins over both."""
     over = {}
@@ -1778,25 +1778,25 @@ def analyze(data, market=None, cma=None):
     if cma:
         data = apply_cma(data, cma)
     listing = data.get("listing") or {}
-    # OFR-253: with no state, an FR/BAR contract means Florida (its costs, labeled Assumed); anything else gets national
+    # OFR-253: with no state, a FAR/BAR contract means Florida (its costs, labeled Assumed); anything else gets national
     # estimates. The assumption says which, so its text and the net sheet always agree.
     no_state = market is None and not state_of(listing)
-    frbar = no_state and any(frbar_form(o) for o in data.get("offers") or [])
-    if frbar:
+    farbar = no_state and any(farbar_form(o) for o in data.get("offers") or [])
+    if farbar:
         market = profiles.load_market(state="FL", county=listing.get("county"))
     costs = load_costs(listing, market)
-    costs.state_assumed = frbar
+    costs.state_assumed = farbar
     A = Assume()
     if data.get("_cma_side_note"):
         A.add("listing", "cma_side", "other side", data["_cma_side_note"], "high")
     if data.get("_cma_address_note"):  # CMA-102
         A.add("listing", "cma_address", "another property", data["_cma_address_note"], "high")
-    if frbar:
+    if farbar:
         A.add("listing", "state", "FL", "Property's state not given: the offer is on a Florida Realtors/Florida Bar "
               "contract, so Florida costs are used (Assumed). Confirm the property is in Florida", "high")
     elif no_state:
         A.add("listing", "state", None, "Property's state not given: national cost estimates are used (no state's local "
-              "costs, and no Florida rules without an FR/BAR contract). Give the state for local costs", "high")
+              "costs, and no Florida rules without a FAR/BAR contract). Give the state for local costs", "high")
     L, S = prepare_listing(data, A, costs)
     offers = [prepare_offer(o, L, S, A) for o in data.get("offers") or []]
     if not offers:

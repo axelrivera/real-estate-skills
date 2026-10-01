@@ -1,4 +1,4 @@
-"""Build a mock FR/BAR contract package (one PDF) from a scenario spec. Local dev only, never shipped.
+"""Build a mock FAR/BAR contract package (one PDF) from a scenario spec. Local dev only, never shipped.
 
     .venv/bin/python dev/mock_contracts/build.py SPEC.json                  # out/mock-contracts/<id>/<Street>-Contract.pdf
     .venv/bin/python dev/mock_contracts/build.py SPEC.json --answer-key     # + key/<Street>-Answer-Key.json (deal-file schema)
@@ -344,7 +344,7 @@ def build(spec, out_dir=None, answer_key=False, scan=False, extra_defects=()):
 
 
 def parser():
-    ap = argparse.ArgumentParser(description="Build a mock FR/BAR contract package (one PDF) from a scenario spec.")
+    ap = argparse.ArgumentParser(description="Build a mock FAR/BAR contract package (one PDF) from a scenario spec.")
     ap.add_argument("spec", nargs="?", help="scenario spec JSON (docs/mock-contracts.md#scenario-spec)")
     ap.add_argument("--out", help="output folder (default out/mock-contracts/<id>/: the spec's name, or street-stage-hash)")
     ap.add_argument("--answer-key", action="store_true", help="also write key/<Street>-Answer-Key.json: the ground truth in "

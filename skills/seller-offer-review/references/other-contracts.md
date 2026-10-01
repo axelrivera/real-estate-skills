@@ -1,6 +1,6 @@
 # Other Contracts (Best Effort)
 
-Read this for any purchase contract that isn't the Florida Realtors/Florida Bar AS IS or Standard form: another state's form, a builder or bank contract, an attorney-drafted agreement, or a Florida form other than FR/BAR (the Florida Realtors CRSP, Vacant Land). Only the FR/BAR forms are fully supported, because only they have been checked line by line. Every other contract is read on a best-effort basis: you read it, the scripts do the math on what you recorded, and the agent confirms your reading.
+Read this for any purchase contract that isn't the Florida Realtors/Florida Bar AS IS or Standard form: another state's form, a builder or bank contract, an attorney-drafted agreement, or a Florida form other than FAR/BAR (the Florida Realtors CRSP, Vacant Land). Only the FAR/BAR forms are fully supported, because only they have been checked line by line. Every other contract is read on a best-effort basis: you read it, the scripts do the math on what you recorded, and the agent confirms your reading.
 
 ## Contents
 
@@ -13,7 +13,7 @@ Read this for any purchase contract that isn't the Florida Realtors/Florida Bar 
 
 ## The Rules
 
-- **No borrowed defaults.** A blank in another contract never takes an FR/BAR default (15-day inspection, 1.5% repair limits, 3-day deposit) or a default you remember from some other form. Use only a default the contract itself prints ("if left blank, then..."). Otherwise ask the agent, or record the reading as a high-impact assumption.
+- **No borrowed defaults.** A blank in another contract never takes a FAR/BAR default (15-day inspection, 1.5% repair limits, 3-day deposit) or a default you remember from some other form. Use only a default the contract itself prints ("if left blank, then..."). Otherwise ask the agent, or record the reading as a high-impact assumption.
 - **No built-in state rules.** The skills carry no rules for any other state's forms. Time rules, holidays, deadlines and cancel rights come only from the contract in front of you and from the agent.
 - **Cite the contract.** Every term you record names the paragraph or section it came from, in the contract's own numbering.
 - **Ask, don't guess.** When the contract is silent or unclear on something that moves a date or money (whether an inspection period lets the buyer cancel for any reason, whether a period counts business days), ask the agent in one line, or record your reading as a high-impact assumption and say so.
@@ -21,7 +21,7 @@ Read this for any purchase contract that isn't the Florida Realtors/Florida Bar 
 
 ## 1. Identify the Form
 
-Record the form's name and version exactly as printed (title, form number, revision date in the footer) in the data file's form name field. If there's no printed form name (an attorney-drafted contract), say so and use a short description ("Attorney-Drafted Purchase Agreement"). If a Florida contract turns out to be FR/BAR after all (the footer reads FloridaRealtors/FloridaBar), switch to the FR/BAR path.
+Record the form's name and version exactly as printed (title, form number, revision date in the footer) in the data file's form name field. If there's no printed form name (an attorney-drafted contract), say so and use a short description ("Attorney-Drafted Purchase Agreement"). If a Florida contract turns out to be FAR/BAR after all (the footer reads FloridaRealtors/FloridaBar), switch to the FAR/BAR path.
 
 ## 2. Time Rules
 
@@ -60,7 +60,7 @@ Handwritten or initialed changes override typed text; flag anything illegible in
 ## 4. Recording It
 
 - **Contract timeline:** set `"form_family": "other"`, `"form"` to the form name, and one `deadlines` entry per date the contract creates, using the contract's own words for `label` (Title Case), `action` and `if_missed`, and its paragraph numbers for `source`. `party` is whoever the contract says acts; when it names someone else (the escrow agent provides the title commitment) and puts the duty on neither side, use `Both` and name them in `action`. When the contract states no consequence for missing a date, `if_missed` says so ("The agreement states no specific remedy"); never write one it doesn't state. Put the time rules in `rules`. Mark `contingency: true` only on buyer protections that end on that date. A period that runs from someone's receipt gets `receipt_date` and `what`. Formats are in `deal-file.md`.
-- **Seller offer review:** set `contract_form` to the form's name (never `standard`, which means the FR/BAR Standard form and its repair limits) and `inspection_days` to the walk-away window. Set `inspection_walkaway` from the contract: `true` when the buyer may cancel for any reason in it, `false` for a repair or objection process only. If you can't tell, leave it out: the engine assumes a walk-away (the cautious reading for the seller) and flags it as high impact.
+- **Seller offer review:** set `contract_form` to the form's name (never `standard`, which means the FAR/BAR Standard form and its repair limits) and `inspection_days` to the walk-away window. Set `inspection_walkaway` from the contract: `true` when the buyer may cancel for any reason in it, `false` for a repair or objection process only. If you can't tell, leave it out: the engine assumes a walk-away (the cautious reading for the seller) and flags it as high impact.
 - **Buyer offer strategy:** set `worksheet.contract_name` to the form's name. The worksheet lists entries by name with no paragraph numbers and generic addendum names; walk the agent through where each goes in their form, and ask before adding anything their form set doesn't have. The inspection or option period's length is a generic default, not a local rule: the script says so in `reply_lines` (`inspection_period`) until the agent sets it in `overrides`. The Deposit at Risk After date is counted from the offer's own periods; the agent confirms when their contract makes the deposit nonrefundable.
 - **Costs** aren't contract rules: they follow `local-costs.md` (a looked-up transfer tax, else labeled national estimates).
 
@@ -68,4 +68,4 @@ Handwritten or initialed changes override typed text; flag anything illegible in
 
 - **Quick question** about one date: answer, and state in the same reply the rule you used and the reading to confirm ("7 days after Nov 20, ending 5:00 PM, not extended; confirm your form says the same").
 - **Full timeline or review:** before running, list the key readings back to the agent in plain words ("Due diligence: 7 days after the Effective Date, ends Nov 27 at 5 PM; buyer may cancel for any reason") and ask them to confirm. Anything you had to interpret goes in the notes.
-- **Chat disclaimer.** The scripts return `support: "best_effort"` and the line to use in `chat_notes` (only there: the timeline keeps it out of `agent_notes`, which can reach a markdown timeline). Say it once, in chat, in your own short words: only Florida FR/BAR contracts are fully supported, this contract was read on a best-effort basis, and the agent should check every date and term against the signed contract (on the buyer side, an offer still being written: against the form before the offer goes out), with a real estate attorney licensed in the property's state for anything that matters. **Never put it in a PDF, calendar file, worksheet or markdown report:** those go to clients and into transaction files.
+- **Chat disclaimer.** The scripts return `support: "best_effort"` and the line to use in `chat_notes` (only there: the timeline keeps it out of `agent_notes`, which can reach a markdown timeline). Say it once, in chat, in your own short words: only Florida FAR/BAR contracts are fully supported, this contract was read on a best-effort basis, and the agent should check every date and term against the signed contract (on the buyer side, an offer still being written: against the form before the offer goes out), with a real estate attorney licensed in the property's state for anything that matters. **Never put it in a PDF, calendar file, worksheet or markdown report:** those go to clients and into transaction files.

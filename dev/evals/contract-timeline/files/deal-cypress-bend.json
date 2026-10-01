@@ -4,7 +4,7 @@
   "county": "Seminole",
   "client": "Sample Buyer",
   "contract": {
-    "form_family": "frbar",
+    "form_family": "farbar",
     "contract_form": "as_is",
     "property": "1532 Cypress Bend Dr, Casselberry, FL 32707",
     "buyer": "Sample Buyer",

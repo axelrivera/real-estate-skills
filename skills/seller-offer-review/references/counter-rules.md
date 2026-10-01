@@ -13,7 +13,7 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 9. **Pre-qual or no approval** → full pre-approval within 3 days. **Counter price above the pre-approval letter's cap** (`approval_max_price`) → an updated letter at the counter price within 3 days.
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
-12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
+12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FAR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
 13. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM; when that is the offer's own deadline exactly, the next weekday, so the row never reads as no change. Change it to what the seller wants.
 
 ## Negotiation History
@@ -24,7 +24,7 @@ When the seller has already countered (`prior_counters`), the draft builds on th
 - **Terms the seller already asked for** (inspection and loan approval days, deposit, concessions, gap coverage, closing date) are restated as the seller last countered them when the offer is weaker, with the why "Restates the seller's last counter". The draft doesn't go back to a harder ask than the seller's last counter: that retracts a concession and stalls the deal. Terms the offer already meets get no row.
 - If the agent's own counter goes above the seller's last price or asks for less than the seller's last terms, say why in its `rows`.
 
-A buyer's counter that drops a term the seller countered (under FR/BAR CO-3 only what a counter restates carries) is raised as a High issue (`counter_chain`), and the draft restates the term.
+A buyer's counter that drops a term the seller countered (under FAR/BAR CO-3 only what a counter restates carries) is raised as a High issue (`counter_chain`), and the draft restates the term.
 
 A term the buyer's counter changed that no seller counter addressed (`buyer_changes`, a later closing date) gets its own row: "accept it, or restate" the earlier term, so the seller decides it instead of accepting it silently; the net assumes it's accepted. When the loan amount and balance to close still add up to an earlier price (`loan_amount`), the draft has a row restating them at the counter price.
 

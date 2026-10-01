@@ -19,7 +19,7 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 }
 ```
 
-`time_zone` (optional: `CT`, `ET`...; Florida's western Panhandle counties are Central time and print "CT" after each time; Gulf County is split, so set it there). `state` (required: ask for it, never assume Florida) and `county` pick the market's time rules (built in for Florida). Those rules cover only the market's own forms (in Florida, FR/BAR AS IS and Standard); any other contract, such as a builder's form, takes its time rules from its own definitions in `rules`. `rules` also overrides the market's rules for this contract (see below).
+`time_zone` (optional: `CT`, `ET`...; Florida's western Panhandle counties are Central time and print "CT" after each time; Gulf County is split, so set it there). `state` (required: ask for it, never assume Florida) and `county` pick the market's time rules (built in for Florida). Those rules cover only the market's own forms (in Florida, FAR/BAR AS IS and Standard); any other contract, such as a builder's form, takes its time rules from its own definitions in `rules`. `rules` also overrides the market's rules for this contract (see below).
 
 `completed` (optional): deadlines already met, by deadline key (the keys in the script output), with the date each was done. An escrow receipt in the package is the deposit done. Done is for something performed (a deposit, a document signed and delivered), never for the end of a contingency or cancel window (a row with `contingency`): that stays open until its date, even when the document that satisfies it is in the package (a signed compensation agreement is `compensation_agreement` done, while Compensation Contingency Ends stays open), and the script refuses a done date before it. The one exception is a window ended early in writing (a signed waiver, written loan approval delivered to the seller): list its key in `ended_in_writing` (optional list) and its `completed` date is accepted. A done row shows "Done Sep 26" on the report and in the output (`done`, `done_display`), never counts as the first deadline, and gets no calendar event. `report_date` (optional, `YYYY-MM-DD`): the report's Prepared date, the system date if left out. When the agent states today's date ("Today is September 26"), set it to that date. A deadline before it that isn't in `completed` shows "Past, Confirm" (`past`, `past_display`), is never the first deadline and gets no calendar event; the script lists it in an agent note.
 
@@ -31,16 +31,16 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 
 | Field | Notes |
 |---|---|
-| `form_family` | `frbar` for FR/BAR AS IS or Standard; anything else is treated as another contract |
+| `form_family` | `farbar` for FAR/BAR AS IS or Standard; anything else is treated as another contract |
 | `form` | Form name as printed, for other contracts ("Sample Residential Purchase Agreement") |
-| `form_revision`, `form_revision_source` | FR/BAR: the revision as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). `form_revision_source`: `"footer"` when you read it from the form's footer; leave it out when it came from anywhere else (a header, a summary, the agent), and record the revision as given, never made into a footer string. A revision other than the verified one adds a chat note, quoting "the footer reads" only for `"footer"` |
+| `form_revision`, `form_revision_source` | FAR/BAR: the revision as printed ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26"). `form_revision_source`: `"footer"` when you read it from the form's footer; leave it out when it came from anywhere else (a header, a summary, the agent), and record the revision as given, never made into a footer string. A revision other than the verified one adds a chat note, quoting "the footer reads" only for `"footer"` |
 | `effective_date` | **Required.** `YYYY-MM-DD`. The date the last party signed or initialed and delivered the final counter or acceptance |
 | `effective_date_source` | The evidence: the last signature or initials, and who made them ("Second seller's signature on the acceptance, MM/DD h:mm PM"; with two or more signers, never the first one's time) |
 | `blanks` | Optional list of contract fields seen blank on the signed copy (`["title_evidence_days_before"]`). A form default then reads "blank" in its agent note; a field left out of the deal file but not listed here reads "not given" (a partial copy or text extract may simply not show it) |
-| `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so. With a short sale rider (FR/BAR Rider G) the closing counts from the approval instead (`frbar.md`) |
-| `closing_source`, `possession_source` | Optional: the paragraph cited for the closing and possession rows, when it isn't Para. 4 / Para. 6 (FR/BAR) or "Contract" |
+| `closing_date`, `closing_time` | Date (needed for the report and for dates counted back from closing; a quick question can go without); time `HH:MM`. Leave the time out when the contract doesn't state one: 10:00 AM is used and an agent note says so. With a short sale rider (FAR/BAR Rider G) the closing counts from the approval instead (`farbar.md`) |
+| `closing_source`, `possession_source` | Optional: the paragraph cited for the closing and possession rows, when it isn't Para. 4 / Para. 6 (FAR/BAR) or "Contract" |
 | `property`, `buyer`, `seller`, `price`, `escrow_agent` | For the report. `price` is a number (412000) |
-| `deposit_amount`, `additional_deposit_amount`, `loan_amount`, `other_amount`, `balance_to_close` | Optional, numbers: Para. 2 (FR/BAR) or the contract's price breakdown, from the last counteroffer or amendment. Each deposit can be given as the number or as the words written (`deposit_amount_str` / `additional_deposit_amount_str`, "$11,000"), either one: the deposit rows and the money check use whichever is there (with both, the rows quote the words and the money check uses the number). With every part known, an agent note when they don't add up to `price`; without the balance, when the known parts pass it |
+| `deposit_amount`, `additional_deposit_amount`, `loan_amount`, `other_amount`, `balance_to_close` | Optional, numbers: Para. 2 (FAR/BAR) or the contract's price breakdown, from the last counteroffer or amendment. Each deposit can be given as the number or as the words written (`deposit_amount_str` / `additional_deposit_amount_str`, "$11,000"), either one: the deposit rows and the money check use whichever is there (with both, the rows quote the words and the money check uses the number). With every part known, an agent note when they don't add up to `price`; without the balance, when the known parts pass it |
 | `counter_chain` | Optional list, one line per counteroffer in order, naming the terms each set ("CO #3: price $432,500, closing Nov 20, loan approval 25 days"). A working record for re-runs; nothing prints it |
 | `preapproval_amount`, `preapproval_price` | Optional, numbers from the pre-approval letter: the loan amount it approves, and the purchase price it covers when it states one. An agent note when either is below the deal's `loan_amount` or `price` |
 | `financing` | `cash`, `conventional`, `fha`, `va`, `usda` |
@@ -48,13 +48,13 @@ The JSON record of an executed contract. `scripts/timeline.py` computes the date
 | `possession_date`, `possession_time`, `possession_note` | Only if possession differs from closing |
 | `date_overrides` | `{deadline key: "YYYY-MM-DD HH:MM"}` for deadlines the contract states as a specific date. With a time it's kept as given; a date alone (`"YYYY-MM-DD"`) ends at the contract's end of day and extends past a weekend or holiday like any period. A `closing` override also moves every date counted back from closing |
 
-FR/BAR contracts also use the fields in `frbar.md` (deposit days, inspection days, riders, rider dates).
+FAR/BAR contracts also use the fields in `farbar.md` (deposit days, inspection days, riders, rider dates).
 
 **Terms that set no date or check** have no field: Rider H's premium cap, Rider F's minimum value, Rider E's repair cap, Rider U's rent and cost split, Rider A's Para. 9 boxes, the SIRS receipt when it came with the condo documents. Read them from the contract text; mention one in `agent_notes` only with a question to ask (a blank, a figure that looks wrong). A field is added only where a date or a check uses it.
 
 ## deadlines
 
-Required for contracts that aren't FR/BAR; optional extras for FR/BAR. One entry per deadline:
+Required for contracts that aren't FAR/BAR; optional extras for FAR/BAR. One entry per deadline:
 
 ```json
 {"key": "due_diligence", "label": "Due Diligence Period Ends", "short": "Due Diligence",
@@ -105,7 +105,7 @@ In signing order. `changes` for contract fields, `date_overrides` for deadlines 
  "date_overrides": {"appraisal": "2026-10-23 17:00"}}
 ```
 
-HOA or condo documents received, short sale approval received (`short_sale_approval_received`), a back-up contract delivered, or any other event a rider runs from: set the matching field in `contract` (FR/BAR, listed in `frbar.md`), or `received` on the `event` deadline, and re-run. A receipt signed on its own form (a condo document receipt, RCD-8) that a later addendum restates goes in `contract` with the receipt's date, and the addendum is listed with `"changes": {}` (plus any real change it makes): in the addendum's `changes`, the row would read as dated by the addendum (`newly_dated`), not from the receipt. When the addendum gives a different receipt date, use the later signed document and flag the difference. The output's `moved` lists the rows whose date changed (with `was`): the closing first when it moved, then the rest in date order. `newly_dated` lists the rows the amendment dated for the first time.
+HOA or condo documents received, short sale approval received (`short_sale_approval_received`), a back-up contract delivered, or any other event a rider runs from: set the matching field in `contract` (FAR/BAR, listed in `farbar.md`), or `received` on the `event` deadline, and re-run. A receipt signed on its own form (a condo document receipt, RCD-8) that a later addendum restates goes in `contract` with the receipt's date, and the addendum is listed with `"changes": {}` (plus any real change it makes): in the addendum's `changes`, the row would read as dated by the addendum (`newly_dated`), not from the receipt. When the addendum gives a different receipt date, use the later signed document and flag the difference. The output's `moved` lists the rows whose date changed (with `was`): the closing first when it moved, then the rest in date order. `newly_dated` lists the rows the amendment dated for the first time.
 
 ## Script Notes
 
@@ -119,4 +119,4 @@ HOA or condo documents received, short sale approval received (`short_sale_appro
 - **`critical`** on a row: missing it can cost a contract right. A lender's target (`lender`: insurance bound, Closing Disclosure) is an estimate, never critical, so it carries no star on the report.
 - **`first_deadline`**: the earliest open contract deadline marked critical from the report date, else the earliest open one. Never a lender target, a Rider GG row (`broker`), a done or a past row. The loan application isn't critical (missing it by a day costs no right by itself), so an earlier one doesn't lead.
 - **`warnings`** (for you, never passed on): a `contract` field or amendment change the script doesn't read, usually a misspelled name. Fix it and re-run.
-- **`chat_notes`** (chat only, never in `agent_notes` or any file): the best-effort line for a contract that isn't FR/BAR, and a note when an FR/BAR form isn't the verified revision.
+- **`chat_notes`** (chat only, never in `agent_notes` or any file): the best-effort line for a contract that isn't FAR/BAR, and a note when a FAR/BAR form isn't the verified revision.

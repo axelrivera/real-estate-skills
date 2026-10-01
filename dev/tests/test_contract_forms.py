@@ -1,4 +1,4 @@
-"""Contract form routing: FR/BAR AS IS and Standard rules never mix (shared/contract_forms.py and its users)."""
+"""Contract form routing: FAR/BAR AS IS and Standard rules never mix (shared/contract_forms.py and its users)."""
 import copy
 import json
 import os
@@ -42,6 +42,15 @@ class Module(unittest.TestCase):
                         ("CRSP-17", "other"), ("Residential Contract for Sale and Purchase", "standard"),
                         ("Vacant Land Contract", "other"), ("", None)):
             self.assertEqual(cf.normalize(v), want, v)
+
+    def test_legacy_name_still_reads(self):
+        for v, want in (("FAR/BAR AS IS", "as_is"), ("farbar standard", "standard"), ("FAR/BAR Standard Contract", "standard"),
+                        ("FR/BAR AS IS", "as_is"), ("FRBAR Standard", "standard"), ("FR/BAR Standard Contract", "standard")):  # legacy
+            self.assertEqual(cf.normalize(v), want, v)
+        with self.assertRaises(cf.FormError):
+            cf.normalize("FR/BAR contract")  # legacy name, form not named
+        self.assertTrue(cf.farbar_market(["FAR/BAR AS IS"]) and cf.farbar_market(["FR/BAR AS IS"]))  # legacy market file
+        self.assertFalse(cf.farbar_market(["CRSP-17"]))
 
     def test_walkaway(self):
         self.assertTrue(cf.inspection_walkaway("as_is"))
@@ -108,8 +117,8 @@ class Module(unittest.TestCase):
         with self.assertRaises(cf.FormError):
             cf.repair_limits(400000, {"repair_limits": {"general": "lots"}})
 
-    def test_term_words(self):  # OFR-234: FR/BAR's names on FR/BAR only; generic words on anything else
-        for form in cf.FRBAR:
+    def test_term_words(self):  # OFR-234: FAR/BAR's names on FAR/BAR only; generic words on anything else
+        for form in cf.FARBAR:
             self.assertEqual(cf.term_words(form)["inspection_label"], "Inspection Period")
             self.assertIsNone(cf.term_words(form)["appraisal_addendum"])
         for form in (cf.OTHER, None):
@@ -334,11 +343,17 @@ class BuyerStrategy(unittest.TestCase):
 
 
 class Timeline(unittest.TestCase):
-    def test_frbar_needs_its_form(self):
+    def test_farbar_needs_its_form(self):
         deal = fixture("contract-timeline", "buyer-fha.json")
         del deal["contract"]["contract_form"]
         with self.assertRaisesRegex(timeline.DealError, "as_is or standard"):
             timeline.analyze(deal)
+
+    def test_legacy_form_family_still_reads(self):
+        deal = fixture("contract-timeline", "buyer-fha.json")
+        want = timeline.analyze(copy.deepcopy(deal))["rows"]
+        deal["contract"]["form_family"] = "frbar"  # legacy deal file from 0.12
+        self.assertEqual(timeline.analyze(deal)["rows"], want)
 
     def test_rows_follow_the_form(self):
         deal = fixture("contract-timeline", "buyer-fha.json")

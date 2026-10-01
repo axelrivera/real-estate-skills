@@ -1,5 +1,5 @@
 """The mock contract generator (dev/mock_contracts, docs/mock-contracts.md). Local only: skipped without PyMuPDF
-(dev/requirements-tools.txt) or the FR/BAR PDFs in the git-ignored sources/Contracts/FARBAR/."""
+(dev/requirements-tools.txt) or the FAR/BAR PDFs in the git-ignored sources/Contracts/FARBAR/."""
 import copy
 import json
 import os
@@ -166,7 +166,7 @@ class KeyMatchesPdf(unittest.TestCase):
     def test_samples_cover_every_printed_key(self):
         """Every map but the contracts has samples, and they set exactly the keys it prints: a map expression naming a
         key no spec could set fails here."""
-        maps = {p[:-5] for p in os.listdir(fields.FIELDS_DIR)} - {"FRBAR-ASIS", "FRBAR-STANDARD"}
+        maps = {p[:-5] for p in os.listdir(fields.FIELDS_DIR)} - {"FARBAR-ASIS", "FARBAR-STANDARD"}
         self.assertEqual(maps, set(ROUND_TRIP))
         for family, samples in ROUND_TRIP.items():
             with self.subTest(family=family):
@@ -201,7 +201,7 @@ class KeyMatchesPdf(unittest.TestCase):
         sc.build({"name": "guard", "form": "as_is", "riders": [{"code": "N"}, {"code": "H", "fill": {"P1.7": "x"}}]})  # structural keys pass
 
     def test_rider_values_reach_both_keys(self):
-        """Printed rider values go into the deal file under frbar.md's names and the offer under listing-file.md's."""
+        """Printed rider values go into the deal file under farbar.md's names and the offer under listing-file.md's."""
         riders = [{"code": "U", "rent_back_days": 21, "rent_back_monthly": 2400}, {"code": "G", "short_sale_approval_days": 75},
                   {"code": "Z", "buyer_attorney_date": "2026-09-28"}, {"code": "C", "seller_financing": 40000}]
         deal = sc.build({"name": "keys", "form": "as_is", "riders": riders})["key"]["contract"]
@@ -486,7 +486,7 @@ class Packages(unittest.TestCase):
         self.assertIn("CR-7_K", [d["family"] for d in S["documents"]])
         with self.assertRaisesRegex(sc.ScenarioError, "never defaulted"):
             sc.build({"name": "no-form"})
-        with self.assertRaisesRegex(sc.ScenarioError, "isn't an FR/BAR contract"):
+        with self.assertRaisesRegex(sc.ScenarioError, "isn't a FAR/BAR contract"):
             sc.build({"name": "trec", "form": "TREC 20-18"})
 
     def test_defects_are_recorded_in_the_key(self):
@@ -523,7 +523,7 @@ class Packages(unittest.TestCase):
     def test_rent_back_checks_para_6b(self):
         S = sc.build({"name": "u6b", "form": "as_is", "financing": "cash", "riders": ["U"]})
         pdf, _ = build.render_document(S["documents"][0], 0, S, set())
-        _, found, m = fields.form_blanks("FRBAR-ASIS")
+        _, found, m = fields.form_blanks("FARBAR-ASIS")
         b = fields.resolve(found, m["fields"]["tenants"]["at"])[0]
         self.assertIn("X", [w[4] for w in pdf[b["page"] - 1].get_text("words", clip=pymupdf.Rect(b["rect"]))])
         self.assertNotIn("tenants", S["key"]["contract"])  # a seller's rent-back isn't a tenancy

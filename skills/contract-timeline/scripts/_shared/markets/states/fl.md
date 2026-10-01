@@ -34,7 +34,7 @@ closing_costs:
 property_tax:
   paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing (until the seller pays the bill in Nov)
   bill_month: 11                      # bills go out Nov 1; a closing from then on assumes it unpaid unless told
-  early_payment_discount: 0.04        # 4% for November payment; FR/BAR Standard K prorates allowing the maximum discount
+  early_payment_discount: 0.04        # 4% for November payment; FAR/BAR Standard K prorates allowing the maximum discount
   reassessed_on_sale: true            # capped assessments reset for the buyer
   fallback_rate: 0.018                # annual tax as share of price when no bill is available
   primary_residence_exemptions:       # Florida homestead (s. 196.031; verified 2026-09-24, CORE-17)
@@ -140,15 +140,15 @@ flood:                                # verified 2026-09-24 (docs/audits/2026-09
     statute: "s. 689.302"
     asks: "known flood damage during ownership, flood insurance claims (including NFIP), and federal flood assistance (including FEMA)"
 
-condo:                                # FR/BAR CR-7x; ss. 718.503, 720.401 (verified 2026-09-24, TL-11)
+condo:                                # FAR/BAR CR-7x; ss. 718.503, 720.401 (verified 2026-09-24, TL-11)
   rescission: "the buyer may cancel within 7 days, excluding weekends and legal holidays, after the later of signing and receiving the association documents; the right ends at closing (s. 718.503)"
   sirs_milestone: "a separate 7-business-day right to void after receiving the milestone inspection summary and the structural integrity reserve study (SIRS)"
   hoa_rescission: "without the HOA disclosure summary before signing, the buyer may cancel within 3 days after receiving it; the right ends at closing (s. 720.401)"
 
-contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked against ASIS-7x Rev. 2/26)
-  forms: [FR/BAR AS IS, FR/BAR Standard]
+contract:                             # FAR/BAR ASIS-7 / CRSP Standard F (checked against ASIS-7x Rev. 2/26)
+  forms: [FAR/BAR AS IS, FAR/BAR Standard]
   day_count: calendar                 # Day 1 is the day after the Effective Date
-  short_period_days: 0                # none: current FR/BAR forms count every period in calendar days
+  short_period_days: 0                # none: current FAR/BAR forms count every period in calendar days
   end_time: "23:59"                   # the form sets no time of day: a period runs to the end of its last day
   weekend_holiday_rollover: next_business_day
   rollover_time: "23:59"              # extends to the next business day, to the end of that day
@@ -156,7 +156,7 @@ contract:                             # FR/BAR ASIS-7 / CRSP Standard F (checked
   before_closing_time: "23:59"
   closing_rollover: true              # a Closing Date on a weekend or holiday extends to the next business day
   holidays: us_federal
-  time_zone: ET                       # TL-19: FR/BAR times are "where the Property is located"
+  time_zone: ET                       # TL-19: FAR/BAR times are "where the Property is located"
   time_zone_counties:                 # the western Panhandle is Central time; Gulf County is split (ask)
     CT: [Bay, Calhoun, Escambia, Holmes, Jackson, Okaloosa, Santa Rosa, Walton, Washington]
     ask: [Gulf]
@@ -186,7 +186,7 @@ cma:                                  # calibrated on Central Florida (Seminole 
     market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last 6 weeks or so
 
 county_overrides:
-  Miami-Dade:                          # FR/BAR 9(c)(iii) regional provision: buyer pays the owner's policy; the seller
+  Miami-Dade:                          # FAR/BAR 9(c)(iii) regional provision: buyer pays the owner's policy; the seller
     closing_costs:                    # pays the title search (up to $200 if blank), tax search and municipal lien search
       deed_transfer_tax_rate: 0.006
       deed_transfer_surtax: {rate: 0.0045, applies_unless: single_family, label: Miami-Dade Documentary Surtax}
@@ -241,7 +241,7 @@ Built-in state defaults. Skills use them only for Florida properties. For any ot
 - HOA estoppel fees are capped by statute; associations with delinquencies can charge more.
 - FIRPTA is not computed. If the seller is a foreign person, flag 15% withholding and refer to the title company or a CPA.
 - CMA adjustment defaults were calibrated on Central Florida sales. Other Florida areas should set their own in the agent's profile.
-- Contract dates follow the FR/BAR definitions. Verify against the form version on the executed contract.
+- Contract dates follow the FAR/BAR definitions. Verify against the form version on the executed contract.
 - Flood: a lender requires flood insurance in a Special Flood Hazard Area (zones A and V). Outside one, Citizens still requires it on a policy at or above the replacement cost in `flood.citizens_requirement` for its year, and on every Citizens policy from January 1, 2027, so never write that flood insurance "isn't required". The seller gives the s. 689.302 flood disclosure at or before signing.
 - Condos: the rescission and SIRS rights in `condo` are the buyer's; deliver the association documents early so the clock starts.
 - Insurance: don't quote premiums. Name the drivers (roof age, wiring and plumbing era, wind mitigation, pool, flood zone) and tell the buyer to get a quote after the 4-point and wind-mitigation inspections.

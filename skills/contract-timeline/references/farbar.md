@@ -1,6 +1,6 @@
-# FR/BAR Deal File Fields (Florida)
+# FAR/BAR Deal File Fields (Florida)
 
-For the FR/BAR AS IS and Standard contracts. Set `"form_family": "frbar"` and `"contract_form": "as_is"` or `"standard"`; the script builds the deadline list from the fields below. What each paragraph, rider and addendum means is in `frbar-contract.md`, `frbar-riders.md` and `frbar-addenda.md`; this file says where each date goes in the deal file. Record `form_revision` as printed in the footer, with `"form_revision_source": "footer"`; a revision you only have from a header, a summary or the agent is recorded as given, without the source. A revision other than the one the rules were checked against adds a chat note to confirm.
+For the FAR/BAR AS IS and Standard contracts. Set `"form_family": "farbar"` and `"contract_form": "as_is"` or `"standard"`; the script builds the deadline list from the fields below. What each paragraph, rider and addendum means is in `farbar-contract.md`, `farbar-riders.md` and `farbar-addenda.md`; this file says where each date goes in the deal file. Record `form_revision` as printed in the footer, with `"form_revision_source": "footer"`; a revision you only have from a header, a summary or the agent is recorded as given, without the source. A revision other than the one the rules were checked against adds a chat note to confirm.
 
 ## Contents
 
@@ -73,13 +73,13 @@ Two phases. **Phase 1**, from the Effective Date: the initial deposit, the selle
 - A closing date written in Para. 4 is replaced by Para. 6 (riders control); the script ignores it and adds an agent note. A closing the parties later agree in writing goes in `date_overrides.closing`.
 - The approval deadline is not a buyer contingency: after it either party may cancel, so it never reads as the end of the buyer's protections.
 
-Addenda: an Extension Addendum (EA-4) or any amendment goes in `amendments` (`changes` for fields, `date_overrides` for specific dates). An extension that adds N days to a period: add N to that period's days in `changes` (the safe reading in `frbar-addenda.md`, EA-4); when the original end had rolled past a weekend or holiday, the script adds an agent note with the later reading (the N days added to the rolled end), so don't compute it by hand. The Appraisal Gap (AGA-1), Escalation (EAC-1) and CDD (CDDA-2) addenda set no timeline row of their own beyond what `frbar-addenda.md` lists; add a `deadlines` entry for any date one of them creates.
+Addenda: an Extension Addendum (EA-4) or any amendment goes in `amendments` (`changes` for fields, `date_overrides` for specific dates). An extension that adds N days to a period: add N to that period's days in `changes` (the safe reading in `farbar-addenda.md`, EA-4); when the original end had rolled past a weekend or holiday, the script adds an agent note with the later reading (the N days added to the rolled end), so don't compute it by hand. The Appraisal Gap (AGA-1), Escalation (EAC-1) and CDD (CDDA-2) addenda set no timeline row of their own beyond what `farbar-addenda.md` lists; add a `deadlines` entry for any date one of them creates.
 
 A term the contract leaves blank takes the default; a term you can't find in the document you were given (a partial copy, a summary) is not a blank: ask for the page or note it as an assumption. Every default you use goes in `agent_notes`, not in `flags`, which print on the client's report, except the ones the script reports itself: the deposit, additional deposit, loan application, loan approval and inspection (or Rider K or L) periods, title evidence, Rider F's appraisal date, Rider H's insurance date, the Standard form's repair limits, the closing time and `title_by` (`deal-file.md`, Script Notes, lists them all). Leave those blanks out of the deal file rather than writing the default in, so the script can say it used one.
 
 ## Checks Before Running
 
-- Read `frbar-package-check.md`: riders checked vs. attached, RESERVED riders (I, K, L) on AS IS, K and L together.
+- Read `farbar-package-check.md`: riders checked vs. attached, RESERVED riders (I, K, L) on AS IS, K and L together.
 - Handwritten changes are initialed by both parties.
 - No two documents disagree on a date. If they do, use the latest executed one and flag it.
 

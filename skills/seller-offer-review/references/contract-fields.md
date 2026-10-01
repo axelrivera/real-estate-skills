@@ -1,8 +1,8 @@
 # Where Offer Fields Live in the Contract
 
-## FR/BAR Contracts (Florida)
+## FAR/BAR Contracts (Florida)
 
-For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts, fully supported. Paragraph numbers are from the verified revisions in `frbar-contract.md`; record the footer in `form_revision`. Read the whole document: riders, addenda and additional terms override the printed paragraphs (Standard R). What each rider does to the seller's net and certainty is in `frbar-riders.md`; addenda (counteroffer, escalation, appraisal gap, CDD, co-op, compensation) are in `frbar-addenda.md`.
+For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts, fully supported. Paragraph numbers are from the verified revisions in `farbar-contract.md`; record the footer in `form_revision`. Read the whole document: riders, addenda and additional terms override the printed paragraphs (Standard R). What each rider does to the seller's net and certainty is in `farbar-riders.md`; addenda (counteroffer, escalation, appraisal gap, CDD, co-op, compensation) are in `farbar-addenda.md`.
 
 | Field | Where to Look |
 |---|---|
@@ -19,7 +19,7 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 | `personal_property` | Para. 1 (items included / excluded) |
 | `seller_concessions`, `home_warranty` | Para. 9 and additional terms (Para. 20). Seller-paid closing costs are often a dollar amount or % in additional terms. None anywhere in the document: record `0` |
 | `title_by` | Para. 9(c): (i) checked → `seller` (the seller designates the Closing Agent and pays the owner's policy); (ii) → `buyer` (the buyer designates and pays it); (iii) Miami-Dade/Broward → `buyer` (the buyer pays the owner's policy; the seller's title search, up to $200 if blank, goes in `listing.costs.title_fees` with the other title charges). The engine charges the owner's policy to that party. No box checked has no default: ask |
-| `contract_form` | Read the form's title: "AS IS Residential Contract for Sale and Purchase" is `as_is` (Para. 12: the buyer may cancel for any reason); "Residential Contract for Sale and Purchase" is `standard` (no walk-away; the seller pays repairs up to the repair limits). Never guess: the two run different math. The Florida Realtors CRSP and any non-FR/BAR form are other contracts (below) |
+| `contract_form` | Read the form's title: "AS IS Residential Contract for Sale and Purchase" is `as_is` (Para. 12: the buyer may cancel for any reason); "Residential Contract for Sale and Purchase" is `standard` (no walk-away; the seller pays repairs up to the repair limits). Never guess: the two run different math. The Florida Realtors CRSP and any non-FAR/BAR form are other contracts (below) |
 | `inspection_days` | Para. 12(a) (15 days when blank); with Rider K or L on the Standard form, the rider's period |
 | `repair_limits` | Standard only, Para. 9(a): the General Repair, WDO and Permit Limits (1.5% of price each if blank). Rider K deletes them; Rider L keeps them |
 | `buyer_broker_pct` | Rider FF (credit to the buyer), Rider GG (separate compensation agreement), or additional terms. Under Rider GG take it only from the signed compensation agreement; without it the review asks for the agreement (the amount) |
@@ -40,7 +40,7 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 
 ## Other Contracts
 
-Any contract that isn't FR/BAR is read on a best-effort basis: read `other-contracts.md` for how to find each term by what it does, what to record, and the chat disclaimer. The fields are the same; only where they sit changes. Set `contract_form` to the form's name, never `standard`, and set `inspection_walkaway` from the contract's own words.
+Any contract that isn't FAR/BAR is read on a best-effort basis: read `other-contracts.md` for how to find each term by what it does, what to record, and the chat disclaimer. The fields are the same; only where they sit changes. Set `contract_form` to the form's name, never `standard`, and set `inspection_walkaway` from the contract's own words.
 
 ## Extraction Tips
 

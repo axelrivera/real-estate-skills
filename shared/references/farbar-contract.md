@@ -1,6 +1,6 @@
-# FR/BAR Residential Contracts
+# FAR/BAR Residential Contracts
 
-This file covers the two Florida Realtors/Florida Bar residential purchase contracts, the AS IS form and the Standard form: every paragraph, standard, blank, default, deadline and cost split, and every place the two forms differ. Read it whenever you analyze, summarize or build a timeline from an executed or proposed FR/BAR contract. Paragraph and line numbers are from the revisions in the table below; check the footer of the contract you're reading, and if its revision differs, tell the agent these rules were checked against the revisions listed here and that numbers or terms may have moved.
+This file covers the two Florida Realtors/Florida Bar residential purchase contracts, the AS IS form and the Standard form: every paragraph, standard, blank, default, deadline and cost split, and every place the two forms differ. Read it whenever you analyze, summarize or build a timeline from an executed or proposed FAR/BAR contract. Paragraph and line numbers are from the revisions in the table below; check the footer of the contract you're reading, and if its revision differs, tell the agent these rules were checked against the revisions listed here and that numbers or terms may have moved.
 
 ## Contents
 
@@ -19,8 +19,8 @@ This file covers the two Florida Realtors/Florida Bar residential purchase contr
 
 | Form | Revision |
 |---|---|
-| `FRBAR-ASIS` | FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26 |
-| `FRBAR-STANDARD` | FloridaRealtors/FloridaBar – 7x Rev. 2/26 |
+| `FARBAR-ASIS` | FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26 |
+| `FARBAR-STANDARD` | FloridaRealtors/FloridaBar – 7x Rev. 2/26 |
 
 The AS IS form has 13 pages (lines 1–652); the Standard form has 14 pages (lines 1–735). Line numbers below are the printed margin numbers.
 

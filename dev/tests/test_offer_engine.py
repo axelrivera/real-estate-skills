@@ -48,7 +48,7 @@ class MatchesPrototype(unittest.TestCase):
             "C": (134729, 131729, 153489, 100, 98, "BACKUP"),
             # Audit 2026-09-23: the downside is measured from the CMA high (OFR-4), and A's FHA appraisal protection runs
             # to closing, so its counter asks for no gap coverage it couldn't enforce (OFR-3, OFR-17).
-            # The tax proration allows Florida's 4% early-payment discount (FR/BAR Standard K; OFR-14).
+            # The tax proration allows Florida's 4% early-payment discount (FAR/BAR Standard K; OFR-14).
             # A's contract has the buyer designate the Closing Agent (Para. 9(c)(ii)), so the buyer pays the owner's policy.
             "A": (145319, 138567, 148211, 55, 63, "DECLINE"),
             # D's sale contingency has a kick-out clause (Rider X): contingency 2, not 1, so 45 (was 42 in the prototype).
@@ -132,7 +132,7 @@ class OtherStates(unittest.TestCase):
         self.assertFalse(any("transfer tax" in n for n in oe.preliminary_inputs(R)))
         text = json.dumps(R["assumptions"]) + json.dumps(R["listing"]["cost_notes"])
         self.assertNotIn("Florida", text)
-        self.assertEqual(o["contract_form"], "other")  # no FR/BAR form (or its math) outside Florida
+        self.assertEqual(o["contract_form"], "other")  # no FAR/BAR form (or its math) outside Florida
         self.assertTrue(o["inspection_walkaway"])
 
     def test_listing_costs_replace_the_estimates(self):
@@ -333,7 +333,7 @@ class AuditAppraisalAndEscalation(unittest.TestCase):
 
 
 class MockContractFixes(unittest.TestCase):
-    """Fixes from the mock FR/BAR contract evals (iteration-mock-1, seller-offer-review evals 6 and 7)."""
+    """Fixes from the mock FAR/BAR contract evals (iteration-mock-1, seller-offer-review evals 6 and 7)."""
 
     def one(self, data):
         return oe.analyze(data)["offers"][0]
@@ -357,7 +357,7 @@ class MockContractFixes(unittest.TestCase):
         d["offers"][0]["price"] = 600000
         self.assertLessEqual(self.one(d)["counter_terms"]["price"], 629000)
 
-    def test_frbar_title_box_sets_who_pays(self):
+    def test_farbar_title_box_sets_who_pays(self):
         """Para. 9(c)(i): the seller designates the Closing Agent and pays the owner's policy, even in Collier."""
         o = self.one(fixture("counter-chain-standard.json"))
         self.assertEqual(o["title_payer"], "seller")

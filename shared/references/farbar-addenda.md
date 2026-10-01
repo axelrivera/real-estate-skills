@@ -1,6 +1,6 @@
-# FR/BAR Addenda, Disclosures and Related Forms
+# FAR/BAR Addenda, Disclosures and Related Forms
 
-Read this when an FR/BAR deal (the Standard or AS IS Residential Contract for Sale and Purchase) comes with any form other than the contract and its CR-7 riders: an addendum, counteroffer, extension, release, disclosure, acknowledgment, notice or worksheet. Each block says what the form changes, which dates and cancel rights it adds, and how it moves money, so a timeline, a seller's offer review or a buyer's offer can use it. The CR-7 riders are covered elsewhere; this file names them only where a form interacts with one.
+Read this when a FAR/BAR deal (the Standard or AS IS Residential Contract for Sale and Purchase) comes with any form other than the contract and its CR-7 riders: an addendum, counteroffer, extension, release, disclosure, acknowledgment, notice or worksheet. Each block says what the form changes, which dates and cancel rights it adds, and how it moves money, so a timeline, a seller's offer review or a buyer's offer can use it. The CR-7 riders are covered elsewhere; this file names them only where a form interacts with one.
 
 ## Contents
 
@@ -71,7 +71,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### ACSP-4 Addendum to Contract
 
-**Form:** `ACSP`, ACSP-4 Rev 6/17. **Used With:** both FR/BAR contracts (also the CRSP).
+**Form:** `ACSP`, ACSP-4 Rev 6/17. **Used With:** both FAR/BAR contracts (also the CRSP).
 
 - **Purpose:** a blank, numbered page for any added or changed terms, before or after the Effective Date.
 - **Blanks and Defaults:** Addendum No., the contract's Effective Date, Seller, Buyer, property, then free-text terms. No defaults (ask for each).
@@ -84,7 +84,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### CO-3 Counter Offer
 
-**Form:** `CO`, CO-3 Rev 1/15. **Used With:** both FR/BAR contracts (any sale contract).
+**Form:** `CO`, CO-3 Rev 1/15. **Used With:** both FAR/BAR contracts (any sale contract).
 
 - **Purpose:** answers an offer by changing selected terms; once signed by all and delivered, the initial offer as amended by this counter becomes the contract.
 - **Blanks and Defaults:** Counter Offer number; parties; date of the initial offer; property. Checkboxes: Purchase Price changed to $; Closing Date changed to; items included; items excluded; Other, as line-numbered changes to the offer. Acceptance deadline: date, or **within 2 days after the counter offer is delivered** if left blank. No other defaults.
@@ -93,22 +93,22 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 - **Money Effects:** a price change moves the balance to close; a Loan Amount stated as a percentage moves with it, one stated in dollars doesn't (check the buyer can still close). Deposits don't change unless a line changes them.
 - **Changes to the Contract:** only the checked items and listed lines change. "All terms and conditions of the initial offer remain the same" means the original offer's printed terms, riders and blanks stand as written. It does **not** carry forward terms from an earlier counter unless they are restated in this one. The Effective Date is when the last party signs and delivers the final counter (Para. 3(b)), so every "days after Effective Date" period starts from that date.
 - **Red Flags:** a counter that relies on an earlier counter's terms without restating them; line numbers that don't match the offer's line numbers; a changed Closing Date with no look at the dates counted back from it (Title Evidence Deadline, survey, permit close-out, rider F's appraisal date); a price change that breaks an escalation, appraisal gap or FHA/VA rider amount; counters sent to more than one buyer with no written reservation to be bound by only one (CO-3 prints no such clause, see MODS-1).
-- **Counter on the Contract:** a seller can also counter without CO-3, by checking "Seller counters Buyer's offer" (AS IS line 613, Standard line 699), striking offered terms and writing new ones, each initialed. Read the written-in value, not the struck one. The buyer accepts by initialing every change; the Effective Date is the last of those initials once delivered (Para. 3(b)). The counter's acceptance time is Para. 3(a)'s for counters (2 days after delivery unless stated), not the buyer's original offer deadline. A price change on the contract should also change the Loan Amount (if in dollars) and the balance to close; if they weren't changed, the money no longer adds up (see `frbar-package-check.md`, Consistency).
+- **Counter on the Contract:** a seller can also counter without CO-3, by checking "Seller counters Buyer's offer" (AS IS line 613, Standard line 699), striking offered terms and writing new ones, each initialed. Read the written-in value, not the struck one. The buyer accepts by initialing every change; the Effective Date is the last of those initials once delivered (Para. 3(b)). The counter's acceptance time is Para. 3(a)'s for counters (2 days after delivery unless stated), not the buyer's original offer deadline. A price change on the contract should also change the Loan Amount (if in dollars) and the balance to close; if they weren't changed, the money no longer adds up (see `farbar-package-check.md`, Consistency).
 - **Skill Use:** the timeline sets the Effective Date from the final counter and applies each changed term; it reads all counters in order and keeps only terms restated in the last one. The seller's review models each counter as a new net and certainty score. The offer builder drafts counters as CO-3 lines tied to the offer's line numbers and sets an acceptance date instead of relying on the 2-day default when timing matters.
 
 ### EA-4 Extension Addendum to Contract
 
-**Form:** `EA`, EA-4 Rev 3/21. **Used With:** both FR/BAR contracts (also CRSP, Vacant Land and Commercial).
+**Form:** `EA`, EA-4 Rev 3/21. **Used With:** both FAR/BAR contracts (also CRSP, Vacant Land and Commercial).
 
 - **Purpose:** extends one or more of the contract's dates or periods on otherwise unchanged terms.
 - **Blanks and Defaults:** contract Effective Date, parties, property, then check the periods that apply:
   - **Closing Date:** extended **until a stated date** (no "days" option).
-  - **Financing Period:** "Commitment Period, Loan Approval Date, or Financing Period" extended for an additional N days **or** until a date. On FR/BAR this is the Para. 8(b) Loan Approval Period.
+  - **Financing Period:** "Commitment Period, Loan Approval Date, or Financing Period" extended for an additional N days **or** until a date. On FAR/BAR this is the Para. 8(b) Loan Approval Period.
   - **Inspection Period:** additional N days or until a date (Para. 12(a)).
   - **Title Cure Period:** "Curative Period or Cure Period", additional N days or until a date (STANDARD A's 30-day Cure Period).
   - **Short Sale Approval Deadline:** rider G.
   - **Sale/Lease of Buyer's Property Deadline:** rider V.
-  - **Due Diligence Period:** Vacant Land and Commercial contracts only; it doesn't exist in FR/BAR.
+  - **Due Diligence Period:** Vacant Land and Commercial contracts only; it doesn't exist in FAR/BAR.
   - An "except" section for changed terms. No defaults (ask for each checked period).
 - **Deadlines:** the new date for each checked period. Safe reading for "additional N days": add N to the period's own day count (a 10-day Inspection Period extended 5 days becomes 15 days after the Effective Date), then apply the weekend and holiday rule once to the new end. Counting from an end that had already rolled past a weekend gives a later date, so it isn't the safe reading; mention it to the agent when the two differ. When the form gives a date, use the date. When both are filled and disagree, flag it and ask.
 - **Cancel Rights:** none of its own; each extended period's existing right now ends on the new date.
@@ -119,7 +119,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### RC-4 Release and Cancellation of Contract
 
-**Form:** `RC`, RC-4 Rev. 3/19. **Used With:** both FR/BAR contracts (checkboxes for CRSP, AS IS FR/BAR, FR/BAR, Commercial, Vacant Land).
+**Form:** `RC`, RC-4 Rev. 3/19. **Used With:** both FAR/BAR contracts (checkboxes for CRSP, AS IS FAR/BAR, FAR/BAR, Commercial, Vacant Land).
 
 - **Purpose:** the parties cancel the contract, release each other and both brokerages, and tell the escrow agent how to pay out the deposit.
 - **Blanks and Defaults:** Buyer; Seller; which contract (check one); Effective Date; property. Para. 2: the two brokerages released. Para. 3: up to four lines of "$ amount to payee". No defaults (ask; the amounts must be agreed).
@@ -132,7 +132,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### EAC-1 Escalation Addendum to Contract
 
-**Form:** `EAC`, © 2021 (EAC-1). **Used With:** both FR/BAR contracts (checkboxes for AS IS FR/BAR, FR/BAR, CRSP, Commercial, Vacant Land).
+**Form:** `EAC`, © 2021 (EAC-1). **Used With:** both FAR/BAR contracts (checkboxes for AS IS FAR/BAR, FAR/BAR, CRSP, Commercial, Vacant Land).
 
 - **Purpose:** the buyer's price rises to beat a bona fide competing offer by a set amount, up to a cap.
 - **Blanks and Defaults:** base Purchase Price the buyer offered; contract (check one); Escalation Amount ($ over the competing offer's price); Maximum Purchase Price; how the escalation is paid: (a) cash at closing with proof of funds attached, or (b) financed. **If neither box is checked, (a) cash applies.** Seller fills in the revised Purchase Price. No other defaults (ask for the increment and the cap).
@@ -145,7 +145,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### AGA-1 Appraisal Gap Addendum
 
-**Form:** `AGA`, AGA-1 Rev 9/22. **Used With:** both FR/BAR contracts, conventional or cash only. The form says not to use it with the FR/BAR Appraisal Contingency Rider (CR-7 F) or the CRSP appraisal addendum; it is not for FHA or VA loans (rider E's appraisal clause conflicts).
+**Form:** `AGA`, AGA-1 Rev 9/22. **Used With:** both FAR/BAR contracts, conventional or cash only. The form says not to use it with the FAR/BAR Appraisal Contingency Rider (CR-7 F) or the CRSP appraisal addendum; it is not for FHA or VA loans (rider E's appraisal clause conflicts).
 
 - **Purpose:** the buyer agrees to cover a low appraisal or other valuation up to a set Gap Amount.
 - **Blanks and Defaults:** Gap Amount (max $, no default: ask); how paid: (a) cash with proof of funds attached, or (b) financed; **(a) if neither is checked**. Valuation deadline: N days after Effective Date, **30 if blank**. Renegotiation window: N days after Buyer delivers the Valuation, **3 if blank**.
@@ -162,7 +162,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### BBCCA-1 Buyer's Broker Compensation Contingency Addendum
 
-**Form:** `BBCCA`, BBCCA-1 Rev. 9/2024. **Used With:** names the FR/BAR "Residential Contract for Sale and Purchase" and the CRSP. Its text is identical to CR-7 rider GG, which is printed for both FR/BAR contracts; on FR/BAR prefer rider GG, and never attach both.
+**Form:** `BBCCA`, BBCCA-1 Rev. 9/2024. **Used With:** names the FAR/BAR "Residential Contract for Sale and Purchase" and the CRSP. Its text is identical to CR-7 rider GG, which is printed for both FAR/BAR contracts; on FAR/BAR prefer rider GG, and never attach both.
 
 - **Purpose:** makes the contract contingent on a compensation agreement for the buyer's broker (usually CASSB-1).
 - **Blanks and Defaults:** who signs the compensation agreement with the Buyer's Broker: Seller's Broker, or Seller (check one; no default: ask). Time Period: N days after Effective Date, **3 if blank**. The agreement's terms must be acceptable to Buyer.
@@ -188,7 +188,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### CDDA-2 Community Development District Addendum
 
-**Form:** `CDDA`, CDDA 2 Rev 2/18. **Used With:** both FR/BAR contracts (also Vacant Land).
+**Form:** `CDDA`, CDDA 2 Rev 2/18. **Used With:** both FAR/BAR contracts (also Vacant Land).
 
 - **Purpose:** the Chapter 190 disclosure that a Community Development District may levy taxes and assessments on the property, plus who pays them. The form says it's required for the initial sale of a parcel or unit after the district is established, not later sales; it is still used on resales to allocate the charges.
 - **Blanks and Defaults:** district name; parties; property; Seller's representation of current CDD taxes and assessments on up to two lines ($ per period, payable to). No defaults (ask).
@@ -201,7 +201,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### COOP-4 Addendum to Contract for Sale and Purchase of Cooperative
 
-**Form:** `COOP`, COOP-4 Rev 7/25. **Used With:** both FR/BAR contracts when the property is a co-op. No CR-7 rider covers co-ops (rider A is condo only). It supersedes inconsistent contract terms; terms are read with s. 719.103 definitions. The seller fills it out.
+**Form:** `COOP`, COOP-4 Rev 7/25. **Used With:** both FAR/BAR contracts when the property is a co-op. No CR-7 rider covers co-ops (rider A is condo only). It supersedes inconsistent contract terms; terms are read with s. 719.103 definitions. The seller fills it out.
 
 - **Purpose:** converts the contract to the sale of co-op shares and a proprietary lease, and carries the s. 719.503 disclosures and rescission rights.
 - **Blanks and Defaults:**
@@ -244,7 +244,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### AA-1 Auction Addendum to Purchase and Sale Contract
 
-**Form:** `AA`, AA-1 Rev. 12/2010. **Used With:** both FR/BAR contracts (the form names the "Residential Sale and Purchase Contract").
+**Form:** `AA`, AA-1 Rev. 12/2010. **Used With:** both FAR/BAR contracts (the form names the "Residential Sale and Purchase Contract").
 
 - **Purpose:** adapts the contract to a sale by auction.
 - **Blanks and Defaults:** Buyer Premium as % of the high bid (no default: ask). Cost checkboxes, each Buyer / Seller / N/A: deed recording, mortgage satisfaction and recording, documentary stamps on the deed, owner's title policy, title search, tax search. No defaults; safe reading if a line is blank: the contract's Para. 9 allocation applies.
@@ -257,7 +257,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### SPRA-2 Septic Program Replacement Addendum
 
-**Form:** `SPRA`, SPRA-2 Rev 3/2024. **Used With:** both FR/BAR contracts.
+**Form:** `SPRA`, SPRA-2 Rev 3/2024. **Used With:** both FAR/BAR contracts.
 
 - **Purpose:** gives Buyer time to look into a county septic-to-sewer replacement program and cancel if the facts are unacceptable.
 - **Blanks and Defaults:** Septic Replacement Inspection Period: N days from Effective Date (**no default printed: ask**).
@@ -289,7 +289,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### BWTIR-1 Buyer's Walk-Through Inspection/Reinspection
 
-**Form:** `BWTIR`, © 2012 (BWTIR-1). **Used With:** both FR/BAR contracts (Standard Para. 12(e); AS IS Para. 12(b)).
+**Form:** `BWTIR`, © 2012 (BWTIR-1). **Used With:** both FAR/BAR contracts (Standard Para. 12(e); AS IS Para. 12(b)).
 
 - **Purpose:** records the walk-through or a reinspection, confirming condition and personal property before closing, and releases the licensee.
 - **Blanks and Defaults:** property; walk-through or reinspection (check one); access provided or not; utilities provided or not; exceptions (what isn't done). No defaults.
@@ -369,7 +369,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### FD-2 Flood Disclosure
 
-**Form:** `FD`, FD-2 Rev 10/25. **Used With:** both FR/BAR contracts. Required by s. 689.302 for residential sales and **not printed in either contract**, so it is a separate form.
+**Form:** `FD`, FD-2 Rev 10/25. **Used With:** both FAR/BAR contracts. Required by s. 689.302 for residential sales and **not printed in either contract**, so it is a separate form.
 
 - **Purpose:** the statutory flood disclosure, given at or before the time the contract is executed.
 - **Blanks and Defaults:** Seller name; property; (1) has / has no knowledge of flooding that damaged the property during Seller's ownership; (2) has / has not filed a flood insurance claim (including NFIP); (3) has / has not received flood-damage assistance (including FEMA); date and method a copy was provided to Buyer (email, fax, mail, personal delivery). The definition of "flooding" is printed (overflow of inland or tidal waters, rapid runoff accumulation, sustained standing water from rain). No defaults.
@@ -412,7 +412,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### `LBPL-1x` Complying With the Lead-Based Paint Law: Licensee Notice to Seller/Landlord
 
-**Form:** `LBPL`, LBPL-1x Rev. 10/06. **Used With:** any pre-1978 residential sale or lease. It goes from the licensee to the seller; the buyer-facing disclosure in FR/BAR is CR-7 rider P.
+**Form:** `LBPL`, LBPL-1x Rev. 10/06. **Used With:** any pre-1978 residential sale or lease. It goes from the licensee to the seller; the buyer-facing disclosure in FAR/BAR is CR-7 rider P.
 
 - **Purpose:** tells the seller its duties under the federal Lead-Based Paint Hazard Reduction Act (housing built in 1977 or earlier), and records the seller's disclosure to the licensee.
 - **Blanks and Defaults:** licensee name and date given; Seller's disclosure to licensee: (a) no knowledge of lead-based paint or hazards, or (b) known, with a description; records: (a) none, or (b) the list. No defaults.
@@ -438,7 +438,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### CCCLA-3 Coastal Construction Control Line Affidavit
 
-**Form:** `CCCLA`, CCCLA-3 Rev 2/20. **Used With:** both FR/BAR contracts, with CR-7 rider N.
+**Form:** `CCCLA`, CCCLA-3 Rev 2/20. **Used With:** both FAR/BAR contracts, with CR-7 rider N.
 
 - **Purpose:** s. 161.57 requires the seller of property partly or wholly seaward of the Coastal Construction Control Line to give the buyer an affidavit or survey showing the line, unless the buyer waives it in writing. This is the affidavit version, sworn with an FDEP aerial showing the line.
 - **Blanks and Defaults:** county; property; seller signatures; notary block (physical presence or online notarization). No defaults.
@@ -507,7 +507,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 
 ### RCD-8 Receipt of Condominium/Cooperative Documents
 
-**Form:** `RCD`, RCD-8 Rev 1/26. **Used With:** both FR/BAR contracts, with rider A (condo) or COOP-4 (co-op).
+**Form:** `RCD`, RCD-8 Rev 1/26. **Used With:** both FAR/BAR contracts, with rider A (condo) or COOP-4 (co-op).
 
 - **Purpose:** the buyer's dated receipt for each document that starts a statutory window.
 - **Blanks and Defaults:** check each that applies, each with a received date:
@@ -642,17 +642,17 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 - **Cancel Rights:** None.
 - **Money Effects:** None.
 - **Changes to the Contract:** None.
-- **Red Flags:** its presence means the governing contract may not be FR/BAR.
-- **Skill Use:** all three skills record the contract as another contract (not FR/BAR), work from that contract's own dates and terms, apply none of the FR/BAR defaults in this file, and say so.
+- **Red Flags:** its presence means the governing contract may not be FAR/BAR.
+- **Skill Use:** all three skills record the contract as another contract (not FAR/BAR), work from that contract's own dates and terms, apply none of the FAR/BAR defaults in this file, and say so.
 
 ## Not in This Set
 
 These Florida Realtors forms are intentionally not covered; name them and say where they fit when one appears:
 
-- **CARB-1** (Compensation/Concession Addendum Related to Buyer's Broker): made for the CRSP, Vacant Land and Commercial contracts. On FR/BAR, riders FF (seller credit related to buyer's broker compensation) and GG (compensation agreement contingency, same text as BBCCA-1) cover the same ground.
-- **MDSTA-1** (Miami-Dade County Special Taxing District Addendum): for the CRSP and Vacant Land contracts. On FR/BAR, rider CC is the Miami-Dade special taxing district disclosure.
-- **QIC-1** (Qualified Improvement Addendum to Contract): for a non-ad valorem qualifying improvement assessment with an unpaid balance. On FR/BAR, rider EE (Qualifying Improvements Disclosure, formerly PACE) covers it.
-- **CFBA-1** (Conveyances to Foreign Buyers Addendum): only for contracts without the preprinted Chapter 692 language. Both FR/BAR contracts print it, so it isn't needed.
+- **CARB-1** (Compensation/Concession Addendum Related to Buyer's Broker): made for the CRSP, Vacant Land and Commercial contracts. On FAR/BAR, riders FF (seller credit related to buyer's broker compensation) and GG (compensation agreement contingency, same text as BBCCA-1) cover the same ground.
+- **MDSTA-1** (Miami-Dade County Special Taxing District Addendum): for the CRSP and Vacant Land contracts. On FAR/BAR, rider CC is the Miami-Dade special taxing district disclosure.
+- **QIC-1** (Qualified Improvement Addendum to Contract): for a non-ad valorem qualifying improvement assessment with an unpaid balance. On FAR/BAR, rider EE (Qualifying Improvements Disclosure, formerly PACE) covers it.
+- **CFBA-1** (Conveyances to Foreign Buyers Addendum): only for contracts without the preprinted Chapter 692 language. Both FAR/BAR contracts print it, so it isn't needed.
 - **ND-3** (Nonlawyer Disclosure): goes with the landlord and tenant forms, not a purchase.
 - **Handouts With No Form Number:**
   - **DBPR Condominium Q&A Sheet:** the question and answer sheet that condo buyers are entitled to (rider A; RCD-8 condo documents).
