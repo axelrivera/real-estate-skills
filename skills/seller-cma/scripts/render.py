@@ -85,16 +85,12 @@ def summary_page(R, C, agent, L):
                    f'{L("sum_stay", price=x["list_price_display"]) if i == stay else x["list_price_display"]}{" ★" if x["recommended"] else ""}</td>'
                    f'<td>{x["time"]}</td><td class="n">{x["expected_sale_display"]}</td><td class="n">{x["net_after_holding_display"]}</td></tr>'
                    for i, x in enumerate(strats))
-    options_note = L(("sum_options_note_free" if free else "sum_options_note_cash" if cash else "sum_options_note") + held)
-    co = C.get("competing_offer_caveat")  # CMA-319: the competing-offer option nets more only if those offers show up
-    if co is not None:
-        options_note += " " + L("sum_options_note_competing", price=strats[co]["list_price_display"])
+    opts = C["options_summary"]  # CMA-336: the net column's header and footnote, the same words the chat template quotes
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_options")}</div><div class="tbl"><table><thead><tr>'
              f'<th>{L("th_list_at")}</th><th>{L("th_time_short")}</th><th class="n">{L("th_expected")}</th>'
-             # CMA-317: "cash" names the net sheet's cash-at-closing row; after holding costs the column is a net
-             f'<th class="n">{L("th_est_cash" if cash and not held else "th_est_net")}</th></tr></thead><tbody>{rows}</tbody></table></div>'
-             f'<div class="note">{options_note}</div></div></div>')
+             f'<th class="n">{opts["net_header"]}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+             f'<div class="note">{opts["note"]}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
@@ -123,16 +119,8 @@ def pricing_section(R, C, L):
 
 
 def payments_section(R, C, L):
-    pay, bp = C["payments"], R["buyer_payment"]
-    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"])  # OFR-25: PMI by down payment
-    mi = L("pay_note_mi", mi=f"{mi_rate * 100:g}") if mi_rate and not (pay["loan_type"] == "conventional" and pay["down_pct"] >= 0.20) else ""
-    note = bp.get("note") or L("pay_note", program=L("prog_" + pay["loan_type"]), down=f'{pay["down_pct"] * 100:g}', rate=f'{pay["rate"]:.2f}',
-                               basis=pay["tax_basis"], ins=money(pay["insurance_annual"]), mi=mi)
-    if pay["tax_estimated"]:
-        note += " " + L("tax_estimated", basis=pay["tax_basis"])
-    elif not pay["homestead_applied"] and not bp.get("note"):  # CMA-270: say the taxes carry no homestead exemption (Texas isn't built in)
-        note += " " + L("pay_no_homestead_built_in" if pay["homestead"] else "pay_no_homestead")
-    note += " " + pay["flood"]["note"]
+    pay = C["payments"]
+    note = pay["basis_note"] + " " + pay["flood"]["note"]  # CMA-338: compute.py's basis line, as the chat template quotes it
     return [f'<h3>{L("h_payments")}</h3>',
             f'<p>{L("pay_intro", per10k=pay["per_10k_display"], down10k=pay["down_per_10k_display"])}</p>',
             table([L("th_list_price"), L("th_down", down=f'{pay["down_pct"] * 100:g}'), L("th_payment")],

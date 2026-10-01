@@ -9,10 +9,18 @@
  },
  "competing_offer_caveat": 2,
  "comps_table": [
-  {},
-  {},
-  {},
-  {},
+  {
+   "seller_paid_display": "$0"
+  },
+  {
+   "seller_paid_display": "$0"
+  },
+  {
+   "seller_paid_display": "$0"
+  },
+  {
+   "seller_paid_display": "$500"
+  },
   {},
   {}
  ],

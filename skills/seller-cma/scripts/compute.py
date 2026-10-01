@@ -413,6 +413,35 @@ def payments(R, market):
                                       and market.get("property_tax.primary_residence_exemptions"))}, tax_info
 
 
+def payment_basis(R, pay, L):
+    """CMA-338: what the buyer payments assume (program, down, rate, tax basis, insurance, mortgage insurance), the
+    note under the report's payment table without its flood sentence, and the chat template's basis line."""
+    bp = R["buyer_payment"]
+    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"])  # OFR-25: PMI by down payment
+    mi = L("pay_note_mi", mi=f"{mi_rate * 100:g}") if mi_rate and not (pay["loan_type"] == "conventional" and pay["down_pct"] >= 0.20) else ""
+    note = bp.get("note") or L("pay_note", program=L("prog_" + pay["loan_type"]), down=f'{pay["down_pct"] * 100:g}', rate=f'{pay["rate"]:.2f}',
+                               basis=pay["tax_basis"], ins=money(pay["insurance_annual"]), mi=mi)
+    if pay["tax_estimated"]:
+        note += " " + L("tax_estimated", basis=pay["tax_basis"])
+    elif not pay["homestead_applied"] and not bp.get("note"):  # CMA-270: say the taxes carry no homestead exemption (Texas isn't built in)
+        note += " " + L("pay_no_homestead_built_in" if pay["homestead"] else "pay_no_homestead")
+    return note
+
+
+def options_summary(C, L):
+    """CMA-336: page 1's options table header for the net column and its footnote, worded as the PDF prints them, for
+    the PDF and the chat template alike."""
+    net, strats = C["net"], C["strategies"]
+    cash, free = net["cash_at_closing"], net["no_mortgage"]
+    held = "_holding" if C["net_basis"] == "after_holding" else ""  # CMA-298: nets after holding costs, as the reply quotes them
+    note = L(("sum_options_note_free" if free else "sum_options_note_cash" if cash else "sum_options_note") + held)
+    co = C.get("competing_offer_caveat")  # CMA-319: the competing-offer option nets more only if those offers show up
+    if co is not None:
+        note += " " + L("sum_options_note_competing", price=strats[co]["list_price_display"])
+    # CMA-317: "cash" names the net sheet's cash-at-closing row; after holding costs the column is a net
+    return {"net_header": L("th_est_cash" if cash and not held else "th_est_net"), "note": note}
+
+
 # --- placeholders ----------------------------------------------------------------
 
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
@@ -848,7 +877,7 @@ def compute(R, market, homes):
     market_notes = [(n, c) for n, c in zip(market.notes, market.note_codes)
                     if (homes or c not in ("mls_assumed", "mls_not_built_in", "mls_not_given"))
                     and not (known_layout and c == "mls_assumed")]
-    return {
+    out = {
         "data_source": data_source,
         "ok": True,
         "preliminary": preliminary,
@@ -884,8 +913,9 @@ def compute(R, market, homes):
         "recommendation_paragraph": cma.fill(rec.get("paragraph", ""), values),
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,
-        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "adjusted_display": adjusted_money(r[3])}
-                        for r in R["comps"].get("summary_rows", [])],  # the chat template's comp rows
+        # the chat template's comp rows, with the report's Seller Paid column (CMA-339)
+        "comps_table": [{"address": r[0], "sold_display": money(r[1]), "seller_paid_display": money(r[2]),
+                         "adjusted_display": adjusted_money(r[3])} for r in R["comps"].get("summary_rows", [])],
         "warnings": warnings,
         "warning_keys": warning_keys,
         "assumptions": assumptions,
@@ -896,6 +926,10 @@ def compute(R, market, homes):
         "market_notes": [n for n, c in market_notes],
         "market_note_keys": [c for n, c in market_notes],
     }
+    out["options_summary"] = options_summary(out, L)  # CMA-336: page 1's net column header and footnote
+    if pay:  # CMA-338: the payment basis, filled as the PDF fills report.json's wording
+        pay["basis_note"] = cma.fill(payment_basis(R, pay, L), values)
+    return out
 
 
 def load_inputs(R, mls_name=None, data_file=None):

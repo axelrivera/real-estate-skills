@@ -1611,3 +1611,94 @@ class EighthPass(unittest.TestCase):
         with open(os.path.join(SKILL, "SKILL.md")) as f:
             self.assertIn("When the agent states today's date", f.read())
 
+
+def resolve(C, path):
+    """A template path ("summary_page.first_steps") in compute.py's output, or KeyError."""
+    v = C
+    for part in path.split("."):
+        v = v[part]
+    return v
+
+
+class ChatTemplate(unittest.TestCase):
+    """The chat template follows page 1 of the PDF, from compute.py's output alone (CMA-332 to CMA-342)."""
+
+    def template(self):
+        with open(os.path.join(SKILL, "assets", "seller-cma-template.md")) as f:
+            return f.read()
+
+    def test_every_template_path_is_in_compute_output(self):
+        """CMA-332, CMA-333: the template reads the filled prose (recommendation_paragraph, summary_page) and every
+        other path from compute.py's output, never report.json's unfilled copies."""
+        text = self.template()
+        self.assertNotIn("recommendation.paragraph", text)
+        C, _ = run(report())
+        paths = ["subject.address", "preliminary_reason", "recommendation.list_price_display", "recommendation.range_display",
+                 "summary_page.expected_sale", "summary_page.headline", "recommendation_paragraph", "summary_page.why",
+                 "median_adjusted_display", "comps_table", "options_summary.net_header", "net.standard_terms",
+                 "net.incomplete", "options_summary.note", "payments.per_10k_display", "net.notes", "net_spread_about",
+                 "payments.basis_note", "payments.flood.annual", "payments.flood.required", "first_steps_heading",
+                 "summary_page.first_steps", "summary_page.next_step", "data_source.as_of_display"]
+        for p in paths:
+            self.assertIn(p, text)
+            resolve(C, p)
+        for p in ("recommendation_paragraph", "summary_page"):
+            self.assertNotRegex(json.dumps(resolve(C, p)), r"\{(median_adjusted|list_price|low|high|per_10k)\}")
+        self.assertTrue(all(len(step) == 2 for step in C["summary_page"]["first_steps"]))  # CMA-334: [heading, detail]
+        self.assertIn("{{summary_page.first_steps[0][0]}}", text)
+
+    def test_comps_table_has_the_seller_paid_column(self):
+        """CMA-339: the chat comps table carries the report's Seller Paid column."""
+        R = report()
+        C, _ = run(R)
+        paid = [compute.money(c["seller_concessions"]) for c in R["comps"]["cards"]]
+        self.assertEqual(sorted(r["seller_paid_display"] for r in C["comps_table"]), sorted(paid))
+        L = compute.labels(R)
+        self.assertIn(f'| {L("th_sale")} | {L("th_sold_for")} | {L("th_seller_paid")} | {L("th_adjusted")} |', self.template())
+
+    def test_options_summary_matches_page_one(self):
+        """CMA-336: the net column's header and footnote come from compute.py, in page 1's own words, by basis."""
+        L = compute.labels(report())
+        cases = [({}, "sum_options_note_holding"), ({"mortgage_payoff": 0}, "sum_options_note_free_holding"),
+                 ({"mortgage_payoff": 210000}, "sum_options_note_cash_holding")]
+        for costs, note in cases:
+            R = report()
+            R["costs"].update(costs)
+            C, homes = run(R)
+            opts = C["options_summary"]
+            self.assertEqual(opts["net_header"], L("th_est_net"))  # after holding costs the column is a net (CMA-317)
+            self.assertTrue(opts["note"].startswith(L(note)), opts["note"])
+            self.assertIn(L("sum_options_note_competing", price=C["strategies"][2]["list_price_display"]), opts["note"])
+            doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+            self.assertIn(opts["note"], doc)
+        C["net_basis"] = "net"  # no holding costs, with a payoff: the column is the net sheet's cash at closing
+        self.assertEqual(compute.options_summary(C, L)["net_header"], L("th_est_cash"))
+        self.assertTrue(compute.options_summary(C, L)["note"].startswith(L("sum_options_note_cash")))
+
+    def test_payment_basis_line(self):
+        """CMA-338: the buyer-payment basis is compute.py's, the same words the report prints before its flood note."""
+        R = report()
+        R["buyer_payment"].pop("note", None)
+        C, homes = run(R)
+        pay = C["payments"]
+        L = compute.labels(R)
+        self.assertTrue(pay["basis_note"].startswith(L("prog_" + pay["loan_type"]) + " loan"), pay["basis_note"])
+        self.assertIn(pay["tax_basis"], pay["basis_note"])
+        self.assertNotIn(pay["flood"]["note"], pay["basis_note"])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(pay["basis_note"] + " " + pay["flood"]["note"], doc)
+
+    def test_template_follows_page_one(self):
+        """CMA-335, CMA-337, CMA-340, CMA-341, CMA-342: the Stay row, the assumed brokerage, the estimates line, the
+        headline and the title."""
+        text = self.template()
+        self.assertIn("reprice.stay_index", text)
+        self.assertIn('"Stay at " + list_price_display', text)
+        self.assertIn("(Assumed Brokerage)", text)
+        self.assertIn("Payment, tax and cost figures are estimates only, not lending or tax advice", text)
+        self.assertIn("{{summary_page.headline", text)
+        self.assertTrue(text.startswith("## {{subject.address}}: Seller Summary"))
+        R = report()
+        R["costs"] = {}
+        self.assertTrue(run(R)[0]["net"]["standard_terms"])
+
