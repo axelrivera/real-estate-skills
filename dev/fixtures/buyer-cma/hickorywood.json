@@ -464,7 +464,7 @@
   ],
   "bullets": [
    "<strong>Homes are selling for about 3.5% under their original asking price</strong>, compared with full price in the spring. Sellers are now expecting to negotiate.",
-   "<strong>Inventory is balanced.</strong> There are 15 homes for sale in this area, and at the summer pace of sales that's about four months of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Six in ten current listings have already cut their price.",
+   "<strong>Inventory is balanced.</strong> There are 15 homes for sale in this area, and at the summer pace of sales that's {months_supply} of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Six in ten current listings have already cut their price.",
    "<strong>Mortgage rates are up.</strong> The national average 30-year rate was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. That's the main reason the spring prices are harder to repeat now.",
    "<strong>Price per square foot.</strong> Spring Oaks homes have sold for a median of about $231 per square foot since April. This home is asking $257. That's supportable for a renovated pool home, but only two Spring Oaks sales have been higher."
   ]

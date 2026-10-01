@@ -208,15 +208,6 @@ def _and(items):
     return ", ".join(items[:-1]) + " and " + items[-1] if len(items) > 1 else "".join(items)
 
 
-def long_date(iso):
-    """CMA-325: '2026-09-26' as 'September 26, 2026'; anything that isn't an ISO date as given."""
-    try:
-        d = date.fromisoformat(str(iso))
-    except ValueError:
-        return str(iso)
-    return f"{d:%B} {d.day}, {d.year}"
-
-
 def about(amount):
     """CMA-272: a difference rounded for a chat reply, which quotes it instead of rounding by hand. CMA-318: fine
     enough that it never contradicts the exact figure printed beside it ("within about $3,500" next to $3,678): to
@@ -851,7 +842,7 @@ def compute(R, market, homes):
     warn("months_supply_typed", *typed_supply_warnings(R, stats.get("months_supply")))  # CMA-320
     warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
     # CMA-325: the chat template's date written out ("September 26, 2026"), never the ISO form
-    data_source = {"mls": market.mls, "as_of": as_of, "as_of_display": long_date(as_of), "export": bool(homes)}
+    data_source = {"mls": market.mls, "as_of": as_of, "as_of_display": cma.long_date(as_of), "export": bool(homes)}
     # CMA-279: an export read with the MLS's own built-in columns shows which MLS it is: "assumed" is noise then
     known_layout = bool(homes) and not R.get("export_columns") and bool(market.get("mls_format.cma_export_columns"))
     market_notes = [(n, c) for n, c in zip(market.notes, market.note_codes)
