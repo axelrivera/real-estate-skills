@@ -10,7 +10,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import handoff, offer_engine as oe, profiles  # noqa: E402
@@ -44,6 +44,8 @@ def load_cma(data, cma_path=None):
 
 def analyze(data, market=None, cma=None):
     R = oe.analyze(data, market=market, cma=cma)
+    R["highest_and_best"] = highest_and_best(data.get("listing") or {}, R["listing"])
+    backup_lapses(R)
     for o in R["offers"]:
         confirm_assumed_inspection(o, R["listing"])
         counter_restatements(o)
@@ -62,7 +64,7 @@ def analyze(data, market=None, cma=None):
 HOUSEKEEPING = {"flood_disclosure"}
 # Deal-specific risks first, within a severity level: a passed time for acceptance (whether there's an offer to answer),
 # sale contingency, then financing, then appraisal gap, then the seller's deadline (OFR-274). Flags without a topic get one here, so the order and flag_keys use keys, not words.
-RISK_ORDER = ("expired", "sale_contingency", "financing", "appraisal_gap", "past_deadline")
+RISK_ORDER = ("expired", "backup_lapses", "sale_contingency", "financing", "appraisal_gap", "past_deadline")
 
 
 def risk_topic(o, f):
@@ -89,6 +91,60 @@ def order_flags(o):
     rank = {t: i for i, t in enumerate(RISK_ORDER)}
     o["flags"] = sorted(o["flags"], key=lambda f: (f.get("topic") in HOUSEKEEPING, sev.get(f["sev"], 1),
                                                      rank.get(risk_topic(o, f), len(RISK_ORDER))))
+
+
+def expires_at(o):
+    """An offer's time for acceptance as a datetime (a date alone is the end of that day), or None when it isn't a date."""
+    raw = str(o.get("expires_raw") or "").strip()
+    for fmt, n in (("%Y-%m-%d %H:%M", 16), ("%Y-%m-%d", 10)):
+        try:
+            when = datetime.strptime(raw[:n], fmt)
+        except ValueError:
+            continue
+        return when if n == 16 else when.replace(hour=23, minute=59)
+    return None
+
+
+def counter_deadline(o, L):
+    """When the counter to this offer stops being open: the time for acceptance it sets (offer_engine.acceptance_due)."""
+    return datetime.combine(oe.acceptance_due(o, L), time(17, 0))
+
+
+def backup_lapses(R):
+    """OFR-319: the plan holds a backup until the primary contract is fully signed, but an offer whose own time for
+    acceptance ends before the counter to the top offer does lapses before it can be used. The backup gets a flag
+    (topic backup_lapses) and the plan asks its agent to extend the time for acceptance, or to answer it first."""
+    rk = R["ranked"]
+    if not rk or rk[0]["action"] != "COUNTER":
+        return
+    top = rk[0]
+    due = counter_deadline(top, R["listing"])
+    for o in rk[1:]:
+        when = expires_at(o)
+        if o["action"] != "BACKUP" or o.get("lapsed") or not when or when >= due:
+            continue
+        past = f"{due:%a %b %-d}, 5:00 PM"
+        o["lapses_before"] = {"until": past, "ends": f"{when:%a %b %-d}, {when:%-I:%M %p}", "offer": top["label"],
+                              "ref": top["ref"]}
+        o["flags"].append({
+            "sev": "Med", "topic": "backup_lapses",
+            "issue": f"Its time for acceptance ({o['expires']}) ends before the counter to {top['label']} does ({past}): "
+                     "as a backup it lapses before it can be used.",
+            "fix": f"Ask the buyer's agent to extend the time for acceptance past {past}, or answer this offer first."})
+
+
+def highest_and_best(raw, L):
+    """OFR-320: a call for highest and best already out (the NMOB-1 deadline, `listing.highest_and_best_due`): {due,
+    pending}, or None. Pending until the deadline's day has passed: the analysis date has no time of day."""
+    v = raw.get("highest_and_best_due")
+    if not v:
+        return None
+    try:
+        day = oe._d(v)
+    except ValueError:
+        return {"due": str(v), "pending": True}
+    when = oe.fmt_when(v) + (", end of day" if len(str(v).strip()) == 10 else "")
+    return {"due": when, "pending": day >= L["analysis_date"]}
 
 
 def deal_flags(o):
@@ -656,11 +712,22 @@ def single_view(R, o):
            "BACKUP": "once the primary contract is fully signed, approve offering this buyer a backup position on the "
                      "Back-Up Contract rider, with a short notice date: the backup buyer can cancel until the seller's notice.",
            "DECLINE": "approve, and with your written OK I'll tell the buyer's agent the seller is moving forward with another offer."}[act]
+    first = []
+    hb = R.get("highest_and_best")
+    if hb and hb["pending"]:  # OFR-320
+        first.append(f"Final offers are due {hb['due']} (highest and best); once they're in, I'll run the review again.")
+    lapse = o.get("lapses_before")
+    if act == "BACKUP" and lapse:  # OFR-319: the backup's own deadline ends before the counter to the top offer does
+        first.append(f"Its time for acceptance ends {lapse['ends']}, before the counter to {lapse['offer']} does: I'll ask "
+                     f"the buyer's agent to extend it past {lapse['until']}.")
+    if first:
+        nxt = " ".join(first) + " Then " + nxt
     return {
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
         "action": act, "headline": "HOLD AS BACKUP" if act == "BACKUP" else act, "title": title(act, o), "why": why,
         "offers_active": len(R["active"]) if multi_ctx else 1,
         "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
+        "respond_by_also": respond_also(R),  # OFR-320
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S, R["costs"]),
@@ -689,6 +756,17 @@ def first_expiry(R):
     return o["expires"], o["label"]
 
 
+def respond_also(R, held=()):
+    """OFR-319, OFR-320: the other deadlines the Respond By box shows: a pending call for highest and best, and a held
+    offer whose own time for acceptance ends before the counter's. [{when, what, key}]"""
+    out = []
+    hb = R.get("highest_and_best")
+    if hb and hb["pending"]:
+        out.append({"when": hb["due"], "what": "Highest & Best Due", "key": "highest_and_best"})
+    out += [{"when": o["expires"], "what": "Backup: Ask to Extend", "key": "backup_lapses"} for o in held]
+    return out
+
+
 def multi_view(R):
     S = R["seller"]
     rk = R["ranked"]
@@ -702,8 +780,14 @@ def multi_view(R):
         reason = hi_price["action_reason"]
         reason = (reason[:1].lower() + reason[1:]) if reason else "more risk"
         lead += f" The highest price ({hi_price['label']}, {money(hi_price['price'])}) ranks #{rk.index(hi_price) + 1}: {reason}."
+    lapse = (backup or {}).get("lapses_before")
     if backup:
         lead += f" Keep {backup['ref']} as backup after the primary contract is fully signed."  # OFR-282
+    if lapse:  # OFR-319: its own deadline ends before the counter's
+        lead += f" Its time for acceptance ends first ({lapse['ends']}): ask its agent to extend it."
+    hb = R.get("highest_and_best")
+    if hb and hb["pending"]:  # OFR-320: final offers are still coming in
+        lead += f" Highest and best is due {hb['due']}: nothing goes out before then."
     if R["incomplete"]:
         n = len(R["incomplete"])
         names = ", ".join(x["label"] for x in R["incomplete"])
@@ -723,6 +807,8 @@ def multi_view(R):
             # differs from what the buyer wrote, and then the note says why.
             t = (f"After {top['label']}'s contract is fully signed, offer a backup position on the Back-Up Contract rider"
                  + (f" (at {money(o['price'])}: {low_first(o['escalation_note'])})" if o.get("escalated") else ""))
+            if o.get("lapses_before"):  # OFR-319: the first step, or the backup lapses before it can be used
+                t = f"First ask to extend its deadline ({o['lapses_before']['ends']}) past {o['lapses_before']['until']}. " + t
         else:
             t = o["action_reason"]
         terms[o["id"]] = t
@@ -754,27 +840,41 @@ def multi_view(R):
 
     most_certain = max(R["active"], key=lambda o: (o["score"]["total"], o["ns_down"]["net_adj"]))
     first = f"{'Counter' if act == 'COUNTER' else 'Accept'} {top['label']}" + (f", Hold {backup['label']} as Backup" if backup else "")
-    opts = [{"option": first, "net": money(top_net), "recommended": True, "status": "good",
+    # OFR-324: `short` names offers by the key the plan table shows beside each label, for the PDF's narrow Option column
+    short = f"{'Counter' if act == 'COUNTER' else 'Accept'} {top['key']}" + (f", Hold {backup['key']} as Backup" if backup else "")
+    opts = [{"option": first, "short": short, "net": money(top_net), "recommended": True, "status": "good",
              "certainty": f"≈{top['counter_score']}/100" if act == "COUNTER" else f"{top['score']['total']}/100",
              "what": "Best net with manageable risk" + (f"; {backup['ref']} is a safety net" if backup else "")}]
     g = top["ns_counter"]["net_adj"] - top["ns"]["net_adj"]
     if act == "ACCEPT" and top["counter_rows"] and g > 0:  # OFR-116: never "Only +$0"
-        opts.append({"option": f"Counter {top['label']} Anyway", "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
+        opts.append({"option": f"Counter {top['label']} Anyway", "short": f"Counter {top['key']} Anyway",
+                     "net": money(top["ns_counter"]["net_adj"]), "recommended": False,
                      "certainty": f"≈{top['counter_score']}/100", "status": "caution",
                      "what": f"Only {signed(g)}, and it risks losing the strongest offer"})
     if most_certain is not top:
-        opts.append({"option": f"Accept {most_certain['label']} Now", "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
+        opts.append({"option": f"Accept {most_certain['label']} Now", "short": f"Accept {most_certain['key']} Now",
+                     "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
                      "certainty": f"{most_certain['score']['total']}/100", "status": "caution",
                      "what": f"Closes {most_certain['close']:%b %-d}, most certain, but {money(top_net - most_certain['ns']['net_adj'])} less than the plan"})
-    opts.append({"option": "Call for Highest & Best", "net": "Unknown", "certainty": "Varies", "status": "caution", "recommended": False,
-                 "what": "May lift prices, but adds ~2 days and weak terms usually stay weak"})
+    if not hb:  # OFR-320: a call for highest and best already out isn't offered again
+        opts.append({"option": "Call for Highest & Best", "net": "Unknown", "certainty": "Varies", "status": "caution",
+                     "recommended": False, "what": "May lift prices, but adds ~2 days and weak terms usually stay weak"})
     verb = "send the counter to" if act == "COUNTER" else "accept"
-    nxt = f"approve the plan and I'll {verb} {top['ref']}" + (
-        f"; once that contract is fully signed, I'll offer {backup['ref']} a backup position" if backup else "") + "."
+    nxt = (f"final offers are due {hb['due']} (highest and best); once they're in, I'll run the review again. Then "
+           if hb and hb["pending"] else "")
+    nxt += (("a" if nxt else "A") + "pprove the plan and I'll "
+            + (f"ask the buyer's agent on {backup['ref']} to extend past {lapse['until']}, then "
+               if lapse else "")
+            + f"{verb} {top['ref']}"
+            + (f"; once that contract is fully signed, I'll offer {backup['ref']} a backup position" if backup else "") + ".")
+    also = respond_also(R, [backup] if lapse else [])
+    keys = (["backup_lapses"] if lapse else []) + (
+        [f"highest_and_best_{'pending' if hb['pending'] else 'done'}"] if hb else [])
     return {
         "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act, "headline": act, "title": title(act, top), "why": lead,
         "offers_active": len(R["active"]) + len(R["incomplete"]), "offers_incomplete": len(R["incomplete"]),
-        "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1],
+        "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1], "respond_by_also": also,
+        "plan_keys": keys,  # OFR-319, OFR-320: what the plan adds, as keys
         "priority": S.get("priority_note") or S["priority"].title(),
         "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
         "preliminary": preliminary(R, top["id"], multi=True), "next_step": cap(nxt), "data_note": data_note(R, multi=True),

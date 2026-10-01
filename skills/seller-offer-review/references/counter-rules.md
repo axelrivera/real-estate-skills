@@ -14,7 +14,7 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
-13. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM. Change it to what the seller wants.
+13. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM; when that is the offer's own deadline exactly, the next weekday, so the row never reads as no change. Change it to what the seller wants.
 
 ## Negotiation History
 
@@ -39,6 +39,8 @@ Appraisal risk starts at the top of the CMA range. With a CMA, a price above it 
 ## Multiple Offers
 
 Only the top-ranked offer gets a counter. The backup is offered a backup position (Back-Up Contract rider) only after the primary contract is fully signed, and gets its own counter only if the first deal falls through. The plan always says only one counter or acceptance goes out at a time, an acceptance plan too.
+
+A backup whose own time for acceptance ends before the counter to the top offer does would lapse before it can be used. The engine flags it (`backup_lapses`), shows its deadline under Respond By, and the plan's first step is to ask its agent to extend the time for acceptance past the counter's (or to answer it first). With a call for highest and best already out (`listing.highest_and_best_due`), nothing goes out before its deadline: the review is run again on the final offers, and another call isn't offered.
 
 ## Overrides
 

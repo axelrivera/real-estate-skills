@@ -6,6 +6,9 @@ header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:
 .hero{margin:6px 0}
 .hero .big{font-size:25pt;letter-spacing:.04em;line-height:1.05}
 .hero .rbo{display:block;font-size:8pt;color:var(--muted)}
+.hero .rba{display:block;font-size:7.8pt;color:var(--caution-strong);margin-top:3px} .hero .rba b{font-size:inherit;white-space:nowrap}
+/* OFR-326: long detail tables may break across pages, row by row, with the header repeated (report.css keeps a .tbl whole) */
+.tbl.split{break-inside:auto} .tbl.split thead{display:table-header-group} .tbl.split tr{break-inside:avoid}
 .hero .who{font-size:12.5pt;font-weight:800;color:var(--brand-ink);margin-top:2px}
 .legend.okey{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:7.4pt} .legend.okey span{margin:0}
 .legend.okey b{color:var(--brand-ink);margin-right:3px}

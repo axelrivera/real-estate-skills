@@ -51,6 +51,8 @@
 
 {{summary.preliminary, when present}}
 
+{{when summary.respond_by_also:}} **Also Due:** {{each summary.respond_by_also: what + ", " + when; joined with "; "}}
+
 **Next Step:** {{summary.next_step}}
 
 **Estimated:** {{estimated_costs, joined with commas; skip when empty}}

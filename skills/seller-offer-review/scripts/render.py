@@ -68,17 +68,17 @@ def snapshot(R):
     """One divider row: the home, then the inputs the numbers rest on. Missing facts drop out; a missing
     input that makes the review Preliminary stays, in the risk color."""
     L, S = R["listing"], R["seller"]
-    hoa = f"HOA ${L['hoa_monthly']:,}/mo" if L.get("hoa_monthly") else ("no HOA" if L.get("hoa_monthly") == 0 else None)
-    facts = [f"{L['beds']} bed" if L.get("beds") else None, f"{L['baths']} bath" if L.get("baths") else None,
-             f"{L['sqft']:,} sq ft" if L.get("sqft") else None, f"built {L['year_built']}" if L.get("year_built") else None,
-             f"roof {L['roof_year']}" if L.get("roof_year") else None, hoa,
-             f"flood zone {L['flood_zone']}" if L.get("flood_zone") else None]
-    items = [esc(x) for x in facts if x]
-    items.append(f"CMA {oe.short_price(L['cma_low'])}–{oe.short_price(L['cma_high'])}" if L["cma_provided"] else '<b class="rt">CMA not provided</b>')
-    items.append(f"payoff {money(S['payoff'])}" if S["payoff_known"] else '<b class="rt">payoff not provided</b>')
+    hoa = f"HOA {money(L['hoa_monthly'])}/mo" if L.get("hoa_monthly") else ("no HOA" if L.get("hoa_monthly") == 0 else None)
+    facts = [f"{L['beds']} Bed" if L.get("beds") else None, f"{L['baths']} Bath" if L.get("baths") else None,
+             f"{L['sqft']:,} Sq Ft" if L.get("sqft") else None, f"Built {L['year_built']}" if L.get("year_built") else None,
+             f"Roof {L['roof_year']}" if L.get("roof_year") else None, hoa,
+             f"Flood Zone {L['flood_zone']}" if L.get("flood_zone") else None]
+    items = [esc(x[:1].upper() + x[1:]) for x in facts if x]  # OFR-323: each chip's label in Title Case
+    items.append(f"CMA {oe.short_price(L['cma_low'])}–{oe.short_price(L['cma_high'])}" if L["cma_provided"] else '<b class="rt">CMA Not Provided</b>')
+    items.append(f"Payoff {money(S['payoff'])}" if S["payoff_known"] else '<b class="rt">Payoff Not Provided</b>')
     if S["deadline"]:
         note = review.deadline_note(S)  # OFR-296: a weekend deadline names the last business day
-        items.append(f"seller's deadline {S['deadline']:%a %b %-d}" + (f" ({note})" if note else ""))
+        items.append(f"Seller's Deadline {S['deadline']:%a %b %-d}" + (f" ({note})" if note else ""))
     return '<div class="divrow factrow"><div>' + "".join(f"<span>{x}</span>" for x in items) + "</div></div>"
 
 
@@ -120,11 +120,12 @@ def certainty_panel(c, subtitle="As Offered"):
   </table>{note}</div></div>'''
 
 
-def options_table(opts, widths=(24, 13, 15)):
+def options_table(opts, widths=(24, 13, 15), short=False):
+    """short: name offers by their key (OFR-324), where the plan table above shows each key beside its label."""
     if not opts:
         return ""
     rows = "".join(
-        f'<tr class="{"recrow" if x["recommended"] else ""}"><td><b>{esc(x["option"])}</b>'
+        f'<tr class="{"recrow" if x["recommended"] else ""}"><td><b>{esc(x.get("short") if short and x.get("short") else x["option"])}</b>'
         f'{" <span class=sm>(Recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
         f'<td class="c">{esc(x["certainty"])}</td><td class="{x["status"]}">{esc(x["what"])}</td></tr>' for x in opts)
     cols = "".join(f'<col style="width:{w}%">' for w in widths)
@@ -151,6 +152,8 @@ def hero(v):
             + f'<div class="why">{md(v["why"])}</div></div>'
             f'<div class="hr"><span class="k">Respond By</span><b>{esc(v["respond_by"])}</b>'
             + (f'<span class="rbo">{esc(v["respond_by_offer"])}</span>' if v.get("respond_by_offer") else "")
+            # OFR-319, OFR-320: a pending highest-and-best deadline and a held offer that lapses first
+            + "".join(f'<span class="rba"><b>{esc(a["when"])}</b> · {esc(a["what"])}</span>' for a in v.get("respond_by_also") or ())
             + f'<span class="k" style="margin-top:6px">Seller\'s Priority</span><div>{esc(v["priority"])}</div></div></div>')
 
 
@@ -182,7 +185,8 @@ def term_rows(o, R):
         ap = o["approval"]
         st = "good" if ap == "full_uw" else ("caution" if ap in ("du_approved", "preapproval") else "risk")
         rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap), "Full underwriting", st,
-                     "Verified with lender" if o.get("lender_called") else "Call the loan officer (section 8)"))
+                     "Verified with lender" if o.get("lender_called") else  # OFR-321: by name when the letter gives one
+                     f"Call {o['loan_officer']} (section 8)" if o.get("loan_officer") else "Call the loan officer (section 8)"))
     else:
         ok = o["approval"] == "pof_verified"
         rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
@@ -248,6 +252,8 @@ def questions(o, R):
     concessions, deposit, inspection, closing) aren't asked: sending the counter asks them."""
     L = R["listing"]
     Q = [f["request"] for f in o["flags"] if f.get("contract") and f.get("request")]  # contract fixes come first
+    if o.get("lapses_before"):  # OFR-319: the backup's own deadline ends before the counter to the top offer does
+        Q.append(f"Will the buyer extend the time for acceptance past {o['lapses_before']['until']}?")
     if o["financed"] and o.get("insurance_quote") is not True:
         roof = f", given the {L['roof_year']} roof?" if L.get("roof_year") else "?"
         Q.append("Has the buyer obtained a homeowners insurance quote for this address" + roof)
@@ -255,11 +261,19 @@ def questions(o, R):
         Q.append("Is the buyer's current home listed or under contract? At what price?")
     if o["financed"] and o["approval"] in ("prequal", "none"):
         Q.append("When can the buyer provide a full pre-approval?")
-    if o["financed"] and not o.get("lender_called"):
+    if o["financed"] and not o.get("lender_called") and not o.get("loan_officer"):  # OFR-321: the letter names one
         Q.append("Who is the loan officer, so we can verify the approval directly?")
     if o.get("escalation"):
         Q.append("What proof of a competing offer does the escalation clause require?")
     return Q
+
+
+def funds_shown(o, gap=0):
+    """OFR-321: True when the package's proof of funds covers the down payment (price less the loan) plus the appraisal
+    gap the buyer may owe, the same cash the engine's proof-of-funds check counts."""
+    funds = o.get("proof_of_funds")
+    price = max(o["price"], o["counter_terms"]["price"] if o.get("action") == "COUNTER" else 0)  # the counter's, when higher
+    return bool(funds) and funds >= price - (o.get("loan_amount") or o["price"] * (1 - o["down_pct"])) + gap
 
 
 def lender_questions(o, R):
@@ -277,8 +291,9 @@ def lender_questions(o, R):
     Q.append(f"Is the approval good for {money(o['price'])} with {o['down_pct'] * 100:.1f}% down on "
              f"{'an' if fin[0] in 'AEFHILMNORSX' else 'a'} {fin} loan{conc}?")
     gap = max(o["appraisal_gap"], o["counter_terms"]["appraisal_gap"] if o.get("action") == "COUNTER" else 0)
-    Q.append("Are funds verified for the down payment and closing costs"
-             + (f", plus an appraisal gap of up to {money(gap)}?" if gap else "?"))
+    if not funds_shown(o, gap):  # OFR-321: a verification of funds in the package already answers it
+        Q.append("Are funds verified for the down payment and closing costs"
+                 + (f", plus an appraisal gap of up to {money(gap)}?" if gap else "?"))
     if o["financing"] in ("fha", "va", "usda"):
         roof = f" (roof {L['roof_year']})" if L.get("roof_year") else ""
         Q.append(f"Any concern about the property meeting {fin} appraisal and condition rules{roof}?")
@@ -297,7 +312,8 @@ def checklist(o, R):
             found.setdefault(f["check"], []).append(f["issue"].rstrip("."))
     fin = o["financed"]
     items = [("signed", "All parties signed & initialed; dates filled", "Pending"),
-             ("lender", "Loan officer called (questions in section 8)" if fin else "Proof of funds confirmed with the bank (questions in section 8)",
+             ("lender", (f"Loan officer ({o['loan_officer']}) called (questions in section 8)" if o.get("loan_officer") else
+                         "Loan officer called (questions in section 8)") if fin else "Proof of funds confirmed with the bank (questions in section 8)",
               "Yes" if o.get("lender_called") or (not fin and o["approval"] == "pof_verified") else "No"),
              ("deposit", "Deposit amount, due date & escrow agent confirmed", "Pending"),
              ("riders", "All riders attached and consistent", "Pending"),
@@ -329,7 +345,7 @@ def assumptions_table(R, multi=False):
     lab = {"high": "High", "med": "Med", "low": "Low"}
     rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.where(R, a["scope"], a.get("also") or ()))}</td>'
                    f'<td>{esc(a["why"])}</td></tr>' for a in items)
-    return ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
+    return ('<div class="tbl split"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
             f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
 
@@ -480,11 +496,11 @@ def single_html(R, o, v):
 <div class="legend"><span><b>Downside</b>: {caption}.</span>
 <span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
 <h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
-<h2 class="pb">3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
-<div class="tbl"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
+<h2>3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
+<div class="tbl split"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
 <thead><tr><th>Term</th><th>Offered</th><th>Benchmark</th><th class="c">Rating</th><th>Note</th></tr></thead><tbody>{tr}</tbody></table></div>
 <h2>4 · Certainty Scorecard <span class="h2s">1 = Weak · 5 = Strong · Weighted</span></h2>{scorecard_single(o)}
-<h2 class="pb">5 · Risk Flags</h2><div class="tbl"><table><colgroup><col style="width:8%"><col style="width:50%"></colgroup>
+<h2>5 · Risk Flags</h2><div class="tbl split"><table><colgroup><col style="width:8%"><col style="width:50%"></colgroup>
 <thead><tr><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl}</tbody></table></div>
 <h2>6 · Verification Checklist</h2><div class="tbl"><table class="ck"><colgroup><col style="width:5%"><col style="width:45%"></colgroup>
 <thead><tr><th class="c">Done</th><th>Item</th><th>Notes</th></tr></thead><tbody>{vf}</tbody></table></div>
@@ -607,9 +623,9 @@ def multi_html(R, v):
         chart = (f'<div><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
                  '<span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span>'
                  f'<span><i style="background:var(--grey);border-radius:50%"></i>Downside</span></div>{key_legend(rk)}</div></div>')
-        lower = f'<div class="two" style="grid-template-columns:1.35fr 1fr"><div>{options_table(v["options"], (26, 13, 11))}</div>{chart}</div>'
+        lower = f'<div class="two" style="grid-template-columns:1.35fr 1fr"><div>{options_table(v["options"], (26, 13, 11), True)}</div>{chart}</div>'
     else:
-        lower = options_table(v["options"], (28, 12, 10))
+        lower = options_table(v["options"], (28, 12, 10), True)
     page1 = f"{hero(v)}{decision}{lower}{closing_block(v)}"
 
     head = "".join(f"<th>{lab}</th>" for lab, _ in KEY_TERMS)
@@ -630,11 +646,12 @@ def multi_html(R, v):
                '<thead><tr><th>Term</th><th>Offered</th><th>Counter</th><th>Why</th></tr></thead><tbody>'
                + "".join(f'<tr><td>{esc(a)}</td><td>{esc(b)}</td><td class="good"><b>{esc(c)}</b></td><td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
                + "</tbody></table></div>")
-    details = f'''<div class="pb"></div><div class="dh">Key Terms Side by Side</div>
+    # OFR-324: the page title and the table heading say different things
+    details = f'''<div class="pb"></div><div class="dh">Offer Details</div>
 {snapshot(R)}<div class="treason-slot"></div>
-<h2>Key Terms <span class="h2s">Favorable · Watch · Weak</span></h2>
+<h2>Key Terms Side by Side <span class="h2s">Favorable · Watch · Weak</span></h2>
 <div class="tbl"><table class="kt"><colgroup><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:9%"></colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
-<div class="legend"><span>Each offer's single review has its full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
+<div class="legend"><span>Each offer has its own single review (a separate PDF) with the full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
 {ctr}
 <h2>Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, multi=True)}
 {fine(R)}'''

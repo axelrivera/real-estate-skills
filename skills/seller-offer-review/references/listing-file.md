@@ -61,6 +61,7 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `current_tax_bill_paid` | `true` once the seller paid this year's bill; else false, and asked for Nov and Dec closings | med |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`). Missing: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
 | `flood_disclosure` | `true` once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer; else flagged for the listing side where the market requires it | — |
+| `highest_and_best_due` | `YYYY-MM-DD HH:MM`: the deadline of a call for highest and best already out (FR/BAR: the Deadline on a signed NMOB-1 Notice of Multiple Offers in any package). It shows under Respond By, the plan holds every response until it passes, and another call isn't offered | none: "Call for Highest & Best" is one of the options | — |
 | `costs` | market values; see below | — |
 
 ### costs (This Deal's Own Numbers, Optional)
@@ -105,6 +106,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `buyer` | name(s) on the contract; shown once, as contract identification | not shown | — |
 | `buyer_agent`, `buyer_brokerage` | the buyer's agent and their brokerage, as on the contract | name falls back to price and financing | — |
 | `lender` | text | — | — |
+| `loan_officer` | the name that signs the pre-approval letter: the questions then don't ask who it is, and the call is to that person | — | — |
 | `price` | number | **required** | — |
 | `financing` | `cash` `conventional` `fha` `va` `usda` | conventional | high |
 | `down_pct` | 0–1 | from `loan_amount` and `price` when both are given; else FHA .035, VA/USDA 0, conventional .10 | med |

@@ -285,10 +285,27 @@ def pdf_text(path, pages=None):
         return "\n".join(d[i].get_text() for i in (pages or range(len(d))))
 
 
-def second_offer_spec(aga_dir, aga_pdf):
-    """The kit's second offer on the asis-offer-aga listing: same parcel, legal description and HOA contact as
-    the first offer's package, so both read as the same listing."""
+def listing_side(key):
+    """(listing broker, listing associate) from a package's answer key: the compensation agreement's payer."""
+    payer = ((key.get("mock") or {}).get("compensation_agreement") or {}).get("payer") or ""
+    m = re.fullmatch(r"(.+) \(signed by (.+)\)", payer)
+    return (m.group(1), m.group(2)) if m else (None, None)
+
+
+def loan_officer(pdf_path):
+    """The loan officer who signs the package's pre-approval letter, or None."""
+    m = re.search(r"(\S+ \S+)\s*\n\s*Senior Loan Officer", pdf_text(pdf_path))
+    return m.group(1) if m else None
+
+
+def second_offer_spec(aga_dir, aga_pdf, aga_key):
+    """The kit's second offer on the asis-offer-aga listing: same parcel, legal description, HOA contact and listing
+    brokerage as the first offer's package, so both read as the same listing."""
     spec = json.load(open(os.path.join(HERE, D["offer_review"]["second_offer_spec"]), encoding="utf-8"))
+    broker, associate = listing_side(aga_key)
+    if not broker:
+        raise KitError("Couldn't read the listing brokerage from the asis-offer-aga answer key.")
+    spec["brokers"].update(listing_broker=broker, listing_associate=associate)
     text = subprocess.run(["pdftotext", "-layout", os.path.join(aga_dir, aga_pdf), "-"], capture_output=True,
                           text=True).stdout if shutil.which("pdftotext") else pdf_text(os.path.join(aga_dir, aga_pdf))
     tax = re.search(r"Property Tax ID #:\s*(\S+)", text)
@@ -662,8 +679,13 @@ def case_offer_review(checks):
     d = os.path.join(OUT, "05-seller-offer-review")
     aga_dir, aga_key, aga_pdfs = build_package(f"dev/mock_contracts/scenarios/{o['starter']}.json", o["starter"])
     offer_pdf = next(p for p in aga_pdfs if p.endswith("-Offer.pdf"))
-    spec, same = second_offer_spec(aga_dir, offer_pdf)
+    spec, same = second_offer_spec(aga_dir, offer_pdf, aga_key)
     b_dir, b_key, b_pdfs = build_package(rel(spec), "manual-kit-sable-palm-second-offer")
+    if listing_side(b_key) != listing_side(aga_key):
+        raise KitError("The two offer packages name different listing brokerages.")
+    a_agent, b_agent = aga_key["offers"][0]["buyer_agent"], b_key["offers"][0]["buyer_agent"]
+    if a_agent.split()[-1][:5] == b_agent.split()[-1][:5]:
+        raise KitError(f"The buyer's agents' surnames read alike ({a_agent}, {b_agent}): rename one in the scenario.")
     # Both packages are for the same street, so the buyer's surname keeps the second upload from replacing the first
     for src_dir, pdfs, key, step in ((aga_dir, aga_pdfs, aga_key, "step-1"), (b_dir, b_pdfs, b_key, "step-2")):
         buyer = key["offers"][0]["buyer"].split()[-1]
@@ -676,9 +698,16 @@ def case_offer_review(checks):
     single = {k: v for k, v in aga_key.items() if k != "mock"}
     single["analysis_date"] = o["today"]
     single["listing"]["list_price"] = o["list_price"]
+    for offer, src_dir, pdfs in ((single["offers"][0], aga_dir, aga_pdfs), (b_key["offers"][0], b_dir, b_pdfs)):
+        officer = loan_officer(os.path.join(src_dir, next(p for p in pdfs if p.endswith("-Offer.pdf"))))
+        if officer:  # the pre-approval letter names the loan officer, so the review never asks who it is
+            offer["loan_officer"] = officer
     multi = json.loads(json.dumps(single))
     second = dict(b_key["offers"][0], id="B")
     multi["offers"].append(second)
+    nmob = (json.load(open(spec, encoding="utf-8")).get("disclosures") or {}).get("NMOB") or {}
+    if nmob.get("deadline"):  # the second package's Notice of Multiple Offers: highest and best is already called
+        multi["listing"]["highest_and_best_due"] = nmob["deadline"]
     work = os.path.join(WORK, "offer-review")
     dump(os.path.join(work, "listing-single.json"), single)
     dump(os.path.join(work, "listing-multi.json"), multi)
@@ -716,10 +745,13 @@ def case_offer_review(checks):
              f"- Certainty: {s1['certainty']['score']}/100 ({s1['certainty']['band']}); walk-away until "
              f"{s1['certainty']['walk_away_until']}. {s1['certainty'].get('walk_away_note', '')}",
              "", "## Step 2: Both Offers (review.py)", "",
-             f"- Action: **{s2['action']}**. {s2['why']}", f"- {s2.get('plan_summary', '')}", "",
-             table(["Rank", "Offer", "Price", "Net", "Downside", "Score", "Close", "Action"],
-                   [[x["rank"], x["offer"], x["price"], x["net"], x["downside"], x["score"], x["close"], x["action"]]
-                    for x in s2["ranked"]]), "",
+             f"- Action: **{s2['action']}**. {s2['why']}", f"- {s2.get('plan_summary', '')}",
+             f"- Respond by {s2['respond_by']} ({s2['respond_by_offer']})"
+             + "".join(f"; also {a['when']} ({a['what']})" for a in s2.get("respond_by_also") or ()) + ".",
+             f"- Next step: {s2['next_step']}", "",
+             table(["Rank", "Offer", "Price", "Net", "Downside", "Score", "Close", "Action", "Terms / Reason"],
+                   [[x["rank"], x["offer"], x["price"], x["net"], x["downside"], x["score"], x["close"], x["action"],
+                     x["terms"]] for x in s2["ranked"]]), "",
              "- Flags on the escalation offer: " + "; ".join(next(x for x in r2["offers"] if x["id"] == "B")["flags"]), "",
              "## Assumptions review.py lists (both steps)", ""] + [f"- {x['what']}" for x in r1["assumptions"]] + [
              "", "## Checks", ""] + [f"- {c}" for c in checks]
@@ -855,6 +887,11 @@ CHECKS = {
     "05-seller-offer-review": [("Step 1: net sheet and a counter for the single offer", "cowork"),
                                ("Step 1: the appraisal gap (AGA-1) is read and handled", "cowork"),
                                ("Step 2: both offers ranked with a plan (counter one, hold the other as backup)", "cowork"),
+                               ("Step 2: the backup's earlier time for acceptance is shown, with a step to ask for an "
+                                "extension", "cowork"),
+                               ("Step 2: the highest-and-best deadline (NMOB-1) is shown and not offered again", "cowork"),
+                               ("No question asks who the loan officer is or whether funds are verified when the "
+                                "package's letters show it", "cowork"),
                                ("No past dates in next steps", "cowork"), ("Numbers match expected.md", "cowork")],
     "06-contract-timeline-fha": [("Deadlines match expected.md", "both"),
                                  ("ICS imports into a calendar with the correct dates", "both"),

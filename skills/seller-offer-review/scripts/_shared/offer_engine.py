@@ -1604,11 +1604,22 @@ def propose_counter(o, L, S):
 ACCEPTANCE_DAYS = 2  # a counter's time for acceptance: two days after the review, on a weekday, 5:00 PM
 
 
-def acceptance_row(o, L):
-    """The Time for Acceptance row every counter carries (OFR-122): the buyer's deadline to sign the counter."""
+def acceptance_due(o, L):
+    """The day a counter's time for acceptance ends (at 5:00 PM): two days after the review, on a weekday. OFR-322: when
+    that is the offer's own deadline to the minute, the next weekday, so the counter's row never reads as no change."""
     due = L["analysis_date"] + timedelta(days=ACCEPTANCE_DAYS)
     while due.weekday() >= 5:
         due += timedelta(days=1)
+    if str(o.get("expires_raw") or "").strip()[:16] == f"{due:%Y-%m-%d} 17:00":
+        due += timedelta(days=1)
+        while due.weekday() >= 5:
+            due += timedelta(days=1)
+    return due
+
+
+def acceptance_row(o, L):
+    """The Time for Acceptance row every counter carries (OFR-122): the buyer's deadline to sign the counter."""
+    due = acceptance_due(o, L)
     was = o.get("expires") or "Not stated"
     # OFR-262: an estimated deadline (counted from the signature date) has only likely passed, never as a fact
     why = ("The offer's own deadline has passed: this sets a new one" if o.get("lapsed") == "passed" else

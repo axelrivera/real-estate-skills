@@ -12,8 +12,8 @@
   "disclosures": {"NMOB": {"deadline": "2026-09-23 12:00", "other": "Include proof of funds for any escalation."}},
   "addenda": [{"form": "EAC", "escalation_amount": 2000, "maximum_price": 506000}],
   "package": {"proof": "both"},
-  "brokers": {"listing_associate": "Hayden Hollister", "listing_broker": "Sunward Homes Realty",
-              "cooperating_associate": "Emery Castellano", "cooperating_broker": "Tidewater Key Realty"},
+  "brokers": {"listing_associate": "Dana Okafor", "listing_broker": "Greenleaf Realty Partners",
+              "cooperating_associate": "Emery Ostrander", "cooperating_broker": "Tidewater Key Realty"},
   "dates": {"offer": "2026-09-22 14:15"},
   "additional_terms": "Seller to leave the patio furniture."
 }

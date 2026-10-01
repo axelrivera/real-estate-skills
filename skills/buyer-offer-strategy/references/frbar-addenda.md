@@ -574,7 +574,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 - **Money Effects:** None.
 - **Changes to the Contract:** none. Printed terms: offers in writing; Seller may accept, counter or reject any or all; Seller may negotiate further with anyone and need not talk to every buyer; price is one factor of many; if an accepted deal fails, Seller may reopen negotiations or seek new offers.
 - **Red Flags:** a deadline shorter than the buyer's lender or pre-approval update needs; item 7 terms that change the process.
-- **Skill Use:** the timeline ignores it. The seller's review sets the deadline and scores all offers after it on the same basis. The offer builder treats this as the last round: best terms inside the buyer's limits, with the escalation (EAC-1) and appraisal gap (AGA-1) choices explicit, and a Para. 3 acceptance deadline that covers the seller's review time.
+- **Skill Use:** the timeline ignores it. The seller's review records the deadline (`highest_and_best_due`), shows it, holds every response until it passes, scores all offers after it on the same basis, and doesn't offer another call. The offer builder treats this as the last round: best terms inside the buyer's limits, with the escalation (EAC-1) and appraisal gap (AGA-1) choices explicit, and a Para. 3 acceptance deadline that covers the seller's review time.
 
 ## Closing, Escrow and Wire Safety
 
