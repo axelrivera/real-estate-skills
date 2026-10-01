@@ -247,6 +247,11 @@ def ask_compensation_agreement(R):
              "impact": old["impact"] if old else "med",
              "why": f"Rider GG: the buyer's broker compensation is in a separate agreement that isn't in the package ({net}). "
                     "Send the signed compensation agreement (the amount)"}
+        # OFR-353: the same ask on several offers is one item naming each (offer_engine.merge_assumptions), asked once
+        same = next((x for x in R["missing"] if (x["field"], x["why"], x["impact"]) == (a["field"], a["why"], a["impact"])), None)
+        if same:
+            same.setdefault("also", []).append(sc)
+            continue
         R["assumptions"].append(a)
         R["missing"].append(a)
     R["missing"].sort(key=lambda a: oe.IMPACT_ORDER[a["impact"]])
@@ -282,7 +287,8 @@ def estimated_costs(R, offers):
 
     out = []
     lines = {k: lab for o in offers for k, lab, v in o["ns"]["lines"] if v}
-    bb_assumed = any(a["field"] == "buyer_broker_pct" for a in R["missing"])
+    shown = {f"offer {o['id']}" for o in offers}  # OFR-352: only the offers this answer covers
+    bb_assumed = any(a["field"] == "buyer_broker_pct" and shown.intersection(oe.scopes(a)) for a in R["missing"])
     by_listing = [o for o in offers if o.get("bb_from_listing")]
     if S["listing_fee_assumed"] and by_listing:
         # OFR-293: the net sheet charges the market's total on one line when the listing broker pays the buyer's broker
@@ -429,24 +435,45 @@ def where(R, scope, also=()):
     return ", ".join(one(s) for s in [scope, *also])
 
 
+def place(R, a, offer_id=None):
+    """Where an assumption applies, for display. OFR-348: a single review names only its own offer on an assumption
+    shared with others."""
+    scopes = oe.scopes(a)
+    if offer_id and f"offer {offer_id}" in scopes:
+        scopes = [x for x in scopes if not x.startswith("offer ") or x == f"offer {offer_id}"]
+    return where(R, scopes[0], scopes[1:])
+
+
+def review_scope(R, mode, o):
+    """OFR-352: the offer a single review of one of several offers is scoped to (its assumptions, questions and cost
+    labels, as its PDF lists them), or None (one offer in the file, or the comparison)."""
+    return o["id"] if mode == "single" and o is not None and R["mode"] == "multi" else None
+
+
 # OFR-287: offer terms the review assumed and the counter won't touch (an assumed inspection period, a missing deposit),
 # the lead-paint check and Rider GG's compensation agreement (OFR-299) are always asked after the high-impact gaps,
 # even past the limit
 ALWAYS_ASK = ("inspection_days", "deposit", "year_built", "compensation_agreement")
 
 
-def confirm_items(R, limit=4):
+def confirm_items(R, limit=4, offer_id=None):
     """The assumptions that would change the answer most, for the chat reply: the high-impact gaps (up to `limit`), the
-    assumed offer terms in ALWAYS_ASK, then other medium-impact gaps while there's room."""
-    asked = [a for a in R["missing"] if a["impact"] in ("high", "med")]
+    assumed offer terms in ALWAYS_ASK, then other medium-impact gaps while there's room. OFR-352: `offer_id` (a single
+    review of one of several offers) asks only what its own review lists."""
+    pool = listed_assumptions(R, offer_id=offer_id) if offer_id else R["missing"]
+    asked = [a for a in pool if a["impact"] in ("high", "med")]
     terms = [a for a in asked if a["field"] in ALWAYS_ASK]
     high = [a for a in asked if a["impact"] == "high" and a not in terms][:limit]
     med = [a for a in asked if a["impact"] == "med" and a not in terms][:max(0, limit - len(high) - len(terms))]
     return high + terms + med
 
 
-def to_confirm(R, limit=4):
-    return [a["why"] for a in confirm_items(R, limit)]
+def to_confirm(R, limit=4, offer_id=None):
+    out = []
+    for a in confirm_items(R, limit, offer_id):
+        if a["why"] not in out:  # OFR-353: one question per ask, however many offers it covers
+            out.append(a["why"])
+    return out
 
 
 THREAT_LABEL = {"appraisal": "Appraisal", "contingency": "Contingencies", "timeline": "Closing date", "approval": "Loan approval",
@@ -629,7 +656,7 @@ def incomplete_view(R, o):
         "options": [],
         "preliminary": None,
         "next_step": cap(nxt),  # OFR-264: a sentence after "Next Step:"
-        "data_note": data_note(R),
+        "data_note": data_note(R, offer_id=o["id"] if R["mode"] == "multi" else None),  # OFR-352: as its assumptions list
     }
 
 
@@ -836,14 +863,15 @@ def multi_view(R):
              f"{'responding to' if act == 'COUNTER' else 'moving forward with'} another offer (NAR Standard of Practice 1-15); "
              "nothing is declined until the seller approves.")
 
-    ranked = [{"rank": i + 1, "offer": o["label"], "key": o["key"],
+    # OFR-351: `id` is what --offer takes, for each offer's single review after the comparison
+    ranked = [{"rank": i + 1, "offer": o["label"], "key": o["key"], "id": o["id"],
                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                "price": money(o["price"]) + (" (escalated)" if o.get("escalated") else ""), "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]),
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
                "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
                "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],
                "terms": terms[o["id"]], "form_assumed": form_assumed(R, o)} for i, o in enumerate(rk)]
-    ranked += [{"rank": "—", "offer": o["label"], "key": o["key"],
+    ranked += [{"rank": "—", "offer": o["label"], "key": o["key"], "id": o["id"],
                 "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                 "price": money(o["price"]), "net": "—", "downside": "—", "score": "—", "band_class": "na", "risk_days": "—",
                 "close": f"{o['close']:%b %-d}", "action": "Incomplete", "status": "risk",
@@ -921,9 +949,9 @@ def net_sheet_rows(cols):
 def offer_detail(o, R):
     costs, L = R["costs"], R["listing"]
     br = biggest_risk(o)
-    cols = [("As Offered", o["ns"]), ("Downside", o["ns_down"])]
-    if o["counter_rows"]:
-        cols.append(("Counter", o["ns_counter"]))
+    cols = [("As Offered", o["ns"]), ("Downside Case", o["ns_down"])]
+    if o["counter_rows"]:  # OFR-354, DS-106: the PDF's labels; a lapsed offer's counter is for reference, never a proposal
+        cols.append(("Counter (Reference)" if o.get("action") == "INCOMPLETE" else "Proposed Counter", o["ns_counter"]))
     return {
         "id": o["id"], "label": o["label"], "buyer": o["buyer"], "buyer_agent": o.get("buyer_agent") or "", "price": money(o["price"]), "financing": fin_str(o),
         "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]), "counter_net": money(o["ns_counter"]["net_adj"]),
@@ -946,6 +974,7 @@ def result(R, mode="auto", offer_id=None):
     mode, o = pick(R, mode, offer_id)
     view = single_view(R, o) if mode == "single" else multi_view(R)
     L = R["listing"]
+    sid = review_scope(R, mode, o)
     offers = [o] if mode == "single" else R["ranked"]
     checked = offers if mode == "single" else R["ranked"] + R["incomplete"]  # OFR-114: a blocked offer still gets its chat notes
     return {
@@ -958,9 +987,11 @@ def result(R, mode="auto", offer_id=None):
                           if deadline_note(R["seller"]) else None),
         "summary": view,
         "offers": [offer_detail(x, R) for x in offers],
-        "to_confirm": to_confirm(R),
+        "to_confirm": to_confirm(R, offer_id=sid),  # OFR-352
         "estimated_costs": estimated_costs(R, offers),  # OFR-272: named in one line in every quick answer
-        "assumptions": [{"impact": a["impact"], "where": where(R, a["scope"], a.get("also") or ()), "what": a["why"]} for a in R["missing"]],
+        # OFR-352: the list the report shows, the one the Preliminary line and the data note count
+        "assumptions": [{"impact": a["impact"], "where": place(R, a, sid), "what": a["why"], "field": a["field"]}
+                        for a in listed_assumptions(R, mode == "multi", sid)],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
         # chat only (never on the report): the best-effort line for a contract that isn't FR/BAR, and revision notes

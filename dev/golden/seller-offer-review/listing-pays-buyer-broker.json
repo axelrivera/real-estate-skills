@@ -925,11 +925,9 @@
    "value": false
   },
   {
-   "field": "compensation_agreement",
-   "impact": "med",
-   "value": null
-  },
-  {
+   "also": {
+    "count": 1
+   },
    "field": "compensation_agreement",
    "impact": "med",
    "value": null
@@ -1040,11 +1038,9 @@
    "value": false
   },
   {
-   "field": "compensation_agreement",
-   "impact": "med",
-   "value": null
-  },
-  {
+   "also": {
+    "count": 1
+   },
    "field": "compensation_agreement",
    "impact": "med",
    "value": null

@@ -40,7 +40,7 @@ class Analysis(unittest.TestCase):
         self.assertEqual(s["counter"]["rows"][-1]["term"], "Time for Acceptance")  # OFR-122
         self.assertEqual(out["value_range"], "not provided")
         self.assertTrue(out["to_confirm"])
-        self.assertEqual(out["offers"][0]["net_sheet"]["columns"], ["As Offered", "Downside", "Counter"])
+        self.assertEqual(out["offers"][0]["net_sheet"]["columns"], ["As Offered", "Downside Case", "Proposed Counter"])  # OFR-354
 
     def test_no_active_offers_stops(self):
         """OFR-22: only declined or expired offers is a plain stop, not a recommendation."""
