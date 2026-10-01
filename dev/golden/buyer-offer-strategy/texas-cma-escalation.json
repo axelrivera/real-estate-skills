@@ -3520,6 +3520,7 @@
   "price": 632000,
   "seller_concessions": 0
  },
+ "reached": null,
  "reply_lines": [
   {
    "key": "flat_number"

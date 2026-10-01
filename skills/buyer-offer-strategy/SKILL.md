@@ -37,7 +37,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 One JSON file per property the buyer is pursuing, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files): read `references/buyer-file.md` for the fields. For a condo (`property.type: condo`), also read `references/condo.md` for lender approval, association questions and the buyer's rescission rights.
 
 - **Value range and market stats:** use the CMA, in this order:
-  1. A buyer CMA's `.cma.json` from earlier in this conversation (`references/saved-files.md`): pass it with `--cma`. It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats. A seller-side CMA is flagged: its range was built for the other party.
+  1. A buyer CMA's `.cma.json` (`references/saved-files.md`): pass it with `--cma`. One the agent attaches with this request wins over one from earlier in the conversation; when the two disagree (another range or offer plan), say in one line which was used ("Using the CMA you attached: $443,000–$456,000."). It fills the value range, the median adjusted comp price (the price anchor), subject facts and market stats. A seller-side CMA is flagged: its range was built for the other party.
   2. Any other CMA (a CMA PDF from an earlier conversation, another tool's PDF, notes): read the low, high and any market stats, confirm them with the agent in one line, and put them in `value` and `market`.
   3. Nothing: list price stands in for value, so the price stays at list (never called "at value"), the appraisal gap is a question for the buyer, and the answer is Preliminary.
 - **Buyer:** loan type and down payment, first-time buyer or not, max price, cash available, reserve floor, max payment.
@@ -47,7 +47,7 @@ One JSON file per property the buyer is pursuing, in a temporary folder, never t
 
 **Minimum to run:** list price and cash available.
 
-**Rate:** when the agent gives none, look up the latest Freddie Mac weekly (PMMS) 30-year average and enter it as `costs.rate` with `costs.rate_source` naming the week ("Freddie Mac weekly 30-year average, week of Sep 24, 2026"). The built-in 6.5% is only the offline fallback, labeled Assumed. The rate matters most when the payment limit sets the price.
+**Rate:** a lender's quote goes in `costs.rate` alone, with no `rate_source`. When the agent gives none, look up the latest Freddie Mac weekly (PMMS) 30-year average and enter it as `costs.rate` with `costs.rate_source` naming the week ("Freddie Mac weekly 30-year average, week of Sep 24, 2026"). The built-in 6.5% is only the offline fallback, labeled Assumed. The rate matters most when the payment limit sets the price.
 
 Local costs come from the property's location (`references/local-costs.md`): Florida's are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Don't ask about them up front; seller-side figures (a title quote, a looked-up transfer tax) go in `property.costs`, and the buyer's rate, insurance and tax rate in the top-level `costs` block.
 

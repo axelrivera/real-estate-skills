@@ -734,7 +734,10 @@ class Audit20260930(unittest.TestCase):
         self.assertEqual(len(r["B"]["payment_assumed"]), 2)
         for words in r["B"]["payment_assumed"]:
             self.assertIn(words, r["why"]["price"])
-        self.assertEqual(strategy.analyze(copy.deepcopy(self.GAP))["B"]["payment_assumed"], [])
+        d = copy.deepcopy(self.GAP)
+        self.assertEqual(strategy.analyze(d)["B"]["payment_assumed"], ["estimated $3,400/yr insurance"])  # OFR-328
+        d["buyer"]["insurance_quote"] = True  # a quote in hand and a given rate: nothing assumed
+        self.assertEqual(strategy.analyze(d)["B"]["payment_assumed"], [])
 
     def test_no_stronger_quotes_the_printed_deposit(self):  # OFR-231
         r = analyze("fha-competitive.json")
@@ -890,6 +893,74 @@ class Audit20260930Iter7(unittest.TestCase):
         _, note = strategy.risk_after(fl["O"]["recommended"], fl["costs"])
         self.assertIsNone(strategy.cf.term_words(fl["O"]["recommended"]["contract_form"])["deposit_risk_confirm"])
         self.assertNotIn("confirm when your contract", note or "")
+
+
+class ManualTestFixes(unittest.TestCase):
+    """The owner's manual smoke test (case 4): one competing offer, a buyer CMA, a lender-quoted rate and an
+    insurance estimate typed in (one-competing-reach.json)."""
+
+    def setUp(self):
+        self.r = analyze("one-competing-reach.json")
+
+    def lvl_band(self, r, k="recommended"):
+        return r["bands"][k][r["B"]["competition"]["level"]][0]
+
+    def test_reaches_the_stronger_band_inside_every_limit(self):  # OFR-325
+        r, B = self.r, self.r["B"]
+        rule, _ = strategy.build_offer(B, r["costs"])
+        _, O = strategy.run_engine(B, r["costs"], [("recommended", rule)])
+        self.assertEqual(strategy.band_of(strategy.ci(O["recommended"], O["recommended"]["target"]["net_adj"],
+                                                      B["property"]["list_price"]), 1)[0], "unl")  # the rule's draft
+        self.assertEqual(self.lvl_band(r), "risk")
+        self.assertIsNotNone(r["reached"])
+        self.assertEqual(r["limits"]["recommended"], [])  # inside every limit
+        t = r["terms"]["recommended"]
+        self.assertLessEqual(t["price"], min(B["value"]["cma_high"], B["cma_offer_plan"]["walk_away"]))
+        self.assertGreaterEqual(r["cash"]["recommended"]["reserve"], B["buyer"]["reserve_floor"])
+        self.assertIsNone(r["promoted"])  # the softer build no longer replaces it at the same (Unlikely) outlook
+        self.assertEqual(self.lvl_band(r, "lower_cost"), "unl")
+
+    def test_no_search_with_overrides_or_a_competitive_offer(self):  # OFR-325
+        d = fixture("one-competing-reach.json")
+        d["overrides"] = {"price": 438000}
+        self.assertIsNone(strategy.analyze(d, cma=strategy.load_cma(d))["reached"])
+        self.assertIsNone(analyze("condo-flood.json")["reached"])  # Competitive already: the rule's offer stands
+
+    def test_lower_cost_reasons_fit_the_competition_level(self):  # OFR-326
+        B, costs = self.r["B"], self.r["costs"]
+        rec, _ = strategy.build_offer(B, costs)
+        t, why = strategy.lower_cost(B, costs, rec)
+        B0 = copy.deepcopy(B)
+        B0["competition"]["level"] = 0
+        _, why0 = strategy.build_offer(B0, costs)
+        for k in ("price", "seller_concessions"):  # never the level-0 reason on a deal with one competing offer
+            self.assertIn(k, why)
+            self.assertNotEqual(why[k], why0[k])
+        promoted = strategy.promote_why({}, why, "lower_cost", t, rec)
+        self.assertNotEqual(promoted["price"], why0["price"])
+        self.assertNotEqual(promoted["seller_concessions"], why0["seller_concessions"])
+
+    def test_lender_quoted_rate_is_not_an_assumption(self):  # OFR-327
+        self.assertNotIn("rate_source", [a["field"] for a in self.r["missing"]])
+        d = fixture("one-competing-reach.json")
+        d["costs"]["rate_source"] = "Freddie Mac weekly 30-year average, week of Sep 24, 2026"
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertIn("rate_source", [a["field"] for a in r["missing"]])
+
+    def test_typed_insurance_estimate_stays_an_assumption(self):  # OFR-328
+        self.assertIn("insurance_annual", [a["field"] for a in self.r["missing"]])
+        self.assertFalse(strategy.quote_in_hand(self.r["B"]["buyer"]))
+        d = fixture("one-competing-reach.json")
+        del d["buyer"]["insurance_quote"]  # a premium given with no flag is a quote in hand (OFR-217)
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertNotIn("insurance_annual", [a["field"] for a in r["missing"]])
+
+    def test_price_cut_in_a_tight_market_is_not_soft(self):  # OFR-331
+        P = {"price_cuts": 1}
+        self.assertEqual(strategy.market_heat(P, {"months_supply": 1.4})[0], "normal")
+        self.assertEqual(strategy.market_heat(P, {"months_supply": 4.2})[0], "soft")
+        self.assertEqual(strategy.market_heat(P, {})[0], "soft")  # supply unknown: the cut still reads soft
+        self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 1.4, "median_dom": 23})[0], "soft")
 
 
 if __name__ == "__main__":

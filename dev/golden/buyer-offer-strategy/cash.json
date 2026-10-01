@@ -3790,6 +3790,7 @@
   "price": 402000,
   "seller_concessions": 0
  },
+ "reached": null,
  "reply_lines": {
   "count": 0
  },
