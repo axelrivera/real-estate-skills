@@ -314,14 +314,29 @@ def second_offer_spec(aga_dir, aga_pdf, aga_key):
     phone = re.search(r"Phone (\(\d{3}\) \d{3}-\d{4})", text)
     if not (tax and legal and contact and phone):
         raise KitError("Couldn't read the tax ID, legal description or HOA contact from the asis-offer-aga package.")
+    # OFR-345: the HOA's fee, period and names come from the first package too, or the scenario re-seeds them and the
+    # two packages disagree ($95 a quarter vs. $95 a month)
+    fee = re.search(r"CURRENT AMOUNT IS\s+([\d,]+\.\d{2})\s*\n\s*\$_*\s*PER\s+(\w+)", text)
+    assoc = re.search(r"is/are:\s*\n[\s_]*\n\s*(\S.*?Association, Inc\.)\s.*\n\s*(\S[^\n_]*?)\s*\n", text)
+    email = re.search(r"Email (\S+@\S+)", text)
+    if not (fee and assoc):
+        raise KitError("Couldn't read the HOA fee or association from the asis-offer-aga package.")
+    hoa_fee, hoa_period = float(fee.group(1).replace(",", "")), fee.group(2).lower()
+    if round(hoa_fee / {"quarter": 3, "year": 12}.get(hoa_period, 1), 2) != aga_key["listing"].get("hoa_monthly"):
+        raise KitError(f"The HOA fee read from the package ({hoa_fee:g} per {hoa_period}) doesn't match its answer key.")
     legal_text = " ".join(re.sub(r"^\s*\d+\s", " ", ln).strip() for ln in legal.group(1).splitlines()).strip()
     legal_text = re.sub(r"\s+", " ", legal_text)
     spec["property"]["tax_id"] = tax.group(1)
     spec["property"]["legal_description"] = legal_text
-    spec["riders"] = [{"code": "B", "contact": contact.group(1), "phone": phone.group(1)}]
+    rider = {"code": "B", "contact": contact.group(1), "phone": phone.group(1), "fee": round(hoa_fee, 2),
+             "fee_period": hoa_period, "association": assoc.group(1), "management_company": assoc.group(2)}
+    if email:
+        rider["email"] = email.group(1)
+    spec["riders"] = [rider]
     path = os.path.join(WORK, "sable-palm-second-offer.json")
     dump(path, spec)
-    return path, {"tax_id": tax.group(1), "legal": legal_text, "hoa_contact": contact.group(1)}
+    return path, {"tax_id": tax.group(1), "legal": legal_text, "hoa_contact": contact.group(1),
+                  "hoa": f"${hoa_fee:,.0f} per {hoa_period}"}
 
 
 def deal_from_key(key, today):
@@ -699,6 +714,8 @@ def case_offer_review(checks):
             shutil.copy(os.path.join(src_dir, p), os.path.join(d, step, p.replace(".pdf", f"-{buyer}.pdf")))
     if b_key["listing"]["address"] != aga_key["listing"]["address"]:
         raise KitError("The second offer isn't on the same listing.")
+    if b_key["listing"].get("hoa_monthly") != aga_key["listing"].get("hoa_monthly"):  # OFR-345
+        raise KitError("The two offer packages show different HOA fees.")
 
     single = {k: v for k, v in aga_key.items() if k != "mock"}
     single["analysis_date"] = o["today"]
@@ -741,7 +758,8 @@ def case_offer_review(checks):
                   f"Escalation Addendum (EAC-1): {money(b['escalation']['increment'])} over competing offers, cap "
                   f"{money(b['escalation']['cap'])}"],
                  ["Riders", ", ".join(a["riders"]), ", ".join(b["riders"])]]), "",
-             f"Both packages carry the same parcel ({same['tax_id']}) and HOA rider contact ({same['hoa_contact']}).", "",
+             f"Both packages carry the same parcel ({same['tax_id']}), HOA rider contact ({same['hoa_contact']}) and HOA "
+             f"fee ({same['hoa']}).", "",
              "## Step 1: Single Offer (review.py)", "",
              f"- Action: **{s1['action']}**. {s1['why']}",
              f"- Respond by {s1['respond_by']}.",
