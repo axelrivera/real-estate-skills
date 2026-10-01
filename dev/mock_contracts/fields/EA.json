@@ -1,0 +1,27 @@
+{
+ "family": "EA",
+ "revision": "EA-4 Rev 3/21",
+ "fields": {
+  "closing": {"at": {"after": "Closing Date. Seller and Buyer"}, "check": "bool(v.closing)"},
+  "closing_date": {"at": {"label": "to extend the Closing Date until"}, "value": "mdy(v.closing)"},
+  "financing": {"at": {"after": "Financing Period.", "kind": "check"}, "check": "bool(v.loan_approval_extra_days or v.loan_approval_until)"},
+  "financing_days": {"at": {"label": "Period for an additional"}, "value": "v.loan_approval_extra_days"},
+  "financing_until": {"at": {"label": "for an additional days or until", "nth": 0}, "value": "mdy(v.loan_approval_until)"},
+  "inspection": {"at": {"after": "Inspection Period.", "kind": "check"}, "check": "bool(v.inspection_extra_days or v.inspection_until)"},
+  "inspection_days": {"at": {"label": "the Inspection Period for an additional"}, "value": "v.inspection_extra_days"},
+  "inspection_until": {"at": {"within": [34, 270, 230, 287], "page": 1}, "value": "mdy(v.inspection_until)"},
+  "title_cure": {"at": {"after": "Title Cure Period.", "kind": "check"}, "check": "bool(v.title_cure_extra_days or v.title_cure_until)"},
+  "title_cure_days": {"at": {"label": "Cure Period for an additional"}, "value": "v.title_cure_extra_days"},
+  "title_cure_until": {"at": {"within": [60, 308, 230, 327], "page": 1}, "value": "mdy(v.title_cure_until)"},
+  "short_sale": {"at": {"after": "Short Sale Approval Deadline.", "kind": "check"}, "check": "bool(v.short_sale_extra_days or v.short_sale_until)"},
+  "short_sale_days": {"at": {"label": "Approval Deadline for an additional"}, "value": "v.short_sale_extra_days"},
+  "short_sale_until": {"at": {"within": [88, 343, 230, 362], "page": 1}, "value": "mdy(v.short_sale_until)"},
+  "sale_lease": {"at": {"after": "Sale/Lease of Buyer's Property", "kind": "check"}, "check": "bool(v.sale_lease_extra_days or v.sale_lease_until)"},
+  "sale_lease_days": {"at": {"within": [148, 377, 190, 397], "page": 1}, "value": "v.sale_lease_extra_days"},
+  "sale_lease_until": {"at": {"within": [240, 377, 405, 397], "page": 1}, "value": "mdy(v.sale_lease_until)"},
+  "due_diligence": {"at": {"after": "Due Diligence Period.", "kind": "check"}, "check": "bool(v.due_diligence_extra_days or v.due_diligence_until)"},
+  "due_diligence_days": {"at": {"label": "Due Diligence Period for an additional"}, "value": "v.due_diligence_extra_days"},
+  "due_diligence_until": {"at": {"within": [52, 412, 230, 431], "page": 1}, "value": "mdy(v.due_diligence_until)"},
+  "except_terms": {"at": {"kind": "area", "page": 1}, "value": "v.except_terms"}
+ }
+}

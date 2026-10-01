@@ -25,6 +25,8 @@ closing_costs:
   seller_title_fees:
     settlement_and_title_fees: 1200   # settlement, search and recording, seller side
   hoa_estoppel_fee: 250
+  hoa_estoppel_label: HOA Documents   # the association's payoff and status documents, a state-neutral name
+                                      # (an estoppel letter in Florida, a resale certificate in Texas)
   buyer_closing_cost_pct: 0.03        # a buyer's closing costs, share of price
 
 brokerage:                            # assumed 5% total until the deal says otherwise

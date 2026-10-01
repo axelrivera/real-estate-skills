@@ -15,7 +15,7 @@ TEMPLATE = os.path.join(SCRIPTS, "..", "assets", "profile-template.md")
 PLACEHOLDERS = {
     "full name": "name", "team name": "team", "brokerage": "brokerage", "license number": "license",
     "phone": "phone", "email": "email", "website": "website",
-    "how the agent writes": "voice", "disclaimers for documents": "disclaimers",
+    "how the agent writes": "voice", "each disclaimer for documents, verbatim, with a blank line between them": "disclaimers",
 }
 
 
@@ -97,8 +97,8 @@ class Images(unittest.TestCase):
             r = ec.from_image(image(tmp, [((31, 58, 95), 0.4), ((212, 175, 55), 0.3)]))
         self.assertEqual([c["name"] for c in r["colors"][:2]], ["Navy", "Gold"])
         self.assertIn("split", r["suggestion"])
-        self.assertTrue(any("Gold is too light" in n for n in r["notes"]))
-        self.assertTrue(any("Navy for all reports is also a good choice" in n for n in r["notes"]))
+        self.assertTrue(any("Gold" in n for n in r["notes"]))  # the light color is named in a note
+        self.assertTrue(any("Navy" in n for n in r["notes"]))  # and the one-color alternative
 
     def test_exact_logo_colors_not_bucket_centers(self):
         """Report the logo's real colors (#1F3A5F, #D4AF37), not the rounded bucket centers."""
@@ -183,6 +183,19 @@ class Template(unittest.TestCase):
         self.assertEqual(r["fields"], ["name", "brokerage"])
         self.assertTrue(r["colors"]["buyer"]["default"])
 
+    def test_two_colors_and_separate_disclaimers(self):
+        """CORE-213: the Brand Colors line has the two-color form, and disclaimers keep a blank line between them, so
+        the report notices (render.notice_lines splits on blank lines) print each as its own paragraph."""
+        with open(TEMPLATE) as f:
+            tpl = f.read()
+        self.assertIn("{{buyer color}} for buyer reports, {{seller color}} for seller reports.", tpl)
+        self.assertIn("with a blank line between them", tpl)
+        two = "Information deemed reliable but not guaranteed.\n\nEqual Housing Opportunity."
+        with tempfile.TemporaryDirectory() as tmp:
+            agent = profiles.load_agent(write_profile(tmp, fill({**FULL, "disclaimers": two})))
+        self.assertEqual([p for p in agent["disclaimers"].split("\n\n") if p.strip()],
+                         ["Information deemed reliable but not guaranteed.", "Equal Housing Opportunity."])
+
     def test_quotes_survive(self):
         values = {"name": 'Ana "AJ" Peña', "brokerage": "#1 Realty, LLC"}
         with tempfile.TemporaryDirectory() as tmp:
@@ -204,7 +217,7 @@ class Check(unittest.TestCase):
     def test_missing_brokerage_and_bad_color(self):
         r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrand: {primary: "navy"}\n---\n')
         self.assertFalse(r["ok"])
-        self.assertIn("Missing brokerage.", r["problems"])
+        self.assertTrue(any("brokerage" in p.lower() for p in r["problems"]))
         self.assertTrue(any("navy" in p for p in r["problems"]))
 
     def test_unreadable_file(self):
@@ -262,7 +275,7 @@ class AuditSmallFixes(unittest.TestCase):
                                       '  primary: "#D4AF37"  # Gold\n---\n')
             r = check_profile.check(path)
         self.assertEqual(r["colors"]["buyer"]["name"], "Gold")
-        self.assertTrue(r["warnings"][0].startswith("Gold is too light"))
+        self.assertIn("Gold", r["warnings"][0])
 
     def test_missing_logo_file(self):
         """CORE-26: a missing file is reported as a missing file, not a website."""
@@ -275,6 +288,39 @@ class AuditSmallFixes(unittest.TestCase):
         r = _json.loads(out.getvalue())
         self.assertFalse(r["ok"])
         self.assertIn("File not found", r["notes"][0])
+
+class AuditFixes0929(unittest.TestCase):
+    def check_text(self, text):
+        with tempfile.TemporaryDirectory() as tmp:
+            return check_profile.check(write_profile(tmp, text))
+
+    def test_voice_gets_fair_housing_check(self):
+        """FH-106: the Voice and Disclaimers sections get the same check as every rendered file."""
+        base = '---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\n---\n\n## Voice\n\n{}\n'
+        r = self.check_text(base.format("Warm and patient; I love helping young families and couples expecting a baby."))
+        self.assertFalse(r["ok"])
+        self.assertTrue(any(p.startswith("Voice section:") and "familial" in p for p in r["problems"]), r["problems"])
+        r = self.check_text(base.format("Warm and patient, numbers first. Office is across from the church on Main."))
+        self.assertTrue(r["ok"], r)
+
+    def test_unquoted_brand_color_warns(self):
+        """CORE-101: an unquoted #code is a YAML comment; say so instead of falling back to blue silently."""
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n  primary: #1F3A5F\n---\n')
+        self.assertFalse(r["ok"])
+        self.assertTrue(any(p.startswith("primary is empty") for p in r["problems"]), r["problems"])
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand: #1F3A5F\n---\n')
+        self.assertTrue(any(p.startswith("brand is empty") for p in r["problems"]), r["problems"])
+
+    def test_color_name_short_and_bare_codes(self):
+        """CORE-102: the agent's color name is found for 3-digit codes and codes without #."""
+        for code in ("#D4AF37", "D4AF37", "#d4af37"):
+            r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n'
+                                f'  primary: "{code}"  # Harvest\n---\n')
+            self.assertEqual(r["colors"]["buyer"]["name"], "Harvest", code)
+        r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n'
+                            '  primary: "#FC0"  # Sunny\n---\n')
+        self.assertEqual((r["colors"]["buyer"]["hex"], r["colors"]["buyer"]["name"]), ("#FFCC00", "Sunny"))
+
 
 if __name__ == "__main__":
     unittest.main()

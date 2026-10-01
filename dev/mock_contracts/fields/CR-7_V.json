@@ -1,0 +1,13 @@
+{
+ "family": "CR-7_V",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "buyer_property": {"at": {"label": "closing of Buyer's property located at"}, "value": "v.buyer_property"},
+  "sale_contingency_date": {"at": {"after": "Buyer may, within 3 days"}, "value": "mdy(v.sale_contingency_date)"},
+  "under_contract": {"at": {"label": "Buyer's property", "kind": "check"}, "check": "bool(v.under_contract)"},
+  "not_under_contract": {"at": {"label": "Buyer's property is", "kind": "check"}, "check": "not v.under_contract"}
+ },
+ "roles": {
+  "buyer_names": {"label": "and", "page": 1, "nth": 0}
+ }
+}

@@ -34,6 +34,7 @@ One block per MLS number, newest listing first and newest change first within ea
 
 - **Change Info** is either a status move (`->ACT` new listing, `ACT->PND` under contract, `PND->SLD` closed, `ACT->TOM` held off market, `TOM->ACT` back on, `ACT->CAN`, `ACT->EXP`, `ACT->WDN`) or a price move (`895000.00->839000`: a cut when the second number is lower). A blank Change Type with a price move is a price change.
 - **DOM** is that listing's days on market at the change; it restarts with each MLS number. Total active days = each earlier listing's last DOM plus the current listing's ADOM from the header. The header's CDOM resets after a long enough gap off the market, so it can undercount: add it up yourself.
+- **A DOM or CDOM figure anywhere in a listing's block** (a DOM column, or a note such as "CDOM at cancel: 83" on any row) counts for that listing. Where the history is entered as `history.events` (`references/report-data.md`), it goes on that listing's last event as `dom`, whichever row it's printed on. Without it the script counts calendar days between status changes, which misses the MLS's own count. On the oldest listing CDOM is its DOM, so `cdom` works there too.
 - The block's status line gives the outcome: Sold, Active, Pending, Expired, `Canceled (WDN-U)` and so on.
 - `PND` followed by anything other than `SLD` is a failed contract. A closing far below the list price (`$550,000` listed, `$325,000` sold) usually means condition, an off-market or investor sale, or a distressed seller: match it to the public-record sale and the next sale's price, and name what the data shows, not a guess.
 
@@ -67,6 +68,7 @@ The report is built from MLS data, and some of it isn't for consumers. These can
 - Owner names, mailing address, owner phone; buyer and seller names in the sale history. Say "an individual", "an LLC", "a trust" or "an investor" when the owner type matters.
 - Mortgage history (lenders, amounts, dates). In chat it can hint at the seller's room to negotiate or, on the seller side, remind the agent to get a payoff statement. Never estimate a payoff from it.
 - Realtor Remarks, Confidential Info, showing instructions, lockbox, the listing agent's contact details and private notes.
+- Realtor Information's terms (occupancy, financing accepted, As-Is). A client file may discuss the As-Is contract only conditionally ("If the offer is written on the As-Is contract, ...") or when the public remarks say As-Is; the seller's preference goes to the agent in the chat reply.
 - The AVM figure.
 
 Past sale prices and dates, list prices, price changes and days on market are fine to show: they're the history the report explains.

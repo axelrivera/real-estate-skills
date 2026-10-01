@@ -1,0 +1,23 @@
+{
+ "family": "CR-7_B",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "community": {"at": {"label": "Disclosure Summary For"}, "value": "v.community"},
+  "assessment": {"at": {"label": "THE CURRENT AMOUNT IS", "after": "PER", "nth": 0}, "value": "money(v.fee)"},
+  "assessment_period": {"at": {"label": "THE CURRENT AMOUNT IS PER", "nth": 0}, "value": "v.fee_period"},
+  "approval_is_required": {"at": {"within": [340, 118, 358, 134], "page": 2, "kind": "check"}, "check": "bool(v.approval_required)"},
+  "approval_not_required": {"at": {"within": [363, 118, 381, 134], "page": 2, "kind": "check"}, "check": "not v.approval_required"},
+  "approval_required_days": {"at": {"label": "Association approval no later than"}, "value": "v.approval_days if v.approval_required else None"},
+  "approval_initiate_days": {"at": {"label": "prior to Closing. Within", "page": 2}, "value": "v.approval_initiate_days if v.approval_required else None"},
+  "association": {"at": {"within": [30, 476, 302, 494], "page": 2}, "value": "v.association"},
+  "management_company": {"at": {"within": [310, 476, 590, 494], "page": 2}, "value": "v.management_company"},
+  "association_contact": {"at": {"label": "Contact Person", "after": "Contact Person", "page": 2}, "value": "v.contact"},
+  "association_phone": {"at": {"label": "Phone", "after": "Phone", "page": 2}, "value": "v.phone"},
+  "association_email": {"at": {"label": "Email", "after": "Email", "page": 2}, "value": "v.email"},
+  "website": {"at": {"label": "www.", "page": 2}, "value": "v.website"}
+ },
+ "roles": {
+  "sign:buyer": [{"within": [30, 670, 590, 700], "page": 1, "part": [0.33, 1]}, {"within": [30, 700, 590, 728], "page": 1, "part": [0.33, 1]}],
+  "date:buyer": [{"within": [30, 670, 590, 700], "page": 1, "part": [0, 0.3]}, {"within": [30, 700, 590, 728], "page": 1, "part": [0, 0.3]}]
+ }
+}

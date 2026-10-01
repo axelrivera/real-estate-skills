@@ -1,0 +1,12 @@
+{
+ "family": "MISIRS",
+ "revision": "MISIRS-2 Rev. 1/26",
+ "fields": {
+  "association": {
+   "at": {
+    "label": "Association Name:"
+   },
+   "value": "v.association or condo_association"
+  }
+ }
+}

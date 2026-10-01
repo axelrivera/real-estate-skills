@@ -1,0 +1,355 @@
+{
+  "today": "2026-09-26",
+  "footer": "Mock document for software testing. Every name, street, brokerage, parcel and MLS number is fictional.",
+
+  "seller_home": {
+    "address": "842 Tanager Ridge Dr",
+    "mls_address": "842 TANAGER RIDGE DR",
+    "city": "Casselberry", "state": "FL", "zip": "32707", "county": "Seminole",
+    "subdivision": "TANAGER RIDGE UNIT 2",
+    "sqft": 1640, "beds": 3, "baths": 2, "year_built": 1986, "pool": false, "hoa": false,
+    "export_file": "842-Tanager-Ridge-Dr-CMA-Export.csv",
+    "report_file": "842-Tanager-Ridge-Dr-360-Property-View.pdf",
+    "notes_file": "842-Tanager-Ridge-Dr-Seller-Notes.md",
+    "split_date": "2026-07-01",
+    "notes": [
+      "# Seller Notes: 842 Tanager Ridge Dr, Casselberry",
+      "",
+      "From my listing appointment call with the owners on September 24, 2026.",
+      "",
+      "- Bought the home in June 2019 and live in it now. They will move out before closing.",
+      "- Roof replaced March 2021 (permitted and finaled with Seminole County).",
+      "- AC replaced July 2023 (Trane, permitted).",
+      "- LVP flooring throughout, installed 2022.",
+      "- Kitchen updated February 2024: new shaker cabinets, quartz counters, stainless appliances. Permit for the electrical work only.",
+      "- Hall bath refreshed 2024 (new vanity and tile). The primary bath is original.",
+      "- Water heater 2019. Windows are the original single-pane.",
+      "- No insurance claims and no known leaks.",
+      "- Mortgage payoff about $171,500, from their September statement. They will request a payoff letter.",
+      "- They want to close by Friday, December 18, 2026.",
+      "- Open to paying some of a buyer's closing costs.",
+      "- We haven't discussed my listing terms yet."
+    ],
+    "report_360": {
+      "title": "Cross Property 360 Property View",
+      "header": {
+        "mls": "X5519027", "status": "Sold", "address": "842 TANAGER RIDGE DR", "city_line": "CASSELBERRY, FL 32707",
+        "price_label": "Sold Price", "price": "$248,000",
+        "pairs": [["Sold Date", "06/14/2019"], ["List Price", "$249,900"], ["Original List Price", "$254,900"],
+                  ["ADOM", "38"], ["CDOM", "38"], ["Beds", "3"], ["Full Baths", "2"], ["Half Baths", "0"],
+                  ["Heated Area", "1,640 SqFt"], ["Total Area", "2,190 SqFt"], ["Year Built", "1986"],
+                  ["Pool", "None"], ["Garage", "Yes, 2 Spaces"], ["HOA Fee", "None"], ["Flood Zone Code", "X"],
+                  ["Property Style", "Single Family Residence"]]
+      },
+      "photos": ["Front Exterior (2019)", "Living Room (2019)", "Kitchen (2019)", "Screened Porch (2019)"],
+      "remarks": "Well-kept 3 bedroom, 2 bath block home on a quiet street in Tanager Ridge. Original kitchen with oak cabinets and laminate counters, carpet in the bedrooms, tile in the living areas, screened back porch and a fenced yard. Roof 2006, AC 2012. Two-car garage with laundry. Close to shopping and SR 436.",
+      "sections": [
+        {"title": "Land, Site and Tax Information", "pairs": [
+          ["Legal Description", "LOT 41 TANAGER RIDGE UNIT 2 PB 33 PGS 12-14"], ["Zoning", "R-1"],
+          ["Tax ID", "27-21-30-5TR-0000-0410"], ["Taxes (MLS)", "$2,388 (2018)"], ["Homestead", "No"],
+          ["CDD", "No"], ["Flood Zone", "X"], ["Flood Zone Panel", "12117C0170F"], ["Lot Size", "0.23 Acres"],
+          ["Lot Dimensions", "80 x 125"]]},
+        {"title": "Interior Information", "pairs": [
+          ["Rooms", "Living Room, Dining Room, Kitchen, Inside Utility"], ["Flooring", "Carpet, Ceramic Tile"],
+          ["Appliances", "Range, Refrigerator, Dishwasher"], ["Heating / Cooling", "Central Air, Electric Heat"],
+          ["Ceiling Fans", "Yes"], ["Fireplace", "No"]]},
+        {"title": "Exterior Information", "pairs": [
+          ["Construction", "Block, Stucco"], ["Roof", "Shingle"], ["Foundation", "Slab"],
+          ["Exterior Features", "Fenced Yard, Screened Porch"], ["Pool", "None"], ["Water / Sewer", "Public / Public"]]},
+        {"title": "Community Information", "pairs": [
+          ["Subdivision", "Tanager Ridge Unit 2"], ["HOA", "None"], ["Housing for Older Persons", "No"],
+          ["Pets Allowed", "Yes"]]},
+        {"title": "Realtor Information", "pairs": [
+          ["List Agent", "Sutton Ravenscroft"], ["List Office", "Palmetto Gate Realty"], ["Occupancy", "Owner"],
+          ["Financing Accepted", "Cash, Conventional, FHA, VA"], ["As Is", "No"],
+          ["Realtor Remarks", "Seller relocating. Pre-approval or proof of funds with all offers."]]}
+      ],
+      "tax_sections": [
+        {"title": "Location Information", "pairs": [
+          ["Subdivision", "TANAGER RIDGE UNIT 2"], ["Tax Area", "C1"], ["Municipality", "Casselberry"],
+          ["Census Tract", "021405"]]},
+        {"title": "Tax Information", "pairs": [
+          ["Tax Year", "2025"], ["Total Tax", "$3,505.61"], ["Exemptions", "Homestead"],
+          ["Tax Exempt Amount", "$50,722"]]},
+        {"title": "Characteristics", "pairs": [
+          ["Bedrooms", "3"], ["Baths", "2"], ["Heated Area", "1,640 SqFt"], ["Total Area", "2,190 SqFt"],
+          ["Year Built", "1986"], ["Effective Year Built", "1992"], ["Lot Size", "0.24 Acres (10,454 SqFt)"],
+          ["Construction", "Concrete Block, Stucco"], ["Roof", "Hip, Shingle"], ["Pool", "No"],
+          ["Garage", "Attached, 2 Car"]]}
+      ],
+      "assessments": {"columns": ["Year", "Just Value", "Assessed Value", "Exemptions", "Total Tax"],
+        "rows": [["2025", "$362,400", "$236,114", "$50,722", "$3,505.61"],
+                 ["2024", "$355,800", "$229,237", "$50,722", "$3,412.08"],
+                 ["2023", "$348,500", "$222,561", "$50,000", "$3,327.44"]]},
+      "avm": {"value": "$391,000", "low": "$362,000", "high": "$420,000", "confidence": "82"},
+      "history": [
+        {"mls": "X5519027", "status": "Sold", "rows": [
+          ["06/14/2019", "", "PND->SLD", "$248,000", "38"],
+          ["05/22/2019", "", "ACT->PND", "$249,900", "38"],
+          ["05/01/2019", "Price Change", "254900.00->249900", "$249,900", "17"],
+          ["04/14/2019", "New Listing", "->ACT", "$254,900", "0"]]},
+        {"mls": "X4488112", "status": "Expired", "rows": [
+          ["09/30/2017", "", "ACT->EXP", "$229,900", "184"],
+          ["06/20/2017", "Price Change", "239900.00->229900", "$229,900", "82"],
+          ["03/30/2017", "New Listing", "->ACT", "$239,900", "0"]]}
+      ],
+      "sales": {"columns": ["Date", "Price", "Deed", "Buyer", "Seller"],
+        "rows": [["06/14/2019", "$248,000", "Warranty Deed", "Avery Linwood, Jules Marchetti", "Corbin Halloway"],
+                 ["11/05/2004", "$187,500", "Warranty Deed", "Corbin Halloway", "Dorian Pellegrino"]]},
+      "mortgages": {"columns": ["Date", "Amount", "Type", "Lender"],
+        "rows": [["04/09/2021", "$198,000", "Refinance", "Harbor Crest Bank"],
+                 ["06/14/2019", "$235,600", "Conventional", "Coastal Pines Mortgage"]]},
+      "flood": {"zone": "X", "panel": "12117C0170F", "panel_date": "09/28/2007",
+                "note": "Minimal flood hazard. The nearest Zone AE area is about 0.4 mile east, along a drainage canal."},
+      "foreclosure": "No foreclosure records found."
+    },
+    "reference": {
+      "comps": [
+        {"address": "818 Tanager Ridge Dr", "sold_price": 398000, "seller_concessions": 5000,
+         "adjustments": [{"label": "Size", "amount": 2100}, {"label": "Newer Kitchen", "amount": 4000}]},
+        {"address": "907 Tanager Ridge Dr", "sold_price": 405000, "seller_concessions": 0,
+         "adjustments": [{"label": "Size", "amount": -1100}, {"label": "Remodeled Baths", "amount": -6000}, {"label": "Market Since the Sale", "amount": -4000}]},
+        {"address": "764 Siskin Way", "sold_price": 412500, "seller_concessions": 0,
+         "adjustments": [{"label": "Size", "amount": -4700}, {"label": "Impact Windows and Baths", "amount": -10000}, {"label": "Market Since the Sale", "amount": -6000}]},
+        {"address": "790 Tanager Ridge Dr", "sold_price": 384000, "seller_concessions": 6500,
+         "adjustments": [{"label": "Newer Roof", "amount": 8000}, {"label": "Newer Kitchen", "amount": 8000}]},
+        {"address": "518 Linnet Cir", "sold_price": 395000, "seller_concessions": 3500,
+         "adjustments": [{"label": "Size", "amount": -6000}, {"label": "Updated Kitchen", "amount": 10000}, {"label": "Market Since the Sale", "amount": -4000}]}
+      ],
+      "recommendation": {"list_price": 399900, "low": 390000, "high": 408000},
+      "strategies": [
+        {"label": "List at $409,900", "list_price": 409900, "expected_sale": 399000, "time": "45–90 days", "seller_credit": 6000, "note": "Tests the top of the range"},
+        {"label": "List at $399,900", "list_price": 399900, "expected_sale": 395000, "time": "3–6 weeks", "seller_credit": 5000, "note": "Middle of the adjusted sales"},
+        {"label": "List at $389,900", "list_price": 389900, "expected_sale": 392000, "time": "1–3 weeks", "seller_credit": 3000, "note": "Aims for competing offers"}
+      ],
+      "costs": {"mortgage_payoff": 171500, "annual_tax": 3505.61, "expected_closing_date": "2026-12-18"},
+      "buyer_payment": {"rate": 6.5, "loan_type": "conventional", "down_pct": 0.05, "insurance_annual": 3200, "district": "C1", "homestead": true}
+    },
+    "rows": [
+      ["0.15", "X9101204", "SLD", "818 TANAGER RIDGE DR", "TANAGER RIDGE UNIT 2", "1612", "$398,000", "$398,000", "08/28/2026", "$399,900", "07/30/2026", "3", "2", "1986", "None", "12", "$5,000", "0.23", "Conventional", "Updated kitchen with quartz counters, 2020 roof, LVP floors. Screened porch."],
+      ["0.22", "X9101377", "SLD", "907 TANAGER RIDGE DR", "TANAGER RIDGE UNIT 2", "1655", "$405,000", "$405,000", "06/12/2026", "$405,000", "05/14/2026", "3", "2", "1987", "None", "6", "", "0.25", "Cash", "Remodeled kitchen and both baths, 2022 roof, 2021 AC."],
+      ["0.31", "X9101529", "SLD", "1012 GROSBEAK CT", "TANAGER RIDGE UNIT 1", "1580", "$362,000", "$362,000", "09/10/2026", "$379,900", "08/11/2026", "3", "2", "1985", "None", "41", "$7,500", "0.22", "FHA", "Original kitchen and baths, roof 2012. Priced for updating."],
+      ["0.28", "X9101688", "SLD", "764 SISKIN WAY", "TANAGER RIDGE UNIT 2", "1702", "$412,500", "$412,500", "05/02/2026", "$409,900", "04/05/2026", "3", "2", "1988", "None", "4", "", "0.26", "Conventional", "Fully updated: kitchen, baths, impact windows, roof 2019."],
+      ["0.44", "X9101840", "SLD", "655 PHOEBE LN", "TANAGER RIDGE UNIT 1", "1540", "$378,000", "$378,000", "07/18/2026", "$385,000", "06/19/2026", "3", "2", "1985", "None", "18", "$6,000", "0.21", "Conventional", "Updated kitchen, original baths, 2018 roof."],
+      ["0.52", "X9102011", "SLD", "1130 VIREO DR", "TANAGER RIDGE UNIT 3", "1810", "$419,000", "$419,000", "04/22/2026", "$425,000", "03/24/2026", "4", "2", "1989", "None", "15", "$4,000", "0.24", "Conventional", "Four bedrooms, updated kitchen, newer AC."],
+      ["0.38", "X9102155", "SLD", "871 SISKIN WAY", "TANAGER RIDGE UNIT 2", "1665", "$431,000", "$431,000", "06/27/2026", "$429,900", "05/30/2026", "3", "2", "1987", "Private", "7", "", "0.27", "Conventional", "Pool home, updated kitchen, roof 2021."],
+      ["0.61", "X9102302", "SLD", "402 LINNET CIR", "WREN MEADOW", "1590", "$371,500", "$371,500", "08/15/2026", "$389,900", "07/16/2026", "3", "2", "1984", "None", "34", "$8,000", "0.20", "FHA", "Partially updated, roof 2016."],
+      ["0.67", "X9102460", "SLD", "518 LINNET CIR", "WREN MEADOW", "1720", "$395,000", "$395,000", "05/20/2026", "$399,000", "04/21/2026", "3", "2", "1984", "None", "9", "$3,500", "0.22", "Conventional", "Updated baths, new flooring, 2020 roof."],
+      ["0.74", "X9102613", "SLD", "233 TOWHEE TRL", "WREN MEADOW", "1480", "$349,900", "$349,900", "09/05/2026", "$359,900", "08/06/2026", "3", "2", "1983", "None", "27", "$5,000", "0.19", "VA", "Original condition, well kept."],
+      ["0.46", "X9102777", "SLD", "1044 VIREO DR", "TANAGER RIDGE UNIT 3", "1860", "$409,000", "$409,000", "07/31/2026", "$424,900", "07/01/2026", "4", "2", "1989", "None", "29", "$9,000", "0.25", "Conventional", "Larger floor plan, dated kitchen, 2019 roof."],
+      ["0.19", "X9102934", "SLD", "790 TANAGER RIDGE DR", "TANAGER RIDGE UNIT 2", "1640", "$384,000", "$384,000", "09/19/2026", "$399,900", "08/20/2026", "3", "2", "1986", "None", "30", "$6,500", "0.24", "Conventional", "Same floor plan. Updated kitchen, original baths, roof 2015."],
+      ["0.83", "X9103088", "SLD", "615 KINGLET AVE", "WREN MEADOW", "1950", "$426,000", "$426,000", "04/10/2026", "$430,000", "03/12/2026", "4", "2", "1990", "None", "8", "", "0.26", "Conventional", "Four bedrooms, remodeled 2021."],
+      ["0.57", "X9103241", "SLD", "944 GROSBEAK CT", "TANAGER RIDGE UNIT 1", "1525", "$355,000", "$355,000", "06/05/2026", "$359,000", "05/06/2026", "3", "2", "1985", "None", "10", "$4,500", "0.21", "FHA", "Original kitchen, newer AC."],
+      ["0.90", "X9103396", "SLD", "128 PEWEE PL", "WREN MEADOW", "1600", "$389,500", "$389,500", "07/08/2026", "$389,500", "06/08/2026", "3", "2", "1984", "None", "5", "", "0.23", "Conventional", "Updated throughout, 2022 roof."],
+      ["0.25", "X9104102", "ACT", "736 TANAGER RIDGE DR", "TANAGER RIDGE UNIT 2", "1690", "$414,900", "", "", "$424,900", "", "3", "2", "1987", "None", "48", "", "0.24", "", "Updated kitchen, new AC 2025. Price improved."],
+      ["0.49", "X9104255", "ACT", "1101 VIREO DR", "TANAGER RIDGE UNIT 3", "1790", "$429,000", "", "", "$429,000", "", "4", "2", "1989", "None", "12", "", "0.25", "", "Four bedrooms, remodeled baths."],
+      ["0.62", "X9104409", "ACT", "455 LINNET CIR", "WREN MEADOW", "1560", "$369,900", "", "", "$389,900", "", "3", "2", "1984", "None", "76", "", "0.20", "", "Original kitchen, roof 2014. Motivated seller."],
+      ["0.35", "X9104560", "ACT", "882 SISKIN WAY", "TANAGER RIDGE UNIT 2", "1630", "$399,900", "", "", "$399,900", "", "3", "2", "1987", "None", "9", "", "0.24", "", "Renovated 2023, new roof."],
+      ["0.78", "X9104714", "ACT", "301 TOWHEE TRL", "WREN MEADOW", "1710", "$445,000", "", "", "$459,000", "", "3", "2", "1984", "Private", "63", "", "0.26", "", "Pool home, updated kitchen."],
+      ["0.29", "X9104868", "PNC", "1025 GROSBEAK CT", "TANAGER RIDGE UNIT 1", "1575", "$389,900", "", "", "$389,900", "", "3", "2", "1985", "None", "11", "", "0.22", "", "Updated kitchen and baths."],
+      ["0.55", "X9105011", "PNC", "679 PHOEBE LN", "TANAGER RIDGE UNIT 1", "1650", "$394,500", "", "", "$404,900", "", "3", "2", "1986", "None", "24", "", "0.23", "", "Newer roof and AC."],
+      ["0.33", "X9105165", "EXP", "853 TANAGER RIDGE DR", "TANAGER RIDGE UNIT 2", "1640", "$419,900", "", "", "$434,900", "", "3", "2", "1986", "None", "121", "", "0.24", "", "Same floor plan, updated kitchen."],
+      ["0.71", "X9105318", "EXP", "587 KINGLET AVE", "WREN MEADOW", "1820", "$449,900", "", "", "$459,900", "", "4", "2", "1990", "None", "180", "", "0.25", "", "Large lot, dated interior."],
+      ["0.41", "X9105472", "CAN", "1066 VIREO DR", "TANAGER RIDGE UNIT 3", "1745", "$424,900", "", "", "$439,000", "", "3", "2", "1989", "None", "95", "", "0.25", "", "Updated kitchen."],
+      ["0.86", "X9105626", "CAN", "219 PEWEE PL", "WREN MEADOW", "1590", "$379,000", "", "", "$379,000", "", "3", "2", "1984", "None", "40", "", "0.22", "", "Original condition."]
+    ]
+  },
+
+  "buyer_home": {
+    "address": "2315 Kestrel Point Ct",
+    "mls_address": "2315 KESTREL POINT CT",
+    "city": "Casselberry", "state": "FL", "zip": "32707", "county": "Seminole",
+    "subdivision": "KESTREL POINT",
+    "mls": "X9061187",
+    "list_price": 464900, "original_price": 489900,
+    "sqft": 1920, "beds": 4, "baths": 2, "year_built": 1998, "pool": true, "hoa_annual": 420,
+    "export_file": "2315-Kestrel-Point-Ct-CMA-Export.csv",
+    "report_file": "2315-Kestrel-Point-Ct-360-Property-View.pdf",
+    "flyer_file": "2315-Kestrel-Point-Ct-Listing-Flyer.pdf",
+    "split_date": "2026-07-01",
+    "flyer": {
+      "headline": "Pool Home in Kestrel Point",
+      "price": "$464,900",
+      "facts": [["Beds", "4"], ["Baths", "2"], ["Living Area", "1,920 sq ft"], ["Lot", "0.27 acre"], ["Built", "1998"], ["Garage", "2-car"]],
+      "remarks": "Screened pool and covered lanai on a 0.27-acre lot in Kestrel Point. Split floor plan with the primary suite on its own side, kitchen updated in 2019 with granite counters and stainless appliances, AC 2020, and a two-car garage. Minutes from SR 436 and the Seminole Wekiva Trail. New price!",
+      "features": ["Screened in-ground pool", "Kitchen updated 2019", "AC 2020", "Split floor plan", "HOA $420 a year"],
+      "agent": "Rowan Tillery", "brokerage": "Lakeshore Crest Realty", "phone": "(407) 555-0187", "mls": "MLS X9061187"
+    },
+    "report_360": {
+      "title": "Cross Property 360 Property View",
+      "header": {
+        "mls": "X9061187", "status": "Active", "address": "2315 KESTREL POINT CT", "city_line": "CASSELBERRY, FL 32707",
+        "price_label": "List Price", "price": "$464,900",
+        "pairs": [["List Date", "07/10/2026"], ["Original List Price", "$489,900"], ["ADOM", "78"], ["CDOM", "78"],
+                  ["Beds", "4"], ["Full Baths", "2"], ["Half Baths", "0"], ["Heated Area", "1,920 SqFt"],
+                  ["Total Area", "2,560 SqFt"], ["Year Built", "1998"], ["Pool", "Private, In Ground, Screened"],
+                  ["Garage", "Yes, 2 Spaces"], ["HOA Fee", "$105 Quarterly"], ["Total Annual Assoc Fees", "$420"],
+                  ["Flood Zone Code", "X"], ["Property Style", "Single Family Residence"]]
+      },
+      "photos": ["Front Exterior", "Kitchen", "Pool and Lanai", "Primary Bedroom"],
+      "remarks": "Screened pool and covered lanai on a 0.27-acre lot in Kestrel Point. Split floor plan with the primary suite on its own side, kitchen updated in 2019 with granite counters and stainless appliances, AC 2020, and a two-car garage. Minutes from SR 436 and the Seminole Wekiva Trail. New price!",
+      "sections": [
+        {"title": "Land, Site and Tax Information", "pairs": [
+          ["Legal Description", "LOT 87 KESTREL POINT PB 52 PGS 41-45"], ["Zoning", "R-1A"],
+          ["Tax ID", "22-21-30-8KP-0000-0870"], ["Taxes (MLS)", "$4,095 (2025)"], ["Homestead", "Yes"],
+          ["CDD", "No"], ["Flood Zone", "X"], ["Flood Zone Panel", "12117C0165F"], ["Lot Size", "0.27 Acres"],
+          ["Lot Dimensions", "90 x 131"]]},
+        {"title": "Interior Information", "pairs": [
+          ["Rooms", "Living Room, Family Room, Dining Room, Kitchen, Inside Utility"],
+          ["Flooring", "Ceramic Tile, Carpet"], ["Appliances", "Range, Microwave, Refrigerator, Dishwasher, Disposal"],
+          ["Heating / Cooling", "Central Air (2020), Electric Heat"], ["Ceiling Fans", "Yes"], ["Fireplace", "No"]]},
+        {"title": "Exterior Information", "pairs": [
+          ["Construction", "Block, Stucco"], ["Roof", "Shingle (2010)"], ["Foundation", "Slab"],
+          ["Pool Features", "In Ground, Screen Enclosure"], ["Exterior Features", "Covered Lanai, Irrigation"],
+          ["Water / Sewer", "Public / Public"]]},
+        {"title": "Community Information", "pairs": [
+          ["Subdivision", "Kestrel Point"], ["HOA", "Yes, Mandatory"], ["HOA Fee", "$105 Quarterly"],
+          ["Total Annual Assoc Fees", "$420"], ["Housing for Older Persons", "No"], ["Pets Allowed", "Yes"]]},
+        {"title": "Realtor Information", "pairs": [
+          ["List Agent", "Rowan Tillery"], ["List Office", "Lakeshore Crest Realty"], ["Occupancy", "Owner"],
+          ["Financing Accepted", "Cash, Conventional, FHA, VA"], ["As Is", "Yes"],
+          ["Realtor Remarks", "Seller has found the next home and is flexible on closing. AS IS contract preferred."]]}
+      ],
+      "tax_sections": [
+        {"title": "Location Information", "pairs": [
+          ["Subdivision", "KESTREL POINT"], ["Tax Area", "C1"], ["Municipality", "Casselberry"], ["Census Tract", "021406"]]},
+        {"title": "Tax Information", "pairs": [
+          ["Tax Year", "2025"], ["Total Tax", "$4,095.13"], ["Exemptions", "Homestead"], ["Tax Exempt Amount", "$50,722"]]},
+        {"title": "Characteristics", "pairs": [
+          ["Bedrooms", "4"], ["Baths", "2"], ["Heated Area", "1,920 SqFt"], ["Total Area", "2,560 SqFt"],
+          ["Year Built", "1998"], ["Effective Year Built", "2004"], ["Lot Size", "0.27 Acres (11,761 SqFt)"],
+          ["Construction", "Concrete Block, Stucco"], ["Roof", "Hip, Shingle"], ["Pool", "Yes (1998)"],
+          ["Garage", "Attached, 2 Car"]]}
+      ],
+      "assessments": {"columns": ["Year", "Just Value", "Assessed Value", "Exemptions", "Total Tax"],
+        "rows": [["2025", "$402,300", "$268,540", "$50,722", "$4,095.13"],
+                 ["2024", "$396,900", "$260,719", "$50,722", "$3,982.40"],
+                 ["2023", "$384,200", "$253,125", "$50,000", "$3,881.95"]]},
+      "avm": {"value": "$458,000", "low": "$431,000", "high": "$486,000", "confidence": "80"},
+      "history": [
+        {"mls": "X9061187", "status": "Active", "rows": [
+          ["09/12/2026", "Price Change", "474900.00->464900", "$464,900", "64"],
+          ["08/14/2026", "Price Change", "489900.00->474900", "$474,900", "35"],
+          ["07/10/2026", "New Listing", "->ACT", "$489,900", "0"]]},
+        {"mls": "X3320415", "status": "Sold", "rows": [
+          ["05/22/2015", "", "PND->SLD", "$262,000", "21"],
+          ["04/21/2015", "", "ACT->PND", "$269,900", "21"],
+          ["03/31/2015", "New Listing", "->ACT", "$269,900", "0"]]}
+      ],
+      "sales": {"columns": ["Date", "Price", "Deed", "Buyer", "Seller"],
+        "rows": [["05/22/2015", "$262,000", "Warranty Deed", "Sloane Aldridge", "Tobias Wexford"],
+                 ["09/18/1998", "$148,300", "Warranty Deed", "Tobias Wexford", "Kestrel Point Builders LLC"]]},
+      "mortgages": {"columns": ["Date", "Amount", "Type", "Lender"],
+        "rows": [["05/22/2015", "$209,600", "Conventional", "Evergreen Shore Lending"]]},
+      "flood": {"zone": "X", "panel": "12117C0165F", "panel_date": "09/28/2007", "note": "Minimal flood hazard. No higher-risk zone within 0.5 mile."},
+      "foreclosure": "No foreclosure records found."
+    },
+    "reference": {
+      "comps": [
+        {"address": "2331 Kestrel Point Ct", "sold_price": 458000, "seller_concessions": 6000,
+         "adjustments": [{"label": "Size", "amount": 1100}, {"label": "Newer Roof", "amount": -6000}]},
+        {"address": "2280 Kestrel Point Ct", "sold_price": 472500, "seller_concessions": 0,
+         "adjustments": [{"label": "Size", "amount": -3000}, {"label": "Renovation and Newer Roof", "amount": -12000}, {"label": "Market Since the Sale", "amount": -5000}]},
+        {"address": "1502 Merlin Bend", "sold_price": 466000, "seller_concessions": 5000,
+         "adjustments": [{"label": "Size", "amount": -4600}, {"label": "Updated Baths and Newer Roof", "amount": -8000}]},
+        {"address": "2355 Kestrel Point Ct", "sold_price": 462500, "seller_concessions": 5000,
+         "adjustments": [{"label": "Size", "amount": -1800}, {"label": "Newer Roof", "amount": -6000}]},
+        {"address": "846 Osprey Glen Way", "sold_price": 452000, "seller_concessions": 3000,
+         "adjustments": [{"label": "Size", "amount": -800}, {"label": "Location Outside Kestrel Point", "amount": 4000}, {"label": "Market Since the Sale", "amount": -3000}]}
+      ],
+      "bottom_line": {"low": 445000, "high": 450000, "midpoint": 447500},
+      "offer_plan": {"opening": 440000, "target_low": 443000, "target_high": 447000, "walk_away": 450000,
+                     "credit_alt": {"price": 445000, "credit": 5000}},
+      "taxes": {"current_bill": 4095.13, "current_year": 2025, "homestead": true,
+                "jurisdictions": [{"label": "Inside Casselberry City Limits", "short": "City", "district": "C1"}]},
+      "payment": {"rate": 6.5, "insurance_annual": 4200, "hoa_cdd_monthly": 35,
+                  "scenarios": [{"label": "Conventional, 5% Down", "type": "conventional", "down_pct": 0.05},
+                                {"label": "FHA, 3.5% Down", "type": "fha", "down_pct": 0.035},
+                                {"label": "Conventional, 20% Down", "type": "conventional", "down_pct": 0.2}]},
+      "credit_scenarios": {"loan_type": "conventional", "down_pct": 0.05, "closing_cost_pct": 0.03,
+                           "scenarios": [{"price": 440000, "credit": 0}, {"price": 445000, "credit": 5000}, {"price": 450000, "credit": 10000}]}
+    },
+    "rows": [
+      ["0.00", "X9061187", "ACT", "2315 KESTREL POINT CT", "KESTREL POINT", "1920", "$464,900", "", "", "$489,900", "", "4", "2", "1998", "Private", "78", "", "0.27", "", "Screened pool and covered lanai on a 0.27-acre lot. Split floor plan, kitchen updated 2019 with granite counters, AC 2020, 2-car garage. New price!"],
+      ["0.12", "X9110107", "SLD", "2331 KESTREL POINT CT", "KESTREL POINT", "1905", "$458,000", "$458,000", "08/21/2026", "$465,000", "07/22/2026", "4", "2", "1998", "Private", "21", "$6,000", "0.25", "Conventional", "Pool home, updated kitchen, roof 2020."],
+      ["0.20", "X9110260", "SLD", "2280 KESTREL POINT CT", "KESTREL POINT", "1960", "$472,500", "$472,500", "05/15/2026", "$469,900", "04/16/2026", "4", "2", "1999", "Private", "5", "", "0.28", "Conventional", "Renovated pool home, 2021 roof, new AC."],
+      ["0.27", "X9110414", "SLD", "1457 MERLIN BEND", "KESTREL POINT", "1870", "$441,000", "$441,000", "09/08/2026", "$459,900", "08/09/2026", "4", "2", "1997", "Private", "38", "$8,000", "0.24", "FHA", "Original kitchen, roof 2011, pool resurfaced."],
+      ["0.33", "X9110567", "SLD", "1502 MERLIN BEND", "KESTREL POINT", "1985", "$466,000", "$466,000", "06/30/2026", "$474,900", "06/01/2026", "4", "2", "1998", "Private", "16", "$5,000", "0.27", "Conventional", "Updated kitchen and baths, 2019 roof."],
+      ["0.41", "X9110721", "SLD", "2198 HARRIER LOOP", "KESTREL POINT", "1780", "$431,500", "$431,500", "07/24/2026", "$439,900", "06/25/2026", "3", "2", "1997", "Private", "14", "$4,000", "0.23", "Conventional", "Three bedrooms plus den, pool."],
+      ["0.48", "X9110874", "SLD", "2140 HARRIER LOOP", "KESTREL POINT", "2080", "$481,000", "$481,000", "04/28/2026", "$485,000", "03/30/2026", "4", "3", "1999", "Private", "9", "", "0.29", "Cash", "Larger model, updated, 2020 roof."],
+      ["0.55", "X9111028", "SLD", "818 OSPREY GLEN WAY", "OSPREY GLEN", "1890", "$437,000", "$437,000", "08/05/2026", "$449,000", "07/06/2026", "4", "2", "1996", "Private", "25", "$7,500", "0.24", "Conventional", "Pool, dated baths, roof 2016."],
+      ["0.62", "X9111181", "SLD", "846 OSPREY GLEN WAY", "OSPREY GLEN", "1930", "$452,000", "$452,000", "05/29/2026", "$455,000", "04/30/2026", "4", "2", "1996", "Private", "7", "$3,000", "0.25", "Conventional", "Updated kitchen, pool resurfaced 2023."],
+      ["0.36", "X9111335", "SLD", "1520 MERLIN BEND", "KESTREL POINT", "1910", "$418,000", "$418,000", "09/16/2026", "$439,900", "08/17/2026", "4", "2", "1998", "None", "44", "$9,000", "0.24", "FHA", "No pool, original condition."],
+      ["0.70", "X9111488", "SLD", "902 OSPREY GLEN WAY", "OSPREY GLEN", "1840", "$429,000", "$429,000", "06/18/2026", "$429,000", "05/19/2026", "4", "2", "1996", "Private", "4", "", "0.23", "Conventional", "Pool home, newer AC."],
+      ["0.24", "X9111642", "SLD", "2355 KESTREL POINT CT", "KESTREL POINT", "1945", "$462,500", "$462,500", "07/10/2026", "$469,000", "06/11/2026", "4", "2", "1998", "Private", "12", "$5,000", "0.26", "Conventional", "Updated pool home, 2022 roof."],
+      ["0.79", "X9111795", "SLD", "1011 CARACARA DR", "OSPREY GLEN", "2150", "$489,000", "$489,000", "04/17/2026", "$495,000", "03/19/2026", "4", "3", "2000", "Private", "10", "", "0.30", "Conventional", "Larger pool home, remodeled."],
+      ["0.58", "X9111949", "SLD", "2215 HARRIER LOOP", "KESTREL POINT", "1720", "$409,900", "$409,900", "08/29/2026", "$424,900", "07/30/2026", "3", "2", "1997", "Private", "30", "$6,000", "0.22", "VA", "Pool, original kitchen."],
+      ["0.88", "X9112102", "SLD", "1045 CARACARA DR", "OSPREY GLEN", "1880", "$446,000", "$446,000", "07/02/2026", "$449,900", "06/03/2026", "4", "2", "2000", "Private", "11", "$4,000", "0.24", "Conventional", "Updated, pool, 2018 roof."],
+      ["0.30", "X9112256", "ACT", "1488 MERLIN BEND", "KESTREL POINT", "1950", "$469,000", "", "", "$469,000", "", "4", "2", "1998", "Private", "15", "", "0.26", "", "Updated pool home."],
+      ["0.45", "X9112409", "ACT", "2172 HARRIER LOOP", "KESTREL POINT", "1800", "$434,900", "", "", "$449,900", "", "4", "2", "1997", "Private", "52", "", "0.23", "", "Pool, price improved."],
+      ["0.66", "X9112563", "ACT", "877 OSPREY GLEN WAY", "OSPREY GLEN", "1900", "$455,000", "", "", "$455,000", "", "4", "2", "1996", "Private", "20", "", "0.25", "", "Renovated baths, pool."],
+      ["0.52", "X9112716", "ACT", "1533 MERLIN BEND", "KESTREL POINT", "2010", "$499,000", "", "", "$515,000", "", "4", "3", "1999", "Private", "88", "", "0.28", "", "Larger model, updated."],
+      ["0.81", "X9112870", "ACT", "1060 CARACARA DR", "OSPREY GLEN", "1850", "$424,500", "", "", "$424,500", "", "4", "2", "2000", "None", "6", "", "0.24", "", "No pool, move-in ready."],
+      ["0.38", "X9113023", "PNC", "2244 HARRIER LOOP", "KESTREL POINT", "1890", "$459,900", "", "", "$459,900", "", "4", "2", "1997", "Private", "8", "", "0.25", "", "Updated kitchen, pool."],
+      ["0.74", "X9113177", "PNC", "931 OSPREY GLEN WAY", "OSPREY GLEN", "1960", "$449,000", "", "", "$462,000", "", "4", "2", "1996", "Private", "33", "", "0.25", "", "Pool, roof 2017."],
+      ["0.43", "X9113330", "EXP", "1471 MERLIN BEND", "KESTREL POINT", "1935", "$479,900", "", "", "$494,900", "", "4", "2", "1998", "Private", "150", "", "0.26", "", "Same model, updated."],
+      ["0.59", "X9113484", "CAN", "2129 HARRIER LOOP", "KESTREL POINT", "1765", "$439,000", "", "", "$439,000", "", "3", "2", "1997", "Private", "60", "", "0.23", "", "Pool."]
+    ]
+  },
+
+  "buyer_limits": {
+    "prompt": "conventional loan with 5% down, first-time buyer, max price $460,000, $42,000 cash available, keep at least $5,000 in reserve, monthly payment no more than $4,000, and the lender quoted 6.5%. The listing agent says one other offer is expected. Use the FR/BAR AS IS contract.",
+    "buyer": {"financing": "conventional", "down_pct": 0.05, "first_time_buyer": true, "max_price": 460000,
+              "cash_available": 42000, "reserve_floor": 5000, "max_payment": 4000},
+    "costs": {"rate": 6.5},
+    "competition": {"level": 1, "note": "Listing agent: one other offer expected"},
+    "worksheet": {"contract_form": "as_is"}
+  },
+
+  "offer_review": {
+    "list_price": 504000,
+    "today": "2026-09-22",
+    "starter": "asis-offer-aga",
+    "second_offer_spec": "scenarios/sable-palm-second-offer.json"
+  },
+
+  "other_state": {
+    "file": "4127-Larchmere-Trace-Purchase-Agreement.pdf",
+    "title": "Residential Purchase Agreement",
+    "form_note": "Sample form RPA-1 (fictional, for software testing)",
+    "state": "OH", "county": "Franklin",
+    "property": "4127 Larchmere Trace, Westerville, OH 43081",
+    "buyer": "Quinn Ashdown", "seller": "Marlowe Pennington",
+    "price": 389000, "earnest_money": 5000,
+    "escrow_agent": "Olentangy Crossing Title Agency",
+    "effective_date": "2026-09-24",
+    "buyer_signed": "09/23/2026 6:10 PM", "seller_signed": "09/24/2026 11:45 AM",
+    "closing_date": "2026-10-30", "closing_time": "13:00",
+    "buyer_brokerage": "Maple Hollow Realty", "buyer_agent": "Devon Achterberg",
+    "seller_brokerage": "Brightwater Home Group", "seller_agent": "Lennox Farraday",
+    "rules": {"day_count": "calendar", "short_period_days": 0, "end_time": "23:59",
+              "weekend_holiday_rollover": "next_business_day", "rollover_time": "23:59",
+              "before_closing_rollover": "none", "holidays": "us_federal"},
+    "deadlines": [
+      {"key": "earnest_money", "label": "Earnest Money Delivered", "short": "Earnest Money", "basis": "after", "days": 3,
+       "party": "Buyer", "critical": true, "source": "Para. 3",
+       "action": "Deliver $5,000 earnest money to Olentangy Crossing Title Agency", "if_missed": "Seller may terminate"},
+      {"key": "loan_application", "label": "Loan Application Made", "short": "Loan Application", "basis": "after", "days": 5,
+       "party": "Buyer", "critical": false, "source": "Para. 4",
+       "action": "Apply for the loan and authorize the credit report", "if_missed": "Buyer is in default of Para. 4"},
+      {"key": "inspection", "label": "Inspection Period Ends", "short": "Inspection", "basis": "after", "days": 10,
+       "party": "Buyer", "critical": true, "contingency": true, "source": "Para. 6",
+       "action": "Deliver written notice of termination or a repair request before the period ends",
+       "if_missed": "Buyer accepts the property's condition"},
+      {"key": "appraisal", "label": "Appraisal Contingency Ends", "short": "Appraisal", "basis": "after", "days": 14,
+       "party": "Buyer", "critical": true, "contingency": true, "source": "Para. 5",
+       "action": "Deliver written notice if the appraisal is below the price", "if_missed": "The appraisal contingency ends"},
+      {"key": "financing", "label": "Financing Contingency Ends", "short": "Financing", "basis": "after", "days": 21,
+       "party": "Buyer", "critical": true, "contingency": true, "source": "Para. 4",
+       "action": "Deliver the written loan commitment, or notice of termination", "if_missed": "The financing contingency ends"},
+      {"key": "walkthrough", "label": "Final Walk-Through", "short": "Walk-Through", "basis": "before", "days": 1,
+       "party": "Buyer", "critical": false, "source": "Para. 9",
+       "action": "Walk through the property on the day before Closing", "if_missed": "Buyer closes without a final walk-through"}
+    ]
+  }
+}

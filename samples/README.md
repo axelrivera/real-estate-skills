@@ -10,7 +10,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 ## Seller CMA
 
-- [517-Larkwood-Ave-Seller-CMA.pdf](seller-cma/517-Larkwood-Ave-Seller-CMA.pdf) (9 pages). The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
+- [517-Larkwood-Ave-Seller-CMA.pdf](seller-cma/517-Larkwood-Ave-Seller-CMA.pdf) (8 pages). The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
 - [517-Larkwood-Ave-Listing-Presentation.pptx](seller-cma/517-Larkwood-Ave-Listing-Presentation.pptx) (15 slides). An editable listing presentation with the same numbers, for the listing appointment.
 - [517-Larkwood-Ave-Listing-Presentation.pdf](seller-cma/517-Larkwood-Ave-Listing-Presentation.pdf) (15 pages). The same presentation as a PDF, the backup copy delivered with the PPTX.
 
@@ -22,7 +22,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 ## Contract Timeline
 
 - [1532-Cypress-Bend-Dr-Contract-Timeline-buyer.pdf](contract-timeline/1532-Cypress-Bend-Dr-Contract-Timeline-buyer.pdf) (3 pages). Every deadline in the executed FHA contract from the buyer's side, from the Effective Date and deposit through inspection, loan approval, title, walk-through and closing, with who owes each one and what happens if it's missed.
-- [1532-Cypress-Bend-Dr-Contract-Timeline-buyer.ics](contract-timeline/1532-Cypress-Bend-Dr-Contract-Timeline-buyer.ics) (12 events). The same deadlines as a calendar file to import into Google Calendar, Outlook or Apple Calendar.
+- [1532-Cypress-Bend-Dr-Contract-Timeline-buyer.ics](contract-timeline/1532-Cypress-Bend-Dr-Contract-Timeline-buyer.ics) (10 events). The same deadlines as a calendar file to import into Google Calendar, Outlook or Apple Calendar.
 
 ## Seller Offer Review
 

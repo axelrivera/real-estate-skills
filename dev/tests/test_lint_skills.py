@@ -7,6 +7,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import lint_skills as ls  # noqa: E402
 
+ROOT_OK = ls.ROOT
+
 
 def skill(tmp, name, text, files=()):
     d = os.path.join(tmp, name)
@@ -19,6 +21,29 @@ def skill(tmp, name, text, files=()):
 
 
 class Lint(unittest.TestCase):
+    def test_dev_only_imports(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            os.makedirs(os.path.join(tmp, "skills", "x", "scripts"))
+            os.makedirs(os.path.join(tmp, "shared"))
+            with open(os.path.join(tmp, "skills", "x", "scripts", "render.py"), "w") as f:
+                f.write("import json\nimport fitz\n")
+            with open(os.path.join(tmp, "shared", "ok.py"), "w") as f:
+                f.write("# pymupdf is mentioned but not imported\n")
+            self.assertEqual(len(ls.dev_only_imports(tmp)), 1)
+            self.assertEqual(ls.dev_only_imports(ROOT_OK), [])
+
+    def test_repo_paths(self):
+        """FH-104: shipped markdown never names a repo path under shared/; the skill's scripts/_shared/ is fine."""
+        with tempfile.TemporaryDirectory() as tmp:
+            refs = os.path.join(tmp, "skills", "x", "references")
+            os.makedirs(refs)
+            with open(os.path.join(refs, "a.md"), "w") as f:
+                f.write("Route it through `shared/contract_forms.py`.\nThe copy in scripts/_shared/dates.py is fine.\n")
+            found = ls.repo_paths(tmp)
+            self.assertEqual(len(found), 1)
+            self.assertIn("a.md:1", found[0])
+            self.assertEqual(ls.repo_paths(ROOT_OK), [])
+
     def test_every_shipped_skill_passes(self):
         import contextlib
         import io

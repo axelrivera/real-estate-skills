@@ -14,3 +14,23 @@ tr.mine td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 
 /* TL-22: the amendments and date rules stay together as one appendix block */
 .appx{break-inside:avoid}
+.tbl.brk{break-inside:auto}
+.pb.flow{break-before:auto}
+.det thead,.kd thead{display:table-header-group}
+.det tr,.kd tr{break-inside:avoid}
+/* TL-106: when page 1 is full, the key-dates table splits with its header repeated instead of moving whole */
+
+/* strip labels keep a white halo so a leader line passing behind never runs through the text */
+.strip .lbl{paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
+/* deadlines already met read as done; rows waiting on an event say Pending, with their rule after the name (TL-224) */
+tr.done td{color:var(--muted)}
+tr.done td:first-child b{font-weight:600}
+tr.pend .pr{color:var(--muted);font-weight:400}
+/* TL-205: the amendment note is information, not a status: brand accent, never a status hue */
+.note-brand{margin-top:6px;border-left:4px solid var(--brand);color:var(--brand-ink);padding:3px 10px;font-size:8.4pt}
+/* TL-211, TL-265: the Prepared line and each header piece never break mid-name; a fact never breaks inside itself, and a
+   row that wraps anyway (a long form name) tightens to fit one line */
+.prep .nw,.t2 .nw,.factrow span{white-space:nowrap}
+.tightfacts .factrow{font-size:8pt}
+.tightfacts .factrow span{padding:0 6px}
+.tightfacts .factrow>div{margin-left:-7px}

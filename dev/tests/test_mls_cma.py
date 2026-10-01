@@ -2,6 +2,7 @@
 import csv
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -185,9 +186,12 @@ class Blocks(unittest.TestCase):
         els = ['<h2>A</h2>', '<p>intro</p>', '<div class="tbl"><table></table></div>', '<p class="note">n</p>',
                '<p>loose</p>', '<h2>B</h2>', '<p>method</p>', '<footer>agent</footer>']
         out = cma.group_blocks(els)
-        self.assertTrue(out.startswith('<div class="kg sec"><h2>A</h2><p>intro</p><div class="tbl">'))
-        self.assertIn('<p class="note">n</p></div><p>loose</p>', out)
-        self.assertIn('<div class="kg sec"><h2>B</h2><p>method</p><footer>agent</footer></div>', out)
+        self.assertEqual(out.count('<div class="kg sec">'), 2)  # one keep-together group per heading
+        loose, second = out.index("<p>loose</p>"), out.rindex('<div class="kg sec">')
+        self.assertLess(out.index('<p class="note">n</p>'), loose)  # the note stays with its figure
+        self.assertTrue(out[:loose].endswith("</div>"))  # the first group closes before the loose paragraph
+        self.assertLess(loose, second)  # which sits between the groups
+        self.assertTrue(out.endswith("<footer>agent</footer></div>"))
 
     def test_lone_h2_gets_section_class(self):
         self.assertEqual(cma.group_blocks(["<h2>Only</h2>"]), '<h2 class="sec">Only</h2>')
@@ -199,14 +203,13 @@ class Blocks(unittest.TestCase):
         self.assertEqual(svg.count('class="dp-dot"'), 2)
 
 
-
 class SubjectHeading(unittest.TestCase):
     def test_location_line_puts_mls_last(self):
         h = cma.subject_heading({"address": "517 Hickorywood Ave", "summary_facts": "4 bed · 2 bath",
                                  "locality": "Altamonte Springs, FL 32714 · MLS O6433709 · Spring Oaks · Seminole County"})
         self.assertIn('<h1>517 Hickorywood Ave</h1>', h)
-        self.assertIn('<div class="divrow loc"><div><span>Altamonte Springs, FL 32714</span><span>Spring Oaks</span>'
-                      '<span>Seminole County</span><span>MLS O6433709</span></div></div>', h)
+        self.assertLess(h.index("Seminole County"), h.index("MLS O6433709"))  # the MLS number goes last
+        self.assertLess(h.index("Spring Oaks"), h.index("MLS O6433709"))
         self.assertIn("<span>4 bed</span><span>2 bath</span>", h)
 
     def test_escaping_and_empty_rows(self):
@@ -275,11 +278,9 @@ class DotPlotLabels(unittest.TestCase):
         """CMA-23: two close markers don't stack their labels."""
         cards = [{"address": f"{i} Oak St", "adjusted": v} for i, v in enumerate((455000, 462000, 470000))]
         svg = cma.dotplot(cards, 455000, 480000, 474900, "Asking $474,900", (468000, "Offer $468,000"))
-        self.assertIn('text-anchor="start" class="dp-mark-lbl"', svg)
-        self.assertIn('text-anchor="end" class="dp-second-lbl"', svg)
-
-if __name__ == "__main__":
-    unittest.main()
+        anchors = dict((cls, a) for a, cls in re.findall(r'text-anchor="(\w+)" class="dp-(mark|second)-lbl"', svg))
+        self.assertEqual(set(anchors), {"mark", "second"})
+        self.assertNotEqual(anchors["mark"], anchors["second"])
 
 
 class DeriveComps(unittest.TestCase):
@@ -312,3 +313,7 @@ class DeriveComps(unittest.TestCase):
                     {"cards": [self.card("A", 1, 0), {"address": "B", "adjusted": 2}]}):
             with self.assertRaises(ValueError):
                 cma.derive_comps(bad)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,11 @@
+{
+ "family": "AGA",
+ "revision": "AGA-1 Rev 9/22",
+ "fields": {
+  "gap_amount": {"at": {"after": "(\"Gap Amount\")"}, "value": "money(v.gap_amount if v.gap_amount is not None else round(price * 0.03, -3))"},
+  "pay_cash": {"at": {"after": "(a) At Closing, Buyer shall"}, "check": "(v.pay or 'cash') == 'cash'"},
+  "finance": {"at": {"after": "(b) Buyer shall seek financing"}, "check": "v.pay == 'finance'"},
+  "valuation_days": {"at": {"label": "no lender, on their own, within"}, "value": "v.valuation_days"},
+  "renegotiate_days": {"at": {"label": "Purchase Price, the parties shall have"}, "value": "v.renegotiate_days"}
+ }
+}

@@ -1,0 +1,85 @@
+{
+ "family": "RCD",
+ "revision": "RCD-8 Rev 1/26",
+ "fields": {
+  "condo_documents": {
+   "at": {
+    "after": "Condominium Documents:",
+    "kind": "check"
+   },
+   "check": "True"
+  },
+  "condo_name": {
+   "at": {
+    "label": "relate to:"
+   },
+   "value": "v.condo_name or condo_name"
+  },
+  "condo_documents_date": {
+   "at": {
+    "label": "condominium, on"
+   },
+   "value": "mdy(v.received)"
+  },
+  "governance_form": {
+   "at": {
+    "after": "Condominium Governance Form",
+    "kind": "check"
+   },
+   "check": "True"
+  },
+  "governance_form_date": {
+   "at": {
+    "label": "condominium associations, on"
+   },
+   "value": "mdy(v.received)"
+  },
+  "milestone_summary": {
+   "at": {
+    "after": "Inspector-Prepared Summary",
+    "kind": "check"
+   },
+   "check": "True"
+  },
+  "milestone_condo": {
+   "at": {
+    "after": "a condominium,",
+    "kind": "check"
+   },
+   "check": "True"
+  },
+  "milestone_condo_name": {
+   "at": {
+    "after": "a condominium,",
+    "kind": "field"
+   },
+   "value": "v.condo_name or condo_name"
+  },
+  "milestone_date": {
+   "at": {
+    "within": [
+     50,
+     506,
+     330,
+     530
+    ],
+    "page": 1,
+    "kind": "field"
+   },
+   "value": "mdy(v.received)"
+  },
+  "sirs": {
+   "at": {
+    "after": "Structural Integrity Reserve Study",
+    "kind": "check"
+   },
+   "check": "True"
+  },
+  "sirs_date": {
+   "at": {
+    "label": "has not completed a SIRS on"
+   },
+   "value": "mdy(v.received)"
+  }
+ }
+}

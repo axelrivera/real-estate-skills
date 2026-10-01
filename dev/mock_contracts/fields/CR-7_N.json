@@ -1,0 +1,8 @@
+{
+ "family": "CR-7_N",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "cccl_waived": {"at": {"after": "Buyer waives the right to", "kind": "check"}, "check": "v.cccl_requested is False"},
+  "cccl_requested": {"at": {"after": "Buyer requests a CCCL affidavit", "kind": "check"}, "check": "bool(v.cccl_requested)"}
+ }
+}

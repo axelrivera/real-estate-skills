@@ -31,6 +31,12 @@ def md(text):
     return re.sub(r"\[([^\]]+)\]", r'<span class="fill">[\1]</span>', out)
 
 
+def sentence(text):
+    """OFR-206: a reason starts with a capital ("buyer has insurance quote" -> "Buyer has insurance quote")."""
+    text = str(text or "")
+    return text[:1].upper() + text[1:]
+
+
 def acct(v):
     return money(v) if v >= 0 else f"({money(-v)})"
 
@@ -73,7 +79,7 @@ def snapshot(r):
     row = f'<div class="divrow factrow"><div>{"".join(f"<span>{esc(x)}</span>" for x in facts)}</div></div>' if facts else ""
     cells = [("Sale-to-List", f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else None),
              ("Months Supply", M.get("months_supply")), ("Days on Market", P.get("dom")),
-             ("Median DOM", M.get("median_dom")), ("Offers Due", esc(C["deadline"]) if C.get("deadline") else None)]
+             ("Median DOM", M.get("median_dom")), ("Offers Due", esc(ST.deadline_label(C.get("deadline"))) or None)]
     cells = [(a, b) for a, b in cells if b is not None and b != ""]  # missing values drop out rather than show a dash
     if not cells:
         return row
@@ -112,10 +118,12 @@ def page1(r, s):
     exp = "".join(f'<tr><td>{esc(a)}</td><td class="n"><b class="{"rt" if a == "Left in Reserve" and s["reserve_short"] else ("gt" if a == "Left in Reserve" else "")}">'
                   f'{esc(b)}</b></td></tr>' for a, b in s["exposure"])
     limits = "".join(f'<div class="limit"><b>Limit:</b> {esc(c)}</div>' for c in s["constraints"])
+    limits += "".join(f'<div class="cnote">{esc(c)}</div>' for c in s.get("cautions") or [])  # OFR-338: inside the limits
     pre = f'<div class="prelim">{md(s["preliminary"])}</div>' if s["preliminary"] else ""
+    absent = "".join(f'<div class="absent"><b>No {esc(a["option"])} Option:</b> {esc(a["why"])}</div>' for a in s["absent"])  # OFR-208
     return f'''{hero}{box}
-<h2>Your Options <span class="h2s">Outlook with {esc(ST.COMP_LABEL[r["B"]["competition"]["level"]])}</span></h2><div class="tbl"><table><colgroup><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:9%"></colgroup>
-<thead><tr><th>Option</th><th class="n">Price</th><th class="c">Outlook</th><th class="n">Seller Net*</th><th class="n">Worst Cash</th><th class="n">Reserve</th><th>What Changes</th></tr></thead><tbody>{opts}</tbody></table></div>
+<h2>{esc(s["options_title"])} <span class="h2s">Outlook with {esc(ST.COMP_LABEL[r["B"]["competition"]["level"]])}</span></h2><div class="tbl"><table><colgroup><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:9%"></colgroup>
+<thead><tr><th>Option</th><th class="n">Price</th><th class="c">Outlook</th><th class="n">Seller Net*</th><th class="n">Worst Cash</th><th class="n">Reserve</th><th>What Changes</th></tr></thead><tbody>{opts}</tbody></table></div>{absent}
 <div class="two">
  <div><h2>How It Stacks Up <span class="h2s">By Competition Level</span></h2><div class="tbl"><table class="bandt"><colgroup><col style="width:36%"></colgroup>
  <thead><tr><th>If the Seller Has…</th>{"".join(f'<th class="c">{esc(x)}</th>' for x in labels)}</tr></thead><tbody>{bands}</tbody></table></div>
@@ -123,16 +131,6 @@ def page1(r, s):
  <div><h2>Your Exposure <span class="h2s">Recommended Offer</span></h2><div class="panel"><table class="exp">{exp}</table></div></div></div>
 {limits}{pre}<div class="nextstep"><b>Next Step:</b> {esc(s["next_step"])}</div>
 <div class="fine" style="margin-top:4px">*Seller net before mortgage payoff, as a listing agent would calculate it. Outlook is an estimate from the offer's terms and market signals; other offers and the seller's priorities are unknown. Not legal or financial advice.</div>'''
-
-
-RESP = {"Price": "Inside the value range; the appraisal won't support much more",
-        "Seller Concessions": "These cover closing costs your cash can't; could trade part of them for price",
-        "Escrow Deposit": "Can go higher: refundable during the inspection period and adds no cost",
-        "Inspection Period": "Needed for a full inspection; offer to share reports quickly",
-        "Appraisal Gap Coverage": "Limited by your reserve; any more is your call",
-        "Loan Approval": "Provide the full pre-approval letter", "Closing Date": "Match it if the lender confirms",
-        "Buyer-Broker Compensation": "Per the buyer-broker agreement; discuss before submitting",
-        "Home Warranty": "Already not requested", "Escrow / Title Agent": "Fine: seller's title company"}
 
 
 def details(r, res):
@@ -144,17 +142,21 @@ def details(r, res):
     hdr = "".join(f"<th>{x}</th>" for x in labels)
     hdrn = "".join(f'<th class="n">{x}</th>' for x in labels)
     side = ""
-    for row in res["side_by_side"]:
+    for row in res["side_by_side"]:  # OFR-360: the payment row comes last and is never amber
         vals = row["values"]
-        side += f"<tr><td>{esc(row['term'])}</td>" + "".join(f'<td class="{"" if i == 0 or v == vals[0] else "caution"}">{esc(v)}</td>' for i, v in enumerate(vals)) + "</tr>"
-    pay_label = "Est. Monthly Payment" + (" (Before Flood Insurance)" if B["flood"]["annual"] is None else "")
-    side += f"<tr><td>{pay_label}</td>" + "".join(f'<td>${r["payment"][k]:,}</td>' for k in K) + "</tr>"
+        side += f"<tr><td>{esc(row['term'])}</td>" + "".join(
+            f"<td>{esc(v)}</td>" if row["key"] == "payment" else f'<td class="{"" if i == 0 or v == vals[0] else "caution"}">{esc(v)}</td>'
+            for i, v in enumerate(vals)) + "</tr>"
     cols = [(ST.OPTION_LABEL[k], O[k]["ns"]) for k in K] + [("Clean Offer at List", tgt)]
     ns = ""
-    for i, (key, label, _) in enumerate(cols[0][1]["lines"]):
+    line_labels = {}
+    for _, c in cols:  # by line key, not position: a rider line can be on one column and not another
+        for key, label, _ in c["lines"]:
+            line_labels.setdefault(key, label)
+    for key, label in line_labels.items():
         if key == "payoff":
             continue
-        vals = [c["lines"][i][2] for _, c in cols]
+        vals = [next((amt for k, _, amt in c["lines"] if k == key), 0) for _, c in cols]
         if all(v == 0 for v in vals):
             continue
         ns += f"<tr><td>{esc(label)}</td>" + "".join(f'<td class="n {"neg" if v < 0 else ""}">{acct(v)}</td>' for v in vals) + "</tr>"
@@ -163,11 +165,11 @@ def details(r, res):
     ns += '<tr class="total2"><td>Net as the Listing Agent Sees It</td>' + "".join(
         f'<td class="n {"best" if c["net_adj"] >= tgt["net_adj"] else ("worst" if c["net_adj"] < tgt["net_adj"] - 5000 else "")}">{acct(c["net_adj"])}</td>'
         for _, c in cols) + "</tr>"
-    ns += '<tr class="alt"><td>If the Appraisal and Inspection Go Badly (Value Midpoint, Typical Repair Credit)</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
+    ns += '<tr class="alt"><td>If the Appraisal and Inspection Go Badly (Appraisal at the Top of the Value Range, Typical Repair Credit)</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
     sc = ""
     for key, label, w in oe.CRITERIA:
         sc += f'<tr><td>{label}</td><td class="n">{w}%</td>' + "".join(f'<td class="c s{O[k]["score"]["scores"][key]}">{O[k]["score"]["scores"][key]}</td>' for k in K) \
-              + f'<td class="sm" style="color:var(--text)">{esc(rec["score"]["why"][key])}</td></tr>'
+              + f'<td class="sm" style="color:var(--text)">{esc(sentence(rec["score"]["why"][key]))}</td></tr>'
     sc += '<tr class="total"><td>Strength Score</td><td class="n">100%</td>' + "".join(
         f'<td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[O[k]["score"]["band"][0]]}"><b>{O[k]["score"]["total"]}</b></td>' for k in K) + "<td></td></tr>"
     cr = ""
@@ -178,23 +180,18 @@ def details(r, res):
     floor = B["buyer"]["reserve_floor"]
     cr += f'<tr class="total2"><td>Left in Reserve (of {money(B["buyer"]["cash_available"])})</td>' + "".join(
         f'<td class="n {"worst" if r["cash"][k]["reserve"] < floor else "best"}">{acct(r["cash"][k]["reserve"])}</td>' for k in K) + "</tr>"
-    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{O[k]["firm_date"]:%b %-d} · {money(O[k]["deposit"])}</td>' for k in K) + "</tr>"
-    M, V = B["market"], B["value"]
-    mk = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' if not V.get("assumed") else "Not provided",
-           V.get("source") if not V.get("assumed") else None),  # the source on its own line, so the range never wraps
-          ("Sale-to-List", f'{M["sale_to_list"] * 100:.1f}%' if M.get("sale_to_list") else "—"), ("Months of Supply", M.get("months_supply") or "—"),
-          ("Median Days on Market", M.get("median_dom") or "—"), ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
-          ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"), ("Market Read", B["competition"]["heat"].title())]
-    if V.get("median_adjusted"):
-        mk.insert(1, ("Median Adjusted Comp", money(V["median_adjusted"])))
-    plan = B.get("cma_offer_plan") or {}
-    if plan.get("target_low") and plan.get("target_high"):
-        mk.append(("CMA Offer Plan", f'target {money(plan["target_low"])}–{money(plan["target_high"])}'
-                   + (f' · walk away {money(plan["walk_away"])}' if plan.get("walk_away") else "")))
-    mkt = "".join(f"<tr><td>{m[0]}</td><td><b>{esc(str(m[1]))}</b>"
-                  + (f"<br><small>{esc(str(m[2]))}</small>" if len(m) > 2 and m[2] else "") + "</td></tr>" for m in mk)
-    pb = "".join(f'<tr><td>{esc(t)}</td><td>{esc(a)}</td><td class="caution">{esc(b)}</td><td>{esc(RESP.get(t, "Discuss with the buyer"))}</td></tr>'
-                 for t, a, b, _ in rec["counter_rows"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
+    # OFR-219: the date as the contract's weekend and holiday rule leaves it
+    # OFR-316: on a contract that isn't FR/BAR the date is counted from the offer's periods: marked to confirm
+    confirm = " (confirm)" if B["words"]["deposit_risk_confirm"] else ""
+    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}{confirm}</td>' for k in K) + "</tr>"
+    if any(ST.appraisal_until(O[k], B, r["costs"]) for k in K):  # OFR-210: the appraisal protection on its own row
+        cr += '<tr><td>Low-Appraisal Protection</td>' + "".join(f'<td class="n">{esc(ST.appraisal_until(O[k], B, r["costs"]) or "—")}</td>' for k in K) + "</tr>"
+    mkt = "".join(f"<tr><td>{m['label']}</td><td><b>{esc(m['value'])}</b>"  # OFR-359: rows shared with the markdown answer
+                  + (f"<br><small>{esc(m['note'])}</small>" if m["note"] else "") + "</td></tr>" for m in res["market_check"])
+    # OFR-214: an ask past one of the buyer's limits is answered with that limit (strategy.pushback)
+    pb = "".join(f'<tr><td>{esc(p["term"])}</td><td>{esc(p["yours"])}</td><td class="caution">{esc(p["ask"])}</td>'
+                 f'<td{" class=risk" if p["breaks"] else ""}>{esc(p["response"])}</td></tr>'
+                 for p in res["pushback"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
     if r["missing"]:
         asum = ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th><th>Where</th><th>What Was Assumed</th></tr></thead><tbody>'
                 + "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{a["impact"].title()}</span></td><td>{esc(a["scope"].title())}</td><td>{esc(a["why"])}</td></tr>'
@@ -205,13 +202,16 @@ def details(r, res):
     lf = r["R"]["seller"]["listing_fee_pct"]
     cost_basis = (f"Assumes a {oe.pct(lf)} listing fee" if lf else "Listing fee unknown") + "; " + "; ".join(L["cost_notes"]) + "."
     state = profiles.STATES.get(L.get("state") or "", "your state")
+    # OFR-208: with one option there's nothing to compare, so no amber legend
+    side_title = ('1 · Options Side by Side <span class="h2s">Amber = Differs from the Recommended Offer</span>' if len(K) > 1
+                  else "1 · Offer Terms")
     return f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
-<h2>1 · Options Side by Side <span class="h2s">Amber = Differs from the Recommended Offer</span></h2>
+<h2>{side_title}</h2>
 <div class="tbl"><table><colgroup><col style="width:22%"></colgroup><thead><tr><th>Term</th>{hdr}</tr></thead><tbody>{side}</tbody></table></div>
 <h2>2 · How the Listing Agent Will See Each Option <span class="h2s">Seller Net Sheet, Before Mortgage Payoff</span></h2>
 <div class="tbl"><table><colgroup><col style="width:32%"></colgroup><thead><tr><th>Line Item</th>{hdrn}<th class="n">Clean Offer at List</th></tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span>{esc(cost_basis)}</span></div>
-<h2 class="pb">3 · Strength Scorecard <span class="h2s">The Same Criteria a Listing Agent Uses · 1 = Weak · 5 = Strong</span></h2>
+<h2>3 · Strength Scorecard <span class="h2s">The Same Criteria a Listing Agent Uses · 1 = Weak · 5 = Strong</span></h2>
 <div class="tbl"><table><colgroup><col style="width:27%"><col style="width:7%">{"".join('<col style="width:8%">' for _ in K)}</colgroup>
 <thead><tr><th>Criterion</th><th class="n">Weight</th>{"".join(f'<th class="c">{x}</th>' for x in labels)}<th>Recommended: Why</th></tr></thead><tbody>{sc}</tbody></table></div>
 <h2>4 · Your Cash &amp; Risk</h2>
@@ -222,7 +222,7 @@ def details(r, res):
  <div><h2>6 · Likely Pushback <span class="h2s">On the Recommended Offer</span></h2><div class="tbl"><table><colgroup><col style="width:24%"><col style="width:19%"><col style="width:19%"></colgroup>
  <thead><tr><th>Term</th><th>Yours</th><th>They May Ask</th><th>Response</th></tr></thead><tbody>{pb}</tbody></table></div></div></div>
 <h2>7 · Assumptions &amp; Data to Confirm</h2>{asum}
-<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {B["buyer"]["closing_cost_pct"]:.1%} of price; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div>'''
+<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {esc(ST.closing_cost_basis(B))}; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div>'''
 
 
 def options_html(r, agent, sample):
@@ -253,7 +253,12 @@ def worksheet_html(r, agent, sample, variant=None):
         return f'<span class="hint">{esc(note)}</span>' if note else ""
 
     done = ("yes", "done", "true", "✓")
-    pk = "".join(f'<tr><td class="c"><span class="cb{" on" if str(x["status"]).lower() in done else ""}"></span></td><td class="src">{esc(x["group"])}</td><td>{esc(x["item"])}{hint(x["note"])}</td>'
+
+    def box(status):  # OFR-206: "Never" (a thing to leave out) is a cross, never a tick
+        if str(status).lower() == "never":
+            return '<b class="never">✕</b>'
+        return f'<span class="cb{" on" if str(status).lower() in done else ""}"></span>'
+    pk = "".join(f'<tr><td class="c">{box(x["status"])}</td><td class="src">{esc(x["group"])}</td><td>{esc(x["item"])}{hint(x["note"])}</td>'
                  '<td class="write"></td><td class="write"></td></tr>' for x in W["package"])
     verify = ("verify every paragraph and rider against the current FR/BAR form version" if W["frbar"]
               else "match each entry to your contract by name (paragraph numbers vary by form)")
@@ -300,13 +305,17 @@ def build(data, fmt, out_dir, ctx):
                                  footer_html=render.footer(f"Offer Options · Prepared for {r['B']['buyer'].get('name') or 'the Buyer'} · "
                                                            f"Not for the Listing Side · {street}"))  # OFR-32
         if top > PAGE1_LIMIT:
-            print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten override notes.", file=sys.stderr)
+            print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten the longest notes or reasons.", file=sys.stderr)
     else:
         doc, W = worksheet_html(r, ctx["agent"], sample, option)
         path = os.path.join(out_dir, render.filename(street, "Offer Package", ext="pdf"))
         render.html_to_pdf(doc, path, footer_html=render.footer(f"Offer Package Worksheet · Buyer Side · {street} · Draft"))
         print(f"Worksheet ({W['option'].lower()} offer): {len(W['riders'])} rider(s), {len(W['clauses'])} clause draft(s), {W['blanks']} blank(s) to fill",
               file=sys.stderr)
+    if not ctx.get("chat_noted"):  # OFR-203: once per run, not once per file
+        ctx["chat_noted"] = True
+        for note in oe.cf.support([r["B"]["contract_form"]], drafting=True)["chat_notes"]:
+            print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
     return [path]
 
 

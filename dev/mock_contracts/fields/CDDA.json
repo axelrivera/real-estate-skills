@@ -1,0 +1,19 @@
+{
+ "family": "CDDA",
+ "revision": "CDDA 2 Rev 2/18",
+ "fields": {
+  "district": {"at": {"after": "COMMUNITY DEVELOPMENT DISTRICT"}, "value": "v.district"},
+  "amount_1": {"at": {"within": [30, 470, 150, 490], "page": 1}, "value": "money(v.assessments[0]['amount']) if v.assessments else None"},
+  "per_1": {"at": {"within": [160, 470, 282, 490], "page": 1}, "value": "v.assessments[0].get('per') if v.assessments else None"},
+  "to_1": {"at": {"within": [286, 470, 595, 490], "page": 1}, "value": "v.assessments[0].get('to') if v.assessments else None"},
+  "amount_2": {"at": {"within": [30, 498, 150, 518], "page": 1}, "value": "money(v.assessments[1]['amount']) if len(v.assessments or []) > 1 else None"},
+  "per_2": {"at": {"within": [160, 498, 282, 518], "page": 1}, "value": "v.assessments[1].get('per') if len(v.assessments or []) > 1 else None"},
+  "to_2": {"at": {"within": [286, 498, 595, 518], "page": 1}, "value": "v.assessments[1].get('to') if len(v.assessments or []) > 1 else None"}
+ },
+ "roles": {
+  "sign:seller": [{"within": [15, 340, 285, 372], "page": 1, "part": [0.45, 1]}, {"within": [15, 398, 285, 430], "page": 1, "part": [0.45, 1]}],
+  "date:seller": [{"within": [15, 340, 285, 372], "page": 1, "part": [0, 0.43]}, {"within": [15, 398, 285, 430], "page": 1, "part": [0, 0.43]}],
+  "sign:buyer": [{"within": [300, 340, 595, 372], "page": 1, "part": [0.45, 1]}, {"within": [300, 398, 595, 430], "page": 1, "part": [0.45, 1]}],
+  "date:buyer": [{"within": [300, 340, 595, 372], "page": 1, "part": [0, 0.43]}, {"within": [300, 398, 595, 430], "page": 1, "part": [0, 0.43]}]
+ }
+}

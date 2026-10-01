@@ -2,27 +2,27 @@
 
 Where the agent's profile lives between conversations, and where to look for it. The profile is a convenience: when none is found, collect what the task needs in the chat, as the skill says.
 
-## The Saved Folder
+## The Working Folder
 
-In Cowork, when the agent has a working folder selected, the profile is saved as `.claude/real-estate/profile.md` inside that folder. It's one file: the agent's name, brokerage, contact details, brand colors, voice and disclaimers. It holds no local costs: reports take those from the property.
+In Cowork, when the agent has a working folder selected, the profile is saved as `profile.md` directly in that folder, next to the agent's own files. It's one file: the agent's name, brokerage, contact details, brand colors, voice and disclaimers. It holds no local costs: reports take those from the property.
 
-Resolve the path from the agent's working folder, never from the current directory: in Cowork, skills run from a plugin folder, not from the agent's folder. If you can't tell which folder the agent selected, there is no saved folder for this conversation.
+Resolve the path from the agent's working folder, never from the current directory: in Cowork, skills run from a plugin folder, not from the agent's folder. If you can't tell which folder the agent selected, there is no working folder for this conversation.
 
 ## Finding the Profile
 
-Use the first place that has one:
+The agent can share it four ways. Use the first place that has one:
 
-1. **The conversation:** a file the agent uploaded or pasted, or one written earlier in this chat.
-2. **Project files** (claude.ai Projects).
-3. **The saved folder,** when there is a working folder: `.claude/real-estate/profile.md`.
+1. **The conversation:** pasted into the chat, uploaded to it, or written earlier in this chat.
+2. **Project files or context** (a claude.ai or Cowork Project).
+3. **The Cowork working folder:** `profile.md` in the folder first (where agent-profile saves it), else any file in the folder or its subfolders that starts with `profile: agent` (the agent may keep it anywhere there, under any name). Look only in the working folder the agent selected.
 
-Pass the file to `render.py` by its path (`--profile`). When the profile came from the saved folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
+Pass the file to `render.py` by its path (`--profile`); a pasted profile goes in a file in the temporary folder first (Working Files). When the profile came from the working folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
 
 ## Saving the Profile
 
 Only save after the agent has given or confirmed the details.
 
-- **Cowork with a working folder:** save straight to `.claude/real-estate/` in that folder (create the folder when it's missing). The first time, say the full path in the hand-over. When a file is already there, the update replaces it; say in plain words what changed.
+- **Cowork with a working folder:** save `profile.md` directly in that folder, or replace the profile file found there (step 3 above) under its own name and place. The first time, name the folder in the hand-over. When a file is already there, the update replaces it; say in plain words what changed.
 - **Anywhere else** (a claude.ai chat, a Project, or Cowork with no folder selected): save to the outputs folder (the runtime provides it; never the skill's own folder) and hand it over with one line on keeping it:
   - **claude.ai inside a Project** (the conversation has Project files or instructions): "Add this file to your Project files so every chat can use it."
   - **Cowork with no folder selected:** "Select a working folder and I'll save this there, so every session can use it." Offer to save it once they do.
@@ -34,7 +34,7 @@ Never block the task over saving: the profile still works for the rest of this c
 
 ## Working Files
 
-The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, the profile and its project instructions) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply.
+The data files a skill writes (report.json, buyer.json, listing.json, deal.json, columns.json) and the CMA handoff (`.cma.json`) are working files: they feed the scripts and are never handed to the agent. Create a temporary folder once per conversation (`mktemp -d`) and write them there, never in the outputs folder and never in the skill's own folder. Only the finished files (PDF, PowerPoint, calendar, the profile and its project instructions) go in the outputs folder, and only those are presented or linked. Never offer a JSON file for download or paste one into a reply. Working files last for the conversation: in a later conversation, rebuild them from the documents the agent uploads again (the executed contract and its amendments, the offers), never from a file the agent was asked to keep.
 
 ## CMA Handoffs
 

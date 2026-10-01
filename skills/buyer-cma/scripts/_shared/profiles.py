@@ -113,6 +113,11 @@ def load_agent(path=None):
                                              for x in licenses)}
     errors = [f for f in AGENT_REQUIRED if not str(data.get(f) or "").strip()]
     brand = data.get("brand")
+    # CORE-101: in YAML an unquoted # starts a comment, so `primary: #1F3A5F` reads as empty and the brand is lost
+    empty = ([k for k in ("primary", "buyer_primary", "seller_primary") if k in brand and brand[k] in (None, "")]
+             if isinstance(brand, dict) else ["brand"] if "brand" in data and brand in (None, "") else [])
+    for k in empty:
+        warnings.append(f"{k} is empty: write the color code in quotes (\"#1F3A5F\"), since an unquoted # starts a comment.")
     if brand is not None and not isinstance(brand, dict):
         warnings.append("Brand colors should be listed under 'brand' as primary, buyer_primary or seller_primary.")
         brand = None
@@ -190,8 +195,10 @@ class Market:
     A path with no value is missing: it comes from the deal (a contract's time rules), or the skill asks.
     """
 
-    def __init__(self, data, sources, notes):
+    def __init__(self, data, sources, notes, note_codes=None):
         self.data, self.sources, self.notes = data, sources, notes
+        # a stable code per note, in the same order (TEST-2): tests check which note fired without matching its words
+        self.note_codes = list(note_codes) if note_codes is not None else [None] * len(notes)
 
     @property
     def state(self):
@@ -244,7 +251,7 @@ class Market:
             sources[path] = "deal"
             if key == "title_estimate_pct":  # a deal estimate replaces the rate table
                 node.pop("rate_tiers", None)
-        return Market(data, sources, list(self.notes))
+        return Market(data, sources, list(self.notes), self.note_codes)
 
 
 # A deal's own costs, as the skills' data files name them, mapped to market paths (Market.with_deal).
@@ -300,6 +307,20 @@ def _county_key(county):
     return re.sub(r"[^a-z]", "", re.sub(r"\bsaint\b", "st", k))
 
 
+def county_for_city(state, city):
+    """The county a city is in, read from the state layer's built-in millage districts ("Orlando (St. Johns WMD)" is
+    in Orange), or None when the state has no layer, no district is named for the city, or districts in more than
+    one county are. Only for a listing that gives a city but no county: a county the agent gave always wins."""
+    code = state_code(state)
+    layer = _layers("state").get(code) if code else None
+    if not layer or not str(city or "").strip():
+        return None
+    want = str(city).strip().lower()
+    counties = {str(r.get("county")) for r in (layer.get("property_tax") or {}).get("millage") or []
+                if str(r.get("district", "")).split(" (")[0].strip().lower() == want and r.get("county")}
+    return counties.pop() if len(counties) == 1 else None
+
+
 def _strip_layer_keys(layer):
     return {k: v for k, v in layer.items()
             if k not in ("layer", "name", "aliases", "as_of", "schema", "profile", "counties")}
@@ -349,18 +370,22 @@ def load_market(state=None, county=None, mls=None):
     if state and not want:
         raise ProfileError(f"{state!r} isn't a US state or territory.")
 
-    data, sources, notes = {}, {}, []
+    data, sources, notes, codes = {}, {}, [], []
+
+    def note(code, text):
+        notes.append(text)
+        codes.append(code)
     states, mlss = _layers("state"), _layers("mls")
     if want is None:
-        notes.append("The property's state wasn't given, so only national estimates were applied. "
+        note("no_state", "The property's state wasn't given, so only national estimates were applied. "
                      "Take it from the listing or ask; don't assume Florida.")
     elif want in states:
         _merge(data, _strip_layer_keys(states[want]), sources, "state")
         known = states[want].get("counties")
         if county and known and _county_key(county) not in {_county_key(c) for c in known}:
-            notes.append(f"{county} isn't a {STATES[want]} county: check the spelling. No county rules were applied.")
+            note("unknown_county", f"{county} isn't a {STATES[want]} county: check the spelling. No county rules were applied.")
     else:
-        notes.append(f"Nothing is built in for {STATES[want]}: costs are national estimates (labeled Estimate), and "
+        note("state_not_built_in", f"Nothing is built in for {STATES[want]}: costs are national estimates (labeled Estimate), and "
                      "contract time rules come from the contract.")
 
     mls_name = mls
@@ -368,16 +393,16 @@ def load_market(state=None, county=None, mls=None):
     if mls_name:
         layer = mlss.get(_mls_key(mls_name))
         if not layer:
-            notes.append(f"{mls_name} isn't built in: map its export's column headers (--columns) and read its "
+            note("mls_not_built_in", f"{mls_name} isn't built in: map its export's column headers (--columns) and read its "
                          "history codes from the listing.")
     else:
         candidates = {id(l): l for l in mlss.values() if _covers(l, want, county)}
         if len(candidates) == 1:
             layer = next(iter(candidates.values()))
-            notes.append(f"The MLS wasn't given, so {layer['name']} was assumed"
+            note("mls_assumed", f"The MLS wasn't given, so {layer['name']} was assumed"
                          f"{' for ' + county if county else ''}.")
         else:
-            notes.append(f"The MLS wasn't given{' for ' + county if county else ''}: "
+            note("mls_not_given", f"The MLS wasn't given{' for ' + county if county else ''}: "
                          "if an MLS export is used, map its column headers (--columns).")
     if layer:
         _merge(data, _strip_layer_keys(layer), sources, "mls")
@@ -390,15 +415,15 @@ def load_market(state=None, county=None, mls=None):
     if want in no_tax and data.get("closing_costs", {}).get("deed_transfer_tax_rate") is None:
         data.setdefault("closing_costs", {})["deed_transfer_tax_rate"] = 0
         sources["closing_costs.deed_transfer_tax_rate"] = "national"
-        notes.append(f"{STATES[want]} has no state transfer tax, so none is charged. A few cities and counties add their "
+        note("no_transfer_tax", f"{STATES[want]} has no state transfer tax, so none is charged. A few cities and counties add their "
                      "own: confirm with the title company.")
     _fill(data, national, sources, "estimate")
     if mls_name and not data.get("mls"):
         data["mls"], sources["mls"] = mls_name, "input"  # an MLS that isn't built in is still the one in use
     for leaf, value in _leaves(data):
         if value == ASK and not leaf.startswith("county_overrides."):
-            notes.append(f"{leaf} varies by area here{' in ' + county if county else ''}: confirm it with the title company "
+            note("varies:" + leaf, f"{leaf} varies by area here{' in ' + county if county else ''}: confirm it with the title company "
                          "or the agent, and put it in the deal's costs.")
     data["state"] = want
     sources["state"] = "state" if want in states else "input" if want else "missing"
-    return Market(data, sources, notes)
+    return Market(data, sources, notes, codes)

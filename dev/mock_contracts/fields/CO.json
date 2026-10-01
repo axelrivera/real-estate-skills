@@ -1,0 +1,20 @@
+{
+ "family": "CO",
+ "revision": "CO-3 Rev 1/15",
+ "fields": {
+  "number": {"at": {"label": "Counter Offer #", "kind": "field", "nth": 0}, "value": "v.number"},
+  "offer_date": {"at": {"label": "party making the offer and dated"}, "value": "mdy(offer_date)"},
+  "property": {"at": {"within": [30, 145, 580, 162], "page": 1}, "value": "property_address"},
+  "price_changed": {"at": {"after": "Purchase Price is changed to", "kind": "check"}, "check": "bool(v.price)"},
+  "price": {"at": {"label": "Purchase Price is changed to", "kind": "field"}, "value": "money(v.price)"},
+  "closing_changed": {"at": {"after": "Closing Date is changed to", "kind": "check"}, "check": "bool(v.closing)"},
+  "closing": {"at": {"label": "Closing Date is changed to", "kind": "field"}, "value": "mdy(v.closing)"},
+  "included_changed": {"at": {"after": "The following items are included", "kind": "check"}, "check": "bool(v.included)"},
+  "included": {"at": {"within": [30, 275, 580, 316], "page": 1}, "value": "v.included"},
+  "excluded_changed": {"at": {"after": "The following items are excluded", "kind": "check"}, "check": "bool(v.excluded)"},
+  "excluded": {"at": {"within": [30, 322, 580, 365], "page": 1}, "value": "v.excluded"},
+  "term_lines": {"at": {"within": [30, 400, 100, 595], "page": 1, "all": true}, "rows": "[str(t.get('line', '')) for t in (v.terms or [])]"},
+  "term_text": {"at": {"within": [105, 400, 580, 595], "page": 1, "all": true}, "rows": "[t['text'] for t in (v.terms or [])]"},
+  "deadline": {"at": {"label": "to all parties on or before"}, "value": "when(v.deadline) if v.deadline else None"}
+ }
+}

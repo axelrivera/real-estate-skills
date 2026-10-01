@@ -1,0 +1,100 @@
+{
+ "sample": true,
+ "analysis_date": "2026-09-22",
+ "listing": {
+  "address": "2604 Sable Palm Way, Jupiter, FL 33458",
+  "state": "FL",
+  "county": "Palm Beach",
+  "list_price": 504000,
+  "year_built": 2016,
+  "property_type": "single_family",
+  "flood_disclosure": true,
+  "built_before_1978": false,
+  "hoa_monthly": 95.0,
+  "highest_and_best_due": "2026-09-23 12:00",
+  "hoa_conflict": "$95 per quarter in one package, $95 per month in the other"
+ },
+ "seller": {
+  "name": "Sample Seller",
+  "listing_fee_pct": 0.05
+ },
+ "offers": [
+  {
+   "id": "A",
+   "status": "active",
+   "received": "2026-09-21 19:05",
+   "expires": "2026-09-23 17:00",
+   "buyer": "Sample Buyer",
+   "buyer_agent": "Kendall Castellanos",
+   "buyer_brokerage": "Sunward Homes Realty",
+   "contract_form": "as_is",
+   "price": 489000,
+   "financing": "conventional",
+   "down_pct": 0.2,
+   "loan_amount": 391200.0,
+   "approval": "preapproval",
+   "deposit": 20000.0,
+   "seller_concessions": 0,
+   "closing_date": "2026-11-02",
+   "title_by": "seller",
+   "inspection_days": 10,
+   "loan_approval_days": 30,
+   "riders": [
+    "B",
+    "GG"
+   ],
+   "balance_to_close": 77800.0,
+   "addenda": [
+    "Appraisal Gap Addendum (AGA-1)"
+   ],
+   "buyer_broker_paid_by": "listing_broker",
+   "proof_of_funds": 156000,
+   "approval_max_price": 489000,
+   "approval_max_loan": 391200.0,
+   "approval_expires": "2026-12-16",
+   "buyer_broker_form": "GG",
+   "appraisal_form": "aga",
+   "appraisal_gap": 15000
+  },
+  {
+   "id": "B",
+   "status": "active",
+   "received": "2026-09-22 14:15",
+   "expires": "2026-09-24 17:00",
+   "buyer": "Sample Buyer",
+   "buyer_agent": "Emery Ostrander",
+   "buyer_brokerage": "Tidewater Key Realty",
+   "contract_form": "as_is",
+   "price": 494000,
+   "financing": "conventional",
+   "down_pct": 0.1,
+   "loan_amount": 444600.0,
+   "approval": "preapproval",
+   "deposit": 20000.0,
+   "seller_concessions": 0,
+   "closing_date": "2026-10-28",
+   "title_by": "seller",
+   "inspection_days": 10,
+   "loan_approval_days": 30,
+   "riders": [
+    "B",
+    "GG"
+   ],
+   "balance_to_close": 29400.0,
+   "addenda": [
+    "Escalation Addendum to Contract (EAC-1)"
+   ],
+   "buyer_broker_paid_by": "listing_broker",
+   "proof_of_funds": 88000,
+   "approval_max_price": 494000,
+   "approval_max_loan": 444600.0,
+   "approval_expires": "2026-12-17",
+   "buyer_broker_form": "GG",
+   "escalation": {
+    "cap": 506000,
+    "increment": 2000,
+    "proof": true
+   }
+  }
+ ]
+}

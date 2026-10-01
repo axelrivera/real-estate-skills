@@ -4,20 +4,84 @@
     {
       "id": 1,
       "prompt": "just got this one fully executed!! can you give me a timeline for my buyer with all the deadlines? i want to send it to them",
-      "expected_output": "Effective Date Sep 25 2026 (seller's initials on counter #1); FR/BAR deal file; deposit Wed Sep 30, inspection Mon Oct 5, appraisal Oct 16, loan approval Mon Oct 26 5 PM, closing Oct 30; buyer-view PDF; chat summary names the first deadline, when contingencies end, closing, and flags (loan approval within 5 days of closing)",
+      "expected_output": "Effective Date Fri Sep 25 2026 (seller's initials on counter #1, 4:12 PM); FR/BAR deal file; deposit Mon Sep 28 (3 days); loan application Wed Sep 30; inspection ends Mon Oct 5; insurance rider 10 days (Mon Oct 5); no appraisal period row (the FHA/VA rider's protection runs to closing, stated as a note); loan approval Mon Oct 26; closing Fri Oct 30. FR/BAR periods end at the end of the day: no 5 PM cutoff on any deadline. The flood zone and which Rider H boxes are checked aren't in the extract: both asked (the flood question with its would-be date). Buyer-view PDF; chat summary names the first deadline, when contingencies end, closing, and flags (loan approval within 5 days of closing); no best-effort disclaimer (FR/BAR is fully supported). Rider H's 10 days are written in a date blank: the reply says they could also count back from closing (Tue Oct 20) and gives the buyer's safe date (Mon Oct 5). The title evidence default is called not given (the extract leaves it out), never blank. The Clear to Close / Closing Disclosure row is a lender estimate with no star",
       "files": ["dev/evals/contract-timeline/files/executed-contract-cypress-bend.md"]
     },
     {
       "id": 2,
       "prompt": "We signed an extension on Cypress Bend, here's the amendment. What moved?",
-      "expected_output": "Adds the amendment to the existing deal file (doesn't rebuild), re-runs, says closing moved Oct 30 → Nov 6 and loan approval moved to Nov 1 → rolled to Mon Nov 2 5 PM; before-closing dates move; offers the updated PDF",
+      "today": "2026-10-21",
+      "expected_output": "Adds the amendment to the existing deal file (doesn't rebuild), re-runs, says closing moved Oct 30 → Fri Nov 6 and loan approval moved from Mon Oct 26 to 37 days (Sun Nov 1, rolled to Mon Nov 2, end of day, no 5 PM cutoff); dates counted back from closing move with it; delivers the updated PDF (the amendment is dated Oct 20, before today); the file's appraisal_days without Rider F and 5-day title evidence on an FHA deal are asked about in the same reply, each with the date that applies if the answer changes (from the script's if_changed, not a second deal file), not fixed silently and not a reason to hold the PDF",
       "files": ["dev/evals/contract-timeline/files/deal-cypress-bend.json", "dev/evals/contract-timeline/files/amendment-1.md"]
     },
     {
       "id": 3,
-      "prompt": "Quick one: TREC contract in Austin, effective 11/20/2026, 7 day option period. When exactly does the option end?",
-      "expected_output": "Doesn't apply Florida rules; uses the TREC rule that the option period ends at 5:00 PM local time (asks or states the assumption), computes Friday Nov 27 2026 5:00 PM with the script, answers in a sentence or two",
+      "prompt": "Quick one: Ohio purchase agreement, effective 11/20/2026. Para. 7 gives the buyer a 7 day due diligence period that ends at 5 PM on the last day. When exactly does it end?",
+      "expected_output": "Doesn't apply Florida rules or any built-in state rules; uses the contract's own rule as the agent quoted it (5:00 PM on the last day, asks or states the assumption about weekends and holidays), computes Friday Nov 27 2026 5:00 PM with the script, answers in a sentence or two, and adds one chat line that only Florida FR/BAR contracts are fully supported and this was read on a best-effort basis",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Heron Lake is fully executed. Standard contract this time, with a few riders. Can you give my buyer every deadline?",
+      "today": "2026-10-03",
+      "expected_output": "Reads the Standard form and riders F, H and L by letter; Effective Date Fri Oct 2 2026 (seller's signature delivered 11:20 AM); deposit Mon Oct 5 (3-day default); Right To Inspect Period ends Mon Oct 19 (15-day rider default, Sat Oct 17 rolled) as a right to cancel that also keeps the repair notices, with the seller's 10-day estimates and 5-day election pending the buyer's notice; loan approval Mon Nov 2 (30-day default, Sun Nov 1 rolled); insurance contingency Mon Nov 2 (Rider H blank: the earlier of 30 days after the Effective Date or 10 days before closing); appraisal due Tue Nov 3 and low-appraisal notice Fri Nov 6 (Rider F blank: 10 days before closing, then 3 days); closing Fri Nov 13; Rider H has box (a) only, recorded as insurance_coverage homeowners so the row is the homeowner's one; the blank Para. 9(a) repair limits are asked with the script's $6,675 each; lists every default used as an agent note; no best-effort disclaimer (FR/BAR)",
+      "files": ["dev/evals/contract-timeline/files/executed-contract-heron-lake-standard.md"]
+    },
+    {
+      "id": 5,
+      "prompt": "here's the fully executed package for Cypress Bend, dotloop export. can you build my buyer's timeline?",
+      "mock_package": "asis-fha-executed",
+      "expected_output": "Reads the Dotloop package: AS IS, FHA $365,000, Riders E, H and GG checked and attached. Effective Date Fri Sep 25 2026 (the second seller's signature, 4:15 PM: the last signature sets it). Deposit ($11,000, 3 days) Mon Sep 28, shown as done when the escrow receipt in the package is read (completed.deposit); compensation agreement due Mon Sep 28 and GG's cancel window to Thu Oct 1; loan application Wed Sep 30; inspection ends Mon Oct 5; insurance contingency Mon Oct 5 (the date written in Rider H, box (a) only: the homeowner's row); loan approval Mon Oct 26; closing Fri Oct 30. The first deadline is the inspection (Mon Oct 5), not Rider GG's cancel window. The deal file matches key/1532-Cypress-Bend-Dr-Answer-Key.json on the contract fields (price, financing, dates, day counts, riders). Buyer-view PDF; no best-effort disclaimer (FR/BAR). The Rider GG question (agreement not in the package) is one line with its Mon Sep 28 date, not repeated as a separate deadline line",
+      "files": [
+        "out/mock-contracts/asis-fha-executed/1532-Cypress-Bend-Dr-Contract.pdf"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Tern Island condo: we're executed and just signed an extension and another addendum. can you give me the updated deadlines for my buyer?",
+      "mock_package": "condo-asis-amended",
+      "today": "2026-10-12",
+      "expected_output": "Reads the package: AS IS condo, cash; the offer was countered once (CO-3 #1 at $284,500) and the buyer's signature on it Wed Sep 23 is the Effective Date. Riders A (association approval required), P (built 1974; the buyer waived the lead-based paint risk assessment, so no lead-paint row) and GG. Records the EA-4 (closing extended to Fri Nov 6, inspection 5 more days: 10 to 15, ends Thu Oct 8) and the ACSP-4 (condo documents, milestone summary and SIRS received Oct 2; $1,500 seller credit; no deadline changes) as amendments, not by rewriting the contract. Condo rescission window from the documents' receipt (recorded in contract, not in the ACSP-4's changes), association approval rows, closing Nov 6; a Check line that the inspection period is still open through Tue Oct 13 on the other EA-4 reading. Deal file matches key/410-Tern-Island-Cir-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/condo-asis-amended/410-Tern-Island-Cir-Contract.pdf"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "we went back and forth three times on Magnolia Crest but it's finally done. deadlines for my buyer please",
+      "mock_package": "standard-counter-chain",
+      "expected_output": "Reads three CO-3 counters and applies only the last (CO #3, restating $432,500, Nov 20 closing and a 25-day loan approval): the earlier counters' terms don't carry over (CO-3). Effective Date Fri Sep 25 (buyer's signature on CO #3, 12:25 PM). Standard form, VA (Rider E), Rider U, GG. Inspection 15 days (repair notices, Standard) ends Tue Oct 13; loan approval Tue Oct 20; Rider U agreement due Nov 10 (10 days before closing, critical) and the seller's possession 5 days after closing (Nov 25, no rent); closing Fri Nov 20. Deal file matches key/3317-Magnolia-Crest-Blvd-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/standard-counter-chain/3317-Magnolia-Crest-Blvd-Contract.pdf"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "the seller countered right on the contract and my buyer initialed everything. can you give me the timeline for my buyer?",
+      "mock_package": "asis-counter-on-contract",
+      "expected_output": "Reads the seller's counter on the contract (counter box checked on page 12): price $405,000 struck and $412,000 written in, closing Oct 29 struck to Fri Nov 6, inspection 10 struck to 7 days, and a Para. 20 term keeping the refrigerator, washer and dryer, each initialed by both. Uses the new values, not the struck ones. Effective Date Thu Sep 24 (the buyer's last initial on the changes, 6:58 PM, Para. 3(b)). Inspection ends Thu Oct 1; additional deposit Mon Oct 5; loan approval Mon Oct 26; closing Nov 6. Deal file matches key/3841-Juniper-Hollow-Rd-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/asis-counter-on-contract/3841-Juniper-Hollow-Rd-Contract.pdf"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "short sale on Osprey Ridge is executed, seller is renting back after closing. this is the scan the listing agent sent. deadlines for my buyer?",
+      "mock_package": "asis-short-sale-rent-back",
+      "mock_scanned": true,
+      "expected_output": "Reads an image-only scan (no text layer): either reads the pages visually or says plainly what it couldn't read and asks for the Dotloop copy; never invents values. AS IS, FHA $289,900, Riders E, G (7-day application, 60-day approval deadline, back-up offers allowed), U (14 days after closing, $1,850 a month) and GG. Effective Date Tue Sep 22. Two phases per Rider G: the seller's short sale application and forms, the approval deadline Mon Nov 23 and the contract's automatic end 30 days later are dated now; the periods Rider G restarts from the approval (inspection, loan approval, closing and the dates counted back from it, the seller's possession) show as pending until the approval is received, with a note to re-run the timeline then; the closing isn't dated from the Dec 22 written on the contract. Mentions that back-up offers are allowed (Rider G). Seller possession 14 days after closing. Deal file matches key/6027-Osprey-Ridge-Ln-Answer-Key.json",
+      "files": [
+        "out/mock-contracts/asis-short-sale-rent-back/6027-Osprey-Ridge-Ln-Contract-Scanned.pdf"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "can you set up the deadline calendar for Sable Palm? here's what I have",
+      "mock_package": "asis-offer-aga",
+      "expected_output": "Sees that the package is a buyer-signed offer: no seller signature or initials, no Effective Date, and the acceptance deadline (Sep 23, 5:00 PM) has passed. Says the timeline starts once the contract is fully executed and doesn't invent an Effective Date or build a calendar from the offer date; offers to build it as soon as the seller signs (asks for the executed copy). key/2604-Sable-Palm-Way-Answer-Key.json has mock.accepted false",
+      "files": [
+        "out/mock-contracts/asis-offer-aga/2604-Sable-Palm-Way-Offer.pdf"
+      ]
     }
   ]
 }

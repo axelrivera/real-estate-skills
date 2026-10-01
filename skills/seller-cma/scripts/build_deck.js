@@ -118,7 +118,7 @@ async function icon(name, color, size = 256) {
     const longest = Math.max(...[D.agent.name, ...D.agent.lines, D.prepared_date].filter(Boolean).map(t => textW(t, 12)));
     const size = longest > 8.5 ? Math.max(9, 12 * 8.5 / longest) : 12;
     s.addText(lines, { x: M, y: 3.75, w: 8.5, h: 1.2, fontFace: FONT, fontSize: size, color: ON_DARK, margin: 0, paraSpaceAfter: 2, valign: 'top', isTextBox: true });
-    if (D.preliminary) s.addText(T.deck_preliminary, { x: 5.5, y: 0.95, w: 4.0, h: 0.5, fontFace: FONT, fontSize: 11, bold: true, color: ON, align: 'right', margin: 0, isTextBox: true });
+    if (D.preliminary) s.addText(D.preliminary, { x: 5.5, y: 0.95, w: 4.0, h: 0.5, fontFace: FONT, fontSize: 11, bold: true, color: ON, align: 'right', margin: 0, isTextBox: true });
     notes(s, T.deck_title_note);
   }
 
@@ -145,7 +145,7 @@ async function icon(name, color, size = 256) {
     const s = content('how we priced it'); title(s, T.deck_method_title, T.deck_method_sub);
     const m = D.method;
     const steps = [[String(m.n_sold), m.sold_line], [String(m.n_comps), T.deck_step_comps],
-                   [m.adj_range, T.deck_step_adjusted], [m.adj_median, T.deck_step_median]];
+                   [m.adj_range, T.deck_step_adjusted], [m.adj_median, T.deck_step_median]].slice(m.n_sold == null ? 1 : 0);
     const top = 1.45, pitch = 0.74, d = 0.34, vx = M + 0.55, vw = 5.75 - vx;
     const size = Math.min(...steps.map(st => fit(st[0], vw, 0.38, { size: 22, min: 16, bold: true, what: 'step value' })));
     s.addShape(pres.shapes.LINE, { x: M + d / 2, y: top + d / 2, w: 0, h: pitch * (steps.length - 1), line: { color: LINE, width: 1.5 } });
@@ -154,9 +154,9 @@ async function icon(name, color, size = 256) {
       s.addShape(pres.shapes.OVAL, { x: M, y, w: d, h: d, fill: { color: TINT }, line: { color: MARK, width: 1 } });
       s.addText(String(i + 1), { x: M, y, w: d, h: d, fontFace: FONT, fontSize: 11, bold: true, color: STRONG, align: 'center', valign: 'middle', margin: 0, isTextBox: true });
       s.addText(st[0], { x: vx, y: y - 0.04, w: vw, h: 0.38, fontFace: FONT, fontSize: size, bold: true, color: BRAND, valign: 'middle', margin: 0, isTextBox: true });
-      tx(s, st[1], { x: vx, y: y + 0.34, w: vw, h: 0.24, size: 12, min: 10, color: INK, valign: 'top', what: i === 0 ? 'the sold line (deck.sold_line)' : 'step caption' });
+      tx(s, st[1], { x: vx, y: y + 0.34, w: vw, h: 0.24, size: 12, min: 10, color: INK, valign: 'top', what: i === 0 && m.n_sold != null ? 'the sold line (deck.sold_line)' : 'step caption' });
     });
-    const rx = 6.2, rw = W - M - rx, ry = top - 0.05, rh = pitch * (steps.length - 1) + 0.68;
+    const rx = 6.2, rw = W - M - rx, ry = top - 0.05, rh = pitch * 3 + 0.68;  // the card keeps its height with three steps (no export)
     card(s, rx, ry, rw, rh, BRAND);
     tx(s, T.deck_rec_label, { x: rx + 0.3, y: ry + 0.3, w: rw - 0.6, h: 0.3, size: 13, min: 11, color: ON });
     tx(s, D.rec.list_display, { x: rx + 0.3, y: ry + 0.65, w: rw - 0.6, h: 0.8, size: 40, min: 28, bold: true, color: ON, valign: 'middle' });
@@ -208,7 +208,10 @@ async function icon(name, color, size = 256) {
       tx(s, c.address, { x: M, y, w: 3.6, h: 0.24, size: 12, min: 10, bold: true, color: INK });
       tx(s, c.line, { x: M, y: y + 0.22, w: 3.6, h: 0.22, size: 9.5, min: 8.5, color: MUTED, what: 'deck.comp_lines' });
       s.addShape(pres.shapes.OVAL, { x: X(c.adjusted) - 0.09, y: y + 0.13, w: 0.18, h: 0.18, fill: { color: MARK }, line: { color: WHITE, width: 1 } });
-      s.addText(c.adjusted_k, { x: X(c.adjusted) + 0.12, y: y + 0.08, w: 0.7, h: 0.26, fontFace: FONT, fontSize: 10, color: INK, margin: 0, isTextBox: true });
+      // CMA-253: a value the recommended-price line would strike through goes on the dot's left
+      const xr = X(D.rec.list_price), struck = xr >= X(c.adjusted) + 0.08 && xr <= X(c.adjusted) + 0.55;
+      s.addText(c.adjusted_k, { x: struck ? X(c.adjusted) - 0.82 : X(c.adjusted) + 0.12, y: y + 0.08, w: 0.7, h: 0.26, fontFace: FONT, fontSize: 10,
+        color: INK, margin: 0, align: struck ? 'right' : 'left', isTextBox: true });
     });
     const shaded = fmt(T.deck_shaded, { low: D.rec.low_k, high: D.rec.high_k });
     const size = fit(shaded + C.comps_takeaway, W - 2 * M, 0.55, { size: 12, min: 10, lines: 2, what: 'deck.comps_takeaway' });
@@ -252,12 +255,16 @@ async function icon(name, color, size = 256) {
     const s = content('market'); title(s, D.market.title, D.market.subtitle);
     const [early, now] = D.market.period_labels;
     const k = C.market_stats.length, gap = 0.25, cw = (W - 2 * M - gap * (k - 1)) / k, y = 1.45, iw = cw - 0.4;
-    const big = Math.min(...C.market_stats.map(m => fit(m[2], iw, 0.5, { size: 28, min: 18, bold: true, what: 'deck.market_stats recent value' })));
+    const big = Math.min(...C.market_stats.map(m => fit(D.market.one_period ? m[1] : m[2], iw, 0.5, { size: 28, min: 18, bold: true, what: 'deck.market_stats recent value' })));
     for (let i = 0; i < k; i++) {
       const m = C.market_stats[i], x = M + i * (cw + gap);
       card(s, x, y, cw, 2.65, TINT);
       await circleIcon(s, D.icons.market_stats[i], x + 0.2, y + 0.2, 0.45);
       tx(s, m[0], { x: x + 0.2, y: y + 0.75, w: iw, h: 0.42, size: 12, min: 10, lines: 2, bold: true, color: INK, valign: 'top', what: 'deck.market_stats label' });
+      if (D.market.one_period) {  // CMA-261: no export, one value per card (no earlier period to compare)
+        s.addText(m[1], { x: x + 0.2, y: y + 1.5, w: iw, h: 0.7, fontFace: FONT, fontSize: big, bold: true, color: BRAND, margin: 0, valign: 'middle', isTextBox: true });
+        continue;
+      }
       s.addText(early, { x: x + 0.2, y: y + 1.27, w: iw, h: 0.2, fontFace: FONT, fontSize: 9, color: MUTED, margin: 0, isTextBox: true });
       tx(s, m[1], { x: x + 0.2, y: y + 1.46, w: iw, h: 0.3, size: 15, min: 11, color: MUTED, what: 'deck.market_stats earlier value' });
       s.addText(now, { x: x + 0.2, y: y + 1.86, w: iw, h: 0.2, fontFace: FONT, fontSize: 9, bold: true, color: STRONG, margin: 0, isTextBox: true });

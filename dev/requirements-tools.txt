@@ -1,0 +1,5 @@
+# Local dev tools that the claude.ai / Cowork sandbox does NOT have. Never import these from skills/ or shared/
+# (make lint-skills checks). Kept out of requirements.txt so that file keeps mirroring the sandbox.
+pymupdf==1.28.2   # dev/mock_contracts: mock FR/BAR contract packages (docs/mock-contracts.md)
+coverage==7.16.2  # line coverage of shared/ and skills/*/scripts/ across the test suite (audit TEST-6)
+# Not pip packages: uv and Python 3.11 for make py311 (make setup runs brew install uv when it's missing, then uv python install 3.11).

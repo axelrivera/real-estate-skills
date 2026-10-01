@@ -371,7 +371,7 @@
   ],
   "bullets": [
    "<strong>Buyers are negotiating again.</strong> Since July, homes nearby sold for about 5% under their original asking price and took almost three times as long to go under contract as in the spring.",
-   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about four months of supply at the summer pace, and more than half have already cut their price.",
+   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about {months_supply} of supply at the summer pace, and more than half have already cut their price.",
    "<strong>Mortgage rates are up.</strong> The 30-year average was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. Buyers' budgets stretch less than they did in April.",
    "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in the next few weeks gives the home its best window before the holidays."
   ]
@@ -379,12 +379,13 @@
  "pricing": {
   "intro": "Three realistic options. Expected sale prices and timelines are our estimates from recent sales, not guarantees. All three are likely to net within a few thousand dollars of each other, so the real difference is time and risk.",
   "recommended_index": 1,
+  "competing_offer_upside": true,
   "strategies": [
    {
     "label": "List at $479,900",
     "list_price": 479900,
     "expected_sale": 463000,
-    "time": "45–90 days",
+    "time": "2–4 months",
     "seller_credit": 10000,
     "note": "Tests the top of the range; likely needs a price cut before an offer"
    },

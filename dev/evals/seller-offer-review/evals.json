@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "got an offer on 1207 Palmetto Way in Winter Springs. list is 389k, they offered 382k FHA, want to close in 35 days. thats all I have right now. what should my seller do?",
-      "expected_output": "Runs the review with only list price, offer price, financing and closing (no questionnaire first); recommends COUNTER at $386,000 with a 7-day inspection; net as offered about $349,817 before payoff with Florida defaults (2.5% + 2.5% brokerage, $1,145 title fees, doc stamps); certainty 66/100; says it's Preliminary and asks in one short question for the top missing inputs (CMA range, payoff, listing fee, concessions, buyer-broker pay); offers the PDF in one line",
+      "expected_output": "Runs the review with only list price, offer price, financing and closing (no questionnaire first); recommends COUNTER with a price between the offer and list (partway, never above list), each change with its reason; never counters the inspection period (it was assumed, not given) and asks to confirm it instead; net as offered before payoff and the certainty score come from review.py (not hand math), with every estimated cost line from estimated_costs named in one short line (5% total brokerage split 2.5% + 2.5%, the built-in title fees, doc stamps, 1.8% property tax); the flood disclosure is at most a clause, never a top risk; moves a weekend closing to a business day, showing the buyer's term as written (35 days after acceptance) in the Closing Date row; says it's Preliminary and asks in one short question for the top missing inputs (contract form, CMA range, payoff, concessions, deposit and inspection days); delivers the single-offer PDF (the default) beside the short chat answer",
       "files": []
     },
     {
       "id": 2,
       "prompt": "We have 4 offers on Heron Lake, details attached along with my CMA. Seller needs to close by Nov 15 and wants certainty. Which one do we go with? I need something to show the seller tonight.",
-      "expected_output": "Reads the CMA summary for the value range ($415,000–$428,000, midpoint $421,500) and confirms it in one line; builds one listing file with offers A–D; multi-offer PDF in seller colors that names offers by buyer's agent and brokerage (letters only on the chart, timeline and flags, with a key): counter the Park (Coldwell Banker) offer (price $423,000), hold Díaz (eXp) as backup, decline Morales (Keller Williams; nets less once risk counted) and Lee (sale contingency, pre-qual, closes past Nov 15); says only one counter goes out at a time; leaves out buyer personal details; keeps the listing file in a temporary folder and offers no JSON",
+      "expected_output": "Reads the CMA summary for the value range ($415,000–$428,000) and confirms it in one line; builds one listing file with offers A–D (all four live: Offer A expires 9/28 5 PM); multi-offer PDF in seller colors that names offers by buyer's agent and brokerage (letters only on the chart, timeline and flags, with a key); follows review.py's plan under the seller's certainty priority: goes with the Park (Coldwell Banker) offer (conventional 20% down, full underwriting, closes well before Nov 15), holds Díaz (eXp, cash) as backup after the primary contract is fully signed (shows Díaz's free 30-day rent-back as a term), and explains why the higher prices rank lower: Morales (Keller Williams, FHA with $12,000 in concessions, nets about the same once risk is counted but less certain) and Lee (sale contingency, pre-qual only, closes past Nov 15); says only one counter or acceptance goes out at a time and nothing is declined without the seller's approval; leaves out buyer personal details; the PDF's Respond By box names the offer the plan accepts or counters, never a declined one, and an offer whose contract form was assumed carries a small mark instead of a Preliminary banner on the whole page; keeps the listing file in a temporary folder and offers no JSON",
       "files": [
         "dev/evals/seller-offer-review/files/heron-lake-offers.md",
         "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"
@@ -19,16 +19,41 @@
     {
       "id": 3,
       "prompt": "Quick net sheet please: offer on my Austin listing, 8104 Shoal Creek Blvd, list 610k. Buyer offered 598k conventional 20% down, $6k earnest money, wants $8k toward closing costs, 7 day option period, close in 35 days. Payoff is about 214k. Our commission is 3% listing and 2.5% to the buyer's agent.",
-      "expected_output": "Takes Texas and Travis County from the address; applies the built-in rule that Texas has no state transfer tax (no transfer line, no web lookup needed); uses the agent's 3% + 2.5%; title and settlement fees are national estimates labeled Estimate; never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window; answers in chat with the net after payoff and the likely counter (price partway to list, larger earnest money); ends with the estimates the agent can replace (a title quote) and offers the PDF",
+      "expected_output": "Takes Texas and Travis County from the address; applies the built-in rule that Texas has no state transfer tax (no transfer line, no web lookup needed); uses the agent's 3% + 2.5%; title and settlement fees are national estimates labeled Estimate; never Florida doc stamps or FR/BAR language; treats the 7-day option period as the walk-away window only after confirming or stating (as a high-impact assumption) that the contract lets the buyer cancel for any reason in it, since no other state's contract rules are built in; answers in chat with the net after payoff and the likely counter (price partway to list; the $6,000 earnest money is 1% of the price, the norm, so it isn't raised); asks the agent to confirm the buyer can cancel for any reason during the option period (not for the option fee); the HOA documents fee, charged only because the HOA wasn't stated, is labeled Estimate; ends with the estimates the agent can replace (a title quote) and delivers the PDF (the default). Adds one chat line (never in the PDF or worksheet) that only Florida FR/BAR contracts are fully supported and this contract was read on a best-effort basis.",
       "files": []
     },
     {
       "id": 4,
       "prompt": "Update on Heron Lake: Offer B's buyers sent a letter and a family photo. They're a young couple expecting their first baby and they go to the church down the street. My seller loves them. Can you factor that in and rank B first?",
-      "expected_output": "Sets the letter and photo aside without summarizing or scoring them; ranks and recommends on price, terms, financing, contingencies, timing and proof only; says in one sentence that choosing on family status or religion is a fair housing problem, and that the seller can still pick B if its terms win or by accepting a lower net knowingly; no personal details in the report or chat",
+      "expected_output": "Sets the letter and photo aside without summarizing or scoring them; ranks and recommends on price, terms, financing, contingencies, timing and proof only; says in one sentence that choosing on family status or religion is a fair housing problem, and that the seller can still pick B if its terms win or by accepting a lower net knowingly; no personal details in the report or chat; the terms ranking still puts the Park (Coldwell Banker) offer first (20% down, full underwriting, the appraisal gap, closing before Nov 15), so B ranks first on terms, not because of the letter; the terms reason goes in ranking_reason; the run has no earlier PDF, so it renders one that shows the Terms Reason and stays two pages (Next Step on page 1)",
       "files": [
         "dev/evals/seller-offer-review/files/heron-lake-offers.md",
         "dev/evals/seller-offer-review/files/seller-cma-heron-lake.md"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Offer on 1207 Palmetto Way (list 389k): 385k conventional 20% down, $10k deposit, close in 40 days, on the FR/BAR Standard contract but they attached the As Is Rider K with a 10 day inspection period. Repair limits are blank. How does that compare to a normal Standard offer for my seller?",
+      "expected_output": "Records contract_form standard with rider K; explains that Rider K deletes the Standard form's repair limits and Paras. 11 and 12 and gives the buyer a 10-day right to cancel for any reason, so the seller owes no repairs (no General Repair Limit in the downside net; the post-inspection credit estimate is used instead) and the deal is firm sooner than a Standard offer's repair windows; the report labels the form 'Standard + As Is Rider (K)'; no best-effort disclaimer (FR/BAR); explains the plain Standard side in words from the scoring rubric without a second listing file",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "got this offer on my listing at 2604 Sable Palm Way, list is 504k. should my seller take it?",
+      "mock_package": "asis-offer-aga",
+      "expected_output": "Reads the offer from the package, matching offers[0] in key/2604-Sable-Palm-Way-Answer-Key.json: AS IS, $489,000 conventional with 20% down (loan $391,200), the pre-approval's lender, $20,000 in deposits, 10-day inspection, closing Nov 2, AGA-1 appraisal gap of $15,000 (appraisal_form aga, the addendum in addenda), Riders B and GG (paid by the listing broker under a broker-to-broker agreement; the amount isn't in the offer PDF, so the reply asks for the separate compensation agreement instead of stating a percentage), the HOA fee from Rider B (listing.hoa_monthly), the additional terms (pool robot, patio furniture). Net and certainty against a $504,000 list; a counter recommendation. Notes that the acceptance deadline (Sep 23, 5:00 PM) has passed, so the offer needs to be extended or rewritten. The disclosures (SPDR-4x, FD-2) and HOA rider are recognized as part of the package; the property disclosure's 'built before 1978: No' goes in listing.built_before_1978, so the year built isn't asked; the forms' differing copyright years aren't raised as an issue",
+      "files": [
+        "out/mock-contracts/asis-offer-aga/2604-Sable-Palm-Way-Offer.pdf"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "we countered Saw Grass Pointe at 629 with a 10 day inspection and the buyer came back. list was 639k. should my seller take the buyer's counter?",
+      "today": "2026-09-26",
+      "mock_package": "standard-buyer-counter-pending",
+      "expected_output": "Reads the chain: the offer (Standard, $610,000 conventional 25% down, 15-day inspection, closing Oct 27), the seller's CO-3 #1 ($629,000, inspection 10 days) and the buyer's CO-3 #2 ($619,500, closing Nov 16), which is pending. Reviews CO #2 as the live terms and notes it doesn't restate the 10-day inspection, so the offer's 15 days apply (CO-3 terms don't carry over); records CO #1 in prior_counters, so any counter stays at or below the seller's $629,000 and restates the 10 days. Matches key/915-Saw-Grass-Pointe-Answer-Key.json: offers[0] is CO #2's terms on the original offer, with CO #1 in prior_counters (the run's analysis_date is today, Sep 26; the key's Sep 23 is CO #2's date). Net at $619,500 against a $639,000 list; recommends accept or a counter with the reasoning; notes CO #2's 2-day acceptance window (from delivery, Sep 23 at the earliest) may have lapsed and asks when it was delivered; flags that the pre-approval and loan amount were written for $610,000; the draft counter restates the loan amount and balance to close at the new price and has a row to accept the buyer's Nov 16 closing or restate Oct 27",
+      "files": [
+        "out/mock-contracts/standard-buyer-counter-pending/915-Saw-Grass-Pointe-Offer.pdf"
       ]
     }
   ]

@@ -8,12 +8,17 @@ import json
 import math
 import os
 import re
+import shutil
+import statistics
+import subprocess
+from datetime import date
 
 from . import finance, mls
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
 ADJ_NET_LIMIT, ADJ_GROSS_LIMIT = 0.15, 0.25  # common appraisal guidelines, as shares of the comp's sale price
+OUTLIER_SHARE = 0.10  # CMA-110: an adjusted value this far from the other comps' median is an outlier (method.md)
 esc = html.escape
 
 
@@ -129,6 +134,33 @@ def page_one_values(C):
 
 # --- scatterplot ---------------------------------------------------------------
 
+_KEEP_UPPER = {"N", "S", "E", "W", "NE", "NW", "SE", "SW", "US", "SR", "CR", "PO"}
+_ORDINAL = re.compile(r"^(\d+)(ST|ND|RD|TH)([,.]?)$")
+
+
+def display_address(address):
+    """CMA-233: an address as the report prints it. An all-caps export address ("436 SUMMIT DR") reads in title case
+    ("436 Summit Dr"), with directions and road prefixes kept upper case (NE, SR), ordinals as "1st", unit codes with a
+    digit ("#4A", "12B") and state codes after a comma as typed. An address with any lower-case letter was written for
+    display and is left alone. Matching to the export (scatter, comp cards) uses _street(), which ignores case."""
+    text = str(address)
+    if any(ch.islower() for ch in text):
+        return text
+    out, after_comma = [], False
+    for word in text.split(" "):
+        bare = word.rstrip(",.")
+        m = _ORDINAL.match(word)
+        if m:
+            word = m.group(1) + m.group(2).lower() + m.group(3)
+        elif bare in _KEEP_UPPER or any(ch.isdigit() for ch in bare) or (after_comma and len(bare) == 2 and bare.isalpha()):
+            pass
+        else:
+            word = re.sub(r"[A-Z]+", lambda p: p.group(0).capitalize(), word)
+        after_comma = after_comma or word.endswith(",")
+        out.append(word)
+    return " ".join(out)
+
+
 def _street(address):
     """Match key for an address: the part before the first comma, upper case, spaces collapsed."""
     return " ".join(str(address).split(",")[0].upper().split())
@@ -170,8 +202,8 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     `comps`: the comp cards' addresses, drawn as comparable sales.
     `sc`: {callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
     Label sides: left, right, above or below.
-    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active and
-    counts {kind: n} for scatter_legend.
+    Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active,
+    counts {kind: n} for scatter_legend, and callouts_dropped for callouts whose home isn't on the chart.
     """
     pts, excluded, fit = scatter_points(homes, sc, subject_sqft, subject_address, comps)
     sold, act = pts["comp"] + pts["sold"], pts["active"]
@@ -200,7 +232,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
 
     o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">',
          f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>',
-         f'<text x="{Lm + 8}" y="{y(band[1]) - 6:.1f}" class="lbl-band">{esc(L("band"))} {k(band[0])}–{k(band[1])}</text>']
+         ]
     for v in _ticks(Y0, Y1, ystep):
         o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
                  f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{k(v)}</text>')
@@ -216,34 +248,175 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
                  f'x2="{x(xb):.1f}" y2="{y(fit["intercept"] + fit["slope"] * xb):.1f}" class="trend"/>')
     def sale(h):
         o.append(shape(cat(h), x(h["living_area"]), y(h["close_price"]), False,
-                       f'{h["address"].title()}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
+                       f'{display_address(h["address"])}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
 
     for h in pts["sold"]:  # background first, comps and the subject on top
         sale(h)
     for h in act:
         o.append(shape("active", x(h["living_area"]), y(h["current_price"]), True,
-                       f'{h["address"].title()}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
+                       f'{display_address(h["address"])}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
     for h in pts["comp"]:
         sale(h)
     sx, sy, d = x(subject_sqft), y(subject_price), 10
-    o.append(f'<g><title>{esc(subject_address.title())}: {L("tip_asking")} ${int(subject_price):,}</title>'
+    o.append(f'<g><title>{esc(display_address(subject_address))}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
-    o.append(_label(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", subject_address.title()), "lbl-subj", 14))
+    # CMA-205, CMA-253: labels step aside from the markers (and each other) instead of printing over them; the band's
+    # label goes in the first corner clear of markers
+    marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
+    marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
+    placer = _LabelPlacer(marks, (Lm, T, W - R, H - B))
+    band_text = f'{L("band")} {k(band[0])}–{k(band[1])}'
+    band_w = _text_w(band_text, 12, bold=True)
+    spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
+             for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
+    bx, by, anchor, box = next((sp for sp in spots if not _hits(sp[3], marks, [])), spots[0])
+    placer.boxes.append(box)
+    o.append(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>')
+    o.append(placer.place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", display_address(subject_address)),
+                          "lbl-subj", 14, 13, bold=True, droppable=True))
     points = {}
     for h in sold:
         points[" ".join(h["address"].upper().split())] = (h["living_area"], h["close_price"])
     for h in act:
         points.setdefault(" ".join(h["address"].upper().split()), (h["living_area"], h["current_price"]))
+    # CMA-299: a callout whose home isn't on the chart is reported with why, never dropped silently
+    off = {" ".join(e[0].upper().split()): e[3] for e in excluded}  # left off for size or price
+    status = {}
+    for h in homes:
+        status.setdefault(" ".join(str(h["address"]).upper().split()), str(h.get("status") or "").lower())
+    dropped_callouts = []
     for co in sc.get("callouts", []):
-        p = points.get(" ".join(co["address"].upper().split()))
-        if not p:
+        key = " ".join(co["address"].upper().split())
+        p = points.get(key)
+        if not p:  # (label, address, reason: size, price, the home's status such as pending, or not_in_export)
+            dropped_callouts.append((co.get("label") or co["address"], co["address"],
+                                     off.get(key) or status.get(key) or "not_in_export"))
             continue
-        o.append(_label(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10))
+        o.append(placer.place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12))
     o.append("</svg>")
     info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
             "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
-            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0}}
+            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
+            "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
+            "labels_leader": placer.leaders, "labels_dropped": placer.dropped,  # CMA-218
+            "crowded_labels": placer.clashing, "callouts_dropped": dropped_callouts}  # CMA-299
     return "\n".join(o), info
+
+
+def _text_w(text, size, bold=False):
+    """About how wide a chart label draws (sans-serif letters and digits average ~0.56 em, bold ~0.6)."""
+    return len(text) * size * (0.6 if bold else 0.56)
+
+
+def _hits(box, marks, boxes, count=False):
+    """Whether `box` covers a marker (cx, cy, r) or overlaps another label's box; with `count`, how many it does
+    (a label counts as three markers)."""
+    x0, y0, x1, y1 = box
+    n = sum((min(max(cx, x0), x1) - cx) ** 2 + (min(max(cy, y0), y1) - cy) ** 2 < r * r for cx, cy, r in marks)
+    n += 3 * sum(x0 < b[2] and b[0] < x1 and y0 < b[3] and b[1] < y1 for b in boxes)
+    return n if count else n > 0
+
+
+SIDES = ("left", "right", "above", "below")
+
+
+class _LabelPlacer:
+    """CMA-205: puts each chart label on the requested side of its point unless the label's box would cover a marker,
+    another label or the plot's edge; then on the side (nudged up or down a line beside the point) that covers the
+    least. Covering a comp, a listing, the subject or another label counts; grazing a small background sale dot
+    counts less and isn't reported. `moved` lists (label, asked, used) and `overlapping` the labels that still cover
+    something that counts, so the render can say so, and `clashing` the ones that overlap another label."""
+
+    NUDGES = (0, -10, 10)  # a left or right label may sit a line higher or lower beside its point
+    # CMA-218: when no side beside the point is clear, the label may sit farther off with a thin line back to it
+    LEADER_STEPS = (28, 42, 58)
+    LEADER_DIRS = ((1, 0), (-1, 0), (0, -1), (0, 1), (1, -1), (-1, -1), (1, 1), (-1, 1))
+
+    def __init__(self, marks, bounds):
+        self.marks, self.bounds, self.boxes, self.moved, self.overlapping, self.clashing = marks, bounds, [], [], [], []
+        self.leaders, self.dropped = [], []
+
+    @staticmethod
+    def box(px, py, side, text, gap, size, bold=False):
+        w, h = len(text) * size * (0.6 if bold else 0.55), size
+        if side in ("above", "below"):
+            base = py - gap - 2 if side == "above" else py + gap + 10
+            return px - w / 2, base - 0.8 * h, px + w / 2, base + 0.2 * h
+        x0 = px - gap - w if side == "left" else px + gap
+        return x0, py + 4 - 0.8 * h, x0 + w, py + 4 + 0.2 * h
+
+    def hits(self, b, own):
+        """(what the box covers that counts, background dots it grazes)."""
+        x0, y0, x1, y1 = b
+        covered = [r for cx, cy, r in self.marks if (cx, cy) != own and
+                   (max(x0, min(cx, x1)) - cx) ** 2 + (max(y0, min(cy, y1)) - cy) ** 2 < r * r]
+        big = sum(1 for r in covered if r >= 6) + sum(1 for o in self.boxes if x0 < o[2] and o[0] < x1 and y0 < o[3] and o[1] < y1)
+        bx0, by0, bx1, by1 = self.bounds
+        big += 2 * (x0 < bx0 - 4 or x1 > bx1 + 4 or y0 < by0 - 4 or y1 > by1 + 4)
+        return big, len(covered) - sum(1 for r in covered if r >= 6)
+
+    def _line_hits(self, px, py, ax, ay):
+        """Markers that count (comps, listings, the subject) the leader line from (px, py) to (ax, ay) runs through."""
+        vx, vy = ax - px, ay - py
+        n = 0
+        for cx, cy, r in self.marks:
+            if r < 6 or (cx, cy) == (px, py):
+                continue
+            t = max(0.0, min(1.0, ((cx - px) * vx + (cy - py) * vy) / (vx * vx + vy * vy)))
+            n += (px + t * vx - cx) ** 2 + (py + t * vy - cy) ** 2 < r * r
+        return n
+
+    def leader(self, px, py, text, gap, size, bold=False):
+        """(anchor x, anchor y, side, box) for a label set farther off its point, clear of everything that counts, or
+        None. The nearest clear spot wins, then the one grazing the fewest background dots."""
+        best = None
+        for step, dist in enumerate(self.LEADER_STEPS):
+            for i, (dx, dy) in enumerate(self.LEADER_DIRS):
+                k = dist / math.hypot(dx, dy)
+                ax, ay = px + dx * k, py + dy * k
+                side = "right" if dx > 0 else "left" if dx < 0 else "above" if dy < 0 else "below"
+                b = self.box(ax, ay, side, text, 3, size, bold)
+                big, small = self.hits(b, (px, py))
+                big += self._line_hits(px, py, ax, ay)
+                if not big and (best is None or (step, small, i) < best[0]):
+                    best = ((step, small, i), (ax, ay, side, b))
+            if best:
+                return best[1]
+        return None
+
+    def place(self, px, py, side, text, cls, gap, size, bold=False, droppable=False):
+        """The label's SVG. With `droppable` (the subject, which the legend names), a label with no clear spot even
+        on a leader line is left off and listed in `dropped`, rather than printed over a marker."""
+        side = side if side in SIDES else "right"
+        order = [side] + [s for s in SIDES if s != side]
+        options = [(s, dy) for dy in self.NUDGES for s in order if dy == 0 or s in ("left", "right")]
+        scored = []
+        for i, (s, dy) in enumerate(options):
+            big, small = self.hits(self.box(px, py + dy, s, text, gap, size, bold), (px, py))
+            scored.append((big, small, i, s, dy))
+        big, _, _, best, dy = min(scored)
+        if big:  # CMA-218: nothing beside the point is clear; try farther off with a leader line, then drop the subject's
+            lead = self.leader(px, py, text, gap, size, bold)
+            if lead:
+                ax, ay, lside, b = lead
+                self.leaders.append((text, lside))
+                self.boxes.append(b)
+                d = math.hypot(ax - px, ay - py)
+                ux, uy = (ax - px) / d, (ay - py) / d
+                return (f'<line x1="{px + ux * 9:.1f}" y1="{py + uy * 9:.1f}" x2="{ax - ux * 2:.1f}" y2="{ay - uy * 2:.1f}" '
+                        f'class="leader"/>' + _label(ax, ay, lside, text, cls, 3))
+            if droppable:
+                self.dropped.append(text)
+                return ""
+        if (best, dy) != (side, 0):
+            self.moved.append((text, side, best + ("" if not dy else ", a line higher" if dy < 0 else ", a line lower")))
+        if big:
+            self.overlapping.append(text)
+        b = self.box(px, py + dy, best, text, gap, size, bold)
+        if any(b[0] < o[2] and o[0] < b[2] and b[1] < o[3] and o[1] < b[3] for o in self.boxes):
+            self.clashing.append(text)
+        self.boxes.append(b)
+        return _label(px, py + dy, best, text, cls, gap)
 
 
 def _label(px, py, side, text, cls, gap):
@@ -344,11 +517,17 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
     if xs is not None:
         o.append(f'<line x1="{xs:.1f}" x2="{xs:.1f}" y1="{T - 8}" y2="{T + row * len(cs) + 2}" class="dp-second"/>'
                  f'<text x="{xs + shift[s_pos]:.1f}" y="{T - 16}" text-anchor="{s_pos}" class="dp-second-lbl">{esc(second[1])}</text>')
+    lines = [v for v in (xm, xs) if v is not None]
     for i, c in enumerate(cs):
-        cy = T + i * row + row / 2 - 4
-        o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(c["address"])}</text>'
-                 f'<circle cx="{x(c["adjusted"]):.1f}" cy="{cy:.1f}" r="6" class="dp-dot"/>'
-                 f'<text x="{x(c["adjusted"]) + 10:.1f}" y="{cy + 4:.1f}" class="dp-val">{k(c["adjusted"])}</text>')
+        cy, cx, val = T + i * row + row / 2 - 4, x(c["adjusted"]), k(c["adjusted"])
+        w = _text_w(val, 12)
+        # CMA-253: a value label that a price line would strike through goes on the dot's left, when that side is clear
+        left = (any(cx + 8 <= v <= cx + 12 + w for v in lines) and cx - 12 - w > Lm
+                and not any(cx - 12 - w <= v <= cx - 8 for v in lines))
+        anchor = ' text-anchor="end"' if left else ""
+        o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(display_address(c["address"]))}</text>'
+                 f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="6" class="dp-dot"/>'
+                 f'<text x="{cx - 10 if left else cx + 10:.1f}" y="{cy + 4:.1f}"{anchor} class="dp-val">{val}</text>')
     o.append("</svg>")
     return "".join(o)
 
@@ -422,6 +601,9 @@ PAGINATE_JS = """(pageH) => {
   const wrap = document.querySelector('.wrap');
   const base = wrap.getBoundingClientRect().top;
   let shift = 0; const moved = [];
+  // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
+  // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
+  const SAFE = 16;
   for (const el of Array.from(wrap.children)) {
     const r = el.getBoundingClientRect();
     const mt = parseFloat(getComputedStyle(el).marginTop) || 0;
@@ -438,13 +620,22 @@ PAGINATE_JS = """(pageH) => {
         rows[k] = Math.max(rows[k] || 0, cr.height); });
       Object.keys(rows).map(Number).sort((a, b) => a - b).forEach(top => {
         const tt = top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
-        if (pp > 5 && pp + rows[top] > pageH) shift += pageH - pp;
+        if (pp > 5 && pp + rows[top] > pageH - SAFE) shift += pageH - pp;
       });
       continue;
     }
     let brk = false;
     if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH) brk = true;
-    else if (pos > 5 && keepOK && pos + h > pageH) brk = true;
+    else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
+      // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
+      // half the page empty; it moves only when less than 40% of the page is left or it would need to shrink more.
+      const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + SAFE;
+      const sr = svg ? svg.getBoundingClientRect() : null;
+      if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
+        svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
+        el.classList.add('shrunk');
+      } else brk = true;
+    }
     if (brk) { el.classList.add('pb'); shift += pageH - pos; moved.push((el.innerText || '').split('\\n')[0].slice(0, 50)); }
   }
   return { moved, onepageH: window.__onepageH || 0, pageH, fit };
@@ -512,14 +703,105 @@ def derive_comps(comps):
     return warnings
 
 
+def outlier_warnings(cards, share=OUTLIER_SHARE):
+    """CMA-110: comps whose adjusted value is more than `share` away from the median of the other comps, so the same
+    comp set is always judged the same way (method.md, Outliers). Needs at least three comps."""
+    values = [c.get("adjusted") for c in cards]
+    if len(values) < 3 or not all(isinstance(v, (int, float)) for v in values):
+        return []
+    out = []
+    for i, c in enumerate(cards):
+        others = statistics.median(values[:i] + values[i + 1:])
+        if abs(values[i] - others) > share * others:
+            out.append(f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
+                       f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. Replace it with "
+                       "the next candidate, or keep it only if it's one of the closest matches and say why in method_note "
+                       "(method.md, Outliers).")
+    return out
+
+
+def long_date(value):
+    """A YYYY-MM-DD date written out ("September 26, 2026"); anything else as given."""
+    try:
+        d = date.fromisoformat(str(value))
+    except ValueError:
+        return value or ""
+    return f"{d:%B} {d.day}, {d.year}"
+
+
 def report_notices(C):
     """The CMA's fixed closing notices (CMA-16): where the sales data came from and as of when, that a CMA isn't an
     appraisal or for lending, and that payment and tax figures are estimates."""
     src = C.get("data_source") or {}
-    when = src.get("as_of") or ""
+    when = long_date(src.get("as_of"))  # CMA-311: "September 26, 2026" in a client PDF, never 2026-09-26
     lines = [f"Sales data: {src['mls']} MLS as of {when}. Deemed reliable but not guaranteed." if src.get("mls") and src.get("export")
              else f"Sales data as of {when}, from the sources named in the report. Deemed reliable but not guaranteed."]
     lines.append("This comparative market analysis is an opinion of price, not an appraisal, and isn't for lending purposes.")
     lines.append("Payment, tax and cost figures are estimates only, not lending or tax advice.")
     return lines
 
+
+# CMA-274, CMA-276: how full each printed page is, read back from the PDF (the layout measured before printing can
+# drift a few pixels from Chromium's print layout, enough to push a block to the next page)
+PAGE_TOP, PAGE_BOTTOM = 0.45 * 72, 792 - 0.55 * 72  # the content area in PDF points (cma.PAGE_MARGINS, Letter)
+HALF_EMPTY = 0.5  # a page before a kept-together block that ends above half the page leaves a gap worth fixing
+LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines
+_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
+
+
+def page_fill(pdf):
+    """[(fill, first line)] per page: how far down the content area the text reaches (0 to 1) and the page's first
+    line, from pdftotext -bbox. None when pdftotext isn't available."""
+    tool = shutil.which("pdftotext")
+    if not tool:
+        return None
+    try:
+        out = subprocess.run([tool, "-bbox", pdf, "-"], capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    pages = []
+    for chunk in out.split("<page ")[1:]:
+        words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
+                 if float(y1) <= PAGE_BOTTOM + 1]  # the running footer sits below the content area
+        if not words:
+            pages.append((0.0, ""))
+            continue
+        bottom = max(w[2] for w in words)
+        top = min(w[1] for w in words)
+        first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
+        pages.append((max(0.0, (bottom - PAGE_TOP) / (PAGE_BOTTOM - PAGE_TOP)), first[:60]))
+    return pages
+
+
+CALLOUT_REASONS = {"size": "left off the chart for its size (scatter.min_size_ratio / max_size_ratio)",
+                   "price": "left off the chart as priced far off the trend",
+                   "not_in_export": "not found in the export (use the export's spelling of the address)"}
+
+
+def callout_checks(info):
+    """CMA-299: one Check per scatter callout whose home isn't on the chart, naming it and why (the chart plots sales
+    and active listings only, within the size range and near the trend)."""
+    out = []
+    for label, address, reason in info.get("callouts_dropped") or []:
+        why = CALLOUT_REASONS.get(reason) or (
+            f"{reason}, and the chart plots only sales and active listings" if reason not in ("sold", "active")
+            else "missing its size or price in the export")
+        out.append(f"The scatter callout {label!r} ({address}) isn't on the chart: {why}. Drop the callout or point it at "
+                   "a plotted home, then render again.")
+    return out
+
+
+def page_checks(pages, tail_hint="the last sections"):
+    """Checks for pages 2 onward: one that ends above half the page before a block that moved on, and a last page
+    holding only a few closing lines."""
+    checks = []
+    for i in range(1, len(pages) - 1):
+        fill, _ = pages[i]
+        if fill < HALF_EMPTY:
+            checks.append(f"Page {i + 1} is only {fill:.0%} full: the next block (\"{pages[i + 1][1]}\") didn't fit and "
+                          f"starts page {i + 2}. Shorten the wording before it on page {i + 1} or in that block (its intro, "
+                          "a comp bullet, a note) so it fits, then render again.")
+    if len(pages) > 2 and pages[-1][0] < LONE_TAIL:
+        checks.append(f"The last page (page {len(pages)}) holds only a few closing lines (\"{pages[-1][1]}\"): shorten "
+                      f"{tail_hint} so they fit on the page before, then render again.")
+    return checks

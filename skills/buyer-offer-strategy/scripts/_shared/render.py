@@ -42,7 +42,7 @@ def output_dir(explicit=None):
 
 
 def filename(*parts, ext):
-    """'517 Hickorywood Dr', 'Buyer CMA' -> '517-Hickorywood-Dr-Buyer-CMA.pdf'. ASCII, no spaces."""
+    """'1438 Buttonbush Dr', 'Buyer CMA' -> '1438-Buttonbush-Dr-Buyer-CMA.pdf'. ASCII, no spaces."""
     text = " ".join(str(p) for p in parts if p)
     text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     slug = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-")
@@ -110,9 +110,17 @@ def footer(left, right_pages=True):
             f"<span>{html.escape(left)}</span><span>{pages}</span></div>")
 
 
+# OFR-329: a table box (.tbl) taller than this (about a seventh of a printed Letter page, six or seven rows) may run
+# across pages: report.css lets a .tbl.brk break between rows and repeats its header row. Shorter ones stay whole.
+LONG_TABLE_PX = 150
+MARK_LONG_TABLES = ("px => { for (const t of document.querySelectorAll('.tbl')) "
+                    "if (t.getBoundingClientRect().height > px) t.classList.add('brk'); }")
+
+
 def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_print=None, landscape=False):
     """Print HTML to PDF with Chromium (print media, backgrounds on).
 
+    Long tables are marked .brk first (LONG_TABLE_PX), so they can run across pages.
     `before_print(page)` can measure or adjust layout first; its return value is returned.
     `landscape` turns the page (11in wide); layout is measured at the matching width.
     """
@@ -126,6 +134,7 @@ def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_
             pg = browser.new_page(viewport={"width": width, "height": 1000})
             pg.set_content(doc, wait_until="load")
             pg.emulate_media(media="print")
+            pg.evaluate(MARK_LONG_TABLES, LONG_TABLE_PX)
             info = before_print(pg) if before_print else None
             pg.pdf(path=path, format=fmt, landscape=landscape, print_background=True, margin=margins,
                    display_header_footer=bool(footer_html), header_template="<span></span>",

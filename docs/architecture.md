@@ -12,7 +12,7 @@ Three ways in, all from the same `skills/` folder:
 |---|---|---|
 | Marketplace (Cowork, desktop app) | Adding `axelrivera/real-estate-skills` | The repo; only `skills/` loads |
 | `real-estate-<version>.plugin` (desktop app upload) | `make package` | `.claude-plugin/plugin.json`, `skills/`, `LICENSE` |
-| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin`, the agent guide (`dev/package/README.md`: install, profile, MLS export and comps search, property report, each skill with inputs and examples) and the PDF manual (`dev/package/*.pdf`) |
+| `real-estate-skills-<version>.zip` (release, for sharing) | `make package` | The `.plugin`, the agent guide (`dev/package/README.md`: install, profile, MLS export and comps search, property report, each skill with inputs and examples) the PDF manual (`dev/package/*.pdf`, built from the guide by `make manual`) and `LICENSE` |
 | One zip per skill (claude.ai) | `make package-skills` | That skill's folder |
 
 ## Runtimes
@@ -41,6 +41,21 @@ Makefile                        # make package: one .plugin; make package-skills
 A shared reference file is copied into a skill's `references/` only when its SKILL.md mentions `references/<name>.md`, so a skill opts in by pointing to it.
 
 The `_shared/` copies are **committed**. Adding the marketplace by URL clones the repo, so every installed skill already has its code. Use copies, not symlinks.
+
+## Contract support
+
+Only contracts that have been through PDF extraction and the forms manifest get built-in references. Today that is the Florida Realtors/Florida Bar AS IS and Standard contracts, all 33 CR-7 riders and the related Florida Realtors addenda and disclosures (`dev/forms/frbar-forms.json`, checked with `make forms-check`; see [development.md](development.md#updating-a-contract-form)). They're described in four shared references, organized by form rather than by skill, and synced into each skill that reads contracts:
+
+| Reference | Covers |
+|---|---|
+| `frbar-contract.md` | Both forms paragraph by paragraph, the Standards, every blank and default, every deadline, the AS IS vs. Standard differences |
+| `frbar-riders.md` | Riders A to GG: which form allows each (I, K, L are RESERVED on AS IS), blanks and defaults, deadlines, cancel rights, money effects, what each skill does with it |
+| `frbar-addenda.md` | Counteroffer, extension, escalation, appraisal gap, CDD, co-op, repair request, walk-through, disclosures, multiple offers, closing and escrow forms |
+| `frbar-package-check.md` | What a package must contain given the property's facts, which blanks have defaults, consistency checks |
+
+Each skill keeps a thin reference that maps those rules to its own data file (`contract-timeline/references/frbar.md`, `seller-offer-review/references/contract-fields.md`, `buyer-offer-strategy/references/worksheet.md`). The deterministic rules live in `shared/contract_forms.py`: the form, the rider letters, and what the riders do to the inspection terms (Standard + Rider K runs AS IS math; Standard + Rider L keeps the repair limits and adds a walk-away).
+
+Every other contract (another state's form, a builder contract, the Florida Realtors CRSP) is read on a best-effort basis through one shared guide, `other-contracts.md`: terms found by function, no borrowed defaults, no built-in rules for any other state, every reading cited and confirmed with the agent. The scripts return `support: "best_effort"` and a `chat_notes` line; the skill says it in chat, never in a PDF, calendar file, worksheet or markdown report. A note that an FR/BAR contract isn't the verified revision follows the same rule.
 
 ## Guardrails
 
@@ -92,7 +107,7 @@ When the interview is done it also writes `project-instructions.md` (from `asset
 
 ### Saved Files
 
-In Cowork with a working folder selected, the profile is saved as `.claude/real-estate/profile.md` inside that folder, the way brand-voice keeps its guidelines in `.claude/`. Every later session finds it there without an upload. Skills resolve the path from the agent's working folder, never the current directory (Cowork runs skills from a plugin folder). Without a working folder, and in claude.ai, it goes to the outputs folder with one line on keeping it (Project files, or share at the start of a chat). Scripts never search for it: the model finds the file and passes `--profile`.
+In Cowork with a working folder selected, the profile is saved as `profile.md` directly in that folder. Every later session finds it there without an upload; so does a profile the agent keeps anywhere in that folder under another name (any file that starts with `profile: agent`). In any chat it can also be pasted or uploaded, or kept in a Project's files. Skills resolve the path from the agent's working folder, never the current directory (Cowork runs skills from a plugin folder). Without a working folder, and in claude.ai, it goes to the outputs folder with one line on keeping it (Project files, or share at the start of a chat). Scripts never search for it: the model finds the file and passes `--profile`.
 
 The rules live in `shared/references/saved-files.md`, copied into every skill that reads or writes a profile or a CMA handoff.
 
@@ -206,7 +221,7 @@ Convention over configuration: reports never ask about local costs up front. The
 
 Users can turn any skill off. Skills share **files**, not invocations:
 
-1. A consumer looks for its input (profile, CMA handoff) in the chat, then Project files, then the saved folder (profiles) or this conversation's temporary folder (handoffs), per [Saved files](#saved-files).
+1. A consumer looks for its input (profile, CMA handoff) in the chat, then Project files, then the Cowork working folder (profiles) or this conversation's temporary folder (handoffs), per [Saved files](#saved-files).
 2. If it's missing, the consumer collects what *its own task* needs (it carries the schema and defaults via `_shared/`), then offers to save the result as a file.
 3. It may mention the producing skill in one line ("Tip: `agent-profile` saves this so you're not asked again"). It never says a skill must be enabled.
 

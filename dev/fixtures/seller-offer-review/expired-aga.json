@@ -1,0 +1,21 @@
+{
+  "analysis_date": "2026-09-26",
+  "listing": {"address": "2604 Sample Palm Way, Jupiter, FL 33458", "county": "Palm Beach", "list_price": 504000,
+              "property_type": "single_family", "hoa_monthly": 225, "flood_disclosure": true},
+  "seller": {"name": "Sample Seller"},
+  "offers": [{
+    "id": "A", "buyer": "Sample Buyer", "buyer_agent": "F. Whitlow", "buyer_brokerage": "Harbor Sample Realty",
+    "received": "2026-09-21 19:05", "expires": "2026-09-23 17:00",
+    "price": 489000, "financing": "conventional", "loan_amount": 391200, "approval": "preapproval",
+    "approval_max_price": 489000, "approval_max_loan": 391200,
+    "deposit": 20000, "seller_concessions": 0, "contract_form": "as_is", "inspection_days": 10, "loan_approval_days": 30,
+    "closing_date": "2026-11-02", "title_by": "seller", "riders": ["B", "GG"], "addenda": ["Appraisal Gap Addendum (AGA-1)"],
+    "appraisal_gap": 15000, "buyer_broker_form": "GG",
+    "contract_issues": [
+      {"sev": "Med", "issue": "The seller's property disclosure answers No to a mandatory HOA, but Rider B discloses one.",
+       "fix": "Have the seller correct the disclosure, initial the change and deliver it to the buyer.", "check": "terms"},
+      {"sev": "Low", "issue": "The Rider GG box says the Seller's Broker signs the compensation agreement; its amount isn't in the package.",
+       "fix": "Confirm the amount and that the listing broker pays it from its fee.", "check": "riders"}
+    ]
+  }]
+}

@@ -1,0 +1,33 @@
+{
+  "side": "buyer",
+  "sample": true,
+  "client": "Sample Buyer",
+  "state": "FL",
+  "county": "Polk",
+  "report_date": "2026-09-26",
+  "contract": {
+    "form_family": "frbar",
+    "contract_form": "as_is",
+    "form_revision": "FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
+    "effective_date": "2026-09-22",
+    "effective_date_source": "Seller's signature, 9/22/2026 1:08 PM (last party to sign)",
+    "property": "200 Sample Way, Lakeland, FL 33803",
+    "buyer": "Sample Buyer",
+    "seller": "Sample Seller",
+    "price": 289900,
+    "escrow_agent": "Sample Title Co.",
+    "financing": "fha",
+    "deposit_amount_str": "$3,000",
+    "inspection_days": 10,
+    "title_by": "seller",
+    "closing_date": "2026-12-22",
+    "riders": ["E", "G", "U", "GG"],
+    "short_sale_application_days": 7,
+    "short_sale_approval_days": 60,
+    "seller_occupancy_days": 14
+  },
+  "completed": {"deposit": "2026-09-23"},
+  "amendments": [],
+  "flags": [],
+  "agent_notes": []
+}

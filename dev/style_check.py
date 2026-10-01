@@ -61,12 +61,12 @@ def is_sentence(text):
 def title_case_errors(text):
     """Words that break title case in `text` (a label), or [] when it's fine."""
     text = re.sub(r"\{[^}]*\}", "X", text)  # placeholders count as capitalized words
-    words = re.findall(r"[A-Za-z][A-Za-z'.]*|[$\d][\d,.%$]*", text)  # numbers count, so "at $474,900" isn't last
+    words = re.findall(r"[^\W\d_][\w'.]*|[$\d][\d,.%$]*", text)  # any letters, so "Díaz" is one word  # numbers count, so "at $474,900" isn't last
     bad = []
     for i, w in enumerate(words):
         if w.lower() in MINOR and 0 < i < len(words) - 1:
             continue
-        if w[0].isalpha() and w[0].islower():
+        if w[0].isalpha() and w[0].islower() and not any(c.isupper() for c in w[1:]):  # "eXp": a brand, kept as written
             bad.append(w)
     return bad
 

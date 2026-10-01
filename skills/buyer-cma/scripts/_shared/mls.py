@@ -274,6 +274,13 @@ def _as_date(value, name):
         raise ExportError(f"{name} should be a date like 2026-07-01, not {value!r}.") from None
 
 
+def ended_within(h, as_of, days=365):
+    """CMA-303: whether a listing row ended within `days` of `as_of` (a failed listing older than a year is history,
+    not a price cap). A row with no dates counts: it can't be placed in time, so it's treated as recent."""
+    ended = h.get("close_date") or h.get("contract_date")
+    return ended is None or as_of is None or (as_of - ended).days <= days
+
+
 def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=None, limit=15):
     """Sold stats (all, earlier, recent), inventory, months of supply, subdivision stats, comp candidates, competition.
 
@@ -394,7 +401,8 @@ def _summary(h, size_diff=None):
             "lot_acres", "days_on_market", "sale_terms")
     extra = ("property_type", "half_baths", "stories", "floor_number", "construction", "garage_spaces", "waterfront",
              "water_frontage", "water_access", "water_view", "flood_zone", "senior_community", "land_lease",
-             "total_annual_fees", "annual_cdd_fee", "furnished", "sale_provisions")  # only when the export has them
+             "total_annual_fees", "annual_cdd_fee", "furnished", "sale_provisions",
+             "city", "county", "zip")  # only when the export has them
     s = {k: (str(h[k]) if isinstance(h.get(k), date) else h.get(k)) for k in keys if k in h}
     s.update({k: h[k] for k in extra if h.get(k) not in (None, "")})
     s["remarks"] = str(h.get("remarks", ""))[:700]

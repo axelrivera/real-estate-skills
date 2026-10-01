@@ -1,0 +1,24 @@
+{
+ "family": "NMOB",
+ "revision": "NMOB-1 Rev. 5/18",
+ "fields": {
+  "property": {"at": {"label": "Property Address: (\"Property\")."}, "value": "property_address"},
+  "listing_brokerage": {"at": {"label": "Listing Brokerage:"}, "value": "listing_broker"},
+  "listing_agent": {"at": {"label": "Listing Agent:"}, "value": "listing_associate"},
+  "selling_brokerage": {"at": {"label": "Selling Brokerage:"}, "value": "cooperating_broker"},
+  "selling_agent": {"at": {"label": "Selling Agent:"}, "value": "cooperating_associate"},
+  "deadline_time": {"at": {"after": "a.m. p.m. on", "kind": "field"}, "value": "clock(v.deadline)"},
+  "deadline_am": {"at": {"after": "a.m. p.m. on", "kind": "check"}, "check": "bool(v.deadline) and v.deadline.hour < 12"},
+  "deadline_pm": {"at": {"label": "a.m.", "kind": "check"}, "check": "bool(v.deadline) and v.deadline.hour >= 12"},
+  "deadline_date": {"at": {"label": "a.m. p.m. on"}, "value": "mdy(v.deadline)"},
+  "other": {"at": {"label": "7) Other:"}, "value": "v.other"},
+  "seller_print": {"at": {"label": "Seller(s) Name (Print):"}, "value": "seller_names"},
+  "buyer_print": {"at": {"label": "Buyer(s) Name (Print):"}, "value": "buyer_names"}
+ },
+ "roles": {
+  "sign:seller": [{"label": "Seller(s) Signature:"}, {"label": "Seller(s) Signature: /"}],
+  "date:seller": [{"label": "Date:", "nth": 0}, {"label": "Date: /", "nth": 0}],
+  "sign:buyer": [{"label": "Buyer(s) Signature:"}, {"label": "Buyer(s) Signature: /"}],
+  "date:buyer": [{"label": "Date:", "nth": 1}, {"label": "Date: /", "nth": 1}]
+ }
+}

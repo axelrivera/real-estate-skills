@@ -14,7 +14,7 @@ brand:
 
 The Doe Group · Sunshine Realty
 
-Used as context by the real estate skills. Keep this file in your Project files so every chat can use it.
+Used as context by the real estate skills.
 
 ## Brand Colors
 

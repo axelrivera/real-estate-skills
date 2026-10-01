@@ -1,0 +1,7 @@
+{
+ "family": "CR-7_X",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "kickout_deposit": {"at": {"label": "must make an additional deposit of"}, "value": "money(v.kickout_deposit)"}
+ }
+}

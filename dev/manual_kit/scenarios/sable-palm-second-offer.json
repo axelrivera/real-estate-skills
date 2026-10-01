@@ -1,0 +1,19 @@
+{
+  "name": "manual-kit-sable-palm-second-offer",
+  "form": "as_is",
+  "stage": "offer",
+  "buyers": ["Harper Quintero"],
+  "sellers": ["Logan Prescott"],
+  "property": {"address": "2604 Sable Palm Way, Jupiter, FL 33458", "county": "Palm Beach", "year_built": 2016, "hoa": true},
+  "price": 494000,
+  "list_price": 504000,
+  "financing": {"type": "conventional", "ltv": 90},
+  "multiple_offers": true,
+  "disclosures": {"NMOB": {"deadline": "2026-09-23 12:00", "other": "Include proof of funds for any escalation."}},
+  "addenda": [{"form": "EAC", "escalation_amount": 2000, "maximum_price": 506000}],
+  "package": {"proof": "both"},
+  "brokers": {"listing_associate": "Dana Okafor", "listing_broker": "Greenleaf Realty Partners",
+              "cooperating_associate": "Emery Ostrander", "cooperating_broker": "Tidewater Key Realty"},
+  "dates": {"offer": "2026-09-22 14:15"},
+  "additional_terms": "Seller to leave the patio furniture."
+}

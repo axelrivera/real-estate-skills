@@ -1,0 +1,99 @@
+{
+ "side": "buyer",
+ "sample": true,
+ "report_date": "2026-11-20",
+ "state": "OH",
+ "client": "Sample Buyer",
+ "rules": {
+  "day_count": "calendar",
+  "short_period_days": 0,
+  "end_time": "23:59",
+  "weekend_holiday_rollover": "none",
+  "rollover_time": "23:59",
+  "before_closing_rollover": "none",
+  "holidays": {
+   "base": "none",
+   "dates": [
+    "2026-11-26",
+    "2026-11-27",
+    "2026-12-25"
+   ]
+  }
+ },
+ "contract": {
+  "form_family": "other",
+  "form": "Sample Residential Purchase Agreement",
+  "property": "100 Sample St, Sampletown, OH 43000",
+  "buyer": "Sample Buyer",
+  "seller": "Sample Seller",
+  "price": 525000,
+  "financing": "conventional",
+  "effective_date": "2026-11-20",
+  "effective_date_source": "Acceptance date on the signature page",
+  "closing_date": "2026-12-22",
+  "closing_time": "14:00",
+  "escrow_agent": "Sample Title Company"
+ },
+ "deadlines": [
+  {
+   "key": "earnest_money",
+   "label": "Earnest Money Delivered",
+   "short": "Earnest Money",
+   "basis": "after",
+   "days": 3,
+   "rollover": true,
+   "party": "Buyer",
+   "critical": true,
+   "source": "Para. 3",
+   "action": "Deliver $5,250 earnest money to Sample Title Company",
+   "if_missed": "Seller may terminate"
+  },
+  {
+   "key": "walkaway_period",
+   "label": "Due Diligence Period Ends",
+   "short": "Due Diligence",
+   "basis": "after",
+   "days": 7,
+   "time": "17:00",
+   "rollover": false,
+   "party": "Buyer",
+   "critical": true,
+   "contingency": true,
+   "source": "Para. 7",
+   "action": "Deliver notice of termination before 5:00 PM if not proceeding",
+   "if_missed": "The right to terminate for any reason ends"
+  },
+  {
+   "key": "financing",
+   "label": "Loan Approval Period Ends",
+   "short": "Financing",
+   "basis": "after",
+   "days": 21,
+   "party": "Buyer",
+   "critical": true,
+   "contingency": true,
+   "source": "Para. 5",
+   "action": "Give notice of termination if loan approval isn't obtained",
+   "if_missed": "The financing contingency ends"
+  },
+  {
+   "key": "title_commitment",
+   "label": "Title Commitment Delivered",
+   "short": "Title",
+   "basis": "after",
+   "days": 20,
+   "receipt_date": "2026-11-20",
+   "what": "the title company's receipt of the contract",
+   "party": "Seller",
+   "critical": false,
+   "source": "Para. 9",
+   "action": "Title company delivers the commitment and exception documents",
+   "if_missed": "Buyer may extend closing or terminate per Para. 9"
+  }
+ ],
+ "amendments": [],
+ "flags": [
+  "The due diligence period ends at 5:00 PM on its last day and isn't extended (Para. 7)",
+  "Only the earnest money date extends past a weekend or listed holiday (Para. 3)"
+ ]
+}

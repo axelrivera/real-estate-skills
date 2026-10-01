@@ -2,11 +2,12 @@
 
 Claude skills for real estate agents: buyer and seller CMAs, offer strategy, offer reviews and contract timelines, all with your name, brokerage and brand colors.
 
-This folder holds three files:
+The download holds four files:
 
 - `{{PLUGIN_FILE}}`: the plugin you install in the Claude desktop app.
 - `README.md`: this guide.
-- `Real-Estate-Skills-Manual.pdf`: the manual.
+- `Real-Estate-Skills-Manual.pdf`: the manual, this guide with screenshots.
+- `LICENSE`: the license.
 
 ## Contents
 
@@ -24,12 +25,21 @@ The MLS steps use **Stellar MLS (Matrix)** as the example. Other MLS systems wor
 
 ## 1. Install the Plugin
 
-1. Unzip this archive.
-2. Open the Claude desktop app and go to the plugin settings.
-3. Choose **Upload local plugin**.
+1. Unzip the download.
+2. Open the Claude desktop app and click **Customize** in the sidebar.
+3. On the **Plugins** tab, click **Add**, then **Upload plugin**.
+
+   <!-- figure: images/install-customize.png | Open Customize in the sidebar. -->
+   <!-- figure: images/install-upload-plugin.png | On the Plugins tab, click Add, then Upload plugin. -->
+
 4. Drag `{{PLUGIN_FILE}}` onto the upload area (or click **browse** and pick it), then click **Upload**.
 
-Upload the `.plugin` file itself, not this zip or the unzipped folder. The skills then appear as `real-estate:agent-profile`, `real-estate:buyer-cma` and so on. To use one, type **/** and its name in a chat (for example **/buyer-cma**) and select it from the list. Section 6 gives each skill's name.
+   <!-- figure: images/install-pick-file.png | Pick the .plugin file inside the unzipped folder, not the .zip. -->
+   <!-- figure: images/install-upload.png | The plugin file and its preview. Click Upload. -->
+
+Upload the `.plugin` file itself, not the zip or the unzipped folder. The skills then appear as `real-estate:agent-profile`, `real-estate:buyer-cma` and so on. To use one, type **/** and its name in a chat (for example **/buyer-cma**) and select it from the list. Section 6 gives each skill's name.
+
+<!-- figure: images/install-skills-tab.png | Once installed, the plugin's Skills tab lists every skill with its / name. -->
 
 ## 2. Set Up Your Profile (Once)
 
@@ -46,7 +56,10 @@ Do this first. It takes about two minutes and every report after it carries your
 4. You get two files:
    - **profile.md**: who you are. The other skills read it.
    - **project-instructions.md**: a short prompt for a Claude Project.
-5. Follow the steps Claude gives you to create a **Project** with both files. From then on, start your real estate work inside that Project and Claude knows who you are without being asked.
+5. Claude's reply explains how to use profile.md. It works any of these ways:
+   - in a **Project**'s files (the easiest: follow the steps Claude gives you, and every chat in that Project knows who you are),
+   - in your Cowork working folder,
+   - uploaded or pasted at the start of any chat.
 
 To change something later, just say it: "My new number is 407-555-0100", "I moved to LPT Realty", "Use navy for my reports."
 
@@ -55,10 +68,22 @@ To change something later, just say it: "My new number is 407-555-0100", "I move
 The CMA skills read a spreadsheet (CSV) of nearby listings and sales. Set up a custom export once and reuse it for every property.
 
 1. In Matrix, click **Hello, [Your Name]** at the top right, then **Settings**, then **Custom Exports**.
+
+   <!-- figure: images/export-hello-menu.png | Click Hello, [Your Name], then Settings. -->
+   <!-- figure: images/export-settings.png | On the Settings page, open Custom Exports. -->
+
 2. Click **Add Export** and name it **Basic CMA Export**.
+
+   <!-- figure: images/export-manage.png | Manage Custom Exports: click Add Export. -->
+
 3. For each field in the table below, type its name in the **Search** box under **Available Fields** (left), then click **Add** to move it to **Export Fields** (right). The order doesn't matter.
+
+   <!-- figure: images/export-add-field.png | Search for the field (here, Heated Area), select it, then click Add. -->
+
 4. At the bottom, set **Separator** to **Comma** and **Include Column Names** to **Name**.
 5. Click **Save**.
+
+   <!-- figure: images/export-finished.png | The finished export: named Basic CMA Export, fields added, Comma and Name selected, then Save (top right). -->
 
 ### Recommended Columns
 
@@ -117,18 +142,31 @@ Add these fields, shown here as Matrix labels them. Only the five marked **Requi
 Do this for each CMA. It takes a few minutes.
 
 1. Go to **Search**, then **Residential**, then **Quick**.
+
+   <!-- figure: images/comps-quick.png | Search, then Residential, then Quick. -->
+
 2. **Statuses:** check **Active**, **Pending**, **Sold**, **Expired** and **Canceled (WDN-U)**. Matrix fills in **0-180** days (the last 6 months) for each one except Active; leave it as is.
 3. **Location:** in **Within [1] miles of [address]**, keep **1** and enter the property's address. You don't need to draw on the map.
    - In a rural area with few sales, widen to 2 or 3 miles.
    - In a dense area or a big subdivision, 0.5 mile is often enough.
+
+   <!-- figure: images/comps-statuses.png | The five statuses checked (Matrix fills in 0-180), and Within 1 miles of the address. -->
+   <!-- figure: images/comps-map.png | The Map tab shows the 1-mile radius Matrix draws for you. -->
+
 4. **Property style:** select the styles that match the home (for example Single Family Residence, or Townhouse and Villa for a townhome, or Condominium for a condo). Single-family homes and townhouses can go together when they're similar in size and price.
 5. Check the count. **It must be under 500.** If it's over, narrow it until it's under:
    - Shrink the radius (1 mile to 0.5 mile).
    - Add a heated square footage range, about 30% above and below the home.
    - Add a year built range or a minimum number of bedrooms.
    - Shorten the days to 0-90.
+
+   <!-- figure: images/comps-style.png | Property Style selected; the match count shows at the bottom left (47 here). -->
+
 6. Go to **Results** and click **All** next to "Checked".
 7. Click **Export** in the action bar at the bottom, pick **Basic CMA Export**, and download the CSV.
+
+   <!-- figure: images/comps-results.png | Every row checked (Checked 47); Export is in the action bar at the bottom. -->
+   <!-- figure: images/comps-export.png | Choose Basic CMA Export and click Export. -->
 
 Upload the file exactly as downloaded. Opening and saving it in Excel can change dates and numbers.
 
@@ -140,16 +178,33 @@ The property report is the home's full record in one PDF: the listing, public re
 
 1. Search for the active listing by MLS number or address and open it.
 2. Check only this home. **Print** uses every checked listing, so if you came from search results, click **None** first, then check this one.
+
+   <!-- figure: images/report-checked-all.png | Coming from search results, every listing is checked (Checked 47). Click None, then check this home. -->
+
 3. Click **Print** and choose the **360 Property View** format.
 4. Select **Print All Tabs**.
 5. Click **Print to PDF** and save the file.
 
+   <!-- figure: images/report-one-checked.png | Only this home checked (Checked 1). Print is in the action bar at the bottom. -->
+   <!-- figure: images/report-print.png | 360 Property View with Print All Tabs checked, then Print to PDF. -->
+
 **For a seller** (your listing appointment):
 
 1. Go to **Search**, then **Public Record**. This opens **Tax Search**; search by the address.
+
+   <!-- figure: images/seller-public-record.png | Search, then Public Record. -->
+   <!-- figure: images/seller-tax-search.png | Tax Search: enter the street number, street name and zip under Location. -->
+
 2. Click the result's **Folio/PID** link to open its **360 Property View**.
 3. The **Last Listing** tab has the home's most recent MLS listing (usually from when the seller bought it), so you don't need to find it separately.
+
+   <!-- figure: images/seller-folio.png | Click the Folio/PID link (owner name hidden here). -->
+   <!-- figure: images/seller-last-listing.png | The Last Listing tab already has the home's most recent MLS listing. -->
+
 4. Click **Print**, choose **360 Property View**, select **Print All Tabs**, then click **Print to PDF** and save the file.
+
+   <!-- figure: images/seller-tax-only.png | By default only the Tax tab is checked, -->
+   <!-- figure: images/seller-all-tabs.png | so check Print All Tabs before Print to PDF. -->
 
 For a seller the report is usually years old, so Claude uses it for the facts that don't change (size, lot, taxes, history) and asks what the seller has updated since.
 
@@ -177,7 +232,7 @@ The strongest offer inside your buyer's limits, up to two alternatives, and how 
 - **Best inputs:** a buyer CMA from the same chat; the buyer's max price, cash available, reserves they want to keep and max monthly payment; and what the listing agent told you (other offers, deadline, what the seller cares about).
 - **Minimum:** the list price and the buyer's cash.
 - **Example:** "What should we offer? My buyer can go to $450,000, has $40,000 cash and wants to keep $10,000. The listing agent says there are two other offers and they want to close in 30 days."
-- **You get:** an Offer Options report and an Offer Package Worksheet (the contract entries, riders and a checklist).
+- **You get:** an Offer Options report and an Offer Package Worksheet (the contract entries, the riders and addenda by name, and a checklist). The Offer Options report shows your buyer's limits and cash: it's for your buyer only, never the listing agent.
 
 ### Seller CMA (/seller-cma)
 
@@ -186,7 +241,7 @@ A recommended list price, three pricing strategies with the seller's estimated n
 - **Upload:** the 360 Property View PDF from the last sale and the comps CSV.
 - **Tell Claude:** what the seller has updated since they bought (with years, roof first), known issues, their timeline, and their mortgage payoff if you have it.
 - **Example:** "Seller CMA for 456 Pine Ave. They replaced the roof in 2023 and redid the kitchen in 2021. Payoff is about $210,000. They'd like to be moved by June."
-- **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers.
+- **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers, plus a PDF copy of the slides (a backup that opens anywhere). If you didn't ask, Claude offers it after the report.
 
 ### Seller Offer Review (/seller-offer-review)
 
@@ -203,10 +258,18 @@ Reviews the offers on your listing. It works two ways, depending on how many off
 
 **For both:**
 
-- **Upload:** each offer (the contract with its addenda), plus pre-approval letters or proof of funds.
+- **Upload:** each offer (the contract with every rider, addendum and counteroffer), plus pre-approval letters or proof of funds.
 - **Best inputs:** a seller CMA from the same chat, the seller's payoff, and what matters most to them (price, speed, certainty).
 - **Minimum:** list price, and each offer's price and financing type.
-- **You get:** a seller-ready PDF, or the review in chat.
+- **You get:** a seller-ready PDF for each offer, plus a side-by-side comparison PDF when there are two or more, with a short answer in chat. When a new offer arrives, every offer's PDF is redone so they all agree. Say "just in chat" if you don't want the PDFs.
+
+**Counters, deadlines and incomplete offers:**
+
+- **When it was delivered.** An offer's time for acceptance usually runs from delivery, not from when the buyer signed. If the package doesn't show when it reached you, tell Claude the date and time; until then a deadline that has likely passed is raised as a question.
+- **Counters back and forth.** When the buyer counters, upload it in the same chat. The review updates the terms, keeps the next counter in line with your seller's last one (never a higher price than your seller already asked), and points out anything the buyer's counter dropped.
+- **Expired offers.** When the time for acceptance has passed, the review says so, shows the numbers as written, and shows what a counter with a new time for acceptance could look like, for reference.
+- **Unsigned or incomplete offers.** An offer that isn't signed, is missing pages or has no price is marked **Contract Incomplete**: you see every warning and what to fix, but no accept, counter or decline, and it isn't ranked.
+- **Pre-approval and proof of funds.** Claude checks the pre-approval amount and expiration against the offer, and the proof of funds against the cash the offer needs.
 
 ### Contract Timeline (/contract-timeline)
 
@@ -216,7 +279,18 @@ Every deadline in an executed contract: who owes what, by when, and what happens
 - **Tell Claude:** whether you represent the buyer or the seller.
 - **Example:** "Here's the executed contract for 789 Elm St. I'm the buyer's agent. Give me the timeline."
 - **You get:** a PDF timeline and a calendar file you or your client can add to any calendar app. Quick questions work too: "When does the inspection period end?"
-- When an amendment or extension is signed, upload it and ask to re-run the dates.
+- When an amendment or extension is signed, upload it and ask to re-run the dates. Moved dates show what they were before.
+- **The Effective Date** is when the last party signed and delivered the final acceptance or counter. If the package shows signatures but not delivery, Claude uses the last signature and asks you to confirm it: every deadline counts from it.
+- **Not signed by everyone yet?** Claude says what's missing and lists the terms, and builds the timeline once it's signed. For a what-if, tell Claude the expected Effective Date.
+- **Already done:** upload the escrow deposit receipt, or tell Claude what's been completed. Done items show as done and drop out of the calendar reminders.
+- **Short sales:** most dates count from the lender's approval. Until you tell Claude the approval date they show as "days after short sale approval"; the report and calendar still work, and you re-run it once the approval comes in.
+
+### Contracts and Forms
+
+- **Fully supported:** the Florida Realtors/Florida Bar contracts (AS IS and Standard), every CR-7 rider (A to GG) and the Florida Realtors addenda and disclosures. Claude knows each form's deadlines, the defaults for blanks and what each rider changes, and checks that every rider marked on the contract is attached.
+- **Every other contract** (another state's form, a builder or bank contract, an attorney-drafted agreement, the Florida Realtors CRSP) works on a best-effort basis: Claude reads the dates, time rules and terms from the contract itself, never borrows Florida's defaults, and asks when the contract doesn't say. Costs use labeled national estimates until you give local numbers.
+- **What to confirm:** with any other contract, and with a Florida form on a newer revision than the one checked, Claude says so once in chat and lists what to confirm (how days are counted, deadlines, defaults it used). That note stays in the chat: it never appears in a PDF, calendar file or worksheet your client sees.
+- **Blanks and defaults:** when a blank is filled from the form's default, or left for you to decide, Claude lists it in chat so you can confirm it with the other agent.
 
 ### How They Fit Together
 
@@ -234,12 +308,18 @@ A Project can hold a whole deal. Every chat in it starts with the files already 
 3. Add the deal's files as they come in:
    - The property report (360 Property View PDF) and the comps CSV.
    - The **CMA PDF** once it's made. Later chats read the value range from it, so the offer work starts from the same numbers.
-   - Offers, pre-approval letters and proof of funds.
+   - Offers, counters, pre-approval letters and proof of funds.
    - The executed contract with every rider, addendum and counteroffer, then each amendment or extension.
    - Any report you've sent the client (offer options, offer review, timeline), so the next chat knows what was already recommended.
 4. Ask in a new chat inside the Project whenever the deal moves: "We got a counter, what now?" or "The inspection extension is signed, update the timeline."
 
 In Cowork, put the files in the project's folder. Keep your main "Real Estate" Project for everything else.
+
+### What Gets Saved Where
+
+- **Your profile:** in Cowork with a working folder selected, Claude saves profile.md in that folder and finds it in every later session. Anywhere else you get the file to keep: add it to your Project files.
+- **Reports:** the PDFs, the PowerPoint and the calendar file are the files you get. Download the ones you want to keep, or add them to the deal's Project.
+- **Deal details:** Claude keeps the details it read from a contract or an offer only for that chat. In a new chat, upload the documents again (the executed contract and every amendment, or the offers and counters), or keep them in the deal's Project so they're already there.
 
 ### Name Files So They're Easy to Find
 
@@ -254,13 +334,13 @@ Start with the address, then what it is and the date: "123 Oak St, Buyer CMA, 20
 
 ### Review Before You Send
 
-The reports are a strong first draft, and you know the home. Check condition calls, the tax district and anything marked for review before a client sees it. Ask for changes in the same chat.
+The reports are a strong first draft, and you know the home. Check condition calls, the tax district and anything marked for review before a client sees it. Confirm every date and default Claude lists in chat, especially on a contract that isn't a Florida Realtors/Florida Bar form. Ask for changes in the same chat.
 
 ### Share Only What the Deal Needs
 
 - **Fair housing.** Reports describe the property, the numbers and the terms, never people. If you ask for wording that could read as steering (for example about schools, safety or who a home suits), Claude writes a compliant version and says why.
 - **Leave out buyer letters and personal details.** Offer reviews don't use them, and they can raise fair housing issues.
-- **Agent-only information stays with you.** Owner names, mortgage history and private remarks from the property report shape Claude's advice to you but never appear in client reports.
+- **Agent-only information stays with you.** Owner names, mortgage history and private remarks from the property report shape Claude's advice to you but never appear in client reports. Account and loan numbers from pre-approval letters and bank statements are never copied into a report.
 
 ## 8. Other MLS Systems
 

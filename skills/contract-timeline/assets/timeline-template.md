@@ -1,17 +1,19 @@
-## Contract Timeline: {{property}} ({{Side}} View)
+## Contract Timeline: {{property}} ({{Side}} View){{" · What-If" when what_if}}{{" · Sample Data" when sample}}
 
-**{{effective.short}} → {{closing.short}} · {{length_days}} days.** {{one or two sentences: for the buyer view "Your main protections run through {{contingencies_end.display}} ({{contingencies_end.short}})." For the seller view "The buyer's main contingencies end {{contingencies_end.display}} ({{contingencies_end.short}})." When open_rights has items, add "These rights stay open after that: {{open_rights, joined}}." and never call the deal firm; otherwise add "After that the deposit is at risk" (buyer) or "After that the deal is firm unless the buyer defaults" (seller). If there's no contingency, say so.}}
+**{{effective.short}} → {{closing.long}} · {{length_days}} days.**{{or, when closing is null: with short_sale, "**{{effective.short}} → closing {{short_sale.closing_days}} days after the short sale approval.**"; without it, "**{{effective.short}} → Closing Not Set.**"}} {{one or two sentences: for the buyer view "Your main protections run through {{contingencies_end.display}} (Day {{contingencies_end.day}}, {{contingencies_end.short, all lowercase}})." then "After that the deposit is at risk." For the seller view "The buyer's main contingencies end {{contingencies_end.display}} (Day {{contingencies_end.day}}, {{contingencies_end.short, all lowercase}})." then "After that the deal is firm unless the buyer defaults." When open_rights has items, end that second sentence instead with ", except under the rights that stay open: {{open_rights}}." (buyer) or ", except for the rights that stay open: {{open_rights}}." (seller), the rights in sentence case (acronyms such as HOA stay capitals) joined with commas and "and"; say "after that" once. When contingencies_waiting has items (a short sale before approval), say instead "Your contingency periods" (buyer) or "The buyer's contingency periods" (seller) "({{contingencies_waiting, sentence case, joined}}) start when the buyer receives the short sale approval; until then, only the dates counted from the Effective Date are set." When contingencies_end is null and nothing waits, say "No buyer contingencies: the deposit is at risk from the start." (buyer) or "No buyer contingencies: the deal is firm once the deposit is in." (seller), plus "These rights stay open: {{open_rights}}." when it has items.}} {{when first_deadline is set: "Next deadline: {{first_deadline.label}}, {{first_deadline.date_display}} (Day {{first_deadline.day}})."}} Dates as of {{report_date.long}}.
 
 | Date | Day | Deadline | Who | Action | If Missed |
 |---|---|---|---|---|---|
-| {{row.display}} | {{row.day}} | {{row.label}}{{" · was " + row.was when it moved}}{{" ★" when row.critical}} | {{row.party}} | {{row.action}} | {{row.if_missed}} |
+| {{row.display}}{{" (" + row.note + ")" when row.note}} | {{row.day}} | {{row.label}}{{" · was " + row.was when it moved}}{{" ★" when row.critical and not row.done}}{{" · " + row.done_display when row.done}}{{" · " + row.past_display when row.past}} | {{row.party}} | {{row.action}} | {{row.if_missed}} |
 
-{{one line per pending (on-event) item: "**{{label}}:** {{rule}}."}}
+{{one line per pending item: "**{{label}}**{{" ★" when critical}} ({{party}}): {{rule}}."}}
 
-**Check Before Relying on These Dates:**
-- {{each flag, in plain words}}
-- {{each agent note, in plain words (chat only; they are not on the PDF)}}
+{{when history has items: "**Amendment History:**" then one line per item, in order: "- {{name, or description when name is empty}}{{", signed " + date_display when date_display}}: {{summary}}."}}
 
-★ Critical = missing it can cost a contract right or put the deposit at risk. Effective Date {{effective.display}} ({{effective.source}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.
+{{when flags has items: "**Check Before Relying on These Dates:**" then "- {{each flag, in plain words}}"; flags only: agent_notes and chat_notes never go in this timeline, they go in your reply to the agent after it}}
 
-{{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}
+★ Critical = missing it can cost a contract right or put the deposit at risk. Effective Date {{effective.display}} ({{effective.source, or when it's empty "confirm: date the last party signed or initialed and delivered the final counteroffer"}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.{{" Lender dates are estimates." when any row or pending item has lender}} Not legal advice.
+
+{{one line per rules.lines item whose text starts "Not stated in the contract": "**{{label}}:** {{text}}"}}
+
+{{the closing notices, one paragraph each, when there are any: the agent's disclaimers from their profile, verbatim (a blank line in them starts a new paragraph); then, when the profile has the brokerage and its license, office address or phone, "{{brokerage}}, Lic. {{brokerage_license}}, {{brokerage_address}}, {{brokerage_phone}}." with the missing ones left out}}

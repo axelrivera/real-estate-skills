@@ -1,0 +1,15 @@
+{
+  "name": "asis-fha-executed",
+  "form": "as_is",
+  "stage": "executed",
+  "buyers": ["Jordan Avery"],
+  "sellers": ["Morgan Whitfield", "Casey Whitfield"],
+  "property": {"address": "1532 Cypress Bend Dr, Casselberry, FL 32707", "county": "Seminole", "year_built": 1994},
+  "price": 365000,
+  "financing": {"type": "fha", "approval_days": 30, "application_days": 5},
+  "deposit": {"initial": 11000, "days": 3},
+  "inspection_days": 10,
+  "dates": {"offer": "2026-09-23 19:10", "effective": "2026-09-25 16:12", "closing": "2026-10-30"},
+  "riders": ["E", {"code": "H", "insurance_date": "2026-10-05"}],
+  "home_warranty": {"paid_by": "seller", "provider": "Sunward Home Shield", "max": 550}
+}

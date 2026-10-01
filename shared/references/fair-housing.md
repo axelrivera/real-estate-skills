@@ -11,6 +11,7 @@ This is how the skills apply the rules, not legal advice. The agent's broker is 
 - Wording
 - Topics With Their Own Rule
 - Choosing Between Buyers
+- Buyer Letters and Photos
 - When the Agent Asks for It
 - Sources
 
@@ -34,7 +35,8 @@ Describe the property, the numbers and the terms. Never describe people: not who
 | "Great schools", "A-rated schools", "top school district" | School quality is a common proxy for steering | Taxing district and millage are costs and are fine. If the client asks about schools, name the assigned school when known and point them to the district to verify |
 | "Up-and-coming", "transitional", "exclusive", "diverse", "changing neighborhood" | Coded descriptions of who lives there | Market facts: days on market, price trend, distance to named amenities |
 | Any mention of the racial, religious or ethnic makeup of an area | Never volunteered (REALTOR Standard of Practice 10-1) | Leave it out |
-| "Christian home", "near our church community" | Religion | Leave it out |
+| "Christian home", "near our church community", "they attend the church down the street" | Religion | Leave it out. A house of worship is fine as a landmark with its distance ("0.3 miles to the church on Main"), and "Church Street" is a place name |
+| "Buyers are expecting their first baby", "a married couple with a baby on the way", "buyers with two kids" | Familial status (children and pregnancy), and marital status where local law protects it (Miami-Dade among others) | Leave it out. Describe the home and the terms |
 | "No wheelchairs", "must be able to climb stairs", "able-bodied" | Disability | Describe the home: "second-floor primary suite, no elevator", "step-free entry", "grab bars in the hall bath" |
 | "No Section 8", "no vouchers", "must have W-2 income", "VA buyers need not apply" | Source of income, where local law protects it (Miami-Dade and Orange County, Florida, among others), and a financing type standing in for a person | Describe terms, not buyers: "Seller prefers offers with a 10-day inspection period". On the seller side, compare loan programs by their mechanics (appraisal rules, timelines), never by who uses them |
 
@@ -59,12 +61,20 @@ For seller-side offer reviews. Judge every offer only on price, terms, financing
 - **Loan type is a term, not a person.** Explain what it changes (appraisal standards, required repairs, timelines, seller-paid costs) and price that into the comparison. Don't describe the buyer through it.
 - **Where the market lists source of income or military or veteran status,** don't recommend refusing a loan type outright; compare its terms and suggest the agent confirm with their broker.
 - **Letters, photos and personal details** from buyers are not read, summarized or scored. Say they were set aside.
+- **When the terms ranking matches a request on a protected ground.** If the seller asked for something about the buyer ("we'd like a young family to have it", "not an investor from overseas") and the offer that ranks first on terms happens to fit it, still rank and recommend on terms only. Never mention the request in the report, write the terms reason for the pick (net after the appraisal risk, certainty, closing date), and tell the agent in one sentence that the request can't be a factor, so the file shows the choice rests on terms.
+- **When the seller has already seen a letter or photo.** It can't be unseen, so the review sets it aside and ranks on terms only, as always. Record the terms reason for the pick in the report, suggest the agent remind the seller that the decision has to rest on the terms, and let the agent's broker decide whether the letter stays in the transaction file.
 
-For buyer-side offers: no personal letters, photos or buyer background in the offer package.
+## Buyer Letters and Photos
+
+For buyer-side offers: no personal letters, photos or buyer background in the offer package. A letter or photo tells the seller who the buyer is: race, color, religion, national origin, familial status (the kids, a pregnancy), disability and more, none of which the seller may weigh. That's why many listing agents refuse to pass letters on and some brokerages ban them. The Offer Package Worksheet's checklist has a "Do Not Include" row for them.
+
+**The compliant alternative is a cover note on the terms,** from the buyer's agent to the listing agent: what's offered, what's attached and what the buyer can flex on. Nothing about who the buyers are or how they'd live in the home. Fill the bracketed terms from the offer the buyer chose (the worksheet's option). With no offer yet in the conversation, fill only the property's address when it's known (from the request or an attached CMA) and leave the terms in brackets for the agent: a CMA's suggested prices are not the buyer's offer. Use "The buyers" when there are two or more, "The buyer" for one, and keep the bracket when it isn't clear. Never copy numbers from another deal:
+
+> Attached is our offer on [address]: [price], [loan type and down payment] with [approval type] (letter attached), a [deposit] escrow deposit within [days] days, a [number]-day inspection period and closing on [closing date]. [The buyer / The buyers] can [the term the buyer can flex on, e.g. move the closing date] to fit your seller's plans. Proof of funds for the deposit and closing costs is attached. Please confirm receipt, and let me know if your seller would like anything adjusted.
 
 ## When the Agent Asks for It
 
-Don't write the problem version. Say in one sentence why (fair housing, briefly, no lecture), then give the compliant version that still makes the point: "I'll leave out 'great for families' because it can read as a familial-status preference under fair housing rules; here it is with the features that make that case: four bedrooms, a fenced yard and a cul-de-sac." If the agent insists, keep doing the rest of the work without that part. Don't flag innocent wording (like "family room") or accuse the agent of anything.
+Don't write the problem version. Say in one sentence why (fair housing, briefly, no lecture), then give the compliant version that still makes the point: "I'll leave out 'great for families' because it can read as a familial-status preference under fair housing rules; here it is with the features that make that case: four bedrooms, a fenced yard and a cul-de-sac." For a buyer letter or family photo, the one sentence names the protected class at stake: familial status for children, a pregnancy or a family photo; also race, color and national origin for any photo of the buyers; religion for a mention of faith or church. For example: "I'll leave out the letter and the photo: a family photo shows the seller the buyers' familial status (and race and national origin), which fair housing rules keep out of the decision, and many listing agents won't pass them on. Here's a cover note on the terms instead," then the note (see Buyer Letters and Photos), with the terms in brackets when there's no offer in the conversation yet. If the agent insists, keep doing the rest of the work without that part. Don't flag innocent wording (like "family room") or accuse the agent of anything.
 
 ## Sources
 

@@ -1,0 +1,7 @@
+{
+ "family": "CR-7_L",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "inspection_days": {"at": {"label": "Buyer shall have"}, "value": "v.inspection_days or inspection_days"}
+ }
+}

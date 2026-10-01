@@ -12,11 +12,12 @@ import argparse
 import copy
 import json
 import os
+import re
 import sys
 from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import contract_forms as cf, finance, handoff, offer_engine as oe, profiles  # noqa: E402
+from _shared import contract_forms as cf, dates, finance, handoff, offer_engine as oe, profiles  # noqa: E402
 
 money, rnd = oe.money, oe.rnd
 COMP_LABEL = {0: "Only Offer", 1: "1 Competing Offer", 2: "2–3 Competing", 3: "Cash or 4+ Competing"}
@@ -28,6 +29,13 @@ DEFAULT_RATE = 6.5
 NATIONAL_INSURANCE_RATE = 0.009
 NATIONAL_CLOSING_PCT = {"financed": 0.035, "cash": 0.015}
 PREPAIDS_PCT = 0.005  # prepaid interest, insurance and escrows on top of the market's closing costs (financed)
+OFFER_QUESTIONS = ("contract_name", "escalation_accepted")  # OFR-222: shape the offer itself, so asked first in to_confirm
+# OFR-239: a listing agent's highest-and-best call, as the agent words it in competition.note
+HIGHEST_AND_BEST = re.compile(r"highest\s*(?:and|&)\s*best", re.I)
+# OFR-327: a costs.rate_source that names the buyer's lender or a quote ("Lender quote") is the lender's rate, not a
+# looked-up weekly average
+TIGHT_SUPPLY_MONTHS = 3  # OFR-331: under this a price cut alone doesn't read soft
+LENDER_QUOTE = re.compile(r"lender|quot|loan officer|loan estimate|pre-?approv", re.I)
 
 
 def _d(v):
@@ -49,13 +57,25 @@ def apply_cma(B, h):
     """Fill the buyer file from a cma-handoff v1 record. Only fills what the file doesn't already say."""
     B = copy.deepcopy(B)
     P, V, M = B.setdefault("property", {}), B.setdefault("value", {}), B.setdefault("market", {})
+    K = B.setdefault("costs", {})
     s, v, mk = h.get("subject") or {}, h["value"], h.get("market") or {}
+    B["_cma_address_note"] = oe.address_note(h, P.get("address"))  # CMA-102
     for key in ("address", "state", "county", "list_price", "beds", "baths", "sqft", "year_built", "roof_year",
-                "hoa_monthly", "flood_zone", "dom"):
+                "hoa_monthly", "flood_zone", "dom", "price_cuts", "annual_tax"):  # OFR-335: the subject's DOM and cuts
         if s.get(key) not in (None, "") and P.get(key) in (None, ""):
             P[key] = s[key]
-    if (h.get("market_profile") or {}).get("state") and not P.get("state"):
-        P["state"] = h["market_profile"]["state"]
+            if key == "dom":  # OFR-242: the handoff's days on market were counted on its as_of date, so age them
+                B["_dom_aged"] = age_dom(P, s["dom"], h.get("as_of"), _d(B.get("analysis_date")) or date.today())
+    # CMA-111: the tax the CMA computed for the buyer (millage and homestead), so both reports show the same payment
+    if K.get("tax_rate") is None and K.get("total_mills") is None and s.get("total_mills") is not None:
+        for key in ("school_mills", "total_mills", "homestead"):
+            if s.get(key) is not None and K.get(key) is None:
+                K[key] = s[key]
+    mp = h.get("market_profile") or {}
+    if mp.get("state") and not P.get("state"):
+        P["state"] = mp["state"]
+    if mp.get("mls") and not P.get("mls"):  # OFR-211: the MLS the CMA was built from
+        P["mls"] = mp["mls"]
     for key, val in (("cma_low", v["low"]), ("cma_high", v["high"]), ("midpoint", v["midpoint"]),
                      ("median_adjusted", v.get("median_adjusted")), ("source", f"{h.get('side') or 'buyer'} CMA {h.get('as_of') or ''}".strip())):
         if V.get(key) is None and val is not None:  # OFR-24: an explicit null in the file counts as missing
@@ -78,6 +98,19 @@ def apply_cma(B, h):
     return B
 
 
+def age_dom(P, dom, as_of, today):
+    """OFR-242: days on market from a CMA handoff, moved forward by the days since its as_of date. Sets P['dom'] and
+    returns (the handoff's figure, its date, days added) when it moved, else None."""
+    try:
+        since = (today - _d(as_of)).days if as_of else 0
+    except ValueError:
+        return None
+    if since <= 0 or not isinstance(dom, (int, float)):
+        return None
+    P["dom"] = dom + since
+    return dom, _d(as_of), since
+
+
 def prepare(B, A, market=None):
     """Defaults for everything missing, each one logged. Returns (B, costs)."""
     B = copy.deepcopy(B)
@@ -86,8 +119,20 @@ def prepare(B, A, market=None):
     M, C, LS, BU = B.setdefault("market", {}), B.setdefault("competition", {}), B.setdefault("listing_side", {}), B.setdefault("buyer", {})
     if not P.get("list_price"):
         raise oe.OfferError("The list price is needed (property.list_price).")
+    for D, key in ((M, "median_dom"), (P, "dom")):  # OFR-336: whole days, from a CMA handoff or the file ("23", never "23.0")
+        if isinstance(D.get(key), float):
+            D[key] = round(D[key])
+    given_market = market
+    city = city_of(P.get("address"))
+    if market is None and not P.get("county") and city:  # OFR-213: the built-in tax districts name the city's county
+        county = profiles.county_for_city(oe.state_of(P), city)
+        if county:
+            P["county"] = A.add("property", "county", county, f"County not given: {county} County, from the city ({city}). "
+                                "Confirm it", "low")
+    if market is None and P.get("mls"):  # OFR-211: the MLS from the buyer file or the CMA handoff
+        market = profiles.load_market(state=oe.state_of(P), county=P.get("county"), mls=P["mls"])
     costs = oe.load_costs(P, market)
-    if market is None and not oe.state_of(P):
+    if given_market is None and not oe.state_of(P):
         A.add("property", "state", None, "Property's state not given: no built-in costs or contract rules were used. "
               "Ask for the state", "high")
     lp = P["list_price"]
@@ -149,13 +194,26 @@ def prepare(B, A, market=None):
             BU["closing_cost_pct"] = NATIONAL_CLOSING_PCT[kind]
             src = "national planning estimate"
         A.add("buyer", "closing_cost_pct", BU["closing_cost_pct"],
-              f"Closing costs estimated at {BU['closing_cost_pct']:.1%} of price ({src}; the lender's Loan Estimate governs)", "low")
+              f"Closing costs estimated at {closing_cost_basis(B)} ({src}; the lender's Loan Estimate governs)", "low")
     BU["approval"] = BU.get("approval") or ("pof_verified" if fin == "cash" else "preapproval")
     BU["lender_min_close_days"] = BU.get("lender_min_close_days") or (21 if fin == "cash" else 35)
     BU.setdefault("agent_track", "average")
-    K["rate"] = oe.given(K, "rate", DEFAULT_RATE, A, "costs", f"Interest rate not provided: assumed {DEFAULT_RATE}% (use the lender's quote)", "low")
+    B["payment_assumed"] = []  # OFR-228: the payment inputs that are estimates, named when the payment limit sets the price
+    # OFR-241: the skill looks up the latest Freddie Mac weekly 30-year rate when the agent gives none (costs.rate with
+    # costs.rate_source naming the week); the built-in rate is only the offline fallback, labeled Assumed
+    if K.get("rate") is None:
+        B["payment_assumed"].append(f"an assumed {DEFAULT_RATE:g}% rate")
+    elif K.get("rate_source") and not LENDER_QUOTE.search(str(K["rate_source"])):  # OFR-327: a quote isn't assumed
+        B["payment_assumed"].append(f"a {K['rate']:g}% rate ({K['rate_source']})")
+        A.add("costs", "rate_source", K["rate"], f"Interest rate: {K['rate']:g}%, the {K['rate_source']}, not a lender's "
+              "quote: use the buyer's quote when there is one", "low")
+    K["rate"] = oe.given(K, "rate", DEFAULT_RATE, A, "costs", f"Interest rate not given and not looked up: Assumed "
+                         f"{DEFAULT_RATE:g}%, the offline fallback (use the lender's quote, else the latest Freddie Mac "
+                         "weekly 30-year rate)", "low")
     if not 1 <= K["rate"] < 20:
         raise oe.OfferError(f"costs.rate is {K['rate']}: write the interest rate as a percent, 6.5 for 6.5%.")
+    if K.get("insurance_annual") is not None and BU.get("insurance_quote") is None:
+        BU["insurance_quote"] = True  # OFR-217: a premium given for this address is a quote in hand
     if K.get("insurance_annual") is None:
         rate = costs.get("buyer_costs.insurance_rate")
         src = costs.described("buyer_costs.insurance_rate") if rate is not None else "national planning estimate"
@@ -163,8 +221,13 @@ def prepare(B, A, market=None):
         age = 1.5 if yb and yb < 1980 else 1.25 if yb and yb < 2002 else 1.0  # CORE-29: older homes cost more to insure
         floor = costs.get("buyer_costs.insurance_min_annual") or 2500
         K["insurance_annual"] = round(max(floor, (rate if rate is not None else NATIONAL_INSURANCE_RATE) * lp * age), -2)
+        B["payment_assumed"].append(f"estimated {money(K['insurance_annual'])}/yr insurance")
         A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: estimated at {money(K['insurance_annual'])}/yr "
               f"({src}" + (f", x{age:g} for a {yb} home" if age > 1 else "") + "). Estimate only: get a quote", "low")
+    elif not quote_in_hand(BU):  # OFR-328: a premium typed in with no quote in hand (false or planned) is an estimate
+        B["payment_assumed"].append(f"estimated {money(K['insurance_annual'])}/yr insurance")
+        A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance: {money(K['insurance_annual'])}/yr is an "
+              "estimate, not a quote for this address. Estimate only: get a quote", "low")
     P["hoa_monthly"] = P.get("hoa_monthly") or 0
     # OFR-26, CMA-6: flood insurance and CDD assessments are payment lines; a missing amount is left out and flagged, never 0
     B["flood"] = finance.flood_insurance(P.get("flood_zone"), K.get("flood_insurance_annual"), costs, today,
@@ -176,42 +239,67 @@ def prepare(B, A, market=None):
     if P.get("cdd") and P.get("cdd_annual") is None:
         A.add("property", "cdd_annual", "not included", "The property is in a CDD but the yearly assessment wasn't given: the "
               "payment leaves it out (it's on the tax bill as a non-ad valorem assessment)", "med")
+    why_no_millage = find_millage(B, costs, A)
     tax = property_tax(B, costs, lp)
     if tax["annual"] is None:
         A.add("costs", "property_tax", "not included", "No millage or tax rate for this market: the payment leaves out property tax",
               "high" if BU.get("max_payment") else "med")
     elif tax["estimated"]:
         A.add("costs", "property_tax", tax["basis"], f"No millage given: property tax estimated at {tax['basis'].removeprefix('about ')} "
-              f"({costs.described('property_tax.fallback_rate')})", "low")
+              f"({costs.described('property_tax.fallback_rate')})" + (f". {why_no_millage}" if why_no_millage else ""), "low")
+    elif P.get("annual_tax") in (None, ""):
+        # OFR-201: the seller's proration uses the same rate as the buyer's payment, never a second (fallback) rate
+        B["seller_annual_tax"] = round(tax["annual"])
+        # OFR-243: an estimate from the buyer's rate at the list price, labeled so on the net sheet, not the seller's bill
+        A.add("property", "annual_tax", B["seller_annual_tax"], f"Seller's tax bill not given: the seller's proration is "
+              f"an estimate, the buyer's tax rate ({tax['basis']}) applied to the list price ({money(B['seller_annual_tax'])}/yr), "
+              "not the seller's actual bill, which can differ (another exemption or assessed value). Get the bill: the "
+              "proration moves the seller's net", "med")
+    if K.get("tax_rate") is None and tax["annual"] is not None and K.get("homestead") is None:  # OFR-124
+        A.add("costs", "homestead", True, "Property tax assumes the buyer files for the homestead exemption (a primary "
+              "residence). For a second home or rental the tax is higher: say so", "low")
+    elif K.get("tax_rate") is not None:  # OFR-237: a given rate is used as is; no exemption is taken off it
+        A.add("costs", "homestead", "as given", f"Property tax uses the given {K['tax_rate'] * 100:g}% rate as is: the payment "
+              "assumes no homestead exemption unless that rate already includes one", "low")
 
     lvl = C.get("level")
-    heat = "normal"
-    dom, med = P.get("dom"), M.get("median_dom")
-    if (dom is not None and med and dom < 0.5 * med) or (M.get("sale_to_list") or 0) >= 0.99:
-        heat = "hot"
-    if (dom is not None and med and dom > 1.5 * med) or P.get("price_cuts"):
-        heat = "soft"
+    heat, basis = market_heat(P, M)
     if lvl is None:
         lvl = {"hot": 2, "normal": 1, "soft": 0}[heat]
-        signals = dom is not None or M.get("sale_to_list") or P.get("price_cuts")
+        signals = P.get("dom") is not None or M.get("sale_to_list") or P.get("price_cuts")
         A.add("competition", "level", COMP_LABEL[lvl],
-              (f"Competition unknown: inferred '{COMP_LABEL[lvl].lower()}' from market signals ({heat})" if signals else
+              (f"Competition unknown: inferred '{COMP_LABEL[lvl].lower()}' from market signals ({heat} {basis})" if signals else
                f"Competition unknown and no market data: assumed '{COMP_LABEL[lvl].lower()}' (typical)") + ". Ask the listing agent", "med")
-    C["level"], C["heat"] = lvl, heat
+    C["level"], C["heat"], C["heat_basis"] = lvl, heat, basis
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
     LS["listing_fee_pct"] = LS.get("listing_fee_pct")
     B["analysis_date"] = today
+    weekday_deadlines(B, today, A)  # OFR-244: "Friday 5 PM" to a date, before any date counts from it
+    B["effective_date"] = effective_date(B, today, A)  # OFR-123: dates count from the expected acceptance
     # One contract form for the options, the listing-side scoring and the worksheet: AS IS and Standard math never mix.
     W = B.get("worksheet") or {}
-    form = cf.normalize(W.get("contract_form") or BU.get("contract_form"))
-    if form is None:
+    try:
+        form = cf.normalize(W.get("contract_form") or BU.get("contract_form"))
+    except cf.FormError as e:
+        raise oe.OfferError(str(e)) from e
+    if form is None:  # ENG-12: a missing form is a high-impact assumption (CLAUDE.md); OFR-126: plain words
         form = A.add("buyer", "contract_form", cf.AS_IS,
                      "Contract form not chosen: planned on the FR/BAR AS IS, the usual form for a competitive offer. If the "
-                     "buyer uses the Standard form, set worksheet.contract_form to standard and re-run: its repair limits "
-                     "and inspection rules change the numbers", "med") \
+                     "buyer will use the Standard form, say so: its repair limits and inspection rules change the numbers",
+                     "high") \
             if cf.frbar_market(costs.get("contract.forms")) else cf.OTHER
     B["contract_form"] = form
+    B["words"] = cf.term_words(form)  # OFR-234: FR/BAR's names on FR/BAR, generic ones on any other contract
     B["repair_limits"] = W.get("repair_limits") or BU.get("repair_limits")
+    # Buyer's broker pay requested from the seller, and how it's paid on an FR/BAR offer: Rider GG (a separate
+    # compensation agreement, the default) or Rider FF (a seller credit to the buyer, which uses the loan program's
+    # concession room). contract_forms.buyer_broker_as_credit is the rule.
+    B["bb_request"] = bb_request(B, costs)
+    route = str(W.get("buyer_broker_form") or BU.get("buyer_broker_form") or "GG").upper()
+    B["buyer_broker_form"] = route if form in cf.FRBAR and B["bb_request"][0] else None
+    if BU.get("needs_sale") and not BU.get("sale_contingency_days"):
+        A.add("buyer", "sale_contingency_days", 21, "Buyer needs to sell first, no sale deadline given: planned on 21 days with a "
+              "kick-out clause. Set the date the buyer's sale can close", "med")
     if BU.get("buyer_broker_agreement_pct") is None:
         A.add("buyer", "buyer_broker_agreement_pct", "not given",
               "Buyer-broker agreement not given: cash to close leaves out any fee the seller doesn't pay. Enter the "
@@ -219,7 +307,177 @@ def prepare(B, A, market=None):
     return B, costs
 
 
+def market_heat(P, M):
+    """OFR-226: (heat, the signals it rests on in words). Hot when days on market are under half the median or
+    sale-to-list is 99%+; soft when days on market are over 1.5x the median or the price was cut (soft wins), unless
+    supply is under 3 months: then a cut reads normal (OFR-331).
+    OFR-229: the words name the deciding signal first ("on days on market (9 vs. 34 median)") and any signal that reads
+    otherwise as secondary ("secondary: sale-to-list 98.1% reads normal"), so "Hot" never sits beside a bare "normal"."""
+    dom, med, stl = P.get("dom"), M.get("median_dom"), M.get("sale_to_list")
+    reads = []  # (signal, its number, what it reads)
+    if dom is not None and med:
+        reads.append(("days on market", f"{dom} vs. {med} median", "hot" if dom < 0.5 * med else "soft" if dom > 1.5 * med else "normal"))
+    if stl:
+        reads.append(("sale-to-list", f"{stl * 100:.1f}%", "hot" if stl >= 0.99 else "normal"))
+    if P.get("price_cuts"):
+        # OFR-331: with under 3 months of supply a cut says this listing was priced high, not that the market is soft
+        sup = M.get("months_supply")
+        tight = isinstance(sup, (int, float)) and sup < TIGHT_SUPPLY_MONTHS
+        reads.append((f"a price cut with {sup:g} months of supply" if tight else "a price cut", None,
+                      "normal" if tight else "soft"))
+    got = {rd for _, _, rd in reads}
+    heat = "soft" if "soft" in got else "hot" if "hot" in got else "normal"
+    if not reads:
+        return heat, "no market data"
+    used = [f"{sig} ({n})" if n else sig for sig, n, rd in reads if rd == heat]
+    others = [f"{sig}{' ' + n if n else ''} reads {rd}" for sig, n, rd in reads if rd != heat]
+    return heat, "on " + " and ".join(used) + (f"; secondary: {', '.join(others)}" if others else "")
+
+
+_MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
+
+
+def deadline_date(text, today):
+    """The date in an offer deadline as the listing agent gave it ("2026-09-25 17:00", "Fri Sep 25 · 5 PM"), or None."""
+    s = str(text or "")
+    m = re.search(r"(\d{4})-(\d{2})-(\d{2})", s)
+    if m:
+        return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    m = re.search(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b", s, re.I)
+    if not m:
+        return None
+    try:
+        d = date(today.year, _MONTHS[m.group(1).lower()], int(m.group(2)))
+    except ValueError:
+        return None
+    return d if d >= today - timedelta(days=31) else date(today.year + 1, d.month, d.day)  # a January deadline in December
+
+
+_WEEKDAY = re.compile(r"\b(mon|tue|wed|thu|fri|sat|sun)(?:day|s|sday|nesday|rsday|urday|r|rs)?\b\.?", re.I)
+_WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+_TIME = re.compile(r"\b(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\b\.?", re.I)
+
+
+def weekday_date(text, today):
+    """OFR-244: a deadline given only as a weekday ("Friday 5pm", "Fri 6 PM") as (date, (hour, minute) or None): the
+    next such day from `today` (today counts). None when the text has a full date, or no weekday."""
+    s = str(text or "")
+    if deadline_date(s, today) or not _WEEKDAY.search(s):
+        return None
+    wd = _WEEKDAYS.index(_WEEKDAY.search(s).group(1).lower())
+    d = today + timedelta(days=(wd - today.weekday()) % 7)
+    m = _TIME.search(s)
+    if m:
+        return d, (int(m.group(1)) % 12 + (12 if m.group(3).lower() == "p" else 0), int(m.group(2) or 0))
+    m = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", s)  # "Friday 17:00"
+    return d, ((int(m.group(1)), int(m.group(2))) if m else None)
+
+
+def weekday_deadlines(B, today, A):
+    """OFR-244: a weekday-only offer deadline or Time for Acceptance becomes "YYYY-MM-DD HH:MM". When the day it resolves
+    to is more than 5 days out (so today is the day after that weekday), the agent may have meant the one just passed:
+    the resolved date is recorded as an assumption to confirm."""
+    for scope, holder, key, name in (("competition", B.get("competition") or {}, "deadline", "Offer deadline"),
+                                     ("worksheet", B.get("worksheet") or {}, "acceptance_deadline", "Time for Acceptance")):
+        hit = weekday_date(holder.get(key), today)
+        if not hit:
+            continue
+        (d, t), given_ = hit, holder[key]
+        holder[key] = f"{d}" + (f" {t[0]:02d}:{t[1]:02d}" if t else "")
+        ahead = (d - today).days
+        if ahead > 5:
+            last = d - timedelta(days=7)
+            A.add(scope, "deadline", holder[key], f"{name} \"{given_}\" read as {d:%a %b} {d.day}, {ahead} days out. If the "
+                  f"listing agent meant {last:%a %b} {last.day}, it has already passed: confirm the date", "med")
+
+
+_ISO_WHEN = re.compile(r"(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}):(\d{2}))?")
+
+
+def _clock(h, m, full=False):
+    """18, 0 -> '6 PM' ('6:00 PM' when `full`); 17, 30 -> '5:30 PM'."""
+    return f"{(h % 12) or 12}" + (f":{m:02d}" if m or full else "") + (" PM" if h >= 12 else " AM")
+
+
+def deadline_label(text, long=False):
+    """OFR-202: a deadline given as "2026-10-02 18:00" in the report's words: "Fri Oct 2 · 6 PM", or with `long`
+    "October 2, 2026, 6:00 PM" (the worksheet's Time for Acceptance). Any other text prints as given."""
+    s = str(text or "").strip()
+    m = _ISO_WHEN.fullmatch(s)
+    if not m:
+        return s
+    d = date.fromisoformat(m.group(1))
+    t = (int(m.group(2)), int(m.group(3))) if m.group(2) else None
+    if long:
+        return f"{d:%B} {d.day}, {d.year}" + (f", {_clock(*t, full=True)}" if t else "")
+    return f"{d:%a %b} {d.day}" + (f" · {_clock(*t)}" if t else "")
+
+
+def effective_date(B, today, A):
+    """OFR-123: the expected Effective Date the closing and deposit dates count from: `expected_effective_date`, else the
+    day after the offer deadline, else the day after the analysis date (recorded as an assumption)."""
+    given_ = B.get("expected_effective_date")
+    if given_:
+        return _d(given_)
+    due = deadline_date((B.get("worksheet") or {}).get("acceptance_deadline") or (B.get("competition") or {}).get("deadline"), today)
+    eff = (due or today) + timedelta(days=1)
+    A.add("buyer", "expected_effective_date", str(eff), f"Expected acceptance not given: dates count from {eff:%b} {eff.day}, "
+          + ("the day after the offer deadline" if due else "the day after today") + ". Give the expected acceptance date "
+          "if it's different", "low")
+    return eff
+
+
+def city_of(address):
+    """The city in a one-line address ("…, Casselberry, FL 32707" -> "Casselberry"), or None."""
+    parts = [x.strip() for x in str(address or "").split(",")]
+    return (parts[-2] or None) if len(parts) >= 3 else None
+
+
+def find_millage(B, costs, A):
+    """OFR-124: the built-in millage for the property's taxing district, as the CMA skills do: `costs.district` (a name
+    or the appraiser's tax-area code), else the address's city. Returns why no district was used (it goes in the
+    fallback rate's assumption), or None."""
+    K, P = B["costs"], B["property"]
+    if K.get("tax_rate") is not None or K.get("total_mills") is not None:
+        return None
+    district = K.get("district")
+    by_city = not district
+    district = district or city_of(P.get("address"))
+    if not district or not costs.get("property_tax.millage"):
+        return None
+    if not P.get("county"):  # OFR-213: prepare() fills the county from the city when a built-in district names it
+        return f"The county wasn't given and {district} isn't a built-in tax district, so no millage was matched: give the county"
+    rows = finance.millage(costs, county=P["county"], district=district)
+    if not rows:
+        return f"{district} isn't a built-in tax district in {P['county']} County: give the tax area from the property record"
+    names = [str(r.get("district")) for r in rows]
+    if len({n.split(" (")[0] for n in names}) > 1:  # different places: never a guess
+        return finance.millage_row(costs, P["county"], district)[1]
+    # One place in several districts (Orlando spans two water-management districts): the higher millage, so the payment
+    # isn't understated, flagged with both names
+    row = max(rows, key=lambda x: x["total"])
+    K["school_mills"], K["total_mills"] = row["school"], row["total"]
+    A.add("costs", "total_mills", row["total"], f"Millage from the built-in {row['district']} district ({row.get('year', '')} "
+          "rates)" + (" by the address's city: confirm the parcel is inside city limits, or give the tax area from the "
+                      "property record" if by_city else "")
+          + (f". {district} spans {len(rows)} built-in districts, {' and '.join(names)}: the higher one was used"
+             if len(rows) > 1 else ""),
+          "med" if by_city or len(rows) > 1 else "low")
+    return None
+
+
 # --- money for the buyer -----------------------------------------------------
+
+def closing_cost_basis(B):
+    """OFR-215: how the closing costs are figured, in words that match the math ("3.0% of price plus loan taxes")."""
+    return f"{B['buyer']['closing_cost_pct']:.1%} of price" + (" plus loan taxes" if B.get("loan_taxes") else "")
+
+
+def quote_in_hand(BU):
+    """An insurance quote the buyer has (True, or a premium in costs.insurance_annual: OFR-217); "planned" isn't one."""
+    q = BU.get("insurance_quote")
+    return bool(q) and q != "planned"
+
 
 def closing_costs(B, price):
     """The buyer's closing costs at `price`: the share of price, plus the market's loan taxes when that share is the
@@ -264,8 +522,31 @@ def monthly_payment(B, costs, price):
     return round(p["total"])
 
 
+def bb_as_credit(B):
+    """True when the buyer's broker is paid as a seller credit (Rider FF): contract_forms decides (ENG-11)."""
+    return cf.buyer_broker_as_credit(B.get("contract_form"), {"buyer_broker_form": B.get("buyer_broker_form")})
+
+
 def concession_cap(B, price):
-    return (finance.concession_cap(B["buyer"]["financing"], B["buyer"]["down_pct"]) or 0) * price
+    """What the loan program lets the seller pay toward the buyer's costs. A buyer's broker credit under Rider FF uses the
+    same room, so it comes off the top (contract_forms.buyer_broker_as_credit)."""
+    cap = (finance.concession_cap(B["buyer"]["financing"], B["buyer"]["down_pct"]) or 0) * price
+    if bb_as_credit(B):
+        cap = max(0, cap - (B.get("bb_request") or (0,))[0] * price)
+    return cap
+
+
+def bb_request(B, costs):
+    """(share of price, why) the buyer asks the seller to pay toward the buyer's broker."""
+    LS, BU = B["listing_side"], B["buyer"]
+    if LS.get("buyer_broker_offered_pct") is not None:
+        return LS["buyer_broker_offered_pct"], "What the seller is offering"
+    if BU.get("buyer_broker_agreement_pct") is not None:
+        return BU["buyer_broker_agreement_pct"], "Per your buyer-broker agreement (confirm with listing agent)"
+    if costs.get("brokerage.buyer_broker_fee_pct") is not None:
+        pct_ = costs.get("brokerage.buyer_broker_fee_pct")
+        return pct_, f"Assumed {pct_ * 100:g}% (5% total): set it from your buyer-broker agreement"
+    return 0, "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
 
 
 # --- engine bridge -------------------------------------------------------------
@@ -275,6 +556,8 @@ def engine_data(B, variants):
     listing = {k: P.get(k) for k in ("address", "state", "county", "list_price", "beds", "baths", "sqft", "year_built", "roof_year",
                                      "hoa_monthly", "flood_zone", "annual_tax", "costs")}
     listing["property_type"] = P.get("type")  # CMA-5: the engine's condo checks
+    if listing.get("annual_tax") in (None, "") and B.get("seller_annual_tax"):
+        listing["annual_tax"] = B["seller_annual_tax"]  # OFR-201: one tax rate for the payment and the proration
     if not V.get("assumed"):  # without a value range the engine measures appraisal risk against list price
         listing.update(cma_low=V["cma_low"], cma_high=V["cma_high"], cma_mid=V["mid"])
     seller = {"listing_fee_pct": LS["listing_fee_pct"], "offered_buyer_broker_pct": LS["buyer_broker_offered_pct"]}
@@ -284,22 +567,72 @@ def engine_data(B, variants):
     for vid, t in variants:
         o = {"id": vid, "price": t["price"], "financing": BU["financing"], "down_pct": BU["down_pct"], "approval": BU["approval"],
              "lender_called": BU.get("lender_called", False), "insurance_quote": t.get("insurance_quote", BU.get("insurance_quote")),
-             "agent_track": BU.get("agent_track"), "buyer": "Buyer"}
+             "agent_track": BU.get("agent_track"), "buyer": "Buyer",
+             "same_buyer": "buyer"}  # OFR-101: the options are one buyer's alternatives, never each other's competition
         for k in ("deposit", "seller_concessions", "buyer_broker_pct", "home_warranty", "inspection_days", "loan_approval_days",
                   "appraisal_gap", "closing_days", "sale_contingency_days", "kickout", "escalation", "contract_form"):
             if t.get(k) is not None:
                 o[k] = t[k]
         if B.get("repair_limits"):
             o["repair_limits"] = B["repair_limits"]
-        if BU["financing"] != "cash":
+        fin = BU["financing"]
+        riders = [B["buyer_broker_form"]] if B.get("buyer_broker_form") and t.get("buyer_broker_pct") else []
+        kind = appraisal_kind(B, t)
+        if kind == "aga":
+            o["appraisal_form"] = "aga"
+            o["aga_valuation_days"] = aga_valuation(t, fin)
+        elif kind == "F":
+            riders.append("F")
+        elif fin != "cash":
             o["appraisal_contingency"] = t.get("appraisal_days", 21)
+        if riders:
+            o["riders"] = riders
         offers.append(o)
-    return {"analysis_date": str(B["analysis_date"]), "listing": listing, "seller": seller, "offers": offers}
+    # OFR-123: the engine counts closing and "days until firm" from the expected Effective Date
+    return {"analysis_date": str(B["effective_date"]), "listing": listing, "seller": seller, "offers": offers}
+
+
+def appraisal_kind(B, t):
+    """How an FR/BAR option protects the appraisal: 'aga' (a gap offer on the Appraisal Gap Addendum, only where AGA-1
+    fits the loan: contract_forms.aga_fits), 'F' (the Appraisal Contingency Rider, conventional or USDA), or None
+    (FHA/VA's own rider, cash, or another contract). ENG-10: a USDA gap is written in Additional Terms with Rider F."""
+    fin = B["buyer"]["financing"]
+    if B["contract_form"] not in cf.FRBAR:
+        return None
+    if t.get("appraisal_gap") and cf.aga_fits(fin):
+        return "aga"
+    return "F" if fin in ("conventional", "usda") else None
+
+
+def aga_valuation(t, fin):
+    """OFR-106: AGA-1's valuation blank, filled so its whole window ends with the Loan Approval Period (financed) or by
+    closing (cash)."""
+    limit = t.get("loan_approval_days") if fin != "cash" else t.get("closing_days")
+    return cf.aga_valuation_days(limit or cf.AGA_VALUATION_DAYS + cf.AGA_DELIVERY_DAYS + cf.AGA_RENEGOTIATE_DAYS)
 
 
 def run_engine(B, costs, variants):
     R = oe.analyze(engine_data(B, variants), market=costs.market)
+    if B["property"].get("annual_tax") in (None, ""):
+        mark_estimate(R, "tax")  # OFR-243: no seller's bill, so the proration is an estimate on every net sheet
     return R, {o["id"]: o for o in R["offers"]}
+
+
+def mark_estimate(x, key):
+    """OFR-243: mark as Estimate the label of every net-sheet line `key` ((key, label, amount) tuples) in the engine
+    result `x`, in place: "Property Tax Proration (Jan 1 to Closing, Estimate)"."""
+    def marked(label):
+        return label[:-1] + ", Estimate)" if label.endswith(")") else label + " (Estimate)"
+
+    if isinstance(x, dict):
+        if isinstance(x.get("lines"), list):
+            x["lines"] = [(ln[0], marked(ln[1]), *ln[2:])
+                          if isinstance(ln, tuple) and ln[0] == key and "Estimate" not in ln[1] else ln for ln in x["lines"]]
+        for v in x.values():
+            mark_estimate(v, key)
+    elif isinstance(x, list):
+        for v in x:
+            mark_estimate(v, key)
 
 
 def ci(o, target_net, lp):
@@ -336,10 +669,14 @@ def build_offer(B, costs):
         price, why["price"] = BU["max_price"], "Capped at your max price"
     price = lp if abs(price - lp) < 1000 and not (low_down and lvl >= 2 and lp > V["mid"]) \
         else rnd(price, 1000, "down" if price > lp else "round")
+    if V.get("assumed") and price == lp:  # OFR-212: with no CMA the price stays at list, never called "at value"
+        why["price"] = "At list: no value range yet, so list stands in for value (a buyer CMA would test it)"
     if BU.get("max_payment") and monthly_payment(B, costs, price) > BU["max_payment"]:
         while price > 1000 and monthly_payment(B, costs, price) > BU["max_payment"]:
             price -= 1000
-        why["price"] = f"Capped so the payment stays under ${BU['max_payment']:,}/mo" + (" (below the value range)" if price < V["cma_low"] else "")
+        est = B.get("payment_assumed") or []  # OFR-228: a cap that rests on an assumed rate or insurance says so
+        why["price"] = (f"Capped so the payment stays under ${BU['max_payment']:,}/mo" + (f" at {' and '.join(est)}" if est else "")
+                        + (" (below the value range)" if price < V["cma_low"] else ""))
     t = {"price": price}
     cc = closing_costs(B, price)
     down = round(price * BU["down_pct"])
@@ -362,6 +699,9 @@ def build_offer(B, costs):
     t["appraisal_gap"] = gap
     if fin == "cash":
         why["appraisal_gap"] = "Cash: no appraisal contingency"
+    elif V.get("assumed") and not gap:  # OFR-212: with no value range the gap can't be sized, so it's a question for the buyer
+        why["appraisal_gap"] = ("Unknown without a value range: ask the buyer how much of a low appraisal they could "
+                                "cover in cash")
     elif price <= line:
         why["appraisal_gap"] = "Not needed: price is inside the value range"
     elif gap >= price - line:
@@ -375,39 +715,36 @@ def build_offer(B, costs):
                                  "send proof of funds with it")
     dep_pct = {0: 0.01, 1: 0.02, 2: 0.03, 3: 0.03}[lvl] if fin != "cash" else {0: 0.03, 1: 0.05, 2: 0.10, 3: 0.10}[lvl]
     t["deposit"] = int(min(rnd(price * dep_pct, 500, "up"), max(1000, down + cc - conc)))
-    why["deposit"] = f"{dep_pct:.0%} shows commitment; refundable during inspection; counts toward cash to close"
+    why["deposit"] = f"{dep_pct:.0%} shows commitment; {B['words']['deposit_refund']}; counts toward cash to close"
     yb = P.get("year_built")
     old = yb is None or (B["analysis_date"].year - yb) > 25  # unknown age: allow the full window
     t["inspection_days"] = 7 if (lvl >= 2 and not old) else 10
     reports = " + 4-point" if costs.state == "FL" else ""
     why["inspection_days"] = (f"Room for a full inspection{reports}" + (" on an older home" if yb and old else " (year built unknown)" if not yb else "")
                               if t["inspection_days"] == 10 else "Short window to compete; newer home")
+    if B["contract_form"] not in cf.FRBAR:  # OFR-315: no other state's periods are built in, so the length is assumed
+        why["inspection_days"] += "; a generic default: confirm what's usual locally for this contract"
     if fin != "cash":
         t["loan_approval_days"] = 21 if (fin == "conventional" and lvl >= 2) else 30
         why["loan_approval_days"] = "Lender standard" if t["loan_approval_days"] == 30 else "Faster approval to compete"
         t["appraisal_days"] = 21
     t["closing_days"] = BU["lender_min_close_days"] + (0 if lvl >= 1 else 10)
-    while (B["analysis_date"] + timedelta(days=t["closing_days"])).weekday() >= 5:
-        t["closing_days"] += 1  # close on a business day, never earlier than the lender's minimum
+    while not dates.is_business_day(B["effective_date"] + timedelta(days=t["closing_days"])):
+        t["closing_days"] += 1  # OFR-219: a business day (no weekend or federal holiday), never before the lender's minimum
     why["closing_days"] = ("Quick close; no lender to wait on" if fin == "cash" else "Fastest your lender can reliably close") \
         if lvl >= 1 else "Comfortable timeline"
     t["home_warranty"] = 0
     why["home_warranty"] = "Not asked of the seller; keeps the net clean"
-    if LS["buyer_broker_offered_pct"] is not None:
-        t["buyer_broker_pct"], why["buyer_broker_pct"] = LS["buyer_broker_offered_pct"], "What the seller is offering"
-    else:
-        t["buyer_broker_pct"] = BU.get("buyer_broker_agreement_pct")
-        if t["buyer_broker_pct"] is not None:
-            why["buyer_broker_pct"] = "Per your buyer-broker agreement (confirm with listing agent)"
-        elif costs.get("brokerage.buyer_broker_fee_pct") is not None:
-            t["buyer_broker_pct"] = costs.get("brokerage.buyer_broker_fee_pct")
-            why["buyer_broker_pct"] = f"Assumed {t['buyer_broker_pct'] * 100:g}% (5% total): set it from your buyer-broker agreement"
-        else:
-            t["buyer_broker_pct"] = 0
-            why["buyer_broker_pct"] = "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
+    t["buyer_broker_pct"], why["buyer_broker_pct"] = B["bb_request"]
+    if bb_as_credit(B):
+        why["buyer_broker_pct"] += "; paid as a credit (Rider FF), which counts toward the loan's concession limit"
+    if BU.get("needs_sale"):  # Rider V with a kick-out (Rider X): the listing side scores it that way too
+        t["sale_contingency_days"], t["kickout"] = BU.get("sale_contingency_days") or 21, True
+        why["sale_contingency_days"] = "Your sale has to close first; the kick-out clause lets the seller keep marketing"
     t["contract_form"] = B["contract_form"]
-    t["insurance_quote"] = True if BU.get("insurance_quote") else "planned"  # OFR-18: only a quote in hand is scored
-    why["insurance_quote"] = ("Quote in hand: include it with the offer" if BU.get("insurance_quote") else
+    # OFR-18: only a quote in hand is scored. OFR-216: "planned" only when the agent said so; otherwise no quote yet
+    t["insurance_quote"] = True if quote_in_hand(BU) else "planned" if BU.get("insurance_quote") == "planned" else None
+    why["insurance_quote"] = ("Quote in hand: include it with the offer" if quote_in_hand(BU) else
                               "Get the quote before submitting; listing agents weigh it on older roofs")
     if lvl >= 2 and fin in ("cash", "conventional") and BU["down_pct"] >= 0.10:
         # Cap = the lowest of the buyer's max, the CMA's walk-away, and the price whose appraisal gap (above the same
@@ -427,12 +764,23 @@ def build_offer(B, costs):
             capv, by_walk = capv - 1000, False
         if capv > price:
             t["escalation"] = {"increment": 1000, "cap": capv, "gap_at_cap": gap_at(capv)}
+            if gap_at(capv) > gap:  # OFR-105: the package's gap coverage is written at the cap's gap, and scored that way
+                t["appraisal_gap"] = gap = gap_at(capv)
+                why["appraisal_gap"] = (f"Covers the gap at the {money(capv)} escalation cap, so the offer holds wherever "
+                                        "it escalates")
             support = ("inside the value range, so the appraisal can support it" if capv <= line or fin == "cash" else
-                       f"{money(capv - line)} above the value range: the gap clause rises with the price, and your cash covers it")
+                       f"{money(capv - line)} above the value range: the appraisal gap coverage is written at the cap's "
+                       "gap, and your cash covers it")
             why["escalation"] = (f"+$1,000 over the best offer, cap {money(capv)}: {support}; your reserve holds"
                                  + (" (held at your CMA's walk-away price)" if by_walk else ""))
-        elif by_walk:
-            why["escalation"] = f"Not used: the offer is already at your CMA's walk-away price ({money(walk)})"
+        elif price >= BU["max_price"]:
+            why["escalation"] = f"Not used: the offer is already at your max price ({money(BU['max_price'])})"
+        elif by_walk:  # OFR-205: what going on to the buyer's max would cost, not only where the walk-away stopped it
+            above = BU["max_price"] - line
+            why["escalation"] = (f"Not used: the offer is already at your CMA's walk-away price ({money(walk)}). Your max is "
+                                 f"{money(BU['max_price'])}" + (f", but a price there is {money(above)} above the top of the "
+                                 f"value range ({money(line)}): cash you'd have to cover if the appraisal comes in low"
+                                 if above > 0 and fin != "cash" else "; the walk-away is the CMA's ceiling for this home"))
         else:
             why["escalation"] = "Not used: no room in your cash or payment to go higher"
     elif lvl >= 2:
@@ -455,6 +803,26 @@ def stronger(B, t):
     return None if s == t else s
 
 
+def no_stronger_reason(B, t):
+    """OFR-205, OFR-208: why stronger() has nothing to add to the offer `t`, in one sentence."""
+    if buyer_cash(B, t)["reserve"] < 0:
+        return "The recommended offer already needs more cash than the buyer has."
+    fin = B["buyer"]["financing"]
+    uncovered = t["price"] - B["value"]["cma_high"] - t.get("appraisal_gap", 0)
+    gap = ("cash needs no appraisal gap coverage" if fin == "cash" else
+           f"an {fin.upper()} gap clause earns no credit with the listing side (the rider lets the buyer walk if the "
+           "appraisal is low)" if fin in ("fha", "va") else
+           "no part of the price above the value range is left uncovered" if uncovered <= 0 else
+           "no cash is left for more appraisal gap coverage")
+    # OFR-231: the deposit as the report prints it ("$11,000 (3.1%)"), never a rounder percent beside it
+    return (f"The deposit is already {term_val('deposit', t, B)} and {gap}, so there's nothing to add that the "
+            "listing agent would credit.")
+
+
+COMP_WORDS = {0: "no competing offers", 1: "one competing offer", 2: "two or three competing offers",
+              3: "cash or four or more competing offers"}
+
+
 def lower_cost(B, costs, rec):
     """The recommended offer (with the agent's overrides) softened toward one competition level lower: never a higher
     price, deposit or gap, no escalation (OFR-8). None if nothing changes."""
@@ -475,7 +843,98 @@ def lower_cost(B, costs, rec):
     t["seller_concessions"] = min(max(rec.get("seller_concessions", 0), soft.get("seller_concessions", 0)),
                                   int(cc // 100 * 100), int(concession_cap(B, t["price"]) // 100 * 100))
     why = {k: v for k, v in why.items() if t.get(k) != rec.get(k)}
+    # OFR-326: build_offer worded the price and concessions for one competition level lower; the deal has the expected
+    # level, so these reasons say what the softer terms are written for instead of calling the competition "little"
+    written = f"written for {COMP_WORDS[lvl - 1]}, not the {COMP_WORDS[lvl]} expected"
+    if t["price"] < rec["price"]:
+        why["price"] = f"{money(rec['price'] - t['price'])} under the fuller offer: {written}"
+    if t["seller_concessions"] > rec.get("seller_concessions", 0):
+        why["seller_concessions"] = ("Covers your closing costs" if t["seller_concessions"] >= int(cc // 100 * 100) else
+                                     "More of your closing costs") + f": a bigger ask, {written}"
     return (None, {}) if t == rec else (t, why)
+
+
+def conc_need(B, price):
+    """The seller concessions the buyer's cash can't do without at `price`: what closing takes beyond cash after the
+    reserve."""
+    BU = B["buyer"]
+    return max(0, round(price * BU["down_pct"]) + closing_costs(B, price) - (BU["cash_available"] - BU["reserve_floor"]))
+
+
+def reach_band(B, costs, rec):
+    """OFR-325: when the rule-built offer reads At Risk or Unlikely, the lowest-cost offer inside every limit that reaches
+    a better band, with that band and the same-band offer that keeps the most cash (OFR-332); else (None, None, None). It tries a price anywhere in the value range up to its top (never
+    past the CMA's walk-away, the buyer's max or, with little competition, list), smaller concessions down to what the
+    buyer's cash can't cover with the reserve kept, a 3% deposit and the lender's fastest close. Lowest cost: the price
+    net of concessions, then the smaller deposit, then the longer close. An escalating offer is left as built."""
+    P, V, BU, lvl = B["property"], B["value"], B["buyer"], B["competition"]["level"]
+    if rec.get("escalation") or V.get("assumed"):
+        return None, None, None
+    walk = (B.get("cma_offer_plan") or {}).get("walk_away")
+    top = rnd(min(x for x in (V["cma_high"], walk, BU["max_price"], P["list_price"] if lvl <= 1 else None) if x),
+              1000, "down")
+    low = min(rnd(V["cma_low"], 1000, "up"), top)
+    fast = BU["lender_min_close_days"]
+    while not dates.is_business_day(B["effective_date"] + timedelta(days=fast)):
+        fast += 1  # OFR-219: a business day, as build_offer counts it
+    closes = sorted({rec["closing_days"], min(fast, rec["closing_days"])})
+    tries = []
+    step = max(1000, int(rnd((top - low) / 30, 1000, "up")))  # at most about 30 prices and 20 concession amounts
+    for p in sorted(set(range(int(low), int(top) + 1, step)) | {int(top)} | ({rec["price"]} if rec["price"] <= top else set())):
+        cc, need = closing_costs(B, p), conc_need(B, p)
+        most = min(rec.get("seller_concessions", 0), int(cc // 100 * 100), int(concession_cap(B, p) // 100 * 100))
+        room = round(p * BU["down_pct"]) + cc  # build_offer's rule: the deposit never exceeds the cash to close
+        first = int(rnd(need, 500, "up")) if need else 0
+        cstep = max(500, int(rnd((most - first) / 20, 500, "up"))) if most > first else 500
+        for conc in sorted(set(range(first, most + 1, cstep)) | {most}):
+            deps = {rec["deposit"], int(min(max(rec["deposit"], rnd(0.03 * p, 500, "up")), max(1000, room - conc)))}
+            for dep in sorted(deps):
+                for days in closes:
+                    # every price tried is inside the value range, so no appraisal gap is needed
+                    t = dict(rec, price=p, seller_concessions=conc, deposit=dep, closing_days=days, appraisal_gap=0)
+                    if conc >= need and t != rec and within_limits(B, costs, t):
+                        tries.append((f"try{len(tries)}", t))
+    if not tries:
+        return None, None, None
+    _, O = run_engine(B, costs, [("recommended", rec)] + tries)
+    # each offer against its own clean offer at list (the same closing date), as it's scored once recommended
+    bands = {k: band_of(ci(O[k], O[k]["target"]["net_adj"], P["list_price"]), lvl) for k in O}
+    best = max(BAND_RANK[b[0]] for b in bands.values())
+    if bands["recommended"][0] not in ("risk", "unl") or best <= BAND_RANK[bands["recommended"][0]]:
+        return None, None, None
+    same = [(k, t) for k, t in tries if BAND_RANK[bands[k][0]] == best]
+    k, t = min(same, key=lambda kt: (kt[1]["price"] - kt[1]["seller_concessions"], kt[1]["deposit"], -kt[1]["closing_days"]))
+    # OFR-332: the same-band offer that keeps the most cash, for when the cheapest one leaves a thin cushion
+    roomy = max((t2 for _, t2 in same), key=lambda t2: buyer_cash(B, t2)["reserve"])
+    return t, bands[k], roomy
+
+
+def reach_why(B, why, t, was, band):
+    """OFR-325: the reasons for the terms reach_band changed, against the competition the deal expects."""
+    why = dict(why)
+    BU, V, lvl = B["buyer"], B["value"], B["competition"]["level"]
+    vs = f"{band[1]} against {COMP_WORDS[lvl]}" if lvl else f"{band[1]} as the only offer"
+    walk = (B.get("cma_offer_plan") or {}).get("walk_away")
+    if t["price"] != was["price"]:
+        where = ("at the top of the value range" if t["price"] >= V["cma_high"] else
+                 "at your CMA's walk-away" if walk and t["price"] >= walk else "inside the value range")
+        why["price"] = f"The lowest price that reaches {vs}: {where}, within your limits"
+    if t["seller_concessions"] < was.get("seller_concessions", 0):
+        keep = f"{money(BU['reserve_floor'])} reserve kept"
+        why["seller_concessions"] = (
+            f"None: a clean offer nets the seller more, and your cash covers closing with the {keep}"
+            if not t["seller_concessions"] else
+            f"A smaller ask nets the seller more: only what your cash can't cover with the {keep}"
+            if t["seller_concessions"] < conc_need(B, t["price"]) + 500 else
+            "A smaller ask: it nets the seller more and lifts the outlook")
+    if t["deposit"] > was.get("deposit", 0):
+        why["deposit"] = (f"{t['deposit'] / t['price']:.0%} shows commitment; {B['words']['deposit_refund']}; counts "
+                          "toward cash to close")
+    if t["closing_days"] < was.get("closing_days", 0):
+        why["closing_days"] = "Fastest your lender can reliably close: a quicker close lifts the outlook"
+    if was.get("appraisal_gap") and not t.get("appraisal_gap"):
+        why["appraisal_gap"] = "Not needed: price is inside the value range"
+    return why
 
 
 def option_set(B, costs, rec):
@@ -516,16 +975,33 @@ def better_option(B, costs, terms, O, lvl):
     return None
 
 
-def promote_why(why, lc_why, pick, t):
+def promote_why(why, lc_why, pick, t, was=None, words=None):
+    """The reasons for a promoted option. CMA-103: the Stronger option names only what it actually raised."""
     why = dict(why)
+    was = was or {}
     if pick == "lower_cost":
         why.update(lc_why)
         why.pop("escalation", None)
-        why["price"] = (lc_why.get("price") or why.get("price", "")) + "; the same outlook as the fuller offer, for less"
+        # OFR-326: worded for the competition the deal expects, never the softer level the option was built for
+        why["price"] = (f"{money(was['price'] - t['price'])} under the fuller offer: the same outlook, for less"
+                        if was.get("price", 0) > t["price"] else why.get("price", ""))
+        if lc_why.get("seller_concessions"):
+            ask = lc_why["seller_concessions"].split(":")[0]
+            why["seller_concessions"] = f"{ask}: a bigger ask that keeps the same outlook"
     if pick == "stronger":
-        why["appraisal_gap"] = "Covers more of an appraisal shortfall: lifts the outlook and stays inside your limits"
-        why["deposit"] = f"{t['deposit'] / t['price']:.0%} shows commitment; refundable during inspection; counts toward cash to close"
+        if t.get("appraisal_gap", 0) > was.get("appraisal_gap", 0):
+            why["appraisal_gap"] = "Covers more of an appraisal shortfall: lifts the outlook and stays inside your limits"
+        if t.get("deposit", 0) > was.get("deposit", 0):
+            refund = (words or cf.term_words(None))["deposit_refund"]
+            why["deposit"] = f"{t['deposit'] / t['price']:.0%} shows commitment; {refund}; counts toward cash to close"
     return why
+
+
+def raised(t, was):
+    """What the Stronger option raised over the offer it replaced, in words ('appraisal-gap coverage and deposit')."""
+    parts = [name for key, name in (("appraisal_gap", "appraisal-gap coverage"), ("deposit", "deposit"))
+             if t.get(key, 0) > (was or {}).get(key, 0)]
+    return " and ".join(parts)
 
 
 # --- top level -----------------------------------------------------------------
@@ -535,7 +1011,13 @@ def analyze(B_in, market=None, cma=None):
     B0 = apply_cma(B_in, cma) if cma else copy.deepcopy(B_in)
     A = oe.Assume()
     if B0.get("_cma_side_note"):
-        A.add("value", "cma side", "other side", B0["_cma_side_note"], "high")
+        A.add("value", "cma_side", "other side", B0["_cma_side_note"], "high")
+    if B0.get("_cma_address_note"):  # CMA-102
+        A.add("value", "cma_address", "another property", B0["_cma_address_note"], "high")
+    if B0.get("_dom_aged"):  # OFR-242
+        was, as_of, since = B0["_dom_aged"]
+        A.add("property", "dom", B0["property"]["dom"], f"Days on market: {B0['property']['dom']}, the CMA's {was} as of "
+              f"{as_of:%b} {as_of.day} plus the {since} day{'s' if since != 1 else ''} since", "low")
     B, costs = prepare(B0, A, market)
     lvl = B["competition"]["level"]
     rec, why = build_offer(B, costs)
@@ -543,11 +1025,28 @@ def analyze(B_in, market=None, cma=None):
     for k, v in ov.items():  # the agent's judgment wins; the report marks it
         rec[k] = v
         why[k] = "Agent's choice"
+    if B["contract_form"] not in cf.FRBAR:  # OFR-222: a best-effort contract's own questions, asked before cost details
+        if not (B.get("worksheet") or {}).get("contract_name"):
+            A.add("worksheet", "contract_name", None, "Contract form not named: ask which form (and version) the offer goes "
+                  "on; the worksheet finds each entry by its name", "med")
+        if "inspection_days" not in ov:  # OFR-315: the chat carries it as a reply line; the report lists it here
+            A.add("worksheet", "inspection_days", rec["inspection_days"], f"Inspection or option period: "
+                  f"{rec['inspection_days']} days is a generic default, not a local rule. Confirm what's usual for this "
+                  "contract in this market", "low")
+        # OFR-316: the deposit's risk date is counted from this offer's own periods, never from another form's rules
+        A.add("worksheet", "deposit_risk", None, "Deposit at Risk After is counted from this offer's inspection or option, "
+              "loan approval and appraisal periods: confirm when your contract makes the deposit nonrefundable", "low")
     if "payment" in why.get("price", ""):  # the payment limit sets the price, so its inputs matter most
-        for a in A.items:
-            if a["field"] in ("rate", "insurance_annual", "property_tax") and a["impact"] == "low":
-                a["impact"] = "med" if a["field"] != "rate" else "high"
-    promoted = None
+        for a in A.items:  # OFR-241: an assumed rate is high; a looked-up weekly rate (rate_source) is med
+            if a["field"] in ("rate", "rate_source", "insurance_annual", "property_tax") and a["impact"] == "low":
+                a["impact"] = "high" if a["field"] == "rate" else "med"
+    reached = None
+    if not ov:  # OFR-325: the rule-built offer is a first draft; the strongest outlook inside the limits wins
+        t, band, roomy = reach_band(B, costs, rec)
+        if t:
+            why, reached = reach_why(B, why, t, rec, band), {"from": rec, "band": band[1], "roomy": roomy}
+            rec = t
+    promoted = fuller = None
     for _ in range(2):  # "best" = strongest outlook inside the limits at the lowest cost that reaches it
         variants, lc_why = option_set(B, costs, rec)
         R, O = run_engine(B, costs, variants)
@@ -556,11 +1055,15 @@ def analyze(B_in, market=None, cma=None):
             break
         promoted, fuller = pick, rec
         rec = dict(variants)[pick]
-        why = promote_why(why, lc_why, pick, rec)
+        why = promote_why(why, lc_why, pick, rec, fuller, B["words"])
         if pick == "lower_cost":  # OFR-9: the fuller offer stays on the table as the stronger alternative
             variants, lc_why = [("recommended", rec), ("stronger", fuller)], {}
             R, O = run_engine(B, costs, variants)
             break
+    # OFR-240: the escalation question only when the offer escalates; with one flat number it would contradict the advice
+    if B["contract_form"] not in cf.FRBAR and rec.get("escalation"):
+        A.add("competition", "escalation_accepted", None, "Ask the listing agent whether they accept an escalation "
+              "clause or want one flat number; not every contract has an escalation form", "med")
     lp = B["property"]["list_price"]
     tgt = O["recommended"]["target"]["net_adj"]
     limits = profiles.loan_limits()  # OFR-11: jumbo and FHA limits
@@ -572,7 +1075,7 @@ def analyze(B_in, market=None, cma=None):
     engine_assumed = [a for a in R["assumptions"] if not a["scope"].startswith("offer") and a["scope"] != "seller"
                       and a["field"] not in ("cma_low / cma_high", "state")]
     res = {"B": B, "R": R, "O": O, "why": why, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
-           "promoted": promoted,
+           "promoted": promoted, "promoted_from": fuller if promoted else None, "reached": reached,
            "assumptions": A.items + engine_assumed, "costs": costs, "sample": bool(B_in.get("sample"))}
     res["cash"] = {k: buyer_cash(B, t) for k, t in variants}
     res["payment"] = {k: monthly_payment(B, costs, t["price"]) for k, t in variants}
@@ -582,10 +1085,41 @@ def analyze(B_in, market=None, cma=None):
     res["ci"] = {k: ci(O[k], tgt, lp) for k, _ in variants}
     res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
     saves_nothing = "lower_cost" in res["terms"] and res["cash"]["lower_cost"]["worst"] >= res["cash"]["recommended"]["worst"]
-    if saves_nothing or ("lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl"):  # OFR-30
+    unlikely = "lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl"
+    if saves_nothing or unlikely:  # OFR-30
         for d in (res["terms"], res["cash"], res["payment"], res["ci"], res["bands"], O):
             d.pop("lower_cost", None)
         res["lower_cost_dropped"] = True
+    # OFR-218: a Stronger option that gains nothing (same outlook, no higher score) isn't worth offering
+    no_gain = "stronger" in res["terms"] and res["bands"]["stronger"][lvl] == res["bands"]["recommended"][lvl] \
+        and O["stronger"]["score"]["total"] <= O["recommended"]["score"]["total"]
+    if no_gain:
+        what = raised(res["terms"]["stronger"], rec)
+        for d in (res["terms"], res["cash"], res["payment"], res["ci"], res["bands"], O):
+            d.pop("stronger", None)
+        res["stronger_dropped"] = True
+    for k in O:  # OFR-216: the scorecard says what's known about the quote, never that one is planned when it isn't
+        if res["terms"][k].get("insurance_quote") is None:
+            w = O[k]["score"]["why"]
+            w["property"] = ("No known condition issues" if w["property"] == "No known condition or insurance issues"
+                             else w["property"]) + "; no insurance quote yet (scored once in hand)"
+    # OFR-205, OFR-208: every option that isn't on the page says why
+    absent = {}
+    if "stronger" not in res["terms"]:
+        absent["stronger"] = ("The recommended offer already includes the stronger terms." if promoted == "stronger" else
+                              f"{'More ' + what if what else 'The fuller terms'} wouldn't change the outlook or the listing "
+                              "agent's score, so it isn't worth the extra cash at risk." if no_gain else
+                              no_stronger_reason(B, rec))
+    if "lower_cost" not in res["terms"]:
+        absent["lower_cost"] = (
+            "The recommended offer is already the lower-cost version: it reaches the same outlook for less cash."
+            if promoted == "lower_cost" else
+            "With no competing offers expected, the recommended offer is already written for the softest market."
+            if lvl == 0 else
+            "Writing it softer wouldn't save any cash." if saves_nothing else
+            "Writing it softer would drop the outlook to Unlikely against the expected competition." if unlikely else
+            "Writing it for one less competing offer wouldn't change any term.")
+    res["absent"] = absent
     lim = {}
     BU, V = B["buyer"], B["value"]
     for k, t in res["terms"].items():
@@ -615,6 +1149,8 @@ def analyze(B_in, market=None, cma=None):
                     "gift funds, a lower price range, or a conversation with the lender about loan options.")
     elif rc["reserve"] < BU["reserve_floor"]:
         cons.append(f"Tight on cash: even the recommended offer leaves {money(rc['reserve'])}, below your {money(BU['reserve_floor'])} reserve floor.")
+    # OFR-332; OFR-338: a caution inside the limits, so it isn't one of the constraints (page 1's red Limit lines)
+    res["reserve_tight"] = tight_reserve(B, costs, res, rc)
     if rec["price"] < V["cma_low"] and "payment" in why.get("price", ""):
         cons.append(f"Your ${BU['max_payment']:,}/mo payment limit caps the price at {money(rec['price'])}, below the "
                     f"{money(V['cma_low'])}–{money(V['cma_high'])} value range. Expect this offer to be passed over unless the seller has no other interest.")
@@ -623,7 +1159,64 @@ def analyze(B_in, market=None, cma=None):
     res["constraints"] = cons
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
+    res["reply_lines"] = reply_lines(B, rec) + ([{"key": "tight_reserve", "text": res["reserve_tight"]}]
+                                                 if res["reserve_tight"] else [])
     return res
+
+
+def highest_and_best(C):
+    """OFR-239: the listing agent called for highest and best (`competition.highest_and_best`, or said so in the note)."""
+    hb = C.get("highest_and_best")
+    return bool(hb) if hb is not None else bool(HIGHEST_AND_BEST.search(str(C.get("note") or "")))
+
+
+TIGHT_RESERVE = (1000, 0.10)  # OFR-332: a cushion under $1,000 or 10% of the floor, whichever is more, is thin
+
+
+def tight_reserve(B, costs, res, rc):
+    """OFR-332: one line when the recommended offer keeps the reserve floor with a thin cushion, naming the same-outlook
+    offer that keeps more cash when the search found one; else None. OFR-334: the line is neutral and carries the
+    trade-off (payment difference and cash kept), so the chat quotes it and never computes or picks between them."""
+    floor = B["buyer"]["reserve_floor"]
+    over = rc["reserve"] - floor
+    if not 0 <= over < max(TIGHT_RESERVE[0], TIGHT_RESERVE[1] * floor):
+        return None
+    line = (f"Thin cushion: this offer leaves {money(rc['reserve'])}, only {money(over)} above your {money(floor)} reserve "
+            "floor, so closing costs that come in high would cut into it.")
+    roomy = (res.get("reached") or {}).get("roomy")
+    if roomy:
+        keep = buyer_cash(B, roomy)["reserve"]
+        if keep - rc["reserve"] >= TIGHT_RESERVE[0]:
+            rec = res["terms"]["recommended"]
+            dpay = monthly_payment(B, costs, roomy["price"]) - monthly_payment(B, costs, rec["price"])
+            res["reserve_alt"] = {"price": roomy["price"], "seller_concessions": roomy["seller_concessions"],
+                                  "payment_more": dpay, "cash_kept": keep - rc["reserve"]}
+            pay = (f"costs {money(abs(dpay))} a month {'more' if dpay > 0 else 'less'}" if dpay else
+                   "has the same payment")
+            line += (f" Both are within your limits, and the choice is yours: {money(roomy['price'])} with "
+                     f"{money(roomy['seller_concessions']) if roomy['seller_concessions'] else 'no'} seller concessions "
+                     f"reaches the same outlook, {pay} and keeps {money(keep - rc['reserve'])} more cash "
+                     f"({money(keep)} left).")
+    return line
+
+
+def reply_lines(B, rec):
+    """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `flat_number` (a
+    highest-and-best round with no escalation: why one flat number), `contract_terms` (a contract that isn't FR/BAR:
+    the form-specific terms come from the agent's contract, never from Florida's rules) and `inspection_period` (the
+    same contract with the period's length not set by the agent: it's a generic default to check locally, OFR-315)."""
+    out = []
+    if highest_and_best(B["competition"]) and not rec.get("escalation"):
+        out.append({"key": "flat_number", "text": "In a highest-and-best round many listing agents want one flat number, so "
+                    f"{money(rec['price'])} goes in as the single price, with no escalation clause."})
+    if B["contract_form"] not in cf.FRBAR:
+        out.append({"key": "contract_terms", "text": "Any option fee, and the appraisal terms of the financing addendum, "
+                    "come from your contract: fill them from your forms, not from this analysis."})
+        if "inspection_days" not in (B.get("overrides") or {}) and rec.get("inspection_days"):
+            out.append({"key": "inspection_period", "text": f"The {rec['inspection_days']}-day inspection or option period "
+                        "is a generic default, not a local rule: confirm what's usual for this contract in this market "
+                        "(some markets expect a short option period in multiple offers) before the offer goes out."})
+    return out
 
 
 # --- formatted views (shared by the markdown template and the PDF) ---------------
@@ -647,7 +1240,7 @@ def term_val(k, t, B):
     if k == "appraisal_gap":
         return (money(v) if v else "None") if B["buyer"]["financing"] != "cash" else "—"
     if k == "closing_days":
-        return f"{v} days ({(B['analysis_date'] + timedelta(days=v)):%b %-d})"
+        return f"{v} days ({(B['effective_date'] + timedelta(days=v)):%b %-d})"
     if k == "buyer_broker_pct":
         return f"{v:.1%} from seller" if v else "Not requested"
     if k == "home_warranty":
@@ -657,13 +1250,61 @@ def term_val(k, t, B):
     return str(v)
 
 
+def term_keys(B):
+    """TERM_KEYS with the inspection period named as the contract names it (OFR-234: contract_forms.term_words)."""
+    label = B["words"]["inspection_label"]
+    return [(k, label if k == "inspection_days" else labl) for k, labl in TERM_KEYS]
+
+
 def diff_text(r, k):
     """Short 'what's different from the recommended offer' text."""
     B = r["B"]
     a, b = r["terms"]["recommended"], r["terms"][k]
-    out = [f"{labl.lower()} {term_val(key, b, B)}" for key, labl in TERM_KEYS if a.get(key) != b.get(key)]
+    out = [f"{labl.lower()} {term_val(key, b, B)}" for key, labl in term_keys(B) if a.get(key) != b.get(key)]
     txt = "; ".join(out) or "Same terms"
     return txt[:1].upper() + txt[1:]
+
+
+def deposit_risk(o):
+    """OFR-210: (the date the deposit is at risk for anything but a low appraisal, the date the appraisal protection
+    runs to or None). The engine's windows already follow the form and riders (contract_forms): the later of the
+    inspection, loan approval and rider windows, then the appraisal window on its own (FHA/VA: to closing)."""
+    ex = o.get("risk_days_ex_appraisal", o["risk_days"])
+    first = o["firm_date"] - timedelta(days=o["risk_days"] - ex)
+    return first, (o["firm_date"] if o["risk_days"] > ex else None)
+
+
+rolled = oe.rolled  # OFR-219: the contract's weekend and holiday rule, shared with seller-offer-review (OFR-300)
+
+
+def risk_after(o, costs):
+    """OFR-219: (the date the deposit is at risk after, rolled per the contract rule; a short note or None). OFR-316: on
+    a contract that isn't FR/BAR the date is counted from the offer's own periods, so the note asks the agent to confirm
+    when the contract releases the deposit (contract_forms.term_words)."""
+    d, was = rolled(deposit_risk(o)[0], costs)
+    notes = [cf.term_words(o["contract_form"])["deposit_risk_confirm"]]
+    if was:
+        notes.append(f"rolled from {was:%a %b} {was.day}")
+    elif not dates.is_business_day(d):
+        notes.append(f"a {dates.holiday_name(d) or f'{d:%A}'}: check whether the contract extends it")
+    notes = [n for n in notes if n]
+    return d, "; ".join(notes) or None
+
+
+def risk_after_text(o, B, costs):
+    d, note = risk_after(o, costs)
+    return f"{d:%a %b} {d.day} ({money(o['deposit'])}" + (f"; {note}" if note else "") + ")"
+
+
+def appraisal_until(o, B, costs):
+    """'To closing (FHA rider)' or 'Until Mon Nov 2': how long a low appraisal alone still protects the deposit."""
+    _, until = deposit_risk(o)
+    if until is None:
+        return None
+    if o.get("appraisal_protected"):
+        return f"To closing ({B['buyer']['financing'].upper()} rider)"
+    until = rolled(until, costs)[0]
+    return f"Until {until:%a %b} {until.day}"
 
 
 def fin_line(B):
@@ -678,7 +1319,13 @@ def preliminary(r):
     hi = [a for a in r["missing"] if a["impact"] == "high"]
     if not hi:
         return None
-    names = {"cma_low / cma_high": "value range (buyer CMA)", "state": "property state", "property_tax": "property tax"}
+    names = {"cma_low / cma_high": "value range (buyer CMA)", "state": "property state", "property_tax": "property tax",
+             "cma_side": "a buyer-side CMA", "cma_address": "a CMA for this property"}  # CMA-101: never a raw field name
+    B = r["B"]
+    if B["buyer"].get("max_price") is not None and any(a["field"] == "max_price" for a in hi):
+        # OFR-233: say what the max was assumed to be, so the reply never has to infer it
+        mx, lp = B["buyer"]["max_price"], B["property"]["list_price"]
+        names["max_price"] = f"max price (assumed {money(mx)}, " + ("the list price)" if mx == lp else "the top of the value range)")
     need = list(dict.fromkeys(names.get(a["field"], a["field"].replace("_", " ")) for a in hi))
     n = len(r["missing"])
     return (f"**Preliminary: based on limited data.** Add {', '.join(need)} to sharpen the recommendation; "
@@ -692,10 +1339,17 @@ def summary(r):
     rec, rc = O["recommended"], r["cash"]["recommended"]
     br = r["bands"]["recommended"][lvl]
     dn = rec["ns"]["net_adj"] - r["target"]
-    why = (f"The strongest offer inside your limits. A listing agent would score it **{rec['score']['total']}/100**, and it nets the seller "
+    broken = r["limits"]["recommended"]
+    # OFR-221: an agent override past a limit is never called "inside your limits": the limit it breaks is named
+    lead = ("The strongest offer inside your limits." if not broken else
+            ("Your terms, but they break your limits: " if r["overrides"] else "The best structure available, but it breaks "
+             "your limits: ") + "; ".join(broken) + ".")
+    why = (f"{lead} A listing agent would score it **{rec['score']['total']}/100**, and it nets the seller "
            + ("about the same as a clean offer at list." if abs(dn) < 500 else f"{money(abs(dn))} {'less' if dn < 0 else 'more'} than a clean offer at list."))
-    if r.get("promoted") == "stronger":
-        why += " It includes the stronger terms (more appraisal-gap coverage and deposit): they lift the outlook and stay inside your limits."
+    if r.get("promoted") == "stronger":  # CMA-103: only what the stronger terms actually raised
+        what = raised(r["terms"]["recommended"], r.get("promoted_from"))
+        why += (f" It includes the stronger terms (more {what}): they lift the outlook and stay inside your limits." if what else
+                " It includes the stronger terms: they lift the outlook and stay inside your limits.")
     if rc["reserve"] < 0:
         why = f"**Not affordable as structured:** {money(-rc['reserve'])} short on cash. " + why
     if "stronger" in O:
@@ -704,7 +1358,7 @@ def summary(r):
             why += f" Reaching **{bs[1]}** takes {money(cs['worst'] - rc['worst'])} more worst-case cash" + (
                 f", below your {money(BU['reserve_floor'])} reserve floor." if cs["reserve"] < BU["reserve_floor"] else ".")
         else:
-            why += " Adding more cash wouldn't change the outlook."
+            why += " The stronger terms wouldn't change the outlook."
     if "lower_cost" in O:
         bl, cl = r["bands"]["lower_cost"][lvl], r["cash"]["lower_cost"]
         why += f" Writing softer saves {money(rc['worst'] - cl['worst'])}" + (f" but drops to **{bl[1]}**." if bl != br else " with the same outlook.")
@@ -713,7 +1367,7 @@ def summary(r):
 
     t, w = r["terms"]["recommended"], r["why"]
     terms = []
-    for key, labl in TERM_KEYS:
+    for key, labl in term_keys(B):
         if key in ("loan_approval_days", "appraisal_gap") and BU["financing"] == "cash":
             continue
         if key == "escalation" and not t.get("escalation") and not w.get("escalation"):
@@ -728,8 +1382,12 @@ def summary(r):
             status = "good" if not r["limits"][k] else "risk"
         elif k == "stronger":
             same = r["bands"][k][lvl] == br
-            what = diff_text(r, k) + (". Same outlook for more cash" if same else f". Reaches {r['bands'][k][lvl][1]}") + (
-                f"; {r['limits'][k][0]}" if r["limits"][k] else "")
+            extra = c["worst"] - rc["worst"]
+            # OFR-218: the deposit is part of cash to close, so a bigger one is more cash at risk early, not more cash
+            gain = (f". Reaches {r['bands'][k][lvl][1]}" if not same else
+                    f". Same outlook, score {o['score']['total']} vs. {rec['score']['total']}"
+                    + (f", for {money(extra)} more worst-case cash" if extra > 0 else ", with more of your cash at risk as deposit"))
+            what = diff_text(r, k) + gain + (f"; {r['limits'][k][0]}" if r["limits"][k] else "")
             status = "caution"
         else:
             what = diff_text(r, k) + f". Saves {money(rc['worst'] - c['worst'])}" + (
@@ -745,61 +1403,123 @@ def summary(r):
                 ["Worst-Case Cash Needed", f"{money(rc['worst'])} of {money(BU['cash_available'])}"],
                 ["Left in Reserve", f"{money(rc['reserve'])} (floor {money(BU['reserve_floor'])})"],
                 ["Est. Monthly Payment", f"${r['payment']['recommended']:,}" + (f" of ${BU['max_payment']:,}" if BU.get("max_payment") else "")],
-                ["Deposit at Risk After", f"{rec['firm_date']:%a %b %-d} ({money(rec['deposit'])})"]]
+                ["Deposit at Risk After", risk_after_text(rec, B, r["costs"])]]
+    if appraisal_until(rec, B, r["costs"]):  # OFR-210: a low appraisal alone protects the deposit longer, on its own line
+        exposure.append(["Low-Appraisal Protection", appraisal_until(rec, B, r["costs"])])
     if r.get("cash_at_cap"):
         cc = r["cash_at_cap"]
         exposure.append([f"At the {money(t['escalation']['cap'])} cap", f"{money(cc['worst'])} · reserve {money(cc['reserve'])}"])
-    signal = C.get("note") or f"None given; market reads {C['heat']}"
-    if P.get("dom") is not None and B["market"].get("median_dom"):
+    # OFR-226: an inferred read names the signals it rests on
+    signal = C.get("note") or (f"None given; market reads {C['heat']} {C['heat_basis']}" if C["heat_basis"] != "no market data"
+                               else "None given; no market data")
+    if C.get("note") and P.get("dom") is not None and B["market"].get("median_dom"):
         signal += f"; {P['dom']} DOM vs. {B['market']['median_dom']} median"
-    deadline = f" before {C['deadline']}" if C.get("deadline") else ""
+    due = deadline_label(C.get("deadline"))  # OFR-202: an ISO deadline reads like the report's other dates
+    deadline = f" before {due}" if due else ""
     return {
         "outlook": br[1], "outlook_class": br[0], "competition": COMP_LABEL[lvl] + ("" if C.get("note") else " (Inferred)"),
-        "why": why, "submit_by": C.get("deadline") or "Before the listing agent's deadline", "signal": signal,
+        "why": why, "submit_by": due or "Before the listing agent's deadline", "signal": signal,
         "financing": fin_line(B), "financing_assumed": BU.get("financing_source") == "assumed",
         "limits": f"Max {money(BU['max_price'])} · cash {money(BU['cash_available'])} · keep {money(BU['reserve_floor'])}"
                   + (f" · ≤ ${BU['max_payment']:,}/mo" if BU.get("max_payment") else ""),
         "strength": rec["score"]["total"], "seller_net": money(rec["ns"]["net_adj"]), "worst_cash": money(rc["worst"]),
         "reserve_short": rc["reserve"] < BU["reserve_floor"],
         "terms": terms, "options": options, "bands": bands, "option_labels": [OPTION_LABEL[k] for k in O],
+        # OFR-208: one option is "Your Offer", and each option that isn't offered says why
+        "options_title": "Your Options" if len(O) > 1 else "Your Offer",
+        "absent": [{"key": k, "option": OPTION_LABEL[k], "why": why_} for k, why_ in (r.get("absent") or {}).items()],
         "exposure": exposure, "constraints": r["constraints"], "preliminary": preliminary(r),
-        "next_step": next_step(B, deadline),
+        "cautions": [r["reserve_tight"]] if r.get("reserve_tight") else [],  # OFR-338: within the limits, not a Limit line
+        "breaks_limits": broken,
+        "next_step": next_step(B, deadline, len(O)),
     }
 
 
-def next_step(B, deadline):
+def limits_broken(B, costs, t):
+    """OFR-214: the buyer's limits the terms `t` would break, as [(key, words)]: max price, max payment, cash, reserve."""
+    BU, c = B["buyer"], buyer_cash(B, t)
+    out = []
+    if t["price"] > BU["max_price"]:
+        out.append(("max_price", f"your {money(BU['max_price'])} max price"))
+    if BU.get("max_payment"):
+        pay = monthly_payment(B, costs, t["price"])
+        if pay > BU["max_payment"]:
+            out.append(("max_payment", f"your ${BU['max_payment']:,}/mo payment limit (about ${pay:,}/mo)"))
+    if c["reserve"] < 0:
+        out.append(("cash", f"your {money(BU['cash_available'])} cash ({money(-c['reserve'])} short)"))
+    elif c["reserve"] < BU["reserve_floor"]:
+        out.append(("reserve_floor", f"your {money(BU['reserve_floor'])} reserve floor (leaves {money(c['reserve'])})"))
+    return out
+
+
+# The listing agent's likely counter, term by term, and the buyer's answer when it stays inside the buyer's limits
+PUSHBACK_KEYS = {"Price": "price", "Seller Concessions": "seller_concessions", "Appraisal Gap Coverage": "appraisal_gap",
+                 "Escrow Deposit": "deposit"}
+RESP = {"Price": "Inside the value range; the appraisal won't support much more",
+        "Seller Concessions": "These cover closing costs your cash can't; could trade part of them for price",
+        "Escrow Deposit": "Can go higher: {deposit_refund} and adds no cost",
+        "Inspection Period": "Needed for a full inspection; offer to share reports quickly",
+        "Appraisal Gap Coverage": "Limited by your reserve; any more is your call",
+        "Loan Approval": "Provide the full pre-approval letter", "Closing Date": "Match it if the lender confirms",
+        "Buyer-Broker Compensation": "Per the buyer-broker agreement; discuss before submitting",
+        "Home Warranty": "Already not requested", "Escrow / Title Agent": "Fine: seller's title company"}
+
+
+def pushback(r):
+    """OFR-214: the Likely Pushback rows on the recommended offer: [{term, yours, ask, response, breaks}]. An ask that
+    would break one of the buyer's limits (price, payment, cash, reserve) is answered with that limit, by key."""
+    B, costs, V = r["B"], r["costs"], r["B"]["value"]
+    o, t = r["O"]["recommended"], r["terms"]["recommended"]
+    ct = o.get("counter_terms") or {}
+    rows = []
+    for term, yours, ask, _ in o.get("counter_rows") or []:
+        if term == "Time for Acceptance":
+            continue
+        key = PUSHBACK_KEYS.get(term)
+        broken = limits_broken(B, costs, dict(t, **{key: ct[key]})) if key and key in ct else []
+        if broken:
+            resp = f"Hold at {yours}: {ask} would break " + " and ".join(w for _, w in broken)
+        elif term == "Price" and V.get("assumed"):
+            resp = "No value range yet: a buyer CMA would show whether more is supported"
+        elif term == "Price" and t["price"] < V["cma_low"]:
+            resp = f"Your call: {ask} is below the value range and inside your limits"
+        else:
+            resp = RESP.get(term, "Discuss with the buyer").format(**B["words"])
+        if term == "Inspection Period":  # OFR-234: the engine's row, named as the contract names it
+            term = B["words"]["inspection_label"]
+        rows.append({"term": term, "yours": yours, "ask": ask, "response": resp, "breaks": [k for k, _ in broken]})
+    return rows
+
+
+def next_step(B, deadline, n_options=2):
     BU = B["buyer"]
-    todo = []
-    if not BU.get("insurance_quote"):
-        todo.append("get the insurance quote")
-    todo.append("have a current proof-of-funds statement ready" if BU["financing"] == "cash" else
-                "get a pre-approval letter at the offer price (not your max, so it doesn't reveal your ceiling)")
-    return f"pick an option, {' and '.join(todo)}, and I'll prepare the offer package{deadline}."
+    letter = "a pre-approval letter at the offer price (not your max, so it doesn't reveal your ceiling)"
+    if BU["financing"] == "cash":
+        todo = ("get the insurance quote and " if not quote_in_hand(BU) else "") + "have a current proof-of-funds statement ready"
+    else:  # OFR-225: one "get", not two
+        todo = "get " + ("the insurance quote and " if not quote_in_hand(BU) else "") + letter
+    pick = "pick an option, " if n_options > 1 else ""
+    txt = f"{pick}{todo}, and I'll prepare the offer package{deadline}."
+    return txt[:1].upper() + txt[1:]  # OFR-225: a sentence after "Next Step:"
 
 
 # --- offer package worksheet -------------------------------------------------------
 
-FRBAR_RIDERS = {"fha_va": "FHA/VA Financing", "appraisal": "Appraisal Contingency", "hoa": "Homeowners' Association / Community Disclosure",
-                "condo": "Condominium", "lead": "Lead-Based Paint Disclosure (Federal)", "insurance": "Homeowners' / Flood Insurance (If in Your Form Set)",
-                "sale": "Sale of Buyer's Property", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract", "escalation": "Escalation Addendum",
-                "cdd": "CDD Disclosure", "short_sale": "Short Sale"}
-GENERIC_RIDERS = {"fha_va": "FHA/VA Financing Addendum", "appraisal": "Appraisal Contingency Addendum", "hoa": "HOA / Community Addendum",
+# CR-7 riders by letter and the Florida Realtors addenda by form number (shared/references/frbar-riders.md, frbar-addenda.md)
+FRBAR_RIDERS = {"fha_va": "FHA/VA Financing Rider (E)", "appraisal": "Appraisal Contingency Rider (F)",
+                "hoa": "Homeowners' Association/Community Disclosure Rider (B)", "condo": "Condominium Rider (A)",
+                "lead": "Lead-Based Paint Disclosure Rider (P)", "insurance": "Homeowner's/Flood Insurance Rider (H)",
+                "sale": "Sale of Buyer's Property Rider (V)", "kickout": "Kick-Out Clause Rider (X)", "backup": "Back-Up Contract Rider (W)",
+                "escalation": "Escalation Addendum (EAC-1)", "cdd": "Community Development District Addendum (CDDA-2)",
+                "short_sale": "Short Sale Approval Contingency Rider (G)", "gap": "Appraisal Gap Addendum (AGA-1)",
+                "bb_GG": "Seller's Agreement with Respect to Buyer's Broker Compensation Rider (GG)",
+                "bb_FF": "Credit Related to Buyer's Broker Compensation Rider (FF)"}
+# Any other contract: generic names; the appraisal protection's name comes from contract_forms.term_words (OFR-234)
+GENERIC_RIDERS = {"fha_va": "FHA/VA Financing Addendum", "hoa": "HOA / Community Addendum",
                   "condo": "Condominium Addendum", "lead": "Lead-Based Paint Disclosure (Federal)", "insurance": "Insurance Contingency (if Your Forms Have One)",
                   "sale": "Sale of Buyer's Property Addendum", "kickout": "Kick-Out Clause", "backup": "Back-Up Contract Addendum",
                   "escalation": "Escalation Clause (Special Provisions, if Your Forms and the Listing Agent Allow It)",
                   "cdd": "Special District / Assessment Disclosure", "short_sale": "Short Sale Addendum"}
-# OFR-19: TREC forms (Texas). Financing, and FHA/VA's appraisal terms, are on the Third Party Financing Addendum; the right
-# to terminate over a low appraisal is TREC 49-1 (not for FHA or VA). Verified against TREC 20-19 and 49-1.
-TREC_RIDERS = {**GENERIC_RIDERS, "fha_va": "Third Party Financing Addendum (FHA/VA Section)",
-               "appraisal": "Addendum Concerning Right to Terminate Due to Lender's Appraisal (TREC 49-1)",
-               "financing": "Third Party Financing Addendum", "hoa": "Addendum for Property Subject to Mandatory Membership in a "
-               "Property Owners Association", "lead": "Addendum for Seller's Disclosure of Information on Lead-Based Paint (Federal)"}
-
-
-def is_trec(form_name, state):
-    return "TREC" in str(form_name or "").upper() or (state == "TX" and not form_name)
-
-
 def blank(x):
     """A blank the agent must fill in (rendered red in the PDF)."""
     return f"[{x}]"
@@ -818,24 +1538,25 @@ def worksheet(r, variant=None):
     t, o = r["terms"][variant], r["O"][variant]
     form = B["contract_form"]  # resolved once in prepare(), the same form the options were scored on
     frbar = form in cf.FRBAR
+    terms = cf.terms(form, {"riders": [], "contract_name": W.get("contract_name")})  # ENG-11: the form's rules, one place
     fin = BU["financing"]
     financed = fin != "cash"
     price = t["price"]
     loan = round(price * (1 - BU["down_pct"])) if financed else 0
-    close = oe.prior_weekday(B["analysis_date"] + timedelta(days=t["closing_days"]) if t.get("closing_days") else o["close"])
+    eff = B["effective_date"]  # OFR-123: every date counts from the expected Effective Date
+    close = oe.prior_weekday(eff + timedelta(days=t["closing_days"]) if t.get("closing_days") else o["close"])
     if frbar:
-        form_name = ("FR/BAR AS IS Residential Contract for Sale and Purchase" if form == "as_is"
-                     else "FR/BAR Residential Contract for Sale and Purchase (Standard)")
+        form_name = cf.FORM_TITLES[form]
         form_why = ("Buyer may cancel for any reason during the inspection period; no seller repair obligation. Usual choice for competitive offers."
-                    if form == cf.AS_IS else "No inspection walk-away; the seller pays repairs up to the General Repair, WDO and "
+                    if terms["walkaway"] else "No inspection walk-away; the seller pays repairs up to the General Repair, WDO and "
                     "Permit Limits (Para. 9(a), 1.5% of price each if blank).")
     else:
         form_name = W.get("contract_name") or "Your state's standard residential purchase contract"
         form_why = "Paragraph numbers vary by form, so find each entry by its name and confirm the form version."
-    deadline = W.get("acceptance_deadline") or C.get("deadline")
-    trec = not frbar and is_trec(W.get("contract_name"), P.get("state"))
-    if trec and not W.get("contract_name"):
-        form_name = "TREC One to Four Family Residential Contract (Resale), 20-19"
+    offer_due = deadline_date(W.get("acceptance_deadline") or C.get("deadline"), B["analysis_date"])
+    # OFR-123: the offer stays open past the listing agent's deadline, so the seller can answer (the Effective Date)
+    deadline = deadline_label(W.get("acceptance_deadline"), long=True) or (
+        f"{eff:%B} {eff.day}, {eff.year}, 5:00 PM" if offer_due or not C.get("deadline") else None)
     para = (lambda p: p) if frbar else (lambda p: "")
     title_payer = costs.get("closing_costs.owner_title.payer")
     title_src = costs.described("closing_costs.owner_title.payer")
@@ -848,9 +1569,9 @@ def worksheet(r, variant=None):
         (para("1"), "Personal Property Included", W.get("personal_property") or blank("items in MLS (range, refrigerator, washer/dryer…)"),
          "List anything the buyer expects to stay"),
         (para("2"), "Purchase Price", f"**{money(price)}**", ""),
-        (para("2(a)"), "Earnest Money" if trec else "Initial Deposit",
-         f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar or trec else f"**{money(t['deposit'])}**",
-         "Para. 5A: to the end of day 3; extends past a weekend or legal holiday" if trec else "" if frbar else "Due date per the contract"),
+        (para("2(a)"), "Initial Deposit",
+         f"**{money(t['deposit'])}** within 3 days of Effective Date" if frbar else f"**{money(t['deposit'])}**",
+         "" if frbar else "Due date per the contract"),
         (para("2(a)"), "Escrow Agent", W.get("escrow_agent") or blank("title company name, address, phone"), ""),
         (para("2(b)"), "Additional Deposit", "None", "Keep the full deposit up front: it scores better"),
     ]
@@ -863,9 +1584,15 @@ def worksheet(r, variant=None):
         rows.append((para("8"), "Financing", "**Cash** (no financing contingency)", "Attach proof of funds"))
     rows += [
         (para("2(d)"), "Balance to Close", f"{money(price - t['deposit'] - loan)} before prorations and costs", "Buyer's funds at closing"),
-        (para("3"), "Time for Acceptance", deadline or blank("date and time"), "Match the listing agent's highest-and-best deadline"),
-        (para("4"), "Closing Date", f"**{close:%B %-d, %Y}**", "Weekday; lender confirmed" if BU.get("lender_called") or not financed
-         else "Weekday; confirm the lender can close by then"),
+        (para("3"), "Time for Acceptance", deadline or blank("date and time"),
+         "Past the offers-due deadline, so the seller has time to answer" if C.get("deadline") and not W.get("acceptance_deadline")
+         else "The seller's deadline to accept"),
+        # OFR-227: a lender who confirmed the financing (lender_called) hasn't confirmed this date; only
+        # lender_confirmed_timeline does, and it ticks the checklist's closing box too
+        (para("4"), "Closing Date", f"**{close:%B %-d, %Y}**",
+         "Weekday; no lender to wait on" if not financed else "Weekday; lender confirmed this closing date"
+         if BU.get("lender_confirmed_timeline") else "Weekday; lender confirmed the financing, not yet this date: confirm "
+         "they can close by then" if BU.get("lender_called") else "Weekday; confirm the lender can close by then"),
         (para("6"), "Occupancy / Possession", "At closing, vacant", ""),
     ]
     if title_payer == "seller":
@@ -880,32 +1607,42 @@ def worksheet(r, variant=None):
         (para("9"), "Home Warranty", "None (buyer may purchase separately)" if not t.get("home_warranty") else f"Seller pays up to {money(t['home_warranty'])}", ""),
         (para("9"), "Survey", "Buyer's expense (recommended)", "Lender may require"),
     ]
-    if trec:  # OFR-19: the walk-away is the option period, bought with the option fee (Para. 5B)
-        rows += [("", "Option Fee", f"**{money(W['option_fee'])}**" if W.get("option_fee") else blank("amount, delivered with the earnest money"),
-                  "Credited to the buyer at closing; kept by the seller if the buyer terminates"),
-                 ("", "Option Period", f"**{t['inspection_days']} days**", "Notices by 5:00 PM on the last day; not extended "
-                  "for weekends or holidays. Book the inspector before submitting")]
-    else:
-        rows.append((para("12"), "Inspection Period", f"**{t['inspection_days']} days**",
-                     f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting"))
-    if form == cf.STANDARD:
+    rows.append((para("12"), B["words"]["inspection_label"], f"**{t['inspection_days']} days**",
+                 f"Book the inspector{' and 4-point' if costs.state == 'FL' else ''} before submitting" if frbar else
+                 "Book the inspector before submitting; find the contract's inspection or walk-away period and its notice rules"
+                 + ("" if "inspection_days" in (B.get("overrides") or {}) else
+                    "; the length is a generic default: confirm local practice")))  # OFR-315
+    if terms["repairs_owed"]:
         lim = cf.repair_limits(price, {"repair_limits": B.get("repair_limits")})
         rows.append((para("9"), "Repair Limits", f"General **{money(lim['general'])}** · WDO **{money(lim['wdo'])}** · "
                      f"Permits **{money(lim['permit'])}**", "Para. 9(a); 1.5% of price each when left blank"))
 
-    names = FRBAR_RIDERS if frbar else TREC_RIDERS if trec else GENERIC_RIDERS
+    names = FRBAR_RIDERS if frbar else dict(GENERIC_RIDERS, appraisal=B["words"]["appraisal_addendum"])
     riders = []  # (name, inputs, why)
-    if trec and fin in ("conventional", "usda"):
-        riders.append((names["financing"], f"Loan: {oe.FIN_LABEL[fin]} {money(loan)} · buyer approval: **{t.get('loan_approval_days', 21)} days**",
-                       "Required for financed offers on TREC forms"))
     yb, roof, fz = P.get("year_built"), P.get("roof_year"), (P.get("flood_zone") or "").upper()
     if fin in ("fha", "va"):
-        riders.append((names["fha_va"], f"Loan type: {fin.upper()} · appraised-value threshold: **{money(price)}**",
-                       "Required with FHA/VA loans (amendatory / escape clause)"))
-    if fin in ("conventional", "usda"):
-        riders.append((names["appraisal"], (f"Waiver: none, or the amount of the gap the buyer covers ({money(t['appraisal_gap'])})"
-                                            if trec and t.get("appraisal_gap") else "Waiver: none" if trec else
-                                            f"Value threshold: **{money(price)}** · appraisal period: **{t.get('appraisal_days', 21)} days**"),
+        # OFR-209: the Para. 2 cap on seller-paid appraisal repairs has no default (frbar-riders.md, Rider E)
+        repair_cap = (f" · Para. 2 seller's cap for lender-required appraisal repairs: {blank('$ amount, no default')}"
+                      if frbar else f" · seller's cap for lender-required repairs: {blank('$ amount')}")
+        cap_note = ("; fill the repair cap on purpose: a blank is ambiguous, and "
+                    + ("the contract owes no other repairs, so it's new exposure for the seller: tell the listing agent"
+                       if not terms["repairs_owed"] else "it's in addition to the Para. 9(a) repair limits") if frbar else "")
+        riders.append((names["fha_va"], f"Loan type: {fin.upper()} · appraised-value threshold: **{money(price)}**{repair_cap}",
+                       "Required with FHA/VA loans (amendatory / escape clause)" + cap_note))
+    # FR/BAR: the Appraisal Gap Addendum is for conventional or cash offers and isn't used with the Appraisal Contingency
+    # Rider (AGA-1's own instructions), so a gap offer uses AGA-1 and no rider F (appraisal_kind, the same rule scored).
+    aga = appraisal_kind(B, t) == "aga"
+    if aga:
+        vd = aga_valuation(t, fin)  # OFR-106: filled so AGA-1's periods end with loan approval (cash: by closing)
+        riders.append((names["gap"], f"Gap Amount: **{money(t['appraisal_gap'])}** · valuation within **{vd} days**"
+                                     + (" (form default)" if vd == cf.AGA_VALUATION_DAYS else
+                                        ", so it ends with loan approval" if financed else ", so it ends before closing")
+                                     + " · 3 days to agree on new terms if the gap isn't enough",
+                       "The buyer covers a low appraisal up to the gap; beyond it the contract ends unless both agree to new terms"))
+    elif fin in ("conventional", "usda"):
+        due = ("appraisal due: blank = **10 days before Closing**, buyer's notice within 3 days after" if frbar
+               else f"appraisal period: **{t.get('appraisal_days', 21)} days**")
+        riders.append((names["appraisal"], f"Value threshold: **{money(price)}** · {due}",
                        "Protects the buyer if the appraisal is low" + ("; pair with gap language below" if t.get("appraisal_gap") else "")))
     if (P.get("hoa_monthly") or 0) > 0 or W.get("hoa_name"):
         riders.append((names["hoa"], f"Association: {W.get('hoa_name') or blank('name')} · dues: {money(P['hoa_monthly'])}/mo · "
@@ -919,7 +1656,7 @@ def worksheet(r, variant=None):
         ins_reason.append(f"{B['analysis_date'].year - roof}-year roof")
     if fz[:1] in ("A", "V"):
         ins_reason.append(f"flood zone {fz}")
-    if not BU.get("insurance_quote"):
+    if not quote_in_hand(BU):
         ins_reason.append("no insurance quote yet")
     if ins_reason and financed:
         riders.append((names["insurance"], f"Days to obtain coverage: {blank('e.g. within inspection period')} · max acceptable premium: {blank('$/yr')}",
@@ -931,28 +1668,42 @@ def worksheet(r, variant=None):
         riders.append((names["backup"], "—", "Seller already has an accepted contract"))
     if t.get("escalation"):
         e = t["escalation"]
-        gap_note = (f" · appraisal gap coverage rises with the price, up to **{money(e['gap_at_cap'])}** at the cap"
-                    if e.get("gap_at_cap", 0) > (t.get("appraisal_gap") or 0) else "")
+        # OFR-105: no promise of rising gap coverage; the package's gap is written at the cap's gap (build_offer)
         riders.append((names["escalation"], f"Increment: **{money(e['increment'])}** · cap: **{money(e['cap'])}** · "
-                       f"redacted copy of the competing offer's price terms required{gap_note}",
+                       f"redacted copy of the competing offer's price terms required",
                        "The cap is inside the value range, so the appraisal can support it" if e["cap"] <= B["value"]["cma_high"]
-                       else "Above the value range: the buyer's cash covers the gap at the cap with the reserve intact"))
+                       else f"Above the value range: the appraisal gap coverage ({money(t.get('appraisal_gap') or 0)}) is "
+                            "written at the cap's gap, and the buyer's cash covers it with the reserve intact"))
     if P.get("cdd"):
         riders.append((names["cdd"], f"Annual amount: {blank('amount')} · outstanding debt: {blank('amount')}", "Property is in a special district"))
     if P.get("short_sale"):
         riders.append((names["short_sale"], f"Lender approval period: {blank('days')}", "Listed as a short sale"))
+    if frbar and B.get("buyer_broker_form") and t.get("buyer_broker_pct"):
+        bb = money(round(t["buyer_broker_pct"] * price))
+        if bb_as_credit(B):
+            riders.append((names["bb_FF"], f"Credit: **{t['buyer_broker_pct']:.2%}** of price ({bb}) · if over the lender's limit: "
+                                           "balance paid by the seller directly to your brokerage (form default)",
+                           "Counts toward the loan program's concession limit together with any closing-cost credit"))
+        else:
+            riders.append((names["bb_GG"], f"Compensation agreement ({bb}) signed by: {blank('seller or listing broker')} · "
+                                           "within **3 days** (form default)",
+                           "Paid as a commission, so it doesn't use the loan's concession room; have the agreement ready "
+                           "to sign with the offer"))
 
     clauses = []
     if t.get("seller_concessions"):
         clauses.append(("Seller-Paid Closing Costs",
                         f"Seller shall pay up to {money(t['seller_concessions'])} toward Buyer's closing costs, prepaid items and escrows, as allowed by "
                         "Buyer's lender. Any amount not used shall not be paid to Buyer."))
-    if financed and t.get("appraisal_gap"):
+    if financed and t.get("appraisal_gap") and not aga:
         rider = names["fha_va"] if fin in ("fha", "va") else names["appraisal"]
+        # OFR-234: another contract's appraisal right lives in its own addendum, so the clause points to it generically
+        rights = (f"Buyer's rights under the {rider}" if frbar or fin in ("fha", "va")
+                  else "Buyer's appraisal rights under the contract and its addenda")
         clauses.append(("Appraisal Gap",
                         f"If the appraised value is less than the Purchase Price, Buyer shall pay in cash up to {money(t['appraisal_gap'])} of the "
                         f"difference between the appraised value and the Purchase Price. If the difference exceeds {money(t['appraisal_gap'])}, "
-                        f"Buyer's rights under the {rider} shall apply."))
+                        f"{rights} shall apply."))
     clauses.append(("Seller-Provided Reports",
                     f"Within 2 days after the Effective Date, Seller shall provide copies of any existing {reports} and inspection reports, "
                     "permits, and insurance claims history for the Property in Seller's possession."))
@@ -984,16 +1735,17 @@ def worksheet(r, variant=None):
     fl = costs.state == "FL"
     rider_list = ", ".join(x[0].split(" (")[0] for x in riders) or "none"
     package = [  # (group, item, status, note)
-        ("Contract", f"{'AS IS contract' if form == 'as_is' else 'Contract'} completed and initialed on every page", CK.get("contract", "Pending"), ""),
+        ("Contract", f"{terms['title'] if frbar else 'Contract'} completed and initialed on every page", CK.get("contract", "Pending"), ""),
         ("Contract", f"Riders attached and signed: {rider_list}", CK.get("riders", "Pending"), ""),
         ("Contract", "Additional terms reviewed by broker", CK.get("terms", "Pending"), ""),
         ("Buyer Docs", "Pre-approval letter at the offer price, not the max" if financed else "Proof of funds (recent statement in the buyer's name)",
          CK.get("pre_approval", "Pending"), (f"Letter at up to {money(esc['cap'])}, the escalation cap" if esc else
                                              f"Letter at {money(price)}") if financed else ""),
-        ("Buyer Docs", "Proof of funds for deposit, closing costs and appraisal gap" if financed else "Source-of-funds note if the account is new",
+        ("Buyer Docs", ("Proof of funds for deposit, closing costs and appraisal gap" if t.get("appraisal_gap") else  # OFR-206
+                        "Proof of funds for deposit and closing costs") if financed else "Source-of-funds note if the account is new",
          CK.get("funds", "Pending"), f"At least {money(worst)} available" + (" (at the escalation cap)" if esc else "")
          if financed else ""),
-        ("Buyer Docs", "Homeowners insurance quote for this address", CK.get("insurance", "Yes" if BU.get("insurance_quote") else "Pending"), "Before submitting"),
+        ("Buyer Docs", "Homeowners insurance quote for this address", CK.get("insurance", "Yes" if quote_in_hand(BU) else "Pending"), "Before submitting"),
         ("Disclosures", "Brokerage relationship disclosure signed (transaction broker / single agent)" if fl else "Agency disclosure signed",
          CK.get("agency", "Pending"), "Florida requirement" if fl else "Per your state's rules"),
         ("Disclosures", "Buyer-broker agreement signed; compensation request matches", CK.get("bb", "Pending"),
@@ -1003,10 +1755,14 @@ def worksheet(r, variant=None):
     if yb and yb < 1978:
         package.append(("Disclosures", "Lead-based paint disclosure", CK.get("lead", "Pending"), f"Required: built {yb}"))
     package += [
-        ("Timing", f"Inspector{' and 4-point' if fl else ''} booked inside the {t['inspection_days']}-day inspection period", CK.get("inspector", "Pending"), ""),
-        ("Timing", f"Lender confirms a {(close - B['analysis_date']).days}-day close" if financed else "Funds available by closing",
-         CK.get("lender_close", "Yes" if BU.get("lender_called") else "Pending"), f"Closing {close:%b %-d}"),
-        ("Do Not Include", "Personal letter, photos or buyer background", "Yes", "Fair housing"),
+        ("Timing", f"Inspector{' and 4-point' if fl else ''} booked inside the {t['inspection_days']}-day {B['words']['inspection']}",
+         CK.get("inspector", "Pending"), ""),
+        # OFR-126: a call to the lender isn't a confirmed closing date: the box is the agent's to tick, or ticked when the
+        # agent says the lender confirmed the timeline (OFR-227), matching the Closing Date note
+        ("Timing", f"Lender confirms a {(close - eff).days}-day close" if financed else "Funds available by closing",
+         CK.get("lender_close", "Yes" if financed and BU.get("lender_confirmed_timeline") else "Pending"), f"Closing {close:%b %-d}"),
+        # OFR-206: a thing to leave out, so its box is never ticked (the renderer prints a cross, not a check)
+        ("Do Not Include", "Personal letter, photos or buyer background", "Never", "Fair housing"),
     ]
     return {"variant": variant, "option": OPTION_LABEL[variant], "price": money(price), "frbar": frbar, "form_name": form_name, "form_why": form_why,
             "software": "Form Simplicity" if frbar else "your contract software",
@@ -1017,24 +1773,73 @@ def worksheet(r, variant=None):
             "blanks": sum(x.count("[") for x in [c for _, _, c, _ in rows] + [b for _, b, _ in riders])}
 
 
+def side_by_side(r):
+    """The options side by side, one row per term ({key, term, values}), then the payment row (key "payment", OFR-360):
+    it follows from the terms, so the PDF never marks it amber as a term that differs."""
+    B, O = r["B"], r["O"]
+    rows = [{"key": key, "term": labl, "values": [term_val(key, r["terms"][k], B) for k in O]} for key, labl in term_keys(B)
+            if not (key == "escalation" and not any(r["terms"][k].get("escalation") for k in O))
+            and not (key in ("loan_approval_days", "appraisal_gap") and B["buyer"]["financing"] == "cash")]
+    pay = "Est. Monthly Payment" + (" (Before Flood Insurance)" if B["flood"]["annual"] is None else "")
+    return rows + [{"key": "payment", "term": pay, "values": [f"${r['payment'][k]:,}" for k in O]}]
+
+
+def market_check(B):
+    """OFR-359: the Market Check rows as [{label, value, note}], the same for the PDF and the markdown answer."""
+    M, V = B["market"], B["value"]
+    rows = [("Value Range", f'{money(V["cma_low"])}–{money(V["cma_high"])}' if not V.get("assumed") else "Not provided",
+             V.get("source") if not V.get("assumed") else None),  # the source on its own line, so the range never wraps
+            ("Sale-to-List", f'{M["sale_to_list"] * 100:.1f}%' if M.get("sale_to_list") else "—"),
+            ("Months of Supply", M.get("months_supply") or "—"), ("Median Days on Market", M.get("median_dom") or "—"),
+            ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
+            ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"),
+            ("Market Read", B["competition"]["heat"].title(), B["competition"].get("heat_basis"))]  # OFR-226: and why
+    if V.get("median_adjusted"):
+        rows.insert(1, ("Median Adjusted Comp", money(V["median_adjusted"])))
+    plan = B.get("cma_offer_plan") or {}
+    if plan.get("target_low") and plan.get("target_high"):
+        rows.append(("CMA Offer Plan", f'target {money(plan["target_low"])}–{money(plan["target_high"])}'
+                     + (f' · walk away {money(plan["walk_away"])}' if plan.get("walk_away") else "")))
+    return [{"label": m[0], "value": str(m[1]), "note": str(m[2]) if len(m) > 2 and m[2] else None} for m in rows]
+
+
 def result(r, variant=None):
     s = summary(r)
     B = r["B"]
     V, M = B["value"], B["market"]
     return {
         "ok": True, "property": B["property"].get("address") or "", "list_price": money(B["property"]["list_price"]),
-        "value_range": f"{money(V['cma_low'])}–{money(V['cma_high'])}", "summary": s,
-        "side_by_side": [{"term": labl, "values": [term_val(key, r["terms"][k], B) for k in r["O"]]} for key, labl in TERM_KEYS
-                         if not (key == "escalation" and not any(r["terms"][k].get("escalation") for k in r["O"]))
-                         and not (key in ("loan_approval_days", "appraisal_gap") and B["buyer"]["financing"] == "cash")],
+        # OFR-356: null when no CMA gave a range (list price stands in for value), never "$429,000–$429,000"
+        "value_range": None if V.get("assumed") else f"{money(V['cma_low'])}–{money(V['cma_high'])}", "summary": s,
+        "side_by_side": side_by_side(r),
+        "market_check": market_check(B),
         "market": {"sale_to_list": f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else None,
                    "months_supply": M.get("months_supply"), "median_dom": M.get("median_dom"),
-                   "median_adjusted": money(V["median_adjusted"]) if V.get("median_adjusted") else None, "read": B["competition"]["heat"]},
+                   "median_adjusted": money(V["median_adjusted"]) if V.get("median_adjusted") else None, "read": B["competition"]["heat"],
+                   "read_basis": B["competition"]["heat_basis"]},
+        "pushback": pushback(r),
         "worksheet": worksheet(r, variant),
-        "to_confirm": [a["why"] for a in r["missing"] if a["impact"] in ("high", "med")][:4],
+        # OFR-212: what to ask first, in the order the chat's one question uses: the listing agent's competition read (the
+        # most valuable input, offer-rules.md) when it was inferred, then the rest by impact. OFR-222: within an impact,
+        # the questions that shape the offer itself (the contract form, escalation) come before cost details. OFR-244: a
+        # weekday deadline that may already have passed comes right after the competition read
+        "to_confirm": [a["why"] for a in sorted(r["missing"], key=lambda a: (confirm_tier(a), oe.IMPACT_ORDER[a["impact"]],
+                                                                            a["field"] not in OFFER_QUESTIONS))
+                       if a["impact"] in ("high", "med")][:4],
+        # OFR-239: lines the chat reply carries outside its length cap ([{key, text}])
+        "reply_lines": r.get("reply_lines") or [],
         "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in r["missing"]],
         "market_notes": list(r["costs"].notes),
+        # chat only: the best-effort line for a contract that isn't FR/BAR, worded for an offer being written (OFR-314)
+        **cf.support([B["contract_form"]], drafting=True),
     }
+
+
+def confirm_tier(a):
+    """to_confirm's first sort key: the inferred competition read (0), a weekday deadline to confirm (1), the rest (2)."""
+    if (a["scope"], a["field"]) == ("competition", "level"):
+        return 0
+    return 1 if a["field"] == "deadline" else 2
 
 
 def main(argv=None):

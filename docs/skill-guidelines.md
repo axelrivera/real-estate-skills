@@ -42,7 +42,7 @@ Markdown mode takes its numbers from the same data JSON the scripts produce, so 
 
 - **Top fact row.** Context under the header (home facts, contract terms, the inputs a report rests on) goes in one divider row (`divrow factrow` in `shared/report.css`), not a grid of boxed cells. It wraps onto a second line as it grows and needs no layout change when an item is added.
 - **Every item carries its word** ("payoff $214,000", "built 1962", "deadline Sun Nov 15"), since a bare value means nothing in a row of mixed facts. Order: the property first, then the money and dates.
-- **Missing items drop out**, no dashes. A missing input that makes the report Preliminary stays and shows in the risk color ("CMA not provided").
+- **Missing items drop out**, no dashes. A missing input that makes the report Preliminary stays and shows in the risk color ("CMA Not Provided").
 - **The row is context only.** A number the reader decides on (a net, a target, a score) belongs in page 1's tiles or tables, not the fact row. A boxed strip (`.snap`) is only for a few comparable numbers read side by side, as in buyer-offer-strategy's market strip.
 
 ## References
@@ -53,4 +53,4 @@ Markdown mode takes its numbers from the same data JSON the scripts produce, so 
 
 ## Evals
 
-Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): 2–4 realistic prompts with the expected result, plus input files when needed. They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.
+Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): at least 3 realistic prompts with the expected result, plus input files when needed: the happy path, a minimal-input run, and every behavior that's easy to get wrong (a fair-housing request, a best-effort contract, an edge case a fix covered). Contract skills carry more (contract-timeline has 10), many on mock contract packages. They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.

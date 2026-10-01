@@ -14,9 +14,9 @@ Page 1 summary → the home → the bottom line and what it means → comparable
 
 - **Bottom line:** the range, the recommended price and why, and why a higher first price is a risk, in 4–5 sentences.
 - **What this means:** expected negotiation (from the recent sale-to-list and concession data), the first-weeks window, the appraisal ceiling, and what documentation is worth.
-- **Comps:** each card explains its adjustments in sentences with dollar amounts. Include the sales that argue for a lower price.
+- **Comps:** each card explains its adjustments in sentences with dollar amounts, every one over $1,000 (a small size adjustment too), so the adjusted value adds up. Include the sales that argue for a lower price.
 - **Competition:** 5–9 rows, actives, pendings, and any expired listing that shows what the market rejected. The notes say why each matters to this seller.
-- **Market:** the table from stats.py, then 3–5 bullets that each tie a number to price or timing.
+- **Market:** the table from stats.py, then 3–5 bullets that each tie a number to price or timing. Months of supply is `{months_supply}`, never typed.
 - **Pricing:** the three options as estimates, saying whether the nets are close and what really differs (time and risk). The net sheet's note names what isn't included.
 - **Before we list:** low-cost steps that remove the questions that cost sellers money (roof documentation, pre-listing and insurance inspections, permits, the public record, easy showings, a seller-credit budget, a review point).
 - **What we need from you:** specific, answerable requests.
@@ -24,7 +24,7 @@ Page 1 summary → the home → the bottom line and what it means → comparable
 
 ## Page 1 (Write It Last)
 
-The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. Exactly three `key_stats`, three `why` bullets, three `first_steps`. Anything page 1 says must be supported later in the report.
+The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. Three `key_stats` (without an export, page 1 fills any you leave out from the comps), three `why` bullets, three `first_steps`. Anything page 1 says must be supported later in the report.
 
 ## After Rendering
 

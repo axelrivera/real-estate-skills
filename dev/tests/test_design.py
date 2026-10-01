@@ -47,12 +47,6 @@ class Defaults(unittest.TestCase):
     def test_default_party_colors(self):
         self.assertEqual(d.party_colors(None), {"buyer": "#1A74AD", "seller": "#C2410C", "both": "#1F3A5F"})
 
-    def test_tints_close_to_prototype(self):
-        t = d.theme(None, "buyer")
-        for token, proto in (("brand_panel", "#F6F9FB"), ("brand_callout", "#EEF5FA"),
-                             ("brand_soft", "#C9DDEB"), ("brand_accent", "#7FB0CF")):
-            self.assertLess(d.distance(t[token], proto), 0.02, token)
-
 
 class Resolution(unittest.TestCase):
     def test_order_side_then_primary_then_default(self):

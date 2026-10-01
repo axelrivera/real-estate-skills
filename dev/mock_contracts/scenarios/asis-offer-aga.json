@@ -1,0 +1,13 @@
+{
+  "name": "asis-offer-aga",
+  "form": "as_is",
+  "stage": "offer",
+  "buyers": ["Sawyer Nakamura"],
+  "sellers": ["Logan Prescott"],
+  "property": {"address": "2604 Sable Palm Way, Jupiter, FL 33458", "county": "Palm Beach", "year_built": 2016, "hoa": true},
+  "price": 489000,
+  "list_price": 504000,
+  "financing": {"type": "conventional", "ltv": 80},
+  "addenda": [{"form": "AGA", "gap_amount": 15000}],
+  "additional_terms": "Seller to leave the pool cleaning robot and the patio furniture. Buyer's inspections to include a four-point and wind mitigation inspection."
+}

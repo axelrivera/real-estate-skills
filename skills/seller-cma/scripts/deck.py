@@ -7,6 +7,7 @@
 build_deck.js only lays out what it is given: it never computes a price, net or payment, and it has no
 colors of its own (they come from shared/design, starting from the agent's brand).
 """
+import glob
 import json
 import math
 import os
@@ -52,6 +53,12 @@ class DeckError(ValueError):
     """The deck can't be built; the message is written for the agent."""
 
 
+def one_period(item, R):
+    """A no-export market stat with one value, [label, value] plus an optional icon (CMA-261)."""
+    return (not R.get("export") and isinstance(item, list)
+            and (len(item) == 2 or len(item) == 3 and item[2] in ICONS))
+
+
 def load_content(R):
     """The deck wording: report.json's `deck` (an object, or a path to a JSON file)."""
     c = R.get("deck")
@@ -66,8 +73,13 @@ def load_content(R):
     problems = [f"deck.{key} is missing" for key, typ in required.items() if not isinstance(c.get(key), typ)]
     problems += [f"deck.{key} needs {lo} to {hi} items" for key, (lo, hi) in COUNTS.items()
                  if isinstance(c.get(key), list) and not lo <= len(c[key]) <= hi]
-    for key, n, _ in ICON_FIELDS:
+    stats = [m for m in c.get("market_stats") or [] if isinstance(m, list)]
+    if len({one_period(m, R) for m in stats}) > 1:
+        problems.append("deck.market_stats mixes one-value and two-period items: use one form for all")
+    for key, n0, _ in ICON_FIELDS:
         for item in c.get(key) or []:
+            # CMA-261: without an export, a market stat can be one value ([label, value]) instead of two periods
+            n = 2 if key == "market_stats" and one_period(item, R) else n0
             if not isinstance(item, list) or len(item) not in (n, n + 1):
                 problems.append(f"each deck.{key} item is {n} texts plus an optional icon name")
                 break
@@ -93,15 +105,24 @@ def _norm(address):
     return " ".join(str(address).upper().replace(".", "").split())
 
 
+CONDITION_WORDS = re.compile(r"^(?:(?:original|older|old|newer|new|remodeled|updated|renovated|your)\s+)+")
+
+
 def adjustment_words(cards):
-    """'size, larger corner lot, seller credits and market since the sale': the adjustments actually made (CMA-26)."""
+    """'size, larger corner lot, seller credits and market since the sale': the adjustments actually made (CMA-26).
+    CMA-321: a short list of what was adjusted, each once: compound labels split ("Kitchen, Hall Bath and Floors"),
+    condition words dropped ("Original Hall Bath" and "Hall Bath" are one item), and two or more baths read "baths"."""
     seen = []
     for c in cards:
         for a in c.get("adjustments") or []:
-            word = str(a.get("label", "")).strip()
-            word = " ".join(w if w.isupper() else w.lower() for w in word.split())
-            if word and word not in seen:
-                seen.append(word)
+            label = " ".join(w if w.isupper() else w.lower() for w in str(a.get("label", "")).split())
+            for word in re.split(r",\s*|\s+and\s+", label):
+                word = CONDITION_WORDS.sub("", word).strip()
+                if word and word not in seen:
+                    seen.append(word)
+    baths = [w for w in seen if w == "bath" or w.endswith(" bath")]
+    if len(baths) > 1:
+        seen = [("baths" if w == baths[0] else w) for w in seen if w not in baths[1:]]
     if any(c.get("seller_concessions") for c in cards):
         seen.append("seller credits")
     if not seen:
@@ -165,11 +186,7 @@ def deck_data(R, C, homes, agent, L, footer):
     content = load_content(R)
     rec, s = R["recommendation"], R["subject"]
     pay, net = C["payments"], C["net"]
-    values = {"list_price": money(rec["list_price"]), "low": money(rec["low"]), "high": money(rec["high"]),
-              "per_10k": pay["per_10k_display"] if pay else "", "median_adjusted": C["median_adjusted_display"],
-              "net_spread": C["net_spread_display"], "recommended_net": C["recommended_net_display"],
-              "trend_at_subject": C["trend"]["at_subject_display"] if C["trend"] else ""}
-    content = _fill(content, values)
+    content = _fill(content, C["placeholders"])  # CMA-265: the same values the report fills (compute.py)
     notes = content.get("notes") or {}
     content["notes"] = {key: notes.get(key, "") for key in NOTE_KEYS}
 
@@ -203,6 +220,7 @@ def deck_data(R, C, homes, agent, L, footer):
     periods = content.get("market_periods")
     if not periods and window:
         periods = period_labels(window)
+    single = bool(content["market_stats"]) and all(one_period(m, R) for m in content["market_stats"])
 
     L_deck = {key: v for key, v in L.text.items() if key.startswith("deck_")}
     words = adjustment_words(R["comps"]["cards"])
@@ -219,8 +237,11 @@ def deck_data(R, C, homes, agent, L, footer):
         L_deck["deck_scatter_title"] = content["scatter_title"]
     program = L("prog_" + pay["loan_type"])
     program = program if program.isupper() else program.lower()  # "FHA", "VA"; "conventional" mid-sentence
-    L_deck["deck_pay_sub"] = L("deck_pay_sub", program=program, down=f'{pay["down_pct"] * 100:g}')
-    icons = {key: [ICONS[item[n] if len(item) > n else fallback] for item in content.get(key) or []]
+    # CMA-270: without a homestead exemption applied, the payments say so
+    L_deck["deck_pay_sub"] = L("deck_pay_sub" if pay["homestead_applied"] or pay["tax_estimated"] else "deck_pay_sub_no_homestead",
+                               program=program, down=f'{pay["down_pct"] * 100:g}')
+    width = lambda key, item, n: 2 if key == "market_stats" and one_period(item, R) else n
+    icons = {key: [ICONS[item[width(key, item, n)] if len(item) > width(key, item, n) else fallback] for item in content.get(key) or []]
              for key, n, fallback in ICON_FIELDS}
     org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
     if agent.get("license"):
@@ -241,7 +262,7 @@ def deck_data(R, C, homes, agent, L, footer):
     return {
         "colors": colors,
         "labels": L_deck,
-        "preliminary": C["preliminary"],
+        "preliminary": L("deck_preliminary", why=C["preliminary_short"]) if C["preliminary"] else "",
         "agent": {"name": agent.get("name") or "", "lines": [x for x in (org, contact) if x],
                   "short": " · ".join(x for x in (agent.get("name"), agent.get("phone"), agent.get("email")) if x)},
         "footer": footer,
@@ -252,28 +273,34 @@ def deck_data(R, C, homes, agent, L, footer):
                 "list_display": money(rec["list_price"]), "range_display": f'{k(rec["low"])} – {k(rec["high"])}',
                 "low_k": k(rec["low"]), "high_k": k(rec["high"])},
         "expected_sale": content.get("expected_sale") or R["summary_page"]["expected_sale"],
-        "method": {"n_sold": C.get("n_sold") or len(R["comps"].get("summary_rows") or R["comps"]["cards"]),"sold_line": sold_line, "n_comps": C["n_comps"],
+        # CMA-271: without an export the sales reviewed are the comps: one step says it, not two ("3 reviewed", "3 closest")
+        "method": {"n_sold": None if not window and not content.get("sold_line") else
+                   C.get("n_sold") or len(R["comps"].get("summary_rows") or R["comps"]["cards"]),
+                   "sold_line": sold_line, "n_comps": C["n_comps"],
                    "adj_range": f'{k(C["adjusted_min"])}–{k(C["adjusted_max"])}', "adj_median": C["median_adjusted_display"]},
         "market": {"title": content.get("market_title") or L("deck_market_title"),
-                   "subtitle": L("deck_market_sub", early=periods[0], recent=periods[1]) if periods else "",
+                   "subtitle": (L("deck_market_sub_one") if single else
+                                L("deck_market_sub", early=periods[0], recent=periods[1]) if periods else ""),
+                   "one_period": single,
                    "period_labels": content.get("market_period_labels") or [L("deck_period_early"), L("deck_period_recent")]},
-        "comps": [{"address": c["address"], "adjusted": c["adjusted"], "adjusted_k": k(c["adjusted"]),
+        "comps": [{"address": cma.display_address(c["address"]), "adjusted": c["adjusted"], "adjusted_k": k(c["adjusted"]),
                    "line": content["comp_lines"].get(c["address"], "")} for c in R["comps"]["cards"]],
         "competition": cards,
         "scatter": scatter_data(homes, R, C, L) if homes else None,
         "strategies": [{"list_price": x["list_price"], "list_display": x["list_price_display"], "label": L("deck_list", price=x["list_price_display"]),
                         "time": x["time"], "expected_display": x["expected_sale_display"], "credit_display": x["seller_credit_display"],
-                        "note": x["note"], "net": round(x["net"]), "net_display": x["net_display"],
+                        # CMA-264: the net chart compares the options on the spread's basis (after holding costs)
+                        "note": x["note"], "net": round(x["net_after_holding"]), "net_display": x["net_after_holding_display"],
                         "payment_display": L("deck_per_month", amount=x["payment_display"]),
                         "down_display": L("deck_down", amount=x["down_display"], pct=f'{pay["down_pct"] * 100:g}')} for x in C["strategies"]],
         "recommended_index": C["recommended_index"],
         "icons": icons,
-        "net_sub": L("deck_cash_free_sub" if free else "deck_cash_sub" if cash else "deck_net_sub") + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else ""),
+        "net_sub": net_sub(C, L),
         "net_spread_display": C["net_spread_display"],
         "net_rows": [[r["label"]] + r["display"] for r in net["rows"]],
         "net_note": net_note,
         "net_speaker": net_speaker,
-        "appendix_comps": [[r[0], money(r[1]), money(r[2]), money(r[3])] for r in R["comps"]["summary_rows"]],
+        "appendix_comps": [[r[0], money(r[1]), money(r[2]), money(r[3], 100)] for r in R["comps"]["summary_rows"]],  # CMA-289
         "subject_row": [R["comps"].get("subject_row_label", L("subject_row")), money(rec["list_price"]), "—",
                         f'{L("range_word")} {k(rec["low"])}–{k(rec["high"])}'],
         "table_head": [L("th_sale"), L("th_sold_for"), L("th_seller_paid"), L("th_adjusted")],
@@ -281,6 +308,15 @@ def deck_data(R, C, homes, agent, L, footer):
         "appendix_note": comps_note,
         "appendix_speaker": comps_speaker,
     }
+
+
+def net_sub(C, L):
+    """The net slide's subtitle: which net the bars and the spread show (CMA-264: after holding costs when counted)."""
+    net = C["net"]
+    # CMA-317: after holding costs it's the net sheet's "Net After Holding Costs" row, never "cash at closing" (its own row)
+    held = "_holding" if C["net_basis"] == "after_holding" else ""
+    basis = L(("deck_cash_free" if net["no_mortgage"] else "deck_cash" if net["cash_at_closing"] else "deck_net") + held + "_sub")
+    return basis + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else "")
 
 
 def contrast_roles(colors):
@@ -344,9 +380,24 @@ def build_pptx(D, path):
     return [l[len("Check: "):] for l in r.stderr.splitlines() if l.startswith("Check: ")]
 
 
+# CMA-256: where LibreOffice installs when `soffice` isn't on PATH (macOS app bundle, Linux packages and snaps)
+OFFICE_PATHS = ("/Applications/LibreOffice.app/Contents/MacOS/soffice", "/usr/bin/soffice", "/usr/bin/libreoffice",
+                "/usr/lib/libreoffice/program/soffice", "/opt/libreoffice/program/soffice", "/usr/local/bin/soffice",
+                "/snap/bin/libreoffice")
+
+
+def find_office():
+    """The LibreOffice command: on PATH first, then the usual install paths. None when there isn't one."""
+    found = shutil.which("soffice") or shutil.which("libreoffice")
+    if found:
+        return found
+    extra = sorted(glob.glob("/opt/libreoffice*/program/soffice"))  # versioned installs (/opt/libreoffice24.8)
+    return next((p for p in (*OFFICE_PATHS, *extra) if os.path.isfile(p) and os.access(p, os.X_OK)), None)
+
+
 def pptx_to_pdf(pptx, pdf):
     """A PDF copy of the slides through LibreOffice (headless, its own profile). None when it isn't available."""
-    office = shutil.which("soffice") or shutil.which("libreoffice")
+    office = find_office()
     if not office:
         return None
     with tempfile.TemporaryDirectory() as tmp:

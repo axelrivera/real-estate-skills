@@ -13,7 +13,7 @@ Give only the steps for where the agent is now, as a short numbered list with th
 | Cowork, not in a project | Set Up a Project in Cowork |
 | Cowork, inside a project | Already in a Cowork Project |
 
-If you can't tell, give the claude.ai steps and add one line: "Using Cowork in the desktop app? Tell me and I'll give you those steps."
+You can tell only from what the conversation shows: a Cowork working folder or task, or claude.ai Project files or instructions. A guess about the surface doesn't count. When nothing shows it, give the claude.ai steps and always add one line: "Using Cowork in the desktop app? Tell me and I'll give you those steps."
 
 When the Project's instructions already start with "Real Estate Assistant for" and the name hasn't changed, skip the instructions step and give only the profile step (or nothing, when the saved profile was updated in place).
 
@@ -32,7 +32,7 @@ When the Project's instructions already start with "Real Estate Assistant for" a
 ## Set Up a Project in Cowork
 
 1. Open **Projects** in the left sidebar and click **+**.
-   - Your profile is already saved in this working folder: choose **Use an existing folder** and pick this folder.
+   - Your profile is saved in this working folder: choose **Use an existing folder** and pick this folder.
    - Otherwise: start from scratch, name it "Real Estate" and pick a folder on your computer for your real estate work.
    - You already set up a claude.ai Project this way: choose **Import from project**. The instructions and files come with it, so you can skip step 2.
 2. Paste everything from project-instructions.md into the project's **Instructions**.
@@ -42,7 +42,7 @@ When the Project's instructions already start with "Real Estate Assistant for" a
 ## Already in a Cowork Project
 
 1. Paste everything from project-instructions.md into the project's **Instructions**.
-2. Your profile is saved in the project folder already, so nothing else is needed. (If it went to the outputs folder because no folder was selected, attach it in a task there and say "save my profile here".)
+2. If profile.md is already in the project's folder (saved there by this skill, or put there yourself), nothing else is needed. Otherwise attach it in a task there and say "save my profile here".
 
 ## Keeping It Current
 

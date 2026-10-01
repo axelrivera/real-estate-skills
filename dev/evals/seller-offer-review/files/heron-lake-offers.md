@@ -6,7 +6,7 @@ Seller has to close by Nov 15 and cares more about certainty than top dollar.
 
 **Offer A** (J. Morales, Keller Williams): $432,000 FHA 3.5% down, Guild Mortgage DU approved (I called the LO, solid).
 $5,000 EMD. Seller pays $12,000 closing costs + $550 home warranty. 2.5% buyer agent. 10-day inspection, 30-day loan approval,
-21-day appraisal, no gap. Close Nov 7. AS IS. Wants their own title company. Expires 9/25 5 PM.
+21-day appraisal, no gap. Close Nov 7. AS IS. Wants their own title company. Expires 9/28 5 PM.
 
 **Offer B** (L. Park, Coldwell Banker): $420,000 conventional 20% down, Chase full underwriting, LO confirmed.
 $15,000 EMD, no concessions, 2.5%. 7-day inspection, 21-day loan, 21-day appraisal with $10,000 appraisal gap. Close in 30 days.

@@ -29,7 +29,7 @@ After the 2024 NAR settlement, a written buyer agreement is required before tour
 
 ### GAP-3: Repair Negotiation
 
-Drafts the repair request or the response to one, with the contract math: under FR/BAR AS IS, cancel or ask for a credit; under the Standard contract, the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank), the seller's 10-day estimate window and the 5-day election when repairs exceed a limit (Para. 12). contract-timeline already dates those windows. Reads contract-timeline's data for the inspection deadline when present.
+Drafts the repair request or the response to one, with the contract math: under FR/BAR AS IS, cancel or ask for a credit; under the Standard contract, the General Repair, WDO and Permit Limits (Para. 9(a), 1.5% of price each if blank), the seller's 10-day estimate window and the 5-day election when repairs exceed a limit (Para. 12). contract-timeline already dates those windows. Reads contract-timeline's data for the inspection deadline when present. Florida Realtors' Buyer's Request for Repairs and/or Remedies (BRR-1) is the Standard form's repair notice and is described in `shared/references/frbar-addenda.md`; Rider L (right to inspect and cancel) keeps the same repair process.
 
 - **Open questions:** Should it read an inspection report PDF and extract the items, or take a list? Should it show a credit-vs-repair comparison?
 
@@ -55,7 +55,8 @@ A review of an active listing's showings, days on market and competing listings,
 |---|---|---|
 | CORE-19 | Tiered and layered transfer taxes | NY mansion tax, WA REET tiers, NJ, LA Measure ULA, Philadelphia city plus state, DC. Support `deed_transfer_tax_tiers` (same format as title tiers) and a list of layered taxes. Until then the market check warns that tiered states need the agent's number. |
 | CORE-30 | Rentals and leases | Security deposit rules (Florida s. 83.49), lease forms, lease fees, and leased and Active Under Contract MLS statuses. |
-| | More state market layers | Only Florida is built in. Texas is the most-tested non-Florida case in the fixtures. |
+| | More state market layers | Only Florida is built in. Texas is the most-tested non-Florida market case in the fixtures (costs only: no other state's contract rules are built in; contracts outside FR/BAR are best effort). |
+| | More fully supported contracts | A contract becomes fully supported only through the same process as FR/BAR: its PDFs in `sources/`, the manifest, `make forms-check`, and references read from the forms. |
 | | More MLS layers | Only Stellar is built in. Miami (MIAMI REALTORS) and BeachesMLS cover the southeast Florida counties Stellar doesn't. |
 | | Offer outcome log | Ported from the prototype: record how offers turned out to calibrate scoring. |
 | | Trigger-description optimization | skill-creator's `run_loop`, run in Claude Code. |

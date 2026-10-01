@@ -1,0 +1,5372 @@
+{
+ "active": [
+  {
+   "_appraisal_basis": "E",
+   "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
+   "aga_named": false,
+   "agent_track": "average",
+   "appraisal_contingency": 21,
+   "appraisal_days": 45,
+   "appraisal_form": "E",
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": true,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "du_approved",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.025,
+   "close": "2026-11-07",
+   "close_days": 45,
+   "close_terms": null,
+   "closing_date": "2026-11-07",
+   "contract_form": "as_is",
+   "counter_risk_days": 44,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 63,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-11-06",
+    "deposit": 13000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 30,
+    "price": 428000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 6000
+   },
+   "deposit": 5000,
+   "down_pct": 0.035,
+   "downside_price": 428000,
+   "expires_raw": "2026-09-25 17:00",
+   "expires_today": false,
+   "financed": true,
+   "financing": "fha",
+   "firm_date": "2026-11-07",
+   "flags": [
+    {
+     "sev": "Med",
+     "topic": "appraisal_gap"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 550,
+   "id": "A",
+   "inspection_assumed": false,
+   "inspection_days": 10,
+   "inspection_walkaway": true,
+   "insurance_quote": false,
+   "key": "A",
+   "kickout": false,
+   "lapsed": null,
+   "lender_called": true,
+   "loan_approval_days": 30,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      432000
+     ],
+     [
+      "conc",
+      -12000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12960
+     ],
+     [
+      "bb",
+      -10800
+     ],
+     [
+      "transfer",
+      -3024
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      -550
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 148794,
+    "net_adj": 145194,
+    "price": 432000,
+    "tax_bill_assumed": true
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-06",
+    "holding": -3520,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -6000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4389
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 151606,
+    "net_adj": 148086,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -12000
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      -550
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 142042,
+    "net_adj": 138442,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "price": 432000,
+   "rank_value": 109754.5,
+   "received": "2026-09-22",
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "E",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "HOA"
+   ],
+   "risk_days": 45,
+   "risk_days_ex_appraisal": 30,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "lo",
+     "Weak"
+    ],
+    "scores": {
+     "agent": 3,
+     "appraisal": 3,
+     "approval": 4,
+     "contingency": 2,
+     "deposit": 2,
+     "financing": 2,
+     "property": 2,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 55
+   },
+   "seller_concessions": 12000,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 154778,
+    "net_adj": 151178,
+    "price": 425000,
+    "tax_bill_assumed": true
+   },
+   "title_by": "buyer",
+   "title_payer": "buyer",
+   "title_payer_by_contract": true,
+   "walkaway_days": 10
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "ACCEPT",
+   "aga_named": false,
+   "agent_track": "strong",
+   "appraisal_contingency": 21,
+   "appraisal_days": 21,
+   "appraisal_form": "F",
+   "appraisal_gap": 10000,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "full_uw",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.025,
+   "close": "2026-10-23",
+   "close_days": 30,
+   "closing_days": 30,
+   "contract_form": "as_is",
+   "counter_risk_days": 21,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 82,
+   "counter_terms": {
+    "appraisal_gap": 10000,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-10-23",
+    "deposit": 15000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 21,
+    "price": 423000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 0
+   },
+   "deposit": 15000,
+   "down_pct": 0.2,
+   "downside_price": 420000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": true,
+   "financing": "conventional",
+   "firm_date": "2026-10-14",
+   "flags": [
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 10000,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "B",
+   "inspection_assumed": false,
+   "inspection_days": 7,
+   "inspection_walkaway": true,
+   "insurance_quote": true,
+   "key": "B",
+   "kickout": false,
+   "lapsed": null,
+   "lender": "Chase",
+   "lender_called": true,
+   "loan_approval_days": 21,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      420000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12600
+     ],
+     [
+      "bb",
+      -10500
+     ],
+     [
+      "transfer",
+      -2940
+     ],
+     [
+      "title",
+      -2175
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 147751,
+    "net_adj": 145351,
+    "price": 420000,
+    "tax_bill_assumed": false
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      423000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12690
+     ],
+     [
+      "bb",
+      -10575
+     ],
+     [
+      "transfer",
+      -2961
+     ],
+     [
+      "title",
+      -2190
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 150550,
+    "net_adj": 148150,
+    "price": 423000,
+    "tax_bill_assumed": false
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      420000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12600
+     ],
+     [
+      "bb",
+      -10500
+     ],
+     [
+      "transfer",
+      -2940
+     ],
+     [
+      "title",
+      -2175
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 144751,
+    "net_adj": 142351,
+    "price": 420000,
+    "tax_bill_assumed": false
+   },
+   "price": 420000,
+   "rank_value": 133426.0,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "F",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "Appraisal",
+    "HOA"
+   ],
+   "risk_days": 21,
+   "risk_days_ex_appraisal": 21,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "hi",
+     "Strong"
+    ],
+    "scores": {
+     "agent": 5,
+     "appraisal": 5,
+     "approval": 5,
+     "contingency": 3,
+     "deposit": 4,
+     "financing": 4,
+     "property": 4,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 86
+   },
+   "seller_concessions": 0,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 152416,
+    "net_adj": 150016,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 7
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "BACKUP",
+   "aga_named": false,
+   "agent_track": "strong",
+   "appraisal_days": 0,
+   "appraisal_form": null,
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": false,
+   "appraisal_waived": false,
+   "appraised": false,
+   "approval": "pof_verified",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.02,
+   "close": "2026-10-14",
+   "close_days": 21,
+   "closing_days": 21,
+   "contract_form": "as_is",
+   "counter_risk_days": 5,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 98,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.02,
+    "close": "2026-10-14",
+    "deposit": 40500,
+    "home_warranty": 0,
+    "inspection_days": 5,
+    "loan_approval_days": 0,
+    "price": 425000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 0
+   },
+   "deposit": 40500,
+   "down_pct": 1.0,
+   "downside_price": 405000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": false,
+   "financing": "cash",
+   "firm_date": "2026-09-28",
+   "flags": [
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "C",
+   "inspection_assumed": false,
+   "inspection_days": 5,
+   "inspection_walkaway": true,
+   "key": "C",
+   "kickout": false,
+   "lapsed": null,
+   "loan_approval_days": 0,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      405000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12150
+     ],
+     [
+      "bb",
+      -8100
+     ],
+     [
+      "transfer",
+      -2835
+     ],
+     [
+      "title",
+      -2100
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 135909,
+    "net_adj": 134229,
+    "price": 405000,
+    "tax_bill_assumed": false
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -8500
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 154669,
+    "net_adj": 152989,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      405000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12150
+     ],
+     [
+      "bb",
+      -8100
+     ],
+     [
+      "transfer",
+      -2835
+     ],
+     [
+      "title",
+      -2100
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 132909,
+    "net_adj": 131229,
+    "price": 405000,
+    "tax_bill_assumed": false
+   },
+   "price": 405000,
+   "rank_value": 131229.0,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "HOA"
+   ],
+   "risk_days": 5,
+   "risk_days_ex_appraisal": 5,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "hi",
+     "Strong"
+    ],
+    "scores": {
+     "agent": 5,
+     "appraisal": 5,
+     "approval": 5,
+     "contingency": 5,
+     "deposit": 5,
+     "financing": 5,
+     "property": 5,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 100
+   },
+   "seller_concessions": 0,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 152544,
+    "net_adj": 150864,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 5
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "DECLINE",
+   "action_reason_keys": [
+    "sale_contingency",
+    "prequal",
+    "past_deadline"
+   ],
+   "aga_named": false,
+   "agent_track": "average",
+   "appraisal_contingency": 21,
+   "appraisal_days": 21,
+   "appraisal_form": "F",
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "prequal",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.03,
+   "close": "2026-11-22",
+   "close_days": 60,
+   "closing_days": 60,
+   "contract_form": "as_is",
+   "counter_risk_days": 40,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    [
+     "3.0%",
+     "2.5%"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 65,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-11-13",
+    "deposit": 13000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 40,
+    "price": 428000,
+    "sale_contingency_days": 21,
+    "seller_concessions": 5000
+   },
+   "deposit": 10000,
+   "down_pct": 0.1,
+   "downside_price": 428000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": true,
+   "financing": "conventional",
+   "firm_date": "2026-11-07",
+   "flags": [
+    {
+     "sev": "High",
+     "topic": "sale_contingency"
+    },
+    {
+     "sev": "High",
+     "topic": "appraisal_gap"
+    },
+    {
+     "sev": "High",
+     "topic": "past_deadline"
+    },
+    {
+     "sev": "Med",
+     "topic": "financing"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "inspection_period"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "check": "riders",
+     "contract": true,
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "D",
+   "inspection_assumed": false,
+   "inspection_days": 15,
+   "inspection_walkaway": true,
+   "key": "D",
+   "kickout": true,
+   "lapsed": null,
+   "lender_called": false,
+   "loan_approval_days": 40,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      440000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -13200
+     ],
+     [
+      "bb",
+      -13200
+     ],
+     [
+      "transfer",
+      -3080
+     ],
+     [
+      "title",
+      -2275
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 158785,
+    "net_adj": 153985,
+    "price": 440000,
+    "tax_bill_assumed": true
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-13",
+    "holding": -4080,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      -2215
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4488
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 149917,
+    "net_adj": 145837,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -12840
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      -2215
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 144649,
+    "net_adj": 139849,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "price": 440000,
+   "rank_value": 104786.5,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "V",
+    "F",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "Appraisal",
+    "HOA"
+   ],
+   "risk_days": 45,
+   "risk_days_ex_appraisal": 45,
+   "sale_contingency_days": 45,
+   "score": {
+    "band": [
+     "lo",
+     "Weak"
+    ],
+    "scores": {
+     "agent": 3,
+     "appraisal": 1,
+     "approval": 2,
+     "contingency": 2,
+     "deposit": 3,
+     "financing": 3,
+     "property": 3,
+     "timeline": 2
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 45
+   },
+   "seller_concessions": 5000,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 151990,
+    "net_adj": 147190,
+    "price": 425000,
+    "tax_bill_assumed": true
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 15
+  }
+ ],
+ "assumptions": [
+  {
+   "also": {
+    "count": 2
+   },
+   "field": "title_by",
+   "impact": "med",
+   "value": "seller"
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "med",
+   "offers": [
+    "A",
+    "D"
+   ],
+   "scope": "listing",
+   "value": false
+  }
+ ],
+ "highest_and_best": null,
+ "incomplete": {
+  "count": 0
+ },
+ "listing": {
+  "analysis_date": "2026-09-23",
+  "annual_tax": 5400,
+  "baths": 2,
+  "beds": 3,
+  "bill_paid": null,
+  "cma_high": 428000,
+  "cma_low": 415000,
+  "cma_mid": 421500.0,
+  "cma_provided": true,
+  "condo": false,
+  "cost_notes": {
+   "count": 5
+  },
+  "county": "Seminole",
+  "deposit_norm": 0.03,
+  "flood_disclosure": null,
+  "flood_zone": "X",
+  "frbar_market": true,
+  "hoa_approval_required": false,
+  "hoa_conflict": null,
+  "hoa_monthly": 85,
+  "insurance_reports": false,
+  "list_price": 425000,
+  "loan_limits": {
+   "as_of": "2026-09-24",
+   "conforming": {
+    "baseline": 832750,
+    "ceiling": 1249125
+   },
+   "counties": {
+    "FL": {
+     "Monroe": {
+      "conforming": 990150
+     }
+    }
+   },
+   "fha": {
+    "ceiling": 1249125,
+    "floor": 541287
+   },
+   "profile": "loan_limits",
+   "year": 2026
+  },
+  "norms": {
+   "concessions_pct": 0.015,
+   "deposit_pct": 0.03,
+   "inspection_days": 7,
+   "loan_approval_days": 21
+  },
+  "norms_source": "market",
+  "property_type": null,
+  "repair_reserve_deal": false,
+  "repair_reserve_pct": 0.007,
+  "roof_year": 2012,
+  "sqft": 1684,
+  "state": "FL",
+  "tax_bill_month": 11,
+  "tax_in_arrears": true,
+  "title_customary_payer": "seller",
+  "title_payer_deal": false,
+  "year_built": 1988
+ },
+ "market_notes": {
+  "count": 0
+ },
+ "missing": [
+  {
+   "also": {
+    "count": 2
+   },
+   "field": "title_by",
+   "impact": "med",
+   "value": "seller"
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "med",
+   "offers": [
+    "A",
+    "D"
+   ],
+   "scope": "listing",
+   "value": false
+  }
+ ],
+ "mode": "multi",
+ "offers": [
+  {
+   "_appraisal_basis": "E",
+   "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
+   "aga_named": false,
+   "agent_track": "average",
+   "appraisal_contingency": 21,
+   "appraisal_days": 45,
+   "appraisal_form": "E",
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": true,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "du_approved",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.025,
+   "close": "2026-11-07",
+   "close_days": 45,
+   "close_terms": null,
+   "closing_date": "2026-11-07",
+   "contract_form": "as_is",
+   "counter_risk_days": 44,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 63,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-11-06",
+    "deposit": 13000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 30,
+    "price": 428000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 6000
+   },
+   "deposit": 5000,
+   "down_pct": 0.035,
+   "downside_price": 428000,
+   "expires_raw": "2026-09-25 17:00",
+   "expires_today": false,
+   "financed": true,
+   "financing": "fha",
+   "firm_date": "2026-11-07",
+   "flags": [
+    {
+     "sev": "Med",
+     "topic": "appraisal_gap"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 550,
+   "id": "A",
+   "inspection_assumed": false,
+   "inspection_days": 10,
+   "inspection_walkaway": true,
+   "insurance_quote": false,
+   "key": "A",
+   "kickout": false,
+   "lapsed": null,
+   "lender_called": true,
+   "loan_approval_days": 30,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      432000
+     ],
+     [
+      "conc",
+      -12000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12960
+     ],
+     [
+      "bb",
+      -10800
+     ],
+     [
+      "transfer",
+      -3024
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      -550
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 148794,
+    "net_adj": 145194,
+    "price": 432000,
+    "tax_bill_assumed": true
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-06",
+    "holding": -3520,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -6000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4389
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 151606,
+    "net_adj": 148086,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -12000
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      -550
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 142042,
+    "net_adj": 138442,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "price": 432000,
+   "rank_value": 109754.5,
+   "received": "2026-09-22",
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "E",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "HOA"
+   ],
+   "risk_days": 45,
+   "risk_days_ex_appraisal": 30,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "lo",
+     "Weak"
+    ],
+    "scores": {
+     "agent": 3,
+     "appraisal": 3,
+     "approval": 4,
+     "contingency": 2,
+     "deposit": 2,
+     "financing": 2,
+     "property": 2,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 55
+   },
+   "seller_concessions": 12000,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 154778,
+    "net_adj": 151178,
+    "price": 425000,
+    "tax_bill_assumed": true
+   },
+   "title_by": "buyer",
+   "title_payer": "buyer",
+   "title_payer_by_contract": true,
+   "walkaway_days": 10
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "ACCEPT",
+   "aga_named": false,
+   "agent_track": "strong",
+   "appraisal_contingency": 21,
+   "appraisal_days": 21,
+   "appraisal_form": "F",
+   "appraisal_gap": 10000,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "full_uw",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.025,
+   "close": "2026-10-23",
+   "close_days": 30,
+   "closing_days": 30,
+   "contract_form": "as_is",
+   "counter_risk_days": 21,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 82,
+   "counter_terms": {
+    "appraisal_gap": 10000,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-10-23",
+    "deposit": 15000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 21,
+    "price": 423000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 0
+   },
+   "deposit": 15000,
+   "down_pct": 0.2,
+   "downside_price": 420000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": true,
+   "financing": "conventional",
+   "firm_date": "2026-10-14",
+   "flags": [
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 10000,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "B",
+   "inspection_assumed": false,
+   "inspection_days": 7,
+   "inspection_walkaway": true,
+   "insurance_quote": true,
+   "key": "B",
+   "kickout": false,
+   "lapsed": null,
+   "lender": "Chase",
+   "lender_called": true,
+   "loan_approval_days": 21,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      420000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12600
+     ],
+     [
+      "bb",
+      -10500
+     ],
+     [
+      "transfer",
+      -2940
+     ],
+     [
+      "title",
+      -2175
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 147751,
+    "net_adj": 145351,
+    "price": 420000,
+    "tax_bill_assumed": false
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      423000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12690
+     ],
+     [
+      "bb",
+      -10575
+     ],
+     [
+      "transfer",
+      -2961
+     ],
+     [
+      "title",
+      -2190
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 150550,
+    "net_adj": 148150,
+    "price": 423000,
+    "tax_bill_assumed": false
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      420000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12600
+     ],
+     [
+      "bb",
+      -10500
+     ],
+     [
+      "transfer",
+      -2940
+     ],
+     [
+      "title",
+      -2175
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 144751,
+    "net_adj": 142351,
+    "price": 420000,
+    "tax_bill_assumed": false
+   },
+   "price": 420000,
+   "rank_value": 133426.0,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "F",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "Appraisal",
+    "HOA"
+   ],
+   "risk_days": 21,
+   "risk_days_ex_appraisal": 21,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "hi",
+     "Strong"
+    ],
+    "scores": {
+     "agent": 5,
+     "appraisal": 5,
+     "approval": 5,
+     "contingency": 3,
+     "deposit": 4,
+     "financing": 4,
+     "property": 4,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 86
+   },
+   "seller_concessions": 0,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 152416,
+    "net_adj": 150016,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 7
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "BACKUP",
+   "aga_named": false,
+   "agent_track": "strong",
+   "appraisal_days": 0,
+   "appraisal_form": null,
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": false,
+   "appraisal_waived": false,
+   "appraised": false,
+   "approval": "pof_verified",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.02,
+   "close": "2026-10-14",
+   "close_days": 21,
+   "closing_days": 21,
+   "contract_form": "as_is",
+   "counter_risk_days": 5,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 98,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.02,
+    "close": "2026-10-14",
+    "deposit": 40500,
+    "home_warranty": 0,
+    "inspection_days": 5,
+    "loan_approval_days": 0,
+    "price": 425000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 0
+   },
+   "deposit": 40500,
+   "down_pct": 1.0,
+   "downside_price": 405000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": false,
+   "financing": "cash",
+   "firm_date": "2026-09-28",
+   "flags": [
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "C",
+   "inspection_assumed": false,
+   "inspection_days": 5,
+   "inspection_walkaway": true,
+   "key": "C",
+   "kickout": false,
+   "lapsed": null,
+   "loan_approval_days": 0,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      405000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12150
+     ],
+     [
+      "bb",
+      -8100
+     ],
+     [
+      "transfer",
+      -2835
+     ],
+     [
+      "title",
+      -2100
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 135909,
+    "net_adj": 134229,
+    "price": 405000,
+    "tax_bill_assumed": false
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -8500
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 154669,
+    "net_adj": 152989,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      405000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12150
+     ],
+     [
+      "bb",
+      -8100
+     ],
+     [
+      "transfer",
+      -2835
+     ],
+     [
+      "title",
+      -2100
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 132909,
+    "net_adj": 131229,
+    "price": 405000,
+    "tax_bill_assumed": false
+   },
+   "price": 405000,
+   "rank_value": 131229.0,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "HOA"
+   ],
+   "risk_days": 5,
+   "risk_days_ex_appraisal": 5,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "hi",
+     "Strong"
+    ],
+    "scores": {
+     "agent": 5,
+     "appraisal": 5,
+     "approval": 5,
+     "contingency": 5,
+     "deposit": 5,
+     "financing": 5,
+     "property": 5,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 100
+   },
+   "seller_concessions": 0,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 152544,
+    "net_adj": 150864,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 5
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "DECLINE",
+   "action_reason_keys": [
+    "sale_contingency",
+    "prequal",
+    "past_deadline"
+   ],
+   "aga_named": false,
+   "agent_track": "average",
+   "appraisal_contingency": 21,
+   "appraisal_days": 21,
+   "appraisal_form": "F",
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "prequal",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.03,
+   "close": "2026-11-22",
+   "close_days": 60,
+   "closing_days": 60,
+   "contract_form": "as_is",
+   "counter_risk_days": 40,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    [
+     "3.0%",
+     "2.5%"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 65,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-11-13",
+    "deposit": 13000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 40,
+    "price": 428000,
+    "sale_contingency_days": 21,
+    "seller_concessions": 5000
+   },
+   "deposit": 10000,
+   "down_pct": 0.1,
+   "downside_price": 428000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": true,
+   "financing": "conventional",
+   "firm_date": "2026-11-07",
+   "flags": [
+    {
+     "sev": "High",
+     "topic": "sale_contingency"
+    },
+    {
+     "sev": "High",
+     "topic": "appraisal_gap"
+    },
+    {
+     "sev": "High",
+     "topic": "past_deadline"
+    },
+    {
+     "sev": "Med",
+     "topic": "financing"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "inspection_period"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "check": "riders",
+     "contract": true,
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "D",
+   "inspection_assumed": false,
+   "inspection_days": 15,
+   "inspection_walkaway": true,
+   "key": "D",
+   "kickout": true,
+   "lapsed": null,
+   "lender_called": false,
+   "loan_approval_days": 40,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      440000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -13200
+     ],
+     [
+      "bb",
+      -13200
+     ],
+     [
+      "transfer",
+      -3080
+     ],
+     [
+      "title",
+      -2275
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 158785,
+    "net_adj": 153985,
+    "price": 440000,
+    "tax_bill_assumed": true
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-13",
+    "holding": -4080,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      -2215
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4488
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 149917,
+    "net_adj": 145837,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -12840
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      -2215
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 144649,
+    "net_adj": 139849,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "price": 440000,
+   "rank_value": 104786.5,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "V",
+    "F",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "Appraisal",
+    "HOA"
+   ],
+   "risk_days": 45,
+   "risk_days_ex_appraisal": 45,
+   "sale_contingency_days": 45,
+   "score": {
+    "band": [
+     "lo",
+     "Weak"
+    ],
+    "scores": {
+     "agent": 3,
+     "appraisal": 1,
+     "approval": 2,
+     "contingency": 2,
+     "deposit": 3,
+     "financing": 3,
+     "property": 3,
+     "timeline": 2
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 45
+   },
+   "seller_concessions": 5000,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 151990,
+    "net_adj": 147190,
+    "price": 425000,
+    "tax_bill_assumed": true
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 15
+  }
+ ],
+ "ranked": [
+  {
+   "_appraisal_basis": null,
+   "action": "ACCEPT",
+   "aga_named": false,
+   "agent_track": "strong",
+   "appraisal_contingency": 21,
+   "appraisal_days": 21,
+   "appraisal_form": "F",
+   "appraisal_gap": 10000,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "full_uw",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.025,
+   "close": "2026-10-23",
+   "close_days": 30,
+   "closing_days": 30,
+   "contract_form": "as_is",
+   "counter_risk_days": 21,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 82,
+   "counter_terms": {
+    "appraisal_gap": 10000,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-10-23",
+    "deposit": 15000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 21,
+    "price": 423000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 0
+   },
+   "deposit": 15000,
+   "down_pct": 0.2,
+   "downside_price": 420000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": true,
+   "financing": "conventional",
+   "firm_date": "2026-10-14",
+   "flags": [
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 10000,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "B",
+   "inspection_assumed": false,
+   "inspection_days": 7,
+   "inspection_walkaway": true,
+   "insurance_quote": true,
+   "key": "B",
+   "kickout": false,
+   "lapsed": null,
+   "lender": "Chase",
+   "lender_called": true,
+   "loan_approval_days": 21,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      420000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12600
+     ],
+     [
+      "bb",
+      -10500
+     ],
+     [
+      "transfer",
+      -2940
+     ],
+     [
+      "title",
+      -2175
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 147751,
+    "net_adj": 145351,
+    "price": 420000,
+    "tax_bill_assumed": false
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      423000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12690
+     ],
+     [
+      "bb",
+      -10575
+     ],
+     [
+      "transfer",
+      -2961
+     ],
+     [
+      "title",
+      -2190
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 150550,
+    "net_adj": 148150,
+    "price": 423000,
+    "tax_bill_assumed": false
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      420000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12600
+     ],
+     [
+      "bb",
+      -10500
+     ],
+     [
+      "transfer",
+      -2940
+     ],
+     [
+      "title",
+      -2175
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 144751,
+    "net_adj": 142351,
+    "price": 420000,
+    "tax_bill_assumed": false
+   },
+   "price": 420000,
+   "rank_value": 133426.0,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "F",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "Appraisal",
+    "HOA"
+   ],
+   "risk_days": 21,
+   "risk_days_ex_appraisal": 21,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "hi",
+     "Strong"
+    ],
+    "scores": {
+     "agent": 5,
+     "appraisal": 5,
+     "approval": 5,
+     "contingency": 3,
+     "deposit": 4,
+     "financing": 4,
+     "property": 4,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 86
+   },
+   "seller_concessions": 0,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-23",
+    "holding": -2400,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4190
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 152416,
+    "net_adj": 150016,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 7
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "BACKUP",
+   "aga_named": false,
+   "agent_track": "strong",
+   "appraisal_days": 0,
+   "appraisal_form": null,
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": false,
+   "appraisal_waived": false,
+   "appraised": false,
+   "approval": "pof_verified",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.02,
+   "close": "2026-10-14",
+   "close_days": 21,
+   "closing_days": 21,
+   "contract_form": "as_is",
+   "counter_risk_days": 5,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 98,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.02,
+    "close": "2026-10-14",
+    "deposit": 40500,
+    "home_warranty": 0,
+    "inspection_days": 5,
+    "loan_approval_days": 0,
+    "price": 425000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 0
+   },
+   "deposit": 40500,
+   "down_pct": 1.0,
+   "downside_price": 405000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": false,
+   "financing": "cash",
+   "firm_date": "2026-09-28",
+   "flags": [
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "C",
+   "inspection_assumed": false,
+   "inspection_days": 5,
+   "inspection_walkaway": true,
+   "key": "C",
+   "kickout": false,
+   "lapsed": null,
+   "loan_approval_days": 0,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      405000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12150
+     ],
+     [
+      "bb",
+      -8100
+     ],
+     [
+      "transfer",
+      -2835
+     ],
+     [
+      "title",
+      -2100
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 135909,
+    "net_adj": 134229,
+    "price": 405000,
+    "tax_bill_assumed": false
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -8500
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 154669,
+    "net_adj": 152989,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      405000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12150
+     ],
+     [
+      "bb",
+      -8100
+     ],
+     [
+      "transfer",
+      -2835
+     ],
+     [
+      "title",
+      -2100
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 132909,
+    "net_adj": 131229,
+    "price": 405000,
+    "tax_bill_assumed": false
+   },
+   "price": 405000,
+   "rank_value": 131229.0,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "HOA"
+   ],
+   "risk_days": 5,
+   "risk_days_ex_appraisal": 5,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "hi",
+     "Strong"
+    ],
+    "scores": {
+     "agent": 5,
+     "appraisal": 5,
+     "approval": 5,
+     "contingency": 5,
+     "deposit": 5,
+     "financing": 5,
+     "property": 5,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 100
+   },
+   "seller_concessions": 0,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-10-14",
+    "holding": -1680,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4062
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 152544,
+    "net_adj": 150864,
+    "price": 425000,
+    "tax_bill_assumed": false
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 5
+  },
+  {
+   "_appraisal_basis": "E",
+   "action": "DECLINE",
+   "action_reason_keys": [
+    "nets_less"
+   ],
+   "aga_named": false,
+   "agent_track": "average",
+   "appraisal_contingency": 21,
+   "appraisal_days": 45,
+   "appraisal_form": "E",
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": true,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "du_approved",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.025,
+   "close": "2026-11-07",
+   "close_days": 45,
+   "close_terms": null,
+   "closing_date": "2026-11-07",
+   "contract_form": "as_is",
+   "counter_risk_days": 44,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 63,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-11-06",
+    "deposit": 13000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 30,
+    "price": 428000,
+    "sale_contingency_days": 0,
+    "seller_concessions": 6000
+   },
+   "deposit": 5000,
+   "down_pct": 0.035,
+   "downside_price": 428000,
+   "expires_raw": "2026-09-25 17:00",
+   "expires_today": false,
+   "financed": true,
+   "financing": "fha",
+   "firm_date": "2026-11-07",
+   "flags": [
+    {
+     "sev": "Med",
+     "topic": "appraisal_gap"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 550,
+   "id": "A",
+   "inspection_assumed": false,
+   "inspection_days": 10,
+   "inspection_walkaway": true,
+   "insurance_quote": false,
+   "key": "A",
+   "kickout": false,
+   "lapsed": null,
+   "lender_called": true,
+   "loan_approval_days": 30,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      432000
+     ],
+     [
+      "conc",
+      -12000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12960
+     ],
+     [
+      "bb",
+      -10800
+     ],
+     [
+      "transfer",
+      -3024
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      -550
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 148794,
+    "net_adj": 145194,
+    "price": 432000,
+    "tax_bill_assumed": true
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-06",
+    "holding": -3520,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -6000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4389
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 151606,
+    "net_adj": 148086,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -12000
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      -550
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 142042,
+    "net_adj": 138442,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "price": 432000,
+   "rank_value": 109754.5,
+   "received": "2026-09-22",
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "E",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "HOA"
+   ],
+   "risk_days": 45,
+   "risk_days_ex_appraisal": 30,
+   "sale_contingency_days": 0,
+   "score": {
+    "band": [
+     "lo",
+     "Weak"
+    ],
+    "scores": {
+     "agent": 3,
+     "appraisal": 3,
+     "approval": 4,
+     "contingency": 2,
+     "deposit": 2,
+     "financing": 2,
+     "property": 2,
+     "timeline": 5
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 55
+   },
+   "seller_concessions": 12000,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 770
+     }
+    ],
+    "close": "2026-11-07",
+    "holding": -3600,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      0
+     ],
+     [
+      "settle",
+      -770
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4403
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 154778,
+    "net_adj": 151178,
+    "price": 425000,
+    "tax_bill_assumed": true
+   },
+   "title_by": "buyer",
+   "title_payer": "buyer",
+   "title_payer_by_contract": true,
+   "walkaway_days": 10
+  },
+  {
+   "_appraisal_basis": null,
+   "action": "DECLINE",
+   "action_reason_keys": [
+    "sale_contingency",
+    "prequal",
+    "past_deadline"
+   ],
+   "aga_named": false,
+   "agent_track": "average",
+   "appraisal_contingency": 21,
+   "appraisal_days": 21,
+   "appraisal_form": "F",
+   "appraisal_gap": 0,
+   "appraisal_in_loan": false,
+   "appraisal_protected": false,
+   "appraisal_risk": true,
+   "appraisal_waived": false,
+   "appraised": true,
+   "approval": "prequal",
+   "bb_credit": false,
+   "bb_from_listing": false,
+   "bb_tag": "Requested",
+   "blocking": {
+    "count": 0
+   },
+   "buyer_broker_pct": 0.03,
+   "close": "2026-11-22",
+   "close_days": 60,
+   "closing_days": 60,
+   "contract_form": "as_is",
+   "counter_risk_days": 40,
+   "counter_rows": [
+    [
+     "Price"
+    ],
+    [
+     "3.0%",
+     "2.5%"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "counter_score": 65,
+   "counter_terms": {
+    "appraisal_gap": 0,
+    "buyer_broker_pct": 0.025,
+    "close": "2026-11-13",
+    "deposit": 13000,
+    "home_warranty": 0,
+    "inspection_days": 7,
+    "loan_approval_days": 40,
+    "price": 428000,
+    "sale_contingency_days": 21,
+    "seller_concessions": 5000
+   },
+   "deposit": 10000,
+   "down_pct": 0.1,
+   "downside_price": 428000,
+   "expires": null,
+   "expires_raw": null,
+   "expires_today": false,
+   "financed": true,
+   "financing": "conventional",
+   "firm_date": "2026-11-07",
+   "flags": [
+    {
+     "sev": "High",
+     "topic": "sale_contingency"
+    },
+    {
+     "sev": "High",
+     "topic": "appraisal_gap"
+    },
+    {
+     "sev": "High",
+     "topic": "past_deadline"
+    },
+    {
+     "sev": "Med",
+     "topic": "financing"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "inspection_period"
+    },
+    {
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "check": "riders",
+     "contract": true,
+     "sev": "Med",
+     "topic": null
+    },
+    {
+     "sev": "Low",
+     "topic": null
+    },
+    {
+     "sev": "Med",
+     "topic": "flood_disclosure"
+    }
+   ],
+   "gap_cover": 0,
+   "gap_intent_only": false,
+   "home_warranty": 0,
+   "id": "D",
+   "inspection_assumed": false,
+   "inspection_days": 15,
+   "inspection_walkaway": true,
+   "key": "D",
+   "kickout": true,
+   "lapsed": null,
+   "lender_called": false,
+   "loan_approval_days": 40,
+   "ns": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      440000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -13200
+     ],
+     [
+      "bb",
+      -13200
+     ],
+     [
+      "transfer",
+      -3080
+     ],
+     [
+      "title",
+      -2275
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 158785,
+    "net_adj": 153985,
+    "price": 440000,
+    "tax_bill_assumed": true
+   },
+   "ns_counter": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-13",
+    "holding": -4080,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -10700
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      -2215
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4488
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 149917,
+    "net_adj": 145837,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "ns_down": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      428000
+     ],
+     [
+      "conc",
+      -5000
+     ],
+     [
+      "repair",
+      -3000
+     ],
+     [
+      "listing",
+      -12840
+     ],
+     [
+      "bb",
+      -12840
+     ],
+     [
+      "transfer",
+      -2996
+     ],
+     [
+      "title",
+      -2215
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 144649,
+    "net_adj": 139849,
+    "price": 428000,
+    "tax_bill_assumed": true
+   },
+   "price": 440000,
+   "rank_value": 104786.5,
+   "repair_reserve": 3000,
+   "repairs_owed": false,
+   "rider_codes": [
+    "V",
+    "F",
+    "B"
+   ],
+   "rider_lines": {
+    "count": 0
+   },
+   "rider_windows": {
+    "count": 0
+   },
+   "riders": [
+    "Appraisal",
+    "HOA"
+   ],
+   "risk_days": 45,
+   "risk_days_ex_appraisal": 45,
+   "sale_contingency_days": 45,
+   "score": {
+    "band": [
+     "lo",
+     "Weak"
+    ],
+    "scores": {
+     "agent": 3,
+     "appraisal": 1,
+     "approval": 2,
+     "contingency": 2,
+     "deposit": 3,
+     "financing": 3,
+     "property": 3,
+     "timeline": 2
+    },
+    "src": {
+     "agent": "auto",
+     "appraisal": "auto",
+     "approval": "auto",
+     "contingency": "auto",
+     "deposit": "auto",
+     "financing": "auto",
+     "property": "auto",
+     "timeline": "auto"
+    },
+    "total": 45
+   },
+   "seller_concessions": 5000,
+   "short_sale": false,
+   "status": "active",
+   "target": {
+    "assumed": [
+     {
+      "estimate": false,
+      "key": "title_fees",
+      "value": 1145
+     }
+    ],
+    "close": "2026-11-22",
+    "holding": -4800,
+    "lines": [
+     [
+      "price",
+      425000
+     ],
+     [
+      "conc",
+      0
+     ],
+     [
+      "repair",
+      0
+     ],
+     [
+      "listing",
+      -12750
+     ],
+     [
+      "bb",
+      -10625
+     ],
+     [
+      "transfer",
+      -2975
+     ],
+     [
+      "title",
+      -2200
+     ],
+     [
+      "settle",
+      -1145
+     ],
+     [
+      "estoppel",
+      -299
+     ],
+     [
+      "warranty",
+      0
+     ],
+     [
+      "tax",
+      -4616
+     ],
+     [
+      "payoff",
+      -238400
+     ]
+    ],
+    "missing": {
+     "count": 0
+    },
+    "net": 151990,
+    "net_adj": 147190,
+    "price": 425000,
+    "tax_bill_assumed": true
+   },
+   "title_by": "seller",
+   "title_payer": "seller",
+   "title_payer_by_contract": false,
+   "walkaway_days": 15
+  }
+ ],
+ "ranking_reason": null,
+ "sample": true,
+ "seller": {
+  "deadline": "2026-11-15",
+  "default_buyer_broker_pct": 0.025,
+  "holding_monthly": 2400,
+  "listing_fee_assumed": false,
+  "listing_fee_pct": 0.03,
+  "offered_buyer_broker_pct": 0.025,
+  "payoff": 238400,
+  "payoff_known": true,
+  "priority": "certainty"
+ },
+ "target": {
+  "assumed": [
+   {
+    "estimate": false,
+    "key": "title_fees",
+    "value": 1145
+   }
+  ],
+  "close": "2026-11-15",
+  "holding": -4240,
+  "lines": [
+   [
+    "price",
+    425000
+   ],
+   [
+    "conc",
+    0
+   ],
+   [
+    "repair",
+    0
+   ],
+   [
+    "listing",
+    -12750
+   ],
+   [
+    "bb",
+    -10625
+   ],
+   [
+    "transfer",
+    -2975
+   ],
+   [
+    "title",
+    -2200
+   ],
+   [
+    "settle",
+    -1145
+   ],
+   [
+    "estoppel",
+    -299
+   ],
+   [
+    "warranty",
+    0
+   ],
+   [
+    "tax",
+    -4516
+   ],
+   [
+    "payoff",
+    -238400
+   ]
+  ],
+  "missing": {
+   "count": 0
+  },
+  "net": 152090,
+  "net_adj": 147850,
+  "price": 425000,
+  "tax_bill_assumed": true
+ }
+}

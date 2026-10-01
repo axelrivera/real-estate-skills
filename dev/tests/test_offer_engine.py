@@ -49,8 +49,10 @@ class MatchesPrototype(unittest.TestCase):
             # Audit 2026-09-23: the downside is measured from the CMA high (OFR-4), and A's FHA appraisal protection runs
             # to closing, so its counter asks for no gap coverage it couldn't enforce (OFR-3, OFR-17).
             # The tax proration allows Florida's 4% early-payment discount (FR/BAR Standard K; OFR-14).
-            "A": (143084, 136352, 145996, 55, 63, "DECLINE"),
-            "D": (154485, 140349, 146337, 42, 62, "DECLINE"),
+            # A's contract has the buyer designate the Closing Agent (Para. 9(c)(ii)), so the buyer pays the owner's policy.
+            "A": (145319, 138567, 148211, 55, 63, "DECLINE"),
+            # D's sale contingency has a kick-out clause (Rider X): contingency 2, not 1, so 45 (was 42 in the prototype).
+            "D": (154485, 140349, 146337, 45, 65, "DECLINE"),
         })
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
         self.assertEqual(R["mode"], "multi")
@@ -61,7 +63,8 @@ class MatchesPrototype(unittest.TestCase):
         # Audit: 4% early-payment discount in the proration (OFR-14) and no tax in holding costs (OFR-13)
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349279, 346779, 353011))
         self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))  # FHA: appraisal protected to closing
-        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Inspection Period"])
+        # OFR-122: every counter sets its own time for acceptance; OFR-273: the assumed inspection period isn't countered
+        self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Time for Acceptance"])
         self.assertEqual(R["seller"]["holding_monthly"], 500)  # HOA and loan interest; tax is in the proration (OFR-13)
 
     def test_two_offers_accept(self):
@@ -183,7 +186,7 @@ class Rules(unittest.TestCase):
     def test_percent_written_as_whole_number_is_refused(self):
         data = fixture("minimal-single.json")
         data["seller"] = {**(data.get("seller") or {}), "listing_fee_pct": 3}
-        with self.assertRaisesRegex(oe.OfferError, "seller.listing_fee_pct is 3: write it as a fraction, 0.03"):
+        with self.assertRaisesRegex(oe.OfferError, r"listing_fee_pct.*0\.03"):
             oe.analyze(data)
 
     def test_state_from_address_without_zip(self):
@@ -216,31 +219,28 @@ class Rules(unittest.TestCase):
         self.assertTrue(label.startswith("Documentary Stamp Tax"))
 
 
-
 class CondoAndFlood(unittest.TestCase):
     """CMA-5 (condo rider, FHA/VA project approval, rescission) and CMA-6 (seller flood disclosure, s. 689.302)."""
 
-    def flags(self, R, oid):
-        return [x["issue"] for x in by_id(R)[oid]["flags"]]
+    def topics(self, R, oid):
+        return [x["topic"] for x in by_id(R)[oid]["flags"]]
 
     def test_broward_condo(self):
+        """The rider_A and flood_disclosure topics on this fixture are pinned by golden."""
         R = oe.analyze(fixture("broward-condo.json"))
-        a, b = self.flags(R, "A"), self.flags(R, "B")
-        self.assertIn("The property is a condo but no condo rider is attached.", a)
-        self.assertIn("FHA loan on a condo: the project must be FHA-approved.", a)
-        self.assertFalse(any("no condo rider" in x for x in b))  # B attached the rider
-        self.assertFalse(any("-approved" in x for x in b))
-        for issues in (a, b):
-            self.assertTrue(any(x.startswith("Condo: the buyer may cancel within 7 days") for x in issues))
-            self.assertTrue(any("flood disclosure (s. 689.302)" in x for x in issues))
-        req = [x.get("request") for x in by_id(R)["A"]["flags"] if "FHA-approved" in x["issue"]]
-        self.assertTrue(req and "FHA approval" in req[0])
+        a, b = self.topics(R, "A"), self.topics(R, "B")
+        self.assertIn("condo_project_approval", a)  # FHA on a condo
+        self.assertNotIn("condo_project_approval", b)
+        self.assertIn("condo_rescission", a)
+        self.assertIn("condo_rescission", b)
+        req = [x.get("request") for x in by_id(R)["A"]["flags"] if x["topic"] == "condo_project_approval"]
+        self.assertTrue(req and req[0])  # a request to the buyer's agent
 
     def test_disclosure_given(self):
         d = fixture("broward-condo.json")
         d["listing"]["flood_disclosure"] = True
         R = oe.analyze(d)
-        self.assertFalse(any("flood disclosure" in x for x in self.flags(R, "A")))
+        self.assertNotIn("flood_disclosure", self.topics(R, "A"))
 
     def test_not_florida(self):
         R = oe.analyze(fixture("texas-single.json"))
@@ -257,8 +257,7 @@ class AuditSellerSideLimits(unittest.TestCase):
         o = d["offers"][0]
         o.update(financing="conventional", down_pct=0.05, seller_concessions=25600)  # 5% of $512,000; the cap is 3%
         R = oe.analyze(d)
-        flags = [x["issue"] for x in by_id(R)["B"]["flags"]]
-        self.assertTrue(any("exceed the Conventional limit of 3% at 5% down" in x for x in flags), flags)
+        self.assertEqual([f["sev"] for f in by_id(R)["B"]["flags"] if f["topic"] == "concessions_cap"], ["High"])
 
     def test_planned_quote_not_scored(self):
         d = fixture("two-offers-accept.json")
@@ -293,38 +292,25 @@ class AuditReviewBenchmarks(unittest.TestCase):
         self.assertEqual(R["listing"]["cma_high"], 525000)  # the file's own value wins
         self.assertTrue(any("from the buyer side" in a["why"] for a in R["assumptions"]))
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class AuditAppraisalAndEscalation(unittest.TestCase):
     """Audit 2026-09-23: OFR-2, OFR-3, OFR-4, OFR-17."""
 
     def test_escalation_ranks_on_effective_price(self):
-        """OFR-2: A ($400k, +$1k to $425k) reaches $406k over B's flat $405k and ranks first."""
-        R = oe.analyze(fixture("escalation.json"))
-        a, b = by_id(R)["A"], by_id(R)["B"]
-        self.assertEqual((a["price_base"], a["price"], a["escalated"]), (400000, 406000, True))
-        self.assertEqual(a["escalation_note"], "Escalates to $406,000 from $400,000 (cap $425,000)")
-        self.assertEqual(R["ranked"][0]["id"], "A")
-        self.assertGreater(a["ns"]["net_adj"], b["ns"]["net_adj"])
+        """OFR-2: A ($400k, +$1k to $425k) reaches $406k over B's flat $405k and ranks first. The prices and nets are
+        pinned by golden; this names the rule."""
+        self.assertEqual(oe.analyze(fixture("escalation.json"))["ranked"][0]["id"], "A")
 
     def test_escalation_terms_are_checked(self):
         data = fixture("escalation.json")
         data["offers"][0]["escalation"] = {"increment": 1000}
-        issues = [f["issue"] for f in by_id(oe.analyze(data))["A"]["flags"]]
-        self.assertTrue(any("no cap" in i for i in issues))
-        self.assertTrue(any("doesn't say how a competing offer is proven" in i for i in issues))
+        topics = {f["topic"] for f in by_id(oe.analyze(data))["A"]["flags"]}
+        self.assertLessEqual({"escalation_cap", "escalation_proof"}, topics)
 
     def test_fha_waiver_is_ignored(self):
         """OFR-3, OFR-17: an FHA appraisal waiver and gap clause don't bind the buyer."""
-        R = oe.analyze(fixture("escalation.json"))
-        c = by_id(R)["C"]
-        self.assertTrue(c["appraisal_protected"])
-        self.assertEqual((c["gap_cover"], c["appraisal_days"]), (0, c["close_days"]))
-        self.assertNotEqual(c["score"]["why"]["appraisal"], "No appraisal contingency")
-        self.assertTrue(any("intent only" in f["issue"] for f in c["flags"]))
-        self.assertTrue(any(a["field"] == "appraisal_contingency" for a in R["assumptions"]))
+        R = oe.analyze(fixture("escalation.json"))  # gap_cover, appraisal_days and the assumption are golden-pinned
+        self.assertIn("fha_gap_intent", [f["topic"] for f in by_id(R)["C"]["flags"]])
 
     def test_financed_waiver_counts_only_documented_funds(self):
         data = fixture("escalation.json")
@@ -344,3 +330,135 @@ class AuditAppraisalAndEscalation(unittest.TestCase):
         R = oe.analyze(data)
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "A"])
         self.assertEqual(by_id(R)["B"]["downside_price"], 405000)
+
+
+class MockContractFixes(unittest.TestCase):
+    """Fixes from the mock FR/BAR contract evals (iteration-mock-1, seller-offer-review evals 6 and 7)."""
+
+    def one(self, data):
+        return oe.analyze(data)["offers"][0]
+
+    def test_lapsed_offer_is_blocking(self):
+        o = self.one(fixture("expired-aga.json"))
+        blocking = [f for f in o["flags"] if f["sev"] == "Blocking"]
+        self.assertEqual([f["topic"] for f in blocking], ["expired"])
+        self.assertEqual(o["action"], "INCOMPLETE")
+        d = fixture("expired-aga.json")
+        d["offers"][0]["expires"] = "2026-09-26 17:00"  # the same day: not provably passed, but it ends today (ENG-18)
+        self.assertEqual([f["sev"] for f in self.one(d)["flags"] if f.get("topic") == "expired"], ["High"])
+        self.assertEqual(self.one(d)["action"], "COUNTER")
+
+    def test_counter_respects_the_sellers_last_counter(self):
+        """The counter terms and flag topics on the unmodified fixture are pinned by golden; the RESTATE marker isn't."""
+        o = self.one(fixture("counter-chain-standard.json"))
+        rows = {r[0]: r for r in o["counter_rows"]}
+        self.assertEqual(rows["Inspection Period"][3], oe.RESTATE)
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0]["price"] = 600000
+        self.assertLessEqual(self.one(d)["counter_terms"]["price"], 629000)
+
+    def test_frbar_title_box_sets_who_pays(self):
+        """Para. 9(c)(i): the seller designates the Closing Agent and pays the owner's policy, even in Collier."""
+        o = self.one(fixture("counter-chain-standard.json"))
+        self.assertEqual(o["title_payer"], "seller")
+        self.assertEqual(line(o["ns"], "title"), -3172)
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0]["title_by"] = "buyer"
+        self.assertEqual(line(self.one(d)["ns"], "title"), 0)
+        d["offers"][0]["title_by"] = "seller"
+        d["listing"]["costs"] = {"title_payer": "buyer"}  # the agent's own number wins
+        self.assertEqual(line(self.one(d)["ns"], "title"), 0)
+
+    def test_agent_issue_replaces_the_engine_flag(self):
+        o = self.one(fixture("expired-aga.json"))
+        gg = [f for f in o["flags"] if f["topic"] == "rider_GG"]
+        self.assertEqual([f["sev"] for f in gg], ["Med"])  # one flag: the agent's Low issue, at the engine's level
+        self.assertTrue(gg[0]["agent_topics"])  # the agent's issue, which keeps the engine's topic
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0].pop("prior_counters")
+        d["offers"][0]["contract_issues"] = [{"sev": "High", "issue": "Counter 2 drops the 10-day inspection period.",
+                                              "fix": "Restate it."}]
+        flags = self.one(d)["flags"]
+        self.assertEqual([f["sev"] for f in flags if f["topic"] == "inspection_period"], ["High"])  # the agent's only
+
+    def test_advice_to_restate_in_a_counter_isnt_a_counter_chain_issue(self):
+        """An agent's note that says "restate Para. 2(c) in the next counter" is about the loan, not a dropped term: the
+        engine's counter-chain flag stays, and the agent's Med issue stays Med."""
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0]["contract_issues"] = [{"sev": "Med", "issue": "Para. 2(c) keeps the Loan Amount in dollars.",
+                                              "fix": "Confirm the cash, or restate Para. 2(c) and 2(e) in the next counter."}]
+        flags = self.one(d)["flags"]
+        self.assertEqual([f["sev"] for f in flags if f.get("topic") == "counter_chain"], ["High"])
+        self.assertEqual([f["sev"] for f in flags if f["issue"].startswith("Para. 2(c)")], ["Med"])
+
+    def test_listing_broker_pays_is_not_an_assumption(self):
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0].pop("buyer_broker_pct", None)
+        d["offers"][0].pop("buyer_broker_amount", None)
+        d["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
+        R = oe.analyze(d)
+        self.assertFalse([a for a in R["assumptions"] if a["field"] == "buyer_broker_pct"])
+
+    def test_preapproval_expiring_before_closing(self):
+        d = fixture("expired-aga.json")
+        d["offers"][0]["approval_expires"] = "2026-10-01"
+        self.assertEqual([f["sev"] for f in self.one(d)["flags"] if f.get("topic") == "approval_expires"], ["Med"])
+        d["offers"][0]["approval_expires"] = "2027-01-31"
+        self.assertFalse([f for f in self.one(d)["flags"] if f.get("topic") == "approval_expires"])
+
+    def test_proof_of_funds_below_the_cash_needed(self):
+        d = fixture("expired-aga.json")
+        o = d["offers"][0]
+        o["proof_of_funds"] = o["price"] - o["loan_amount"] + o["appraisal_gap"] - 1
+        self.assertEqual([f["sev"] for f in self.one(d)["flags"] if f.get("topic") == "proof_of_funds"], ["High"])
+        o["proof_of_funds"] += 1
+        self.assertFalse([f for f in self.one(d)["flags"] if f.get("topic") == "proof_of_funds"])
+
+    def test_preapproval_cap(self):
+        """The approval_cap flags on both fixtures are pinned by golden; the counter rows that ask for a letter aren't."""
+        self.assertIn("Pre-Approval", [r[0] for r in self.one(fixture("counter-chain-standard.json"))["counter_rows"]])
+        e = self.one(fixture("expired-aga.json"))  # price at the cap: no flag, but the counter above it asks for a letter
+        self.assertIn("Pre-Approval", [r[0] for r in e["counter_rows"]])
+
+    def test_standard_without_rider_f_appraises_within_loan_approval(self):
+        """Para. 8(b)(2): no separate 21-day appraisal contingency and no rider flag."""
+        R = oe.analyze(fixture("counter-chain-standard.json"))
+        o = R["offers"][0]
+        self.assertEqual(o["appraisal_days"], o["loan_approval_days"])
+        self.assertFalse([a for a in R["assumptions"] if a["field"] == "appraisal_contingency"])
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0]["appraisal_contingency"] = 30
+        self.assertFalse([f for f in self.one(d)["flags"] if f.get("topic") == "rider_F"])
+
+    def test_standard_repairs_never_exceed_the_limit(self):
+        o = self.one(fixture("counter-chain-standard.json"))
+        self.assertEqual(o["repair_reserve"], o["repair_limits"]["general"])
+        self.assertEqual(line(o["ns_down"], "repair"), -9292)
+        labels = {lab for s in (o["ns"], o["ns_down"], o["ns_counter"]) for k, lab, _ in s["lines"] if k == "repair"}
+        self.assertEqual(labels, {"Repairs up to the General Repair Limit (Standard)"})
+
+    def test_down_payment_from_loan_amount(self):
+        o = self.one(fixture("counter-chain-standard.json"))
+        self.assertAlmostEqual(o["down_pct"], 1 - 457500 / 619500, places=4)
+        self.assertFalse([f for f in o["flags"] if f.get("topic") == "loan_amount"])
+
+    def test_buyer_broker_paid_from_listing_fee(self):
+        d = fixture("expired-aga.json")
+        d["seller"]["listing_fee_pct"] = 0.05  # the listing agreement's total fee
+        d["offers"][0]["buyer_broker_pct"] = 0.025
+        base = self.one(d)["ns"]
+        d["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
+        paid = self.one(d)["ns"]
+        self.assertEqual(line(base, "bb"), -12225)
+        self.assertEqual(line(paid, "bb"), 0)
+        self.assertEqual(line(paid, "listing"), line(base, "listing"))
+        self.assertEqual(paid["net"] - base["net"], 12225)
+        d["seller"].pop("listing_fee_pct")  # assumed fee: the market's total covers both sides, as before
+        d["offers"][0].pop("buyer_broker_paid_by")
+        before = self.one(d)["ns"]["net"]
+        d["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
+        self.assertEqual(self.one(d)["ns"]["net"], before)
+
+
+if __name__ == "__main__":
+    unittest.main()

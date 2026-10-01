@@ -1,0 +1,16 @@
+{
+  "name": "asis-multiple-offers",
+  "form": "as_is",
+  "stage": "offer",
+  "buyers": ["Riley Fairbanks"],
+  "sellers": ["Quinn Vandermeer", "Reese Vandermeer"],
+  "property": {"address": "2290 Larkwood Ave, Dunedin, FL 34698", "county": "Pinellas", "year_built": 1985},
+  "price": 455000,
+  "list_price": 449000,
+  "financing": {"type": "conventional", "ltv": 80},
+  "multiple_offers": true,
+  "disclosures": {"NMOB": {"deadline": "2026-09-21 20:00", "other": "Include proof of funds for any escalation."}},
+  "addenda": [{"form": "EAC", "escalation_amount": 2000, "maximum_price": 475000}],
+  "package": {"proof": "both"},
+  "dates": {"offer": "2026-09-21 16:40"}
+}

@@ -1,0 +1,13 @@
+{
+  "name": "asis-ff-credit",
+  "form": "as_is",
+  "stage": "executed",
+  "buyers": ["Finley Brightwater"],
+  "sellers": ["Parker Hollister"],
+  "property": {"address": "7420 Juniper Hollow Rd, Brandon, FL 33511", "county": "Hillsborough", "year_built": 2003},
+  "price": 398000,
+  "financing": {"type": "conventional", "ltv": 95},
+  "inspection_days": 12,
+  "buyer_broker": {"form": "FF", "percent": 2.5, "excess": "broker"},
+  "dates": {"offer": "2026-09-22 18:30", "effective": "2026-09-23 11:05"}
+}

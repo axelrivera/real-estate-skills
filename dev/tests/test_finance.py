@@ -92,12 +92,10 @@ class Taxes(unittest.TestCase):
         n = f.seller_net(500000, m, listing_fee_pct=0, buyer_broker_fee_pct=0)
         self.assertEqual(next(x["amount"] for x in n["lines"] if x["key"] == "owner_title"), 3000)  # quote wins
 
-    def test_millage_lookup(self):
-        self.assertEqual(f.millage(FL, county="Seminole County", district="Altamonte")[0]["total"], 17.5683)
-
     def test_millage_by_tax_area_code(self):
         # A property report's "Tax Area: 01" is Seminole's unincorporated code, whatever the mailing city says.
         self.assertEqual(f.millage(FL, county="Seminole", district="01")[0]["total"], 13.6790)
+        self.assertEqual(f.millage(FL, county="Seminole County", district="Altamonte")[0]["total"], 17.5683)  # by name
         self.assertEqual(f.millage(FL, county="Seminole", district="a1")[0]["district"], "Altamonte Springs")
         self.assertEqual(f.millage(FL, county="Orange", district="8")[0]["district"], "Orlando (St. Johns WMD)")  # "8/28/71/78"
 
@@ -129,13 +127,10 @@ class SellerSide(unittest.TestCase):
 
     def test_seller_net_florida(self):
         n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True, listing_fee_pct=0.025, buyer_broker_fee_pct=0.025)
-        labels = [a for a, _ in n["items"]]
-        self.assertIn("Documentary Stamp Tax on the Deed (0.70%)", labels)
         self.assertEqual([x["key"] for x in n["lines"]],
                          ["listing_fee", "buyer_broker_fee", "transfer_tax", "owner_title", "title_fees", "estoppel", "credit"])
         self.assertAlmostEqual(sum(x["amount"] for x in n["lines"]), n["total_costs"])
-        self.assertIn("Owner's Title Insurance", labels)
-        self.assertIn("HOA Estoppel Letter", labels)
+        self.assertIn("0.70%", next(x["label"] for x in n["lines"] if x["key"] == "transfer_tax"))
         self.assertEqual(n["missing"], [])
         self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in local title fees
         default = f.seller_net(465000, FL)
@@ -149,20 +144,21 @@ class SellerSide(unittest.TestCase):
 
     def test_buyer_pays_title_county(self):
         miami = profiles.load_market(state="FL", county="Miami-Dade")
-        labels = [a for a, _ in f.seller_net(500000, miami)["items"]]
-        self.assertNotIn("Owner's Title Insurance", labels)
+        self.assertNotIn("owner_title", [x["key"] for x in f.seller_net(500000, miami)["lines"]])
 
     def test_other_state_uses_labeled_estimates(self):
         n = f.seller_net(500000, profiles.load_market(state="GA"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
         self.assertEqual(n["missing"], [])
         labels = {x["key"]: x["label"] for x in n["lines"]}
-        self.assertEqual(labels["transfer_tax"], "Transfer Tax (Estimate, 0.40%)")
-        self.assertEqual(labels["owner_title"], "Owner's Title Insurance (Estimate)")
-        self.assertEqual(labels["title_fees"], "Title Company Fees (Estimate)")
+        for k in ("transfer_tax", "owner_title", "title_fees"):  # every estimate says so on its line
+            self.assertIn("Estimate", labels[k])
+        self.assertIn("0.40%", labels["transfer_tax"])
         self.assertEqual({a["key"] for a in n["assumed"] if a["estimate"]}, {"transfer_tax", "owner_title", "title_fees"})
         deal = f.seller_net(500000, profiles.load_market(state="GA").with_deal({"transfer_tax_rate": 0.001}),
                             listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
-        self.assertEqual({x["key"]: x["label"] for x in deal["lines"]}["transfer_tax"], "Transfer Tax (0.10%)")  # looked up
+        label = {x["key"]: x["label"] for x in deal["lines"]}["transfer_tax"]
+        self.assertIn("0.10%", label)  # looked up: no longer an estimate
+        self.assertNotIn("Estimate", label)
 
     def test_no_state_transfer_tax(self):
         # Texas has no state transfer tax: best practice is none, never the national 0.4% estimate.
@@ -170,7 +166,6 @@ class SellerSide(unittest.TestCase):
         self.assertNotIn("transfer_tax", [x["key"] for x in n["lines"]])
         self.assertNotIn("transfer_tax", [a["key"] for a in n["assumed"]])
         self.assertEqual(n["missing"], [])
-
 
 
 class FloodInsurance(unittest.TestCase):
@@ -193,6 +188,11 @@ class FloodInsurance(unittest.TestCase):
         self.assertIn("$500,000", f.flood_insurance("X", None, self.FL, date(2025, 6, 1))["note"])
         self.assertEqual(f.flood_insurance("X", None, self.FL, date(2027, 1, 1))["required"], "citizens")
 
+    def test_phase_in_sentence_has_its_verb(self):
+        """CMA-322: the later tier's clause read "and every Citizens policy from January 1, 2027 (s. ...)", no verb."""
+        note = f.flood_insurance("X", None, self.FL, date(2026, 9, 24))["note"]
+        self.assertIn("from January 1, 2027 every Citizens policy must (", note)
+
     def test_condo_unit_policy_is_exempt(self):
         r = f.flood_insurance("X", None, self.FL, date(2026, 9, 24), condo_unit=True)
         self.assertIsNone(r["required"])
@@ -202,6 +202,16 @@ class FloodInsurance(unittest.TestCase):
         r = f.flood_insurance("X", None, None, date(2026, 9, 24))
         self.assertIsNone(r["required"])
         self.assertNotIn("Citizens", r["note"])
+
+    def test_zone_that_isnt_a_fema_code_is_unknown(self):
+        """CMA-106: "To confirm" (method.md's own wording) was read as zone "TO"."""
+        for zone in ("To confirm", "to confirm (likely X)", "TBD", "Unknown", "N/A", "Pending", "D", "", None):
+            r = f.flood_insurance(zone, None, None, date(2026, 9, 24))
+            self.assertFalse(r["sfha"], zone)
+            self.assertTrue(r["note"].startswith("The flood zone isn't confirmed"), (zone, r["note"]))
+        for zone, code in (("X", "X"), ("Zone X", "X"), ("Flood Zone AE", "AE"), ("X500", "X500"), ("Shaded X", "X"),
+                           ("A12", "A12"), ("VE (coastal)", "VE")):
+            self.assertRegex(f.flood_insurance(zone, None, None)["note"], rf"^Flood zone {code}[: ]", zone)
 
     def test_quote_is_counted_and_never_zero(self):
         self.assertIsNone(f.flood_insurance("AE", 0, self.FL)["annual"])  # 0 is not a quote
@@ -265,9 +275,6 @@ class AuditLoanPrograms(unittest.TestCase):
         self.assertIn("can't be FHA", f.loan_limit_note(1300000, "fha", lim, "FL", "Orange"))
         self.assertIsNone(f.loan_limit_note(900000, "va", lim, "FL", "Orange"))
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class AuditMoneyLines(unittest.TestCase):
     """CMA-3, OFR-14 (proration), CORE-6 (Miami-Dade surtax), CORE-18 (search fees), CMA-4 (buyer-broker shortfall)."""
@@ -307,3 +314,6 @@ class AuditMoneyLines(unittest.TestCase):
         self.assertEqual([f.property_type(v) for v in ("Single Family Residence", "Condominium", "Townhome", None)],
                          ["single_family", "condo", "townhouse", None])
 
+
+if __name__ == "__main__":
+    unittest.main()

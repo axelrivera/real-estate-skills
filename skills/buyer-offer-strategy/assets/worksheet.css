@@ -12,3 +12,4 @@
 .cb{display:inline-block;width:11px;height:11px;border:1.3px solid var(--text);border-radius:1px;vertical-align:-1px;background:#fff}
 .cb.on{background:var(--text)} .cb.on::after{content:"✓";color:#fff;font-size:9px;line-height:11px;display:block;text-align:center}
 .docs .cb{margin:0 8px 0 4px}
+.never{color:var(--risk-strong);font-size:9pt}  /* a "Do Not Include" row: a cross, never a tick */

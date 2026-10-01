@@ -1,0 +1,14 @@
+{
+  "name": "standard-l-countered",
+  "form": "standard",
+  "stage": "countered",
+  "buyers": ["Rowan Ashcombe", "Ellis Ashcombe"],
+  "sellers": ["Quinn Galloway"],
+  "property": {"address": "88 Heron Lake Ct, Winter Park, FL 32789", "county": "Orange", "year_built": 2007},
+  "price": 545000,
+  "list_price": 556000,
+  "financing": {"type": "conventional", "ltv": 90},
+  "repair_limits": {"general": 0.02, "wdo": 5000},
+  "riders": [{"code": "L", "inspection_days": 10}, "F"],
+  "counters": [{"price": 552000, "closing": "2026-11-13", "changes": {"inspection_days": 7}, "date": "2026-09-22 17:01", "accepted": false}]
+}

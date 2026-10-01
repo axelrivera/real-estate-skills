@@ -4,10 +4,10 @@
  "subject": {
   "address": "517 Larkwood Ave",
   "mls_address": "517 LARKWOOD AVE",
-  "city": "Harrow Springs",
+  "city": "Casselberry",
   "state": "FL",
   "county": "Seminole",
-  "locality": "Harrow Springs, FL 32700 · Fernwood Park · Seminole County",
+  "locality": "Casselberry, FL 32707 · Fernwood Park · Seminole County",
   "sqft": 1849,
   "beds": 4,
   "baths": 2,
@@ -365,7 +365,7 @@
   ],
   "bullets": [
    "<strong>Buyers are negotiating again.</strong> Since July, homes nearby sold for about 5% under their original asking price and took almost three times as long to go under contract as in the spring.",
-   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about four months of supply at the summer pace, and more than half have already cut their price.",
+   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about {months_supply} of supply at the summer pace, and more than half have already cut their price.",
    "<strong>Mortgage rates are up.</strong> The 30-year average was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. Buyers' budgets stretch less than they did in April.",
    "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in the next few weeks gives the home its best window before the holidays."
   ]
@@ -373,12 +373,13 @@
  "pricing": {
   "intro": "Three realistic options. Expected sale prices and timelines are our estimates from recent sales, not guarantees. All three are likely to net within a few thousand dollars of each other, so the real difference is time and risk.",
   "recommended_index": 1,
+  "competing_offer_upside": true,
   "strategies": [
    {
     "label": "List at $479,900",
     "list_price": 479900,
     "expected_sale": 463000,
-    "time": "45–90 days",
+    "time": "2–4 months",
     "seller_credit": 10000,
     "note": "Tests the top of the range; likely needs a price cut before an offer"
    },
@@ -412,33 +413,31 @@
   "loan_type": "conventional",
   "down_pct": 0.05,
   "insurance_annual": 3600,
-  "district": "Harrow Springs",
+  "district": "Casselberry",
   "homestead": true,
-  "note": "Conventional loan, 5% down, 6.95% 30-year fixed (Freddie Mac average, week of September 17, 2026), Harrow Springs property taxes with homestead, $3,600 a year insurance (placeholder), and 0.5% mortgage insurance."
+  "note": "Conventional loan, 5% down, 6.95% 30-year fixed (Freddie Mac average, week of September 17, 2026), Casselberry property taxes with homestead, $3,600 a year insurance (placeholder), and 0.5% mortgage insurance."
  },
  "prep": {
   "intro": "These steps cost little and remove the questions that slow Florida buyers down or cost sellers money at the negotiating table.",
   "items": [
-   "<strong>Document the roof.</strong> Have the permit and completion date ready to share. Roof age decides whether a buyer can insure the home, so a documented new roof is one of the most valuable facts in the listing.",
+   "<strong>Document the roof.</strong> Roof age decides whether a buyer can insure the home, so a permitted new roof is one of the listing's most valuable facts.",
    "<strong>Get a pre-listing inspection, 4-point, and wind-mitigation report.</strong> Buyers can get insurance quotes before they offer, and you learn about any issue before a buyer uses it to renegotiate.",
    "<strong>Gather the renovation permits.</strong> Kitchen, bath, electrical, and plumbing work. Unpermitted work can surface during the buyer's due diligence and delay or derail a sale.",
-   "<strong>Check the public record.</strong> Make sure the property appraiser's record matches the four bedrooms and two baths we will advertise.",
-   "<strong>Make it easy to show.</strong> Lockbox access through the standard showing system with short notice gets the most buyers through in the first weeks.",
+   "<strong>Make it easy to show.</strong> Lockbox access with short notice gets the most buyers through in the first weeks.",
    "<strong>Decide on a seller-credit budget now.</strong> Most recent sales included one. A credit toward a temporary rate buydown lowers a buyer's payment far more in the first years than the same amount off the price.",
-   "<strong>Agree on a review point.</strong> If there are steady showings but no offer after about three weeks, we revisit the price with fresh data rather than waiting."
+   "<strong>Agree on a review point.</strong> Steady showings but no offer after about three weeks means we revisit the price."
   ]
  },
  "needs": [
-  "The roof permit and replacement date, plus any existing 4-point or wind-mitigation report.",
+  "The roof and renovation permits, plus any existing 4-point or wind-mitigation report.",
   "The age of the AC, water heater, and pool equipment, and the dates of the kitchen, bath, and flooring work.",
   "The electrical panel brand, whether the home has aluminum branch wiring, and whether the plumbing has been updated. Both are common questions for homes built in the early 1970s.",
-  "Copies of any permits for the renovation work.",
   "Anything you know that affects the home's value or condition, such as past leaks, insurance claims, or repairs. Florida law requires sellers to disclose known material defects.",
   "Your estimated mortgage payoff, so we can turn the net estimates into cash at closing.",
   "When you would like to close, and whether the home will be occupied or vacant during showings."
  ],
  "method": [
-  "This analysis uses the property details and current tax bill you provided; a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 17, 2026, plus current active, pending, and expired listings); and the Freddie Mac weekly mortgage rate survey for September 17, 2026. Florida documentary stamp tax and owner's title insurance are calculated at the state's standard rates.",
+  "This analysis uses the property details and tax bill you provided, a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 17, 2026, plus current listings), and the Freddie Mac rate survey for September 17, 2026.",
   "This is a broker's opinion of value based on comparable sales. It is not an appraisal. Expected sale prices, timelines, costs, and net proceeds are estimates for planning, not guarantees; your closing agent will provide exact figures. Condition adjustments are based on listing descriptions of the comparable homes and on the updates you described, and will be refined once we see your records. Market conditions change, so this analysis should be refreshed if the home is not listed within a few weeks."
  ],
  "export": "dev/samples/mls-export.csv",

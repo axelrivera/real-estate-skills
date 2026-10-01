@@ -1,0 +1,7 @@
+{
+ "family": "CR-7_W",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "backup_notice_date": {"at": {"label": "before", "after": "this contingency shall be"}, "value": "mdy(v.backup_notice_date)"}
+ }
+}

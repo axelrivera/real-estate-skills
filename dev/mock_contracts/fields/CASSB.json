@@ -1,0 +1,217 @@
+{
+ "family": "CASSB",
+ "revision": "CASSB-1 Rev 1/26",
+ "fields": {
+  "payer_seller": {
+   "at": {
+    "after": "Seller: (",
+    "kind": "check"
+   },
+   "check": "v.between == 'seller'"
+  },
+  "seller_names": {
+   "at": {
+    "label": "Seller:",
+    "kind": "field",
+    "page": 1
+   },
+   "value": "seller_names if v.between == 'seller' else None"
+  },
+  "payer_broker": {
+   "at": {
+    "after": "Seller's Broker: (",
+    "kind": "check"
+   },
+   "check": "v.between != 'seller'"
+  },
+  "sellers_broker": {
+   "at": {
+    "label": "Seller's Broker:",
+    "kind": "field"
+   },
+   "value": "listing_broker if v.between != 'seller' else None"
+  },
+  "buyers_broker": {
+   "at": {
+    "label": "Buyer's Broker:",
+    "kind": "field"
+   },
+   "value": "cooperating_broker"
+  },
+  "property": {
+   "at": {
+    "label": "Property Address:"
+   },
+   "value": "property_address"
+  },
+  "listed": {
+   "at": {
+    "after": "Property is listed by",
+    "kind": "check"
+   },
+   "check": "v.between == 'seller'"
+  },
+  "listing_broker": {
+   "at": {
+    "label": "Property is listed by Seller's Broker,"
+   },
+   "value": "listing_broker if v.between == 'seller' else None"
+  },
+  "buyer_names": {
+   "at": {
+    "within": [
+     35,
+     298,
+     505,
+     316
+    ],
+    "page": 1
+   },
+   "value": "buyer_names"
+  },
+  "term_days": {
+   "at": {
+    "label": "and will remain in effect for"
+   },
+   "value": "v.term_days"
+  },
+  "flat_fee": {
+   "at": {
+    "after": "(flat fee)",
+    "kind": "check"
+   },
+   "check": "bool(v.amount) and not v.percent"
+  },
+  "flat_fee_amount": {
+   "at": {
+    "after": "(flat fee)",
+    "kind": "field"
+   },
+   "value": "money(v.amount) if v.amount and not v.percent else None"
+  },
+  "percent": {
+   "at": {
+    "after": "% of the gross purchase",
+    "kind": "check"
+   },
+   "check": "bool(v.percent)"
+  },
+  "percent_value": {
+   "at": {
+    "after": "% of the gross purchase",
+    "kind": "field"
+   },
+   "value": "v.percent"
+  },
+  "percent_plus": {
+   "at": {
+    "label": "purchase price of the Property plus"
+   },
+   "value": "money(v.amount) if v.percent and v.amount else None"
+  },
+  "other_terms": {
+   "at": {
+    "label": "Other terms:"
+   },
+   "value": "v.other_terms"
+  }
+ },
+ "roles": {
+  "initials:seller:1": [
+   {
+    "label": "Seller",
+    "after": "or Seller's Broker",
+    "page": 1,
+    "nth": 0
+   },
+   {
+    "label": "Seller",
+    "after": "or Seller's Broker",
+    "page": 2,
+    "nth": 0
+   }
+  ],
+  "initials:seller:2": [
+   {
+    "label": "Seller",
+    "after": "or Seller's Broker",
+    "page": 1,
+    "nth": 1
+   },
+   {
+    "label": "Seller",
+    "after": "or Seller's Broker",
+    "page": 2,
+    "nth": 1
+   }
+  ],
+  "initials:listing_agent": {
+   "label": "Seller's Broker or Authorized Associate",
+   "after": "and Buyer's Broker",
+   "all": true
+  },
+  "initials:buyer_agent": {
+   "label": "Buyer's Broker or Authorized Associate",
+   "after": "acknowledge",
+   "all": true
+  },
+  "sign:payer": [
+   {
+    "within": [
+     250,
+     478,
+     505,
+     501
+    ],
+    "page": 2
+   },
+   {
+    "within": [
+     250,
+     500,
+     505,
+     520
+    ],
+    "page": 2
+   }
+  ],
+  "date:payer": [
+   {
+    "within": [
+     520,
+     485,
+     580,
+     501
+    ],
+    "page": 2
+   },
+   {
+    "within": [
+     520,
+     502,
+     580,
+     520
+    ],
+    "page": 2
+   }
+  ],
+  "sign:buyer_agent": {
+   "within": [
+    210,
+    522,
+    505,
+    555
+   ],
+   "page": 2
+  },
+  "date:buyer_agent": {
+   "within": [
+    520,
+    535,
+    580,
+    555
+   ],
+   "page": 2
+  }
+ }
+}

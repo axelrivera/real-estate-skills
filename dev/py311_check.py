@@ -2,9 +2,10 @@
 
     .venv/bin/python dev/py311_check.py            # make py311
 
-Runs `python3.11 -m compileall` when a 3.11 interpreter is on the PATH. Without one it checks, from any newer
-Python: the grammar (ast feature_version 3.11) and the 3.12-only f-string forms the grammar check can't see (PEP 701):
-a quote inside the braces that matches the f-string's own quote, or a backslash inside the braces.
+Runs `python3.11 -m compileall` on every shipped Python file with a real 3.11 interpreter: `python3.11` on the PATH,
+else the one uv manages (`uv python find 3.11`; `make setup` installs it, REL-105). Without one it falls back, from
+any newer Python, to the grammar (ast feature_version 3.11) and the 3.12-only f-string forms the grammar check can't
+see (PEP 701): a quote inside the braces that matches the f-string's own quote, or a backslash inside the braces.
 """
 import ast
 import glob
@@ -60,11 +61,26 @@ def fstring_problems(path):
     return problems
 
 
+def find_py311():
+    """A Python 3.11 interpreter: python3.11 on the PATH, else uv's, else None."""
+    found = shutil.which("python3.11")
+    if not found and shutil.which("uv"):
+        r = subprocess.run(["uv", "python", "find", "3.11"], capture_output=True, text=True)
+        found = r.stdout.strip() if r.returncode == 0 else None
+    if found:
+        r = subprocess.run([found, "-c", "import sys; print(sys.version_info[:2] == (3, 11))"], capture_output=True, text=True)
+        if r.stdout.strip() == "True":
+            return found
+    return None
+
+
 def main():
-    py311 = shutil.which("python3.11")
+    py311 = find_py311()
     if py311:
-        r = subprocess.run([py311, "-m", "compileall", "-q", *files()], capture_output=True, text=True)
-        print(r.stdout + r.stderr or "python3.11 compileall: OK")
+        # -f: recompile everything (a cached .pyc from a newer Python proves nothing); -q: errors only.
+        # compileall writes no .pyc for sources that fail, and the ones it writes are for 3.11 and git-ignored.
+        r = subprocess.run([py311, "-m", "compileall", "-f", "-q", *files()], capture_output=True, text=True)
+        print(r.stdout + r.stderr or f"Python 3.11 compileall: OK ({len(files())} files, {py311})")
         return r.returncode
     bad = []
     for p in files():
@@ -76,7 +92,7 @@ def main():
                 bad.append(f"{rel}:{e.lineno}: {e.msg}")
         if sys.version_info >= (3, 12):
             bad += [f"{rel}:{line}: {why} (3.12+ only)" for line, why in fstring_problems(p)]
-    print("\n".join(bad) if bad else f"Python 3.11 check: OK ({len(files())} files; no python3.11 on PATH, so checked by grammar)")
+    print("\n".join(bad) if bad else f"Python 3.11 check: OK ({len(files())} files; no Python 3.11: run make setup; checked by grammar)")
     return 1 if bad else 0
 
 

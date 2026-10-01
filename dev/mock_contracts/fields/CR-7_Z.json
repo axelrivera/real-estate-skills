@@ -1,0 +1,7 @@
+{
+ "family": "CR-7_Z",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "buyer_attorney_date": {"at": {"label": "notice to Seller on or before"}, "value": "mdy(v.buyer_attorney_date)"}
+ }
+}

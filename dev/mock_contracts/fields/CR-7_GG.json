@@ -1,0 +1,9 @@
+{
+ "family": "CR-7_GG",
+ "revision": "CR-7 Rev. 8/24",
+ "fields": {
+  "brokers": {"at": {"after": "Seller's Broker and Buyer's Broker", "kind": "check"}, "check": "(v.between or 'brokers') == 'brokers'"},
+  "seller": {"at": {"after": "Seller and Buyer's Broker", "kind": "check"}, "check": "v.between == 'seller'"},
+  "agreement_days": {"at": {"label": "Agreement\") within"}, "value": "v.compensation_agreement_days"}
+ }
+}

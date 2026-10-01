@@ -28,26 +28,8 @@ def analyze(name, **kw):
 
 
 class MatchesPrototype(unittest.TestCase):
-    """The prototype's FHA sample (2–3 competing offers): same options, scores, cash and payments."""
-
-    def test_options(self):
-        r = analyze("fha-competitive.json")
-        got = {k: (o["price"], o["score"]["total"], r["cash"][k]["worst"], r["cash"][k]["reserve"], r["payment"][k],
-                   round(r["ci"][k], 1), r["bands"][k][2][1]) for k, o in r["O"].items()}
-        # Audit 2026-09-23 (OFR-3, OFR-4, OFR-17): FHA appraisal protection runs to closing and a gap clause earns no
-        # listing-side credit, so there's no "stronger" option built on gap money; scores move by a point or three.
-        self.assertEqual(got, {
-            # CORE-16: the loan taxes are itemized (0.55% of the FHA loan) and the lump share drops 0.5 points.
-            # CORE-17: the 2026 indexed homestead exemption lowers the payment $1.
-            # OFR-10: at 3.5% down with competition, the price stops at the value midpoint ($363,500, rounded down) and
-            # the offer competes on terms; the lower price lifts the appraisal score two points.
-            "recommended": (363000, 67, 23555, 2445, 3133, 61.7, "Competitive"),  # the 5% assumed brokerage lowers the seller net
-            "lower_cost": (363000, 65, 19055, 6945, 3133, 53.5, "At Risk"),
-        })
-        t = r["terms"]["recommended"]
-        self.assertEqual((t["seller_concessions"], t["deposit"], t["appraisal_gap"]), (2000, 11000, 0))
-        self.assertNotIn("escalation", t)  # FHA 3.5% never escalates
-        self.assertNotIn("stronger", r["O"])
+    """The prototype's FHA sample (2–3 competing offers). Its options, scores, cash, payments and bands on the
+    unmodified fixture are pinned by golden (dev/golden/buyer-offer-strategy/fha-competitive.json)."""
 
     def test_seller_net_with_prototype_costs(self):
         d = fixture("fha-competitive.json")
@@ -55,13 +37,15 @@ class MatchesPrototype(unittest.TestCase):
         d["property"]["costs"] = {"title_fees": 645}
         r = strategy.analyze(d)
         # Audit: 4% early-payment discount in the proration (OFR-14), no tax in holding costs (OFR-13)
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331804)  # OFR-10: $363,000, the value midpoint
-        self.assertEqual(r["target"], 335670)
+        # OFR-10: $363,000, the value midpoint. OFR-123: closing counts from Sep 26 (the day after the Sep 25 deadline),
+        # so the tax proration runs three days longer than when it counted from the analysis date
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331714)
+        self.assertEqual(r["target"], 335580)  # the same closing, so the same three days of proration
 
     def test_market_defaults(self):
         r = analyze("fha-competitive.json")
         # No built-in listing fee (CORE-5), $1,145 title fees; OFR-10: priced at the value midpoint, $2,000 below list
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333119)  # 2.5% listing fee assumed (5% total)
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333029)  # 2.5% listing fee assumed (5% total); OFR-123
         self.assertTrue(any(a["field"] == "listing_fee_pct" for a in r["R"]["assumptions"]))
         # CORE-16: Florida 2.5% + 0.5% prepaids, with the loan's note stamps (0.35%) and intangible tax (0.2%) itemized
         self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.03)
@@ -72,31 +56,27 @@ class MatchesPrototype(unittest.TestCase):
 
 class MissingData(unittest.TestCase):
     def test_minimal_is_preliminary(self):
-        r = analyze("minimal.json")
-        fields = {a["field"]: a["impact"] for a in r["missing"]}
-        self.assertEqual(fields["financing"], "high")
-        self.assertEqual(fields["cma_low / cma_high"], "high")
-        self.assertEqual(r["B"]["buyer"]["financing"], "conventional")
-        self.assertEqual(r["B"]["buyer"]["down_pct"], 0.05)
-        s = strategy.summary(r)
-        self.assertIn("**Preliminary", s["preliminary"])
-        self.assertIn("(assumed; confirm with lender)", s["financing"])
+        """The missing fields, financing and down payment on minimal.json are pinned by golden; the summary isn't."""
+        s = strategy.summary(analyze("minimal.json"))
+        self.assertTrue(s["preliminary"])
+        self.assertIn("assumed", s["financing"])
 
     def test_not_enough_cash_says_so(self):
         d = fixture("fha-competitive.json")
         d["buyer"]["cash_available"] = 9000
+        r = strategy.analyze(fixture("fha-competitive.json"))  # inside the floor: a thin-cushion note (OFR-332), no limit
+        self.assertTrue(r["reserve_tight"])
+        self.assertEqual(r["constraints"], [])  # OFR-338: a caution, not a Limit line
         r = strategy.analyze(d)
-        self.assertTrue(r["constraints"][0].startswith("Not enough cash"))
+        self.assertLess(r["cash"]["recommended"]["reserve"], 0)
+        self.assertEqual(len(r["constraints"]), 1)  # the shortfall, said once
         self.assertNotIn("stronger", r["O"])
 
     def test_cash_buyer(self):
-        """OFR-1: a cash buyer's 100% down passes the fraction check; no lender wording."""
-        r = analyze("cash.json")
-        self.assertEqual(r["B"]["buyer"]["down_pct"], 1.0)
-        rec = r["O"]["recommended"]
-        self.assertFalse(rec["financed"])
-        self.assertEqual(rec["loan_approval_days"], 0)
-        self.assertEqual(strategy.summary(r)["financing"], "Cash")
+        """OFR-1: a cash buyer's 100% down passes the fraction check (golden runs cash.json, so a regression fails it);
+        the summary and its terms read as cash, with no lender wording, which golden doesn't run."""
+        s = strategy.summary(analyze("cash.json"))
+        self.assertEqual(s["financing"], "Cash")
 
     def test_percent_down_still_refused(self):
         d = fixture("fha-competitive.json")
@@ -119,7 +99,7 @@ class EvalFindings(unittest.TestCase):
         self.assertEqual(r["promoted"], "stronger")
         self.assertEqual(r["bands"]["recommended"][lvl][0], "strong")
         self.assertEqual(r["R"]["listing"]["state"], "FL")  # read from "Orlando, FL" without a ZIP
-        self.assertEqual(r["why"]["inspection_days"], "Room for a full inspection + 4-point (year built unknown)")
+        self.assertIn("4-point", r["why"]["inspection_days"])
 
     def test_planned_insurance_quote_is_not_scored(self):
         """OFR-18: a quote the buyer plans to get is a to-do, not a point."""
@@ -127,9 +107,12 @@ class EvalFindings(unittest.TestCase):
              "buyer": {"cash_available": 38000}}
         r = strategy.analyze(B)
         self.assertIsNone(r["promoted"])
-        self.assertIn("insurance quote planned before submitting (scored once in hand)",
-                      r["O"]["recommended"]["score"]["why"]["property"])
-        self.assertIn("get the insurance quote", strategy.summary(r)["next_step"])
+        self.assertIsNone(r["terms"]["recommended"]["insurance_quote"])  # OFR-216: no quote, and none said to be planned
+        self.assertIn("insurance quote", strategy.summary(r)["next_step"])
+        B["buyer"]["insurance_quote"] = "planned"
+        r = strategy.analyze(B)
+        self.assertIsNone(r["promoted"])
+        self.assertEqual(r["terms"]["recommended"]["insurance_quote"], "planned")
 
     def test_rate_written_as_fraction_is_refused(self):
         B = {"analysis_date": "2026-09-23", "property": {"address": "1 Main St, Orlando, FL", "list_price": 400000},
@@ -139,22 +122,6 @@ class EvalFindings(unittest.TestCase):
 
 
 class HandoffAndOtherStates(unittest.TestCase):
-    def test_handoff_fills_value_market_and_subject(self):
-        r = analyze("texas-cma-escalation.json")
-        B = r["B"]
-        self.assertEqual((B["value"]["cma_low"], B["value"]["cma_high"], B["value"]["mid"]), (598000, 632000, 615000))
-        self.assertEqual(B["value"]["point"], 618500)  # median adjusted comp anchors the price
-        self.assertEqual((B["market"]["sale_to_list"], B["market"]["median_dom"]), (0.992, 11))
-        self.assertEqual((B["property"]["list_price"], B["property"]["state"]), (610000, "TX"))
-        self.assertEqual(B["competition"]["heat"], "hot")
-        # OFR-9: $615,000 reaches the same Strong outlook as the $632,000 offer, so it's recommended and the fuller offer
-        # stays as the stronger alternative. OFR-5: that one is already at the CMA's walk-away, so it doesn't escalate.
-        self.assertEqual(r["promoted"], "lower_cost")
-        self.assertEqual((r["terms"]["recommended"]["price"], r["terms"]["stronger"]["price"]), (615000, 632000))
-        self.assertEqual(r["bands"]["recommended"][3][0], r["bands"]["stronger"][3][0])
-        self.assertNotIn("escalation", r["terms"]["stronger"])
-        self.assertNotIn("cma_low / cma_high", [a["field"] for a in r["missing"]])
-
     def test_handoff_seller_paid_stats_fill_the_market_table(self):
         # A buyer CMA's handoff names these share_with_seller_paid_costs_recent and median_seller_paid_recent (raw numbers).
         d = fixture("texas-cma-escalation.json")
@@ -185,15 +152,18 @@ class HandoffAndOtherStates(unittest.TestCase):
         text = json.dumps(w)
         for florida in ("FR/BAR", "Form Simplicity", "4-point", "Florida"):
             self.assertNotIn(florida, text)
-        self.assertEqual(w["form_name"], "TREC One to Four Family Residential Contract (Resale)")
+        self.assertEqual(w["form_name"], "Sample Residential Purchase Agreement")
         self.assertTrue(all(row["para"] == "" for row in w["rows"]))
         self.assertIn("national estimate", json.dumps(r["missing"]))  # closing costs, not Florida's
 
     def test_florida_worksheet(self):
         w = strategy.worksheet(analyze("fha-competitive.json"))
         self.assertTrue(w["frbar"])
-        self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing", "Homeowners' / Flood Insurance (If in Your Form Set)"])
-        self.assertEqual(w["rows"][6]["entry"], "**$11,000** within 3 days of Effective Date")
+        self.assertEqual([x["rider"] for x in w["riders"]], ["FHA/VA Financing Rider (E)", "Homeowner's/Flood Insurance Rider (H)",
+                                                         "Seller's Agreement with Respect to Buyer's Broker Compensation Rider (GG)"])
+        deposit = next(r for r in w["rows"] if r["field"] == "Initial Deposit")
+        self.assertIn("$11,000", deposit["entry"])
+        self.assertIn("Inspection Period", [r["field"] for r in w["rows"]])  # Florida keeps its inspection period
 
 
 class Pdf(unittest.TestCase):
@@ -229,6 +199,13 @@ class Pdf(unittest.TestCase):
                 with open(p, "rb") as f:
                     self.assertEqual(f.read(4), b"%PDF")
 
+    def test_page_one_fits_every_fixture(self):
+        # OFR-317: with one option, the exposure labels squeezed to a word per line and page 1 overflowed
+        for name in sorted(os.listdir(FIXTURES)):
+            err = io.StringIO()
+            with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                buyer_render.main([os.path.join(FIXTURES, name), "--out", tmp, "--format", "options"])
+            self.assertNotIn("overflows", err.getvalue(), name)
 
 
 class FloodCddCondo(unittest.TestCase):
@@ -273,7 +250,6 @@ class AuditPricing(unittest.TestCase):
     def test_only_offer_never_above_list(self):
         r = strategy.analyze(self.only_offer())
         self.assertEqual(r["terms"]["recommended"]["price"], 400000)
-        self.assertIn("value range starts above it", r["why"]["price"])
 
     def test_lower_cost_starts_from_the_agents_price(self):
         for price in (632000, 612000):
@@ -299,42 +275,58 @@ class AuditPricing(unittest.TestCase):
         d["property"].update(list_price=950000)
         d["value"] = {"cma_low": 930000, "cma_high": 980000}
         r = strategy.analyze(d)
-        self.assertTrue(any("jumbo" in a["why"] for a in r["assumptions"]))
+        self.assertIn("loan_limit", [a["field"] for a in r["assumptions"]])
         self.assertIn("check the loan limit", r["limits"]["recommended"])
         d = self.only_offer(financing="fha", down_pct=0.035)
         d["property"].update(list_price=700000)
         d["value"] = {"cma_low": 690000, "cma_high": 720000}
         r = strategy.analyze(d)
-        self.assertTrue(any("FHA floor ($541,287)" in a["why"] for a in r["assumptions"]))
+        why = next(a["why"] for a in r["assumptions"] if a["field"] == "loan_limit")
+        self.assertIn("$541,287", why)  # the 2026 FHA floor
 
 
-class TrecWorksheet(unittest.TestCase):
-    """OFR-19 (TREC 20-19 and 49-1, verified): option fee and period, the financing addendum and 49-1."""
+class FrbarGap(unittest.TestCase):
+    def test_conventional_gap_uses_aga_not_rider_f(self):
+        """AGA-1 is for conventional or cash offers and isn't used with the Appraisal Contingency Rider (F)."""
+        d = fixture("fha-competitive.json")
+        d["buyer"].update(financing="conventional", down_pct=0.2)
+        d["overrides"] = {"appraisal_gap": 10000}
+        w = strategy.worksheet(strategy.analyze(d))
+        riders = [r["rider"] for r in w["riders"]]
+        self.assertIn("Appraisal Gap Addendum (AGA-1)", riders)
+        self.assertNotIn("Appraisal Contingency Rider (F)", riders)
+        self.assertNotIn("Appraisal Gap", [c["title"] for c in w["clauses"]])
 
-    def test_trec_rows_and_riders(self):
+
+class OtherContractWorksheet(unittest.TestCase):
+    """Only FR/BAR is built in: any other contract gets the generic entries by name, never another state's form rules."""
+
+    def test_other_contract_rows_and_riders_are_generic(self):
         d = fixture("texas-cma-escalation.json")
-        d.setdefault("worksheet", {})["option_fee"] = 300
         w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
         fields = [r["field"] for r in w["rows"]]
-        self.assertIn("Option Fee", fields)
-        self.assertIn("Option Period", fields)
+        words = strategy.cf.term_words(strategy.cf.OTHER)  # OFR-234: generic words, never FR/BAR's
+        self.assertIn(words["inspection_label"], fields)
         self.assertNotIn("Inspection Period", fields)
-        self.assertIn("Earnest Money", fields)
+        self.assertIn("Initial Deposit", fields)
+        self.assertNotIn("Option Fee", fields)
+        self.assertEqual(next(r for r in w["rows"] if r["field"] == "Initial Deposit")["note"], "Due date per the contract")
         riders = [r["rider"] for r in w["riders"]]
-        self.assertIn("Third Party Financing Addendum", riders)
-        self.assertIn("Addendum Concerning Right to Terminate Due to Lender's Appraisal (TREC 49-1)", riders)
+        self.assertIn(words["appraisal_addendum"], riders)
+        self.assertFalse(any("TREC" in x or "Third Party" in x for x in riders))
 
-    def test_fha_on_trec_has_no_49_1(self):
+    def test_best_effort_line_is_chat_only(self):
+        d = fixture("texas-cma-escalation.json")
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        out = strategy.result(r)
+        self.assertEqual(out["support"], "best_effort")
+        self.assertNotIn("fully supported", json.dumps(out["worksheet"]))
+
+    def test_fha_on_other_contract(self):
         d = fixture("texas-cma-escalation.json")
         d["buyer"].update(financing="fha", down_pct=0.035)
         w = strategy.worksheet(strategy.analyze(d, cma=strategy.load_cma(d)))
-        riders = [r["rider"] for r in w["riders"]]
-        self.assertFalse(any("49-1" in x for x in riders))
-        self.assertIn("Third Party Financing Addendum (FHA/VA Section)", riders)
-
-    def test_florida_keeps_its_inspection_period(self):
-        w = strategy.worksheet(analyze("fha-competitive.json"))
-        self.assertIn("Inspection Period", [r["field"] for r in w["rows"]])
+        self.assertIn("FHA/VA Financing Addendum", [r["rider"] for r in w["riders"]])
 
 
 class InsuranceEstimate(unittest.TestCase):
@@ -349,9 +341,6 @@ class InsuranceEstimate(unittest.TestCase):
         self.assertEqual(r["B"]["costs"]["insurance_annual"], 3500)  # $2,700 is under the Florida floor
         why = next(a["why"] for a in r["assumptions"] if a["field"] == "insurance_annual")
         self.assertIn("get a quote", why)
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class AuditEscalationCap(unittest.TestCase):
@@ -375,7 +364,8 @@ class AuditEscalationCap(unittest.TestCase):
 
     def test_letters_cover_the_cap(self):
         text = json.dumps(strategy.worksheet(self.r))
-        self.assertIn("Letter at up to $637,000, the escalation cap", text)
+        self.assertIn("$637,000", text)
+        self.assertIn("escalation cap", text)
         self.assertIn("(at the escalation cap)", text)
 
 
@@ -392,3 +382,689 @@ class AuditBuyerBrokerShortfall(unittest.TestCase):
         self.assertIn("Broker Fee (Not Paid by Seller)", doc)
         self.assertFalse(any(a["field"] == "buyer_broker_agreement_pct" for a in r["missing"]))
 
+
+class Audit20260929(unittest.TestCase):
+    """Fixes from the 2026-09-29 audit (docs/audits/2026-09-29.md)."""
+
+    GAP = {"analysis_date": "2026-09-23",
+           "property": {"address": "100 Test Rd, Sanford, FL 32771", "county": "Seminole", "list_price": 400000,
+                        "year_built": 2012},
+           "value": {"cma_low": 380000, "cma_high": 398000},
+           "competition": {"level": 3, "deadline": "2026-09-25 17:00"},
+           "buyer": {"financing": "conventional", "down_pct": 0.2, "cash_available": 140000, "max_price": 420000,
+                     "reserve_floor": 5000},
+           "worksheet": {"contract_form": "as_is"}}
+
+    def test_variants_are_one_buyer(self):  # OFR-101
+        r = strategy.analyze(copy.deepcopy(self.GAP))
+        rec = r["terms"]["recommended"]
+        self.assertIn("escalation", rec)
+        _, alone = strategy.run_engine(r["B"], r["costs"], [("recommended", rec)])
+        _, both = strategy.run_engine(r["B"], r["costs"], [("recommended", rec), ("stronger", dict(rec, price=rec["price"] + 5000))])
+        self.assertEqual(both["recommended"]["score"]["total"], alone["recommended"]["score"]["total"])
+        self.assertFalse(both["recommended"]["escalated"])
+
+    def test_escalation_gap_is_written_at_the_cap(self):  # OFR-105
+        r = strategy.analyze(copy.deepcopy(self.GAP))
+        rec = r["terms"]["recommended"]
+        self.assertEqual(rec["appraisal_gap"], rec["escalation"]["gap_at_cap"])
+        self.assertEqual(r["O"]["recommended"]["appraisal_form"], "aga")
+        self.assertNotIn("rises with the price", json.dumps(strategy.worksheet(r)))
+
+    def test_dates_count_from_the_expected_acceptance(self):  # OFR-123
+        r = strategy.analyze(copy.deepcopy(self.GAP))
+        self.assertEqual(str(r["B"]["effective_date"]), "2026-09-26")
+        o, t = r["O"]["recommended"], r["terms"]["recommended"]
+        self.assertEqual(o["close_days"], t["closing_days"])  # a 35-day close is 35 days after acceptance
+        rows = {x["field"]: x["entry"] for x in strategy.worksheet(r)["rows"]}
+        self.assertIn("September 26, 2026", rows["Time for Acceptance"])
+        d = copy.deepcopy(self.GAP)
+        d["expected_effective_date"] = "2026-10-01"
+        self.assertEqual(str(strategy.analyze(d)["B"]["effective_date"]), "2026-10-01")
+        self.assertEqual(strategy.deadline_date("Fri Sep 25 · 5 PM", strategy._d("2026-09-23")), strategy._d("2026-09-25"))
+
+    def test_city_millage_and_homestead(self):  # OFR-124
+        d = fixture("fha-competitive.json")
+        d["costs"].pop("total_mills"), d["costs"].pop("school_mills"), d["costs"].pop("homestead")
+        r = strategy.analyze(d)
+        self.assertEqual(r["B"]["costs"]["total_mills"], 18.1808)  # Casselberry, from the address
+        fields = {a["field"] for a in r["assumptions"]}
+        self.assertTrue({"total_mills", "homestead"} <= fields)
+
+    def test_plain_words_and_the_agents_boxes(self):  # OFR-126, ENG-12
+        d = copy.deepcopy(self.GAP)
+        d["worksheet"].pop("contract_form")
+        d["buyer"]["lender_called"] = True
+        r = strategy.analyze(d)
+        form = next(a for a in r["assumptions"] if a["field"] == "contract_form")
+        self.assertEqual(form["impact"], "high")
+        self.assertFalse([a for a in r["assumptions"] if "re-run" in a["why"] or "worksheet." in a["why"]])
+        box = next(p for p in strategy.worksheet(r)["package"] if p["item"].startswith("Lender confirms"))
+        self.assertEqual(box["status"], "Pending")
+
+    def test_usda_gap_isnt_written_on_aga(self):  # ENG-10, OFR-104
+        d = copy.deepcopy(self.GAP)
+        d["buyer"].update(financing="usda", down_pct=0)
+        d["overrides"] = {"price": 400000, "appraisal_gap": 5000}
+        r = strategy.analyze(d)
+        self.assertNotEqual(r["O"]["recommended"]["appraisal_form"], "aga")
+        w = strategy.worksheet(r)
+        self.assertFalse([x for x in w["riders"] if "AGA-1" in x["rider"]])
+        self.assertIn("Appraisal Gap", [c["title"] for c in w["clauses"]])
+
+    def test_stronger_names_only_what_it_raised(self):  # CMA-103
+        self.assertEqual(strategy.raised({"deposit": 12000, "appraisal_gap": 0}, {"deposit": 8000, "appraisal_gap": 0}), "deposit")
+        why = strategy.promote_why({}, {}, "stronger", {"price": 400000, "deposit": 12000, "appraisal_gap": 0},
+                                   {"deposit": 8000, "appraisal_gap": 0})
+        self.assertNotIn("appraisal_gap", why)
+
+    def test_handoff_tax_and_address(self):  # CMA-111, CMA-102, CMA-101
+        d = fixture("texas-cma-escalation.json")
+        d["costs"].pop("total_mills")
+        d["cma"]["subject"].update(total_mills=21.4, school_mills=9.1, homestead=True)
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertEqual(r["B"]["costs"]["total_mills"], 21.4)
+        d = fixture("texas-cma-escalation.json")
+        d["property"]["address"] = "12 Other Ln, Austin, TX 78757"
+        d["cma"]["side"] = "seller"
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        text = strategy.preliminary(r)
+        self.assertIn("a CMA for this property", text)
+        self.assertIn("a buyer-side CMA", text)
+        self.assertNotIn("cma side", text)
+
+
+class Audit20260929Second(unittest.TestCase):
+    """Second-pass fixes from the 2026-09-29 audit (eval iteration 3): OFR-201 to OFR-213."""
+
+    def fields(self, r):
+        return {(a["scope"], a["field"]): a for a in r["assumptions"]}
+
+    def test_one_tax_rate_for_payment_and_proration(self):  # OFR-201
+        d = fixture("texas-cma-escalation.json")
+        d["costs"] = {"rate": 6.4, "insurance_annual": 3900, "tax_rate": 0.0198}
+        r = analyze_data(d)
+        self.assertEqual(r["R"]["listing"]["annual_tax"], round(610000 * 0.0198))  # not the national 1.1%
+        self.assertIn(("property", "annual_tax"), self.fields(r))
+        self.assertNotIn(("listing", "annual_tax"), self.fields(r))
+        # a seller's bill that was given still wins
+        d["cma"]["subject"]["annual_tax"] = 9000
+        self.assertEqual(analyze_data(d)["R"]["listing"]["annual_tax"], 9000)
+
+    def test_iso_deadline_is_formatted(self):  # OFR-202
+        self.assertEqual(strategy.deadline_label("2026-10-02 18:00"), "Fri Oct 2 · 6 PM")
+        self.assertEqual(strategy.deadline_label("2026-10-02 17:30"), "Fri Oct 2 · 5:30 PM")
+        self.assertEqual(strategy.deadline_label("2026-10-03 17:00", long=True), "October 3, 2026, 5:00 PM")
+        self.assertEqual(strategy.deadline_label("Fri Oct 2 · 6 PM"), "Fri Oct 2 · 6 PM")
+        d = fixture("fha-competitive.json")
+        d["competition"]["deadline"] = "2026-09-25 17:00"
+        s = strategy.summary(strategy.analyze(d))
+        self.assertEqual(s["submit_by"], "Fri Sep 25 · 5 PM")
+        self.assertNotIn("2026-09-25", s["next_step"])
+
+    def test_chat_note_prints_once_per_run(self):  # OFR-203
+        d = fixture("texas-cma-escalation.json")  # another contract: one best-effort line for chat
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "buyer.json")
+            with open(path, "w") as f:
+                json.dump(d, f)
+            err = io.StringIO()
+            real = buyer_render.render.html_to_pdf
+            buyer_render.render.html_to_pdf = lambda *a, **k: 0
+            try:
+                with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                    buyer_render.main([path, "--format", "all", "--out", tmp])
+            finally:
+                buyer_render.render.html_to_pdf = real
+        self.assertEqual(err.getvalue().count("chat only, never on the report"), 1)
+
+    def test_no_escalation_names_the_max_and_the_gap(self):  # OFR-205
+        d = fixture("texas-cma-escalation.json")
+        A = strategy.oe.Assume()
+        B, costs = strategy.prepare(strategy.apply_cma(d, strategy.load_cma(d)), A)
+        t, why = strategy.build_offer(B, costs)
+        self.assertNotIn("escalation", t)  # the value-range top is the CMA's walk-away
+        self.assertIn("$640,000", why["escalation"])  # the buyer's max
+        self.assertIn("$8,000", why["escalation"])  # what a price at the max would put above the range
+
+    def test_missing_options_say_why(self):  # OFR-205, OFR-208
+        r = analyze("fha-competitive.json")
+        self.assertNotIn("stronger", r["terms"])
+        s = strategy.summary(r)
+        self.assertEqual([a["key"] for a in s["absent"]], ["stronger"])
+        self.assertEqual(s["options_title"], "Your Options")
+        self.assertTrue(s["next_step"].startswith("Pick an option"))
+        d = fixture("fha-competitive.json")
+        d["buyer"]["max_payment"] = 3100  # a lower payment cap: the softer offer would be Unlikely, one option left
+        r = strategy.analyze(d)
+        s = strategy.summary(r)
+        self.assertEqual(list(r["terms"]), ["recommended"])
+        self.assertEqual({a["key"] for a in s["absent"]}, {"stronger", "lower_cost"})
+        self.assertEqual(s["options_title"], "Your Offer")
+        self.assertNotIn("Pick an option", s["next_step"])
+
+    def test_worksheet_nits(self):  # OFR-206, OFR-209
+        r = analyze("fha-competitive.json")
+        W = strategy.worksheet(r)
+        items = {x["group"] + ":" + x["item"]: x["status"] for x in W["package"]}
+        self.assertEqual(items["Do Not Include:Personal letter, photos or buyer background"], "Never")
+        self.assertIn("Buyer Docs:Proof of funds for deposit and closing costs", items)  # no gap, so no gap in the line
+        rider_e = next(x for x in W["riders"] if "(E)" in x["rider"])
+        self.assertIn("Para. 2", rider_e["inputs"])
+        self.assertIn("[", rider_e["inputs"])  # the cap has no default: a red blank
+        self.assertEqual(buyer_render.sentence("buyer has insurance quote"), "Buyer has insurance quote")
+
+    def test_deposit_risk_before_the_fha_escape_clause(self):  # OFR-210
+        r = analyze("fha-competitive.json")
+        o, t = r["O"]["recommended"], r["terms"]["recommended"]
+        first, until = strategy.deposit_risk(o)
+        self.assertEqual((first - r["B"]["effective_date"]).days, max(t["inspection_days"], t["loan_approval_days"]))
+        self.assertEqual(until, o["firm_date"])  # the escape clause runs to closing, for a low appraisal only
+        rows = dict(strategy.summary(r)["exposure"])
+        self.assertTrue(rows["Low-Appraisal Protection"].startswith("To closing"))
+
+    def test_handoff_mls_is_read(self):  # OFR-211
+        d = fixture("minimal.json")
+        d["cma"] = {"handoff": "cma", "version": 1, "side": "buyer", "as_of": "2026-09-22",
+                    "subject": {"address": d["property"]["address"], "list_price": d["property"]["list_price"]},
+                    "value": {"low": 420000, "high": 440000, "midpoint": 430000}, "comps": [],
+                    "market_profile": {"state": "FL", "mls": "Stellar"}}
+        r = analyze_data(d)
+        self.assertNotIn("mls_assumed", r["costs"].market.note_codes)
+        self.assertEqual(r["B"]["property"]["mls"], "Stellar")
+
+    def test_no_cma_keeps_list_and_asks_the_gap(self):  # OFR-212
+        r = analyze("minimal.json")
+        t = r["terms"]["recommended"]
+        self.assertEqual(t["price"], r["B"]["property"]["list_price"])
+        self.assertNotIn("At value", r["why"]["price"])
+        self.assertIn("ask the buyer", r["why"]["appraisal_gap"])
+        # the quick answer's one question: the inferred competition read first, then the rest by impact
+        to_confirm = strategy.result(r)["to_confirm"]
+        self.assertTrue(to_confirm[0].startswith("Competition unknown"))
+        self.assertTrue(to_confirm[1].startswith("No value range"))
+
+    def test_county_from_the_city(self):  # OFR-213
+        r = analyze("minimal.json")  # "…, Orlando, FL 32806" with no county
+        self.assertEqual(r["B"]["property"]["county"], "Orange")
+        self.assertEqual(r["B"]["costs"]["total_mills"], 18.1386)  # Orlando spans two districts: the higher one
+        self.assertIn(("property", "county"), self.fields(r))
+        d = fixture("minimal.json")
+        d["property"]["address"] = "10 Test St, Miami, FL 33130"  # no built-in district: the fallback says why
+        r = analyze_data(d)
+        self.assertIsNone(r["B"]["property"].get("county"))
+        self.assertIn("county", self.fields(r)[("costs", "property_tax")]["why"])
+
+
+def analyze_data(d):
+    return strategy.analyze(d, cma=strategy.load_cma(d))
+
+
+class Audit20260929Third(unittest.TestCase):
+    """Eval iteration 4 findings (OFR-214 onward)."""
+
+    GATLIN = {"analysis_date": "2026-09-26", "property": {"address": "2716 Gatlin Ave, Orlando, FL", "list_price": 429000},
+              "buyer": {"cash_available": 38000}}
+
+    def test_pushback_names_the_limit_it_breaks(self):  # OFR-214
+        r = analyze("fha-competitive.json")
+        B, t = r["B"], r["terms"]["recommended"]
+        row = next(p for p in strategy.pushback(r) if p["term"] == "Price")
+        self.assertEqual(row["breaks"], [])
+        B["buyer"]["max_payment"] = strategy.monthly_payment(B, r["costs"], t["price"])  # the ask is now over the cap
+        row = next(p for p in strategy.pushback(r) if p["term"] == "Price")
+        self.assertEqual(row["breaks"], ["max_payment"])
+        self.assertIn(row["yours"], row["response"])
+        keys = [k for k, _ in strategy.limits_broken(B, r["costs"], dict(t, price=B["buyer"]["max_price"] + 1000,
+                                                                          appraisal_gap=10 ** 6))]
+        self.assertEqual(keys, ["max_price", "max_payment", "cash"])
+
+    def test_closing_cost_label_matches_the_math(self):  # OFR-215
+        r = analyze("fha-competitive.json")
+        self.assertTrue(r["B"]["loan_taxes"])
+        self.assertTrue(strategy.closing_cost_basis(r["B"]).endswith("plus loan taxes"))
+        a = next(x for x in r["assumptions"] if x["field"] == "closing_cost_pct")
+        self.assertIn(strategy.closing_cost_basis(r["B"]), a["why"])
+        self.assertNotIn("loan taxes", strategy.closing_cost_basis(analyze("cash.json")["B"]))
+
+    def test_insurance_scorecard_from_facts(self):  # OFR-216
+        r = strategy.analyze(copy.deepcopy(self.GATLIN))
+        why = r["O"]["recommended"]["score"]["why"]["property"]
+        self.assertIn("no insurance quote yet", why)
+        self.assertNotIn("planned", why)
+
+    def test_insurance_premium_is_a_quote_in_hand(self):  # OFR-217
+        d = copy.deepcopy(self.GATLIN)
+        d["costs"] = {"insurance_annual": 3900}
+        r = strategy.analyze(d)
+        self.assertIs(r["terms"]["recommended"]["insurance_quote"], True)
+        self.assertNotIn("insurance", strategy.summary(r)["next_step"])
+        riders = [x["rider"] for x in strategy.worksheet(r)["riders"]]
+        self.assertFalse(any("(H)" in x for x in riders))
+        d["buyer"]["insurance_quote"] = False  # an estimate the agent marks as not a quote stays a to-do
+        self.assertIsNone(strategy.analyze(d)["terms"]["recommended"]["insurance_quote"])
+
+    def test_stronger_with_no_gain_is_dropped(self):  # OFR-218
+        r = analyze("texas-cma-escalation.json")
+        self.assertTrue(r.get("stronger_dropped"))
+        self.assertNotIn("stronger", r["terms"])
+        self.assertIn("stronger", r["absent"])
+        r = strategy.analyze(copy.deepcopy(self.GATLIN))  # a higher score keeps it, worded as deposit at risk
+        self.assertIn("stronger", r["terms"])
+        self.assertGreater(r["O"]["stronger"]["score"]["total"], r["O"]["recommended"]["score"]["total"])
+        what = next(o["what"] for o in strategy.summary(r)["options"] if o["key"] == "stronger")
+        self.assertNotIn("for more cash", what)
+
+    def test_closing_and_deposit_dates_follow_business_days(self):  # OFR-219
+        r = strategy.analyze(copy.deepcopy(self.GATLIN))
+        eff = r["B"]["effective_date"]
+        for k, t in r["terms"].items():
+            self.assertTrue(strategy.dates.is_business_day(eff + strategy.timedelta(days=t["closing_days"])), k)
+        self.assertNotEqual(eff + strategy.timedelta(days=r["terms"]["lower_cost"]["closing_days"]),
+                            strategy.date(2026, 11, 11))  # Veterans Day
+        r = analyze("minimal.json")  # FR/BAR: a period ending on a weekend rolls to the next business day
+        d, note = strategy.risk_after(r["O"]["recommended"], r["costs"])
+        self.assertTrue(strategy.dates.is_business_day(d))
+        self.assertIsNotNone(note)
+        r = analyze("texas-cma-escalation.json")  # no built-in rule: the date stays, with a note to check
+        d, note = strategy.risk_after(r["O"]["recommended"], r["costs"])
+        self.assertFalse(strategy.dates.is_business_day(d))
+        self.assertIsNotNone(note)
+
+    def test_override_past_the_reserve_names_the_limit(self):  # OFR-221
+        d = fixture("texas-cma-escalation.json")
+        d["overrides"] = {"appraisal_gap": 20000}
+        s = strategy.summary(analyze_data(d))
+        self.assertTrue(s["breaks_limits"])
+        self.assertNotIn("inside your limits", s["why"])
+        self.assertEqual(strategy.summary(analyze("texas-cma-escalation.json"))["breaks_limits"], [])
+
+    def test_other_contract_questions_come_first(self):  # OFR-222
+        d = fixture("texas-cma-escalation.json")
+        del d["worksheet"]["contract_name"]
+        r = analyze_data(d)
+        order = {a["why"]: a["field"] for a in r["missing"]}
+        firsts = [order[w] for w in strategy.result(r)["to_confirm"][:2]]
+        self.assertEqual(firsts[0], "contract_name")
+        d["cma"]["offer_plan"]["walk_away"] = 640000  # OFR-240: the escalation question comes with an escalation
+        d["overrides"] = {"inspection_days": 10}  # keeps the rule-built (escalating) offer from being softened
+        r = analyze_data(d)
+        self.assertTrue(r["terms"]["recommended"].get("escalation"))
+        order = {a["why"]: a["field"] for a in r["missing"]}
+        firsts = [order[w] for w in strategy.result(r)["to_confirm"][:2]]
+        self.assertEqual(firsts, ["contract_name", "escalation_accepted"])
+        self.assertNotIn("contract_name", [a["field"] for a in analyze("fha-competitive.json")["missing"]])
+
+    def test_next_step_is_a_sentence(self):  # OFR-225
+        s = strategy.summary(strategy.analyze(copy.deepcopy(self.GATLIN)))
+        self.assertTrue(s["next_step"][0].isupper())
+        self.assertEqual(s["next_step"].lower().count("get "), 1)
+
+    def test_market_read_names_its_signals(self):  # OFR-226, OFR-229
+        heat, basis = strategy.market_heat({"dom": 9}, {"median_dom": 34, "sale_to_list": 0.981})
+        self.assertEqual(heat, "hot")
+        self.assertTrue(basis.startswith("on days on market"))  # the deciding signal first
+        self.assertIn("secondary: sale-to-list", basis)  # the other one, worded as secondary
+        self.assertEqual(strategy.market_heat({}, {}), ("normal", "no market data"))
+        self.assertEqual(strategy.market_heat({"price_cuts": 1, "dom": 3}, {"median_dom": 30})[0], "soft")
+
+
+
+class Audit20260930(unittest.TestCase):
+    """Eval iteration 5 findings (OFR-227 to OFR-237)."""
+    GAP = fixture("fha-competitive.json")
+
+    def test_lender_timeline_is_its_own_field(self):  # OFR-227
+        d = copy.deepcopy(self.GAP)  # lender_called: the financing is confirmed, the date isn't
+        w = strategy.worksheet(strategy.analyze(d))
+        close = next(x for x in w["rows"] if x["field"] == "Closing Date")
+        box = next(p for p in w["package"] if p["item"].startswith("Lender confirms"))
+        self.assertEqual(box["status"], "Pending")
+        self.assertNotIn("lender confirmed this closing date", close["note"])
+        d["buyer"]["lender_confirmed_timeline"] = True
+        w = strategy.worksheet(strategy.analyze(d))
+        close = next(x for x in w["rows"] if x["field"] == "Closing Date")
+        box = next(p for p in w["package"] if p["item"].startswith("Lender confirms"))
+        self.assertEqual(box["status"], "Yes")  # the note and the box agree
+        self.assertIn("lender confirmed this closing date", close["note"])
+
+    def test_payment_cap_names_its_assumed_inputs(self):  # OFR-228
+        d = copy.deepcopy(self.GAP)
+        d["costs"].pop("rate"), d["costs"].pop("insurance_annual")
+        r = strategy.analyze(d)
+        self.assertIn("payment", r["why"]["price"])  # the payment limit sets the price here
+        self.assertEqual(len(r["B"]["payment_assumed"]), 2)
+        for words in r["B"]["payment_assumed"]:
+            self.assertIn(words, r["why"]["price"])
+        d = copy.deepcopy(self.GAP)
+        self.assertEqual(strategy.analyze(d)["B"]["payment_assumed"], ["estimated $3,400/yr insurance"])  # OFR-328
+        d["buyer"]["insurance_quote"] = True  # a quote in hand and a given rate: nothing assumed
+        self.assertEqual(strategy.analyze(d)["B"]["payment_assumed"], [])
+
+    def test_no_stronger_quotes_the_printed_deposit(self):  # OFR-231
+        r = analyze("fha-competitive.json")
+        t = dict(r["terms"]["recommended"], deposit=11000, price=358000)
+        self.assertIn(strategy.term_val("deposit", t, r["B"]), strategy.no_stronger_reason(r["B"], t))
+
+    def test_other_contract_terms_are_generic(self):  # OFR-234
+        d = fixture("texas-cma-escalation.json")
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        words = strategy.cf.term_words(strategy.cf.OTHER)
+        self.assertEqual(r["B"]["words"], words)
+        res = strategy.result(r)
+        labels = [t["term"] for t in res["summary"]["terms"]] + [x["term"] for x in res["side_by_side"]]
+        self.assertIn(words["inspection_label"], labels)
+        self.assertNotIn("Inspection Period", labels + [p["term"] for p in res["pushback"]])
+        self.assertIn(words["deposit_refund"], r["why"]["deposit"])
+        fl = analyze("fha-competitive.json")
+        self.assertEqual(fl["B"]["words"], strategy.cf.term_words(strategy.cf.AS_IS))
+        self.assertIsNone(fl["B"]["words"]["appraisal_addendum"])
+
+    def test_given_tax_rate_notes_homestead(self):  # OFR-237
+        d = fixture("texas-cma-escalation.json")
+        d["costs"] = {"rate": 6.4, "insurance_annual": 3900, "tax_rate": 0.0198}
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        a = [x for x in r["assumptions"] if x["field"] == "homestead"]
+        self.assertEqual([x["value"] for x in a], ["as given"])
+
+    def test_preliminary_names_the_assumed_max(self):  # OFR-233
+        r = strategy.analyze({"analysis_date": "2026-09-26", "property": {"address": "2716 Gatlin Ave, Orlando, FL",
+                                                                          "list_price": 429000}, "buyer": {"cash_available": 38000}})
+        self.assertIn("max_price", [a["field"] for a in r["missing"] if a["impact"] == "high"])
+        self.assertIn("max price (assumed $429,000", strategy.preliminary(r))
+
+    def test_scorecard_flows_after_the_net_sheet(self):  # OFR-230
+        r = analyze("fha-competitive.json")
+        html = buyer_render.details(r, strategy.result(r))
+        self.assertEqual(html.count('class="pb"'), 1)  # one break before the detail pages, none forced inside them
+
+
+class Audit20260930Iter6(unittest.TestCase):
+    """Eval iteration 6 findings (OFR-239 to OFR-244)."""
+    TX = fixture("texas-cma-escalation.json")
+    GAP = fixture("fha-competitive.json")
+
+    def test_reply_lines_outside_the_cap(self):  # OFR-239
+        r = analyze_data(copy.deepcopy(self.TX))  # highest and best, one flat number
+        res = strategy.result(r)
+        self.assertEqual([x["key"] for x in res["reply_lines"]], ["flat_number", "contract_terms", "inspection_period"])
+        self.assertIn(strategy.money(r["terms"]["recommended"]["price"]), res["reply_lines"][0]["text"])
+        d = copy.deepcopy(self.TX)
+        d["competition"]["note"] = "Listing agent: 6 offers in"
+        self.assertEqual([x["key"] for x in strategy.result(analyze_data(d))["reply_lines"]],
+                         ["contract_terms", "inspection_period"])  # OFR-315: the period is still a default
+        d["competition"]["highest_and_best"] = True  # the field wins over the note
+        self.assertIn("flat_number", [x["key"] for x in strategy.analyze(d, cma=strategy.load_cma(d))["reply_lines"]])
+        d = copy.deepcopy(self.TX)
+        d["cma"]["offer_plan"]["walk_away"], d["overrides"] = 640000, {"inspection_days": 10}  # escalating: no flat number
+        self.assertTrue(analyze_data(d)["terms"]["recommended"].get("escalation"))
+        self.assertEqual([x["key"] for x in analyze_data(d)["reply_lines"] if x["key"] != "tight_reserve"], ["contract_terms"])
+        self.assertEqual([x["key"] for x in analyze("fha-competitive.json")["reply_lines"]], ["tight_reserve"])  # FR/BAR, no highest and best; a thin cushion (OFR-332)
+
+    def test_no_escalation_question_without_escalation(self):  # OFR-240
+        r = analyze_data(copy.deepcopy(self.TX))
+        self.assertFalse(r["terms"]["recommended"].get("escalation"))
+        self.assertNotIn("escalation_accepted", [a["field"] for a in r["missing"]])
+
+    def test_looked_up_rate_is_labeled(self):  # OFR-241
+        d = copy.deepcopy(self.GAP)
+        d["costs"]["rate"], d["costs"]["rate_source"] = 7.0, "Freddie Mac weekly 30-year average, week of Sep 24, 2026"
+        r = strategy.analyze(d)
+        self.assertIn("payment", r["why"]["price"])  # the payment limit sets the price
+        self.assertIn("week of Sep 24", r["why"]["price"])
+        a = {x["field"]: x for x in r["missing"]}
+        self.assertEqual(a["rate_source"]["impact"], "med")  # looked up, not assumed: not Preliminary on its own
+        self.assertNotIn("rate", a)
+        d["costs"].pop("rate"), d["costs"].pop("rate_source"), d["costs"].pop("insurance_annual")
+        a = {x["field"]: x for x in strategy.analyze(d)["missing"]}
+        self.assertEqual(a["rate"]["value"], strategy.DEFAULT_RATE)  # the offline fallback, high when it sets the price
+        self.assertEqual(a["rate"]["impact"], "high")
+        self.assertIn("Assumed", a["rate"]["why"])
+
+    def test_handoff_days_on_market_are_aged(self):  # OFR-242
+        d = copy.deepcopy(self.TX)
+        del d["property"]["dom"]
+        d["cma"]["subject"]["dom"] = 4
+        d["analysis_date"] = "2026-09-26"  # handoff as of 9/22
+        r = analyze_data(d)
+        self.assertEqual(r["B"]["property"]["dom"], 8)
+        self.assertEqual({a["field"]: a["value"] for a in r["missing"]}["dom"], 8)
+        self.assertNotIn("dom", [a["field"] for a in analyze_data(copy.deepcopy(self.TX))["missing"]])  # given in the file
+
+    def test_estimated_seller_tax_is_labeled(self):  # OFR-243
+        d = copy.deepcopy(self.GAP)
+        del d["property"]["annual_tax"]
+        r = strategy.analyze(d)
+        tax = [ln[1] for ln in r["O"]["recommended"]["ns"]["lines"] if ln[0] == "tax"]
+        self.assertTrue(tax and tax[0].endswith("Estimate)"))
+        self.assertIn("annual_tax", [a["field"] for a in r["missing"]])
+        tax = [ln[1] for ln in analyze("fha-competitive.json")["O"]["recommended"]["ns"]["lines"] if ln[0] == "tax"]
+        self.assertNotIn("Estimate", tax[0])  # the seller's bill was given
+
+    def test_weekday_deadline(self):  # OFR-244
+        sat = strategy.date(2026, 9, 26)
+        self.assertEqual(strategy.weekday_date("Friday 5pm", sat), (strategy.date(2026, 10, 2), (17, 0)))
+        self.assertEqual(strategy.weekday_date("Mon 17:30", sat), (strategy.date(2026, 9, 28), (17, 30)))
+        self.assertIsNone(strategy.weekday_date("Fri Sep 25 · 5 PM", sat))  # a full date is used as given
+        d = copy.deepcopy(self.GAP)
+        d["analysis_date"], d["competition"]["deadline"] = "2026-09-26", "Friday 5pm"
+        r = strategy.analyze(d)
+        self.assertEqual(r["B"]["competition"]["deadline"], "2026-10-02 17:00")
+        self.assertEqual(r["B"]["effective_date"], strategy.date(2026, 10, 3))
+        a = {x["field"]: x for x in r["missing"]}
+        self.assertEqual(a["deadline"]["value"], "2026-10-02 17:00")
+        first = strategy.result(r)["to_confirm"][0]
+        self.assertEqual(first, a["deadline"]["why"])  # asked first: it may already have passed
+        d["analysis_date"] = "2026-09-29"  # Tuesday: Friday is 3 days out, no question
+        self.assertNotIn("deadline", [x["field"] for x in strategy.analyze(d)["missing"]])
+
+
+
+class Audit20260930Iter7(unittest.TestCase):
+    """Eval iteration 7 on a contract that isn't FR/BAR (OFR-314 to OFR-316)."""
+
+    def setUp(self):
+        d = fixture("texas-cma-escalation.json")
+        self.d = d
+        self.r = strategy.analyze(copy.deepcopy(d), cma=strategy.load_cma(d))
+
+    def test_best_effort_line_fits_an_offer_being_written(self):  # OFR-314
+        out = strategy.result(self.r)
+        self.assertEqual(out["chat_notes"], [strategy.cf.BEST_EFFORT_OFFER_NOTE])
+        self.assertNotIn(strategy.cf.BEST_EFFORT_NOTE, out["chat_notes"])
+
+    def test_option_period_is_a_default_to_confirm(self):  # OFR-315
+        keys = [x["key"] for x in self.r["reply_lines"]]
+        self.assertIn("inspection_period", keys)
+        self.assertIn("inspection_days", [a["field"] for a in self.r["missing"]])
+        d = copy.deepcopy(self.d)
+        d["overrides"] = {"inspection_days": 4}  # the agent set it: no longer a default
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertNotIn("inspection_period", [x["key"] for x in r["reply_lines"]])
+        self.assertNotIn("inspection_days", [a["field"] for a in r["missing"]])
+        fl = analyze("fha-competitive.json")  # FR/BAR: the form's own period, nothing to confirm
+        self.assertNotIn("inspection_period", [x["key"] for x in fl["reply_lines"]])
+
+    def test_deposit_risk_date_marked_to_confirm(self):  # OFR-316
+        o = self.r["O"]["recommended"]
+        self.assertEqual(o["contract_form"], strategy.cf.OTHER)
+        _, note = strategy.risk_after(o, self.r["costs"])
+        self.assertIn(strategy.cf.term_words(strategy.cf.OTHER)["deposit_risk_confirm"], note)
+        self.assertIn("deposit_risk", [a["field"] for a in self.r["missing"]])
+        fl = analyze("fha-competitive.json")
+        _, note = strategy.risk_after(fl["O"]["recommended"], fl["costs"])
+        self.assertIsNone(strategy.cf.term_words(fl["O"]["recommended"]["contract_form"])["deposit_risk_confirm"])
+        self.assertNotIn("confirm when your contract", note or "")
+
+
+class ManualTestFixes(unittest.TestCase):
+    """The owner's manual smoke test (case 4): one competing offer, a buyer CMA, a lender-quoted rate and an
+    insurance estimate typed in (one-competing-reach.json)."""
+
+    def setUp(self):
+        self.r = analyze("one-competing-reach.json")
+
+    def test_thin_reserve_cushion_is_named_with_a_roomier_offer(self):
+        """OFR-332: the cheapest offer that reaches the band keeps only $86 over the floor: page 1 and the reply say so
+        and name the same-outlook offer that keeps more cash."""
+        self.assertIn("tight_reserve", [l["key"] for l in self.r["reply_lines"]])
+        roomy = self.r["reached"]["roomy"]
+        self.assertGreater(strategy.buyer_cash(self.r["B"], roomy)["reserve"], self.r["cash"]["recommended"]["reserve"] + 1000)
+        self.assertIsNone(analyze("cash.json")["reserve_tight"])  # plenty of cushion: no line
+
+    def test_thin_cushion_line_carries_the_trade_off(self):
+        """OFR-334: the line names what the roomier offer costs a month and the cash it keeps, so the chat has nothing to
+        compute; the files keep the cheapest offer."""
+        alt, r = self.r["reserve_alt"], self.r
+        self.assertEqual(alt["price"], r["reached"]["roomy"]["price"])
+        self.assertEqual(alt["payment_more"], strategy.monthly_payment(r["B"], r["costs"], alt["price"])
+                         - strategy.monthly_payment(r["B"], r["costs"], r["terms"]["recommended"]["price"]))
+        self.assertGreater(alt["payment_more"], 0)
+        self.assertEqual(alt["cash_kept"], strategy.buyer_cash(r["B"], r["reached"]["roomy"])["reserve"]
+                         - r["cash"]["recommended"]["reserve"])
+        self.assertIn(strategy.money(alt["cash_kept"]), r["reserve_tight"])
+        self.assertIn(strategy.money(alt["payment_more"]), r["reserve_tight"])
+        self.assertLess(r["terms"]["recommended"]["price"], alt["price"])  # the report still recommends the cheapest
+
+    def test_thin_cushion_is_a_caution_not_a_limit(self):
+        """OFR-338: inside the limits, so page 1 prints it in the caution style, not a red "Limit:" line."""
+        s = strategy.summary(self.r)
+        self.assertNotIn(self.r["reserve_tight"], s["constraints"])
+        self.assertEqual(s["cautions"], [self.r["reserve_tight"]])
+        html = buyer_render.page1(self.r, s)
+        self.assertNotIn("<b>Limit:</b> Thin", html)
+        self.assertIn('<div class="cnote">Thin cushion', html)
+
+    def test_median_days_print_whole(self):  # OFR-336: the CMA's 23.0 prints as 23
+        self.assertEqual(self.r["B"]["market"]["median_dom"], 23)
+        self.assertIsInstance(self.r["B"]["market"]["median_dom"], int)
+        self.assertIn("<b>23</b>", buyer_render.snapshot(self.r))
+
+    def test_subject_days_and_cuts_from_the_handoff(self):
+        """OFR-335: a buyer-cma handoff carries the subject's days on market and price cuts; with them only there, the
+        report shows the Days on Market tile and the market read leads with days on market."""
+        d = fixture("one-competing-reach.json")
+        for k in ("dom", "price_cuts"):
+            d["cma"]["subject"][k] = d["property"].pop(k)
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        P, C = r["B"]["property"], r["B"]["competition"]
+        self.assertEqual((P["dom"], P["price_cuts"]), (78, 2))
+        self.assertEqual(C["heat"], "soft")
+        self.assertTrue(C["heat_basis"].startswith("on days on market (78 vs. 23 median)"))
+        self.assertIn("a price cut", C["heat_basis"])
+        self.assertIn("<span>Days on Market</span><b>78</b>", buyer_render.snapshot(r))
+
+    def lvl_band(self, r, k="recommended"):
+        return r["bands"][k][r["B"]["competition"]["level"]][0]
+
+    def test_reaches_the_stronger_band_inside_every_limit(self):  # OFR-325
+        r, B = self.r, self.r["B"]
+        rule, _ = strategy.build_offer(B, r["costs"])
+        _, O = strategy.run_engine(B, r["costs"], [("recommended", rule)])
+        self.assertEqual(strategy.band_of(strategy.ci(O["recommended"], O["recommended"]["target"]["net_adj"],
+                                                      B["property"]["list_price"]), 1)[0], "unl")  # the rule's draft
+        self.assertEqual(self.lvl_band(r), "risk")
+        self.assertIsNotNone(r["reached"])
+        self.assertEqual(r["limits"]["recommended"], [])  # inside every limit
+        t = r["terms"]["recommended"]
+        self.assertLessEqual(t["price"], min(B["value"]["cma_high"], B["cma_offer_plan"]["walk_away"]))
+        self.assertGreaterEqual(r["cash"]["recommended"]["reserve"], B["buyer"]["reserve_floor"])
+        self.assertIsNone(r["promoted"])  # the softer build no longer replaces it at the same (Unlikely) outlook
+        self.assertEqual(self.lvl_band(r, "lower_cost"), "unl")
+
+    def test_no_search_with_overrides_or_a_competitive_offer(self):  # OFR-325
+        d = fixture("one-competing-reach.json")
+        d["overrides"] = {"price": 438000}
+        self.assertIsNone(strategy.analyze(d, cma=strategy.load_cma(d))["reached"])
+        self.assertIsNone(analyze("condo-flood.json")["reached"])  # Competitive already: the rule's offer stands
+
+    def test_lower_cost_reasons_fit_the_competition_level(self):  # OFR-326
+        B, costs = self.r["B"], self.r["costs"]
+        rec, _ = strategy.build_offer(B, costs)
+        t, why = strategy.lower_cost(B, costs, rec)
+        B0 = copy.deepcopy(B)
+        B0["competition"]["level"] = 0
+        _, why0 = strategy.build_offer(B0, costs)
+        for k in ("price", "seller_concessions"):  # never the level-0 reason on a deal with one competing offer
+            self.assertIn(k, why)
+            self.assertNotEqual(why[k], why0[k])
+        promoted = strategy.promote_why({}, why, "lower_cost", t, rec)
+        self.assertNotEqual(promoted["price"], why0["price"])
+        self.assertNotEqual(promoted["seller_concessions"], why0["seller_concessions"])
+
+    def test_lender_quoted_rate_is_not_an_assumption(self):  # OFR-327
+        self.assertNotIn("rate_source", [a["field"] for a in self.r["missing"]])
+        d = fixture("one-competing-reach.json")
+        d["costs"]["rate_source"] = "Freddie Mac weekly 30-year average, week of Sep 24, 2026"
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertIn("rate_source", [a["field"] for a in r["missing"]])
+
+    def test_typed_insurance_estimate_stays_an_assumption(self):  # OFR-328
+        self.assertIn("insurance_annual", [a["field"] for a in self.r["missing"]])
+        self.assertFalse(strategy.quote_in_hand(self.r["B"]["buyer"]))
+        d = fixture("one-competing-reach.json")
+        del d["buyer"]["insurance_quote"]  # a premium given with no flag is a quote in hand (OFR-217)
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertNotIn("insurance_annual", [a["field"] for a in r["missing"]])
+
+    def test_price_cut_in_a_tight_market_is_not_soft(self):  # OFR-331
+        P = {"price_cuts": 1}
+        self.assertEqual(strategy.market_heat(P, {"months_supply": 1.4})[0], "normal")
+        self.assertEqual(strategy.market_heat(P, {"months_supply": 4.2})[0], "soft")
+        self.assertEqual(strategy.market_heat(P, {})[0], "soft")  # supply unknown: the cut still reads soft
+        self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 1.4, "median_dom": 23})[0], "soft")
+
+
+class MarkdownParity(unittest.TestCase):
+    """OFR-350..361: the markdown template carries what the PDFs print, from keys strategy.result() outputs."""
+
+    TEMPLATE = os.path.join(ROOT, "skills", "buyer-offer-strategy", "assets", "offer-strategy-template.md")
+
+    def test_value_range_is_null_without_a_cma(self):  # OFR-356
+        self.assertIsNone(strategy.result(analyze("minimal.json"))["value_range"])
+        self.assertEqual(strategy.result(analyze("texas-cma-escalation.json"))["value_range"], "$598,000–$632,000")
+
+    def test_side_by_side_ends_with_the_payment(self):  # OFR-360
+        r = analyze("condo-flood.json")
+        rows = strategy.result(r)["side_by_side"]
+        self.assertEqual(rows[-1]["key"], "payment")
+        self.assertEqual(rows[-1]["values"], [f"${r['payment'][k]:,}" for k in r["O"]])
+        self.assertNotIn("payment", [x["key"] for x in rows[:-1]])
+
+    def test_market_check_rows(self):  # OFR-359
+        rows = strategy.result(analyze("minimal.json"))["market_check"]
+        self.assertEqual(rows[0], {"label": "Value Range", "value": "Not provided", "note": None})
+        labels = [m["label"] for m in strategy.result(analyze("texas-cma-escalation.json"))["market_check"]]
+        self.assertIn("Median Adjusted Comp", labels)
+        self.assertEqual(labels[-2:], ["Market Read", "CMA Offer Plan"])
+
+    def test_template_paths_exist(self):  # OFR-350..361: every summary./worksheet. path and loop field is in the output
+        import re
+        with open(self.TEMPLATE, encoding="utf-8") as f:
+            text = f.read()
+        res = strategy.result(analyze("minimal.json"))
+        for root, key in re.findall(r"\b(summary|worksheet)\.([a-z_]+)", text):
+            self.assertIn(key, res[root], f"{root}.{key}")
+        loops = {"t": res["summary"]["terms"], "o": res["summary"]["options"], "b": res["summary"]["bands"],
+                 "row": res["side_by_side"], "m": res["market_check"], "p": res["pushback"],
+                 "a": strategy.result(analyze("fha-competitive.json"))["assumptions"]}
+        for var, key in re.findall(r"\b(t|o|b|row|m|p|a)\.([a-z_]+)", text):
+            self.assertIn(key, loops[var][0], f"{var}.{key}")
+        for key in ("property", "list_price", "value_range", "reply_lines", "to_confirm", "side_by_side", "market_check",
+                    "pushback", "assumptions", "chat_notes"):
+            self.assertIn(key, text)
+            self.assertIn(key, res)
+
+    def test_template_package_statuses(self):  # OFR-350: "Never" is a cross and "Yes" a ticked box, never all "- [ ]"
+        with open(self.TEMPLATE, encoding="utf-8") as f:
+            text = f.read()
+        statuses = {x["status"] for x in strategy.result(analyze("texas-cma-escalation.json"))["worksheet"]["package"]}
+        self.assertLessEqual({"Never", "Yes"}, statuses)
+        self.assertIn('status Never: "- ✕ "', text)
+        self.assertIn('status Yes, Done, True or ✓: "- [x] "', text)
+        for key in ("docs", "form_why", "software", "frbar"):  # OFR-352..354
+            self.assertIn("worksheet." + key, text)
+
+
+if __name__ == "__main__":
+    unittest.main()

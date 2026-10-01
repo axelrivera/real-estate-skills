@@ -1,0 +1,14 @@
+{
+ "family": "CR-7_H",
+ "revision": "CR-7 Rev. 10/21",
+ "fields": {
+  "homeowners": {"at": {"after": "(a) Homeowner"}, "check": "v.homeowners is not False"},
+  "homeowners_premium_max": {"at": {"after": "or % of the Purchase", "nth": 0}, "value": "money(v.homeowners_premium_max) if v.homeowners is not False else None"},
+  "homeowners_premium_pct": {"at": {"label": "or", "after": "% of the Purchase Price", "nth": 0}, "value": "v.homeowners_premium_pct if v.homeowners is not False else None"},
+  "homeowners_date": {"at": {"label": "% of the Purchase Price by"}, "value": "mdy(v.insurance_date) if v.homeowners is not False else None"},
+  "flood": {"at": {"after": "(b) Flood"}, "check": "bool(v.flood)"},
+  "flood_premium_max": {"at": {"label": "first year premium not to exceed"}, "value": "money(v.flood_premium_max) if v.flood else None"},
+  "flood_premium_pct": {"at": {"label": "year premium not to exceed or"}, "value": "v.flood_premium_pct if v.flood else None"},
+  "flood_date": {"at": {"label": "price by"}, "value": "mdy(v.flood_date) if v.flood else None"}
+ }
+}

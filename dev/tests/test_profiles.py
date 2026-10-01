@@ -89,11 +89,11 @@ class Market(unittest.TestCase):
         m = p.load_market(state="FL", county="Seminole County")
         self.assertEqual(m.mls, "Stellar")
         self.assertEqual(m.source("mls_format.cma_export_columns"), "mls")
-        self.assertTrue(any("Stellar MLS was assumed" in n for n in m.notes))
+        self.assertIn("mls_assumed", m.note_codes)
         m = p.load_market(state="FL", county="Miami-Dade")
         self.assertIsNone(m.mls)
         self.assertIsNone(m.get("mls_format"))
-        self.assertTrue(any("MLS wasn't given" in n for n in m.notes))
+        self.assertIn("mls_not_given", m.note_codes)
 
     def test_puerto_rico_gets_stellar_but_no_florida_costs(self):
         m = p.load_market(state="PR")
@@ -106,7 +106,7 @@ class Market(unittest.TestCase):
         self.assertEqual(p.load_market(state="FL", county="Miami-Dade", mls="My Florida Regional MLS").mls, "Stellar")
         m = p.load_market(state="FL", mls="Beaches MLS")
         self.assertIsNone(m.get("mls_format"))
-        self.assertTrue(any("isn't built in" in n for n in m.notes))
+        self.assertIn("mls_not_built_in", m.note_codes)
 
     def test_no_state_assumes_nothing_from_florida(self):
         """CORE-8, TL-4: no silent Florida defaults; national estimates only."""
@@ -114,7 +114,7 @@ class Market(unittest.TestCase):
         self.assertIsNone(m.state)
         self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "estimate")
         self.assertIsNone(m.get("contract.day_count"))
-        self.assertTrue(any("don't assume Florida" in n for n in m.notes))
+        self.assertIn("no_state", m.note_codes)
 
     def test_other_states_get_national_estimates(self):
         m = p.load_market(state="GA")
@@ -124,14 +124,14 @@ class Market(unittest.TestCase):
         self.assertEqual(m.source("brokerage.listing_fee_pct"), "estimate")
         self.assertIsNone(m.get("contract.day_count"))  # time rules come from the contract, never estimated
         self.assertIsNone(m.get("cma.adjustments.pool"))
-        self.assertTrue(any("national estimates" in n for n in m.notes))
+        self.assertIn("state_not_built_in", m.note_codes)
 
     def test_no_state_transfer_tax_states(self):
         for st in ("TX", "AZ", "OR", "AK"):
             m = p.load_market(state=st)
             self.assertEqual(m.get("closing_costs.deed_transfer_tax_rate"), 0, st)
             self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "national")
-            self.assertTrue(any("no state transfer tax" in n for n in m.notes))
+            self.assertIn("no_transfer_tax", m.note_codes)
         self.assertEqual(p.load_market(state="FL").get("closing_costs.deed_transfer_tax_rate"), 0.007)  # its own
         self.assertEqual(p.load_market(state="TX").with_deal({"transfer_tax_rate": 0.002})
                          .get("closing_costs.deed_transfer_tax_rate"), 0.002)  # the deal's number still wins
@@ -158,8 +158,8 @@ class Market(unittest.TestCase):
             self.assertEqual(p.load_market(state="FL", county=name).get("closing_costs.owner_title.payer"), "buyer", name)
         for a, b in (("St. Johns", "Saint Johns"), ("DeSoto", "De Soto County")):
             self.assertEqual(p._county_key(a), p._county_key(b))
-        self.assertFalse(any("isn't a Florida county" in n for n in p.load_market(state="FL", county="St. Johns").notes))
-        self.assertTrue(any("isn't a Florida county" in n for n in p.load_market(state="FL", county="Semnole").notes))
+        self.assertNotIn("unknown_county", p.load_market(state="FL", county="St. Johns").note_codes)
+        self.assertIn("unknown_county", p.load_market(state="FL", county="Semnole").note_codes)
 
     def test_bad_state(self):
         with self.assertRaises(p.ProfileError):
@@ -194,7 +194,7 @@ class AuditMarketData(unittest.TestCase):
     def test_no_mls_without_a_county(self):
         m = p.load_market(state="FL")
         self.assertIsNone(m.mls)  # Florida has several MLSs: ask
-        self.assertTrue(any("MLS wasn't given" in n for n in m.notes))
+        self.assertIn("mls_not_given", m.note_codes)
 
     def test_pinellas_is_stellar_brevard_is_not(self):
         self.assertEqual(p.load_market(state="FL", county="Pinellas").mls, "Stellar")
@@ -206,8 +206,18 @@ class AuditMarketData(unittest.TestCase):
                          ["buyer", "buyer", "seller", "seller", "seller"])
         m = p.load_market(state="FL", county="Monroe")
         self.assertIsNone(m.get("closing_costs.owner_title.payer"))  # varies by area: ask
-        self.assertTrue(any("owner_title.payer varies by area" in n for n in m.notes))
-        self.assertFalse(any("varies by area" in n for n in p.load_market(state="FL", county="Seminole").notes))
+        self.assertIn("varies:closing_costs.owner_title.payer", m.note_codes)
+        self.assertFalse([c for c in p.load_market(state="FL", county="Seminole").note_codes if c.startswith("varies:")])
+        self.assertEqual(len(m.notes), len(m.note_codes))
+
+
+class CountyForCity(unittest.TestCase):
+    def test_built_in_districts_name_the_county(self):  # OFR-213
+        self.assertEqual(p.county_for_city("FL", "Orlando"), "Orange")  # two districts, one county
+        self.assertEqual(p.county_for_city("Florida", "casselberry"), "Seminole")
+        self.assertIsNone(p.county_for_city("FL", "Miami"))  # no built-in district
+        self.assertIsNone(p.county_for_city("TX", "Austin"))  # no state layer
+        self.assertIsNone(p.county_for_city(None, "Orlando"))
 
 
 if __name__ == "__main__":
