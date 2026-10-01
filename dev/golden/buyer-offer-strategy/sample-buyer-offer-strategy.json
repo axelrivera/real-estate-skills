@@ -3865,7 +3865,7 @@
   "recommended": 61.69
  },
  "constraints": {
-  "count": 0
+  "count": 1
  },
  "limits": {
   "lower_cost": {
@@ -3927,9 +3927,11 @@
  "promoted": null,
  "promoted_from": null,
  "reached": null,
- "reply_lines": {
-  "count": 0
- },
+ "reply_lines": [
+  {
+   "key": "tight_reserve"
+  }
+ ],
  "sample": true,
  "target": 336905,
  "terms": {

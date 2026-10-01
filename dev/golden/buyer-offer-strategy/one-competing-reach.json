@@ -4019,7 +4019,7 @@
   "recommended": 45.33
  },
  "constraints": {
-  "count": 0
+  "count": 1
  },
  "limits": {
   "lower_cost": {
@@ -4088,11 +4088,27 @@
    "loan_approval_days": 30,
    "price": 447000,
    "seller_concessions": 8000
+  },
+  "roomy": {
+   "appraisal_days": 21,
+   "appraisal_gap": 0,
+   "buyer_broker_pct": 0.025,
+   "closing_days": 36,
+   "contract_form": "as_is",
+   "deposit": 13500,
+   "home_warranty": 0,
+   "inspection_days": 10,
+   "insurance_quote": null,
+   "loan_approval_days": 30,
+   "price": 442000,
+   "seller_concessions": 3500
   }
  },
- "reply_lines": {
-  "count": 0
- },
+ "reply_lines": [
+  {
+   "key": "tight_reserve"
+  }
+ ],
  "sample": false,
  "target": 430613,
  "terms": {

@@ -5703,6 +5703,7 @@
  "reply_lines": {
   "count": 0
  },
+ "reserve_tight": null,
  "sample": true,
  "target": 395042,
  "terms": {

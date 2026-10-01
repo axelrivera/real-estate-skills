@@ -3532,6 +3532,7 @@
    "key": "inspection_period"
   }
  ],
+ "reserve_tight": null,
  "sample": true,
  "stronger_dropped": true,
  "target": 561839,

@@ -64,7 +64,8 @@ class MissingData(unittest.TestCase):
     def test_not_enough_cash_says_so(self):
         d = fixture("fha-competitive.json")
         d["buyer"]["cash_available"] = 9000
-        self.assertEqual(strategy.analyze(fixture("fha-competitive.json"))["constraints"], [])
+        r = strategy.analyze(fixture("fha-competitive.json"))  # inside the floor; only the thin-cushion note (OFR-332)
+        self.assertEqual(r["constraints"], [r["reserve_tight"]])
         r = strategy.analyze(d)
         self.assertLess(r["cash"]["recommended"]["reserve"], 0)
         self.assertEqual(len(r["constraints"]), 1)  # the shortfall, said once
@@ -796,8 +797,8 @@ class Audit20260930Iter6(unittest.TestCase):
         d = copy.deepcopy(self.TX)
         d["cma"]["offer_plan"]["walk_away"], d["overrides"] = 640000, {"inspection_days": 10}  # escalating: no flat number
         self.assertTrue(analyze_data(d)["terms"]["recommended"].get("escalation"))
-        self.assertEqual([x["key"] for x in analyze_data(d)["reply_lines"]], ["contract_terms"])
-        self.assertEqual(analyze("fha-competitive.json")["reply_lines"], [])  # FR/BAR, no highest and best
+        self.assertEqual([x["key"] for x in analyze_data(d)["reply_lines"] if x["key"] != "tight_reserve"], ["contract_terms"])
+        self.assertEqual([x["key"] for x in analyze("fha-competitive.json")["reply_lines"]], ["tight_reserve"])  # FR/BAR, no highest and best; a thin cushion (OFR-332)
 
     def test_no_escalation_question_without_escalation(self):  # OFR-240
         r = analyze_data(copy.deepcopy(self.TX))
@@ -901,6 +902,15 @@ class ManualTestFixes(unittest.TestCase):
 
     def setUp(self):
         self.r = analyze("one-competing-reach.json")
+
+    def test_thin_reserve_cushion_is_named_with_a_roomier_offer(self):
+        """OFR-332: the cheapest offer that reaches the band keeps only $86 over the floor: page 1 and the reply say so
+        and name the same-outlook offer that keeps more cash."""
+        self.assertIn("tight_reserve", [l["key"] for l in self.r["reply_lines"]])
+        self.assertIn(self.r["reserve_tight"], self.r["constraints"])
+        roomy = self.r["reached"]["roomy"]
+        self.assertGreater(strategy.buyer_cash(self.r["B"], roomy)["reserve"], self.r["cash"]["recommended"]["reserve"] + 1000)
+        self.assertIsNone(analyze("cash.json")["reserve_tight"])  # plenty of cushion: no line
 
     def lvl_band(self, r, k="recommended"):
         return r["bands"][k][r["B"]["competition"]["level"]][0]

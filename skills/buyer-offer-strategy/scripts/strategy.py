@@ -860,13 +860,13 @@ def conc_need(B, price):
 
 def reach_band(B, costs, rec):
     """OFR-325: when the rule-built offer reads At Risk or Unlikely, the lowest-cost offer inside every limit that reaches
-    a better band, with that band; else (None, None). It tries a price anywhere in the value range up to its top (never
+    a better band, with that band and the same-band offer that keeps the most cash (OFR-332); else (None, None, None). It tries a price anywhere in the value range up to its top (never
     past the CMA's walk-away, the buyer's max or, with little competition, list), smaller concessions down to what the
     buyer's cash can't cover with the reserve kept, a 3% deposit and the lender's fastest close. Lowest cost: the price
     net of concessions, then the smaller deposit, then the longer close. An escalating offer is left as built."""
     P, V, BU, lvl = B["property"], B["value"], B["buyer"], B["competition"]["level"]
     if rec.get("escalation") or V.get("assumed"):
-        return None, None
+        return None, None, None
     walk = (B.get("cma_offer_plan") or {}).get("walk_away")
     top = rnd(min(x for x in (V["cma_high"], walk, BU["max_price"], P["list_price"] if lvl <= 1 else None) if x),
               1000, "down")
@@ -892,16 +892,18 @@ def reach_band(B, costs, rec):
                     if conc >= need and t != rec and within_limits(B, costs, t):
                         tries.append((f"try{len(tries)}", t))
     if not tries:
-        return None, None
+        return None, None, None
     _, O = run_engine(B, costs, [("recommended", rec)] + tries)
     # each offer against its own clean offer at list (the same closing date), as it's scored once recommended
     bands = {k: band_of(ci(O[k], O[k]["target"]["net_adj"], P["list_price"]), lvl) for k in O}
     best = max(BAND_RANK[b[0]] for b in bands.values())
     if bands["recommended"][0] not in ("risk", "unl") or best <= BAND_RANK[bands["recommended"][0]]:
-        return None, None
-    k, t = min(((k, t) for k, t in tries if BAND_RANK[bands[k][0]] == best),
-               key=lambda kt: (kt[1]["price"] - kt[1]["seller_concessions"], kt[1]["deposit"], -kt[1]["closing_days"]))
-    return t, bands[k]
+        return None, None, None
+    same = [(k, t) for k, t in tries if BAND_RANK[bands[k][0]] == best]
+    k, t = min(same, key=lambda kt: (kt[1]["price"] - kt[1]["seller_concessions"], kt[1]["deposit"], -kt[1]["closing_days"]))
+    # OFR-332: the same-band offer that keeps the most cash, for when the cheapest one leaves a thin cushion
+    roomy = max((t2 for _, t2 in same), key=lambda t2: buyer_cash(B, t2)["reserve"])
+    return t, bands[k], roomy
 
 
 def reach_why(B, why, t, was, band):
@@ -1037,9 +1039,9 @@ def analyze(B_in, market=None, cma=None):
                 a["impact"] = "high" if a["field"] == "rate" else "med"
     reached = None
     if not ov:  # OFR-325: the rule-built offer is a first draft; the strongest outlook inside the limits wins
-        t, band = reach_band(B, costs, rec)
+        t, band, roomy = reach_band(B, costs, rec)
         if t:
-            why, reached = reach_why(B, why, t, rec, band), {"from": rec, "band": band[1]}
+            why, reached = reach_why(B, why, t, rec, band), {"from": rec, "band": band[1], "roomy": roomy}
             rec = t
     promoted = fuller = None
     for _ in range(2):  # "best" = strongest outlook inside the limits at the lowest cost that reaches it
@@ -1144,6 +1146,9 @@ def analyze(B_in, market=None, cma=None):
                     "gift funds, a lower price range, or a conversation with the lender about loan options.")
     elif rc["reserve"] < BU["reserve_floor"]:
         cons.append(f"Tight on cash: even the recommended offer leaves {money(rc['reserve'])}, below your {money(BU['reserve_floor'])} reserve floor.")
+    res["reserve_tight"] = tight_reserve(B, res, rc)  # OFR-332
+    if res["reserve_tight"]:
+        cons.append(res["reserve_tight"])
     if rec["price"] < V["cma_low"] and "payment" in why.get("price", ""):
         cons.append(f"Your ${BU['max_payment']:,}/mo payment limit caps the price at {money(rec['price'])}, below the "
                     f"{money(V['cma_low'])}–{money(V['cma_high'])} value range. Expect this offer to be passed over unless the seller has no other interest.")
@@ -1152,7 +1157,8 @@ def analyze(B_in, market=None, cma=None):
     res["constraints"] = cons
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
-    res["reply_lines"] = reply_lines(B, rec)
+    res["reply_lines"] = reply_lines(B, rec) + ([{"key": "tight_reserve", "text": res["reserve_tight"]}]
+                                                 if res["reserve_tight"] else [])
     return res
 
 
@@ -1160,6 +1166,27 @@ def highest_and_best(C):
     """OFR-239: the listing agent called for highest and best (`competition.highest_and_best`, or said so in the note)."""
     hb = C.get("highest_and_best")
     return bool(hb) if hb is not None else bool(HIGHEST_AND_BEST.search(str(C.get("note") or "")))
+
+
+TIGHT_RESERVE = (1000, 0.10)  # OFR-332: a cushion under $1,000 or 10% of the floor, whichever is more, is thin
+
+
+def tight_reserve(B, res, rc):
+    """OFR-332: one line when the recommended offer keeps the reserve floor with a thin cushion, naming the same-outlook
+    offer that keeps more cash when the search found one; else None."""
+    floor = B["buyer"]["reserve_floor"]
+    over = rc["reserve"] - floor
+    if not 0 <= over < max(TIGHT_RESERVE[0], TIGHT_RESERVE[1] * floor):
+        return None
+    line = (f"Thin cushion: this offer leaves {money(rc['reserve'])}, only {money(over)} above your {money(floor)} reserve "
+            "floor, so closing costs that come in high would cut into it.")
+    roomy = (res.get("reached") or {}).get("roomy")
+    if roomy:
+        keep = buyer_cash(B, roomy)["reserve"]
+        if keep - rc["reserve"] >= TIGHT_RESERVE[0]:
+            line += (f" {money(roomy['price'])} with {money(roomy['seller_concessions']) if roomy['seller_concessions'] else 'no'}"
+                     f" seller concessions reaches the same outlook and keeps {money(keep)}.")
+    return line
 
 
 def reply_lines(B, rec):
