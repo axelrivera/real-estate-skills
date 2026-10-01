@@ -211,7 +211,7 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
         col["cash_left"] = _tight(col["cash"], R["costs"].get("buyer_cash"))  # CMA-217
         base = base or col
         col["extra"] = col["payment"] - base["payment"]
-        saved = base["cash"] - col["cash"]
+        saved = col["cash_saved"] = base["cash"] - col["cash"]  # CMA-308: against the first scenario, never the credit
         col["payback_years"] = saved / (col["extra"] * 12) if col["extra"] > 0 and saved > 0 else None
         cols.append(col)
     # CMA-11: a higher price raises the seller's percentage costs, so "price minus credit" isn't quite their net
@@ -263,10 +263,25 @@ def _plural(n, word):
     return f"{n:,} {word}" + ("" if n == 1 else "s") if n else f"no {word}s"
 
 
+def credit_alt_saving(credit, ca):
+    """CMA-308: what offer_plan.credit_alt really saves at closing: its cash to close against the scenario at the same
+    price minus credit with no credit (else the first scenario). The higher price raises the down payment and closing
+    costs, so the saving is less than the credit. None when credit_alt matches no scenario."""
+    cols = (credit or {}).get("columns") or []
+    col = next((c for c in cols if ca and c["price"] == ca.get("price") and c["credit"] == ca.get("credit")), None)
+    if not col:
+        return None
+    base = next((c for c in cols if c["price"] == col["net"] and not c["credit"]), cols[0])
+    saved = base["cash"] - col["cash"]
+    return {"price": col["price"], "credit": col["credit"], "base_price": base["price"], "base_credit": base["credit"],
+            "cash_saved": saved, "cash_saved_display": money(saved)}
+
+
 def history_stats(R, as_of):
     """CMA-201, CMA-208: the listing history counted from `history.events` instead of by hand: price cuts and
     increases, the total cut in dollars and as a share of the first list price, failed contracts, and the days the
-    home was actively for sale across every MLS number. Returns (stats or None, [(warning key, text)]).
+    home was actively for sale across every MLS number since the last sale (CMA-307: an earlier owner's listings are
+    in the table, never in the counts). Returns (stats or None, [(warning key, text)]).
 
     Each event is {date: YYYY-MM-DD, mls, change, price (the asking price after it, when the row shows one), dom (the
     grid's days on market at that row, when it shows one), days_off / days_on (days off or back on the market in
@@ -320,10 +335,15 @@ def history_stats(R, as_of):
     if subject_mls and newest_mls and newest_mls != subject_mls:
         notes.append(("history_mls_mismatch", f"The newest history row is MLS {newest_mls}, but the listing is MLS "
                       f"{subject_mls}: check that the history is this home's current listing."))
+    # CMA-307: the counts start after the last sale (an ownership change): an earlier owner's listing stays in the
+    # table but its days, price changes and contracts aren't this seller's
+    sale = max((n for n, r in enumerate(rows[:-1]) if HISTORY_CHANGES[r["change"]] == "sold"), default=None)
+    counted = rows[sale + 1:] if sale is not None else rows
     # the price changes: any row whose price differs from the asking price before it (a new listing restarts it)
     cuts, increases, asking, first_price, first_listed, last_contract = [], [], None, None, None, None
     for r in rows:
         r["delta"] = 0
+    for r in counted:
         if HISTORY_CHANGES[r["change"]] == "pending":  # CMA-214: the asking price when it last went under contract
             last_contract = (r["date"], r["price"] if r["price"] is not None else asking)
         if r["change"] in HISTORY_NEW:
@@ -338,7 +358,7 @@ def history_stats(R, as_of):
         asking = r["price"]
     # active days and failed contracts, listing by listing
     listings, current = [], None
-    for r in rows:
+    for r in counted:
         if r["change"] in HISTORY_NEW or current is None or (r["mls"] and current["mls"] and r["mls"] != current["mls"]):
             current = {"mls": r["mls"], "rows": []}
             listings.append(current)
@@ -381,7 +401,7 @@ def history_stats(R, as_of):
                                   "dom, each pair as dated off_market and back_on events, or the days in days_off / "
                                   "days_on (report-data.md)."))
         active_days += days
-    total_cut, first_listed = sum(cuts), first_listed or rows[0]["date"]
+    total_cut, first_listed = sum(cuts), first_listed or counted[0]["date"]
     timeline = []
     for r in rows:  # oldest first, for the report's table (render.py words each kind from labels.json)
         kind = HISTORY_KIND.get(r["change"], r["change"])
@@ -397,6 +417,8 @@ def history_stats(R, as_of):
         "price_cut_pct": round(total_cut / first_price, 4) if first_price and total_cut else 0,
         "price_increase_total": sum(increases), "failed_contracts": failed, "active_days": active_days,
         "out_of_order": out_of_order,  # CMA-216: event indices, grouped
+        # CMA-307: the sale the counts start after, when the history has one before the current listing
+        "counted_since_sale": rows[sale]["date"].isoformat() if sale is not None else None,
         "timeline": timeline,
     }
     ask_now = R["subject"].get("list_price") or asking
@@ -710,8 +732,10 @@ def compute(R, market, homes):
         elif c["over_costs"]:
             warn("credit_over_costs", f"The {money(c['credit'])} credit at {money(c['price'])} exceeds the closing costs: fix the scenario.")
     ca = op.get("credit_alt")
-    if ca and credit and not any(c["price"] == ca["price"] and c["credit"] == ca["credit"] for c in credit["columns"]):
-        warn("credit_alt_mismatch", "offer_plan.credit_alt doesn't match any price-vs-credit scenario.")
+    alt = credit_alt_saving(credit, ca)
+    if ca and not alt:  # CMA-308: without its scenario the report can't say what it saves, so it's left out
+        warn("credit_alt_mismatch", "offer_plan.credit_alt doesn't match any price-vs-credit scenario: the report "
+             "leaves it out until it does.")
     for key, text in range_warnings(bl, [c["adjusted"] for c in R["comps"]["cards"]], market):  # CMA-296
         warn(key, text)
     if op["walk_away"] > bl["high"]:
@@ -762,8 +786,6 @@ def compute(R, market, homes):
     for key, text in notes:
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
-    values = placeholder_values(median_adjusted, hist, credit, len(R["comps"]["cards"]))  # CMA-203
-    warn("unfilled_placeholder", *placeholder_warnings(R, values, RENDER_PLACEHOLDERS))
 
     fit = mls.trend([h for h in homes if not mls.same_address(h["address"], s.get("mls_address", s["address"]))],
                     s["sqft"], (R.get("scatter") or {}).get("fit_size_ratio", 1.6)) if homes else None
@@ -784,6 +806,12 @@ def compute(R, market, homes):
             "median_seller_paid_recent": recent.get("median_seller_paid_when_paid"),
             "months_supply": st["months_supply_at_recent_pace"],
             "active_count": st["active_count"]}.items() if v is not None}
+    values = placeholder_values(median_adjusted, hist, credit, len(R["comps"]["cards"]))  # CMA-203
+    if alt:  # CMA-308: the credit alternative's real cash saving, quoted instead of the credit
+        values["credit_alt_cash_saved"] = alt["cash_saved_display"]
+    if stats.get("months_supply") is not None:  # CMA-310: quoted, never rounded by hand
+        values["months_supply"] = f"{stats['months_supply']:.1f} months"
+    warn("unfilled_placeholder", *placeholder_warnings(R, values, RENDER_PLACEHOLDERS))
     as_of = R.get("as_of") or date.today().isoformat()
     tj, pay_in = tax_rows[ji], R["costs"]["payment"]
     h = handoff.build(
@@ -805,7 +833,8 @@ def compute(R, market, homes):
         offer_plan={k: op[k] for k in ("opening", "target_low", "target_high", "walk_away") if k in op},
         market_profile={"state": market.state, "mls": market.mls},
     )
-    data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
+    data_source = {"mls": market.mls, "as_of": as_of, "as_of_display": cma.long_date(as_of),  # CMA-311
+                   "export": bool(homes)}
     return {
         "data_source": data_source,
         "ok": True,
@@ -825,6 +854,7 @@ def compute(R, market, homes):
         "current_bill_display": money(R["costs"]["taxes"]["current_bill"]) if R["costs"]["taxes"].get("current_bill") else None,
         "payments": pay,
         "credit": credit,
+        "credit_alt": alt,  # CMA-308
         # CMA-235: the credit option that fits the buyer's cash, named by the cash_short warning
         "cash_fit": {**{k: cash_fit[k] for k in ("price", "credit", "cash")},  # CMA-295: the chat template quotes it
                      **{k + "_display": money(cash_fit[k]) for k in ("price", "credit", "cash")}} if cash_fit else None,

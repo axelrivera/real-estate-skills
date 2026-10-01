@@ -10,8 +10,8 @@
 
 | Field | Notes |
 |---|---|
-| `prepared_date` | Written out ("September 22, 2026"). Default: today |
-| `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. Default: today |
+| `prepared_date` | Written out ("September 22, 2026"). The date the agent gave as today, when they gave one. Default: the computer's date |
+| `as_of` | `YYYY-MM-DD`: the date the export was pulled (also stats.py's `--as-of`), used for the handoff, months of supply and date rules. The date the agent gave as today, when they gave one. Default: the computer's date |
 | `export` | Path to the MLS export CSV (absolute, or relative to report.json's folder; keep them together in the temporary folder) (used for the chart and the handoff's market stats) |
 | `split_date` | The `--split-date` you used with stats.py |
 | `mls` | The MLS name when it isn't the one built in for the county (same as `--mls`) |
@@ -51,7 +51,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 `heading` (a finding), `intro`, `events`, `after`. The gut check needs `events` too: the history's counts come only from them.
 
-`events`: one per row of the MLS history grid, in the grid's order (newest first), copied as they are, never re-sorted by hand: compute.py warns when a row is out of date order and counts it by its date.
+`events`: one per row of the MLS history grid, in the grid's order (newest first), copied as they are, never re-sorted by hand and never left out: an earlier owner's listing and its sale stay in, so the table shows the whole record: compute.py warns when a row is out of date order and counts it by its date.
 
 | Field | Notes |
 |---|---|
@@ -66,7 +66,7 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 **Undated off/on pairs.** A grid row that sums up several moves ("TOM (off and on twice through Mar 5)") hides off/on pairs with no dates, so the calendar counts that stretch as all off (or all on). Enter the row as its dated event with the wording in `note`, then, in this order of preference: the listing's DOM from the grid as `dom` (the MLS's count already includes the pairs, so nothing else is needed); each pair as its own dated `off_market` and `back_on` events, when the agent has the dates; or the days in `days_on` (days back for sale inside an off stretch) or `days_off` (days off inside an active stretch), when the agent knows them. A note that says a move happened more than once, with none of these, is warned (`history_repeat`): ask the agent, and quote the active days as compute.py counted them until they answer.
 
-A past sale from the public records is a `sold` event with no `mls`. compute.py prints `history`: `price_cuts`, `price_increases`, `price_cut_total`, `price_cut_pct` (of the first list price), `failed_contracts` (a pending followed by anything but a sale), `last_contract_price` and `vs_last_contract` (asking now minus the asking price when it last went under contract, quoted with `{last_contract_price}` and `{vs_last_contract}`), `out_of_order` (the rows that break the grid's date order), `active_days` (days listed for sale, not off the market or under contract, across every MLS number, the current one to `as_of`), and builds the report's table from the events. `rows` (`[date, event, price]` strings) replaces that table only when you need wording the events can't give; the counts still come from `events`.
+A past sale from the public records is a `sold` event with no `mls`. compute.py prints `history`: `price_cuts`, `price_increases`, `price_cut_total`, `price_cut_pct` (of the first list price), `failed_contracts` (a pending followed by anything but a sale), `last_contract_price` and `vs_last_contract` (asking now minus the asking price when it last went under contract, quoted with `{last_contract_price}` and `{vs_last_contract}`), `out_of_order` (the rows that break the grid's date order), `active_days` (days listed for sale, not off the market or under contract, across every MLS number since the last sale, the current one to `as_of`). Every count starts after the last sale (an ownership change, `counted_since_sale`): an earlier owner's listing shows in the table but adds no days, cuts or contracts, and builds the report's table from the events. `rows` (`[date, event, price]` strings) replaces that table only when you need wording the events can't give; the counts still come from `events`.
 
 ## offer_plan
 

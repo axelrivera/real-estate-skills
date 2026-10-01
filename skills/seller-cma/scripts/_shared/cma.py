@@ -11,6 +11,7 @@ import re
 import shutil
 import statistics
 import subprocess
+from datetime import date
 
 from . import finance, mls
 
@@ -719,11 +720,20 @@ def outlier_warnings(cards, share=OUTLIER_SHARE):
     return out
 
 
+def long_date(value):
+    """A YYYY-MM-DD date written out ("September 26, 2026"); anything else as given."""
+    try:
+        d = date.fromisoformat(str(value))
+    except ValueError:
+        return value or ""
+    return f"{d:%B} {d.day}, {d.year}"
+
+
 def report_notices(C):
     """The CMA's fixed closing notices (CMA-16): where the sales data came from and as of when, that a CMA isn't an
     appraisal or for lending, and that payment and tax figures are estimates."""
     src = C.get("data_source") or {}
-    when = src.get("as_of") or ""
+    when = long_date(src.get("as_of"))  # CMA-311: "September 26, 2026" in a client PDF, never 2026-09-26
     lines = [f"Sales data: {src['mls']} MLS as of {when}. Deemed reliable but not guaranteed." if src.get("mls") and src.get("export")
              else f"Sales data as of {when}, from the sources named in the report. Deemed reliable but not guaranteed."]
     lines.append("This comparative market analysis is an opinion of price, not an appraisal, and isn't for lending purposes.")

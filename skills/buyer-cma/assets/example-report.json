@@ -429,7 +429,7 @@
   ],
   "bullets": [
    "<strong>Homes are selling for about 4% under their original asking price</strong>, after seller-paid costs, compared with about 1% in the spring. Sellers are now expecting to negotiate.",
-   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale in this area, and at the summer pace of sales that's about three months of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Two in three current listings have already cut their price.",
+   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale in this area, and at the summer pace of sales that's {months_supply} of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Two in three current listings have already cut their price.",
    "<strong>Mortgage rates are up.</strong> The national average 30-year rate was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. That's the main reason the spring prices are harder to repeat now.",
    "<strong>Price per square foot.</strong> Cattail Crossing homes have sold for a median of about $243 per square foot since April. This home is asking $266. That's supportable for an updated pool home with a new roof, but only two similar sales have been higher."
   ]

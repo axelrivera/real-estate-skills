@@ -978,5 +978,89 @@ class SixthPass(unittest.TestCase):
         self.assertNotRegex(doc, r"~\d")
 
 
+class ManualSmoke(unittest.TestCase):
+    """The owner's manual smoke test (CMA-307 to CMA-315)."""
+    KESTREL = [  # the 360 grid, newest first: the current listing, then an earlier owner's listing that sold
+        {"date": "2026-09-12", "mls": "X9061187", "change": "price", "price": 464900, "dom": 64},
+        {"date": "2026-08-14", "mls": "X9061187", "change": "price", "price": 474900, "dom": 35},
+        {"date": "2026-07-10", "mls": "X9061187", "change": "listed", "price": 489900, "dom": 0},
+        {"date": "2015-05-22", "mls": "X3320415", "change": "sold", "price": 262000, "dom": 21},
+        {"date": "2015-04-21", "mls": "X3320415", "change": "pending", "price": 269900, "dom": 21},
+        {"date": "2015-03-31", "mls": "X3320415", "change": "listed", "price": 269900, "dom": 0},
+    ]
+
+    def run_(self, change=None):
+        R = report()
+        if change:
+            change(R)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def kestrel(self, R):
+        R["as_of"] = "2026-09-26"
+        R["subject"]["list_price"] = 464900
+        R["subject"]["locality"] = R["subject"]["locality"].rsplit("MLS ", 1)[0] + "MLS X9061187"
+        R["history"]["events"] = copy.deepcopy(self.KESTREL)
+        R["history"].pop("rows", None)
+
+    def test_counts_start_after_the_last_sale(self):
+        """CMA-307: an earlier owner's listing that sold is in the table but not in the active days or the counts."""
+        R, C = self.run_(self.kestrel)
+        h = C["history"]
+        self.assertEqual(h["active_days"], 64 + 14)  # the current listing's DOM, then Sep 12 to as_of Sep 26
+        self.assertEqual((h["price_cuts"], h["price_increases"], h["failed_contracts"], h["listings"]), (2, 0, 0, 1))
+        self.assertEqual(h["first_listed"], "2026-07-10")
+        self.assertEqual(h["first_list_price"], 489900)
+        self.assertEqual(h["counted_since_sale"], "2015-05-22")
+        self.assertNotIn("last_contract_price", h)  # the only contract was the earlier owner's
+        self.assertEqual(len(h["timeline"]), 6)  # CMA-312: every grid row stays in the table
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertNotIn("Relisted as a new listing", doc)  # the 2026 listing is the next owner's
+        self.assertEqual(doc.count("Listed for sale"), 2)
+
+    def test_credit_alternative_quotes_the_computed_saving(self):
+        """CMA-308: the credit alternative's cash saved is the scenarios' difference, less than the credit."""
+        R, C = self.run_()
+        alt = C["credit_alt"]
+        cols = {(c["price"], c["credit"]): c for c in C["credit"]["columns"]}
+        self.assertEqual((alt["price"], alt["credit"], alt["base_price"]), (465000, 10000, 455000))
+        self.assertEqual(alt["cash_saved"], cols[(455000, 0)]["cash"] - cols[(465000, 10000)]["cash"])
+        self.assertLess(alt["cash_saved"], 10000)
+        self.assertEqual(C["placeholders"]["credit_alt_cash_saved"], alt["cash_saved_display"])
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn(f"about {alt['cash_saved_display']} less cash at closing", doc)
+        self.assertNotIn("$10,000 more cash", doc)
+
+        def mismatch(R):
+            R["offer_plan"]["credit_alt"] = {"price": 470000, "credit": 7000}
+        R, C = self.run_(mismatch)
+        self.assertIsNone(C["credit_alt"])
+        self.assertIn("credit_alt_mismatch", C["warning_keys"])
+
+    def test_months_supply_placeholder(self):
+        """CMA-310: months of supply quoted from the export, never rounded into words by hand."""
+        def quote(R):
+            R["market"]["bullets"][0] = "<strong>Supply.</strong> About {months_supply} at the recent pace."
+        R, C = self.run_(quote)
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        self.assertRegex(C["placeholders"]["months_supply"], r"^\d+\.\d months$")
+
+    def test_notice_date_written_out(self):
+        """CMA-311: the client notice says "September 26, 2026", never 2026-09-26."""
+        lines = buyer_render.cma.report_notices({"data_source": {"mls": "Stellar", "export": True, "as_of": "2026-09-26"}})
+        self.assertIn("Stellar MLS as of September 26, 2026.", lines[0])
+        _, C = self.run_(lambda R: R.__setitem__("as_of", "2026-09-26"))
+        self.assertEqual(C["data_source"]["as_of_display"], "September 26, 2026")
+
+    def test_tax_table_names_its_price(self):
+        """CMA-315: the tax table says which of the plan's prices its estimate is at."""
+        def at_target(R):
+            R["costs"]["taxes"].pop("purchase_price", None)
+            R["costs"]["payment"].pop("price", None)
+        R, C = self.run_(at_target)
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn(f"Estimate at a {compute.money(C['payments']['price'])} Purchase (Target),", doc)
+
+
 if __name__ == "__main__":
     unittest.main()

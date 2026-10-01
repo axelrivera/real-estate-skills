@@ -514,8 +514,10 @@ def case_buyer_cma(pdf, checks):
     base["comps"]["cards"] = [{**c, "meta": "", "bullets": ["Reference comp."]} for c in ref["comps"]]
     base["scatter"]["callouts"] = []
     base["history"] = {"heading": "Price History", "intro": "The full history:", "after": "", "events": history_events(h)}
-    base["costs"]["taxes"].update({**ref["taxes"], "purchase_price": h["list_price"]})
-    base["costs"]["payment"].update({**ref["payment"], "price": h["list_price"], "tax_jurisdiction_index": 0})
+    base["costs"]["taxes"].update(ref["taxes"])
+    base["costs"]["taxes"].pop("purchase_price", None)  # CMA-315: the skill's default, taxes at the payment's price
+    base["costs"]["payment"].update({**ref["payment"], "tax_jurisdiction_index": 0})
+    base["costs"]["payment"].pop("price", None)  # the payment at the plan's target, as the skill figures it
     base["costs"]["credit_scenarios"].update(ref["credit_scenarios"])
     base["costs"]["credit_scenarios"].pop("buydown", None)
     work = os.path.join(WORK, "buyer-cma")
@@ -539,7 +541,8 @@ def case_buyer_cma(pdf, checks):
         "$262,000 in May 2015.",
         f"- **Counted by compute.py:** {comp['history']['price_cuts']} price cuts, {comp['history']['price_increases']} "
         f"increases, {money(comp['history']['price_cut_total'])} cut in all, {comp['history']['active_days']} active "
-        "days. The report and reply must use these counts, never a hand count.",
+        "days (the 2015 listing that sold is in the history table but not in the counts). The report and reply must "
+        "use these counts, never a hand count.",
         f"- Facts: {h['beds']} beds, {h['baths']} baths, {h['sqft']:,} sq ft, built {h['year_built']}, screened pool, "
         "lot 0.27 acre, HOA $420 a year, flood zone X, roof 2010 (a watch item: insurers ask about roofs this age).",
         "- Tax: 2025 bill $4,095.13 with the seller's homestead. Tax Area C1 (City of Casselberry). The buyer's bill "
@@ -569,8 +572,10 @@ def case_buyer_cma(pdf, checks):
         "range (the reference run puts it " + comp["range"]["asking_position"] + "), and the opening offer and "
         f"walk-away should sit inside about {band(min(adj), max(adj))} (that span plus or minus 3%).",
         "",
-        "## Taxes at the Asking Price (compute.py)", "",
-        "Fixed by the built-in 2025 Casselberry millage and the new owner's homestead:", "",
+        "## Taxes at the Target Price (compute.py)", "",
+        f"Fixed by the built-in 2025 Casselberry millage and the new owner's homestead, at the reference plan's target "
+        f"({comp['payments']['price_display']}). The skill figures taxes at the payment's price, the target, so with "
+        "Claude's own plan the dollars move with its target; the report's tax table names that price:", "",
         table(["Jurisdiction", "Basis", "A Year", "A Month"],
               [[t["label"], t["basis"], t["annual_display"], t["monthly_display"]] for t in comp["taxes"]]), "",
         f"The listing shows the seller's {comp['current_bill_display']} bill; the report must say the buyer's bill "
@@ -840,8 +845,8 @@ CHECKS = {
                       ("Facts and market numbers match expected.md", "both"),
                       ("Listing presentation: the PPTX opens and its prices and nets match the PDF", "both"),
                       ("\"Perfect for young families\" is declined in one sentence with compliant wording", "both")],
-    "03-buyer-cma": [("PDF has the value range, the full history with both price cuts, and the scatterplot", "cowork"),
-                     ("Facts, tax at the asking price and market numbers match expected.md", "cowork"),
+    "03-buyer-cma": [("PDF has the value range, the full history (both price cuts and the 2015 listing and sale), and the scatterplot", "cowork"),
+                     ("Facts, tax at the target price (named in the tax table) and market numbers match expected.md", "cowork"),
                      ("Opening offer and walk-away sit inside the sanity band", "cowork")],
     "04-buyer-offer-strategy": [("Offer Options and Offer Package Worksheet PDFs are both delivered", "cowork"),
                                 ("Recommended offer stays inside every limit (price, cash, reserve, payment)", "cowork"),

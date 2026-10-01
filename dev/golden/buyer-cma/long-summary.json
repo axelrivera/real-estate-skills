@@ -29,6 +29,7 @@
     "cap": 13650.0,
     "cash": 36400.0,
     "cash_left": null,
+    "cash_saved": 0.0,
     "cash_short": null,
     "closing_costs": 13650.0,
     "credit": 0,
@@ -49,6 +50,7 @@
     "cap": 13800.0,
     "cash": 31800.0,
     "cash_left": null,
+    "cash_saved": 4600.0,
     "cash_short": null,
     "closing_costs": 13800.0,
     "credit": 5000,
@@ -69,6 +71,7 @@
     "cap": 13950.0,
     "cash": 27200.0,
     "cash_left": null,
+    "cash_saved": 9200.0,
     "cash_short": null,
     "closing_costs": 13950.0,
     "credit": 10000,
@@ -93,6 +96,13 @@
    "count": 1
   },
   "seller_cost_per_10k": 70
+ },
+ "credit_alt": {
+  "base_credit": 0,
+  "base_price": 455000,
+  "cash_saved": 9200.0,
+  "credit": 10000,
+  "price": 465000
  },
  "current_bill": 2731,
  "data_source": {
@@ -182,6 +192,7 @@
  },
  "history": {
   "active_days": 119,
+  "counted_since_sale": null,
   "current_price": 474900,
   "display": {
    "price_cut_count": "4",

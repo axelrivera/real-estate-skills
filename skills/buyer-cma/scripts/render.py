@@ -120,6 +120,8 @@ def history_rows(h, hist, L):
             kind = "relisted" if n_listed > 1 else "listed"
         elif kind == "back_on" and e["delta"]:
             kind = "back_on_higher" if e["delta"] > 0 else "back_on_lower"
+        elif kind == "sold":  # CMA-307: a listing after a sale is the next owner's, not a relisting
+            n_listed = 0
         out.append([when, e.get("note") or L("hist_" + kind), money(e["price"]) if e["price"] is not None else "—"])
     return out
 
@@ -163,7 +165,7 @@ def summary_page(R, C, agent, L):
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_costs")}</div><div class="tbl"><table><tbody>{trs}</tbody></table></div>'
              + cash_fit_note(first, C, L)
-             + f'<div class="note">{L("sum_costs_note", price=money(pay["price"]))}</div></div></div>')
+             + f'<div class="note">{L("sum_costs_note", price=money(pay["price"]), basis=basis_label(pay, L))}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_check")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["check_first"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{L("sum_next")}</b> {sp["next_step"]}</span></div>')
@@ -235,7 +237,11 @@ def body(R, C, homes, agent, L):
                  [L("ladder_walk"), money(op["walk_away"]), op["why_walk_away"]]], num_cols=(1,), row_classes={0: "total"})]
     if op.get("credit_alt"):
         ca = op["credit_alt"]
-        b.append("<p>" + L("credit_alt", price=money(ca["price"]), credit=money(ca["credit"]), equiv=money(ca["price"] - ca["credit"])) + "</p>")
+        alt = C.get("credit_alt")  # CMA-308: the cash it saves comes from the scenarios, never the credit itself
+        if alt:
+            key = "credit_alt" if alt["cash_saved"] > 0 else "credit_alt_no_saving"
+            b.append("<p>" + L(key, price=money(ca["price"]), credit=money(ca["credit"]), equiv=money(ca["price"] - ca["credit"]),
+                               saved=alt["cash_saved_display"], base=money(alt["base_price"])) + "</p>")
     b.append(f'<p class="note">{L("offer_conditions", conditions=op["conditions"])}</p>')
     b += [f'<h3>{R["offer"].get("heading", L("h_offer"))}</h3>', ul(R["offer"]["bullets"])]
 
@@ -281,7 +287,9 @@ def body(R, C, homes, agent, L):
     trows = [[seller_row, money(bill), money(bill / 12)] if bill else [seller_row, L("not_available"), "—"]]
     trows += [[L("your_bill", label=j["label"]), "≈ " + money(j["annual"], 100), "≈ " + money(j["annual"] / 12)] for j in C["taxes"]]
     homestead = homestead_label(R, L)
-    b.append(table([L("tax_header", price=money(t["purchase_price"]), homestead=homestead), L("th_yearly"), L("th_monthly")],
+    tax_basis = compute.price_basis(t["purchase_price"], R)  # CMA-315: which of the plan's prices the tax is at
+    b.append(table([L("tax_header", price=money(t["purchase_price"]), homestead=homestead,
+                      basis=L("basis_" + tax_basis) if tax_basis else ""), L("th_yearly"), L("th_monthly")],
                    trows, num_cols=(1, 2), row_classes={i: "tax-jump" for i in range(1, len(trows))}))
     note = t["note"]
     if any(j["estimated"] for j in C["taxes"]):
