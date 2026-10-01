@@ -85,7 +85,7 @@
 |---|---|
 | {{each summary.kpis: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}, when there is one) |
 | Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}} |
-| Buyer Can Walk Away Until | {{summary.certainty.walk_away_until}} ({{summary.certainty.walk_away_note}}, when there is one) |
+| Buyer's Last Cancel Right | {{summary.certainty.walk_away_until}} ({{summary.certainty.walk_away_note}}, when there is one) |
 | Deposit at Risk After That | {{summary.certainty.deposit}} |
 | Closing | {{summary.certainty.closing}} |
 | Biggest Threat | {{summary.certainty.threat}} |

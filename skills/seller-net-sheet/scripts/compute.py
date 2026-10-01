@@ -369,6 +369,9 @@ def compute(R, market):
     if "title_fees" in assumed and market.source("closing_costs.seller_title_fees") != "estimate":
         notes.append("Title company fees are typical local charges; the title company's quote replaces them.")
         assumptions.append("Title company fees are the typical local charges: a title quote replaces them.")
+    # iteration 11: a built-in estoppel fee is a typical local charge too (a national estimate is labeled on its line)
+    if (any(l["key"] == "estoppel" for l in first["lines"]) and market.source("closing_costs.hoa_estoppel_fee") not in ("estimate", "deal")):
+        notes.append("The HOA estoppel fee is a typical local charge; the association's fee schedule replaces it.")
     estimates = [a["text"] for a in first["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimates:
         notes.append(f"Estimates, not local figures: {', '.join(estimates)}. Local rates or a title quote replace them.")

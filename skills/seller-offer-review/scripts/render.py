@@ -115,7 +115,7 @@ def certainty_panel(c, subtitle="As Offered"):
   <div class="gauge"><b class="{t}">{c["score"]}</b><span>/100 · <b class="{t}" style="font-size:inherit">{c["band"]}</b> certainty</span></div>
   <div class="meter"><div class="bar {b}" style="width:{c["score"]}%"></div></div>
   <table class="facts2">
-   <tr><td>Buyer Can Walk Away Until</td><td class="n"><b>{esc(c["walk_away_until"])}</b></td></tr>
+   <tr><td>Buyer's Last Cancel Right</td><td class="n"><b>{esc(c["walk_away_until"])}</b></td></tr>
    <tr><td>Deposit at Risk After That</td><td class="n">{esc(c["deposit"]) if c["deposit"] != "not provided" else '<span class="rt">not provided</span>'}</td></tr>
    <tr><td>Closing</td><td class="n"><b class="{"" if c["closing_ok"] else "rt"}">{esc(c["closing"])}</b></td></tr>
    <tr><td>Biggest Threat</td><td class="n"><b class="rt">{esc(c["threat"])}</b></td></tr>

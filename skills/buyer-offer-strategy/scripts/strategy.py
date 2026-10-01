@@ -1728,7 +1728,10 @@ def worksheet(r, variant=None):
     if not quote_in_hand(BU):
         ins_reason.append("no insurance quote yet")
     if ins_reason and financed:
-        riders.append((names["insurance"], f"Days to obtain coverage: {blank('e.g. within inspection period')} · max acceptable premium: {blank('$/yr')}",
+        # iteration 11 eval 1: Rider H asks for a date with a form default, not an example (farbar-riders.md H)
+        due = ("deadline date: blank = **the earlier of 30 days after the Effective Date or 10 days before Closing**"
+               if farbar else f"days to obtain coverage: {blank('per your form')}")
+        riders.append((names["insurance"], f"{due[:1].upper()}{due[1:]} · max acceptable premium: {blank('$/yr')}",
                        "Recommended: " + ", ".join(ins_reason) + ". Weakens the offer slightly; skip if a quote is already in hand"))
     if BU.get("needs_sale"):
         riders.append((names["sale"], f"Buyer's property: {blank('address')} · days: {blank('21 or fewer')}", "Weakens the offer; pair with a kick-out clause"))

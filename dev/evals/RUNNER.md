@@ -10,9 +10,9 @@ You are playing Claude inside claude.ai / Cowork, helping a real estate agent. A
   cd <skill folder> && export PATH=<repo>/.venv/bin:$PATH OUTPUT_DIR=<outputs folder> NODE_PATH=<repo>/dev/node_modules && . ~/.nvm/nvm.sh && nvm use --silent 22 >/dev/null; python3 scripts/...
   ```
   `python3` then resolves to the right interpreter. `/mnt/user-data/outputs/` doesn't exist here: wherever the skill says the outputs folder, use your outputs folder.
-- Write every file you create (data JSON, profiles, PDFs, PPTX, handoffs) to your outputs folder. Never write inside the skill folder or anywhere else in the repo.
+- Write every file you create (data JSON, profiles, PDFs, PPTX, handoffs) to your outputs folder, and scratch files (extracted text, page images, working data) to a `_work/` subfolder of it, never to a shared temp or scratchpad name another runner could overwrite. Never write inside the skill folder or anywhere else in the repo.
 - Web search is available if the skill says to look something up.
-- Today is 2026-09-26 (the eval files assume late September 2026: the Cypress Bend contract was executed 9/25), unless your task gives another date (an eval's `today`). Use that date even if the machine clock says otherwise, and pass it to any script that takes a report date.
+- Today is the date on your task's first line ("Today is ...", written by `dev/evals/setup.py`: the eval's `today`, else 2026-09-26, since the eval files assume late September 2026). Use it even if the machine clock says otherwise, and pass it to any script that takes a report date.
 
 ## What to save in the outputs folder
 

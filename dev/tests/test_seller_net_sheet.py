@@ -164,6 +164,13 @@ class Iteration9(unittest.TestCase):
         for name in ("texas-no-payoff.json", "florida-three-prices.json", "miami-condo-bill-paid.json"):
             self.assertFalse([n for n in compute.run(fixture(name))["market_notes"] if "MLS" in n or "--columns" in n])
 
+    def test_builtin_estoppel_fee_is_noted(self):  # iteration 11: a built-in local fee says it's typical, like title fees
+        r = compute.run(fixture("florida-three-prices.json"))
+        self.assertTrue(any("estoppel fee is a typical local charge" in n for n in r["notes"]))
+        # the deal's own figure (Miami fixture) and a national estimate (Texas, labeled on its line) need no note
+        self.assertFalse(any("estoppel" in n for n in compute.run(fixture("miami-condo-bill-paid.json"))["notes"]))
+        self.assertFalse(any("estoppel" in n for n in compute.run(fixture("texas-no-payoff.json"))["notes"]))
+
 
 class Inputs(unittest.TestCase):
     def base(self):

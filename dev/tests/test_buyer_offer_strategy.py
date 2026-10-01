@@ -1201,3 +1201,10 @@ class MarkdownParity(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Iteration11(unittest.TestCase):
+    def test_rider_h_blank_shows_the_form_default(self):  # eval 1: an "e.g." hint stood where the form's default goes
+        ws = json.dumps(strategy.worksheet(strategy.analyze(fixture("condo-flood.json"))))
+        self.assertIn("the earlier of 30 days after the Effective Date or 10 days before Closing", ws)
+        self.assertNotIn("e.g. within inspection period", ws)
