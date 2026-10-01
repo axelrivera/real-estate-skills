@@ -93,7 +93,8 @@ class OtherOffersAssumptions(unittest.TestCase):  # OFR-346
     def test_a_single_review_lists_only_its_own_offer_scoped_assumptions(self):
         import json
         path = os.path.join(os.path.dirname(__file__), "..", "fixtures", "seller-offer-review", "four-offers.json")
-        R = review.analyze(json.load(open(path)))
+        with open(path) as f:
+            R = review.analyze(json.load(f))
         scopes = lambda a: [x for x in [a["scope"], *(a.get("also") or [])] if x.startswith("offer ")]  # noqa: E731
         only_b = [a for a in R["missing"] if "offer B" in scopes(a) and "offer A" not in scopes(a)]
         self.assertTrue(only_b)
