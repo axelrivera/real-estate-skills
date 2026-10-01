@@ -88,5 +88,18 @@ class TopOfferNextStepOrder(unittest.TestCase):  # OFR-344
         self.assertLess(nxt.index("extend past"), nxt.index("send the counter"))
 
 
+
+class OtherOffersAssumptions(unittest.TestCase):  # OFR-346
+    def test_a_single_review_lists_only_its_own_offer_scoped_assumptions(self):
+        import json
+        path = os.path.join(os.path.dirname(__file__), "..", "fixtures", "seller-offer-review", "four-offers.json")
+        R = review.analyze(json.load(open(path)))
+        scopes = lambda a: [x for x in [a["scope"], *(a.get("also") or [])] if x.startswith("offer ")]  # noqa: E731
+        only_b = [a for a in R["missing"] if "offer B" in scopes(a) and "offer A" not in scopes(a)]
+        self.assertTrue(only_b)
+        self.assertFalse([a for a in review.listed_assumptions(R, False, "A") if a in only_b])
+        self.assertTrue(all(a in review.listed_assumptions(R, False, "B") for a in only_b))
+
+
 if __name__ == "__main__":
     unittest.main()

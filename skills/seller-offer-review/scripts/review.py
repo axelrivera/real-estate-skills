@@ -365,9 +365,14 @@ def listed_assumptions(R, multi=False, offer_id=None):
     each offer's high-impact ones and any shared by several offers (the rest are in each offer's single review).
     OFR-257: the counts in the Preliminary line and the data note come from this same list, so they match the table.
     OFR-344: `offer_id` (a single review of one of several offers) drops a listing assumption that applies only to
-    other offers (`offers`: the tax bill question for an offer closing in November or December)."""
+    other offers (`offers`: the tax bill question for an offer closing in November or December), and OFR-346 an
+    assumption scoped only to other offers (their compensation agreement, their loan terms)."""
+    def mine(a):
+        offers = [x for x in oe.scopes(a) if x.startswith("offer ")]
+        return not offers or f"offer {offer_id}" in offers
     return [a for a in R["missing"] if (not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"
-                                        or a.get("also")) and (offer_id is None or offer_id in a.get("offers", [offer_id]))]
+                                        or a.get("also")) and (offer_id is None or (offer_id in a.get("offers", [offer_id])
+                                                                                    and mine(a)))]
 
 
 # OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in the
