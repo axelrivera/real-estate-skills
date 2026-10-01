@@ -444,7 +444,9 @@ class DeckContent(unittest.TestCase):
         R["costs"]["mortgage_payoff"] = 0
         D, C = self.data(R)
         self.assertTrue(C["net"]["cash_at_closing"] and C["net"]["no_mortgage"])
-        self.assertIn("cash at closing", D["net_sub"].lower())
+        L = compute.labels(R)  # CMA-317: after holding costs the subtitle names that net, never "cash at closing"
+        self.assertTrue(D["net_sub"].startswith(L("deck_cash_free_holding_sub" if C["net_basis"] == "after_holding"
+                                                  else "deck_cash_free_sub")))
         self.assertFalse([r for r in C["net"]["rows"] if r["key"] == "payoff"])
 
     def test_icons(self):
@@ -1060,10 +1062,14 @@ class ThirdPass(unittest.TestCase):
         self.assertIsNotNone(deck.deck_data(R, C, homes, AGENT, compute.labels(R), "footer")["method"]["n_sold"])
 
     def test_rounded_differences_for_the_reply(self):
-        """CMA-272: rounded differences come from compute, to $500 under $5,000 and $1,000 above."""
-        self.assertEqual(compute.about(6796), "about $7,000")
+        """CMA-272: rounded differences come from compute; CMA-318: to $100 under $10,000, so "about" agrees with the
+        exact figure beside it."""
+        self.assertEqual(compute.about(6796), "about $6,800")
         self.assertEqual(compute.about(-3976), "about $4,000")
-        self.assertEqual(compute.about(2240), "about $2,000")
+        self.assertEqual(compute.about(2240), "about $2,200")
+        self.assertEqual(compute.about(3678), "about $3,700")  # the smoke test's spread read "about $3,500"
+        self.assertEqual(compute.about(12345), "about $12,500")
+        self.assertEqual(compute.about(61400), "about $61,000")
         R = report()
         R["costs"]["mortgage_payoff"] = 210000
         C, _ = run(R)
@@ -1517,4 +1523,91 @@ class SeventhPass(unittest.TestCase):
         self.assertNotIn("hasn't sold", text)
         text = compute.price_history(L, relist={"failed_price": 474900, "status": "active"})
         self.assertEqual(text, "The listing at $474,900 didn't sell.")
+
+
+class EighthPass(unittest.TestCase):
+    """Owner's manual smoke test, 842 Tanager Ridge Dr (CMA-317 to CMA-324)."""
+
+    def test_after_holding_net_is_never_called_cash_at_closing(self):
+        """CMA-317: the tile, the option tables' headers and the deck's net subtitle show the after-holding net, so
+        they name it as the net sheet's "Net After Holding Costs" row does, never "cash at closing" (its own row)."""
+        R = report()
+        R["costs"]["mortgage_payoff"] = 210000
+        C, homes = run(R)
+        self.assertEqual((C["net_basis"], C["net"]["cash_at_closing"]), ("after_holding", True))
+        doc, L = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(L("sum_cash_tile_holding", price=C["recommendation"]["list_price_display"]), doc)
+        self.assertNotIn("Cash at Closing at", doc)
+        self.assertNotIn(L("th_est_cash"), doc)
+        self.assertNotIn(L("th_cash"), doc)
+        self.assertEqual([r["key"] for r in C["net"]["rows"]][-3:], ["total", "holding", "after_holding"])
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, L, "footer")
+        self.assertTrue(D["net_sub"].startswith(L("deck_cash_holding_sub")))
+        self.assertNotIn("cash at closing", D["net_sub"].lower())
+
+    def test_spread_about_agrees_with_the_exact_spread(self):
+        """CMA-318: {net_spread_about} is within $50 of {net_spread} under $10,000."""
+        C, _ = run(report())
+        spread = C["net_spread"]
+        self.assertLess(spread, 10000)
+        about = int(C["net_spread_about"].replace("about $", "").replace(",", ""))
+        self.assertLessEqual(abs(about - spread), 50)
+
+    def test_competing_offer_caveat_on_page_one(self):
+        """CMA-319: the competing-offer option netting more than the recommended one gets its caveat on page 1."""
+        R = report()
+        C, homes = run(R)
+        nets = [x["net_after_holding"] for x in C["strategies"]]
+        self.assertGreater(nets[2], nets[C["recommended_index"]])  # the fixture's competing-offer option nets more
+        self.assertEqual(C["competing_offer_caveat"], 2)
+        doc, L = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        caveat = L("sum_options_note_competing", price=C["strategies"][2]["list_price_display"])
+        self.assertIn(caveat, doc[:doc.index(L("h_home"))])  # page 1
+        R["pricing"]["strategies"][2].update(expected_sale=452000, seller_credit=10000)  # now it nets less
+        C, homes = run(R)
+        self.assertIsNone(C["competing_offer_caveat"])
+        doc, L = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertNotIn(caveat, doc)
+
+    def test_months_supply_placeholder(self):
+        """CMA-320: months of supply comes from stats.py through {months_supply}; a typed figure warns."""
+        R = report()
+        C, homes = run(R)
+        self.assertEqual(C["placeholders"]["months_supply"], compute.months_text(C["handoff"]["market"]["months_supply"]))
+        self.assertNotIn("months_supply_typed", C["warning_keys"])
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(f'about {C["placeholders"]["months_supply"]} of supply', doc)
+        R["market"]["bullets"][2] = "Only five homes are for sale nearby, about a month and a half of supply."
+        self.assertIn("months_supply_typed", run(R)[0]["warning_keys"])
+        self.assertEqual((compute.months_text(1.3), compute.months_text(1.0)), ("1.3 months", "1 month"))
+
+    def test_method_note_adjustments_are_short_and_once_each(self):
+        """CMA-321: "original hall bath, older roof, size, kitchen, hall bath and floors, remodeled primary bath" named
+        the hall bath twice."""
+        mk = lambda *labels: {"adjustments": [{"label": x, "amount": 5000} for x in labels], "seller_concessions": 5000}
+        cards = [mk("Original Hall Bath", "Older Roof", "Size"),
+                 mk("Kitchen, Hall Bath and Floors", "Remodeled Primary Bath", "Market Since the Sale")]
+        self.assertEqual(deck.adjustment_words(cards),
+                         "baths, roof, size, kitchen, floors, market since the sale and seller credits")
+
+    def test_higher_price_never_expects_a_lower_sale(self):
+        """CMA-323: $399,900 expected to sell for less than $394,900 warns."""
+        R = report()
+        self.assertNotIn("expected_sale_order", run(R)[0]["warning_keys"])
+        top, rec = R["pricing"]["strategies"][0], R["pricing"]["strategies"][1]
+        top["expected_sale"] = rec["expected_sale"] - 1000
+        self.assertIn("expected_sale_order", run(R)[0]["warning_keys"])
+
+    def test_data_date_written_out(self):
+        """CMA-325: the chat template's data date reads "September 26, 2026", not the ISO form; the agent's stated date
+        sets as_of and prepared_date."""
+        R = report()
+        R["as_of"] = "2026-09-26"
+        C, _ = run(R)
+        self.assertEqual(C["data_source"]["as_of_display"], "September 26, 2026")
+        with open(os.path.join(SKILL, "assets", "seller-cma-template.md")) as f:
+            self.assertIn("{{data_source.as_of_display}}", f.read())
+        with open(os.path.join(SKILL, "SKILL.md")) as f:
+            self.assertIn("When the agent states today's date", f.read())
 

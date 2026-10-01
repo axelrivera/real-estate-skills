@@ -319,7 +319,7 @@ def flood_insurance(zone, quote=None, market=None, as_of=None, condo_unit=False)
     else:
         later = [t for t in rule["schedule"] if str(t.get("from")) > day and not t.get("min_replacement_cost")]
         need = (f"a Citizens policy on a home with a dwelling replacement cost of {money(tier['min_replacement_cost'])} or "
-                f"more must carry flood insurance" + (f", and every Citizens policy from {_long_date(later[0]['from'])}" if later else ""))
+                f"more must carry flood insurance" + (f", and from {_long_date(later[0]['from'])} every Citizens policy must" if later else ""))  # CMA-322
         required = "citizens_value"
     return {"annual": annual, "sfha": False, "required": required,
             "note": f"{where}: a lender may not require flood insurance, but {need} ({cite}).{tail}"}

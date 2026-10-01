@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | {{each strategies: list_price_display (★ when recommended), time, expected_sale_display, net_after_holding_display (the basis the comparison line below uses; "pending brokerage terms" when net.incomplete is true: never show a net without the commission), payment_display/mo}} |
 
-\*{{"Before mortgage payoff" or, with a payoff, "Cash at closing after your payoff"}}{{", less estimated holding costs until closing" when compute.py's net_basis is "after_holding"}}. Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
+\*{{"Before mortgage payoff" or, with a payoff, "Cash at closing after your payoff"; when compute.py's net_basis is "after_holding", "Before mortgage payoff" or "After your mortgage payoff", then ", and after estimated holding costs until closing" (never "cash at closing": that's the net sheet's row before holding costs)}}.{{" The " + the competing_offer_caveat strategy's list_price_display + " net assumes competing offers; without them it likely nets less." when compute.py's competing_offer_caveat is set}} Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
 
 {{one line comparing the options, on the table's basis: each other strategy's net_vs_recommended_about, and net_spread_about}}
 
@@ -34,6 +34,6 @@
 
 **Next Step:** {{summary_page.next_step}}
 
-_Broker's opinion of value, not an appraisal, and not for lending purposes. Sales data: {{"{data_source.mls} MLS" when data_source.export is true, else "the sales provided"}} as of {{data_source.as_of}}, deemed reliable but not guaranteed. Net figures are estimates; the closing agent provides exact figures. Commissions are negotiable and not set by law._
+_Broker's opinion of value, not an appraisal, and not for lending purposes. Sales data: {{"{data_source.mls} MLS" when data_source.export is true, else "the sales provided"}} as of {{data_source.as_of_display}}, deemed reliable but not guaranteed. Net figures are estimates; the closing agent provides exact figures. Commissions are negotiable and not set by law._
 
 {{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}

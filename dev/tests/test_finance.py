@@ -188,6 +188,11 @@ class FloodInsurance(unittest.TestCase):
         self.assertIn("$500,000", f.flood_insurance("X", None, self.FL, date(2025, 6, 1))["note"])
         self.assertEqual(f.flood_insurance("X", None, self.FL, date(2027, 1, 1))["required"], "citizens")
 
+    def test_phase_in_sentence_has_its_verb(self):
+        """CMA-322: the later tier's clause read "and every Citizens policy from January 1, 2027 (s. ...)", no verb."""
+        note = f.flood_insurance("X", None, self.FL, date(2026, 9, 24))["note"]
+        self.assertIn("from January 1, 2027 every Citizens policy must (", note)
+
     def test_condo_unit_policy_is_exempt(self):
         r = f.flood_insurance("X", None, self.FL, date(2026, 9, 24), condo_unit=True)
         self.assertIsNone(r["required"])

@@ -14,9 +14,9 @@ Page 1 summary → the home → the bottom line and what it means → comparable
 
 - **Bottom line:** the range, the recommended price and why, and why a higher first price is a risk, in 4–5 sentences.
 - **What this means:** expected negotiation (from the recent sale-to-list and concession data), the first-weeks window, the appraisal ceiling, and what documentation is worth.
-- **Comps:** each card explains its adjustments in sentences with dollar amounts. Include the sales that argue for a lower price.
+- **Comps:** each card explains its adjustments in sentences with dollar amounts, every one over $1,000 (a small size adjustment too), so the adjusted value adds up. Include the sales that argue for a lower price.
 - **Competition:** 5–9 rows, actives, pendings, and any expired listing that shows what the market rejected. The notes say why each matters to this seller.
-- **Market:** the table from stats.py, then 3–5 bullets that each tie a number to price or timing.
+- **Market:** the table from stats.py, then 3–5 bullets that each tie a number to price or timing. Months of supply is `{months_supply}`, never typed.
 - **Pricing:** the three options as estimates, saying whether the nets are close and what really differs (time and risk). The net sheet's note names what isn't included.
 - **Before we list:** low-cost steps that remove the questions that cost sellers money (roof documentation, pre-listing and insurance inspections, permits, the public record, easy showings, a seller-credit budget, a review point).
 - **What we need from you:** specific, answerable requests.

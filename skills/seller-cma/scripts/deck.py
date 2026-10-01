@@ -105,15 +105,24 @@ def _norm(address):
     return " ".join(str(address).upper().replace(".", "").split())
 
 
+CONDITION_WORDS = re.compile(r"^(?:(?:original|older|old|newer|new|remodeled|updated|renovated|your)\s+)+")
+
+
 def adjustment_words(cards):
-    """'size, larger corner lot, seller credits and market since the sale': the adjustments actually made (CMA-26)."""
+    """'size, larger corner lot, seller credits and market since the sale': the adjustments actually made (CMA-26).
+    CMA-321: a short list of what was adjusted, each once: compound labels split ("Kitchen, Hall Bath and Floors"),
+    condition words dropped ("Original Hall Bath" and "Hall Bath" are one item), and two or more baths read "baths"."""
     seen = []
     for c in cards:
         for a in c.get("adjustments") or []:
-            word = str(a.get("label", "")).strip()
-            word = " ".join(w if w.isupper() else w.lower() for w in word.split())
-            if word and word not in seen:
-                seen.append(word)
+            label = " ".join(w if w.isupper() else w.lower() for w in str(a.get("label", "")).split())
+            for word in re.split(r",\s*|\s+and\s+", label):
+                word = CONDITION_WORDS.sub("", word).strip()
+                if word and word not in seen:
+                    seen.append(word)
+    baths = [w for w in seen if w == "bath" or w.endswith(" bath")]
+    if len(baths) > 1:
+        seen = [("baths" if w == baths[0] else w) for w in seen if w not in baths[1:]]
     if any(c.get("seller_concessions") for c in cards):
         seen.append("seller credits")
     if not seen:
@@ -304,9 +313,9 @@ def deck_data(R, C, homes, agent, L, footer):
 def net_sub(C, L):
     """The net slide's subtitle: which net the bars and the spread show (CMA-264: after holding costs when counted)."""
     net = C["net"]
-    basis = L("deck_cash_free_sub" if net["no_mortgage"] else "deck_cash_sub" if net["cash_at_closing"] else "deck_net_sub")
-    if C["net_basis"] == "after_holding":
-        basis = L("deck_net_after_holding_sub", basis=basis)
+    # CMA-317: after holding costs it's the net sheet's "Net After Holding Costs" row, never "cash at closing" (its own row)
+    held = "_holding" if C["net_basis"] == "after_holding" else ""
+    basis = L(("deck_cash_free" if net["no_mortgage"] else "deck_cash" if net["cash_at_closing"] else "deck_net") + held + "_sub")
     return basis + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else "")
 
 

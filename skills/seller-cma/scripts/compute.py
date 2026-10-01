@@ -208,10 +208,20 @@ def _and(items):
     return ", ".join(items[:-1]) + " and " + items[-1] if len(items) > 1 else "".join(items)
 
 
+def long_date(iso):
+    """CMA-325: '2026-09-26' as 'September 26, 2026'; anything that isn't an ISO date as given."""
+    try:
+        d = date.fromisoformat(str(iso))
+    except ValueError:
+        return str(iso)
+    return f"{d:%B} {d.day}, {d.year}"
+
+
 def about(amount):
-    """CMA-272: a difference rounded for a chat reply, to the nearest $500 under $5,000 and $1,000 above: 'about
-    $7,000' for $6,796. The reply quotes it instead of rounding by hand."""
-    step = 500 if abs(amount) < 5000 else 1000
+    """CMA-272: a difference rounded for a chat reply, which quotes it instead of rounding by hand. CMA-318: fine
+    enough that it never contradicts the exact figure printed beside it ("within about $3,500" next to $3,678): to
+    the nearest $100 under $10,000 ('about $6,800' for $6,796), $500 under $50,000, $1,000 above."""
+    step = 100 if abs(amount) < 10000 else 500 if abs(amount) < 50000 else 1000
     return "about " + money(abs(amount), step)
 
 
@@ -417,7 +427,35 @@ def payments(R, market):
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
-def placeholder_values(R, median_display, recommended_net, spread, spread_about, pay, trend, L, relist=None, reprice=None):
+def months_text(months):
+    """CMA-320: months of supply as the report reads it, '1.3 months' or '1 month', from stats.py's recent pace."""
+    return f"{months:g} month{'' if months == 1 else 's'}"
+
+
+SUPPLY_WORDS = re.compile(r"\bof (?:\w+ )?(?:supply|inventory)\b", re.I)
+
+
+def typed_supply_warnings(R, months, path="$"):
+    """CMA-320: wording that states months of supply ("about a month and a half of supply") without
+    {months_supply}: a figure typed by hand, not stats.py's."""
+    out = []
+    if isinstance(R, str):
+        if SUPPLY_WORDS.search(R) and "{months_supply}" not in R:
+            out.append(f"{path} states a supply figure in its own words. Write {{months_supply}} (stats.py's recent pace, "
+                       f"{months_text(months)}), never a typed figure." if months is not None else
+                       f"{path} states a supply figure, but there's no export to compute months of supply from: leave it out.")
+    elif isinstance(R, list):
+        for i, v in enumerate(R):
+            out += typed_supply_warnings(v, months, f"{path}[{i}]")
+    elif isinstance(R, dict):
+        for key, v in R.items():
+            if key not in ("labels", "export_columns"):
+                out += typed_supply_warnings(v, months, f"{path}.{key}")
+    return out
+
+
+def placeholder_values(R, median_display, recommended_net, spread, spread_about, pay, trend, L, relist=None, reprice=None,
+                       months_supply=None):
     """CMA-265: every {name} the report and deck wording may use, filled in every field (not just page 1). The
     chart's two ({trend_at_subject}, {r2_share}) only with an export. CMA-278: the rounded spread, the adjusted span,
     a reprice's {current_price} and a relist's {failed_price}, each only when there is one. CMA-287: {original_price},
@@ -429,6 +467,8 @@ def placeholder_values(R, median_display, recommended_net, spread, spread_about,
               "adjusted_max": adjusted_money(max(c["adjusted"] for c in cards))}
     if pay:
         values["per_10k"] = pay["per_10k_display"]
+    if months_supply is not None:  # CMA-320: with an export
+        values["months_supply"] = months_text(months_supply)
     if trend:
         values.update(trend_at_subject=trend["at_subject_display"], r2_share=L(trend["r2_key"]))
     if R.get("reprice"):
@@ -601,6 +641,16 @@ def compute(R, market, homes):
         if x["expected_sale"] > rec["high"]:
             warn("expected_above_range", f"The expected sale {money(x['expected_sale'])} is above the supported range: "
                             "an appraisal risk to explain, or lower it.")
+    # CMA-323: a higher list price expected to sell below a lower one's reads as a mistake to a seller. A reprice's Stay
+    # (the rule's figure for a listing that sat) and a competing-offer option that rests on those offers are exempt
+    for i, hi in enumerate(strategies):
+        for j, lo in enumerate(strategies):
+            if (stay not in (i, j) and hi["list_price"] > lo["list_price"] and hi["expected_sale"] < lo["expected_sale"]
+                    and not (competing and j == len(strategies) - 1 and p.get("competing_offer_upside"))):
+                warn("expected_sale_order", f"The {money(hi['list_price'])} option expects {money(hi['expected_sale'])}, "
+                     f"below the {money(lo['list_price'])} option's {money(lo['expected_sale'])}. A higher list price "
+                     f"sells at least as high, only slower: give it at least {money(lo['expected_sale'])} (its longer time "
+                     "and holding costs already make it net less).")
 
     net = net_sheet(R, market, L)
     warn("title_quote", *net["warnings"])  # CORE-9: a title quote below the published rate
@@ -756,6 +806,9 @@ def compute(R, market, homes):
                  "Three Pricing Strategies). Check its expected sale and seller credit against the recent sale-to-list and "
                  "seller-paid data. If it still nets more, recommend it, or say in pricing.note that its net depends on "
                  "competing offers and set pricing.competing_offer_upside to true.")
+    # CMA-319: the competing-offer option netting more than the recommended one gets its caveat on page 1 too, not only
+    # in pricing.note: that net rests on competing offers showing up
+    caveat = len(strat_out) - 1 if competing and nets[-1] > nets[ri] else None
     # CMA-288: a higher option within about 1% of the recommended price (a relist cap just above it) isn't a distinct
     # strategy: drop it, leaving the recommended and competing-offer options
     for i, x in enumerate(strat_out):
@@ -793,10 +846,12 @@ def compute(R, market, homes):
              "r2_key": mls.r2_key(fit["r2"])} if fit else None
     # CMA-298: the recommended net, like every option compare, after holding costs (page 1, the reply and the deck agree)
     values = placeholder_values(R, median_display, strat_out[ri]["net_after_holding_display"], money(max(nets) - min(nets)),
-                                about(max(nets) - min(nets)), pay, trend, L, relist, reprice_out)
+                                about(max(nets) - min(nets)), pay, trend, L, relist, reprice_out, stats.get("months_supply"))
     warn("unfilled_placeholder", *placeholder_warnings(R, values))
+    warn("months_supply_typed", *typed_supply_warnings(R, stats.get("months_supply")))  # CMA-320
     warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
-    data_source = {"mls": market.mls, "as_of": as_of, "export": bool(homes)}
+    # CMA-325: the chat template's date written out ("September 26, 2026"), never the ISO form
+    data_source = {"mls": market.mls, "as_of": as_of, "as_of_display": long_date(as_of), "export": bool(homes)}
     # CMA-279: an export read with the MLS's own built-in columns shows which MLS it is: "assumed" is noise then
     known_layout = bool(homes) and not R.get("export_columns") and bool(market.get("mls_format.cma_export_columns"))
     market_notes = [(n, c) for n, c in zip(market.notes, market.note_codes)
@@ -845,6 +900,7 @@ def compute(R, market, homes):
         "assumptions": assumptions,
         "assumption_keys": assumption_keys,
         "state_hint": hint,  # CMA-282
+        "competing_offer_caveat": caveat,  # CMA-319: the strategy index whose net rests on competing offers, or None
         # CMA-259: without an export nothing reads the MLS, so notes about which MLS (assumed, not built in) are noise
         "market_notes": [n for n, c in market_notes],
         "market_note_keys": [c for n, c in market_notes],
