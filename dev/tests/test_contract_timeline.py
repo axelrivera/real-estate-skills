@@ -1492,6 +1492,9 @@ class ManualSmoke(unittest.TestCase):
             timeline.analyze(d)
         d["completed"]["compensation_cancel"] = "2026-10-01"  # on its date the window has run: fine
         self.assertTrue(by_key(timeline.analyze(d))["compensation_cancel"]["done"])
+        d["completed"]["compensation_cancel"] = "2026-09-26"
+        d["ended_in_writing"] = ["compensation_cancel"]  # the buyer ended it early in writing: accepted
+        self.assertTrue(by_key(timeline.analyze(d))["compensation_cancel"]["done"])
 
     def test_header_pieces_never_break_inside(self):
         """TL-265: the Prepared line is one unbroken piece, the parties line breaks only before a separator, and a

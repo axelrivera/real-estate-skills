@@ -1473,12 +1473,16 @@ def analyze(deal, side=None):
     completed = _completed(deal, {r["key"] for r in current})
     # TL-264: done is for something performed (a deposit, a signed document). The end of a contingency or cancel window
     # stays open until its date, even when the document that satisfies it is in the package, so every report reads alike
+    # A window the buyer ended early in writing (a signed waiver, written loan approval delivered) is listed by key in
+    # `ended_in_writing`: then a done date before the window's end is accepted
+    in_writing = set(deal.get("ended_in_writing") or [])
     early = [r for r in current if r.get("contingency") and r["when"] and r["key"] in completed
-             and completed[r["key"]] < r["when"].date()]
+             and r["key"] not in in_writing and completed[r["key"]] < r["when"].date()]
     if early:
         raise DealError("completed lists " + ", ".join(f'{r["key"]} ({r["label"]}, {r["when"]:%a %b %-d})' for r in early)
                         + ": the end of a contingency or cancel window stays open until its date. Record what was "
-                        "performed instead (a signed agreement, a deposit) and leave the window out of completed.")
+                        "performed instead (a signed agreement, a deposit) and leave the window out of completed, or, when the buyer ended "
+                        "it early in writing (a signed waiver, written loan approval delivered), list its key in ended_in_writing.")
     if _d(current_contract.get("short_sale_approval_received")) and "short_sale_approval" in {r["key"] for r in current}:
         completed.setdefault("short_sale_approval", _d(current_contract["short_sale_approval_received"]))
     rows = []
