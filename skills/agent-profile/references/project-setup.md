@@ -42,7 +42,7 @@ When the Project's instructions already start with "Real Estate Assistant for" a
 ## Already in a Cowork Project
 
 1. Paste everything from project-instructions.md into the project's **Instructions**.
-2. Your profile is saved in the project folder already, so nothing else is needed. (If it went to the outputs folder because no folder was selected, attach it in a task there and say "save my profile here".)
+2. If profile.md is already in the project's folder (saved there by this skill, or put there yourself), nothing else is needed. Otherwise attach it in a task there and say "save my profile here".
 
 ## Keeping It Current
 

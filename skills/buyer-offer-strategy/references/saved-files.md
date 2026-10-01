@@ -10,13 +10,13 @@ Resolve the path from the agent's working folder, never from the current directo
 
 ## Finding the Profile
 
-Use the first place that has one:
+The agent can share it four ways. Use the first place that has one:
 
-1. **The conversation:** a file the agent uploaded or pasted, or one written earlier in this chat.
-2. **Project files** (claude.ai Projects).
-3. **The saved folder,** when there is a working folder: `.claude/real-estate/profile.md`.
+1. **The conversation:** pasted into the chat, uploaded to it, or written earlier in this chat.
+2. **Project files or context** (a claude.ai or Cowork Project).
+3. **The Cowork working folder:** `.claude/real-estate/profile.md` first (where this skill saves it), else any file in the folder that starts with `profile: agent` (the agent may keep it anywhere there, under any name). Look only in the working folder the agent selected.
 
-Pass the file to `render.py` by its path (`--profile`). When the profile came from the saved folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
+Pass the file to `render.py` by its path (`--profile`); a pasted profile goes in a file in the temporary folder first (Working Files). When the profile came from the working folder, say so in one short line ("Using your saved profile"), so the agent knows where it came from.
 
 ## Saving the Profile
 

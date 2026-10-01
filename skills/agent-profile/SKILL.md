@@ -23,7 +23,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 
 ## 1. Find an Existing Profile
 
-Look for a file that starts with `profile: agent` in the places `references/saved-files.md` lists: the conversation, Project files, then the saved folder in the agent's Cowork working folder.
+Look for a file that starts with `profile: agent` in the places `references/saved-files.md` lists: the conversation (pasted or uploaded), Project files, then the agent's Cowork working folder.
 
 If there is one, this is an update, not an interview. Change only what the agent asks and keep the rest. Write new values in the style the saved file already uses, not as typed: a new phone typed 321-555-0142 goes in as "(321) 555-0142" when the saved phone reads "(407) 555-0100". Then go to step 5. When they only ask how to set up a Project, skip the profile and go to step 6, which still writes `project-instructions.md` (step 5) when the conversation doesn't have one. A move to a new brokerage often changes the team name, email, website and disclaimers too: ask about those in one line instead of changing them, with the new brokerage's licensed name in the same line when the name given is a brand (no example name there).
 
