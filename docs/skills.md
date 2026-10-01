@@ -4,7 +4,7 @@ Every skill ships in one plugin, `real-estate` (`.claude-plugin/plugin.json` at 
 
 ## Profile
 
-Context every other skill reads. Markdown output only. Other skills use the profile when present and never require it. In Cowork it's saved in `.claude/real-estate/` in the working folder ([architecture.md](architecture.md#saved-files)).
+Context every other skill reads. Markdown output only. Other skills use the profile when present and never require it. In Cowork it's saved as `profile.md` in the working folder ([architecture.md](architecture.md#saved-files)).
 
 | Skill | Produces |
 |---|---|

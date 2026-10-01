@@ -21,7 +21,7 @@ The [PDF manual](dev/package/Real-Estate-Skills-Manual.pdf) walks through setup,
 - **Cowork or the desktop app, from GitHub:** add the marketplace `axelrivera/real-estate-skills` (https://github.com/axelrivera/real-estate-skills), then install the `real-estate` plugin. In Claude Code terms: `/plugin marketplace add axelrivera/real-estate-skills`, then `/plugin install real-estate@real-estate-skills`.
 - **claude.ai, single skills:** run `make package-skills` and upload each zip in `dist/skills/` as a skill (not `dist/dev/`, which holds a diagnostic).
 
-Start with `agent-profile` ("set me up"): a two-minute interview that saves `profile.md` and ready-to-paste Project instructions, with the steps to set up a claude.ai or Cowork Project. In Cowork, select a working folder first: the profile is saved in `.claude/real-estate/` there, so every session finds it.
+Start with `agent-profile` ("set me up"): a two-minute interview that saves `profile.md` and ready-to-paste Project instructions, with the steps to set up a claude.ai or Cowork Project. In Cowork, select a working folder first: the profile is saved there as `profile.md`, so every session finds it.
 
 ## Skills
 

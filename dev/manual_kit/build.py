@@ -375,7 +375,7 @@ def case_profile(checks):
     write(os.path.join(d, "expected.md"), "\n".join([
         "# Case 1: Expected", "",
         "Nothing is computed for this case: the profile is your own.", "",
-        "- **Cowork:** the skill asks for what it needs in at most two rounds, then saves `.claude/real-estate/profile.md` "
+        "- **Cowork:** the skill asks for what it needs in at most two rounds, then saves `profile.md` "
         "in the working folder. Open it: your details, your colors, no placeholders like `[Your Name]` and nothing "
         "made up (no invented license number or slogan).",
         "- **claude.ai:** there is no working folder, so the profile is handed over in chat (or as a file to keep) and "
@@ -892,7 +892,7 @@ def case_other_state(pdf, checks):
 # pass (1, 2 and 6) are Cowork only.
 CHECKS = {
     "01-agent-profile": [("At most two rounds of questions", "both"),
-                         ("Saves .claude/real-estate/profile.md in the working folder", "cowork"),
+                         ("Saves profile.md in the working folder", "cowork"),
                          ("Hands the profile over in chat or as a file to keep (no saved file)", "ai"),
                          ("No placeholders or made-up details in the profile", "both")],
     "02-seller-cma": [("Uses the saved profile without asking for an upload", "cowork"),

@@ -4,7 +4,7 @@ numbered steps. Attach profile.md (when it changed) and project-instructions.md.
 
 {{what's saved, in one or two sentences: who, which details, which colors (on an update, only what changed; on a Project-only request, that the profile is unchanged)}}
 
-**Using your profile:** every real estate report reads it, so your name, brokerage, look and voice show up without you typing them. Claude finds it when it's {{the one that fits where the agent is now, from references/saved-files.md: "saved in this working folder ({{full path}}), so every task here uses it" | "in this Project's files, so every chat here uses it" | "shared in the chat: upload or paste it at the start of a chat"}}. It also works {{the other ways, in one short list: uploaded or pasted in any chat, added to a Project's files, kept in a Cowork working folder}}.
+**Using your profile:** every real estate report reads it, so your name, brokerage, look and voice show up without you typing them. Claude finds it when it's {{the one that fits where the agent is now, from references/saved-files.md: "saved as profile.md in this working folder ({{the folder's name}}), so every task here uses it" | "in this Project's files, so every chat here uses it" | "shared in the chat: upload or paste it at the start of a chat"}}. It also works {{the other ways, in one short list: uploaded or pasted in any chat, added to a Project's files, kept in a Cowork working folder}}.
 
 {{only when there's a Project step to give:}} **Make It Automatic (Optional):** put both files in a Project and every chat there starts knowing who you are.
 {{the numbered steps for where the agent is now, from references/project-setup.md; the Cowork line when the surface isn't shown}}

@@ -26,7 +26,7 @@ Never upload `expected.md`. Case 1 builds your real profile; every later case us
 
 | # | Skill | Upload | Prompt to Paste | Pass Checks |
 |---|---|---|---|---|
-| 1 | agent-profile | Nothing | "Set up my profile.", then answer with your own details | At most two rounds of questions; saves `.claude/real-estate/profile.md`; no placeholders or made-up details |
+| 1 | agent-profile | Nothing | "Set up my profile.", then answer with your own details | At most two rounds of questions; saves `profile.md` in the working folder; no placeholders or made-up details |
 | 2 | seller-cma | 360 report, CMA export, seller notes (new session) | "What should we list at?", then "build the listing presentation", then "add that the home is perfect for young families" | Uses the saved profile without an upload; PDF in the profile's colors; flags the 2017 expired listing; net sheet marks the 5% brokerage "Assumed"; PPTX opens with the same numbers; the fair-housing request is declined in one sentence |
 | 3 | buyer-cma | Listing flyer, 360 report, CMA export | "Is it priced right and what should we offer?" | PDF with the range, the history with both price cuts and the scatterplot; facts and tax match expected.md |
 | 4 | buyer-offer-strategy | The `.cma.json` handoff; the buyer's limits are in the prompt | "Help me write the offer" with cash, max price, loan and payment cap | Offer Options and Offer Package Worksheet PDFs; stays inside every limit; riders named by letter; worksheet shows offer terms only |
