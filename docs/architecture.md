@@ -65,7 +65,7 @@ Every SKILL.md opens with a **Guardrails** section, right after its intro, cover
 |---|---|---|
 | Strong | buyer-cma, seller-cma, seller-offer-review | Guardrails with the skill's risky spots named, `references/fair-housing.md`, the render check, a fair-housing eval |
 | Standard | buyer-offer-strategy, agent-profile | Guardrails, `references/fair-housing.md`, a fair-housing eval (and the render check for buyer-offer-strategy) |
-| Light | contract-timeline | A short Guardrails section and the render check |
+| Light | contract-timeline, seller-net-sheet | A short Guardrails section and the render check |
 
 The render check is `shared/prose.py`, run by `render.main` before any file is built. It stops on an em dash used in a sentence (a lone one for an empty value is fine) or a clear fair-housing phrase and names each field to rewrite. The phrase list is a backstop for the written rules, not a replacement: it catches clear cases only, and chat replies are covered by the SKILL.md rules alone. State and local protected classes live in the built-in market's `fair_housing.extra_protected_classes` (some Florida counties).
 

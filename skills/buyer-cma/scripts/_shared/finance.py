@@ -424,6 +424,8 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     (labeled "Estimate" on the line) and false for a built-in local default. `warnings` are sentences to show the
     agent (a title quote below the published rate).
     A saved owner's title quote (`closing_costs.owner_title.quote`: {price, premium}) wins over the rate table.
+    `other_costs` is a total (one "Other Costs" line) or a list of {label, amount} (one "other" line each: a home
+    warranty, repairs, a survey).
     `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
     `annual_tax` with `closing` (a date) adds the tax proration (see tax_proration; `bill_paid` once the seller paid
     this year's bill). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
@@ -518,7 +520,11 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
             add("estoppel", name + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""), estoppel)
     if credit:
         add("credit", "Seller Credit to Buyer", credit)
-    if other_costs:
+    if isinstance(other_costs, (list, tuple)):  # [{label, amount}]: one "other" line each, in order
+        for o in other_costs:
+            if o.get("amount"):
+                add("other", o.get("label") or "Other Costs", o["amount"])
+    elif other_costs:
         add("other", "Other Costs", other_costs)
     pr = tax_proration(annual_tax, closing, market, bill_paid)
     if pr:

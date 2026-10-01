@@ -928,6 +928,10 @@ CHECKS = {
     "08-contract-timeline-other-state": [("Timeline uses the contract's own dates and rules; matches expected.md", "cowork"),
                                          ("Best-effort disclaimer in chat only, not in the PDF or ICS", "cowork"),
                                          ("No Florida rules or forms mentioned", "cowork")],
+    "09-seller-net-sheet": [("One-page PDF with the profile's name, brokerage and colors", "cowork"),
+                            ("Nets and lines match expected.md, with no questions before the first sheet", "cowork"),
+                            ("The tax proration reads Bill Assumed Unpaid and the reply says so", "cowork"),
+                            ("Step 2 answers in chat with the net in expected.md, without a new PDF", "cowork")],
 }
 
 
@@ -969,9 +973,53 @@ def readme_md():
             ["05-seller-offer-review", "seller-offer-review", "step-1 offer package, then step-2"],
             ["06-contract-timeline-fha", "contract-timeline", "executed FHA package"],
             ["07-contract-timeline-short-sale", "contract-timeline", "executed short sale package"],
-            ["08-contract-timeline-other-state", "contract-timeline", "Ohio purchase agreement"]]), "",
+            ["08-contract-timeline-other-state", "contract-timeline", "Ohio purchase agreement"],
+            ["09-seller-net-sheet", "seller-net-sheet", "nothing"]]), "",
         "claude.ai pass (shorter): upload `dist/skills/*.zip`, then run cases 1, 2 and 6.",
     ])
+
+
+NET_SHEET = {"address": "3318 Wren Hollow Ln", "city": "Casselberry", "county": "Seminole", "state": "FL",
+             "prices": (425000, 410000), "credit": 6000, "chat_price": 400000, "payoff": 188000, "listing_fee_pct": 0.0275,
+             "buyer_broker_fee_pct": 0.025, "annual_tax": 5400, "closing": "2026-12-04"}
+
+
+def case_net_sheet(checks):
+    n, d = NET_SHEET, os.path.join(OUT, "09-seller-net-sheet")
+    prompt = (f"Today is {long_date(TODAY)}. Net sheet for my seller at {n['address']}, {n['city']} ({n['county']} County): "
+              f"{money(n['prices'][0])} and {money(n['prices'][1])}, and {money(n['prices'][0])} with a {money(n['credit'])} "
+              f"credit to the buyer. They owe about {money(n['payoff'])}. My listing agreement is 2.75% and 2.5% to the "
+              f"buyer's agent. Taxes are {money(n['annual_tax'])} a year. We'd close around {long_date(n['closing'])}. "
+              "I need a PDF to print.")
+    chat = f"Now just tell me here in chat: what would they net at {money(n['chat_price'])}?"
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 9: Seller Net Sheet", [], [
+        {"title": "Step 1", "text": prompt}, {"title": "Step 2 (same session)", "text": chat}]))
+
+    def compute(scenarios):
+        data = {"prepared_date": TODAY, "closing_date": n["closing"], "scenarios": scenarios,
+                "property": {k: n[k] for k in ("address", "city", "county", "state")},
+                "costs": {"listing_fee_pct": n["listing_fee_pct"], "buyer_broker_fee_pct": n["buyer_broker_fee_pct"],
+                          "mortgage_payoff": n["payoff"], "annual_tax": n["annual_tax"]}}
+        path = os.path.join(WORK, "09-net-sheet.json")
+        dump(path, data)
+        return run(["skills/seller-net-sheet/scripts/compute.py", path])
+
+    pdf = compute([{"price": n["prices"][0]}, {"price": n["prices"][1]}, {"price": n["prices"][0], "seller_credit": n["credit"]}])
+    chat_net = compute([{"price": n["chat_price"]}])
+    rows = [[r["label"], *r["display"]] for r in pdf["rows"] if r["kind"] != "group"]
+    write(os.path.join(d, "expected.md"), "\n".join([
+        "# Case 9: Expected", "",
+        "Computed by the skill's own script from the facts in the prompt (no HOA; the property type isn't in the "
+        "prompt, which changes nothing in Seminole County).", "",
+        "## Step 1: The PDF", "",
+        table(["Line", *[c["label"] for c in pdf["columns"]]], rows), "",
+        "- One page, in the profile's colors, with the agent's name and brokerage in the header.",
+        "- The tax proration line reads \"Bill Assumed Unpaid\" (a December closing), and the reply says so.",
+        "- Title company fees show as four lines (settlement, title search, municipal lien search, recording).",
+        "- The reply lists the assumptions (the unpaid tax bill, typical title fees) and offers the chat version in one line.", "",
+        "## Step 2: In Chat", "",
+        f"- Net at {money(n['chat_price'])}: **{chat_net['columns'][0]['net_display']}** (a markdown table, no new PDF).", "",
+        "## Checks", ""] + [f"- {c}" for c in checks]))
 
 
 # --- verification -----------------------------------------------------------------------
@@ -1040,6 +1088,8 @@ def main():
                       "deadline timeline: PDF and calendar file.", check_texts("07-contract-timeline-short-sale"))
         print("08 contract-timeline (other state)")
         case_other_state(pdf, check_texts("08-contract-timeline-other-state"))
+        print("09 seller-net-sheet")
+        case_net_sheet(check_texts("09-seller-net-sheet"))
     finally:
         pdf.close()
     write(os.path.join(OUT, "README.md"), readme_md())

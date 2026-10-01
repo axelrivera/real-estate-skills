@@ -9,7 +9,7 @@ New skills and scope decisions that aren't defects. Defects go in an audit and a
 | GAP-1 | High | `listing-copy`: MLS remarks, social posts, flyer copy | profile `voice`, `shared/prose.py`, `fair-housing.md`, MLS layer character limits |
 | GAP-2 | High | `buyer-consultation`: plain-language buyer-broker agreement summary and fee conversation guide | profile, the deal's brokerage terms |
 | GAP-3 | Medium | `repair-negotiation`: inspection repair request and response | contract-timeline's inspection deadline, FR/BAR AS IS and Standard repair rules |
-| GAP-4 | Medium | `seller-net-sheet` and `buyer-cash-to-close`: standalone, no CMA or offer needed | `shared/finance.py` (`seller_net`, payments, proration) |
+| GAP-4 | Low | `buyer-cash-to-close`: standalone, no CMA or offer needed (`seller-net-sheet` built 2026-10-01) | `shared/finance.py` (payments, loan taxes, buyer-broker shortfall) |
 | GAP-5 | Medium | Transaction checklist and weekly client update emails | contract-timeline's data JSON |
 | GAP-6 | Low | Active listing performance and price reduction review; seller disclosure prep | seller-cma, `shared/mls.py`; after the CMA and offer skills are stable |
 
@@ -33,11 +33,12 @@ Drafts the repair request or the response to one, with the contract math: under 
 
 - **Open questions:** Should it read an inspection report PDF and extract the items, or take a list? Should it show a credit-vs-repair comparison?
 
-### GAP-4: Standalone Net Sheet and Cash to Close
+### GAP-4: Standalone Cash to Close
 
-The two most-requested quick numbers, without building a CMA or reviewing an offer. Both are thin skills on `shared/finance.py`: a data JSON, a markdown template and a one-page PDF each.
+The seller half, `seller-net-sheet`, was built on 2026-10-01. The buyer half stays here at a lower priority: the lender's Loan Estimate is the official cash-to-close figure, and buyer-cma and buyer-offer-strategy already show cash to close for their scenarios.
 
-- **Depends on** the audit's money-line fixes (tax proration with `tax_paid`, the buyer-broker shortfall line, Florida mortgage stamps and intangible tax, no built-in commissions).
+- **Before building it,** merge the two buyer closing-cost estimates into one shared function: buyer-cma's `buyer_closing_costs` (`compute.py`) and buyer-offer-strategy's `closing_costs` / `buyer_cash` (`strategy.py`) estimate differently today (prepaids and the cash-buyer share are only in the strategy).
+- **Same shape as the seller net sheet:** a data JSON, a markdown template and a one-page PDF.
 
 ### GAP-5: Transaction Checklist and Client Updates
 

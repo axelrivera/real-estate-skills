@@ -15,6 +15,10 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 - {{seller-cma/*-Listing-Presentation.pptx}}. An editable listing presentation with the same numbers, for the listing appointment.
 - {{seller-cma/*-Listing-Presentation.pdf}}. The same presentation as a PDF, the backup copy delivered with the PPTX.
 
+## Seller Net Sheet
+
+{{seller-net-sheet/*-Seller-Net-Sheet.pdf}}. A one-page net sheet for the home the offer review samples use, before any offers: what the seller walks away with at the $515,000 list price, after a price cut and with a $10,000 seller credit, itemized from brokerage and Florida's documentary stamp tax through the title company fees, the property tax proration and the mortgage payoff.
+
 ## Buyer Offer Strategy
 
 - {{buyer-offer-strategy/*-Offer-Options.pdf}}. An FHA buyer competing with two other offers on a $365,000 listing. It shows the recommended offer inside the buyer's limits, the alternatives and what each changes and costs, and how the offer scores against the competition from the listing agent's side.

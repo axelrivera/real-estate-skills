@@ -1,0 +1,25 @@
+{
+  "sample": true,
+  "prepared_date": "2026-09-22",
+  "prepared_for": "Sample Seller",
+  "closing_date": "2026-11-20",
+  "property": {
+    "address": "2250 Oak Hollow Ct",
+    "city": "Casselberry",
+    "county": "Seminole",
+    "state": "FL",
+    "property_type": "single_family",
+    "hoa_monthly": 60
+  },
+  "scenarios": [
+    {"price": 515000, "label": "List Price"},
+    {"price": 499900, "label": "After a Price Cut"},
+    {"price": 515000, "label": "List Price with Credit", "seller_credit": 10000}
+  ],
+  "costs": {
+    "listing_fee_pct": 0.025,
+    "buyer_broker_fee_pct": 0.025,
+    "mortgage_payoff": 301000,
+    "annual_tax": 6900
+  }
+}

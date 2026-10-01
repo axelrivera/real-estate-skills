@@ -142,6 +142,16 @@ class SellerSide(unittest.TestCase):
         self.assertNotIn("title_fees", [a["key"] for a in quoted["assumed"]])
         self.assertAlmostEqual(n["net"], n["net_before_payoff"] - 200000)
 
+    def test_seller_net_labeled_other_costs(self):
+        """A list of {label, amount} gives one "other" line each (a zero is left out); a number stays one line."""
+        items = [{"label": "Home Warranty", "amount": 550}, {"label": "Survey", "amount": 0}, {"label": "Repairs", "amount": 2400}]
+        n = f.seller_net(465000, FL, listing_fee_pct=0.025, buyer_broker_fee_pct=0.025, other_costs=items)
+        self.assertEqual([(x["label"], x["amount"]) for x in n["lines"] if x["key"] == "other"],
+                         [("Home Warranty", 550), ("Repairs", 2400)])
+        lump = f.seller_net(465000, FL, listing_fee_pct=0.025, buyer_broker_fee_pct=0.025, other_costs=2950)
+        self.assertEqual([(x["label"], x["amount"]) for x in lump["lines"] if x["key"] == "other"], [("Other Costs", 2950)])
+        self.assertAlmostEqual(n["net_before_payoff"], lump["net_before_payoff"])
+
     def test_buyer_pays_title_county(self):
         miami = profiles.load_market(state="FL", county="Miami-Dade")
         self.assertNotIn("owner_title", [x["key"] for x in f.seller_net(500000, miami)["lines"]])

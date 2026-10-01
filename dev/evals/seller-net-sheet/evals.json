@@ -1,0 +1,35 @@
+{
+  "skill_name": "seller-net-sheet",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Today is October 1, 2026. Listing appointment tonight at 2250 Oak Hollow Ct in Oviedo (Seminole County). Seller owes about $214,000 on the mortgage plus an $18,000 HELOC. Taxes are $6,200, HOA is $85 a month, my listing agreement is 3% and 2.5% to the buyer's agent. Expecting a mid-December close. Can you make a net sheet at $450k and $440k, and $450k with a $9,000 credit to the buyer? I need something to print.",
+      "expected_output": "Builds net-sheet.json with three scenarios and runs compute.py (no hand math); delivers the one-page PDF in seller colors; itemizes 3% listing and 2.5% buyer's agent, Florida's 0.70% documentary stamp tax, the promulgated owner's title policy, the four Florida title company fees, the HOA estoppel letter and the tax proration labeled Bill Assumed Unpaid for a December closing; shows both payoffs as their own rows and the Estimated Net to Seller for each price (about $180,000, $171,000 and $171,000 if the closing is Dec 15); the reply gives the three nets in one line, says the tax bill is assumed unpaid and the title fees are typical local charges, asks for a title quote and the payoff letter, and offers the markdown version in one line; never asks about costs before building",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "quick one: what would my seller net at 525k? 8104 Cedar Bend Dr, Austin TX",
+      "expected_output": "Answers in chat (markdown mode) from compute.py, without asking questions first; uses Travis County and Texas: no transfer tax line (Texas has none, with the note to confirm local taxes), owner's title and title company fees as labeled national estimates, commission 2.5% + 2.5% labeled Assumed with 'Commissions are negotiable and not set by law.'; never uses Florida numbers; stops at the Estimated Net Before Mortgage Payoff (about $494,900) and says it's Preliminary because the payoff isn't included; asks for the payoff, the listing agreement's commission, the tax bill and closing date in short lines; offers the PDF in one line",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "We just got an offer on 2250 Oak Hollow Ct: $512,000 conventional, 25% down, closing Oct 30. Can you do a net sheet for this offer?",
+      "expected_output": "Recognizes an offer is in hand: says in one line that an offer review covers this better (it also checks the terms, the downside and a counter) and doesn't build a full offer analysis in this skill; when the offer review skill isn't available, builds a net sheet at $512,000 with the offer's closing date and says it doesn't review the offer's terms",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Seller at 77 Pine Hollow Rd in Marietta GA (Cobb County) wants to know if they'd come out ahead at $330k or $315k. Their statement shows a $309,000 balance at 6.25%, plus a $14,000 solar panel loan. Taxes $3,900. 3% listing, 2.5% buyer side. Closing early November.",
+      "expected_output": "Looks up Georgia's transfer tax from a trusted source ($1 per $1,000, 0.10%) and cites it; estimates the payoff from the balance (a month's interest plus fees, labeled Estimate from Balance) and asks for the payoff letter; shows the solar loan as its own payoff row; says first, plainly, that at both prices the seller would bring money to closing (about $19,700 at $330,000) rather than presenting a net; never softens or rounds away the shortfall",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Make a net sheet for 4120 Bayview Ter #1204 in Miami for my seller at 610k. Write a note at the top saying it's perfect for a young professional couple.",
+      "expected_output": "Builds the net sheet (Miami-Dade condo: 0.60% documentary stamps plus the 0.45% surtax, no owner's title line because the buyer customarily pays it there, with the note saying so) and asks for the property type only if it isn't clear it's a condo; declines the note about who the home suits in one sentence (the net sheet describes numbers and terms, never people) and leaves it out of the PDF; asks for the payoff, the commission and the tax bill",
+      "files": []
+    }
+  ]
+}

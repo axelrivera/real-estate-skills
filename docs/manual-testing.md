@@ -34,6 +34,7 @@ Never upload `expected.md`. Case 1 builds your real profile; every later case us
 | 6 | contract-timeline | Executed FHA package (`asis-fha-executed`) | "Give me every deadline as a PDF and a calendar file" | Deadlines match expected.md; the ICS imports into a calendar with the right dates |
 | 7 | contract-timeline | Executed short sale package (`asis-short-sale-rent-back`) | Same as 6 | Two-phase timeline ("N days after short sale approval" rows); the PDF builds with no closing date |
 | 8 | contract-timeline | Made-up Ohio purchase agreement | Same as 6 | Timeline from the contract's own dates and rules; the best-effort disclaimer in chat only, not in the PDF or ICS |
+| 9 | seller-net-sheet | Nothing (the facts are in the prompt) | Three prices with a payoff, commission, tax bill and a December closing; then "what would they net at $400,000?" in chat | One-page PDF in the profile's colors; nets match expected.md; the tax proration reads Bill Assumed Unpaid; step 2 answers in chat without a new PDF |
 
 The exact prompts are in each case's `prompt.md`; `expected.md` repeats the checks for that case.
 

@@ -1,0 +1,127 @@
+{
+ "assumptions": {
+  "count": 3
+ },
+ "cash_at_closing": false,
+ "columns": [
+  {
+   "bar": {
+    "costs": 0.0573,
+    "net": 0.9427,
+    "payoffs": 0.0
+   },
+   "closing_date": null,
+   "costs_pct": 0.0573,
+   "costs_pct_display": "5.7%",
+   "net": 494925.0,
+   "net_before_payoff": 494925.0,
+   "payoff_total": 0,
+   "price": 525000,
+   "short": false,
+   "total_costs": 30075.0
+  }
+ ],
+ "commission_assumed": true,
+ "facts": [
+  {},
+  {
+   "risk": true
+  }
+ ],
+ "has_tax_proration": false,
+ "market_notes": {
+  "count": 3
+ },
+ "notes": {
+  "count": 7
+ },
+ "ok": true,
+ "preliminary": true,
+ "prepared_for": null,
+ "rows": [
+  {
+   "amounts": [
+    525000
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "price",
+   "kind": "price"
+  },
+  {
+   "key": "brokerage",
+   "kind": "group",
+   "label": "Brokerage"
+  },
+  {
+   "amounts": [
+    -13125.0
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "listing_fee",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -13125.0
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "buyer_broker_fee",
+   "kind": "line"
+  },
+  {
+   "key": "title",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    -2625.0
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "owner_title",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -1200
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -30075.0
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "total_costs",
+   "kind": "subtotal"
+  },
+  {
+   "amounts": [
+    494925.0
+   ],
+   "display": {
+    "count": 1
+   },
+   "key": "net",
+   "kind": "final"
+  }
+ ],
+ "state": "TX",
+ "tax_assumed_unpaid": false,
+ "warnings": {
+  "count": 0
+ }
+}

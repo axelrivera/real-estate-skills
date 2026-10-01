@@ -113,7 +113,7 @@ outputs:
 
 # One happy-path sample per skill for previews, committed. Inputs in dev/samples/ are fully mocked.
 samples:
-	@for skill in buyer-cma seller-cma buyer-offer-strategy contract-timeline seller-offer-review; do \
+	@for skill in buyer-cma seller-cma seller-net-sheet buyer-offer-strategy contract-timeline seller-offer-review; do \
 		echo "$$skill"; rm -rf samples/$$skill; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/$$skill" \
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \

@@ -1,0 +1,258 @@
+{
+ "assumptions": {
+  "count": 0
+ },
+ "cash_at_closing": true,
+ "columns": [
+  {
+   "bar": {
+    "costs": 0.0625,
+    "net": 0.9375,
+    "payoffs": 0.0
+   },
+   "closing_date": "2026-12-18",
+   "costs_pct": 0.0625,
+   "costs_pct_display": "6.2%",
+   "net": 571885.0,
+   "net_before_payoff": 571885.0,
+   "payoff_total": 0,
+   "price": 610000,
+   "short": false,
+   "total_costs": 38115.0
+  },
+  {
+   "bar": {
+    "costs": 0.0677,
+    "net": 0.9323,
+    "payoffs": 0.0
+   },
+   "closing_date": "2026-12-18",
+   "costs_pct": 0.0677,
+   "costs_pct_display": "6.8%",
+   "net": 554692.5,
+   "net_before_payoff": 554692.5,
+   "payoff_total": 0,
+   "price": 595000,
+   "short": false,
+   "total_costs": 40307.5
+  }
+ ],
+ "commission_assumed": false,
+ "facts": [
+  {},
+  {
+   "text": "Condo"
+  },
+  {},
+  {},
+  {},
+  {},
+  {}
+ ],
+ "has_tax_proration": true,
+ "market_notes": {
+  "count": 1
+ },
+ "notes": {
+  "count": 5
+ },
+ "ok": true,
+ "preliminary": false,
+ "rows": [
+  {
+   "amounts": [
+    610000,
+    595000
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "price",
+   "kind": "price"
+  },
+  {
+   "key": "brokerage",
+   "kind": "group",
+   "label": "Brokerage"
+  },
+  {
+   "amounts": [
+    -18300.0,
+    -17850.0
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "listing_fee",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -12200.0,
+    -11900.0
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "buyer_broker_fee",
+   "kind": "line"
+  },
+  {
+   "key": "taxes",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    -3660.0,
+    -3570.0
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "transfer_tax",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -2745.0,
+    -2677.5
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "transfer_surtax",
+   "kind": "line"
+  },
+  {
+   "key": "title",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    -850,
+    -850
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -200,
+    -200
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -125,
+    -125
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -70,
+    -70
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line",
+   "label": "Recording"
+  },
+  {
+   "amounts": [
+    -399,
+    -399
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "estoppel",
+   "kind": "line"
+  },
+  {
+   "key": "prorations",
+   "kind": "group",
+   "label": "Prorations"
+  },
+  {
+   "amounts": [
+    434,
+    434
+   ],
+   "display": [
+    "$434",
+    "$434"
+   ],
+   "key": "tax_proration",
+   "kind": "line"
+  },
+  {
+   "key": "concessions",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    0,
+    -600
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "other",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    0,
+    -2500
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "other",
+   "kind": "line",
+   "label": "Repairs"
+  },
+  {
+   "amounts": [
+    -38115.0,
+    -40307.5
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "total_costs",
+   "kind": "subtotal"
+  },
+  {
+   "amounts": [
+    571885.0,
+    554692.5
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "net",
+   "kind": "final"
+  }
+ ],
+ "state": "FL",
+ "tax_assumed_unpaid": false,
+ "warnings": {
+  "count": 0
+ }
+}

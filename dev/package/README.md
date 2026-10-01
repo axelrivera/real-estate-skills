@@ -243,6 +243,16 @@ A recommended list price, three pricing strategies with the seller's estimated n
 - **Example:** "Seller CMA for 456 Pine Ave. They replaced the roof in 2023 and redid the kitchen in 2021. Payoff is about $210,000. They'd like to be moved by June."
 - **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers, plus a PDF copy of the slides (a backup that opens anywhere). If you didn't ask, Claude offers it after the report.
 
+### Seller Net Sheet (/seller-net-sheet)
+
+What the seller walks away with at one price, or up to three side by side, without a CMA or an offer. Useful before a listing appointment, when a seller asks about a price cut, or to show what a seller credit costs.
+
+- **Tell Claude:** the address with its city and county, the price or prices, and the mortgage payoff. The listing agreement's commission, the expected closing date and this year's tax bill sharpen it.
+- **Minimum:** the address and one price. Without the payoff, the sheet stops at the net before the payoff and is marked Preliminary.
+- **Example:** "What would my seller net at $450,000 and at $440,000 on 2250 Oak Hollow Ct in Oviedo? They owe about $214,000, my listing agreement is 3% plus 2.5% to the buyer's agent, and we expect to close in mid-December."
+- **You get:** a one-page PDF with every cost itemized and labeled where it's an estimate, or a short table in chat. Send a payoff letter, a title quote or the tax bill and Claude redoes it.
+- **Already have an offer?** Use Seller Offer Review: it nets the offer and also checks its terms.
+
 ### Seller Offer Review (/seller-offer-review)
 
 Reviews the offers on your listing. It works two ways, depending on how many offers you upload.
@@ -295,7 +305,7 @@ Every deadline in an executed contract: who owes what, by when, and what happens
 ### How They Fit Together
 
 - **Buyer side:** Buyer CMA, then Buyer Offer Strategy, then Contract Timeline once the contract is executed.
-- **Seller side:** Seller CMA, then Seller Offer Review when offers arrive, then Contract Timeline.
+- **Seller side:** Seller CMA (or a quick Seller Net Sheet before the appointment), then Seller Offer Review when offers arrive, then Contract Timeline.
 
 ## 7. Best Practices
 
