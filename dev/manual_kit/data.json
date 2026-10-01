@@ -257,8 +257,8 @@
         {"address": "846 Osprey Glen Way", "sold_price": 452000, "seller_concessions": 3000,
          "adjustments": [{"label": "Size", "amount": -800}, {"label": "Location Outside Kestrel Point", "amount": 4000}, {"label": "Market Since the Sale", "amount": -3000}]}
       ],
-      "bottom_line": {"low": 443000, "high": 456000, "midpoint": 449500},
-      "offer_plan": {"opening": 440000, "target_low": 444000, "target_high": 449000, "walk_away": 453000,
+      "bottom_line": {"low": 445000, "high": 450000, "midpoint": 447500},
+      "offer_plan": {"opening": 440000, "target_low": 443000, "target_high": 447000, "walk_away": 450000,
                      "credit_alt": {"price": 445000, "credit": 5000}},
       "taxes": {"current_bill": 4095.13, "current_year": 2025, "homestead": true,
                 "jurisdictions": [{"label": "Inside Casselberry City Limits", "short": "City", "district": "C1"}]},
