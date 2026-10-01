@@ -129,7 +129,10 @@ def payments(R, market, tax_rows):
                      "cash_to_close": to_close, "cash_to_close_display": money(to_close),
                      "down_short": _short(r["cash_down"], cash), "cash_short": _short(to_close, cash),
                      "cash_left": _tight(to_close, cash)})
-    first = pay["scenarios"][0]
+        # CMA-340: the chat template quotes the margins already formatted, as the PDF prints them
+        rows[-1].update(cash_short_display=_money_or_none(rows[-1]["cash_short"]),
+                        cash_left_display=_money_or_none(rows[-1]["cash_left"]))
+    first =pay["scenarios"][0]
     lower = finance.monthly_payment(price - 10000, first["type"], first["down_pct"], pay["rate"], tax_at(price - 10000),
                                     pay["insurance_annual"], pay.get("hoa_cdd_monthly", 0), flood_annual=flood["annual"])
     alt = None
@@ -139,17 +142,24 @@ def payments(R, market, tax_rows):
     # CMA-204: which tax the payment uses. Two jurisdictions mean the district isn't confirmed: the payment uses the
     # one at tax_jurisdiction_index (the higher bill by default), labeled Estimate, as is a fallback-rate estimate.
     tax_basis = {"short": tj["short"], "unconfirmed": len(tax_rows) == 2, "estimated": bool(tj["estimated"]),
-                 "basis": tj["basis"], "higher": len(tax_rows) == 2 and (tj["annual"] or 0) >= (tax_rows[1 - ji]["annual"] or 0)}
+                 "basis": tj["basis"], "higher": len(tax_rows) == 2 and (tj["annual"] or 0) >= (tax_rows[1 - ji]["annual"] or 0),
+                 # CMA-340: the PDF's With / No Homestead label, which `basis` doesn't carry for a fallback rate
+                 "homestead": bool(R["costs"]["taxes"].get("homestead", True))}
     tax_basis["label_estimate"] = tax_basis["unconfirmed"] or tax_basis["estimated"]
     cs = R["costs"].get("credit_scenarios") or {}
     given_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
     closing = {"pct": given_pct if given_pct is not None else market.get("closing_costs.buyer_closing_cost_pct") or 0.03,
                "loan_tax_labels": [t["label"] for t in finance.loan_taxes(1, market)] if given_pct is None else [],
                "lender_amount": cs.get("closing_costs")}
+    closing["pct_display"] = f'{closing["pct"] * 100:g}%'  # CMA-340: as the PDF's closing-cost note words it
     return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R), "rate": pay["rate"],
             "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood, "closing": closing,
             "per_10k": rows[0]["total"] - lower["total"], "alt_jurisdiction": alt, "tax_index": ji, "tax_basis": tax_basis,
             "buyer_cash": cash, "buyer_cash_display": money(cash) if cash else None}
+
+
+def _money_or_none(x):
+    return money(x) if x is not None else None
 
 
 def _short(need, have):
@@ -432,6 +442,9 @@ def history_stats(R, as_of):
         "failed_contracts": _plural(failed, "failed contract"), "active_days": _plural(active_days, "day"),
         "first_listed": f"{first_listed:%B %-d, %Y}",
     }
+    # CMA-340: the sale the counts start after, worded for the chat template's history line (kept out of `display`,
+    # whose names are report placeholders)
+    stats["counted_since_sale_display"] = f"{rows[sale]['date']:%B %-d, %Y}" if sale is not None else None
     if "vs_last_contract" in stats:  # CMA-214: "$400 above", "$2,000 below" or "equal to" the last contract's asking
         d = stats["vs_last_contract"]
         stats["display"].update(last_contract_price=money(stats["last_contract_price"]),

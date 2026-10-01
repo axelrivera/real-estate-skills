@@ -198,6 +198,7 @@
  "history": {
   "active_days": 119,
   "counted_since_sale": null,
+  "counted_since_sale_display": null,
   "current_price": 474900,
   "display": {
    "price_cut_count": "4",
@@ -333,7 +334,8 @@
    "loan_tax_labels": {
     "count": 0
    },
-   "pct": 0.03
+   "pct": 0.03,
+   "pct_display": "3%"
   },
   "flood": {
    "annual": null,
@@ -350,7 +352,9 @@
     "assumed": false,
     "cash_down": 23745.0,
     "cash_left": null,
+    "cash_left_display": null,
     "cash_short": null,
+    "cash_short_display": null,
     "cash_to_close": 37992.0,
     "closing_costs": 14247.0,
     "down_short": null,
@@ -368,7 +372,9 @@
     "assumed": false,
     "cash_down": 16621.5,
     "cash_left": null,
+    "cash_left_display": null,
     "cash_short": null,
+    "cash_short_display": null,
     "cash_to_close": 30868.5,
     "closing_costs": 14247.0,
     "down_short": null,
@@ -386,7 +392,9 @@
     "assumed": false,
     "cash_down": 94980.0,
     "cash_left": null,
+    "cash_left_display": null,
     "cash_short": null,
+    "cash_short_display": null,
     "cash_to_close": 109227.0,
     "closing_costs": 14247.0,
     "down_short": null,
@@ -404,6 +412,7 @@
   "tax_basis": {
    "estimated": false,
    "higher": true,
+   "homestead": true,
    "label_estimate": true,
    "short": "City",
    "unconfirmed": true

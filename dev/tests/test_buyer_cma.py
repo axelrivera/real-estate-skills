@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -1133,6 +1134,84 @@ class ManualSmokeV2(unittest.TestCase):
         self.assertIn("no other offers are competing.</p>", doc)
         self.assertEqual(compute.end_sentence("before you sign."), "before you sign.")
         self.assertEqual(compute.end_sentence("(see the roof)."), "(see the roof).")
+
+
+class ChatTemplate(unittest.TestCase):
+    """CMA-340: the chat template follows page 1 of the PDF, and every compute.py path it quotes exists."""
+    TEMPLATE = os.path.join(SKILL, "assets", "buyer-cma-template.md")
+    PATH = re.compile(r"\b[a-z][a-z_0-9]*(?:\[[^\]]+\]|\.[a-z][a-z_0-9]*)+")
+    BARE = ("bottom_line_paragraph", "median_adjusted_display", "current_bill_display", "comps_table", "cash_fit")
+
+    def run_(self, change=None):
+        R = report()
+        if change:
+            change(R)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def resolve(self, C, path, nullable=False):
+        """The value at `path`; with `nullable`, a null object on the way (cash_fit without buyer_cash) ends it."""
+        node = C
+        for name, index in re.findall(r"\.?([a-z_0-9]+)|\[([^\]]+)\]", path):
+            if node is None and nullable:
+                return None
+            if name:
+                self.assertIsInstance(node, dict, path)
+                self.assertIn(name, node, path)
+                node = node[name]
+            else:
+                i = int(index) if index.isdigit() else self.resolve(C, index)
+                self.assertIsInstance(node, list, path)
+                self.assertLess(i, len(node), path)
+                node = node[i]
+        return node
+
+    def paths(self):
+        with open(self.TEMPLATE) as f:
+            text = f.read()
+        return sorted({m.group(0) for m in self.PATH.finditer(text) if "." in m.group(0) or "[" in m.group(0)})
+
+    def short(self, R):
+        R["costs"]["buyer_cash"] = 30000
+        R["history"]["events"] = copy.deepcopy(ManualSmoke.KESTREL)
+        R["history"].pop("rows", None)
+        R["as_of"] = "2026-09-26"
+        R["subject"]["list_price"] = 464900
+        R["subject"]["locality"] = R["subject"]["locality"].rsplit("MLS ", 1)[0] + "MLS X9061187"
+
+    def test_every_template_path_exists(self):
+        paths = self.paths()
+        self.assertIn("payments.rows[0].cash_short_display", paths)
+        self.assertIn("summary_page.check_first[0][1]", paths)
+        for change in (None, self.short):  # the short run sets every nullable object (cash_fit, the sale)
+            _, C = self.run_(change)
+            for p in paths:
+                with self.subTest(path=p, short=bool(change)):
+                    self.resolve(C, p, nullable=change is None)
+            for name in self.BARE:
+                self.assertIn(name, C)
+
+    def test_display_values_for_the_template(self):
+        _, C = self.run_(self.short)
+        pay, first = C["payments"], C["payments"]["rows"][0]
+        self.assertTrue(first["cash_short"])
+        self.assertEqual(first["cash_short_display"], compute.money(first["cash_short"]))
+        self.assertEqual(pay["closing"]["pct_display"], f'{pay["closing"]["pct"] * 100:g}%')
+        self.assertTrue(pay["tax_basis"]["homestead"])
+        self.assertEqual(C["history"]["counted_since_sale_display"], "May 22, 2015")
+        self.assertTrue(all(isinstance(v, str) for v in C["placeholders"].values()))  # never a None placeholder
+        _, C = self.run_(lambda R: R["costs"]["taxes"].__setitem__("homestead", False))
+        self.assertFalse(C["payments"]["tax_basis"]["homestead"])
+        self.assertIsNone(C["history"]["counted_since_sale_display"])
+        self.assertIsNone(C["payments"]["rows"][0]["cash_short_display"])
+
+    def test_labels_match_page_one(self):
+        with open(self.TEMPLATE) as f:
+            text = f.read()
+        with open(os.path.join(SKILL, "assets", "labels.json")) as f:
+            labels = json.load(f)
+        for key in ("sum_why", "sum_comps_h", "sum_costs", "sum_check"):
+            self.assertIn(f"**{labels[key]}", text)
 
 
 if __name__ == "__main__":
