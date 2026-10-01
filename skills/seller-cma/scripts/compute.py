@@ -887,7 +887,7 @@ def compute(R, market, homes):
         "recommendation": {"list_price": rec["list_price"], "list_price_display": money(rec["list_price"]),
                            "low": rec["low"], "high": rec["high"],
                            "range_display": f"{money(rec['low'])} – {money(rec['high'])}",
-                           "expected_sale": (R.get("summary_page") or {}).get("expected_sale", "")},
+                           "expected_sale": cma.fill((R.get("summary_page") or {}).get("expected_sale", ""), values)},
         "median_adjusted": median_adjusted, "median_adjusted_display": median_display,
         "adjusted_min": min(c["adjusted"] for c in R["comps"]["cards"]),
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
