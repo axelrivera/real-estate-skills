@@ -13,6 +13,17 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "approval",
+    "buyer_broker_pct",
+    "contract_form",
+    "deposit",
+    "down_pct",
+    "inspection_days",
+    "loan_approval_days",
+    "seller_concessions",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -65,13 +76,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": false,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": true,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -121,7 +135,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -139,8 +153,8 @@
     "missing": {
      "count": 0
     },
-    "net": 351272,
-    "net_adj": 350689,
+    "net": 351571,
+    "net_adj": 350988,
     "price": 382000,
     "tax_bill_assumed": false
    },
@@ -189,7 +203,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -207,8 +221,8 @@
     "missing": {
      "count": 0
     },
-    "net": 355024,
-    "net_adj": 354441,
+    "net": 355323,
+    "net_adj": 354740,
     "price": 386000,
     "tax_bill_assumed": false
    },
@@ -257,7 +271,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -275,13 +289,13 @@
     "missing": {
      "count": 0
     },
-    "net": 348772,
-    "net_adj": 348189,
+    "net": 349071,
+    "net_adj": 348488,
     "price": 382000,
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 333796.0,
+   "rank_value": 334095.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -371,7 +385,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -389,8 +403,8 @@
     "missing": {
      "count": 0
     },
-    "net": 357838,
-    "net_adj": 357255,
+    "net": 358137,
+    "net_adj": 357554,
     "price": 389000,
     "tax_bill_assumed": false
    },
@@ -481,8 +495,7 @@
   {
    "field": "hoa_monthly",
    "impact": "low",
-   "scope": "listing",
-   "value": "unknown"
+   "scope": "listing"
   }
  ],
  "highest_and_best": null,
@@ -628,8 +641,7 @@
   {
    "field": "hoa_monthly",
    "impact": "low",
-   "scope": "listing",
-   "value": "unknown"
+   "scope": "listing"
   }
  ],
  "mode": "single",
@@ -647,6 +659,17 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "approval",
+    "buyer_broker_pct",
+    "contract_form",
+    "deposit",
+    "down_pct",
+    "inspection_days",
+    "loan_approval_days",
+    "seller_concessions",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -699,13 +722,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": false,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": true,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -755,7 +781,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -773,8 +799,8 @@
     "missing": {
      "count": 0
     },
-    "net": 351272,
-    "net_adj": 350689,
+    "net": 351571,
+    "net_adj": 350988,
     "price": 382000,
     "tax_bill_assumed": false
    },
@@ -823,7 +849,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -841,8 +867,8 @@
     "missing": {
      "count": 0
     },
-    "net": 355024,
-    "net_adj": 354441,
+    "net": 355323,
+    "net_adj": 354740,
     "price": 386000,
     "tax_bill_assumed": false
    },
@@ -891,7 +917,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -909,13 +935,13 @@
     "missing": {
      "count": 0
     },
-    "net": 348772,
-    "net_adj": 348189,
+    "net": 349071,
+    "net_adj": 348488,
     "price": 382000,
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 333796.0,
+   "rank_value": 334095.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -1005,7 +1031,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -1023,8 +1049,8 @@
     "missing": {
      "count": 0
     },
-    "net": 357838,
-    "net_adj": 357255,
+    "net": 358137,
+    "net_adj": 357554,
     "price": 389000,
     "tax_bill_assumed": false
    },
@@ -1048,6 +1074,17 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "approval",
+    "buyer_broker_pct",
+    "contract_form",
+    "deposit",
+    "down_pct",
+    "inspection_days",
+    "loan_approval_days",
+    "seller_concessions",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -1100,13 +1137,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": false,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": true,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -1156,7 +1196,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -1174,8 +1214,8 @@
     "missing": {
      "count": 0
     },
-    "net": 351272,
-    "net_adj": 350689,
+    "net": 351571,
+    "net_adj": 350988,
     "price": 382000,
     "tax_bill_assumed": false
    },
@@ -1224,7 +1264,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -1242,8 +1282,8 @@
     "missing": {
      "count": 0
     },
-    "net": 355024,
-    "net_adj": 354441,
+    "net": 355323,
+    "net_adj": 354740,
     "price": 386000,
     "tax_bill_assumed": false
    },
@@ -1292,7 +1332,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -1310,13 +1350,13 @@
     "missing": {
      "count": 0
     },
-    "net": 348772,
-    "net_adj": 348189,
+    "net": 349071,
+    "net_adj": 348488,
     "price": 382000,
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 333796.0,
+   "rank_value": 334095.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -1406,7 +1446,7 @@
      ],
      [
       "estoppel",
-      -299
+      0
      ],
      [
       "warranty",
@@ -1424,8 +1464,8 @@
     "missing": {
      "count": 0
     },
-    "net": 357838,
-    "net_adj": 357255,
+    "net": 358137,
+    "net_adj": 357554,
     "price": 389000,
     "tax_bill_assumed": false
    },
@@ -1493,7 +1533,7 @@
    ],
    [
     "estoppel",
-    -299
+    0
    ],
    [
     "warranty",
@@ -1511,8 +1551,8 @@
   "missing": {
    "count": 0
   },
-  "net": 357838,
-  "net_adj": 357255,
+  "net": 358137,
+  "net_adj": 357554,
   "price": 389000,
   "tax_bill_assumed": false
  },

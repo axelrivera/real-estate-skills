@@ -17,7 +17,7 @@ header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:
 
 /* the itemized table */
 .net td{padding:2.4px 8px} .net th{padding:4px 8px}
-.net th.n{text-align:right}
+.net th.n{text-align:right;white-space:normal} /* a long price label wraps; render.py stops on one that still clips */
 .net table{table-layout:fixed}
 .net tr.group td{padding-top:6px;color:var(--brand-ink);font-weight:700;font-size:7.6pt;text-transform:uppercase;letter-spacing:.05em}
 .net tr.line td:first-child{padding-left:16px}

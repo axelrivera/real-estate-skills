@@ -102,3 +102,7 @@ td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow
 .compact .ctr td{padding:1.5px 7px;font-size:8.3pt} .compact .ctr td.now{font-size:8.8pt} .compact .ctr td.why2{font-size:7.4pt}
 .compact .kpis b{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
 .compact .p1 td{padding-top:1.8px;padding-bottom:1.8px} .compact h2{margin:6px 0 3px} .compact .prelim,.compact .cnote{padding:3px 8px;font-size:7.8pt;margin-top:4px}
+
+/* tighter detail pages when that keeps a short tail off a page of its own (render.py fit_page_one) */
+.tail .det td{padding-top:1.4px;padding-bottom:1.4px} .tail .det th{padding-top:2px;padding-bottom:2px}
+.tail .det h2{margin:7px 0 3px} .tail .det .legend{margin-top:2px}

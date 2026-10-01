@@ -251,7 +251,8 @@ def net_sheet(R, market, L):
     # is assumed unpaid, so the seller's share (Jan 1 to closing) is charged, and the line says it's assumed
     bill_month = market.get("property_tax.bill_month") or TAX_BILL_MONTH
     closings = [_date(x.get("closing_date") or costs.get("expected_closing_date"), "expected_closing_date") for x in strategies]
-    tax_assumed = bool(annual_tax) and bill_paid is None and any(c and c.month >= bill_month for c in closings)
+    tax_assumed = bool(annual_tax) and bill_paid is None and any(  # past the due date the bill is assumed paid instead
+        c and c.month >= bill_month and not finance.tax_bill_assumed_paid(c, market, bill_paid) for c in closings)
     first = cols[0]
     assumed_keys = {a["key"] for a in first["assumed"]}
 

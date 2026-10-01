@@ -813,7 +813,8 @@ class Audit20260930Iter6(unittest.TestCase):
         self.assertIn("payment", r["why"]["price"])  # the payment limit sets the price
         self.assertIn("week of Sep 24", r["why"]["price"])
         a = {x["field"]: x for x in r["missing"]}
-        self.assertEqual(a["rate_source"]["impact"], "med")  # looked up, not assumed: not Preliminary on its own
+        # iteration 10 eval 1: looked up, not assumed, but it sets the price through the payment limit: high
+        self.assertEqual(a["rate_source"]["impact"], "high")
         self.assertNotIn("rate", a)
         d["costs"].pop("rate"), d["costs"].pop("rate_source"), d["costs"].pop("insurance_annual")
         a = {x["field"]: x for x in strategy.analyze(d)["missing"]}
@@ -1013,6 +1014,138 @@ class ManualTestFixes(unittest.TestCase):
         self.assertEqual(strategy.market_heat(P, {"months_supply": 4.2})[0], "soft")
         self.assertEqual(strategy.market_heat(P, {})[0], "soft")  # supply unknown: the cut still reads soft
         self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 1.4, "median_dom": 23})[0], "soft")
+
+
+class Iteration9Fixes(unittest.TestCase):
+    """Eval findings, iteration 9: an FHA buyer whose payment limit caps the price below the value range against 2-3
+    competing offers (eval 1), a list-price-only buyer (eval 2) and a Texas highest-and-best round (eval 3)."""
+    EVALS = os.path.join(ROOT, "dev", "evals", "buyer-offer-strategy", "files")
+    CYPRESS = {"analysis_date": "2026-09-26",
+               "property": {"address": "1532 Cypress Bend Dr, Casselberry, FL 32707", "list_price": 365000},
+               "competition": {"level": 2, "note": "Listing agent: 2 other offers coming", "deadline": "Friday 5 PM"},
+               "buyer": {"financing": "fha", "down_pct": 0.035, "approval": "du_approved", "lender_called": True,
+                         "cash_available": 26000, "reserve_floor": 2000, "max_price": 375000, "max_payment": 3200},
+               "costs": {"rate": 7.03, "rate_source": "Freddie Mac weekly 30-year average, week of Sep 24, 2026"}}
+
+    def cypress(self):
+        d = copy.deepcopy(self.CYPRESS)
+        return strategy.analyze(d, cma=strategy.load_cma(d, os.path.join(self.EVALS, "1532-Cypress-Bend-Dr.cma.json")))
+
+    def setUp(self):
+        self.r = self.cypress()
+
+    def test_unlikely_lower_cost_is_never_promoted(self):  # eval 1, finding 1
+        r = self.r
+        self.assertIsNone(r["promoted"])
+        self.assertEqual(r["terms"]["recommended"]["seller_concessions"], 500)  # only what the cash can't cover
+        self.assertNotIn("lower_cost", r["terms"])
+        self.assertIn("Unlikely", r["absent"]["lower_cost"])
+
+    def test_gap_reason_below_the_range(self):  # eval 1, finding 2
+        self.assertEqual(self.r["why"]["appraisal_gap"], "Not needed: price is below the value range")
+
+    def test_headline_is_true_when_stronger_fits(self):  # eval 1, finding 3
+        self.assertTrue(strategy.summary(self.r)["why"].startswith("The strongest offer inside your limits."))
+        d = {"analysis_date": "2026-09-26", "property": {"address": "2716 Gatlin Ave, Orlando, FL", "list_price": 429000},
+             "buyer": {"cash_available": 38000}}
+        r = strategy.analyze(d)  # eval 2: Stronger only raises the deposit, same outlook, a higher score, inside limits
+        self.assertTrue(strategy.stronger_fits(r))
+        s = strategy.summary(r)
+        self.assertTrue(s["why"].startswith("The best outlook inside your limits, with the least cash at risk."))
+        self.assertNotIn("Strongest", s["options"][0]["what"])
+
+    def test_payment_cap_says_what_would_change_it(self):  # eval 1, finding 4
+        line = self.r["constraints"][0]
+        self.assertIn("What would change it: a payment limit of about", line)
+        self.assertNotIn("quote", line)  # iteration 11 eval 1: the Preliminary line names the quotes, so page 1 fits
+        pay = strategy.monthly_payment(self.r["B"], self.r["costs"], self.r["B"]["value"]["cma_low"])
+        self.assertIn(f"${pay:,}/mo reaches the bottom of the range", line)
+
+    def test_conventional_average_named_for_fha_and_asked_first(self):  # eval 1, finding 8
+        tc = strategy.result(self.r)["to_confirm"]
+        self.assertIn("deadline", tc[0].lower())
+        self.assertIn("conventional-loan average, so the lender's FHA rate quote replaces it", tc[1])
+        self.assertIn("Insurance", tc[2])
+        self.assertIn("a conventional-loan average", self.r["why"]["price"])
+
+    def test_deposit_label_follows_the_contract_words(self):  # eval 3, finding 7
+        d = fixture("one-competing-reach.json")
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        self.assertIn("Escrow Deposit", [t["term"] for t in strategy.summary(r)["terms"]])  # FAR/BAR's name
+        r["B"]["words"] = dict(r["B"]["words"], deposit_label="Deposit")
+        labels = [t["term"] for t in strategy.summary(r)["terms"]]
+        self.assertIn("Deposit", labels)
+        self.assertNotIn("Escrow Deposit", labels)
+        self.assertNotIn("Escrow Deposit", [x["term"] for x in strategy.pushback(r)])
+
+    def test_short_tail_is_pulled_back_a_page(self):  # eval 1, finding 5
+        class Page:
+            def __init__(self, pages, tight):
+                self.cls, self.pages, self.tight = set(), pages, tight
+
+            def evaluate(self, js):
+                if "getBoundingClientRect" in js:
+                    return 900
+                for verb in ("add", "remove"):
+                    if f".{verb}('tail')" in js:
+                        getattr(self.cls, "add" if verb == "add" else "discard")("tail")
+
+            def pdf(self, **_):
+                n = self.tight if "tail" in self.cls else self.pages
+                return b"/Type /Pages " + b"/Type /Page " * n
+
+        saves = Page(4, 3)
+        buyer_render.fit_page_one(saves)
+        self.assertIn("tail", saves.cls)
+        same = Page(3, 3)
+        buyer_render.fit_page_one(same)
+        self.assertNotIn("tail", same.cls)
+
+
+class Iteration10Fixes(unittest.TestCase):
+    """Eval findings, iteration 10: the Cypress Bend FHA buyer capped by the payment limit (eval 1), a list-price-only
+    buyer (eval 2) and a lower-cost option priced lower (eval 3)."""
+
+    def setUp(self):
+        self.r = Iteration9Fixes().cypress()
+
+    def test_payment_inputs_that_set_the_price_are_high_and_named_first(self):  # eval 1, finding 7
+        a = {x["field"]: x for x in self.r["missing"]}
+        self.assertEqual(a["rate_source"]["impact"], "high")
+        self.assertEqual(a["insurance_annual"]["impact"], "high")
+        self.assertIn("Add a lender rate quote, an insurance quote, contract form to sharpen",
+                      strategy.preliminary(self.r))
+
+    def test_downside_row_names_only_what_applies(self):  # eval 1, finding 8
+        self.assertEqual(strategy.downside_label(self.r["O"]), "If the Inspection Goes Badly (Typical Repair Credit)")
+        doc = buyer_render.options_html(self.r, {}, sample=True)
+        self.assertNotIn("Appraisal at the Top of the Value Range", doc)
+        above = {"recommended": {"price": 380000, "downside_price": 372000, "repair_reserve": 2500}}
+        self.assertEqual(strategy.downside_label(above), "If the Appraisal and Inspection Go Badly (Appraisal at the Top "
+                                                          "of the Value Range, Typical Repair Credit)")
+        above["recommended"]["repair_reserve"] = 0
+        self.assertEqual(strategy.downside_label(above), "If the Appraisal Comes In Low (Appraisal at the Top of the "
+                                                          "Value Range)")
+
+    def test_lower_cost_saving_is_worst_case_cash(self):  # eval 3, finding 9
+        d = fixture("one-competing-reach.json")
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
+        s = strategy.summary(r)
+        lc = next(o for o in s["options"] if o["key"] == "lower_cost")
+        self.assertRegex(lc["what"], r"Saves \$[\d,]+ in worst-case cash")
+
+    def test_preliminary_names_loan_type_as_to_confirm_does(self):  # eval 2, finding 10
+        d = {"analysis_date": "2026-09-26", "property": {"address": "2716 Gatlin Ave, Orlando, FL", "list_price": 429000},
+             "buyer": {"cash_available": 38000}}
+        r = strategy.analyze(d)
+        self.assertIn("loan type", strategy.preliminary(r))
+        self.assertNotIn("financing", strategy.preliminary(r))
+        self.assertTrue(any(x.startswith("Loan type") for x in strategy.result(r)["to_confirm"]))
+
+    def test_lower_cost_absent_when_already_unlikely(self):  # eval 1, finding 11
+        self.assertEqual(self.r["bands"]["recommended"][2][1], "Unlikely")
+        self.assertEqual(self.r["absent"]["lower_cost"],
+                         "Writing it softer would still read Unlikely against the expected competition.")
 
 
 class MarkdownParity(unittest.TestCase):

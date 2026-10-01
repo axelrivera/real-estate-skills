@@ -109,6 +109,62 @@ class OtherMarkets(unittest.TestCase):
         self.assertEqual(row(C, "Solar Panel Loan")["amounts"][0], -14000)
 
 
+class Iteration9(unittest.TestCase):
+    """Iteration 9 evals: the tax due date, a missing proration, an assumed closing date, shortfalls, market notes."""
+
+    def test_closing_after_due_date_assumes_bill_paid(self):
+        d = fixture("georgia-short.json")
+        d["costs"]["tax_bill_due_date"] = "10-15"  # Cobb County bills are due Oct 15; closing Nov 6
+        C = compute.run(d)
+        tax = next(r for r in C["rows"] if r["key"] == "tax_proration")
+        self.assertIn("Bill Assumed Paid", tax["label"])
+        self.assertEqual(tax["amounts"][0], round(3900 * 56 / 365))  # a credit back to the seller
+        self.assertTrue(C["tax_assumed_paid"])
+        self.assertFalse(C["tax_assumed_unpaid"])
+        self.assertTrue(any("assumed paid" in a and "Oct 15" in a for a in C["assumptions"]))
+        before = compute.run(fixture("georgia-short.json"))  # no due date: today's rule, a charge
+        self.assertLess(next(r for r in before["rows"] if r["key"] == "tax_proration")["amounts"][0], 0)
+        d["costs"]["tax_bill_due_date"] = "mid-October"
+        with self.assertRaisesRegex(compute.NetSheetError, "tax_bill_due_date"):
+            compute.run(d)
+
+    def test_no_tax_bill_is_preliminary(self):
+        C = compute.run(fixture("texas-no-payoff.json"))
+        self.assertIn("property tax proration isn't included", C["preliminary_reason"])
+
+    def test_vague_closing_date_marked_assumed(self):
+        d = fixture("florida-three-prices.json")
+        d["closing_date_assumed"] = True
+        C = compute.run(d)
+        self.assertTrue(C["closing_date_assumed"])
+        self.assertTrue(any(f["text"].startswith("Closing ") and f["text"].endswith("(Assumed)") for f in C["facts"]))
+        self.assertTrue(any(a.startswith("Closing on") and "assumed" in a for a in C["assumptions"]))
+        self.assertFalse(compute.run(fixture("florida-three-prices.json"))["closing_date_assumed"])
+
+    def test_shortfalls_in_column_order_and_tile_label(self):
+        C = compute.run(fixture("georgia-short.json"))
+        prices = [c["price_display"] for c in C["columns"]]
+        notes = [n for n in C["notes"] if "bring about" in n]
+        self.assertEqual([next(p for p in prices if f"At {p} " in n) for n in notes], prices)
+        self.assertEqual(C["columns"][0]["tile_label"], "Cash to Bring to Closing")
+        self.assertEqual(C["columns"][0]["tile_display"], finance.money(-C["columns"][0]["net"]))
+        doc = render.build_html(C, {})
+        self.assertIn("Cash to Bring to Closing", doc)
+        F = compute.run(fixture("florida-three-prices.json"))
+        self.assertEqual(F["columns"][0]["tile_label"], "Estimated Net to Seller")
+
+    def test_property_type_assumed(self):
+        d = fixture("miami-condo-bill-paid.json")
+        d["property"]["property_type_assumed"] = True
+        C = compute.run(d)
+        self.assertIn("Condo (Assumed)", [f["text"] for f in C["facts"]])
+        self.assertTrue(any("assumed condo from the unit number" in a for a in C["assumptions"]))
+
+    def test_market_notes_drop_mls(self):
+        for name in ("texas-no-payoff.json", "florida-three-prices.json", "miami-condo-bill-paid.json"):
+            self.assertFalse([n for n in compute.run(fixture(name))["market_notes"] if "MLS" in n or "--columns" in n])
+
+
 class Inputs(unittest.TestCase):
     def base(self):
         return copy.deepcopy(fixture("florida-three-prices.json"))
@@ -188,6 +244,19 @@ class Render(unittest.TestCase):
             with open(path, "rb") as f:
                 self.assertEqual(len(re.findall(rb"/Type\s*/Page[^s]", f.read())), 1)
         self.assertIn("chart was left out", err.getvalue())
+
+    def test_long_default_label_never_clips(self):
+        """Iteration 9 eval 1: the default "$450,000 with $9,000 Credit" was cut off in the table header. It wraps now,
+        and a label that still can't fit stops the render."""
+        d = fixture("florida-three-prices.json")
+        for x in d["scenarios"]:
+            x.pop("label", None)
+        with tempfile.TemporaryDirectory() as tmp:
+            (path,) = render.build(d, "pdf", tmp, {"agent": {}})
+            self.assertTrue(os.path.exists(path))
+            d["scenarios"][2]["label"] = "Listpricewithsellercreditandhomewarranty"
+            with self.assertRaisesRegex(compute.NetSheetError, "cut off"):
+                render.build(d, "pdf", tmp, {"agent": {}})
 
     def test_html_marks_preliminary_and_short(self):
         C = compute.run(fixture("texas-no-payoff.json"))

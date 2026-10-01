@@ -37,6 +37,8 @@ property_tax:
   paid: arrears
   reassessed_on_sale: true
   fallback_rate: 0.011                # annual tax as share of price when the listing shows no tax bill
+                                      # due_date: MM-DD (none nationally): when a market's bill is due that year; a
+                                      # closing after it assumes the bill paid (finance.tax_proration)
 
 holding_costs:
   insurance_rate: 0.005

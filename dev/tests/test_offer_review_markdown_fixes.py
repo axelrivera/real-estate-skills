@@ -86,8 +86,9 @@ class SharedAsk(unittest.TestCase):  # OFR-353
     def test_rider_gg_agreement_is_one_item(self):
         R = review.analyze(fixture("listing-pays-buyer-broker.json"))
         gg = [a for a in R["missing"] if a["field"] == "compensation_agreement"]
-        self.assertEqual(len(gg), 1)
-        self.assertEqual(len(review.oe.scopes(gg[0])), 2)
+        # iteration 10 eval 6: the listing broker pays the buyer's broker on both offers, so the agreement's amount
+        # doesn't move the seller's net and isn't asked (the flag still says to get the signed agreement)
+        self.assertEqual(gg, [])
         asks = review.to_confirm(R)
         self.assertEqual(len(asks), len(set(asks)))
 

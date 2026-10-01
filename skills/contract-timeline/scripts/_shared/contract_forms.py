@@ -165,7 +165,8 @@ def terms(form, item=None):
     """What the form and its riders mean for the inspection period and repairs.
 
     Returns {'walkaway': bool or None, 'repairs_owed': bool, 'riders': [codes], 'inspection_rider': 'K' | 'L' | None,
-    'label': "Standard + As Is Rider (K)", 'title': "Standard contract with the As Is Rider (K)"}. walkaway is None only
+    'label': "Standard + As Is Rider (K)", 'title': "Standard contract with the As Is Rider (K)", 'watch': (issue, fix)
+    or None}: `watch` is what the inspection rider leaves open (farbar-riders.md K), for the offer review's flags. walkaway is None only
     for another contract that doesn't say; its label and title are the contract's own name.
     Raises FormError for a rider the form doesn't allow (I, K, L on AS IS) or K and L together."""
     item = item or {}
@@ -176,7 +177,7 @@ def terms(form, item=None):
             raise FormError(f"{', '.join(rider_name(c) for c in bad)}: RESERVED on the FAR/BAR AS IS form (Para. 19), which "
                             "already gives the buyer a walk-away inspection period. Check which form was signed and which "
                             "riders are attached.")
-        return {"walkaway": True, "repairs_owed": False, "riders": codes, "inspection_rider": None, "label": "AS IS",
+        return {"walkaway": True, "repairs_owed": False, "riders": codes, "inspection_rider": None, "watch": None, "label": "AS IS",
                 "title": "AS IS contract"}
     if form == STANDARD:
         if "K" in codes and "L" in codes:
@@ -184,12 +185,21 @@ def terms(form, item=None):
                             "and each replaces the Standard form's inspection terms differently. Ask which one governs.")
         rider = "K" if "K" in codes else "L" if "L" in codes else None
         return {"walkaway": rider is not None, "repairs_owed": rider != "K", "riders": codes, "inspection_rider": rider,
+                "watch": _K_WATCH if rider == "K" else None,
                 "label": f"Standard + {_SHORT[rider]} Rider ({rider})" if rider else "Standard",
                 "title": f"Standard contract with the {rider_name(rider)}" if rider else "Standard contract"}
     given = item.get("inspection_walkaway")
     name = item.get("contract_name") or item.get("form") or "Other contract"
     return {"walkaway": None if given is None else given is not False, "repairs_owed": False, "riders": codes,
-            "inspection_rider": None, "label": name, "title": name}
+            "inspection_rider": None, "watch": None, "label": name, "title": name}
+
+
+# iteration 10 eval 5: what the As Is Rider (K) leaves open on the Standard form (farbar-riders.md K)
+_K_WATCH = ("As Is Rider (K): deletes the Para. 9(a) repair, WDO and permit limits and all of Paras. 11 and 12, so the "
+            "seller owes no repairs. The Para. 9(a) 125% escrow isn't deleted, and there's no permit cooperation clause "
+            "like the AS IS form's Para. 12(c).",
+            "Agree in Additional Terms whether the 125% escrow applies to the as-is maintenance duty and whether the "
+            "seller helps close open permits.")
 
 
 def inspection_walkaway(form, item=None):
@@ -205,17 +215,18 @@ def term_words(form):
     (Inspection Period, a deposit refundable in it); for any other contract, generic words that fit most forms (a Texas
     TREC contract's option period, an appraisal right in its financing addendum), never Florida's names.
 
-    {'inspection_label', 'inspection', 'deposit_refund', 'appraisal_addendum', 'deposit_risk_confirm'};
+    {'inspection_label', 'inspection', 'deposit_label', 'deposit_refund', 'appraisal_addendum', 'deposit_risk_confirm'};
     appraisal_addendum is None on FAR/BAR (its riders are named by letter: appraisal_form()), and so is
     deposit_risk_confirm (the engine's windows follow the form and riders)."""
     if form in FARBAR:
-        return {"inspection_label": "Inspection Period", "inspection": "inspection period",
+        return {"inspection_label": "Inspection Period", "inspection": "inspection period", "deposit_label": "Escrow Deposit",
                 "deposit_refund": "refundable during inspection", "appraisal_addendum": None, "deposit_risk_confirm": None}
     return {"inspection_label": "Inspection or Option Period", "inspection": "inspection or option period",
+            "deposit_label": "Deposit",  # iteration 9 eval 3: "Escrow Deposit" is FAR/BAR's name
             # OFR-316: the engine counts the deposit's risk date from the offer's own periods; on another contract the
             # agent confirms when that form makes the deposit nonrefundable (no other state's rules are built in)
             "deposit_risk_confirm": "counted from this offer's periods: confirm when your contract releases the deposit",
-            "deposit_refund": "refundable during the inspection or option period (per your contract)",
+            "deposit_refund": "refundable if the buyer ends the contract within the inspection or option period (per your contract)",
             "appraisal_addendum": "Appraisal Protection (Per Your Contract's Addendum)"}
 
 
@@ -266,6 +277,10 @@ def revision_note(form, printed, from_footer=True):
 BEST_EFFORT_NOTE = ("Only Florida FAR/BAR contracts are fully supported. This contract was read on a best-effort basis: check "
                     "every date and term against the signed contract, and have a real estate attorney licensed in the "
                     "property's state confirm anything that matters.")
+# iteration 9 eval 3: an offer described in chat (no form named) wasn't read from a contract, so its line says so
+DESCRIBED_NOTE = ("Only Florida FAR/BAR contracts are fully supported. This offer was reviewed on a best-effort basis from "
+                  "its description: check every date and term against the signed contract once you have it, and have a "
+                  "real estate attorney licensed in the property's state confirm anything that matters.")
 # OFR-314: the buyer side writes an offer that isn't signed yet, so its line points at the form being filled in
 BEST_EFFORT_OFFER_NOTE = ("Only Florida FAR/BAR contracts are fully supported. This offer was built on a best-effort basis for "
                           "another contract form: check every term and date against that form before the offer goes out, "

@@ -13,9 +13,15 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "buyer_broker_pct",
+    "down_pct",
+    "loan_approval_days",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -79,13 +85,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "C",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "C",
    "kickout": false,
    "lapsed": null,
@@ -427,7 +436,7 @@
   },
   {
    "field": "buyer_broker_pct",
-   "impact": "high",
+   "impact": "low",
    "value": 0.025
   },
   {
@@ -447,6 +456,12 @@
     "C"
    ],
    "scope": "listing",
+   "value": false
+  },
+  {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
    "value": false
   },
   {
@@ -524,9 +539,10 @@
  },
  "missing": [
   {
-   "field": "buyer_broker_pct",
+   "field": "listing_fee_includes_buyer_broker",
    "impact": "high",
-   "value": 0.025
+   "scope": "seller",
+   "value": false
   },
   {
    "field": "down_pct",
@@ -557,6 +573,11 @@
    "scope": "seller"
   },
   {
+   "field": "buyer_broker_pct",
+   "impact": "low",
+   "value": 0.025
+  },
+  {
    "field": "loan_approval_days",
    "impact": "low",
    "value": 30
@@ -577,9 +598,15 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "buyer_broker_pct",
+    "down_pct",
+    "loan_approval_days",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -643,13 +670,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "C",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "C",
    "kickout": false,
    "lapsed": null,
@@ -992,9 +1022,15 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "buyer_broker_pct",
+    "down_pct",
+    "loan_approval_days",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -1058,13 +1094,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "C",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "C",
    "kickout": false,
    "lapsed": null,

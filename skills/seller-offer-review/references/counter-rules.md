@@ -14,7 +14,8 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 10. **Seller-paid home warranty** → buyer pays. A cheap give-back if the buyer pushes.
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FAR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
-13. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM; when that is the offer's own deadline exactly, the next weekday, so the row never reads as no change. Change it to what the seller wants.
+13. **AGA-1 periods running to or past closing** (the `aga_window_at_closing` or `aga_window_past_closing` flag) → a valuation period that ends them with loan approval on a financed offer, else before closing: the row the flag's fix names, so the counter and the flag agree. A blank valuation period is the form's 30 days, so the row shows "30 days (blank)".
+14. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM; when that is the offer's own deadline exactly, the next weekday, so the row never reads as no change. Change it to what the seller wants.
 
 ## Negotiation History
 

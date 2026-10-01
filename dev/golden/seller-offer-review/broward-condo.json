@@ -13,6 +13,10 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": [
+    "appraisal_contingency",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -87,13 +91,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -438,6 +445,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -494,13 +504,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -861,6 +874,12 @@
    ],
    "scope": "listing",
    "value": false
+  },
+  {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
+   "value": false
   }
  ],
  "highest_and_best": null,
@@ -933,6 +952,12 @@
  },
  "missing": [
   {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
+   "value": false
+  },
+  {
    "field": "appraisal_contingency",
    "impact": "med"
   },
@@ -974,6 +999,10 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": [
+    "appraisal_contingency",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -1048,13 +1077,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -1399,6 +1431,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -1455,13 +1490,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -1810,6 +1848,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -1866,13 +1907,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -2219,6 +2263,10 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": [
+    "appraisal_contingency",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -2293,13 +2341,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,

@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 9
+  "count": 11
  },
  "chat_notes": {
   "count": 0
@@ -36,19 +36,20 @@
  "first_deadline": {
   "broker": false,
   "by_closing": false,
-  "contingency": true,
-  "critical": true,
-  "day": 23,
+  "contingency": false,
+  "critical": false,
+  "day": 21,
   "done": false,
   "done_display": null,
-  "key": "appraisal",
+  "key": "appraisal_due",
   "lender": false,
   "no_time": false,
   "party": "Buyer",
   "past": false,
   "past_display": null,
   "waits_on_approval": false,
-  "when": "2026-11-25 17:00"
+  "was": null,
+  "when": "2026-11-23 23:59"
  },
  "flag_keys": [
   "before_closing_rolled"
@@ -112,7 +113,9 @@
   "year_built_without_rider_p",
   "default:deposit",
   "default:loan_app",
+  "default:lead_paint",
   "default:title",
+  "default:survey",
   "closing_time_assumed",
   "title_by_unknown"
  ],

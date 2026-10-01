@@ -20,6 +20,9 @@
    "approval_expires": "2026-12-16",
    "approval_max_loan": 391200.0,
    "approval_max_price": 489000,
+   "assumed_terms": [
+    "buyer_broker_paid_by"
+   ],
    "balance_to_close": 77800.0,
    "bb_credit": false,
    "bb_from_listing": true,
@@ -79,6 +82,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "rider_GG"
     },
@@ -87,13 +91,16 @@
      "topic": "hoa_conflict"
     }
    ],
+   "form_given": true,
    "gap_cover": 15000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -451,6 +458,9 @@
    "approval_expires": "2026-12-17",
    "approval_max_loan": 444600.0,
    "approval_max_price": 494000,
+   "assumed_terms": [
+    "buyer_broker_paid_by"
+   ],
    "balance_to_close": 29400.0,
    "bb_credit": false,
    "bb_from_listing": true,
@@ -522,6 +532,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "rider_GG"
     },
@@ -534,13 +545,16 @@
      "topic": "hoa_conflict"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "B",
    "kickout": false,
    "lapsed": null,
@@ -923,14 +937,6 @@
    ],
    "scope": "listing",
    "value": false
-  },
-  {
-   "also": {
-    "count": 1
-   },
-   "field": "compensation_agreement",
-   "impact": "med",
-   "value": null
   }
  ],
  "highest_and_best": {
@@ -1038,14 +1044,6 @@
    "value": false
   },
   {
-   "also": {
-    "count": 1
-   },
-   "field": "compensation_agreement",
-   "impact": "med",
-   "value": null
-  },
-  {
    "field": "holding_monthly",
    "impact": "low",
    "scope": "seller"
@@ -1073,6 +1071,9 @@
    "approval_expires": "2026-12-16",
    "approval_max_loan": 391200.0,
    "approval_max_price": 489000,
+   "assumed_terms": [
+    "buyer_broker_paid_by"
+   ],
    "balance_to_close": 77800.0,
    "bb_credit": false,
    "bb_from_listing": true,
@@ -1132,6 +1133,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "rider_GG"
     },
@@ -1140,13 +1142,16 @@
      "topic": "hoa_conflict"
     }
    ],
+   "form_given": true,
    "gap_cover": 15000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,
@@ -1504,6 +1509,9 @@
    "approval_expires": "2026-12-17",
    "approval_max_loan": 444600.0,
    "approval_max_price": 494000,
+   "assumed_terms": [
+    "buyer_broker_paid_by"
+   ],
    "balance_to_close": 29400.0,
    "bb_credit": false,
    "bb_from_listing": true,
@@ -1575,6 +1583,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "rider_GG"
     },
@@ -1587,13 +1596,16 @@
      "topic": "hoa_conflict"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "B",
    "kickout": false,
    "lapsed": null,
@@ -1954,6 +1966,9 @@
    "approval_expires": "2026-12-17",
    "approval_max_loan": 444600.0,
    "approval_max_price": 494000,
+   "assumed_terms": [
+    "buyer_broker_paid_by"
+   ],
    "balance_to_close": 29400.0,
    "bb_credit": false,
    "bb_from_listing": true,
@@ -2025,6 +2040,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "rider_GG"
     },
@@ -2037,13 +2053,16 @@
      "topic": "hoa_conflict"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "B",
    "kickout": false,
    "lapsed": null,
@@ -2403,6 +2422,9 @@
    "approval_expires": "2026-12-16",
    "approval_max_loan": 391200.0,
    "approval_max_price": 489000,
+   "assumed_terms": [
+    "buyer_broker_paid_by"
+   ],
    "balance_to_close": 77800.0,
    "bb_credit": false,
    "bb_from_listing": true,
@@ -2462,6 +2484,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "rider_GG"
     },
@@ -2470,13 +2493,16 @@
      "topic": "hoa_conflict"
     }
    ],
+   "form_given": true,
    "gap_cover": 15000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": null,

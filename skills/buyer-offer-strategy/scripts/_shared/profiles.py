@@ -266,6 +266,7 @@ DEAL_COSTS = {
     "buyer_closing_cost_pct": "closing_costs.buyer_closing_cost_pct",
     "tax_paid": "property_tax.paid",
     "tax_rate": "property_tax.fallback_rate",
+    "tax_bill_due_date": "property_tax.due_date",  # iteration 9: a closing after it assumes this year's bill paid
     "insurance_rate": "holding_costs.insurance_rate",
     "utilities_monthly": "holding_costs.utilities_monthly",
     "inspection_credit_reserve_pct": "contract.inspection_credit_reserve_pct",

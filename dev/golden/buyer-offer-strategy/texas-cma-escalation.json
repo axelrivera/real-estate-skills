@@ -127,6 +127,9 @@
    "mid": 615000,
    "midpoint": 615000,
    "point": 618500
+  },
+  "words": {
+   "deposit_label": "Deposit"
   }
  },
  "O": {
@@ -145,6 +148,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "inspection_walkaway"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -189,13 +195,16 @@
    "flags": {
     "count": 0
    },
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "recommended",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "A",
    "kickout": false,
@@ -565,6 +574,9 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "full_uw",
+    "assumed_terms": [
+     "inspection_walkaway"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -609,13 +621,16 @@
     "flags": {
      "count": 0
     },
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "A",
     "kickout": false,
@@ -982,6 +997,9 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "full_uw",
+    "assumed_terms": [
+     "inspection_walkaway"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -1026,13 +1044,16 @@
     "flags": {
      "count": 0
     },
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "B",
     "kickout": false,
@@ -1432,6 +1453,12 @@
     "impact": "med",
     "scope": "listing",
     "value": 1200
+   },
+   {
+    "field": "listing_fee_includes_buyer_broker",
+    "impact": "high",
+    "scope": "seller",
+    "value": false
    }
   ],
   "incomplete": {
@@ -1519,6 +1546,12 @@
     "value": true
    },
    {
+    "field": "listing_fee_includes_buyer_broker",
+    "impact": "high",
+    "scope": "seller",
+    "value": false
+   },
+   {
     "field": "offer_norms",
     "impact": "med",
     "scope": "listing"
@@ -1570,6 +1603,9 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "full_uw",
+    "assumed_terms": [
+     "inspection_walkaway"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -1614,13 +1650,16 @@
     "flags": {
      "count": 0
     },
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "A",
     "kickout": false,
@@ -1987,6 +2026,9 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "full_uw",
+    "assumed_terms": [
+     "inspection_walkaway"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2031,13 +2073,16 @@
     "flags": {
      "count": 0
     },
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "B",
     "kickout": false,
@@ -2406,6 +2451,9 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "full_uw",
+    "assumed_terms": [
+     "inspection_walkaway"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2450,13 +2498,16 @@
     "flags": {
      "count": 0
     },
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "B",
     "kickout": false,
@@ -2823,6 +2874,9 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "full_uw",
+    "assumed_terms": [
+     "inspection_walkaway"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2867,13 +2921,16 @@
     "flags": {
      "count": 0
     },
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "A",
     "kickout": false,

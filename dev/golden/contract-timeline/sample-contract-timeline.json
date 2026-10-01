@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 5
+  "count": 6
  },
  "chat_notes": {
   "count": 0
@@ -100,7 +100,8 @@
   "flood_zone_unknown",
   "rider_h_boxes",
   "insurance_days_reading",
-  "default:title"
+  "default:title",
+  "default:survey"
  ],
  "ok": true,
  "open_rights": {

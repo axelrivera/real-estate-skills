@@ -299,6 +299,24 @@ class AuditMoneyLines(unittest.TestCase):
         n = f.seller_net(400000, FL, listing_fee_pct=0.025, buyer_broker_fee_pct=0, annual_tax=6000, closing=date(2026, 10, 1))
         self.assertEqual(next(x["amount"] for x in n["lines"] if x["key"] == "tax_proration"), p["amount"])
 
+    def test_proration_past_due_date_assumes_paid(self):
+        """Iteration 9 eval 4: a closing after the bill's due date (Cobb County, Oct 15) assumes the bill paid: a credit."""
+        GA = profiles.load_market(state="GA", county="Cobb")
+        p = f.tax_proration(3900, date(2026, 11, 6), GA, due_date="10-15")
+        self.assertTrue(p["assumed_paid"])
+        self.assertEqual(p["amount"], -round(3900 * 56 / 365))  # the buyer credits Nov 6 to Dec 31
+        self.assertIn("Bill Assumed Paid", p["label"])
+        self.assertGreater(f.tax_proration(3900, date(2026, 10, 15), GA, due_date="2026-10-15")["amount"], 0)  # due that day
+        self.assertGreater(f.tax_proration(3900, date(2026, 11, 6), GA, bill_paid=False, due_date="10-15")["amount"], 0)
+        self.assertGreater(f.tax_proration(3900, date(2026, 11, 6), GA)["amount"], 0)  # no due date: today's rule
+        n = f.seller_net(330000, GA, annual_tax=3900, closing=date(2026, 11, 6), tax_due_date="10-15")
+        self.assertEqual(next(x["amount"] for x in n["lines"] if x["key"] == "tax_proration"), p["amount"])
+        # Florida has no due date in the year (bills run to March): unchanged, a November closing is charged
+        self.assertFalse(f.tax_proration(6000, date(2026, 12, 1), FL)["assumed_paid"])
+        self.assertGreater(f.tax_proration(6000, date(2026, 12, 1), FL)["amount"], 0)
+        with self.assertRaisesRegex(ValueError, "10-15"):
+            f.tax_proration(3900, date(2026, 11, 6), GA, due_date="October")
+
     def test_miami_dade_surtax_by_property_type(self):
         md = profiles.load_market(state="FL", county="Miami-Dade")
         keys = lambda **k: {x["key"]: x["amount"] for x in f.seller_net(600000, md, listing_fee_pct=0, buyer_broker_fee_pct=0, **k)["lines"]}  # noqa: E731

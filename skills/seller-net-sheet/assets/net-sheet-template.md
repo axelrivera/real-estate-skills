@@ -4,7 +4,7 @@
 
 {{facts, each text joined with " · "}} · Prepared {{prepared_date}}{{" for " + prepared_for, when there is one}}
 
-**{{final_label}}:** {{each columns: label + " **" + net_display + "**", joined with " · "}}
+{{each columns: label + ", " + tile_label + ": **" + tile_display + "**", joined with " · "}}
 
 | | {{each columns: label}} |
 |---|{{"---:|" for each column}}

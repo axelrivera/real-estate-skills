@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 12
+  "count": 16
  },
  "chat_notes": {
   "count": 0
@@ -15,22 +15,22 @@
  },
  "financing": "FHA",
  "first_deadline": {
-  "broker": false,
+  "broker": true,
   "by_closing": false,
-  "contingency": false,
+  "contingency": true,
   "critical": true,
-  "day": 62,
+  "day": 6,
   "done": false,
   "done_display": null,
-  "key": "short_sale_approval",
+  "key": "compensation_cancel",
   "lender": false,
   "no_time": false,
-  "party": "Seller",
+  "party": "Buyer",
   "past": false,
   "past_display": null,
   "waits_on_approval": false,
   "was": null,
-  "when": "2026-11-23 23:59"
+  "when": "2026-09-28 23:59"
  },
  "flag_keys": [
   "fha_va_appraisal"
@@ -72,9 +72,13 @@
   "flood_zone_unknown",
   "rider_u_6b",
   "default:deposit",
+  "default:compensation_agreement",
   "default:loan_app",
   "default:loan_approval",
+  "default:post_closing_agreement",
   "default:title",
+  "default:survey",
+  "default:closing",
   "short_sale_backup",
   "short_sale_closing_replaced",
   "short_sale_waiting",

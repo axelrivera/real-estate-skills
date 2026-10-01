@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 5
+  "count": 8
  },
  "chat_notes": {
   "count": 0
@@ -91,7 +91,10 @@
   "repair_limits_blank",
   "flood_zone_unknown",
   "rider_u_6b",
-  "default:title"
+  "default:compensation_agreement",
+  "default:title",
+  "default:post_closing_agreement",
+  "default:survey"
  ],
  "ok": true,
  "open_rights": {

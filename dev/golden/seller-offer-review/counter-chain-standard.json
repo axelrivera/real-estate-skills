@@ -15,6 +15,9 @@
    "approval": "preapproval",
    "approval_max_loan": 457500,
    "approval_max_price": 610000,
+   "assumed_terms": [
+    "buyer_broker_pct"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -96,13 +99,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": false,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": "likely",
@@ -644,6 +650,9 @@
    "approval": "preapproval",
    "approval_max_loan": 457500,
    "approval_max_price": 610000,
+   "assumed_terms": [
+    "buyer_broker_pct"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -725,13 +734,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": false,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": "likely",
@@ -1101,6 +1113,9 @@
    "approval": "preapproval",
    "approval_max_loan": 457500,
    "approval_max_price": 610000,
+   "assumed_terms": [
+    "buyer_broker_pct"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -1182,13 +1197,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": false,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": "likely",

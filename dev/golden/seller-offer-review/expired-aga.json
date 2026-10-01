@@ -77,6 +77,9 @@
    "approval": "preapproval",
    "approval_max_loan": 391200,
    "approval_max_price": 489000,
+   "assumed_terms": [
+    "buyer_broker_pct"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -105,11 +108,14 @@
      "sev": "Low"
     }
    ],
-   "counter_risk_days": 36,
+   "counter_risk_days": 30,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     },
@@ -120,8 +126,9 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 78,
    "counter_terms": {
+    "aga_valuation_days": 24,
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
@@ -151,6 +158,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "aga_window_at_closing"
     },
@@ -169,13 +177,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 15000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": "passed",
@@ -646,6 +657,9 @@
    "approval": "preapproval",
    "approval_max_loan": 391200,
    "approval_max_price": 489000,
+   "assumed_terms": [
+    "buyer_broker_pct"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Assumed",
@@ -674,11 +688,14 @@
      "sev": "Low"
     }
    ],
-   "counter_risk_days": 36,
+   "counter_risk_days": 30,
    "counter_rows": [
     [
      "Price"
     ],
+    {
+     "count": 4
+    },
     {
      "count": 4
     },
@@ -689,8 +706,9 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 78,
    "counter_terms": {
+    "aga_valuation_days": 24,
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
@@ -720,6 +738,7 @@
     {
      "check": "terms",
      "contract": true,
+     "request": null,
      "sev": "Med",
      "topic": "aga_window_at_closing"
     },
@@ -738,13 +757,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 15000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "A",
    "kickout": false,
    "lapsed": "passed",

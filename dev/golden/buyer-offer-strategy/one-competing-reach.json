@@ -193,6 +193,10 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "appraisal_contingency",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -275,13 +279,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "lower_cost",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": null,
    "key": "B",
    "kickout": false,
@@ -634,6 +641,10 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "preapproval",
+   "assumed_terms": [
+    "appraisal_contingency",
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -706,13 +717,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "recommended",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": null,
    "key": "A",
    "kickout": false,
@@ -1068,6 +1082,10 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "preapproval",
+    "assumed_terms": [
+     "appraisal_contingency",
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -1140,13 +1158,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": null,
     "key": "A",
     "kickout": false,
@@ -1499,6 +1520,10 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "preapproval",
+    "assumed_terms": [
+     "appraisal_contingency",
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -1581,13 +1606,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "lower_cost",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": null,
     "key": "B",
     "kickout": false,
@@ -2110,6 +2138,10 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "preapproval",
+    "assumed_terms": [
+     "appraisal_contingency",
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2182,13 +2214,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": null,
     "key": "A",
     "kickout": false,
@@ -2541,6 +2576,10 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "preapproval",
+    "assumed_terms": [
+     "appraisal_contingency",
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2623,13 +2662,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "lower_cost",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": null,
     "key": "B",
     "kickout": false,
@@ -2984,6 +3026,10 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "preapproval",
+    "assumed_terms": [
+     "appraisal_contingency",
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -3056,13 +3102,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": null,
     "key": "A",
     "kickout": false,
@@ -3415,6 +3464,10 @@
     "appraisal_waived": false,
     "appraised": true,
     "approval": "preapproval",
+    "assumed_terms": [
+     "appraisal_contingency",
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -3497,13 +3550,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "lower_cost",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": null,
     "key": "B",
     "kickout": false,

@@ -36,6 +36,7 @@ HIGHEST_AND_BEST = re.compile(r"highest\s*(?:and|&)\s*best", re.I)
 # looked-up weekly average
 TIGHT_SUPPLY_MONTHS = 3  # OFR-331: under this a price cut alone doesn't read soft
 LENDER_QUOTE = re.compile(r"lender|quot|loan officer|loan estimate|pre-?approv", re.I)
+CONVENTIONAL_AVERAGE = re.compile(r"freddie|pmms", re.I)  # iteration 9 eval 1: the weekly survey is conventional loans
 
 
 def _d(v):
@@ -204,9 +205,12 @@ def prepare(B, A, market=None):
     if K.get("rate") is None:
         B["payment_assumed"].append(f"an assumed {DEFAULT_RATE:g}% rate")
     elif K.get("rate_source") and not LENDER_QUOTE.search(str(K["rate_source"])):  # OFR-327: a quote isn't assumed
-        B["payment_assumed"].append(f"a {K['rate']:g}% rate ({K['rate_source']})")
+        # iteration 9 eval 1: the Freddie Mac average is a conventional rate; an FHA, VA or USDA quote replaces it
+        prog = fin.upper() if fin in ("fha", "va", "usda") and CONVENTIONAL_AVERAGE.search(str(K["rate_source"])) else None
+        B["payment_assumed"].append(f"a {K['rate']:g}% rate ({K['rate_source']}" + (", a conventional-loan average)" if prog else ")"))
         A.add("costs", "rate_source", K["rate"], f"Interest rate: {K['rate']:g}%, the {K['rate_source']}, not a lender's "
-              "quote: use the buyer's quote when there is one", "low")
+              + (f"quote: it's a conventional-loan average, so the lender's {prog} rate quote replaces it" if prog else
+                 "quote: use the buyer's quote when there is one"), "low")
     K["rate"] = oe.given(K, "rate", DEFAULT_RATE, A, "costs", f"Interest rate not given and not looked up: Assumed "
                          f"{DEFAULT_RATE:g}%, the offline fallback (use the lender's quote, else the latest Freddie Mac "
                          "weekly 30-year rate)", "low")
@@ -702,6 +706,8 @@ def build_offer(B, costs):
     elif V.get("assumed") and not gap:  # OFR-212: with no value range the gap can't be sized, so it's a question for the buyer
         why["appraisal_gap"] = ("Unknown without a value range: ask the buyer how much of a low appraisal they could "
                                 "cover in cash")
+    elif price < V["cma_low"]:  # iteration 9 eval 1: a price under the range isn't "inside" it
+        why["appraisal_gap"] = "Not needed: price is below the value range"
     elif price <= line:
         why["appraisal_gap"] = "Not needed: price is inside the value range"
     elif gap >= price - line:
@@ -965,11 +971,16 @@ def better_option(B, costs, terms, O, lvl):
         return None  # the agent decided the terms
     lp = B["property"]["list_price"]
     tgt = O["recommended"]["target"]["net_adj"]
-    rank = {k: BAND_RANK[band_of(ci(O[k], tgt, lp), lvl)[0]] for k in terms}
+    # the outlook at every competition level, as "How It Stacks Up" prints it
+    ranks = {k: [BAND_RANK[band_of(ci(O[k], tgt, lp), lv)[0]] for lv in range(4)] for k in terms}
+    rank = {k: r[lvl] for k, r in ranks.items()}
     if "stronger" in terms and rank["stronger"] > rank["recommended"] and within_limits(B, costs, terms["stronger"]):
         return "stronger"
-    # OFR-9: "best" is the strongest outlook at the lowest cost that reaches it, so a cheaper option in the same band wins
-    if "lower_cost" in terms and rank["lower_cost"] >= rank["recommended"] and within_limits(B, costs, terms["lower_cost"]) \
+    # OFR-9: "best" is the strongest outlook at the lowest cost that reaches it, so a cheaper option in the same band wins.
+    # iteration 9 eval 1: never an option the lower-cost rule drops (Unlikely against the expected competition at
+    # level 2+, offer-rules.md)
+    if "lower_cost" in terms and rank["lower_cost"] >= rank["recommended"] \
+            and not (lvl >= 2 and rank["lower_cost"] == BAND_RANK["unl"]) and within_limits(B, costs, terms["lower_cost"]) \
             and buyer_cash(B, terms["lower_cost"])["worst"] < buyer_cash(B, terms["recommended"])["worst"]:
         return "lower_cost"
     return None
@@ -1037,9 +1048,14 @@ def analyze(B_in, market=None, cma=None):
         A.add("worksheet", "deposit_risk", None, "Deposit at Risk After is counted from this offer's inspection or option, "
               "loan approval and appraisal periods: confirm when your contract makes the deposit nonrefundable", "low")
     if "payment" in why.get("price", ""):  # the payment limit sets the price, so its inputs matter most
-        for a in A.items:  # OFR-241: an assumed rate is high; a looked-up weekly rate (rate_source) is med
-            if a["field"] in ("rate", "rate_source", "insurance_annual", "property_tax") and a["impact"] == "low":
-                a["impact"] = "high" if a["field"] == "rate" else "med"
+        for a in A.items:
+            if a["field"] == "property_tax" and a["impact"] == "low":
+                a["impact"] = "med"
+            if a["field"] in ("rate", "rate_source", "insurance_annual"):  # iteration 9 eval 1: asked right after the deadline
+                a["caps_price"] = True
+                # iteration 10 eval 1: an estimated rate or premium moves the price itself, so it's high impact (the
+                # report reads Preliminary and its page-1 line names them first), whether assumed or looked up
+                a["impact"] = "high"
     reached = None
     if not ov:  # OFR-325: the rule-built offer is a first draft; the strongest outlook inside the limits wins
         t, band, roomy = reach_band(B, costs, rec)
@@ -1086,6 +1102,7 @@ def analyze(B_in, market=None, cma=None):
     res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
     saves_nothing = "lower_cost" in res["terms"] and res["cash"]["lower_cost"]["worst"] >= res["cash"]["recommended"]["worst"]
     unlikely = "lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl"
+    already_unlikely = res["bands"]["recommended"][lvl][0] == "unl"  # iteration 10 eval 1: nothing lower to drop to
     if saves_nothing or unlikely:  # OFR-30
         for d in (res["terms"], res["cash"], res["payment"], res["ci"], res["bands"], O):
             d.pop("lower_cost", None)
@@ -1117,6 +1134,7 @@ def analyze(B_in, market=None, cma=None):
             "With no competing offers expected, the recommended offer is already written for the softest market."
             if lvl == 0 else
             "Writing it softer wouldn't save any cash." if saves_nothing else
+            "Writing it softer would still read Unlikely against the expected competition." if unlikely and already_unlikely else
             "Writing it softer would drop the outlook to Unlikely against the expected competition." if unlikely else
             "Writing it for one less competing offer wouldn't change any term.")
     res["absent"] = absent
@@ -1152,10 +1170,15 @@ def analyze(B_in, market=None, cma=None):
     # OFR-332; OFR-338: a caution inside the limits, so it isn't one of the constraints (page 1's red Limit lines)
     res["reserve_tight"] = tight_reserve(B, costs, res, rc)
     if rec["price"] < V["cma_low"] and "payment" in why.get("price", ""):
+        # iteration 9 eval 1: say what would change it. Iteration 11 eval 1: the rate and insurance quotes are named by
+        # the Preliminary line (high impact when the payment sets the price), so this line only gives the payment
         cons.append(f"Your ${BU['max_payment']:,}/mo payment limit caps the price at {money(rec['price'])}, below the "
-                    f"{money(V['cma_low'])}–{money(V['cma_high'])} value range. Expect this offer to be passed over unless the seller has no other interest.")
+                    f"{money(V['cma_low'])}–{money(V['cma_high'])} value range. Expect this offer to be passed over unless the seller has no other interest. "
+                    f"What would change it: a payment limit of about "
+                    f"${monthly_payment(B, costs, V['cma_low']):,}/mo reaches the bottom of the range.")
     elif rec["price"] < V["cma_low"] and "max price" in why.get("price", ""):
-        cons.append(f"Your max price ({money(BU['max_price'])}) is below the value range: expect this offer to be passed over.")
+        cons.append(f"Your max price ({money(BU['max_price'])}) is below the value range: expect this offer to be passed over. "
+                    f"What would change it: a max price of at least {money(V['cma_low'])}, the bottom of the range.")
     res["constraints"] = cons
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
@@ -1252,8 +1275,14 @@ def term_val(k, t, B):
 
 def term_keys(B):
     """TERM_KEYS with the inspection period named as the contract names it (OFR-234: contract_forms.term_words)."""
-    label = B["words"]["inspection_label"]
-    return [(k, label if k == "inspection_days" else labl) for k, labl in TERM_KEYS]
+    named = {"inspection_days": B["words"]["inspection_label"], "deposit": deposit_label(B)}
+    return [(k, named.get(k, labl)) for k, labl in TERM_KEYS]
+
+
+def deposit_label(B):
+    """iteration 9 eval 3: the deposit named as the contract names it (contract_forms.term_words' deposit_label when the
+    shared routing has it); "Escrow Deposit" is FAR/BAR's name."""
+    return B["words"].get("deposit_label") or "Escrow Deposit"
 
 
 def diff_text(r, k):
@@ -1307,6 +1336,22 @@ def appraisal_until(o, B, costs):
     return f"Until {until:%a %b} {until.day}"
 
 
+def downside_label(O):
+    """iteration 10 eval 1: the net sheet's downside row named from what actually applies: the appraisal only for an
+    option priced above the value range (its downside price is lower), the repair cost only when there is one."""
+    appraisal = any(o["downside_price"] < o["price"] for o in O.values())
+    repairs = [o for o in O.values() if o.get("repair_reserve")]
+    owed = any(o.get("repairs_owed") for o in repairs)
+    repair = "Repairs up to the General Repair Limit" if owed else "Typical Repair Credit"
+    if appraisal and repairs:
+        return f"If the Appraisal and Inspection Go Badly (Appraisal at the Top of the Value Range, {repair})"
+    if appraisal:
+        return "If the Appraisal Comes In Low (Appraisal at the Top of the Value Range)"
+    if repairs:
+        return f"If the Inspection Goes Badly ({repair})"
+    return "If the Appraisal and Inspection Go Badly (No Appraisal Shortfall or Repair Credit Expected)"
+
+
 def fin_line(B):
     BU, f = B["buyer"], B["buyer"]["financing"]
     if f == "cash":
@@ -1320,7 +1365,12 @@ def preliminary(r):
     if not hi:
         return None
     names = {"cma_low / cma_high": "value range (buyer CMA)", "state": "property state", "property_tax": "property tax",
-             "cma_side": "a buyer-side CMA", "cma_address": "a CMA for this property"}  # CMA-101: never a raw field name
+             "cma_side": "a buyer-side CMA", "cma_address": "a CMA for this property",  # CMA-101: never a raw field name
+             # iteration 10 eval 2: the same name to_confirm uses ("Loan type not provided"), so the two can be matched
+             "financing": "loan type",
+             # iteration 10 eval 1: the payment inputs that set the price, named as what to get
+             "rate": "a lender rate quote", "rate_source": "a lender rate quote", "insurance_annual": "an insurance quote"}
+    hi.sort(key=lambda a: not a.get("caps_price"))  # iteration 10 eval 1: what moves the price comes first
     B = r["B"]
     if B["buyer"].get("max_price") is not None and any(a["field"] == "max_price" for a in hi):
         # OFR-233: say what the max was assumed to be, so the reply never has to infer it
@@ -1332,6 +1382,15 @@ def preliminary(r):
             f"{n} input{'s' if n != 1 else ''} assumed in total (listed at the end).")
 
 
+def stronger_fits(r):
+    """iteration 9 eval 1: the Stronger option is inside every limit (reserve floor kept) and the listing agent would
+    score it higher, so the recommended offer can't be called the strongest inside the limits."""
+    if "stronger" not in r["O"] or r["limits"].get("stronger"):
+        return False
+    return (r["cash"]["stronger"]["reserve"] >= r["B"]["buyer"]["reserve_floor"]
+            and r["O"]["stronger"]["score"]["total"] > r["O"]["recommended"]["score"]["total"])
+
+
 def summary(r):
     """Page 1 of the Offer Options report, formatted. The markdown template uses the same values."""
     B, O, lvl = r["B"], r["O"], r["B"]["competition"]["level"]
@@ -1341,7 +1400,11 @@ def summary(r):
     dn = rec["ns"]["net_adj"] - r["target"]
     broken = r["limits"]["recommended"]
     # OFR-221: an agent override past a limit is never called "inside your limits": the limit it breaks is named
-    lead = ("The strongest offer inside your limits." if not broken else
+    # iteration 9 eval 1: a Stronger option inside every limit that scores higher (same outlook) means this one isn't
+    # "the strongest": it's the best outlook with the least cash at risk
+    best = "The strongest offer inside your limits." if not stronger_fits(r) else \
+        "The best outlook inside your limits, with the least cash at risk."
+    lead = (best if not broken else
             ("Your terms, but they break your limits: " if r["overrides"] else "The best structure available, but it breaks "
              "your limits: ") + "; ".join(broken) + ".")
     why = (f"{lead} A listing agent would score it **{rec['score']['total']}/100**, and it nets the seller "
@@ -1361,9 +1424,12 @@ def summary(r):
             why += " The stronger terms wouldn't change the outlook."
     if "lower_cost" in O:
         bl, cl = r["bands"]["lower_cost"][lvl], r["cash"]["lower_cost"]
-        why += f" Writing softer saves {money(rc['worst'] - cl['worst'])}" + (f" but drops to **{bl[1]}**." if bl != br else " with the same outlook.")
-    if BU["financing"] in ("fha", "va", "usda") and lvl >= 2:
-        why += f" {BU['financing'].upper()} financing caps the score, so certainty and net do the work, not escalation."
+        # iteration 10 eval 3: the saving is worst-case cash to close, not price, so it says so
+        why += f" Writing softer saves {money(rc['worst'] - cl['worst'])} in worst-case cash" + (
+            f" but drops to **{bl[1]}**." if bl != br else " with the same outlook.")
+    if BU["financing"] in ("fha", "va", "usda") and lvl >= 2:  # iteration 11 eval 1: not when a limit caps the price
+        why += (f" {BU['financing'].upper()} financing caps the score, and no escalation." if r.get("constraints") else
+                f" {BU['financing'].upper()} financing caps the score, so certainty and net do the work, not escalation.")
 
     t, w = r["terms"]["recommended"], r["why"]
     terms = []
@@ -1378,7 +1444,8 @@ def summary(r):
     for k in O:
         o, c = O[k], r["cash"][k]
         if k == "recommended":
-            what = "Strongest offer inside your limits" if not r["limits"][k] else "Best structure available; " + r["limits"][k][0]
+            what = ("Best outlook inside your limits, least cash at risk" if stronger_fits(r) else "Strongest offer inside your limits") \
+                if not r["limits"][k] else "Best structure available; " + r["limits"][k][0]
             status = "good" if not r["limits"][k] else "risk"
         elif k == "stronger":
             same = r["bands"][k][lvl] == br
@@ -1390,7 +1457,7 @@ def summary(r):
             what = diff_text(r, k) + gain + (f"; {r['limits'][k][0]}" if r["limits"][k] else "")
             status = "caution"
         else:
-            what = diff_text(r, k) + f". Saves {money(rc['worst'] - c['worst'])}" + (
+            what = diff_text(r, k) + f". Saves {money(rc['worst'] - c['worst'])} in worst-case cash" + (  # iteration 10 eval 3
                 "" if r["bands"][k][lvl] == br else f"; outlook {r['bands'][k][lvl][1]}")
             status = "caution"
         options.append({"key": k, "option": OPTION_LABEL[k], "price": money(o["price"]), "outlook": r["bands"][k][lvl][1],
@@ -1487,6 +1554,8 @@ def pushback(r):
             resp = RESP.get(term, "Discuss with the buyer").format(**B["words"])
         if term == "Inspection Period":  # OFR-234: the engine's row, named as the contract names it
             term = B["words"]["inspection_label"]
+        elif term == "Escrow Deposit":  # iteration 9 eval 3: likewise the deposit
+            term = deposit_label(B)
         rows.append({"term": term, "yours": yours, "ask": ask, "response": resp, "breaks": [k for k, _ in broken]})
     return rows
 
@@ -1836,10 +1905,12 @@ def result(r, variant=None):
 
 
 def confirm_tier(a):
-    """to_confirm's first sort key: the inferred competition read (0), a weekday deadline to confirm (1), the rest (2)."""
+    """to_confirm's first sort key: the inferred competition read (0), a weekday deadline to confirm (1), the payment
+    inputs when the payment limit sets the price (2), the rest (3)."""
     if (a["scope"], a["field"]) == ("competition", "level"):
         return 0
-    return 1 if a["field"] == "deadline" else 2
+    # iteration 9 eval 1: when the payment limit sets the price, its rate and insurance come next: they move the cap
+    return 1 if a["field"] == "deadline" else 2 if a.get("caps_price") else 3
 
 
 def main(argv=None):

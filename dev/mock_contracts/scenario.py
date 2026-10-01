@@ -875,10 +875,13 @@ def _compensation(bb_form, bb, ctx, accepted, offer, effective, rng, late):
         out.update(executed=False, buyers_broker_signed=offer + timedelta(minutes=35), payer_signed=None,
                    note="Draft sent with the offer; the window starts at the Effective Date")
         return out
-    window_end = datetime.combine(effective.date() + timedelta(days=days), datetime.min.time()).replace(hour=23, minute=59)
+    end_day = effective.date() + timedelta(days=days)
+    if not sd.is_business_day(end_day):  # FAR/BAR time rules: a period ending on a weekend or holiday rolls forward
+        end_day = sd.next_business_day(end_day)
+    window_end = datetime.combine(end_day, datetime.min.time()).replace(hour=23, minute=59)
     bb_signed = effective + timedelta(hours=1, minutes=rng.randint(5, 50))
     if late:
-        day = effective.date() + timedelta(days=days + rng.randint(1, 2))
+        day = end_day + timedelta(days=rng.randint(1, 2))  # after the window as rolled, so it's really late
     else:
         day = effective.date() + timedelta(days=rng.randint(1, days))
     payer_signed = datetime.combine(day, datetime.min.time()).replace(hour=rng.randint(9, 18), minute=rng.randint(0, 59))

@@ -52,13 +52,14 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `built_before_1978` | `true` or `false` from the seller's property disclosure ("Was the Property built before 1978?") when the year isn't known: it runs the lead-based paint check, so the year isn't asked | asked with `year_built` | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
 | `insurance_reports` | `true` only when the seller has current insurance inspection reports to share (Florida: 4-point and wind mitigation). A counter that shortens the inspection period offers them only then | false: never offered | — |
-| `hoa_monthly` | unknown → the HOA estoppel or documents fee is still charged, labeled Estimate and listed as an assumption; `0` = no HOA, no fee | low |
+| `hoa_monthly` | unknown → no HOA estoppel or documents fee is charged (a condo's is, labeled Estimate), and the assumption asks whether there's an HOA; `0` = no HOA, no fee | low |
 | `hoa_conflict` | text naming what disagrees ("$95 per quarter in one package, $95 per month in the other") when the offer packages, or a package and the listing, give different HOA assessments. Every offer gets a Low flag (topic `hoa_conflict`) and the report's chip reads "HOA to Confirm" instead of a figure. Keep `hoa_monthly` at the figure you trust most | none | — |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional: the CMA's midpoint or median adjusted comp price) | from `--cma`; else both = list price, appraisal risk measured vs. list. A range given here (not by `--cma`) comes back as `value_range_confirm`, the one line the reply uses to confirm it | **high** |
 | `annual_tax` | the listing's `total_mills` or `tax_rate` × list price, else the market fallback rate × list price (Florida 1.8%, elsewhere the 1.1% national estimate); no rate → proration left out. Each is labeled on the report | low / med |
 | `total_mills`, `tax_rate` | optional, used only without `annual_tax`: the adopted rate you looked up per `local-costs.md`, in mills (`20.464`; a Texas rate per $100 of value times 10), or as a share of value (`0.0205`). Applied to the list price with no exemptions | med |
+| `tax_rate_source` | where `total_mills` or `tax_rate` came from, for its label: `looked_up` (the default: "the adopted rate looked up"), `agent` ("the rate the agent gave") or `listing` ("the listing's rate", only when the MLS listing or tax record states it) | — |
 | `current_tax_bill_paid` | `true` once the seller paid this year's bill; else false, and asked for Nov and Dec closings | med |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`). Missing: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
 | `flood_disclosure` | `true` once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer; else flagged for the listing side where the market requires it | — |
@@ -88,6 +89,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `payoff` | 0; nets labeled **before payoff** | **high** |
 | `listing_fee_pct` | 2.5% assumed for the listing side (default commission, 5% total); when the listing broker pays the buyer's broker, 5% in total on one line. Set it only when the agent or the listing agreement gives the fee; never fill in a default yourself, or the report shows it as a fact and drops the assumption | med |
 | `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say assume 2.5% | med |
+| `listing_fee_includes_buyer_broker` | `false` once the agent confirms the listing fee and the buyer-broker offer are separate fees; when they say the listing fee includes the buyer's agent, set `listing_fee_pct` to that total and `buyer_broker_paid_by: "listing_broker"` on each offer instead. Left out with both `listing_fee_pct` and `offered_buyer_broker_pct` given, the two are read as separate fees ("Listing agreement 3%; we offered buyer agents 2.5%" is 3% + 2.5%) and recorded as a high-impact assumption the missing-inputs question asks about | **high** |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
 | `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty) | med |

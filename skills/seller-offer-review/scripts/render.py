@@ -182,24 +182,28 @@ def term_rows(o, R):
     rows.append(("Price", money(o["price"]), ref, st, "; ".join(notes)))
     f = o["financing"]
     st = "good" if f == "cash" or (f == "conventional" and o["down_pct"] >= .20) else ("caution" if f in ("conventional", "va") else "risk")
-    rows.append(("Financing", review.fin_str(o), "Cash or conv. ≥20% down", st, ""))
+    mark = lambda *f: oe.assumed(o, *f)  # noqa: E731  iteration 9 evals 1, 3, 5: an assumed term never reads as a fact
+    # iteration 10 eval 6: the loan amount and the lender from the package, when the listing file has them
+    loan = f" · {money(o['loan_amount'])} loan" if o["financed"] and o.get("loan_amount") else ""
+    rows.append(("Financing", review.fin_str(o) + loan + mark("financing", "down_pct"), "Cash or conv. ≥20% down", st, ""))
     if o["financed"]:
         ap = o["approval"]
         st = "good" if ap == "full_uw" else ("caution" if ap in ("du_approved", "preapproval") else "risk")
-        rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap), "Full underwriting", st,
+        lender = f" · {esc(o['lender'])}" if o.get("lender") else ""
+        rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap) + lender + mark("approval"), "Full underwriting", st,
                      "Verified with lender" if o.get("lender_called") else  # OFR-321: by name when the letter gives one
                      f"Call {o['loan_officer']} (section 8)" if o.get("loan_officer") else "Call the loan officer (section 8)"))
     else:
         ok = o["approval"] == "pof_verified"
         rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
     N, est = L["norms"], "" if L["norms_source"] == "market" else " (national est.)"  # OFR-15: same norms as the counter
-    dep = N["deposit_pct"] if o["financed"] else max(N["deposit_pct"], 0.05)
+    dep = oe.deposit_benchmark(o, L)  # iteration 10 eval 3: the scorecard rates against the same benchmark
     if o["deposit"] is None:
         rows.append(("Escrow Deposit", "Not provided", f"≥{pctx(dep)} of price{est}", "caution", "Confirm amount and due date"))
     else:
         p = o["deposit"] / o["price"]
         rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥{pctx(dep)} ({money(round(dep * o['price']))}){est}",
-                     "good" if p >= dep - 1e-9 else ("caution" if p >= dep / 2 else "risk"), ""))
+                     oe.deposit_status(o, L), ""))
     c, cn = o["seller_concessions"], N["concessions_pct"]
     rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", f"≤{pctx(cn)} of price{est}",
                  "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
@@ -210,16 +214,20 @@ def term_rows(o, R):
                      "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    form = f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FARBAR else ""  # the label comes from contract_forms
+    # iteration 11 eval 2: "(AS IS) (assumed)" read as if the days were assumed; mark the form and the days apart
+    form_assumed = "contract_form" in (o.get("assumed_terms") or ())
+    form = (f" ({o['contract_label']}{', form assumed' if form_assumed else ''})"  # the label comes from contract_forms
+            if o["contract_form"] in oe.cf.FARBAR else "")
     note = ("Buyer may cancel for any reason; seller still pays repairs up to the limits"
             if o["inspection_walkaway"] and o["repairs_owed"] else "Buyer may cancel for any reason" if o["inspection_walkaway"]
             else "Repair notices only; seller pays repairs up to the limits" if o["repairs_owed"] else "")
-    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}", f"≤{N['inspection_days']} days{est}",
+    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}{mark('inspection_days')}",
+                 f"≤{N['inspection_days']} days{est}",
                  "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
                  note))
     if o["financed"]:
         la = N["loan_approval_days"]
-        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", f"≤{la} days{est}",
+        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days{mark('loan_approval_days')}", f"≤{la} days{est}",
                      "good" if o["loan_approval_days"] <= la else ("caution" if o["loan_approval_days"] <= max(30, la) else "risk"), ""))
         if o["appraisal_days"]:
             rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
@@ -233,19 +241,23 @@ def term_rows(o, R):
     st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
     rb, rent = o.get("rent_back_days"), o.get("rent_back_monthly")  # OFR-281: a rent-back is a closing term
     rb = (f" + {rb}-day rent-back" + (" (free)" if rent == 0 else f" ({money(rent)}/mo)" if rent else "")) if rb else ""
-    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}", f"On/before {oe.prior_weekday(dl):%b %-d}" if dl else "—", st,
+    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}{mark('closing_days')}", f"On/before {oe.prior_weekday(dl):%b %-d}" if dl else "—", st,
                  "Weekend date; confirm funding" if o["close"].weekday() >= 5 else ""))
     tb, cust = o["title_by"], L["title_customary_payer"]
     if tb or cust:
         name = {"seller": "Seller's title co.", "buyer": "Buyer's title co."}
-        rows.append(("Escrow / Title Agent", name.get(tb, "—"), name.get(cust, "—"), "good" if tb == cust else "caution", ""))
+        rows.append(("Escrow / Title Agent", name.get(tb, "—") + (mark("title_by") if tb else ""), name.get(cust, "—"),
+                     "good" if tb == cust else "caution", ""))
     for key, lab in (("personal_property", "Personal Property"), ("occupancy", "Occupancy"), ("other_terms", "Other Terms")):
         if o.get(key):
             rows.append((lab, esc(o[key]), "—", "caution", ""))
     if o.get("riders"):
         # ENG-11: the form and rider label from contract_forms ("Standard + As Is Rider (K)"); riders are listed after it
-        form = f"{o['contract_label']} · " if o["contract_form"] in oe.cf.FARBAR else ""
-        rows.append(("Contract / Riders", form + esc(", ".join(o["riders"])), "—", "good", ""))
+        label = o["contract_label"] if o["contract_form"] in oe.cf.FARBAR else ""
+        # iteration 9 eval 5: a rider the label already names ("Standard + As Is Rider (K)") isn't listed again
+        rest = [r for r in o["riders"] if not (label and (c := oe.cf.rider_codes([r])[0]) and f"({c[0]})" in label)]
+        text = " · ".join(x for x in (label + mark("contract_form") if label else "", esc(", ".join(rest))) if x)
+        rows.append(("Contract / Riders", text, "—", "good", ""))
     return rows
 
 
@@ -290,8 +302,15 @@ def lender_questions(o, R):
     Q = ["What conditions are left on the underwriting approval?" if o["approval"] == "full_uw" else
          "Has the file been through automated underwriting (DU or LP), and are income, assets and credit verified with documents?"]
     conc = f", with {money(o['seller_concessions'])} in seller concessions" if o["seller_concessions"] else ""
-    Q.append(f"Is the approval good for {money(o['price'])} with {o['down_pct'] * 100:.1f}% down on "
-             f"{'an' if fin[0] in 'AEFHILMNORSX' else 'a'} {fin} loan{conc}?")
+    # iteration 9 eval 7: when the seller counters (or a lapsed offer's reference counter) changes the price, ask at it
+    price = o["counter_terms"]["price"] if o.get("action") in ("COUNTER", "INCOMPLETE") and o["counter_rows"] else o["price"]
+    a_loan = f"{'an' if fin[0] in 'AEFHILMNORSX' else 'a'} {fin} loan"
+    cap = o.get("approval_max_loan")
+    if cap and price * (1 - o["down_pct"]) > cap + 1:  # iteration 10 eval 6: never imply a loan above the letter's cap
+        Q.append(f"Is the approval good for {money(price)} with {a_loan} at the letter's {money(cap)} cap and the rest "
+                 f"in cash{conc}?")
+    else:
+        Q.append(f"Is the approval good for {money(price)} with {o['down_pct'] * 100:.1f}% down on {a_loan}{conc}?")
     gap = max(o["appraisal_gap"], o["counter_terms"]["appraisal_gap"] if o.get("action") == "COUNTER" else 0)
     if not funds_shown(o, gap):  # OFR-321: a verification of funds in the package already answers it
         Q.append("Are funds verified for the down payment and closing costs"
@@ -300,7 +319,8 @@ def lender_questions(o, R):
         roof = f" (roof {L['roof_year']})" if L.get("roof_year") else ""
         Q.append(f"Any concern about the property meeting {fin} appraisal and condition rules{roof}?")
     if o["close"].weekday() >= 5:
-        Q.append(f"The contract closes {o['close']:%a %b %-d}; can you close {oe.prior_weekday(o['close']):%a %b %-d} instead?")
+        # iteration 10 eval 1: "the offer", since an offer described in chat isn't a contract anyone has seen
+        Q.append(f"The offer closes {o['close']:%a %b %-d}; can you close {oe.prior_weekday(o['close']):%a %b %-d} instead?")
     else:
         Q.append(f"Can you close by {o['close']:%a %b %-d} with your current workload?")
     return Q
@@ -375,8 +395,9 @@ def gantt(o, R):
     def line(name, d, kind):
         if not d:
             return f'<tr><td>{name}</td><td class="n">—</td><td class="n">—</td>' + "".join(f'<td class="gantt {gx(i)}"></td>' for i in range(ncell)) + "</tr>"
+        d = min(d, o["close_days"]) if o["close_days"] else d  # iteration 10 eval 1: no window runs past closing
         cells = "".join(f'<td class="gantt {gx(i)} {"on-" + kind if i * step < d else ""}"><div></div></td>' for i in range(ncell))
-        end, _ = oe.rolled(start + timedelta(days=d), R["costs"])  # off a weekend or holiday, as page 1 rolls it
+        end, _ = oe.rolled(start + timedelta(days=d), R["costs"], o["close"])  # off a weekend or holiday, as page 1 rolls it
         return f'<tr><td>{name}</td><td class="n">{d}</td><td class="n">{end:%b %-d}</td>{cells}</tr>'
 
     body = line("Inspection (Right to Cancel)" if o["inspection_walkaway"] else "Inspection (Repair Notices)", o["inspection_days"],
@@ -407,7 +428,7 @@ def scorecard_single(o):
              f'<td class="{t}"><b>{b[1]}</b> · 80+ strong · 60–79 workable · under 60 weak</td></tr>')
     return ('<div class="tbl"><table><colgroup><col style="width:28%"><col style="width:8%"><col style="width:7%"></colgroup>'
             f'<thead><tr><th>Criterion</th><th class="n">Weight</th><th class="c">Score</th><th>Why</th></tr></thead><tbody>{rows}</tbody></table></div>'
-            '<div class="legend"><span>Scores are drafted automatically from the contract; <span class="pill vyes">Agent</span> marks scores the agent set.</span></div>')
+            '<div class="legend"><span>Scores are drafted automatically from the offer&#x27;s terms; <span class="pill vyes">Agent</span> marks scores the agent set.</span></div>')
 
 
 def netsheet_body(cols, hl=0):
@@ -482,7 +503,7 @@ def single_html(R, o, v):
     vf = "".join(f'<tr><td class="c">{checkbox(b)}</td><td>{esc(a)}</td><td class="sm" style="color:var(--text)">{esc(c)}</td></tr>'
                  for a, b, c in checklist(o, R))
     lq = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(lender_questions(o, R)))
-    qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the contract{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
+    qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the offer{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
     gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
     repairs = ("" if not o["repair_reserve"] else f"{money(o['repair_reserve'])} in repairs (the contract's General Repair Limit)"
                if o["repairs_owed"] else f"{money(o['repair_reserve'])} inspection credit")
@@ -496,12 +517,20 @@ def single_html(R, o, v):
         caption = ("it matches As Offered: the price is at or under " + ref if o["appraisal_risk"] else
                    "it matches As Offered: no appraisal contingency") + ", and there's no repair figure for this market"
     heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
+    revive = ""
+    if v.get("revive"):  # iteration 9 eval 6: the reference counter's terms sit beside its net, never a net alone
+        rr = "".join(f'<tr><td><b>{esc(r["term"])}</b></td><td class="was">{esc(r["offered"])}</td><td class="arr">→</td>'
+                     f'<td class="now">{esc(r["counter"])}</td><td class="why2">{esc(r["why"])}</td></tr>' for r in v["revive"]["rows"])
+        revive = ('<div class="ctr cmp"><div class="ctrh"><span>COUNTER (REFERENCE)</span><em>For reference only, not a '
+                  'recommendation</em></div><table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%">'
+                  '<col style="width:17%"><col></colgroup><thead><tr><th>Term</th><th>Buyer Offered</th><th></th>'
+                  f'<th>A Counter Could Say</th><th>Why</th></tr></thead><tbody>{rr}</tbody></table></div>')
     details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div><div class="treason-slot"></div>
 <h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
 <div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span><b>Downside</b>: {caption}.</span>
 <span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
-<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
+{revive}<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
 <h2>3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
 <div class="tbl split"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
 <thead><tr><th>Term</th><th>Offered</th><th>Benchmark</th><th class="c">Rating</th><th>Note</th></tr></thead><tbody>{tr}</tbody></table></div>
@@ -743,9 +772,10 @@ def build(data, fmt, out_dir, ctx):
     for a in R["missing"][:6]:
         print(f"Assumed [{a['impact']}] {a['why']}", file=sys.stderr)
     offers = R["active"] + R.get("incomplete", [])
-    for note in oe.cf.support([o["contract_form"] for o in offers],
-                              [(o["contract_form"], o.get("form_revision"),
-                                str(o.get("form_revision_source") or "").lower() == "footer") for o in offers])["chat_notes"]:
+    sup = oe.cf.support([o["contract_form"] for o in offers],
+                        [(o["contract_form"], o.get("form_revision"),
+                          str(o.get("form_revision_source") or "").lower() == "footer") for o in offers])
+    for note in review.described_support(sup, offers)["chat_notes"]:  # iteration 10 eval 3: same line as review.py
         print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
     return paths
 

@@ -44,8 +44,8 @@ def tiles(C):
     for c in cols:
         sub = f'Sale {c["price_display"]} · costs {c["total_costs_display"]} ({c["costs_pct_display"]})'
         out.append(f'<div class="tile"><span class="k">{esc(c["label"])}</span>'
-                   f'<b class="{"short" if c["short"] else ""}">{c["net_display"]}</b>'
-                   f'<i>{esc(C["final_label"])}</i><i>{esc(sub)}</i></div>')
+                   f'<b class="{"short" if c["short"] else ""}">{c["tile_display"]}</b>'
+                   f'<i>{esc(c["tile_label"])}</i><i>{esc(sub)}</i></div>')
     return f'<div class="tiles n{len(cols)}">{"".join(out)}</div>'
 
 
@@ -90,7 +90,7 @@ def build_html(C, agent, sample=False):
 
 
 def fit_one_page(pg):
-    """(height, chart dropped?): the compact layout when the page would run onto a second one, then without the chart
+    """(height, chart dropped?, clipped labels): the compact layout when the page would run onto a second one, then without the chart
     (it repeats the table's totals) when even that doesn't fit, as with a long disclaimer in the profile."""
     measure = "() => document.body.getBoundingClientRect().height"
     height = pg.evaluate(measure)
@@ -99,19 +99,26 @@ def fit_one_page(pg):
             break
         pg.evaluate(f"() => document.body.classList.add('{step}')")
         height = pg.evaluate(measure)
-    return height, pg.evaluate("() => document.body.classList.contains('nochart')")
+    # iteration 9 eval 1: a price label too long for its column header was cut off with no warning
+    clipped = pg.evaluate("() => [...document.querySelectorAll('th, .tile .k, .bars .lbl')]"
+                          ".filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.textContent)")
+    return height, pg.evaluate("() => document.body.classList.contains('nochart')"), clipped
 
 
 def build(data, fmt, out_dir, ctx):
     C = compute.run(data, ctx.get("cma"), ctx.get("mls"))
     sample = ctx.get("sample") or bool(data.get("sample"))
     path = os.path.join(out_dir, render.filename(C["address"], "Seller Net Sheet", ext="pdf"))
-    height, no_chart = render.html_to_pdf(build_html(C, ctx["agent"], sample), path, before_print=fit_one_page,
+    height, no_chart, clipped = render.html_to_pdf(build_html(C, ctx["agent"], sample), path, before_print=fit_one_page,
                                           footer_html=render.footer(f"Seller Net Sheet · {C['address']}", right_pages=False))
     if height > PAGE_LIMIT:
         os.remove(path)
         raise compute.NetSheetError(f"The net sheet runs {height - PAGE_LIMIT:.0f}px past one page: shorten the price "
                                     "labels or the names of other costs, or compare fewer prices.")
+    if clipped:
+        os.remove(path)
+        raise compute.NetSheetError("These labels don't fit their column and would be cut off: "
+                                    f"{', '.join(dict.fromkeys(clipped))}. Give the price a shorter label.")
     if no_chart:
         print("Layout: the Where the Sale Price Goes chart was left out to keep the sheet on one page.", file=sys.stderr)
     for a in C["assumptions"]:

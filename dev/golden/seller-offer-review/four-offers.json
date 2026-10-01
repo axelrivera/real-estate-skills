@@ -18,6 +18,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": {
+    "count": 0
+   },
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -105,13 +108,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 550,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": false,
    "key": "A",
    "kickout": false,
@@ -461,6 +467,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -513,13 +522,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 10000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -869,6 +881,9 @@
    "appraisal_waived": false,
    "appraised": false,
    "approval": "pof_verified",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -921,13 +936,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "C",
    "inspection_assumed": false,
    "inspection_days": 5,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "C",
    "kickout": false,
    "lapsed": null,
@@ -1278,6 +1296,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "prequal",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -1383,13 +1404,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "D",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "D",
    "kickout": true,
    "lapsed": null,
@@ -1743,6 +1767,12 @@
    ],
    "scope": "listing",
    "value": false
+  },
+  {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
+   "value": false
   }
  ],
  "highest_and_best": null,
@@ -1817,6 +1847,12 @@
  },
  "missing": [
   {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
+   "value": false
+  },
+  {
    "also": {
     "count": 2
    },
@@ -1855,6 +1891,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": {
+    "count": 0
+   },
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -1942,13 +1981,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 550,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": false,
    "key": "A",
    "kickout": false,
@@ -2298,6 +2340,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -2350,13 +2395,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 10000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -2706,6 +2754,9 @@
    "appraisal_waived": false,
    "appraised": false,
    "approval": "pof_verified",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -2758,13 +2809,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "C",
    "inspection_assumed": false,
    "inspection_days": 5,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "C",
    "kickout": false,
    "lapsed": null,
@@ -3115,6 +3169,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "prequal",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -3220,13 +3277,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "D",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "D",
    "kickout": true,
    "lapsed": null,
@@ -3578,6 +3638,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "full_uw",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -3630,13 +3693,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 10000,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "B",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -3986,6 +4052,9 @@
    "appraisal_waived": false,
    "appraised": false,
    "approval": "pof_verified",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -4038,13 +4107,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "C",
    "inspection_assumed": false,
    "inspection_days": 5,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "C",
    "kickout": false,
    "lapsed": null,
@@ -4393,6 +4465,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": {
+    "count": 0
+   },
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -4480,13 +4555,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 550,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": false,
    "key": "A",
    "kickout": false,
@@ -4841,6 +4919,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "prequal",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -4946,13 +5027,16 @@
      "topic": "flood_disclosure"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "D",
    "inspection_assumed": false,
    "inspection_days": 15,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "key": "D",
    "kickout": true,
    "lapsed": null,
@@ -5309,8 +5393,8 @@
     "value": 1145
    }
   ],
-  "close": "2026-11-15",
-  "holding": -4240,
+  "close": "2026-11-13",
+  "holding": -4080,
   "lines": [
    [
     "price",
@@ -5354,7 +5438,7 @@
    ],
    [
     "tax",
-    -4516
+    -4488
    ],
    [
     "payoff",
@@ -5364,10 +5448,10 @@
   "missing": {
    "count": 0
   },
-  "net": 152090,
-  "net_adj": 147850,
+  "net": 152118,
+  "net_adj": 148038,
   "price": 425000,
   "tax_bill_assumed": true
  },
- "target_close": "2026-11-15"
+ "target_close": "2026-11-13"
 }

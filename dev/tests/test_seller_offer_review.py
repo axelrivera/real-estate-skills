@@ -217,7 +217,7 @@ class Pdf(unittest.TestCase):
         self.assertNotIn("Can the buyer increase the escrow deposit", doc)  # the counter asks it
         R = review.analyze(fixture("four-offers.json"))
         doc, _, _ = review_render.build_html(R, {}, sample=False, mode="single", offer_id="B")
-        self.assertIn("None: the contract covers it.", doc)  # accepted as written: nothing to ask
+        self.assertIn("None: the offer covers it.", doc)  # iteration 10 eval 1; accepted as written: nothing to ask
         self.assertIn("on a conventional loan?", doc)
 
     def test_default_theme_without_profile(self):
@@ -336,7 +336,8 @@ class Audit20260929(unittest.TestCase):
         data = fixture("minimal-single.json")
         data["offers"][0].update(contract_form="standard", riders=["K"])
         doc, _, _ = review_render.build_html(review.analyze(data), {}, sample=False)
-        self.assertIn("Standard + As Is Rider (K) · K", doc)
+        self.assertIn("Standard + As Is Rider (K)", doc)
+        self.assertNotIn("Rider (K) · K", doc)  # iteration 9 eval 5: the rider isn't listed twice
 
 
 class AuditPlanWording(unittest.TestCase):
@@ -806,6 +807,8 @@ class EvalIteration6(unittest.TestCase):
         data = fixture("texas-single.json")
         self.assertIsNone(estoppel(data))  # hoa_monthly 0: no HOA, no charge
         data["listing"].pop("hoa_monthly")
+        self.assertIsNone(estoppel(data))  # iteration 9 eval 1: an unknown HOA isn't charged "in case"
+        data["listing"]["property_type"] = "condo"  # a condo has an association: charged, as an estimate
         self.assertEqual(estoppel(data), "HOA Documents (Estimate)")
         self.assertEqual(estoppel(fixture("expired-aga.json")), "HOA Estoppel Letter")  # an HOA, Florida's built-in fee
 
@@ -862,5 +865,222 @@ class RevisionSource(unittest.TestCase):
         self.assertTrue(any("footer reads" in n for n in footer))
 
 
+class EvalIteration9(unittest.TestCase):
+    """Fixes from eval iteration 9 (seller-offer-review)."""
+
+    def test_counter_price_in_the_questions(self):  # eval 7
+        data = fixture("counter-chain-standard.json")
+        data["offers"][0]["balance_to_close"] = 619500 - 24000 - 457500 - 10000  # adds up to an earlier price
+        R = review.analyze(data)
+        o = R["offers"][0]
+        price = review.money(o["counter_terms"]["price"])
+        self.assertNotEqual(o["counter_terms"]["price"], o["price"])
+        asks = review_render.questions(o, R)
+        self.assertTrue(any("balance to close at the " + price in q for q in asks))
+        self.assertFalse(any("$619,500 price" in q for q in asks))
+        self.assertTrue(any(f"good for {price}" in q for q in review_render.lender_questions(o, R)))
+
+    def test_assumed_terms_are_marked(self):  # evals 1, 3, 5
+        R = review.analyze(fixture("minimal-single.json"))
+        o = R["offers"][0]
+        rows = {r[0]: r[1] for r in review_render.term_rows(o, R)}
+        self.assertEqual(rows["Approval"], "Pre-approval letter (assumed)")
+        self.assertTrue(rows["Inspection Period"].endswith("(assumed)"))
+        self.assertTrue(rows["Loan Approval Period"].endswith("(assumed)"))
+        self.assertTrue(rows["Escrow / Title Agent"].endswith("(assumed)"))
+        self.assertIn("(assumed)", o["score"]["why"]["approval"])
+        self.assertIn("assumed", review.walk_away(o, R["costs"])[1])
+        given = review.analyze(fixture("texas-single.json"))  # every term given: no marks
+        self.assertNotIn("(assumed)", json.dumps([r[1] for r in review_render.term_rows(given["offers"][0], given)]))
+
+    def test_disclosure_is_never_a_top_risk(self):  # evals 1, 5
+        R = review.analyze(fixture("minimal-single.json"))
+        o = R["offers"][0]
+        o["flags"] = [{"sev": "Med", "issue": "Seller's flood disclosure not yet given.", "fix": "Give it.",
+                       "topic": "flood_disclosure"}]
+        self.assertEqual(review.single_view(R, o)["risks"], [])
+        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        self.assertIn("No significant risks found.", doc)
+
+    def test_tax_rate_labeled_by_its_source(self):  # eval 3
+        data = fixture("texas-single.json")
+        data["listing"].pop("annual_tax")
+        data["listing"]["total_mills"] = 20.36
+        L = review.analyze(data)["listing"]
+        self.assertIn("the adopted rate looked up", L["tax_estimate"])
+        self.assertNotIn("listing's", L["tax_estimate"])
+        data["listing"]["tax_rate_source"] = "agent"
+        self.assertIn("the rate the agent gave", review.analyze(data)["listing"]["tax_estimate"])
+
+    def test_reference_counter_terms_in_the_pdf(self):  # eval 6
+        R = review.analyze(fixture("expired-aga.json"))
+        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        self.assertIn("Counter (Reference)", doc)
+        self.assertIn("COUNTER (REFERENCE)", doc)
+        self.assertIn("Mon Sep 28, 5:00 PM", doc)
+
+    def test_aga_counter_agrees_with_the_flag(self):  # eval 6
+        o = review.analyze(fixture("expired-aga.json"))["offers"][0]
+        row = next(r for r in o["counter_rows"] if r[0] == "AGA-1 Valuation Period")
+        self.assertEqual(row[1:3], ("30 days (blank)", "24 days"))
+        self.assertEqual(o["counter_terms"]["aga_valuation_days"], 24)
+        flag = next(f for f in o["flags"] if f["topic"] == "aga_window_at_closing")
+        self.assertIn("24-day", flag["fix"])
+        self.assertIsNone(flag["request"])  # the counter asks it
+
+    def test_listing_and_buyer_agent_fees_read_as_separate(self):  # eval 4, owner decision
+        data = fixture("texas-single.json")
+        R = review.analyze(data)
+        a = next(a for a in R["missing"] if a["field"] == "listing_fee_includes_buyer_broker")
+        self.assertEqual(a["impact"], "high")
+        self.assertIn("5.5% total", a["why"])
+        self.assertIn("whether the listing fee includes the buyer's agent", review.result(R)["summary"]["preliminary"])
+        data["seller"]["listing_fee_includes_buyer_broker"] = False
+        self.assertFalse(any(a["field"] == "listing_fee_includes_buyer_broker" for a in review.analyze(data)["missing"]))
+
+    def test_best_effort_note_for_a_described_offer(self):  # eval 3
+        notes = review.result(review.analyze(fixture("texas-single.json")))["chat_notes"]
+        self.assertEqual(notes, [review.oe.cf.DESCRIBED_NOTE])
+        data = fixture("texas-single.json")
+        data["offers"][0]["contract_form"] = "TREC One to Four Family Residential Contract"
+        notes = review.result(review.analyze(data))["chat_notes"]
+        self.assertEqual(notes, [review.oe.cf.BEST_EFFORT_NOTE])
+
+    def test_hoa_fee_not_charged_when_unknown(self):  # eval 1
+        R = review.analyze(fixture("minimal-single.json"))
+        self.assertFalse(any(k == "estoppel" and v for k, _, v in R["offers"][0]["ns"]["lines"]))
+        self.assertFalse(any("HOA" in c for c in review.result(R)["estimated_costs"]))
+
+
+class EvalIteration10(unittest.TestCase):
+    """Fixes from eval iteration 10."""
+
+    def test_earliest_live_deadline_shows(self):  # evals 2, 4; iteration 11 eval 2: never a declined offer's (OFR-305)
+        R = review.analyze(fixture("four-offers.json"))
+        a = next(o for o in R["offers"] if o["id"] == "A")
+        self.assertEqual(a["action"], "DECLINE")
+        for out in (review.result(R), review.result(R, "single", "B")):
+            self.assertNotIn("offer_expires", {x["key"] for x in out["summary"]["respond_by_also"]})
+        kept = [o for o in R["active"] if o["action"] != "DECLINE" and o is not R["ranked"][0]]
+        for o in kept:  # a kept offer that lapses before the pick's deadline still shows
+            o["expires_raw"], o["expires"] = "2026-09-24 09:00", "Sep 24, 2026 · 9:00 AM"
+        if kept:
+            keys = {x["key"] for x in review.respond_also(R, shown=R["ranked"][0])}
+            self.assertTrue(keys & {"offer_expires", "backup_lapses"})
+
+    def test_walk_away_stops_at_closing(self):  # eval 1: FHA to a Saturday closing
+        data = fixture("minimal-single.json")
+        data["analysis_date"] = "2026-09-26"
+        R = review.analyze(data)
+        c = review.result(R)["summary"]["certainty"]
+        self.assertTrue(c["walk_away_until"].startswith("Sat Oct 31"), c["walk_away_until"])
+        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        self.assertIn("(Oct 31).", doc)
+        self.assertNotIn("Nov 2", doc)
+
+    def test_walk_away_note_names_the_window(self):  # eval 2: the rent-back agreement sets the cash offer's date
+        data = fixture("four-offers.json")
+        data["offers"][2].update(rent_back_days=30, rent_back_monthly=0)
+        note = review.result(review.analyze(data), "single", "C")["summary"]["certainty"]["walk_away_note"]
+        self.assertIn("rent-back agreement (Rider U)", note)
+        self.assertNotIn("loan", note)
+
+    def test_stated_buyer_broker_fee_isnt_assumed(self):  # eval 3
+        data = fixture("texas-single.json")  # the agent stated 2.5% to the buyer's agent; the offer doesn't ask
+        del data["offers"][0]["buyer_broker_pct"]
+        R = review.analyze(data)
+        lab = next(lab for k, lab, _ in R["offers"][0]["ns"]["lines"] if k == "bb")
+        self.assertNotIn("Assumed", lab)
+        self.assertNotIn("buyer_broker_pct", [a["field"] for a in R["missing"] if a["impact"] == "high"])
+
+    def test_described_note_on_render_stderr(self):  # eval 3: one line in both scripts
+        err = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+            review_render.main([os.path.join(FIXTURES, "texas-single.json"), "--out", tmp])
+        self.assertIn(review.oe.cf.DESCRIBED_NOTE, err.getvalue())
+        self.assertNotIn(review.oe.cf.BEST_EFFORT_NOTE, err.getvalue())
+
+    def test_deposit_rating_and_score_agree(self):  # eval 3
+        R = review.analyze(fixture("texas-single.json"))
+        o = R["offers"][0]
+        row = next(r for r in review_render.term_rows(o, R) if r[0] == "Escrow Deposit")
+        self.assertEqual(row[3], "good")
+        self.assertGreaterEqual(o["score"]["scores"]["deposit"], 3)
+
+    def test_assumed_inspection_counters_to_the_benchmark(self):  # eval 1
+        R = review.analyze(fixture("minimal-single.json"))
+        f = next(f for f in R["offers"][0]["flags"] if f.get("topic") == "inspection_period")
+        n = R["listing"]["norms"]["inspection_days"]
+        self.assertIn(f"counter to {n} days", f["fix"])
+        self.assertNotIn("7–10", f["fix"])
+
+    def test_loan_officer_questions(self):  # evals 1, 6
+        data = fixture("minimal-single.json")
+        data["analysis_date"] = "2026-09-26"  # closes Sat Oct 31
+        R = review.analyze(data)
+        qs = review_render.lender_questions(R["offers"][0], R)
+        self.assertTrue(any(q.startswith("The offer closes Sat Oct 31") for q in qs))
+        self.assertFalse(any("contract" in q for q in qs))
+        R = review.analyze(fixture("expired-aga.json"))  # reference counter at $497K, letter capped at $391,200
+        q = next(q for q in review_render.lender_questions(R["offers"][0], R) if q.startswith("Is the approval good"))
+        self.assertIn("$391,200", q)
+        self.assertNotIn("20.0% down", q)
+
+    def test_accept_option_says_the_counter_likely_lapsed(self):  # eval 7
+        out = review.result(review.analyze(fixture("counter-chain-standard.json")))
+        acc = next(x for x in out["summary"]["options"] if x["option"] == "Accept as Written")
+        self.assertEqual(acc["status"], "risk")
+        self.assertIn("likely passed", acc["what"])
+
+    def test_gg_between_brokers_asks_the_listing_fee(self):  # eval 6
+        data = fixture("expired-aga.json")
+        data["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
+        R = review.analyze(data)
+        fields = [a["field"] for a in review.confirm_items(R)]
+        self.assertNotIn("compensation_agreement", fields)
+        self.assertIn("listing_fee_pct", fields)
+        gg = next(f for f in R["offers"][0]["flags"] if f.get("topic") == "rider_GG")
+        self.assertIsNone(gg.get("request"))
+
+    def test_rider_k_items_are_flags_not_top_risks(self):  # eval 5
+        data = fixture("minimal-single.json")
+        data["offers"][0].update(financing="conventional", down_pct=0.2, contract_form="standard", riders=["K"])
+        R = review.analyze(data)
+        self.assertIn("rider_K_terms", [f.get("topic") for f in R["offers"][0]["flags"]])
+        self.assertFalse(any("Rider (K)" in r["issue"] for r in review.result(R)["summary"]["risks"]))
+
+    def test_target_tile_names_its_closing(self):  # evals 2, 4
+        R = review.analyze(fixture("four-offers.json"))
+        k = next(k for k in review.result(R, "single", "C")["summary"]["kpis"] if k["label"] == "Seller's Target Net")
+        self.assertIn("closing", k["note"])
+
+    def test_terms_review_shows_loan_and_lender(self):  # eval 6
+        data = fixture("expired-aga.json")
+        data["offers"][0]["lender"] = "Sample Home Lending"
+        R = review.analyze(data)
+        rows = {r[0]: r[1] for r in review_render.term_rows(R["offers"][0], R)}
+        self.assertIn("$391,200 loan", rows["Financing"])
+        self.assertIn("Sample Home Lending", rows["Approval"])
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class EvalIteration11(unittest.TestCase):
+    def test_terms_reason_only_on_the_picks_review(self):
+        """Eval 4: the agent's terms reason for the pick printed on every offer's single review."""
+        d = fixture("four-offers.json")
+        d["ranking_reason"] = "Best net with a strong lender."
+        R = review.analyze(d)
+        top, other = R["ranked"][0], R["ranked"][1]
+        self.assertEqual(review.single_view(R, top)["terms_reason"], "Best net with a strong lender.")
+        self.assertIsNone(review.single_view(R, other)["terms_reason"])
+
+    def test_form_assumed_is_marked_apart_from_the_days(self):
+        """Eval 2: "7 days (AS IS) (assumed)" read as if the days were assumed when only the form was."""
+        d = fixture("minimal-single.json")
+        d["offers"][0]["inspection_days"] = 7
+        doc, _, _ = review_render.build_html(review.analyze(d), {}, sample=False)
+        self.assertIn("7 days (AS IS, form assumed)", doc)
+        self.assertNotIn("7 days (AS IS) (assumed)", doc)

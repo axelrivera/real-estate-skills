@@ -14,6 +14,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": [
+    "inspection_walkaway"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -35,7 +38,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 78,
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -59,13 +62,16 @@
    "flags": {
     "count": 0
    },
+   "form_given": false,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "A",
    "kickout": false,
@@ -292,7 +298,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 313462.0,
+   "rank_value": 314682.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -311,15 +317,15 @@
    "sale_contingency_days": 0,
    "score": {
     "band": [
-     "mid",
-     "Workable"
+     "hi",
+     "Strong"
     ],
     "scores": {
      "agent": 3,
      "appraisal": 5,
      "approval": 4,
      "contingency": 3,
-     "deposit": 2,
+     "deposit": 3,
      "financing": 4,
      "property": 5,
      "timeline": 4
@@ -334,7 +340,7 @@
      "property": "auto",
      "timeline": "auto"
     },
-    "total": 78
+    "total": 80
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -457,6 +463,12 @@
    "impact": "med",
    "scope": "listing",
    "value": 1200
+  },
+  {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
+   "value": false
   }
  ],
  "highest_and_best": null,
@@ -534,6 +546,12 @@
    "value": true
   },
   {
+   "field": "listing_fee_includes_buyer_broker",
+   "impact": "high",
+   "scope": "seller",
+   "value": false
+  },
+  {
    "field": "offer_norms",
    "impact": "med",
    "scope": "listing"
@@ -584,6 +602,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": [
+    "inspection_walkaway"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -605,7 +626,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 78,
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -629,13 +650,16 @@
    "flags": {
     "count": 0
    },
+   "form_given": false,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "A",
    "kickout": false,
@@ -862,7 +886,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 313462.0,
+   "rank_value": 314682.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -881,15 +905,15 @@
    "sale_contingency_days": 0,
    "score": {
     "band": [
-     "mid",
-     "Workable"
+     "hi",
+     "Strong"
     ],
     "scores": {
      "agent": 3,
      "appraisal": 5,
      "approval": 4,
      "contingency": 3,
-     "deposit": 2,
+     "deposit": 3,
      "financing": 4,
      "property": 5,
      "timeline": 4
@@ -904,7 +928,7 @@
      "property": "auto",
      "timeline": "auto"
     },
-    "total": 78
+    "total": 80
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -1003,6 +1027,9 @@
    "appraisal_waived": false,
    "appraised": true,
    "approval": "du_approved",
+   "assumed_terms": [
+    "inspection_walkaway"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -1024,7 +1051,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 78,
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -1048,13 +1075,16 @@
    "flags": {
     "count": 0
    },
+   "form_given": false,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "A",
    "inspection_assumed": false,
    "inspection_days": 7,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "A",
    "kickout": false,
@@ -1281,7 +1311,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 313462.0,
+   "rank_value": 314682.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -1300,15 +1330,15 @@
    "sale_contingency_days": 0,
    "score": {
     "band": [
-     "mid",
-     "Workable"
+     "hi",
+     "Strong"
     ],
     "scores": {
      "agent": 3,
      "appraisal": 5,
      "approval": 4,
      "contingency": 3,
-     "deposit": 2,
+     "deposit": 3,
      "financing": 4,
      "property": 5,
      "timeline": 4
@@ -1323,7 +1353,7 @@
      "property": "auto",
      "timeline": "auto"
     },
-    "total": 78
+    "total": 80
    },
    "seller_concessions": 8000,
    "short_sale": false,

@@ -1,27 +1,27 @@
 {
-  "prepared_date": "2026-10-01",
-  "prepared_for": "Dana Morgan",
-  "closing_date": "2026-12-15",
+  "prepared_date": "2026-03-09",
+  "prepared_for": "Robin Example",
+  "closing_date": "2026-05-29",
   "property": {
-    "address": "2250 Oak Hollow Ct",
-    "city": "Oviedo",
-    "county": "Seminole",
+    "address": "1418 Sample Heron Ln",
+    "city": "Lakeland",
+    "county": "Polk",
     "state": "FL",
-    "property_type": "single_family",
+    "property_type": "townhouse",
     "hoa": true,
-    "hoa_monthly": 85
+    "hoa_monthly": 240
   },
   "scenarios": [
-    {"price": 450000, "label": "Current List Price"},
-    {"price": 440000, "label": "After a Price Cut"},
-    {"price": 450000, "label": "List Price with Credit", "seller_credit": 9000, "home_warranty": 550}
+    {"price": 312000, "label": "Planned List Price"},
+    {"price": 305000, "label": "Lower Price"},
+    {"price": 312000, "label": "Planned Price with Credit", "seller_credit": 4000, "repairs": 1500}
   ],
   "costs": {
-    "listing_fee_pct": 0.03,
-    "buyer_broker_fee_pct": 0.025,
-    "mortgage_payoff": 214000,
-    "other_payoffs": [{"label": "Home Equity Line", "amount": 18000}],
-    "annual_tax": 6200,
-    "other": [{"label": "Survey", "amount": 450}]
+    "listing_fee_pct": 0.028,
+    "buyer_broker_fee_pct": 0.02,
+    "mortgage_payoff": 141500,
+    "other_payoffs": [{"label": "Solar Lease Buyout", "amount": 7300}],
+    "annual_tax": 3480,
+    "other": [{"label": "Permit Closeout", "amount": 375}]
   }
 }

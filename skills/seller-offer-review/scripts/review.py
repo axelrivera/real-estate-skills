@@ -61,7 +61,9 @@ def analyze(data, market=None, cma=None):
 # --- after the engine ----------------------------------------------------------
 
 # Listing-side reminders (the seller's own paperwork), not risks in the offer: listed last, never a top risk (OFR-274)
-HOUSEKEEPING = {"flood_disclosure", "hoa_conflict"}  # OFR-343: the HOA figure is the listing's to confirm
+# OFR-343: the HOA figure is the listing's to confirm; iteration 10 eval 5: Rider K's watch items are terms to agree,
+# listed with the risk flags but never a top risk
+HOUSEKEEPING = {"flood_disclosure", "hoa_conflict", "rider_K_terms"}
 # Deal-specific risks first, within a severity level: a passed time for acceptance (whether there's an offer to answer),
 # sale contingency, then financing, then appraisal gap, then the seller's deadline (OFR-274). Flags without a topic get one here, so the order and flag_keys use keys, not words.
 RISK_ORDER = ("expired", "backup_lapses", "sale_contingency", "financing", "appraisal_gap", "past_deadline")
@@ -163,8 +165,8 @@ def confirm_assumed_inspection(o, L):
         if f.get("topic") == "inspection_period" and not f.get("agent_topics"):
             f["sev"] = "Low"
             f["issue"] = f"Inspection period not given: {o['inspection_days']} days assumed."
-            f["fix"] = (f"Confirm the days in the contract; if it's over {L['norms']['inspection_days']}, counter to 7–10 "
-                        "days.")
+            n = L["norms"]["inspection_days"]  # iteration 10 eval 1: one number, as the Terms Review benchmark (≤n days)
+            f["fix"] = f"Confirm the days in the contract; if it's over {n}, counter to {n} days."
 
 
 CHANGE_ROW = {"inspection_days": "Inspection Period", "loan_approval_days": "Loan Approval Period", "deposit": "Escrow Deposit",
@@ -230,6 +232,11 @@ def ask_compensation_agreement(R):
     assumed buyer-broker share so the question is asked once."""
     for o in R["active"] + R["incomplete"]:
         if o.get("bb_tag") == "Requested" or not any(f.get("topic") == "rider_GG" for f in o["flags"]):
+            continue
+        if o.get("bb_from_listing"):  # iteration 10 eval 6: the amount doesn't move the seller's net; the listing fee does
+            fee = next((a for a in R["missing"] if a["field"] == "listing_fee_pct"), None)
+            if fee:
+                fee["ask"] = True
             continue
         sc = f"offer {o['id']}"
         old = next((a for a in R["missing"] if a["field"] == "buyer_broker_pct" and sc in oe.scopes(a)), None)
@@ -322,12 +329,8 @@ def estimated_costs(R, offers):
                     f"tax proration on an estimated {money(tax['value'])} bill") + extra)
     elif unpaid and "tax" in lines:
         out.append("tax proration with this year's bill assumed unpaid")
-    if "estoppel" in lines:  # OFR-309: an HOA fee is charged only with an HOA or when it's unknown
-        name = words(lines["estoppel"].split(" (")[0])
-        if L["hoa_monthly"] is None:
-            out.append(f"{name} (estimate, charged in case there's an HOA)")
-        elif "(Estimate)" in lines["estoppel"]:
-            out.append(f"{name} (estimate)")
+    if "estoppel" in lines and "(Estimate)" in lines["estoppel"]:  # iteration 9 eval 1: charged only with an HOA or a condo
+        out.append(f"{words(lines['estoppel'].split(' (')[0])} (estimate)")
     if not L.get("repair_reserve_deal") and any(not o["repairs_owed"] and any(k == "repair" and v for k, _, v in o["ns_down"]["lines"])
                                                 for o in offers):  # a Standard form's repair limits are contract terms
         out.append("post-inspection credit in the downside (estimate)")
@@ -362,6 +365,12 @@ def price_note(o):
     return fin_str(o) + (f" · {o['escalation_note']}" if o.get("escalation") else "")
 
 
+def target_note(o):
+    """Iteration 10 evals 2, 4: each offer's target closes on that offer's date, so the tile names it (the comparison's
+    target names its own), and the seller sees why the targets differ."""
+    return f"list price, clean terms, closing {o['close']:%b %-d}"
+
+
 def fin_str(o):
     return oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.1f}% down")
 
@@ -383,7 +392,7 @@ def listed_assumptions(R, multi=False, offer_id=None):
 
 # OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in the
 # data note and the assumptions), and the contract form, which each offer carries as its own "form assumed" mark
-SAME_FOR_EVERY_OFFER = {"payoff", "listing_fee_pct", "state", "title_payer", "deed transfer tax", "who pays owner's title",
+SAME_FOR_EVERY_OFFER = {"payoff", "listing_fee_pct", "listing_fee_includes_buyer_broker", "state", "title_payer", "deed transfer tax", "who pays owner's title",
                         "owner's title rate", "title company fees"}
 MARKED_PER_OFFER = {"contract_form"}
 
@@ -458,11 +467,11 @@ ALWAYS_ASK = ("inspection_days", "deposit", "year_built", "compensation_agreemen
 
 def confirm_items(R, limit=4, offer_id=None):
     """The assumptions that would change the answer most, for the chat reply: the high-impact gaps (up to `limit`), the
-    assumed offer terms in ALWAYS_ASK, then other medium-impact gaps while there's room. OFR-352: `offer_id` (a single
+    assumed offer terms in ALWAYS_ASK (and any marked `ask`, e.g. an assumed listing fee under Rider GG), then other medium-impact gaps while there's room. OFR-352: `offer_id` (a single
     review of one of several offers) asks only what its own review lists."""
     pool = listed_assumptions(R, offer_id=offer_id) if offer_id else R["missing"]
     asked = [a for a in pool if a["impact"] in ("high", "med")]
-    terms = [a for a in asked if a["field"] in ALWAYS_ASK]
+    terms = [a for a in asked if a["field"] in ALWAYS_ASK or a.get("ask")]
     high = [a for a in asked if a["impact"] == "high" and a not in terms][:limit]
     med = [a for a in asked if a["impact"] == "med" and a not in terms][:max(0, limit - len(high) - len(terms))]
     return high + terms + med
@@ -511,8 +520,21 @@ def biggest_risk(o):
 
 def firm_day(o, costs):
     """OFR-300: (the day the buyer's last cancel right really ends, the day it moved from or None): the last day of the
-    longest window, rolled off a weekend or holiday by the market's contract rule (offer_engine.rolled)."""
-    return oe.rolled(o["firm_date"], costs)
+    longest window, rolled off a weekend or holiday by the market's contract rule (offer_engine.rolled), never past the
+    closing (iteration 10 eval 1)."""
+    return oe.rolled(o["firm_date"], costs, o["close"])
+
+
+def open_after(o, wd):
+    """Iteration 10 eval 2: what still lets the buyer cancel after the walk-away period, named (the loan approval, the
+    appraisal, the sale of the buyer's home, each rider's window), so a later walk-away date reads as that window."""
+    names = [n for n, d in (("the loan approval", o["loan_approval_days"] if o["financed"] else 0),
+                            ("the appraisal terms", o["appraisal_days"]),
+                            ("the sale of the buyer's home", o["sale_contingency_days"])) if d and d > wd]
+    names += [f"the {what} (Rider {code})" for code, d, what in o.get("rider_windows") or () if d > wd]
+    if not names:
+        return "the loan, appraisal or rider terms"
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " or " + names[-1]
 
 
 def walk_away(o, costs):
@@ -526,12 +548,13 @@ def walk_away(o, costs):
     wd = o.get("walkaway_days") or 0
     if wd and wd < o["risk_days"]:
         start = o["firm_date"] - timedelta(days=o["risk_days"])
-        end, _ = oe.rolled(start + timedelta(days=wd), costs)
+        end, _ = oe.rolled(start + timedelta(days=wd), costs, o["close"])
         notes.append(f"For any reason until {end:%b %-d} ({wd}-day inspection period"
                      + (f", {o['contract_label']}" if o["contract_form"] in oe.cf.FARBAR else "")
-                     + "); after that only under the loan, appraisal or rider terms.")
+                     + (", assumed" if oe.assumed(o, "inspection_days", "contract_form") else "")  # iteration 9 eval 1
+                     + f"); after that only under {open_after(o, wd)}.")
     if o.get("appraisal_form") == "aga" and ex < o["risk_days"] == o["appraisal_days"]:
-        first, _ = oe.rolled(o["firm_date"] - timedelta(days=o["risk_days"] - ex), costs)
+        first, _ = oe.rolled(o["firm_date"] - timedelta(days=o["risk_days"] - ex), costs, o["close"])
         notes.append(f"After {first:%b %-d} ({ex} days) only if the valuation plus the gap comes in below the price (AGA-1).")
     until, was = firm_day(o, costs)
     moved = f"; {was:%a %b %-d} moves to the next business day" if was else ""
@@ -649,10 +672,11 @@ def incomplete_view(R, o):
         "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
                  {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
                  {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": downside_note(o, L), "tone": "risk"},
-                 {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": "list price, clean terms", "tone": ""}],
+                 {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": target_note(o), "tone": ""}],
         "certainty": certainty(o, S, R["costs"]),
-        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"] if not f.get("contract")][:3],  # contract issues are in fixes
-        "terms_reason": R.get("ranking_reason"),
+        # contract issues are in fixes; iteration 9 evals 1, 5: a listing-side reminder is never a top risk
+        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in deal_flags(o) if not f.get("contract")][:3],
+        "terms_reason": None,  # iteration 11 eval 4: the pick's terms reason belongs to the pick, not a blocked offer
         "options": [],
         "preliminary": None,
         "next_step": cap(nxt),  # OFR-264: a sentence after "Next Step:"
@@ -725,13 +749,16 @@ def single_view(R, o):
         kpis.append({"label": "Net with Our Counter", "value": money(cn), "tone": "good",
                      "note": f"{signed(cn - ao)} vs. as offered" if cn >= ao else f"{signed(cn - dn)} vs. downside; protects the price"})
     else:
-        kpis.append({"label": "Seller's Target Net", "value": money(tgt), "note": "list price, clean terms", "tone": ""})
+        kpis.append({"label": "Seller's Target Net", "value": money(tgt), "note": target_note(o), "tone": ""})
 
     score = o["score"]["total"]
     opts = [{"option": "Accept as Written", "net": money(ao), "certainty": f"{score}/100", "status": "good" if score >= 80 else "risk",
              "what": "Deal as signed" if score >= 80 else f"Realistic net closer to {money(dn)} {downside_note(o, L, short=True)}" if dn < ao
              else "Deal as signed, with its risks in view (see the risk flags)",  # OFR-258: never "closer to" the same net
              "recommended": act == "ACCEPT"}]
+    if o.get("lapsed") == "likely":  # iteration 10 eval 7: signing a counter whose time has likely passed may not bind
+        opts[0].update(status="risk", what=f"Its time for acceptance likely passed ({o['expires']}): confirm when it was "
+                                           "delivered before signing, or counter")
     if o["counter_rows"]:
         opts.append({"option": "Counter", "net": money(cn), "certainty": f"≈{o['counter_score']}/100 if accepted",
                      "status": "good" if act == "COUNTER" else "caution", "recommended": act == "COUNTER",
@@ -768,12 +795,14 @@ def single_view(R, o):
         "action": act, "headline": "HOLD AS BACKUP" if act == "BACKUP" else act, "title": title(act, o), "why": why,
         "offers_active": len(R["active"]) if multi_ctx else 1,
         "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
-        "respond_by_also": respond_also(R),  # OFR-320
+        "respond_by_also": respond_also(R, shown=o),  # OFR-320
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S, R["costs"]),
-        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in o["flags"][:3]],  # OFR-274: reminders only fill a spare slot
-        "terms_reason": R.get("ranking_reason"),
+        # OFR-274, iteration 9 evals 1, 5: a listing-side reminder (the flood disclosure) is never a top risk
+        "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in deal_flags(o)[:3]],
+        # iteration 11 eval 4: the terms reason for the pick prints on the pick's own review only
+        "terms_reason": R.get("ranking_reason") if not multi_ctx or (R["ranked"] and o is R["ranked"][0]) else None,
         "options": opts,
         "preliminary": preliminary(R, o["id"] if multi_ctx else None),
         "next_step": cap(nxt),  # OFR-264
@@ -784,27 +813,38 @@ def single_view(R, o):
 # --- multiple offers ---------------------------------------------------------
 
 def first_expiry(R):
-    """(when, offer label) of the first deadline among the offers the plan acts on now (OFR-305: the ones it counters or
-    accepts), never a declined or backup offer's, so the Respond By box can't read as "answer the declined offer"."""
+    """(when, offer label, offer or None) of the first deadline among the offers the plan acts on now (OFR-305: the ones
+    it counters or accepts), never a declined or backup offer's, so the Respond By box can't read as "answer the
+    declined offer" (respond_also lists an earlier one from another offer)."""
     acted = [o for o in R["ranked"] if o["action"] in ("ACCEPT", "COUNTER")]
     ex = [o for o in acted if o.get("expires_raw") and not o.get("lapsed")]
     if not ex:  # OFR-120: no deadline in the files is a fact to state, not a place to look
-        return "No time stated", (acted[0]["label"] if acted else None)
+        return "No time stated", (acted[0]["label"] if acted else None), None
     def when(o):  # OFR-263: a date alone is the end of that day
         s = str(o["expires_raw"]).strip()
         return s if len(s) > 10 else f"{s} 23:59"
     o = min(ex, key=when)
-    return o["expires"], o["label"]
+    return o["expires"], o["label"], o
 
 
-def respond_also(R, held=()):
+def respond_also(R, held=(), shown=None):
     """OFR-319, OFR-320: the other deadlines the Respond By box shows: a pending call for highest and best, and a held
-    offer whose own time for acceptance ends before the counter's. [{when, what, key}]"""
+    offer whose own time for acceptance ends before the counter's. Iteration 10 evals 2, 4: and the earliest live time
+    for acceptance among the active offers when the box doesn't already show it (`shown` is the offer Respond By names,
+    or None), so an offer that lapses first is never hidden behind "No time stated". [{when, what, key}]"""
     out = []
     hb = R.get("highest_and_best")
     if hb and hb["pending"]:
         out.append({"when": hb["due"], "what": "Highest & Best Due", "key": "highest_and_best"})
     out += [{"when": o["expires"], "what": "Backup: Ask to Extend", "key": "backup_lapses"} for o in held]
+    # OFR-305, iteration 11 eval 2: only an offer the plan keeps (accepted, countered or held), never a declined one
+    live = [o for o in R["active"] if expires_at(o) and not o.get("lapsed") and o.get("action") != "DECLINE"]
+    first = min(live, key=expires_at, default=None)
+    if first and first is not shown and all(first is not o for o in held) and len(R["active"]) > 1:
+        mine = expires_at(shown) if shown and not shown.get("lapsed") else None
+        if mine is None or expires_at(first) < mine:
+            out.append({"when": first["expires"], "what": f"{first['label']}: Time for Acceptance Ends",
+                        "key": "offer_expires"})
     return out
 
 
@@ -909,13 +949,14 @@ def multi_view(R):
                if lapse else "")
             + f"{verb} {top['ref']}"
             + (f"; once that contract is fully signed, I'll offer {backup['ref']} a backup position" if backup else "") + ".")
-    also = respond_also(R, [backup] if lapse else [])
+    rb = first_expiry(R)
+    also = respond_also(R, [backup] if lapse else [], shown=rb[2])
     keys = (["backup_lapses"] if lapse else []) + (
         [f"highest_and_best_{'pending' if hb['pending'] else 'done'}"] if hb else [])
     return {
         "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act, "headline": act, "title": title(act, top), "why": lead,
         "offers_active": len(R["active"]) + len(R["incomplete"]), "offers_incomplete": len(R["incomplete"]),
-        "respond_by": first_expiry(R)[0], "respond_by_offer": first_expiry(R)[1], "respond_by_also": also,
+        "respond_by": rb[0], "respond_by_offer": rb[1], "respond_by_also": also,
         "plan_keys": keys,  # OFR-319, OFR-320: what the plan adds, as keys
         "priority": S.get("priority_note") or S["priority"].title(),
         "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
@@ -995,10 +1036,19 @@ def result(R, mode="auto", offer_id=None):
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
         # chat only (never on the report): the best-effort line for a contract that isn't FAR/BAR, and revision notes
-        **oe.cf.support([x["contract_form"] for x in checked],  # TL-201: "the footer reads" only when read from it
-                        [(x["contract_form"], x.get("form_revision"), str(x.get("form_revision_source") or "").lower() == "footer")
-                         for x in checked]),
+        **described_support(oe.cf.support([x["contract_form"] for x in checked],  # TL-201: "the footer reads" only when read from it
+                                          [(x["contract_form"], x.get("form_revision"),
+                                            str(x.get("form_revision_source") or "").lower() == "footer") for x in checked]),
+                            checked),
     }
+
+
+def described_support(sup, offers):
+    """(iteration 10 eval 3: render.py uses this too, so chat and stderr carry one line) The support result with the best-effort line reworded when no best-effort offer names a contract form."""
+    other = [x for x in offers if x["contract_form"] == oe.cf.OTHER]
+    if other and not any(x.get("form_given") for x in other):
+        sup["chat_notes"] = [oe.cf.DESCRIBED_NOTE if n == oe.cf.BEST_EFFORT_NOTE else n for n in sup["chat_notes"]]
+    return sup
 
 
 def main(argv=None):

@@ -29,7 +29,8 @@ Where property tax is paid in arrears (Florida, Texas and most states), every ne
 - **The seller's share only.** The net charges this year's tax from January 1 to the day before closing, credited to the buyer. Never the whole year's bill.
 - **After this year's bills go out** (Florida: November 1): assume the bill is still unpaid at closing, unless the agent says the seller paid it. The line is labeled "Bill Assumed Unpaid", and your reply says so.
 - **The seller already paid it** (the agent says so: `current_tax_bill_paid` true): the seller paid the whole year, so the net shows the buyer's credit back to the seller from closing to December 31.
-- **No tax bill or no closing date:** the proration is left out, and the net sheet says it isn't included (nothing else claims it's in the proration).
+- **Past the bill's due date** (the agent gives it, or the market's `property_tax.due_date`): a closing after it assumes the bill is paid, so the buyer credits the seller from closing to December 31, and the line is labeled "Bill Assumed Paid". Florida's bills are due the next March, so this never applies there.
+- **No tax bill or no closing date:** the proration is left out, the net sheet says it isn't included (nothing else claims it's in the proration), and the sheet is Preliminary.
 
 ## After the First Report
 

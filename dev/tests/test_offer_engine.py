@@ -61,7 +61,7 @@ class MatchesPrototype(unittest.TestCase):
         R = oe.analyze(prototype_costs(fixture("minimal-single.json")))
         o = R["offers"][0]
         # Audit: 4% early-payment discount in the proration (OFR-14) and no tax in holding costs (OFR-13)
-        self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349279, 346779, 353011))
+        self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349578, 347078, 353310))  # iteration 9 eval 1: no HOA fee
         self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))  # FHA: appraisal protected to closing
         # OFR-122: every counter sets its own time for acceptance; OFR-273: the assumed inspection period isn't countered
         self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Time for Acceptance"])
@@ -91,8 +91,11 @@ class FloridaMarketDefaults(unittest.TestCase):
         d["seller"] = {"listing_fee_pct": 0.025, "offered_buyer_broker_pct": 0.02}
         o = oe.analyze(d)["offers"][0]
         self.assertEqual(line(o["ns"], "listing"), -9550)       # 2.5% of 382,000
-        self.assertEqual(line(o["ns"], "bb"), -7640)            # the seller's 2% offer, assumed for this offer
-        self.assertIn("Assumed", next(lab for k, lab, _ in o["ns"]["lines"] if k == "bb"))
+        self.assertEqual(line(o["ns"], "bb"), -7640)            # the seller's 2% offer, as the agent stated it
+        # iteration 10 eval 3: a fee the agent stated isn't labeled or ranked as assumed
+        self.assertNotIn("Assumed", next(lab for k, lab, _ in o["ns"]["lines"] if k == "bb"))
+        bb = next(a for a in oe.analyze(d)["assumptions"] if a["field"] == "buyer_broker_pct")
+        self.assertEqual(bb["impact"], "low")
         self.assertEqual(line(o["ns"], "settle"), -1145)        # 700 + 250 + 125 + 70
         self.assertEqual(line(o["ns"], "transfer"), -2674)      # 0.70%
         self.assertEqual(oe.analyze(d)["listing"]["state"], "FL")  # read from the address
@@ -458,6 +461,56 @@ class MockContractFixes(unittest.TestCase):
         before = self.one(d)["ns"]["net"]
         d["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
         self.assertEqual(self.one(d)["ns"]["net"], before)
+
+
+class EvalIteration10(unittest.TestCase):
+    """Engine fixes from eval iteration 10 (seller-offer-review)."""
+
+    def test_target_closes_on_a_business_day(self):  # eval 4: the seller's Sun Nov 15 deadline
+        R = oe.analyze(fixture("four-offers.json"))
+        self.assertEqual(R["target_close"].isoformat(), "2026-11-13")
+
+    def test_no_contingency_outlives_closing(self):  # eval 1: FHA to a Saturday closing
+        d = fixture("minimal-single.json")
+        d["analysis_date"] = "2026-09-26"
+        d["offers"][0]["loan_approval_days"] = 45
+        o = oe.analyze(d)["offers"][0]
+        self.assertEqual((o["risk_days"], o["close_days"]), (35, 35))
+        self.assertEqual(oe.rolled(o["firm_date"], {"contract.weekend_holiday_rollover": "next_business_day"},
+                                   o["close"])[0], o["close"])
+
+    def test_kickout_already_in_isnt_asked_again(self):  # eval 2
+        o = by_id(oe.analyze(fixture("four-offers.json")))["D"]
+        f = next(f for f in o["flags"] if "sale of buyer" in f["issue"].lower())
+        self.assertNotIn("kick-out and", f["fix"])
+        self.assertIn("already in", f["fix"])
+
+    def test_deposit_score_agrees_with_its_rating(self):  # eval 3: 1.0% against a 1% norm is not weak
+        o = oe.analyze(fixture("texas-single.json"))["offers"][0]
+        self.assertEqual(oe.deposit_status(o, oe.analyze(fixture("texas-single.json"))["listing"]), "good")
+        self.assertGreaterEqual(o["score"]["scores"]["deposit"], 3)
+
+    def test_inspection_flag_counters_to_the_norm(self):  # eval 1
+        d = fixture("minimal-single.json")
+        d["offers"][0]["inspection_days"] = 20
+        R = oe.analyze(d)
+        f = next(f for f in R["offers"][0]["flags"] if f.get("topic") == "inspection_period")
+        self.assertEqual(f["fix"], f"Counter to {R['listing']['norms']['inspection_days']} days.")
+
+    def test_date_only_expiry_asks_for_the_delivery(self):  # eval 7
+        d = fixture("counter-chain-standard.json")
+        d["offers"][0]["expires"] = "2026-09-25"
+        a = next(a for a in oe.analyze(d)["assumptions"] if a["field"] == "expires")
+        self.assertIn("delivered", a["why"])
+        self.assertNotIn("time on the form", a["why"])
+
+    def test_rider_k_watch_items_are_a_low_flag(self):  # evals 5, 18
+        d = fixture("minimal-single.json")
+        d["offers"][0].update(financing="conventional", down_pct=0.2, contract_form="standard", riders=["K"])
+        f = next(f for f in oe.analyze(d)["offers"][0]["flags"] if f.get("topic") == "rider_K_terms")
+        self.assertEqual(f["sev"], "Low")
+        self.assertIn("Paras. 11 and 12", f["issue"])
+        self.assertIn("125% escrow", f["issue"])
 
 
 if __name__ == "__main__":

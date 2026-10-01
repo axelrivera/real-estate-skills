@@ -23,6 +23,7 @@ money = oe.money
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSS = {"options": os.path.join(HERE, "..", "assets", "offer-options.css"), "worksheet": os.path.join(HERE, "..", "assets", "worksheet.css")}
 PAGE1_LIMIT = 989  # px available on page 1 at the print viewport
+MARGINS = {"top": "0.3in", "right": "0.3in", "bottom": "0.4in", "left": "0.3in"}  # the shared render default, named
 
 
 def md(text):
@@ -165,7 +166,7 @@ def details(r, res):
     ns += '<tr class="total2"><td>Net as the Listing Agent Sees It</td>' + "".join(
         f'<td class="n {"best" if c["net_adj"] >= tgt["net_adj"] else ("worst" if c["net_adj"] < tgt["net_adj"] - 5000 else "")}">{acct(c["net_adj"])}</td>'
         for _, c in cols) + "</tr>"
-    ns += '<tr class="alt"><td>If the Appraisal and Inspection Go Badly (Appraisal at the Top of the Value Range, Typical Repair Credit)</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
+    ns += f'<tr class="alt"><td>{esc(ST.downside_label(O))}</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
     sc = ""
     for key, label, w in oe.CRITERIA:
         sc += f'<tr><td>{label}</td><td class="n">{w}%</td>' + "".join(f'<td class="c s{O[k]["score"]["scores"][key]}">{O[k]["score"]["scores"][key]}</td>' for k in K) \
@@ -205,7 +206,7 @@ def details(r, res):
     # OFR-208: with one option there's nothing to compare, so no amber legend
     side_title = ('1 · Options Side by Side <span class="h2s">Amber = Differs from the Recommended Offer</span>' if len(K) > 1
                   else "1 · Offer Terms")
-    return f'''<div class="pb"></div><div class="dh">Detailed Analysis</div>
+    return f'''<div class="pb"></div><div class="det"><div class="dh">Detailed Analysis</div>
 <h2>{side_title}</h2>
 <div class="tbl"><table><colgroup><col style="width:22%"></colgroup><thead><tr><th>Term</th>{hdr}</tr></thead><tbody>{side}</tbody></table></div>
 <h2>2 · How the Listing Agent Will See Each Option <span class="h2s">Seller Net Sheet, Before Mortgage Payoff</span></h2>
@@ -222,7 +223,7 @@ def details(r, res):
  <div><h2>6 · Likely Pushback <span class="h2s">On the Recommended Offer</span></h2><div class="tbl"><table><colgroup><col style="width:24%"><col style="width:19%"><col style="width:19%"></colgroup>
  <thead><tr><th>Term</th><th>Yours</th><th>They May Ask</th><th>Response</th></tr></thead><tbody>{pb}</tbody></table></div></div></div>
 <h2>7 · Assumptions &amp; Data to Confirm</h2>{asum}
-<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {esc(ST.closing_cost_basis(B))}; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div>'''
+<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {esc(ST.closing_cost_basis(B))}; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div></div>'''
 
 
 def options_html(r, agent, sample):
@@ -286,11 +287,25 @@ def worksheet_html(r, agent, sample, variant=None):
 
 # --- files -----------------------------------------------------------------------
 
+PAGE = re.compile(rb"/Type\s*/Page(?![a-zA-Z])")
+
+
+def page_count(pg):
+    """Pages the report prints to, at the margins html_to_pdf uses (the footer sits in the margin)."""
+    return len(PAGE.findall(pg.pdf(format="Letter", print_background=True, margin=MARGINS)))
+
+
 def fit_page_one(pg):
     top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
     if top > PAGE1_LIMIT:
         pg.evaluate("() => document.body.classList.add('compact')")
         top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
+    # iteration 9 eval 1: a short tail (a few assumption rows and the fine print) alone on the last page is pulled back
+    # by tightening the detail pages; kept only when it saves the page
+    pages = page_count(pg)
+    pg.evaluate("() => document.body.classList.add('tail')")
+    if page_count(pg) >= pages:
+        pg.evaluate("() => document.body.classList.remove('tail')")
     return top
 
 
@@ -301,7 +316,7 @@ def build(data, fmt, out_dir, ctx):
     street = (r["B"]["property"].get("address") or "Property").split(",")[0]
     if fmt == "options":
         path = os.path.join(out_dir, render.filename(street, "Offer Options", ext="pdf"))
-        top = render.html_to_pdf(options_html(r, ctx["agent"], sample), path, before_print=fit_page_one,
+        top = render.html_to_pdf(options_html(r, ctx["agent"], sample), path, margins=MARGINS, before_print=fit_page_one,
                                  footer_html=render.footer(f"Offer Options · Prepared for {r['B']['buyer'].get('name') or 'the Buyer'} · "
                                                            f"Not for the Listing Side · {street}"))  # OFR-32
         if top > PAGE1_LIMIT:

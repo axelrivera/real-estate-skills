@@ -71,27 +71,55 @@ def property_type(value):
     return "other"
 
 
-def tax_proration(annual_tax, closing, market=None, bill_paid=None):
-    """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis'}, or None.
+def tax_due_date(closing, market=None, due_date=None):
+    """This year's tax bill due date in the closing's year, or None when neither the agent (`due_date`: "10-15" or
+    "2026-10-15"; only the month and day count) nor the market (`property_tax.due_date`) gives one."""
+    v = due_date if due_date not in (None, "") else (market.get("property_tax.due_date") if market is not None else None)
+    if v in (None, "") or not closing:
+        return None
+    if isinstance(v, date):
+        return date(closing.year, v.month, v.day)
+    m = re.match(r"^(?:\d{4}-)?(\d{1,2})-(\d{1,2})$", str(v).strip())
+    if not m:
+        raise ValueError(f"The tax bill's due date should look like 10-15 or 2026-10-15, not {v!r}.")
+    return date(closing.year, int(m.group(1)), int(m.group(2)))
+
+
+def tax_bill_assumed_paid(closing, market=None, bill_paid=None, due_date=None):
+    """True when the agent hasn't said whether this year's bill is paid and closing falls after its due date: the
+    seller is assumed to have paid it (iteration 9 eval 4: Cobb County, Georgia bills are due Oct 15). Without a due
+    date (Florida's bills run to March of the next year) the rule doesn't apply."""
+    due = tax_due_date(closing, market, due_date)
+    return bill_paid is None and due is not None and closing > due
+
+
+def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=None):
+    """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis', 'assumed_paid'},
+    or None.
 
     FAR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
     (`property_tax.early_payment_discount`, Florida 4%). Taxes paid in arrears (`property_tax.paid`): while the current
     bill is unpaid, the seller credits the buyer from Jan 1 (a cost); once the seller has paid it (Florida bills go out
     in November), the buyer credits the seller from closing to Dec 31 (`amount` negative, a credit to the seller).
+    With no word from the agent, a closing after the bill's due date (`due_date`, else `property_tax.due_date`)
+    assumes it paid: the credit, labeled "Bill Assumed Paid" (`assumed_paid` true).
     """
     if not annual_tax or not closing:
         return None
     if market is not None and market.get("property_tax.paid") == "advance":
         return None
+    assumed_paid = tax_bill_assumed_paid(closing, market, bill_paid, due_date)
     discount = (market.get("property_tax.early_payment_discount") if market is not None else None) or 0
     year_days = (date(closing.year + 1, 1, 1) - date(closing.year, 1, 1)).days
     seller_days = (closing - date(closing.year, 1, 1)).days  # Jan 1 through the day before closing
     base = annual_tax * (1 - discount)
     basis = f"{money(annual_tax)} bill" + (f" less the {discount * 100:g}% early-payment discount" if discount else "")
-    if bill_paid:
+    if bill_paid or assumed_paid:
         return {"amount": -round(base * (year_days - seller_days) / year_days),
-                "label": "Property Tax Proration (Credit, Closing to Dec 31)", "basis": basis}
-    return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis}
+                "label": "Property Tax Proration (Credit, Closing to Dec 31" + (", Bill Assumed Paid)" if assumed_paid else ")"),
+                "basis": basis, "assumed_paid": assumed_paid}
+    return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis,
+            "assumed_paid": False}
 
 
 # CORE-19: states where one flat deed transfer rate can be wrong (graduated rates, mansion taxes, city or county
@@ -412,7 +440,7 @@ def title_premium(price, tiers):
 
 def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,
                has_hoa=False, other_costs=0, title_fees=None, annual_tax=None, closing=None, bill_paid=None,
-               prop_type=None):
+               prop_type=None, tax_due_date=None):
     """Seller's estimated net at `price`, itemized, with the source of every assumption.
 
     Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
@@ -428,7 +456,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     warranty, repairs, a survey).
     `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
     `annual_tax` with `closing` (a date) adds the tax proration (see tax_proration; `bill_paid` once the seller paid
-    this year's bill). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
+    this year's bill; `tax_due_date` the bill's due date when the agent gives it). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
     but single-family homes); without it, that surtax is missing.
     """
     items, lines, missing, assumed, warnings = [], [], [], [], []
@@ -526,7 +554,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
                 add("other", o.get("label") or "Other Costs", o["amount"])
     elif other_costs:
         add("other", "Other Costs", other_costs)
-    pr = tax_proration(annual_tax, closing, market, bill_paid)
+    pr = tax_proration(annual_tax, closing, market, bill_paid, tax_due_date)
     if pr:
         add("tax_proration", pr["label"], pr["amount"])
 

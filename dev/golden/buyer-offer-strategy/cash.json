@@ -91,6 +91,9 @@
    "appraisal_waived": false,
    "appraised": false,
    "approval": "pof_verified",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -149,13 +152,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "recommended",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "A",
    "kickout": false,
@@ -367,7 +373,7 @@
     "tax_bill_assumed": false
    },
    "price": 394000,
-   "rank_value": 357053.0,
+   "rank_value": 356233.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": [
@@ -399,7 +405,7 @@
      "appraisal": 5,
      "approval": 5,
      "contingency": 4,
-     "deposit": 4,
+     "deposit": 3,
      "financing": 5,
      "property": 5,
      "timeline": 4
@@ -414,7 +420,7 @@
      "property": "auto",
      "timeline": "auto"
     },
-    "total": 91
+    "total": 89
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -506,6 +512,9 @@
    "appraisal_waived": false,
    "appraised": false,
    "approval": "pof_verified",
+   "assumed_terms": [
+    "title_by"
+   ],
    "bb_credit": false,
    "bb_from_listing": false,
    "bb_tag": "Requested",
@@ -564,13 +573,16 @@
      "topic": "rider_GG"
     }
    ],
+   "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
    "home_warranty": 0,
    "id": "stronger",
    "inspection_assumed": false,
    "inspection_days": 10,
+   "inspection_rider": null,
    "inspection_walkaway": true,
+   "inspection_watch": null,
    "insurance_quote": true,
    "key": "B",
    "kickout": false,
@@ -924,6 +936,9 @@
     "appraisal_waived": false,
     "appraised": false,
     "approval": "pof_verified",
+    "assumed_terms": [
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -982,13 +997,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "A",
     "kickout": false,
@@ -1200,7 +1218,7 @@
      "tax_bill_assumed": false
     },
     "price": 394000,
-    "rank_value": 357053.0,
+    "rank_value": 356233.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1232,7 +1250,7 @@
       "appraisal": 5,
       "approval": 5,
       "contingency": 4,
-      "deposit": 4,
+      "deposit": 3,
       "financing": 5,
       "property": 5,
       "timeline": 4
@@ -1247,7 +1265,7 @@
       "property": "auto",
       "timeline": "auto"
      },
-     "total": 91
+     "total": 89
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -1339,6 +1357,9 @@
     "appraisal_waived": false,
     "appraised": false,
     "approval": "pof_verified",
+    "assumed_terms": [
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -1397,13 +1418,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "B",
     "kickout": false,
@@ -1890,6 +1914,9 @@
     "appraisal_waived": false,
     "appraised": false,
     "approval": "pof_verified",
+    "assumed_terms": [
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -1948,13 +1975,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "A",
     "kickout": false,
@@ -2166,7 +2196,7 @@
      "tax_bill_assumed": false
     },
     "price": 394000,
-    "rank_value": 357053.0,
+    "rank_value": 356233.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2198,7 +2228,7 @@
       "appraisal": 5,
       "approval": 5,
       "contingency": 4,
-      "deposit": 4,
+      "deposit": 3,
       "financing": 5,
       "property": 5,
       "timeline": 4
@@ -2213,7 +2243,7 @@
       "property": "auto",
       "timeline": "auto"
      },
-     "total": 91
+     "total": 89
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -2305,6 +2335,9 @@
     "appraisal_waived": false,
     "appraised": false,
     "approval": "pof_verified",
+    "assumed_terms": [
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2363,13 +2396,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "B",
     "kickout": false,
@@ -2722,6 +2758,9 @@
     "appraisal_waived": false,
     "appraised": false,
     "approval": "pof_verified",
+    "assumed_terms": [
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -2780,13 +2819,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "B",
     "kickout": false,
@@ -3137,6 +3179,9 @@
     "appraisal_waived": false,
     "appraised": false,
     "approval": "pof_verified",
+    "assumed_terms": [
+     "title_by"
+    ],
     "bb_credit": false,
     "bb_from_listing": false,
     "bb_tag": "Requested",
@@ -3195,13 +3240,16 @@
       "topic": "rider_GG"
      }
     ],
+    "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
     "inspection_days": 10,
+    "inspection_rider": null,
     "inspection_walkaway": true,
+    "inspection_watch": null,
     "insurance_quote": true,
     "key": "A",
     "kickout": false,
@@ -3413,7 +3461,7 @@
      "tax_bill_assumed": false
     },
     "price": 394000,
-    "rank_value": 357053.0,
+    "rank_value": 356233.0,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3445,7 +3493,7 @@
       "appraisal": 5,
       "approval": 5,
       "contingency": 4,
-      "deposit": 4,
+      "deposit": 3,
       "financing": 5,
       "property": 5,
       "timeline": 4
@@ -3460,7 +3508,7 @@
       "property": "auto",
       "timeline": "auto"
      },
-     "total": 91
+     "total": 89
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -3672,8 +3720,7 @@
     "Competitive"
    ],
    "3": [
-    "comp",
-    "Competitive"
+    "risk"
    ]
   },
   "stronger": {
@@ -3722,7 +3769,7 @@
  "cash_at_cap": null,
  "chosen": "recommended",
  "ci": {
-  "recommended": 72.7,
+  "recommended": 70.7,
   "stronger": 84.26
  },
  "constraints": {

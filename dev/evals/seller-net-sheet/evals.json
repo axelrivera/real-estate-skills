@@ -10,7 +10,7 @@
     {
       "id": 2,
       "prompt": "quick one: what would my seller net at 525k? 8104 Cedar Bend Dr, Austin TX",
-      "expected_output": "Answers in chat (markdown mode) from compute.py, without asking questions first; uses Travis County and Texas: no transfer tax line (Texas has none, with the note to confirm local taxes), owner's title and title company fees as labeled national estimates, commission 2.5% + 2.5% labeled Assumed with 'Commissions are negotiable and not set by law.'; never uses Florida numbers; stops at the Estimated Net Before Mortgage Payoff (about $494,900) and says it's Preliminary because the payoff isn't included; asks for the payoff, the listing agreement's commission, the tax bill and closing date in short lines; offers the PDF in one line",
+      "expected_output": "Answers in chat (markdown mode) from compute.py, without asking questions first; uses Texas (Austin spans Travis, Williamson and Hays counties: asks which only as the skill says, never guesses): no transfer tax line (Texas has none, with the note to confirm local taxes), owner's title and title company fees as labeled national estimates, commission 2.5% + 2.5% labeled Assumed with 'Commissions are negotiable and not set by law.'; never uses Florida numbers; stops at the Estimated Net Before Mortgage Payoff (about $494,900) and says it's Preliminary because the payoff isn't included; asks for the payoff, the listing agreement's commission, the tax bill and closing date in short lines; offers the PDF in one line",
       "files": []
     },
     {
