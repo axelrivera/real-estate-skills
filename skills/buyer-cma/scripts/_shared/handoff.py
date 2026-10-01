@@ -24,10 +24,12 @@ REQUIRED = {
 VALUE_KEYS = ("low", "high", "midpoint")
 # CMA-111: optional subject facts (still v1: a reader that doesn't know them ignores them). The offer skills use them when
 # the offer file doesn't say: the tax the CMA computed (millage and homestead for the buyer's payment, the current bill
-# for the seller's proration), the flood zone (a FEMA code only), HOA dues and the roof year.
+# for the seller's proration), the flood zone (a FEMA code only), HOA dues and the roof year. CMA-328: the listing's
+# days on market (`dom`: active days since the last sale, counted on `as_of`) and its price cuts (`price_cuts`), for
+# the buyer's offer outlook.
 NUMBER = (int, float)
 SUBJECT_OPTIONAL = {"annual_tax": NUMBER, "school_mills": NUMBER, "total_mills": NUMBER, "homestead": bool,
-                    "flood_zone": str, "hoa_monthly": NUMBER, "roof_year": int}
+                    "flood_zone": str, "hoa_monthly": NUMBER, "roof_year": int, "dom": NUMBER, "price_cuts": int}
 _FEMA = re.compile(r"^\s*(A99|AE|AH|AO|AR|A|VE|V|X500|X|B|C|D)\b", re.I)
 
 

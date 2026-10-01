@@ -1062,5 +1062,78 @@ class ManualSmoke(unittest.TestCase):
         self.assertIn(f"Estimate at a {compute.money(C['payments']['price'])} Purchase (Target),", doc)
 
 
+class ManualSmokeV2(unittest.TestCase):
+    """The owner's second manual run, 2315 Kestrel Point Ct (CMA-326 to CMA-330)."""
+
+    def run_(self, change=None):
+        R = report()
+        if change:
+            change(R)
+        market, homes = compute.load_inputs(R)
+        return R, compute.compute(R, market, homes)
+
+    def test_as_is_preference_stays_with_the_agent(self):
+        """CMA-326: the seller's As-Is preference (Realtor Information) stated in the report is warned; a conditional
+        sentence, or one the public remarks back (`as_is_public`), isn't."""
+        def stated(R):
+            R["subject"]["summary"] += " The seller prefers an As-Is contract."
+        _, C = self.run_(stated)
+        self.assertIn("as_is_private", C["warning_keys"])
+
+        def conditional(R):
+            R["watch"]["items"].append("<strong>As-Is.</strong> If the offer is written on the As-Is contract, the "
+                                       "seller isn't committing to repairs.")
+        self.assertNotIn("as_is_private", self.run_(conditional)[1]["warning_keys"])
+
+        def public(R):
+            stated(R)
+            R["subject"]["as_is_public"] = True
+        self.assertNotIn("as_is_private", self.run_(public)[1]["warning_keys"])
+
+    def test_competition_note_position_comes_from_the_script(self):
+        """CMA-327: a competing listing's adjusted price and its place in the range are computed ($424,500 plus a
+        $25,000 pool is near the top of $435,000 to $450,000, never the bottom); a note that places it by hand warns."""
+        def pool(R):
+            R["bottom_line"].update(low=435000, high=450000, midpoint=442500)
+            R["offer_plan"].update(opening=435000, target_low=440000, target_high=444000, walk_away=446000)
+            R["offer_plan"].pop("credit_alt", None)
+            R["competition"]["rows"][0][2] = 424500
+            R["competition"]["rows"][0][6] = "No pool. Add about $25,000 for a pool: {adjusted_estimate}, {range_position}."
+            R["competition"]["adjustments"] = {"644 PEACHWOOD DR": [{"label": "Pool", "amount": 25000}]}
+        R, C = self.run_(pool)
+        est = C["competition_estimates"][0]
+        self.assertEqual((est["adjusted"], est["range_position"]), (449500, "near the top of this home's range"))
+        self.assertIn("$449,500, near the top of this home's range.", R["competition"]["rows"][0][6])
+        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        self.assertNotIn("range_position_typed", C["warning_keys"])
+        self.assertEqual(compute.range_position(430000, 435000, 450000), "below this home's range")
+        self.assertEqual(compute.range_position(442000, 435000, 450000), "in the middle of this home's range")
+
+        def by_hand(R):
+            R["competition"]["rows"][0][6] = "Add about $25,000 for a pool and it lands near the bottom of this home's range."
+        self.assertIn("range_position_typed", self.run_(by_hand)[1]["warning_keys"])
+
+    def test_handoff_carries_days_on_market_and_cuts(self):
+        """CMA-328: the history's active days and price cuts reach the offer skills through the handoff."""
+        R, C = self.run_()
+        s = C["handoff"]["subject"]
+        self.assertEqual((s["dom"], s["price_cuts"]), (C["history"]["active_days"], C["history"]["price_cuts"]))
+        handoff.validate(C["handoff"])
+        bad = copy.deepcopy(C["handoff"])
+        bad["subject"]["price_cuts"] = "two"
+        with self.assertRaises(handoff.HandoffError):
+            handoff.validate(bad)
+
+    def test_conditions_end_with_a_period(self):
+        """CMA-329: "This assumes: ..." ends with a period even when the wording has none."""
+        def no_period(R):
+            R["offer_plan"]["conditions"] = "the roof can be insured as it is, and no other offers are competing"
+        R, C = self.run_(no_period)
+        doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
+        self.assertIn("no other offers are competing.</p>", doc)
+        self.assertEqual(compute.end_sentence("before you sign."), "before you sign.")
+        self.assertEqual(compute.end_sentence("(see the roof)."), "(see the roof).")
+
+
 if __name__ == "__main__":
     unittest.main()

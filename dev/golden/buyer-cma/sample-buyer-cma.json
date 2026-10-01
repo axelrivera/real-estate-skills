@@ -2,6 +2,9 @@
  "adjusted_max": 492300,
  "adjusted_min": 436200,
  "cash_fit": null,
+ "competition_estimates": {
+  "count": 0
+ },
  "comps_table": [
   {},
   {},
@@ -167,10 +170,12 @@
    "beds": 4,
    "city": "Casselberry",
    "county": "Seminole",
+   "dom": 119,
    "flood_zone": "X",
    "homestead": true,
    "list_price": 474900,
    "pool": true,
+   "price_cuts": 4,
    "school_mills": 5.25,
    "sqft": 1849,
    "state": "FL",

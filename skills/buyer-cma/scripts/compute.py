@@ -500,6 +500,7 @@ def rough_plan(R, market, median, lo, hi):
 
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 RENDER_PLACEHOLDERS = ("trend_at_subject", "r2_share")  # filled by render.py from the chart
+COMPETITION_PLACEHOLDERS = ("adjusted_estimate", "range_position")  # CMA-327: a competition row's, once there's a range
 
 
 def median_rounded(median_adjusted, count):
@@ -619,7 +620,7 @@ def comps_first(R, market, homes=()):
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
     fills = placeholder_values(median_adjusted, hist, count=len(values))  # CMA-203
-    warn("unfilled_placeholder", *placeholder_warnings(R, fills, RENDER_PLACEHOLDERS))
+    warn("unfilled_placeholder", *placeholder_warnings(R, fills, RENDER_PLACEHOLDERS + COMPETITION_PLACEHOLDERS))
     return {
         "ok": True, "stage": "comps",
         "next": "Set bottom_line (the range around the median) and offer_plan, add costs, then run compute.py again "
@@ -638,6 +639,96 @@ def comps_first(R, market, homes=()):
         "warning_keys": warning_keys,
         "market_notes": market.notes,
     }
+
+
+def range_position(value, low, high):
+    """CMA-327: where a value sits against the supported range, in words: below or above it, else near the bottom,
+    in the middle or near the top (by thirds), so no sentence places a price in the range by hand."""
+    if value < low:
+        return "below this home's range"
+    if value > high:
+        return "above this home's range"
+    third = (high - low) / 3
+    return ("near the bottom of this home's range" if value <= low + third else
+            "near the top of this home's range" if value >= high - third else "in the middle of this home's range")
+
+
+RANGE_WORDS = re.compile(r"\b(bottom|top|low end|high end|middle|inside|within|below|above)\b[^.]*\brange\b", re.I)
+
+
+def competition_positions(R, bl):
+    """CMA-327: a competing listing's price adjusted to this home (`competition.adjustments`: {address as in
+    competition.rows: [{label, amount}]}) and where it sits in the range. Fills {adjusted_estimate} and {range_position}
+    in that row's notes. Returns (estimates, [(warning key, text)]): `range_position_typed` for a note that places a
+    price in the range in its own words."""
+    cp = R.get("competition") or {}
+    rows, adjustments, out, notes = cp.get("rows") or [], cp.get("adjustments") or {}, [], []
+    if not isinstance(adjustments, dict):
+        raise ReportError("competition.adjustments should be {address as in competition.rows: [{label, amount}]}.")
+    for address, items in adjustments.items():
+        row = next((r for r in rows if mls.same_address(r[0], address)), None)
+        if row is None:
+            raise ReportError(f"competition.adjustments names {address!r}, which isn't in competition.rows.")
+        if not isinstance(items, list) or not all(isinstance(a, dict) and isinstance(a.get("amount"), (int, float))
+                                                  and not isinstance(a.get("amount"), bool) for a in items):
+            raise ReportError(f"competition.adjustments[{address!r}] should be a list of {{label, amount}}, the amount "
+                              "a signed plain number (25000).")
+        value = row[2] + sum(a["amount"] for a in items)
+        position = range_position(value, bl["low"], bl["high"])
+        row[6] = str(row[6]).replace("{adjusted_estimate}", money(value)).replace("{range_position}", position)
+        out.append({"address": row[0], "price": row[2], "adjusted": value, "adjusted_display": money(value),
+                    "range_position": position})
+    adjusted = {r["address"] for r in out}
+    for i, r in enumerate(rows):
+        if len(r) > 6 and r[0] not in adjusted and RANGE_WORDS.search(str(r[6])):
+            notes.append(("range_position_typed", f"competition.rows[{i}]'s note places a price in the range in its own "
+                          "words: add the listing's adjustments to competition.adjustments and write {adjusted_estimate} "
+                          "and {range_position}, so the script says where it sits (writing.md)."))
+    return out, notes
+
+
+AS_IS = re.compile(r"\bas[\s-]+is\b", re.I)
+AS_IS_SELLER = re.compile(r"\b(seller|owner|listing|prefer\w*|want\w*|wish\w*|requir\w*|insist\w*|offered|being sold)\b",
+                          re.I)
+CONDITIONAL = re.compile(r"\b(if|whether|unless)\b", re.I)
+SENTENCE = re.compile(r"(?<=[.!?])[\"')\]]*\s+")
+
+
+def _strings(node, path="$", skip=("labels", "export_columns", "comps", "competition")):
+    if isinstance(node, str):
+        yield path, node
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _strings(v, f"{path}[{i}]", skip)
+    elif isinstance(node, dict):
+        for key, v in node.items():
+            if key not in skip:
+                yield from _strings(v, f"{path}.{key}", skip)
+
+
+def private_field_warnings(R):
+    """CMA-326: the seller's As-Is preference sits in the 360's Realtor Information and Realtor Remarks, which never go
+    in a client file (listing-sheet.md). Warns `as_is_private` on a sentence about this home that states it (names the
+    seller, the listing or a preference) without an "if", unless `subject.as_is_public` says the public remarks or the
+    flyer say As-Is. Other listings (comps, competition) aren't checked."""
+    if (R.get("subject") or {}).get("as_is_public"):
+        return []
+    out = []
+    for path, text in _strings(R):
+        for sentence in SENTENCE.split(re.sub(r"<[^>]+>", "", text)):
+            if AS_IS.search(sentence) and AS_IS_SELLER.search(sentence) and not CONDITIONAL.search(sentence):
+                out.append(("as_is_private", f"{path} says {sentence.strip()!r}: the seller's As-Is preference is "
+                            "Realtor Information, for the agent only. Write it conditionally (\"If the offer is written "
+                            "on the As-Is contract, ...\") and put the preference in the reply's for-you-only line, or "
+                            "set subject.as_is_public when the public remarks or the flyer say As-Is."))
+                break
+    return out
+
+
+def end_sentence(text):
+    """CMA-329: a final period for wording that completes a sentence ("This assumes: ..."), when it has none."""
+    t = str(text or "").rstrip()
+    return t if not t or re.search(r"[.!?][\"')\]]*$", re.sub(r"<[^>]+>", "", t)) else t + "."
 
 
 def target_price(op):
@@ -708,6 +799,11 @@ def compute(R, market, homes):
         if len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool) for j in (2, 3)):
             raise ReportError(f"competition.rows[{i}] should be [address, status, price, sqft, pool, days, notes], "
                               "with price and sqft as plain numbers (474500, not \"$474,500\").")
+    competing, notes = competition_positions(R, bl)  # CMA-327
+    for key, text in notes:
+        warn(key, text)
+    for key, text in private_field_warnings(R):  # CMA-326
+        warn(key, text)
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     scope = cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), s["list_price"])  # CMA-10
     if scope:
@@ -825,7 +921,9 @@ def compute(R, market, homes):
                                          total_mills=tj["total_mills"], homestead=R["costs"]["taxes"].get("homestead", True),
                                          flood_zone=pay_in.get("flood_zone") or next((v for lbl, v in s.get("facts") or []
                                                                                       if str(lbl).lower() == "flood zone"), None),
-                                         hoa_monthly=s.get("hoa_monthly"), roof_year=s.get("roof_year"))},
+                                         hoa_monthly=s.get("hoa_monthly"), roof_year=s.get("roof_year"),
+                                         # CMA-328: the history's counts since the last sale, for the offer's outlook
+                                         dom=(hist or {}).get("active_days"), price_cuts=(hist or {}).get("price_cuts"))},
         value={"low": bl["low"], "high": bl["high"], "midpoint": bl.get("midpoint", (bl["low"] + bl["high"]) / 2),
                "median_adjusted": median_adjusted},
         comps=[{"address": r[0], "sold_price": r[1], "seller_paid": r[2], "adjusted": r[3]} for r in R["comps"].get("summary_rows", [])],
@@ -855,6 +953,7 @@ def compute(R, market, homes):
         "payments": pay,
         "credit": credit,
         "credit_alt": alt,  # CMA-308
+        "competition_estimates": competing,  # CMA-327
         # CMA-235: the credit option that fits the buyer's cash, named by the cash_short warning
         "cash_fit": {**{k: cash_fit[k] for k in ("price", "credit", "cash")},  # CMA-295: the chat template quotes it
                      **{k + "_display": money(cash_fit[k]) for k in ("price", "credit", "cash")}} if cash_fit else None,

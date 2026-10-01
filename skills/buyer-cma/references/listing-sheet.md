@@ -68,6 +68,7 @@ The report is built from MLS data, and some of it isn't for consumers. These can
 - Owner names, mailing address, owner phone; buyer and seller names in the sale history. Say "an individual", "an LLC", "a trust" or "an investor" when the owner type matters.
 - Mortgage history (lenders, amounts, dates). In chat it can hint at the seller's room to negotiate or, on the seller side, remind the agent to get a payoff statement. Never estimate a payoff from it.
 - Realtor Remarks, Confidential Info, showing instructions, lockbox, the listing agent's contact details and private notes.
+- Realtor Information's terms (occupancy, financing accepted, As-Is). A client file may discuss the As-Is contract only conditionally ("If the offer is written on the As-Is contract, ...") or when the public remarks say As-Is; the seller's preference goes to the agent in the chat reply.
 - The AVM figure.
 
 Past sale prices and dates, list prices, price changes and days on market are fine to show: they're the history the report explains.

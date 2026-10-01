@@ -242,7 +242,7 @@ def body(R, C, homes, agent, L):
             key = "credit_alt" if alt["cash_saved"] > 0 else "credit_alt_no_saving"
             b.append("<p>" + L(key, price=money(ca["price"]), credit=money(ca["credit"]), equiv=money(ca["price"] - ca["credit"]),
                                saved=alt["cash_saved_display"], base=money(alt["base_price"])) + "</p>")
-    b.append(f'<p class="note">{L("offer_conditions", conditions=op["conditions"])}</p>')
+    b.append(f'<p class="note">{L("offer_conditions", conditions=compute.end_sentence(op["conditions"]))}</p>')  # CMA-329
     b += [f'<h3>{R["offer"].get("heading", L("h_offer"))}</h3>', ul(R["offer"]["bullets"])]
 
     c = R["comps"]

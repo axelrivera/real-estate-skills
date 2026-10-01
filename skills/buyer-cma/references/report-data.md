@@ -32,8 +32,9 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 | `list_price`, `sqft` | *numbers* |
 | `latitude`, `longitude` | Optional *numbers*: only when the export has no Distance column and no row for the home (distances are measured from its own row otherwise) |
 | `beds`, `baths`, `year_built`, `pool` | For the handoff (`pool` true/false) |
-| `roof_year`, `hoa_monthly` | Optional, for the handoff: the offer skills' insurance and HOA checks. The handoff also carries the current bill, the payment's millage and homestead, and the flood zone (a FEMA code only) |
+| `roof_year`, `hoa_monthly` | Optional, for the handoff: the offer skills' insurance and HOA checks. The handoff also carries the current bill, the payment's millage and homestead, the flood zone (a FEMA code only), and the history's active days and price cuts |
 | `subdivision` | As in the export (improves the handoff's comp ranking) |
+| `as_is_public` | Optional: `true` only when the public remarks or the flyer say As-Is. Without it, compute.py warns on a sentence that states the seller's As-Is preference (`listing-sheet.md`) |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. A condo follows `condo.md` (comps, adjustments, association questions) |
 | `facts` | Ten `[label, value]` in this order, labels in Title Case: List Price, Price per Sq Ft, Beds / Baths, Living Area, Lot, Built, Pool, Garage, HOA / CDD, Flood Zone |
 | `summary` | 2–3 sentences: what the home is and anything unusual about the sale |
@@ -86,7 +87,7 @@ A past sale from the public records is a `sold` event with no `mls`. compute.py 
 
 ## competition
 
-`intro`, `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), days, notes]`. `price` and `sqft` are plain numbers (474500, 1850), not formatted text.
+`intro`, `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), days, notes]`. `price` and `sqft` are plain numbers (474500, 1850), not formatted text. Optional `adjustments`: `{address as in rows: [{label, amount}]}`, for a note that adjusts a listing's price to this home: compute.py adds them to its price and fills `{adjusted_estimate}` and `{range_position}` ("near the top of this home's range") in that row's note only.
 
 ## market
 

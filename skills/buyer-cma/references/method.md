@@ -2,7 +2,7 @@
 
 ## The Subject
 
-Pull the ten facts for the fact grid (see `report-data.md`) from the property report, using the county's figures where the MLS and public records disagree (`listing-sheet.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, As-Is contract, "may be temporarily off market". What only Realtor Remarks or private notes say (the listing agent is related to the owner, proof of funds required, showing instructions) stays with the agent: never in the report, but a watch item for the agent in the chat reply (`listing-sheet.md`, What Stays with the Agent).
+Pull the ten facts for the fact grid (see `report-data.md`) from the property report, using the county's figures where the MLS and public records disagree (`listing-sheet.md`). Note anything unusual about the sale: vacant, trust, estate or LLC owner, an As-Is sale the public remarks state, "may be temporarily off market". What only Realtor Information, Realtor Remarks or private notes say (an As-Is preference, the listing agent is related to the owner, proof of funds required, showing instructions) stays with the agent: never in the report, but a watch item for the agent in the chat reply (`listing-sheet.md`, What Stays with the Agent).
 
 ## The Listing History
 

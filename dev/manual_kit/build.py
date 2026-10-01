@@ -379,7 +379,7 @@ def case_seller_cma(pdf, checks):
 
     cmd = ["skills/seller-cma/scripts/stats.py", rel(export), "--address", h["mls_address"], "--sqft", str(h["sqft"]),
            "--subdivision", h["subdivision"], "--state", h["state"], "--county", h["county"],
-           "--split-date", h["split_date"]] + (["--pool"] if h["pool"] else [])
+           "--split-date", h["split_date"], "--as-of", TODAY] + (["--pool"] if h["pool"] else [])  # CMA-330
     stats = run(cmd)
     if not stats.get("ok"):
         raise KitError(f"seller stats.py: {stats}")
@@ -511,7 +511,8 @@ def case_buyer_cma(pdf, checks):
     pdf.render(flyer_html(h), os.path.join(d, h["flyer_file"]), "Listing Flyer")
 
     cmd = ["skills/buyer-cma/scripts/stats.py", rel(export), "--address", h["mls_address"], "--state", h["state"],
-           "--county", h["county"], "--split-date", h["split_date"]]
+           "--county", h["county"], "--mls-number", h["mls"], "--split-date", h["split_date"],
+           "--as-of", TODAY]  # CMA-330: as the skill runs it (SKILL.md step 2), so months of supply runs to today
     stats = run(cmd)
     if not stats.get("ok") or not stats.get("subject_row"):
         raise KitError(f"buyer stats.py didn't find the subject row: {stats.get('problems') or stats.get('market_notes')}")
