@@ -1471,6 +1471,14 @@ def analyze(deal, side=None):
 
     closing_dt = next((r["when"] for r in current if r["key"] == "closing" and r["when"]), None)
     completed = _completed(deal, {r["key"] for r in current})
+    # TL-264: done is for something performed (a deposit, a signed document). The end of a contingency or cancel window
+    # stays open until its date, even when the document that satisfies it is in the package, so every report reads alike
+    early = [r for r in current if r.get("contingency") and r["when"] and r["key"] in completed
+             and completed[r["key"]] < r["when"].date()]
+    if early:
+        raise DealError("completed lists " + ", ".join(f'{r["key"]} ({r["label"]}, {r["when"]:%a %b %-d})' for r in early)
+                        + ": the end of a contingency or cancel window stays open until its date. Record what was "
+                        "performed instead (a signed agreement, a deposit) and leave the window out of completed.")
     if _d(current_contract.get("short_sale_approval_received")) and "short_sale_approval" in {r["key"] for r in current}:
         completed.setdefault("short_sale_approval", _d(current_contract["short_sale_approval_received"]))
     rows = []
@@ -1830,7 +1838,9 @@ def rules_text(rules, eff):
     if int(rules["short_period_days"]) > 0 and rules["day_count"] != "business":
         lines.append(("Short Periods", f"Periods of {rules['short_period_days']} days or less skip Saturdays, Sundays and holidays."))
     unknown = rules.get("_unknown") or []
-    to_confirm = "Not stated in the contract terms recorded (to confirm): "
+    # TL-261: these lines print on the client's report, so they say only what the contract states; the question to confirm
+    # each open rule goes to the agent in chat (the rules_unknown note)
+    to_confirm = "Not stated in the contract: "
     if rules["weekend_holiday_rollover"] == "next_business_day":
         lines.append(("Weekend / Holiday End", f"A period ending on a Saturday, Sunday or holiday extends to {_clock(_t(rules['rollover_time']))} the next business day."))
     elif "weekend_holiday_rollover" in unknown:

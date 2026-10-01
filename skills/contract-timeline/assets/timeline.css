@@ -28,5 +28,9 @@ tr.done td:first-child b{font-weight:600}
 tr.pend .pr{color:var(--muted);font-weight:400}
 /* TL-205: the amendment note is information, not a status: brand accent, never a status hue */
 .note-brand{margin-top:6px;border-left:4px solid var(--brand);color:var(--brand-ink);padding:3px 10px;font-size:8.4pt}
-/* TL-211: the Prepared date never breaks mid-date */
-.prep .nw{white-space:nowrap}
+/* TL-211, TL-265: the Prepared line and each header piece never break mid-name; a fact never breaks inside itself, and a
+   row that wraps anyway (a long form name) tightens to fit one line */
+.prep .nw,.t2 .nw,.factrow span{white-space:nowrap}
+.tightfacts .factrow{font-size:8pt}
+.tightfacts .factrow span{padding:0 6px}
+.tightfacts .factrow>div{margin-left:-7px}

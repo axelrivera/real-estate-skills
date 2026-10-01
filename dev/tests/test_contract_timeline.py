@@ -87,7 +87,8 @@ class FrbarDates(unittest.TestCase):
         # the lender's critical Closing Disclosure (Oct 27) is never it: the closing is
         late = fixture("buyer-fha.json")
         late["report_date"] = "2026-10-27"
-        late["completed"] = {k: "2026-10-01" for k in ("deposit", "inspection", "insurance", "loan_approval")}
+        # TL-264: a contingency window is done only once its date has come (loan approval ends Oct 26)
+        late["completed"] = {k: "2026-10-26" for k in ("deposit", "inspection", "insurance", "loan_approval")}
         r = timeline.analyze(late)
         self.assertFalse(r["first_deadline"]["lender"])
         self.assertEqual(r["first_deadline"]["key"], "closing")
@@ -1452,6 +1453,57 @@ class FifthPass(unittest.TestCase):
         self.assertTrue(lines[0].startswith("Buyer's Broker Compensation Agreement Signed (Mon Sep 28): "))
         self.assertIn("Ask the listing agent.", lines[0])
         self.assertFalse(any(n == "Ask the listing agent." for n in r["agent_notes"]))
+
+
+class ManualSmoke(unittest.TestCase):
+    """The owner's manual smoke test, cases 6 to 8 (TL-261 to TL-265)."""
+
+    def test_open_time_rule_reads_plain_on_the_report(self):
+        """TL-261: an open time rule prints as "Not stated in the contract"; the question stays in the chat note."""
+        deal = fixture("other-contract.json")
+        deal["rules"] = {"day_count": "calendar", "end_time": "23:59", "weekend_holiday_rollover": "next_business_day"}
+        r = timeline.analyze(deal)
+        self.assertIn("rules_unknown", r["note_keys"])
+        lines = {x["label"]: x["text"] for x in r["rules"]["lines"]}
+        self.assertTrue(lines["Before-Closing Dates"].startswith("Not stated in the contract: "))
+        self.assertNotIn("to confirm", timeline_render.build_html(r, {}, sample=True))
+
+    def test_lender_line_only_with_lender_rows(self):
+        """TL-262: the footer's lender-estimate line prints only when the report has a lender's target."""
+        other = timeline.analyze(fixture("other-contract.json"))
+        self.assertFalse(any(x["lender"] for x in other["rows"] + other["pending"]))
+        self.assertNotIn("Lender dates are estimates", timeline_render.build_html(other, {}, sample=True))
+        fha = timeline.analyze(fixture("buyer-fha.json"))
+        self.assertTrue(any(x["lender"] for x in fha["rows"]))
+        self.assertIn("Lender dates are estimates", timeline_render.build_html(fha, {}, sample=True))
+
+    def test_contingency_window_is_never_done_before_its_date(self):
+        """TL-264: the signed compensation agreement is done; Compensation Contingency Ends stays open (and critical)
+        until its date, the same on every deal, and a done date before it is refused."""
+        d = fixture("buyer-fha.json")
+        d["contract"]["riders"] = list(d["contract"]["riders"]) + ["GG"]
+        d["completed"] = {"deposit": "2026-09-26", "compensation_agreement": "2026-09-26"}
+        rows = by_key(timeline.analyze(d))
+        self.assertTrue(rows["compensation_agreement"]["done"])
+        self.assertFalse(rows["compensation_cancel"]["done"])
+        self.assertTrue(rows["compensation_cancel"]["critical"])
+        d["completed"]["compensation_cancel"] = "2026-09-26"  # Thu Oct 1 is still ahead
+        with self.assertRaisesRegex(timeline.DealError, "compensation_cancel"):
+            timeline.analyze(d)
+        d["completed"]["compensation_cancel"] = "2026-10-01"  # on its date the window has run: fine
+        self.assertTrue(by_key(timeline.analyze(d))["compensation_cancel"]["done"])
+
+    def test_header_pieces_never_break_inside(self):
+        """TL-265: the Prepared line is one unbroken piece, the parties line breaks only before a separator, and a
+        fact row that wraps tightens to one line."""
+        doc = timeline_render.build_html(timeline.analyze(fixture("buyer-fha.json")), {}, sample=True)
+        self.assertIn('<span class="nw">Prepared for <b>', doc)
+        self.assertRegex(doc, r'<div class="t2"><span class="nw">[^<]+</span> <span class="nw">· [^<]+</span> '
+                              r'<span class="nw">/ [^<]+</span></div>')
+        with open(os.path.join(ROOT, "skills", "contract-timeline", "assets", "timeline.css")) as f:
+            css = f.read()
+        self.assertIn(".factrow span{white-space:nowrap}", css.replace(".prep .nw,.t2 .nw,", ""))
+        self.assertIn(".tightfacts .factrow", css)
 
 
 if __name__ == "__main__":

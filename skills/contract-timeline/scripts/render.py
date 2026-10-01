@@ -205,7 +205,8 @@ def party_pill(party, colors, ink=None):
 
 
 def prepared_block(t, agent):
-    lines = [f'Prepared for <b>{esc(t["client"])}</b> · <span class="nw">{esc(t["report_date"]["long"])}</span>']
+    # TL-265: the whole line stays together, so a separator never dangles at a line end
+    lines = [f'<span class="nw">Prepared for <b>{esc(t["client"])}</b> · {esc(t["report_date"]["long"])}</span>']
     if agent.get("name"):
         lines.append(f'<b>{esc(agent["name"])}</b>')
         org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
@@ -332,6 +333,8 @@ def build_html(t, agent, sample):
                   [(x["label"], x["text"]) for x in t["rules"]["lines"]]
     method = ('<div class="tbl"><table class="meth"><tbody>' +
               "".join(f"<tr><td><b>{esc(a)}</b></td><td>{esc(b)}</td></tr>" for a, b in method_rows) + "</tbody></table></div>")
+    # TL-262: the lender-estimate line only when the report shows a lender's target (insurance bound, Closing Disclosure)
+    lender_line = " Lender dates are estimates." if any(r.get("lender") for r in t["rows"] + t["pending"]) else ""
     details = f'''<div class="pb"></div><div class="dh">Deadline Details</div>
 <div class="sm" style="margin-bottom:4px"><span class="crit">★</span> Critical = missing it can cost a contract right or put the deposit at risk.</div>
 <div class="tbl brk"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
@@ -339,13 +342,15 @@ def build_html(t, agent, sample):
 <div class="appx"><div class="dh" style="margin-top:10px">Appendix: Amendments and Date Rules</div>
 {hist_html}
 <h2>How the Dates Were Computed</h2>{method}
-<div class="fine">Computed from the executed contract, riders, counteroffers and amendments. Verify every date against the documents and with the escrow or title agent; the form version and any handwritten changes control. Time rules follow {esc(t["rules"]["family"])}. Lender dates are estimates. Not legal advice.</div></div>'''
+<div class="fine">Computed from the executed contract, riders, counteroffers and amendments. Verify every date against the documents and with the escrow or title agent; the form version and any handwritten changes control. Time rules follow {esc(t["rules"]["family"])}.{lender_line} Not legal advice.</div></div>'''
 
     title = (f'Contract Timeline <span class="viewtag">{Side} View</span>'
              f'{" <span class=viewtag>What-If</span>" if t.get("what_if") else ""}'  # TL-119: a hypothetical timeline
              f'{"<span class=sample>SAMPLE DATA</span>" if sample else ""}')
-    parties = " / ".join(x for x in (t["buyer"] or "Buyer", t["seller"] or "Seller"))
-    body = (f'<header><div><div class="t1">{title}</div><div class="t2">{esc(t["property"])} · {esc(parties)}</div></div>'
+    # TL-265: each piece keeps its words together and a line breaks only before a separator, never mid-name
+    pieces = (t["property"], "· " + (t["buyer"] or "Buyer"), "/ " + (t["seller"] or "Seller"))
+    sub = " ".join(f'<span class="nw">{esc(x)}</span>' for x in pieces)
+    body = (f'<header><div><div class="t1">{title}</div><div class="t2">{sub}</div></div>'
             f'<div class="prep">{prepared_block(t, agent)}</div></header>{snap_html}<div class="p1">{page1}</div>{details}')
     with open(CSS_PATH, encoding="utf-8") as f:
         css = f.read()
@@ -355,6 +360,9 @@ def build_html(t, agent, sample):
 
 def fit_page_one(pg):
     """Measure page 1; switch to the compact layout when it would spill onto page 2."""
+    # TL-265: a fact row that runs onto a second line (a long form name) tightens its spacing and type to fit one
+    pg.evaluate("""() => { const s = [...document.querySelectorAll('.factrow span')];
+        if (s.length > 1 && s[s.length - 1].offsetTop > s[0].offsetTop) document.body.classList.add('tightfacts'); }""")
     top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
     if top > PAGE1_LIMIT:
         pg.evaluate("() => document.body.classList.add('compact')")
