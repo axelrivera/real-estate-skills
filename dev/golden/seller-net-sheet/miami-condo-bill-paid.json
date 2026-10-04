@@ -252,6 +252,11 @@
   }
  ],
  "state": "FL",
+ "summary_tiles": [
+  {
+   "label": "Difference"
+  }
+ ],
  "tax_assumed_paid": false,
  "tax_assumed_unpaid": false,
  "warnings": {

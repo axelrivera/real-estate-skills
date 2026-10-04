@@ -48,7 +48,11 @@ def tiles(C):
         out.append(f'<div class="tile"><span class="k">{esc(c["label"])}</span>'
                    f'<b class="{"short" if c["short"] else ""}">{c["tile_display"]}</b>'
                    f'<i>{esc(c["tile_label"])}</i><i>{esc(sub)}</i></div>')
-    return f'<div class="tiles n{len(cols)}">{"".join(out)}</div>'
+    # one or two prices: the spare slots show figures already on the sheet, so the row stays three boxes wide
+    out += [f'<div class="tile sum"><span class="k">{esc(t["label"])}</span>'
+            f'<b{"" if t["display"].startswith("$") else " class=word"}>{esc(t["display"])}</b><i>{esc(t["note"])}</i></div>'
+            for t in C.get("summary_tiles") or []]
+    return f'<div class="tiles">{"".join(out)}</div>'
 
 
 def table(C):

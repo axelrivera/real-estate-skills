@@ -4,18 +4,16 @@ header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:
 /* as in the other reports: with no fact row, the tiles sit right under the header and draw the line themselves */
 header:has(+ .tiles){border-bottom:none;padding-bottom:0}
 
-/* the net for each price: outlined tiles, the number carries the color */
-.tiles{display:grid;gap:8px;margin:4px 0 2px}
-.tiles.n1{grid-template-columns:1fr} .tiles.n2{grid-template-columns:1fr 1fr} .tiles.n3{grid-template-columns:1fr 1fr 1fr}
+/* the net for each price: outlined tiles, the number carries the color. Always three boxes wide, so a tile never
+   stretches: with one or two prices the spare slots hold summary figures (.sum: a lighter outline, black numbers) */
+.tiles{display:grid;gap:8px;margin:4px 0 2px;grid-template-columns:1fr 1fr 1fr}
 .tile{border:1.5px solid var(--brand);border-left-width:5px;border-radius:6px;padding:7px 12px}
 .tile .k{display:block;font-size:7.2pt;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
 .tile b{display:block;font-size:22pt;font-weight:900;line-height:1.1;margin:2px 0;color:var(--brand-strong);font-variant-numeric:tabular-nums}
 .tile b.short{color:var(--risk-strong)}
 .tile i{display:block;font-style:normal;font-size:8pt;color:var(--muted)}
-/* one price: the number on the left, its caption beside it */
-.tiles.n1 .tile{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"b k" "b i1" "b i2";column-gap:18px;align-items:center}
-.tiles.n1 .tile .k{grid-area:k} .tiles.n1 .tile b{grid-area:b;margin:0}
-.tiles.n1 .tile i:nth-of-type(1){grid-area:i1} .tiles.n1 .tile i:nth-of-type(2){grid-area:i2}
+.tile.sum{border-color:var(--brand-rule);border-left-width:1.5px} .tile.sum b{color:var(--text)}
+.tile b.word{font-size:15pt;line-height:1.55} /* "Not Provided": a word, not a figure; the same box height */
 
 /* the itemized table */
 .net td{padding:2.4px 8px} .net th{padding:4px 8px}

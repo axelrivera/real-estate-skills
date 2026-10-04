@@ -228,6 +228,25 @@ class Inputs(unittest.TestCase):
 
 
 class Render(unittest.TestCase):
+    def test_tile_row_is_always_three_boxes(self):
+        """One or two prices no longer stretch: the spare slots show seller costs and payoffs, or the difference."""
+        one = compute.run(fixture("texas-no-payoff.json"))
+        self.assertEqual([t["label"] for t in one["summary_tiles"]], ["Seller Costs", "Payoffs"])
+        self.assertEqual(one["summary_tiles"][1]["display"], "Not Provided")  # the price tile already shows the net before payoff
+        two = compute.run(fixture("miami-condo-bill-paid.json"))
+        self.assertEqual(two["summary_tiles"][0]["label"], "Difference")
+        self.assertTrue(two["summary_tiles"][0]["note"].startswith("More with"))
+        short = compute.run(fixture("georgia-short.json"))  # the seller brings cash at both prices
+        self.assertTrue(short["summary_tiles"][0]["note"].startswith("Less to bring with"))
+        self.assertEqual(compute.run(fixture("florida-three-prices.json"))["summary_tiles"], [])
+        for C in (one, two):
+            doc = render.build_html(C, {}); self.assertEqual(doc.count('<div class="tile">') + doc.count('<div class="tile sum">'), 3)
+        d = fixture("florida-three-prices.json")
+        d["scenarios"] = d["scenarios"][:1]
+        d.setdefault("costs", {})["mortgage_payoff"] = 0
+        d["costs"].pop("other_payoffs", None)
+        self.assertEqual(compute.run(d)["summary_tiles"][1]["display"], "$0")
+
     def test_no_fact_row_means_no_header_rule(self):
         """With no facts under the header the tiles sit right under it, and the header's rule is dropped (as in the
         other reports), so it doesn't collide with the tiles' border."""

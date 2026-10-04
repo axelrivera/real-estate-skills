@@ -163,6 +163,32 @@ def payoffs(costs):
     return rows, known, est
 
 
+def summary_tiles(columns, payoff_known):
+    """The boxes that fill the tile row next to one or two price tiles, so the row is always three boxes wide and no
+    tile stretches: one price adds its seller costs and its payoffs (the price tile already shows the net before payoff
+    when the payoff isn't known, so that box asks for it); two prices add the difference between their nets, worded as
+    less to bring when the seller is short at both. Numbers already on the sheet, nothing new."""
+    if len(columns) == 1:
+        a = columns[0]
+        out = [{"label": "Seller Costs", "display": a["total_costs_display"], "note": f"{a['costs_pct_display']} of the sale price"}]
+        if not payoff_known:
+            out.append({"label": "Payoffs", "display": "Not Provided", "note": "The payoff letter shows the cash at closing"})
+        elif a["payoff_total"]:
+            out.append({"label": "Payoffs", "display": money(a["payoff_total"]), "note": "Mortgage and other payoffs"})
+        else:
+            out.append({"label": "Payoffs", "display": "$0", "note": "No mortgage or liens to pay off"})
+        return out
+    if len(columns) == 2:
+        a, b = columns
+        diff = abs(a["net"] - b["net"])
+        if round(diff) == 0:
+            return [{"label": "Difference", "display": "$0", "note": "Same net at both prices"}]
+        hi = a if a["net"] > b["net"] else b
+        return [{"label": "Difference", "display": money(diff),
+                 "note": f"Less to bring with {hi['label']}" if a["short"] and b["short"] else f"More with {hi['label']}"}]
+    return []
+
+
 def title_fee_rows(market, line):
     """The title company fees line, itemized by the fees it adds up (Florida: settlement, title search, municipal lien
     search, recording). A single quote stays one line."""
@@ -426,6 +452,7 @@ def compute(R, market):
         "state": st,
         "facts": facts,
         "columns": columns,
+        "summary_tiles": summary_tiles(columns, payoff_known),
         "rows": rows,
         "final_label": final_label,
         "cash_at_closing": cash,

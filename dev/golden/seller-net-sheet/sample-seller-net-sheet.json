@@ -298,6 +298,9 @@
   }
  ],
  "state": "FL",
+ "summary_tiles": {
+  "count": 0
+ },
  "tax_assumed_paid": false,
  "tax_assumed_unpaid": true,
  "warnings": {
