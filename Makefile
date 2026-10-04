@@ -29,7 +29,7 @@ help:
 	@echo "make manual-kit     Build the manual smoke-test kit into $(OUT)/manual-test/ (local only; see docs/manual-testing.md)"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
-	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/"
+	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/ (SKILL=seller-net-sheet for one skill)"
 	@echo "make samples        Regenerate the committed preview files and samples/README.md from the mock data in dev/samples/"
 	@echo "make manual         Rebuild the PDF manual (dev/package/Real-Estate-Skills-Manual.pdf) from the agent guide and its screenshots"
 	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README + PDF manual + LICENSE)"
@@ -102,7 +102,7 @@ runtime-check:
 # Each skill exposes scripts/render.py DATA.json --format all --out DIR.
 # Fixtures live in dev/fixtures/<skill>/*.json and are never shipped.
 outputs:
-	@for f in $(filter-out dev/fixtures/_profiles/%,$(wildcard dev/fixtures/*/*.json)); do \
+	@for f in $(filter-out dev/fixtures/_profiles/%,$(wildcard dev/fixtures/$(or $(SKILL),*)/*.json)); do \
 		skill=$$(basename $$(dirname $$f)); name=$$(basename $$f .json); \
 		dir=skills/$$skill; \
 		echo "$$skill: $$name"; \
