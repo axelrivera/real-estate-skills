@@ -228,6 +228,15 @@ class Inputs(unittest.TestCase):
 
 
 class Render(unittest.TestCase):
+    def test_no_fact_row_means_no_header_rule(self):
+        """With no facts under the header the tiles sit right under it, and the header's rule is dropped (as in the
+        other reports), so it doesn't collide with the tiles' border."""
+        C = compute.run(fixture("florida-three-prices.json"))
+        self.assertIn('class="divrow factrow"', render.build_html(C, {}))
+        doc = render.build_html(dict(C, facts=[]), {})
+        self.assertNotIn("factrow", doc.split("<style>")[-1].split("</style>")[-1])
+        self.assertIn("header:has(+ .tiles){border-bottom:none", doc)
+
     def test_one_page_pdf(self):
         """Three prices with every optional line still print on one page."""
         d = fixture("florida-three-prices.json")

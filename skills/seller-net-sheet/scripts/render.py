@@ -34,6 +34,8 @@ def header(C, agent, sample):
 
 
 def fact_row(C):
+    if not C["facts"]:  # nothing to show: no empty row between the header and the tiles
+        return ""
     items = "".join(f'<span>{"<b class=rt>" + esc(f["text"]) + "</b>" if f.get("risk") else esc(f["text"])}</span>' for f in C["facts"])
     return f'<div class="divrow factrow"><div>{items}</div></div>'
 
