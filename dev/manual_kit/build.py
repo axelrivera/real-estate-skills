@@ -111,8 +111,11 @@ def prompt_md(case, uploads, steps, today=TODAY, note=None):
         lines += ["```text", s["text"], "```", ""]
     if note:
         lines += [note, ""]
-    lines += [f"Date assumed: {long_date(today)}. Keep the \"Today is\" sentence in the prompt so dates line up with "
-              "expected.md."]
+    if any("Today is" in s["text"] for s in steps):
+        lines += [f"Date assumed: {long_date(today)}. Keep the \"Today is\" sentence in the prompt so dates line up with "
+                  "expected.md."]
+    else:  # a follow-up in an earlier case's chat: that prompt set the date
+        lines += [f"Date assumed: {long_date(today)}, set by the earlier prompt in this chat."]
     return "\n".join(lines)
 
 
@@ -621,7 +624,8 @@ def case_buyer_cma(pdf, checks):
         {"title": "Prompt", "text":
             f"Today is {long_date(TODAY)}. My buyer is looking at {h['address']} in {h['city']}. Here are the listing "
             "flyer, the MLS 360 property report and my CMA export. Is it priced right and what should we offer? I need "
-            "the buyer CMA PDF."}]))
+            "the buyer CMA PDF."}],
+        note="Keep this chat open: case 4 continues in it."))
     return stats, comp
 
 
@@ -630,36 +634,41 @@ def case_offer_strategy(comp, checks):
     lim = D["buyer_limits"]
     d = os.path.join(OUT, "04-buyer-offer-strategy")
     os.makedirs(d, exist_ok=True)
+    work = os.path.join(WORK, "offer-strategy")
+    os.makedirs(work, exist_ok=True)
+    # nothing to upload: the case runs in the case 3 chat, where the buyer CMA (and its handoff) already is; the kit
+    # keeps a copy in its work folder only to compute expected.md
     handoff_src = comp["handoff_file"]
     handoff_name = os.path.basename(handoff_src)
-    shutil.copy(handoff_src, os.path.join(d, handoff_name))
+    shutil.copy(handoff_src, os.path.join(work, handoff_name))
     run(["-c", "import sys, json; sys.path.insert(0, 'shared'); import handoff; "
-         f"handoff.load({json.dumps(os.path.join(d, handoff_name))}); print(json.dumps({{'ok': True}}))"])
+         f"handoff.load({json.dumps(os.path.join(work, handoff_name))}); print(json.dumps({{'ok': True}}))"])
 
     buyer = {"analysis_date": TODAY,
              "property": {"address": f"{h['address']}, {h['city']}, {h['state']} {h['zip']}", "state": h["state"],
                           "county": h["county"], "list_price": h["list_price"]},
              "competition": lim["competition"], "costs": lim["costs"], "buyer": lim["buyer"],
              "worksheet": lim["worksheet"], "chosen_option": "recommended", "overrides": {}}
-    work = os.path.join(WORK, "offer-strategy")
     dump(os.path.join(work, "buyer.json"), buyer)
     out = run(["skills/buyer-offer-strategy/scripts/strategy.py", rel(os.path.join(work, "buyer.json")),
-               "--cma", rel(os.path.join(d, handoff_name))])
+               "--cma", rel(os.path.join(work, handoff_name))])
     if not out.get("ok", True):
         raise KitError(f"strategy.py: {out}")
     dump(os.path.join(work, "strategy-output.json"), out)
     lines = ["# Case 4: Expected", "",
-             f"Date assumed: {long_date(TODAY)}. The handoff `{handoff_name}` was written by buyer-cma's compute.py from "
-             "the case 3 home, and the numbers below come from strategy.py run on a buyer file matching the prompt.", ""]
+             f"Date assumed: {long_date(TODAY)}. Run in the same chat as case 3: the buyer CMA from that chat is the input "
+             "(nothing uploaded). The numbers below come from strategy.py run on that CMA's handoff and a buyer file "
+             "matching the prompt.", ""]
     lines += strategy_summary(out, lim)
     lines += ["", "## Checks", ""] + [f"- {c}" for c in checks]
     write(os.path.join(d, "expected.md"), "\n".join(lines))
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 4: Buyer Offer Strategy", [handoff_name], [
-        {"title": "Prompt", "text":
-            f"Today is {long_date(TODAY)}. Attached is the buyer CMA for {h['address']}, {h['city']} (listed at "
-            f"{money(h['list_price'])}). Help me write the offer. My buyer: {lim['prompt']} I need the offer options "
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 4: Buyer Offer Strategy", [], [
+        {"title": "Prompt (in the case 3 chat)", "text":
+            f"Now help me write the offer on {h['address']}. My buyer: {lim['prompt']} I need the offer options "
             "report and the offer package worksheet."}],
-        note="If the skill asks for anything else, answer from the prompt or say you don't know."))
+        note="Run this in the same chat as case 3, right after the buyer CMA: don't start a new chat and don't upload "
+             "anything. The skill should use the CMA it just built; if it asks for a CMA file, note that as a failure. "
+             "If it asks for anything else, answer from the prompt or say you don't know."))
     return out
 
 
@@ -906,7 +915,8 @@ CHECKS = {
     "03-buyer-cma": [("PDF has the value range, the full history (both price cuts and the 2015 listing and sale), and the scatterplot", "cowork"),
                      ("Facts, tax at the target price (named in the tax table) and market numbers match expected.md", "cowork"),
                      ("Opening offer and walk-away sit inside the sanity band", "cowork")],
-    "04-buyer-offer-strategy": [("Offer Options and Offer Package Worksheet PDFs are both delivered", "cowork"),
+    "04-buyer-offer-strategy": [("Uses the buyer CMA from the case 3 chat without asking for a file", "both"),
+                                ("Offer Options and Offer Package Worksheet PDFs are both delivered", "cowork"),
                                 ("Recommended offer stays inside every limit (price, cash, reserve, payment)", "cowork"),
                                 ("Riders are named by letter (CR-7), and the worksheet shows offer terms only", "cowork"),
                                 ("Numbers match expected.md", "cowork")],
@@ -969,7 +979,7 @@ def readme_md():
             ["01-agent-profile", "agent-profile", "nothing"],
             ["02-seller-cma", "seller-cma", "360 report, CMA export, seller notes"],
             ["03-buyer-cma", "buyer-cma", "listing flyer, 360 report, CMA export"],
-            ["04-buyer-offer-strategy", "buyer-offer-strategy", "the buyer CMA handoff (.cma.json)"],
+            ["04-buyer-offer-strategy", "buyer-offer-strategy", "nothing: continue the case 3 chat"],
             ["05-seller-offer-review", "seller-offer-review", "step-1 offer package, then step-2"],
             ["06-contract-timeline-fha", "contract-timeline", "executed FHA package"],
             ["07-contract-timeline-short-sale", "contract-timeline", "executed short sale package"],

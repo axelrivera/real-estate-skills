@@ -17,7 +17,7 @@ A short smoke test of the installed plugin before each release: one happy path p
 `out/manual-test/` has one folder per case, and each case runs on its own:
 
 - `prompt.md`: what to upload and the exact prompt to paste (with the "Today is" date the expected dates assume).
-- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), a buyer CMA handoff, mock FAR/BAR packages, and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
+- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), mock FAR/BAR packages, and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
 - `expected.md`: the facts to check, computed by the skills' own scripts when the kit was built. Value ranges and prices are Claude's judgment, so those come with a sanity band instead of an exact number.
 
 Never upload `expected.md`. Case 1 builds your real profile; every later case uses it.
@@ -29,7 +29,7 @@ Never upload `expected.md`. Case 1 builds your real profile; every later case us
 | 1 | agent-profile | Nothing | "Set up my profile.", then answer with your own details | At most two rounds of questions; saves `profile.md` in the working folder; no placeholders or made-up details |
 | 2 | seller-cma | 360 report, CMA export, seller notes (new session) | "What should we list at?", then "build the listing presentation", then "add that the home is perfect for young families" | Uses the saved profile without an upload; PDF in the profile's colors; flags the 2017 expired listing; net sheet marks the 5% brokerage "Assumed"; PPTX opens with the same numbers; the fair-housing request is declined in one sentence |
 | 3 | buyer-cma | Listing flyer, 360 report, CMA export | "Is it priced right and what should we offer?" | PDF with the range, the history with both price cuts and the scatterplot; facts and tax match expected.md |
-| 4 | buyer-offer-strategy | The `.cma.json` handoff; the buyer's limits are in the prompt | "Help me write the offer" with cash, max price, loan and payment cap | Offer Options and Offer Package Worksheet PDFs; stays inside every limit; riders named by letter; worksheet shows offer terms only |
+| 4 | buyer-offer-strategy | Nothing: run in the case 3 chat, which has the buyer CMA; the buyer's limits are in the prompt | "Now help me write the offer" with cash, max price, loan and payment cap | Uses the CMA from the chat (asks for no file); Offer Options and Offer Package Worksheet PDFs; stays inside every limit; riders named by letter; worksheet shows offer terms only |
 | 5 | seller-offer-review | Step 1: the first offer; step 2: a second offer on the same listing | "Should my seller accept?", then "compare both and give me a plan" | Single-offer net and counter; AGA-1 handled; ranking and plan; no past dates in next steps |
 | 6 | contract-timeline | Executed FHA package (`asis-fha-executed`) | "Give me every deadline as a PDF and a calendar file" | Deadlines match expected.md; the ICS imports into a calendar with the right dates |
 | 7 | contract-timeline | Executed short sale package (`asis-short-sale-rent-back`) | Same as 6 | Two-phase timeline ("N days after short sale approval" rows); the PDF builds with no closing date |
