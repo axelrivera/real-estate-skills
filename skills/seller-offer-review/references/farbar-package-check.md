@@ -20,6 +20,7 @@ This is a completeness check, not a legal opinion. Say what is missing or incons
 - **Para. 19 checklist vs. attached riders:** every checked rider is attached and initialed by all parties, and every attached rider is checked. A rider "counts" only with every party's initials.
 - **Rider EE under its old name:** a "PACE Disclosure" rider is the Qualifying Improvements rider (EE). Fine, but note the current name.
 - **Addenda listed under "Other" in Para. 19:** each one is attached (Appraisal Gap AGA-1, Escalation EAC-1, CDD CDDA-2, Cooperative COOP-4, Counter Offer CO-3, and so on).
+- **Escalation Addendum (EAC-1) checking the other contract:** its contract box must name the form the offer is on (AS IS FAR/BAR on an AS IS offer, FAR/BAR on a Standard one). A box for the other form, CRSP, Commercial or Vacant Land is a High issue: have the buyer's agent correct the box and the buyer initial it.
 - **Appraisal Gap Addendum (AGA-1) with the Appraisal Contingency Rider (F) or an FHA/VA offer:** AGA-1 says it's for conventional or cash offers and isn't used with rider F. Flag the combination.
 - **Buyer's Request for Repairs (BRR-1) on an AS IS contract:** BRR-1 follows the Standard form's repair process; on AS IS the inspection period is a walk-away and repair requests are negotiation only.
 

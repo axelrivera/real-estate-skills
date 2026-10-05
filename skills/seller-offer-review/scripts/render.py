@@ -680,6 +680,9 @@ def multi_html(R, v):
     page1 = f"{hero(v)}{decision}{lower}{closing_block(v)}"
 
     head = "".join(f"<th>{lab}</th>" for lab, _ in KEY_TERMS)
+    # iteration 12: an escalation clause gets its own column (base, increment, cap) when any offer has one
+    has_esc = any(o.get("escalation") for o in rk + R["incomplete"])
+    head += "<th>Escalation</th>" if has_esc else ""
     body = ""
     for o in rk + R["incomplete"]:  # incomplete contracts: their terms as written, not ranked
         t = {r[0]: r for r in term_rows(o, R)}
@@ -688,9 +691,14 @@ def multi_html(R, v):
             hit = next((t[k] for k in keys if k in t), None)
             word = STATUS_WORD.get(hit[3], "") if hit else ""  # OFR-28: the status in words, not only by color
             cells += (f'<td class="{hit[3]}">{hit[1]}' + (f' <span class="sm">({word})</span>' if word else "") + "</td>") if hit else "<td>—</td>"
+        if has_esc:
+            et = oe.escalation_terms(o)
+            cells += f'<td>{"<br>".join(esc(p) for p in et.split(" · "))}</td>' if et else "<td>None</td>"
         risk = review.biggest_risk(o)  # OFR-274, OFR-304: the same answer as the review's biggest_risk
         risk = (f'<span class="pill {risk["sev"].lower()}">{risk["sev"]}</span> {esc(risk["issue"])}' if risk else "None major")
         body += f'<tr><td><b>{esc(o["key"])}</b> · <b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
+    widths = (11, 8, 9, 8, 7, 7, 7, 7, 8, 9) if has_esc else (12, 9, 10, 8, 8, 8, 7, 8, 9)  # the rest: Biggest Risk
+    kt_cols = "".join(f'<col style="width:{w}%">' for w in widths)
     ctr = ""
     if v["action"] == "COUNTER" and top["counter_rows"]:
         ctr = (f'<h2>Counter to {esc(top["label"])} <span class="h2s">Full Terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
@@ -701,7 +709,7 @@ def multi_html(R, v):
     details = f'''<div class="pb"></div><div class="dh">Offer Details</div>
 {snapshot(R)}<div class="treason-slot"></div><div class="chart-slot"></div>
 <h2>Key Terms Side by Side <span class="h2s">Favorable · Watch · Weak</span></h2>
-<div class="tbl"><table class="kt"><colgroup><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:9%"></colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
+<div class="tbl"><table class="kt"><colgroup>{kt_cols}</colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
 <div class="legend"><span>Each offer has its own single review (a separate PDF) with the full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
 {ctr}
 <h2>Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, multi=True)}

@@ -351,6 +351,9 @@ def compute(R, market):
 
     # Notes under the table, in sentence case. Assumptions go to the agent in the reply.
     notes, assumptions, warnings = [], [], list(dict.fromkeys(w for n in nets for w in n["warnings"]))
+    # iteration 12: the chat reply lists the assumptions, so the markdown sheet's notes (chat_notes) leave out a note
+    # an assumption already says, and use a short form where the note adds a figure (said: note -> None or short form)
+    said = {}
     tax_missing = False
     if type_assumed:
         assumptions.append(f"The property type is assumed {PROPERTY_TYPES[kind].lower()}"
@@ -364,6 +367,7 @@ def compute(R, market):
     if commission_assumed:
         total = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
         notes.append(f"Brokerage is assumed at {pct_text(total)}% in total until the listing agreement sets it.")
+        said[notes[-1]] = None
         assumptions.append(f"Commission {pct_text(total)}% in total (listing and buyer's agent), assumed: send the listing "
                            "agreement's terms to replace it.")
     if brokerage:
@@ -378,22 +382,32 @@ def compute(R, market):
             notes.append(f"Assumed: this year's tax bill ({tax_basis}) is paid by its {due_text} due date, before closing, so "
                          "the buyer credits back closing to Dec 31. If it's still unpaid at closing, the seller is charged "
                          "from Jan 1 instead.")
+            said[notes[-1]] = None
             assumptions.append(f"This year's tax bill is assumed paid, since closing is after its {due_text} due date: say "
                                "if it's still unpaid.")
+        elif tax_assumed:  # iteration 12: one note, not a proration note and a near-identical assumption note
+            notes.append(f"Property tax prorated from Jan 1 to the day before closing ({tax_basis}), assuming this year's "
+                         "bill is still unpaid at closing; if the seller pays it first, the buyer credits back the rest of "
+                         "the year instead.")
+            said[notes[-1]] = f"Property tax prorated from Jan 1 to the day before closing ({tax_basis})."
         else:
             notes.append(f"Property tax prorated from Jan 1 to the day before closing ({tax_basis}).")
-        if tax_assumed:
+        if tax_assumed and any(paid_assumed):  # mixed closings: one before the due date, one after
             notes.append("Assumed: this year's tax bill is still unpaid at closing. If the seller pays it first, the buyer "
                          "credits back the rest of the year instead.")
+            said[notes[-1]] = None
+        if tax_assumed:
             assumptions.append("This year's tax bill is assumed unpaid at closing: say if the seller has paid it.")
     elif market.get("property_tax.paid") == "arrears":
         missing_bits = [w for w, gone in (("the tax bill", not annual_tax), ("the closing date", not any(x["closing"] for x in xs))) if gone]
         notes.append("Not included: this year's property tax proration. Taxes here are paid in arrears, so the seller "
                      f"credits the buyer from Jan 1; add {' and '.join(missing_bits)} to include it.")
+        said[notes[-1]] = None
         assumptions.append(f"No property tax proration yet: send {' and '.join(missing_bits)} to include it.")
         tax_missing = True
     if "title_fees" in assumed and market.source("closing_costs.seller_title_fees") != "estimate":
         notes.append("Title company fees are typical local charges; the title company's quote replaces them.")
+        said[notes[-1]] = None
         assumptions.append("Title company fees are the typical local charges: a title quote replaces them.")
     # iteration 11: a built-in estoppel fee is a typical local charge too (a national estimate is labeled on its line)
     if (any(l["key"] == "estoppel" for l in first["lines"]) and market.source("closing_costs.hoa_estoppel_fee") not in ("estimate", "deal")):
@@ -401,6 +415,7 @@ def compute(R, market):
     estimates = [a["text"] for a in first["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimates:
         notes.append(f"Estimates, not local figures: {', '.join(estimates)}. Local rates or a title quote replace them.")
+        said[notes[-1]] = None
         assumptions.append(f"National estimates (no local figures built in): {', '.join(estimates)}.")
     if market.get("closing_costs.owner_title.payer") == "buyer":  # say why there's no owner's title line
         notes.append("The buyer customarily pays the owner's title policy here, so it isn't a seller cost.")
@@ -428,6 +443,9 @@ def compute(R, market):
             shortfalls.append(text)
             warnings.append(text + " Say so plainly in the reply.")
     notes[:0] = shortfalls  # iteration 9 eval 4: in column order
+    # iteration 12: an HOA nobody mentioned is assumed away; say so, since its estoppel fee and dues would come off the net
+    if not has_hoa and p.get("hoa") is None and hoa_monthly is None and kind != "condo":
+        assumptions.append("No HOA assumed: say if there is one (its estoppel fee and any dues owed come off the net).")
     if not st:
         assumptions.append("The property's state wasn't given, so every cost is a national estimate: ask for the city and county.")
 
@@ -462,6 +480,8 @@ def compute(R, market):
         "tax_assumed_paid": tax_paid_assumed,
         "closing_date_assumed": bool(dated),
         "notes": notes,
+        # iteration 12: the markdown sheet's notes, without what the reply's assumption lines already say
+        "chat_notes": [said.get(n, n) for n in notes if said.get(n, n)],
         "assumptions": assumptions,
         "warnings": warnings,
         # iteration 9 evals 2, 5: a net sheet reads no MLS export, so the MLS / --columns notes don't apply

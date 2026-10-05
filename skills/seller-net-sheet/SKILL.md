@@ -32,7 +32,7 @@ Build first, ask after: local costs and commission are never questions up front 
 - **Needed:** the address with its city and state, and at least one price. Ask only for what's missing of these. Never guess the county or state from a subdivision or the MLS.
 - **County:** take it from the city when the city lies in one county (Miami: Miami-Dade). When the city spans counties (Austin: Travis, Williamson, Hays), ask: in Florida before building, since it sets the local costs; elsewhere after the first sheet, saying the county only changes the tax estimate.
 - **Property type:** a unit number (#1204) means a condo (`property_type` `condo`, `hoa` true) unless the agent says otherwise; set `property_type_assumed` so it's listed as an assumption.
-- **Worth having** (use them when given, ask after the first sheet when not): the mortgage payoff (without it the sheet stops at the net before payoff and is marked Preliminary), the listing agreement's commission, the expected closing date and this year's tax bill (together they set the proration), HOA, property type. A vague closing date ("mid-December", "early November") becomes a likely date (the 15th, the 6th) with `closing_date_assumed` true. When the agent gives the tax bill's due date, add it (`tax_bill_due_date`): a closing after it assumes the bill paid.
+- **Worth having** (use them when given, ask after the first sheet when not): the mortgage payoff (without it the sheet stops at the net before payoff and is marked Preliminary), the listing agreement's commission, the expected closing date and this year's tax bill (together they set the proration), HOA, property type. A vague closing date ("mid-December", "early November") becomes a likely date (the 15th, the 6th) with `closing_date_assumed` true. When the agent gives the tax bill's due date, add it (`tax_bill_due_date`): a closing after it assumes the bill paid. No HOA mentioned (and not a condo): leave `hoa` out; the sheet assumes none and lists that assumption.
 - **Up to three prices.** One by default. Add more when the agent asks "what if": a price cut, a seller credit at the same price, a different closing date. Each is a scenario; give it a short Title Case `label` when the price alone doesn't say what it is.
 - **A seller CMA from this conversation:** pass its `.seller.cma.json` with `--cma`. It fills the location, tax bill and HOA dues, and the recommended price when no price was given.
 
@@ -46,7 +46,7 @@ Write `net-sheet.json` in a temporary folder, never the outputs folder (`referen
 python3 scripts/compute.py net-sheet.json [--cma FILE.seller.cma.json]
 ```
 
-It prints the columns, the itemized rows (already formatted), `notes`, `assumptions`, `warnings` and `preliminary`. Fix any `problems` it names and re-run. Outside Florida, look up the state's deed transfer tax as `references/local-costs.md` says (none in the states without one) and put it in `costs`. Also outside Florida (Florida's bills are due the next March), when the closing falls in the last months of the year and the agent didn't give the tax bill's due date, look it up on the county tax office's site and set `tax_bill_due_date` (a closing after it assumes the bill paid); name the source in the reply.
+It prints the columns, the itemized rows (already formatted), `notes` (the PDF's), `chat_notes` (the markdown sheet's: the notes without what the assumptions already say), `assumptions`, `warnings` and `preliminary`. Fix any `problems` it names and re-run. Outside Florida, look up the state's deed transfer tax as `references/local-costs.md` says (none in the states without one) and put it in `costs`. Also outside Florida (Florida's bills are due the next March), when the closing falls in the last months of the year and the agent didn't give the tax bill's due date, look it up on the county tax office's site and set `tax_bill_due_date` (a closing after it assumes the bill paid); name the source in the reply.
 
 ## 3. Deliver
 
@@ -57,7 +57,7 @@ It prints the columns, the itemized rows (already formatted), `notes`, `assumpti
   It always fits one page, and stops if it wouldn't or a label would be cut off (shorten the price labels or other cost names). Look at the page before presenting it.
 - **Markdown** (a quick question in chat): fill `assets/net-sheet-template.md` from compute.py's output only. Never paste JSON.
 
-Either way, the reply holds, in this order, in short bullets under about 200 words:
+Either way, the reply holds, in this order, in short bullets under about 200 words (the table and the markdown sheet's notes don't count; each assumption is said once, in its line below, never again in a closing sentence):
 
 1. The nets at every price together in one line, not a bullet each (the tiles' numbers), and what separates them when there's more than one.
 2. Each item in `assumptions`, one short line each: what's assumed and what replaces it (the listing agreement, a payoff letter, the tax bill, a title quote).
@@ -69,3 +69,5 @@ Either way, the reply holds, in this order, in short bullets under about 200 wor
 `market_notes` explain where the costs came from; most are covered by the assumptions. Mention one only when it asks the agent for something the assumptions don't (a misspelled county).
 
 When the agent sends better numbers (a payoff letter, the commission, the tax bill, a title quote), put them in the same `net-sheet.json` and render again; never edit a number in the reply by hand.
+
+**A "what if" price after the sheet has three:** answer it in chat from a one-price run in a separate scratch file (`what-if.json`, a copy with only that scenario), never by replacing the delivered sheet's `net-sheet.json`, so its three prices still match the PDF. Say in one line that the PDF keeps its three prices, and offer to swap one out for a new sheet.

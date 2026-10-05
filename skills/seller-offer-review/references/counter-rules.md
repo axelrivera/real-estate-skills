@@ -3,7 +3,7 @@
 The engine drafts a counter from the rules below. The benchmarks (deposit, concessions, inspection, loan approval) are the market's `offer_norms`, the same ones the Terms Review shows (Florida: 3%, 1.5%, 7 days, 21 days); without them, national planning norms are used (1%, 3%, 10 days, 30 days) and flagged. Each rule adds a row (term, offered, counter, why) only when it applies. The goal is a better net **and** less risk, not simply a higher price. Review the draft for realism before answering.
 
 1. **Price above value with an unfunded appraisal gap** (an appraisal contingency, price > CMA high, gap < price − CMA high) → counter at CMA high. A price the appraisal won't support is a renegotiation waiting to happen. This can lower the paper net, so the report compares the counter with both the as-offered and the downside net; the honest comparison is the downside. **Only with a CMA:** without one, list price only stands in for the value, so the price is never countered down; rule 3 asks for gap coverage and the row says a CMA would firm up the value.
-2. **Price below list** → meet partway (rounded up to $1,000). With a CMA and a price under the CMA low, counter at list.
+2. **Price below list** → meet partway (rounded up to $1,000). With a CMA and a price under the CMA low, counter at list. **An escalation clause whose cap is above the price** (the base price when the clause doesn't trigger, the escalated price when it does) → the counter goes up to the cap, never past list (or the seller's last counter): the cap is the most the buyer has said it will pay. The row's why names the cap.
 3. **Appraisal gap:** an appraisal contingency (not FHA or VA, whose rider lets the buyer walk), and the counter price is above the CMA high (list price without a CMA) → ask the buyer to cover the difference, rounded up to $1,000.
 4. **Concessions above the norm** (Florida 1.5% of price) → counter at half.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
@@ -15,7 +15,7 @@ The engine drafts a counter from the rules below. The benchmarks (deposit, conce
 11. **Closing after the seller's deadline** → move to the deadline. A weekend date moves to the prior Friday.
 12. **Buyer chose title** where the seller customarily pays the owner's policy → seller's title company. Not on FAR/BAR: under Para. 9(c) the buyer who designates the Closing Agent also pays the owner's policy, so the seller is better off as offered.
 13. **AGA-1 periods running to or past closing** (the `aga_window_at_closing` or `aga_window_past_closing` flag) → a valuation period that ends them with loan approval on a financed offer, else before closing: the row the flag's fix names, so the counter and the flag agree. A blank valuation period is the form's 30 days, so the row shows "30 days (blank)".
-14. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review, on a weekday, 5:00 PM; when that is the offer's own deadline exactly, the next weekday, so the row never reads as no change. Change it to what the seller wants.
+14. **Time for Acceptance** → every counter (and the reference counter for a lapsed offer) sets one: two days after the review (at least a day after a pending call for highest and best), on a weekday, 5:00 PM; when that is the offer's own deadline exactly, the next weekday, so the row never reads as no change. Change it to what the seller wants.
 
 ## Negotiation History
 

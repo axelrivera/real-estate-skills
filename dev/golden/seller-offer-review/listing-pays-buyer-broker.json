@@ -500,7 +500,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 499000,
+    "price": 504000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -649,7 +649,7 @@
     "lines": [
      [
       "price",
-      499000
+      504000
      ],
      [
       "conc",
@@ -661,7 +661,7 @@
      ],
      [
       "listing",
-      -24950
+      -25200
      ],
      [
       "bb",
@@ -669,11 +669,11 @@
      ],
      [
       "transfer",
-      -3493
+      -3528
      ],
      [
       "title",
-      -2570
+      -2595
      ],
      [
       "settle",
@@ -699,9 +699,9 @@
     "missing": {
      "count": 0
     },
-    "net": 459385,
-    "net_adj": 458605,
-    "price": 499000,
+    "net": 464075,
+    "net_adj": 463295,
+    "price": 504000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -1560,7 +1560,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 499000,
+    "price": 504000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -1709,7 +1709,7 @@
     "lines": [
      [
       "price",
-      499000
+      504000
      ],
      [
       "conc",
@@ -1721,7 +1721,7 @@
      ],
      [
       "listing",
-      -24950
+      -25200
      ],
      [
       "bb",
@@ -1729,11 +1729,11 @@
      ],
      [
       "transfer",
-      -3493
+      -3528
      ],
      [
       "title",
-      -2570
+      -2595
      ],
      [
       "settle",
@@ -1759,9 +1759,9 @@
     "missing": {
      "count": 0
     },
-    "net": 459385,
-    "net_adj": 458605,
-    "price": 499000,
+    "net": 464075,
+    "net_adj": 463295,
+    "price": 504000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -2025,7 +2025,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 499000,
+    "price": 504000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -2174,7 +2174,7 @@
     "lines": [
      [
       "price",
-      499000
+      504000
      ],
      [
       "conc",
@@ -2186,7 +2186,7 @@
      ],
      [
       "listing",
-      -24950
+      -25200
      ],
      [
       "bb",
@@ -2194,11 +2194,11 @@
      ],
      [
       "transfer",
-      -3493
+      -3528
      ],
      [
       "title",
-      -2570
+      -2595
      ],
      [
       "settle",
@@ -2224,9 +2224,9 @@
     "missing": {
      "count": 0
     },
-    "net": 459385,
-    "net_adj": 458605,
-    "price": 499000,
+    "net": 464075,
+    "net_adj": 463295,
+    "price": 504000,
     "tax_bill_assumed": false
    },
    "ns_down": {

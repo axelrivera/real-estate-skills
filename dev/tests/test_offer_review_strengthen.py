@@ -46,8 +46,9 @@ class CounterChanges(unittest.TestCase):
 
     def test_engine_counter_unchanged_without_changes(self):
         b = offer(review.analyze(case05()), "B")
-        self.assertEqual(rows(b)["Price"][2], "$499,000")
-        self.assertEqual(rows(b)["Pre-Approval"][2], "Updated letter at $499,000 in 3 days")  # engine wording, never "New letter"
+        # iteration 12: B's escalation cap ($506,000) reaches list, so the engine counters at list, not partway
+        self.assertEqual(rows(b)["Price"][2], "$504,000")
+        self.assertEqual(rows(b)["Pre-Approval"][2], "Updated letter at $504,000 in 3 days")  # engine wording, never "New letter"
 
     def test_pinned_price_moves_every_dependent_row_and_the_net(self):
         b = offer(review.analyze(case05(counter={"changes": {"price": 502000}})), "B")
@@ -58,7 +59,9 @@ class CounterChanges(unittest.TestCase):
         self.assertEqual(r["Time for Acceptance"][0], b["counter_rows"][-1][0])
 
     def test_engine_value_keeps_the_rule_why(self):
-        b = offer(review.analyze(case05(counter={"changes": {"price": 499000}})), "B")
+        b = offer(review.analyze(case05(counter={"changes": {"price": 504000}})), "B")
+        self.assertIn("escalation cap ($506,000)", rows(b)["Price"][3])
+        b = offer(review.analyze(case05(escalation=None, counter={"changes": {"price": 499000}})), "B")
         self.assertEqual(rows(b)["Price"][3], "Below list: meet partway")
 
     def test_change_equal_to_the_offer_drops_the_row(self):
