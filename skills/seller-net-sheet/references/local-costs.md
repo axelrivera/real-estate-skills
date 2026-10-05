@@ -14,7 +14,7 @@ Never use Florida's numbers for another state.
 
 ## How Reports Show Estimates
 
-- **Once, in the notes.** Each report says which figures are estimates or assumed in one notes block (the notes under the net sheet, the payment table's note, "Assumptions & Data to Confirm"), once each, in plain words.
+- **Once, in the notes.** Each report says which figures are estimates or assumed in one notes block (the notes under the net sheet, the payment table's note, "Assumptions & Data to Confirm", the offer review's "What to Confirm"), once each, in plain words.
 - **Never in a label.** No "(Estimate)", "Assumed" or "(assumed)" in a column header, row label, tile or fact chip, and no per-row marks in a table: they change the layout and repeat what the notes say. A label that names the figure ("Estimated Net") is fine.
 - **Commission defaults are defaults.** The default 2.5% + 2.5% gets no label anywhere; the brokerage lines show the rates, as they do for the agent's own terms. The reply still asks for the listing agreement's terms.
 
