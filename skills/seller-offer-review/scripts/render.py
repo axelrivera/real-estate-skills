@@ -154,12 +154,12 @@ def hero(v):
     ctx = f' · {n} Offers Active' if n > 1 else ""
     kicker = "Status" if v["action"] == "INCOMPLETE" else "Recommended Response"
     return (f'<div class="hero"><div class="hl {cls}"><span class="k">{kicker}{ctx}</span><div class="big">{esc(v["headline"])}</div>'
-            + f'<div class="who">{esc(v["offer_label"])}</div>'
+            + f'<div class="who">{esc(v.get("who") or v["offer_label"])}</div>'
             + f'<div class="why">{md(v["why"])}</div></div>'
-            f'<div class="hr"><span class="k">Respond By</span><b>{esc(v["respond_by"])}</b>'
+            f'<div class="hr{" stack" if v["mode"] == "single" else ""}"><span class="k">Respond By</span><b>{esc(v["respond_by"])}</b>'
             + (f'<span class="rbo">{esc(v["respond_by_offer"])}</span>' if v.get("respond_by_offer") else "")
             # OFR-319, OFR-320: a pending highest-and-best deadline and a held offer that lapses first
-            + "".join(f'<span class="rba"><b>{esc(a["when"])}</b> · {esc(a["what"])}</span>' for a in v.get("respond_by_also") or ())
+            + "".join(f'<span class="rba"><b>{esc(a["when"])}</b><span class="sep"> · </span><span class="rbw">{esc(a["what"])}</span></span>' for a in v.get("respond_by_also") or ())
             + f'<span class="k" style="margin-top:6px">Seller\'s Priority</span><div>{esc(v["priority"])}</div></div></div>')
 
 
@@ -281,7 +281,7 @@ def questions(o, R):
         Q.append("When can the buyer provide a full pre-approval?")
     if o["financed"] and not o.get("lender_called") and not o.get("loan_officer"):  # OFR-321: the letter names one
         Q.append("Who is the loan officer, so we can verify the approval directly?")
-    if o.get("escalation"):
+    if o.get("escalation") and not oe.cf.escalation_proof_stated(o["contract_form"], o):  # EAC-1 says it: a redacted copy
         Q.append("What proof of a competing offer does the escalation clause require?")
     return Q
 
@@ -304,7 +304,10 @@ def lender_questions(o, R):
     fin = oe.FIN_LABEL[o["financing"]]
     fin = fin if fin.isupper() else fin.lower()  # "an FHA loan", "a conventional loan"
     pof = o.get("proof_of_funds")  # the package's proof of funds already shows the assets: never asked again
+    # round 3 case 05: a letter that says the lender reviewed the credit report, income and asset documentation
+    # (`approval_documented`) already answers the documents half
     Q = ["What conditions are left on the underwriting approval?" if o["approval"] == "full_uw" else
+         "Has the file been through automated underwriting (DU or LP)?" if o.get("approval_documented") else
          "Has the file been through automated underwriting (DU or LP), and are income "
          + ("and credit" if pof else "assets and credit") + " verified with documents?"]
     conc = f", with {money(o['seller_concessions'])} in seller concessions" if o["seller_concessions"] else ""
@@ -375,7 +378,7 @@ def assumptions_table(R, multi=False, offer_id=None):
     lab = {"high": "High", "med": "Med", "low": "Low"}
     # OFR-348: a single review names only its own offer on an assumption shared with others (review.place)
     rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.place(R, a, offer_id))}</td>'
-                   f'<td>{esc(a["why"])}</td></tr>' for a in items)
+                   f'<td>{esc(review.why_for(a, offer_id))}</td></tr>' for a in items)
     return ('<div class="tbl split"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
             f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
@@ -458,10 +461,12 @@ def single_html(R, o, v):
     tgt = o["target"]["net_adj"]
     act = v["action"]
     if v["counter"]:
-        ck = "".join(f'<tr><td><b>{esc(r["term"])}</b></td><td class="was">{esc(r["offered"])}</td><td class="arr">→</td>'
-                     f'<td class="now">{esc(r["counter"])}</td><td class="why2">{esc(r["why"])}</td></tr>' for r in v["counter"]["rows"])
-        box = (f'<div class="ctr"><div class="ctrh"><span>OUR COUNTER</span><em>{md(v["counter"]["summary"])}</em></div>'
-               '<table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%"><col style="width:17%"><col></colgroup>'
+        # round 3 case 05: a deadline stays on one line ("Thu Sep 24, 5:00 PM" on both sides)
+        nw = lambda r: " oneline" if r["term"] == "Time for Acceptance" else ""  # noqa: E731
+        ck = "".join(f'<tr><td><b>{esc(r["term"])}</b></td><td class="was{nw(r)}">{esc(r["offered"])}</td><td class="arr">→</td>'
+                     f'<td class="now{nw(r)}">{esc(r["counter"])}</td><td class="why2">{esc(r["why"])}</td></tr>' for r in v["counter"]["rows"])
+        box = (f'<div class="ctr"><div class="ctrh"><span>{"FALLBACK COUNTER" if v.get("wait") else "OUR COUNTER"}</span><em>{md(v["counter"]["summary"])}</em></div>'
+               '<table><colgroup><col style="width:19%"><col style="width:17%"><col style="width:3%"><col style="width:21%"><col></colgroup>'
                f'<thead><tr><th>Term</th><th>Buyer Offered</th><th></th><th>We Counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table></div>')
     elif act == "INCOMPLETE":
         rows = "".join(f'<tr><td class="c"><span class="cb"></span></td><td><span class="pill {f["sev"].lower()}">{f["sev"]}</span> '
@@ -659,7 +664,7 @@ def multi_html(R, v):
     rk = R["ranked"]
     top = rk[0]
     band = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
-    pill = {"Accept": "rec", "Counter": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
+    pill = {"Accept": "rec", "Counter": "rec", "Wait": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
     rows = "".join(
         f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b>{FORM_MARK if r.get("form_assumed") else ""}</td>'
         f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
@@ -701,9 +706,14 @@ def multi_html(R, v):
     kt_cols = "".join(f'<col style="width:{w}%">' for w in widths)
     ctr = ""
     if v["action"] == "COUNTER" and top["counter_rows"]:
-        ctr = (f'<h2>Counter to {esc(top["label"])} <span class="h2s">Full Terms</span></h2><div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
+        # round 3 case 05: while final offers are due, the counter is the fallback; a deadline stays on one line
+        nw = lambda a: ' class="oneline"' if a == "Time for Acceptance" else ""  # noqa: E731
+        sub = "If the Final Offer Doesn't Improve" if v.get("wait") else "Full Terms"
+        ctr = (f'<h2>{"Fallback " if v.get("wait") else ""}Counter to {esc(top["label"])} <span class="h2s">{esc(sub)}</span></h2>'
+               '<div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
                '<thead><tr><th>Term</th><th>Offered</th><th>Counter</th><th>Why</th></tr></thead><tbody>'
-               + "".join(f'<tr><td>{esc(a)}</td><td>{esc(b)}</td><td class="good"><b>{esc(c)}</b></td><td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
+               + "".join(f'<tr><td>{esc(a)}</td><td{nw(a)}>{esc(b)}</td><td class="good{" oneline" if nw(a) else ""}"><b>{esc(c)}</b></td>'
+                         f'<td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
                + "</tbody></table></div>")
     # OFR-324: the page title and the table heading say different things
     details = f'''<div class="pb"></div><div class="dh">Offer Details</div>
@@ -781,6 +791,7 @@ SPILL_RETRY_PX = 40  # Chromium's print layout can run a little longer than the 
 
 
 LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines: the detail pages print denser instead
+SHORT_TAIL = 0.35  # a last page under this full prints denser when that saves the page (else it stays as it was)
 _PAGE = re.compile(r'<page width="[\d.]+" height="([\d.]+)">')
 _WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
 MARGIN_TOP, MARGIN_BOTTOM = 0.3 * 72, 0.4 * 72  # the page margins (render.html_to_pdf), in PDF points
@@ -851,6 +862,13 @@ def write_pdf(R, agent, sample, mode, offer_id, out_dir):
         fit = limit - SPILL_RETRY_PX if "spill" in found else limit
         dense = "tail" in found
         top, blocks = pdf(fit, dense)
+    if not dense and top <= fit:  # round 3 case 05: a short last page is kept only when printing denser can't save it
+        now = pages(path)
+        if now and len(now) > 2 and now[-1][0] < SHORT_TAIL:
+            top, blocks = pdf(fit, True)
+            denser = pages(path)
+            if not denser or len(denser) >= len(now) or "spill" in page_problems(denser):
+                top, blocks = pdf(fit)
     if top > fit:
         print(overflow_warning(name, top, fit, blocks), file=sys.stderr)
     return path

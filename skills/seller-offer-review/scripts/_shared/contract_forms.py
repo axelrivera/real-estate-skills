@@ -351,6 +351,38 @@ def appraisal_form(form, item=None, financing=None):
     return "E" if "E" in codes else "F" if "F" in codes else None
 
 
+# The Escalation Addendum (farbar-addenda.md EAC-1): how the added amount is paid, (a) cash at closing with proof of
+# funds attached or (b) financed, with (a) when neither box is checked; and the competing offer is proven by a copy
+# the seller delivers with the competing buyer's identity redacted.
+_EAC_NAME = re.compile(r"\bEAC(-1)?\b|escalation addendum", re.I)
+
+
+def eac_named(form, item=None):
+    """True when a FAR/BAR offer's escalation is on the Escalation Addendum (EAC-1): its name in `addenda` or `riders`."""
+    if form not in FARBAR:
+        return False
+    item = item or {}
+    return any(_EAC_NAME.search(str(n)) for n in list(item.get("riders") or []) + list(item.get("addenda") or []))
+
+
+def escalation_paid_in_cash(form, item=None):
+    """True when the escalated amount is paid in cash at closing, False when it's financed, None when not known.
+    `escalation.paid_in_cash` as read wins; on EAC-1 with neither box recorded, the form's default, cash."""
+    item = item or {}
+    e = item.get("escalation") if isinstance(item.get("escalation"), dict) else {}
+    if e.get("paid_in_cash") is not None:
+        return bool(e["paid_in_cash"])
+    return True if eac_named(form, item) else None
+
+
+def escalation_proof_stated(form, item=None):
+    """True when the escalation's own terms say how a competing offer is proven: `escalation.proof` as read, or EAC-1
+    (the seller delivers a redacted copy of the competing offer), so nobody needs to ask."""
+    item = item or {}
+    e = item.get("escalation") if isinstance(item.get("escalation"), dict) else {}
+    return bool(e.get("proof")) or eac_named(form, item)
+
+
 def appraisal_in_loan_approval(form, item=None, financing=None):
     """True when a FAR/BAR financed offer has no appraisal rider or addendum (no F, E or AGA-1): Para. 8(b)(2) makes
     the lender's appraisal part of Loan Approval, so the appraisal window is the Loan Approval Period (both forms)."""

@@ -87,8 +87,9 @@ class HighestAndBest(unittest.TestCase):  # OFR-320
         s = out["summary"]
         self.assertNotIn("Call for Highest & Best", self.options(out))
         self.assertIn("highest_and_best_pending", s["plan_keys"])
-        self.assertEqual(s["respond_by_also"][0]["key"], "highest_and_best")
-        self.assertEqual(s["respond_by_also"][0]["when"], "Wed Sep 23, 12:00 PM")
+        # round 3 case 05: while it's pending, the call's deadline is the Respond By deadline itself
+        self.assertEqual((s["respond_by"], s["respond_by_offer"]), ("Wed Sep 23, 12:00 PM", "Highest & Best Due"))
+        self.assertNotIn("highest_and_best", [x["key"] for x in s["respond_by_also"]])
 
     def test_passed_call_is_not_a_deadline(self):
         _, out = multi(data({"highest_and_best_due": "2026-09-21 12:00"}))

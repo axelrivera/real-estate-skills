@@ -1186,6 +1186,7 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
         if pa.get("loan_cap") or ctx["loan_amount"]:
             offer["approval_max_loan"] = pa.get("loan_cap") or ctx["loan_amount"]
         offer["approval_expires"] = (_dt(pa["date"]).date() + timedelta(days=90)).isoformat()
+        offer["approval_documented"] = True  # the letter says credit, income and asset documentation were reviewed
     if ctx["warranty_by"] == "seller" and ctx["warranty_max"]:
         offer["home_warranty"] = ctx["warranty_max"]
     if form == cf.STANDARD and ctx["repair_limits"]:
@@ -1213,7 +1214,8 @@ def _offer_key(ctx, form, docs, riders, bb_form, bb, mock, counters=()):
     if "EAC" in addenda:
         a = addenda["EAC"]
         offer["escalation"] = {"cap": a.get("maximum_price") or round(ctx["price"] * 1.05, -3),
-                               "increment": a.get("escalation_amount") or 2500, "proof": True}
+                               "increment": a.get("escalation_amount") or 2500, "proof": True,
+                               "paid_in_cash": (a.get("pay") or "cash") == "cash"}  # EAC-1 (a) cash, as fields/EAC.json checks
     if "X" in codes:
         offer["kickout"] = True
     if "U" in codes:

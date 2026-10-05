@@ -27,7 +27,7 @@ For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential cont
 | `appraisal_contingency`, `appraisal_gap`, `appraisal_form` | No appraisal rider or addendum on a financed offer: leave `appraisal_contingency` out; Para. 8(b)(2) makes the lender's appraisal part of Loan Approval, and the engine uses the loan approval period. Rider F (appraisal due by its date, 10 days before closing if blank, then 3 days for notice); Rider E (FHA/VA amendatory clause: protection to closing, can't be waived, a gap clause is intent only); the Appraisal Gap Addendum (AGA-1, conventional or cash only: set `appraisal_form: aga`, its Gap Amount in `appraisal_gap` and any filled periods in `aga_valuation_days` / `aga_renegotiate_days`) or additional terms for gap language |
 | `gap_funds` | Financed offer that waives the appraisal: the buyer's documented cash beyond the down payment and closing costs (proof of funds). The waiver is credited only up to it |
 | `sale_contingency_days`, `kickout` | Rider V (a sale date, no default: count days from the analysis date to that date plus 3) and Rider X |
-| `escalation` | Escalation Addendum (EAC-1) or additional terms: `cap`, `increment`, and `proof` (EAC-1: a redacted copy of the competing offer) |
+| `escalation` | Escalation Addendum (EAC-1) or additional terms: `cap`, `increment`, `proof` (EAC-1: a redacted copy of the competing offer), `paid_in_cash` (EAC-1's checked box: (a) cash at closing `true`, (b) financed `false`) and `proof_of_funds` (the amount of a proof of funds attached to the addendum) |
 | `rent_back_days`, `rent_back_monthly` | Rider U |
 | `seller_financing` | Rider C (note amount) |
 | `assessment_payoff` | Rider EE or the CDD addendum, when the seller agrees to pay off the balance |

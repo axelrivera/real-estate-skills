@@ -96,7 +96,7 @@ def risk_topic(o, f):
     if f.get("topic"):
         t = f["topic"]
         return {"approval_cap": "financing", "concessions_cap": "financing", "fha_gap_intent": "appraisal_gap",
-                "escalation_cap_over_approval": "financing"}.get(t, t)
+                "escalation_cap_over_approval": "financing", "escalation_cash_short": "financing"}.get(t, t)
     issue = f["issue"]
     if o["sale_contingency_days"] and issue.startswith("Contingent on sale"):
         return "sale_contingency"
@@ -306,21 +306,39 @@ def confirm_listing_side(R, profile_brokerage=None):
     against each other: a different name is asked once, as an item to confirm (the contract's broker block and Rider
     GG name the listing side; a wrong one is a correction before signing)."""
     live = R["active"] + R["incomplete"]
-    named = []
-    for o in live:
-        n = str(o.get("listing_brokerage") or "").strip()
-        if n and not any(same_firm(n, x) for x, _ in named):
-            named.append((n, o))
+    given = [(str(o.get("listing_brokerage") or "").strip(), o) for o in live]
+    given = [(n, o) for n, o in given if n]
+    named = []  # one entry per firm, with every offer that names it
+    for n, o in given:
+        hit = next((x for x in named if same_firm(n, x[0])), None)
+        if hit:
+            hit[1].append(o)
+        else:
+            named.append((n, [o]))
     mine = str(profile_brokerage or "").strip()
-    off = [(n, o) for n, o in named if mine and not same_firm(n, mine)]
+    off = [(n, os_) for n, os_ in named if mine and not same_firm(n, mine)]
     if not (off or (not mine and len(named) > 1)):
         return
     shown = off or named
-    names = " and ".join(f"{n} ({o['label']})" if len(live) > 1 else n for n, o in shown)
-    why = (f"Listing brokerage: the contract names {names}, but your profile says {mine}. Confirm the listing side on "
-           "the contract and in any compensation agreement before signing" if mine else
-           f"Listing brokerage: the contracts name {names}. Confirm the listing side on each contract before signing")
-    a = {"scope": "listing", "field": "listing_brokerage", "value": shown[0][0], "impact": "med", "why": why}
+    # Round 3 case 05: one firm on every contract is named once ("both contracts name"), never with one offer's name in
+    # brackets; different firms name each offer that carries them
+    if len(named) == 1:
+        count = len(named[0][1])
+        whose = ("the contract names" if count == 1 else "both contracts name" if count == 2 else
+                 f"all {count} contracts name")
+        names = f"{whose} {named[0][0]}"
+    else:
+        names = "the contracts name " + " and ".join(
+            f"{n} ({', '.join(o['label'] for o in os_)})" for n, os_ in shown)
+    tail = (f", but your profile says {mine}. Confirm the listing side on the contract and in any compensation agreement "
+            "before signing" if mine else ". Confirm the listing side on each contract before signing")
+    why = f"Listing brokerage: {names}{tail}"
+    # a single review cites only its own contract
+    one = (tail if mine else "; the offers don't all name the same one. Confirm the listing side on the contract before "
+           "signing")
+    single = {o["id"]: f"Listing brokerage: the contract names {n}{one}" for n, os_ in shown for o in os_}
+    a = {"scope": "listing", "field": "listing_brokerage", "value": shown[0][0], "impact": "med", "why": why,
+         "why_single": single, "offers": list(single)}
     R["assumptions"].append(a)
     lows = [i for i, x in enumerate(R["missing"]) if x["impact"] == "low"]
     R["missing"].insert(lows[0] if lows else len(R["missing"]), a)
@@ -427,10 +445,11 @@ def price_note(o):
     return fin_str(o) + (f" · {o['escalation_note']}" if o.get("escalation") else "")
 
 
-def target_note(o):
-    """Iteration 10 evals 2, 4: each offer's target closes on that offer's date, so the tile names it (the comparison's
-    target names its own), and the seller sees why the targets differ."""
-    return f"list price, clean terms, closing {o['close']:%b %-d}"
+def target_note(o, R=None):
+    """The Seller's Target tile's caption, on the date its number closes on: one target per listing, on the recommended
+    offer's closing date (one_target, R["target_close"]; round 3 case 05: a backup's tile named its own date)."""
+    close = (R or {}).get("target_close") or o["close"]
+    return f"list price, clean terms, closing {close:%b %-d}"
 
 
 def fin_str(o):
@@ -543,11 +562,18 @@ def confirm_items(R, limit=4, offer_id=None):
     return high + terms + med
 
 
+def why_for(a, offer_id=None):
+    """An assumption's wording for this report: a single review of one of several offers gets its own (`why_single`,
+    round 3 case 05: it never cites another offer's contract), else the shared wording."""
+    return (a.get("why_single") or {}).get(offer_id) or a["why"]
+
+
 def to_confirm(R, limit=4, offer_id=None):
     out = []
     for a in confirm_items(R, limit, offer_id):
-        if a["why"] not in out:  # OFR-353: one question per ask, however many offers it covers
-            out.append(a["why"])
+        why = why_for(a, offer_id)
+        if why not in out:  # OFR-353: one question per ask, however many offers it covers
+            out.append(why)
     return out
 
 
@@ -676,7 +702,59 @@ def respond_by(o):
     if not o.get("expires"):
         return "No time stated"  # OFR-120: a fact, not a place to look
     return f"Passed ({o['expires']})" if o.get("lapsed") == "passed" else \
-        f"Likely passed ({o['expires']})" if o.get("lapsed") == "likely" else o["expires"]
+        f"Likely passed ({o['expires']})" if o.get("lapsed") == "likely" else short_when(o.get("expires_raw")) or o["expires"]
+
+
+# Round 3 case 05: with a call for highest and best still out, the plan is to wait for the final offers and then decide;
+# the counter (or acceptance) the review works out is only the fallback if the final offer doesn't improve
+WAIT_HEADLINE, WAIT_TITLE = "WAIT FOR FINAL OFFERS", "Wait for Final Offers, Then Decide"
+
+
+def waiting(R):
+    hb = R.get("highest_and_best")
+    return bool(hb and hb["pending"])
+
+
+def fallback(o, where=None, its=False):
+    """'If the final Ostrander (Tidewater Key Realty) offer doesn't improve: counter at $504,000' (`where`: where its
+    full terms are, "below" or "the plan"; `its`: "If its final offer", right after a sentence that names it)."""
+    name = "its final offer" if its else "the final " + (o["ref"][4:] if o["ref"].startswith("the ") else o["ref"])
+    if o["action"] != "COUNTER":
+        return f"If {name} doesn't improve: accept it as written"
+    price = o["counter_terms"]["price"]
+    what = f"counter at {money(price)}" if price != o["price"] else "counter"
+    return f"If {name} doesn't improve: {what}" + (f" ({where})" if where else "")
+
+
+def wait_option(hb):
+    return {"option": "Wait for Final Offers", "short": "Wait for Final Offers", "net": "—", "certainty": "—",
+            "status": "good", "recommended": True,
+            "what": f"Nothing goes out before {short_when(hb.get('raw')) or hb['due']}; then decide on the final terms"}
+
+
+def wait_note(hb, o):
+    """For the chat reply: the deadline to wait for and the fallback, in words."""
+    return {"due": short_when(hb.get("raw")) or hb["due"], "fallback": fallback(o)}
+
+
+def short_name(o, R):
+    """An offer's name where space is tight (the Respond By box): the label's first part (the buyer's agent's surname),
+    or the whole label when another offer's starts the same way."""
+    first = o["label"].split(" · ")[0]
+    if any(x is not o and x["label"].split(" · ")[0] == first for x in R["offers"]):
+        return o["label"]
+    return first
+
+
+def wait_respond_by(R, hb, o, also):
+    """(respond_by, respond_by_offer, respond_by_also) while waiting for final offers: the deadline first, then the
+    fallback offer's own time for acceptance (the fallback has to go out before it) and the other deadlines."""
+    out = []
+    if expires_at(o) and not o.get("lapsed"):
+        out.append({"when": short_when(o.get("expires_raw")) or o["expires"], "what": f"{short_name(o, R)} Offer Expires",
+                    "key": "offer_expires"})
+    out += [a for a in also if a["key"] != "highest_and_best"]
+    return short_when(hb.get("raw")) or hb["due"], "Highest & Best Due", out
 
 
 def deadline_note(S):
@@ -744,7 +822,7 @@ def incomplete_view(R, o):
         "kpis": [{"label": "Offer Price", "value": money(o["price"]), "note": price_note(o), "tone": "brand"},
                  {"label": "Net as Written", "value": money(o["ns"]["net_adj"]), "note": "for reference only", "tone": ""},
                  {"label": "Downside Net", "value": money(o["ns_down"]["net_adj"]), "note": downside_note(o, L), "tone": "risk"},
-                 {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": target_note(o), "tone": ""}],
+                 {"label": "Seller's Target Net", "value": money(o["target"]["net_adj"]), "note": target_note(o, R), "tone": ""}],
         "certainty": certainty(o, S, R["costs"]),
         # contract issues are in fixes; iteration 9 evals 1, 5: a listing-side reminder is never a top risk
         "risks": [{"sev": f["sev"], "issue": f["issue"]} for f in deal_flags(o) if not f.get("contract")][:3],
@@ -821,7 +899,7 @@ def single_view(R, o):
         kpis.append({"label": "Net with Our Counter", "value": money(cn), "tone": "good",
                      "note": f"{signed(cn - ao)} vs. as offered" if cn >= ao else f"{signed(cn - dn)} vs. downside; protects the price"})
     else:
-        kpis.append({"label": "Seller's Target Net", "value": money(tgt), "note": target_note(o), "tone": ""})
+        kpis.append({"label": "Seller's Target Net", "value": money(tgt), "note": target_note(o, R), "tone": ""})
 
     score = o["score"]["total"]
     opts = [{"option": "Accept as Written", "net": money(ao), "certainty": f"{score}/100", "status": "good" if score >= 80 else "risk",
@@ -860,14 +938,26 @@ def single_view(R, o):
     if act == "BACKUP" and lapse:  # OFR-319: the backup's own deadline ends before the counter to the top offer does
         first.append(f"Its time for acceptance ends {lapse['ends']}, before the counter to {lapse['offer']} does: I'll ask "
                      f"the buyer's agent to extend it past {lapse['until']}.")
+    wait = waiting(R) and act in ("COUNTER", "ACCEPT")
     if first:
-        nxt = " ".join(first) + " Then " + nxt
+        nxt = " ".join(first) + (" " + fallback(o).split(":")[0] + ": " if wait else " Then ") + nxt
+    headline, heading = ("HOLD AS BACKUP" if act == "BACKUP" else act), title(act, o)
+    rb, rb_offer, also = respond_by(o), (o["label"] if o.get("expires") else None), respond_also(R, shown=o)  # OFR-320
+    if act == "BACKUP" and lapse:  # round 3 case 05: the comparison's label for this deadline, in every report
+        rb_offer = "Backup: Ask to Extend"
+    if wait:  # round 3 case 05: the plan is to wait for the final offers; the counter is the fallback
+        headline, heading = WAIT_HEADLINE, WAIT_TITLE
+        why = (f"Highest and best is due {hb['due']}: nothing goes out before then. {fallback(o, 'below')}. " + why)
+        for x in opts:
+            x["recommended"] = False
+        opts.insert(0, wait_option(hb))
+        rb, rb_offer, also = wait_respond_by(R, hb, o, also)
     return {
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
-        "action": act, "headline": "HOLD AS BACKUP" if act == "BACKUP" else act, "title": title(act, o), "why": why,
+        "action": act, "headline": headline, "title": heading, "why": why, "wait": wait_note(hb, o) if wait else None,
         "offers_active": len(R["active"]) if multi_ctx else 1,
-        "respond_by": respond_by(o), "respond_by_offer": o["label"] if o.get("expires") else None,
-        "respond_by_also": respond_also(R, shown=o),  # OFR-320
+        "respond_by": rb, "respond_by_offer": rb_offer,
+        "respond_by_also": also,
         "priority": S.get("priority_note") or S["priority"].title(),
         "counter": counter, "compare": compare, "kpis": kpis,
         "certainty": certainty(o, S, R["costs"]),
@@ -896,7 +986,7 @@ def first_expiry(R):
         s = str(o["expires_raw"]).strip()
         return s if len(s) > 10 else f"{s} 23:59"
     o = min(ex, key=when)
-    return o["expires"], o["label"], o
+    return short_when(o.get("expires_raw")) or o["expires"], o["label"], o
 
 
 def respond_also(R, held=(), shown=None):
@@ -917,8 +1007,11 @@ def respond_also(R, held=(), shown=None):
     if first and first is not shown and all(first is not o for o in held) and len(R["active"]) > 1:
         mine = expires_at(shown) if shown and not shown.get("lapsed") else None
         if mine is None or expires_at(first) < mine:
-            out.append({"when": short_when(first.get("expires_raw")) or first["expires"], "what": f"{first['label']} Expires",
-                        "key": "offer_expires"})
+            # round 3 case 05: the plan's backup that lapses first carries the comparison's label in every report
+            lapse = bool(first.get("lapses_before"))
+            out.append({"when": short_when(first.get("expires_raw")) or first["expires"],
+                        "what": "Backup: Ask to Extend" if lapse else f"{short_name(first, R)} Offer Expires",
+                        "key": "backup_lapses" if lapse else "offer_expires"})
     return out
 
 
@@ -951,8 +1044,10 @@ def multi_view(R):
     if lapse:  # OFR-319: its own deadline ends before the counter's
         lead += f" Its time for acceptance ends first ({lapse['ends']}): ask its agent to extend it."
     hb = R.get("highest_and_best")
-    if hb and hb["pending"]:  # OFR-320: final offers are still coming in
-        lead += f" Highest and best is due {hb['due']}: nothing goes out before then."
+    wait = waiting(R)  # round 3 case 05: wait for the final offers, then decide; the plan below is the fallback
+    if wait:  # OFR-320: final offers are still coming in
+        lead = (f"Highest and best is due {hb['due']}: nothing goes out before then; then decide on the final offers. "
+                f"As the offers stand, {lead[:1].lower() + lead[1:]} {fallback(top, 'the plan', its=True)}.")
     if R["incomplete"]:
         n = len(R["incomplete"])
         names = ", ".join(x["label"] for x in R["incomplete"])
@@ -964,9 +1059,10 @@ def multi_view(R):
     for o in rk:
         a = o["action"]
         if o is top and a == "COUNTER":
-            t = "Counter: " + " · ".join(f"{r[0].lower()} {r[2]}" for r in o["counter_rows"][:5])
+            t = ("If its final offer doesn't improve, counter: " if wait else "Counter: ") + \
+                " · ".join(f"{r[0].lower()} {r[2]}" for r in o["counter_rows"][:5])
         elif o is top:
-            t = "Accept as written"
+            t = "If its final offer doesn't improve, accept as written" if wait else "Accept as written"
         elif a == "BACKUP":
             # OFR-251: the backup keeps its own price; a counter price would read as an ask. Only an escalated price
             # differs from what the buyer wrote, and then the note says so (iteration 12: the base, increment and cap are
@@ -979,6 +1075,9 @@ def multi_view(R):
             t = o["action_reason"]
         terms[o["id"]] = t
     summary = f"Net after holding with {top['ref']} {'counter' if act == 'COUNTER' else 'as written'}: **{money(top_net)}**"
+    if wait:
+        summary = (f"If the final offer doesn't improve, net after holding with the "
+                   f"{'counter' if act == 'COUNTER' else 'offer as written'}: **{money(top_net)}**")
     if act == "COUNTER":
         summary += f" ({signed(top_net - top['ns']['net_adj'])} vs. as offered"
         summary += f", {signed(top_net - top['ns_down']['net_adj'])} vs. downside)" if top_net < top["ns"]["net_adj"] else ")"
@@ -993,7 +1092,8 @@ def multi_view(R):
                "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                "price": money(o["price"]) + (" (escalated)" if o.get("escalated") else ""), "net": money(o["ns"]["net_adj"]), "downside": money(o["ns_down"]["net_adj"]),
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
-               "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
+               "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else
+               "Wait" if wait and o is top else o["action"].title(),
                "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],
                "terms": terms[o["id"]], "form_assumed": form_assumed(R, o),
                "escalation": oe.escalation_terms(o)} for i, o in enumerate(rk)]  # iteration 12: base, increment, cap
@@ -1027,9 +1127,12 @@ def multi_view(R):
     if not hb:  # OFR-320: a call for highest and best already out isn't offered again
         opts.append({"option": "Call for Highest & Best", "net": "Unknown", "certainty": "Varies", "status": "caution",
                      "recommended": False, "what": "May lift prices, but adds ~2 days and weak terms usually stay weak"})
+    if wait:  # the plan's response is the fallback once the final offers are in
+        opts[0].update(recommended=False, what="The fallback if the final offers don't improve: best net with manageable risk")
+        opts.insert(0, wait_option(hb))
     verb = "send the counter to" if act == "COUNTER" else "accept"
-    nxt = (f"final offers are due {hb['due']} (highest and best); once they're in, I'll run the review again. Then "
-           if hb and hb["pending"] else "")
+    nxt = (f"final offers are due {hb['due']} (highest and best); once they're in, I'll run the review again. "
+           f"{fallback(top).split(':')[0]}: " if wait else "")
     nxt += (("a" if nxt else "A") + "pprove the plan and I'll "
             + (f"ask the buyer's agent on {backup['ref']} to extend past {lapse['until']}, then "
                if lapse else "")
@@ -1037,10 +1140,15 @@ def multi_view(R):
             + (f"; once that contract is fully signed, I'll offer {backup['ref']} a backup position" if backup else "") + ".")
     rb = first_expiry(R)
     also = respond_also(R, [backup] if lapse else [], shown=rb[2])
+    if wait:
+        when, what, also = wait_respond_by(R, hb, top, also)
+        rb = (when, what, top)
     keys = (["backup_lapses"] if lapse else []) + (
         [f"highest_and_best_{'pending' if hb['pending'] else 'done'}"] if hb else [])
     return {
-        "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act, "headline": act, "title": title(act, top), "why": lead,
+        "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act,
+        "headline": WAIT_HEADLINE if wait else act, "title": WAIT_TITLE if wait else title(act, top), "why": lead,
+        "wait": wait_note(hb, top) if wait else None, "who": f"Leading Now: {top['label']}" if wait else None,
         "offers_active": len(R["active"]) + len(R["incomplete"]), "offers_incomplete": len(R["incomplete"]),
         "respond_by": rb[0], "respond_by_offer": rb[1], "respond_by_also": also,
         "plan_keys": keys,  # OFR-319, OFR-320: what the plan adds, as keys
@@ -1117,7 +1225,7 @@ def result(R, mode="auto", offer_id=None):
         "to_confirm": to_confirm(R, offer_id=sid),  # OFR-352
         "estimated_costs": estimated_costs(R, offers),  # OFR-272: named in one line in every quick answer
         # OFR-352: the list the report shows, the one the Preliminary line and the data note count
-        "assumptions": [{"impact": a["impact"], "where": place(R, a, sid), "what": a["why"], "field": a["field"]}
+        "assumptions": [{"impact": a["impact"], "where": place(R, a, sid), "what": why_for(a, sid), "field": a["field"]}
                         for a in listed_assumptions(R, mode == "multi", sid)],
         "cost_notes": L["cost_notes"],
         "market_notes": R["market_notes"],
