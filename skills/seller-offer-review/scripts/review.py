@@ -412,8 +412,9 @@ def confirm_listing_side(R, profile_brokerage=None):
     why = t("lb_why", names=names, tail=tail)
     one = tail if mine else L_["lb_tail_disagree"]  # a single review cites only its own contract
     single = {o["id"]: t("lb_why_single", name=n, tail=one) for n, os_ in shown for o in os_}
+    # the agent's own brokerage and profile: asked in chat (`agent`), never on the seller's report
     a = {"scope": "listing", "field": "listing_brokerage", "value": shown[0][0], "impact": "med", "why": why,
-         "why_single": single, "offers": list(single)}
+         "why_single": single, "offers": list(single), "agent": True}
     R["assumptions"].append(a)
     lows = [i for i, x in enumerate(R["missing"]) if x["impact"] == "low"]
     R["missing"].insert(lows[0] if lows else len(R["missing"]), a)
@@ -549,14 +550,16 @@ def listed_assumptions(R, multi=False, offer_id=None, defaults=False):
     OFR-344: `offer_id` (a single review of one of several offers) drops a listing assumption that applies only to
     other offers (`offers`: the tax bill question for an offer closing in November or December), and OFR-346 an
     assumption scoped only to other offers (their compensation agreement, their loan terms). A default commission
-    (`default`) is a default, not an assumption: never listed or counted, unless `defaults` (the chat's questions)."""
+    (`default`) is a default, not an assumption, and an item about the listing agent's own business (`agent`: their
+    listing agreement, their brokerage against their profile) is theirs to confirm: neither is listed or counted on the
+    seller's report, unless `defaults` (the chat's questions)."""
     def mine(a):
         offers = [x for x in oe.scopes(a) if x.startswith("offer ")]
         return not offers or f"offer {offer_id}" in offers
     return [a for a in R["missing"] if (not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"
                                         or a.get("also")) and (offer_id is None or (offer_id in a.get("offers", [offer_id])
                                                                                     and mine(a)))
-            and (defaults or not a.get("default"))]
+            and (defaults or not (a.get("default") or a.get("agent")))]
 
 
 # OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in
@@ -1683,7 +1686,7 @@ def report_notes(R, mode, sid, offers, confirm):
     for a in confirm:
         N.add(akey(a), why_for(a, sid), "assumption")
     for a in R["missing"]:
-        if a.get("default"):
+        if a.get("default") or a.get("agent"):
             N.add(akey(a), a["why"], "chat_only")
     ids = {o["id"] for o in offers}
     for n in L["cost_notes"]:

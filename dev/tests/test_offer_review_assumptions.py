@@ -97,12 +97,16 @@ class Scope(unittest.TestCase):
         self.assertTrue(all(a in review.listed_assumptions(R, False, "B") for a in only_b))
 
     def test_shared_item_names_only_its_offer(self):
-        R = review.analyze(case05())
-        a = next(a for a in R["missing"] if a.get("also") and a["scope"].startswith("offer "))
+        R = review.analyze(case05(both={"deposit": None}))  # one report item both offers share (the agent's own items are chat only)
+        a = next(a for a in R["missing"] if a.get("also") and a["scope"].startswith("offer ") and not a.get("agent"))
         ids = [x[6:] for x in [a["scope"], *a["also"]] if x.startswith("offer ")]
         others = [o["label"] for o in R["offers"] if o["id"] in ids[1:]]
         self.assertFalse([lab for lab in others if lab in json.dumps(review.result(R, "single", ids[0])["doc"]["confirm"], ensure_ascii=False)])
         self.assertTrue(all(lab in json.dumps(review.result(R, "multi")["doc"]["confirm"], ensure_ascii=False) for lab in others))
+        # the listing agent's own items (their listing agreement, their brokerage) never reach the seller's report
+        for sid in (None, "A", "B"):
+            doc = json.dumps(review.result(R, "single" if sid else "multi", sid)["doc"]["confirm"], ensure_ascii=False)
+            self.assertNotIn("listing agreement", doc)
 
 
 class ToConfirm(unittest.TestCase):
@@ -191,11 +195,14 @@ class ToConfirm(unittest.TestCase):
 
 class ListingBrokerage(unittest.TestCase):
     """The listing brokerage the contracts name is checked against the profile's, once, never pinning one offer's firm
-    on another."""
+    on another, and asked in the chat only (the agent's own business, never on the seller's report)."""
 
     def found(self, d, sid=None, agent=PROFILE):
+        """(the listing-brokerage asks in the chat, every chat ask): the agent's own brokerage is asked in the chat only,
+        never listed on the seller's report."""
         out = review.result(review.analyze(d, agent=agent), "single" if sid else "multi", sid)
-        return [a["what"] for a in out["assumptions"] if a["field"] == "listing_brokerage"], out["to_confirm"]
+        self.assertEqual([a for a in out["assumptions"] if a["field"] == "listing_brokerage"], [])
+        return [q for q in out["to_confirm"] if q.startswith("Listing brokerage")], out["to_confirm"]
 
     def test_profile_mismatch_asked_once(self):
         d = case05(both={"listing_brokerage": "Greenleaf Realty Partners"})

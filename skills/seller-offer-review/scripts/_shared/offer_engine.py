@@ -748,6 +748,7 @@ def prepare_offer(o, L, S, A):
         A.add(sc, "buyer_broker_paid_by", "listing broker", "Buyer's broker paid by the listing broker from its own fee "
               "(Rider GG signed broker to broker, or the listing agreement), so it's left out of the seller's net. Confirm "
               "the listing agreement says so", "med")
+        A.items[-1]["agent"] = True  # the listing agent's own agreement: asked in chat, never on the seller's report
     if o["bb_from_listing"] and o.get("buyer_broker_pct") is None and o.get("buyer_broker_amount") is None:
         # Not a cost to the seller, so not an assumption: the default share only sizes an assumed listing fee.
         o["buyer_broker_pct"], o["bb_tag"] = S["default_buyer_broker_pct"] or 0, None
