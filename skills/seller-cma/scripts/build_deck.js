@@ -62,8 +62,26 @@ function fit(text, w, h, { size, min = size, lines = 1, bold = false, oneLineMin
   const ok = (sz, ln) => { const k = lineCount(text, sz, w, bold); return k <= ln && k * sz * LEAD / 72 <= h + 0.02; };
   if (oneLineMin) for (let sz = size; sz >= oneLineMin - 1e-9; sz -= 0.5) if (ok(sz, 1)) return sz;
   for (let sz = size; sz >= min - 1e-9; sz -= 0.5) if (ok(sz, lines)) return sz;
-  checks.push(`slide ${slideNo} (${where}): ${what || 'text'} "${String(text).slice(0, 60)}" doesn't fit its box; shorten it in deck and rebuild.`);
+  const most = fitChars(text, t => { const k = lineCount(t, min, w, bold); return k <= lines && k * min * LEAD / 72 <= h + 0.02; });
+  checks.push(`slide ${slideNo} (${where}): ${what || 'text'} "${String(text).slice(0, 60)}" doesn't fit its box: ${tooLong(most, text)} in deck and rebuild.`);
   return min;
+}
+// Iteration 12: a text-fit check says how much fits. fitChars() is the length of the longest run of whole words, from
+// the start, for which `fits` holds (0 when even the first word doesn't); tooLong() words the fix with both lengths.
+function fitChars(text, fits) {
+  const words = String(text).split(/ +/).filter(Boolean);
+  let best = 0;
+  for (let k = 1; k <= words.length; k++) {
+    const part = words.slice(0, k).join(' ');
+    if (!fits(part)) break;
+    best = part.length;
+  }
+  return best;
+}
+function tooLong(most, text, name = 'it') {
+  const has = String(text).length;
+  return most > 0 ? `at most about ${most} characters fit and ${name} has ${has}; shorten ${name} to ${most} characters or fewer`
+    : `its first word is wider than the box (${name} has ${has} characters); use shorter words`;
 }
 
 async function icon(name, color, size = 256) {
@@ -404,7 +422,11 @@ async function icon(name, color, size = 256) {
     let size = 12.5;  // the list as a whole fits its 3.1" box (bullet indent ~0.3", 6 pt after each item)
     const listH = sz => C.needs_short.reduce((a, t) => a + lineCount(t, sz, 4.0) * sz * LEAD / 72 + 6 / 72, 0);
     while (size > 10 && listH(size) > 3.1) size -= 0.5;
-    if (listH(size) > 3.1) checks.push(`slide ${slideNo} (${where}): deck.needs_short doesn't fit; shorten the items and rebuild.`);
+    if (listH(size) > 3.1) {
+      const has = C.needs_short.reduce((a, t) => a + String(t).length, 0);
+      const most = Math.floor(has * 3.1 / listH(size));  // the same items, scaled to the box at the smallest size
+      checks.push(`slide ${slideNo} (${where}): deck.needs_short doesn't fit: at most about ${most} characters fit across the ${C.needs_short.length} items and they have ${has}; shorten the items (or drop one) to ${most} characters or fewer in all and rebuild.`);
+    }
     s.addText(C.needs_short.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < C.needs_short.length - 1 } })),
       { x: M, y: 1.6, w: 4.3, h: 3.1, fontFace: FONT, fontSize: size, color: ON, margin: 0, paraSpaceAfter: 6, valign: 'top', isTextBox: true });
     s.addText(T.deck_timeline, { x: 5.4, y: 1.15, w: 4.1, h: 0.35, fontFace: FONT, fontSize: 15, bold: true, color: ON_DARK, margin: 0, isTextBox: true });
@@ -441,7 +463,11 @@ async function icon(name, color, size = 256) {
     s.addTable(table, { x: M, y: TY, w: W - 2 * M, colW: cols, rowH, fontFace: FONT, fontSize, color: INK, valign: 'middle',
                         margin: [0.02, 0.06, 0.02, 0.06] });
     const y = TY + nRows * rowH + 0.15;
-    if (y + noteH > BOTTOM + 0.02) checks.push(`slide ${slideNo} (${where}): the table and its note don't fit together; shorten the note and rebuild.`);
+    if (y + noteH > BOTTOM + 0.02) {
+      const room = BOTTOM + 0.02 - y;
+      const most = fitChars(note, t => lineCount(t, noteSize, W - 2 * M) * noteSize * LEAD / 72 <= room);
+      checks.push(`slide ${slideNo} (${where}): the table and its note don't fit together: ${tooLong(most, note, 'the note')} and rebuild.`);
+    }
     s.addText(note, { x: M, y, w: W - 2 * M, h: Math.max(0.2, BOTTOM - y), fontFace: FONT, fontSize: noteSize, color: MUTED, margin: 0, valign: 'top', isTextBox: true });
     notes(s, speaker || note);
   };

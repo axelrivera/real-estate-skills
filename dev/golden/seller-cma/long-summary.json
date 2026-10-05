@@ -2,7 +2,7 @@
  "adjusted_max": 492300,
  "adjusted_min": 436200,
  "assumption_keys": [
-  "expected_below_range",
+  "expected_sale_ratio",
   "title_fees_built_in"
  ],
  "assumptions": {
@@ -40,9 +40,10 @@
    1,
    2
   ],
-  "ratio": 0.9386,
-  "ratio_display": "93.9%",
-  "source": "export",
+  "floored": true,
+  "ratio": 0.97,
+  "ratio_display": "97.0%",
+  "source": "assumed",
   "top": [
    0
   ]
@@ -193,9 +194,9 @@
  "n_sold": 33,
  "net": {
   "after_holding": [
-   409698.0,
-   410742.0,
-   402442.5
+   423768.0,
+   424812.0,
+   419796.0
   ],
   "assumed": [
    {
@@ -215,18 +216,18 @@
   "columns": [
    {
     "net": null,
-    "net_before_payoff": 411818.0,
-    "total_costs": 39182.0
+    "net_before_payoff": 425888.0,
+    "total_costs": 40112.0
    },
    {
     "net": null,
-    "net_before_payoff": 411818.0,
-    "total_costs": 39182.0
+    "net_before_payoff": 425888.0,
+    "total_costs": 40112.0
    },
    {
     "net": null,
-    "net_before_payoff": 403216.5,
-    "total_costs": 33283.5
+    "net_before_payoff": 420570.0,
+    "total_costs": 34430.0
    }
   ],
   "has_tax": false,
@@ -253,9 +254,9 @@
   "rows": [
    {
     "amounts": [
-     451000,
-     451000,
-     436500
+     466000,
+     466000,
+     455000
     ],
     "display": {
      "count": 3
@@ -264,9 +265,9 @@
    },
    {
     "amounts": [
-     -11275.0,
-     -11275.0,
-     -10912.5
+     -11650.0,
+     -11650.0,
+     -11375.0
     ],
     "display": {
      "count": 3
@@ -275,9 +276,9 @@
    },
    {
     "amounts": [
-     -11275.0,
-     -11275.0,
-     -10912.5
+     -11650.0,
+     -11650.0,
+     -11375.0
     ],
     "display": {
      "count": 3
@@ -286,9 +287,9 @@
    },
    {
     "amounts": [
-     -3157.0,
-     -3157.0,
-     -3055.5
+     -3262.0,
+     -3262.0,
+     -3185.0
     ],
     "display": {
      "count": 3
@@ -297,9 +298,9 @@
    },
    {
     "amounts": [
-     -2330,
-     -2330,
-     -2258
+     -2405,
+     -2405,
+     -2350
     ],
     "display": {
      "count": 3
@@ -330,9 +331,9 @@
    },
    {
     "amounts": [
-     411818.0,
-     411818.0,
-     403216.5
+     425888.0,
+     425888.0,
+     420570.0
     ],
     "display": {
      "count": 3
@@ -352,9 +353,9 @@
    },
    {
     "amounts": [
-     409698.0,
-     410742.0,
-     402442.5
+     423768.0,
+     424812.0,
+     419796.0
     ],
     "display": {
      "count": 3
@@ -365,16 +366,16 @@
   "standard_terms": false,
   "tax_assumed": false,
   "totals": [
-   411818.0,
-   411818.0,
-   403216.5
+   425888.0,
+   425888.0,
+   420570.0
   ],
   "warnings": {
    "count": 0
   }
  },
  "net_basis": "after_holding",
- "net_spread": 8299.5,
+ "net_spread": 5016.0,
  "ok": true,
  "options_summary": {
   "net_header_sub": null
@@ -435,7 +436,7 @@
  },
  "preliminary": false,
  "recommendation": {
-  "expected_sale_value": 451000,
+  "expected_sale_value": 466000,
   "high": 480000,
   "list_price": 469900,
   "low": 455000
@@ -447,11 +448,11 @@
  "strategies": [
   {
    "down": 23995.0,
-   "expected_sale": 451000,
+   "expected_sale": 466000,
    "expected_sale_source": "rule",
    "list_price": 479900,
-   "net": 411818.0,
-   "net_after_holding": 409698.0,
+   "net": 425888.0,
+   "net_after_holding": 423768.0,
    "net_vs_recommended": -1044.0,
    "payment": 4146.69,
    "recommended": false,
@@ -459,11 +460,11 @@
   },
   {
    "down": 23495.0,
-   "expected_sale": 451000,
+   "expected_sale": 466000,
    "expected_sale_source": "rule",
    "list_price": 469900,
-   "net": 411818.0,
-   "net_after_holding": 410742.0,
+   "net": 425888.0,
+   "net_after_holding": 424812.0,
    "net_vs_recommended": 0.0,
    "payment": 4065.2,
    "recommended": true,
@@ -471,12 +472,12 @@
   },
   {
    "down": 22995.0,
-   "expected_sale": 436500,
+   "expected_sale": 455000,
    "expected_sale_source": "rule",
    "list_price": 459900,
-   "net": 403216.5,
-   "net_after_holding": 402442.5,
-   "net_vs_recommended": -8299.5,
+   "net": 420570.0,
+   "net_after_holding": 419796.0,
+   "net_vs_recommended": -5016.0,
    "payment": 3983.72,
    "recommended": false,
    "seller_credit": 5000

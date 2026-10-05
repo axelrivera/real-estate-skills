@@ -16,6 +16,7 @@ import json
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -1725,14 +1726,17 @@ class ResultsV4(unittest.TestCase):
         return R
 
     def test_expected_sale_rule(self):
-        """List x the recent sale-to-original-list ratio plus the option's credit, to $500; the top option expects the
-        recommended one's sale; page 1 and slide 2 say "About ..." from the recommended option, never typed."""
+        """List x the recent sale-to-final-list ratio plus the option's credit, to $500, never below the range; the top
+        option expects the recommended one's sale; page 1 and slide 2 say "About ..." from the recommended option,
+        never typed."""
         R = self.no_typed()
         C, homes = run(R)
-        ratio = C["handoff"]["market"]["sale_to_original_list_recent"]
+        ratio = C["expected_sale_basis"]["ratio"]
         top, rec, low = C["strategies"]
-        for x in (rec, low):
-            self.assertEqual(x["expected_sale"], round((x["list_price"] * ratio + x["seller_credit"]) / 500) * 500)
+        floor = R["recommendation"]["low"]
+        for x, cap in ((rec, rec["list_price"]), (low, R["recommendation"]["high"])):  # the last is the competing option
+            rule = round((x["list_price"] * ratio + x["seller_credit"]) / 500) * 500
+            self.assertEqual(x["expected_sale"], min(max(rule, floor), cap))
             self.assertEqual(x["expected_sale_source"], "rule")
         self.assertEqual(top["expected_sale"], rec["expected_sale"])  # a higher price buys time, not a higher sale
         self.assertEqual(C["recommendation"]["expected_sale"], "About " + rec["expected_sale_display"])
@@ -1799,10 +1803,15 @@ class ResultsV4(unittest.TestCase):
 
     def test_split_month_is_the_periods(self):
         R = report()
-        R["comps"]["method_note"] = "About 1.5% per quarter off sales from before August, since prices softened."
-        with self.assertRaisesRegex(compute.ReportError, r'comps\.method_note: says "before August".*\{split_month\}'):
+        R["market"]["intro"] = "Homes sold since August took longer to sell than in the spring."
+        with self.assertRaisesRegex(compute.ReportError, r'market\.intro: says "since August".*if this sentence compares '
+                                    r'the two periods, write "since \{split_month\}".*if it means another date'):
             run(R)
-        R["comps"]["method_note"] = "About 1.5% per quarter off sales from before {split_month}."
+        R["market"]["intro"] = "Homes sold since {split_month} took longer to sell than in the spring."
+        # iteration 12: a time adjustment's own cutoff is not the market split, in the method note or anywhere else
+        R["comps"]["method_note"] = "About 1.5% per quarter off sales from before August, since prices softened."
+        R["comps"]["intro"] = "Sales from before August are adjusted down for the softer market."
+        run(R)
         R["summary_page"]["why"][0] = "The home has sat since January without an offer."  # not a period boundary
         self.assertEqual(run(R)[0]["placeholders"]["split_month"], "July")
 
@@ -1916,3 +1925,123 @@ class ResultsV4(unittest.TestCase):
         self.assertNotIn("<c:legend>", chart)  # the legend is drawn as shapes matching the markers
         for slate in ("A3ADB6", "B8C2CC", "5A6672"):  # the old slate grays: a second, blue hue
             self.assertNotIn(slate, chart)
+
+
+TANAGER = os.path.join(ROOT, "dev", "fixtures", "seller-cma", "tanager", "report.json")
+
+
+def tanager():
+    """Iteration 12, seller-cma eval-9: 842 Tanager Ridge Dr, five comps clustered at $384,000 to $395,100 adjusted, an
+    export whose sold rows echo the sale price as the current price (a Matrix export), the agent's first range of
+    $375,000 to $400,000, launch headings that are the report's steps, and a method note with a time-adjustment
+    cutoff ("before August") that isn't the July market split."""
+    with open(TANAGER) as f:
+        R = json.load(f)
+    R["export"] = os.path.join(os.path.dirname(TANAGER), R["export"])
+    return R
+
+
+class Iteration12(unittest.TestCase):
+    def test_expected_sale_is_never_below_the_range(self):
+        """The rule's figure for a list price inside the range never lands under it: the comps are already net of
+        credits, so page 1's expected sale reads inside its range."""
+        R = tanager()
+        C, homes = run(R)
+        rec = C["strategies"][1]
+        self.assertEqual(rec["expected_sale"], 384500)  # 389,900 x 97% + 6,500, inside $375,000 to $400,000
+        self.assertEqual(C["strategies"][0]["expected_sale"], 384500)  # the top option expects the recommended one's
+        self.assertEqual(C["strategies"][2]["expected_sale"], 375000)  # 372,500 by the rule, floored at the range
+        self.assertNotIn("expected_below_range", C["assumption_keys"])
+        self.assertIn("never below the bottom of the supported range", C["expected_sale_basis"]["note"])
+        for x in C["strategies"]:
+            self.assertGreaterEqual(x["expected_sale"], R["recommendation"]["low"])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        page1 = doc[doc.index('class="onepage"'):]
+        self.assertIn("$375,000 – $400,000", page1)
+        self.assertIn("About $384,500", page1)
+        R = tanager()  # a range narrower than the rule's figure: the expected sale is its bottom, still not above list
+        R["recommendation"].update(low=385000, high=390000)
+        C, _ = run(R)
+        self.assertEqual([x["expected_sale"] for x in C["strategies"]], [385000, 385000, 385000])
+
+    def test_sale_to_final_list_from_an_export_that_carries_it(self):
+        """An export whose sold rows carry the final list price (RESO ListPrice) gives the ratio against it, not
+        against the original price; one that echoes the sale price falls back to 97% assumed and says why."""
+        R = tanager()
+        C, _ = run(R)
+        self.assertEqual(C["expected_sale_basis"]["source"], "assumed")
+        self.assertIn("no final list price", " ".join(C["assumptions"]))
+        market, homes = compute.load_inputs(tanager())
+        final = {"790 TANAGER RIDGE DR": 389900, "1012 GROSBEAK CT": 369900, "402 LINNET CIR": 379900}
+        for h in homes:
+            if h["status"] == "SOLD" and h["address"] in final:
+                h["current_price"] = final[h["address"]]
+        self.assertTrue(compute.mls.carries_final_list([h for h in homes if h["status"] == "SOLD"]))
+        recent = [h for h in homes if h["status"] == "SOLD" and str(h["close_date"]) >= "2026-07-01"]
+        want = round(statistics.median((h["close_price"] - (h["seller_paid"] or 0)) / h["current_price"] for h in recent), 4)
+        C = compute.compute(tanager(), market, homes)
+        self.assertEqual((C["expected_sale_basis"]["source"], C["expected_sale_basis"]["ratio"]), ("export", want))
+        self.assertGreater(want, C["handoff"]["market"]["sale_to_original_list_recent"])  # earlier cuts don't count
+        self.assertIn("final asking price", C["expected_sale_basis"]["note"])
+
+    def test_range_rule_allows_a_normal_width(self):
+        """Clustered comps never force a range narrower than the method's normal width: each end may reach half the
+        typical width from the median, rounded outward to $5,000; every warning names a range that passes."""
+        values = [384000, 385200, 386825, 387500, 395100]
+        fl = {"cma.typical_range_width": 25000}
+        self.assertEqual(compute.cma.range_bounds(values, fl), (370000, 400000, 25000))
+        self.assertEqual(compute.cma.range_warnings({"low": 375000, "high": 400000}, values, fl), [])
+        out = dict(compute.cma.range_warnings({"low": 385000, "high": 390000}, values, fl))
+        self.assertEqual(list(out), ["range_narrow"])
+        self.assertIn("for example to $375,000 – $400,000", out["range_narrow"])
+        out = compute.cma.range_warnings({"low": 365000, "high": 410000}, values, fl)
+        self.assertEqual([k for k, _ in out], ["range_one_comp", "range_one_comp"])
+        for _, text in out:
+            self.assertIn("Any range inside $370,000 – $400,000 and no wider than $50,000 passes", text)
+        spread = [431000, 452000, 466000, 478800, 496000]  # comps that disagree: the second-highest still caps the top
+        self.assertEqual(compute.cma.range_bounds(spread, fl)[1], 480000)
+        no_market = compute.cma.range_bounds(values, None)  # 5% of the median where no width is built in
+        self.assertEqual(no_market, (375000, 400000, 0.05 * 386825))
+
+    def test_time_adjustment_month_is_not_the_split(self):
+        R = tanager()
+        self.assertIn("before August", R["comps"]["method_note"])
+        run(R)  # no stop: the time adjustment's cutoff isn't the July market split
+        R["market"]["intro"] = "Homes sold since August took about a month to sell."
+        with self.assertRaisesRegex(compute.ReportError, r"market\.intro: says \"since August\""):
+            run(R)
+
+    def test_launch_headings_must_be_step_names(self):
+        R = tanager()
+        plan = R["deck"]["launch_plan"]
+        plan[3][0], plan[4][0] = "Seller-Credit Budget", "3-Week Review"  # what the eval wrote: passed before
+        with self.assertRaises(compute.ReportError) as e:
+            run(R)
+        msg = str(e.exception)
+        self.assertIn('deck.launch_plan[3]: "Seller-Credit Budget" isn\'t one of', msg)
+        self.assertIn('deck.launch_plan[4]: "3-Week Review" isn\'t one of', msg)
+        self.assertIn('"Decide on a seller-credit budget now"', msg)  # the names that pass, once each
+        self.assertEqual(msg.count('"Gather Kitchen Records"') + msg.count('"Gather the kitchen records"'), 2)  # 2 stops
+        plan[3][0], plan[4][0] = "Decide On A Seller Credit Budget", "agree on the review point!"  # trivial differences
+        run(R)
+        self.assertTrue(compute.same_step("Gather Kitchen Records", "Gather the kitchen records."))
+        self.assertFalse(compute.same_step("Kitchen Records", "Gather the kitchen records."))
+
+    def test_text_fit_checks_say_how_much_fits(self):
+        if not node_ready():
+            self.skipTest("Node with pptxgenjs, react-icons and sharp isn't resolvable here.")
+        R = tanager()
+        R["deck"]["subtitle"] = ("Listing Presentation · Casselberry, Tanager Ridge · Three Bedrooms, an Updated Kitchen, "
+                                 "a Two-Car Garage and a Newer Roof")
+        C, homes = run(R)
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+        with tempfile.TemporaryDirectory() as tmp:
+            checks = deck.build_pptx(D, os.path.join(tmp, "deck.pptx"))
+            sub = next(c for c in checks if "deck.subtitle" in c)
+            m = re.search(r"at most about (\d+) characters fit and it has (\d+); shorten it to \1 characters or fewer", sub)
+            self.assertTrue(m, sub)
+            self.assertEqual(int(m.group(2)), len(R["deck"]["subtitle"]))
+            R["deck"]["subtitle"] = R["deck"]["subtitle"][:int(m.group(1))].rsplit(" ", 1)[0]  # cut to the limit: fits
+            D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+            checks = deck.build_pptx(D, os.path.join(tmp, "deck2.pptx"))
+        self.assertFalse([c for c in checks if "deck.subtitle" in c])

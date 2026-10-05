@@ -9,6 +9,7 @@ $10,000 in price, the scatter trend, all formatted for the markdown template, pl
 seller-offer-review skill reads) next to report.json, in the working folder, never the outputs. render.py uses the same numbers for the PDF and the deck.
 """
 import argparse
+import difflib
 import json
 import os
 import re
@@ -186,29 +187,32 @@ EXPECTED_STEP = 500
 
 
 def fill_expected_sales(R, strategies, stats, stay, competing):
-    """Results_v4 case 02: each option's expected sale by one rule, so two runs agree: its list price times the recent
-    sale-to-original-list ratio (net of seller-paid costs: stats.py's, else `market.sale_to_list`, else 97% assumed),
-    plus its own seller credit (the net sheet takes it off), to the nearest $500. Then capped: never above the list
-    price (except the competing-offer option, the last), never above the supported range, and a higher list price
-    never expects less than a lower one. An expected_sale in report.json is the agent's figure and is kept. A reprice's
-    Stay has its own rule (stay_rule). Fills the strategies in place; returns the basis for the report's note."""
+    """Results_v4 case 02, iteration 12: each option's expected sale by one rule, so two runs agree: its list price times
+    the recent sale-to-FINAL-list ratio (net of seller-paid costs: stats.py's when the export carries final list prices,
+    else `market.sale_to_list`, else 97% assumed; not sale-to-original-list, which counts the price cuts of overpriced
+    homes against this one), plus its own seller credit (the net sheet takes it off), to the nearest $500. Then kept
+    inside the supported range (the comps are already net of credits, so the range is the value: never below its
+    bottom), never above the list price (except the competing-offer option, the last), and a higher list price never
+    expects less than a lower one. An expected_sale in report.json is the agent's figure and is kept. A reprice's Stay
+    has its own rule (stay_rule). Fills the strategies in place; returns the basis for the report's note."""
     m = R.get("market") or {}
-    if stats.get("sale_to_original_list_recent"):
-        ratio, source = stats["sale_to_original_list_recent"], "export"
+    if stats.get("sale_to_final_list_recent"):
+        ratio, source = stats["sale_to_final_list_recent"], "export"
     elif isinstance(m.get("sale_to_list"), (int, float)) and 0.5 < m["sale_to_list"] <= 1.2:
         ratio, source = m["sale_to_list"], "report"
     else:
         ratio, source = ASSUMED_SALE_TO_LIST, "assumed"
-    high, last = R["recommendation"]["high"], len(strategies) - 1
+    low, high, last = R["recommendation"]["low"], R["recommendation"]["high"], len(strategies) - 1
     filled = [i for i, x in enumerate(strategies) if i != stay and x.get("expected_sale") is None]
     agent = [i for i, x in enumerate(strategies) if i != stay and i not in filled]
-    capped = False
+    capped = floored = False
     for i in filled:
         x = strategies[i]
         v = round((x["list_price"] * ratio + (x.get("seller_credit") or 0)) / EXPECTED_STEP) * EXPECTED_STEP
         cap = min(high, x["list_price"]) if not (competing and i == last) else high
+        floored |= v < low and cap > v
         capped |= v > cap
-        x["expected_sale"], x["expected_sale_source"] = min(v, cap), "rule"
+        x["expected_sale"], x["expected_sale_source"] = min(max(v, low), cap), "rule"
     # An option above the recommended price sells near the middle anyway (method.md, the top of the range): it expects
     # the recommended option's sale, and its price costs time and holding costs, not price
     ri = (R.get("pricing") or {}).get("recommended_index", 1)
@@ -224,7 +228,7 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     for i in agent:
         strategies[i]["expected_sale_source"] = "agent"
     return {"ratio": ratio, "ratio_display": f"{ratio * 100:.1f}%", "source": source, "filled": filled, "agent": agent,
-            "capped": capped, "top": top}
+            "capped": capped, "floored": floored, "top": top}
 
 
 def _require(R, *paths):
@@ -707,13 +711,18 @@ def typed_stat_errors(R, deck_content, raw, values):
 
 MONTH_PHRASE = re.compile(r"\b(before|since|after)\s+(?:early\s+|late\s+|mid-?\s*)?(" + "|".join(MONTHS) + r")\b(?!\s+\d)")
 MONTH_FIELDS = ("comps", "market", "means", "summary_page.why", "summary_page.key_stats", "scatter")
-SALES_WORDS = re.compile(r"\b(sales?|sold|homes|prices|market|quarter|adjust\w*|closed)\b", re.I)
+SALES_WORDS = re.compile(r"\b(sales?|sold|homes|prices|market|closed)\b", re.I)
+# Iteration 12: a time adjustment's cutoff ("1.5% per quarter off sales from before August") is its own date, not the
+# market split: the method note, the comps' adjustment lines and any sentence about adjusting are never checked
+TIME_ADJUSTMENT = re.compile(r"\b(adjust\w*|per quarter|a quarter|older than|time adjustment)\b|%", re.I)
+MONTH_SKIP = re.compile(r"^comps\.(method_note|cards\[\d+\]\.adjustments)")
 
 
 def split_month_errors(R, values):
-    """Results_v4 case 02: "sales from before August" when the recent period starts in July. A market or comp sentence
-    that puts a period boundary at a month (a sales word within a few words of "before/since/after <Month>") must use
-    the split's month ({split_month}) or the window's first month. "The home has sat since January" isn't one."""
+    """Results_v4 case 02: "sales since August" in the market wording when the recent period starts in July. A market
+    or comp sentence that puts the market split at a month (a sales word within a few words of "before/since/after
+    <Month>") must use the split's month ({split_month}) or the window's first month. "The home has sat since January"
+    isn't one, and neither is a time adjustment's cutoff (TIME_ADJUSTMENT, MONTH_SKIP)."""
     if "split_month" not in values:
         return []
     allowed = {values["split_month"].split()[0], values["window_start_month"]}
@@ -723,43 +732,54 @@ def split_month_errors(R, values):
         for part in key.split("."):
             node = node.get(part) if isinstance(node, dict) else None
         for path, text in _strings(node, key):
-            for m in MONTH_PHRASE.finditer(text):
-                near = " ".join(text[:m.start()].split()[-6:] + text[m.end():].split()[:5])
-                if m.group(2) not in allowed and SALES_WORDS.search(near):
-                    out.append(f'{path}: says "{m.group(0)}", but the recent period starts {values["split_month"]} → '
-                               f'write "{m.group(1)} {{split_month}}" (filled as "{values["split_month"]}").')
+            if MONTH_SKIP.match(path):
+                continue
+            for sentence in re.split(r"(?<=[.!?])\s+", text):
+                if TIME_ADJUSTMENT.search(sentence):
+                    continue
+                for m in MONTH_PHRASE.finditer(sentence):
+                    near = " ".join(sentence[:m.start()].split()[-6:] + sentence[m.end():].split()[:5])
+                    if m.group(2) not in allowed and SALES_WORDS.search(near):
+                        out.append(f'{path}: says "{m.group(0)}", but the market split (the recent period) starts '
+                                   f'{values["split_month"]} → if this sentence compares the two periods, write '
+                                   f'"{m.group(1)} {{split_month}}" (filled as "{values["split_month"]}"); if it means '
+                                   'another date, name it without a month ("in the last six weeks").')
     return out
 
 
-GENERIC_WORDS = {"home", "house", "list", "listing", "launch", "price", "ready", "plan", "step", "steps", "your", "with",
-                 "from", "that", "this", "before", "after", "week", "weeks", "make", "keep", "time", "early", "first"}
+def step_name(text):
+    """A Before We List step name for matching: tags, case, punctuation, hyphens and articles dropped
+    ("<strong>Gather the kitchen records.</strong>" and "Gather Kitchen Records" are both "gather kitchen records")."""
+    words = re.findall(r"[a-z0-9]+", re.sub(r"<[^>]+>", " ", str(text)).lower().replace("&", " and "))
+    return " ".join(w for w in words if w not in ("a", "an", "the"))
 
 
-def _words(text):
-    return {w for w in re.findall(r"[a-z]+", re.sub(r"<[^>]+>", " ", str(text).lower())) if len(w) >= 4} - GENERIC_WORDS
-
-
-def _same_word(a, b):
-    short, long_ = sorted((a, b), key=len)
-    return long_.startswith(short) or a[:5] == b[:5]
+def same_step(heading, lead):
+    """Iteration 12: a launch-plan heading names a step when it's the step's name, give or take trivial differences
+    (case, punctuation, articles, a typo or a plural: 90% alike), never just a shared word ("Seller-Credit Budget" is
+    not "Decide on a seller-credit budget now.")."""
+    a, b = step_name(heading), step_name(lead)
+    return bool(a) and (a == b or difflib.SequenceMatcher(None, a, b).ratio() >= 0.9)
 
 
 def launch_plan_errors(R, deck_content):
     """Results_v4 case 02: a launch-plan card the agent never gave ("Easy Showings: lockbox access"). Each card's
-    heading must name one of the report's Before We List steps (prep.items' bold leads, or page 1's first steps)."""
+    heading must be one of the report's Before We List step names (prep.items' bold leads, or page 1's first steps),
+    matched by `same_step`."""
     plan = (deck_content or {}).get("launch_plan") or []
     leads = [re.search(r"<strong>(.*?)</strong>", str(i)) for i in (R.get("prep") or {}).get("items") or []]
-    sources = [_words(m.group(1)) for m in leads if m]
-    sources += [_words(s[0]) for s in (R.get("summary_page") or {}).get("first_steps") or [] if isinstance(s, list) and s]
-    if not plan or not sources:
+    steps = [re.sub(r"[.:]\s*$", "", m.group(1).strip()) for m in leads if m]
+    steps += [str(s[0]) for s in (R.get("summary_page") or {}).get("first_steps") or [] if isinstance(s, list) and s]
+    if not plan or not steps:
         return []
     out = []
     for i, item in enumerate(plan):
         heading = item[0] if isinstance(item, list) and item else ""
-        words = _words(heading)
-        if words and not any(_same_word(a, b) for src in sources for a in words for b in src):
+        if step_name(heading) and not any(same_step(heading, s) for s in steps):
+            names = "; ".join(f'"{s}"' for s in {step_name(s): s for s in reversed(steps)}.values())
             out.append(f'deck.launch_plan[{i}]: "{heading}" isn\'t one of the report\'s Before We List steps → use a step '
-                       "from prep.items (its bold lead), or add it there first if the agent asked for it.")
+                       f"name as the heading, in Title Case ({names}), or add the step to prep.items first if the agent "
+                       "asked for it.")
     return out
 
 
@@ -887,7 +907,8 @@ def expected_basis(basis, strategies, values, L):
     if basis["filled"]:
         key = {"export": "expected_basis_export", "report": "expected_basis_report"}.get(basis["source"], "expected_basis_assumed")
         parts.append(L(key, ratio=basis["ratio_display"], since=values.get("split_month", ""))
-                     + (L("expected_basis_capped") if basis["capped"] else "") + ".")
+                     + (L("expected_basis_capped") if basis["capped"] else "")
+                     + (L("expected_basis_floored") if basis.get("floored") else "") + ".")
         if basis["top"]:  # a higher price buys time on the market, not a higher sale
             parts.append(L("expected_basis_top", prices=_and([money(strategies[i]["list_price"]) for i in basis["top"]])))
     if basis["agent"]:
@@ -1034,6 +1055,7 @@ def compute(R, market, homes):
         stats = {k: v for k, v in {
             "split_date": st["window"]["split_date"],
             "sale_to_original_list_recent": recent.get("median_sale_to_original_list"),
+            "sale_to_final_list_recent": recent.get("median_sale_to_final_list"),
             "median_days_recent": recent.get("median_days_on_market"),
             "share_with_seller_paid_costs_recent": recent.get("share_with_seller_paid_costs"),
             "median_seller_paid_recent": recent.get("median_seller_paid_when_paid"),
@@ -1061,15 +1083,13 @@ def compute(R, market, homes):
     # CMA-288: or of two, once a relist drops the top option: the last one when it's below the recommended one
     competing = len(strategies) - 1 != ri and strategies[-1]["list_price"] < strategies[ri]["list_price"]
     basis = fill_expected_sales(R, strategies, stats, stay, competing)  # Results_v4: the rule, not a typed guess
-    if ri in basis["filled"] and strategies[ri]["expected_sale"] < rec["low"]:
-        assume("expected_below_range", f"The recommended option's expected sale ({money(strategies[ri]['expected_sale'])}) is "
-               f"below the supported range ({money(rec['low'])} – {money(rec['high'])}): it's the list price times the "
-               f"recent {basis['ratio_display']} sale-to-original-list ratio, which includes overpriced listings. Say so in "
-               "the reply; if the agent expects more, their own figure goes in that option's expected_sale.")
     if basis["source"] == "assumed" and basis["filled"]:
-        assume("expected_sale_ratio", f"Expected sales assume {basis['ratio_display']} of list after seller-paid costs "
-               "(no MLS export to measure it from). The recent sale-to-original-list ratio of the sales reviewed "
-               "(market.sale_to_list, a fraction) replaces it.")
+        why = ("the export's sold rows show the sale price as the current price, so there's no final list price to "
+               "measure from; an export with the final list price column (ListPrice) measures it"
+               if others and not (st or {}).get("final_list_in_export") else "no MLS export to measure it from")
+        assume("expected_sale_ratio", f"Expected sales assume {basis['ratio_display']} of the final list price after "
+               f"seller-paid costs ({why}). The recent sale-to-final-list ratio of the sales reviewed (market.sale_to_list, "
+               "a fraction) replaces it.")
 
     scope =cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
     if scope:
