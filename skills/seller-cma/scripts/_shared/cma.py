@@ -19,6 +19,7 @@ CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
 ADJ_NET_LIMIT, ADJ_GROSS_LIMIT = 0.15, 0.25  # common appraisal guidelines, as shares of the comp's sale price
 OUTLIER_SHARE = 0.10  # CMA-110: an adjusted value this far from the other comps' median is an outlier (method.md)
+LABEL_GAP = 3  # px kept clear between two chart labels on the seller CMA's scatter, so stacked labels never touch
 esc = html.escape
 
 
@@ -196,10 +197,12 @@ def scatter_points(homes, sc, subject_sqft, subject_address, comps=()):
     return pts, excluded, fit
 
 
-def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=()):
+def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=(), drop_crowded=False):
     """Price vs. size for sold and active homes near the subject's size, with the supported range band.
 
-    `comps`: the comp cards' addresses, drawn as comparable sales.
+    `comps`: the comp cards' addresses, drawn as comparable sales. `drop_crowded` (the seller CMA): labels stay
+    LABEL_GAP apart, and a callout with no clear spot, even on a leader line, is left off (listed in `labels_dropped`)
+    instead of printed over a marker or another label.
     `sc`: {callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
     Label sides: left, right, above or below.
     Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active,
@@ -264,7 +267,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     # label goes in the first corner clear of markers
     marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
     marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
-    placer = _LabelPlacer(marks, (Lm, T, W - R, H - B))
+    placer = _LabelPlacer(marks, (Lm, T, W - R, H - B), gap=LABEL_GAP if drop_crowded else 0)
     band_text = f'{L("band")} {k(band[0])}–{k(band[1])}'
     band_w = _text_w(band_text, 12, bold=True)
     spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
@@ -292,7 +295,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
             dropped_callouts.append((co.get("label") or co["address"], co["address"],
                                      off.get(key) or status.get(key) or "not_in_export"))
             continue
-        o.append(placer.place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12))
+        o.append(placer.place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12, droppable=drop_crowded))
     o.append("</svg>")
     info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
             "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
@@ -332,9 +335,10 @@ class _LabelPlacer:
     LEADER_STEPS = (28, 42, 58)
     LEADER_DIRS = ((1, 0), (-1, 0), (0, -1), (0, 1), (1, -1), (-1, -1), (1, 1), (-1, 1))
 
-    def __init__(self, marks, bounds):
+    def __init__(self, marks, bounds, gap=0):
         self.marks, self.bounds, self.boxes, self.moved, self.overlapping, self.clashing = marks, bounds, [], [], [], []
         self.leaders, self.dropped = [], []
+        self.gap = gap  # px kept clear between two labels (the seller CMA: 3, so stacked labels never touch)
 
     @staticmethod
     def box(px, py, side, text, gap, size, bold=False):
@@ -345,12 +349,17 @@ class _LabelPlacer:
         x0 = px - gap - w if side == "left" else px + gap
         return x0, py + 4 - 0.8 * h, x0 + w, py + 4 + 0.2 * h
 
+    def touch(self, b, o):
+        """Whether two label boxes overlap or come closer than the placer's gap."""
+        g = self.gap
+        return b[0] - g < o[2] and o[0] < b[2] + g and b[1] - g < o[3] and o[1] < b[3] + g
+
     def hits(self, b, own):
         """(what the box covers that counts, background dots it grazes)."""
         x0, y0, x1, y1 = b
         covered = [r for cx, cy, r in self.marks if (cx, cy) != own and
                    (max(x0, min(cx, x1)) - cx) ** 2 + (max(y0, min(cy, y1)) - cy) ** 2 < r * r]
-        big = sum(1 for r in covered if r >= 6) + sum(1 for o in self.boxes if x0 < o[2] and o[0] < x1 and y0 < o[3] and o[1] < y1)
+        big = sum(1 for r in covered if r >= 6) + sum(1 for o in self.boxes if self.touch(b, o))
         bx0, by0, bx1, by1 = self.bounds
         big += 2 * (x0 < bx0 - 4 or x1 > bx1 + 4 or y0 < by0 - 4 or y1 > by1 + 4)
         return big, len(covered) - sum(1 for r in covered if r >= 6)
@@ -413,7 +422,7 @@ class _LabelPlacer:
         if big:
             self.overlapping.append(text)
         b = self.box(px, py + dy, best, text, gap, size, bold)
-        if any(b[0] < o[2] and o[0] < b[2] and b[1] < o[3] and o[1] < b[3] for o in self.boxes):
+        if any(self.touch(b, o) for o in self.boxes):
             self.clashing.append(text)
         self.boxes.append(b)
         return _label(px, py + dy, best, text, cls, gap)
@@ -625,6 +634,20 @@ PAGINATE_JS = """(pageH) => {
       continue;
     }
     let brk = false;
+    // A group that opts in (.runon: the seller CMA's How This Was Prepared) runs on to the next page block by block
+    // instead of moving whole and leaving the page before part empty (Results_v4 case 02), once its heading and first
+    // block fit here.
+    if (pos > 5 && isKeep && el.classList.contains('runon') && pos + h > pageH - SAFE && pageH - pos >= 0.25 * pageH) {
+      const units = Array.from(el.children).slice(1);
+      if (units.length && pos + units[0].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
+        el.classList.add('split');
+        for (const u of units) {
+          const ur = u.getBoundingClientRect(), tt = ur.top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
+          if (pp > 5 && pp + ur.height > pageH - SAFE) shift += pageH - pp;
+        }
+        continue;
+      }
+    }
     if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH) brk = true;
     else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
       // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
@@ -730,6 +753,75 @@ def outlier_warnings(cards, share=OUTLIER_SHARE):
                        f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. Replace it with "
                        "the next candidate, or keep it only if it's one of the closest matches and say why in method_note "
                        "(method.md, Outliers).")
+    return out
+
+
+def range_warnings(bl, values, market):
+    """CMA-296: the supported range against the adjusted comps (method.md), for the buyer and seller CMAs alike.
+    `bl` has `low` and `high`. Returns [(key, text)]. `range_wide`: wider than twice the market's typical width
+    (`cma.typical_range_width`; 5% of the median where none is built in). `range_one_comp`: an end past the
+    second-highest or second-lowest adjusted value (the highest or lowest with 3 comps or fewer), rounded outward to
+    $5,000, so a single comp sets it."""
+    if not values:
+        return []
+    v = sorted(values)
+    median = statistics.median(v)
+    typical = (market.get("cma.typical_range_width") if market is not None else None) or 0.05 * median
+    out = []
+    width = bl["high"] - bl["low"]
+    if width > 2 * typical + 1:
+        out.append(("range_wide", f"The range is {money(width)} wide, more than twice the typical {money(typical, 1000)}: "
+                    "the comps disagree more than a range can absorb. Replace the weakest match (the largest adjustments, "
+                    "the farthest or oldest sale) and re-run, or keep it and say in the bottom line why it's this wide."))
+    lo, hi = (v[1], v[-2]) if len(v) >= 4 else (v[0], v[-1])
+    lo_ok, hi_ok = math.floor(lo / 5000) * 5000, math.ceil(hi / 5000) * 5000
+    if bl["high"] > hi_ok:
+        out.append(("range_one_comp", f"The top of the range ({money(bl['high'])}) is above {money(hi_ok)}, the "
+                    f"{'second-highest' if len(v) >= 4 else 'highest'} adjusted comp ({money(hi)}) rounded up: one sale "
+                    f"sets it. Bring it to {money(hi_ok)} or below."))
+    if bl["low"] < lo_ok:
+        out.append(("range_one_comp", f"The bottom of the range ({money(bl['low'])}) is below {money(lo_ok)}, the "
+                    f"{'second-lowest' if len(v) >= 4 else 'lowest'} adjusted comp ({money(lo)}) rounded down: one sale "
+                    f"sets it. Bring it to {money(lo_ok)} or above."))
+    return out
+
+
+# --- adjustment kinds ------------------------------------------------------------
+
+# A comp adjustment's category (`kind`), so text that lists what was adjusted uses fixed plain words, never the
+# model's label wording ("hall bath (not in its listing)"). The card keeps its own label.
+ADJUSTMENT_KINDS = ("size", "pool", "garage", "condition", "age", "lot", "view", "location", "time", "credits", "other")
+# Kind inferred from a label when none is given: the first kind with a matching word, in this order
+_KIND_WORDS = (
+    ("time", r"market|since the sale|time|months?|quarter|rates?|sold in|appreciation|softening"),
+    ("credits", r"credit|concession|seller[- ]paid|seller help"),
+    ("pool", r"pool|spa"),
+    ("garage", r"garage|carport|parking"),
+    ("age", r"roof|\bac\b|a/c|hvac|systems?|water heater|\bage\b|year built|older|newer|effective age"),
+    ("view", r"view|water|pond|lake|golf|conservation|preserve|canal|river|ocean|bay"),
+    ("lot", r"\blot\b|acre|yard|corner|cul-de-sac|frontage"),
+    ("location", r"location|street|road|traffic|neighborhood|subdivision|busy|commercial"),
+    ("size", r"size|sq\.? ?ft|square|living area|larger|smaller|bedroom|room count|stories"),
+    ("condition", r"kitchen|bath|renovat|remodel|update|condition|floor|dated|finish|paint|repair|cabinet|counter|window"),
+)
+
+
+def adjustment_kind(adj):
+    """The adjustment's `kind` when given, else the one its label points to ('other' when none does)."""
+    if isinstance(adj, dict) and adj.get("kind") in ADJUSTMENT_KINDS:
+        return adj["kind"]
+    label = str((adj or {}).get("label", "") if isinstance(adj, dict) else adj).lower()
+    return next((k for k, words in _KIND_WORDS if re.search(words, label)), "other")
+
+
+def adjustment_kind_errors(cards):
+    """`kind` values that aren't one of ADJUSTMENT_KINDS, as `field: problem → fix` lines."""
+    out = []
+    for i, c in enumerate(cards or []):
+        for j, a in enumerate(c.get("adjustments") or []):
+            if isinstance(a, dict) and a.get("kind") not in (None, "") and a["kind"] not in ADJUSTMENT_KINDS:
+                out.append(f"comps.cards[{i}].adjustments[{j}].kind: {a['kind']!r} isn't a kind → use one of "
+                           f"{', '.join(ADJUSTMENT_KINDS)}, or leave it out to take it from the label.")
     return out
 
 

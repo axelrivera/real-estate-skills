@@ -63,22 +63,7 @@
  },
  "summary_page": {
   "label": "Seller Summary",
-  "expected_sale": "Mid-to-upper $570,000s",
   "headline": "Priced near the middle of what recent sales support, for the strongest first weeks on the market.",
-  "key_stats": [
-   [
-    "{median_adjusted}",
-    "Median of the Five Closest Sales, Adjusted to Your Home"
-   ],
-   [
-    "96.2%",
-    "Sale Price vs. Original Asking Price for Nearby Homes Since July"
-   ],
-   [
-    "21 days",
-    "Typical Time to Go Under Contract Now, Up from 10 in the Spring"
-   ]
-  ],
   "why": [
    "The five closest Cattail Crossing pool sales, adjusted to your home, center on about $581,400.",
    "The market cooled since spring: homes now sell about 4% under asking, and three in four sellers help with buyer costs.",
@@ -324,38 +309,6 @@
  },
  "market": {
   "intro": "We looked at 38 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
-  "columns": [
-   "",
-   "April – June",
-   "July – Mid-Sept"
-  ],
-  "rows": [
-   [
-    "Homes Sold",
-    "26",
-    "12"
-   ],
-   [
-    "Typical Sale vs. Original Asking Price",
-    "99.0%",
-    "96.2%"
-   ],
-   [
-    "Typical Days to Go Under Contract",
-    "10",
-    "21"
-   ],
-   [
-    "Sales with Seller-Paid Buyer Costs",
-    "54%",
-    "75%"
-   ],
-   [
-    "Typical Seller-Paid Amount",
-    "$8,000",
-    "$9,500"
-   ]
-  ],
   "bullets": [
    "<strong>Buyers are negotiating again.</strong> Since July, homes nearby sold for about 4% under their original asking price after seller-paid costs and took about twice as long to go under contract as in the spring.",
    "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about {months_supply} of supply at the summer pace, and two in three have already cut their price.",
@@ -371,7 +324,6 @@
    {
     "label": "List at $594,900",
     "list_price": 594900,
-    "expected_sale": 574000,
     "time": "45–90 days",
     "seller_credit": 10000,
     "note": "Tests the top of the range; likely needs a price cut before an offer"
@@ -379,7 +331,6 @@
    {
     "label": "List at $584,900",
     "list_price": 584900,
-    "expected_sale": 575000,
     "time": "3–6 weeks",
     "seller_credit": 10000,
     "note": "Priced near the middle of recent adjusted sales; room to negotiate"
@@ -387,7 +338,6 @@
    {
     "label": "List at $574,900",
     "list_price": 574900,
-    "expected_sale": 572000,
     "time": "1–3 weeks",
     "seller_credit": 5000,
     "note": "Aims for competing offers; depends on them materializing"
@@ -414,7 +364,6 @@
    "<strong>Get a pre-listing inspection, 4-point, and wind-mitigation report.</strong> Buyers can get insurance quotes before they offer, and you learn about any issue before a buyer uses it to renegotiate. A new roof usually earns new wind-mitigation credits.",
    "<strong>Gather the remodel permits.</strong> Kitchen, bath, electrical, and plumbing work. Unpermitted work can surface during the buyer's due diligence and delay or derail a sale.",
    "<strong>Check the public record.</strong> Make sure the property appraiser's record matches the four bedrooms and three full baths we will advertise.",
-   "<strong>Make it easy to show.</strong> Lockbox access through the standard showing system with short notice gets the most buyers through in the first weeks.",
    "<strong>Decide on a seller-credit budget now.</strong> Most recent sales included one. A credit toward a temporary rate buydown lowers a buyer's payment far more in the first years than the same amount off the price.",
    "<strong>Agree on a review point.</strong> If there are steady showings but no offer after about three weeks, we revisit the price with fresh data rather than waiting."
   ]

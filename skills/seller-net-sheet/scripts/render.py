@@ -21,10 +21,12 @@ FINAL_NOTE = "The title company's settlement statement gives the final figures."
 
 
 def header(C, agent, sample):
-    tag = '<span class="viewtag">Seller Side</span>' + ('<span class="sample">SAMPLE DATA</span>' if sample else "")
+    # Results_v4 case 09: no "Seller Side" pill (a seller's net sheet has only one side); the agent's name reads as a
+    # signature, as the size of the other reports' agent line
+    tag = '<span class="sample">SAMPLE DATA</span>' if sample else ""
     lines = [(f'Prepared for <b>{esc(C["prepared_for"])}</b> · ' if C.get("prepared_for") else "Prepared ") + esc(C["prepared_date"])]
     if agent.get("name"):
-        lines.append(f'<b>{esc(agent["name"])}</b>')
+        lines.append(f'<b class="agent">{esc(agent["name"])}</b>')
         org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
         lic = f'Lic. {esc(str(agent["license"]))}' if agent.get("license") else ""
         if org or lic:
@@ -66,8 +68,24 @@ def table(C):
         cells = "".join(f'<td class="n{" empty" if v == "—" else ""}{" short" if r["kind"] == "final" and c["short"] else ""}">{v}</td>'
                         for v, c in zip(r["display"], cols))
         body.append(f'<tr class="{r["kind"]}"><td>{esc(r["label"])}</td>{cells}</tr>')
-    widths = f'<colgroup><col style="width:{100 - 18 * len(cols)}%">' + f'<col style="width:18%">' * len(cols) + "</colgroup>"
+    widths = "<colgroup>" + "".join(f'<col style="width:{w:g}%">' for w in column_widths([c["label"] for c in cols])) + "</colgroup>"
     return f'<div class="tbl net"><table>{widths}<thead>{head}</thead><tbody>{"".join(body)}</tbody></table></div>'
+
+
+TABLE_PX = 783  # the table's width: 8.5in less the 0.3in margins, at 96 dpi
+HEAD_PX_PER_CHAR = 6.1  # a bold 8pt header character, about; plus 16px of cell padding
+MIN_COL, MAX_COL, MIN_FIRST = 16, 27, 34  # % of the table
+
+
+def column_widths(labels):
+    """Results_v4 case 09: each price column wide enough for its header on one line ("$425,000 with $6,000 Credit"),
+    within 16% to 27% of the table, and the row names the rest (at least 34%). [first, *price columns] in %."""
+    need = [min(MAX_COL, max(MIN_COL, (len(t) * HEAD_PX_PER_CHAR + 16) / TABLE_PX * 100)) for t in labels]
+    spare = 100 - MIN_FIRST
+    if sum(need) > spare:  # too wide together: share the room, the longest give way first
+        need = [n * spare / sum(need) for n in need]
+    need = [round(n, 1) for n in need]
+    return [round(100 - sum(need), 1)] + need
 
 
 def bars(C):

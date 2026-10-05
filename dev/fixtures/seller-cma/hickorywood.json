@@ -62,7 +62,6 @@
  },
  "summary_page": {
   "label": "Seller Summary",
-  "expected_sale": "Low-to-mid $460,000s",
   "headline": "Priced at the middle of what recent sales support, for the strongest first weeks on the market.",
   "key_stats": [
    [
@@ -70,7 +69,7 @@
     "Median of the Five Closest Sales, Adjusted to Your Home"
    ],
    [
-    "95.2%",
+    "{sale_to_list_recent}",
     "Sale Price vs. Original Asking Price for Nearby Homes Since July"
    ],
    [
@@ -350,8 +349,8 @@
    ],
    [
     "Typical Sale vs. Original Asking Price",
-    "100%",
-    "95.2%"
+    "{sale_to_list_early}",
+    "{sale_to_list_recent}"
    ],
    [
     "Typical Days to Go Under Contract",

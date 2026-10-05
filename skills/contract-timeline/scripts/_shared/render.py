@@ -105,7 +105,8 @@ def footer(left, right_pages=True):
     """Chromium footer template: `left` text and 'Page X of Y'."""
     pages = ('Page <span class="pageNumber"></span> of <span class="totalPages"></span>'
              if right_pages else "")
-    return ('<div style="font-size:7pt;color:#5A6672;width:100%;padding:0 0.3in;display:flex;'
+    from .design import NEUTRALS  # the footer can't read the page's CSS variables: the muted gray, true gray
+    return (f'<div style="font-size:7pt;color:{NEUTRALS["muted"]};width:100%;padding:0 0.3in;display:flex;'
             'justify-content:space-between;font-family:Helvetica,Arial,sans-serif">'
             f"<span>{html.escape(left)}</span><span>{pages}</span></div>")
 

@@ -573,33 +573,7 @@ def placeholder_warnings(R, values, extra=()):
             for p, name in unfilled_placeholders(R, set(values) | set(extra))]
 
 
-def range_warnings(bl, values, market):
-    """CMA-296: the supported range against the adjusted comps (method.md). `range_wide`: wider than twice the market's
-    typical width (`cma.typical_range_width`; 5% of the median where none is built in). `range_one_comp`: an end past
-    the second-highest or second-lowest adjusted value (the highest or lowest with 3 comps or fewer), rounded outward
-    to $5,000, so a single comp sets it."""
-    if not values:
-        return []
-    v = sorted(values)
-    median = statistics.median(v)
-    typical = market.get("cma.typical_range_width") or 0.05 * median
-    out = []
-    width = bl["high"] - bl["low"]
-    if width > 2 * typical + 1:
-        out.append(("range_wide", f"The range is {money(width)} wide, more than twice the typical {money(typical, 1000)}: "
-                    "the comps disagree more than a range can absorb. Replace the weakest match (the largest adjustments, "
-                    "the farthest or oldest sale) and re-run, or keep it and say in the bottom line why it's this wide."))
-    lo, hi = (v[1], v[-2]) if len(v) >= 4 else (v[0], v[-1])
-    lo_ok, hi_ok = math.floor(lo / 5000) * 5000, math.ceil(hi / 5000) * 5000
-    if bl["high"] > hi_ok:
-        out.append(("range_one_comp", f"The top of the range ({money(bl['high'])}) is above {money(hi_ok)}, the "
-                    f"{'second-highest' if len(v) >= 4 else 'highest'} adjusted comp ({money(hi)}) rounded up: one sale "
-                    f"sets it. Bring it to {money(hi_ok)} or below."))
-    if bl["low"] < lo_ok:
-        out.append(("range_one_comp", f"The bottom of the range ({money(bl['low'])}) is below {money(lo_ok)}, the "
-                    f"{'second-lowest' if len(v) >= 4 else 'lowest'} adjusted comp ({money(lo)}) rounded down: one sale "
-                    f"sets it. Bring it to {money(lo_ok)} or above."))
-    return out
+range_warnings = cma.range_warnings  # CMA-296: shared with the seller CMA (shared/cma.py)
 
 
 def comp_count_warnings(cards):

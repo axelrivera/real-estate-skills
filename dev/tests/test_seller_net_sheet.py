@@ -304,3 +304,21 @@ class Render(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ResultsV4(unittest.TestCase):
+    """Results_v4 case 09: no "Seller Side" pill, the agent's name as a signature, headers that fit one line."""
+
+    def test_header(self):
+        doc = render.build_html(compute.run(fixture("florida-three-prices.json")), {"name": "Axel Rivera", "brokerage": "LPT Realty"})
+        self.assertNotIn("Seller Side", doc)
+        self.assertIn('<b class="agent">Axel Rivera</b>', doc)
+
+    def test_columns_fit_their_headers(self):
+        widths = render.column_widths(["$425,000", "$410,000", "$425,000 with $6,000 Credit"])
+        self.assertAlmostEqual(sum(widths), 100, delta=0.2)
+        self.assertGreater(widths[3], widths[1])  # the long header gets the room it needs
+        need = (len("$425,000 with $6,000 Credit") * render.HEAD_PX_PER_CHAR + 16) / render.TABLE_PX * 100
+        self.assertGreaterEqual(widths[3], need - 0.1)
+        self.assertGreaterEqual(widths[0], render.MIN_FIRST)
+        self.assertEqual(render.column_widths(["A"] * 3)[1:], [render.MIN_COL] * 3)
