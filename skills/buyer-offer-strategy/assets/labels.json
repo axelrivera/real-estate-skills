@@ -322,6 +322,7 @@
  "opt_saves": ". Saves {amount} in worst-case cash",
  "opt_outlook": "; outlook {band}",
  "diff": "{term} {value}",
+ "diff_none": "no {term}",
  "same_terms": "Same terms",
  "submit_default": "Before the listing agent's deadline",
  "sig_agent": "Listing agent: {level}",

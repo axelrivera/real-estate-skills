@@ -1738,8 +1738,9 @@ def diff_text(r, k):
     """What's different from the recommended offer, in short phrases."""
     B = r["B"]
     a, b = r["terms"]["recommended"], r["terms"][k]
-    out = [t("diff", term=term_label(key, B).lower(), value=term_val(key, b, B)) for key in TERM_KEYS
-           if a.get(key) != b.get(key)]
+    # a term the option drops reads "no escalation", never the table's "None" or empty mark inside a sentence
+    out = [t("diff", term=term_label(key, B).lower(), value=term_val(key, b, B)) if b.get(key)
+           else t("diff_none", term=term_label(key, B).lower()) for key in TERM_KEYS if a.get(key) != b.get(key)]
     return cap("; ".join(out)) or L_["same_terms"]
 
 
