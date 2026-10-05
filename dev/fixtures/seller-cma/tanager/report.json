@@ -100,7 +100,7 @@
  },
  "recommendation": {
   "list_price": 389900,
-  "low": 375000,
+  "low": 380000,
   "high": 400000,
   "paragraph": "Recent sales of similar homes in Tanager Ridge, adjusted for their differences from yours, point to a value of about {low} to {high}, a narrow range because four of the five agree closely. We recommend launching at {list_price}, just above the median adjusted sale of about {median_adjusted} and just under the $390,000 search line many buyers use. It leaves room for the negotiating that is normal now and presents the home as fairly priced in its first weeks, when buyer attention is highest. A home with your floor plan on your street, 853 Tanager Ridge Dr, asked $419,900 and expired after 121 days, and the only sale near $405,000 had both baths remodeled and sold in June, when the market was stronger."
  },
@@ -112,7 +112,7 @@
  ],
  "comps": {
   "intro": "We looked at every sale within about a mile since April 2026 and chose the five closest matches: three-bedroom, two-bath homes in Tanager Ridge of about 1,540 to 1,660 square feet, built in the mid-1980s, without a pool. Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
-  "method_note": "Adjustments used: about $75 per square foot of size difference; $10,000 where a comp had an updated kitchen but original baths (your hall bath and newer roof give you a small edge); $10,000 off a comp with both baths remodeled; $25,000 for a home with an original kitchen and baths; about 1.5% per quarter off sales from before August, because prices have softened since spring. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "method_note": "Adjustments used: about $75 per square foot of size difference; $10,000 where a comp had an updated kitchen but original baths (your hall bath and newer roof give you a small edge); $10,000 off a comp with both baths remodeled; $25,000 for a home with an original kitchen and baths; about {time_rate} per quarter off sales from before {time_cutoff}, because prices have softened since spring. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
   "cards": [
    {
     "address": "790 Tanager Ridge Dr",
@@ -162,11 +162,6 @@
       "label": "Size",
       "amount": -1125,
       "kind": "size"
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -7050,
-      "kind": "time"
      }
     ],
     "meta": "Sold $405,000 · June 12, 2026 · 1,655 sq ft · 3/2 · no pool · 0.25 acre · 0.2 mi",
@@ -190,17 +185,12 @@
       "label": "Hall Bath and Newer Roof",
       "amount": 10000,
       "kind": "condition"
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -4300,
-      "kind": "time"
      }
     ],
     "meta": "Sold $378,000 · July 18, 2026 · 1,540 sq ft · 3/2 · no pool · 0.21 acre · 0.4 mi",
     "bullets": [
      "Updated kitchen, original baths and a 2018 roof; the seller paid $6,000 of the buyer's costs.",
-     "About 100 square feet smaller: plus $7,500. Your hall bath and newer roof: plus $10,000. July sale: minus about $4,300."
+     "About 100 square feet smaller: plus $7,500. Your hall bath and newer roof: plus $10,000."
     ]
    },
    {
@@ -226,7 +216,10 @@
     ]
    }
   ],
-  "summary_paragraph": "The adjusted values run from about {adjusted_min} to {adjusted_max}, with a median of about {median_adjusted}. Four of the five land within a few thousand dollars of each other; 818 Tanager Ridge Dr, the closest match in condition, sits at the top. Other sales tell the same story: 764 Siskin Way, fully updated with impact windows, sold for $412,500 in May, and 402 Linnet Cir in Wren Meadow, partly updated, sold for $371,500 in August."
+  "summary_paragraph": "The adjusted values run from about {adjusted_min} to {adjusted_max}, with a median of about {median_adjusted}. Four of the five land within a few thousand dollars of each other; 818 Tanager Ridge Dr, the closest match in condition, sits at the top. Other sales tell the same story: 764 Siskin Way, fully updated with impact windows, sold for $412,500 in May, and 402 Linnet Cir in Wren Meadow, partly updated, sold for $371,500 in August.",
+  "time_adjustment": {
+   "rate_per_quarter": 0.015
+  }
  },
  "scatter": {
   "heading": "Where Your Home Fits in the Neighborhood",
@@ -329,7 +322,7 @@
    "<strong>Buyers are negotiating again.</strong> Since {split_month}, homes nearby sold for about {sale_to_list_recent} of their original asking price after seller-paid costs, against {sale_to_list_early} in the spring, and took about {days_recent} days to go under contract.",
    "<strong>Most sellers are helping with costs.</strong> {credit_share_recent} of recent sales included a seller credit, typically about {credit_amount_recent}. Budget for one now.",
    "<strong>Supply is still tight.</strong> Five other homes are for sale nearby, about {months_supply} of supply at the recent pace, and three of them have already cut their price. Well-priced homes still sell; overpriced ones sit.",
-   "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in early October gives the home its best window and keeps a December 18 closing within reach."
+   "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in {launch_when} gives the home its best window and keeps a December 18 closing within reach."
   ]
  },
  "pricing": {

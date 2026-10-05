@@ -80,8 +80,8 @@ def summary_page(R, C, agent, L):
          '<div class="sp-dot">' + cma.dotplot(R["comps"]["cards"], rec["low"], rec["high"], rec["list_price"],
                                              L("dot_rec", price=money(rec["list_price"]))) + "</div>"]
     stay = (C.get("reprice") or {}).get("stay_index")  # CMA-273: the Stay row reads "Stay at $474,900", as in the full table
-    rows = "".join(f'<tr class="{"rec" if x["recommended"] else ""}"><td>'
-                   f'{L("sum_stay", price=x["list_price_display"]) if i == stay else x["list_price_display"]}{" ★" if x["recommended"] else ""}</td>'
+    rows = "".join(f'<tr class="{"rec" if x["recommended"] else ""}"><td style="white-space:nowrap">'
+                   f'{L("sum_stay", price=x["list_price_display"]) if i == stay else x["list_price_display"]}{"&nbsp;★" if x["recommended"] else ""}</td>'
                    f'<td>{x["time"]}</td><td class="n">{x["expected_sale_display"]}</td><td class="n">{x["net_after_holding_display"]}</td></tr>'
                    for i, x in enumerate(strats))
     opts = C["options_summary"]  # CMA-336: the net column's header and footnote, the same words the chat template quotes
@@ -152,7 +152,9 @@ def body(R, C, homes, agent, L):
         b += [f'<h3>{L("h_means")}</h3>', ul(R["means"])]
 
     c = R["comps"]
-    b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{c["method_note"]}</p>',
+    # Results_v5: the method line opens with what was adjusted, generated from the comps so it names every kind used
+    method_note = " ".join(x for x in (C.get("adjustment_summary"), c["method_note"]) if x)
+    b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{method_note}</p>',
           '<div class="comps2">' + "".join(
               f'<div class="comp"><div class="comp-h"><b>{esc(cma.display_address(cd["address"]))}</b><span class="adj">{L("adjusted")} {adj(cd["adjusted"])}</span></div>'
               f'<div class="meta">{cd["meta"]}</div>{ul(cd["bullets"], "")}</div>' for cd in c["cards"]) + "</div>"]
@@ -204,7 +206,11 @@ def closing(R, C, agent, L):
     # together) rather than move whole and leave the page before half empty. The seller CMA carries the launch plan
     # and is the listing presentation's leave-behind, so it's a marketing piece: the Equal Housing Opportunity
     # statement, as on the deck (references/fair-housing.md)
-    return ('<div class="kg sec runon">' + f'<h2>{L("h_method")}</h2>' + "".join(f"<p>{x}</p>" for x in R["method"])
+    # Results_v5 case 02: how the expected sales are figured is method, so it's here, not under the pricing table
+    method = list(R["method"])
+    if C["expected_sale_basis"].get("method"):  # after the sources, before the not-an-appraisal paragraph
+        method[1:1] = [esc(C["expected_sale_basis"]["method"])]
+    return ('<div class="kg sec runon">' + f'<h2>{L("h_method")}</h2>' + "".join(f"<p>{x}</p>" for x in method)
             + "<div>" + footer_block(agent, R, L) + render.notices(agent, cma.report_notices(C), marketing=True) + "</div></div>")
 
 

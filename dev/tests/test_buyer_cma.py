@@ -305,7 +305,7 @@ class CompsFirst(unittest.TestCase):
         full = report()
         market, homes = compute.load_inputs(copy.deepcopy(full))
         C = compute.compute(copy.deepcopy(full), market, homes)
-        R = {k: full[k] for k in ("subject", "comps", "export", "as_of")}
+        R = {k: full[k] for k in ("subject", "comps", "export", "as_of", "split_date")}
         code, out, written = self.run_cli(R)
         self.assertEqual(code, 0, out)
         self.assertEqual(out["stage"], "comps")
@@ -461,7 +461,7 @@ class GutCheck(unittest.TestCase):
 
     def comps_only(self, **subject):
         full = report()
-        R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of")}
+        R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of", "split_date")}
         R["subject"].update(subject)
         R["export"] = full["export"]
         market, homes = compute.load_inputs(R)
@@ -953,8 +953,8 @@ class SixthPass(unittest.TestCase):
         self.assertNotIn("To fit your", doc)
 
     def test_range_width_and_one_comp_end(self):
-        """CMA-296: a range end past the second-highest or second-lowest adjusted comp (rounded outward to $5,000), or
-        a range wider than twice the typical width, warns."""
+        """CMA-296, Results_v5: a range end past the second-highest or second-lowest adjusted comp (rounded outward to
+        $5,000), or a range wider than about 6% of the median adjusted value, warns."""
         _, C = self.run_()
         self.assertFalse({"range_wide", "range_one_comp"} & set(C["warning_keys"]))
 
@@ -962,7 +962,7 @@ class SixthPass(unittest.TestCase):
             R["bottom_line"]["high"] = 495000
         _, C = self.run_(top)
         self.assertEqual(C["warning_keys"].count("range_one_comp"), 1)
-        self.assertNotIn("range_wide", C["warning_keys"])
+        self.assertIn("range_wide", C["warning_keys"])  # Results_v5: and past the 6% cap
 
         def wide(R):
             R["bottom_line"]["low"] = 400000

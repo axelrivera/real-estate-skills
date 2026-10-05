@@ -144,6 +144,23 @@ def transfer_tax_warning(market):
 PAYOFF_INTEREST = 0.045  # seller's mortgage interest for holding-cost estimates (national planning figure)
 
 
+def payoff_from_balance(balance, rate_pct=None):
+    """Results_v5 case 02: a loan BALANCE isn't a payoff. The estimate adds a month's interest, at the loan's own rate
+    (`rate_pct`, a percent) when known, else the same PAYOFF_INTEREST the holding costs use (the seller net sheet's
+    rule too); no fee cushion. A payoff the seller or agent states ("about $171,500 from the September statement") is
+    used as given and never goes through here."""
+    rate = rate_pct / 100 if rate_pct else PAYOFF_INTEREST
+    return round(balance * (1 + rate / 12))
+
+
+def tax_pair(annual):
+    """Results_v5 case 03: a yearly tax and its monthly share that reconcile: the yearly figure to $100 and the monthly
+    one from that same rounded figure ("$7,200 a year", "$600 a month"), never a floored year beside an exact month.
+    Returns (yearly, monthly) as numbers."""
+    yearly = round(annual / 100) * 100
+    return yearly, round(yearly / 12)
+
+
 def holding_monthly(price, market, payoff=0, hoa_monthly=0, rate=None):
     """A seller's monthly cost of owning the home while it's for sale: loan interest, HOA, insurance and utilities
     from the market's `holding_costs`. Property tax is left out: it's in the tax proration already (OFR-13).

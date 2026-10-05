@@ -146,7 +146,8 @@ class CmaLayout(unittest.TestCase):
         hist = {"timeline": [{"date": d, "kind": "listed", "price": 1, "delta": 0} for d in
                              ("2015-03-31", "2015-04-21", "2015-05-22", "2026-07-10", "2026-08-14")]}
         rows = [r[0] for r in cma_render.history_rows({}, hist, self.L, "2026-09-26")]
-        self.assertEqual(rows, ["Mar 31, 2015", "Apr 21, 2015", "May 22, 2015", "Jul 10, 2026", "Aug 14"])
+        # Results_v5: the year on every row once the rows span more than one year
+        self.assertEqual(rows, ["Mar 31, 2015", "Apr 21, 2015", "May 22, 2015", "Jul 10, 2026", "Aug 14, 2026"])
 
     def test_credit_table_never_runs_on(self):
         R = cma_report()

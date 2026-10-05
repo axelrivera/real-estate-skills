@@ -13,7 +13,7 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 | HOA estoppel or association documents | When `costs.hoa` (or `subject.hoa`) is true: the market's fee and name (Florida: HOA Estoppel Letter, $299; elsewhere HOA Documents, an estimate, whatever the state calls them: a resale certificate in Texas). Use the same name in the report's prose |
 | Seller credit | Each strategy's `seller_credit` |
 | Other | `costs.other`: `[{label, amount}]` (survey, repairs already agreed, a home warranty) |
-| Mortgage payoff | `costs.mortgage_payoff`, from the payoff statement or a figure the seller or agent gives (a verbal "about $210,000" goes here too, labeled "Your Estimate"; ask for the statement): the last row becomes "Estimated Cash at Closing". A monthly statement's balance goes in `mortgage_balance` with `mortgage_rate` |
+| Mortgage payoff | `costs.mortgage_payoff`: a payoff the seller or agent states, from a payoff letter, a statement's payoff figure or memory ("about $210,000"), used as given and labeled "Your Estimate" (ask for the payoff letter): the last row becomes "Estimated Cash at Closing". Only a loan balance (a monthly statement's principal balance) goes in `mortgage_balance` with `mortgage_rate`: a month's interest is added, at that rate or 4.5% |
 
 **Estimates.** Outside the built-in market, estimated lines say "Estimate" and a note under the table lists them; `assumptions` names them for your reply. The report isn't marked Preliminary for estimates. When the agent sends a quote or terms, put them in `costs` and render again. A value with no estimate at all (rare) is left out, named in a "Preliminary" note, and marks the report Preliminary.
 

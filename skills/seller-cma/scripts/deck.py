@@ -96,45 +96,16 @@ def load_content(R):
     return prose.title_labels(c, DECK_LABELS)
 
 
-def _fill(value, values):
-    """Replace {list_price}-style placeholders in every string of the deck content."""
-    if isinstance(value, str):
-        return re.sub(r"\{(\w+)\}", lambda m: values.get(m.group(1), m.group(0)), value)
-    if isinstance(value, list):
-        return [_fill(v, values) for v in value]
-    if isinstance(value, dict):
-        return {key: _fill(v, values) for key, v in value.items()}
-    return value
+_fill = cma.fill  # the report's placeholders, filled the same way (a count opening a sentence is capitalized)
 
 
 def _norm(address):
     return " ".join(str(address).upper().replace(".", "").split())
 
 
-# The plain words for each adjustment kind (cma.ADJUSTMENT_KINDS), the same on every deck
-ADJ_KIND_WORDS = {"size": "size", "pool": "pool", "garage": "garage", "condition": "condition and updates",
-                  "age": "roof and systems", "lot": "lot", "view": "view or water", "location": "location",
-                  "time": "market changes since each sale", "credits": "seller credits", "other": "other differences"}
-
-
-def adjustment_words(cards):
-    """'size, condition and updates, market changes since each sale and seller credits': what was adjusted, each kind
-    once, in the order first used (CMA-26). Results_v4 case 02: fixed plain words per adjustment kind (the card's
-    `kind`, else cma.adjustment_kind from its label), never the label's own wording ("hall bath (not in its listing)")."""
-    seen = []
-    for c in cards:
-        for a in c.get("adjustments") or []:
-            if isinstance(a, dict) and not a.get("amount"):
-                continue
-            kind = cma.adjustment_kind(a)
-            if kind not in seen:
-                seen.append(kind)
-    if any(c.get("seller_concessions") for c in cards) and "credits" not in seen:
-        seen.append("credits")
-    items = [ADJ_KIND_WORDS[k] for k in seen]
-    if not items:
-        return ""
-    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+# CMA-26, Results_v4 case 02: what was adjusted, each kind once in fixed plain words (shared with the report's method line)
+ADJ_KIND_WORDS = cma.ADJ_KIND_WORDS
+adjustment_words = cma.adjustment_words
 
 
 def period_labels(window):
@@ -302,8 +273,10 @@ def deck_data(R, C, homes, agent, L, footer):
                                 L("deck_market_sub", early=periods[0], recent=periods[1]) if periods else ""),
                    "one_period": single,
                    "period_labels": content.get("market_period_labels") or [L("deck_period_early"), L("deck_period_recent")]},
+        # Results_v5 case 02: the strongest match is the script's pick (compute.py strongest_comp), labeled here
         "comps": [{"address": cma.display_address(c["address"]), "adjusted": c["adjusted"], "adjusted_k": k(c["adjusted"]),
-                   "line": content["comp_lines"].get(c["address"], "")} for c in R["comps"]["cards"]],
+                   "line": comp_line(content["comp_lines"].get(c["address"], ""), i == C.get("strongest_comp"), L)}
+                  for i, c in enumerate(R["comps"]["cards"])],
         "competition": cards,
         "scatter": scatter_data(homes, R, C, L) if homes else None,
         "strategies": [{"list_price": x["list_price"], "list_display": x["list_price_display"], "label": L("deck_list", price=x["list_price_display"]),
@@ -328,6 +301,13 @@ def deck_data(R, C, homes, agent, L, footer):
         "appendix_note": comps_note,
         "appendix_speaker": comps_speaker,
     }
+
+
+def comp_line(line, strongest, L):
+    """A comp's line on the comps slide, led by "Strongest match" on the script's pick."""
+    if not strongest:
+        return line
+    return L("deck_strongest") + (" · " + line if line else "")
 
 
 MARKET_CARDS = (("sale_to_list", "percent"), ("days", "time"), ("credit_share", "money"), ("credit_amount", "dollar"))
@@ -364,7 +344,9 @@ def contrast_roles(colors):
     mark = next((c for c in options if gap(c) >= 0.12), max(options, key=gap))
     def first(options, against, target):
         return next((c for c in options if design.contrast(hx(c), hx(against)) >= target), "bg")
-    return {"mark": mark.lstrip("#"),
+    # Results_v5: comps on the charts are the brand itself, as on the PDF (darkened to 3:1 only when it's too light)
+    comp = hx("brand") if design.contrast(hx("brand"), white) >= 3.0 else design.darken_to(hx("brand"), 3.0)
+    return {"mark": mark.lstrip("#"), "comp": comp.lstrip("#"),
             "on_dark": colors[first(("brand_soft", "brand_rule"), "brand_deep", 7.0)],
             "on_ink": colors[first(("brand_soft", "brand_rule"), "brand_ink", 4.5)],
             "grey_pale": design.mix_white(hx("grey"), 0.6).lstrip("#")}
@@ -458,20 +440,21 @@ def _restyle(ser, colors, keys):
     i = int(idx.group(1)) if idx else -1
     kind = keys[i] if 0 <= i < len(keys) else None
     mk = re.compile(r"<c:marker>.*?</c:marker>", re.S)
-    if kind == "comp":
-        ser = mk.sub(_marker("circle", 8, colors["mark"], colors["mark"]), ser, 1)
+    if kind == "comp":  # Results_v5: the brand itself, as the PDF's chart
+        ser = mk.sub(_marker("circle", 8, colors["comp"], colors["comp"]), ser, 1)
     elif kind == "sold":
         # background: small solid dots, no outline (LibreOffice, which makes the PDF copy, ignores marker transparency)
         ser = mk.sub(_marker("circle", 5, colors["grey_pale"], None), ser, 1)
-    elif kind == "active":  # a solid true gray (LibreOffice drops a hollow marker's ring): the listings to watch
-        ser = mk.sub(_marker("circle", 7, colors["grey"], colors["grey"], 15875), ser, 1)
+    elif kind == "active":  # Results_v5: an open ring, as the PDF: a white fill (not none, which LibreOffice drops)
+        ser = mk.sub(_marker("circle", 7, colors["bg"], colors["muted"], 15875), ser, 1)
     elif kind == "trend":
         ser = mk.sub('<c:marker><c:symbol val="none"/></c:marker>', ser, 1)
         ser = re.sub(r"(<c:spPr>.*?)<a:ln[^>]*>\s*<a:noFill/>\s*</a:ln>",
                      lambda m: m.group(1) + f'<a:ln w="15875"><a:solidFill><a:srgbClr val="{colors["muted"]}"/></a:solidFill>'
                                             '<a:prstDash val="dash"/></a:ln>', ser, 1, flags=re.S)
     elif kind == "subject":
-        ser = mk.sub(_marker("diamond", 14, colors["text"], colors["bg"], 12700), ser, 1)
+        # Results_v5: a little smaller, with a wider white edge, so a comp at the same size stays visible beside it
+        ser = mk.sub(_marker("diamond", 11, colors["text"], colors["bg"], 19050), ser, 1)
     return ser
 
 

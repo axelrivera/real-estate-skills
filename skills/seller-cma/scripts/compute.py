@@ -24,7 +24,6 @@ from _shared import cma, finance, handoff, mls, profiles  # noqa: E402
 NET_LINE_ORDER = ("listing_fee", "buyer_broker_fee", "transfer_tax", "transfer_surtax", "owner_title", "title_fees", "estoppel",
                   "credit", "other", "tax_proration")
 
-PAYOFF_CUSHION = 500  # payoff and recording fees on top of a statement balance (an estimate; the payoff letter governs)
 CONTRACT_TO_CLOSE_MONTHS = 1  # a typical financed contract-to-close period, added to each option's time to contract
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
@@ -284,7 +283,8 @@ def net_sheet(R, market, L):
     if payoff is None and costs.get("mortgage_balance") == 0:  # owned free and clear: the net is the cash at closing
         payoff = 0
     if payoff is None and costs.get("mortgage_balance"):  # CMA-29: a balance isn't a payoff; add a month's interest + fees
-        payoff = round(costs["mortgage_balance"] * (1 + (costs.get("mortgage_rate") or 7) / 100 / 12) + PAYOFF_CUSHION)
+        # Results_v5 case 02: at the loan's rate, else the 4.5% the holding costs assume (never a hidden 7%)
+        payoff = finance.payoff_from_balance(costs["mortgage_balance"], costs.get("mortgage_rate"))
         payoff_est = True
     has_hoa = bool(costs.get("hoa", s.get("hoa", False)))
     title_fees = costs.get("title_fees")  # the title company's quote: a total or {name: amount}
@@ -901,20 +901,146 @@ def deck_content(R):
 
 
 def expected_basis(basis, strategies, values, L):
-    """Results_v4: the sentence under the pricing table that says where each expected sale comes from, naming any
-    option whose figure is the agent's own."""
-    parts = []
+    """Results_v4, Results_v5 case 02: (the short, plain note under the pricing table, the method sentence for How This
+    Was Prepared). The note says the expected sales are estimates, why a higher price expects the recommended one's
+    sale, and names any option whose figure is the agent's own; the rule itself (the ratio, the rounding, the range
+    limits) goes in the method."""
+    note, method = [], ""
     if basis["filled"]:
         key = {"export": "expected_basis_export", "report": "expected_basis_report"}.get(basis["source"], "expected_basis_assumed")
-        parts.append(L(key, ratio=basis["ratio_display"], since=values.get("split_month", ""))
-                     + (L("expected_basis_capped") if basis["capped"] else "")
-                     + (L("expected_basis_floored") if basis.get("floored") else "") + ".")
+        method = (L(key, ratio=basis["ratio_display"], since=values.get("split_month", ""))
+                  + (L("expected_basis_capped") if basis["capped"] else "")
+                  + (L("expected_basis_floored") if basis.get("floored") else "") + ".")
+        note.append(L("expected_plain"))
         if basis["top"]:  # a higher price buys time on the market, not a higher sale
-            parts.append(L("expected_basis_top", prices=_and([money(strategies[i]["list_price"]) for i in basis["top"]])))
+            prices = _and([money(strategies[i]["list_price"]) for i in basis["top"]])
+            note.append(L("expected_plain_top", prices=prices))
+            method += " " + L("expected_basis_top", prices=prices)
     if basis["agent"]:
         prices = _and([money(strategies[i]["list_price"]) for i in basis["agent"]])
-        parts.append(L("expected_basis_agent" if len(basis["agent"]) == 1 else "expected_basis_agent_many", prices=prices))
-    return " ".join(parts)
+        note.append(L("expected_basis_agent" if len(basis["agent"]) == 1 else "expected_basis_agent_many", prices=prices))
+    return " ".join(note), method
+
+
+# --- the launch date: one, script-owned (Results_v5 case 02) -------------------------------
+
+LAUNCH_DAYS = 14  # without the agent's launch_date: two weeks after the report, the usual prep time
+LAUNCH_WORDS = re.compile(r"\b(launch\w*|go(?:es|ing)? live|went live|hits? the market|hitting the market|list(?:ing)? date)\b", re.I)
+_MONTH_RE = "|".join(MONTHS)
+LAUNCH_TIMING = re.compile(rf"\b(?:(?P<part>early|mid|late)[- ]?)?(?P<month>{_MONTH_RE})\b(?:\s+(?P<day>\d{{1,2}})\b)?"
+                           r"|\b(?:in|within)\s+(?:about\s+|roughly\s+|around\s+)?(?P<weeks>[\w]+)\s+weeks?\b"
+                           r"|\bweek\s+(?P<weekno>\d)\b", re.I)
+WEEK_WORDS = {w: i for i, w in enumerate(cma.NUMBER_WORDS)}
+
+
+def launch_info(R, as_of):
+    """The go-live date: report.json's `launch_date` (the agent's), else LAUNCH_DAYS after the report date. Its
+    placeholders: {launch_when} ('early October', 'mid-October'), {launch_date} ('October 10'), {launch_weeks}
+    ('about two weeks')."""
+    given = _date(R.get("launch_date"), "launch_date")
+    d = given or as_of + timedelta(days=LAUNCH_DAYS)
+    part = "early" if d.day <= 10 else "mid" if d.day <= 20 else "late"
+    weeks = max(1, round((d - as_of).days / 7))
+    when = f"{part}-{MONTHS[d.month - 1]}" if part == "mid" else f"{part} {MONTHS[d.month - 1]}"
+    return {"date": d.isoformat(), "part": part, "month": MONTHS[d.month - 1], "day": d.day, "weeks": weeks,
+            "source": "agent" if given else "assumed",
+            "values": {"launch_when": when, "launch_date": f"{MONTHS[d.month - 1]} {d.day}",
+                       "launch_weeks": f"about {cma.number_word(weeks)} week{'s' if weeks != 1 else ''}"}}
+
+
+def _timing_problem(m, info):
+    """Why a timing phrase isn't the launch date, or None."""
+    if m.group("month"):
+        if m.group("month").capitalize() != info["month"]:
+            return "month"
+        if m.group("part") and m.group("part").lower() != info["part"]:
+            return "part"
+        if m.group("day") and abs(int(m.group("day")) - info["day"]) > 3:
+            return "day"
+        return None
+    n = m.group("weeks") or m.group("weekno")
+    n = int(n) if n and n.isdigit() else WEEK_WORDS.get(str(n).lower())
+    if n is None:
+        return None
+    return "weeks" if abs(n - info["weeks"]) >= 1 else None
+
+
+def launch_errors(R, deck_content, info, values):
+    """Results_v5 case 02: page 1 said "go live within about two weeks", the market bullet "launching in early
+    October", the deck's timeline "Mid-October": the launch timing anywhere in the wording must be the one launch date
+    ({launch_when}, {launch_date}, {launch_weeks}). A timing phrase right after a launch word, or a deck timeline step
+    that goes live, that names another month, part of the month, day or number of weeks stops the render."""
+    out = []
+    fix = (f"the plan goes live {info['values']['launch_when']} ({info['values']['launch_date']}, "
+           f"{info['values']['launch_weeks']} from the report date) → write {{launch_when}}, {{launch_date}} or "
+           "{launch_weeks}; to move it, set launch_date in report.json.")
+    strings = list(_strings({k: v for k, v in R.items() if k != "deck"}))
+    content = deck_content or {}
+    strings += [(f"deck.{p}", t) for p, t in _strings({k: v for k, v in content.items() if k != "timeline"})]
+    for path, text in strings:
+        text = cma.fill(text, values)
+        for sentence in re.split(r"(?<=[.!?])\s+", re.sub(r"<[^>]+>", "", text)):
+            for w in LAUNCH_WORDS.finditer(sentence):
+                m = LAUNCH_TIMING.search(sentence[w.end():w.end() + 60])
+                if m and _timing_problem(m, info):
+                    out.append(f'{path}: says "{w.group(0)} ... {m.group(0)}", but {fix}')
+                    break
+    for i, step in enumerate(content.get("timeline") or []):
+        if isinstance(step, list) and len(step) >= 2 and LAUNCH_WORDS.search(str(step[1])):
+            m = LAUNCH_TIMING.search(cma.fill(str(step[0]), values))
+            if m and _timing_problem(m, info):
+                out.append(f'deck.timeline[{i}][0]: "{step[0]}" for "{step[1]}", but {fix}')
+    return list(dict.fromkeys(out))
+
+
+# --- the strongest match: the script's pick (Results_v5 case 02) -------------------------------
+
+# "the closest match in condition" names one way it matches, not the best match overall: not checked
+STRONGEST_WORDS = re.compile(r"\b(strongest|best|closest|most similar)\s+(?:[\w-]+\s+)?(match|comp|comparable|sale)\b"
+                             r"(?!\s+(?:in|on|for|by)\b)", re.I)
+
+
+def strongest_comp(cards, low, high):
+    """The index of the comp that matches the home best: the smallest adjustments (gross, as a share of its price)
+    among comps whose adjusted value sits inside the supported range (all comps when none does), the newest on a tie.
+    The deck labels it, so it's never a comp adjusted outside the range."""
+    def gross(c):
+        return sum(abs(a["amount"]) for a in c.get("adjustments") or []
+                   if isinstance(a, dict) and isinstance(a.get("amount"), (int, float))) / max(c.get("sold_price") or 1, 1)
+    inside = [i for i, c in enumerate(cards) if low <= c["adjusted"] <= high] or list(range(len(cards)))
+    return min(inside, key=lambda i: (round(gross(cards[i]), 4), -(cma.comp_close_date(cards[i]) or date.min).toordinal()))
+
+
+def strongest_errors(R, deck_content, best):
+    """A comp line or card bullet that calls a comp other than the script's pick the strongest (or best, closest)
+    match stops the render: the deck labels the script's pick itself."""
+    cards, out = R["comps"]["cards"], []
+    name = cma.display_address(cards[best]["address"])
+    for address, line in ((deck_content or {}).get("comp_lines") or {}).items():
+        m = STRONGEST_WORDS.search(str(line))
+        if m and not mls.same_address(cma._street(address), cma._street(cards[best]["address"])):
+            out.append(f'deck.comp_lines["{address}"]: says "{m.group(0)}", but the strongest match is {name} (the '
+                       "smallest adjustments inside the range) → drop it: the slide labels the strongest match itself.")
+    for i, c in enumerate(cards):
+        for j, b in enumerate(c.get("bullets") or []):
+            m = STRONGEST_WORDS.search(str(b))
+            if m and i != best:
+                out.append(f'comps.cards[{i}].bullets[{j}]: calls {cma.display_address(c["address"])} the "{m.group(0)}", '
+                           f"but the strongest match is {name} (the smallest adjustments inside the range) → drop the claim, "
+                           "or say what it does match (its floor plan, its street).")
+    return out
+
+
+def comp_prose_fields(R, deck_content):
+    """[(path, text)] of the comp and scatter wording the light prose check reads (cma.comp_prose_errors)."""
+    c, sc, d = R["comps"], R.get("scatter") or {}, deck_content or {}
+    fields = [("comps.intro", c.get("intro", "")), ("comps.summary_paragraph", c.get("summary_paragraph", ""))]
+    fields += [(f"comps.cards[{i}].bullets[{j}]", b) for i, cd in enumerate(c["cards"]) for j, b in enumerate(cd.get("bullets") or [])]
+    fields += [(f"scatter.{k}", sc[k]) for k in ("intro", "after_paragraph") if isinstance(sc.get(k), str)]
+    fields += [(f"deck.{k}", d[k]) for k in ("comps_takeaway", "scatter_takeaway") if isinstance(d.get(k), str)]
+    index = {cma._street(cd["address"]): i for i, cd in enumerate(c["cards"])}
+    fields += [(f'deck.comp_lines["{a}"]', t, index.get(cma._street(a))) for a, t in (d.get("comp_lines") or {}).items()]
+    return fields
 
 
 def page_one_stats(R, values, median_display, L, n, lo, hi):
@@ -1034,11 +1160,15 @@ def compute(R, market, homes):
         bp["insurance_annual"] = finance.insurance_estimate(rec["list_price"], market, s.get("year_built"))["annual"]
         assume("insurance_estimated", f"Buyer payments use an estimated {money(bp['insurance_annual'])} a year for "
                "homeowner's insurance (the market's rate for this price and the home's age); give a quote if the seller has one.")
+    # Results_v5: the time adjustments are the script's (comps.time_adjustment), added before the comps are summed
+    split = cma.default_split(R, homes)
+    time_errors, time_info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
     try:
         warn("derive_comps", *cma.derive_comps(R["comps"]))  # adjusted values and summary rows from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))  # CMA-110
+    warn("time_undated", *cma.time_warnings(time_info))
     median_adjusted = statistics.median(c["adjusted"] for c in R["comps"]["cards"])
     address = s.get("mls_address", s["address"])
     others = [h for h in homes if not mls.same_address(h["address"], address)]
@@ -1066,7 +1196,7 @@ def compute(R, market, homes):
         max_dist = max((h["distance"] for h in others if h["status"] == "SOLD" and h.get("distance") is not None), default=None)
     else:
         window, n_sold, max_dist, st = None, None, None, None
-    errors = cma.adjustment_kind_errors(R["comps"]["cards"])  # Results_v4: data the model wrote that's wrong stops the render
+    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + time_errors  # Results_v4: wrong data stops the render
     # CMA-300: Stay at Current Price's expected sale by the one rule (method.md, A Reprice). Left out of report.json, it's
     # filled from the rule, so the first run never guesses it
     rule = stay_rule(R, homes, strategies[stay], median_adjusted, (window or {}).get("split_date")) if stay is not None else None
@@ -1164,8 +1294,11 @@ def compute(R, market, homes):
         assume("title_fees_built_in", "Title company fees are the built-in typical charges; use the title company's quote when there is one.")
     # CMA-269: the payoff and the holding interest rate are assumptions too, not only lines in the net notes
     if net["payoff"] and net["payoff_estimated"]:
-        assume("payoff_estimated", f"The mortgage payoff ({money(net['payoff'])}) is estimated from the loan balance, plus a "
-               "month's interest and fees. The lender's payoff statement (costs.mortgage_payoff) replaces it.")
+        rate = costs_in.get("mortgage_rate")
+        assume("payoff_estimated", f"The mortgage payoff ({money(net['payoff'])}) is estimated from the loan balance plus a "
+               f"month's interest at {f'the loan rate of {rate:g}%' if rate else 'an assumed 4.5%'}. A payoff the seller "
+               "states (\"about $171,500 from the statement\") goes in costs.mortgage_payoff as given; the lender's payoff "
+               "letter replaces either.")
     elif net["payoff"]:
         assume("payoff_seller", f"The mortgage payoff ({money(net['payoff'])}) is the seller's estimate, labeled Your "
                "Estimate. The lender's payoff statement replaces it.")
@@ -1323,18 +1456,35 @@ def compute(R, market, homes):
                                 about(max(nets) - min(nets)), pay, trend, L, relist, reprice_out, stats.get("months_supply"))
     numbers, raw = market_numbers(st)  # Results_v4: every market-period number, as {sale_to_list_recent} and the rest
     values.update(numbers)
+    # Results_v5: the time adjustment's rate and cutoff, the comps' counts and newest sale, and the launch date
+    values.update(cma.time_values(time_info))
+    cards = R["comps"]["cards"]
+    facts, raw_facts = cma.comp_facts(cards, homes, split, R.get("as_of"), adjusted_money)
+    for key, v in facts.items():
+        values.setdefault(key, v)
+    as_of_d = _date(R.get("as_of"), "as_of") or date.today()
+    launch = launch_info(R, as_of_d)
+    values.update(launch["values"])
+    best = strongest_comp(cards, rec["low"], rec["high"])
+    values["strongest_comp"] = cma.display_address(cards[best]["address"])
     warn("unfilled_placeholder", *placeholder_warnings(R, values))
     warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
     # Results_v4: wrong data the model wrote stops the render, every problem at once (field: problem → fix)
     content = deck_content(R)
     history, history_errors = listing_history(R, homes, relist, L)
     errors += (typed_supply_errors(R, stats.get("months_supply")) + typed_stat_errors(R, content, raw, values)  # CMA-320
-               + split_month_errors(R, values) + launch_plan_errors(R, content) + history_errors)
+               + split_month_errors(R, values) + launch_plan_errors(R, content) + history_errors
+               # Results_v5: the stated time adjustment, comp counts and bands, the launch timing, the strongest match
+               + cma.time_method_errors([(f"comps.{k}", cma.fill(R["comps"].get(k, ""), values))
+                                         for k in ("method_note", "intro")], time_info)
+               + cma.comp_prose_errors([(f[0], cma.fill(f[1], values), *f[2:]) for f in comp_prose_fields(R, content)],
+                                       raw_facts, [st["sold_recent"]["n"]] if st else [])
+               + launch_errors(R, content, launch, values) + strongest_errors(R, content, best))
     if errors:
         raise ReportError(f"report.json has {len(errors)} thing{'s' if len(errors) > 1 else ''} to fix before the "
                           "files are built:\n" + "\n".join("- " + e for e in errors))
     expected_rec = strategies[ri]["expected_sale"]
-    expected_note = expected_basis(basis, strategies, values, L)
+    expected_note, expected_method = expected_basis(basis, strategies, values, L)
     key_stats = page_one_stats(R, values, median_display, L, len(R["comps"]["cards"]),
                                min(c["adjusted"] for c in R["comps"]["cards"]), max(c["adjusted"] for c in R["comps"]["cards"]))
     market_table = market_rows(R, numbers, window, L)
@@ -1358,7 +1508,13 @@ def compute(R, market, homes):
                            # Results_v4: from the recommended option's number, never a typed phrase
                            "expected_sale": L("sum_expected_value", amount=money(expected_rec)),
                            "expected_sale_value": expected_rec},
-        "expected_sale_basis": {**basis, "note": expected_note},
+        "expected_sale_basis": {**basis, "note": expected_note, "method": expected_method},
+        # Results_v5: the method line's list of what was adjusted, from the comps (every kind used), and the time rule
+        "adjustment_summary": cma.adjustment_summary(R["comps"]["cards"], time_info),
+        "time_adjustment": time_info,
+        "launch": {**{k: v for k, v in launch.items() if k != "values"}, "when": launch["values"]["launch_when"],
+                   "date_display": launch["values"]["launch_date"], "weeks_display": launch["values"]["launch_weeks"]},
+        "strongest_comp": best,
         "listing_history": history,
         "key_stats": key_stats,
         "market_table": market_table,

@@ -1,6 +1,6 @@
 {
- "adjusted_max": 492300,
- "adjusted_min": 436200,
+ "adjusted_max": 493900,
+ "adjusted_min": 435900,
  "assumption_keys": [
   "expected_sale_ratio",
   "title_fees_built_in"
@@ -49,12 +49,12 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 492300,
+    "adjusted": 493900,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 483800,
+    "adjusted": 484000,
     "seller_paid": 0,
     "sold_price": 495000
    },
@@ -64,12 +64,12 @@
     "sold_price": 427000
    },
    {
-    "adjusted": 438400,
+    "adjusted": 440200,
     "seller_paid": 12000,
     "sold_price": 429000
    },
    {
-    "adjusted": 436200,
+    "adjusted": 435900,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -126,6 +126,14 @@
    "count": 2
   }
  ],
+ "launch": {
+  "date": "2026-10-06",
+  "day": 6,
+  "month": "October",
+  "part": "early",
+  "source": "assumed",
+  "weeks": 2
+ },
  "listing_history": {
   "count": 0
  },
@@ -409,6 +417,19 @@
   "total_mills": 18.18
  },
  "placeholders": {
+  "comps_count": "five",
+  "comps_since_split": "one",
+  "comps_with_age": "one",
+  "comps_with_condition": "two",
+  "comps_with_credits": "three",
+  "comps_with_garage": "zero",
+  "comps_with_location": "zero",
+  "comps_with_lot": "one",
+  "comps_with_other": "zero",
+  "comps_with_pool": "zero",
+  "comps_with_size": "four",
+  "comps_with_time": "four",
+  "comps_with_view": "one",
   "credit_share_early": "50%",
   "credit_share_recent": "89%",
   "days_early": "8",
@@ -420,6 +441,8 @@
   "sold_early": "24",
   "sold_recent": "9",
   "split_month": "July",
+  "time_cutoff": "July",
+  "time_rate": "1%",
   "window_start_month": "April"
  },
  "preliminary": false,
@@ -471,6 +494,7 @@
    "seller_credit": 5000
   }
  ],
+ "strongest_comp": 2,
  "summary_page": {
   "first_steps": [
    {
@@ -496,6 +520,16 @@
   ],
   "why": {
    "count": 3
+  }
+ },
+ "time_adjustment": {
+  "cutoff": "2026-07-01",
+  "cutoff_display": "July",
+  "falling": true,
+  "rate": 0.01,
+  "rate_display": "1%",
+  "undated": {
+   "count": 0
   }
  },
  "trend": {
