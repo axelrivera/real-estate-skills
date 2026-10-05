@@ -49,9 +49,9 @@ One JSON file per property the buyer is pursuing, in a temporary folder, never t
 
 **Minimum to run:** list price and cash available.
 
-**Rate:** a lender's quote goes in `costs.rate` alone, with no `rate_source`. When the agent gives none, look up the latest Freddie Mac weekly (PMMS) 30-year average and enter it as `costs.rate` with `costs.rate_source` naming the week ("Freddie Mac weekly 30-year average, week of Sep 24, 2026"). The built-in 6.5% is only the offline fallback, labeled Assumed. The Freddie Mac average is for conventional loans: for FHA, VA or USDA the script labels it a conventional-loan average, and the lender's quote for that program replaces it. The rate matters most when the payment limit sets the price: then the rate and insurance quotes come right after the deadline in `to_confirm`, so the reply asks for them.
+**Rate:** a lender's quote goes in `costs.rate` alone, with no `rate_source`. When the agent gives none, look up the latest Freddie Mac weekly (PMMS) 30-year average and enter it as `costs.rate` with `costs.rate_source` naming the week ("Freddie Mac weekly 30-year average, week of Sep 24, 2026"). The built-in 6.5% is only the offline fallback, said in the assumptions. The Freddie Mac average is for conventional loans: for FHA, VA or USDA the script labels it a conventional-loan average, and the lender's quote for that program replaces it. The rate matters most when the payment limit sets the price: then the rate and insurance quotes come right after the deadline in `to_confirm`, so the reply asks for them.
 
-Local costs come from the property's location (`references/local-costs.md`): Florida's are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Don't ask about them up front; seller-side figures (a title quote, a looked-up transfer tax) go in `property.costs`, and the buyer's rate, insurance and tax rate in the top-level `costs` block.
+Local costs come from the property's location (`references/local-costs.md`): Florida's are built in; elsewhere national estimates, named once in the report's notes, never Florida's numbers. Don't ask about them up front; seller-side figures (a title quote, a looked-up transfer tax) go in `property.costs`, and the buyer's rate, insurance and tax rate in the top-level `costs` block.
 
 ## 2. Run and Review
 

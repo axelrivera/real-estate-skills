@@ -21,11 +21,11 @@
 
 **Your Pricing Options:**
 
-| List At | Time to Contract | Expected Sale | {{options_summary.net_header}}{{" (Assumed Brokerage)" when net.standard_terms is true}} | Buyer's Payment |
+| List At | Time to Contract | Expected Sale | {{options_summary.net_header}} | Buyer's Payment |
 |---|---|---|---|---|
 | {{each strategies, row i: "Stay at " + list_price_display when i is reprice.stay_index, else list_price_display; " ★" when recommended | time | expected_sale_display | net_after_holding_display ("pending brokerage terms" when net.incomplete is true: never show a net without the commission) | payment_display/mo}} |
 
-{{options_summary.note}} {{expected_sale_basis.note}} Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
+{{options_summary.note}} {{expected_sale_basis.note}} Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming the estimates in net.notes (never the default commission: it is a default, with no label)}}
 
 {{one line comparing the options, on the table's basis: each other strategy's net_vs_recommended_about, and net_spread_about}}
 

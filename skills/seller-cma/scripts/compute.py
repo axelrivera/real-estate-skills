@@ -314,15 +314,13 @@ def net_sheet(R, market, L):
     assumed_keys = {a["key"] for a in first["assumed"]}
 
     def label(line):
+        """Labels never say Assumed or Estimate (local-costs.md): the notes under the table say which figures are
+        estimates, once, and a default commission is a default."""
         key, rate = line["key"], line["rate"]
         if key in ("listing_fee", "buyer_broker_fee"):
-            return L(f"net_{key}" + ("_assumed" if key in assumed_keys else ""), pct=pct_text(rate))
+            return L(f"net_{key}", pct=pct_text(rate))
         if key in ("transfer_tax", "estoppel"):  # CMA-109: the market's own name ("HOA Estoppel Letter" in Florida)
             return line["label"]  # the market's own name and rate ("Documentary stamp tax on the deed (0.70%)")
-        if key == "owner_title":
-            return L("net_owner_title_est" if rate else "net_owner_title")
-        if key == "tax_proration" and tax_assumed:
-            return L("net_tax_proration_assumed")
         return L(f"net_{key}") if f"net_{key}" in L.text else line["label"]
 
     # Rows by line key, not position: a line such as the seller credit exists only in the options that have one.
@@ -338,7 +336,7 @@ def net_sheet(R, market, L):
         rows.append({"key": key, "label": label(line),
                      "amounts": [-next((l["amount"] for l in c["lines"] if l["key"] == key), 0) for c in cols]})
     if payoff:
-        rows.append({"key": "payoff", "label": L("net_payoff_est" if payoff_est else "net_payoff"), "amounts": [-payoff for _ in cols]})
+        rows.append({"key": "payoff", "label": L("net_payoff"), "amounts": [-payoff for _ in cols]})
     cash = payoff is not None  # a payoff, or none to make (0): either way the total is the seller's cash at closing
     totals = [c["net"] if cash else c["net_before_payoff"] for c in cols]
     rows.append({"key": "total", "label": L("net_total_cash" if cash else "net_total"), "amounts": totals})
@@ -371,11 +369,9 @@ def net_sheet(R, market, L):
         notes.append(L("net_holding_note", monthly=money(monthly, 10), close=f"{CONTRACT_TO_CLOSE_MONTHS:g}", loan=loan,
                        tax=L("net_holding_tax_in" if has_tax else "net_holding_tax_out"))
                      + (" " + L("net_holding_left_out", items=" and ".join(left_out)) if left_out else ""))
+    # The default commission is a default, not an assumption (local-costs.md): its rates are on the brokerage lines, with
+    # no Assumed label and no note; the reply still asks for the listing agreement's terms
     standard_terms = bool(assumed_keys & {"listing_fee", "buyer_broker_fee"})
-    total_pct = sum(l["rate"] or 0 for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
-    if standard_terms:
-        notes.append(L("net_placeholder_note", pct=pct_text(total_pct)))
-        key_notes.append(notes[-1])
     if any(l["key"] in ("listing_fee", "buyer_broker_fee") for c in cols for l in c["lines"]):
         notes.append(finance.COMMISSION_NOTE)
         key_notes.append(notes[-1])
@@ -397,6 +393,9 @@ def net_sheet(R, market, L):
     estimates = [a["text"] for a in first["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimates:
         notes.append(L("net_estimates_note", items=", ".join(estimates)))
+    own = str((R.get("pricing") or {}).get("net_note") or "").lower()  # the report's own note, printed after these
+    if payoff and "payoff" not in own:  # the payoff line carries no label: a note says whose figure it is, once
+        notes.append(L("net_payoff_est_note" if payoff_est else "net_payoff_note"))
     shown = [MISSING_WORDS.get(m, m) for m in first["missing"]]
     if first["missing"]:
         notes.append(L("net_missing", items=", ".join(shown)))
@@ -407,9 +406,6 @@ def net_sheet(R, market, L):
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
             "payoff": payoff, "payoff_estimated": payoff_est, "cash_at_closing": cash,
             "holding_rate_assumed": bool(holding and payoff and not costs.get("mortgage_rate")), "holding_rate": loan_rate, "no_mortgage": payoff == 0, "standard_terms": standard_terms, "has_tax": has_tax,
-            # Results_v4: beside every net when the brokerage is assumed ("5% Brokerage Assumed")
-            "assumed_brokerage": L("th_assumed_sub", pct=pct_text(total_pct)) if standard_terms else None,
-            "assumed_brokerage_pct": pct_text(total_pct) if standard_terms else None,
             "tax_assumed": tax_assumed and has_tax,
             "closings": [c.isoformat() if c else None for c in closings],
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
@@ -543,11 +539,9 @@ def options_summary(C, L):
     co = C.get("competing_offer_caveat")  # CMA-319: the competing-offer option nets more only if those offers show up
     if co is not None:
         note += " " + L("sum_options_note_competing", price=strats[co]["list_price_display"])
-    if net["standard_terms"]:  # Results_v4: the assumed brokerage is named beside the nets, not only on the tile
-        note += " " + L("sum_options_note_assumed", pct=net["assumed_brokerage_pct"])
-    # CMA-317: "cash" names the net sheet's cash-at-closing row; after holding costs the column is a net
-    return {"net_header": L("th_est_cash" if cash and not held else "th_est_net"), "note": note,
-            "net_header_sub": net["assumed_brokerage"]}
+    # CMA-317: "cash" names the net sheet's cash-at-closing row; after holding costs the column is a net. The header
+    # never carries an Assumed label (local-costs.md): a default commission is a default
+    return {"net_header": L("th_est_cash" if cash and not held else "th_est_net"), "note": note}
 
 
 # --- placeholders ----------------------------------------------------------------
@@ -1268,12 +1262,12 @@ def compute(R, market, homes):
     if brokerage and stay is not None:
         # CMA-286: the agent's own listing already has a listing agreement: its commission replaces the assumption
         assume("brokerage_listing_agreement",
-               "Brokerage is assumed (" + ", ".join(brokerage) + "), labeled Assumed on every net. This is the agent's own "
+               "Brokerage is at the default rates (" + ", ".join(brokerage) + "), shown without a label. This is the agent's own "
                "listing, so the listing agreement already sets the commission: ask for it in the reply (costs.listing_fee_pct "
                "and buyer_broker_fee_pct) and re-run.")
     elif brokerage:
-        assume("brokerage_assumed", "Brokerage is assumed (" + ", ".join(brokerage) + "), marked on every page and slide "
-               "that shows a net. The agent can give the listing agreement's terms to update it.")
+        assume("brokerage_assumed", "Brokerage is at the default rates (" + ", ".join(brokerage) + "), a default, shown "
+               "with no label. Ask for the listing agreement's terms in the reply; they replace it.")
     estimated = [a["text"] for a in net["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimated:
         # CMA-109: the transfer tax lookup only when the net used the estimate (never in a no-transfer-tax state)
@@ -1281,7 +1275,7 @@ def compute(R, market, homes):
                   "if the buyer pays or it's split); a title quote (costs.title_fees, title_estimate_pct) replaces the rest."
                   if any(a["key"] == "transfer_tax" and a.get("estimate") for a in net["assumed"]) else
                   "A title quote (costs.title_fees, title_estimate_pct) replaces them.")
-        assume("estimates", "National estimates, labeled Estimate on the net sheet: " + ", ".join(estimated) + ". " + lookup)
+        assume("estimates", "National estimates, named once in the net sheet's notes: " + ", ".join(estimated) + ". " + lookup)
     costs_in = R.get("costs") or {}
     if costs_in.get("annual_tax") and not net["has_tax"]:
         warn("tax_no_closing_date", "costs.annual_tax is set but there's no closing date: add costs.expected_closing_date (or a "
@@ -1300,8 +1294,8 @@ def compute(R, market, homes):
                "states (\"about $171,500 from the statement\") goes in costs.mortgage_payoff as given; the lender's payoff "
                "letter replaces either.")
     elif net["payoff"]:
-        assume("payoff_seller", f"The mortgage payoff ({money(net['payoff'])}) is the seller's estimate, labeled Your "
-               "Estimate. The lender's payoff statement replaces it.")
+        assume("payoff_seller", f"The mortgage payoff ({money(net['payoff'])}) is the seller's estimate, said in the "
+               "net sheet's notes. The lender's payoff statement replaces it.")
     if net["holding_rate_assumed"]:
         assume("holding_rate", f"Holding costs charge loan interest at an assumed {net['holding_rate'] * 100:g}% a year on "
                "the payoff. The seller's own rate (costs.mortgage_rate) replaces it.")

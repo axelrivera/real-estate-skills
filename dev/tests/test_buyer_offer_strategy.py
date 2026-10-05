@@ -59,7 +59,8 @@ class MissingData(unittest.TestCase):
         """The missing fields, financing and down payment on minimal.json are pinned by golden; the summary isn't."""
         s = strategy.summary(analyze("minimal.json"))
         self.assertTrue(s["preliminary"])
-        self.assertIn("assumed", s["financing"])
+        self.assertNotIn("assumed", s["financing"])  # the loan type assumption is in the assumptions, once
+        self.assertIn("financing", [a["field"] for a in analyze("minimal.json")["missing"]])
 
     def test_not_enough_cash_says_so(self):
         d = fixture("fha-competitive.json")
@@ -836,12 +837,12 @@ class Audit20260930Iter6(unittest.TestCase):
         self.assertEqual({a["field"]: a["value"] for a in r["missing"]}["dom"], 8)
         self.assertNotIn("dom", [a["field"] for a in analyze_data(copy.deepcopy(self.TX))["missing"]])  # given in the file
 
-    def test_estimated_seller_tax_is_labeled(self):  # OFR-243
+    def test_estimated_seller_tax_is_an_assumption_not_a_label(self):  # OFR-243, owner rule: said once, in the assumptions
         d = copy.deepcopy(self.GAP)
         del d["property"]["annual_tax"]
         r = strategy.analyze(d)
         tax = [ln[1] for ln in r["O"]["recommended"]["ns"]["lines"] if ln[0] == "tax"]
-        self.assertTrue(tax and tax[0].endswith("Estimate)"))
+        self.assertEqual(tax, ["Property Tax Proration (Jan 1 to Closing)"])
         self.assertIn("annual_tax", [a["field"] for a in r["missing"]])
         tax = [ln[1] for ln in analyze("fha-competitive.json")["O"]["recommended"]["ns"]["lines"] if ln[0] == "tax"]
         self.assertNotIn("Estimate", tax[0])  # the seller's bill was given

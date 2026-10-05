@@ -339,7 +339,7 @@ Start with the address, then what it is and the date: "123 Oak St, Buyer CMA, 20
 
 - **Comps go stale.** Pull a fresh export when the last one is more than two or three weeks old, and always before an offer or a price change.
 - **Download a fresh property report** when the listing's price or status has changed.
-- **Give your own costs** when you have them. Closing costs, taxes and commission are estimated from the property's location and labeled "Estimate" or "Assumed". Say your numbers in the request: "Title quote is $2,150", "Listing side is 3%, buyer side 2.5%." Florida's costs are built in; other states use national estimates until you give local numbers.
+- **Give your own costs** when you have them. Closing costs and taxes are estimated from the property's location, and each report names its estimates once, in its notes. Commission uses the default 2.5% listing and 2.5% buyer side until you give your terms. Say your numbers in the request: "Title quote is $2,150", "Listing side is 3%, buyer side 2.5%." Florida's costs are built in; other states use national estimates until you give local numbers.
 - **Keep your profile current.** Say "My new number is..." and replace profile.md in your Projects.
 
 ### Review Before You Send

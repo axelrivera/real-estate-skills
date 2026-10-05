@@ -266,7 +266,7 @@ class OtherMarkets(unittest.TestCase):
         self.assertEqual(C["net"]["missing"], [])
         self.assertFalse(C["net"]["incomplete"])
         self.assertTrue(any(a.startswith("National estimates") for a in C["assumptions"]))
-        self.assertTrue(any(a.startswith("Brokerage is assumed") for a in C["assumptions"]))
+        self.assertTrue(any(a.startswith("Brokerage is at the default rates") for a in C["assumptions"]))  # asked in chat
         self.assertAlmostEqual(C["payments"]["rows"][0]["tax_monthly"], 479900 * 19.0 / 1000 / 12)  # no homestead in Texas
 
     def test_out_of_state_terms(self):
@@ -274,7 +274,8 @@ class OtherMarkets(unittest.TestCase):
         R = texas(report())
         R["costs"]["hoa"] = True
         C, _ = run(R)
-        self.assertEqual(row(C, "estoppel")["label"], "HOA Documents (Estimate)")
+        self.assertEqual(row(C, "estoppel")["label"], "HOA Documents")  # the estimate is named in the notes, once
+        self.assertIn("HOA documents fee", next(n for n in C["net"]["notes"] if n.startswith("Estimates, not local figures")))
         estimates = next(a for a in C["assumptions"] if a.startswith("National estimates"))
         self.assertNotIn("transfer tax", estimates)
         R = texas(report())
@@ -309,7 +310,8 @@ class OtherMarkets(unittest.TestCase):
         doc, _ = seller_render.build_html(R, C, homes, profiles.load_agent(None))
         self.assertNotIn("tag prelim", doc)
         self.assertNotIn("Transfer Tax", doc)  # Texas has no state transfer tax
-        self.assertIn("Owner's Title Insurance (Estimate)", doc)
+        self.assertNotIn("(Estimate)", doc)  # local-costs.md: no line says Estimate; the notes name the estimates
+        self.assertIn("Owner's Title Insurance", doc)
         self.assertIn("Estimates, not local figures", doc)
         self.assertNotIn("Documentary Stamp", doc)
 
@@ -650,27 +652,34 @@ class AuditLowCma(unittest.TestCase):
     def test_payoff_from_a_balance_is_an_estimate(self):
         R = report()
         R["costs"].update(mortgage_balance=200000, mortgage_rate=6)
+        R["pricing"]["net_note"] = "Not included: any repairs agreed after inspection."  # says nothing about the payoff
         C, _ = run(R)
         self.assertEqual(row(C, "payoff")["amounts"][0], -(200000 + 1000))  # Results_v5: a month at 6%, no cushion
-        self.assertEqual(row(C, "payoff")["label"], "Mortgage Payoff (Estimate from Balance)")
+        self.assertEqual(row(C, "payoff")["label"], "Mortgage Payoff")  # no Estimate label: the note says so, once
+        self.assertEqual(sum("estimated from the loan balance" in n for n in C["net"]["notes"]), 1)
 
 
 class AuditMoneyLines(unittest.TestCase):
-    """CORE-5, CMA-18 (standard terms marked everywhere), CMA-3 (proration), CORE-6 (surtax)."""
+    """CORE-5, CMA-18 (a default commission is a default: no label anywhere), CMA-3 (proration), CORE-6 (surtax)."""
 
-    def test_brokerage_assumed_when_not_given(self):
+    def test_brokerage_default_when_not_given(self):
+        """Owner rule: default commission rates are defaults, not assumptions: no Assumed label on the lines, the page
+        1 tile, the net column headers or the deck; the reply still asks for the listing agreement's terms."""
         R = report()
         R["costs"] = {}
         C, homes = run(R)
-        self.assertIn("Assumed", row(C, "listing_fee")["label"])
-        self.assertIn("Assumed", row(C, "buyer_broker_fee")["label"])
+        self.assertEqual(row(C, "listing_fee")["label"], "Listing Brokerage (2.5%)")
+        self.assertEqual(row(C, "buyer_broker_fee")["label"], "Buyer's Agent Compensation (2.5%)")
         self.assertTrue(C["net"]["standard_terms"])
-        self.assertFalse(C["net"]["incomplete"])  # 5% total assumed: the files build
-        self.assertTrue(any("5%" in n and "assumed" in n.lower() for n in C["net"]["notes"]))
+        self.assertFalse(C["net"]["incomplete"])  # the 5% default: the files build
+        self.assertFalse(any("assumed" in n.lower() and "brokerage" in n.lower() for n in C["net"]["notes"]))
+        self.assertIn("brokerage_assumed", C["assumption_keys"])  # the chat still asks
         doc = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)[0]
-        self.assertIn("Assumed Brokerage", doc)  # page 1 net tile
+        self.assertNotIn("Assumed Brokerage", doc)
+        self.assertNotIn("Brokerage Assumed", doc)
+        self.assertNotIn("Assumed)", doc)
         D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.cma.Labels(compute.ASSETS), "footer")
-        self.assertIn("brokerage assumed", D["net_sub"])  # the deck's net slide
+        self.assertNotIn("assumed", D["net_sub"])  # the deck's net slide
     def test_tax_proration_and_surtax(self):
         R = report()
         R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-01")
@@ -772,13 +781,14 @@ class SecondPass(unittest.TestCase):
         self.assertEqual(self.stats([], "--state", "FL", "--county", "Seminole")["undated_history"], [])
 
     def test_december_closing_assumes_the_bill_unpaid(self):
-        """CMA-254: one rule: the seller's share, the bill assumed unpaid (labeled), a credit back only when paid."""
+        """CMA-254: one rule: the seller's share, the bill assumed unpaid (said in the notes), a credit back only when paid."""
         R = report()
         R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-15")
         C, _ = run(R)
         tax = row(C, "tax_proration")
         self.assertTrue(C["net"]["tax_assumed"])
-        self.assertEqual(tax["label"], compute.labels(R)("net_tax_proration_assumed"))
+        self.assertEqual(tax["label"], "Property Tax Proration (Jan 1 to Closing)")  # no Assumed label
+        self.assertIn(compute.labels(R)("net_tax_assumed_note"), C["net"]["notes"])
         self.assertLess(tax["amounts"][1], 0)  # a cost to the seller
         self.assertTrue(any("current_tax_bill_paid" in a for a in C["assumptions"]))
         R["costs"]["current_tax_bill_paid"] = True
@@ -1041,7 +1051,7 @@ class ThirdPass(unittest.TestCase):
         self.assertFalse([a for a in run(R)[0]["assumptions"] if "payoff" in a])
         R["costs"]["mortgage_payoff"] = 210000
         A = run(R)[0]["assumptions"]
-        self.assertTrue(any("Your Estimate" in a for a in A))
+        self.assertTrue(any("the seller's estimate" in a for a in A))
         self.assertTrue(any("assumed 4.5%" in a for a in A))
         R["costs"]["mortgage_rate"] = 6.25
         self.assertFalse(any("assumed 4.5%" in a for a in run(R)[0]["assumptions"]))
@@ -1648,7 +1658,7 @@ class ChatTemplate(unittest.TestCase):
         paths = ["subject.address", "preliminary_reason", "recommendation.list_price_display", "recommendation.range_display",
                  "recommendation.expected_sale", "summary_page.headline", "recommendation_paragraph", "summary_page.why",
                  "expected_sale_basis.note",
-                 "median_adjusted_display", "comps_table", "options_summary.net_header", "net.standard_terms",
+                 "median_adjusted_display", "comps_table", "options_summary.net_header",
                  "net.incomplete", "options_summary.note", "payments.per_10k_display", "net.notes", "net_spread_about",
                  "payments.basis_note", "payments.flood.annual", "payments.flood.required", "first_steps_heading",
                  "summary_page.first_steps", "summary_page.next_step", "data_source.as_of_display"]
@@ -1702,12 +1712,12 @@ class ChatTemplate(unittest.TestCase):
         self.assertIn(pay["basis_note"] + " " + pay["flood"]["note"], doc)
 
     def test_template_follows_page_one(self):
-        """CMA-335, CMA-337, CMA-340, CMA-341, CMA-342: the Stay row, the assumed brokerage, the estimates line, the
+        """CMA-335, CMA-337, CMA-340, CMA-341, CMA-342: the Stay row, no brokerage label (a default), the estimates line, the
         headline and the title."""
         text = self.template()
         self.assertIn("reprice.stay_index", text)
         self.assertIn('"Stay at " + list_price_display', text)
-        self.assertIn("(Assumed Brokerage)", text)
+        self.assertNotIn("Assumed Brokerage", text)  # local-costs.md: a default commission gets no label
         self.assertIn("Payment, tax and cost figures are estimates only, not lending or tax advice", text)
         self.assertIn("{{summary_page.headline", text)
         self.assertTrue(text.startswith("## {{subject.address}}: Seller Summary"))
@@ -1872,14 +1882,18 @@ class ResultsV4(unittest.TestCase):
         self.assertIn("closes in 2027", notes)
         self.assertIn("own expected closing", notes)
 
-    def test_assumed_brokerage_beside_every_net(self):
+    def test_default_brokerage_never_labeled_beside_a_net(self):
+        """Owner rule (supersedes Results_v4's '5% Brokerage Assumed'): no Assumed label under a net column's header,
+        on the page 1 tile or in the options footnote; the brokerage lines show the rates."""
         R = report()
         R["costs"] = {}
         C, homes = run(R)
-        self.assertEqual(C["options_summary"]["net_header_sub"], "5% Brokerage Assumed")
+        self.assertNotIn("net_header_sub", C["options_summary"])
+        self.assertNotIn("assumed", C["options_summary"]["note"].lower().replace("assumes competing", ""))
         doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
-        self.assertEqual(doc.count("5% Brokerage Assumed"), 2)  # page 1's options table and the pricing table
-        self.assertIn("Brokerage is assumed at 5%", C["options_summary"]["note"])
+        self.assertNotIn("Brokerage Assumed", doc)
+        self.assertNotIn("th-sub", doc)
+        self.assertIn("Listing Brokerage (2.5%)", doc)
 
     def test_report_carries_equal_housing_and_runs_on(self):
         R = report()

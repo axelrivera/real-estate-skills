@@ -102,7 +102,8 @@ def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=Non
     bill is unpaid, the seller credits the buyer from Jan 1 (a cost); once the seller has paid it (Florida bills go out
     in November), the buyer credits the seller from closing to Dec 31 (`amount` negative, a credit to the seller).
     With no word from the agent, a closing after the bill's due date (`due_date`, else `property_tax.due_date`)
-    assumes it paid: the credit, labeled "Bill Assumed Paid" (`assumed_paid` true).
+    assumes it paid: the credit (`assumed_paid` true). The label never says Assumed: a report says so once, in its
+    notes (local-costs.md).
     """
     if not annual_tax or not closing:
         return None
@@ -116,7 +117,7 @@ def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=Non
     basis = f"{money(annual_tax)} bill" + (f" less the {discount * 100:g}% early-payment discount" if discount else "")
     if bill_paid or assumed_paid:
         return {"amount": -round(base * (year_days - seller_days) / year_days),
-                "label": "Property Tax Proration (Credit, Closing to Dec 31" + (", Bill Assumed Paid)" if assumed_paid else ")"),
+                "label": "Property Tax Proration (Credit, Closing to Dec 31)",
                 "basis": basis, "assumed_paid": assumed_paid}
     return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis,
             "assumed_paid": False}
@@ -523,7 +524,8 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     `missing` lists market values that weren't available (rare: the national estimates fill most);
     `assumed` lists defaults the deal didn't give, as {'key', 'value', 'text', 'estimate'} (key: listing_fee,
     buyer_broker_fee, transfer_tax, owner_title, title_fees, estoppel); `estimate` is true for a national estimate
-    (labeled "Estimate" on the line) and false for a built-in local default. `warnings` are sentences to show the
+    and false for a built-in local default. Line labels never say Estimate or Assumed: a report names its estimates
+    once, in its notes, and default commission rates are defaults (local-costs.md). `warnings` are sentences to show the
     agent (a title quote below the published rate).
     A saved owner's title quote (`closing_costs.owner_title.quote`: {price, premium}) wins over the rate table.
     `other_costs` is a total (one "Other Costs" line) or a list of {label, amount} (one "other" line each: a home
@@ -567,11 +569,11 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         warnings.append(transfer_tax_warning(market))
     payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
     tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed Transfer Tax"
-    est = "Estimate, " if estimated("closing_costs.deed_transfer_tax_rate") else ""
+    est = estimated("closing_costs.deed_transfer_tax_rate")
     if rate and payer in (None, "seller"):
-        add("transfer_tax", f"{tax_label} ({est}{rate * 100:.2f}%)", price * rate, rate)
+        add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
     elif rate and payer == "split":
-        add("transfer_tax", f"{tax_label} ({est}Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+        add("transfer_tax", f"{tax_label} (Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
     if rate and payer in (None, "seller", "split") and est:
         assume("transfer_tax", rate, f"transfer tax {rate * 100:g}%", "closing_costs.deed_transfer_tax_rate")
     surtax = market.get("closing_costs.deed_transfer_surtax") if market is not None else None
@@ -598,7 +600,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         elif tiers:  # the published rate table
             add("owner_title", "Owner's Title Insurance", title_premium(price, tiers))
         elif pct:
-            add("owner_title", "Owner's Title Insurance (Estimate)", price * pct, pct)
+            add("owner_title", "Owner's Title Insurance", price * pct, pct)
             if market.source("closing_costs.owner_title.estimate_pct") != "deal":
                 assume("owner_title", pct, f"owner's title {pct * 100:g}% of price", "closing_costs.owner_title.estimate_pct")
         else:
@@ -609,8 +611,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     else:
         fees = market.get("closing_costs.seller_title_fees") if market is not None else None
         if fees:
-            est = estimated("closing_costs.seller_title_fees")
-            add("title_fees", "Title Company Fees" + (" (Estimate)" if est else ""), sum(fees.values()))
+            add("title_fees", "Title Company Fees", sum(fees.values()))
             if market.source("closing_costs.seller_title_fees") != "deal":  # a built-in default
                 assume("title_fees", sum(fees.values()), "typical title company fees", "closing_costs.seller_title_fees")
         else:
@@ -619,7 +620,11 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
             name = (market.get("closing_costs.hoa_estoppel_label") if market is not None else None) or "HOA Documents"
-            add("estoppel", name + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""), estoppel)
+            add("estoppel", name, estoppel)
+            if market.source("closing_costs.hoa_estoppel_fee") != "deal":  # a built-in default or a national estimate
+                words = " ".join(w if w.isupper() else w.lower() for w in name.split())
+                assume("estoppel", estoppel, f"{words}{'' if 'fee' in words else ' fee'} {money(estoppel)}",
+                       "closing_costs.hoa_estoppel_fee")
     if credit:
         add("credit", "Seller Credit to Buyer", credit)
     if isinstance(other_costs, (list, tuple)):  # [{label, amount}]: one "other" line each, in order

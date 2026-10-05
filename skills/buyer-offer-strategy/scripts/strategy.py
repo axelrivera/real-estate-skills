@@ -231,7 +231,7 @@ def prepare(B, A, market=None):
     BU.setdefault("agent_track", "average")
     B["payment_assumed"] = []  # OFR-228: the payment inputs that are estimates, named when the payment limit sets the price
     # OFR-241: the skill looks up the latest Freddie Mac weekly 30-year rate when the agent gives none (costs.rate with
-    # costs.rate_source naming the week); the built-in rate is only the offline fallback, labeled Assumed
+    # costs.rate_source naming the week); the built-in rate is only the offline fallback, said in the assumptions
     if K.get("rate") is None:
         B["payment_assumed"].append(f"an assumed {DEFAULT_RATE:g}% rate")
     elif K.get("rate_source") and not LENDER_QUOTE.search(str(K["rate_source"])):  # OFR-327: a quote isn't assumed
@@ -675,7 +675,7 @@ def bb_request(B, costs):
         return BU["buyer_broker_agreement_pct"], "Per your buyer-broker agreement (confirm with listing agent)"
     if costs.get("brokerage.buyer_broker_fee_pct") is not None:
         pct_ = costs.get("brokerage.buyer_broker_fee_pct")
-        return pct_, f"Assumed {pct_ * 100:g}% (5% total): set it from your buyer-broker agreement"
+        return pct_, f"The default {pct_ * 100:g}% (5% total); your buyer-broker agreement sets it"
     return 0, "Not known for this market: none requested from the seller; set it from your buyer-broker agreement"
 
 
@@ -742,27 +742,10 @@ def aga_valuation(t, fin):
 
 
 def run_engine(B, costs, variants):
+    # OFR-243: with no seller's bill the proration is an estimate: the engine's assumption (annual_tax) says so once, in
+    # the assumptions, never on the net sheet's line (local-costs.md)
     R = oe.analyze(engine_data(B, variants), market=costs.market)
-    if B["property"].get("annual_tax") in (None, ""):
-        mark_estimate(R, "tax")  # OFR-243: no seller's bill, so the proration is an estimate on every net sheet
     return R, {o["id"]: o for o in R["offers"]}
-
-
-def mark_estimate(x, key):
-    """OFR-243: mark as Estimate the label of every net-sheet line `key` ((key, label, amount) tuples) in the engine
-    result `x`, in place: "Property Tax Proration (Jan 1 to Closing, Estimate)"."""
-    def marked(label):
-        return label[:-1] + ", Estimate)" if label.endswith(")") else label + " (Estimate)"
-
-    if isinstance(x, dict):
-        if isinstance(x.get("lines"), list):
-            x["lines"] = [(ln[0], marked(ln[1]), *ln[2:])
-                          if isinstance(ln, tuple) and ln[0] == key and "Estimate" not in ln[1] else ln for ln in x["lines"]]
-        for v in x.values():
-            mark_estimate(v, key)
-    elif isinstance(x, list):
-        for v in x:
-            mark_estimate(v, key)
 
 
 def ci(o, target_net, lp):
@@ -1654,7 +1637,7 @@ def fin_line(B):
     if f == "cash":
         return "Cash"
     txt = f"{oe.FIN_LABEL[f]} · {oe.pct(BU['down_pct'])} down"
-    return txt + (" (assumed; confirm with lender)" if BU.get("financing_source") == "assumed" else " (per buyer and lender)")
+    return txt + ("" if BU.get("financing_source") == "assumed" else " (per buyer and lender)")  # assumed: in the assumptions
 
 
 def preliminary(r):
@@ -1981,7 +1964,7 @@ def worksheet(r, variant=None):
     ]
     if financed:
         rows.append((para("2(c) / 8"), "Financing", f"**{oe.FIN_LABEL[fin]}** · loan {money(loan)} ({1 - BU['down_pct']:.1%} LTV)",
-                     "As chosen by the buyer and lender" + (" (ASSUMED: confirm before entering)" if BU.get("financing_source") == "assumed" else "")))
+                     "As chosen by the buyer and lender" + (": confirm the loan type before entering" if BU.get("financing_source") == "assumed" else "")))
         rows.append((para("8(b)"), "Loan Approval Period", f"**{t.get('loan_approval_days', 30)} days**",
                      "Loan application within 5 days (form default)" if farbar else ""))
     else:

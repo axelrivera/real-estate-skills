@@ -99,9 +99,9 @@ def pay_closing_note(pay, L):
 
 
 def tax_row_label(R, pay, L):
-    """CMA-204: the payment's tax row, labeled Estimate when the district is unconfirmed or the rate is a fallback."""
-    key = "pay_tax_est" if pay["tax_basis"]["label_estimate"] else "pay_tax"
-    return L(key, short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))
+    """CMA-204: the payment's tax row. An unconfirmed district or a fallback rate is said in the note under the table
+    (tax_which_note), never on the label (local-costs.md)."""
+    return L("pay_tax", short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))
 
 
 def tax_which_note(pay, L):
@@ -147,8 +147,7 @@ def summary_page(R, C, agent, L):
     sc0 = R["costs"]["payment"]["scenarios"][0]
     stats = list(sp["key_stats"])[:3] + [[money(first["total"]),
                                            L("sum_payment_tile", price=money(pay["price"]), basis=basis_label(pay, L),
-                                             down=f"{sc0['down_pct'] * 100:g}")
-                                           + (L("assumed_suffix") if first.get("assumed") else "")]]  # CMA-227
+                                             down=f"{sc0['down_pct'] * 100:g}")]]  # CMA-227: assumed: said in the payment note
     tgt = k(op["target_low"]) + (f"–{k(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
     left = agent_block(agent, L)
     o = ['<div class="onepage">',
@@ -167,7 +166,7 @@ def summary_page(R, C, agent, L):
                                              (op["opening"], L("dot_offer", price=money(op["opening"])))) + "</div>"]
     tax = C["taxes"][pay["tax_index"]]
     bill = R["costs"]["taxes"].get("current_bill")
-    yours = L("sum_tax_yours_est" if pay["tax_basis"]["label_estimate"] else "sum_tax_yours",
+    yours = L("sum_tax_yours_if" if pay["tax_basis"]["unconfirmed"] else "sum_tax_yours",
               short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))  # CMA-204
     rows = [[L("sum_tax_now"), money(bill) + L("per_year") if bill else L("not_available")],
             [yours, "≈ " + money(finance.tax_pair(tax["annual"])[0]) + L("per_year")],  # Results_v5: reconciles with /mo
@@ -357,6 +356,9 @@ def body(R, C, homes, agent, L):
         pmi=f'{finance.annual_mi_rate("conventional", conv_down) * 100:g}', pmi_down=f"{conv_down * 100:g}",
         mip=f'{progs["fha"]["annual_mi"] * 100:.2f}', ufmip=f'{progs["fha"]["upfront_fee"] * 100:.2f}', per10k=money(pay["per_10k"], 5))
     pay_note += " " + pay_closing_note(pay, L)
+    assumed = [r["label"] for r in rows_p if r.get("assumed")]  # CMA-227: said once, here, never on a column header
+    if assumed:
+        pay_note += " " + L("pay_assumed", label=" and ".join(assumed))
     if R["costs"]["payment"].get("note"):  # CMA-226: the agent's note adds to the assumptions, never replaces them
         pay_note += " " + R["costs"]["payment"]["note"]
     pay_note += tax_which_note(pay, L) + " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one

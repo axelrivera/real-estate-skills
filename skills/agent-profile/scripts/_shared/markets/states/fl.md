@@ -29,7 +29,7 @@ closing_costs:
   buyer_closing_cost_pct: 0.025       # buyer's closing costs when no estimate is given, before the loan taxes in buyer_costs
 
 # brokerage: none built in. Commissions are negotiable and not set by law: they come from the listing agreement and
-# offer for each deal (the deal's costs), else the national estimate (5% total), labeled Assumed.
+# offer for each deal (the deal's costs), else the national default (5% total), with no label (a default).
 
 property_tax:
   paid: arrears                       # arrears: seller credits buyer from Jan 1 to closing (until the seller pays the bill in Nov)

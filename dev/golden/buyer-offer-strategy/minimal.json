@@ -183,6 +183,7 @@
      }
     ],
     "close": "2026-11-09",
+    "estoppel_estimate": false,
     "holding": -767,
     "lines": [
      [
@@ -251,6 +252,7 @@
      }
     ],
     "close": "2026-11-09",
+    "estoppel_estimate": false,
     "holding": -767,
     "lines": [
      [
@@ -319,6 +321,7 @@
      }
     ],
     "close": "2026-11-09",
+    "estoppel_estimate": false,
     "holding": -767,
     "lines": [
      [
@@ -442,6 +445,7 @@
      }
     ],
     "close": "2026-11-09",
+    "estoppel_estimate": false,
     "holding": -767,
     "lines": [
      [
@@ -610,6 +614,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -678,6 +683,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -746,6 +752,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -869,6 +876,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1034,6 +1042,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1102,6 +1111,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1170,6 +1180,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1293,6 +1304,7 @@
      }
     ],
     "close": "2026-10-29",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1464,6 +1476,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -1532,6 +1545,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -1600,6 +1614,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -1723,6 +1738,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -1888,6 +1904,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -1956,6 +1973,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -2024,6 +2042,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -2147,6 +2166,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -2322,6 +2342,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -2390,6 +2411,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -2458,6 +2480,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -2581,6 +2604,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -2657,6 +2681,7 @@
     "scope": "seller"
    },
    {
+    "default": true,
     "field": "listing_fee_pct",
     "impact": "med",
     "scope": "seller",
@@ -2778,6 +2803,7 @@
     "scope": "seller"
    },
    {
+    "default": true,
     "field": "listing_fee_pct",
     "impact": "med",
     "scope": "seller",
@@ -2925,6 +2951,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -2993,6 +3020,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3061,6 +3089,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3184,6 +3213,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3349,6 +3379,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3417,6 +3448,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3485,6 +3517,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3608,6 +3641,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -3783,6 +3817,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -3851,6 +3886,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -3919,6 +3955,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -4042,6 +4079,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -4209,6 +4247,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4277,6 +4316,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4345,6 +4385,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4468,6 +4509,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4636,6 +4678,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4704,6 +4747,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4772,6 +4816,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -4895,6 +4940,7 @@
       }
      ],
      "close": "2026-10-29",
+     "estoppel_estimate": false,
      "holding": -583,
      "lines": [
       [
@@ -5070,6 +5116,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -5138,6 +5185,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -5206,6 +5254,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -5329,6 +5378,7 @@
       }
      ],
      "close": "2026-11-09",
+     "estoppel_estimate": false,
      "holding": -767,
      "lines": [
       [
@@ -5415,6 +5465,7 @@
     }
    ],
    "close": "2026-11-09",
+   "estoppel_estimate": false,
    "holding": -767,
    "lines": [
     [

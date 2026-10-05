@@ -39,7 +39,6 @@ td.n,th.n{text-align:right;white-space:nowrap}
    table fits the page instead of being clipped; the numbers below stay on one line */
 .tbl.wrap-head th{white-space:normal;vertical-align:bottom}
 .tbl.whole{break-inside:avoid} /* the buyer CMA's credit table: kept on one page */
-th .th-sub{font-weight:400;font-size:7.5pt;color:var(--muted);letter-spacing:0}
 tr.subj td{color:var(--subject);font-weight:700} tr.subj td:first-child{box-shadow:inset 3px 0 0 var(--subject)}
 tr.total td{font-weight:700;border-top:2px solid var(--brand)}
 tr.alt td{color:var(--muted);font-size:8.5pt}

@@ -218,7 +218,7 @@ class SellerEngine(unittest.TestCase):
         self.assertTrue(o["inspection_walkaway"])
         self.assertEqual(o["risk_days"], max(o["inspection_days"], o["loan_approval_days"], o["appraisal_days"]))
         line = dict((k, (lbl, v)) for k, lbl, v in o["ns_down"]["lines"])["repair"]
-        self.assertEqual(line[0], "Post-Inspection Repair Credit (Est.)")
+        self.assertEqual(line[0], "Post-Inspection Repair Credit")
         self.assertNotIn("repair_limits", o)
         self.assertFalse(any("Standard contract" in f["issue"] for f in o["flags"]))
 
@@ -245,7 +245,7 @@ class SellerEngine(unittest.TestCase):
         self.assertNotIn("repair_limits", o)
         self.assertEqual(o["risk_days"], max(o["inspection_days"], o["loan_approval_days"], o["appraisal_days"]))
         line = dict((k, (lbl, v)) for k, lbl, v in o["ns_down"]["lines"])["repair"]
-        self.assertEqual(line[0], "Post-Inspection Repair Credit (Est.)")
+        self.assertEqual(line[0], "Post-Inspection Repair Credit")
 
     def test_standard_with_rider_l_walks_away_and_owes_repairs(self):
         _, o = offer("standard", riders=["L"])

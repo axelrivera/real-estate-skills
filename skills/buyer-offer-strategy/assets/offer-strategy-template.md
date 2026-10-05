@@ -78,7 +78,7 @@ Strength **{{summary.strength}}/100** Â· Seller Net **{{summary.seller_net}}** Â
 
 ### Assumptions & Data to Confirm
 
-| Impact | Where | What Was Assumed |
+| Impact | Where | What to Confirm |
 |---|---|---|
 | {{a.impact in Title Case: High, Med, Low}} | {{a.where}} | {{a.what}} |
 

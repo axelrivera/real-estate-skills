@@ -26,7 +26,7 @@
    ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -99,6 +99,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -167,6 +168,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -235,6 +237,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -349,6 +352,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -431,6 +435,7 @@
    "scope": "seller"
   },
   {
+   "default": true,
    "field": "listing_fee_pct",
    "impact": "med",
    "scope": "seller",
@@ -468,6 +473,7 @@
    "value": 0
   },
   {
+   "default": true,
    "field": "buyer_broker_pct",
    "impact": "med",
    "value": 0.025
@@ -587,6 +593,7 @@
    "value": 7002
   },
   {
+   "default": true,
    "field": "listing_fee_pct",
    "impact": "med",
    "scope": "seller",
@@ -614,6 +621,7 @@
    "value": "unknown"
   },
   {
+   "default": true,
    "field": "buyer_broker_pct",
    "impact": "med",
    "value": 0.025
@@ -672,7 +680,7 @@
    ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -745,6 +753,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -813,6 +822,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -881,6 +891,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -995,6 +1006,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1087,7 +1099,7 @@
    ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -1160,6 +1172,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1228,6 +1241,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1296,6 +1310,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1410,6 +1425,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -583,
     "lines": [
      [
@@ -1497,6 +1513,7 @@
    }
   ],
   "close": "2026-10-28",
+  "estoppel_estimate": false,
   "holding": -583,
   "lines": [
    [

@@ -156,7 +156,7 @@ def payoffs(costs):
     if first is not None:
         known = True
         if first:
-            rows.append({"key": "payoff", "label": "Mortgage Payoff" + (" (Estimate from Balance)" if est else ""), "amount": first})
+            rows.append({"key": "payoff", "label": "Mortgage Payoff", "amount": first})  # an estimate: said in the notes
     for o in _items(costs.get("other_payoffs"), "costs.other_payoffs"):
         if o["amount"]:
             rows.append({"key": "payoff", "label": o["label"], "amount": o["amount"]})
@@ -196,8 +196,7 @@ def title_fee_rows(market, line):
     items = [(k, v) for k, v in fees.items() if v]
     if len(items) < 2 or abs(sum(v for _, v in items) - line["amount"]) > 0.5:
         return [(line["label"], line["amount"])]
-    est = " (Estimate)" if market.source("closing_costs.seller_title_fees") == "estimate" else ""
-    return [(title_case(k) + est, v) for k, v in items]
+    return [(title_case(k), v) for k, v in items]  # national estimates are named in the notes, never on the line
 
 
 def compute(R, market):
@@ -251,20 +250,20 @@ def compute(R, market):
     def label(line):
         key, rate = line["key"], line["rate"]
         if key == "listing_fee":
-            return f"Listing Brokerage ({pct_text(rate)}%{', Assumed' if key in assumed else ''})"
+            return f"Listing Brokerage ({pct_text(rate)}%)"  # a default commission is a default: no label
         if key == "buyer_broker_fee":
-            return f"Buyer's Agent Compensation ({pct_text(rate)}%{', Assumed' if key in assumed else ''})"
+            return f"Buyer's Agent Compensation ({pct_text(rate)}%)"
         if key == "tax_proration" and tax_mixed:
             return "Property Tax Proration (Charge or Credit by Closing Date)"
         if key == "tax_proration" and tax_assumed:
-            return "Property Tax Proration (Jan 1 to Closing, Bill Assumed Unpaid)"
+            return "Property Tax Proration (Jan 1 to Closing)"  # the unpaid bill is said once, in the notes
         return line["label"]
 
     # Rows: one per line key across every column (a seller credit may exist in only one), grouped as on the page
     rows = [{"kind": "price", "key": "price", "label": "Sale Price", "amounts": [x["price"] for x in xs]}]
     if len({x["closing"] for x in xs}) > 1:  # different closing dates move the proration: show them
         rows.append({"kind": "info", "key": "closing", "label": "Closing Date",
-                     "display": [(short_date(x["closing"]) + (" (Assumed)" if x["closing_assumed"] else "")) if x["closing"]
+                     "display": [short_date(x["closing"]) if x["closing"]
                                  else "Not set" for x in xs]})
     for gkey, glabel, keys in GROUPS:
         group = []
@@ -327,7 +326,7 @@ def compute(R, market):
         facts.append({"text": "State Not Provided", "risk": True})
     type_assumed = kind in PROPERTY_TYPES and bool(p.get("property_type_assumed"))  # iteration 9 eval 5: from a unit number
     if kind in PROPERTY_TYPES:
-        facts.append({"text": PROPERTY_TYPES[kind] + (" (Assumed)" if type_assumed else "")})
+        facts.append({"text": PROPERTY_TYPES[kind]})
     if hoa_monthly:
         facts.append({"text": f"HOA {money(hoa_monthly)}/mo"})
     elif has_hoa:
@@ -336,12 +335,12 @@ def compute(R, market):
         facts.append({"text": "No HOA"})
     closings = {x["closing"] for x in xs}
     if len(closings) == 1 and xs[0]["closing"]:
-        facts.append({"text": f"Closing {short_date(xs[0]['closing'])}" + (" (Assumed)" if xs[0]["closing_assumed"] else "")})
+        facts.append({"text": f"Closing {short_date(xs[0]['closing'])}"})
     if not payoff_known:
         facts.append({"text": "Payoff Not Provided", "risk": True})
     elif payoff_total:
         facts.append({"text": f"Payoffs {money(payoff_total)}" if len(pay_rows) > 1 else
-                      f"Payoff {money(payoff_total)}" + (" (Estimated)" if payoff_est else "")})
+                      f"Payoff {money(payoff_total)}"})
     else:
         facts.append({"text": "No Mortgage"})
     if annual_tax:
@@ -355,21 +354,27 @@ def compute(R, market):
     # an assumption already says, and use a short form where the note adds a figure (said: note -> None or short form)
     said = {}
     tax_missing = False
+    # Labels and facts never say Assumed or Estimate (local-costs.md): what's assumed is said once, here
     if type_assumed:
+        notes.append(f"Property type taken as {PROPERTY_TYPES[kind].lower()}"
+                     + (" from the unit number" if kind == "condo" else "") + ".")
+        said[notes[-1]] = None
         assumptions.append(f"The property type is assumed {PROPERTY_TYPES[kind].lower()}"
                            + (" from the unit number" if kind == "condo" else "") + ": say if it's something else.")
     dated = [x for x in xs if x["closing"] and x["closing_assumed"]]
-    if dated:  # iteration 9 evals 1, 4: a vague closing date is an assumption, said in the reply and marked on the page
+    if dated:  # iteration 9 evals 1, 4: a vague closing date is an assumption, said in the reply and in the notes
         when = " and ".join(dict.fromkeys(short_date(x["closing"]) for x in dated))
+        notes.append(f"Closing on {when} is an expected date; the actual date moves the tax proration.")
+        said[notes[-1]] = None
         assumptions.append(f"Closing on {when} is assumed: the actual date replaces it (it moves the tax proration).")
     brokerage = any(l["key"] in ("listing_fee", "buyer_broker_fee") for n in nets for l in n["lines"])
+    # A default commission is a default, not an assumption: its rates are on the lines, with no label and no note; the
+    # reply still asks for the listing agreement's terms
     commission_assumed = bool(assumed & {"listing_fee", "buyer_broker_fee"})
     if commission_assumed:
         total = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
-        notes.append(f"Brokerage is assumed at {pct_text(total)}% in total until the listing agreement sets it.")
-        said[notes[-1]] = None
-        assumptions.append(f"Commission {pct_text(total)}% in total (listing and buyer's agent), assumed: send the listing "
-                           "agreement's terms to replace it.")
+        assumptions.append(f"Commission at the default {pct_text(total)}% in total (listing and buyer's agent): send the "
+                           "listing agreement's terms if they differ.")
     if brokerage:
         notes.append(finance.COMMISSION_NOTE)
     if has_tax:
@@ -415,7 +420,7 @@ def compute(R, market):
         said[notes[-1]] = None
         assumptions.append(f"Title company fees are typical {whose} charges"
                            + (", not a quote for this county" if whose != "local" else "") + ": a title quote replaces them.")
-    # iteration 11: a built-in estoppel fee is a typical local charge too (a national estimate is labeled on its line)
+    # iteration 11: a built-in estoppel fee is a typical local charge too (a national estimate is in the estimates note)
     if (any(l["key"] == "estoppel" for l in first["lines"]) and market.source("closing_costs.hoa_estoppel_fee") not in ("estimate", "deal")):
         notes.append(f"The HOA estoppel fee is a typical {typical('closing_costs.hoa_estoppel_fee')} charge; the "
                      "association's fee schedule replaces it.")
@@ -433,7 +438,9 @@ def compute(R, market):
     if missing:
         notes.append(f"Not yet included, with no local figure: {', '.join(missing)}.")
     if payoff_known and payoff_total:
-        notes.append("Payoffs are estimates until the lender's payoff letter, which adds interest through the closing date.")
+        notes.append(("The mortgage payoff is estimated from the statement balance plus a month's interest; payoffs"
+                      if payoff_est else "Payoffs")
+                     + " are estimates until the lender's payoff letter, which adds interest through the closing date.")
         if payoff_est:
             assumptions.append("The mortgage payoff is estimated from the statement balance: the lender's payoff letter replaces it.")
     elif not payoff_known:

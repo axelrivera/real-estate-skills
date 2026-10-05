@@ -186,30 +186,29 @@ def term_rows(o, R):
     rows.append(("Price", money(o["price"]), ref, st, "; ".join(notes)))
     f = o["financing"]
     st = "good" if f == "cash" or (f == "conventional" and o["down_pct"] >= .20) else ("caution" if f in ("conventional", "va") else "risk")
-    mark = lambda *f: oe.assumed(o, *f)  # noqa: E731  iteration 9 evals 1, 3, 5: an assumed term never reads as a fact
     # iteration 10 eval 6: the loan amount and the lender from the package, when the listing file has them
     loan = f" · {money(o['loan_amount'])} loan" if o["financed"] and o.get("loan_amount") else ""
-    rows.append(("Financing", review.fin_str(o) + loan + mark("financing", "down_pct"), "Cash or conv. ≥20% down", st, ""))
+    rows.append(("Financing", review.fin_str(o) + loan, "Cash or conv. ≥20% down", st, ""))
     if o["financed"]:
         ap = o["approval"]
         st = "good" if ap == "full_uw" else ("caution" if ap in ("du_approved", "preapproval") else "risk")
         lender = f" · {esc(o['lender'])}" if o.get("lender") else ""
-        rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap) + lender + mark("approval"), "Full underwriting", st,
+        rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap) + lender, "Full underwriting", st,
                      "Verified with lender" if o.get("lender_called") else  # OFR-321: by name when the letter gives one
                      f"Call {o['loan_officer']} (section 8)" if o.get("loan_officer") else "Call the loan officer (section 8)"))
     else:
         ok = o["approval"] == "pof_verified"
         rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
-    N, est = L["norms"], "" if L["norms_source"] == "market" else " (national est.)"  # OFR-15: same norms as the counter
+    N = L["norms"]  # OFR-15: same norms as the counter; national norms are said once, in the assumptions
     dep = oe.deposit_benchmark(o, L)  # iteration 10 eval 3: the scorecard rates against the same benchmark
     if o["deposit"] is None:
-        rows.append(("Escrow Deposit", "Not provided", f"≥{pctx(dep)} of price{est}", "caution", "Confirm amount and due date"))
+        rows.append(("Escrow Deposit", "Not provided", f"≥{pctx(dep)} of price", "caution", "Confirm amount and due date"))
     else:
         p = o["deposit"] / o["price"]
-        rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥{pctx(dep)} ({money(round(dep * o['price']))}){est}",
+        rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥{pctx(dep)} ({money(round(dep * o['price']))})",
                      oe.deposit_status(o, L), ""))
     c, cn = o["seller_concessions"], N["concessions_pct"]
-    rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", f"≤{pctx(cn)} of price{est}",
+    rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", f"≤{pctx(cn)} of price",
                  "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
     ob = S["offered_buyer_broker_pct"]
     if not o.get("bb_from_listing"):  # OFR-259: paid by the listing broker from its fee, it isn't a seller cost to rate
@@ -218,20 +217,18 @@ def term_rows(o, R):
                      "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    # iteration 11 eval 2: "(AS IS) (assumed)" read as if the days were assumed; mark the form and the days apart
-    form_assumed = "contract_form" in (o.get("assumed_terms") or ())
-    form = (f" ({o['contract_label']}{', form assumed' if form_assumed else ''})"  # the label comes from contract_forms
+    form = (f" ({o['contract_label']})"  # the label comes from contract_forms; an assumed form is in the assumptions
             if o["contract_form"] in oe.cf.FARBAR else "")
     note = ("Buyer may cancel for any reason; seller still pays repairs up to the limits"
             if o["inspection_walkaway"] and o["repairs_owed"] else "Buyer may cancel for any reason" if o["inspection_walkaway"]
             else "Repair notices only; seller pays repairs up to the limits" if o["repairs_owed"] else "")
-    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}{mark('inspection_days')}",
-                 f"≤{N['inspection_days']} days{est}",
+    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}",
+                 f"≤{N['inspection_days']} days",
                  "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
                  note))
     if o["financed"]:
         la = N["loan_approval_days"]
-        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days{mark('loan_approval_days')}", f"≤{la} days{est}",
+        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", f"≤{la} days",
                      "good" if o["loan_approval_days"] <= la else ("caution" if o["loan_approval_days"] <= max(30, la) else "risk"), ""))
         if o["appraisal_days"]:
             rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
@@ -245,12 +242,12 @@ def term_rows(o, R):
     st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
     rb, rent = o.get("rent_back_days"), o.get("rent_back_monthly")  # OFR-281: a rent-back is a closing term
     rb = (f" + {rb}-day rent-back" + (" (free)" if rent == 0 else f" ({money(rent)}/mo)" if rent else "")) if rb else ""
-    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}{mark('closing_days')}", f"On/before {oe.prior_weekday(dl):%b %-d}" if dl else "—", st,
+    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}", f"On/before {oe.prior_weekday(dl):%b %-d}" if dl else "—", st,
                  "Weekend date; confirm funding" if o["close"].weekday() >= 5 else ""))
     tb, cust = o["title_by"], L["title_customary_payer"]
     if tb or cust:
         name = {"seller": "Seller's title co.", "buyer": "Buyer's title co."}
-        rows.append(("Escrow / Title Agent", name.get(tb, "—") + (mark("title_by") if tb else ""), name.get(cust, "—"),
+        rows.append(("Escrow / Title Agent", name.get(tb, "—"), name.get(cust, "—"),
                      "good" if tb == cust else "caution", ""))
     for key, lab in (("personal_property", "Personal Property"), ("occupancy", "Occupancy"), ("other_terms", "Other Terms")):
         if o.get(key):
@@ -260,7 +257,7 @@ def term_rows(o, R):
         label = o["contract_label"] if o["contract_form"] in oe.cf.FARBAR else ""
         # iteration 9 eval 5: a rider the label already names ("Standard + As Is Rider (K)") isn't listed again
         rest = [r for r in o["riders"] if not (label and (c := oe.cf.rider_codes([r])[0]) and f"({c[0]})" in label)]
-        text = " · ".join(x for x in (label + mark("contract_form") if label else "", esc(", ".join(rest))) if x)
+        text = " · ".join(x for x in (label if label else "", esc(", ".join(rest))) if x)
         rows.append(("Contract / Riders", text, "—", "good", ""))
     return rows
 
@@ -380,7 +377,7 @@ def assumptions_table(R, multi=False, offer_id=None):
     rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.place(R, a, offer_id))}</td>'
                    f'<td>{esc(review.why_for(a, offer_id))}</td></tr>' for a in items)
     return ('<div class="tbl split"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
-            f'<th>Where</th><th>What Was Assumed: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
+            f'<th>Where</th><th>What to Confirm: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
 
 
 def gantt(o, R):
@@ -545,7 +542,7 @@ def single_html(R, o, v):
 <div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span><b>Downside</b>: {caption}.</span>
 <span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., {target_basis(R, o)}.</span></div>
-{revive}<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
+{revive}<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Effective Date if Accepted Today)</span></h2>{gantt(o, R)}
 <h2>3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
 <div class="tbl split"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
 <thead><tr><th>Term</th><th>Offered</th><th>Benchmark</th><th class="c">Rating</th><th>Note</th></tr></thead><tbody>{tr}</tbody></table></div>
@@ -653,9 +650,6 @@ KEY_TERMS = [("Financing", ("Financing",)), ("Approval / Funds", ("Approval", "P
              ("Closing", ("Closing Date",))]
 
 
-# OFR-306: an offer whose contract form was assumed carries a small mark instead of a Preliminary banner on the whole page
-FORM_MARK = ' <span class="sm">(form assumed)</span>'
-FORM_NOTE = " <b>Form assumed</b> = the contract form wasn't given; see Assumptions &amp; Data to Confirm."
 
 
 def multi_html(R, v):
@@ -666,7 +660,7 @@ def multi_html(R, v):
     band = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
     pill = {"Accept": "rec", "Counter": "rec", "Wait": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
     rows = "".join(
-        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b>{FORM_MARK if r.get("form_assumed") else ""}</td>'
+        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b></td>'
         f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
         f'<td class="n">{r["price"].replace(" (escalated)", "<br><span class=sm>escalated</span>")}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
         f'<td class="c {band[r["band_class"]]}"><b>{r["score"]}</b></td><td class="n">{r["risk_days"]}{"" if r["risk_days"] == "—" else " d"}</td><td class="n">{r["close"]}</td>'
@@ -674,7 +668,7 @@ def multi_html(R, v):
     decision = f'''<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
  <table class="rank"><colgroup><col style="width:3%"><col style="width:17%"><col style="width:9%"><col style="width:9%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
  <thead><tr><th></th><th>Offer</th><th>Financing</th><th class="c">Action</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Walk</th><th class="n">Close</th><th>Terms / Reason</th></tr></thead><tbody>{rows}</tbody></table>
- <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away.{FORM_NOTE if any(r.get("form_assumed") for r in v["ranked"]) else ""} {esc(v["plan_note"])}</div></div>'''
+ <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away. {esc(v["plan_note"])}</div></div>'''
     if len(R["active"]) <= CHART_MAX:
         chart = (f'<div class="chartbox"><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
                  '<span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span>'

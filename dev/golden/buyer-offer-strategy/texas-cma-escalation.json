@@ -226,6 +226,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -500,
     "lines": [
      [
@@ -299,6 +300,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -500,
     "lines": [
      [
@@ -372,6 +374,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -500,
     "lines": [
      [
@@ -493,6 +496,7 @@
      }
     ],
     "close": "2026-10-28",
+    "estoppel_estimate": false,
     "holding": -500,
     "lines": [
      [
@@ -652,6 +656,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -725,6 +730,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -798,6 +804,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -919,6 +926,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1075,6 +1083,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1148,6 +1157,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1221,6 +1231,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1342,6 +1353,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1681,6 +1693,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1754,6 +1767,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1827,6 +1841,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -1948,6 +1963,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2104,6 +2120,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2177,6 +2194,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2250,6 +2268,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2371,6 +2390,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2529,6 +2549,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2602,6 +2623,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2675,6 +2697,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2796,6 +2819,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -2952,6 +2976,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -3025,6 +3050,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -3098,6 +3124,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -3219,6 +3246,7 @@
       }
      ],
      "close": "2026-10-28",
+     "estoppel_estimate": false,
      "holding": -500,
      "lines": [
       [
@@ -3310,6 +3338,7 @@
     }
    ],
    "close": "2026-10-28",
+   "estoppel_estimate": false,
    "holding": -500,
    "lines": [
     [

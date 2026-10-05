@@ -132,7 +132,8 @@ class SellerSide(unittest.TestCase):
         self.assertAlmostEqual(sum(x["amount"] for x in n["lines"]), n["total_costs"])
         self.assertIn("0.70%", next(x["label"] for x in n["lines"] if x["key"] == "transfer_tax"))
         self.assertEqual(n["missing"], [])
-        self.assertEqual([a["key"] for a in n["assumed"]], ["title_fees"])  # built-in local title fees
+        self.assertEqual([(a["key"], a["estimate"]) for a in n["assumed"]],
+                         [("title_fees", False), ("estoppel", False)])  # built-in local title and estoppel fees
         default = f.seller_net(465000, FL)
         self.assertEqual(default["missing"], [])
         self.assertEqual([(a["key"], a["value"], a["estimate"]) for a in default["assumed"][:2]],
@@ -160,8 +161,8 @@ class SellerSide(unittest.TestCase):
         n = f.seller_net(500000, profiles.load_market(state="GA"), listing_fee_pct=0.03, buyer_broker_fee_pct=0.025)
         self.assertEqual(n["missing"], [])
         labels = {x["key"]: x["label"] for x in n["lines"]}
-        for k in ("transfer_tax", "owner_title", "title_fees"):  # every estimate says so on its line
-            self.assertIn("Estimate", labels[k])
+        for k in ("transfer_tax", "owner_title", "title_fees"):  # local-costs.md: no line says Estimate; `assumed` does
+            self.assertNotIn("Estimate", labels[k])
         self.assertIn("0.40%", labels["transfer_tax"])
         self.assertEqual({a["key"] for a in n["assumed"] if a["estimate"]}, {"transfer_tax", "owner_title", "title_fees"})
         deal = f.seller_net(500000, profiles.load_market(state="GA").with_deal({"transfer_tax_rate": 0.001}),
@@ -330,7 +331,7 @@ class AuditMoneyLines(unittest.TestCase):
         p = f.tax_proration(3900, date(2026, 11, 6), GA, due_date="10-15")
         self.assertTrue(p["assumed_paid"])
         self.assertEqual(p["amount"], -round(3900 * 56 / 365))  # the buyer credits Nov 6 to Dec 31
-        self.assertIn("Bill Assumed Paid", p["label"])
+        self.assertEqual(p["label"], "Property Tax Proration (Credit, Closing to Dec 31)")  # no Assumed label
         self.assertGreater(f.tax_proration(3900, date(2026, 10, 15), GA, due_date="2026-10-15")["amount"], 0)  # due that day
         self.assertGreater(f.tax_proration(3900, date(2026, 11, 6), GA, bill_paid=False, due_date="10-15")["amount"], 0)
         self.assertGreater(f.tax_proration(3900, date(2026, 11, 6), GA)["amount"], 0)  # no due date: today's rule
