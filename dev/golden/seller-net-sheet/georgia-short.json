@@ -1,10 +1,15 @@
 {
+ "assumption_keys": [
+  "tax",
+  "payoff",
+  "national"
+ ],
  "assumptions": {
   "count": 3
  },
  "cash_at_closing": true,
  "chat_notes": {
-  "count": 6
+  "count": 2
  },
  "closing_date_assumed": false,
  "columns": [
@@ -17,12 +22,12 @@
    "closing_date": "2026-11-06",
    "costs_pct": 0.0746,
    "costs_pct_display": "7.5%",
-   "net": -19241.0,
-   "net_before_payoff": 305368.0,
+   "net": -19241,
+   "net_before_payoff": 305368,
    "payoff_total": 324609,
    "price": 330000,
    "short": true,
-   "total_costs": 24632.0
+   "total_costs": 24632
   },
   {
    "bar": {
@@ -33,29 +38,31 @@
    "closing_date": "2026-11-06",
    "costs_pct": 0.0753,
    "costs_pct_display": "7.5%",
-   "net": -33326.0,
-   "net_before_payoff": 291283.0,
+   "net": -33326,
+   "net_before_payoff": 291283,
    "payoff_total": 324609,
    "price": 315000,
    "short": true,
-   "total_costs": 23717.0
+   "total_costs": 23717
   }
  ],
  "commission_assumed": false,
- "facts": [
-  {},
-  {},
-  {},
-  {},
-  {},
-  {}
- ],
+ "facts": {
+  "count": 6
+ },
  "has_tax_proration": true,
  "market_notes": {
   "count": 1
  },
+ "note_keys": [
+  "tax",
+  "payoff",
+  "national",
+  "commission",
+  "not_included"
+ ],
  "notes": {
-  "count": 7
+  "count": 5
  },
  "ok": true,
  "preliminary": false,
@@ -79,8 +86,8 @@
   },
   {
    "amounts": [
-    -9900.0,
-    -9450.0
+    -9900,
+    -9450
    ],
    "display": {
     "count": 2
@@ -90,8 +97,8 @@
   },
   {
    "amounts": [
-    -8250.0,
-    -7875.0
+    -8250,
+    -7875
    ],
    "display": {
     "count": 2
@@ -105,8 +112,8 @@
   },
   {
    "amounts": [
-    -330.0,
-    -315.0
+    -330,
+    -315
    ],
    "display": {
     "count": 2
@@ -120,8 +127,8 @@
   },
   {
    "amounts": [
-    -1650.0,
-    -1575.0
+    -1650,
+    -1575
    ],
    "display": {
     "count": 2
@@ -158,8 +165,8 @@
   },
   {
    "amounts": [
-    -24632.0,
-    -23717.0
+    -24632,
+    -23717
    ],
    "display": {
     "count": 2
@@ -169,8 +176,8 @@
   },
   {
    "amounts": [
-    305368.0,
-    291283.0
+    305368,
+    291283
    ],
    "display": {
     "count": 2
@@ -207,8 +214,8 @@
   },
   {
    "amounts": [
-    -19241.0,
-    -33326.0
+    -19241,
+    -33326
    ],
    "display": {
     "count": 2
@@ -217,6 +224,7 @@
    "kind": "final"
   }
  ],
+ "sample": false,
  "state": "GA",
  "summary_tiles": [
   {

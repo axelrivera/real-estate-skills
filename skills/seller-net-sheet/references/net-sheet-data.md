@@ -34,7 +34,7 @@ One to three prices, each a column on the page. Three is the most that fits on o
 | Field | What it is |
 |---|---|
 | `price` | The sale price (required) |
-| `label` | The column's name in Title Case, when the price alone doesn't say it ("Current List Price", "After a Price Cut"). Default: the price, plus "with $9,000 Credit" when there's a credit |
+| `label` | The column's name in Title Case, in words, when the price alone doesn't say it ("Current List Price", "After a Price Cut"). Never a figure (no digits, $, % or month names): the sheet prints the price, credit and dates itself, and compute.py refuses a label with one. Default: the price, plus "with $9,000 Credit" when there's a credit |
 | `seller_credit` | Seller-paid buyer closing costs or concessions in this scenario |
 | `home_warranty` | A home warranty the seller pays for |
 | `repairs` | Repairs or a repair credit the seller has agreed to or expects |
@@ -50,11 +50,11 @@ This sale's own numbers. Each one replaces a built-in value or an estimate (`ref
 | `listing_fee_pct`, `buyer_broker_fee_pct` | The listing agreement's terms (`0` when the seller won't pay the buyer's agent). Without them, the 2.5% default each, with no label (a default, not an assumption; the reply asks for the terms) |
 | `mortgage_payoff` | The first mortgage payoff from a payoff letter or the seller's figure. `0` when the home is owned free and clear |
 | `mortgage_balance`, `mortgage_rate` | A monthly statement's balance and rate, when there's no payoff figure: compute.py adds a month's interest at `mortgage_rate` (4.5% when not given), and the notes say it's an estimate from the balance. A payoff figure the agent states ("they owe about $188,000") is `mortgage_payoff`, used as given |
-| `other_payoffs` | `[{label, amount}]`: a second mortgage, a HELOC, a solar loan or lease buyout. Each is its own row |
+| `other_payoffs` | `[{label, amount}]`: a second mortgage, a HELOC, a solar loan or lease buyout. Each is its own row; the label is a name in words ("Second Mortgage") |
 | `annual_tax` | This year's tax bill (the MLS sheet or the property report has it). With a closing date it adds the proration |
 | `current_tax_bill_paid` | `true` only when the agent says the seller already paid this year's bill; `false` when the agent says it's unpaid |
 | `tax_bill_due_date` | When this year's bill is due (`10-15` or `2026-10-15`): as the agent gives it, else from the county tax office's site when the closing is late in the year. A closing after it assumes the bill paid: the buyer credits the seller from closing to Dec 31, labeled Bill Assumed Paid. Without it, a closing after the bills go out assumes the bill unpaid |
-| `other` | `[{label, amount}]` of other seller costs in every scenario: a survey, a permit closeout, an attorney's fee |
+| `other` | `[{label, amount}]` of other seller costs in every scenario: a survey, a permit closeout, an attorney's fee (labels in words, no figures) |
 | `transfer_tax_rate`, `transfer_tax_payer`, `transfer_tax_label` | Outside Florida, the state's deed transfer tax from a trusted source (`references/local-costs.md`) |
 | `title_payer`, `title_estimate_pct` | Who pays the owner's title policy here, and its rate when the market has no rate table |
 | `title_fees` | A title company's quote: a total, or `{name: amount}` to itemize it |

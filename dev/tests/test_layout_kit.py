@@ -83,6 +83,8 @@ class Markup(unittest.TestCase):
             self.assertIn(f"repeat({n},", out)
         with self.assertRaises(ValueError):
             layout.tiles([("a", "1")] * 3, n=2)
+        out = layout.tiles([("A", "$1", None, "price short"), ("B", "$2")], n=3)  # a kind of tile, by class
+        self.assertEqual(re.findall(r'class="(kit-tile(?:\s[^"]*)?)"', out), ["kit-tile price short", "kit-tile", "kit-tile kit-empty"])
 
     def test_table_cells_escaped_and_aligned(self):
         rng = random.Random(2)

@@ -153,7 +153,7 @@ def payoff_from_balance(balance, rate_pct=None):
     rule too); no fee cushion. A payoff the seller or agent states ("about $171,500 from the September statement") is
     used as given and never goes through here."""
     rate = rate_pct / 100 if rate_pct else PAYOFF_INTEREST
-    return round(balance * (1 + rate / 12))
+    return fmt.half_up(balance * (1 + rate / 12))
 
 
 def tax_pair(annual):

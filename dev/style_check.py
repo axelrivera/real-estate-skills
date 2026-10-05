@@ -38,7 +38,7 @@ MINOR = {"a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet", "as", 
 # Tags and classes whose text is a label. Sentences inside them are skipped by is_sentence().
 LABEL_TAGS = {"h1", "h2", "h3", "h4", "th", "caption", "dt", "legend"}
 LABEL_CLASSES = {"k", "lbl", "label", "tile-label", "side", "pill", "tag", "badge", "cap", "hd", "title", "key",
-                 "group"}  # "group": a table's group row (the net sheet's BROKERAGE, uppercase only in CSS)
+                 "group", "kit-k", "kit-ct", "kit-nh"}  # kit-*: the layout kit's tile, chart and notes titles; "group": a table's group row (the net sheet's BROKERAGE, uppercase only in CSS)
 # Captions set inside a heading (<h2>Title <span class="h2s">caption</span></h2>) are sentence case.
 CAPTION_CLASSES = {"h2s", "h3s"}
 

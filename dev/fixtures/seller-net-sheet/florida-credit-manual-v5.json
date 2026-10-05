@@ -8,9 +8,9 @@
     "state": "FL"
   },
   "scenarios": [
-    {"price": 425000, "label": "At $425,000"},
-    {"price": 410000, "label": "At $410,000"},
-    {"price": 425000, "seller_credit": 6000, "label": "At $425,000 with $6,000 Credit"}
+    {"price": 425000},
+    {"price": 410000},
+    {"price": 425000, "seller_credit": 6000}
   ],
   "costs": {
     "listing_fee_pct": 0.0275,

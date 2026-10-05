@@ -1,56 +1,58 @@
-/* Seller net sheet: one page, on top of the shared report.css. Brand colors come from theme variables; never
-   hard-code one here. Print-light: outlined tiles, rules and colored type; fill only where it's the data (the bars). */
+/* Seller net sheet: one page, on top of the shared report.css and the layout kit (kit-*). Brand colors come from theme
+   variables; never hard-code one here. Print-light: outlined tiles, rules and colored type; fill only where it's the
+   data (the bars). */
+:root{--bar-costs:var(--brand-accent);--bar-payoffs:var(--grey-light);--bar-net:var(--brand)}
 header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto;font-size:8.4pt;line-height:1.35}
-/* the agent's name reads as a signature, not a footnote (Results_v4 case 09) */
+/* the agent's name reads as a signature, not a footnote */
 .prep b.agent{font-size:11.5pt;font-weight:800;color:var(--text)}
-/* as in the other reports: with no fact row, the tiles sit right under the header and draw the line themselves */
-header:has(+ .tiles){border-bottom:none;padding-bottom:0}
+/* with no fact row, the tiles sit right under the header and draw the line themselves */
+header:has(+ .net-tiles){border-bottom:none;padding-bottom:0}
 
-/* the net for each price: outlined tiles, the number carries the color. Always three boxes wide, so a tile never
-   stretches: with one or two prices the spare slots hold summary figures (.sum: a lighter outline, black numbers) */
-.tiles{display:grid;gap:8px;margin:4px 0 2px;grid-template-columns:1fr 1fr 1fr}
-.tile{border:1.5px solid var(--brand);border-left-width:5px;border-radius:6px;padding:7px 12px}
-.tile .k{display:block;font-size:7.2pt;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-.tile b{display:block;font-size:22pt;font-weight:900;line-height:1.1;margin:2px 0;color:var(--brand-strong);font-variant-numeric:tabular-nums}
-.tile b.short{color:var(--risk-strong)}
-.tile i{display:block;font-style:normal;font-size:8pt;color:var(--muted)}
-.tile.sum{border-color:var(--brand-rule);border-left-width:1.5px} .tile.sum b{color:var(--text)}
-.tile b.word{font-size:15pt;line-height:1.55} /* "Not Provided": a word, not a figure; the same box height */
+/* the net for each price: outlined tiles, the number carries the color. Three slots wide (layout.tiles), so a tile
+   never stretches: with one or two prices the spare slots hold summary figures (.sum: a lighter outline, black
+   numbers), or stay empty */
+.net-tiles{gap:8px;margin:4px 0 2px}
+.net-tiles .kit-tile{border:1.5px solid var(--brand);border-left-width:5px;border-radius:6px;padding:7px 12px}
+.net-tiles .kit-tile:first-child{padding-left:12px}
+.net-tiles .kit-tile.kit-empty{border:none}
+.net-tiles .kit-k{font-size:7.2pt;letter-spacing:.07em}
+.net-tiles .kit-v{font-size:22pt;font-weight:900;line-height:1.1;margin:2px 0;color:var(--brand-strong);font-variant-numeric:tabular-nums}
+.net-tiles .short .kit-v{color:var(--risk-strong)}
+.net-tiles .kit-sub{font-size:8pt}
+.net-tiles .sum{border-color:var(--brand-rule);border-left-width:1.5px} .net-tiles .sum .kit-v{color:var(--text)}
 
-/* the itemized table */
+/* the itemized table: row labels wrap; a price header wraps anywhere rather than widen its column past the page */
 .net td{padding:2.4px 8px} .net th{padding:4px 8px}
-.net th.n{text-align:right;white-space:normal} /* a long price label wraps; render.py stops on one that still clips */
-.net table{table-layout:fixed}
+.net th.n{text-align:right}
+.net th.price-col{overflow-wrap:anywhere;width:19%}
+.net td.lbl-col{overflow-wrap:anywhere}
 .net tr.group td{padding-top:6px;color:var(--brand-ink);font-weight:700;font-size:7.6pt;text-transform:uppercase;letter-spacing:.05em}
 .net tr.line td:first-child{padding-left:16px}
-.net tr.line td.n{color:var(--text)} .net td.empty{color:var(--grey)}
+.net tr.line td.n{color:var(--text)} .net .empty{color:var(--grey)}
 .net tr.info td{color:var(--muted)}
 .net tr.price td{font-weight:700}
 .net tr.subtotal td{font-weight:700;border-top:1.5px solid var(--brand-soft)}
 .net tr.final td{font-weight:800;font-size:10pt;color:var(--brand-strong);border-top:2px solid var(--brand)}
-.net tr.final td.short{color:var(--risk-strong)}
+.net tr.final .short{color:var(--risk-strong)}
 
-/* where the price goes: one stacked bar per price (the fills are the data) */
-.bars{margin-top:6px;display:grid;grid-template-columns:fit-content(45%) 1fr 88px;align-items:center;gap:4px 8px} /* one grid: the label column fits the longest label */
-.bars .row{display:contents}
+/* where the price goes: one stacked bar per price (the fills are the data), in the kit's chart box */
+.bars{margin:2px 0 4px;display:grid;grid-template-columns:fit-content(40%) 1fr auto;align-items:center;gap:4px 8px}
 .bars .lbl{font-size:8pt;font-weight:700;color:var(--text)}
 .bars .track{display:flex;height:12px;border-radius:3px;overflow:hidden;border:1px solid var(--brand-rule)}
-.bars .seg.costs{background:var(--brand-accent)} .bars .seg.payoffs{background:var(--grey-light)} .bars .seg.net{background:var(--brand)}
-.bars .val{text-align:right;font-size:8.4pt;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brand-strong)}
-.legend i.costs{background:var(--brand-accent)} .legend i.payoffs{background:var(--grey-light)} .legend i.net{background:var(--brand)}
+.bars .seg.costs{background:var(--bar-costs)} .bars .seg.payoffs{background:var(--bar-payoffs)} .bars .seg.net{background:var(--bar-net)}
+.bars .val{text-align:right;font-size:8.4pt;font-weight:700;font-variant-numeric:tabular-nums;color:var(--brand-strong);white-space:nowrap}
 
-.notes{margin:8px 0 0;padding-left:14px;font-size:7.6pt;color:var(--muted);line-height:1.35}
-.notes li{margin:0 0 1.5px}
+.kit-notes{margin-top:8px;line-height:1.35}
 .prelim{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
-.rt{color:var(--risk-strong);font-weight:700}
 
 /* compact: used only when the page would otherwise run onto a second one */
-body.compact .tile{padding:4px 10px} body.compact .tile b{font-size:17pt;margin:0}
+body.compact .net-tiles .kit-tile{padding:4px 10px} body.compact .net-tiles .kit-v{font-size:17pt;margin:0}
 body.compact .prep{font-size:7.8pt;line-height:1.25} body.compact .prep b.agent{font-size:10pt}
 body.compact .net td{padding:1.2px 8px} body.compact .net tr.group td{padding-top:3px}
-body.compact h2{margin:6px 0 2px} body.compact .bars{row-gap:2px;margin-top:4px}
-body.compact .notes{font-size:7pt;margin-top:5px} body.compact .notices{margin-top:6px}
+body.compact h2{margin:6px 0 2px} body.compact .bars{row-gap:2px}
+body.compact .kit-notes{font-size:7pt;margin-top:5px} body.compact .notices{margin-top:6px}
 body.nochart .chart{display:none}
 /* tight: after the chart is left out, when a long disclaimer or long labels still run past the page */
-body.tight .net td{padding:.6px 8px} body.tight .net tr:not(.final) td{font-size:8pt} body.tight .net tr.group td{padding-top:2px} body.tight .tile i{font-size:7.4pt}
-body.tight .notes{font-size:6.6pt;line-height:1.25} body.tight .notices{font-size:6.6pt;line-height:1.2;margin-top:4px}
+body.tight .net td{padding:.6px 8px} body.tight .net tr:not(.final) td{font-size:8pt} body.tight .net tr.group td{padding-top:2px}
+body.tight .net-tiles .kit-sub{font-size:7.4pt}
+body.tight .kit-notes{font-size:6.6pt;line-height:1.25} body.tight .notices{font-size:6.6pt;line-height:1.2;margin-top:4px}

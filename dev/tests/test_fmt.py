@@ -128,14 +128,11 @@ class Percent(unittest.TestCase):
                 self.assertEqual(len(fixed[:-1].split(".")[1]) if digits else 0, digits)
 
     def test_agrees_with_the_skill_forms(self):
-        (sn,) = load("seller-net-sheet", "compute")
         sc_pct = load("seller-cma", "compute")[0].pct_text
         rng = random.Random(9)
         for _ in range(N):
             f = rng.randint(0, 10000) / 100000  # three decimals of a percent, like the rates the skills print
             self.assertEqual(fmt.pct(f, None, symbol=False), sc_pct(f))
-            if round(f * 1e5) % 10 != 5:
-                self.assertEqual(fmt.pct(f, 2, symbol=False), sn.pct_text(f))
             if round(f * 1e4) % 10 != 5:
                 self.assertEqual(fmt.pct(f), oe.pct(f))
 

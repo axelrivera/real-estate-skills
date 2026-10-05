@@ -13,8 +13,8 @@
   },
   "scenarios": [
     {"price": 689000, "label": "Current List Price, As Is with No Seller Help"},
-    {"price": 669000, "label": "After the Planned October Price Reduction"},
-    {"price": 689000, "label": "Full Price with $12,000 Credit and Home Warranty", "seller_credit": 12000, "home_warranty": 650}
+    {"price": 669000, "label": "After the Planned Fall Price Reduction"},
+    {"price": 689000, "label": "Full Price with a Seller Credit and Home Warranty", "seller_credit": 12000, "home_warranty": 650}
   ],
   "costs": {
     "listing_fee_pct": 0.03,

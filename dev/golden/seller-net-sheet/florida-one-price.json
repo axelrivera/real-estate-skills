@@ -1,10 +1,15 @@
 {
+ "assumption_keys": [
+  "tax",
+  "title_fees",
+  "estoppel"
+ ],
  "assumptions": {
-  "count": 2
+  "count": 3
  },
  "cash_at_closing": true,
  "chat_notes": {
-  "count": 5
+  "count": 3
  },
  "closing_date_assumed": false,
  "columns": [
@@ -17,30 +22,30 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.084,
    "costs_pct_display": "8.4%",
-   "net": 180206.0,
-   "net_before_payoff": 412206.0,
+   "net": 180206,
+   "net_before_payoff": 412206,
    "payoff_total": 232000,
    "price": 450000,
    "short": false,
-   "total_costs": 37794.0
+   "total_costs": 37794
   }
  ],
  "commission_assumed": false,
  "facts": [
-  {},
-  {
-   "text": "Single-Family"
-  },
-  {},
-  {},
-  {},
-  {},
-  {}
+  "Single-Family"
  ],
  "has_tax_proration": true,
  "market_notes": {
   "count": 0
  },
+ "note_keys": [
+  "tax",
+  "title_fees",
+  "estoppel",
+  "commission",
+  "payoff",
+  "not_included"
+ ],
  "notes": {
   "count": 6
  },
@@ -64,7 +69,7 @@
   },
   {
    "amounts": [
-    -13500.0
+    -13500
    ],
    "display": {
     "count": 1
@@ -74,7 +79,7 @@
   },
   {
    "amounts": [
-    -11250.0
+    -11250
    ],
    "display": {
     "count": 1
@@ -88,7 +93,7 @@
   },
   {
    "amounts": [
-    -3150.0
+    -3150
    ],
    "display": {
     "count": 1
@@ -193,7 +198,7 @@
   },
   {
    "amounts": [
-    -37794.0
+    -37794
    ],
    "display": {
     "count": 1
@@ -203,7 +208,7 @@
   },
   {
    "amounts": [
-    412206.0
+    412206
    ],
    "display": {
     "count": 1
@@ -238,7 +243,7 @@
   },
   {
    "amounts": [
-    180206.0
+    180206
    ],
    "display": {
     "count": 1
@@ -247,9 +252,9 @@
    "kind": "final"
   }
  ],
+ "sample": false,
  "state": "FL",
  "summary_tiles": [
-  {},
   {
    "label": "Payoffs"
   }
