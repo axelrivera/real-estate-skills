@@ -61,8 +61,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -484,7 +484,7 @@
   },
   {
    "_appraisal_basis": null,
-   "action": "COUNTER",
+   "action": "ACCEPT",
    "aga_named": false,
    "agent_track": "strong",
    "appraisal_contingency": 21,
@@ -524,8 +524,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 10000,
@@ -535,7 +535,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 425000,
+    "price": 423000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -668,7 +668,7 @@
     "lines": [
      [
       "price",
-      425000
+      423000
      ],
      [
       "conc",
@@ -680,19 +680,19 @@
      ],
      [
       "listing",
-      -12750
+      -12690
      ],
      [
       "bb",
-      -10625
+      -10575
      ],
      [
       "transfer",
-      -2975
+      -2961
      ],
      [
       "title",
-      -2200
+      -2190
      ],
      [
       "settle",
@@ -718,9 +718,9 @@
     "missing": {
      "count": 0
     },
-    "net": 152416,
-    "net_adj": 150016,
-    "price": 425000,
+    "net": 150550,
+    "net_adj": 148150,
+    "price": 423000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -968,8 +968,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -1432,8 +1432,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -2055,8 +2055,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -2478,7 +2478,7 @@
   },
   {
    "_appraisal_basis": null,
-   "action": "COUNTER",
+   "action": "ACCEPT",
    "aga_named": false,
    "agent_track": "strong",
    "appraisal_contingency": 21,
@@ -2518,8 +2518,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 10000,
@@ -2529,7 +2529,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 425000,
+    "price": 423000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -2662,7 +2662,7 @@
     "lines": [
      [
       "price",
-      425000
+      423000
      ],
      [
       "conc",
@@ -2674,19 +2674,19 @@
      ],
      [
       "listing",
-      -12750
+      -12690
      ],
      [
       "bb",
-      -10625
+      -10575
      ],
      [
       "transfer",
-      -2975
+      -2961
      ],
      [
       "title",
-      -2200
+      -2190
      ],
      [
       "settle",
@@ -2712,9 +2712,9 @@
     "missing": {
      "count": 0
     },
-    "net": 152416,
-    "net_adj": 150016,
-    "price": 425000,
+    "net": 150550,
+    "net_adj": 148150,
+    "price": 423000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -2962,8 +2962,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -3426,8 +3426,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -3866,7 +3866,7 @@
  "ranked": [
   {
    "_appraisal_basis": null,
-   "action": "COUNTER",
+   "action": "ACCEPT",
    "aga_named": false,
    "agent_track": "strong",
    "appraisal_contingency": 21,
@@ -3906,8 +3906,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 10000,
@@ -3917,7 +3917,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 425000,
+    "price": 423000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -4050,7 +4050,7 @@
     "lines": [
      [
       "price",
-      425000
+      423000
      ],
      [
       "conc",
@@ -4062,19 +4062,19 @@
      ],
      [
       "listing",
-      -12750
+      -12690
      ],
      [
       "bb",
-      -10625
+      -10575
      ],
      [
       "transfer",
-      -2975
+      -2961
      ],
      [
       "title",
-      -2200
+      -2190
      ],
      [
       "settle",
@@ -4100,9 +4100,9 @@
     "missing": {
      "count": 0
     },
-    "net": 152416,
-    "net_adj": 150016,
-    "price": 425000,
+    "net": 150550,
+    "net_adj": 148150,
+    "price": 423000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -4350,8 +4350,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -4809,8 +4809,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,
@@ -5296,8 +5296,8 @@
    "counter_stance": {
     "given": false,
     "reason": null,
-    "stance": "firm",
-    "suggested": "firm"
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
    },
    "counter_terms": {
     "appraisal_gap": 0,

@@ -8,9 +8,9 @@ Each counter has one stance, which sets how rules 2 and 4 treat the price and th
 
 | Stance | Price (rule 2) | Concessions (rule 4) | Suggested When |
 |---|---|---|---|
-| `firm` | below the seller's number (list, or the seller's last counter): countered at it | down to the market norm, or half when that's less | two or more buyers have active offers, or this offer is at or above list |
+| `firm` | below the seller's number (list, or the seller's last counter): countered at it | down to the market norm, or half when that's less | two or more buyers have active offers, or this offer is at or above list; never when the seller's priority is `certainty` or `speed` (countering the most certain offer up risks losing it) |
 | `meet_partway` | meet partway, as rule 2 reads | half | otherwise |
-| `terms_only` | the offered price stands (rule 1 doesn't counter it down either) | half | the offer is within 1% of the seller's number |
+| `terms_only` | the offered price stands (rule 1 doesn't counter it down either) | half | the offer is under the seller's number by 1% or less |
 
 Every other rule applies under every stance, and the term rules follow the stance's price (gap coverage, the deposit norm, the updated pre-approval). The report shows the stance's name with the counter and one sentence on what it means; the agent's reason follows it when the stance differs from the suggestion.
 

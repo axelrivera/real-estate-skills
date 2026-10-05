@@ -66,9 +66,9 @@ class Results(unittest.TestCase):
 
     def test_multi_plan_follows_the_sellers_priority(self):
         data = fixture("four-offers.json")
-        for o in data["offers"]:  # the priority on the same counter terms (four offers suggest a firm counter)
-            o["counter"] = {"stance": "meet_partway", "stance_reason": "The seller wants this buyer."}
-        out = review.result(review.analyze(data))
+        R = review.analyze(data)  # certainty: never a firm counter, even with four offers
+        self.assertEqual({o["counter_stance"]["suggested"] for o in R["offers"]}, {"meet_partway"})
+        out = review.result(R)
         s = out["summary"]
         self.assertEqual(s["headline"], "ACCEPT")  # certainty: B (86) isn't risked for a 0.7% gain
         self.assertEqual([(p["key"], p["action"]) for p in s["ranked"]],

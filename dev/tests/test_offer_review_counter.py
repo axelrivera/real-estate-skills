@@ -237,18 +237,23 @@ class CounterStance(unittest.TestCase):
 
     def test_suggestion(self):
         L = {"list_price": 400000}
-        for competing, price, prior, want in (
-                (1, 380000, None, "meet_partway"),
-                (2, 380000, None, "firm"),  # two buyers' active offers
-                (1, 400000, None, "firm"),  # at list
-                (1, 410000, None, "firm"),  # above list
-                (1, 396000, None, "terms_only"),  # exactly 1% under list
-                (1, 395000, None, "meet_partway"),  # just over 1% under
-                (1, 404000, 408000, "firm"),  # above list, under the seller's last counter
-                (1, 376500, 380000, "terms_only")):  # within 1% of the seller's last counter
-            with self.subTest(competing=competing, price=price, prior=prior):
-                o = {"price": price, "prior_counters": [{"by": "seller", "price": prior}] if prior else []}
-                self.assertEqual(oe.suggest_stance(o, {**L, "competing_offers": competing}), want)
+        # (competing buyers, price, the seller's last counter, the stance for price/balanced, for certainty/speed)
+        for competing, price, prior, want, sure in (
+                (1, 380000, None, "meet_partway", "meet_partway"),
+                (2, 380000, None, "firm", "meet_partway"),  # two buyers' active offers
+                (1, 400000, None, "firm", "meet_partway"),  # at list
+                (1, 410000, None, "firm", "meet_partway"),  # above list (rule 1 still applies)
+                (2, 396000, None, "firm", "terms_only"),  # exactly 1% under list
+                (1, 396000, None, "terms_only", "terms_only"),
+                (1, 395000, None, "meet_partway", "meet_partway"),  # just over 1% under
+                (1, 404000, 408000, "firm", "terms_only"),  # above list, within 1% of the seller's last counter
+                (1, 376500, 380000, "terms_only", "terms_only"),  # within 1% of the seller's last counter
+                (1, 382000, 380000, "meet_partway", "meet_partway")):  # over the seller's last counter, under list
+            for priority in oe.PRIORITIES:
+                with self.subTest(competing=competing, price=price, prior=prior, priority=priority):
+                    o = {"price": price, "prior_counters": [{"by": "seller", "price": prior}] if prior else []}
+                    self.assertEqual(oe.suggest_stance(o, {**L, "competing_offers": competing}, priority),
+                                     sure if priority in ("certainty", "speed") else want)
 
     def test_each_stance_sets_price_and_concessions(self):
         base = dict(price=380000, seller_concessions=12000)  # above the norm: half is 6,000

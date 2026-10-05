@@ -93,7 +93,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `listing_fee_includes_buyer_broker` | `false` once the agent confirms the listing fee and the buyer-broker offer are separate fees; when they say the listing fee includes the buyer's agent, set `listing_fee_pct` to that total and `buyer_broker_paid_by: "listing_broker"` on each offer instead. Left out with both `listing_fee_pct` and `offered_buyer_broker_pct` given, the two are read as separate fees ("Listing agreement 3%; we offered buyer agents 2.5%" is 3% + 2.5%) and recorded as a high-impact assumption the missing-inputs question asks about | **high** |
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
-| `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty). Any other value stops the render, naming the four | med |
+| `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty; with `certainty` or `speed` the engine never suggests a firm counter). Any other value stops the render, naming the four | med |
 | `priority_note` | shown instead of the priority word: words only, no dates or amounts ("close before the deadline; certainty over top dollar"); the deadline goes in `deadline` | — |
 
 ## offers[]
