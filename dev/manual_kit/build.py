@@ -4,7 +4,14 @@
 
 Makes every file a tester uploads (mock MLS 360 reports, a listing flyer, CMA exports, seller notes, a buyer CMA
 handoff, FAR/BAR contract packages and an other-state agreement), one folder per case with the prompt to paste, and
-an expected.md per case whose numbers come from running the skills' own scripts at build time. The mock data is in
+an expected.md per case whose numbers come from running the skills' own scripts at build time.
+
+The kit is black box: a tester uploads files, pastes prompts and reads the PDFs, calendar files and chat replies, never
+a data file or anything in between. Checks (CHECKS) are of three kinds: yes/no behaviors, consistency within one run
+(the report against its own reply, a later case against the earlier case's report in the same chat), and fixed numbers
+only where the inputs fully determine them (the timelines, the net sheet, the offer review's math on the package).
+Where Claude's judgment sets a number (comp picks, the value range), expected.md gives a sanity band or a reference
+run, labeled as such, never a number to match. The mock data is in
 data.json (a real city, Casselberry in Seminole County; every street, name, brokerage and MLS number is made up).
 See docs/manual-testing.md.
 
@@ -358,12 +365,15 @@ def deal_from_key(key, today):
 
 
 def timeline_md(t):
-    rows = [[r["label"], r["display"], r["party"], ("Done " + r["done_display"][5:]) if r["done"] else "",
+    def name(r):  # the star as the PDF shows it: critical and not done
+        return r["label"] + (" ★" if r["critical"] and not r["done"] else "")
+
+    rows = [[name(r), r["display"], r["party"], ("Done " + r["done_display"][5:]) if r["done"] else "",
              r["rule"]] for r in t["rows"]]
-    out = [table(["Deadline", "When", "Who", "Status", "Rule"], rows)]
+    out = [table(["Deadline", "When", "Who", "Status", "Rule"], rows), "", "★ = critical, as the PDF stars it."]
     if t["pending"]:
         out += ["", "Not dated yet (wait on an event):", "",
-                table(["Deadline", "Rule"], [[r["label"], r["rule"]] for r in t["pending"]])]
+                table(["Deadline", "Rule"], [[name(r), r["rule"]] for r in t["pending"]])]
     return "\n".join(out)
 
 
@@ -437,8 +447,7 @@ def case_seller_cma(pdf, checks):
         "## The Home Is Not Listed Now", "",
         f"- The 360 report's status line is **{r360['header']['status']}** ({r360['header']['pairs'][0][1]}): the "
         "2019 purchase. The home is off the market today.",
-        f"- stats.py `subject_rows` is **empty**: the export has no row for {h['mls_address']}. The skill must not stop "
-        "to ask whose listing it is.",
+        f"- The export has **no row** for {h['mls_address']}: the skill must not stop to ask whose listing it is.",
         f"- **Old failed listing to flag:** MLS# {expired['mls']}, listed {expired['rows'][-1][0]} at "
         f"{expired['rows'][-1][3]}, cut to {expired['rows'][1][3]} on {expired['rows'][1][0]}, **expired "
         f"{expired['rows'][0][0]} after {expired['rows'][0][4]} days**.", "",
@@ -657,9 +666,21 @@ def case_offer_strategy(comp, checks):
     dump(os.path.join(work, "strategy-output.json"), out)
     lines = ["# Case 4: Expected", "",
              f"Date assumed: {long_date(TODAY)}. Run in the same chat as case 3: the buyer CMA from that chat is the input "
-             "(nothing uploaded). The numbers below come from strategy.py run on that CMA's handoff and a buyer file "
-             "matching the prompt.", ""]
-    lines += strategy_summary(out, lim)
+             "(nothing uploaded).", "",
+             "## What to Check (Against the Case 3 Report)", "",
+             "The offer builds on the value range Claude chose in case 3, so its numbers move with that range. Check them "
+             "against the case 3 PDF and the buyer's limits, not against the reference run below:", "",
+             "- The Offer Options report shows the same value range and comps median as the case 3 buyer CMA.",
+             "- The recommended price sits inside that value range and at or below the case 3 walk-away.",
+             f"- Worst-case cash is at most {money(lim['buyer']['cash_available'])}, the reserve left is at least "
+             f"{money(lim['buyer']['reserve_floor'])}, the payment is at most {money(lim['buyer']['max_payment'])} a month, "
+             f"and the price is at most {money(lim['buyer']['max_price'])}.",
+             "- The reply, the Offer Options PDF and the worksheet give the same price, deposit, concessions and dates.", ""]
+    lines += strategy_summary(out, lim, [
+        "## Reference Run (Will Differ With the Case 3 Range)", "",
+        "For orientation only: the offer the kit's own case 3 reference (its comp picks, not Claude's) leads to. Expect "
+        "different prices and dollars in your run; the terms' shape (riders, periods, the worksheet's entries) should "
+        "look alike.", ""])
     lines += ["", "## Checks", ""] + [f"- {c}" for c in checks]
     write(os.path.join(d, "expected.md"), "\n".join(lines))
     write(os.path.join(d, "prompt.md"), prompt_md("Case 4: Buyer Offer Strategy", [], [
@@ -672,8 +693,9 @@ def case_offer_strategy(comp, checks):
     return out
 
 
-def strategy_summary(out, lim):
-    """Page-1 facts from strategy.py's output: the recommended terms, the options, cash exposure and riders."""
+def strategy_summary(out, lim, reference_intro=()):
+    """Page-1 facts from strategy.py's output: the recommended terms, the options, cash exposure and riders, after the
+    buyer's limits and `reference_intro` (the heading that marks the rest as a reference run)."""
     s, ws = out["summary"], out["worksheet"]
     lines = ["## Buyer Limits (from the prompt)", "",
              table(["Limit", "Value"], [["Max Price", money(lim["buyer"]["max_price"])],
@@ -681,25 +703,27 @@ def strategy_summary(out, lim):
                                         ["Reserve Floor", money(lim["buyer"]["reserve_floor"])],
                                         ["Max Payment", money(lim["buyer"]["max_payment"]) + " a month"],
                                         ["Loan", "Conventional, 5% down, 6.5%, first-time buyer"]]), "",
-             f"## Recommended Offer (strategy.py): {s['outlook']}, Strength {s['strength']}/100", "",
-             f"Value range from the handoff: {out['value_range']}. Competition: {s['competition']}.", "",
+             *reference_intro,
+             f"## Reference Recommended Offer: {s['outlook']}, Strength {s['strength']}/100", "",
+             f"Reference value range (the kit's case 3 picks): {out['value_range']}. Competition: {s['competition']}.", "",
              table(["Term", "Offer", "Why"], [[t["term"], t["offer"].replace("**", ""), t["why"]] for t in s["terms"]]), "",
              table(["Cash and Payment", "Amount"], [[a, b] for a, b in s["exposure"]]), ""]
     notes = list(s.get("constraints") or []) + [x["text"] for x in out.get("reply_lines") or []
                                                if x["text"] not in (s.get("constraints") or [])]
-    if notes:  # OFR-332 and the like: on page 1 and in the reply, word for word
-        lines += ["Page 1 and the reply must carry, word for word:", ""] + [f"- {n}" for n in notes] + [""]
-    lines += ["## Options", "",
+    if notes:  # OFR-332 and the like: on page 1 and in the reply (the numbers in them move with the range)
+        lines += ["The reference run's page 1 and reply carry these lines (yours read alike, with your run's numbers):",
+                  ""] + [f"- {n}" for n in notes] + [""]
+    lines += ["## Reference Options", "",
              table(["Option", "Price", "Outlook", "Seller Net", "Worst-Case Cash", "Reserve", "What Changes"],
                    [[o["option"], o["price"], o["outlook"], o["seller_net"], o["worst_cash"], o["reserve"], o["what"]]
                     for o in s["options"]]), "",
-             "## Outlook by Competition Level", "",
+             "## Reference Outlook by Competition Level", "",
              table(["Level"] + s["option_labels"], [[b["level"]] + [v["band"] for v in b["values"]] for b in s["bands"]]),
              "", f"## Worksheet: {ws['form_name']}", "",
              "Riders, by name and CR-7 letter:", ""]
     lines += [f"- {r['rider']}: {r['inputs'].replace('**', '')}" for r in ws["riders"]]
     lines += ["", "The worksheet must not show the buyer's max price, cash or reserve.", "",
-              "## Assumptions strategy.py lists", ""] + [f"- {a['what']}" for a in out["assumptions"]]
+              "## Assumptions the Reply Should List", ""] + [f"- {a['what']}" for a in out["assumptions"]]
     return lines
 
 
@@ -831,7 +855,12 @@ def case_timeline(folder, starter, title, prompt, checks):
     if t.get("contingencies_end"):
         lines += [f"- Contingencies end: {t['contingencies_end']['label']}, {t['contingencies_end']['display']}."]
     if t.get("contingencies_waiting"):
-        lines += [f"- Waiting on the approval: {', '.join(t['contingencies_waiting'])}."]
+        lines += [f"- Waiting on the approval: {t['contingencies_waiting_text']}."]
+    backup = c.get("short_sale_backup")
+    if backup:  # Rider G Para. 7, as the package checks it
+        lines += [f"- Rider G back-up offers: box **7({backup})** is checked: " + (
+            "the seller may accept back-up contracts while this one is pending." if backup == "b" else
+            "the seller may not accept back-up offers while this contract is in effect.")]
     if deal["completed"]:
         lines += [f"- Done per the package (escrow receipt, signed compensation agreement): "
                   f"{', '.join(k.replace('_', ' ') for k in deal['completed'])}. The skill may show these as done or "
@@ -867,7 +896,8 @@ def case_other_state(pdf, checks):
     if not t.get("ok"):
         raise KitError(f"timeline.py other state: {t}")
     eff = date.fromisoformat(a["effective_date"])
-    plain = [[x["label"], f"{x['days']} day{'s' if x['days'] != 1 else ''} "
+    plain = [[x["label"], "By Closing" if x["basis"] == "before" and not x["days"] else
+              f"{x['days']} day{'s' if x['days'] != 1 else ''} "
               f"{'after the Effective Date' if x['basis'] == 'after' else 'before Closing'}",
               (eff + timedelta(days=x["days"])).strftime("%a %b %-d") if x["basis"] == "after" else
               (date.fromisoformat(a["closing_date"]) - timedelta(days=x["days"])).strftime("%a %b %-d")]
@@ -883,6 +913,11 @@ def case_other_state(pdf, checks):
              "## Deadlines (timeline.py with the contract's rules)", "", timeline_md(t), "",
              "Plain calendar count before the weekend rule, for reference (the rollover moves the earnest money and "
              "the inspection period to Monday):", "", table(["Deadline", "Period", "Raw Day"], plain), "",
+             "## Calendar File", "",
+             f"- Closing is the only timed event: {t['closing']['display']}, in Eastern time (Ohio), so a calendar set to "
+             "another zone shifts it by the difference.",
+             "- The deadlines that end at 11:59 PM, the walk-through and the title commitment (due by Closing) are "
+             "all-day items: no event at 11:59 PM and none at the closing's hour besides Closing.", "",
              "## Must Not Happen", "",
              "- No Florida rules, FAR/BAR paragraphs or Florida costs.",
              "- The best-effort disclaimer appears in chat only: not in the PDF, the calendar file or a markdown report.",
@@ -897,64 +932,98 @@ def case_other_state(pdf, checks):
 
 # --- checks, README, results ---------------------------------------------------------------
 
-# Each check: (text, where) with where "both" (Cowork and claude.ai), "cowork" or "ai". Cases outside the claude.ai
-# pass (1, 2 and 6) are Cowork only.
+# Each check: (text, where, kind). where: "both" (Cowork and claude.ai), "cowork" or "ai"; cases outside the claude.ai
+# pass (1, 2 and 6) are Cowork only. kind (docs/manual-testing.md): "behavior" (yes or no: it did or didn't),
+# "consistency" (two things from the same run agree: the PDF and the reply, case 4 and the case 3 report), "fixed"
+# (a number the inputs fully determine, in expected.md) or "band" (Claude's judgment, inside expected.md's sanity band).
 CHECKS = {
-    "01-agent-profile": [("At most two rounds of questions", "both"),
-                         ("Saves profile.md in the working folder", "cowork"),
-                         ("Hands the profile over in chat or as a file to keep (no saved file)", "ai"),
-                         ("No placeholders or made-up details in the profile", "both")],
-    "02-seller-cma": [("Uses the saved profile without asking for an upload", "cowork"),
-                      ("Uses the case 1 profile when it's uploaded with the inputs", "ai"),
-                      ("Report PDF shows the profile's name, brokerage and colors", "both"),
-                      ("Treats the home as not listed now and flags the 2017 expired listing (price and days)", "both"),
-                      ("Net sheet marks the 5% brokerage as assumed", "both"),
-                      ("Facts and market numbers match expected.md", "both"),
-                      ("Listing presentation: the PPTX opens and its prices and nets match the PDF", "both"),
-                      ("\"Perfect for young families\" is declined in one sentence with compliant wording", "both")],
-    "03-buyer-cma": [("PDF has the value range, the full history (both price cuts and the 2015 listing and sale), and the scatterplot", "cowork"),
-                     ("Facts, tax at the target price (named in the tax table) and market numbers match expected.md", "cowork"),
-                     ("Opening offer and walk-away sit inside the sanity band", "cowork")],
-    "04-buyer-offer-strategy": [("Uses the buyer CMA from the case 3 chat without asking for a file", "both"),
-                                ("Offer Options and Offer Package Worksheet PDFs are both delivered", "cowork"),
-                                ("Recommended offer stays inside every limit (price, cash, reserve, payment)", "cowork"),
-                                ("Riders are named by letter (CR-7), and the worksheet shows offer terms only", "cowork"),
-                                ("Numbers match expected.md", "cowork")],
-    "05-seller-offer-review": [("Step 1: net sheet and a counter for the single offer", "cowork"),
-                               ("Step 1: the appraisal gap (AGA-1) is read and handled", "cowork"),
-                               ("Step 2: both offers ranked with a plan (counter one, hold the other as backup)", "cowork"),
+    "01-agent-profile": [("At most two rounds of questions", "both", "behavior"),
+                         ("Saves profile.md in the working folder", "cowork", "behavior"),
+                         ("Hands the profile over in chat or as a file to keep (no saved file)", "ai", "behavior"),
+                         ("No placeholders or made-up details in the profile", "both", "behavior")],
+    "02-seller-cma": [("Uses the saved profile without asking for an upload", "cowork", "behavior"),
+                      ("Uses the case 1 profile when it's uploaded with the inputs", "ai", "behavior"),
+                      ("Report PDF shows the profile's name, brokerage and colors", "both", "behavior"),
+                      ("Treats the home as not listed now and flags the 2017 expired listing (price and days)", "both",
+                       "behavior"),
+                      ("Net sheet marks the 5% brokerage as assumed", "both", "behavior"),
+                      ("Facts and market numbers match expected.md", "both", "fixed"),
+                      ("Recommended list price inside the sanity band, or the report says why not", "both", "band"),
+                      ("Listing presentation: the PPTX opens and its prices and nets match the PDF", "both", "consistency"),
+                      ("\"Perfect for young families\" is declined in one sentence with compliant wording", "both",
+                       "behavior")],
+    "03-buyer-cma": [("PDF has the value range, the full history (both price cuts and the 2015 listing and sale), and "
+                      "the scatterplot", "cowork", "behavior"),
+                     ("Facts, price-cut counts and market numbers match expected.md", "cowork", "fixed"),
+                     ("The tax table names the price it's figured at, and that price is the offer plan's target", "cowork",
+                      "consistency"),
+                     ("Opening offer and walk-away sit inside the sanity band", "cowork", "band"),
+                     ("The reply's range and offer plan match the PDF", "cowork", "consistency")],
+    "04-buyer-offer-strategy": [("Uses the buyer CMA from the case 3 chat without asking for a file", "both", "behavior"),
+                                ("Offer Options and Offer Package Worksheet PDFs are both delivered", "cowork", "behavior"),
+                                ("Uses the case 3 report's value range and comps median", "cowork", "consistency"),
+                                ("Recommended price inside the case 3 value range and at or below its walk-away", "cowork",
+                                 "consistency"),
+                                ("Worst-case cash at most the cash available, reserve at least the floor, payment at "
+                                 "most the limit, price at most the max", "cowork", "consistency"),
+                                ("Riders are named by letter (CR-7), and the worksheet shows offer terms only", "cowork",
+                                 "behavior")],
+    "05-seller-offer-review": [("Step 1: net sheet and a counter for the single offer", "cowork", "behavior"),
+                               ("Step 1: the appraisal gap (AGA-1) is read and handled", "cowork", "behavior"),
+                               ("Step 2: both offers ranked with a plan (counter one, hold the other as backup)", "cowork",
+                                "behavior"),
                                ("Step 2: the backup's earlier time for acceptance is shown, with a step to ask for an "
-                                "extension", "cowork"),
-                               ("Step 2: the highest-and-best deadline (NMOB-1) is shown and not offered again", "cowork"),
+                                "extension", "cowork", "behavior"),
+                               ("Step 2: the highest-and-best deadline (NMOB-1) is shown and not offered again", "cowork",
+                                "behavior"),
                                ("No question asks who the loan officer is or whether funds are verified when the "
-                                "package's letters show it", "cowork"),
-                               ("No past dates in next steps", "cowork"), ("Numbers match expected.md", "cowork")],
-    "06-contract-timeline-fha": [("Deadlines match expected.md", "both"),
-                                 ("ICS imports into a calendar with the correct dates", "both"),
-                                 ("The FHA appraisal note appears", "both")],
-    "07-contract-timeline-short-sale": [("Two-phase timeline: rows read \"N days after short sale approval\"", "cowork"),
-                                        ("PDF builds with no closing date", "cowork"),
-                                        ("Short sale dates match expected.md", "cowork")],
-    "08-contract-timeline-other-state": [("Timeline uses the contract's own dates and rules; matches expected.md", "cowork"),
-                                         ("Best-effort disclaimer in chat only, not in the PDF or ICS", "cowork"),
-                                         ("No Florida rules or forms mentioned", "cowork")],
-    "09-seller-net-sheet": [("One-page PDF with the profile's name, brokerage and colors", "cowork"),
-                            ("Nets and lines match expected.md, with no questions before the first sheet", "cowork"),
-                            ("The tax proration reads Bill Assumed Unpaid and the reply says so", "cowork"),
-                            ("Step 2 answers in chat with the net in expected.md, without a new PDF", "cowork")],
+                                "package's letters show it", "cowork", "behavior"),
+                               ("No past dates in next steps", "cowork", "behavior"),
+                               ("Nets, counter and ranking match expected.md", "cowork", "fixed")],
+    "06-contract-timeline-fha": [("Deadlines match expected.md", "both", "fixed"),
+                                 ("ICS imports into a calendar with the correct dates", "both", "behavior"),
+                                 ("The FHA appraisal note appears", "both", "behavior"),
+                                 ("Compensation Contingency Ends carries no star when the signed agreement shows as "
+                                  "done", "both",
+                                  "behavior"),
+                                 ("Timeline strip: each marker sits on its own date's tick", "both", "behavior"),
+                                 ("The PDF, the calendar file and the reply give the same dates", "both", "consistency")],
+    "07-contract-timeline-short-sale": [("Two-phase timeline: rows read \"N days after short sale approval\"", "cowork",
+                                         "behavior"),
+                                        ("PDF builds with no closing date; the strip says it runs to Contract Expires",
+                                         "cowork", "behavior"),
+                                        ("Short sale dates match expected.md", "cowork", "fixed"),
+                                        ("The reply says the seller may accept back-up contracts (Rider G box 7(b))",
+                                         "cowork", "fixed")],
+    "08-contract-timeline-other-state": [("Timeline uses the contract's own dates and rules; matches expected.md", "cowork",
+                                          "fixed"),
+                                         ("Calendar: Closing at 1:00 PM Eastern; every other item all-day", "cowork",
+                                          "behavior"),
+                                         ("Best-effort disclaimer in chat only, not in the PDF or ICS", "cowork",
+                                          "behavior"),
+                                         ("No Florida rules or forms mentioned", "cowork", "behavior")],
+    "09-seller-net-sheet": [("One-page PDF with the profile's name, brokerage and colors", "cowork", "behavior"),
+                            ("Nets and lines match expected.md, with no questions before the first sheet", "cowork",
+                             "fixed"),
+                            ("The tax proration reads Bill Assumed Unpaid and the reply says so", "cowork", "behavior"),
+                            ("Step 2 answers in chat with the net in expected.md, without a new PDF", "cowork", "fixed")],
 }
+KINDS = {"behavior": "Behavior", "consistency": "Consistency", "fixed": "Fixed", "band": "Band"}
 
 
 def check_texts(case):
-    return [c for c, _ in CHECKS[case]]
+    """The checks as expected.md lists them, each with its kind."""
+    return [f"{c} ({KINDS[kind]})" for c, _, kind in CHECKS[case]]
 
 
 def results_md():
-    rows = [[case, c, "" if where != "ai" else "n/a", "" if where != "cowork" else "n/a", ""]
-            for case, checks in CHECKS.items() for c, where in checks]
+    rows = [[case, c, KINDS[kind], "" if where != "ai" else "n/a", "" if where != "cowork" else "n/a", ""]
+            for case, checks in CHECKS.items() for c, where, kind in checks]
     head = ["# Manual Test Results", "", "Version: ", "Tester: ", "Date: ", "",
-            "Mark each empty cell Pass or Fail. Add a note for every Fail (what happened, which file).", ""]
-    out = ["| Case | Check | Cowork | claude.ai | Notes |", "|---|---|---|---|---|"]
+            "Mark each empty cell Pass or Fail. Add a note for every Fail (what happened, which file). Type: Behavior "
+            "(it did or didn't), Consistency (two parts of the same run agree), Fixed (matches expected.md exactly), "
+            "Band (inside expected.md's sanity band).", ""]
+    out = ["| Case | Check | Type | Cowork | claude.ai | Notes |", "|---|---|---|---|---|---|"]
     out += ["| " + " | ".join(r) + " |" for r in rows]
     return "\n".join(head + out)
 

@@ -1005,6 +1005,8 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
             contract["insurance_coverage"] = "both" if hw and fl else "flood" if fl else "homeowners"
             if fl and values.get("flood_date"):
                 contract["flood_insurance_date"] = _d(values["flood_date"]).isoformat()
+        if code == "G" and values.get("backup_offers") in ("a", "b"):  # Para. 7's back-up offer box (farbar.md)
+            contract["short_sale_backup"] = values["backup_offers"]
         if code == "P":  # Rider P checks "Waived the opportunity" unless the buyer received a risk assessment
             contract["lbp_waived"] = values.get("risk_assessment") != "received"
         for flag in DEAL_FLAGS:  # yes/no boxes the rider prints (Rider N's CCCL request, Rider A's)
