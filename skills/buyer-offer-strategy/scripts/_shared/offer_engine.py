@@ -528,9 +528,11 @@ def apply_escalations(offers, L):
         if cap and o["appraisal_risk"] and cap > appraisal_line(L) + o["gap_cover"]:
             # iteration 12: with no CMA, list price stands in for the value; never call it a value range
             ref = "the value range" if L["cma_provided"] else "list price"
-            issues.append(("Med", f"The cap ({money(cap)}) is above what {ref} and gap coverage support "
+            support = f"{ref} and gap coverage support" if o["gap_cover"] else f"{ref} supports, with no gap coverage"
+            issues.append(("Med", f"The cap ({money(cap)}) is above what {support} "
                                   f"({money(appraisal_line(L) + o['gap_cover'])}).",
-                           "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling.",
+                           "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling."
+                           if o["gap_cover"] else "Ask for appraisal gap coverage up to the cap, or treat the appraisal as the ceiling.",
                            "escalation_cap_over_value"))
         issues += escalation_funding(o, cap, eff)
         o["escalation_issues"] = issues  # (sev, issue, fix, topic)
