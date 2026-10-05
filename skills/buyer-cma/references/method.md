@@ -47,10 +47,10 @@ The built-in rates are flat dollars from Central Florida sales in one price band
 
 The supported range is a judgment around the median adjusted value, typically about $25,000 wide (`cma.typical_range_width`; 5% of the median where none is built in). Lean toward the best condition matches and the most recent sales, and say which way you leaned and why. Round each end to $5,000.
 
-- **One comp never sets an end.** Each end sits at or inside the second-highest and second-lowest adjusted values, rounded outward to $5,000 (with 3 comps, inside the highest and lowest). A single high or low sale can pull the median a little, never an end: adjusted values of $431,000 to $496,000 with the second-highest at $478,800 top out at $480,000, not $490,000.
+- **One comp never sets an end.** Each end sits at or inside the second-highest and second-lowest adjusted values (with 3 comps, the highest and lowest), or half the typical width from the median, whichever reaches farther, rounded outward to $5,000. A single high or low sale can pull the median a little, never an end: adjusted values of $431,000 to $496,000 with the second-highest at $478,800 top out at $480,000, not $490,000. Comps that agree closely never force a range narrower than the typical width; under half of it, compute.py warns `range_narrow`.
 - **When comps disagree, widen, up to about twice the typical width** ($50,000 in Florida). Wider than that means the comps don't agree enough to support a range: replace the weakest match (the largest adjustments, the farthest or oldest sale) and re-run, or keep the range and say in the bottom line why it's this wide.
 
-compute.py warns on both (`range_one_comp`, `range_wide`).
+compute.py warns on each (`range_one_comp`, `range_wide`, `range_narrow`) and names a range that passes.
 
 ## The Scatterplot
 

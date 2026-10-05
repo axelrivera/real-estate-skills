@@ -104,7 +104,7 @@
  "payment_takeaway": "Buyers shop by payment. Every $10,000 is about {per_10k} a month to them.",
  "launch_plan": [
   [
-   "Document the Roof",
+   "Document the New Roof",
    "Permit, final inspection, warranty",
    "roof"
   ],
@@ -119,12 +119,12 @@
    "permit"
   ],
   [
-   "Seller-Credit Budget",
+   "Decide on a Seller-Credit Budget",
    "Decide it now, before offers arrive",
    "money"
   ],
   [
-   "3-Week Review",
+   "Agree on a Review Point",
    "Steady showings but no offer? Revisit the price",
    "calendar"
   ]

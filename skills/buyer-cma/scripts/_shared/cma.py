@@ -763,33 +763,53 @@ def outlier_warnings(cards, share=OUTLIER_SHARE):
     return out
 
 
-def range_warnings(bl, values, market):
-    """CMA-296: the supported range against the adjusted comps (method.md), for the buyer and seller CMAs alike.
-    `bl` has `low` and `high`. Returns [(key, text)]. `range_wide`: wider than twice the market's typical width
-    (`cma.typical_range_width`; 5% of the median where none is built in). `range_one_comp`: an end past the
-    second-highest or second-lowest adjusted value (the highest or lowest with 3 comps or fewer), rounded outward to
-    $5,000, so a single comp sets it."""
-    if not values:
-        return []
+def range_bounds(values, market):
+    """CMA-296, iteration 12: the widest range the comps support without one sale setting an end, as (low, high, typical).
+    Each end may reach the second-lowest / second-highest adjusted value (the lowest / highest with 3 comps or fewer),
+    rounded outward to $5,000, or half the market's typical width (`cma.typical_range_width`; 5% of the median where
+    none is built in) from the median, rounded outward to $5,000, whichever is farther: tightly clustered comps never
+    force a range narrower than the method's normal width."""
     v = sorted(values)
     median = statistics.median(v)
     typical = (market.get("cma.typical_range_width") if market is not None else None) or 0.05 * median
+    lo, hi = (v[1], v[-2]) if len(v) >= 4 else (v[0], v[-1])
+    low = min(math.floor(lo / 5000) * 5000, math.floor((median - typical / 2) / 5000) * 5000)
+    high = max(math.ceil(hi / 5000) * 5000, math.ceil((median + typical / 2) / 5000) * 5000)
+    return low, high, typical
+
+
+def range_warnings(bl, values, market):
+    """CMA-296: the supported range against the adjusted comps (method.md), for the buyer and seller CMAs alike.
+    `bl` has `low` and `high`. Returns [(key, text)], each naming a range that passes. `range_wide`: wider than twice
+    the market's typical width. `range_one_comp`: an end past `range_bounds`, so a single comp sets it. `range_narrow`:
+    under half the typical width, narrower than the comps can promise."""
+    if not values:
+        return []
+    median = statistics.median(values)
+    low_ok, high_ok, typical = range_bounds(values, market)
+    # the typical range centered on the median, rounded to $5,000, inside the bounds: one range that always passes
+    ex_lo = max(low_ok, round((median - typical / 2) / 5000) * 5000)
+    ex_hi = min(high_ok, round((median + typical / 2) / 5000) * 5000)
+    example = f"{money(ex_lo)} – {money(ex_hi)}"
+    passes = (f"Any range inside {money(low_ok)} – {money(high_ok)} and no wider than {money(2 * typical, 1000)} passes; "
+              f"about {money(typical, 1000)} wide is typical (for example {example}).")
     out = []
     width = bl["high"] - bl["low"]
     if width > 2 * typical + 1:
         out.append(("range_wide", f"The range is {money(width)} wide, more than twice the typical {money(typical, 1000)}: "
                     "the comps disagree more than a range can absorb. Replace the weakest match (the largest adjustments, "
-                    "the farthest or oldest sale) and re-run, or keep it and say in the bottom line why it's this wide."))
-    lo, hi = (v[1], v[-2]) if len(v) >= 4 else (v[0], v[-1])
-    lo_ok, hi_ok = math.floor(lo / 5000) * 5000, math.ceil(hi / 5000) * 5000
-    if bl["high"] > hi_ok:
-        out.append(("range_one_comp", f"The top of the range ({money(bl['high'])}) is above {money(hi_ok)}, the "
-                    f"{'second-highest' if len(v) >= 4 else 'highest'} adjusted comp ({money(hi)}) rounded up: one sale "
-                    f"sets it. Bring it to {money(hi_ok)} or below."))
-    if bl["low"] < lo_ok:
-        out.append(("range_one_comp", f"The bottom of the range ({money(bl['low'])}) is below {money(lo_ok)}, the "
-                    f"{'second-lowest' if len(v) >= 4 else 'lowest'} adjusted comp ({money(lo)}) rounded down: one sale "
-                    f"sets it. Bring it to {money(lo_ok)} or above."))
+                    "the farthest or oldest sale) and re-run, or keep it and say in the bottom line why it's this wide. "
+                    + passes))
+    if bl["high"] > high_ok:
+        out.append(("range_one_comp", f"The top of the range ({money(bl['high'])}) is above {money(high_ok)}: only one sale "
+                    f"supports it. Bring it to {money(high_ok)} or below. " + passes))
+    if bl["low"] < low_ok:
+        out.append(("range_one_comp", f"The bottom of the range ({money(bl['low'])}) is below {money(low_ok)}: only one sale "
+                    f"supports it. Bring it to {money(low_ok)} or above. " + passes))
+    if width < typical / 2:
+        out.append(("range_narrow", f"The range is {money(width)} wide, under half the typical {money(typical, 1000)}: "
+                    "adjusted comps can't promise a value that precise, even when they agree. Widen it around the median "
+                    f"adjusted value ({money(median)}), for example to {example}. " + passes.split("; ")[0] + "."))
     return out
 
 

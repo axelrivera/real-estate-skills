@@ -36,9 +36,10 @@
   "filled": {
    "count": 0
   },
-  "ratio": 0.9386,
-  "ratio_display": "93.9%",
-  "source": "export",
+  "floored": false,
+  "ratio": 0.97,
+  "ratio_display": "97.0%",
+  "source": "assumed",
   "top": {
    "count": 0
   }
