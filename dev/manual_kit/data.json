@@ -108,13 +108,13 @@
         {"address": "818 Tanager Ridge Dr", "sold_price": 398000, "seller_concessions": 5000,
          "adjustments": [{"label": "Size", "amount": 2100}, {"label": "Newer Kitchen", "amount": 4000}]},
         {"address": "907 Tanager Ridge Dr", "sold_price": 405000, "seller_concessions": 0,
-         "adjustments": [{"label": "Size", "amount": -1100}, {"label": "Remodeled Baths", "amount": -6000}, {"label": "Market Since the Sale", "amount": -4000}]},
+         "adjustments": [{"label": "Size", "amount": -1100}, {"label": "Remodeled Baths", "amount": -6000}]},
         {"address": "764 Siskin Way", "sold_price": 412500, "seller_concessions": 0,
-         "adjustments": [{"label": "Size", "amount": -4700}, {"label": "Impact Windows and Baths", "amount": -10000}, {"label": "Market Since the Sale", "amount": -6000}]},
+         "adjustments": [{"label": "Size", "amount": -4700}, {"label": "Impact Windows and Baths", "amount": -10000}]},
         {"address": "790 Tanager Ridge Dr", "sold_price": 384000, "seller_concessions": 6500,
          "adjustments": [{"label": "Newer Roof", "amount": 8000}, {"label": "Newer Kitchen", "amount": 8000}]},
         {"address": "518 Linnet Cir", "sold_price": 395000, "seller_concessions": 3500,
-         "adjustments": [{"label": "Size", "amount": -6000}, {"label": "Updated Kitchen", "amount": 10000}, {"label": "Market Since the Sale", "amount": -4000}]}
+         "adjustments": [{"label": "Size", "amount": -6000}, {"label": "Updated Kitchen", "amount": 10000}]}
       ],
       "recommendation": {"list_price": 399900, "low": 390000, "high": 408000},
       "strategies": [
@@ -249,15 +249,15 @@
         {"address": "2331 Kestrel Point Ct", "sold_price": 458000, "seller_concessions": 6000,
          "adjustments": [{"label": "Size", "amount": 1100}, {"label": "Newer Roof", "amount": -6000}]},
         {"address": "2280 Kestrel Point Ct", "sold_price": 472500, "seller_concessions": 0,
-         "adjustments": [{"label": "Size", "amount": -3000}, {"label": "Renovation and Newer Roof", "amount": -12000}, {"label": "Market Since the Sale", "amount": -5000}]},
+         "adjustments": [{"label": "Size", "amount": -3000}, {"label": "Renovation and Newer Roof", "amount": -12000}]},
         {"address": "1502 Merlin Bend", "sold_price": 466000, "seller_concessions": 5000,
          "adjustments": [{"label": "Size", "amount": -4600}, {"label": "Updated Baths and Newer Roof", "amount": -8000}]},
         {"address": "2355 Kestrel Point Ct", "sold_price": 462500, "seller_concessions": 5000,
          "adjustments": [{"label": "Size", "amount": -1800}, {"label": "Newer Roof", "amount": -6000}]},
         {"address": "846 Osprey Glen Way", "sold_price": 452000, "seller_concessions": 3000,
-         "adjustments": [{"label": "Size", "amount": -800}, {"label": "Location Outside Kestrel Point", "amount": 4000}, {"label": "Market Since the Sale", "amount": -3000}]}
+         "adjustments": [{"label": "Size", "amount": -800}, {"label": "Location Outside Kestrel Point", "amount": 4000}]}
       ],
-      "bottom_line": {"low": 445000, "high": 450000, "midpoint": 447500},
+      "bottom_line": {"low": 435000, "high": 460000, "midpoint": 447500},
       "offer_plan": {"opening": 440000, "target_low": 443000, "target_high": 447000, "walk_away": 450000,
                      "credit_alt": {"price": 445000, "credit": 5000}},
       "taxes": {"current_bill": 4095.13, "current_year": 2025, "homestead": true,
