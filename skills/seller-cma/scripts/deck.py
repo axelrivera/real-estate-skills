@@ -18,13 +18,15 @@ import tempfile
 import zipfile
 from datetime import datetime, timedelta
 
-from _shared import cma, design, finance, render
+from _shared import cma, design, finance, prose, render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILDER = os.path.join(HERE, "build_deck.js")
 PDF_TIMEOUT = 180  # seconds for LibreOffice to convert the deck; a hung conversion gives up and the PPTX ships alone
 money, k = finance.money, lambda v: finance.money(v / 1000) + "K"
 
+# Label fields in the deck wording, put in Title Case when it's read (shared/prose.py title_labels)
+DECK_LABELS = ("title", "subtitle", "scatter_title", "market_title", "market_period_labels[]")
 REQUIRED = {"title": str, "subtitle": str, "recommendation_why": str, "value_drivers": list, "document_items": list,
             "comp_lines": dict, "comps_takeaway": str, "scatter_takeaway": str, "market_stats": list, "market_takeaway": str,
             "competition": list, "competition_takeaway": str, "strategy_takeaway": str, "payment_takeaway": str,
@@ -91,7 +93,7 @@ def load_content(R):
                 problems.append(f'deck.{key} uses the icon "{item[n]}"; use one of: {", ".join(sorted(ICONS))}')
     if problems:
         raise DeckError("The deck content isn't complete: " + "; ".join(problems) + ".")
-    return c
+    return prose.title_labels(c, DECK_LABELS)
 
 
 def _fill(value, values):

@@ -111,6 +111,22 @@ def parse_text(text):
         raise HandoffError(f"The CMA handoff block isn't valid JSON: {e.msg}.") from None
 
 
+CLIENT_KEYS = ("subject", "comps", "market", "offer_plan")  # what the offer skills can show a client
+
+
+def linked(data, args):
+    """For render.main(linked=...): the handoff named by --cma, its client-facing parts only, so its text gets the same
+    wording check as the data file. A file that can't be read is left to the skill, which says why."""
+    path = args.get("cma")
+    if not path:
+        return []
+    try:
+        h = load(path)
+    except (OSError, ValueError):
+        return []
+    return [("cma", {k: h[k] for k in CLIENT_KEYS if k in h})]
+
+
 def load(path):
     """A handoff from a .cma.json file, or from a markdown/text file that contains the block."""
     with open(path, encoding="utf-8") as f:

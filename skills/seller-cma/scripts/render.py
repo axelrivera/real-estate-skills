@@ -11,6 +11,7 @@ computed by compute.py, never typed, so the PDF and the deck always agree. Print
 then layout notes and checks on stderr.
 """
 import html
+import json
 import os
 import sys
 from datetime import date
@@ -366,9 +367,29 @@ def page_checks(pages, L=None):
     return checks
 
 
+# Label fields the model types, put in Title Case before the build (shared/prose.py title_labels); the deck's are
+# fixed when it's read (deck.DECK_LABELS)
+LABEL_FIELDS = ("**.heading", "summary_page.label", "summary_page.key_stats[][1]", "summary_page.first_steps[][0]",
+                "pricing.strategies[].label", "comps.cards[].adjustments[].label")
+
+
+def deck_file(data, args):
+    """For render.main(linked=...): the deck wording when report.json's `deck` names a file, so it gets the same
+    wording check as report.json. A missing or broken file is left to deck.py, which says why."""
+    path = data.get("deck")
+    if not isinstance(path, str):
+        return []
+    try:
+        with open(path, encoding="utf-8") as f:
+            return [("deck", json.load(f))]
+    except (OSError, ValueError):
+        return []
+
+
 def main(argv=None):
     return render.main(build, formats=("pdf", "pptx"), argv=argv, default="pdf",  # the deck only when asked for
-                       errors=(compute.ReportError, deck.DeckError, compute.mls.ExportError))
+                       errors=(compute.ReportError, deck.DeckError, compute.mls.ExportError), placeholders=True,
+                       labels=LABEL_FIELDS, linked=deck_file)
 
 
 if __name__ == "__main__":

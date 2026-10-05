@@ -160,7 +160,8 @@ def options(ap):
 
 def main(argv=None):
     return render.main(build, formats=("pdf",), argv=argv, extra_args=options,
-                       errors=(compute.NetSheetError, handoff.HandoffError))
+                       errors=(compute.NetSheetError, handoff.HandoffError),
+                       labels=("scenarios[].label", "costs.other[].label", "costs.other_payoffs[].label"), linked=handoff.linked)
 
 
 if __name__ == "__main__":

@@ -31,8 +31,10 @@ def check(path):
     problems += [f"Missing {f}." for f in agent["errors"]]
     problems += agent["warnings"]  # invalid color codes, numbers written without quotes
     colors, warnings = {}, []
-    # FH-106: every skill writes in this voice and prints these disclaimers, so they get the render-time check
-    for field, why in prose.issues({"voice": agent["voice"], "disclaimers": agent["disclaimers"]}):
+    # FH-106: every skill writes in this voice and prints these disclaimers, so they get the render-time check (em dashes,
+    # fair housing, tool words: shared/prose.py PROFILE_RULES)
+    sections = {"voice": agent["voice"], "disclaimers": agent["disclaimers"]}
+    for field, why in prose.issues(sections, rules=prose.PROFILE_RULES):
         problems.append(f"{field[2:].capitalize()} section: {why}")
     # CORE-27: the agent's own word for a color ("Gold"), from the comment beside it in the profile.
     # CORE-102: 3- or 6-digit codes, quoted or not, with or without the #.

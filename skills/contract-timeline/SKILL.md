@@ -18,7 +18,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Labels in Title Case:** headings, column headers, row names, tiles, legend entries, card and slide titles. Sentences, notes and table values stay sentence case.
 - **Names, not pronouns.** In chat and in notes, call a client by name or "the buyer" / "the seller"; never infer a pronoun from a name.
 - **Contract support.** Only Florida FAR/BAR contracts (AS IS and Standard, with their CR-7 riders and addenda) are fully supported. For any other contract the script output has `support: "best_effort"` and the line to use in `chat_notes`: say it once in chat, in your own short words. The same goes for a note that a FAR/BAR contract isn't the revision the rules were checked against. Never put either in a PDF, calendar file, worksheet or markdown report.
-- **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check. It can't see chat replies, so the rules above still apply there.
+- **`render.py` checks the data file first** (and any deck, CMA or profile file it reads) and stops on an em dash in a sentence, a clear fair-housing red flag, or tool words, data keys, ISO dates or jargon in client text (`references/client-wording.md`), listing every field at once. Rewrite each field; don't work around the check. Labels are put in Title Case for you. It can't see chat replies, so the rules above still apply there.
 
 ## 1. Read the Executed Documents
 
