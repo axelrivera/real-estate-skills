@@ -380,6 +380,7 @@ class Printed(unittest.TestCase):
                 checks = deck.build_pptx(D, os.path.join(tmp, "deck.pptx"))
                 self.assertTrue(os.path.exists(os.path.join(tmp, "deck.pptx")))
                 self.assertEqual([c for c in checks if "reaches the footer" in c or "above the footer" in c], [])
+                self.assertEqual([c for c in checks if "text overlaps" in c], [])
 
 
 if __name__ == "__main__":

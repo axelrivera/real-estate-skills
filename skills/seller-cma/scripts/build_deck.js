@@ -100,7 +100,33 @@ async function icon(name, color, size = 256) {
   const BOTTOM = FOOT - 0.1;        // no text box on a content slide reaches past this
   let n = 0;
   const notes = (s, text) => { if (text) s.addNotes(text); };
-  const addSlide = name => { slideNo += 1; where = name; return pres.addSlide(); };
+  // Every text a slide draws is recorded where its words land (measured with the Arial metrics above: alignment and
+  // anchor included, not the box), and footer() checks that no two overlap: a construction error, named on stderr.
+  const inkOf = (text, o) => {
+    const str = Array.isArray(text) ? text.map(r => r.text).join('') : String(text);
+    const size = o.fontSize || 18, bold = !!o.bold || (Array.isArray(text) && text.some(r => r.options && r.options.bold));
+    const k = lineCount(str, size, o.w, bold), lines = Number.isFinite(k) ? k : 1;
+    const tw = lines > 1 ? o.w : Math.min(o.w, textW(str, size, bold) / 1.04);
+    const th = Math.min(o.h, lines * size * 1.1 / 72);
+    const x = o.align === 'right' ? o.x + o.w - tw : o.align === 'center' ? o.x + (o.w - tw) / 2 : o.x;
+    const y = o.valign === 'top' ? o.y : o.valign === 'bottom' ? o.y + o.h - th : o.y + (o.h - th) / 2;
+    return { str, x0: x, y0: y, x1: x + tw, y1: y + th };
+  };
+  const addSlide = name => {
+    slideNo += 1; where = name;
+    const s = pres.addSlide(), raw = s.addText.bind(s);
+    s.__ink = [];
+    s.addText = (text, o) => { if (o && o.w && o.h && String(Array.isArray(text) ? text.map(r => r.text).join('') : text).trim()) s.__ink.push(inkOf(text, o)); return raw(text, o); };
+    return s;
+  };
+  const overlaps = s => {
+    const ink = s.__ink || [], tol = 0.015;
+    for (let i = 0; i < ink.length; i++) for (let j = i + 1; j < ink.length; j++) {
+      const a = ink[i], b = ink[j];
+      if (Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) > tol && Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) > tol)
+        checks.push(`slide ${slideNo} (${where}): text overlaps: "${a.str.slice(0, 40)}" and "${b.str.slice(0, 40)}".`);
+    }
+  };
   // Text at the size fit() chose; o takes fit's options (size, min, lines, oneLineMin, what) and pptxgenjs's. A box
   // that would reach the footer is a check, measured, never assumed.
   const tx = (s, text, o) => {
@@ -113,13 +139,20 @@ async function icon(name, color, size = 256) {
   };
 
   const footer = s => {
+    overlaps(s);
     n += 1;
     s.addText(D.footer, { x: M, y: FOOT, w: 7.5, h: 0.25, fontFace: FONT, fontSize: 8, color: MUTED, margin: 0, isTextBox: true });
     s.addText(String(n), { x: W - M - 0.5, y: FOOT, w: 0.5, h: 0.25, fontFace: FONT, fontSize: 8, color: MUTED, align: 'right', margin: 0, isTextBox: true });
   };
+  // Returns where the heading ends (the subtitle's measured bottom), so what a slide draws under it starts below it
   const title = (s, t, sub) => {
     tx(s, t, { x: M, y: 0.32, w: W - 2 * M, h: 0.62, size: 26, min: 20, bold: true, color: INK, valign: 'top', what: 'slide title' });
-    if (sub) tx(s, sub, { x: M, y: 0.92, w: W - 2 * M, h: 0.36, size: 13, min: 11, color: MUTED, what: 'subtitle' });
+    if (!sub) return 0.94;
+    // the box is as tall as its measured text, so nothing drawn under it can overlap the words
+    const y = 0.92, w = W - 2 * M, size = fit(sub, w, 0.36, { size: 13, min: 11, what: 'subtitle' });
+    const h = Math.min(0.36, textH(sub, size, w, false));
+    s.addText(sub, { x: M, y, w, h, fontFace: FONT, fontSize: size, color: MUTED, valign: 'top', margin: 0, isTextBox: true });
+    return y + h;
   };
   const circleIcon = async (s, name, x, y, d = 0.5, bg = BRAND, fg = ON) => {
     s.addShape(pres.shapes.OVAL, { x, y, w: d, h: d, fill: { color: bg }, line: { color: bg } });
@@ -220,9 +253,10 @@ async function icon(name, color, size = 256) {
 
   // 5. Comps dot plot (shapes, so the supported range and the recommendation share one axis; ticks named by deck.py)
   {
-    const s = content('comparable sales'); title(s, T.deck_comps_title, T.deck_comps_sub);
+    const s = content('comparable sales'), head = title(s, T.deck_comps_title, T.deck_comps_sub);
     const comps = [...D.comps].sort((a, b) => b.adjusted - a.adjusted), A = D.dot;
-    const px = 4.3, pw = 5.0, top = 1.55, rowH = comps.length > 5 ? 0.42 : 0.5;
+    // the recommended-price label sits 0.5 above the plot: the plot starts low enough that it clears the subtitle
+    const px = 4.3, pw = 5.0, top = Math.max(1.55, head + 0.06 + 0.5), rowH = comps.length > 5 ? 0.42 : 0.5;
     const X = v => px + (v - A.lo) / (A.hi - A.lo) * pw;
     const plotH = rowH * comps.length;
     s.addShape(pres.shapes.RECTANGLE, { x: X(A.low), y: top - 0.1, w: X(A.high) - X(A.low), h: plotH + 0.2, fill: { color: TINT }, line: { color: TINT } });
