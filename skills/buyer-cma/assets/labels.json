@@ -74,7 +74,7 @@
  "pay_hoa": "HOA / CDD",
  "pay_total": "Estimated Monthly Total",
  "pay_if": "If {short} Instead",
- "pay_note": "Assumes a 30-year fixed rate of {rate}%, insurance of {ins} a year, private mortgage insurance of about {pmi}% a year at {pmi_down}% down (an estimate by down payment: less with more down, none from 20%), and FHA mortgage insurance of {mip}% a year with the {ufmip}% upfront premium added to the loan. These are estimates, not loan quotes. Every $10,000 off the price lowers the payment by roughly {per10k} a month.",
+ "pay_note": "Assumes a 30-year fixed rate of {rate}%, insurance of {ins} a year{ins_basis}, private mortgage insurance of about {pmi}% a year at {pmi_down}% down (an estimate by down payment: less with more down, none from 20%), and FHA mortgage insurance of {mip}% a year with the {ufmip}% upfront premium added to the loan. These are estimates, not loan quotes. Every $10,000 off the price lowers the payment by roughly {per10k} a month.",
  "h_watch": "Things to Look Into",
  "h_questions": "Questions for the Listing Agent",
  "h_method": "How This Was Prepared",
@@ -134,7 +134,7 @@
  "cr_seller_cost_known": "about {amt} in {what}, plus their listing fee's share",
  "cr_seller_cost_fee": "their listing fee's share",
  "cr_cc_est": "your lender's estimate of {amt}",
- "cr_cc_pct": "about {pct}% of the price (a placeholder until your lender's estimate)",
+ "cr_cc_pct": "about {pct}% of the price{prepaids} (an estimate until your lender's Loan Estimate)",
  "cr_cc_taxes": ", plus the {names} on the loan ({amt} at {price})",
  "cr_buydown": "<strong>Or use the credit to lower your payment instead.</strong> A {credit} credit put toward a temporary 2-1 rate buydown at {price} (which costs about {cost}) would make your payment about {y1} in year one and {y2} in year two, then {full} after that. That trades cash-at-closing help for two years of lower payments.",
  "cr_buydown_short": "<strong>Or use the credit to lower your payment instead.</strong> A 2-1 rate buydown at {price} would cost about {cost}, more than the {credit} credit, so the seller would need to contribute more or you would cover the difference.",
@@ -160,7 +160,7 @@
  "basis_opening": " (Opening Offer)",
  "basis_walk_away": " (Walk-Away)",
  "sum_tax_yours_est": "Your Tax Bill if {short} (Estimate), {homestead}",
- "pay_tax_est":"Property Taxes ({short}, {homestead}, Estimate)",
+ "pay_tax_est": "Property Taxes ({short}, {homestead}, Estimate)",
  "pay_tax_which_higher": "The property tax uses the {short} bill, the higher of the two, until the parcel's taxing district is confirmed.",
  "pay_tax_which": "The property tax uses the {short} bill until the parcel's taxing district is confirmed.",
  "pay_tax_which_rate": "The property tax is an estimate at {basis}: there's no millage for this area yet.",
@@ -210,6 +210,12 @@
   "cr_cc_est",
   "pay_cc_note",
   "pay_cc_taxes",
-  "pay_cc_lender"
- ]
+  "pay_cc_lender",
+  "ins_estimated",
+  "cc_prepaids",
+  "cr_cc_given"
+ ],
+ "ins_estimated": " (an estimate for this home's price and age, not a quote)",
+ "cc_prepaids": ", prepaid items included",
+ "cr_cc_given": "{pct}% of the price, as given"
 }

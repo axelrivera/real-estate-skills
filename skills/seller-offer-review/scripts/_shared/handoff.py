@@ -26,10 +26,12 @@ VALUE_KEYS = ("low", "high", "midpoint")
 # the offer file doesn't say: the tax the CMA computed (millage and homestead for the buyer's payment, the current bill
 # for the seller's proration), the flood zone (a FEMA code only), HOA dues and the roof year. CMA-328: the listing's
 # days on market (`dom`: active days since the last sale, counted on `as_of`, a number) and how many price cuts since then (`price_cuts`, an integer count), for
-# the buyer's offer outlook.
+# the buyer's offer outlook. `hoa_frequency` (monthly, quarterly, semiannual or annual): how the association bills the
+# dues, so the HOA rider shows the amount as billed.
 NUMBER = (int, float)
 SUBJECT_OPTIONAL = {"annual_tax": NUMBER, "school_mills": NUMBER, "total_mills": NUMBER, "homestead": bool,
-                    "flood_zone": str, "hoa_monthly": NUMBER, "roof_year": int, "dom": NUMBER, "price_cuts": int}
+                    "flood_zone": str, "hoa_monthly": NUMBER, "hoa_frequency": str, "roof_year": int, "dom": NUMBER,
+                    "price_cuts": int}
 _FEMA = re.compile(r"^\s*(A99|AE|AH|AO|AR|A|VE|V|X500|X|B|C|D)\b", re.I)
 
 

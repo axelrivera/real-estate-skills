@@ -8,7 +8,7 @@
 .hero .hr dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;padding-top:4px;border-top:1px solid var(--brand-rule)}
 .hero .hr dt{font-size:7pt;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:1px}
 .hero .hr dd{margin:0}
-.ctr td.val{color:var(--good-strong);font-weight:800;font-size:9.6pt}
+.ctr td.val{color:var(--brand-strong);font-weight:800;font-size:9.6pt}
 .ctr td.val small{display:block;font-size:7.4pt;font-weight:400;color:var(--muted)}
 .bandt td{text-align:center;font-size:8.4pt;vertical-align:middle} .bandt td:first-child{text-align:left}
 /* outlook bands: Strong / Competitive / At risk / Unlikely */
@@ -26,12 +26,14 @@
 .hero .hl.backup{border-left-color:var(--brand-deep)} .hero .hl.backup .big{color:var(--brand-deep)}
 
 /* status text and cells */
-.gt{color:var(--good-strong);font-weight:700} .rt{color:var(--risk-strong);font-weight:700}
+.gt{color:var(--good-strong);font-weight:700} .rt{color:var(--risk-strong);font-weight:700} .ct{color:var(--caution-strong);font-weight:700}
 .hit{color:var(--good-strong)} .midt{color:var(--caution-strong)} .lot{color:var(--risk-strong)}
 /* status cells: a thin left mark in the status color, no fill */
 td.good{box-shadow:inset 3px 0 0 var(--good-base)} td.caution{box-shadow:inset 3px 0 0 var(--caution-base)} td.risk{box-shadow:inset 3px 0 0 var(--risk-base)}
 td.best{color:var(--good-strong);font-weight:700} td.worst{color:var(--risk-strong);font-weight:700}
+td.thin{color:var(--caution-strong);font-weight:700}
 td.neg{color:var(--muted)}
+th.nw{white-space:nowrap} /* an option name ("Lower-Cost") stays on one line */
 td.hl{color:var(--brand-strong);font-weight:700} th.hl{color:var(--brand-strong);border-bottom-width:3px}
 tr.total td{font-weight:700;border-top:2px solid var(--brand)}
 tr.total2 td{font-weight:800;font-size:9.4pt;border-top:2px solid var(--brand);border-bottom:2px solid var(--brand)}
@@ -46,15 +48,15 @@ tr.alt td{color:var(--muted);font-size:7.8pt}
 .s3{color:var(--caution-strong)} .s2{color:var(--risk-strong)}
 .s1{color:var(--risk-strong);font-weight:800}
 
-/* counter / plan box: green because it is the recommended move. Outlined, no fills */
-.ctr{border:2px solid var(--good-base);border-radius:6px;overflow:hidden;margin:0 0 7px;break-inside:avoid}
-.ctrh{color:var(--good-strong);border-bottom:1.5px solid var(--good-base);padding:5px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+/* the recommended offer box: the brand color, never a status color (the outlook pill carries the status). Outlined, no fills */
+.ctr{border:2px solid var(--brand);border-radius:6px;overflow:hidden;margin:0 0 7px;break-inside:avoid}
+.ctrh{color:var(--brand-strong);border-bottom:1.5px solid var(--brand);padding:5px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .ctrh span{font-size:12pt;font-weight:900;letter-spacing:.06em;white-space:nowrap} .ctrh em{font-style:normal;font-size:8.8pt;text-align:right} .ctrh em b{font-size:10.5pt}
-.ctr th{color:var(--good-strong);border-bottom:1px solid var(--good-border);font-size:7.6pt;text-transform:uppercase;letter-spacing:.04em}
+.ctr th{color:var(--brand-strong);border-bottom:1px solid var(--brand-rule);font-size:7.6pt;text-transform:uppercase;letter-spacing:.04em}
 .ctr td{padding:3px 8px;font-size:9pt} .ctr td.was{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--grey)}
-.ctr td.arr{color:var(--good-base);font-weight:800;text-align:center;padding:3px 0} .ctr td.now{color:var(--good-strong);font-weight:800;font-size:9.6pt}
-.ctr td.why2{font-size:7.9pt;color:var(--muted)} .ctr td{border-top-color:var(--good-border)}
-.ctr .note{padding:4px 10px;font-size:7.9pt;color:var(--muted);border-top:1px solid var(--good-border)}
+.ctr td.arr{color:var(--brand);font-weight:800;text-align:center;padding:3px 0} .ctr td.now{color:var(--brand-strong);font-weight:800;font-size:9.6pt}
+.ctr td.why2{font-size:7.9pt;color:var(--muted)} .ctr td{border-top-color:var(--brand-rule)}
+.ctr .note{padding:4px 10px;font-size:7.9pt;color:var(--muted);border-top:1px solid var(--brand-rule)}
 .ctr.cmp{border-color:var(--brand-deep)} .ctr.cmp .ctrh{color:var(--brand-deep);border-bottom-color:var(--brand-deep)}
 .plan td.act{font-weight:800} .plan td{font-size:8.8pt;vertical-align:middle}
 .plan td.act.good{color:var(--good-strong);box-shadow:none} .plan td.act.caution{color:var(--caution-strong);box-shadow:none}
@@ -74,7 +76,7 @@ tr.alt td{color:var(--muted);font-size:7.8pt}
 .meter{height:9px;background:var(--brand-rule);border-radius:3px;margin-top:4px;overflow:hidden}
 .bar{height:100%} .bar.hi{background:var(--good-base)} .bar.mid{background:var(--caution-base)} .bar.lo{background:var(--risk-base)}
 table.facts2 td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt}
-tr.recrow td{font-weight:700} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--good-base)}
+tr.recrow td{font-weight:700} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .nextstep{margin-top:6px;border:1.5px solid var(--brand-deep);padding:5px 10px;border-radius:4px;font-size:8.6pt} .nextstep b:first-child{color:var(--brand-deep)}
 .prelim,.cnote{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
 .qs td:first-child{color:var(--brand-ink);font-weight:700;text-align:center}

@@ -35,6 +35,9 @@ thead{display:table-header-group}
 th{padding:5px 8px;white-space:nowrap;font-size:9.5pt}
 td{padding:5px 8px}
 td.n,th.n{text-align:right;white-space:nowrap}
+/* tables whose column headers carry long labels (the payment scenarios, the credit splits): headers wrap so the
+   table fits the page instead of being clipped; the numbers below stay on one line */
+.tbl.wrap-head th{white-space:normal;vertical-align:bottom}
 tr.subj td{color:var(--subject);font-weight:700} tr.subj td:first-child{box-shadow:inset 3px 0 0 var(--subject)}
 tr.total td{font-weight:700;border-top:2px solid var(--brand)}
 tr.alt td{color:var(--muted);font-size:8.5pt}
@@ -102,7 +105,7 @@ h2,h3{break-after:avoid}
 tr{break-inside:avoid}
 .kg{break-inside:avoid;margin-top:14px}
 .kg.sec{margin-top:22px}
-.kg.big{break-inside:auto}
+.kg.big,.kg.flow{break-inside:auto}
 .kg>h2:first-child,.kg>h3:first-child{margin-top:0}
 .pb{break-before:page}
 

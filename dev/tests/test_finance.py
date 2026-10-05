@@ -248,6 +248,31 @@ class AuditMarketMoney(unittest.TestCase):
         self.assertEqual(f.loan_taxes(0, FL), [])
         self.assertEqual(f.loan_taxes(300000, None), [])
 
+    def test_buyer_closing_costs_one_rule(self):
+        """The buyer CMA's and the offer strategy's closing costs: market share + 0.5% prepaids + loan taxes; half for cash."""
+        tx = profiles.load_market(state="TX")
+        self.assertEqual(f.buyer_closing_pct(FL), 0.03)  # Florida 2.5% + prepaids
+        self.assertEqual(f.buyer_closing_pct(FL, cash=True), 0.0125)
+        self.assertEqual(f.buyer_closing_pct(tx), 0.035)  # national 3% + prepaids
+        self.assertEqual(f.buyer_closing_pct(None), 0.035)  # no market: the same national value
+        cc = f.buyer_closing_costs(400000, 380000, FL)
+        self.assertEqual(cc["amount"], 12000 + 1330 + 760)
+        self.assertEqual(cc["source"], "estimate")
+        self.assertEqual(f.buyer_closing_costs(400000, 0, FL, cash=True)["amount"], 5000)  # no loan, no loan taxes
+        self.assertEqual(f.buyer_closing_costs(400000, 380000, FL, pct=0.04)["amount"], 16000)  # the agent's share, as is
+        self.assertEqual(f.buyer_closing_costs(400000, 380000, FL, pct=0.04, amount=9000)["source"], "lender")
+
+    def test_insurance_estimate(self):
+        """CORE-29: market rate x price x age factor, at least the floor; the agent's rate as is."""
+        self.assertEqual(f.insurance_estimate(400000, FL, 2015)["annual"], 3600)  # 0.9%
+        self.assertEqual(f.insurance_estimate(400000, FL, 1998)["annual"], 4500)  # x1.25
+        self.assertEqual(f.insurance_estimate(400000, FL, 1972)["annual"], 5400)  # x1.5
+        self.assertEqual(f.insurance_estimate(300000, FL, 2015)["annual"], 3500)  # Florida's floor
+        self.assertEqual(f.insurance_estimate(300000, None, 2015)["annual"], 2500)  # national floor, 0.6% = $1,800
+        self.assertEqual(f.insurance_estimate(300000, profiles.load_market(state="TX"), 2015)["source"], "market")
+        agent = f.insurance_estimate(300000, FL, 1972, rate=0.005)
+        self.assertEqual((agent["annual"], agent["source"]), (1500, "agent"))  # no floor or age factor on the agent's rate
+
     def test_second_homestead_exemption_starts_above_50000(self):
         low = f.property_tax(60000, FL, school_mills=5, total_mills=15)
         self.assertAlmostEqual(low["annual"], (35000 * 5 + (60000 - 25000 - 10000) * 10) / 1000)  # only $10,000 of it

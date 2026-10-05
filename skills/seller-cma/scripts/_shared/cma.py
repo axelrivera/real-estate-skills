@@ -603,7 +603,7 @@ PAGINATE_JS = """(pageH) => {
   let shift = 0; const moved = [];
   // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
   // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
-  const SAFE = 16;
+  const SAFE = 16, FLOW_ROOM = 0.35;
   for (const el of Array.from(wrap.children)) {
     const r = el.getBoundingClientRect();
     const mt = parseFloat(getComputedStyle(el).marginTop) || 0;
@@ -634,6 +634,19 @@ PAGINATE_JS = """(pageH) => {
       if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
         svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
         el.classList.add('shrunk');
+      } else if (!svg && pageH - pos >= FLOW_ROOM * pageH) {
+        // A table or list block that would leave this much of the page empty runs on instead, whole rows or items
+        // only, once its heading, intro and first few rows fit here (the table's header row repeats on the next page)
+        const tb = el.querySelector('.tbl'), rows = tb ? tb.querySelectorAll('tbody tr') : [];
+        const items = tb ? [] : el.querySelectorAll(':scope > ul > li, :scope > ol > li');
+        const parts = tb ? rows : items, keep = tb ? 3 : 2;
+        if (parts.length >= keep + 2 && pos + parts[keep - 1].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
+          el.classList.add('flow');
+          if (tb) tb.classList.add('brk');
+          const th = tb ? tb.querySelector('thead') : null;
+          // the gap left at the break and the repeated header row, roughly
+          shift += (th ? th.getBoundingClientRect().height : 0) + parts[keep].getBoundingClientRect().height;
+        } else brk = true;
       } else brk = true;
     }
     if (brk) { el.classList.add('pb'); shift += pageH - pos; moved.push((el.innerText || '').split('\\n')[0].slice(0, 50)); }
