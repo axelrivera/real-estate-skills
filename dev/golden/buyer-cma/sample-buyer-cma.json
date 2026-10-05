@@ -536,8 +536,8 @@
   },
   "offer_plan": {
    "opening": 449000,
-   "target_high": 451500,
-   "target_low": 449000,
+   "target_high": 456500,
+   "target_low": 454000,
    "walk_away": 470000
   },
   "posture": "leverage",
@@ -816,7 +816,7 @@
  "offer_plan": {
   "basis": {
    "opening": "below_range",
-   "target": "ratio_up",
+   "target": "floor",
    "walk_away": "median"
   },
   "ladder": [
@@ -837,9 +837,9 @@
   "posture": "leverage",
   "posture_name": "Leverage",
   "posture_suggested": "leverage",
-  "target": 449000,
-  "target_high": 451500,
-  "target_low": 449000,
+  "target": 454000,
+  "target_high": 456500,
+  "target_low": 454000,
   "walk_away": 470000
  },
  "ok": true,

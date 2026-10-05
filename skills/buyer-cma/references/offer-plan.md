@@ -28,10 +28,10 @@ Each step is rounded to $1,000 (half up), and none goes above the asking price:
 | `competitive` | Range middle | Range high |
 | `must_win` | Asking, capped at the range high | Range high |
 
-- **Target:** asking times the recent sale-to-original-list ratio, kept between the opening and the walk-away (halfway between them when the export has no ratio). The target range is the target give or take $2,500, inside the same ends.
+- **Target:** asking times the recent sale-to-original-list ratio (halfway between the opening and the walk-away when the export has no ratio), never under a quarter of the way from the opening to the walk-away (to $1,000, half up) and never above the walk-away, so the plan always leaves room to move up from its opening. The target range is the target give or take $2,500, inside the same ends (its low end never under that quarter mark).
 - **Walk-away** never goes above the range's high from the rule: above the range only through `plan_override`, when the buyer explicitly accepts appraisal-gap risk (say so; the `walk_away_above_range` warning reminds you).
 - **Each step's reason** in the report is the script's, from what set it (the range's bottom, the median, asking when it capped the step). Say what is particular to this home in `posture_reason` or `conditions`, never by retyping a number.
-- **The agent's own numbers:** `plan_override {opening, target_low, target_high, walk_away, reason}` with only the steps the agent chose. The report marks them as the agent's with the reason; the rest stay the rule's (the target is re-set between the agent's ends). The steps must still run low to high.
+- **The agent's own numbers:** `plan_override {opening, target_low, target_high, walk_away, reason}` with only the steps the agent chose. The report marks them as the agent's with the reason; the rest stay the rule's (the target is re-set by the same rule between the agent's ends). The steps must still run low to high.
 - **Credit alternative:** when the buyer is cash-tight, `credit_alt {credit}`: the opening plus that credit, so price minus credit stays the opening. It must match a credit offer. The higher price raises the down payment and closing costs, so it saves less cash than the credit: the script says what it really saves (compute.py's `credit_alt.cash_saved`), never the credit amount as the cash saved.
 - **Conditions:** what the plan assumes (the roof, a failed contract's cause, no competing offers…), so the buyer knows which answers would change it.
 
