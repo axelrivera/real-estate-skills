@@ -71,6 +71,7 @@
  "verdict_caption": "Recommended List Price · Supported Value Range {range}",
  "verdict_caption_reprice": "New List Price · Supported Value Range {range}",
  "line_recommendation": "Recent sales, adjusted to your home, support {low} to {high}, with a median adjusted value of {median}. {price} sits {position}, {vs}.",
+ "line_range_override": "This range is our judgment rather than the standard method's {rule}: {reason}",
  "pos_below": "below the supported range",
  "pos_above": "above the supported range",
  "pos_bottom": "near the bottom of the range",
@@ -369,6 +370,7 @@
  "deck_app_comps_title": "Appendix: Comparable Sales",
  "deck_preliminary": "PRELIMINARY: {why}",
  "_prose": [
+  "line_range_override",
   "sum_expected_value",
   "options_note_net",
   "options_note_cash",

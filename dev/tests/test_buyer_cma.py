@@ -85,13 +85,18 @@ def fha_buyer(cash, credit_alt=False):
     return change
 
 
+TEXAS_CONDITION = {"original": 0, "cosmetic": 5000, "kitchen_only": 15000, "full_renovation": 45000}  # the agent's
+
+
 def six_comps(R):
     """A sixth comp that makes the median a midpoint (not a whole $100)."""
-    extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "bullets": [],
+    levels = cma.condition_values(profiles.load_market(state="FL", county="Seminole"))
+    mine = R["subject"]["condition"]
+    extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "bullets": [], "condition": mine,
              "adjustments": [{"label": "Test", "amount": 0}]}
     R["comps"]["cards"].append(extra)
     mid = sorted(c["sold_price"] - (c.get("seller_concessions") or 0) + sum(a["amount"] for a in c["adjustments"])
-                 for c in R["comps"]["cards"][:-1])[2]
+                 + levels[mine] - levels[c["condition"]] for c in R["comps"]["cards"][:-1])[2]
     extra["sold_price"] = mid + 123
 
 
@@ -151,7 +156,12 @@ class Inputs(unittest.TestCase):
                    lambda R: R["costs"]["payment"].__setitem__("rate", 0.0695),  # a fraction, not 6.95
                    lambda R: R["costs"].__setitem__("transfer_tax_rate", 0.7),  # 0.7 meant 0.7%
                    lambda R: R["costs"]["payment"].__setitem__("tax_jurisdiction_index", 5),
-                   lambda R: R["bottom_line"].pop("low"),
+                   lambda R: R["bottom_line"].__setitem__("low", 455000),  # the script sets the range
+                   lambda R: R.__setitem__("range_override", {"low": 480000, "high": 455000, "reason": "Our call."}),
+                   lambda R: R.__setitem__("range_override", {"low": 455000, "high": 480000}),  # no reason
+                   lambda R: R["comps"]["cards"][0].pop("condition"),
+                   lambda R: R["comps"]["cards"][0]["adjustments"].append({"label": "Updated Kitchen", "amount": 15000}),
+                   lambda R: R["subject"].__setitem__("condition", "renovated"),
                    lambda R: R["offer_plan"].__setitem__("opening", R["offer_plan"]["walk_away"] + 5000),
                    with_events([{"date": "2026-01-16", "change": "relisted?"}]))
         for i, change in enumerate(changes):
@@ -225,8 +235,9 @@ class Warnings(unittest.TestCase):
         _, C, _ = run(lambda R: R["subject"].__setitem__("county", "Hillsborough"))
         self.assertIn("adjustment_scope", C["warning_keys"])
         m = profiles.load_market(state="FL", county="Seminole")  # the built-in partial-update and roof-age rates
-        self.assertEqual((m.get("cma.adjustments.kitchen_only_vs_dated"), m.get("cma.adjustments.baths_only_vs_dated")),
-                         (15000, 10000))
+        levels = m.get("cma.adjustments.condition_levels")
+        self.assertEqual(list(levels), list(cma.CONDITION_LEVELS))  # every level, in ladder order
+        self.assertEqual((levels["kitchen_only"], levels["baths_only"]), (15000, 10000))
         bands = m.get("cma.adjustments.roof_age")
         self.assertEqual([b["value"] for b in bands], [0, -5000, -10000, -15000])
         self.assertEqual(bands[2]["years"], [15, 19])
@@ -237,12 +248,14 @@ class Warnings(unittest.TestCase):
         """A range end past the second-highest or second-lowest adjusted comp, or a range wider than about 6% of the
         median adjusted value, warns."""
         self.assertFalse({"range_wide", "range_one_comp"} & set(warnings()))
-        keys = warnings(lambda R: R["bottom_line"].__setitem__("high", 495000))
+        def override(low, high):
+            return lambda R: R.__setitem__("range_override", {"low": low, "high": high, "reason": "The agent's call."})
+        keys = warnings(override(455000, 495000))
         self.assertEqual(keys.count("range_one_comp"), 1)
         self.assertIn("range_wide", keys)
 
         def wide(R):
-            R["bottom_line"]["low"] = 400000
+            override(400000, 480000)(R)
             R["offer_plan"]["opening"] = 400000
         keys = warnings(wide)
         self.assertIn("range_wide", keys)
@@ -440,6 +453,7 @@ class Taxes(unittest.TestCase):
     def test_other_states(self):
         def texas(R):
             R["subject"].update(state="TX", county="Travis")
+            R["comps"]["condition_values"] = TEXAS_CONDITION  # no built-in condition values outside Florida
             R.pop("export")
             for j in R["costs"]["taxes"]["jurisdictions"]:
                 j.pop("school_mills", None), j.pop("total_mills", None), j.pop("district", None)
@@ -611,7 +625,7 @@ class Credit(unittest.TestCase):
     def test_competing_listing_position_is_computed(self):
         """A competing listing's adjusted price and its place in the range come from the script, in its note."""
         def pool(R):
-            R["bottom_line"].update(low=435000, high=450000)
+            R["range_override"] = {"low": 435000, "high": 450000, "reason": "The agent leans on the pool sales."}
             R["offer_plan"].update(opening=435000, target_low=440000, target_high=444000, walk_away=446000)
             R["offer_plan"].pop("credit_alt", None)
             R["competition"]["rows"][0][2] = 424500

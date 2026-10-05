@@ -102,6 +102,10 @@ RETIRED = {
     "summary_page.key_stats": "the script picks page 1's key numbers",
     "bottom_line.paragraph": "the script says where asking sits and the median: write why the range sits where it does in bottom_line.why",
     "bottom_line.midpoint": "the script computes the midpoint",
+    "bottom_line.low": "the script sets the range from the adjusted comps (method.md, The Range): leave it out, or put "
+                       "the agent's own range in range_override {low, high, reason}",
+    "bottom_line.high": "the script sets the range from the adjusted comps (method.md, The Range): leave it out, or put "
+                        "the agent's own range in range_override {low, high, reason}",
     "history.heading": "the script writes the history's heading from its counts",
     "history.intro": "the script writes the history's counts: write what they add up to in history.takeaway",
     "history.after": "write what the history adds up to (no figures) in history.takeaway",
@@ -131,7 +135,7 @@ RETIRED_EACH = {
 # count, price, percent and date itself, so a figure typed here could disagree with the one beside it.
 JUDGMENT = (
     "subject.summary", "summary_page.label", "summary_page.headline", "summary_page.why[]",
-    "summary_page.check_first[][]", "summary_page.next_step", "bottom_line.why", "history.takeaway",
+    "summary_page.check_first[][]", "summary_page.next_step", "bottom_line.why", "range_override.reason", "history.takeaway",
     "history.events[].note", "offer_plan.why_opening", "offer_plan.why_target", "offer_plan.why_walk_away",
     "offer_plan.conditions", "offer.heading", "offer.bullets[]", "comps.intro", "comps.method_note", "comps.lean",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
@@ -175,10 +179,14 @@ def schema_errors(R):
     for pattern in JUDGMENT:
         for path, v in _walk(R, _parts(pattern), ""):
             if isinstance(v, str):
-                found = prose.figures(re.sub(r"<[^>]+>", " ", v)) + re.findall(r"\{\w*\}", v)
+                text = re.sub(r"<[^>]+>", " ", v)
+                found = prose.figures(text) + re.findall(r"\{\w*\}", v)
                 if found:
                     out.append(f"{path}: has {', '.join(repr(x) for x in found)} → the report prints every count, price, "
                                "percent and date itself; write this in words, without the figure.")
+                who = prose.people(text)
+                if who:
+                    out.append(f"{path}: has {', '.join(repr(x) for x in who)} → {prose.PEOPLE_FIX}.")
     return out
 
 
@@ -792,25 +800,38 @@ def comp_count_warnings(cards):
             "you can, and say so in the report."] if len(cards) < 3 else []
 
 
-def prepare_comps(R, homes, warn):
-    """Time adjustments by the shared rule, then each adjusted value from its parts (cma.derive_comps), the outlier
-    and adjustment warnings. Returns (time info, the market split)."""
+def prepare_comps(R, homes, warn, market):
+    """Condition and time adjustments by the shared rules (the condition ladder, the market's time rate), then each
+    adjusted value from its parts (cma.derive_comps), the outlier and adjustment warnings. Returns (time info, the
+    market split, condition info)."""
     for i, c in enumerate(R["comps"]["cards"]):
         if not isinstance(c, dict) or not c.get("address") or not isinstance(c.get("adjustments"), list):
             raise ReportError(f"comps.cards[{i}] needs address, sold_price, seller_concessions and adjustments "
                               "([{label, amount}], empty when there are none): the script adds them up.")
     split = cma.default_split(R, homes)
+    cond_errors, cond_info = cma.apply_condition_adjustments(R["comps"], R["subject"], market)
     errors, info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
-    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + errors
+    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + cond_errors + errors
+    if errors:
+        raise ReportError(stop_message(errors))
     try:
         warn("derive_comps", *cma.derive_comps(R["comps"]))
     except ValueError as e:
         raise ReportError(str(e)) from e
-    if errors:
-        raise ReportError(stop_message(errors))
     warn("time_undated", *cma.time_warnings(info))
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
-    return info, split
+    return info, split, cond_info
+
+
+def supported_range(R, values, market):
+    """The range by the shared rule (cma.choose_range), or the agent's range_override, written into the working copy's
+    bottom_line so every figure after it uses the one range. Returns resolve_range's dict."""
+    rng, errors = cma.resolve_range(values, market, R.get("range_override"))
+    if errors:
+        raise ReportError(stop_message(errors))
+    bl = R.setdefault("bottom_line", {})
+    bl["low"], bl["high"] = rng["low"], rng["high"]
+    return rng
 
 
 def export_row(homes, address):
@@ -964,9 +985,12 @@ def comps_first(R, market, homes=()):
         raise ReportError(stop_message(errors))
     warnings, warning_keys, warn = _warner()
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
-    prepare_comps(R, homes, warn)
+    prepare_comps(R, homes, warn, market)
     s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
+    rng = supported_range(R, values, market)
+    for key, text in cma.range_warnings(rng, values, market):
+        warn(key, text)
     shown = median_rounded(median_adjusted, len(values))
     hist, hwarn = history_stats(R, R.get("as_of") or date.today().isoformat())
     for key, text in hwarn:
@@ -974,8 +998,10 @@ def comps_first(R, market, homes=()):
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
     return {
         "ok": True, "stage": "comps",
-        "next": "Set bottom_line (the range around the median) and offer_plan, add costs, then run compute.py again "
+        "next": "Write bottom_line.why and the offer_plan around this range, add costs, then run compute.py again "
                 "for the payments, the credit scenarios and the handoff.",
+        "range": {"low": rng["low"], "high": rng["high"], "display": fmt.range(rng["low"], rng["high"]),
+                  "override": rng["override"]},
         "subject": {"address": s["address"], "list_price": s["list_price"], "list_price_display": money(s["list_price"])},
         "median_adjusted": median_adjusted, "median_adjusted_display": money(shown),
         "adjusted_min": min(values), "adjusted_max": max(values),
@@ -1122,7 +1148,7 @@ def compute(R, market, homes):
     if errors:
         raise ReportError(stop_message(errors))
     default_prices(R)
-    _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
+    _require(R, "subject.address", "subject.list_price", "subject.sqft",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
              "costs.payment.price", "costs.payment.rate")
     try:
@@ -1142,7 +1168,7 @@ def compute(R, market, homes):
                           "position of the jurisdiction the payment uses in costs.taxes.jurisdictions.")
     if not R["costs"]["payment"].get("scenarios"):
         raise ReportError("costs.payment.scenarios needs at least one {type, down_pct}.")
-    s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
+    s, bl, op = R["subject"], R.setdefault("bottom_line", {}), R["offer_plan"]
     ladder = [("opening", op["opening"]), ("target_low", op.get("target_low")), ("target_high", op.get("target_high")),
               ("walk_away", op["walk_away"])]
     ladder = [(k, v) for k, v in ladder if v is not None]
@@ -1150,13 +1176,12 @@ def compute(R, market, homes):
         if v1 > v2:
             raise ReportError(f"offer_plan.{k1} ({money(v1)}) is above offer_plan.{k2} ({money(v2)}): the plan runs "
                               "opening, then target, then walk-away, from low to high.")
-    if bl["low"] > bl["high"]:
-        raise ReportError("bottom_line.low is above bottom_line.high.")
     as_of = R.get("as_of") or date.today().isoformat()
     warnings, warning_keys, warn = _warner()
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
-    time_info, split = prepare_comps(R, homes, warn)
+    time_info, split, cond_info = prepare_comps(R, homes, warn, market)
     cards = R["comps"]["cards"]
+    range_info = supported_range(R, [c["adjusted"] for c in cards], market)
     comp_rows = (R.get("competition") or {}).get("rows") or []
     for i, r in enumerate(comp_rows):
         if not isinstance(r, list) or len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool)
@@ -1304,6 +1329,10 @@ def compute(R, market, homes):
     C["subject"] = subject_model(s)
     C["bottom_line"] = {"line": t("line_bottom", ask=money(s["list_price"]), position=L[pos_key],
                                   median=C["median_adjusted_display"]), "why": bl.get("why", "")}
+    rng["override"] = range_info["override"]
+    if range_info["override"]:  # the agent's own range, said once beside it, with the rule's for comparison
+        C["bottom_line"]["line"] += " " + t("line_range_override", rule=fmt.range(range_info["rule_low"],
+                                            range_info["rule_high"]), reason=end_sentence(range_info["reason"]))
     C["history"] = hist
     C["history_section"] = history_section(hist, as_of)
     if C["history_section"]:
@@ -1326,14 +1355,15 @@ def compute(R, market, homes):
     comps = R["comps"]
     C["comps"] = {
         "intro": comps.get("intro", ""), "count_line": comps_count_line(cards, homes, split),
-        "method": cma.adjustment_summary(cards, time_info, money), "method_note": comps.get("method_note", ""),
+        "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": comp_cards(cards, homes), "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), money(r[3])] for r in comps["summary_rows"]],
         "subject_row": [L["subject_row"], money(s["list_price"]), fmt.EMPTY, f'{L["range_word"]} {rng["display_k"]}']}
     C["comps_table"] = [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in comps["summary_rows"]]
     C["time_adjustment"] = time_info
-    C["adjustment_summary"] = cma.adjustment_summary(cards, time_info, money)
+    C["adjustment_summary"] = cma.adjustment_summary(cards, time_info, money, cond_info)
+    C["condition"] = cond_info
     C["scatter"] = scatter_model(R, s, pts, fit, bl) if pts else None
     C["trend"] = ({"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                    "r2_key": mls.r2_key(fit["r2"])} if fit else None)

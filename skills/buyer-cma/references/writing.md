@@ -12,7 +12,7 @@ Every number gets a sentence saying what it means for this buyer. Short sentence
 
 Page 1 summary → the home → bottom line (+ history, offer plan, negotiating points) → comps → scatterplot → competition → market → costs (taxes, insurance, payment, price vs. credit) → watch items and questions → method.
 
-- **Every figure is the script's.** Each count, price, percent, date and comparison in the report is a sentence the script writes from the numbers (where asking sits, the history's counts, the comps' dates, the market table, the costs). What you write is the judgment around them, with no figures: "the spring sales", "repeated price cuts", "most sellers here help with costs". compute.py stops on a figure in a judgment field and names it.
+- **Every figure is the script's.** Each count, price, percent, date and comparison in the report is a sentence the script writes from the numbers (where asking sits, the history's counts, the comps' dates, the market table, the costs). What you write is the judgment around them, with no figures: "the earlier sales", "repeated price cuts", "most sellers here help with costs". compute.py stops on a figure in a judgment field and names it.
 - **Bottom line:** `why`, 2–3 sentences: why the range sits where it does and which sales it leans on. The script states the range, where asking sits in it and the median.
 - **History:** `takeaway`: what the history adds up to and the question it raises. The script writes the heading, the counts and the table, so never restate a count.
 - **Credit and cash:** the script says what each $5,000 of credit saves at closing and adds a month, and what the credit alternative saves; `takeaway` says which trade-off suits this buyer.

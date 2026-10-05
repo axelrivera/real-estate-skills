@@ -1,6 +1,8 @@
 """shared/cma.py comp rules: the supported range width, time adjustments and the adjustment summary (buyer-cma and
 seller-cma share them)."""
 import os
+import random
+import statistics
 import sys
 import unittest
 
@@ -45,6 +47,117 @@ class RangeWidth(unittest.TestCase):
             self.assertEqual(hi - lo, width)
 
 
+class RangeRule(unittest.TestCase):
+    """The range is the script's, by one rule, for any comps (generated): the same comps give the same range; it is
+    the normal width, ends on $5,000, centered on the median within a rounding step unless pulled in, and it passes
+    every range check."""
+
+    def test_rule_properties(self):
+        rng = random.Random(11)
+        for _ in range(400):
+            base = rng.uniform(150_000, 2_500_000)
+            values = [round(base * rng.uniform(0.85, 1.15)) for _ in range(rng.randint(3, 8))]
+            market = {"cma.range_width_pct": rng.choice((0.05, 0.06, 0.08))} if rng.random() < 0.5 else None
+            lo, hi = cma.choose_range(values, market)
+            self.assertEqual((lo, hi), cma.choose_range(list(reversed(values)), market))  # order never matters
+            median = statistics.median(values)
+            low_ok, high_ok, target = cma.range_bounds(values, market)
+            self.assertEqual(hi - lo, target)
+            self.assertEqual((lo % cma.RANGE_STEP, hi % cma.RANGE_STEP), (0, 0))
+            self.assertTrue(low_ok <= lo and hi <= high_ok, (values, lo, hi))
+            if low_ok < lo and hi < high_ok:  # not pulled in: centered within half a step
+                self.assertLessEqual(abs((lo + hi) / 2 - median), cma.RANGE_STEP / 2)
+            self.assertEqual(cma.range_warnings({"low": lo, "high": hi}, values, market), [])
+
+    def test_half_up_never_banker(self):
+        """A median exactly between two $5,000 steps rounds up, the same way every time ($445,000 at $25,000 wide)."""
+        self.assertEqual(cma.choose_range([430000, 440000, 445000, 450000, 460000], None), (435000, 460000))
+
+    def test_override(self):
+        values = [431500, 437800, 441625, 445500, 451750]
+        rule = cma.choose_range(values, None)
+        got, errors = cma.resolve_range(values, None, None)
+        self.assertEqual(((got["low"], got["high"]), got["override"], errors), (rule, False, []))
+        got, errors = cma.resolve_range(values, None, {"low": 425000, "high": 450000, "reason": "The agent's call."})
+        self.assertEqual((got["low"], got["high"], got["override"], got["rule_low"], errors),
+                         (425000, 450000, True, rule[0], []))
+        for bad in ({"low": 450000, "high": 425000, "reason": "x"}, {"low": 425000, "high": 450000},
+                    {"low": "425000", "high": 450000, "reason": "x"}, [425000, 450000]):
+            got, errors = cma.resolve_range(values, None, bad)
+            self.assertTrue(errors, bad)
+            self.assertEqual((got["low"], got["high"]), rule)  # an override that fails never sets the range
+
+
+class ConditionLadder(unittest.TestCase):
+    """Condition is one level per home; the script adjusts each comp by the levels' difference, for any levels."""
+    VALUES = {"original": 0, "cosmetic": 5000, "baths_only": 10000, "kitchen_only": 15000, "kitchen_and_baths": 25000,
+              "full_renovation": 45000, "new": 50000}
+
+    def comps(self, levels, **extra):
+        return {"cards": [{"address": f"{i} A St", "sold_price": 400000, "seller_concessions": 0, "condition": lv,
+                           "adjustments": [{"label": "Size", "amount": 1000}]} for i, lv in enumerate(levels)], **extra}
+
+    def test_amount_is_the_difference(self):
+        market = compute.profiles.load_market(state="FL", county="Seminole")
+        self.assertEqual(cma.condition_values(market), self.VALUES)  # the market file's ladder, in ladder order
+        rng = random.Random(3)
+        for _ in range(200):
+            mine = rng.choice(cma.CONDITION_LEVELS)
+            comps = self.comps([rng.choice(cma.CONDITION_LEVELS) for _ in range(rng.randint(3, 6))])
+            errors, info = cma.apply_condition_adjustments(comps, {"condition": mine}, market)
+            self.assertEqual(errors, [])
+            self.assertEqual(info["subject"], mine)
+            for c in comps["cards"]:
+                cond = [a for a in c["adjustments"] if a.get("kind") == "condition"]
+                diff = self.VALUES[mine] - self.VALUES[c["condition"]]
+                self.assertEqual([a["amount"] for a in cond], [diff] if diff else [])
+                self.assertEqual(c["adjustments"][-1], {"label": "Size", "amount": 1000})  # typed lines kept
+            again = cma.apply_condition_adjustments(comps, {"condition": mine}, market)  # never doubles up
+            self.assertEqual(again[0], [])
+            self.assertEqual(sum(a.get("kind") == "condition" for c in comps["cards"] for a in c["adjustments"]),
+                             sum(c["condition"] != mine and self.VALUES[c["condition"]] != self.VALUES[mine]
+                                 for c in comps["cards"]))
+
+    def test_typed_condition_and_missing_levels_stop(self):
+        market = compute.profiles.load_market(state="FL", county="Seminole")
+        for label, kind in (("Renovation", None), ("Updated Kitchen", "other"), ("Primary Bath", "age"),
+                            ("Partial Update vs. Full Renovation", None), ("Dated Finishes", "lot")):
+            comps = self.comps(["original", "full_renovation", "kitchen_only"])
+            comps["cards"][1]["adjustments"].append({"label": label, "amount": 15000, **({"kind": kind} if kind else {})})
+            errors, _ = cma.apply_condition_adjustments(comps, {"condition": "kitchen_only"}, market)
+            self.assertEqual(len(errors), 1, label)
+            self.assertIn("cards[1].adjustments[1]", errors[0])
+        for label in ("Older Roof", "New Windows", "Larger Corner Lot", "Pool"):  # not condition: kept as typed
+            comps = self.comps(["original"])
+            comps["cards"][0]["adjustments"].append({"label": label, "amount": 5000})
+            self.assertEqual(cma.apply_condition_adjustments(comps, {"condition": "original"}, market)[0], [])
+        errors, _ = cma.apply_condition_adjustments(self.comps(["original", None, "renovated"]), {}, market)
+        self.assertEqual(len(errors), 3)  # the home's level and both comps' bad levels, all at once
+
+    def test_values_outside_the_built_in_market(self):
+        texas = compute.profiles.load_market(state="TX", county="Travis")
+        errors, _ = cma.apply_condition_adjustments(self.comps(["original", "full_renovation"]),
+                                                    {"condition": "kitchen_only"}, texas)
+        self.assertIn("comps.condition_values", errors[0])
+        same = self.comps(["kitchen_only", "kitchen_only"])  # every comp at the home's level: nothing to price
+        self.assertEqual(cma.apply_condition_adjustments(same, {"condition": "kitchen_only"}, texas)[0], [])
+        given = self.comps(["original", "full_renovation"], condition_values={"original": 0, "kitchen_only": 20000,
+                                                                             "full_renovation": 60000})
+        errors, info = cma.apply_condition_adjustments(given, {"condition": "kitchen_only"}, texas)
+        self.assertEqual(errors, [])
+        self.assertEqual([a["amount"] for c in given["cards"] for a in c["adjustments"] if a.get("kind") == "condition"],
+                         [20000, -40000])
+        upside = self.comps(["original"], condition_values={"original": 0, "kitchen_only": 30000, "full_renovation": 20000})
+        self.assertTrue(cma.apply_condition_adjustments(upside, {"condition": "kitchen_only"}, texas)[0])
+
+    def test_method_line_names_the_homes_level(self):
+        market = compute.profiles.load_market(state="FL", county="Seminole")
+        comps = self.comps(["original", "full_renovation"])
+        _, info = cma.apply_condition_adjustments(comps, {"condition": "kitchen_only"}, market)
+        text = cma.adjustment_summary(comps["cards"], None, None, info)
+        self.assertIn("condition and updates ($15,000 to $30,000, against this home's updated kitchen)", text)
+
+
 class TimeAdjustments(unittest.TestCase):
     """Time adjustments are the script's, from the stated rate and cutoff (the market split by default)."""
 
@@ -64,11 +177,11 @@ class TimeAdjustments(unittest.TestCase):
     def test_typed_amounts(self):
         R = tanager()  # a typed amount that agrees is kept as the script's
         cards = {c["address"]: c for c in R["comps"]["cards"]}
-        cards["907 Tanager Ridge Dr"]["adjustments"].append({"label": "Spring Sale", "amount": -7000})
-        self.assertEqual([v for a, v in card(run(R)[0], "907 Tanager Ridge Dr")["lines"] if a == "Spring Sale"], ["−$7,100"])
+        cards["907 Tanager Ridge Dr"]["adjustments"].append({"label": "Earlier Sale", "amount": -7000})
+        self.assertEqual([v for a, v in card(run(R)[0], "907 Tanager Ridge Dr")["lines"] if a == "Earlier Sale"], ["−$7,100"])
         R = tanager()  # a sale after the cutoff gets none
         next(c for c in R["comps"]["cards"] if c["address"] == "655 Phoebe Ln")["adjustments"].append(
-            {"label": "Summer Sale", "amount": -4300})
+            {"label": "Older Sale", "amount": -4300})
         stops(self, R, r"comps\.cards\[3\]\.adjustments\[2\]: .*−\$4,300")
         R = tanager()  # typed without a stated rule
         R["comps"].pop("time_adjustment")

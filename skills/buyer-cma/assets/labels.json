@@ -63,6 +63,7 @@
  "h_bottom": "The Bottom Line",
  "range_caption": "Supported value range · midpoint about {mid}",
  "line_bottom": "Asking {ask} sits {position} this range. The median of the comparable sales, adjusted to this home, is {median}.",
+ "line_range_override": "This range is our judgment rather than the standard method's {rule}: {reason}",
  "pos_above": "above",
  "pos_below": "below",
  "pos_top": "near the top of",
@@ -306,6 +307,7 @@
  "line_shelf_life": "Market conditions change, so refresh this analysis if no offer is made within a few weeks.",
 
  "_prose": [
+  "line_range_override",
   "sum_cuts_none",
   "sum_cuts_one",
   "cr_over_cap",

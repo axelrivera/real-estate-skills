@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import ROOT, load  # noqa: E402
@@ -164,6 +165,7 @@ class Model(unittest.TestCase):
 
 
 @unittest.skipUnless(PRINTS, "needs Chromium and pdftotext")
+@mock.patch.dict(os.environ, {"LAYOUT_PROBE": "1"})  # the layout probe: printed tables read back for the split rule
 class Printed(unittest.TestCase):
     def test_pages_fit_and_figures_come_from_the_model(self):
         for seed, step, data, R, docs in cases():
@@ -175,6 +177,7 @@ class Printed(unittest.TestCase):
                     with contextlib.redirect_stderr(err):
                         path = render.write_pdf(M, agent, False, tmp)
                     self.assertNotIn("clipped", err.getvalue())
+                    self.assertNotIn("split table", err.getvalue())
                     self.assertNotIn("overflows", err.getvalue())
                     pages = layout.page_fill(path, 0.3, 0.4)
                     for i, (fill, first) in enumerate(pages[1:], start=2):

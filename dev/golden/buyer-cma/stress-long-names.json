@@ -120,9 +120,9 @@
      {
       "count": 2
      },
-     [
-      "Renovation"
-     ],
+     {
+      "count": 2
+     },
      [
       "Size"
      ]
@@ -239,6 +239,18 @@
   {},
   {}
  ],
+ "condition": {
+  "subject": "full_renovation",
+  "values": {
+   "baths_only": 10000,
+   "cosmetic": 5000,
+   "full_renovation": 45000,
+   "kitchen_and_baths": 25000,
+   "kitchen_only": 15000,
+   "new": 50000,
+   "original": 0
+  }
+ },
  "costs": {
   "credit": {
    "cash_flags": {
@@ -586,10 +598,10 @@
    "year_built": 1972
   },
   "value": {
-   "high": 480000,
-   "low": 455000,
+   "high": 490000,
+   "low": 465000,
    "median_adjusted": 476900.0,
-   "midpoint": 467500
+   "midpoint": 477500
   },
   "version": 1
  },
@@ -1059,9 +1071,10 @@
  },
  "range": {
   "cap": 28614.0,
-  "high": 480000,
-  "low": 455000,
-  "midpoint": 467500,
+  "high": 490000,
+  "low": 465000,
+  "midpoint": 477500,
+  "override": false,
   "width": 25000
  },
  "sample": true,

@@ -71,7 +71,8 @@
     "Kitchen, hall bath, floors, roof, AC"
    ]
   ],
-  "summary": "The primary bath and the single-pane windows are original. This analysis estimates what the home is worth today, recommends a list price, and shows what each pricing choice is likely to net you."
+  "summary": "The primary bath and the single-pane windows are original. This analysis estimates what the home is worth today, recommends a list price, and shows what each pricing choice is likely to net you.",
+  "condition": "kitchen_only"
  },
  "summary_page": {
   "label": "Seller Summary",
@@ -85,8 +86,6 @@
  },
  "recommendation": {
   "list_price": 389900,
-  "low": 380000,
-  "high": 400000,
   "why": "It leaves room for the negotiating that is normal now and presents the home as fairly priced in its first weeks, when buyer attention is highest."
  },
  "means": [
@@ -103,11 +102,12 @@
     "address": "790 Tanager Ridge Dr",
     "sold_price": 384000,
     "seller_concessions": 6500,
+    "condition": "kitchen_only",
     "adjustments": [
      {
-      "label": "Hall Bath and Newer Roof",
+      "label": "Older Roof",
       "amount": 10000,
-      "kind": "condition"
+      "kind": "age"
      }
     ],
     "bullets": [
@@ -118,6 +118,7 @@
     "address": "818 Tanager Ridge Dr",
     "sold_price": 398000,
     "seller_concessions": 5000,
+    "condition": "kitchen_only",
     "adjustments": [
      {
       "label": "Size",
@@ -133,12 +134,8 @@
     "address": "907 Tanager Ridge Dr",
     "sold_price": 405000,
     "seller_concessions": 0,
+    "condition": "kitchen_and_baths",
     "adjustments": [
-     {
-      "label": "Both Baths Remodeled",
-      "amount": -10000,
-      "kind": "condition"
-     },
      {
       "label": "Size",
       "amount": -1125,
@@ -153,6 +150,7 @@
     "address": "655 Phoebe Ln",
     "sold_price": 378000,
     "seller_concessions": 6000,
+    "condition": "kitchen_only",
     "adjustments": [
      {
       "label": "Size",
@@ -160,9 +158,9 @@
       "kind": "size"
      },
      {
-      "label": "Hall Bath and Newer Roof",
+      "label": "Older Roof",
       "amount": 10000,
-      "kind": "condition"
+      "kind": "age"
      }
     ],
     "bullets": [
@@ -173,6 +171,7 @@
     "address": "1012 Grosbeak Ct",
     "sold_price": 362000,
     "seller_concessions": 7500,
+    "condition": "original",
     "adjustments": [
      {
       "label": "Size",
@@ -180,9 +179,9 @@
       "kind": "size"
      },
      {
-      "label": "Original Kitchen and Baths",
-      "amount": 25000,
-      "kind": "condition"
+      "label": "Older Roof",
+      "amount": 10000,
+      "kind": "age"
      }
     ],
     "bullets": [
@@ -289,7 +288,7 @@
  },
  "market": {
   "bullets": [
-   "<strong>Buyers are negotiating again.</strong> Since the summer, homes nearby sold further under their original asking price and took longer to go under contract than in the spring.",
+   "<strong>Buyers are negotiating again.</strong> In recent months, homes nearby sold further under their original asking price and took longer to go under contract than earlier in the year.",
    "<strong>Seller help is common.</strong> Most recent sales included a seller credit: budget for one now.",
    "<strong>Pricing decides the pace.</strong> Well-priced homes still sell; overpriced ones sit.",
    "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's."
@@ -422,7 +421,7 @@
   "comps_basis": "size, age, condition and neighborhood",
   "comps_takeaway": "Four of the five agree within a few thousand dollars. The best-matched sale sits at the top.",
   "scatter_takeaway": "The renovated sales sit above the trend, and yours sits among them.",
-  "market_title": "The Market Shifted Since Spring",
+  "market_title": "The Market Has Shifted",
   "market_takeaway": "Buyers are negotiating again.",
   "competition": [
    [

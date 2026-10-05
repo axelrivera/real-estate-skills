@@ -8,9 +8,10 @@ Each seed builds a synthetic MLS export in the Stellar CMA columns (dev/fixtures
 six months with a market split, active, pending and expired listings, the subject's own active row and sometimes its
 sale years ago, prices from about $150,000 to $2,000,000, condos and single-family homes, HOA or none, flood zones from
 X to VE, long street and subdivision names. From that export it picks 3 to 8 comps and adjusts them as an agent would
-(size, condition, pool, lot), sets the time adjustment by the method's rule from the export's split (none, 1% or 2% a
-quarter), runs the comps-only stage for the adjusted values and sets a range that the range rules accept, an offer plan
-inside it, a listing history across years (relists, cuts, increases, failed contracts, off-market stretches), taxes,
+(size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then and
+always outside Florida), sets the time adjustment by the method's rule from the export's split (none, 1% or 2% a
+quarter), runs the comps-only stage for the adjusted values and the script's range (now and then the agent's own
+range_override instead), an offer plan inside it, a listing history across years (relists, cuts, increases, failed contracts, off-market stretches), taxes,
 payment and credit scenarios. Every judgment field is figure-free, as the skill requires. Mock data only; nothing here
 asserts anything: the test does.
 """
@@ -50,9 +51,9 @@ SUBDIVISIONS = ("Fernwood Park", "Kestrel Point", "Cattail Crossing", "Spring Oa
 STYLES = ("Single Family Residence", "Condominium", "Townhouse")
 ZONES = ("X", "X", "X", "AE", "X500", "VE", "AH", "To confirm")
 WHY = ("The closest sales, adjusted to this home, center near the middle of the range.",
-       "The market cooled since spring: homes now sell under their original asking price, and many sellers help with "
+       "The market cooled since early in the year: homes now sell under their original asking price, and many sellers help with "
        "buyers' costs.", "Time on the market and repeated price cuts give you room to negotiate price or a seller credit.",
-       "The most recent sales landed lower than the spring ones, which supports an opening near the bottom of the range "
+       "The most recent sales landed lower than the earlier ones, which supports an opening near the bottom of the range "
        "and a patient negotiation over the inspection period.")
 CHECKS = (("The Roof", "Get the permit, the final inspection and any warranty"),
           ("Original Systems", "AC, water heater and pool equipment ages"),
@@ -66,7 +67,7 @@ NOTES = ("Updated kitchen, same size, no pool.", "Larger but dated. Cut once alr
 BULLETS = ("A close match in condition and size, sold in the same market.", "The seller paid part of the buyer's costs, "
            "which comes off the price.", "Its larger lot backs onto conservation, which buyers pay more for.",
            "Original kitchen and baths, so it's adjusted up for the updates this home has.",
-           "Sold in the spring, when rates were lower and homes were moving faster.")
+           "Sold earlier in the year, when rates were lower and homes were moving faster.")
 WATCH = ("<strong>The roof.</strong> Roof age is the biggest factor in insuring a Florida home, so we want the permit "
          "and date in writing.", "<strong>Original systems.</strong> If the AC and water heater are original, insurers "
          "ask about both.", "<strong>Permits for the renovation.</strong> Confirm the kitchen, bath and any electrical or "
@@ -249,14 +250,12 @@ def generate(seed, out_dir):
                                                                                           diff * 75 * scale)), -2)})
         if h["private_pool"] != subject["pool"] and not condo:
             adj.append({"label": "Pool", "amount": round((25000 if subject["pool"] else -25000) * scale, -2)})
-        if rng.random() < 0.5:
-            adj.append({"label": rng.choice(("Renovation", "Partial Update vs. Full Renovation", "Kitchen Only")),
-                        "amount": round(rng.choice((15000, 30000, -15000, 45000)) * scale, -2)})
         if rng.random() < 0.2:
             adj.append({"label": rng.choice(("Larger Corner Lot", "Pond Lot", "Documented Recent Systems")),
                         "amount": round(-rng.choice((5000, 10000)) * scale, -2)})
         cards.append({"address": cma.display_address(h["address"]) if rng.random() < 0.7 else h["address"],
                       "sold_price": h["close_price"], "seller_concessions": h.get("seller_paid") or 0,
+                      "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
                       "adjustments": adj, "bullets": rng.sample(BULLETS, rng.randint(1, 3))})
     R = {"prepared_date": as_of.isoformat(), "as_of": as_of.isoformat(), "export": path, "split_date": split.isoformat(),
          "subject": {"address": f"{number} {street}{unit}", "mls_address": subject["mls_address"],
@@ -270,7 +269,8 @@ def generate(seed, out_dir):
                                ["Pool", "Private" if subject["pool"] else "None"], ["Garage", "2-car attached"],
                                ["HOA / CDD", "None" if rng.random() < 0.5 else "Yes"],
                                ["Flood Zone", subject["zone"]]],
-                     "summary": "An updated home with a remodeled kitchen and new flooring."},
+                     "summary": "An updated home with a remodeled kitchen and new flooring.",
+                     "condition": rng.choice(cma.CONDITION_LEVELS[:-1])},
          "history": {"events": events, "takeaway": "The market has had a long look at this home, and the price has "
                                                    "come down; we need to know why before writing an offer."},
          "comps": {"cards": cards, "intro": "The closest matches in size and condition, including the ones that argue "
@@ -279,22 +279,31 @@ def generate(seed, out_dir):
                    "lean": "We lean toward the most recent sales and the best condition matches."}}
     if rate:
         R["comps"]["time_adjustment"] = {"rate_per_quarter": rate, "prices": direction}
+    # the condition ladder's dollars: the market's (Florida), else the agent's or paired sales', scaled to the price
+    if not florida or rng.random() < 0.3:
+        R["comps"]["condition_values"] = {lv: round(v * scale, -2) for lv, v in
+                                          profiles.load_market(state="FL", county="Seminole").get(
+                                              "cma.adjustments.condition_levels").items()}
     if rng.random() < 0.3:
         R.pop("history")
     if not florida:
         R["mls"] = "Stellar"
     # the comps-only stage, as the skill runs it before setting the range: the adjusted values
     m2 = compute.copy.deepcopy(R)
-    compute.prepare_comps(m2, homes, lambda *a: None)
+    compute.prepare_comps(m2, homes, lambda *a: None, market)
     values = [c["adjusted"] for c in m2["comps"]["cards"]]
-    low, high = cma.passing_range(values, market)
+    low, high = cma.choose_range(values, market)
+    if rng.random() < 0.1:  # now and then the agent sets the range: a step lower, shown as their choice
+        low, high = low - 5000, high - 5000
+        R["range_override"] = {"low": low, "high": high, "reason": "The agent leans toward the most recent sales, "
+                                                                   "which sit lower than the rest."}
     median = statistics.median(values)
     walk = max(low, min(high, math.floor(median / 1000) * 1000))
     opening = low
     t_lo = opening + round((walk - opening) / 3, -3)
     t_hi = max(t_lo, walk - round((walk - opening) / 4, -3))
-    R["bottom_line"] = {"low": low, "high": high, "why": "The recent sales and the best condition matches set the range; "
-                                                         "the spring sales sit higher."}
+    R["bottom_line"] = {"why": "The recent sales and the best condition matches set the range; the earlier sales sit "
+                               "higher."}
     R["offer_plan"] = {"opening": opening, "target_low": t_lo, "target_high": t_hi, "walk_away": walk,
                        "why_opening": "The bottom of the supported range, backed by the comps.",
                        "why_target": "Where recent sales suggest this home settles.",
@@ -321,7 +330,7 @@ def generate(seed, out_dir):
                                  for a in rng.sample(plotted, min(len(plotted), rng.randint(0, 3)))],
                     "takeaway": "The renovated sales sit above the line, and the dated ones below it."}
     R["market"] = {"bullets": ["<strong>Sellers expect to negotiate</strong> after the market cooled.",
-                               "<strong>Mortgage rates are up</strong> from the spring sales."]}
+                               "<strong>Mortgage rates are up</strong> from the earlier sales."]}
     if florida and rng.random() < 0.5:
         rows = finance.millage(market, county=county)
         juris = [{"label": f"in {r['district']}", "short": "City" if i else "County", "district": r["district"]}

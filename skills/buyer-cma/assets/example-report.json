@@ -36,21 +36,22 @@
     "X (lower risk)"
    ]
   ],
-  "summary": "An updated block pool home: remodeled kitchen with quartz counters, updated baths, new flooring, and a new roof the listing dates to this summer, put on while the home was off the market.",
+  "summary": "An updated block pool home: remodeled kitchen with quartz counters, updated baths, new flooring, and a new roof the listing dates to this year, put on while the home was off the market.",
   "state": "FL",
   "county": "Seminole",
   "city": "Oviedo",
   "beds": 4,
   "baths": 3,
   "year_built": 1998,
-  "pool": true
+  "pool": true,
+  "condition": "full_renovation"
  },
  "summary_page": {
   "label": "Buyer Summary",
   "headline": "Open at the bottom of what recent sales support: after months on the market and repeated price cuts, you have room to negotiate.",
   "why": [
    "The closest Cattail Crossing pool sales, adjusted to this home, center near the middle of the range.",
-   "The market cooled since spring: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
+   "The market cooled since early in the year: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
    "Months on the market and repeated price cuts give you room to negotiate price or a seller credit."
   ],
   "check_first": [
@@ -70,9 +71,7 @@
   "next_step": "Get the listing agent's answers on the roof permit and the system ages, then write the offer."
  },
  "bottom_line": {
-  "low": 570000,
-  "high": 590000,
-  "why": "The two sales that support this price closed in the spring, when mortgage rates were lower and homes were selling faster. The summer sales and this home's own price cuts point toward the middle of the range."
+  "why": "The two sales that support this price closed earlier in the year, when mortgage rates were lower and homes were selling faster. The recent sales and this home's own price cuts point toward the middle of the range."
  },
  "history": {
   "events": [
@@ -133,8 +132,8 @@
   "target_high": 578000,
   "walk_away": 580000,
   "why_opening": "The bottom of the supported range, backed by the comps. After this long on the market and this many price cuts, the seller has reason to counter rather than ignore it.",
-  "why_target": "Where the summer sales and the typical negotiation off asking suggest this home settles.",
-  "why_walk_away": "Just under the median of the adjusted comps. Above it you'd be paying spring prices and risking a low appraisal you'd have to cover in cash.",
+  "why_target": "Where the recent sales and the typical negotiation off asking suggest this home settles.",
+  "why_walk_away": "Just under the median of the adjusted comps. Above it you'd be paying earlier prices and risking a low appraisal you'd have to cover in cash.",
   "credit_alt": {
    "price": 580000,
    "credit": 10000
@@ -144,9 +143,9 @@
  "offer": {
   "heading": "Negotiating Points",
   "bullets": [
-   "<strong>There is room to negotiate.</strong> The price has come down four times since May, and no buyer has gone under contract at any of those prices. Mortgage rates are also higher now than when the spring sales happened.",
-   "<strong>Seller help with closing costs is normal right now.</strong> Most nearby sales this summer included seller-paid costs. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
-   "<strong>Watch the appraisal.</strong> Only a couple of similar pool homes nearby have sold above this asking price, both in the spring. An offer near the top of the range raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
+   "<strong>There is room to negotiate.</strong> The price has come down four times for months, and no buyer has gone under contract at any of those prices. Mortgage rates are also higher now than when the earlier sales happened.",
+   "<strong>Seller help with closing costs is normal right now.</strong> Most nearby sales in recent months included seller-paid costs. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
+   "<strong>Watch the appraisal.</strong> Only a couple of similar pool homes nearby have sold above this asking price, both earlier in the year. An offer near the top of the range raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
   ]
  },
  "comps": {
@@ -157,6 +156,7 @@
     "address": "1512 Buttonbush Dr",
     "sold_price": 612000,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -170,13 +170,14 @@
     "bullets": [
      "The strongest sale for the seller's price: renovated recently on the same street, and sold above asking within a week with no seller help.",
      "Slightly larger, and it came with a permitted recent AC; this home's AC age isn't listed, so that home gets a small edge.",
-     "It sold in the spring, when rates were lower and homes were moving faster."
+     "It sold earlier in the year, when rates were lower and homes were moving faster."
     ]
    },
    {
     "address": "1377 Sedgefield Ct",
     "sold_price": 598500,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -196,11 +197,8 @@
     "address": "1455 Arrowroot Way",
     "sold_price": 548000,
     "seller_concessions": 8000,
+    "condition": "original",
     "adjustments": [
-     {
-      "label": "Renovation",
-      "amount": 45000
-     },
      {
       "label": "Size",
       "amount": -3600
@@ -215,12 +213,8 @@
     "address": "1621 Sedgefield Ct",
     "sold_price": 561000,
     "seller_concessions": 11000,
-    "adjustments": [
-     {
-      "label": "Partial Update vs. Full Renovation",
-      "amount": 30000
-     }
-    ],
+    "condition": "kitchen_only",
+    "adjustments": [],
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
      "The seller paid part of the buyer's costs, which comes off the price.",
@@ -231,6 +225,7 @@
     "address": "1340 Buttonbush Dr",
     "sold_price": 589000,
     "seller_concessions": 9500,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -240,7 +235,7 @@
     "bullets": [
      "Renovated recently on the same street, and sold within a few weeks.",
      "The seller paid part of the buyer's costs, which comes off the price.",
-     "A little larger. A summer sale, so no market adjustment."
+     "A little larger. A recent sale, so no market adjustment."
     ]
    }
   ],
@@ -344,9 +339,9 @@
  },
  "market": {
   "bullets": [
-   "<strong>Homes are selling under their original asking price</strong>, after seller-paid costs, compared with about full price in the spring. Sellers now expect to negotiate.",
+   "<strong>Homes are selling under their original asking price</strong>, after seller-paid costs, compared with about full price earlier in the year. Sellers now expect to negotiate.",
    "<strong>Inventory is balanced.</strong> That's neither a buyer's market nor a seller's market, but it has shifted toward buyers, and most current listings have already cut their price.",
-   "<strong>Mortgage rates are up</strong> from the spring sales. That's the main reason the spring prices are harder to repeat now.",
+   "<strong>Mortgage rates are up</strong> from the earlier sales. That's the main reason the earlier prices are harder to repeat now.",
    "<strong>Price per square foot.</strong> This home asks more per square foot than most Cattail Crossing sales. That's supportable for an updated pool home with a new roof, but only a couple of similar sales have been higher."
   ]
  },
@@ -421,7 +416,7 @@
  },
  "watch": {
   "items": [
-   "<strong>The new roof.</strong> The listing says the roof was replaced this summer, while the home was off the market. Roof age is the biggest factor in insuring a Florida home, so we want the permit, the final inspection and any warranty in writing.",
+   "<strong>The new roof.</strong> The listing says the roof was replaced this year, while the home was off the market. Roof age is the biggest factor in insuring a Florida home, so we want the permit, the final inspection and any warranty in writing.",
    "<strong>Why the price keeps coming down.</strong> Four cuts in four months can simply mean an ambitious first price, but ask whether any buyer's inspection or feedback raised a problem.",
    "<strong>Original systems.</strong> Neither the AC's nor the water heater's age is listed. If they're original, they're near the end of their life, and insurers ask about both.",
    "<strong>Permits for the remodel.</strong> Confirm the kitchen, bath, and any plumbing or electrical work was permitted. Unpermitted work can cause problems with insurance and future resale.",
@@ -431,7 +426,7 @@
   ],
   "questions": [
    "Can you share the roof permit, the final inspection, and any roofer's warranty? Is there a new wind-mitigation report?",
-   "Has any buyer inspected the home since May, and did any report or feedback lead to the price cuts?",
+   "Has any buyer inspected the home for months, and did any report or feedback lead to the price cuts?",
    "How old are the AC, water heater, and pool equipment?",
    "Were the kitchen, bathroom, and any electrical or plumbing updates permitted?",
    "Is the third full bath original to the house?",

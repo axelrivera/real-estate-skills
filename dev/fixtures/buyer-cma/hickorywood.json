@@ -33,22 +33,23 @@
     "X (lower risk)"
    ]
   ],
-  "summary": "This is a renovated pool home: new kitchen with stone counters, updated baths, new flooring, and a resurfaced pool. The house is vacant and owned by a trust.",
+  "summary": "This is a renovated pool home: new kitchen with stone counters, updated baths, new flooring, and a resurfaced pool.",
   "state": "FL",
   "county": "Seminole",
   "city": "Altamonte Springs",
   "beds": 4,
   "baths": 2,
   "year_built": 1972,
-  "pool": true
+  "pool": true,
+  "condition": "full_renovation"
  },
  "summary_page": {
   "label": "Buyer Summary",
   "headline": "Open at the bottom of what recent sales support: the home has sat for months and the price keeps coming down, which gives you room to negotiate.",
   "why": [
    "The closest Spring Oaks pool sales, adjusted to this home, center near the middle of the range.",
-   "The market cooled since spring: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
-   "A vacant home, repeated price cuts and a failed contract give you room to negotiate price or a seller credit."
+   "The market cooled since early in the year: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
+   "Repeated price cuts and a failed contract give you room to negotiate price or a seller credit."
   ],
   "check_first": [
    [
@@ -67,9 +68,7 @@
   "next_step": "Get the listing agent's answers on the roof and the failed contract, then write the offer."
  },
  "bottom_line": {
-  "low": 455000,
-  "high": 480000,
-  "why": "The two sales that support the asking price closed in the spring, when mortgage rates were lower and homes were selling faster. The recent sales and this home's own history point lower, so the range leans toward them."
+  "why": "The two sales that support the asking price closed earlier in the year, when mortgage rates were lower and homes were selling faster. The recent sales and this home's own history point lower, so the range leans toward them."
  },
  "history": {
   "events": [
@@ -154,7 +153,7 @@
   "walk_away": 470000,
   "why_opening": "The bottom of the supported range, backed by the comps. After this much time on the market and this many price cuts, the seller has reason to counter rather than ignore it.",
   "why_target": "Where recent sales and the typical negotiation off asking suggest this home settles.",
-  "why_walk_away": "At the median of the adjusted comps. Above it you'd be paying spring prices and risking a low appraisal you'd have to cover in cash.",
+  "why_walk_away": "At the median of the adjusted comps. Above it you'd be paying earlier prices and risking a low appraisal you'd have to cover in cash.",
   "credit_alt": {
    "price": 465000,
    "credit": 10000
@@ -164,7 +163,7 @@
  "offer": {
   "heading": "Negotiating Points",
   "bullets": [
-   "<strong>There is room to negotiate.</strong> The seller is paying to carry a vacant house, has cut the price four times, and has already lost one buyer. Mortgage rates are also higher now than when the spring sales happened.",
+   "<strong>There is room to negotiate.</strong> The seller has cut the price four times, and has already lost one buyer. Mortgage rates are also higher now than when the earlier sales happened.",
    "<strong>Seller help with closing costs is normal right now.</strong> Most recent sales in this area included seller-paid costs. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
    "<strong>Watch the appraisal.</strong> Only a few homes in Spring Oaks have sold above this home's price per square foot, all renovated pool homes. An offer near the top of the range raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
   ]
@@ -177,6 +176,7 @@
     "address": "622 Spring Oaks Blvd",
     "sold_price": 505500,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -190,13 +190,14 @@
     "bullets": [
      "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
      "About the same size. Its larger fenced corner lot, with room for a boat or trailer, is worth a bit more.",
-     "It sold in the spring, when rates were lower and homes were moving faster."
+     "It sold earlier in the year, when rates were lower and homes were moving faster."
     ]
    },
    {
     "address": "516 Oakwood Ct",
     "sold_price": 495000,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -216,11 +217,8 @@
     "address": "745 Little Wekiva Cir",
     "sold_price": 427000,
     "seller_concessions": 500,
+    "condition": "original",
     "adjustments": [
-     {
-      "label": "Renovation",
-      "amount": 45000
-     },
      {
       "label": "Size",
       "amount": -1700
@@ -235,12 +233,8 @@
     "address": "602 Mockingbird Ln",
     "sold_price": 429000,
     "seller_concessions": 12000,
-    "adjustments": [
-     {
-      "label": "Partial Update vs. Full Renovation",
-      "amount": 30000
-     }
-    ],
+    "condition": "kitchen_only",
+    "adjustments": [],
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
      "The seller paid part of the buyer's costs, which comes off the price.",
@@ -251,6 +245,7 @@
     "address": "621 Little Wekiva Rd",
     "sold_price": 465000,
     "seller_concessions": 13071,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Larger Canal Lot",
@@ -375,9 +370,9 @@
  },
  "market": {
   "bullets": [
-   "<strong>Homes are selling under their original asking price</strong>, compared with full price in the spring. Sellers are now expecting to negotiate.",
+   "<strong>Homes are selling under their original asking price</strong>, compared with full price earlier in the year. Sellers are now expecting to negotiate.",
    "<strong>Inventory is balanced.</strong> That's neither a buyer's market nor a seller's market, but it has shifted toward buyers, and most current listings have already cut their price.",
-   "<strong>Mortgage rates are up</strong> from the spring sales. That's the main reason the spring prices are harder to repeat now.",
+   "<strong>Mortgage rates are up</strong> from the earlier sales. That's the main reason the earlier prices are harder to repeat now.",
    "<strong>Price per square foot.</strong> This home asks more per square foot than most Spring Oaks sales. That's supportable for a renovated pool home, but only a couple of sales have been higher."
   ]
  },

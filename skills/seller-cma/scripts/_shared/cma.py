@@ -596,14 +596,45 @@ def range_bounds(values, market):
     return low, high, target
 
 
-def passing_range(values, market):
-    """One range that passes every range check: the target width centered on the median (ends to $5,000), moved inside
-    the bounds when the rounding put an end outside them."""
+def choose_range(values, market):
+    """The supported range, by one rule, so the same comps always give the same range (method.md, The Range): the
+    normal width (range_width's `target`, the widest $5,000 step under the cap) centered on the median adjusted value,
+    the low end rounded half up to $5,000 and the high end the low end plus the width, then moved inside range_bounds
+    when the rounding put an end past what the comps support (one comp never sets an end). Returns (low, high).
+    The model never types a range; `range_override` (resolve_range) is the agent's own choice, shown as theirs."""
     median = statistics.median(values)
     low_ok, high_ok, target = range_bounds(values, market)
-    lo = round((median - target / 2) / RANGE_STEP) * RANGE_STEP
+    lo = fmt.half_up((median - target / 2) / RANGE_STEP) * RANGE_STEP
     lo = min(max(lo, low_ok), high_ok - target)
     return lo, lo + target
+
+
+passing_range = choose_range  # every range warning names the rule's range as one that passes
+
+
+def resolve_range(values, market, override=None):
+    """The report's range: the rule's (choose_range), or the agent's `range_override` {low, high, reason} when given.
+    Returns ({low, high, rule_low, rule_high, override (bool), reason}, errors as `field: problem → fix`). An override
+    still gets the range checks (range_warnings), so a range one comp sets or one wider than the cap warns."""
+    rule_lo, rule_hi = choose_range(values, market)
+    out = {"low": rule_lo, "high": rule_hi, "rule_low": rule_lo, "rule_high": rule_hi, "override": False, "reason": ""}
+    if override in (None, {}, False):
+        return out, []
+    fix = ('{"low": ..., "high": ..., "reason": "why, in words"}, only when the agent chose the range; otherwise leave '
+           f"it out and the script sets it ({money(rule_lo)} – {money(rule_hi)} here)")
+    if not isinstance(override, dict):
+        return out, [f"range_override: should be {fix}."]
+    lo, hi, why = override.get("low"), override.get("high"), str(override.get("reason") or "").strip()
+    errors = []
+    if not all(isinstance(x, (int, float)) and not isinstance(x, bool) and x > 0 for x in (lo, hi)) or lo >= hi:
+        errors.append(f"range_override: low and high must be plain numbers, low under high (got {lo!r}, {hi!r}) → {fix}.")
+    if not why:
+        errors.append("range_override.reason: missing → say in words (no figures) why the agent set the range instead "
+                      "of the rule; the report shows it as the agent's choice.")
+    if errors:
+        return out, errors
+    out.update(low=lo, high=hi, override=True, reason=why)
+    return out, []
 
 
 def range_warnings(bl, values, market):
@@ -658,12 +689,12 @@ _KIND_WORDS = (
     ("credits", r"credit|concession|seller[- ]paid|seller help"),
     ("pool", r"pool|spa"),
     ("garage", r"garage|carport|parking"),
-    ("age", r"roof|\bac\b|a/c|hvac|systems?|water heater|\bage\b|year built|older|newer|effective age"),
+    ("age", r"roof|\bac\b|a/c|hvac|systems?|water heater|windows?|\bage\b|year built|older|newer|effective age"),
     ("view", r"view|water|pond|lake|golf|conservation|preserve|canal|river|ocean|bay"),
     ("lot", r"\blot\b|acre|yard|corner|cul-de-sac|frontage"),
     ("location", r"location|street|road|traffic|neighborhood|subdivision|busy|commercial"),
     ("size", r"size|sq\.? ?ft|square|living area|larger|smaller|bedroom|room count|stories"),
-    ("condition", r"kitchen|bath|renovat|remodel|update|condition|floor|dated|finish|paint|repair|cabinet|counter|window"),
+    ("condition", r"kitchen|bath|renovat|remodel|update|condition|floor|dated|finish|paint|repair|cabinet|counter"),
 )
 
 
@@ -713,11 +744,12 @@ def adjustment_kinds_used(cards):
     return seen
 
 
-def adjustment_summary(cards, time_info=None, f=None):
+def adjustment_summary(cards, time_info=None, f=None, condition_info=None):
     """Results_v5 case 02: the method line's list of what was adjusted, generated from the comps so it names every kind
     actually used, each with its amounts: 'Adjusted for size (plus or minus up to $7,500), condition and updates
     ($5,000 to $25,000), market changes since each sale (1.5% a quarter for sales before July) and seller credits (taken
-    off each sale price).' `time_info` is apply_time_adjustments' info, for the rate and cutoff. '' with no adjustments.
+    off each sale price).' `time_info` is apply_time_adjustments' info, for the rate and cutoff; `condition_info`
+    apply_condition_adjustments', for the subject's level ("against this home's updated kitchen"). '' with none.
     `f` formats the amounts (finance.money by default; a skill on the report kit passes fmt.money)."""
     f = f or money
     parts = []
@@ -736,8 +768,96 @@ def adjustment_summary(cards, time_info=None, f=None):
             detail = f(amounts[0])
         else:
             detail = f"{f(amounts[0])} to {f(amounts[-1])}"
+        if kind == "condition" and condition_info and detail:
+            detail += f", against this home's {condition_info['subject_phrase'].removeprefix('an ').removeprefix('a ')}"
         parts.append(ADJ_KIND_WORDS[kind] + (f" ({detail})" if detail else ""))
     return f"Adjusted for {_and(parts)}." if parts else ""
+
+
+# --- condition adjustments: script-owned, from one ladder -------------------------------
+
+# The condition ladder (references/condition-ladder.md): each comp and the subject get one level, from listing evidence
+# (the comp's remarks; the seller's description of their home), and the script adjusts each comp by the difference in
+# the levels' dollar values. In ladder order, lowest first.
+CONDITION_LEVELS = ("original", "cosmetic", "baths_only", "kitchen_only", "kitchen_and_baths", "full_renovation", "new")
+CONDITION_WORDS = {  # (card label, phrase in a sentence)
+    "original": ("Original", "original condition"),
+    "cosmetic": ("Cosmetic Updates", "cosmetic updates"),
+    "baths_only": ("Updated Baths", "updated baths"),
+    "kitchen_only": ("Updated Kitchen", "an updated kitchen"),
+    "kitchen_and_baths": ("Updated Kitchen and Baths", "an updated kitchen and baths"),
+    "full_renovation": ("Full Renovation", "a full renovation"),
+    "new": ("New or Like New", "new or like-new condition"),
+}
+CONDITION_LABEL = "Condition: {level}"  # the card label of a condition adjustment the script adds
+# A typed adjustment whose label names the kitchen, baths or a renovation is a condition adjustment, whatever its kind
+_CONDITION_TYPED = re.compile(r"kitchen|bath|renovat|remodel|condition|dated|finishes|cosmetic", re.I)
+
+
+def condition_values(market, given=None):
+    """{level: dollars over an original home}: report.json's `comps.condition_values` (paired sales or the agent's
+    rates) over the market's `cma.adjustments.condition_levels`. {} when neither has any."""
+    base = (market.get("cma.adjustments.condition_levels") if market is not None else None) or {}
+    return {**{k: v for k, v in base.items() if k in CONDITION_LEVELS}, **(given if isinstance(given, dict) else {})}
+
+
+def _level_errors(where, level):
+    if level in CONDITION_LEVELS:
+        return []
+    got = "missing" if level in (None, "") else f"{level!r} isn't a level"
+    return [f"{where}: {got} → one of {', '.join(CONDITION_LEVELS)} (references/condition-ladder.md: pick it from the "
+            "listing's own words; a partly updated kitchen or baths counts as the level below)."]
+
+
+def apply_condition_adjustments(comps, subject, market):
+    """Condition adjustments are the script's, by one ladder: `subject.condition` and each card's `condition` name a
+    level (CONDITION_LEVELS); each comp gets the subject's level value minus its own (condition_values), added to its
+    adjustments as kind "condition" (none when the levels match). A condition amount typed on a card is an error: the
+    level carries it. Returns (errors as `field: problem → fix`, info {subject, subject_phrase, values} or None)."""
+    cards = comps.get("cards") or []
+    errors = _level_errors("subject.condition", subject.get("condition"))
+    for i, c in enumerate(cards):
+        errors += _level_errors(f"comps.cards[{i}].condition", c.get("condition"))
+        for j, a in enumerate(c.get("adjustments") or []):
+            if not isinstance(a, dict) or a.get("source") == "script":
+                continue
+            if adjustment_kind(a) == "condition" or _CONDITION_TYPED.search(str(a.get("label") or "")):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a condition adjustment ({a.get('label')!r}) typed by "
+                              "hand → delete it and set the card's `condition` level (and subject.condition): the script "
+                              "adjusts each comp by the difference between the levels.")
+    given = comps.get("condition_values")
+    if given is not None and (not isinstance(given, dict) or any(
+            k not in CONDITION_LEVELS or isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0
+            for k, v in given.items())):
+        errors.append("comps.condition_values: should be {level: dollars over an original home} with levels from "
+                      f"{', '.join(CONDITION_LEVELS)} and plain non-negative numbers.")
+        given = None
+    values = condition_values(market, given)
+    if errors:
+        return errors, None
+    used = [subject["condition"]] + [c["condition"] for c in cards]
+    if len(set(used)) == 1:  # every comp at the home's level: nothing to adjust, so no dollars needed
+        values = {used[0]: values.get(used[0], 0)}
+    missing = [lv for lv in dict.fromkeys(used) if lv not in values]
+    if missing:
+        return [f"comps.condition_values: no dollar value for {', '.join(missing)} in this market → give "
+                "comps.condition_values {level: dollars over an original home} for every level used, from paired sales "
+                "in the export or the agent's rates, scaled to the price (method.md)."], None
+    ordered = [values[lv] for lv in CONDITION_LEVELS if lv in values]
+    if ordered != sorted(ordered):
+        return ["comps.condition_values: a higher level is worth less than a lower one → each level's value is at least "
+                "the one below it (" + " ≤ ".join(CONDITION_LEVELS) + ")."], None
+    mine = values[subject["condition"]]
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "condition")]
+        amount = fmt.half_up(mine - values[c["condition"]])
+        if amount:
+            c["adjustments"].insert(0, {"label": CONDITION_LABEL.format(level=CONDITION_WORDS[c["condition"]][0]),
+                                     "amount": amount, "kind": "condition", "source": "script"})
+    info = {"subject": subject["condition"], "subject_phrase": CONDITION_WORDS[subject["condition"]][1],
+            "values": {lv: values[lv] for lv in CONDITION_LEVELS if lv in values}}
+    return [], info
 
 
 # --- time adjustments: script-owned (Results_v5) ------------------------------------

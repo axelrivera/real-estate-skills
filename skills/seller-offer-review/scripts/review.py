@@ -99,6 +99,9 @@ def text_problems(data):
         found = figures(text, references)
         if found:
             probs.append(f"{where}: {text!r} has a figure in it ({', '.join(found)}) → {what}")
+        who = [] if references else prose.people(text)  # a contract reference's field quotes the contract: data
+        if who:
+            probs.append(f"{where}: {text!r} describes the people ({', '.join(who)}) → {prose.PEOPLE_FIX}")
 
     words = "say it in words; the report prints every price, amount and date itself"
     if data.get("ranking_reason"):

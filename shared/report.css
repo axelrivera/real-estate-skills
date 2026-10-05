@@ -38,10 +38,13 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 /* a short table stays on one page; a long one (render.html_to_pdf marks it .brk) runs on, whole rows only, its header
    row repeated and its outline closed on each page, so it never leaves a page mostly blank */
 .tbl{border:1px solid var(--brand-rule);border-radius:5px;overflow:hidden;break-inside:avoid}
-.tbl.brk{break-inside:auto;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+/* a table that may split carries its own outline, square: a wrapper broken across pages stretches to the page foot and
+   prints an empty band under the last row, while the table's own fragment ends at its last row (its header repeats) */
+.tbl.brk{break-inside:auto;border:none;border-radius:0;overflow:visible}
+.tbl.brk>table{border:1px solid var(--brand-rule)}
 .tbl.brk tr{break-inside:avoid}
-/* never one row alone: the first two body rows start together and the last (often a total) keeps the row above it */
-.tbl.brk tbody tr:nth-child(2),.tbl.brk tbody tr:last-child{break-before:avoid}
+/* where a table may split (three rows on each side, a total with the two rows above it, never under eight rows) is
+   set on the rows by layout.TABLE_BREAKS_JS before printing */
 thead{display:table-header-group}
 th{color:var(--brand-ink);font-weight:700;text-align:left;padding:3px 6px;font-size:8pt;border-bottom:1.5px solid var(--brand)}
 td{padding:2.6px 6px;border-top:1px solid var(--brand-rule);vertical-align:top}

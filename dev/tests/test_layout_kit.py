@@ -10,6 +10,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, ROOT)
@@ -245,6 +246,79 @@ class Printed(unittest.TestCase):
             # no section heading is left at the foot of a page without its table
             for fill, first in info["pages"][1:]:
                 self.assertFalse(first.startswith("Row "), first)
+
+
+class TableSplits(unittest.TestCase):
+    """The table-split rule (TABLE_BREAKS_JS), read back from the printed PDF by the layout probe: for tables of any
+    length, with totals anywhere, placed anywhere on the page, no page holds fewer than 3 rows of a split table, a total
+    prints with the 2 rows above it and a small table never splits."""
+
+    def test_rule_on_synthetic_pages(self):
+        tables = [{"n": 12, "whole": False, "summary": [8, 11], "first": "Row 0"}, {"n": 5, "whole": True, "summary": [],
+                                                                                  "first": "A"}]
+        pages = {(0, i): 1 if i < 6 else 2 for i in range(12)}  # 6 rows and 6, each total with the 2 rows above it
+        pages.update({(1, i): 3 for i in range(5)})
+        self.assertEqual(layout.table_split_problems(tables, pages), [])
+        pages.update({(0, 6): 1, (0, 7): 1})  # the break now falls just above the first total
+        found = layout.table_split_problems(tables, pages)
+        self.assertEqual(len(found), 1)
+        self.assertIn("summary row 9", found[0])
+        pages.update({(0, i): 1 for i in range(10)})  # only rows 10-11 on page 2
+        self.assertTrue(any("only 2 rows" in p for p in layout.table_split_problems(tables, pages)))
+        pages.update({(1, 0): 2})
+        self.assertTrue(any("small" in p for p in layout.table_split_problems(tables, pages)))
+
+    @NEEDS
+    def test_printed_tables_keep_the_rule(self):
+        rng = random.Random(8)
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"LAYOUT_PROBE": "1"}):
+            for case in range(10):
+                blocks = []
+                for t in range(rng.randint(2, 4)):
+                    n = rng.randint(3, 26)
+                    rows = [[f"Line {t}.{r}" + (" with a longer label that wraps" if rng.random() < 0.2 else ""),
+                             fmt.money(rng.randint(1, 900_000))] for r in range(n)]
+                    totals = {i: "total" for i in rng.sample(range(1, n), min(n - 1, rng.randint(0, 2)))}
+                    blocks.append(f'<div style="height:{rng.randint(0, 700)}px"></div>')
+                    blocks.append(layout.table([layout.Col(0, "Item"), layout.Col(1, "Amount", align="num")], rows,
+                                               row_classes=totals))
+                doc = render.page("".join(blocks), theme_css=THEME, body_class="font-bundled")
+                path = os.path.join(tmp, f"t{case}.pdf")
+                err = io.StringIO()
+                with contextlib.redirect_stderr(err):
+                    info = layout.print_pdf(doc, path, layout.Fit(end=None))
+                self.assertEqual(info["table_splits"], [], case)
+                self.assertNotIn("split table", err.getvalue())
+                self.assertGreater(len(layout.row_pages(path)), 0)  # the probe's marks were read back
+
+    @NEEDS
+    def test_a_table_that_may_split_draws_its_own_outline(self):
+        """A wrapper broken across pages stretches to the page foot and prints an empty band under the last row: so
+        every table the rule lets split has a wrapper with no border and the outline on the table itself; a table
+        that never splits keeps its rounded wrapper."""
+        from playwright.sync_api import sync_playwright
+        rng = random.Random(4)
+        tables = [layout.table([layout.Col(0, "Item"), layout.Col(1, "Amount", align="num")],
+                               [[f"Line {r}", fmt.money(r)] for r in range(n)]) for n in (3, 7, 9, 18, rng.randint(6, 30))]
+        doc = render.page("".join(tables), theme_css=THEME, body_class="font-bundled")
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            pg = browser.new_page(viewport={"width": 758, "height": 1000})
+            pg.set_content(doc)
+            pg.emulate_media(media="print")
+            layout.table_break_rules(pg, 980)
+            got = pg.evaluate("""() => [...document.querySelectorAll('.tbl')].map(w => [w.dataset.split,
+                parseFloat(getComputedStyle(w).borderTopWidth),
+                parseFloat(getComputedStyle(w.querySelector('table')).borderTopWidth)])""")
+            browser.close()
+        self.assertEqual({g[0] for g in got}, {"rows", "whole"})
+        for split, wrapper, table in got:
+            if split == "rows":
+                self.assertEqual(wrapper, 0)
+                self.assertGreater(table, 0)
+            else:
+                self.assertGreater(wrapper, 0)
+                self.assertEqual(table, 0)
 
 
 if __name__ == "__main__":

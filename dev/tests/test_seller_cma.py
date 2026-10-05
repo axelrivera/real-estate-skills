@@ -69,6 +69,7 @@ def row(C, key):
 def texas(R):
     R["costs"] = {}  # no terms given: national estimates, never Florida's numbers
     R["subject"].update(state="TX", county="Travis", city="Austin")
+    R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}  # the agent's
     R.pop("export")
     R["buyer_payment"].pop("district")
     R["buyer_payment"].update(school_mills=9.5, total_mills=19.0)
@@ -304,6 +305,7 @@ class OtherMarkets(unittest.TestCase):
         for k in ("state", "county"):
             R["subject"].pop(k)
         R["mls"] = "Stellar"
+        R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}
         C, _ = run(R)
         self.assertTrue(C["preliminary"])
         self.assertEqual(C["state_hint"]["state"], "FL")
@@ -336,7 +338,8 @@ class Warnings(unittest.TestCase):
             ("top_nets_more", edit(("pricing", "strategies", 0, "expected_sale"), 470000)),
             ("expected_sale_order", edit(("pricing", "strategies", 0, "expected_sale"), 461000)),
             ("bottom_nets_more", lambda R: R["pricing"].pop("competing_offer_upside")),
-            ("range_wide", lambda R: R["recommendation"].update(low=400000, high=520000)),
+            ("range_wide", lambda R: R.__setitem__("range_override", {"low": 400000, "high": 520000,
+                                                                       "reason": "The agent's own range."})),
             ("no_county", no_county),
         ]
         self.assertEqual(run(report())[0]["warning_keys"], [])
@@ -353,12 +356,23 @@ class Warnings(unittest.TestCase):
             R["pricing"]["strategies"][0]["expected_sale"] = 485000
 
         def missing(R):
-            del R["recommendation"]["low"]
+            del R["recommendation"]["list_price"]
+
+        def typed_range(R):
+            R["recommendation"]["low"] = 455000  # the script sets the range
+
+        def typed_condition(R):
+            R["comps"]["cards"][1]["adjustments"].append({"label": "Remodeled Baths", "amount": -10000, "kind": "other"})
+
+        def no_level(R):
+            R["subject"]["condition"] = "updated"
 
         def bad_history(R):
             R["listing_history"] = [{"status": "sold", "price": 1}]
 
-        for change, pattern in ((above_list, r"strategies\[0\]"), (missing, ""), (bad_history, r"listing_history\[0\]")):
+        for change, pattern in ((above_list, r"strategies\[0\]"), (missing, ""), (bad_history, r"listing_history\[0\]"),
+                                (typed_range, r"recommendation\.low"), (typed_condition, r"cards\[1\]\.adjustments"),
+                                (no_level, r"subject\.condition")):
             with self.subTest(change.__name__):
                 R = report()
                 change(R)
@@ -379,8 +393,8 @@ class ExpectedSale(unittest.TestCase):
         C, _ = run(R)
         ratio = C["expected_sale_basis"]["ratio"]
         top, rec, low = C["strategies"]
-        floor = R["recommendation"]["low"]
-        for x, cap in ((rec, rec["list_price"]), (low, R["recommendation"]["high"])):
+        floor = C["recommendation"]["low"]
+        for x, cap in ((rec, rec["list_price"]), (low, C["recommendation"]["high"])):
             rule = compute.fmt.half_up(x["list_price"] * ratio + x["seller_credit"], 500)
             self.assertEqual(x["expected_sale"], min(max(rule, floor), cap))
             self.assertEqual(x["expected_sale_source"], "rule")
@@ -398,7 +412,7 @@ class ExpectedSale(unittest.TestCase):
         C, _ = run(R)
         self.assertEqual(C["expected_sale_basis"]["source"], "report")
         for i, x in enumerate(C["strategies"]):
-            self.assertLessEqual(x["expected_sale"], R["recommendation"]["high"])
+            self.assertLessEqual(x["expected_sale"], C["recommendation"]["high"])
             if i < 2:
                 self.assertLessEqual(x["expected_sale"], x["list_price"])
         C, _ = run(texas(self.no_typed()))
@@ -406,7 +420,7 @@ class ExpectedSale(unittest.TestCase):
         self.assertIn("expected_sale", C["assumption_keys"])
         R = tanager()
         self.assertEqual([x["expected_sale"] for x in run(R)[0]["strategies"]], [384500, 384500, 380000])
-        R["recommendation"].update(low=385000, high=390000)
+        R["range_override"] = {"low": 385000, "high": 390000, "reason": "The agent's own range."}
         self.assertEqual([x["expected_sale"] for x in run(R)[0]["strategies"]], [385000, 385000, 385000])
 
     def test_ratio_from_an_export_that_carries_the_final_list(self):
