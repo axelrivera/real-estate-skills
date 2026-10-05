@@ -435,7 +435,7 @@ def case_seller_cma(pdf, checks):
         "costs": ref["costs"], "buyer_payment": ref["buyer_payment"],
     })
     base["comps"]["cards"] = [{**c, "bullets": ["Reference comp."]} for c in ref["comps"]]
-    base["pricing"]["strategies"] = ref["strategies"]
+    base["pricing"]["strategies"] = [{k: v for k, v in s.items() if k != "label"} for s in ref["strategies"]]
     base["pricing"]["recommended_index"] = 1
     base["scatter"]["callouts"] = []
     work = os.path.join(WORK, "seller-cma")

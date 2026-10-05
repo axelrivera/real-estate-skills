@@ -119,8 +119,8 @@ class Reprice(unittest.TestCase):
 
     def test_output(self):
         R = report()
-        stay = {"label": "Stay at $489,900", "list_price": 489900, "expected_sale": 462000, "time": "60–120 days",
-                "seller_credit": 10000, "note": "Has sat 74 days at this price"}
+        stay = {"list_price": 489900, "expected_sale": 462000, "time": "60–120 days", "seller_credit": 10000,
+                "note": "Has sat at this price"}
         R["pricing"]["strategies"].insert(0, stay)
         R["pricing"]["recommended_index"] = 2
         R["reprice"] = {"current_price": 489900, "days_on_market": 74}
@@ -128,8 +128,9 @@ class Reprice(unittest.TestCase):
         self.assertLessEqual({"current_price": 489900, "days_on_market": 74, "stay_index": 0}.items(), C["reprice"].items())
         self.assertEqual(len(C["strategies"]), 4)
         self.assertTrue(C["strategies"][2]["recommended"])
-        self.assertEqual(C["first_steps_heading"], compute.labels(R)("sum_first"))  # the reprice's own labels
-        self.assertNotEqual(C["first_steps_heading"], run(report())[0]["first_steps_heading"])
+        self.assertEqual(C["summary"]["first_heading"], compute.word("sum_first", True))  # the reprice's own labels
+        self.assertNotEqual(C["summary"]["first_heading"], run(report())[0]["summary"]["first_heading"])
+        self.assertEqual(C["strategies"][0]["label"], compute.t("strategy_stay", price="$489,900"))
         self.assertIsNone(run(report())[0]["reprice"])
         R["pricing"]["strategies"][3]["expected_sale"] = 461000  # the competing-offer option (last) may sell above list
         run(R)
@@ -163,10 +164,9 @@ class Reprice(unittest.TestCase):
         R = reprice()
         R["costs"] = {}
         C, _ = run(R)
-        self.assertIn("brokerage_listing_agreement", C["assumption_keys"])
-        self.assertNotIn("brokerage_assumed", C["assumption_keys"])
+        self.assertIn("commission_default", C["assumption_keys"])
         self.assertEqual(len(C["assumptions"]), len(C["assumption_keys"]))
-        self.assertFalse({"brokerage_listing_agreement", "brokerage_assumed"} & set(run(reprice())[0]["assumption_keys"]))
+        self.assertNotIn("commission_default", run(reprice())[0]["assumption_keys"])
 
     def test_price_history(self):
         """The original price comes from report.json or the export's own row; no cut, no history."""
@@ -176,14 +176,11 @@ class Reprice(unittest.TestCase):
         R = reprice(current=474900)
         R["export"] = EVAL_ACTIVE
         R["reprice"]["days_on_market"] = 36
-        R["means"] = ["It started at {original_price}."]
         C, homes = run(R)
-        self.assertEqual((C["reprice"]["original_price"], C["placeholders"]["original_price"]), (484900, "$484,900"))
-        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
+        self.assertEqual((C["reprice"]["original_price"], C["reprice"]["original_price_display"]), (484900, "$484,900"))
         for price in ("$484,900", "$474,900"):
-            self.assertIn(price, C["reprice"]["price_history"])
-        doc, _ = seller_render.build_html(R, C, homes, AGENT)
-        self.assertIn(C["reprice"]["price_history"], doc)
+            self.assertIn(price, C["price_history"])
+        self.assertIn(C["price_history"], seller_render.build_html(C, AGENT).replace("&#x27;", "'"))
         R = reprice(current=474900)
         R.pop("export")
         R["reprice"]["original_price"] = 484900
@@ -191,7 +188,6 @@ class Reprice(unittest.TestCase):
         R["reprice"]["original_price"] = 474900
         C, _ = run(R)
         self.assertIsNone(C["reprice"]["original_price"])
-        self.assertNotIn("original_price", C["placeholders"])
 
 
 class Relist(unittest.TestCase):
@@ -206,7 +202,8 @@ class Relist(unittest.TestCase):
         R["relist"] = {"failed_price": 474900}
         R["pricing"]["strategies"][0]["list_price"] = 474900
         C, _ = run(R)
-        self.assertEqual((C["relist"]["source"], C["placeholders"]["failed_price"]), ("report", "$474,900"))
+        self.assertEqual((C["relist"]["source"], C["relist"]["failed_price_display"]), ("report", "$474,900"))
+        self.assertIn("$474,900", C["price_history"])
         R = reprice(current=474900)  # a reprice has its own rule
         R["relist"] = {"failed_price": 469900}
         self.assertIsNone(run(R)[0]["relist"])
@@ -231,7 +228,7 @@ class Relist(unittest.TestCase):
         C, _ = run(R)
         self.assertEqual((C["relist"]["failed_price"], C["relist"]["status"], C["relist"]["source"]),
                          (474900, "expired", "export"))
-        self.assertEqual((C["relist"]["original_price"], C["placeholders"]["original_price"]), (484900, "$484,900"))
+        self.assertEqual((C["relist"]["original_price"], C["relist"]["original_price_display"]), (484900, "$484,900"))
         _, r = stats_main([EVAL_EXPORT, "--address", "517 HICKORYWOOD AVE", "--sqft", "1849", "--mls", "Stellar", *FL])
         self.assertEqual((r["relist"]["failed_price"], r["relist"]["status"], r["mls"]), (474900, "expired", "Stellar"))
         self.assertNotIn("relist", stats([subject_row("ACT")], "--own-listing"))

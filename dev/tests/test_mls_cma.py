@@ -166,9 +166,6 @@ class Stats(unittest.TestCase):
         self.assertIn(("4 GOLD ST", 1900, "listing", "price"), excluded)
         self.assertIn("5 COMP RD", [h["address"] for h in pts["comp"]])  # a comp card is always drawn
         self.assertIn("656 LITTLE WEKIVA RD", [h["address"] for h in pts["active"]])  # low asking price: competition, kept
-        L = lambda key, **kw: key + ":" + str(kw.get("n", ""))
-        note = cma.excluded_note(excluded, L)
-        self.assertIn("excluded_price_many:2", note)
 
 
 class Blocks(unittest.TestCase):

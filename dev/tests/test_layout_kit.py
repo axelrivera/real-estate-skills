@@ -122,7 +122,7 @@ class Markup(unittest.TestCase):
         self.assertEqual(layout.notes_block(notes.Notes()), "")
 
     def test_moved_pagination_code_is_shared(self):
-        for name in ("page_fill", "page_checks", "group_blocks", "PAGINATE_JS", "HALF_EMPTY", "LONE_TAIL"):
+        for name in ("page_fill", "group_blocks", "HALF_EMPTY", "LONE_TAIL"):
             self.assertIs(getattr(cma, name), getattr(layout, name))
 
     def test_fit_steps_and_page_size(self):

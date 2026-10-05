@@ -137,7 +137,8 @@ class SameInsurance(unittest.TestCase):
         est = seller_compute.finance.insurance_estimate(R["recommendation"]["list_price"], market,
                                                         R["subject"].get("year_built"))["annual"]
         self.assertEqual(C["payments"]["insurance_annual"], est)
-        self.assertIn("insurance_estimated", C["assumption_keys"])
+        self.assertTrue(C["payments"]["insurance_estimated"])
+        self.assertIn("payment", C["assumption_keys"])
 
 
 class BuyerBrokerShortfall(unittest.TestCase):

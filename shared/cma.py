@@ -1,19 +1,17 @@
-"""Report pieces shared by the buyer and seller CMAs: labels, tables, charts, keep-together groups, pagination.
+"""Report pieces shared by the buyer and seller CMAs: the page-1 heading, charts (scatter, dot plot), comps math (adjusted
+values, time adjustments, the range rules) and the closing notices. The page fit lives in layout.py.
 
-All visible text comes from the skill's labels file (assets/labels.json). Colors are theme variables
-(shared/cma.css), never hard-coded.
+All visible text comes from the skill's labels file (assets/labels.json), passed in as a label lookup. Colors are theme
+variables (shared/cma.css), never hard-coded. Figures print through fmt.
 """
 import html
-import json
 import math
 import os
 import re
-import shutil
 import statistics
-import tempfile
 from datetime import date, timedelta
 
-from . import finance, layout, mls
+from . import finance, fmt, layout, mls
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
@@ -23,42 +21,12 @@ LABEL_GAP = 3  # px kept clear between two chart labels on the seller CMA's scat
 esc = html.escape
 
 
-# --- labels -------------------------------------------------------------------
-
-class Labels:
-    """Label lookup with {placeholders}: labels('pay_header', price='$474,900')."""
-
-    def __init__(self, assets_dir, overrides=None):
-        with open(os.path.join(assets_dir, "labels.json"), encoding="utf-8") as f:
-            self.text = json.load(f)
-        self.text.update(overrides or {})
-
-    def __call__(self, key, **kw):
-        t = self.text[key]
-        return t.format(**kw) if kw else t
-
-
 def css():
     with open(CMA_CSS, encoding="utf-8") as f:
         return f.read()
 
 
-# --- html building blocks ----------------------------------------------------
-
-def table(head, rows, num_cols=(), row_classes=None):
-    head = [unspaced_range(h) for h in head]  # Results_v5: "April – June" reads "April–June" in a header
-    th = "".join(f'<th class="n">{h}</th>' if i in num_cols else f"<th>{h}</th>" for i, h in enumerate(head))
-    body = []
-    for ri, r in enumerate(rows):
-        cls = (row_classes or {}).get(ri, "")
-        tds = "".join(f'<td class="n">{c}</td>' if i in num_cols else f"<td>{c}</td>" for i, c in enumerate(r))
-        body.append(f'<tr class="{cls}">{tds}</tr>' if cls else f"<tr>{tds}</tr>")
-    return f'<div class="tbl"><table><thead><tr>{th}</tr></thead><tbody>{"".join(body)}</tbody></table></div>'
-
-
-def ul(items, cls="plain"):
-    return f'<ul class="{cls}">' + "".join(f"<li>{i}</li>" for i in items) + "</ul>"
-
+# --- page 1 -------------------------------------------------------------------
 
 def subject_heading(subject):
     """Page-1 heading: the address across the full width, a location line (city, area, MLS number), the home facts.
@@ -95,13 +63,6 @@ def adjustment_scope_warning(market, county, price):
             "export (or use the agent's), scale flat amounts like the pool to the price, and say so in method_note.")
 
 
-def k(v):
-    """$455K, or $1.25M from a million up (CMA-12)."""
-    if abs(v) >= 1_000_000:
-        return "$" + f"{v / 1_000_000:.2f}".rstrip("0").rstrip(".") + "M"
-    return money(v / 1000) + "K"
-
-
 def nice_step(span, target=6):
     """A tick step of 1, 2, 2.5 or 5 x 10^n giving about `target` ticks across `span` (CMA-12)."""
     raw = max(span, 1) / target
@@ -115,29 +76,6 @@ def _ticks(lo, hi, step):
         out.append(round(v))
         v += step
     return out
-
-
-def fill(value, values):
-    """Replace {median_adjusted}-style placeholders in every string of `value` (report wording), so numbers the
-    scripts compute aren't typed by hand. Unknown names are left as written."""
-    if isinstance(value, str):
-        def one(m):
-            v = values.get(m.group(1), m.group(0))
-            # a value that opens a sentence ("{comps_since_split} sales closed..."): its first letter upper case
-            if v[:1].islower() and re.search(r"(^|[.!?]\s+|<strong>)$", value[:m.start()]):
-                return v[0].upper() + v[1:]
-            return v
-        return re.sub(r"\{(\w+)\}", one, value)
-    if isinstance(value, list):
-        return [fill(v, values) for v in value]
-    if isinstance(value, dict):
-        return {key: fill(v, values) for key, v in value.items()}
-    return value
-
-
-def page_one_values(C):
-    """Placeholders every CMA page 1 can use."""
-    return {"median_adjusted": C["median_adjusted_display"]}
 
 
 # --- scatterplot ---------------------------------------------------------------
@@ -214,12 +152,12 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     `sc`: {callouts: [{address, label, side}], subject_label, subject_label_pos, min/max/fit_size_ratio}.
     Label sides: left, right, above or below.
     Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active,
-    counts {kind: n} for scatter_legend, and callouts_dropped for callouts whose home isn't on the chart.
+    counts {kind: n} of what was drawn, and callouts_dropped for callouts whose home isn't on the chart.
     `points`: scatter_points' result, computed once by the caller's document model (the trend it states is the one
     drawn). `chart`: a layout.Chart, marked with each series as it's drawn, so its legend names only what's on the chart.
     `band_label`: the range band's text as the caller formats it; `kfmt`: the tick formatter (cma.k by default).
     """
-    kf = kfmt or k
+    kf = kfmt or fmt.k
     pts, excluded, fit = points or scatter_points(homes, sc, subject_sqft, subject_address, comps)
     sold, act = pts["comp"] + pts["sold"], pts["active"]
     kind = {id(h): k for k, hs in pts.items() for h in hs}
@@ -286,7 +224,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
     marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
     placer = _LabelPlacer(marks, (Lm, T, W - R, H - B), gap=LABEL_GAP if drop_crowded else 0)
-    band_text = band_label or f'{L("band")} {k(band[0])}–{k(band[1])}'
+    band_text = band_label or f'{L("band")} {fmt.range(band[0], band[1], fmt.k)}'
     band_w = _text_w(band_text, 12, bold=True)
     spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
              for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
@@ -484,20 +422,6 @@ def _mark(chart, kind, L):
         chart.mark(kind, L("lg_" + kind), LEGEND_SWATCHES[kind])
 
 
-def scatter_legend(L, subject, counts):
-    """Only the entries with something on the chart: `counts` is scatter()'s info["counts"]."""
-    entries = [
-        ("comp", '<circle cx="7" cy="7" r="5.5" class="m-comp"/>'),
-        ("sold", '<circle cx="7" cy="7" r="4" class="m-sold"/>'),
-        ("active", '<circle cx="7" cy="7" r="5.5" class="m-active hol"/>'),
-        ("trend", '<line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>'),
-    ]
-    spans = [f'<span><svg viewBox="0 0 14 14">{mark}</svg>{L("lg_" + kind)}</span>' for kind, mark in entries if counts.get(kind)]
-    spans.append(f'<span><svg viewBox="0 0 14 14"><path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--subject)"/></svg>'
-                 f'{L("lg_subject", subject=esc(subject))}</span>')
-    return '<div class="legend">' + "".join(spans) + "</div>"
-
-
 def trend_position(price, at_subject):
     """Where the subject's price sits against the size-only line: ('above' | 'below' | 'at', gap in dollars).
     Within 1% of the price (at least $5,000) counts as at the line."""
@@ -505,36 +429,6 @@ def trend_position(price, at_subject):
     if abs(gap) < max(5000, price * 0.01):
         return "at", 0
     return ("above" if gap > 0 else "below"), abs(gap)
-
-
-_TREND_ICON_Y = {"above": 10.5, "below": 22.5, "at": 16.5}
-
-
-def trend_caption(info, price, L):
-    """The chart's takeaway box: a headline with where the subject sits against the size-only line (and by how much),
-    what the line means, and an icon that draws the same thing. The one chart element allowed a tint (see cma.css)."""
-    if not info.get("trend_at_subject"):
-        return ""
-    side, gap = trend_position(price, info["trend_at_subject"])
-    values = {"price": finance.money(price), "gap": finance.money(gap, 1000)}
-    cy = _TREND_ICON_Y[side]
-    icon = ('<svg class="cr-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" class="cr-disc"/>'
-            '<line x1="6" y1="21.5" x2="26" y2="11.5" class="cr-line"/>'
-            f'<path d="M16,{cy - 4} L20,{cy} L16,{cy + 4} L12,{cy} Z" class="cr-subj"/></svg>')
-    body = " ".join(t for t in (L("trend_caption"), L("trend_" + side, **values)) if t)
-    return (f'<div class="chart-read">{icon}<div><p class="cr-head">{L("trend_head_" + side, **values)}</p>'
-            f'<p class="cr-body">{body}</p></div></div>')
-
-
-def excluded_note(excluded, L):
-    """One line with the counts only: which homes were left off doesn't matter to the reader, just that some were
-    and why (size, or a price far off the line)."""
-    parts = []
-    for reason in ("size", "price"):
-        n = sum(e[3] == reason for e in excluded)
-        if n:
-            parts.append(L(f"excluded_{reason}_one") if n == 1 else L(f"excluded_{reason}_many", n=n))
-    return f'<p class="note">{" ".join(parts)}</p>' if parts else ""
 
 
 # --- dot plot (page 1) ---------------------------------------------------------
@@ -546,7 +440,7 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None
     """Adjusted comps against the supported range, with the asking (or list) price marked. The address column is as
     wide as its longest address, measured (DOT_ADDR_MIN to DOT_ADDR_MAX); an address wider still is fitted to it.
     `kfmt` formats the values and ticks (cma.k by default)."""
-    k_ = kfmt or k
+    k_ = kfmt or fmt.k
     cs = sorted(cards, key=lambda c: -c["adjusted"])
     vals = [c["adjusted"] for c in cs] + [low, high, marker_price] + ([second[0]] if second else [])
     step = nice_step(max(vals) - min(vals) + 16000, 6)
@@ -596,24 +490,11 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None
     return "".join(o)
 
 
-# --- keep-together groups and pagination -------------------------------------
+# --- the page and the comps ------------------------------------------------------
 
-# Keep-together groups and the pagination script live in layout.py (the one page-fit pipeline); the names stay here
-# for the CMA renderers until they move to layout.print_pdf.
-FIGURES, group_blocks, PAGINATE_JS = layout.FIGURES, layout.group_blocks, layout.PAGINATE_JS
-
-PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": "0.45in"}
-CONTENT_HEIGHT_PX = 10 * 96  # 11in − 0.45in − 0.55in
-
-
-def paginate(pg, starts=()):
-    """Before printing: fit page 1 on one page (fit_level 0-3), then move groups so none splits
-    and no section starts in the bottom quarter of a page. `starts`: the first words of blocks a print read-back saw
-    starting a page (print_report)."""
-    pg.set_viewport_size({"width": 730, "height": 1000})  # 8.5in − 2 × 0.45in
-    res = pg.evaluate(PAGINATE_JS, [CONTENT_HEIGHT_PX, list(starts)])
-    return {"moved": res["moved"], "summary_page": {"height_px": round(res["onepageH"]), "page_px": res["pageH"],
-                                                    "fits": res["onepageH"] <= res["pageH"], "fit_level": res["fit"]}}
+# Keep-together groups live in layout.py (the one page-fit pipeline); the name stays here for older callers
+group_blocks = layout.group_blocks
+PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": "0.45in"}  # every CMA's printed page
 
 
 def derive_comps(comps):
@@ -832,12 +713,6 @@ def adjustment_kinds_used(cards):
     return seen
 
 
-def adjustment_words(cards):
-    """'size, condition and updates, market changes since each sale and seller credits' (CMA-26): what was adjusted,
-    each kind once, in fixed plain words, never the label's own wording."""
-    return _and([ADJ_KIND_WORDS[k] for k in adjustment_kinds_used(cards)])
-
-
 def adjustment_summary(cards, time_info=None, f=None):
     """Results_v5 case 02: the method line's list of what was adjusted, generated from the comps so it names every kind
     actually used, each with its amounts: 'Adjusted for size (plus or minus up to $7,500), condition and updates
@@ -980,9 +855,9 @@ def apply_time_adjustments(comps, homes, as_of, split):
             got = a.get("amount")
             off = not isinstance(got, (int, float)) or abs(got - amount) > max(300, 0.05 * abs(amount))
             if off and a.get("source") != "script":
-                why = (f"it closed {long_date(closed.isoformat())}, on or after the {long_date(cutoff.isoformat())} cutoff, so it "
+                why = (f"it closed {fmt.date_long(closed.isoformat())}, on or after the {fmt.date_long(cutoff.isoformat())} cutoff, so it "
                        "gets none" if not amount else
-                       f"{_pct(rate)} a quarter from its {long_date(closed.isoformat())} close to {long_date(end.isoformat())} "
+                       f"{_pct(rate)} a quarter from its {fmt.date_long(closed.isoformat())} close to {fmt.date_long(end.isoformat())} "
                        f"gives {money(amount)}")
                 errors.append(f"{where}.adjustments[{j}]: the time adjustment is {money(got) if isinstance(got, (int, float)) else repr(got)}, "
                               f"but {why} → leave the amount out (delete the line) and the script adds it.")
@@ -1012,41 +887,6 @@ def time_warnings(info):
             "close_date (YYYY-MM-DD) to the card and re-run." for a in (info or {}).get("undated") or []]
 
 
-def time_values(info):
-    """{time_rate} ('1.5%') and {time_cutoff} ('July', 'August 15') for the method wording."""
-    return {"time_rate": info["rate_display"], "time_cutoff": info["cutoff_display"]} if info else {}
-
-
-_TIME_SENTENCE = re.compile(r"\bper quarter\b|\ba quarter\b|\btime adjust", re.I)
-_BEFORE_MONTH = re.compile(r"\b(?:before|prior to|until)\s+(?:early\s+|late\s+|mid-?\s*)?(" + "|".join(MONTH_NAMES) + r")\b")
-_PERCENT = re.compile(r"(\d+(?:\.\d+)?)\s*%")
-
-
-def time_method_errors(fields, info):
-    """Results_v5: the method's stated time adjustment must be the one applied: in a sentence about the quarterly
-    adjustment, a typed percent other than the rate, or 'before <Month>' at another month than the cutoff, is an
-    error (write {time_rate} and {time_cutoff}). `fields`: [(path, text)]."""
-    if not info:
-        return []
-    out = []
-    for path, text in fields:
-        for sentence in re.split(r"(?<=[.!?;])\s+", re.sub(r"<[^>]+>", "", str(text))):
-            if not _TIME_SENTENCE.search(sentence):
-                continue
-            pcts = [float(p) for p in _PERCENT.findall(sentence)]
-            if pcts and not any(abs(p - info["rate"] * 100) < 0.01 for p in pcts):
-                out.append(f'{path}: says "{_PERCENT.search(sentence).group(0)}" a quarter, but the time adjustment applied '
-                           f"is {info['rate_display']} → write {{time_rate}}.")
-            cut = info["cutoff_display"].split()[0]
-            for m in _BEFORE_MONTH.finditer(sentence):
-                if m.group(1) != cut:
-                    out.append(f'{path}: says "{m.group(0)}", but the time adjustment applies to sales before '
-                               f"{info['cutoff_display']} → write \"before {{time_cutoff}}\".")
-    return out
-
-
-# --- comp facts for the wording, and the light check of comp prose (Results_v5) ------------------
-
 NUMBER_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
 
 
@@ -1054,151 +894,13 @@ def number_word(n):
     return NUMBER_WORDS[n] if 0 <= n < len(NUMBER_WORDS) else f"{n:,}"
 
 
-def comp_facts(cards, homes, split, as_of=None, fmt=money):
-    """Results_v5: the facts comp wording usually states, as placeholders: {comps_count}, {comps_since_split} (closed on
-    or after the market split), {comps_with_<kind>} (comps with an adjustment of that kind, e.g. {comps_with_age}:
-    roof and systems; credits also counts seller-paid costs), {newest_comp} and {newest_comp_date}, {adjusted_min},
-    {adjusted_max}, {adjusted_median} (with `fmt`). Counts are words ('four'). Returns (values, raw) where raw holds
-    the numbers the prose check compares against."""
-    dated = [(c, comp_close_date(c, homes)) for c in cards]
-    since = [c for c, d in dated if d and split and d >= split]
-    kinds = {k: sum(1 for c in cards if any(isinstance(a, dict) and a.get("amount") and adjustment_kind(a) == k
-                                              for a in c.get("adjustments") or [])
-                     or (k == "credits" and c.get("seller_concessions")))
-             for k in ADJUSTMENT_KINDS}
-    values = {"comps_count": number_word(len(cards)), "comps_since_split": number_word(len(since)),
-              **{f"comps_with_{k}": number_word(n) for k, n in kinds.items()}}
-    adjusted = [c["adjusted"] for c in cards if isinstance(c.get("adjusted"), (int, float))]
-    if adjusted:
-        values.update(adjusted_min=fmt(min(adjusted)), adjusted_max=fmt(max(adjusted)),
-                      adjusted_median=fmt(statistics.median(adjusted)))
-    known = [(c, d) for c, d in dated if d]
-    newest = max(d for _, d in known) if known else None
-    if newest:
-        top = next(c for c, d in known if d == newest)
-        values.update(newest_comp=display_address(top["address"]), newest_comp_date=f"{MONTH_NAMES[newest.month - 1]} {newest.day}")
-    raw = {"n": len(cards), "n_since": len(since), "kinds": kinds, "dates": [d for _, d in dated], "newest": newest,
-           "adjusted": adjusted, "sold": [c.get("sold_price") for c in cards],
-           "adjusted_since": [c["adjusted"] for c in since if isinstance(c.get("adjusted"), (int, float))],
-           "sold_since": [c.get("sold_price") for c in since],
-           "split_month": MONTH_NAMES[split.month - 1] if split else None, "addresses": [c.get("address", "") for c in cards]}
-    return values, raw
-
-
-_COUNT = re.compile(r"\b(?P<n>" + "|".join(NUMBER_WORDS[2:11]) + r")\s+(?:of\s+(?:the|these|our)\s+)?"
-                    r"(?P<mid>(?:[A-Za-z][\w'-]*\s+){0,3}?)(?P<noun>sales|comps|comparables|comparable sales|matches|homes)\b",
-                    re.I)
-_COMP_WORDS = re.compile(r"\b(closest|best|nearest|comparable|comps?|matches)\b", re.I)
-_SINCE = re.compile(r"\b(?:since|after|from)\s+(?:early\s+|mid-?\s*|late\s+)?(" + "|".join(MONTH_NAMES) + r")\b")
-_WITH = re.compile(r"^\s+with\s+(?:an?\s+|the\s+)?((?:[\w-]+\s*){1,4})", re.I)
-_BAND = re.compile(r"(?:\b(?P<q1>low|lower|mid|middle|high|upper)(?:[- ]to[- ](?P<q2>mid|middle|high|upper))?[- ]?)?"
-                   r"\$(?P<d>\d{1,3}),?(?P<z>0)00s\b", re.I)
-_NEWEST = re.compile(r"\b(newest|most recent|latest)\b(?:\s+[\w-]+){0,2}?\s+(sale|sales|close|closing|comp|sold|match)\b", re.I)
-_LISTING_WORDS = re.compile(r"\b(listings?|for sale|asking|listed|active)\b", re.I)
-
-
-def _band(m):
-    """(low, high) of a '$440,000s' band ('$400,000s' spans $100,000), narrowed by low / mid / high, $1,000 loose."""
-    d = int(m.group("d"))
-    base, span = d * 1000, 100000 if d % 100 == 0 else 10000 if d % 10 == 0 else 1000
-    q1, q2 = (m.group("q1") or "").lower(), (m.group("q2") or "").lower()
-    part = {"low": (0, 0.5), "lower": (0, 0.5), "mid": (0.25, 0.75), "middle": (0.25, 0.75), "high": (0.5, 1),
-            "upper": (0.5, 1)}
-    lo, hi = part.get(q1, (0, 1))
-    if q2:
-        hi = part[q2][1]
-    return base + lo * span - 1000, base + hi * span + 1000
-
-
-def comp_prose_errors(fields, raw, extra_counts=()):
-    """Results_v5: a light check of comp and scatter wording against the comps, kept conservative. A number-word count
-    of comps ("the three sales that closed since July", "four comps with newer roofs", "the five closest matches") that
-    isn't the comps' own count; a "$440,000s" band the comps it names don't sit in; "the newest sale" for a comp that
-    isn't the newest. `fields`: [(path, text)]; `raw` from comp_facts; `extra_counts`: other counts a "since <split>"
-    sentence may mean (the export's sales since the split). Each as `field: problem → fix`."""
-    out = []
-    since_ok = {raw["n_since"], *extra_counts}
-    for item in fields:
-        path, text = item[:2]
-        card = re.match(r"^comps\.cards\[(\d+)\]", path)
-        card_index = item[2] if len(item) > 2 else int(card.group(1)) if card else None
-        for sentence in re.split(r"(?<=[.!?])\s+", re.sub(r"<[^>]+>", "", str(text))):
-            since_split = any(m.group(1) == raw["split_month"] for m in _SINCE.finditer(sentence))
-            for m in _COUNT.finditer(sentence):
-                n, noun = NUMBER_WORDS.index(m.group("n").lower()), m.group("noun").lower()
-                w = _WITH.match(sentence[m.end():])
-                kind = adjustment_kind({"label": w.group(1)}) if w else None
-                if kind and kind != "other":
-                    if n != raw["kinds"].get(kind, n):
-                        out.append(f'{path}: says "{m.group(0)} with {w.group(1).strip()}", but {number_word(raw["kinds"][kind])} '
-                                   f"of the comps have a {ADJ_KIND_WORDS[kind]} adjustment → write {{comps_with_{kind}}}.")
-                elif since_split:
-                    if n not in since_ok:
-                        out.append(f'{path}: says "{m.group(0)}" since {raw["split_month"]}, but '
-                                   f"{number_word(raw['n_since'])} of the comps closed since then → write {{comps_since_split}}.")
-                elif noun != "homes" and (noun in ("comps", "comparables", "comparable sales", "matches")
-                                          or _COMP_WORDS.search(m.group("mid") or "")):
-                    if n not in (raw["n"], raw["n_since"]):
-                        out.append(f'{path}: says "{m.group(0)}", but the report has {number_word(raw["n"])} comps → '
-                                   "write {comps_count}.")
-            named = _COMP_WORDS.search(sentence) or _COUNT.search(sentence) or re.search(r"\badjust", sentence, re.I)
-            if named and not _LISTING_WORDS.search(sentence):
-                group = (raw["adjusted_since"], raw["sold_since"]) if since_split else (raw["adjusted"], raw["sold"])
-                for m in _BAND.finditer(sentence):
-                    lo, hi = _band(m)
-                    if group[0] and not any(vals and all(lo <= v <= hi for v in vals if isinstance(v, (int, float)))
-                                            for vals in group):
-                        out.append(f'{path}: says "{m.group(0)}", but the comps it names run from {money(min(group[0]))} '
-                                   f"to {money(max(group[0]))} adjusted → write {{adjusted_min}} to {{adjusted_max}}.")
-            if raw["newest"] and _NEWEST.search(sentence):
-                if card_index is not None:
-                    i = card_index
-                    d = raw["dates"][i] if i < len(raw["dates"]) else None
-                    if d and d < raw["newest"]:
-                        out.append(f'{path}: calls this sale "{_NEWEST.search(sentence).group(0)}", but a comp closed later '
-                                   f"({long_date(raw['newest'].isoformat())}) → say {{newest_comp}} ({{newest_comp_date}}) is "
-                                   "the newest, or drop it.")
-                else:
-                    hit = [i for i, a in enumerate(raw["addresses"]) if a and _street(a).split(" ")[0] in sentence.split()
-                           and _street(a).split(" ")[1:2] and _street(a).split(" ")[1].lower() in sentence.lower()]
-                    if len(hit) == 1 and raw["dates"][hit[0]] and raw["dates"][hit[0]] < raw["newest"]:
-                        out.append(f'{path}: calls {display_address(raw["addresses"][hit[0]])} '
-                                   f'"{_NEWEST.search(sentence).group(0)}", but a comp closed later → write {{newest_comp}}.')
-    return out
-
-
-# --- dates in history tables, and column headers -------------------------------------
-
-def history_date_labels(dates, this_year=None):
-    """Results_v5 case 03: 'Jul 10, 2026' on every row when the rows span more than one year (or their one year isn't
-    `this_year`), so a bare 'Aug 14' never reads as another row's year; 'Jul 10' on every row when all are this year."""
-    years = {d.year for d in dates}
-    short = len(years) == 1 and (this_year is None or years == {this_year})
-    return [f"{d:%b} {d.day}" if short else f"{d:%b} {d.day}, {d.year}" for d in dates]
-
-
-_SPACED_RANGE = re.compile(r"(?<=\w)\s+[–-]\s+(?=\w)")
-
-
-def unspaced_range(text):
-    """Results_v5: 'April – June' in a column header reads 'April–June' (an en dash, no spaces)."""
-    return _SPACED_RANGE.sub("–", str(text))
-
-
-def long_date(value):
-    """A YYYY-MM-DD date written out ("September 26, 2026"); anything else as given."""
-    try:
-        d = date.fromisoformat(str(value))
-    except ValueError:
-        return value or ""
-    return f"{d:%B} {d.day}, {d.year}"
-
+# --- closing notices ------------------------------------------------------------------
 
 def report_notices(C):
     """The CMA's fixed closing notices (CMA-16): where the sales data came from and as of when, that a CMA isn't an
     appraisal or for lending, and that payment and tax figures are estimates."""
     src = C.get("data_source") or {}
-    when = long_date(src.get("as_of"))  # CMA-311: "September 26, 2026" in a client PDF, never 2026-09-26
+    when = fmt.date_long(src.get("as_of"))  # CMA-311: "September 26, 2026" in a client PDF, never 2026-09-26
     lines = [f"Sales data: {src['mls']} MLS as of {when}. Deemed reliable but not guaranteed." if src.get("mls") and src.get("export")
              else f"Sales data as of {when}, from the sources named in the report. Deemed reliable but not guaranteed."]
     lines.append("This comparative market analysis is an opinion of price, not an appraisal, and isn't for lending purposes.")
@@ -1208,32 +910,6 @@ def report_notices(C):
 
 # CMA-274, CMA-276: reading the printed pages back lives in layout.py
 HALF_EMPTY, LONE_TAIL, page_fill, _squash = layout.HALF_EMPTY, layout.LONE_TAIL, layout.page_fill, layout.squash
-
-
-def print_report(doc, path, footer_html, tail_hint="the last sections"):
-    """Print a CMA report (paginate, then the PDF), read the pages back (page_fill) and, when a page before the last
-    is under half full because the block starting it printed lower than paginate estimated (CMA-274 drift: an earlier
-    block printed taller), print it again with that block starting its page in the estimate, so the blocks after it
-    are placed (and a scatter shrunk to fit) as they print. The second print is kept only when it has fewer page checks.
-    Returns (paginate's info, pages or None)."""
-    from . import render
-    info = render.html_to_pdf(doc, path, margins=PAGE_MARGINS, footer_html=footer_html, before_print=paginate)
-    pages = page_fill(path)
-    if not pages:
-        return info, pages
-    starts = [_squash(pages[i][1])[:30] for i in range(1, len(pages) - 1) if pages[i][0] < HALF_EMPTY and pages[i][1].strip()]
-    checks = page_checks(pages, tail_hint)
-    if not starts or not checks:
-        return info, pages
-    with tempfile.TemporaryDirectory() as tmp:
-        second = os.path.join(tmp, os.path.basename(path))
-        retry = render.html_to_pdf(doc, second, margins=PAGE_MARGINS, footer_html=footer_html,
-                                   before_print=lambda pg: paginate(pg, starts))
-        again = page_fill(second)
-        if again is not None and len(page_checks(again, tail_hint)) < len(checks):
-            shutil.move(second, path)
-            return retry, again
-    return info, pages
 
 
 CALLOUT_REASONS = {"size": "left off the chart for its size (scatter.min_size_ratio / max_size_ratio)",
@@ -1253,6 +929,4 @@ def callout_checks(info):
                    "a plotted home, then render again.")
     return out
 
-
-page_checks = layout.page_checks
 

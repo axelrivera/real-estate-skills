@@ -105,13 +105,12 @@ class Short(unittest.TestCase):
                 self.assertLessEqual(abs(n - v), 5000 if t.endswith("M") else (500 if digits == 0 else 50) + 1e-6)
                 self.assertEqual(fmt.k(-v, digits), fmt.MINUS + t)
 
-    def test_k_agrees_with_cma_k_and_short_price(self):
+    def test_k_agrees_with_short_price(self):
         rng = random.Random(7)
         for _ in range(N):
             v = rng.randint(1_000, 3_000_000)
             if v % 1000 == 500 or v % 100 == 50 or 999_000 <= v < 1_000_000:
                 continue  # ties (now half-up) and the band that now reads $1M instead of $1,000K
-            self.assertEqual(fmt.k(v), cma.k(v))
             self.assertEqual(fmt.k(v, 1), oe.short_price(v))
 
 
@@ -128,22 +127,18 @@ class Percent(unittest.TestCase):
                 self.assertEqual(len(fixed[:-1].split(".")[1]) if digits else 0, digits)
 
     def test_agrees_with_the_skill_forms(self):
-        sc_pct = load("seller-cma", "compute")[0].pct_text
         rng = random.Random(9)
         for _ in range(N):
             f = rng.randint(0, 10000) / 100000  # three decimals of a percent, like the rates the skills print
-            self.assertEqual(fmt.pct(f, None, symbol=False), sc_pct(f))
             if round(f * 1e4) % 10 != 5:
                 self.assertEqual(fmt.pct(f), oe.pct(f))
 
     def test_months(self):
         self.assertEqual(fmt.months(1), "1 month")
         self.assertEqual(fmt.months(1.04), "1 month")
-        months_text = load("seller-cma", "compute")[0].months_text
         rng = random.Random(10)
         for _ in range(500):
             m = rng.randint(1, 240) / 10  # one decimal, as stats.py gives it
-            self.assertEqual(fmt.months(m), months_text(m))
             self.assertTrue(fmt.months(m).endswith(" month" if m == 1 else " months"))
 
 
@@ -178,24 +173,12 @@ class Dates(unittest.TestCase):
             for v in (stamp, d.isoformat()):
                 self.assertEqual(fmt.when(v), oe.fmt_when_short(v))
                 self.assertEqual(fmt.when(v, "dot"), oe.fmt_when(v))
-            self.assertEqual(fmt.date_long(d), cma.long_date(d.isoformat()))
 
     def test_text_passes_through(self):
         for f in (fmt.date_long, fmt.date_short, fmt.when):
             self.assertEqual(f("upon acceptance"), "upon acceptance")
             self.assertEqual(f(None), "")
 
-    def test_period_labels_match_both_copies(self):
-        (compute,) = load("seller-cma", "compute")
-        (deck,) = load("seller-cma", "deck")
-        rng = random.Random(15)
-        for _ in range(400):
-            first = date(2024, 1, 1) + timedelta(days=rng.randint(0, 700))
-            split = first + timedelta(days=rng.randint(20, 200))
-            last = split + timedelta(days=rng.randint(20, 200))
-            w = {"first_close": first.isoformat(), "split_date": split.isoformat(), "last_close": last.isoformat()}
-            self.assertEqual(fmt.period_labels(w), compute.period_labels(w))
-            self.assertEqual(fmt.period_labels(w), deck.period_labels(w))
 
 
 class Ranges(unittest.TestCase):
