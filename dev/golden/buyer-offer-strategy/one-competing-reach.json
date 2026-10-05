@@ -140,6 +140,7 @@
    "median_dom": 23,
    "months_supply": 1.4,
    "sale_to_list": 0.9642,
+   "sale_to_list_basis": "original",
    "share_with_seller_costs": "100%"
   },
   "payment_assumed": {
@@ -674,20 +675,20 @@
    ],
    "counter_score": 66,
    "counter_terms": {
-    "appraisal_gap": 2000,
+    "appraisal_gap": 3000,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
     "deposit": 13500,
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 452000,
+    "price": 453000,
     "sale_contingency_days": 0,
-    "seller_concessions": 500
+    "seller_concessions": 1500
    },
    "deposit": 13500,
    "down_pct": 0.05,
-   "downside_price": 439000,
+   "downside_price": 440000,
    "expires": null,
    "expires_raw": null,
    "expires_today": false,
@@ -746,11 +747,11 @@
     "lines": [
      [
       "price",
-      439000
+      440000
      ],
      [
       "conc",
-      -500
+      -1500
      ],
      [
       "repair",
@@ -758,19 +759,19 @@
      ],
      [
       "listing",
-      -10975
+      -11000
      ],
      [
       "bb",
-      -10975
+      -11000
      ],
      [
       "transfer",
-      -3073
+      -3080
      ],
      [
       "title",
-      -2270
+      -2275
      ],
      [
       "settle",
@@ -796,9 +797,9 @@
     "missing": {
      "count": 0
     },
-    "net": 406478,
-    "net_adj": 405818,
-    "price": 439000,
+    "net": 406416,
+    "net_adj": 405756,
+    "price": 440000,
     "tax_bill_assumed": true
    },
    "ns_counter": {
@@ -814,11 +815,11 @@
     "lines": [
      [
       "price",
-      452000
+      453000
      ],
      [
       "conc",
-      -500
+      -1500
      ],
      [
       "repair",
@@ -826,19 +827,19 @@
      ],
      [
       "listing",
-      -11300
+      -11325
      ],
      [
       "bb",
-      -11300
+      -11325
      ],
      [
       "transfer",
-      -3164
+      -3171
      ],
      [
       "title",
-      -2335
+      -2340
      ],
      [
       "settle",
@@ -864,9 +865,9 @@
     "missing": {
      "count": 0
     },
-    "net": 418672,
-    "net_adj": 418012,
-    "price": 452000,
+    "net": 418610,
+    "net_adj": 417950,
+    "price": 453000,
     "tax_bill_assumed": true
    },
    "ns_down": {
@@ -882,11 +883,11 @@
     "lines": [
      [
       "price",
-      439000
+      440000
      ],
      [
       "conc",
-      -500
+      -1500
      ],
      [
       "repair",
@@ -894,19 +895,19 @@
      ],
      [
       "listing",
-      -10975
+      -11000
      ],
      [
       "bb",
-      -10975
+      -11000
      ],
      [
       "transfer",
-      -3073
+      -3080
      ],
      [
       "title",
-      -2270
+      -2275
      ],
      [
       "settle",
@@ -932,13 +933,13 @@
     "missing": {
      "count": 0
     },
-    "net": 403478,
-    "net_adj": 402818,
-    "price": 439000,
+    "net": 403416,
+    "net_adj": 402756,
+    "price": 440000,
     "tax_bill_assumed": true
    },
-   "price": 439000,
-   "rank_value": 389800.8,
+   "price": 440000,
+   "rank_value": 389738.8,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": [
@@ -989,7 +990,7 @@
     },
     "total": 72
    },
-   "seller_concessions": 500,
+   "seller_concessions": 1500,
    "short_sale": false,
    "status": "active",
    "target": {
@@ -1115,20 +1116,20 @@
     ],
     "counter_score": 66,
     "counter_terms": {
-     "appraisal_gap": 2000,
+     "appraisal_gap": 3000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 452000,
+     "price": 453000,
      "sale_contingency_days": 0,
-     "seller_concessions": 500
+     "seller_concessions": 1500
     },
     "deposit": 13500,
     "down_pct": 0.05,
-    "downside_price": 439000,
+    "downside_price": 440000,
     "expires": null,
     "expires_raw": null,
     "expires_today": false,
@@ -1187,11 +1188,11 @@
      "lines": [
       [
        "price",
-       439000
+       440000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -1199,19 +1200,19 @@
       ],
       [
        "listing",
-       -10975
+       -11000
       ],
       [
        "bb",
-       -10975
+       -11000
       ],
       [
        "transfer",
-       -3073
+       -3080
       ],
       [
        "title",
-       -2270
+       -2275
       ],
       [
        "settle",
@@ -1237,9 +1238,9 @@
      "missing": {
       "count": 0
      },
-     "net": 406478,
-     "net_adj": 405818,
-     "price": 439000,
+     "net": 406416,
+     "net_adj": 405756,
+     "price": 440000,
      "tax_bill_assumed": true
     },
     "ns_counter": {
@@ -1255,11 +1256,11 @@
      "lines": [
       [
        "price",
-       452000
+       453000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -1267,19 +1268,19 @@
       ],
       [
        "listing",
-       -11300
+       -11325
       ],
       [
        "bb",
-       -11300
+       -11325
       ],
       [
        "transfer",
-       -3164
+       -3171
       ],
       [
        "title",
-       -2335
+       -2340
       ],
       [
        "settle",
@@ -1305,9 +1306,9 @@
      "missing": {
       "count": 0
      },
-     "net": 418672,
-     "net_adj": 418012,
-     "price": 452000,
+     "net": 418610,
+     "net_adj": 417950,
+     "price": 453000,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -1323,11 +1324,11 @@
      "lines": [
       [
        "price",
-       439000
+       440000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -1335,19 +1336,19 @@
       ],
       [
        "listing",
-       -10975
+       -11000
       ],
       [
        "bb",
-       -10975
+       -11000
       ],
       [
        "transfer",
-       -3073
+       -3080
       ],
       [
        "title",
-       -2270
+       -2275
       ],
       [
        "settle",
@@ -1373,13 +1374,13 @@
      "missing": {
       "count": 0
      },
-     "net": 403478,
-     "net_adj": 402818,
-     "price": 439000,
+     "net": 403416,
+     "net_adj": 402756,
+     "price": 440000,
      "tax_bill_assumed": true
     },
-    "price": 439000,
-    "rank_value": 389800.8,
+    "price": 440000,
+    "rank_value": 389738.8,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1430,7 +1431,7 @@
      },
      "total": 72
     },
-    "seller_concessions": 500,
+    "seller_concessions": 1500,
     "short_sale": false,
     "status": "active",
     "target": {
@@ -2171,20 +2172,20 @@
     ],
     "counter_score": 66,
     "counter_terms": {
-     "appraisal_gap": 2000,
+     "appraisal_gap": 3000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 452000,
+     "price": 453000,
      "sale_contingency_days": 0,
-     "seller_concessions": 500
+     "seller_concessions": 1500
     },
     "deposit": 13500,
     "down_pct": 0.05,
-    "downside_price": 439000,
+    "downside_price": 440000,
     "expires": null,
     "expires_raw": null,
     "expires_today": false,
@@ -2243,11 +2244,11 @@
      "lines": [
       [
        "price",
-       439000
+       440000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -2255,19 +2256,19 @@
       ],
       [
        "listing",
-       -10975
+       -11000
       ],
       [
        "bb",
-       -10975
+       -11000
       ],
       [
        "transfer",
-       -3073
+       -3080
       ],
       [
        "title",
-       -2270
+       -2275
       ],
       [
        "settle",
@@ -2293,9 +2294,9 @@
      "missing": {
       "count": 0
      },
-     "net": 406478,
-     "net_adj": 405818,
-     "price": 439000,
+     "net": 406416,
+     "net_adj": 405756,
+     "price": 440000,
      "tax_bill_assumed": true
     },
     "ns_counter": {
@@ -2311,11 +2312,11 @@
      "lines": [
       [
        "price",
-       452000
+       453000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -2323,19 +2324,19 @@
       ],
       [
        "listing",
-       -11300
+       -11325
       ],
       [
        "bb",
-       -11300
+       -11325
       ],
       [
        "transfer",
-       -3164
+       -3171
       ],
       [
        "title",
-       -2335
+       -2340
       ],
       [
        "settle",
@@ -2361,9 +2362,9 @@
      "missing": {
       "count": 0
      },
-     "net": 418672,
-     "net_adj": 418012,
-     "price": 452000,
+     "net": 418610,
+     "net_adj": 417950,
+     "price": 453000,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -2379,11 +2380,11 @@
      "lines": [
       [
        "price",
-       439000
+       440000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -2391,19 +2392,19 @@
       ],
       [
        "listing",
-       -10975
+       -11000
       ],
       [
        "bb",
-       -10975
+       -11000
       ],
       [
        "transfer",
-       -3073
+       -3080
       ],
       [
        "title",
-       -2270
+       -2275
       ],
       [
        "settle",
@@ -2429,13 +2430,13 @@
      "missing": {
       "count": 0
      },
-     "net": 403478,
-     "net_adj": 402818,
-     "price": 439000,
+     "net": 403416,
+     "net_adj": 402756,
+     "price": 440000,
      "tax_bill_assumed": true
     },
-    "price": 439000,
-    "rank_value": 389800.8,
+    "price": 440000,
+    "rank_value": 389738.8,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2486,7 +2487,7 @@
      },
      "total": 72
     },
-    "seller_concessions": 500,
+    "seller_concessions": 1500,
     "short_sale": false,
     "status": "active",
     "target": {
@@ -3059,20 +3060,20 @@
     ],
     "counter_score": 66,
     "counter_terms": {
-     "appraisal_gap": 2000,
+     "appraisal_gap": 3000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 452000,
+     "price": 453000,
      "sale_contingency_days": 0,
-     "seller_concessions": 500
+     "seller_concessions": 1500
     },
     "deposit": 13500,
     "down_pct": 0.05,
-    "downside_price": 439000,
+    "downside_price": 440000,
     "expires": null,
     "expires_raw": null,
     "expires_today": false,
@@ -3131,11 +3132,11 @@
      "lines": [
       [
        "price",
-       439000
+       440000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -3143,19 +3144,19 @@
       ],
       [
        "listing",
-       -10975
+       -11000
       ],
       [
        "bb",
-       -10975
+       -11000
       ],
       [
        "transfer",
-       -3073
+       -3080
       ],
       [
        "title",
-       -2270
+       -2275
       ],
       [
        "settle",
@@ -3181,9 +3182,9 @@
      "missing": {
       "count": 0
      },
-     "net": 406478,
-     "net_adj": 405818,
-     "price": 439000,
+     "net": 406416,
+     "net_adj": 405756,
+     "price": 440000,
      "tax_bill_assumed": true
     },
     "ns_counter": {
@@ -3199,11 +3200,11 @@
      "lines": [
       [
        "price",
-       452000
+       453000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -3211,19 +3212,19 @@
       ],
       [
        "listing",
-       -11300
+       -11325
       ],
       [
        "bb",
-       -11300
+       -11325
       ],
       [
        "transfer",
-       -3164
+       -3171
       ],
       [
        "title",
-       -2335
+       -2340
       ],
       [
        "settle",
@@ -3249,9 +3250,9 @@
      "missing": {
       "count": 0
      },
-     "net": 418672,
-     "net_adj": 418012,
-     "price": 452000,
+     "net": 418610,
+     "net_adj": 417950,
+     "price": 453000,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -3267,11 +3268,11 @@
      "lines": [
       [
        "price",
-       439000
+       440000
       ],
       [
        "conc",
-       -500
+       -1500
       ],
       [
        "repair",
@@ -3279,19 +3280,19 @@
       ],
       [
        "listing",
-       -10975
+       -11000
       ],
       [
        "bb",
-       -10975
+       -11000
       ],
       [
        "transfer",
-       -3073
+       -3080
       ],
       [
        "title",
-       -2270
+       -2275
       ],
       [
        "settle",
@@ -3317,13 +3318,13 @@
      "missing": {
       "count": 0
      },
-     "net": 403478,
-     "net_adj": 402818,
-     "price": 439000,
+     "net": 403416,
+     "net_adj": 402756,
+     "price": 440000,
      "tax_bill_assumed": true
     },
-    "price": 439000,
-    "rank_value": 389800.8,
+    "price": 440000,
+    "rank_value": 389738.8,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3374,7 +3375,7 @@
      },
      "total": 72
     },
-    "seller_concessions": 500,
+    "seller_concessions": 1500,
     "short_sale": false,
     "status": "active",
     "target": {
@@ -4072,21 +4073,21 @@
   },
   "recommended": {
    "bb_short": 0,
-   "cc": 15464,
-   "conc": -500,
-   "down": 21950,
+   "cc": 15499,
+   "conc": -1500,
+   "down": 22000,
    "gap": 0,
-   "reserve": 5086,
-   "to_close": 36914,
+   "reserve": 6001,
+   "to_close": 35999,
    "wasted_conc": 0,
-   "worst": 36914
+   "worst": 35999
   }
  },
  "cash_at_cap": null,
  "chosen": "recommended",
  "ci": {
   "lower_cost": 21.46,
-  "recommended": 45.33
+  "recommended": 45.27
  },
  "constraints": {
   "count": 0
@@ -4144,7 +4145,7 @@
  },
  "payment": {
   "lower_cost": 3869,
-  "recommended": 3877
+  "recommended": 3885
  },
  "promoted": null,
  "promoted_from": null,
@@ -4178,17 +4179,10 @@
    "seller_concessions": 3500
   }
  },
- "reply_lines": [
-  {
-   "key": "tight_reserve"
-  }
- ],
- "reserve_alt": {
-  "cash_kept": 2744,
-  "payment_more": 24,
-  "price": 442000,
-  "seller_concessions": 3500
+ "reply_lines": {
+  "count": 0
  },
+ "reserve_tight": null,
  "sample": false,
  "target": 430613,
  "terms": {
@@ -4217,8 +4211,8 @@
    "inspection_days": 10,
    "insurance_quote": null,
    "loan_approval_days": 30,
-   "price": 439000,
-   "seller_concessions": 500
+   "price": 440000,
+   "seller_concessions": 1500
   }
  }
 }

@@ -100,7 +100,8 @@
   "market": {
    "median_dom": 11,
    "months_supply": 2.4,
-   "sale_to_list": 0.992
+   "sale_to_list": 0.992,
+   "sale_to_list_basis": "original"
   },
   "payment_assumed": {
    "count": 0

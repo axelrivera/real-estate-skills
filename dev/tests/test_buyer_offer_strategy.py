@@ -340,7 +340,7 @@ class InsuranceEstimate(unittest.TestCase):
         r = strategy.analyze(B)
         self.assertEqual(r["B"]["costs"]["insurance_annual"], 3500)  # $2,700 is under the Florida floor
         why = next(a["why"] for a in r["assumptions"] if a["field"] == "insurance_annual")
-        self.assertIn("get a quote", why)
+        self.assertIn("get a quote", why.lower())
 
 
 class AuditEscalationCap(unittest.TestCase):
@@ -417,7 +417,8 @@ class Audit20260929(unittest.TestCase):
         o, t = r["O"]["recommended"], r["terms"]["recommended"]
         self.assertEqual(o["close_days"], t["closing_days"])  # a 35-day close is 35 days after acceptance
         rows = {x["field"]: x["entry"] for x in strategy.worksheet(r)["rows"]}
-        self.assertIn("September 26, 2026", rows["Time for Acceptance"])
+        # the expected acceptance is Saturday Sep 26: the Time for Acceptance moves to Monday, never a weekend 5:00 PM
+        self.assertIn("September 28, 2026", rows["Time for Acceptance"])
         d = copy.deepcopy(self.GAP)
         d["expected_effective_date"] = "2026-10-01"
         self.assertEqual(str(strategy.analyze(d)["B"]["effective_date"]), "2026-10-01")
@@ -703,8 +704,7 @@ class Audit20260929Third(unittest.TestCase):
     def test_market_read_names_its_signals(self):  # OFR-226, OFR-229
         heat, basis = strategy.market_heat({"dom": 9}, {"median_dom": 34, "sale_to_list": 0.981})
         self.assertEqual(heat, "hot")
-        self.assertTrue(basis.startswith("on days on market"))  # the deciding signal first
-        self.assertIn("secondary: sale-to-list", basis)  # the other one, worded as secondary
+        self.assertEqual(basis, "9 days on market vs. a 34-day median")  # only the deciding signal, in plain words
         self.assertEqual(strategy.market_heat({}, {}), ("normal", "no market data"))
         self.assertEqual(strategy.market_heat({"price_cuts": 1, "dom": 3}, {"median_dom": 30})[0], "soft")
 
@@ -905,9 +905,17 @@ class ManualTestFixes(unittest.TestCase):
     def setUp(self):
         self.r = analyze("one-competing-reach.json")
 
+    @staticmethod
+    def thin():
+        """The same case with $41,900 of cash: the cheapest offer that reaches At Risk keeps $901 over the floor."""
+        d = fixture("one-competing-reach.json")
+        d["buyer"]["cash_available"] = 41900
+        return strategy.analyze(d, cma=strategy.load_cma(d))
+
     def test_thin_reserve_cushion_is_named_with_a_roomier_offer(self):
-        """OFR-332: the cheapest offer that reaches the band keeps only $86 over the floor: page 1 and the reply say so
-        and name the same-outlook offer that keeps more cash."""
+        """OFR-332: the cheapest offer that reaches the band keeps under $1,000 over the floor: page 1 and the reply say
+        so and name the same-outlook offer that keeps more cash."""
+        self.r = self.thin()
         self.assertIn("tight_reserve", [l["key"] for l in self.r["reply_lines"]])
         roomy = self.r["reached"]["roomy"]
         self.assertGreater(strategy.buyer_cash(self.r["B"], roomy)["reserve"], self.r["cash"]["recommended"]["reserve"] + 1000)
@@ -916,6 +924,7 @@ class ManualTestFixes(unittest.TestCase):
     def test_thin_cushion_line_carries_the_trade_off(self):
         """OFR-334: the line names what the roomier offer costs a month and the cash it keeps, so the chat has nothing to
         compute; the files keep the cheapest offer."""
+        self.r = self.thin()
         alt, r = self.r["reserve_alt"], self.r
         self.assertEqual(alt["price"], r["reached"]["roomy"]["price"])
         self.assertEqual(alt["payment_more"], strategy.monthly_payment(r["B"], r["costs"], alt["price"])
@@ -929,6 +938,7 @@ class ManualTestFixes(unittest.TestCase):
 
     def test_thin_cushion_is_a_caution_not_a_limit(self):
         """OFR-338: inside the limits, so page 1 prints it in the caution style, not a red "Limit:" line."""
+        self.r = self.thin()
         s = strategy.summary(self.r)
         self.assertNotIn(self.r["reserve_tight"], s["constraints"])
         self.assertEqual(s["cautions"], [self.r["reserve_tight"]])
@@ -951,8 +961,9 @@ class ManualTestFixes(unittest.TestCase):
         P, C = r["B"]["property"], r["B"]["competition"]
         self.assertEqual((P["dom"], P["price_cuts"]), (78, 2))
         self.assertEqual(C["heat"], "soft")
-        self.assertTrue(C["heat_basis"].startswith("on days on market (78 vs. 23 median)"))
-        self.assertIn("a price cut", C["heat_basis"])
+        self.assertEqual(C["heat_basis"], "78 days on market vs. a 23-day median")  # 2 cuts with 1.4 months of supply read normal
+        self.assertEqual(strategy.market_read(r["B"]), "This home has 78 days on market vs. a 23-day median and 2 price cuts, "
+                         "while nearby homes sold at 96.4% of original list price and there are 1.4 months of supply.")
         self.assertIn("<span>Days on Market</span><b>78</b>", buyer_render.snapshot(r))
 
     def lvl_band(self, r, k="recommended"):
@@ -1037,7 +1048,8 @@ class Iteration9Fixes(unittest.TestCase):
     def test_unlikely_lower_cost_is_never_promoted(self):  # eval 1, finding 1
         r = self.r
         self.assertIsNone(r["promoted"])
-        self.assertEqual(r["terms"]["recommended"]["seller_concessions"], 500)  # only what the cash can't cover
+        # only what the cash can't cover ($500), rounded up to the $1,000 minimum ask: $0 would break the reserve
+        self.assertEqual(r["terms"]["recommended"]["seller_concessions"], 1000)
         self.assertNotIn("lower_cost", r["terms"])
         self.assertIn("Unlikely", r["absent"]["lower_cost"])
 

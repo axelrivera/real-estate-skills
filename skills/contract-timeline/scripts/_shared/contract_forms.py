@@ -157,6 +157,17 @@ def rider_codes(names):
     return codes, others
 
 
+def rider_order(names):
+    """`names` (rider and addendum names as a package lists them) in the order the forms print them: CR-7 riders by
+    letter, the single letters first and then the double ones (B, F, H, GG), then the addenda that aren't CR-7 riders
+    (AGA-1, EAC-1) in the order given."""
+    def key(item):
+        i, name = item
+        c = rider_code(name)
+        return (0, len(c), c, i) if c else (1, 0, "", i)
+    return [n for _, n in sorted(enumerate(names), key=key)]
+
+
 def rider_name(code):
     return f"{RIDERS[code]} Rider ({code})"
 

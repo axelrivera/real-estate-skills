@@ -567,7 +567,7 @@ def _warner():
 
 def compute(R, market, homes):
     _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
-             "comps.cards", "pricing.strategies", "buyer_payment.rate", "buyer_payment.insurance_annual")
+             "comps.cards", "pricing.strategies", "buyer_payment.rate")
     L = labels(R)
     for block in ("costs", "buyer_payment"):  # units before any math: fractions stay fractions, interest stays a percent
         try:
@@ -595,6 +595,11 @@ def compute(R, market, homes):
         raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
     warnings, warning_keys, warn = _warner()
     assumptions, assumption_keys, assume = _warner()  # CMA-286: keyed like the warnings
+    bp = R["buyer_payment"]
+    if bp.get("insurance_annual") in (None, ""):  # the shared estimate at the recommended price, labeled an estimate
+        bp["insurance_annual"] = finance.insurance_estimate(rec["list_price"], market, s.get("year_built"))["annual"]
+        assume("insurance_estimated", f"Buyer payments use an estimated {money(bp['insurance_annual'])} a year for "
+               "homeowner's insurance (the market's rate for this price and the home's age); give a quote if the seller has one.")
     try:
         warn("derive_comps", *cma.derive_comps(R["comps"]))  # adjusted values and summary rows from their parts
     except ValueError as e:

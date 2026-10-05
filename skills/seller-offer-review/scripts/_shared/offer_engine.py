@@ -1029,7 +1029,7 @@ def auto_scores(o, L, S):
             s["appraisal"] = 2
         else:
             s["appraisal"] = 1
-        ref = "CMA high" if L["cma_provided"] else "list price"
+        ref = "the top of the value range" if L["cma_provided"] else "list price"
         if o["appraisal_protected"]:
             gap = "protected to closing; gap clause is intent only" if o["appraisal_gap"] else "protected to closing"
         elif o.get("gap_intent_only") and o["appraisal_gap"]:
@@ -1038,8 +1038,8 @@ def auto_scores(o, L, S):
             gap = f"waived, {money(o['gap_cover'])} documented to cover a low appraisal"
         else:
             gap = (f"{money(o['appraisal_gap'])} gap coverage" + (" (Appraisal Gap Addendum)" if o.get("appraisal_form") == "aga" else "")
-                   if o["appraisal_gap"] else "no gap coverage")
-        why["appraisal"] = f"{money(over_hi)} over {ref}, {gap}" if over_hi > 0 else f"At/under {ref}, {gap}"
+                   if o["appraisal_gap"] else "no appraisal gap coverage")
+        why["appraisal"] = f"{money(over_hi)} over {ref}, {gap}" if over_hi > 0 else f"At or under {ref}, {gap}"
 
     rd = o["risk_days"]
     if o["sale_contingency_days"] and o["kickout"]:  # the seller keeps marketing; a back-up forces a waive-or-walk in 3 days

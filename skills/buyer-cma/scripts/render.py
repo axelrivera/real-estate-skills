@@ -8,6 +8,7 @@ by compute.py, never typed. Prints the PDF path, then layout notes on stderr.
 """
 import html
 import os
+import re
 import sys
 from datetime import date
 
@@ -77,10 +78,18 @@ def cash_fit_note(first, C, L):
                                      credit=money(fit["credit"]), amt=money(fit["cash"])) + "</div>")
 
 
+def closing_pct_words(pct, given, prepaids, L):
+    """The closing costs' share of price, as the notes word it: the agent's share as given, else the shared estimate
+    (prepaid items included when financed)."""
+    if given:
+        return L("cr_cc_given", pct=f"{pct * 100:g}")
+    return L("cr_cc_pct", pct=f"{pct * 100:g}", prepaids=L("cc_prepaids") if prepaids else "")
+
+
 def pay_closing_note(pay, L):
     """CMA-223: what the payment table's closing costs are, on the credit table's basis."""
     cl = pay["closing"]
-    cc = L("cr_cc_pct", pct=f'{cl["pct"] * 100:g}')
+    cc = closing_pct_words(cl["pct"], cl["given"], cl["prepaids"], L)
     if cl["loan_tax_labels"]:
         cc += L("pay_cc_taxes", names=" and ".join(x.lower() for x in cl["loan_tax_labels"]))
     lender = [r["label"] for r in pay["rows"] if r.get("lender_closing_costs")]
@@ -145,7 +154,7 @@ def summary_page(R, C, agent, L):
          '<div class="sp-hero"><div class="sp-rec">'
          f'<div class="lbl">{L("sum_opening")}</div><div class="price">{money(op["opening"])}</div>'
          f'<div class="line">{L("sum_ladder_line", target=tgt, walk=money(op["walk_away"]))}</div>'
-         f'<div class="line">{L("sum_range_line")} <b>{k(bl["low"])} – {k(bl["high"])}</b> · {L("sum_asking")} <b>{money(s["list_price"])}</b></div>'
+         f'<div class="line">{L("sum_range_line")} <b>{k(bl["low"])}–{k(bl["high"])}</b> · {L("sum_asking")} <b>{money(s["list_price"])}</b></div>'
          f'<div class="line" style="margin-top:6px">{sp["headline"]}</div></div>'
          '<div class="sp-stats">' + "".join(f'<div class="sp-stat"><b>{v}</b><span>{lbl}</span></div>' for v, lbl in stats) + "</div></div>",
          f'<div class="sp-h">{L("sum_comps_h")} <span style="font-weight:400;color:var(--muted)">· {L("sum_shaded")}</span></div>',
@@ -196,12 +205,13 @@ def credit_section(R, C, L):
         [L("cr_appr", median=C["median_adjusted_display"])] + [money(c["appraisal_room"]) for c in cols],
     ]
     head = [L("cr_head")] + [money(c["price"]) + (" + " + money(c["credit"]) if c["credit"] else "") for c in cols]
-    cc = L("cr_cc_est", amt=money(cs["closing_costs"])) if cr["closing_costs_given"] else L("cr_cc_pct", pct=f'{cr["closing_cost_pct"] * 100:g}')
+    cc = L("cr_cc_est", amt=money(cs["closing_costs"])) if cr["closing_costs_given"] else \
+        closing_pct_words(cr["closing_cost_pct"], cr["closing_pct_given"], cr["prepaids"], L)
     if cr["loan_tax_labels"]:  # CORE-16
         cc += L("cr_cc_taxes", amt=money(cols[0]["loan_taxes"]), price=money(cols[0]["price"]),
                 names=" and ".join(x.lower() for x in cr["loan_tax_labels"]))
     out = [f'<h3>{L("h_credit")}</h3>', f'<p>{cs["intro"]}</p>',
-           table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"}),
+           wrap_head(table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"})),
            f'<p class="note">{L("cr_note", cc=cc)}{seller_cost_note(cr, L)}'
            + (" " + L("cash_note", cash=C["payments"]["buyer_cash_display"]) if C["payments"].get("buyer_cash") else "") + "</p>"]
     if cs.get("after_paragraph"):
@@ -214,6 +224,37 @@ def credit_section(R, C, L):
     return out
 
 
+def wrap_head(html_table):
+    """The payment and credit tables: their column headers wrap (cma.css .wrap-head), so long loan labels and prices
+    fit the page instead of being clipped."""
+    return html_table.replace('<div class="tbl">', '<div class="tbl wrap-head">', 1)
+
+
+def chart_labels(sc, s):
+    """The chart's labels name each home the way the report prints its address (the comp cards, the tables, the legend),
+    never a shortened form: the subject by its address, each callout by its own."""
+    return {**sc, "subject_label": cma.display_address(s["address"]),
+            "callouts": [{**c, "label": cma.display_address(c["address"])} for c in sc.get("callouts") or []]}
+
+
+MINOR_WORDS = {"a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet", "as", "at", "by", "in", "of", "off",
+               "on", "per", "to", "up", "via", "vs", "vs.", "from", "into", "with", "than", "if"}
+
+
+def title_case(text):
+    """A heading the report data writes, in Title Case as every label is (CLAUDE.md): each word capitalized except short
+    joining words inside it; words that already carry a capital ("iPhone", "HOA") are kept as written."""
+    words = str(text).split(" ")
+    out = []
+    for i, w in enumerate(words):
+        m = re.match(r"^([^A-Za-z]*)([a-z])(.*)$", w)
+        inner = 0 < i < len(words) - 1 and w.lower().strip(",:;") in MINOR_WORDS
+        if m and not inner and not any(c.isupper() for c in m.group(3)) and not w.startswith(("{", "<")):
+            w = m.group(1) + m.group(2).upper() + m.group(3)
+        out.append(w)
+    return " ".join(out)
+
+
 def body(R, C, homes, agent, L):
     """The report after page 1, as a list of top-level blocks (grouped for pagination afterwards)."""
     s, bl, op = R["subject"], R["bottom_line"], R["offer_plan"]
@@ -221,11 +262,11 @@ def body(R, C, homes, agent, L):
          '<div class="facts">' + "".join(f"<div><span>{a}</span><b>{v}</b></div>" for a, v in s["facts"]) + "</div>",
          f'<p>{s["summary"]}</p>',
          f'<h2>{L("h_bottom")}</h2>',
-         f'<div class="verdict"><div class="range">{money(bl["low"])} – {money(bl["high"])}</div>'
+         f'<div class="verdict"><div class="range">{money(bl["low"])}–{money(bl["high"])}</div>'
          f'<div class="mid">{L("range_caption", mid=money(bl.get("midpoint", (bl["low"] + bl["high"]) / 2)))}</div><p>{bl["paragraph"]}</p></div>']
     if R.get("history"):
         h = R["history"]
-        b += [f'<h3>{h["heading"]}</h3>', f'<p>{h["intro"]}</p>',
+        b += [f'<h3>{title_case(h["heading"])}</h3>', f'<p>{h["intro"]}</p>',
               table([L("th_date"), L("th_event"), L("th_price")], history_rows(h, C.get("history"), L), num_cols=(2,))]
         if h.get("after"):
             b.append(f'<p>{h["after"]}</p>')
@@ -243,7 +284,7 @@ def body(R, C, homes, agent, L):
             b.append("<p>" + L(key, price=money(ca["price"]), credit=money(ca["credit"]), equiv=money(ca["price"] - ca["credit"]),
                                saved=alt["cash_saved_display"], base=money(alt["base_price"])) + "</p>")
     b.append(f'<p class="note">{L("offer_conditions", conditions=compute.end_sentence(op["conditions"]))}</p>')  # CMA-329
-    b += [f'<h3>{R["offer"].get("heading", L("h_offer"))}</h3>', ul(R["offer"]["bullets"])]
+    b += [f'<h3>{title_case(R["offer"].get("heading", L("h_offer")))}</h3>', ul(R["offer"]["bullets"])]
 
     c = R["comps"]
     b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{c["method_note"]}</p>',
@@ -257,6 +298,7 @@ def body(R, C, homes, agent, L):
 
     sc = R.get("scatter")
     if sc and homes:
+        sc = chart_labels(sc, s)
         svg, info = cma.scatter(homes, sc, s["sqft"], s["list_price"], s.get("mls_address", s["address"]), (bl["low"], bl["high"]), L,
                                 [cd["address"] for cd in R["comps"]["cards"]])
         C["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"],  # CMA-205
@@ -264,8 +306,8 @@ def body(R, C, homes, agent, L):
         C["callout_checks"] = cma.callout_checks(info)  # CMA-302: a callout whose home isn't plotted
         trend =money(info["trend_at_subject"], 1000) if info["trend_at_subject"] else "N/A"
         share = L(compute.mls.r2_key(info["r2"])) if info["r2"] is not None else ""
-        b += [f'<h3>{sc.get("heading", L("h_scatter"))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
-              '<div class="chart-box">' + cma.scatter_legend(L, sc.get("subject_label", s["address"]), info["counts"]) + svg + "</div>"]
+        b += [f'<h3>{title_case(sc.get("heading", L("h_scatter")))}</h3>', f'<p>{sc["intro"].replace("{trend_at_subject}", trend)}</p>',
+              '<div class="chart-box">' + cma.scatter_legend(L, sc["subject_label"], info["counts"]) + svg + "</div>"]
         b += [n for n in (cma.excluded_note(info["excluded"], L), cma.trend_caption(info, s["list_price"], L)) if n]
         b.append(f'<p>{sc["after_paragraph"].replace("{trend_at_subject}", trend).replace("{r2_share}", share)}</p>')
 
@@ -275,12 +317,12 @@ def body(R, C, homes, agent, L):
                 [[cma.display_address(r[0]), r[1], money(r[2]), f"{int(r[3]):,}", r[4], r[5], r[6]] for r in cp["rows"]], num_cols=(2, 3, 5))]
     m = R["market"]
     b += [f'<h2>{L("h_market")}</h2>', f'<p>{m["intro"]}</p>',
-          table(m["columns"], m["rows"], num_cols=tuple(range(1, len(m["columns"])))), ul(m["bullets"])]
+          table(m["columns"], C.get("market_rows") or m["rows"], num_cols=tuple(range(1, len(m["columns"])))), ul(m["bullets"])]
 
     t, pay = R["costs"]["taxes"], C["payments"]
     b += [f'<h2>{L("h_costs")}</h2>']
     if t.get("heading"):
-        b.append(f'<h3>{t["heading"]}</h3>')
+        b.append(f'<h3>{title_case(t["heading"])}</h3>')
     b.append(f'<p>{t["intro"]}</p>')
     bill = t.get("current_bill")  # optional: new construction and land-only bills have none
     seller_row = L("seller_bill", year=t["current_year"]) if t.get("current_year") else L("seller_bill_no_year")
@@ -319,6 +361,7 @@ def body(R, C, homes, agent, L):
                       if finance.program(sc["type"]) == "conventional" and sc["down_pct"] < 0.2), 0.05)  # OFR-25
     pay_note = L(
         "pay_note", rate=f'{pay["rate"]:.2f}', ins=money(pay["insurance_annual"]),
+        ins_basis=L("ins_estimated") if pay["insurance"]["estimated"] else "",
         pmi=f'{finance.annual_mi_rate("conventional", conv_down) * 100:g}', pmi_down=f"{conv_down * 100:g}",
         mip=f'{progs["fha"]["annual_mi"] * 100:.2f}', ufmip=f'{progs["fha"]["upfront_fee"] * 100:.2f}', per10k=money(pay["per_10k"], 5))
     pay_note += " " + pay_closing_note(pay, L)
@@ -326,8 +369,8 @@ def body(R, C, homes, agent, L):
         pay_note += " " + R["costs"]["payment"]["note"]
     pay_note += tax_which_note(pay, L) + " " + pay["flood"]["note"]  # CMA-6: the flood rule, and "get a quote" until there is one
     b += [f'<h3>{L("h_payment")}</h3>', f'<p>{R["costs"]["payment"]["intro"]}</p>',
-          table([L("pay_header", price=money(pay["price"]), basis=basis_label(pay, L))] + [r["label"] for r in rows_p], prow,
-                num_cols=tuple(range(1, len(rows_p) + 1)), row_classes=classes),
+          wrap_head(table([L("pay_header", price=money(pay["price"]), basis=basis_label(pay, L))] + [r["label"] for r in rows_p],
+                          prow, num_cols=tuple(range(1, len(rows_p) + 1)), row_classes=classes)),
           f'<p class="note">{pay_note}</p>']
     if C["credit"]:
         b += credit_section(R, C, L)

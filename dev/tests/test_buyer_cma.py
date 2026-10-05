@@ -192,7 +192,8 @@ class LoanTaxes(unittest.TestCase):
         col = C["credit"]["columns"][0]
         loan = col["loan"]
         self.assertEqual(col["loan_taxes"], round(loan * 0.0035) + round(loan * 0.002))
-        self.assertAlmostEqual(col["closing_costs"], col["price"] * 0.025 + col["loan_taxes"])
+        # the shared rule (finance.buyer_closing_costs): Florida's 2.5% plus 0.5% prepaids, plus the loan taxes
+        self.assertEqual(col["closing_costs"], round(col["price"] * 0.03 + col["loan_taxes"]))
 
 
 class AuditMethod(unittest.TestCase):
@@ -902,7 +903,7 @@ class FifthPass(unittest.TestCase):
         self.assertIsNone(row["down_short"])  # $23,200 down fits $30,000
         self.assertTrue(row["cash_short"])  # but not once closing costs are added
         self.assertEqual(C["warning_keys"].count("scenario_over_cash"), 1)
-        _, C = self.run_(FourthPass.fha_buyer(30000))  # Conventional 3% fits
+        _, C = self.run_(FourthPass.fha_buyer(34000))  # Conventional 3% fits (about $32,600 with prepaids and loan taxes)
         self.assertNotIn("scenario_over_cash", C["warning_keys"])
 
 

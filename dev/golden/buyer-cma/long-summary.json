@@ -18,13 +18,14 @@
    "cost": 10272.6,
    "covered": false,
    "credit": 10000,
-   "full": 4025.27,
+   "full": 4258.61,
    "price": 465000,
-   "year1": 3459.05,
-   "year2": 3735.45
+   "year1": 3692.38,
+   "year2": 3968.78
   },
   "closing_cost_pct": 0.03,
   "closing_costs_given": false,
+  "closing_pct_given": true,
   "columns": [
    {
     "appraisal_room": 21800,
@@ -34,7 +35,7 @@
     "cash_left": null,
     "cash_saved": 0.0,
     "cash_short": null,
-    "closing_costs": 13650.0,
+    "closing_costs": 13650,
     "credit": 0,
     "extra": 0.0,
     "loan": 432250.0,
@@ -43,7 +44,7 @@
     "over_cap": false,
     "over_costs": false,
     "payback_years": null,
-    "payment": 3943.79,
+    "payment": 4177.12,
     "pi": 2861.27,
     "price": 455000
    },
@@ -55,7 +56,7 @@
     "cash_left": null,
     "cash_saved": 4600.0,
     "cash_short": null,
-    "closing_costs": 13800.0,
+    "closing_costs": 13800,
     "credit": 5000,
     "extra": 40.74,
     "loan": 437000.0,
@@ -64,7 +65,7 @@
     "over_cap": false,
     "over_costs": false,
     "payback_years": 9.41,
-    "payment": 3984.53,
+    "payment": 4217.87,
     "pi": 2892.71,
     "price": 460000
    },
@@ -76,7 +77,7 @@
     "cash_left": null,
     "cash_saved": 9200.0,
     "cash_short": null,
-    "closing_costs": 13950.0,
+    "closing_costs": 13950,
     "credit": 10000,
     "extra": 81.48,
     "loan": 441750.0,
@@ -85,7 +86,7 @@
     "over_cap": false,
     "over_costs": false,
     "payback_years": 9.41,
-    "payment": 4025.27,
+    "payment": 4258.61,
     "pi": 2924.15,
     "price": 465000
    }
@@ -94,6 +95,7 @@
   "loan_tax_labels": {
    "count": 0
   },
+  "prepaids": false,
   "program": "conventional",
   "seller_cost_parts": {
    "count": 1
@@ -320,6 +322,30 @@
  "market_notes": {
   "count": 1
  },
+ "market_rows": [
+  [
+   "25",
+   "10"
+  ],
+  {
+   "count": 3
+  },
+  [
+   "100%",
+   "96.5%"
+  ],
+  [
+   "9",
+   "18"
+  ],
+  [
+   "56%",
+   "80%"
+  ],
+  {
+   "count": 3
+  }
+ ],
  "median_adjusted": 476800.0,
  "ok": true,
  "payments": {
@@ -330,19 +356,28 @@
   "buyer_cash": null,
   "buyer_cash_display": null,
   "closing": {
+   "given": true,
    "lender_amount": null,
    "loan_tax_labels": {
     "count": 0
    },
    "pct": 0.03,
-   "pct_display": "3%"
+   "pct_display": "3%",
+   "prepaids": false
   },
   "flood": {
    "annual": null,
    "required": "citizens_value",
    "sfha": false
   },
-  "insurance_annual": 3600,
+  "insurance": {
+   "age_factor": 1.5,
+   "annual": 6400.0,
+   "estimated": true,
+   "rate": 0.009,
+   "source": "market"
+  },
+  "insurance_annual": 6400.0,
   "per_10k": 81.48,
   "price": 474900,
   "price_basis": "asking",
@@ -356,17 +391,17 @@
     "cash_short": null,
     "cash_short_display": null,
     "cash_to_close": 37992.0,
-    "closing_costs": 14247.0,
+    "closing_costs": 14247,
     "down_short": null,
     "flood": null,
     "hoa": 0,
-    "ins": 300.0,
+    "ins": 533.33,
     "lender_closing_costs": false,
     "loan": 451155.0,
     "mi": 187.98,
     "pi": 2986.41,
     "tax": 631.55,
-    "total": 4105.94
+    "total": 4339.28
    },
    {
     "assumed": false,
@@ -376,17 +411,17 @@
     "cash_short": null,
     "cash_short_display": null,
     "cash_to_close": 30868.5,
-    "closing_costs": 14247.0,
+    "closing_costs": 14247,
     "down_short": null,
     "flood": null,
     "hoa": 0,
-    "ins": 300.0,
+    "ins": 533.33,
     "lender_closing_costs": false,
     "loan": 466298.37,
     "mi": 210.04,
     "pi": 3086.65,
     "tax": 631.55,
-    "total": 4228.25
+    "total": 4461.58
    },
    {
     "assumed": false,
@@ -396,17 +431,17 @@
     "cash_short": null,
     "cash_short_display": null,
     "cash_to_close": 109227.0,
-    "closing_costs": 14247.0,
+    "closing_costs": 14247,
     "down_short": null,
     "flood": null,
     "hoa": 0,
-    "ins": 300.0,
+    "ins": 533.33,
     "lender_closing_costs": false,
     "loan": 379920.0,
     "mi": 0.0,
     "pi": 2514.87,
     "tax": 631.55,
-    "total": 3446.42
+    "total": 3679.76
    }
   ],
   "tax_basis": {

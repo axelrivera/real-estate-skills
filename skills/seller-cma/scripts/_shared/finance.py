@@ -182,6 +182,63 @@ def loan_taxes(loan, market):
     return [{"label": r["label"], "rate": r["rate"], "amount": round(loan * r["rate"])} for r in rows if loan and r.get("rate")]
 
 
+# One buyer closing-cost rule for every skill (the buyer CMA's payment and credit tables, the offer strategy's cash),
+# so two reports at the same price give the same cash to close.
+PREPAIDS_PCT = 0.005  # prepaid interest, insurance and escrows on top of the market's closing costs (financed)
+NATIONAL_BUYER_CLOSING_PCT = 0.03  # national.md's buyer_closing_cost_pct, only when no market is loaded
+
+
+def buyer_closing_pct(market=None, cash=False):
+    """The buyer's closing costs as a share of price, before any loan taxes: the market's `buyer_closing_cost_pct`
+    plus PREPAIDS_PCT when financed, half the market's share for a cash purchase (no lender fees, prepaids or loan)."""
+    pct = market.get("closing_costs.buyer_closing_cost_pct") if market is not None else None
+    pct = NATIONAL_BUYER_CLOSING_PCT if pct is None else pct
+    return round(pct / 2 if cash else pct + PREPAIDS_PCT, 4)
+
+
+def buyer_closing_costs(price, loan, market=None, cash=False, pct=None, amount=None):
+    """The buyer's closing costs at `price`: {"amount", "pct", "loan_taxes", "source"}.
+
+    An agent's or lender's figure wins and is used as is, taxes included: `amount` (dollars) first, then `pct` (an
+    all-in share of price). Otherwise buyer_closing_pct(market, cash) of the price plus the market's loan taxes on
+    `loan` (Florida: note stamps and intangible tax), itemized; none for cash. `source` is "lender" (amount), "agent"
+    (pct) or "estimate"."""
+    if amount is not None:
+        return {"amount": round(amount), "pct": None, "loan_taxes": [], "source": "lender"}
+    if pct is not None:
+        return {"amount": round(price * pct), "pct": pct, "loan_taxes": [], "source": "agent"}
+    share = buyer_closing_pct(market, cash)
+    taxes = [] if cash else loan_taxes(loan, market)
+    return {"amount": round(price * share + sum(t["amount"] for t in taxes)), "pct": share, "loan_taxes": taxes,
+            "source": "estimate"}
+
+
+NATIONAL_INSURANCE_RATE = 0.006  # national.md's buyer_costs.insurance_rate, only when no market is loaded
+INSURANCE_MIN_ANNUAL = 2500  # floor for the estimate when the market has none
+
+
+def insurance_age_factor(year_built):
+    """CORE-29: older homes cost more to insure (wiring, plumbing, roof and code era)."""
+    return 1.5 if year_built and year_built < 1980 else 1.25 if year_built and year_built < 2002 else 1.0
+
+
+def insurance_estimate(price, market=None, year_built=None, rate=None):
+    """A buyer's homeowner's insurance per year, when there's no quote: {"annual", "rate", "age_factor", "source"}.
+
+    With the agent's `rate` (a share of price for this home) it's price × rate as is (source "agent"). Otherwise the
+    market's `buyer_costs.insurance_rate` (else NATIONAL_INSURANCE_RATE) × price × the age factor, never below the
+    market's `buyer_costs.insurance_min_annual` (else INSURANCE_MIN_ANNUAL), rounded to $100 (source "market" or
+    "national"). Always an estimate: the report labels it so until there's a quote."""
+    if rate is not None:
+        return {"annual": round(price * rate, -2), "rate": rate, "age_factor": 1.0, "source": "agent"}
+    mrate = market.get("buyer_costs.insurance_rate") if market is not None else None
+    age = insurance_age_factor(year_built)
+    floor = (market.get("buyer_costs.insurance_min_annual") if market is not None else None) or INSURANCE_MIN_ANNUAL
+    use = NATIONAL_INSURANCE_RATE if mrate is None else mrate
+    return {"annual": round(max(floor, use * price * age), -2), "rate": use, "age_factor": age,
+            "source": "national" if mrate is None else "market"}
+
+
 def loan_limit_note(loan, name, limits, state=None, county=None):
     """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `limits` is
     profiles.loan_limits(); county limits above the baseline come from its `counties` table."""

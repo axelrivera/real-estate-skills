@@ -24,6 +24,7 @@
   },
   "closing_cost_pct": 0.03,
   "closing_costs_given": false,
+  "closing_pct_given": true,
   "columns": [
    {
     "appraisal_room": 14800,
@@ -33,7 +34,7 @@
     "cash_left": null,
     "cash_saved": 0.0,
     "cash_short": null,
-    "closing_costs": 13650.0,
+    "closing_costs": 13650,
     "credit": 0,
     "extra": 0.0,
     "loan": 432250.0,
@@ -54,7 +55,7 @@
     "cash_left": null,
     "cash_saved": 4600.0,
     "cash_short": null,
-    "closing_costs": 13800.0,
+    "closing_costs": 13800,
     "credit": 5000,
     "extra": 40.74,
     "loan": 437000.0,
@@ -75,7 +76,7 @@
     "cash_left": null,
     "cash_saved": 9200.0,
     "cash_short": null,
-    "closing_costs": 13950.0,
+    "closing_costs": 13950,
     "credit": 10000,
     "extra": 81.48,
     "loan": 441750.0,
@@ -93,6 +94,7 @@
   "loan_tax_labels": {
    "count": 0
   },
+  "prepaids": false,
   "program": "conventional",
   "seller_cost_parts": {
    "count": 1
@@ -314,6 +316,30 @@
  "market_notes": {
   "count": 1
  },
+ "market_rows": [
+  [
+   "25",
+   "10"
+  ],
+  {
+   "count": 3
+  },
+  [
+   "100%",
+   "96.5%"
+  ],
+  [
+   "9",
+   "18"
+  ],
+  [
+   "56%",
+   "80%"
+  ],
+  {
+   "count": 3
+  }
+ ],
  "median_adjusted": 469800,
  "ok": true,
  "payments": {
@@ -324,17 +350,24 @@
   "buyer_cash": null,
   "buyer_cash_display": null,
   "closing": {
+   "given": true,
    "lender_amount": null,
    "loan_tax_labels": {
     "count": 0
    },
    "pct": 0.03,
-   "pct_display": "3%"
+   "pct_display": "3%",
+   "prepaids": false
   },
   "flood": {
    "annual": null,
    "required": "citizens_value",
    "sfha": false
+  },
+  "insurance": {
+   "annual": 3600,
+   "estimated": false,
+   "source": "agent"
   },
   "insurance_annual": 3600,
   "per_10k": 81.48,
@@ -350,7 +383,7 @@
     "cash_short": null,
     "cash_short_display": null,
     "cash_to_close": 37992.0,
-    "closing_costs": 14247.0,
+    "closing_costs": 14247,
     "down_short": null,
     "flood": null,
     "hoa": 0,
@@ -370,7 +403,7 @@
     "cash_short": null,
     "cash_short_display": null,
     "cash_to_close": 30868.5,
-    "closing_costs": 14247.0,
+    "closing_costs": 14247,
     "down_short": null,
     "flood": null,
     "hoa": 0,
@@ -390,7 +423,7 @@
     "cash_short": null,
     "cash_short_display": null,
     "cash_to_close": 109227.0,
-    "closing_costs": 14247.0,
+    "closing_costs": 14247,
     "down_short": null,
     "flood": null,
     "hoa": 0,

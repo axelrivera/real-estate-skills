@@ -66,20 +66,29 @@ ASSUMED = ", Assumed"  # CMA-227: a scenario with `assumed: true` is labeled onc
 
 
 def buyer_closing_costs(R, market, price, program, down, loan):
-    """CMA-223: the buyer's closing costs at `price`, on one basis for the payment table and the credit table: the
-    lender's figure (`credit_scenarios.closing_costs`) for the credit table's own program and down payment, else
-    `closing_cost_pct` of the price, else the market's share of the price plus its loan taxes on `loan` (CORE-16).
+    """CMA-223: the buyer's closing costs at `price`, on one basis for the payment table and the credit table, and the
+    offer strategy's (finance.buyer_closing_costs): the lender's figure (`credit_scenarios.closing_costs`) for the
+    credit table's own program and down payment, else `closing_cost_pct` of the price as given, else the market's share
+    plus prepaids and its loan taxes on `loan` (CORE-16; half the share for cash).
     Returns (amount, the itemized loan taxes, whether it's the lender's figure)."""
     cs = R["costs"].get("credit_scenarios") or {}
     own = (finance.program(cs.get("loan_type", "conventional")) == program
            and abs(_frac(cs, "down_pct", "costs.credit_scenarios", 0.05) - down) < 1e-9)
-    if cs.get("closing_costs") and own:
-        return cs["closing_costs"], [], True
-    pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
-    taxes = finance.loan_taxes(loan, market) if pct is None and program != "cash" else []
-    if pct is None:
-        pct = market.get("closing_costs.buyer_closing_cost_pct") or 0.03
-    return price * pct + sum(t["amount"] for t in taxes), taxes, False
+    cc = finance.buyer_closing_costs(price, loan, market, cash=program == "cash",
+                                     pct=_frac(cs, "closing_cost_pct", "costs.credit_scenarios"),
+                                     amount=cs.get("closing_costs") if own and cs.get("closing_costs") else None)
+    return cc["amount"], cc["loan_taxes"], cc["source"] == "lender"
+
+
+def closing_basis(R, market, program="conventional"):
+    """How the closing costs are figured, for the notes under the payment and credit tables: (share of price, the loan
+    tax labels itemized on top, whether the share is the agent's own)."""
+    cs = R["costs"].get("credit_scenarios") or {}
+    given = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
+    if given is not None:
+        return given, [], True
+    cash = finance.program(program) == "cash"
+    return finance.buyer_closing_pct(market, cash), [] if cash else [t["label"] for t in finance.loan_taxes(1, market)], False
 
 
 def broker_fee_short(R, price):
@@ -147,10 +156,9 @@ def payments(R, market, tax_rows):
                  "homestead": bool(R["costs"]["taxes"].get("homestead", True))}
     tax_basis["label_estimate"] = tax_basis["unconfirmed"] or tax_basis["estimated"]
     cs = R["costs"].get("credit_scenarios") or {}
-    given_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
-    closing = {"pct": given_pct if given_pct is not None else market.get("closing_costs.buyer_closing_cost_pct") or 0.03,
-               "loan_tax_labels": [t["label"] for t in finance.loan_taxes(1, market)] if given_pct is None else [],
-               "lender_amount": cs.get("closing_costs")}
+    pct, labels, given = closing_basis(R, market, pay["scenarios"][0]["type"])
+    closing = {"pct": pct, "loan_tax_labels": labels, "lender_amount": cs.get("closing_costs"), "given": given,
+               "prepaids": not given and finance.program(pay["scenarios"][0]["type"]) != "cash"}
     closing["pct_display"] = f'{closing["pct"] * 100:g}%'  # CMA-340: as the PDF's closing-cost note words it
     return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R), "rate": pay["rate"],
             "insurance_annual": pay["insurance_annual"], "rows": rows, "flood": flood, "closing": closing,
@@ -196,11 +204,10 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     ji = pay.get("tax_jurisdiction_index", 0)
     program = finance.program(cs.get("loan_type", "conventional"))
     down = _frac(cs, "down_pct", "costs.credit_scenarios", 0.05)
-    closing_pct = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
-    # CORE-16: with no lender figure, the market's share of price plus its loan taxes, itemized on the loan amount
-    itemize = closing_pct is None and not cs.get("closing_costs") and program != "cash"
-    if closing_pct is None:
-        closing_pct = market.get("closing_costs.buyer_closing_cost_pct") or 0.03
+    # CORE-16: with no lender figure, the market's share of price plus prepaids and its loan taxes on the loan amount
+    closing_pct, tax_labels, pct_given = closing_basis(R, market, program)
+    if cs.get("closing_costs"):
+        tax_labels = []
     cap = finance.concession_cap(program, down)
     seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
     cols, base = [], None
@@ -231,7 +238,8 @@ def credit_scenarios(R, market, tax_rows, median_adjusted):
     out = {"program": program, "down_pct": down, "columns": cols, "seller_cost_per_10k": round(10000 * seller_cost_pct),
            "seller_cost_parts": [x for x, v in (("transfer tax", transfer), ("buyer-broker pay", seller_pays)) if v],
            "closing_costs_given": bool(cs.get("closing_costs")), "closing_cost_pct": closing_pct,
-           "loan_tax_labels": [t["label"] for t in finance.loan_taxes(1, market)] if itemize else []}
+           "closing_pct_given": pct_given, "prepaids": not pct_given and program != "cash",
+           "loan_tax_labels": tax_labels}
     bd = cs.get("buydown")
     if bd:
         col = next((c for c in cols if c["price"] == bd.get("price")), cols[-1])
@@ -504,7 +512,7 @@ def rough_plan(R, market, median, lo, hi):
     opening = min(math.floor((median - width / 2) / 1000) * 1000, walk)
     target = min(max(round((opening + walk) / 2000) * 1000, opening), walk)
     lo, hi = math.floor(lo / 1000) * 1000, math.ceil(hi / 1000) * 1000  # CMA-215: rough, so to $1,000, outward
-    return {"range": {"low": lo, "high": hi, "display": f"{money(lo)} – {money(hi)}"},
+    return {"range": {"low": lo, "high": hi, "display": f"{money(lo)}–{money(hi)}"},
             "opening": opening, "target": target, "walk_away": walk, "typical_width": width,
             "capped_at_asking": walk == ask and math.floor(median / 1000) * 1000 > ask,
             "display": {"opening": money(opening), "target": money(target), "walk_away": money(walk)},
@@ -763,6 +771,33 @@ def price_basis(price, R):
     return {op.get("opening"): "opening", op.get("walk_away"): "walk_away"}.get(price)
 
 
+def insurance_line(R, market):
+    """The payment's homeowner's insurance: the agent's figure (`costs.payment.insurance_annual`, a quote or their own
+    number) as given, else the shared estimate at the payment's price (finance.insurance_estimate: the agent's
+    `costs.insurance_rate` for this home, else the market's rate by the home's age, with its floor), labeled Estimate.
+    Fills `insurance_annual` so every table uses the one figure."""
+    pay = R["costs"]["payment"]
+    if pay.get("insurance_annual") not in (None, ""):
+        return {"annual": pay["insurance_annual"], "estimated": False, "source": "agent"}
+    est = finance.insurance_estimate(pay["price"], market, R["subject"].get("year_built"), R["costs"].get("insurance_rate"))
+    pay["insurance_annual"] = est["annual"]
+    return {**est, "estimated": True}
+
+
+MEDIAN_PRICE_ROW = re.compile(r"\b(median|typical)\s+(sale|sold|sales)?\s*price\b", re.I)
+
+
+def market_rows(R, prices):
+    """The market table's rows: the report's own, plus a Median Sale Price row (before and since the split, from the
+    export) after the first row when the table compares the two periods and has no sale-price row of its own."""
+    m = R.get("market") or {}
+    rows = [list(r) for r in m.get("rows") or []]
+    if not prices or None in prices or len(m.get("columns") or []) != 3 \
+            or any(MEDIAN_PRICE_ROW.search(str(r[0])) and "vs" not in str(r[0]).lower() for r in rows if r):
+        return rows
+    return rows[:1] + [["Median Sale Price", money(prices[0], 1000), money(prices[1], 1000)]] + rows[1:]
+
+
 def default_prices(R):
     """CMA-204: without `costs.payment.price` the payment is figured at the offer plan's target, not the asking price;
     without `costs.taxes.purchase_price` the tax estimate uses the payment's price, so page 1's numbers agree."""
@@ -778,13 +813,14 @@ def compute(R, market, homes):
     default_prices(R)
     _require(R, "subject.address", "subject.list_price", "subject.sqft", "bottom_line.low", "bottom_line.high",
              "offer_plan.opening", "offer_plan.walk_away", "comps.cards", "costs.taxes.purchase_price",
-             "costs.payment.price", "costs.payment.rate", "costs.payment.insurance_annual")
+             "costs.payment.price", "costs.payment.rate")
     for block in ("costs",):  # units before any math: fractions stay fractions, interest stays a percent
         try:
             finance.check_units(R.get(block) or {}, block)
         except ValueError as e:
             raise ReportError(str(e)) from e
     market = market.with_deal(R.get("costs"))  # this home's own numbers (the state's transfer tax, a tax rate)
+    insurance = insurance_line(R, market)
     n_juris, ji = len(R["costs"]["taxes"].get("jurisdictions") or []), R["costs"]["payment"].get("tax_jurisdiction_index")
     if not n_juris:
         raise ReportError("costs.taxes.jurisdictions needs at least one entry.")
@@ -899,7 +935,7 @@ def compute(R, market, homes):
     fit = mls.trend([h for h in homes if not mls.same_address(h["address"], s.get("mls_address", s["address"]))],
                     s["sqft"], (R.get("scatter") or {}).get("fit_size_ratio", 1.6)) if homes else None
 
-    stats = {}
+    stats, market_prices = {}, None
     if homes:
         address = s.get("mls_address", s["address"])
         st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
@@ -915,7 +951,10 @@ def compute(R, market, homes):
             "median_seller_paid_recent": recent.get("median_seller_paid_when_paid"),
             "months_supply": st["months_supply_at_recent_pace"],
             "active_count": st["active_count"]}.items() if v is not None}
+        # the market table's Median Sale Price row, before and since the split, from the export (never typed)
+        market_prices = [st["sold_early"].get("median_price"), st["sold_recent"].get("median_price")]
     values = placeholder_values(median_adjusted, hist, credit, len(R["comps"]["cards"]))  # CMA-203
+    values["insurance_annual"] = money(insurance["annual"])  # the payment's insurance, quoted in costs.insurance
     if alt:  # CMA-308: the credit alternative's real cash saving, quoted instead of the credit
         values["credit_alt_cash_saved"] = alt["cash_saved_display"]
     if stats.get("months_supply") is not None:  # CMA-310: quoted, never rounded by hand
@@ -934,7 +973,8 @@ def compute(R, market, homes):
                                          total_mills=tj["total_mills"], homestead=R["costs"]["taxes"].get("homestead", True),
                                          flood_zone=pay_in.get("flood_zone") or next((v for lbl, v in s.get("facts") or []
                                                                                       if str(lbl).lower() == "flood zone"), None),
-                                         hoa_monthly=s.get("hoa_monthly"), roof_year=s.get("roof_year"),
+                                         hoa_monthly=s.get("hoa_monthly"), hoa_frequency=s.get("hoa_frequency"),
+                                         roof_year=s.get("roof_year"),
                                          # CMA-328: the history's counts since the last sale, for the offer's outlook
                                          dom=(hist or {}).get("active_days"), price_cuts=(hist or {}).get("price_cuts"))},
         value={"low": bl["low"], "high": bl["high"], "midpoint": bl.get("midpoint", (bl["low"] + bl["high"]) / 2),
@@ -950,7 +990,7 @@ def compute(R, market, homes):
         "data_source": data_source,
         "ok": True,
         "subject": {"address": s["address"], "list_price": s["list_price"], "list_price_display": money(s["list_price"])},
-        "range": {"low": bl["low"], "high": bl["high"], "display": f"{money(bl['low'])} – {money(bl['high'])}",
+        "range": {"low": bl["low"], "high": bl["high"], "display": f"{money(bl['low'])}–{money(bl['high'])}",
                   "asking_position": "above the range" if s["list_price"] > bl["high"] else
                   "below the range" if s["list_price"] < bl["low"] else "inside the range"},
         "median_adjusted": median_adjusted, "median_adjusted_display": values["median_adjusted"],
@@ -958,15 +998,16 @@ def compute(R, market, homes):
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
         "offer_plan": {"opening": money(op["opening"]), "walk_away": money(op["walk_away"]),
                        "target": money(op.get("target_low", op["opening"])) + (
-                           f" – {money(op['target_high'])}" if op.get("target_high") and op["target_high"] != op.get("target_low") else "")},
+                           f"–{money(op['target_high'])}" if op.get("target_high") and op["target_high"] != op.get("target_low") else "")},
         "taxes": [{**j, "annual_display": money(j["annual"], 100) if j["annual"] is not None else None,
                    "monthly_display": money(j["annual"] / 12) if j["annual"] is not None else None} for j in tax_rows],
         "current_bill": R["costs"]["taxes"].get("current_bill"),
         "current_bill_display": money(R["costs"]["taxes"]["current_bill"]) if R["costs"]["taxes"].get("current_bill") else None,
-        "payments": pay,
+        "payments": {**pay, "insurance": insurance} if pay else pay,
         "credit": credit,
         "credit_alt": alt,  # CMA-308
         "competition_estimates": competing,  # CMA-327
+        "market_rows": market_rows(R, market_prices),
         # CMA-235: the credit option that fits the buyer's cash, named by the cash_short warning
         "cash_fit": {**{k: cash_fit[k] for k in ("price", "credit", "cash")},  # CMA-295: the chat template quotes it
                      **{k + "_display": money(cash_fit[k]) for k in ("price", "credit", "cash")}} if cash_fit else None,
