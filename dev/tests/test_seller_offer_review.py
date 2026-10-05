@@ -921,7 +921,7 @@ class EvalIteration9(unittest.TestCase):
 
     def test_aga_counter_agrees_with_the_flag(self):  # eval 6
         o = review.analyze(fixture("expired-aga.json"))["offers"][0]
-        row = next(r for r in o["counter_rows"] if r[0] == "AGA-1 Valuation Period")
+        row = next(r for r in o["counter_rows"] if r[0] == "Appraisal Gap Valuation Period")
         self.assertEqual(row[1:3], ("30 days (blank)", "24 days"))
         self.assertEqual(o["counter_terms"]["aga_valuation_days"], 24)
         flag = next(f for f in o["flags"] if f["topic"] == "aga_window_at_closing")

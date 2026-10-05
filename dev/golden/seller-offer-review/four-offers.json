@@ -387,8 +387,8 @@
       "value": 770
      }
     ],
-    "close": "2026-11-07",
-    "holding": -3600,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -432,7 +432,7 @@
      ],
      [
       "tax",
-      -4403
+      -4190
      ],
      [
       "payoff",
@@ -442,10 +442,10 @@
     "missing": {
      "count": 0
     },
-    "net": 154778,
-    "net_adj": 151178,
+    "net": 154991,
+    "net_adj": 152591,
     "price": 425000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "buyer",
    "title_payer": "buyer",
@@ -1211,8 +1211,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
-    "holding": -1680,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -1256,7 +1256,7 @@
      ],
      [
       "tax",
-      -4062
+      -4190
      ],
      [
       "payoff",
@@ -1266,8 +1266,8 @@
     "missing": {
      "count": 0
     },
-    "net": 152544,
-    "net_adj": 150864,
+    "net": 152416,
+    "net_adj": 150016,
     "price": 425000,
     "tax_bill_assumed": false
    },
@@ -1683,8 +1683,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-22",
-    "holding": -4800,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -1728,7 +1728,7 @@
      ],
      [
       "tax",
-      -4616
+      -4190
      ],
      [
       "payoff",
@@ -1738,10 +1738,10 @@
     "missing": {
      "count": 0
     },
-    "net": 151990,
-    "net_adj": 147190,
+    "net": 152416,
+    "net_adj": 150016,
     "price": 425000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -2260,8 +2260,8 @@
       "value": 770
      }
     ],
-    "close": "2026-11-07",
-    "holding": -3600,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -2305,7 +2305,7 @@
      ],
      [
       "tax",
-      -4403
+      -4190
      ],
      [
       "payoff",
@@ -2315,10 +2315,10 @@
     "missing": {
      "count": 0
     },
-    "net": 154778,
-    "net_adj": 151178,
+    "net": 154991,
+    "net_adj": 152591,
     "price": 425000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "buyer",
    "title_payer": "buyer",
@@ -3084,8 +3084,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
-    "holding": -1680,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -3129,7 +3129,7 @@
      ],
      [
       "tax",
-      -4062
+      -4190
      ],
      [
       "payoff",
@@ -3139,8 +3139,8 @@
     "missing": {
      "count": 0
     },
-    "net": 152544,
-    "net_adj": 150864,
+    "net": 152416,
+    "net_adj": 150016,
     "price": 425000,
     "tax_bill_assumed": false
    },
@@ -3556,8 +3556,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-22",
-    "holding": -4800,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -3601,7 +3601,7 @@
      ],
      [
       "tax",
-      -4616
+      -4190
      ],
      [
       "payoff",
@@ -3611,10 +3611,10 @@
     "missing": {
      "count": 0
     },
-    "net": 151990,
-    "net_adj": 147190,
+    "net": 152416,
+    "net_adj": 150016,
     "price": 425000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -4382,8 +4382,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-10-14",
-    "holding": -1680,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -4427,7 +4427,7 @@
      ],
      [
       "tax",
-      -4062
+      -4190
      ],
      [
       "payoff",
@@ -4437,8 +4437,8 @@
     "missing": {
      "count": 0
     },
-    "net": 152544,
-    "net_adj": 150864,
+    "net": 152416,
+    "net_adj": 150016,
     "price": 425000,
     "tax_bill_assumed": false
    },
@@ -4834,8 +4834,8 @@
       "value": 770
      }
     ],
-    "close": "2026-11-07",
-    "holding": -3600,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -4879,7 +4879,7 @@
      ],
      [
       "tax",
-      -4403
+      -4190
      ],
      [
       "payoff",
@@ -4889,10 +4889,10 @@
     "missing": {
      "count": 0
     },
-    "net": 154778,
-    "net_adj": 151178,
+    "net": 154991,
+    "net_adj": 152591,
     "price": 425000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "buyer",
    "title_payer": "buyer",
@@ -5306,8 +5306,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-22",
-    "holding": -4800,
+    "close": "2026-10-23",
+    "holding": -2400,
     "lines": [
      [
       "price",
@@ -5351,7 +5351,7 @@
      ],
      [
       "tax",
-      -4616
+      -4190
      ],
      [
       "payoff",
@@ -5361,10 +5361,10 @@
     "missing": {
      "count": 0
     },
-    "net": 151990,
-    "net_adj": 147190,
+    "net": 152416,
+    "net_adj": 150016,
     "price": 425000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -5393,8 +5393,8 @@
     "value": 1145
    }
   ],
-  "close": "2026-11-13",
-  "holding": -4080,
+  "close": "2026-10-23",
+  "holding": -2400,
   "lines": [
    [
     "price",
@@ -5438,7 +5438,7 @@
    ],
    [
     "tax",
-    -4488
+    -4190
    ],
    [
     "payoff",
@@ -5448,10 +5448,10 @@
   "missing": {
    "count": 0
   },
-  "net": 152118,
-  "net_adj": 148038,
+  "net": 152416,
+  "net_adj": 150016,
   "price": 425000,
-  "tax_bill_assumed": true
+  "tax_bill_assumed": false
  },
- "target_close": "2026-11-13"
+ "target_close": "2026-10-23"
 }

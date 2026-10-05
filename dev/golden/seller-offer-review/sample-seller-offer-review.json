@@ -765,8 +765,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-12",
-    "holding": -2917,
+    "close": "2026-10-30",
+    "holding": -2158,
     "lines": [
      [
       "price",
@@ -810,7 +810,7 @@
      ],
      [
       "tax",
-      -5717
+      -5481
      ],
      [
       "payoff",
@@ -820,10 +820,10 @@
     "missing": {
      "count": 0
     },
-    "net": 174834,
-    "net_adj": 171917,
+    "net": 175070,
+    "net_adj": 172912,
     "price": 515000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1770,8 +1770,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-12",
-    "holding": -2917,
+    "close": "2026-10-30",
+    "holding": -2158,
     "lines": [
      [
       "price",
@@ -1815,7 +1815,7 @@
      ],
      [
       "tax",
-      -5717
+      -5481
      ],
      [
       "payoff",
@@ -1825,10 +1825,10 @@
     "missing": {
      "count": 0
     },
-    "net": 174834,
-    "net_adj": 171917,
+    "net": 175070,
+    "net_adj": 172912,
     "price": 515000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -2602,8 +2602,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-12",
-    "holding": -2917,
+    "close": "2026-10-30",
+    "holding": -2158,
     "lines": [
      [
       "price",
@@ -2647,7 +2647,7 @@
      ],
      [
       "tax",
-      -5717
+      -5481
      ],
      [
       "payoff",
@@ -2657,10 +2657,10 @@
     "missing": {
      "count": 0
     },
-    "net": 174834,
-    "net_adj": 171917,
+    "net": 175070,
+    "net_adj": 172912,
     "price": 515000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -2689,8 +2689,8 @@
     "value": 1145
    }
   ],
-  "close": "2026-11-12",
-  "holding": -2917,
+  "close": "2026-10-30",
+  "holding": -2158,
   "lines": [
    [
     "price",
@@ -2734,7 +2734,7 @@
    ],
    [
     "tax",
-    -5717
+    -5481
    ],
    [
     "payoff",
@@ -2744,10 +2744,10 @@
   "missing": {
    "count": 0
   },
-  "net": 174834,
-  "net_adj": 171917,
+  "net": 175070,
+  "net_adj": 172912,
   "price": 515000,
-  "tax_bill_assumed": true
+  "tax_bill_assumed": false
  },
- "target_close": "2026-11-12"
+ "target_close": "2026-10-30"
 }

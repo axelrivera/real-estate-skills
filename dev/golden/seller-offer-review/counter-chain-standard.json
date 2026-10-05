@@ -1578,7 +1578,7 @@
    {
     "estimate": false,
     "key": "title_fees",
-    "value": 770
+    "value": 1145
    }
   ],
   "close": "2026-11-16",
@@ -1610,11 +1610,11 @@
    ],
    [
     "title",
-    0
+    -3270
    ],
    [
     "settle",
-    -770
+    -1145
    ],
    [
     "estoppel",
@@ -1636,8 +1636,8 @@
   "missing": {
    "count": 0
   },
-  "net": 592157,
-  "net_adj": 591137,
+  "net": 588512,
+  "net_adj": 587492,
   "price": 639000,
   "tax_bill_assumed": true
  },
