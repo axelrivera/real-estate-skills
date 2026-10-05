@@ -93,17 +93,23 @@ SPEC = {
                     r"^competing_offer_caveat$", r"^warnings", r"^warning_keys", r"^placeholders\."],
         "text": [r"^summary_page\.(why|first_steps)"],
     },
+    # The buyer's priority is a category the model records from what the agent said (never suggested from data)
     "buyer-offer-strategy": {
         "script": [],
-        "roots": [r"^B\.value", r"^B\.market"],
+        "roots": [r"^B\.value", r"^B\.market", r"^(B\.)?buyer_priority$"],
         "derived": [r"^(O|R|terms|cash|payment|bands|ci|limits|why|lc_why|reached|promoted_from|dropped_stronger|"
                     r"reserve_alt|cash_at_cap)\.", r"^(target|reached|promoted|promoted_from|cash_at_cap|chosen|framing|"
                     r"by_net|reserve_alt|dropped_stronger)$", r"^constraints", r"^reply_lines", r"^absent"],
         "text": [],
     },
-    # The offers, list price and CMA range come from the eval's files and prompt, and the engine sets the counter:
-    # nothing here is judgment (with no CMA, listing.cma_* is the list price, so it moves only when that was misread)
-    "seller-offer-review": {"script": [], "roots": [], "derived": [], "text": []},
+    # The offers, list price and CMA range come from the eval's files and prompt (with no CMA, listing.cma_* is the list
+    # price, so it moves only when that was misread). The one judgment is the counter's stance when the model picks one
+    # over the suggestion; the counter's terms, its net and score, and the action follow it
+    "seller-offer-review": {
+        "script": [r"\.counter_stance\.suggested$"],
+        "roots": [r"\.counter_stance\.(stance|given)$"],
+        "derived": [r"\.(counter_terms|counter_rows|ns_counter|counter_score|counter_risk_days|action)(\.|\[|$)"],
+        "text": []},
     "contract-timeline": {"script": [], "roots": [], "derived": [], "text": []},
     "seller-net-sheet": {"script": [], "roots": [], "derived": [], "text": []},
 }

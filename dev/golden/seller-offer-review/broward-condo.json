@@ -45,6 +45,12 @@
     }
    ],
    "counter_score": 63,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -53,7 +59,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 487000,
+    "price": 489000,
     "sale_contingency_days": 0,
     "seller_concessions": 6000
    },
@@ -77,6 +83,10 @@
      "contract": true,
      "sev": "High",
      "topic": "condo_project_approval"
+    },
+    {
+     "sev": "Med",
+     "topic": "backup_lapses"
     },
     {
      "sev": "Med",
@@ -199,7 +209,7 @@
     "lines": [
      [
       "price",
-      487000
+      489000
      ],
      [
       "conc",
@@ -211,15 +221,15 @@
      ],
      [
       "listing",
-      -12175
+      -12225
      ],
      [
       "bb",
-      -12175
+      -12225
      ],
      [
       "transfer",
-      -3409
+      -3423
      ],
      [
       "title",
@@ -249,9 +259,9 @@
     "missing": {
      "count": 0
     },
-    "net": 257183,
-    "net_adj": 254030,
-    "price": 487000,
+    "net": 259069,
+    "net_adj": 255916,
+    "price": 489000,
     "tax_bill_assumed": true
    },
    "ns_down": {
@@ -458,7 +468,7 @@
   },
   {
    "_appraisal_basis": null,
-   "action": "ACCEPT",
+   "action": "COUNTER",
    "aga_named": false,
    "appraisal_days": 21,
    "appraisal_form": null,
@@ -494,6 +504,12 @@
     }
    ],
    "counter_score": 80,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -502,7 +518,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 485000,
+    "price": 489000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -637,7 +653,7 @@
     "lines": [
      [
       "price",
-      485000
+      489000
      ],
      [
       "conc",
@@ -649,15 +665,15 @@
      ],
      [
       "listing",
-      -12125
+      -12225
      ],
      [
       "bb",
-      -12125
+      -12225
      ],
      [
       "transfer",
-      -3395
+      -3423
      ],
      [
       "title",
@@ -687,9 +703,9 @@
     "missing": {
      "count": 0
     },
-    "net": 261448,
-    "net_adj": 258796,
-    "price": 485000,
+    "net": 265220,
+    "net_adj": 262568,
+    "price": 489000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -944,6 +960,7 @@
   "cma_low": 470000,
   "cma_mid": 482500.0,
   "cma_provided": true,
+  "competing_offers": 2,
   "condo": true,
   "cost_notes": {
    "count": 4
@@ -1079,6 +1096,12 @@
     }
    ],
    "counter_score": 63,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -1087,7 +1110,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 487000,
+    "price": 489000,
     "sale_contingency_days": 0,
     "seller_concessions": 6000
    },
@@ -1111,6 +1134,10 @@
      "contract": true,
      "sev": "High",
      "topic": "condo_project_approval"
+    },
+    {
+     "sev": "Med",
+     "topic": "backup_lapses"
     },
     {
      "sev": "Med",
@@ -1233,7 +1260,7 @@
     "lines": [
      [
       "price",
-      487000
+      489000
      ],
      [
       "conc",
@@ -1245,15 +1272,15 @@
      ],
      [
       "listing",
-      -12175
+      -12225
      ],
      [
       "bb",
-      -12175
+      -12225
      ],
      [
       "transfer",
-      -3409
+      -3423
      ],
      [
       "title",
@@ -1283,9 +1310,9 @@
     "missing": {
      "count": 0
     },
-    "net": 257183,
-    "net_adj": 254030,
-    "price": 487000,
+    "net": 259069,
+    "net_adj": 255916,
+    "price": 489000,
     "tax_bill_assumed": true
    },
    "ns_down": {
@@ -1492,7 +1519,7 @@
   },
   {
    "_appraisal_basis": null,
-   "action": "ACCEPT",
+   "action": "COUNTER",
    "aga_named": false,
    "appraisal_days": 21,
    "appraisal_form": null,
@@ -1528,6 +1555,12 @@
     }
    ],
    "counter_score": 80,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -1536,7 +1569,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 485000,
+    "price": 489000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -1671,7 +1704,7 @@
     "lines": [
      [
       "price",
-      485000
+      489000
      ],
      [
       "conc",
@@ -1683,15 +1716,15 @@
      ],
      [
       "listing",
-      -12125
+      -12225
      ],
      [
       "bb",
-      -12125
+      -12225
      ],
      [
       "transfer",
-      -3395
+      -3423
      ],
      [
       "title",
@@ -1721,9 +1754,9 @@
     "missing": {
      "count": 0
     },
-    "net": 261448,
-    "net_adj": 258796,
-    "price": 485000,
+    "net": 265220,
+    "net_adj": 262568,
+    "price": 489000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -1933,7 +1966,7 @@
  "ranked": [
   {
    "_appraisal_basis": null,
-   "action": "ACCEPT",
+   "action": "COUNTER",
    "aga_named": false,
    "appraisal_days": 21,
    "appraisal_form": null,
@@ -1969,6 +2002,12 @@
     }
    ],
    "counter_score": 80,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -1977,7 +2016,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 485000,
+    "price": 489000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -2112,7 +2151,7 @@
     "lines": [
      [
       "price",
-      485000
+      489000
      ],
      [
       "conc",
@@ -2124,15 +2163,15 @@
      ],
      [
       "listing",
-      -12125
+      -12225
      ],
      [
       "bb",
-      -12125
+      -12225
      ],
      [
       "transfer",
-      -3395
+      -3423
      ],
      [
       "title",
@@ -2162,9 +2201,9 @@
     "missing": {
      "count": 0
     },
-    "net": 261448,
-    "net_adj": 258796,
-    "price": 485000,
+    "net": 265220,
+    "net_adj": 262568,
+    "price": 489000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -2415,6 +2454,12 @@
     }
    ],
    "counter_score": 63,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -2423,7 +2468,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 487000,
+    "price": 489000,
     "sale_contingency_days": 0,
     "seller_concessions": 6000
    },
@@ -2447,6 +2492,10 @@
      "contract": true,
      "sev": "High",
      "topic": "condo_project_approval"
+    },
+    {
+     "sev": "Med",
+     "topic": "backup_lapses"
     },
     {
      "sev": "Med",
@@ -2569,7 +2618,7 @@
     "lines": [
      [
       "price",
-      487000
+      489000
      ],
      [
       "conc",
@@ -2581,15 +2630,15 @@
      ],
      [
       "listing",
-      -12175
+      -12225
      ],
      [
       "bb",
-      -12175
+      -12225
      ],
      [
       "transfer",
-      -3409
+      -3423
      ],
      [
       "title",
@@ -2619,9 +2668,9 @@
     "missing": {
      "count": 0
     },
-    "net": 257183,
-    "net_adj": 254030,
-    "price": 487000,
+    "net": 259069,
+    "net_adj": 255916,
+    "price": 489000,
     "tax_bill_assumed": true
    },
    "ns_down": {

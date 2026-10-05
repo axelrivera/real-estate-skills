@@ -320,6 +320,57 @@ class Options(unittest.TestCase):
         self.assertIn("lower_cost", r["absent"])
 
 
+class BuyerPriority(unittest.TestCase):
+    """buyer_priority picks the recommended option; competition.level and buyer_priority take only their choices."""
+
+    def with_priority(self, name, priority):
+        d = fixture(name)
+        d["buyer_priority"] = priority
+        return run(d)
+
+    def test_missing_is_balanced_with_no_assumption(self):
+        r = analyze("minimal.json")
+        self.assertEqual(r["buyer_priority"], "balanced")
+        self.assertNotIn("buyer_priority", fields(r))
+        self.assertEqual(r["terms"]["recommended"], self.with_priority("minimal.json", "balanced")["terms"]["recommended"])
+
+    def test_win_takes_the_higher_score_inside_the_limits(self):
+        bal, win = analyze("minimal.json"), self.with_priority("minimal.json", "win")
+        self.assertIsNone(bal["promoted"])
+        self.assertEqual(win["promoted"], "stronger")
+        self.assertGreater(win["O"]["recommended"]["score"]["total"], bal["O"]["recommended"]["score"]["total"])
+        self.assertFalse(win["promoted_lifts"])  # same outlook, a higher score
+        self.assertEqual(strategy.result(win)["summary"]["priority"]["key"], "win")
+
+    def test_protect_cash_takes_less_cash_unless_at_risk(self):
+        bal, pc = analyze("stress-long-names.json"), self.with_priority("stress-long-names.json", "protect_cash")
+        self.assertIsNone(bal["promoted"])
+        self.assertEqual((pc["promoted"], pc["framing"]), ("lower_cost", "cash_first"))
+        lvl = pc["B"]["competition"]["level"]
+        self.assertGreaterEqual(strategy.BAND_RANK[pc["bands"]["recommended"][lvl][0]], strategy.BAND_RANK["comp"])
+        self.assertLess(pc["cash"]["recommended"]["worst"], bal["cash"]["recommended"]["worst"])
+
+    def test_overrides_turn_the_choice_off(self):
+        for p in strategy.BUYER_PRIORITIES:
+            d = fixture("minimal.json")
+            d.update(buyer_priority=p, overrides={"inspection_days": 10})
+            self.assertIsNone(run(d)["promoted"], p)
+
+    def test_unknown_categories_stop_naming_every_choice(self):
+        for field, change, allowed in (("competition.level", {"competition": {"level": 5}}, ("0", "1", "2", "3")),
+                                       ("competition.level", {"competition": {"level": "2"}}, ("0", "1", "2", "3")),
+                                       ("buyer_priority", {"buyer_priority": "aggressive"}, strategy.BUYER_PRIORITIES)):
+            with self.subTest(field=field, change=change):
+                d = fixture("minimal.json")
+                d.update(change)
+                with self.assertRaises(strategy.oe.OfferError) as e:
+                    run(d)
+                msg = str(e.exception)
+                self.assertIn(field + ":", msg)
+                for a in allowed:
+                    self.assertIn(a, msg)
+
+
 class Escalation(unittest.TestCase):
     def setUp(self):
         d = fixture("texas-cma-escalation.json")

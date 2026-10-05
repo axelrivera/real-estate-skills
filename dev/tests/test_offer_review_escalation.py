@@ -51,6 +51,8 @@ def case05(**b):
 
 
 def offer_b(**b):
+    """Offer B on the meet-partway stance (counter-rules.md rule 2: the cap between partway and list)."""
+    b.setdefault("counter", {"stance": "meet_partway", "stance_reason": "Testing the meet-partway rules."})
     return next(o for o in review.analyze(case05(**b))["offers"] if o["id"] == "B")
 
 

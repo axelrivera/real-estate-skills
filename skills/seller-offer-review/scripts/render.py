@@ -176,7 +176,8 @@ def page_box(v, d):
     if not b:
         return ""
     if b["kind"] == "counter":
-        return box("", b["head"], b["sub"], counter_table(b["cols"], b["rows"]))
+        note = f'<div class="note">{esc(b["note"])}</div>' if b.get("note") else ""
+        return box("", b["head"], b["sub"], counter_table(b["cols"], b["rows"]) + note)
     if b["kind"] == "fixes":
         cols = [Col("cb", b["cols"][0], cls="c cbc"), Col("issue", b["cols"][1], cls="issue"), Col("fix", b["cols"][2], cls="why2")]
         rows = [{"cb": Raw('<span class="cb"></span>'), "issue": Raw(f'{pill(f["sev"])} <b>{esc(f["issue"])}</b>'),
@@ -482,7 +483,8 @@ def multi_body(M, agent):
                 Col("why", c["cols"][3])]
         rows = [{**r, "counter": Raw(f"<b>{esc(r['counter'])}</b>")} for r in c["rows"]]
         ctr = (f'<h2>{esc(c["h"])} <span class="h2s">{esc(c["sub"])}</span></h2>'
-               + layout.table(cols, rows, keep="whole", cls="mctr", row_classes={i: "oneline" for i, r in enumerate(c["rows"]) if r["oneline"]}))
+               + layout.table(cols, rows, keep="whole", cls="mctr", row_classes={i: "oneline" for i, r in enumerate(c["rows"]) if r["oneline"]})
+               + (f'<p class="sm">{esc(c["note"])}</p>' if c.get("note") else ""))
     details = (f'<div class="dh pb">{esc(d["dh"])}</div>' + facts(M) + '<div class="treason-slot"></div><div class="chart-slot"></div><div class="opts-slot"></div>'
                + key_terms_table(d["key_terms"]) + ctr + confirm_table(d) + closing_notes(M, agent))
     return f'<div class="p1">{page1}</div>' + details

@@ -26,6 +26,7 @@
    "reserve_floor": 5000
   },
   "buyer_broker_form": "GG",
+  "buyer_priority": "balanced",
   "cma": {
    "as_of": "2026-09-26",
    "comps": [
@@ -242,15 +243,21 @@
     }
    ],
    "counter_score": 65,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
-    "appraisal_gap": 2000,
+    "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-12",
     "deposit": 14000,
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 452000,
+    "price": 464900,
     "sale_contingency_days": 0,
     "seller_concessions": 6500
    },
@@ -399,7 +406,7 @@
     "lines": [
      [
       "price",
-      452000
+      464900
      ],
      [
       "conc",
@@ -411,19 +418,19 @@
      ],
      [
       "listing",
-      -11300
+      -11623
      ],
      [
       "bb",
-      -11300
+      -11623
      ],
      [
       "transfer",
-      -3164
+      -3254
      ],
      [
       "title",
-      -2335
+      -2400
      ],
      [
       "settle",
@@ -449,9 +456,9 @@
     "missing": {
      "count": 0
     },
-    "net": 412564,
-    "net_adj": 411739,
-    "price": 452000,
+    "net": 424663,
+    "net_adj": 423838,
+    "price": 464900,
     "tax_bill_assumed": true
    },
    "ns_down": {
@@ -708,15 +715,21 @@
     }
    ],
    "counter_score": 66,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
-    "appraisal_gap": 3000,
+    "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
     "deposit": 13500,
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 30,
-    "price": 453000,
+    "price": 464900,
     "sale_contingency_days": 0,
     "seller_concessions": 1500
    },
@@ -861,7 +874,7 @@
     "lines": [
      [
       "price",
-      453000
+      464900
      ],
      [
       "conc",
@@ -873,19 +886,19 @@
      ],
      [
       "listing",
-      -11325
+      -11623
      ],
      [
       "bb",
-      -11325
+      -11623
      ],
      [
       "transfer",
-      -3171
+      -3254
      ],
      [
       "title",
-      -2340
+      -2400
      ],
      [
       "settle",
@@ -911,9 +924,9 @@
     "missing": {
      "count": 0
     },
-    "net": 418610,
-    "net_adj": 417968,
-    "price": 453000,
+    "net": 429771,
+    "net_adj": 429129,
+    "price": 464900,
     "tax_bill_assumed": true
    },
    "ns_down": {
@@ -1173,15 +1186,21 @@
      }
     ],
     "counter_score": 66,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 3000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 453000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 1500
     },
@@ -1326,7 +1345,7 @@
      "lines": [
       [
        "price",
-       453000
+       464900
       ],
       [
        "conc",
@@ -1338,19 +1357,19 @@
       ],
       [
        "listing",
-       -11325
+       -11623
       ],
       [
        "bb",
-       -11325
+       -11623
       ],
       [
        "transfer",
-       -3171
+       -3254
       ],
       [
        "title",
-       -2340
+       -2400
       ],
       [
        "settle",
@@ -1376,9 +1395,9 @@
      "missing": {
       "count": 0
      },
-     "net": 418610,
-     "net_adj": 417968,
-     "price": 453000,
+     "net": 429771,
+     "net_adj": 429129,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -1635,15 +1654,21 @@
      }
     ],
     "counter_score": 66,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 4000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 454000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 1000
     },
@@ -1788,7 +1813,7 @@
      "lines": [
       [
        "price",
-       454000
+       464900
       ],
       [
        "conc",
@@ -1800,19 +1825,19 @@
       ],
       [
        "listing",
-       -11350
+       -11623
       ],
       [
        "bb",
-       -11350
+       -11623
       ],
       [
        "transfer",
-       -3178
+       -3254
       ],
       [
        "title",
-       -2345
+       -2400
       ],
       [
        "settle",
@@ -1838,9 +1863,9 @@
      "missing": {
       "count": 0
      },
-     "net": 420048,
-     "net_adj": 419406,
-     "price": 454000,
+     "net": 430271,
+     "net_adj": 429629,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -2106,15 +2131,21 @@
      }
     ],
     "counter_score": 65,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 2000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-12",
      "deposit": 14000,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 452000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 6500
     },
@@ -2263,7 +2294,7 @@
      "lines": [
       [
        "price",
-       452000
+       464900
       ],
       [
        "conc",
@@ -2275,19 +2306,19 @@
       ],
       [
        "listing",
-       -11300
+       -11623
       ],
       [
        "bb",
-       -11300
+       -11623
       ],
       [
        "transfer",
-       -3164
+       -3254
       ],
       [
        "title",
-       -2335
+       -2400
       ],
       [
        "settle",
@@ -2313,9 +2344,9 @@
      "missing": {
       "count": 0
      },
-     "net": 412564,
-     "net_adj": 411739,
-     "price": 452000,
+     "net": 424663,
+     "net_adj": 423838,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -2591,6 +2622,7 @@
    "cma_low": 435000,
    "cma_mid": 442500,
    "cma_provided": true,
+   "competing_offers": 2,
    "condo": false,
    "cost_notes": {
     "count": 4
@@ -2746,15 +2778,21 @@
      }
     ],
     "counter_score": 66,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 3000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 453000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 1500
     },
@@ -2899,7 +2937,7 @@
      "lines": [
       [
        "price",
-       453000
+       464900
       ],
       [
        "conc",
@@ -2911,19 +2949,19 @@
       ],
       [
        "listing",
-       -11325
+       -11623
       ],
       [
        "bb",
-       -11325
+       -11623
       ],
       [
        "transfer",
-       -3171
+       -3254
       ],
       [
        "title",
-       -2340
+       -2400
       ],
       [
        "settle",
@@ -2949,9 +2987,9 @@
      "missing": {
       "count": 0
      },
-     "net": 418610,
-     "net_adj": 417968,
-     "price": 453000,
+     "net": 429771,
+     "net_adj": 429129,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -3208,15 +3246,21 @@
      }
     ],
     "counter_score": 66,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 4000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 454000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 1000
     },
@@ -3361,7 +3405,7 @@
      "lines": [
       [
        "price",
-       454000
+       464900
       ],
       [
        "conc",
@@ -3373,19 +3417,19 @@
       ],
       [
        "listing",
-       -11350
+       -11623
       ],
       [
        "bb",
-       -11350
+       -11623
       ],
       [
        "transfer",
-       -3178
+       -3254
       ],
       [
        "title",
-       -2345
+       -2400
       ],
       [
        "settle",
@@ -3411,9 +3455,9 @@
      "missing": {
       "count": 0
      },
-     "net": 420048,
-     "net_adj": 419406,
-     "price": 454000,
+     "net": 430271,
+     "net_adj": 429629,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -3679,15 +3723,21 @@
      }
     ],
     "counter_score": 65,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 2000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-12",
      "deposit": 14000,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 452000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 6500
     },
@@ -3836,7 +3886,7 @@
      "lines": [
       [
        "price",
-       452000
+       464900
       ],
       [
        "conc",
@@ -3848,19 +3898,19 @@
       ],
       [
        "listing",
-       -11300
+       -11623
       ],
       [
        "bb",
-       -11300
+       -11623
       ],
       [
        "transfer",
-       -3164
+       -3254
       ],
       [
        "title",
-       -2335
+       -2400
       ],
       [
        "settle",
@@ -3886,9 +3936,9 @@
      "missing": {
       "count": 0
      },
-     "net": 412564,
-     "net_adj": 411739,
-     "price": 452000,
+     "net": 424663,
+     "net_adj": 423838,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -4147,15 +4197,21 @@
      }
     ],
     "counter_score": 66,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 4000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 454000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 1000
     },
@@ -4300,7 +4356,7 @@
      "lines": [
       [
        "price",
-       454000
+       464900
       ],
       [
        "conc",
@@ -4312,19 +4368,19 @@
       ],
       [
        "listing",
-       -11350
+       -11623
       ],
       [
        "bb",
-       -11350
+       -11623
       ],
       [
        "transfer",
-       -3178
+       -3254
       ],
       [
        "title",
-       -2345
+       -2400
       ],
       [
        "settle",
@@ -4350,9 +4406,9 @@
      "missing": {
       "count": 0
      },
-     "net": 420048,
-     "net_adj": 419406,
-     "price": 454000,
+     "net": 430271,
+     "net_adj": 429629,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -4609,15 +4665,21 @@
      }
     ],
     "counter_score": 66,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 3000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-02",
      "deposit": 13500,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 453000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 1500
     },
@@ -4762,7 +4824,7 @@
      "lines": [
       [
        "price",
-       453000
+       464900
       ],
       [
        "conc",
@@ -4774,19 +4836,19 @@
       ],
       [
        "listing",
-       -11325
+       -11623
       ],
       [
        "bb",
-       -11325
+       -11623
       ],
       [
        "transfer",
-       -3171
+       -3254
       ],
       [
        "title",
-       -2340
+       -2400
       ],
       [
        "settle",
@@ -4812,9 +4874,9 @@
      "missing": {
       "count": 0
      },
-     "net": 418610,
-     "net_adj": 417968,
-     "price": 453000,
+     "net": 429771,
+     "net_adj": 429129,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -5080,15 +5142,21 @@
      }
     ],
     "counter_score": 65,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
-     "appraisal_gap": 2000,
+     "appraisal_gap": 15000,
      "buyer_broker_pct": 0.025,
      "close": "2026-11-12",
      "deposit": 14000,
      "home_warranty": 0,
      "inspection_days": 7,
      "loan_approval_days": 30,
-     "price": 452000,
+     "price": 464900,
      "sale_contingency_days": 0,
      "seller_concessions": 6500
     },
@@ -5237,7 +5305,7 @@
      "lines": [
       [
        "price",
-       452000
+       464900
       ],
       [
        "conc",
@@ -5249,19 +5317,19 @@
       ],
       [
        "listing",
-       -11300
+       -11623
       ],
       [
        "bb",
-       -11300
+       -11623
       ],
       [
        "transfer",
-       -3164
+       -3254
       ],
       [
        "title",
-       -2335
+       -2400
       ],
       [
        "settle",
@@ -5287,9 +5355,9 @@
      "missing": {
       "count": 0
      },
-     "net": 412564,
-     "net_adj": 411739,
-     "price": 452000,
+     "net": 424663,
+     "net_adj": 423838,
+     "price": 464900,
      "tax_bill_assumed": true
     },
     "ns_down": {
@@ -5667,6 +5735,7 @@
    ]
   }
  },
+ "buyer_priority": "balanced",
  "by_net": true,
  "cash": {
   "lower_cost": {
@@ -5803,6 +5872,7 @@
  },
  "promoted": null,
  "promoted_from": null,
+ "promoted_lifts": false,
  "reached": {
   "band_key": "risk",
   "from": {

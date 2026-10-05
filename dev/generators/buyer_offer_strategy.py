@@ -10,8 +10,8 @@ Every input is valid and realistic: cash, conventional (3% to 25% down), FHA, VA
 from the only offer to cash or four or more, given or left to infer, with highest and best called or not; buyer limits
 tight or loose (max price, payment, cash, reserve floor); HOA dues billed by the quarter or month, condos, CDDs, flood
 zones, old roofs and pre-1978 homes (the riders contract_forms adds); the FAR/BAR AS IS or Standard form (with repair
-limits), or another state's contract; overrides; weekday deadlines; long names. Text the model would write is words
-only, as the skill requires. Mock data.
+limits), or another state's contract; overrides; the buyer's priority; weekday deadlines; long names. Text the model
+would write is words only, as the skill requires. Mock data.
 """
 import copy
 import random
@@ -160,6 +160,8 @@ def generate(seed):
                                                ("deposit", int(round(lp * 0.02, -2)))) if _maybe(rng, 0.6)}
     if _maybe(rng, 0.2):
         data["chosen_option"] = rng.choice(("recommended", "stronger", "lower_cost"))
+    if _maybe(rng, 0.5):  # the buyer's priority (strategy.BUYER_PRIORITIES); left out, balanced
+        data["buyer_priority"] = rng.choice(("win", "balanced", "protect_cash"))
     if _maybe(rng, 0.3):
         data["sample"] = True
     return data

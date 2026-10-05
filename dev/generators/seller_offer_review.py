@@ -8,7 +8,8 @@
 Every input is valid and realistic: one to six offers (cash, FHA, VA, USDA, conventional), escalations financed or paid
 in cash, the Appraisal Gap Addendum, riders that fit the form (contract_forms' rules: K or L on the Standard form, none
 of I, K, L on AS IS), backups, a call for highest and best pending or passed, offers whose time for acceptance has
-lapsed, a CMA range or none, a payoff or none, long names and brokerages, and other states on their own contracts.
+lapsed, a CMA range or none, a payoff or none, the seller's priority and counter stances, long names and brokerages, and
+other states on their own contracts.
 Text the model would write (labels, priority notes, contract issues) is words only, as the skill requires. Mock data.
 """
 import copy
@@ -37,6 +38,10 @@ ISSUES = (("High", "The second buyer named in paragraph 1 hasn't initialed every
           ("Low", "The rider checklist and the attached riders disagree on Rider B.",
            "Have both sides initial the corrected checklist.", "riders"))
 ANALYSIS = date(2026, 9, 23)
+STANCES = ("firm", "meet_partway", "terms_only")  # counter.stance (shared/offer_engine.COUNTER_STANCES)
+STANCE_REASONS = ("The seller would rather keep this buyer than hold out on price.",
+                  "Showings are steady and the seller is in no hurry, so the price holds.",
+                  "The price is close enough; the inspection and deposit terms matter more to the seller.")
 
 
 def _when(d, hour=17, minute=0):
@@ -125,6 +130,8 @@ def offer(rng, i, lp, florida, cma_high):
     if i and rng.random() < 0.1:
         o["contract_issues"] = [{"sev": "Blocking", "issue": "Page three of the contract is missing.",
                                  "fix": "Ask the buyer's agent for the complete contract.", "check": "signed"}]
+    if rng.random() < 0.3:  # the agent's counter stance, with its reason (needed when it isn't the suggested one)
+        o["counter"] = {"stance": rng.choice(STANCES), "stance_reason": rng.choice(STANCE_REASONS)}
     if rng.random() < 0.3:
         o["agent_track"] = rng.choice(("strong", "average", "weak"))
     if rng.random() < 0.3:

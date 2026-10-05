@@ -148,6 +148,10 @@
  "counter_summary": "{n} changes · net after holding {net} → **{counter}** ({d} vs. as offered{tail})",
  "counter_summary_one": "{n} change · net after holding {net} → **{counter}** ({d} vs. as offered{tail})",
  "counter_tail": ", {d} vs. downside",
+ "stance": {"firm": "Firm", "meet_partway": "Meet Partway", "terms_only": "Terms Only"},
+ "stance_line": {"firm": "Firm counter: it doesn't meet the buyer partway on price, and it keeps seller concessions at or under the market norm.",
+                 "meet_partway": "Meet-partway counter: it meets the buyer partway where the rules allow, on price and on seller concessions above the market norm.",
+                 "terms_only": "Terms-only counter: the buyer's price stands, and only the terms change."},
  "cmp_price": "Price",
  "cmp_net": "Net After Holding",
  "cmp_downside": "Downside Net",
@@ -294,8 +298,8 @@
  "est_estoppel": "{name} (estimate)",
  "est_repair": "post-inspection credit in the downside (estimate)",
 
- "box_counter": "OUR COUNTER",
- "box_fallback": "FALLBACK COUNTER",
+ "box_counter": "OUR COUNTER · {stance}",
+ "box_fallback": "FALLBACK COUNTER · {stance}",
  "box_fix": "FIX BEFORE REVIEW",
  "box_fix_sub": "No recommendation until the contract is corrected",
  "box_accept": "ACCEPT AS WRITTEN",
@@ -541,7 +545,7 @@
  "kt_note": "Each offer has its own single review (a separate PDF) with the full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.",
  "h_counter": "Counter to {label}",
  "h_counter_fallback": "Fallback Counter to {label}",
- "h_counter_sub": "Full Terms",
- "h_counter_sub_wait": "If the Final Offer Doesn't Improve",
+ "h_counter_sub": "Full Terms · {stance}",
+ "h_counter_sub_wait": "If the Final Offer Doesn't Improve · {stance}",
  "th_counter_short": "Counter"
 }

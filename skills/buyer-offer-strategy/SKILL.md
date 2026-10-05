@@ -31,6 +31,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Financing is an input.** Loan type and down payment come from the buyer and lender. If missing, the default (conventional; 20% down at $1M+, 3% for a first-time buyer, 5% otherwise) is flagged to confirm. FHA, VA or USDA only when given.
 - **Don't block on missing data.** Conservative defaults are logged; page 1 says **Preliminary** when a high-impact input is assumed, and says plainly when the buyer can't afford the offer.
 - **The agent's judgment wins.** Their decisions go in `overrides`, are marked in the report, and the alternatives are built from them.
+- **The buyer's priority is theirs.** When the buyer or agent says what matters most (win the house, or keep cash), set `buyer_priority` (`win`, `balanced`, `protect_cash`; `references/buyer-file.md`); it picks which option is recommended. Never infer it from the market; left out, it's `balanced`.
 
 ## 1. Build the Buyer File
 

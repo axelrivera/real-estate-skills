@@ -9,6 +9,8 @@ document model and the printed pages, for any valid input. Never a sentence, nev
   - the worksheet is offer terms only: changing the buyer's max, cash, reserve and payment limit leaves it unchanged;
   - notes: each note once (by key and by text), never also in What to Confirm; no label carries a note;
   - the input is unchanged;
+  - buyer_priority: every priority renders on every input with the same offer each run; win never recommends a lower
+    outlook or score than balanced, protect_cash never more worst-case cash, and overrides turn the choice off;
   - a buyer CMA's own handoff (dev/generators/buyer_cma.py through buyer-cma's compute) is read as the offer's range;
   - printed: both PDFs, nothing clipped or over page 1, no near-empty page, every dollar figure and percent on the
     page comes from the model, and each note prints once.
@@ -135,6 +137,36 @@ class Model(unittest.TestCase):
                 for k, t2 in r["terms"].items():  # never an alternative past the max price or the payment limit
                     if k != "recommended" and not r["overrides"]:
                         self.assertLessEqual(t2["price"], max(BU["max_price"], t["price"]), k)
+
+    def test_every_priority_picks_by_its_rule(self):
+        """Every buyer_priority on every input, rendered: the same inputs give the same offer; win never recommends
+        less outlook or score than balanced, protect_cash never more worst-case cash; overrides turn the choice off."""
+        for seed, data, _, _ in cases():
+            got = {}
+            for p in strategy.BUYER_PRIORITIES:
+                d = dict(data, buyer_priority=p)
+                r = strategy.analyze(d, cma=strategy.load_cma(d))
+                self.assertTrue(strategy.result(r))
+                again = strategy.analyze(d, cma=strategy.load_cma(d))
+                self.assertEqual(r["terms"]["recommended"], again["terms"]["recommended"])
+                got[p] = r
+            lvl = got["balanced"]["B"]["competition"]["level"]
+            with self.subTest(seed=seed):
+                rank = {p: strategy.BAND_RANK[r["bands"]["recommended"][lvl][0]] for p, r in got.items()}
+                score = {p: r["O"]["recommended"]["score"]["total"] for p, r in got.items()}
+                worst = {p: r["cash"]["recommended"]["worst"] for p, r in got.items()}
+                if data.get("overrides"):
+                    self.assertTrue(all(r["promoted"] is None for r in got.values()))
+                    continue
+                self.assertGreaterEqual((rank["win"], score["win"]), (rank["balanced"], score["balanced"]))
+                self.assertLessEqual(worst["protect_cash"], worst["balanced"])
+                self.assertNotEqual(got["protect_cash"]["promoted"], "stronger")
+                pc = got["protect_cash"]
+                if pc["promoted"] == "lower_cost" and rank["protect_cash"] < strategy.BAND_RANK["comp"]:
+                    # never dropped to At Risk or Unlikely by choice: the fuller terms read the same (or were dropped
+                    # for gaining nothing)
+                    if "stronger" in pc["bands"]:
+                        self.assertEqual(strategy.BAND_RANK[pc["bands"]["stronger"][lvl][0]], rank["protect_cash"])
 
     def test_worksheet_is_offer_terms_only(self):
         for seed, _, r, M in cases():
