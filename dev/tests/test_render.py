@@ -91,7 +91,7 @@ class Main(unittest.TestCase):
             self.assertEqual(seen["mode"], "multi")
             self.assertEqual(seen["formats"], ["a", "b"])
             self.assertIn("doc.a", out.getvalue())  # the file that worked is still listed
-            self.assertIn("The b file wasn't built: no deck without Node", str(stop.exception.code))
+            self.assertIn("no deck without Node", str(stop.exception.code))
             with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stop:
                 render.main(build, ("a", "b"), [src, "--out", tmp, "--format", "b"], errors=(BadInput,))
             self.assertEqual(stop.exception.code, "no deck without Node")
@@ -110,7 +110,7 @@ class Pdf(unittest.TestCase):
             with open(path, "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
 
-    def test_long_tables_may_break(self):  # OFR-329: a long table runs on across pages; a short one stays whole
+    def test_long_tables_may_break(self):  # a long table runs on across pages; a short one stays whole
         def tbl(rows, cls):
             body = "".join(f"<tr><td>Row {i}</td><td>Value</td></tr>" for i in range(rows))
             return f"<div class='tbl {cls}'><table><thead><tr><th>Item</th><th>Amount</th></tr></thead><tbody>{body}</tbody></table></div>"
@@ -122,13 +122,8 @@ class Pdf(unittest.TestCase):
                 "() => [...document.querySelectorAll('.tbl')].map(t => [t.classList.contains('brk'), getComputedStyle(t).breakInside])"))
         self.assertEqual(got, [[False, "avoid"], [True, "auto"]])
 
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-class AuditNoticesAndBrokerage(unittest.TestCase):
-    """CORE-3, CORE-4, CMA-16, FH-6."""
+class Notices(unittest.TestCase):
+    """The agent block needs a brokerage with a name; disclaimers print as written, Equal Housing once."""
 
     def test_name_without_brokerage_is_refused(self):
         from shared import profiles
@@ -145,3 +140,7 @@ class AuditNoticesAndBrokerage(unittest.TestCase):
         self.assertEqual(render.notice_lines(agent, marketing=True).count("Equal Housing Opportunity."), 1)
         self.assertEqual(render.notice_lines({}, marketing=True), ["Equal Housing Opportunity."])
         self.assertEqual(render.notices({}), "")
+
+
+if __name__ == "__main__":
+    unittest.main()

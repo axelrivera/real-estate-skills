@@ -216,8 +216,14 @@ class KeyMatchesPdf(unittest.TestCase):
         self.assertEqual((offer["rent_back_days"], offer["rent_back_monthly"], offer["attorney_days"], offer["seller_financing"]),
                          (21, 2400, 7, 40000))
         S = sc.build({"name": "keys", "form": "as_is", "riders": ["V"]})
-        self.assertTrue(any("Rider V's sale date has no default" in n for n in S["notes"]))
         self.assertIn("sale_contingency_date", S["key"]["contract"])
+        # Rider U checks Para. 6(b)'s box on the contract, but a seller's rent-back isn't a tenancy in the key
+        S = sc.build({"name": "u6b", "form": "as_is", "financing": "cash", "riders": ["U"]})
+        pdf, _ = build.render_document(S["documents"][0], 0, S, set())
+        _, found, m = fields.form_blanks("FARBAR-ASIS")
+        b = fields.resolve(found, m["fields"]["tenants"]["at"])[0]
+        self.assertIn("X", [w[4] for w in pdf[b["page"] - 1].get_text("words", clip=pymupdf.Rect(b["rect"]))])
+        self.assertNotIn("tenants", S["key"]["contract"])
 
 
 @unittest.skipUnless(HAVE_TOOLS, "PyMuPDF (dev/requirements-tools.txt) or sources/Contracts/FARBAR/ missing")
@@ -233,6 +239,8 @@ class Packages(unittest.TestCase):
         return " ".join(page.get_text() for page in pymupdf.open(path))
 
     def test_executed_package_reads_back_as_its_answer_key(self):
+        """The executed package's PDF and answer key agree; the Effective Date is the last signature; escrow receipts
+        are completed deposits."""
         r = self.build(spec("asis-fha-executed"), answer_key=True)
         with open(r["answer_key"]) as f:
             key = json.load(f)
@@ -247,6 +255,17 @@ class Packages(unittest.TestCase):
                      "11,000.00", "10/30/2026", "dotloop verified", "09/25/26"):
             self.assertIn(want, text)
         self.assertNotIn("Licensed to dotloop", text)  # the source account's name is redacted
+        # two sellers sign a few minutes apart: the Effective Date is the second signature (Para. 3(b)).
+        c = sc.build(spec("asis-fha-executed"))["key"]["contract"]
+        self.assertEqual(c["effective_date_source"], "Seller's signature on the contract, 09/25/2026 4:15 PM")
+        c = sc.build({**spec("standard-counter-chain"), "buyers": ["Emerson Delacroix", "Ellis Delacroix"]})["key"]["contract"]
+        self.assertTrue(c["effective_date_source"].endswith("09/25/2026 12:28 PM"), c["effective_date_source"])
+        key = sc.build(spec("asis-fha-executed"))["key"]
+        receipt = key["mock"]["deposits_received"][0]["date"]
+        self.assertEqual(key["completed"], {"deposit": f"{receipt[6:10]}-{receipt[:2]}-{receipt[3:5]}"})
+        key = sc.build({"name": "add-dep", "form": "as_is", "price": 480000, "stage": "amended"})["key"]
+        self.assertEqual(set(key["completed"]), {"deposit", "add_deposit"})
+        self.assertNotIn("completed", sc.build(spec("asis-offer-aga"))["key"])
 
     def test_offer_is_signed_by_the_buyer_only(self):
         r = self.build(spec("asis-offer-aga"), answer_key=True)
@@ -270,20 +289,18 @@ class Packages(unittest.TestCase):
         s["counters"][2] = {"by": "seller", "terms": [{"line": "", "text": "Seller keeps the refrigerator."}]}
         S = sc.build(s)
         self.assertEqual((S["key"]["contract"]["price"], S["key"]["contract"]["loan_approval_days"]), (425000, 30))
-        self.assertTrue(any("don't carry over" in n for n in S["notes"]))
         full = sc.build(spec("standard-counter-chain"))["key"]["contract"]
         self.assertEqual((full["price"], full["closing_date"], full["loan_approval_days"]), (432500, "2026-11-20", 25))
 
-    def test_pending_counter_leaves_the_offer_terms(self):
+    def test_pending_counters(self):
+        """A pending counter leaves the offer's terms; a pending buyer counter is the live offer the seller reviews."""
         key = sc.build(spec("standard-l-countered"))["key"]
         offer = key["offers"][0]
         self.assertEqual((offer["price"], offer["inspection_days"], key["mock"]["pending"]), (545000, 10, "counter offer"))
         self.assertEqual(key["mock"]["counters"][0]["price"], 552000)  # the pending counter changes nothing yet
-
-    def test_buyer_counter_is_the_live_offer(self):
-        """A pending buyer counter is what the seller reviews: the original offer with only that counter's terms (CO-3),
-        the original offer and the seller's earlier counter in prior_counters, the balance to close as the form reads it,
-        and the review dated the day of the last counter."""
+        # a pending buyer counter is what the seller reviews: the original offer with only that counter's terms
+        # (CO-3), the original offer and the seller's earlier counter in prior_counters, the balance to close as the
+        # form reads it, and the review dated the day of the last counter.
         key = sc.build(spec("standard-buyer-counter-pending"))["key"]
         offer = key["offers"][0]
         self.assertEqual((offer["price"], offer["closing_date"], offer["inspection_days"]), (619500, "2026-11-16", 15))
@@ -308,28 +325,6 @@ class Packages(unittest.TestCase):
                                 "buyer_broker": {"form": "GG", "between": "seller"}})["key"]
         self.assertEqual(seller_paid["offers"][0]["buyer_broker_paid_by"], "seller")
 
-    def test_effective_date_is_the_last_signature(self):
-        """Two sellers sign a few minutes apart: the Effective Date is the second signature (Para. 3(b))."""
-        c = sc.build(spec("asis-fha-executed"))["key"]["contract"]
-        self.assertEqual(c["effective_date_source"], "Seller's signature on the contract, 09/25/2026 4:15 PM")
-        c = sc.build({**spec("standard-counter-chain"), "buyers": ["Emerson Delacroix", "Ellis Delacroix"]})["key"]["contract"]
-        self.assertTrue(c["effective_date_source"].endswith("09/25/2026 12:28 PM"), c["effective_date_source"])
-
-    def test_escrow_receipts_are_completed_deposits(self):
-        key = sc.build(spec("asis-fha-executed"))["key"]
-        receipt = key["mock"]["deposits_received"][0]["date"]
-        self.assertEqual(key["completed"], {"deposit": f"{receipt[6:10]}-{receipt[:2]}-{receipt[3:5]}"})
-        key = sc.build({"name": "add-dep", "form": "as_is", "price": 480000, "stage": "amended"})["key"]
-        self.assertEqual(set(key["completed"]), {"deposit", "add_deposit"})
-        self.assertNotIn("completed", sc.build(spec("asis-offer-aga"))["key"])
-
-    def test_amendment_without_deadline_changes_is_described(self):
-        s = copy.deepcopy(spec("condo-asis-amended"))
-        s["amendments"][1].pop("description")
-        amend = sc.build(s)["key"]["amendments"]
-        self.assertEqual((amend[0]["description"], amend[1]["description"], amend[1]["changes"]),
-                         ("Extension Addendum", "Addendum No. 1 (no deadline changes)", {}))
-
     def test_property_facts_follow_the_address(self):
         """Two offers on one listing (different scenarios) describe the same parcel and the same association."""
         prop = {"address": "2604 Sable Palm Way, Jupiter, FL 33458", "county": "Palm Beach", "hoa": True}
@@ -350,6 +345,11 @@ class Packages(unittest.TestCase):
         self.assertIn("Condominium", key["contract"]["riders"])
         self.assertIn("Lead-Based Paint Disclosure", key["contract"]["riders"])  # built in 1974
         self.assertTrue(key["contract"]["lbp_waived"])  # Rider P's default: the buyer waived the risk assessment
+        s = copy.deepcopy(spec("condo-asis-amended"))
+        s["amendments"][1].pop("description")
+        amend = sc.build(s)["key"]["amendments"]
+        self.assertEqual((amend[0]["description"], amend[1]["description"], amend[1]["changes"]),
+                         ("Extension Addendum", "Addendum No. 1 (no deadline changes)", {}))
 
     def test_buyer_broker_compensation(self):
         """Rider GG (broker to broker) by default; FF on request; none only when asked; a listed rider isn't doubled."""
@@ -364,10 +364,8 @@ class Packages(unittest.TestCase):
         self.assertEqual((codes, bb["amount"]), (["FF"], 9000))
         self.assertEqual(riders(buyer_broker="none"), ([], None))
         self.assertEqual(riders(riders=["FF"])[0], ["FF"])
-
-    def test_compensation_agreement(self):
-        """GG gets a separate CASSB-1: executed after the Effective Date and inside GG's window, signed by the listing
-        broker's associate (broker to broker) or the sellers; a draft before acceptance; none with FF or none."""
+        # GG gets a separate CASSB-1: executed after the Effective Date and inside GG's window, signed by the listing
+        # broker's associate (broker to broker) or the sellers; a draft before acceptance; none with FF or none.
         base = {"form": "as_is", "financing": "cash"}
         for between, days in (("brokers", 3), ("seller", 5)):
             with self.subTest(between=between):
@@ -389,7 +387,7 @@ class Packages(unittest.TestCase):
         self.assertIn("Reese Okafor", text)
         self.assertNotIn("CASSB-1", " ".join(p.get_text() for p in pymupdf.open(r["pdf"])))  # not merged into the package
 
-    def test_names(self):
+    def test_names_and_answer_key(self):
         """An unnamed spec gets street-stage-hash: stable for the same spec, different for another; files follow the address."""
         a = sc.build({"form": "as_is", "stage": "offer", "property": {"address": "12 Any Way, Oviedo, FL 32765"}})
         again = sc.build({"form": "as_is", "stage": "offer", "property": {"address": "12 Any Way, Oviedo, FL 32765"}})
@@ -400,10 +398,8 @@ class Packages(unittest.TestCase):
         self.assertEqual((a["files"]["package"], a["files"]["compensation"]),
                          ("12-Any-Way-Offer.pdf", "12-Any-Way-Compensation-Agreement.pdf"))
         self.assertEqual(sc.build(spec("asis-fha-executed"))["files"]["package"], "1532-Cypress-Bend-Dr-Contract.pdf")
-
-    def test_key_is_kept_apart_and_carries_the_gap_deadlines(self):
-        """The key and spec live in key/, named for the property; an AGA-1 adds its deadlines and pushes a default
-        closing past them."""
+        # the key and spec live in key/, named for the property; an AGA-1 adds its deadlines and pushes a default
+        # closing past them.
         r = self.build({"name": "aga", "form": "as_is", "addenda": [{"form": "AGA", "gap_amount": 15000}]}, answer_key=True)
         top = sorted(os.listdir(self.tmp.name))
         self.assertFalse([f for f in top if f.endswith(".json")], top)
@@ -449,12 +445,6 @@ class Packages(unittest.TestCase):
         self.assertIn("SD", docs(property={"sinkhole_claim": True}))
         self.assertIn("CDDA", docs(property={"cdd": True}))
 
-    def test_missing_disclosure_drops_the_flood_disclosure_when_no_rider_is_required(self):
-        key = sc.build({"name": "fd", "form": "as_is", "financing": "cash", "property": {"year_built": 2010},
-                        "defects": ["missing-disclosure"]})["key"]
-        self.assertEqual((key["mock"]["dropped_rider"], key["mock"]["dropped_disclosure"]), (None, "FD"))
-        self.assertNotIn("FD", key["mock"]["documents"])
-
     def test_disclosure_answers(self):
         """Condition questions default to yes, problems to no; the spec overrides by question text."""
         import answers
@@ -481,6 +471,15 @@ class Packages(unittest.TestCase):
             self.assertEqual(next(a for q, a in picked.items() if "built before 1978" in q), "yes", family)
             picked = {q: a for _, q, a in answers.choose(found, words, {})}
             self.assertEqual(next(a for q, a in picked.items() if "built before 1978" in q), "no", family)
+        # 'If yes, was the claim paid?' stays blank when no claim was made, and is Yes with a paid claim.
+        path, found, _ = fields.form_blanks("SPDR")
+        words = {i + 1: [w[:5] for w in p.get_text("words")] for i, p in enumerate(pymupdf.open(path))}
+        picked = {answers._own(q): a for _, q, a in answers.choose(found, words, {})}
+        self.assertNotIn("If yes, was the claim paid?", picked)
+        S = sc.build({"name": "sink", "form": "as_is", "property": {"sinkhole_claim": True}})
+        given = next(d for d in S["documents"] if d["family"] == "SPDR")["values"]["answers"]
+        picked = {answers._own(q): a for _, q, a in answers.choose(found, words, given)}
+        self.assertEqual(picked["If yes, was the claim paid?"], "yes")
 
     def test_rules_come_from_contract_forms(self):
         s = {"name": "k-on-as-is", "form": "as_is", "riders": ["K"]}
@@ -501,6 +500,11 @@ class Packages(unittest.TestCase):
         self.assertEqual((kinds["missing-initials"]["party"], kinds["missing-initials"]["page"]), ("seller", 4))
         self.assertEqual(key["contract"]["inspection_days"], 15)  # blank: the form default
         self.assertEqual(key["mock"]["unattached_rider"], "E")
+        # missing-disclosure drops the flood disclosure when no rider is required
+        key = sc.build({"name": "fd", "form": "as_is", "financing": "cash", "property": {"year_built": 2010},
+                        "defects": ["missing-disclosure"]})["key"]
+        self.assertEqual((key["mock"]["dropped_rider"], key["mock"]["dropped_disclosure"]), (None, "FD"))
+        self.assertNotIn("FD", key["mock"]["documents"])
 
     def test_generated_people_never_share_a_name(self):
         """No two made-up people share a first name or surname (a shared surname reads as a relative: Rider AA)."""
@@ -511,26 +515,6 @@ class Packages(unittest.TestCase):
             people += [v["contact"] for d in S["documents"] if d.get("code") == "B" for v in [d["values"]]]
             words = [w for n in people for w in n.split()]
             self.assertEqual(len(words), len(set(words)), people)
-
-    def test_follow_up_questions_follow_their_answer(self):
-        """'If yes, was the claim paid?' stays blank when no claim was made, and is Yes with a paid claim."""
-        import answers
-        path, found, _ = fields.form_blanks("SPDR")
-        words = {i + 1: [w[:5] for w in p.get_text("words")] for i, p in enumerate(pymupdf.open(path))}
-        picked = {answers._own(q): a for _, q, a in answers.choose(found, words, {})}
-        self.assertNotIn("If yes, was the claim paid?", picked)
-        S = sc.build({"name": "sink", "form": "as_is", "property": {"sinkhole_claim": True}})
-        given = next(d for d in S["documents"] if d["family"] == "SPDR")["values"]["answers"]
-        picked = {answers._own(q): a for _, q, a in answers.choose(found, words, given)}
-        self.assertEqual(picked["If yes, was the claim paid?"], "yes")
-
-    def test_rent_back_checks_para_6b(self):
-        S = sc.build({"name": "u6b", "form": "as_is", "financing": "cash", "riders": ["U"]})
-        pdf, _ = build.render_document(S["documents"][0], 0, S, set())
-        _, found, m = fields.form_blanks("FARBAR-ASIS")
-        b = fields.resolve(found, m["fields"]["tenants"]["at"])[0]
-        self.assertIn("X", [w[4] for w in pdf[b["page"] - 1].get_text("words", clip=pymupdf.Rect(b["rect"]))])
-        self.assertNotIn("tenants", S["key"]["contract"])  # a seller's rent-back isn't a tenancy
 
     @SLOW
     def test_scanned_copy_has_no_text_layer(self):

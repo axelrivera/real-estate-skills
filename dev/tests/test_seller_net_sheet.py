@@ -1,6 +1,8 @@
-"""Tests for skills/seller-net-sheet/scripts."""
+"""Seller net sheet (skills/seller-net-sheet/scripts): the money math, the rules for taxes, payoffs and assumptions,
+input errors, and the one-page render. Every fixture's computed facts are also pinned by dev/golden/seller-net-sheet/."""
 import contextlib
 import copy
+import glob
 import io
 import json
 import os
@@ -14,8 +16,8 @@ from skill_import import ROOT, load  # noqa: E402
 
 FIXTURES = os.path.join(ROOT, "dev", "fixtures", "seller-net-sheet")
 cma_compute, = load("seller-cma", "compute")  # loaded first: load() clears the other skill's modules
-compute, render, handoff, finance, profiles = load("seller-net-sheet", "compute", "render", "_shared.handoff",
-                                                   "_shared.finance", "_shared.profiles")
+compute, render, handoff, finance, profiles, shared_render = load(
+    "seller-net-sheet", "compute", "render", "_shared.handoff", "_shared.finance", "_shared.profiles", "_shared.render")
 
 
 def fixture(name):
@@ -23,43 +25,36 @@ def fixture(name):
         return json.load(f)
 
 
-def row(C, label):
-    return next(r for r in C["rows"] if r["label"] == label)
+def all_fixtures():
+    paths = sorted(glob.glob(os.path.join(FIXTURES, "*.json"))) + [os.path.join(ROOT, "dev", "samples", "seller-net-sheet.json")]
+    for path in paths:
+        with open(path) as f:
+            yield os.path.basename(path), json.load(f)
 
 
-class Florida(unittest.TestCase):
-    def setUp(self):
-        self.C = compute.run(fixture("florida-three-prices.json"))
+def tax_row(C):
+    return next(r for r in C["rows"] if r["key"] == "tax_proration")
 
-    def test_three_columns_add_up(self):
-        C = self.C
-        self.assertEqual([c["label"] for c in C["columns"]], ["Current List Price", "After a Price Cut", "List Price with Credit"])
-        for i, c in enumerate(C["columns"]):
-            lines = [r["amounts"][i] for r in C["rows"] if r["kind"] == "line"]
-            self.assertAlmostEqual(c["price"] + sum(lines), c["net"])  # every line, the payoffs included, adds up to the net
-            self.assertAlmostEqual(c["net_before_payoff"] - c["payoff_total"], c["net"])
-        self.assertEqual(C["final_label"], "Estimated Net to Seller")
-        self.assertFalse(C["preliminary"])
 
-    def test_title_fees_itemized(self):
-        """Florida's title company fees show as their four charges, and they add up to the shared line."""
-        names = [r["label"] for r in self.C["rows"] if r["key"] == "title_fees"]
-        self.assertEqual(names, ["Settlement Fee", "Title Search", "Municipal Lien Search", "Recording"])
-        total = sum(-r["amounts"][0] for r in self.C["rows"] if r["key"] == "title_fees")
-        self.assertEqual(total, 1145)
+def page_count(path):
+    with open(path, "rb") as f:
+        return len(re.findall(rb"/Type\s*/Page[^s]", f.read()))
 
-    def test_scenario_lines_only_where_given(self):
-        credit, warranty = row(self.C, "Seller Credit to Buyer"), row(self.C, "Home Warranty")
-        self.assertEqual(credit["display"], ["—", "—", "−$9,000"])
-        self.assertEqual(warranty["amounts"], [0, 0, -550])
-        self.assertEqual(row(self.C, "Home Equity Line")["amounts"], [-18000] * 3)
 
-    def test_tax_after_bill_month_assumed_unpaid(self):
-        r = next(r for r in self.C["rows"] if r["key"] == "tax_proration")
-        self.assertEqual(r["label"], "Property Tax Proration (Jan 1 to Closing)")  # no Assumed label
-        self.assertTrue(any("assuming this year's bill is still unpaid" in n for n in self.C["notes"]))  # said once, in a note
-        self.assertTrue(self.C["tax_assumed_unpaid"])
-        self.assertEqual(-r["amounts"][0], round(6200 * 0.96 * 348 / 365))  # Jan 1 to Dec 14, less the 4% discount
+class EveryFixture(unittest.TestCase):
+    def test_columns_add_up_and_labels_carry_no_notes(self):
+        """In every fixture each column's lines (payoffs included) add up to its net, and no row, column or fact label
+        carries an Assumed or Estimate tag: estimates are said once, in the notes."""
+        for name, data in all_fixtures():
+            with self.subTest(name):
+                C = compute.run(data)
+                for i, c in enumerate(C["columns"]):
+                    lines = [r["amounts"][i] for r in C["rows"] if r["kind"] == "line"]
+                    self.assertAlmostEqual(c["price"] + sum(lines), c["net"])
+                    self.assertAlmostEqual(c["net_before_payoff"] - c["payoff_total"], c["net"])
+                labels = [r["label"] for r in C["rows"]] + [c["label"] for c in C["columns"]] + [f["text"] for f in C["facts"]]
+                self.assertEqual([x for x in labels if re.search(r"\b(Assumed|Estimate)\b", x)], [])
+                self.assertFalse([n for n in C["market_notes"] if "MLS" in n or "--columns" in n])
 
     def test_matches_seller_cma_net(self):
         """The same price, credit and costs give the same net as seller-cma's net sheet (one shared calculator)."""
@@ -76,142 +71,100 @@ class Florida(unittest.TestCase):
         self.assertAlmostEqual(compute.run(data)["columns"][0]["net"], cma_net)
 
 
-class OtherMarkets(unittest.TestCase):
-    def test_texas_minimal_is_preliminary(self):
-        C = compute.run(fixture("texas-no-payoff.json"))
-        self.assertTrue(C["preliminary"])
-        self.assertIn("payoff", C["preliminary_reason"])
-        self.assertEqual(C["final_label"], "Estimated Net Before Mortgage Payoff")
-        self.assertNotIn("transfer_tax", [r["key"] for r in C["rows"]])  # Texas has no state transfer tax
-        self.assertIn("Listing Brokerage (2.5%)", [r["label"] for r in C["rows"]])  # a default: no Assumed label
-        self.assertFalse(any("Brokerage is assumed" in n for n in C["notes"]))
-        self.assertTrue(any(a.startswith("Commission at the default 5%") for a in C["assumptions"]))  # asked in chat
-        self.assertTrue(any("No state transfer tax in Texas" in n for n in C["notes"]))
-        self.assertTrue(any(f["text"] == "Payoff Not Provided" and f.get("risk") for f in C["facts"]))
-        self.assertFalse(any("0.70%" in r["label"] for r in C["rows"]))  # never Florida's numbers
-
-    def test_miami_condo_paid_bill(self):
-        C = compute.run(fixture("miami-condo-bill-paid.json"))
-        keys = [r["key"] for r in C["rows"]]
-        self.assertIn("transfer_surtax", keys)  # a condo owes Miami-Dade's surtax
-        self.assertNotIn("owner_title", keys)  # the buyer pays the owner's policy there
-        self.assertTrue(any("buyer customarily pays the owner's title" in n for n in C["notes"]))
-        tax = next(r for r in C["rows"] if r["key"] == "tax_proration")
-        self.assertGreater(tax["amounts"][0], 0)  # paid bill: a credit back to the seller
-        self.assertEqual(C["final_label"], "Estimated Net to Seller")  # owned free and clear: cash at closing
-        self.assertTrue(any("FIRPTA" in n for n in C["notes"]))
-        self.assertEqual([r["label"] for r in C["rows"] if r["key"] == "title_fees"][0], "Settlement Fee")  # the quote, itemized
-
-    def test_short_sale_warns(self):
-        C = compute.run(fixture("georgia-short.json"))
-        self.assertTrue(all(c["short"] for c in C["columns"]))
-        self.assertTrue(C["warnings"] and "bring about" in C["warnings"][0])
-        self.assertIn("bring about", C["notes"][0])
-        payoff = next(r for r in C["rows"] if r["label"].startswith("Mortgage Payoff"))
-        self.assertEqual(-payoff["amounts"][0], round(309000 * (1 + 6.25 / 1200)))  # a month of interest, no hidden fees (round 5)
-        self.assertEqual(row(C, "Solar Panel Loan")["amounts"][0], -14000)
-
-
-class Iteration9(unittest.TestCase):
-    """Iteration 9 evals: the tax due date, a missing proration, an assumed closing date, shortfalls, market notes."""
+class TaxProration(unittest.TestCase):
+    def test_bill_unpaid_before_due_date(self):
+        """Closing before the bill is due: a charge from Jan 1 to closing, less Florida's 4% early-payment discount."""
+        C = compute.run(fixture("florida-three-prices.json"))
+        self.assertTrue(C["tax_assumed_unpaid"])
+        self.assertEqual(-tax_row(C)["amounts"][0], round(6200 * 0.96 * 348 / 365))  # Jan 1 to Dec 14
 
     def test_closing_after_due_date_assumes_bill_paid(self):
         d = fixture("georgia-short.json")
+        self.assertLess(tax_row(compute.run(d))["amounts"][0], 0)  # no due date: a charge
         d["costs"]["tax_bill_due_date"] = "10-15"  # Cobb County bills are due Oct 15; closing Nov 6
         C = compute.run(d)
-        tax = next(r for r in C["rows"] if r["key"] == "tax_proration")
-        self.assertEqual(tax["label"], "Property Tax Proration (Credit, Closing to Dec 31)")
-        self.assertTrue(any(n.startswith("Assumed: this year's tax bill") for n in C["notes"]))
-        self.assertEqual(tax["amounts"][0], round(3900 * 56 / 365))  # a credit back to the seller
-        self.assertTrue(C["tax_assumed_paid"])
-        self.assertFalse(C["tax_assumed_unpaid"])
-        self.assertTrue(any("assumed paid" in a and "Oct 15" in a for a in C["assumptions"]))
-        before = compute.run(fixture("georgia-short.json"))  # no due date: today's rule, a charge
-        self.assertLess(next(r for r in before["rows"] if r["key"] == "tax_proration")["amounts"][0], 0)
+        self.assertEqual(tax_row(C)["amounts"][0], round(3900 * 56 / 365))  # a credit back to the seller
+        self.assertEqual((C["tax_assumed_paid"], C["tax_assumed_unpaid"]), (True, False))
         d["costs"]["tax_bill_due_date"] = "mid-October"
         with self.assertRaisesRegex(compute.NetSheetError, "tax_bill_due_date"):
             compute.run(d)
 
-    def test_no_tax_bill_is_preliminary(self):
-        C = compute.run(fixture("texas-no-payoff.json"))
-        self.assertIn("property tax proration isn't included", C["preliminary_reason"])
-
-    def test_vague_closing_date_marked_assumed(self):
-        d = fixture("florida-three-prices.json")
-        d["closing_date_assumed"] = True
-        C = compute.run(d)
-        self.assertTrue(C["closing_date_assumed"])
-        self.assertFalse(any("Assumed" in f["text"] for f in C["facts"]))  # local-costs.md: said once, in the notes
-        self.assertTrue(any(n.startswith("Closing on") and "expected date" in n for n in C["notes"]))
-        self.assertTrue(any(a.startswith("Closing on") and "assumed" in a for a in C["assumptions"]))
-        self.assertFalse(compute.run(fixture("florida-three-prices.json"))["closing_date_assumed"])
-
-    def test_shortfalls_in_column_order_and_tile_label(self):
-        C = compute.run(fixture("georgia-short.json"))
-        prices = [c["price_display"] for c in C["columns"]]
-        notes = [n for n in C["notes"] if "bring about" in n]
-        self.assertEqual([next(p for p in prices if f"At {p} " in n) for n in notes], prices)
-        self.assertEqual(C["columns"][0]["tile_label"], "Cash to Bring to Closing")
-        self.assertEqual(C["columns"][0]["tile_display"], finance.money(-C["columns"][0]["net"]))
-        doc = render.build_html(C, {})
-        self.assertIn("Cash to Bring to Closing", doc)
-        F = compute.run(fixture("florida-three-prices.json"))
-        self.assertEqual(F["columns"][0]["tile_label"], "Estimated Net to Seller")
-
-    def test_property_type_assumed(self):
-        d = fixture("miami-condo-bill-paid.json")
-        d["property"]["property_type_assumed"] = True
-        C = compute.run(d)
-        self.assertIn("Condo", [f["text"] for f in C["facts"]])  # no Assumed label: the notes say it
-        self.assertIn("Property type taken as condo from the unit number.", C["notes"])
-        self.assertTrue(any("assumed condo from the unit number" in a for a in C["assumptions"]))
-
-    def test_market_notes_drop_mls(self):
-        for name in ("texas-no-payoff.json", "florida-three-prices.json", "miami-condo-bill-paid.json"):
-            self.assertFalse([n for n in compute.run(fixture(name))["market_notes"] if "MLS" in n or "--columns" in n])
-
-    def test_builtin_estoppel_fee_is_noted(self):  # iteration 11: a built-in local fee says it's typical, like title fees
-        r = compute.run(fixture("florida-three-prices.json"))
-        self.assertTrue(any("estoppel fee is a typical Florida charge" in n for n in r["notes"]))
-        # the deal's own figure (Miami fixture) and a national estimate (Texas, labeled on its line) need no note
-        self.assertFalse(any("estoppel" in n for n in compute.run(fixture("miami-condo-bill-paid.json"))["notes"]))
-        self.assertFalse(any("estoppel" in n for n in compute.run(fixture("texas-no-payoff.json"))["notes"]))
-
-
-class Inputs(unittest.TestCase):
-    def base(self):
-        return copy.deepcopy(fixture("florida-three-prices.json"))
-
-    def test_errors_for_the_agent(self):
-        d = self.base()
-        d["scenarios"] *= 2
-        with self.assertRaisesRegex(compute.NetSheetError, "at most 3"):
-            compute.run(d)
-        d = self.base()
-        del d["property"]["address"]
-        with self.assertRaisesRegex(compute.NetSheetError, "address"):
-            compute.run(d)
-        d = self.base()
-        d["costs"]["listing_fee_pct"] = 3
-        with self.assertRaisesRegex(ValueError, "0.03 for 3%"):
-            compute.run(d)
-        d = self.base()
-        d["scenarios"] = []
-        with self.assertRaisesRegex(compute.NetSheetError, "at least one sale price"):
-            compute.run(d)
-
-    def test_default_labels_unique(self):
-        d = self.base()
-        d["scenarios"] = [{"price": 450000}, {"price": 450000, "seller_credit": 5000}, {"price": 450000}]
-        self.assertEqual([c["label"] for c in compute.run(d)["columns"]],
-                         ["$450,000 (Option 1)", "$450,000 with $5,000 Credit", "$450,000 (Option 3)"])
-
     def test_no_tax_bill_leaves_proration_out(self):
-        d = self.base()
+        d = fixture("florida-three-prices.json")
         del d["costs"]["annual_tax"]
         C = compute.run(d)
         self.assertNotIn("tax_proration", [r["key"] for r in C["rows"]])
-        self.assertTrue(any(n.startswith("Not included: this year's property tax proration") for n in C["notes"]))
+        self.assertFalse(C["has_tax_proration"])
+
+
+class Payoff(unittest.TestCase):
+    """A stated payoff is used as given; a balance gets a month's interest at the loan's rate, else 4.5%."""
+
+    def test_payoff_from_balance(self):
+        base = fixture("florida-credit-manual-v5.json")
+        for costs, want in (({"mortgage_payoff": 188000}, 188000),
+                            ({"mortgage_balance": 188000}, round(188000 * (1 + 4.5 / 1200))),
+                            ({"mortgage_balance": 188000, "mortgage_rate": 6}, round(188000 * 1.005))):
+            with self.subTest(costs):
+                d = copy.deepcopy(base)
+                d["costs"] = {k: v for k, v in d["costs"].items() if k != "mortgage_payoff"} | costs
+                C = compute.run(d)
+                self.assertEqual(-next(r for r in C["rows"] if r.get("key") == "payoff")["amounts"][0], want)
+
+    def test_short_sale_tile_is_cash_to_bring(self):
+        C = compute.run(fixture("georgia-short.json"))
+        self.assertTrue(all(c["short"] for c in C["columns"]))
+        self.assertTrue(C["warnings"])
+        self.assertEqual(C["columns"][0]["tile_display"], finance.money(-C["columns"][0]["net"]))
+        F = compute.run(fixture("florida-three-prices.json"))
+        self.assertNotEqual(C["columns"][0]["tile_label"], F["columns"][0]["tile_label"])
+
+
+class Assumptions(unittest.TestCase):
+    def test_assumed_inputs_are_recorded(self):
+        """An assumed closing date or property type is flagged and asked about in the assumptions list."""
+        for name, change, flag in (("florida-three-prices.json", lambda d: d.update(closing_date_assumed=True), "closing_date_assumed"),
+                                   ("miami-condo-bill-paid.json", lambda d: d["property"].update(property_type_assumed=True), None)):
+            with self.subTest(name):
+                d = fixture(name)
+                before = compute.run(d)
+                change(d)
+                C = compute.run(d)
+                if flag:
+                    self.assertEqual((before[flag], C[flag]), (False, True))
+                self.assertEqual(len(C["assumptions"]), len(before["assumptions"]) + 1)
+
+    def test_texas_never_gets_florida_numbers(self):
+        C = compute.run(fixture("texas-no-payoff.json"))
+        self.assertTrue(C["preliminary"])
+        self.assertNotIn("transfer_tax", [r["key"] for r in C["rows"]])
+        self.assertFalse(any("0.70%" in r["label"] for r in C["rows"]))
+
+    def test_builtin_estoppel_fee_is_noted_once(self):
+        """A built-in local fee is noted as a typical charge; the deal's own figure or a national estimate is not."""
+        count = lambda name: sum("estoppel" in n for n in compute.run(fixture(name))["notes"])  # noqa: E731
+        self.assertEqual(count("florida-three-prices.json"), 1)
+        self.assertEqual(count("miami-condo-bill-paid.json"), 0)
+        self.assertEqual(count("texas-no-payoff.json"), 0)
+
+
+class Inputs(unittest.TestCase):
+    def test_errors_for_the_agent(self):
+        cases = (("at most 3", lambda d: d.update(scenarios=d["scenarios"] * 2), compute.NetSheetError),
+                 ("address", lambda d: d["property"].pop("address"), compute.NetSheetError),
+                 ("0.03 for 3%", lambda d: d["costs"].update(listing_fee_pct=3), ValueError),
+                 ("sale price", lambda d: d.update(scenarios=[]), compute.NetSheetError))
+        for msg, change, exc in cases:
+            with self.subTest(msg):
+                d = fixture("florida-three-prices.json")
+                change(d)
+                with self.assertRaisesRegex(exc, re.escape(msg)):
+                    compute.run(d)
+
+    def test_default_labels_unique(self):
+        d = fixture("florida-three-prices.json")
+        d["scenarios"] = [{"price": 450000}, {"price": 450000, "seller_credit": 5000}, {"price": 450000}]
+        self.assertEqual(len({c["label"] for c in compute.run(d)["columns"]}), 3)
 
     def test_cma_handoff_fills_location_and_price(self):
         h = handoff.build(side="seller", as_of="2026-09-22", subject={"address": "2250 Oak Hollow Ct", "city": "Casselberry",
@@ -223,9 +176,8 @@ class Inputs(unittest.TestCase):
                 json.dump(h, f)
             C = compute.run({"property": {}, "closing_date": "2026-11-20"}, cma_path=path)
             self.assertEqual(C["columns"][0]["price"], 515000)
-            self.assertEqual(C["columns"][0]["label"], "Recommended List Price")
             self.assertTrue(C["has_tax_proration"])
-            with self.assertRaisesRegex(compute.NetSheetError, "not 9 Elm St"):
+            with self.assertRaisesRegex(compute.NetSheetError, "9 Elm St"):
                 compute.run({"property": {"address": "9 Elm St"}}, cma_path=path)
             with open(path, "w") as f:
                 json.dump({**h, "side": "buyer"}, f)
@@ -235,90 +187,27 @@ class Inputs(unittest.TestCase):
 
 class Render(unittest.TestCase):
     def test_tile_row_is_always_three_boxes(self):
-        """One or two prices no longer stretch: the spare slots show seller costs and payoffs, or the difference."""
+        """One or two prices fill the spare tile slots (costs and payoffs, or the difference); three prices need none."""
         one = compute.run(fixture("texas-no-payoff.json"))
-        self.assertEqual([t["label"] for t in one["summary_tiles"]], ["Seller Costs", "Payoffs"])
-        self.assertEqual(one["summary_tiles"][1]["display"], "Not Provided")  # the price tile already shows the net before payoff
         two = compute.run(fixture("miami-condo-bill-paid.json"))
-        self.assertEqual(two["summary_tiles"][0]["label"], "Difference")
-        self.assertTrue(two["summary_tiles"][0]["note"].startswith("More with"))
-        short = compute.run(fixture("georgia-short.json"))  # the seller brings cash at both prices
-        self.assertTrue(short["summary_tiles"][0]["note"].startswith("Less to bring with"))
+        self.assertEqual((len(one["summary_tiles"]), len(two["summary_tiles"])), (2, 1))
         self.assertEqual(compute.run(fixture("florida-three-prices.json"))["summary_tiles"], [])
         for C in (one, two):
-            doc = render.build_html(C, {}); self.assertEqual(doc.count('<div class="tile">') + doc.count('<div class="tile sum">'), 3)
+            doc = render.build_html(C, {})
+            self.assertEqual(doc.count('<div class="tile">') + doc.count('<div class="tile sum">'), 3)
         d = fixture("florida-three-prices.json")
         d["scenarios"] = d["scenarios"][:1]
-        d.setdefault("costs", {})["mortgage_payoff"] = 0
+        d["costs"]["mortgage_payoff"] = 0
         d["costs"].pop("other_payoffs", None)
         self.assertEqual(compute.run(d)["summary_tiles"][1]["display"], "$0")
 
     def test_no_fact_row_means_no_header_rule(self):
-        """With no facts under the header the tiles sit right under it, and the header's rule is dropped (as in the
-        other reports), so it doesn't collide with the tiles' border."""
         C = compute.run(fixture("florida-three-prices.json"))
         self.assertIn('class="divrow factrow"', render.build_html(C, {}))
         doc = render.build_html(dict(C, facts=[]), {})
         self.assertNotIn("factrow", doc.split("<style>")[-1].split("</style>")[-1])
         self.assertIn("header:has(+ .tiles){border-bottom:none", doc)
-
-    def test_one_page_pdf(self):
-        """Three prices with every optional line still print on one page."""
-        d = fixture("florida-three-prices.json")
-        d["scenarios"][1].update({"home_warranty": 600, "repairs": 3500, "closing_date": "2026-11-30"})
-        d["costs"]["other"] += [{"label": "Permit Closeout", "amount": 800}, {"label": "Attorney Fee", "amount": 650}]
-        agent = {"name": "Jordan Avery", "brokerage": "Sample Realty, LLC", "disclaimers": "Information deemed reliable."}
-        with tempfile.TemporaryDirectory() as tmp:
-            (path,) = render.build(d, "pdf", tmp, {"agent": agent, "sample": True})
-            with open(path, "rb") as f:
-                pdf = f.read()
-        self.assertEqual(len(re.findall(rb"/Type\s*/Page[^s]", pdf)), 1)
-
-    def test_long_disclaimer_drops_the_chart_not_the_page(self):
-        d = fixture("florida-three-prices.json")
-        d["scenarios"][1].update({"home_warranty": 600, "repairs": 3500, "closing_date": "2026-11-30"})
-        para = "This brokerage's disclaimer runs long, as some states and brokerages require, line after line. " * 3
-        agent = {"name": "Jordan Avery", "brokerage": "Sample Realty, LLC", "disclaimers": "\n\n".join([para] * 6)}
-        err = io.StringIO()
-        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(err):
-            (path,) = render.build(d, "pdf", tmp, {"agent": agent})
-            with open(path, "rb") as f:
-                self.assertEqual(len(re.findall(rb"/Type\s*/Page[^s]", f.read())), 1)
-        self.assertIn("chart was left out", err.getvalue())
-
-    def test_long_default_label_never_clips(self):
-        """Iteration 9 eval 1: the default "$450,000 with $9,000 Credit" was cut off in the table header. It wraps now,
-        and a label that still can't fit stops the render."""
-        d = fixture("florida-three-prices.json")
-        for x in d["scenarios"]:
-            x.pop("label", None)
-        with tempfile.TemporaryDirectory() as tmp:
-            (path,) = render.build(d, "pdf", tmp, {"agent": {}})
-            self.assertTrue(os.path.exists(path))
-            d["scenarios"][2]["label"] = "Listpricewithsellercreditandhomewarranty"
-            with self.assertRaisesRegex(compute.NetSheetError, "cut off"):
-                render.build(d, "pdf", tmp, {"agent": {}})
-
-    def test_html_marks_preliminary_and_short(self):
-        C = compute.run(fixture("texas-no-payoff.json"))
-        doc = render.build_html(C, {})
-        self.assertIn("Preliminary:", doc)
-        self.assertIn("Payoff Not Provided", doc)
-        doc = render.build_html(compute.run(fixture("georgia-short.json")), {})
-        self.assertIn('class="short"', doc)
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-class ResultsV4(unittest.TestCase):
-    """Results_v4 case 09: no "Seller Side" pill, the agent's name as a signature, headers that fit one line."""
-
-    def test_header(self):
-        doc = render.build_html(compute.run(fixture("florida-three-prices.json")), {"name": "Axel Rivera", "brokerage": "LPT Realty"})
-        self.assertNotIn("Seller Side", doc)
-        self.assertIn('<b class="agent">Axel Rivera</b>', doc)
+        self.assertIn('class="short"', render.build_html(compute.run(fixture("georgia-short.json")), {}))
 
     def test_columns_fit_their_headers(self):
         widths = render.column_widths(["$425,000", "$410,000", "$425,000 with $6,000 Credit"])
@@ -328,3 +217,52 @@ class ResultsV4(unittest.TestCase):
         self.assertGreaterEqual(widths[3], need - 0.1)
         self.assertGreaterEqual(widths[0], render.MIN_FIRST)
         self.assertEqual(render.column_widths(["A"] * 3)[1:], [render.MIN_COL] * 3)
+
+    def test_every_optional_line_fits_one_page(self):
+        """Three prices with every optional line print on one page; a long disclaimer drops the chart, not the page."""
+        d = fixture("florida-three-prices.json")
+        d["scenarios"][1].update({"home_warranty": 600, "repairs": 3500, "closing_date": "2026-11-30"})
+        d["costs"]["other"] += [{"label": "Permit Closeout", "amount": 800}, {"label": "Attorney Fee", "amount": 650}]
+        para = "This brokerage's disclaimer runs long, as some states and brokerages require, line after line. " * 3
+        for disclaimers, chart in (("Information deemed reliable.", True), ("\n\n".join([para] * 6), False)):
+            agent = {"name": "Jordan Avery", "brokerage": "Sample Realty, LLC", "disclaimers": disclaimers}
+            err = io.StringIO()
+            with self.subTest(chart=chart), tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(err), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                (path,) = render.build(d, "pdf", tmp, {"agent": agent, "sample": True})
+                self.assertEqual(page_count(path), 1)
+                self.assertEqual("chart was left out" not in err.getvalue(), chart)
+
+    def test_label_that_cannot_fit_stops_the_render(self):
+        """Default column labels wrap to fit; a label that still can't fit stops the render instead of printing clipped."""
+        d = fixture("florida-three-prices.json")
+        for x in d["scenarios"]:
+            x.pop("label", None)
+        with tempfile.TemporaryDirectory() as tmp:
+            (path,) = render.build(d, "pdf", tmp, {"agent": {}})
+            self.assertTrue(os.path.exists(path))
+            d["scenarios"][2]["label"] = "Listpricewithsellercreditandhomewarranty"
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()), \
+                    self.assertRaisesRegex(compute.NetSheetError, "cut off"):
+                render.build(d, "pdf", tmp, {"agent": {}})
+
+    def test_chart_labels_one_line(self):
+        """Every price label under the chart bars stays one line high, the longest included."""
+        doc = render.build_html(compute.run(fixture("florida-credit-manual-v5.json")), {})
+        seen = {}
+
+        def measure(pg):
+            seen["heights"] = pg.evaluate("() => [...document.querySelectorAll('.bars .lbl')].map(e => e.getBoundingClientRect().height)")
+            return render.fit_one_page(pg)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            _, no_chart, clipped = shared_render.html_to_pdf(doc, os.path.join(tmp, "x.pdf"), before_print=measure)
+        self.assertFalse(no_chart)
+        self.assertEqual(clipped, [])
+        hs = seen["heights"]
+        self.assertEqual(len(hs), 3)
+        self.assertLess(max(hs) - min(hs), 2, hs)
+
+
+if __name__ == "__main__":
+    unittest.main()

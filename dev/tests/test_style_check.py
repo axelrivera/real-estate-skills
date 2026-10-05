@@ -1,4 +1,4 @@
-"""Tests for dev/style_check.py's text rules (DOC-6, DOC-12)."""
+"""Tests for dev/style_check.py's text rules: headings, word dashes, estimate marks in labels."""
 import os
 import sys
 import unittest
@@ -20,7 +20,6 @@ class Rules(unittest.TestCase):
         self.assertTrue(sc.WORD_DASH.search("the net – after costs"))
         self.assertIsNone(sc.WORD_DASH.search("$455,000 – $480,000"))  # a number range is fine
         self.assertIsNone(sc.WORD_DASH.search("run it with --out DIR"))
-
 
     def test_estimate_marks_in_labels(self):
         """Owner rule: Assumed / Estimate marks never sit in a header, a row label, a tile or a fact chip; notes may
