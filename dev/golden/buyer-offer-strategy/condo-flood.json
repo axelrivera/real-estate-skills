@@ -174,11 +174,11 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -643,7 +643,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -1114,11 +1114,11 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -1583,7 +1583,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -2223,11 +2223,11 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -2692,7 +2692,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -3159,7 +3159,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -3627,11 +3627,11 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",

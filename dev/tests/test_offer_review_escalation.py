@@ -21,6 +21,11 @@ BASE = {"analysis_date": "2026-09-23",
                     "cma_low": 390000, "cma_high": 410000, "annual_tax": 5000, "hoa_monthly": 0, "flood_disclosure": True},
         "seller": {"payoff": 200000, "listing_fee_pct": 0.025, "offered_buyer_broker_pct": 0.025}}
 
+def page(R, agent=None, sample=False, mode="auto", offer_id=None):
+    """The report's HTML, from the one document model (review.result)."""
+    return render.build_html(review.result(R, mode, offer_id), agent or {}, sample)
+
+
 
 def hand(**k):
     o = {"id": "A", "contract_form": "as_is", "price": 400000, "financing": "conventional", "down_pct": 0.2, "deposit": 10000,
@@ -96,8 +101,8 @@ class EscalationCounter(unittest.TestCase):
         ranked = {r["id"]: r for r in review.multi_view(R)["ranked"]}
         self.assertEqual(ranked["B"]["escalation"], "Base $494,000 · +$2,000 · cap $506,000")
         self.assertIsNone(ranked["A"]["escalation"])
-        self.assertIn("<th>Escalation</th>", render.build_html(R, {}, mode="multi")[0])
-        self.assertNotIn("<th>Escalation</th>", render.build_html(review.analyze(case05(escalation=None)), {}, mode="multi")[0])
+        self.assertIn(">Escalation</th>", page(R, {}, mode="multi"))
+        self.assertNotIn(">Escalation</th>", page(review.analyze(case05(escalation=None)), {}, mode="multi"))
 
 
 class EscalationForm(unittest.TestCase):

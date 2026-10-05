@@ -90,7 +90,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "standard_repairs"
     },
     {
      "check": "terms",
@@ -148,7 +148,7 @@
      ],
      [
       "transfer",
-      -4336
+      -4337
      ],
      [
       "title",
@@ -178,8 +178,8 @@
     "missing": {
      "count": 0
     },
-    "net": 570221,
-    "net_adj": 569201,
+    "net": 570220,
+    "net_adj": 569200,
     "price": 619500,
     "tax_bill_assumed": true
    },
@@ -286,7 +286,7 @@
      ],
      [
       "transfer",
-      -4336
+      -4337
      ],
      [
       "title",
@@ -316,8 +316,8 @@
     "missing": {
      "count": 0
     },
-    "net": 560929,
-    "net_adj": 559909,
+    "net": 560928,
+    "net_adj": 559908,
     "price": 619500,
     "tax_bill_assumed": true
    },
@@ -334,7 +334,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544573.0,
+   "rank_value": 544572.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -731,7 +731,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "standard_repairs"
     },
     {
      "check": "terms",
@@ -789,7 +789,7 @@
      ],
      [
       "transfer",
-      -4336
+      -4337
      ],
      [
       "title",
@@ -819,8 +819,8 @@
     "missing": {
      "count": 0
     },
-    "net": 570221,
-    "net_adj": 569201,
+    "net": 570220,
+    "net_adj": 569200,
     "price": 619500,
     "tax_bill_assumed": true
    },
@@ -927,7 +927,7 @@
      ],
      [
       "transfer",
-      -4336
+      -4337
      ],
      [
       "title",
@@ -957,8 +957,8 @@
     "missing": {
      "count": 0
     },
-    "net": 560929,
-    "net_adj": 559909,
+    "net": 560928,
+    "net_adj": 559908,
     "price": 619500,
     "tax_bill_assumed": true
    },
@@ -975,7 +975,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544573.0,
+   "rank_value": 544572.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -1198,7 +1198,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "standard_repairs"
     },
     {
      "check": "terms",
@@ -1256,7 +1256,7 @@
      ],
      [
       "transfer",
-      -4336
+      -4337
      ],
      [
       "title",
@@ -1286,8 +1286,8 @@
     "missing": {
      "count": 0
     },
-    "net": 570221,
-    "net_adj": 569201,
+    "net": 570220,
+    "net_adj": 569200,
     "price": 619500,
     "tax_bill_assumed": true
    },
@@ -1394,7 +1394,7 @@
      ],
      [
       "transfer",
-      -4336
+      -4337
      ],
      [
       "title",
@@ -1424,8 +1424,8 @@
     "missing": {
      "count": 0
     },
-    "net": 560929,
-    "net_adj": 559909,
+    "net": 560928,
+    "net_adj": 559908,
     "price": 619500,
     "tax_bill_assumed": true
    },
@@ -1442,7 +1442,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544573.0,
+   "rank_value": 544572.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,

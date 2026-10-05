@@ -3,890 +3,531 @@
     python3 scripts/render.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID]
                               [--profile profile.md] [--sample] [--out DIR]
 
-Single review: page 1 is a self-contained executive summary (the recommendation, the counter, key
-numbers, certainty and the seller's options); the pages after it hold the net sheet, contingency
-timeline, terms review, scorecard, risk flags, checklist, questions and assumptions.
-Comparison: a two-page landscape decision summary, one row per offer (plan and ranking, chart up to 6 offers,
-key terms side by side). A comparison always comes with a single review of every active offer, each its own PDF
-(OFR-318: the comparison is the big picture; each offer's detail is in its own review).
-Colors follow the agent's seller-side brand color.
+review.py builds the document model once (render.main's compute step): every figure, label and note is already in
+it. This file only places it with the shared layout kit. Single review: page 1 is a self-contained executive summary
+(the recommendation, the counter, key numbers, certainty and the seller's options); the pages after it hold the net
+sheet, contingency timeline, terms review, scorecard, risk flags, checklist, questions, what to confirm and the notes.
+Comparison: a two-page landscape decision summary, one row per offer. A comparison always comes with a single review of
+every active offer, each its own PDF (OFR-318). Colors follow the agent's seller-side brand color.
 """
 import html
-import math
 import os
 import re
-import shutil
-import subprocess
 import sys
-from datetime import timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import review  # noqa: E402
-from _shared import design, handoff, offer_engine as oe, profiles, render  # noqa: E402
+from _shared import design, handoff, layout, offer_engine as oe, render  # noqa: E402
 
-esc = html.escape
-money, signed = oe.money, review.signed
+
+
+def esc(text):
+    """Escaped text; a minus sign stays joined to its figure (no line break between − and $)."""
+    return html.escape(str(text)).replace("−$", "−⁠$")
+
+
+Raw, Col = layout.Raw, layout.Col
+L_ = review.L_
 CSS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "offer-review.css")
-PAGE1_LIMIT = 989  # px available on page 1 at the print viewport (portrait)
-PAGE1_LIMIT_WIDE = 749  # the comparison prints landscape: 8.5in minus margins
 PILL = {"good": "low", "caution": "med", "risk": "high"}
-RATING = {"good": "Favorable", "caution": "Watch", "risk": "Weak"}
-
-
-def md(text):
-    """Escape, then turn the summary's **bold** into <b>."""
-    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc(text or ""))
-
-
-def acct(v):
-    """Net-sheet style: costs in parentheses."""
-    return money(v) if v >= 0 else f"({money(-v)})"
-
-
-def pctx(v, d=1):
-    return f"{v * 100:.{d}f}%"
-
-
-# --- shared blocks -------------------------------------------------------------
-
-def prepared_block(R, agent):
-    # DS-103: the date never wraps; a name too long for the block wraps between words (report.css caps its width)
-    lines = [f'Prepared for <b>{esc(R["seller"].get("name") or "Seller")}</b> · '
-             f'<span class="nw">{R["listing"]["analysis_date"]:%B %-d, %Y}</span>']
-    if agent.get("name"):
-        lines.append(f'<b>{esc(agent["name"])}</b>')
-        org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
-        lic = f'Lic. {esc(str(agent["license"]))}' if agent.get("license") else ""
-        if org or lic:
-            lines.append(" · ".join(x for x in (org, lic) if x))
-    return "<br>".join(lines)
-
-
-def header(R, title, sub, agent, sample):
-    tag = '<span class="viewtag">Seller Side</span>' + ('<span class="sample">SAMPLE DATA</span>' if sample else "")
-    return (f'<header><div><div class="t1">{title}{tag}</div><div class="t2">{sub}</div></div>'
-            f'<div class="prep">{prepared_block(R, agent)}</div></header>')
-
-
-def snapshot(R):
-    """One divider row: the home, then the inputs the numbers rest on. Missing facts drop out; a missing
-    input that makes the review Preliminary stays, in the risk color."""
-    L, S = R["listing"], R["seller"]
-    hoa = f"HOA {money(L['hoa_monthly'])}/mo" if L.get("hoa_monthly") else ("no HOA" if L.get("hoa_monthly") == 0 else None)
-    if hoa and L.get("hoa_conflict"):  # OFR-343: the risk flags dispute the figure, so the chip doesn't state it
-        hoa = "HOA to Confirm"
-    facts = [f"{L['beds']} Bed" if L.get("beds") else None, f"{L['baths']} Bath" if L.get("baths") else None,
-             f"{L['sqft']:,} Sq Ft" if L.get("sqft") else None, f"Built {L['year_built']}" if L.get("year_built") else None,
-             f"Roof {L['roof_year']}" if L.get("roof_year") else None, hoa,
-             f"Flood Zone {L['flood_zone']}" if L.get("flood_zone") else None]
-    items = [esc(x[:1].upper() + x[1:]) for x in facts if x]  # OFR-323: each chip's label in Title Case
-    items.append(f"CMA {oe.short_price(L['cma_low'])}–{oe.short_price(L['cma_high'])}" if L["cma_provided"] else '<b class="rt">CMA Not Provided</b>')
-    items.append(f"Payoff {money(S['payoff'])}" if S["payoff_known"] else '<b class="rt">Payoff Not Provided</b>')
-    if S["deadline"]:
-        note = review.deadline_note(S)  # OFR-296: a weekend deadline names the last business day
-        items.append(f"Seller's Deadline {S['deadline']:%a %b %-d}" + (f" ({note})" if note else ""))
-    return '<div class="divrow factrow"><div>' + "".join(f"<span>{x}</span>" for x in items) + "</div></div>"
-
-
-def state_name(R):
-    st = R["listing"].get("state")
-    return profiles.STATES.get(st or "", "your state")
-
-
-def fine(R):
-    L, S = R["listing"], R["seller"]
-    costs = "; ".join(L["cost_notes"])
-    tax = f"tax proration assumes {money(L['annual_tax'])}/yr paid in arrears" if L["annual_tax"] else "no tax proration included"
-    ref = "top of the value range (CMA high)" if L["cma_provided"] else "list price"  # OFR-4: appraisal_line
-    credit = (f" and an inspection credit of {L['repair_reserve_pct'] * 100:.1f}% of price (to the nearest $500) when the buyer "
-              "has an inspection period"  # OFR-254
-              if L["repair_reserve_pct"] else "")
-    if any(o["repairs_owed"] and o["repair_reserve"] for o in R["offers"]):
-        credit += (" (on the Standard form, repairs up to its General Repair Limit instead)" if credit else
-                   " and, on the Standard form, repairs up to its General Repair Limit")
-    return (f'<div class="fine">All figures are estimates for discussion only. {esc(costs)}. The {tax}; holding costs assume '
-            f'{money(S["holding_monthly"])}/mo. The downside case assumes the appraisal lands at the {ref}{credit}. Actual costs come '
-            "from the title company's settlement statement. Certainty scores reflect the listing agent's professional judgment, not a "
-            f"guarantee of performance. This report is not legal or financial advice; consult a real estate attorney licensed in "
-            f"{esc(state_name(R))} about contract terms.</div>")
-
-
-def certainty_panel(c, subtitle="As Offered"):
-    note = f'<div class="legend"><span>{esc(c["walk_away_note"])}</span></div>' if c.get("walk_away_note") else ""
-    b = c["band_class"]
-    t = {"hi": "hit", "mid": "midt", "lo": "lot"}[b]
-    return f'''<div><h2>How Likely Is It to Close? <span class="h2s">{subtitle}</span></h2><div class="panel">
-  <div class="gauge"><b class="{t}">{c["score"]}</b><span>/100 · <b class="{t}" style="font-size:inherit">{c["band"]}</b> certainty</span></div>
-  <div class="meter"><div class="bar {b}" style="width:{c["score"]}%"></div></div>
-  <table class="facts2">
-   <tr><td>Buyer's Last Cancel Right</td><td class="n"><b>{esc(c["walk_away_until"])}</b></td></tr>
-   <tr><td>Deposit at Risk After That</td><td class="n">{esc(c["deposit"]) if c["deposit"] != "not provided" else '<span class="rt">not provided</span>'}</td></tr>
-   <tr><td>Closing</td><td class="n"><b class="{"" if c["closing_ok"] else "rt"}">{esc(c["closing"])}</b></td></tr>
-   <tr><td>Biggest Threat</td><td class="n"><b class="rt">{esc(c["threat"])}</b></td></tr>
-  </table>{note}</div></div>'''
-
-
-def options_table(opts, widths=(24, 13, 15), short=False):
-    """short: name offers by their key (OFR-324), where the plan table above shows each key beside its label."""
-    if not opts:
-        return ""
-    rows = "".join(
-        f'<tr class="{"recrow" if x["recommended"] else ""}"><td><b>{esc(x.get("short") if short and x.get("short") else x["option"])}</b>'
-        f'{" <span class=sm>(Recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
-        f'<td class="c">{esc(x["certainty"])}</td><td class="{x["status"]}">{esc(x["what"])}</td></tr>' for x in opts)
-    cols = "".join(f'<col style="width:{w}%">' for w in widths)
-    return (f'<div class="optsbox"><h2>Your Options</h2><div class="tbl opts"><table><colgroup>{cols}</colgroup>'
-            f'<thead><tr><th>Option</th><th class="n">Net After Holding</th><th class="c">Certainty</th><th>What Happens</th></tr></thead>'
-            f'<tbody>{rows}</tbody></table></div></div>')
-
-
-def closing_block(v):
-    pre = f'<div class="prelim">{md(v["preliminary"])}</div>' if v["preliminary"] else ""
-    if v.get("terms_reason"):  # OFR-279: the agent's terms reason for the pick; OFR-292: moves to page 2 when page 1 is full
-        pre = f'<div class="nextstep treason"><b>Terms Reason:</b> {esc(v["terms_reason"])}</div>' + pre
-    return (f'{pre}<div class="nextstep"><b>Next Step:</b> {esc(v["next_step"])} {"The detail follows on the next pages." if v["mode"] == "single" else "Key terms follow on the next page."}</div>'
-            f'<div class="fine" style="margin-top:4px">{md(v["data_note"])} Estimates only; not legal or financial advice.</div>')
-
-
-def hero(v):
-    cls = {"DECLINE": "decline", "BACKUP": "backup", "INCOMPLETE": "decline"}.get(v["action"], "")
-    n = v["offers_active"] - (v.get("offers_incomplete") or 0)  # OFR-120: incomplete offers aren't active
-    ctx = f' · {n} Offers Active' if n > 1 else ""
-    kicker = "Status" if v["action"] == "INCOMPLETE" else "Recommended Response"
-    return (f'<div class="hero"><div class="hl {cls}"><span class="k">{kicker}{ctx}</span><div class="big">{esc(v["headline"])}</div>'
-            + f'<div class="who">{esc(v.get("who") or v["offer_label"])}</div>'
-            + f'<div class="why">{md(v["why"])}</div></div>'
-            f'<div class="hr{" stack" if v["mode"] == "single" else ""}"><span class="k">Respond By</span><b>{esc(v["respond_by"])}</b>'
-            + (f'<span class="rbo">{esc(v["respond_by_offer"])}</span>' if v.get("respond_by_offer") else "")
-            # OFR-319, OFR-320: a pending highest-and-best deadline and a held offer that lapses first
-            + "".join(f'<span class="rba"><b>{esc(a["when"])}</b><span class="sep"> · </span><span class="rbw">{esc(a["what"])}</span></span>' for a in v.get("respond_by_also") or ())
-            + f'<span class="k" style="margin-top:6px">Seller\'s Priority</span><div>{esc(v["priority"])}</div></div></div>')
-
-
-def key_legend(offs):
-    """Key for the places that show an offer's short key instead of its label (chart, timeline, flags). OFR-28: with
-    several offers, the key carries the rank too ("B (#1)")."""
-    rank = {o["id"]: f" (#{i + 1})" for i, o in enumerate(offs)} if len(offs) > 1 else {}
-    return ('<div class="legend okey">' + "".join(
-        f'<span><b>{esc(o["key"])}{rank.get(o["id"], "")}</b> {esc(o["label"])}</span>' for o in offs) + "</div>")
-
-
-# --- detail tables -------------------------------------------------------------
-
-def term_rows(o, R):
-    """(label, offered, benchmark, status, note)"""
-    L, S = R["listing"], R["seller"]
-    rows = []
-    ref = f"CMA {money(L['cma_low'])}–{money(L['cma_high'])}" if L["cma_provided"] else f"List {money(L['list_price'])}"
-    exposed = o["appraisal_risk"] and o["price"] - (oe.appraisal_line(L) + o["gap_cover"]) > 0  # same line as the engine
-    st = "risk" if o["price"] < L["cma_low"] else ("caution" if exposed or o["price"] < L["list_price"] else "good")
-    notes = [o["escalation_note"]] if o.get("escalation") else []
-    if exposed:
-        notes.append("Above value range; appraisal may cut it")
-    rows.append(("Price", money(o["price"]), ref, st, "; ".join(notes)))
-    f = o["financing"]
-    st = "good" if f == "cash" or (f == "conventional" and o["down_pct"] >= .20) else ("caution" if f in ("conventional", "va") else "risk")
-    # iteration 10 eval 6: the loan amount and the lender from the package, when the listing file has them
-    loan = f" · {money(o['loan_amount'])} loan" if o["financed"] and o.get("loan_amount") else ""
-    rows.append(("Financing", review.fin_str(o) + loan, "Cash or conv. ≥20% down", st, ""))
-    if o["financed"]:
-        ap = o["approval"]
-        st = "good" if ap == "full_uw" else ("caution" if ap in ("du_approved", "preapproval") else "risk")
-        lender = f" · {esc(o['lender'])}" if o.get("lender") else ""
-        rows.append(("Approval", oe.APPROVAL_LABEL.get(ap, ap) + lender, "Full underwriting", st,
-                     "Verified with lender" if o.get("lender_called") else  # OFR-321: by name when the letter gives one
-                     f"Call {o['loan_officer']} (section 8)" if o.get("loan_officer") else "Call the loan officer (section 8)"))
-    else:
-        ok = o["approval"] == "pof_verified"
-        rows.append(("Proof of Funds", "Verified" if ok else "Not verified", "Verified with bank", "good" if ok else "risk", ""))
-    N = L["norms"]  # OFR-15: same norms as the counter; national norms are said once, in the assumptions
-    dep = oe.deposit_benchmark(o, L)  # iteration 10 eval 3: the scorecard rates against the same benchmark
-    if o["deposit"] is None:
-        rows.append(("Escrow Deposit", "Not provided", f"≥{pctx(dep)} of price", "caution", "Confirm amount and due date"))
-    else:
-        p = o["deposit"] / o["price"]
-        rows.append(("Escrow Deposit", f"{money(o['deposit'])} ({pctx(p)})", f"≥{pctx(dep)} ({money(round(dep * o['price']))})",
-                     oe.deposit_status(o, L), ""))
-    c, cn = o["seller_concessions"], N["concessions_pct"]
-    rows.append(("Seller Concessions", f"{money(c)} ({pctx(c / o['price'])})" if c else "$0", f"≤{pctx(cn)} of price",
-                 "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
-    ob = S["offered_buyer_broker_pct"]
-    if not o.get("bb_from_listing"):  # OFR-259: paid by the listing broker from its fee, it isn't a seller cost to rate
-        rows.append(("Buyer-Broker Comp.", f"{oe.pct(o['buyer_broker_pct'], 2)} ({money(round(o['price'] * o['buyer_broker_pct']))})",
-                     f"{oe.pct(ob)} per listing agmt." if ob is not None else "Not set",
-                     "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
-    if o["home_warranty"]:
-        rows.append(("Home Warranty", f"Seller pays {money(o['home_warranty'])}", "Buyer pays", "caution", ""))
-    form = (f" ({o['contract_label']})"  # the label comes from contract_forms; an assumed form is in the assumptions
-            if o["contract_form"] in oe.cf.FARBAR else "")
-    note = ("Buyer may cancel for any reason; seller still pays repairs up to the limits"
-            if o["inspection_walkaway"] and o["repairs_owed"] else "Buyer may cancel for any reason" if o["inspection_walkaway"]
-            else "Repair notices only; seller pays repairs up to the limits" if o["repairs_owed"] else "")
-    rows.append(("Inspection Period", f"{o['inspection_days']} days{form}",
-                 f"≤{N['inspection_days']} days",
-                 "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
-                 note))
-    if o["financed"]:
-        la = N["loan_approval_days"]
-        rows.append(("Loan Approval Period", f"{o['loan_approval_days']} days", f"≤{la} days",
-                     "good" if o["loan_approval_days"] <= la else ("caution" if o["loan_approval_days"] <= max(30, la) else "risk"), ""))
-        if o["appraisal_days"]:
-            rows.append(("Appraisal Gap Coverage", money(o["appraisal_gap"]) if o["appraisal_gap"] else "None",
-                         "Covers price above value", "risk" if exposed else "good", ""))
-        else:
-            rows.append(("Appraisal Contingency", "Waived", "—", "good", ""))
-    sc = o["sale_contingency_days"]
-    rows.append(("Sale-of-Home Contingency", (f"{sc} days" + (" (kick-out)" if o["kickout"] else "")) if sc else "None", "None",
-                 "risk" if sc else "good", ""))
-    dl = S["deadline"]
-    st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
-    rb, rent = o.get("rent_back_days"), o.get("rent_back_monthly")  # OFR-281: a rent-back is a closing term
-    rb = (f" + {rb}-day rent-back" + (" (free)" if rent == 0 else f" ({money(rent)}/mo)" if rent else "")) if rb else ""
-    rows.append(("Closing Date", f"{o['close']:%a %b %-d} ({o['close_days']} days){rb}", f"On/before {oe.prior_weekday(dl):%b %-d}" if dl else "—", st,
-                 "Weekend date; confirm funding" if o["close"].weekday() >= 5 else ""))
-    tb, cust = o["title_by"], L["title_customary_payer"]
-    if tb or cust:
-        name = {"seller": "Seller's title co.", "buyer": "Buyer's title co."}
-        rows.append(("Escrow / Title Agent", name.get(tb, "—"), name.get(cust, "—"),
-                     "good" if tb == cust else "caution", ""))
-    for key, lab in (("personal_property", "Personal Property"), ("occupancy", "Occupancy"), ("other_terms", "Other Terms")):
-        if o.get(key):
-            rows.append((lab, esc(o[key]), "—", "caution", ""))
-    if o.get("riders"):
-        # ENG-11: the form and rider label from contract_forms ("Standard + As Is Rider (K)"); riders are listed after it
-        label = o["contract_label"] if o["contract_form"] in oe.cf.FARBAR else ""
-        # iteration 9 eval 5: a rider the label already names ("Standard + As Is Rider (K)") isn't listed again
-        rest = [r for r in o["riders"] if not (label and (c := oe.cf.rider_codes([r])[0]) and f"({c[0]})" in label)]
-        text = " · ".join(x for x in (label if label else "", esc(", ".join(rest))) if x)
-        rows.append(("Contract / Riders", text, "—", "good", ""))
-    return rows
-
-
-def questions(o, R):
-    """Only what the contract, the counter and the loan officer can't answer. Terms the counter sets (price, gap,
-    concessions, deposit, inspection, closing) aren't asked: sending the counter asks them."""
-    L = R["listing"]
-    Q = [f["request"] for f in o["flags"] if f.get("contract") and f.get("request")]  # contract fixes come first
-    if o.get("lapses_before"):  # OFR-319: the backup's own deadline ends before the counter to the top offer does
-        Q.append(f"Will the buyer extend the time for acceptance past {o['lapses_before']['until']}?")
-    if o["financed"] and o.get("insurance_quote") is not True:
-        roof = f", given the {L['roof_year']} roof?" if L.get("roof_year") else "?"
-        Q.append("Has the buyer obtained a homeowners insurance quote for this address" + roof)
-    if o["sale_contingency_days"]:
-        Q.append("Is the buyer's current home listed or under contract? At what price?")
-    if o["financed"] and o["approval"] in ("prequal", "none"):
-        Q.append("When can the buyer provide a full pre-approval?")
-    if o["financed"] and not o.get("lender_called") and not o.get("loan_officer"):  # OFR-321: the letter names one
-        Q.append("Who is the loan officer, so we can verify the approval directly?")
-    if o.get("escalation") and not oe.cf.escalation_proof_stated(o["contract_form"], o):  # EAC-1 says it: a redacted copy
-        Q.append("What proof of a competing offer does the escalation clause require?")
-    return Q
-
-
-def funds_shown(o, gap=0):
-    """OFR-321: True when the package's proof of funds covers the down payment (price less the loan) plus the appraisal
-    gap the buyer may owe, the same cash the engine's proof-of-funds check counts."""
-    funds = o.get("proof_of_funds")
-    price = max(o["price"], o["counter_terms"]["price"] if o.get("action") == "COUNTER" else 0)  # the counter's, when higher
-    return bool(funds) and funds >= price - (o.get("loan_amount") or o["price"] * (1 - o["down_pct"])) + gap
-
-
-def lender_questions(o, R):
-    """The call before responding: what the letter can't show. At most five, asked the same way of every buyer's lender or bank."""
-    L = R["listing"]
-    if not o["financed"]:
-        return ["Is the account in the name of the buyer (or the entity signing the contract)?",
-                f"Are funds for {money(o['price'])} plus closing costs available now, not waiting on a sale, loan or transfer?",
-                "Can the bank confirm the balance in writing to the escrow agent?"]
-    fin = oe.FIN_LABEL[o["financing"]]
-    fin = fin if fin.isupper() else fin.lower()  # "an FHA loan", "a conventional loan"
-    pof = o.get("proof_of_funds")  # the package's proof of funds already shows the assets: never asked again
-    # round 3 case 05: a letter that says the lender reviewed the credit report, income and asset documentation
-    # (`approval_documented`) already answers the documents half
-    Q = ["What conditions are left on the underwriting approval?" if o["approval"] == "full_uw" else
-         "Has the file been through automated underwriting (DU or LP)?" if o.get("approval_documented") else
-         "Has the file been through automated underwriting (DU or LP), and are income "
-         + ("and credit" if pof else "assets and credit") + " verified with documents?"]
-    conc = f", with {money(o['seller_concessions'])} in seller concessions" if o["seller_concessions"] else ""
-    # iteration 9 eval 7: when the seller counters (or a lapsed offer's reference counter) changes the price, ask at it
-    price = o["counter_terms"]["price"] if o.get("action") in ("COUNTER", "INCOMPLETE") and o["counter_rows"] else o["price"]
-    a_loan = f"{'an' if fin[0] in 'AEFHILMNORSX' else 'a'} {fin} loan"
-    cap = o.get("approval_max_loan")
-    if cap and price * (1 - o["down_pct"]) > cap + 1:  # iteration 10 eval 6: never imply a loan above the letter's cap
-        Q.append(f"Is the approval good for {money(price)} with {a_loan} at the letter's {money(cap)} cap and the rest "
-                 f"in cash{conc}?")
-    else:
-        Q.append(f"Is the approval good for {money(price)} with {o['down_pct'] * 100:.1f}% down on {a_loan}{conc}?")
-    gap = max(o["appraisal_gap"], o["counter_terms"]["appraisal_gap"] if o.get("action") == "COUNTER" else 0)
-    if not funds_shown(o, gap):  # OFR-321: a verification of funds in the package already answers it
-        price = max(o["price"], o["counter_terms"]["price"] if o.get("action") == "COUNTER" else 0)
-        Q.append((f"The proof of funds shows {money(pof)}: is there cash for the down payment at {money(price)} and closing costs"
-                  if pof else "Are funds verified for the down payment and closing costs")
-                 + (f", plus an appraisal gap of up to {money(gap)}?" if gap else "?"))
-    if o["financing"] in ("fha", "va", "usda"):
-        roof = f" (roof {L['roof_year']})" if L.get("roof_year") else ""
-        Q.append(f"Any concern about the property meeting {fin} appraisal and condition rules{roof}?")
-    if o["close"].weekday() >= 5:
-        # iteration 10 eval 1: "the offer", since an offer described in chat isn't a contract anyone has seen
-        Q.append(f"The offer closes {o['close']:%a %b %-d}; can you close {oe.prior_weekday(o['close']):%a %b %-d} instead?")
-    else:
-        Q.append(f"Can you close by {o['close']:%a %b %-d} with your current workload?")
-    return Q
-
-
-def checklist(o, R):
-    C = o.get("checklist") or {}
-    found = {}  # contract problems noted on the matching line ("signed", "riders", "terms")
-    for f in o["flags"]:
-        if f.get("contract"):
-            found.setdefault(f["check"], []).append(f["issue"].rstrip("."))
-    fin = o["financed"]
-    items = [("signed", "All parties signed & initialed; dates filled", "Pending"),
-             ("lender", (f"Loan officer ({o['loan_officer']}) called (questions in section 8)" if o.get("loan_officer") else
-                         "Loan officer called (questions in section 8)") if fin else "Proof of funds confirmed with the bank (questions in section 8)",
-              "Yes" if o.get("lender_called") or (not fin and o["approval"] == "pof_verified") else "No"),
-             ("deposit", "Deposit amount, due date & escrow agent confirmed", "Pending"),
-             ("riders", "All riders attached and consistent", "Pending"),
-             ("insurance", "Buyer has insurance quote on this address", "N/A" if not fin else ({True: "Yes", False: "No"}.get(o.get("insurance_quote"), "Unknown"))),
-             ("bb", "Buyer-broker compensation request reviewed with seller", "Pending"),
-             ("net", "Seller's net sheet reviewed with seller", "Pending")]
-    L = R["listing"]
-    if L.get("flood_disclosure_rule"):  # OFR-274: the listing side's reminder lives here, not among the offer's risks
-        items.append(("flood", "Seller's flood disclosure given to the buyer", "Yes" if L.get("flood_disclosure") else "Pending"))
-    out = []
-    for k, lab, dflt in items:
-        v = C.get(k, dflt)
-        v, note = (v.get("status", dflt), v.get("note", "")) if isinstance(v, dict) else (v, "")
-        note = "; ".join([note] * bool(note) + found.get(k, []))
-        if v != "N/A":
-            out.append((lab, v, note))
-    return out
-
-
-def checkbox(v):
-    """The report is printed once: a box to tick by hand, already ticked when the file says it's done."""
-    return '<span class="cb on">✓</span>' if v == "Yes" else '<span class="cb"></span>'
-
-def assumptions_table(R, multi=False, offer_id=None):
-    """Every assumption; in the comparison, only the listing's and each offer's high-impact ones (the rest are in the single reviews)."""
-    items = review.listed_assumptions(R, multi, offer_id)  # OFR-257: the same list the data note counts
-    if not items:
-        return '<p class="sm">No assumptions: every key input was provided.</p>'
-    lab = {"high": "High", "med": "Med", "low": "Low"}
-    # OFR-348: a single review names only its own offer on an assumption shared with others (review.place)
-    rows = "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{lab[a["impact"]]}</span></td><td>{esc(review.place(R, a, offer_id))}</td>'
-                   f'<td>{esc(review.why_for(a, offer_id))}</td></tr>' for a in items)
-    return ('<div class="tbl split"><table><colgroup><col style="width:9%"><col style="width:20%"></colgroup><thead><tr><th class="c">Impact</th>'
-            f'<th>Where</th><th>What to Confirm: Provide the Real Value to Sharpen the Analysis</th></tr></thead><tbody>{rows}</tbody></table></div>')
-
-
-def gantt(o, R):
-    S, L = R["seller"], R["listing"]
-    dl = (S["deadline"] - L["analysis_date"]).days if S["deadline"] else 0
-    span = max(o["close_days"], dl, o["risk_days"]) + 5
-    step = max(1, math.ceil(span / 56))
-    ncell = math.ceil(span / step)
-    per_wk = max(1, 7 // step)
-    hdr = '<tr><th style="width:22%">Contingency</th><th class="n" style="width:6%">Days</th><th class="n" style="width:9%">Ends</th>'
-    for i in range(0, ncell, per_wk):
-        n = min(per_wk, ncell - i)  # a short last week gets no date: too narrow for one, it would wrap ("Nov / 3")
-        day = f"{(L['analysis_date'] + timedelta(days=i * step)):%b %-d}" if n >= min(3, per_wk) else ""
-        hdr += f'<th colspan="{n}" class="c" style="white-space:nowrap">{day}</th>'
-    hdr += "</tr>"
-
-    def gx(i):
-        c = "wk " if i % per_wk == 0 else ""
-        if dl and i == (dl - 1) // step:
-            c += "dl"
-        return c
-
-    start = o["firm_date"] - timedelta(days=o["risk_days"])  # acceptance, as page 1 counts (review.walk_away)
-
-    def line(name, d, kind):
-        if not d:
-            return f'<tr><td>{name}</td><td class="n">—</td><td class="n">—</td>' + "".join(f'<td class="gantt {gx(i)}"></td>' for i in range(ncell)) + "</tr>"
-        d = min(d, o["close_days"]) if o["close_days"] else d  # iteration 10 eval 1: no window runs past closing
-        cells = "".join(f'<td class="gantt {gx(i)} {"on-" + kind if i * step < d else ""}"><div></div></td>' for i in range(ncell))
-        end, _ = oe.rolled(start + timedelta(days=d), R["costs"], o["close"])  # off a weekend or holiday, as page 1 rolls it
-        return f'<tr><td>{name}</td><td class="n">{d}</td><td class="n">{end:%b %-d}</td>{cells}</tr>'
-
-    body = line("Inspection (Right to Cancel)" if o["inspection_walkaway"] else "Inspection (Repair Notices)", o["inspection_days"],
-                "hot" if o["inspection_walkaway"] else "warm")
-    if o["financed"]:
-        body += (line("Appraisal (Part of Loan Approval)" if o.get("appraisal_in_loan") and not o["appraisal_protected"] else
-                      "Appraisal", o["appraisal_days"], "warm") + line("Loan Approval", o["loan_approval_days"], "warm"))
-    body += line("Sale of Buyer's Home", o["sale_contingency_days"], "hot")
-    ci = (o["close_days"] - 1) // step
-    dtxt = f" <span class=sm>(Deadline {S['deadline']:%b %-d})</span>" if S["deadline"] else ""
-    body += (f'<tr><td><b>Closing</b>{dtxt}</td><td class="n">{o["close_days"]}</td><td class="n">{o["close"]:%b %-d}</td>'
-             + "".join(f'<td class="gantt {gx(i)} {"on-close" if i == ci else ""}"><div></div></td>' for i in range(ncell)) + "</tr>")
-    legend = ('<div class="legend"><span><i class="hot"></i>Cancel for Any Reason</span><span><i class="warm"></i>Cancel if Financing/Appraisal Fails</span>'
-              '<span><i class="closei"></i>Closing</span>' + ('<span><i class="dl"></i>Seller Deadline</span>' if dl else "")
-              + f'<span>Firm after day <b>{o["risk_days"]}</b> ({review.firm_day(o, R["costs"])[0]:%b %-d}).</span></div>')
-    return f'<div class="tbl"><table style="table-layout:fixed"><thead>{hdr}</thead><tbody>{body}</tbody></table></div>{legend}'
-
-
-def scorecard_single(o):
-    rows = ""
-    for k, lab, w in oe.CRITERIA:
-        s = o["score"]["scores"][k]
-        src = "" if o["score"]["src"][k] == "auto" else ' <span class="pill vyes">Agent</span>'
-        rows += f'<tr><td>{lab}</td><td class="n">{w}%</td><td class="c s{s}">{s}</td><td>{esc(o["score"]["why"][k])}{src}</td></tr>'
-    b = o["score"]["band"]
-    t = {"hi": "hit", "mid": "midt", "lo": "lot"}[b[0]]
-    rows += (f'<tr class="total"><td>Certainty Score</td><td class="n">100%</td><td class="c {t}"><b>{o["score"]["total"]}</b></td>'
-             f'<td class="{t}"><b>{b[1]}</b> · 80+ strong · 60–79 workable · under 60 weak</td></tr>')
-    return ('<div class="tbl"><table><colgroup><col style="width:28%"><col style="width:8%"><col style="width:7%"></colgroup>'
-            f'<thead><tr><th>Criterion</th><th class="n">Weight</th><th class="c">Score</th><th>Why</th></tr></thead><tbody>{rows}</tbody></table></div>'
-            '<div class="legend"><span>Scores are drafted automatically from the offer&#x27;s terms; <span class="pill vyes">Agent</span> marks scores the agent set.</span></div>')
-
-
-def netsheet_body(cols, hl=0):
-    body = ""
-    for r in review.net_sheet_rows(cols):
-        body += f"<tr><td>{esc(r['label'])}</td>" + "".join(
-            f'<td class="n {"hl" if j == hl else ""} {"neg" if v < 0 else ""}">{acct(v)}</td>' for j, v in enumerate(r["values"])) + "</tr>"
-    body += '<tr class="total"><td>Estimated Net Proceeds</td>' + "".join(f'<td class="n">{acct(c["net"])}</td>' for _, c in cols) + "</tr>"
-    body += '<tr><td>Holding Costs Until Closing</td>' + "".join(f'<td class="n neg">{acct(c["holding"])}</td>' for _, c in cols) + "</tr>"
-    return body
-
-
-# --- single offer --------------------------------------------------------------
-
-def single_html(R, o, v):
-    L = R["listing"]
-    tgt = o["target"]["net_adj"]
-    act = v["action"]
-    if v["counter"]:
-        # round 3 case 05: a deadline stays on one line ("Thu Sep 24, 5:00 PM" on both sides)
-        nw = lambda r: " oneline" if r["term"] == "Time for Acceptance" else ""  # noqa: E731
-        ck = "".join(f'<tr><td><b>{esc(r["term"])}</b></td><td class="was{nw(r)}">{esc(r["offered"])}</td><td class="arr">→</td>'
-                     f'<td class="now{nw(r)}">{esc(r["counter"])}</td><td class="why2">{esc(r["why"])}</td></tr>' for r in v["counter"]["rows"])
-        box = (f'<div class="ctr"><div class="ctrh"><span>{"FALLBACK COUNTER" if v.get("wait") else "OUR COUNTER"}</span><em>{md(v["counter"]["summary"])}</em></div>'
-               '<table><colgroup><col style="width:19%"><col style="width:17%"><col style="width:3%"><col style="width:21%"><col></colgroup>'
-               f'<thead><tr><th>Term</th><th>Buyer Offered</th><th></th><th>We Counter</th><th>Why</th></tr></thead><tbody>{ck}</tbody></table></div>')
-    elif act == "INCOMPLETE":
-        rows = "".join(f'<tr><td class="c"><span class="cb"></span></td><td><span class="pill {f["sev"].lower()}">{f["sev"]}</span> '
-                       f'<b>{esc(f["issue"])}</b></td><td class="why2">{esc(f["fix"])}</td></tr>' for f in v["fixes"])
-        box = ('<div class="ctr stop"><div class="ctrh"><span>FIX BEFORE REVIEW</span><em>No recommendation until the contract is corrected</em></div>'
-               '<table><colgroup><col style="width:5%"><col style="width:50%"></colgroup>'
-               f'<thead><tr><th></th><th>Issue</th><th>How to Fix</th></tr></thead><tbody>{rows}</tbody></table></div>')
-    elif act == "ACCEPT":
-        keys = [r for r in term_rows(o, R) if r[0] in ("Price", "Financing", "Escrow Deposit", "Seller Concessions", "Inspection Period", "Closing Date")]
-        rows = "".join(f'<tr><td><b>{t}</b></td><td class="now">{val}</td><td class="why2">{b}</td></tr>' for t, val, b, _, _ in keys)
-        box = (f'<div class="ctr"><div class="ctrh"><span>ACCEPT AS WRITTEN</span><em>Net After Holding <b>{money(o["ns"]["net_adj"])}</b></em></div>'
-               f'<table><tbody>{rows}</tbody></table></div>')
-    elif v["compare"]:
-        c = v["compare"]
-        rows = "".join(f'<tr><td><b>{a}</b></td><td>{b}</td><td class="now">{d}</td></tr>' for a, b, d in c["rows"])
-        box = (f'<div class="ctr cmp"><div class="ctrh"><span>HOW IT COMPARES</span><em>vs. {esc(c["vs"])} (Recommended)</em></div>'
-               f'<table><thead><tr><th>Measure</th><th>{esc(c["this"])}</th><th>{esc(c["vs"])}</th></tr></thead><tbody>{rows}</tbody></table></div>')
-    else:
-        box = ""
-    kp = "".join(f'<div class="{"kgood" if k["tone"] == "good" and "counter" in k["label"].lower() else ""}"><span>{esc(k["label"])}</span>'
-                 f'<b class="{k["tone"] if k["tone"] in ("brand", "good") and k is not v["kpis"][1] else ""}">{esc(k["value"])}</b>'
-                 f'<i class="{k["tone"] if k["tone"] in ("good", "risk") else ""}">{esc(k["note"])}</i></div>' for k in v["kpis"])
-    # DS-106: an incomplete contract's issues are in the Fix Before Review box, never "no risks"
-    none = "See Fix Before Review above." if act == "INCOMPLETE" else "No significant risks found."
-    risks = "".join(f'<tr><td class="c"><span class="pill {r["sev"].lower()}">{r["sev"]}</span></td><td>{esc(r["issue"])}</td></tr>'
-                    for r in v["risks"]) or f"<tr><td>{none}</td></tr>"
-    page1 = (f'{hero(v)}{box}<div class="kpis">{kp}</div>'
-             f'<div class="two">{certainty_panel(v["certainty"])}<div><h2>Top Risks in the Offer as Written</h2>'
-             f'<div class="tbl"><table><colgroup><col style="width:17%"></colgroup><tbody>{risks}</tbody></table></div></div></div>'
-             f'{options_table(v["options"])}{closing_block(v)}')
-
-    cols = [("As Offered", o["ns"]), ("Downside Case", o["ns_down"])]
-    if o["counter_rows"]:  # DS-106: a lapsed offer's counter is for reference, never a proposal
-        cols.append(("Counter (Reference)" if act == "INCOMPLETE" else "Proposed Counter", o["ns_counter"]))
-    target_label = "Seller's Target"
-    cols.append((target_label, o["target"]))
-    ns = netsheet_body(cols)
-    ns += '<tr class="total2"><td>Net After Holding Costs</td>' + "".join(
-        f'<td class="n {"best" if c["net_adj"] >= tgt else ("worst" if c["net_adj"] < tgt - 5000 else "")}">{acct(c["net_adj"])}</td>' for _, c in cols) + "</tr>"
-    ns += "<tr class=\"alt\"><td>vs. Seller's Target Net</td>" + "".join(
-        f'<td class="n">{"—" if n == target_label else signed(c["net_adj"] - tgt)}</td>' for n, c in cols) + "</tr>"
-    ref = f"the top of the value range ({money(round(oe.appraisal_line(L)))})" if L["cma_provided"] else "list price"
-    who = " · ".join(esc(x) for x in (o["buyer"], o.get("buyer_agent")) if x)
-    tr = (f'<tr><td>Buyer / Agent</td><td colspan="4">{who}</td></tr>' if who else "") + "".join(
-        f'<tr><td>{t}</td><td class="{st}">{val}</td><td>{b}</td><td class="c"><span class="pill {PILL[st]}">{RATING[st]}</span></td>'
-        f'<td class="sm" style="color:var(--text)">{esc(n)}</td></tr>' for t, val, b, st, n in term_rows(o, R))
-    fl = "".join(f'<tr><td class="c"><span class="pill {f["sev"].lower()}">{f["sev"]}</span></td><td>{esc(f["issue"])}</td><td>{esc(f["fix"])}</td></tr>'
-                 for f in o["flags"]) or '<tr><td colspan="3">No significant risks found.</td></tr>'
-    vf = "".join(f'<tr><td class="c">{checkbox(b)}</td><td>{esc(a)}</td><td class="sm" style="color:var(--text)">{esc(c)}</td></tr>'
-                 for a, b, c in checklist(o, R))
-    lq = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(lender_questions(o, R)))
-    qs = "".join(f"<tr><td>{i + 1}</td><td>{esc(q)}</td></tr>" for i, q in enumerate(questions(o, R))) or f'<tr><td></td><td>None: the offer{" and the counter" if v["counter"] else ""} cover{"" if v["counter"] else "s"} it.</td></tr>'
-    gap = f" with {money(o['appraisal_gap'])} gap coverage" if o["appraisal_gap"] else ""
-    repairs = ("" if not o["repair_reserve"] else f"{money(o['repair_reserve'])} in repairs (the contract's General Repair Limit)"
-               if o["repairs_owed"] else f"{money(o['repair_reserve'])} inspection credit")
-    # OFR-258: the appraisal part only when a low appraisal cuts this price; an offer at or under the line isn't cut
-    if "appraisal" in review.downside_hits(o):
-        caption = f"appraisal at {ref}{gap}" + (f" + {repairs}" if repairs else "")
-    elif repairs:
-        caption = f"{repairs}; " + (f"the price is at or under {ref}, so a low appraisal isn't counted" if o["appraisal_risk"]
-                                    else "no appraisal contingency")
-    else:  # OFR-127: say why the two columns match
-        caption = ("it matches As Offered: the price is at or under " + ref if o["appraisal_risk"] else
-                   "it matches As Offered: no appraisal contingency") + ", and there's no repair figure for this market"
-    heads = "".join(f'<th class="n {"hl" if i == 0 else ""}">{n}</th>' for i, (n, _) in enumerate(cols))
-    revive = ""
-    if v.get("revive"):  # iteration 9 eval 6: the reference counter's terms sit beside its net, never a net alone
-        rr = "".join(f'<tr><td><b>{esc(r["term"])}</b></td><td class="was">{esc(r["offered"])}</td><td class="arr">→</td>'
-                     f'<td class="now">{esc(r["counter"])}</td><td class="why2">{esc(r["why"])}</td></tr>' for r in v["revive"]["rows"])
-        revive = ('<div class="ctr cmp"><div class="ctrh"><span>COUNTER (REFERENCE)</span><em>For reference only, not a '
-                  'recommendation</em></div><table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%">'
-                  '<col style="width:17%"><col></colgroup><thead><tr><th>Term</th><th>Buyer Offered</th><th></th>'
-                  f'<th>A Counter Could Say</th><th>Why</th></tr></thead><tbody>{rr}</tbody></table></div>')
-    details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div><div class="treason-slot"></div><div class="opts-slot"></div>
-<h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
-<div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
-<div class="legend"><span><b>Downside</b>: {caption}.</span>
-<span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., {target_basis(R, o)}.</span></div>
-{revive}<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Effective Date if Accepted Today)</span></h2>{gantt(o, R)}
-<h2>3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
-<div class="tbl split"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
-<thead><tr><th>Term</th><th>Offered</th><th>Benchmark</th><th class="c">Rating</th><th>Note</th></tr></thead><tbody>{tr}</tbody></table></div>
-<h2>4 · Certainty Scorecard <span class="h2s">1 = Weak · 5 = Strong · Weighted</span></h2>{scorecard_single(o)}
-<h2>5 · Risk Flags</h2><div class="tbl split"><table><colgroup><col style="width:8%"><col style="width:50%"></colgroup>
-<thead><tr><th class="c">Level</th><th>Issue</th><th>Mitigation</th></tr></thead><tbody>{fl}</tbody></table></div>
-<h2>6 · Verification Checklist</h2><div class="tbl"><table class="ck"><colgroup><col style="width:5%"><col style="width:45%"></colgroup>
-<thead><tr><th class="c">Done</th><th>Item</th><th>Notes</th></tr></thead><tbody>{vf}</tbody></table></div>
-<h2>7 · Questions for the Buyer's Agent</h2><div class="tbl"><table class="qs"><colgroup><col style="width:5%"></colgroup>
-<thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{qs}</tbody></table></div>
-<h2>8 · Questions for the {"Loan Officer" if o["financed"] else "Bank"}</h2><div class="tbl"><table class="qs"><colgroup><col style="width:5%"></colgroup>
-<thead><tr><th class="c">#</th><th>Question</th></tr></thead><tbody>{lq}</tbody></table></div>
-<h2>9 · Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, offer_id=o["id"] if R["mode"] == "multi" else None)}
-{fine(R)}'''
-    sub = f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · Offer from {esc(o['label'])}"
-    snap = snapshot(R)
-    return "Single Offer Review", sub, snap + f'<div class="p1">{page1}</div>' + details
-
-
-# --- multiple offers -----------------------------------------------------------
-
-def target_basis(R, o):
-    """The target's closing basis in words: one target per listing, on the recommended offer's closing date."""
-    close = R.get("target_close") or o["close"]
-    return "same closing date" if close == o["close"] else f"closing {close:%b %-d} (the recommended offer's date)"
-
-
-def scatter(R, W=300, H=230):
-    offs = R["active"]
-    vals = [x for o in offs for x in (o["ns"]["net_adj"], o["ns_down"]["net_adj"])] + [R["target"]["net_adj"]]
-    lo, hi = min(vals), max(vals)
-    pad = max(2000, (hi - lo) * .12)
-    step = 5000 if hi - lo < 40000 else 10000 if hi - lo < 90000 else 25000
-    y0, y1 = math.floor((lo - pad) / step) * step, math.ceil((hi + pad) / step) * step
-    xmin = max(0, min(40, (min(o["score"]["total"] for o in offs) // 10) * 10))
-    Lm, Rm, T, B = 42, 10, 10, 28
-
-    def xs(val):
-        return Lm + (val - xmin) / (100 - xmin) * (W - Lm - Rm)
-
-    def ys(val):
-        return T + (1 - (val - y0) / (y1 - y0)) * (H - T - B)
-
-    tgt = R["target"]["net_adj"]
-    col = {"ACCEPT": "var(--good-base)", "COUNTER": "var(--good-base)", "BACKUP": "var(--caution-base)", "DECLINE": "var(--risk-base)"}
-    ink = {k: v.replace("-base)", "-strong)") for k, v in col.items()}  # DS-4: the base colors are for marks, never text
-    svg = [f'<svg viewBox="0 0 {W} {H}" class="scat">',
-           f'<rect x="{xs(70)}" y="{ys(y1)}" width="{xs(100) - xs(70)}" height="{max(0, ys(tgt - (y1 - y0) * .1) - ys(y1))}" fill="var(--good-base)" opacity=".07"/>',
-           f'<text x="{xs(99)}" y="{ys(y1) + 10}" text-anchor="end" class="q">Sweet Spot</text>']
-    val = y0
-    while val <= y1:
-        svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(val)}" y2="{ys(val)}" class="gl"/>'
-                   f'<text x="{Lm - 4}" y="{ys(val) + 3}" text-anchor="end" class="ax">${val // 1000:,.0f}K</text>')
-        val += step
-    for x in range(int(xmin), 101, 10):
-        svg.append(f'<text x="{xs(x)}" y="{H - B + 12}" text-anchor="middle" class="ax">{x}</text>')
-    svg.append(f'<text x="{(Lm + W - Rm) / 2}" y="{H - 3}" text-anchor="middle" class="ax">Certainty Score →</text>')
-    rank = {r["id"]: i + 1 for i, r in enumerate(R["ranked"])}
-    marks, boxes = [], [(xs(99) - 45, ys(y1) + 2, xs(99), ys(y1) + 12)]  # boxes: what the Target label must not cover
-    for o in offs:
-        c = col[o["action"]]
-        x, a, b = xs(o["score"]["total"]), ys(o["ns"]["net_adj"]), ys(o["ns_down"]["net_adj"])
-        right = o["score"]["total"] > 90
-        text = f"{o['key']} #{rank.get(o['id'], '')}"
-        tx, ty = (x - 9 if right else x + 9), (a + b) / 2 + 4
-        tw = text_width(text, 11)
-        boxes += [(x - 6, min(a, b) - 6, x + 6, max(a, b) + 6), (tx - tw if right else tx, ty - 10, tx if right else tx + tw, ty + 2)]
-        marks.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
-                     f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
-                     f'<text x="{tx}" y="{ty}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{ink[o["action"]]}">{esc(text)}</text>')
-    close = R.get("target_close")  # the one target every report shows, on the recommended offer's closing date
-    label = f"Target {money(tgt)} (Clean Offer at List" + (f", Closing {close:%b %-d})" if close else ")")
-    lx, ly, anchor = target_label_spot(label, ys(tgt), Lm + 3, W - Rm - 3, boxes)  # OFR-296: never over a point's label
-    svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
-               f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" class="ax" style="fill:var(--good-strong)">{esc(label)}</text>')
-    svg += marks
-    svg.append("</svg>")
-    return "".join(svg)
-
-
-def text_width(text, size):
-    """Rough rendered width of chart text in SVG units (about 0.56 em a character at the report's sans-serif)."""
-    return len(text) * size * 0.56
-
-
-def target_label_spot(label, y, left, right, boxes):
-    """(x, y, anchor) for the Target line's label: above or below the line, at the left or right end, whichever covers
-    the fewest chart marks and point labels (the first free spot in that order)."""
-    w = text_width(label, 10)
-
-    def overlap(b):
-        x0, y0, x1, y1 = b
-        return sum(max(0, min(x1, c[2]) - max(x0, c[0])) * max(0, min(y1, c[3]) - max(y0, c[1])) for c in boxes)
-    spots = [(left, y - 3, "start", (left, y - 12, left + w, y - 1)), (right, y - 3, "end", (right - w, y - 12, right, y - 1)),
-             (left, y + 11, "start", (left, y + 2, left + w, y + 13)), (right, y + 11, "end", (right - w, y + 2, right, y + 13))]
-    x, ty, anchor, _ = min(spots, key=lambda s: overlap(s[3]))  # min keeps the first of equals
-    return x, ty, anchor
-
-
-STATUS_WORD = {"caution": "Watch", "risk": "Weak"}
-CHART_MAX = 6  # past this many offers the chart crowds; the decision table stands alone
-KEY_TERMS = [("Financing", ("Financing",)), ("Approval / Funds", ("Approval", "Proof of Funds")), ("Deposit", ("Escrow Deposit",)),
-             ("Concessions", ("Seller Concessions",)), ("Inspection", ("Inspection Period",)),
-             ("Appraisal Gap", ("Appraisal Gap Coverage", "Appraisal Contingency")), ("Sale of Home", ("Sale-of-Home Contingency",)),
-             ("Closing", ("Closing Date",))]
-
-
-
-
-def multi_html(R, v):
-    """The decision summary: one row per offer, so it reads the same with 2 offers or 12. Detail lives in each single review."""
-    L = R["listing"]
-    rk = R["ranked"]
-    top = rk[0]
-    band = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
-    pill = {"Accept": "rec", "Counter": "rec", "Wait": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
-    rows = "".join(
-        f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b></td>'
-        f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
-        f'<td class="n">{r["price"].replace(" (escalated)", "<br><span class=sm>escalated</span>")}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
-        f'<td class="c {band[r["band_class"]]}"><b>{r["score"]}</b></td><td class="n">{r["risk_days"]}{"" if r["risk_days"] == "—" else " d"}</td><td class="n">{r["close"]}</td>'
-        f'<td class="why2">{esc(r["terms"])}</td></tr>' for r in v["ranked"])
-    decision = f'''<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
- <table class="rank"><colgroup><col style="width:3%"><col style="width:17%"><col style="width:9%"><col style="width:9%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
- <thead><tr><th></th><th>Offer</th><th>Financing</th><th class="c">Action</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Walk</th><th class="n">Close</th><th>Terms / Reason</th></tr></thead><tbody>{rows}</tbody></table>
- <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away. {esc(v["plan_note"])}</div></div>'''
-    if len(R["active"]) <= CHART_MAX:
-        chart = (f'<div class="chartbox"><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
-                 '<span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span>'
-                 f'<span><i style="background:var(--grey);border-radius:50%"></i>Downside</span></div>{key_legend(rk)}</div></div>')
-        lower = f'<div class="two lower" style="grid-template-columns:1.35fr 1fr"><div>{options_table(v["options"], (26, 13, 11), True)}</div>{chart}</div>'
-    else:
-        lower = options_table(v["options"], (28, 12, 10), True)
-    page1 = f"{hero(v)}{decision}{lower}{closing_block(v)}"
-
-    head = "".join(f"<th>{lab}</th>" for lab, _ in KEY_TERMS)
-    # iteration 12: an escalation clause gets its own column (base, increment, cap) when any offer has one
-    has_esc = any(o.get("escalation") for o in rk + R["incomplete"])
-    head += "<th>Escalation</th>" if has_esc else ""
-    body = ""
-    for o in rk + R["incomplete"]:  # incomplete contracts: their terms as written, not ranked
-        t = {r[0]: r for r in term_rows(o, R)}
-        cells = ""
-        for _, keys in KEY_TERMS:
-            hit = next((t[k] for k in keys if k in t), None)
-            word = STATUS_WORD.get(hit[3], "") if hit else ""  # OFR-28: the status in words, not only by color
-            cells += (f'<td class="{hit[3]}">{hit[1]}' + (f' <span class="sm">({word})</span>' if word else "") + "</td>") if hit else "<td>—</td>"
-        if has_esc:
-            et = oe.escalation_terms(o)
-            cells += f'<td>{"<br>".join(esc(p) for p in et.split(" · "))}</td>' if et else "<td>None</td>"
-        risk = review.biggest_risk(o)  # OFR-274, OFR-304: the same answer as the review's biggest_risk
-        risk = (f'<span class="pill {risk["sev"].lower()}">{risk["sev"]}</span> {esc(risk["issue"])}' if risk else "None major")
-        body += f'<tr><td><b>{esc(o["key"])}</b> · <b>{esc(o["label"])}</b></td>{cells}<td class="sm" style="color:var(--text)">{risk}</td></tr>'
-    widths = (11, 8, 9, 8, 7, 7, 7, 7, 8, 9) if has_esc else (12, 9, 10, 8, 8, 8, 7, 8, 9)  # the rest: Biggest Risk
-    kt_cols = "".join(f'<col style="width:{w}%">' for w in widths)
-    ctr = ""
-    if v["action"] == "COUNTER" and top["counter_rows"]:
-        # round 3 case 05: while final offers are due, the counter is the fallback; a deadline stays on one line
-        nw = lambda a: ' class="oneline"' if a == "Time for Acceptance" else ""  # noqa: E731
-        sub = "If the Final Offer Doesn't Improve" if v.get("wait") else "Full Terms"
-        ctr = (f'<h2>{"Fallback " if v.get("wait") else ""}Counter to {esc(top["label"])} <span class="h2s">{esc(sub)}</span></h2>'
-               '<div class="tbl"><table><colgroup><col style="width:20%"><col style="width:17%"><col style="width:17%"></colgroup>'
-               '<thead><tr><th>Term</th><th>Offered</th><th>Counter</th><th>Why</th></tr></thead><tbody>'
-               + "".join(f'<tr><td>{esc(a)}</td><td{nw(a)}>{esc(b)}</td><td class="good{" oneline" if nw(a) else ""}"><b>{esc(c)}</b></td>'
-                         f'<td>{esc(d)}</td></tr>' for a, b, c, d in top["counter_rows"])
-               + "</tbody></table></div>")
-    # OFR-324: the page title and the table heading say different things
-    details = f'''<div class="pb"></div><div class="dh">Offer Details</div>
-{snapshot(R)}<div class="treason-slot"></div><div class="chart-slot"></div>
-<h2>Key Terms Side by Side <span class="h2s">Favorable · Watch · Weak</span></h2>
-<div class="tbl"><table class="kt"><colgroup>{kt_cols}</colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
-<div class="legend"><span>Each offer has its own single review (a separate PDF) with the full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
-{ctr}
-<h2>Assumptions &amp; Data to Confirm</h2>{assumptions_table(R, multi=True)}
-{fine(R)}'''
-    n_inc = v.get("offers_incomplete") or 0  # OFR-120: a lapsed or blocked offer isn't counted as active
-    sub = (f"{esc(L.get('address') or '')} · List {money(L['list_price'])} · {v['offers_active'] - n_inc} active offers"
-           + (f", {n_inc} incomplete" if n_inc else ""))
-    return "Multiple Offer Review", sub, f'<div class="p1">{page1}</div>' + details
-
-
-# --- document ------------------------------------------------------------------
-
-def build_html(R, agent, sample=False, mode="auto", offer_id=None):
-    mode, o = review.pick(R, mode, offer_id)
-    v = review.single_view(R, o) if mode == "single" else review.multi_view(R)
-    title, sub, body = single_html(R, o, v) if mode == "single" else multi_html(R, v)
-    theme = design.theme(agent.get("brand"), "seller")
-    with open(CSS_PATH, encoding="utf-8") as f:
-        css = f.read()
-    if mode == "multi":
-        css += "@page{size:Letter landscape}"  # the comparison is two wide tables; after report.css's portrait rule
-    doc = render.page(header(R, title, sub, agent, sample) + body + render.notices(agent), css=css, title=title, theme_css=design.css_vars(theme),
-                      body_class="wide" if mode == "multi" else "")
-    return doc, mode, o
-
+BAND_TEXT = {"hi": "hit", "mid": "midt", "lo": "lot", "na": ""}
 
 # OFR-292: page 1's blocks that grow with the data, named in the overflow warning (the tallest ones first)
 PAGE1_BLOCKS = ((".p1 .hero .why", "the recommendation text"), (".p1 .ctr", "the counter or plan table"),
                 (".p1 .kpis", "the key numbers"), (".p1 .two", "the certainty, risks and chart row"),
                 (".p1 .opts", "the options table"), (".p1 .prelim", "the Preliminary line"),
                 (".p1 .treason", "the Terms Reason"))
-
-
-# Steps that fit page 1, in order, until it fits: the compact layout; (OFR-292) the Terms Reason to the top of page 2;
-# in the comparison, the chart to page 2 (the options table then takes the full width); a tighter layout; in a single
-# review, the options table to the top of page 2. Page 1 never spills onto a near-empty page 2.
-FIT_STEPS = (
-    "() => document.body.classList.add('compact')",
+# Page 1 fits by these steps, in order, until it fits: the compact layout; (OFR-292) the Terms Reason to the top of
+# page 2; in the comparison, the chart to page 2 (the options table then takes the full width); a tighter layout; in a
+# single review, the options table to the top of page 2. The detail pages print denser when that saves a short last page.
+STEPS = (
+    "compact",
     "() => { const r = document.querySelector('.p1 .treason'), s = document.querySelector('.treason-slot');"
     " if (r && s) s.appendChild(r); }",
     "() => { const c = document.querySelector('.p1 .chartbox'), s = document.querySelector('.chart-slot');"
-    " if (c && s) { s.appendChild(c); document.querySelector('.p1 .lower').style.gridTemplateColumns = '1fr'; } }",
-    "() => document.body.classList.add('tight')",
-    "() => { const o = document.querySelector('.p1 > .optsbox'), s = document.querySelector('.opts-slot');"
+    " if (c && s) { s.appendChild(c); document.querySelector('.p1 .lower').classList.add('solo'); } }",
+    "tight",
+    "() => { const o = document.querySelector('.p1 .optsbox'), s = document.querySelector('.opts-slot');"
     " if (o && s) s.appendChild(o); }",
 )
 
 
-def fit_page_one(pg, limit=PAGE1_LIMIT):
-    """Measure page 1 and fit it, a step at a time (FIT_STEPS) until it fits. Returns (top, blocks): where page 2
-    starts and, when page 1 still spills, its data-driven blocks by height."""
-    measure = "() => document.querySelector('.pb').getBoundingClientRect().top"
-    top = pg.evaluate(measure)
-    for step in FIT_STEPS:
-        if top <= limit:
-            break
-        pg.evaluate(step)
-        top = pg.evaluate(measure)
-    blocks = []
-    if top > limit:
-        heights = pg.evaluate("(sels) => sels.map(s => { const e = document.querySelector(s);"
-                              " return e ? e.getBoundingClientRect().height : 0; })", [s for s, _ in PAGE1_BLOCKS])
-        blocks = sorted(((h, name) for h, (_, name) in zip(heights, PAGE1_BLOCKS) if h), reverse=True)
-    return top, blocks
+def fit(multi):
+    return layout.Fit(end=".dh", steps=STEPS, tail=("dense",), tail_below=0.35, blocks=PAGE1_BLOCKS, landscape=multi,
+                      tail_hint="the detail sections")
 
 
-DETAIL_HEADS = ("Detailed Analysis", "Offer Details")  # the heading page 2 starts with (.dh)
-SPILL_RETRY_PX = 40  # Chromium's print layout can run a little longer than the measured one (CMA-274): refit this much tighter
+def md(text):
+    """Escape, then turn the summary's **bold** into <b>."""
+    return Raw(re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc(text or "")))
 
 
-LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines: the detail pages print denser instead
-SHORT_TAIL = 0.35  # a last page under this full prints denser when that saves the page (else it stays as it was)
-_PAGE = re.compile(r'<page width="[\d.]+" height="([\d.]+)">')
-_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
-MARGIN_TOP, MARGIN_BOTTOM = 0.3 * 72, 0.4 * 72  # the page margins (render.html_to_pdf), in PDF points
+def pill(sev, text=None):
+    return Raw(f'<span class="pill {esc(sev.lower())}">{esc(text or sev)}</span>')
 
 
-def pages(path):
-    """[(fill, first line)] per printed page: how far down the content area the text reaches (0 to 1) and the page's
-    first line, from pdftotext -bbox (the running footer, in the bottom margin, isn't counted). None without pdftotext."""
-    tool = shutil.which("pdftotext")
-    if not tool:
-        return None
-    try:
-        out = subprocess.run([tool, "-bbox", path, "-"], capture_output=True, text=True, timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
-        return None
-    found = []
-    for chunk in out.split("<page ")[1:]:
-        height = float(_PAGE.match("<page " + chunk).group(1))
-        bottom_edge = height - MARGIN_BOTTOM
-        words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
-                 if float(y1) <= bottom_edge + 1]
-        if not words:
-            found.append((0.0, ""))
-            continue
-        top = min(w[1] for w in words)
-        first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
-        found.append((max(0.0, (max(w[2] for w in words) - MARGIN_TOP) / (bottom_edge - MARGIN_TOP)), first))
-    return found
+# --- shared blocks -------------------------------------------------------------
+
+def header(M, agent, sample):
+    d = M["doc"]
+    # DS-103: the date never wraps; a name too long for the block wraps between words (report.css caps its width)
+    lines = [Raw(f'Prepared for <b>{esc(d["prepared_for"])}</b> · <span class="nw">{esc(d["date"])}</span>')]
+    if agent.get("name"):
+        lines.append(Raw(f'<b>{esc(agent["name"])}</b>'))
+        org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
+        lic = f'Lic. {agent["license"]}' if agent.get("license") else ""
+        if org or lic:
+            lines.append(" · ".join(x for x in (org, lic) if x))
+    return layout.header(d["title"], d["subtitle"], prepared=lines, tag=d["tag"], sample=sample)
 
 
-def page_problems(found):
-    """What the printed pages show that the layout check before printing can't: page 1 spilling onto page 2 (page 2
-    doesn't start with the detail heading), and a last page holding only a few closing lines. [] when fine or unread."""
-    if not found:
-        return []
-    out = []
-    if len(found) > 1 and not found[1][1].startswith(DETAIL_HEADS):
-        out.append("spill")
-    if len(found) > 2 and found[-1][0] < LONE_TAIL:
-        out.append("tail")
-    return out
+def facts(M):
+    """The divider row: the home, then the inputs the numbers rest on; a missing one in the risk color."""
+    return layout.fact_row([Raw(f'<b class="rt">{esc(f["text"])}</b>') if f["risk"] else f["text"] for f in M["doc"]["facts"]])
 
 
-def overflow_warning(name, top, limit, blocks):
-    """OFR-292: the warning names page 1's tallest data-driven blocks, not a guess."""
-    what = ", ".join(f"{n} ({h:.0f}px)" for h, n in blocks[:2]) or "page 1's content"
-    return f"{name}: page 1 overflows by {top - limit:.0f}px; the tallest blocks are {what}. Shorten the text that fills them."
+def hero(v):
+    cls = {"DECLINE": "decline", "BACKUP": "backup", "INCOMPLETE": "decline"}.get(v["action"], "")
+    n = v["offers_active"]
+    ctx = review.t("kicker_active", n=n) if n > 1 else ""
+    kicker = L_["kicker_status"] if v["action"] == "INCOMPLETE" else L_["kicker_response"]
+    also = "".join(f'<span class="rba"><b>{esc(a["when"])}</b><span class="sep"> · </span><span class="rbw">{esc(a["what"])}</span></span>'
+                   for a in v.get("respond_by_also") or ())  # OFR-319, OFR-320
+    return (f'<div class="hero"><div class="hl {cls}"><span class="k">{esc(kicker + ctx)}</span><div class="big">{esc(v["headline"])}</div>'
+            f'<div class="who">{esc(v.get("who") or v["offer_label"])}</div><div class="why">{md(v["why"])}</div></div>'
+            f'<div class="hr{" stack" if v["mode"] == "single" else ""}"><span class="k">{esc(L_["k_respond_by"])}</span>'
+            f'<b>{esc(v["respond_by"])}</b>'
+            + (f'<span class="rbo">{esc(v["respond_by_offer"])}</span>' if v.get("respond_by_offer") else "") + also
+            + f'<span class="k" style="margin-top:6px">{esc(L_["k_priority"])}</span><div>{esc(v["priority"])}</div></div></div>')
 
 
-def write_pdf(R, agent, sample, mode, offer_id, out_dir):
-    doc, mode, o = build_html(R, agent, sample, mode, offer_id)
-    street = (R["listing"].get("address") or "Listing").split(",")[0]
-    name = render.filename(street, f"{o['label']} Offer Review" if mode == "single" else "Multiple Offer Review", ext="pdf")
-    path = os.path.join(out_dir, name)
-    label = f"Single Offer Review · Seller Side · {street} · {o['label']}" if mode == "single" else f"Multiple Offer Review · Seller Side · {street}"
-    limit = PAGE1_LIMIT_WIDE if mode == "multi" else PAGE1_LIMIT
-    def pdf(fit, dense=False):
-        def before(pg):
-            if dense:  # the detail pages print denser, so the last page isn't a few closing lines alone
-                pg.evaluate("() => document.body.classList.add('dense')")
-            return fit_page_one(pg, fit)
-        return render.html_to_pdf(doc, path, footer_html=render.footer(label), landscape=mode == "multi",
-                                  before_print=before)
-    fit, dense = limit, False
-    top, blocks = pdf(fit)
-    found = page_problems(pages(path)) if top <= fit else []
-    if found:  # the print ran longer than measured (CMA-274), or left a near-empty last page: print it again
-        fit = limit - SPILL_RETRY_PX if "spill" in found else limit
-        dense = "tail" in found
-        top, blocks = pdf(fit, dense)
-    if not dense and top <= fit:  # round 3 case 05: a short last page is kept only when printing denser can't save it
-        now = pages(path)
-        if now and len(now) > 2 and now[-1][0] < SHORT_TAIL:
-            top, blocks = pdf(fit, True)
-            denser = pages(path)
-            if not denser or len(denser) >= len(now) or "spill" in page_problems(denser):
-                top, blocks = pdf(fit)
-    if top > fit:
-        print(overflow_warning(name, top, fit, blocks), file=sys.stderr)
+def box(kind, head, sub, inner, cls=""):
+    """The outlined box under the answer (our counter, fix before review, accept, how it compares, our plan)."""
+    return (f'<div class="ctr {kind} {cls}"><div class="ctrh"><span>{esc(head)}</span><em>{md(sub)}</em></div>{inner}</div>')
+
+
+def counter_table(cols, rows):
+    """Term, offered, arrow, counter, why; the time for acceptance stays on one line (fmt.when)."""
+    spec = [Col("term", cols[0], cls="term"), Col("offered", cols[1], cls="was"), Col("arr", cols[2], cls="arr"),
+            Col("counter", cols[3], cls="now"), Col("why", cols[4], cls="why2")]
+    body = [{**r, "term": Raw(f"<b>{esc(r['term'])}</b>"), "arr": "→"} for r in rows]
+    return layout.table(spec, body, keep="whole", cls="ctrt", row_classes={i: "oneline" for i, r in enumerate(rows) if r.get("oneline")})
+
+
+def options_table(opts, short=False):
+    """short: name offers by their key (OFR-324), where the plan table above shows each key beside its label."""
+    if not opts:
+        return ""
+    rec = esc(L_["lbl_recommended"])
+    rows = [{"option": Raw(f'<b>{esc(x.get("short") if short and x.get("short") else x["option"])}</b>'
+                           + (f' <span class="sm">{rec}</span>' if x["recommended"] else "")),
+             "net": x["net"], "certainty": x["certainty"], "what": x["what"]} for x in opts]
+    classes = {i: f'st-{x["status"]}' + (" recrow" if x["recommended"] else "") for i, x in enumerate(opts)}
+    cols = [Col("option", L_["th_option"], cls="opt"), Col("net", L_["th_net_holding"], align="num"),
+            Col("certainty", L_["th_certainty"], cls="c"), Col("what", L_["th_what_happens"], cls="what")]
+    return (f'<div class="optsbox"><h2>{esc(L_["h_options"])}</h2>'
+            + layout.table(cols, rows, keep="whole", cls="opts", row_classes=classes) + "</div>")
+
+
+def closing_block(v, follow):
+    pre = f'<div class="prelim">{md(v["preliminary"])}</div>' if v["preliminary"] else ""
+    if v.get("terms_reason"):  # OFR-279; OFR-292: moves to page 2 when page 1 is full
+        pre = f'<div class="nextstep treason"><b>{esc(L_["lbl_terms_reason"])}</b> {esc(v["terms_reason"])}</div>' + pre
+    return (f'{pre}<div class="nextstep"><b>{esc(L_["lbl_next_step"])}</b> {esc(v["next_step"])} {esc(follow)}</div>'
+            f'<div class="fine datanote">{md(v["data_note"])}</div>')
+
+
+def certainty_panel(c):
+    note = f'<div class="legend"><span>{esc(c["walk_away_note"])}</span></div>' if c.get("walk_away_note") else ""
+    b = c["band_class"]
+    tc = BAND_TEXT[b]
+    dep = esc(c["deposit"]) if c["deposit_known"] else f'<span class="rt">{esc(c["deposit"])}</span>'
+    return (f'<div><h2>{esc(L_["h_certainty"])} <span class="h2s">{esc(L_["h_certainty_sub"])}</span></h2><div class="panel">'
+            f'<div class="gauge"><b class="{tc}">{c["score"]}</b><span>/100 · <b class="{tc}" style="font-size:inherit">'
+            f'{esc(c["band"])}</b> {esc(L_["certainty_word"])}</span></div>'
+            f'<div class="meter"><div class="bar {b}" style="width:{c["score"]}%"></div></div><table class="facts2">'
+            f'<tr><td>{esc(L_["cert_walk"])}</td><td class="n"><b>{esc(c["walk_away_until"])}</b></td></tr>'
+            f'<tr><td>{esc(L_["cert_deposit"])}</td><td class="n">{dep}</td></tr>'
+            f'<tr><td>{esc(L_["cert_closing"])}</td><td class="n"><b class="{"" if c["closing_ok"] else "rt"}">{esc(c["closing"])}</b></td></tr>'
+            f'<tr><td>{esc(L_["cert_threat"])}</td><td class="n"><b class="rt">{esc(c["threat"])}</b></td></tr>'
+            f'</table>{note}</div></div>')
+
+
+def confirm_table(d):
+    """What to Confirm: every assumption the report rests on (OFR-257: the data note counts this same list)."""
+    if not d["confirm"]:
+        return f'<h2>{esc(d["h_confirm"])}</h2><p class="sm">{esc(d["confirm_none"])}</p>'
+    cols = [Col("impact", d["confirm_cols"][0], cls="c imp"), Col("where", d["confirm_cols"][1], cls="where"),
+            Col("what", d["confirm_cols"][2])]
+    rows = [{"impact": Raw(f'<span class="pill {a["impact"]}">{esc(a["impact_label"])}</span>'), "where": a["where"],
+             "what": a["what"]} for a in d["confirm"]]
+    return f'<h2>{esc(d["h_confirm"])}</h2>' + layout.table(cols, rows, keep="brk", cls="confirm")
+
+
+def closing_notes(M, agent):
+    return (layout.notes_block(M["notes"], title=L_["h_notes"])
+            + render.notices(agent, [render.NOT_ADVICE]))
+
+
+# --- single review ------------------------------------------------------------
+
+def page_box(v, d):
+    b = d["box"]
+    if not b:
+        return ""
+    if b["kind"] == "counter":
+        return box("", b["head"], b["sub"], counter_table(b["cols"], b["rows"]))
+    if b["kind"] == "fixes":
+        cols = [Col("cb", b["cols"][0], cls="c cbc"), Col("issue", b["cols"][1], cls="issue"), Col("fix", b["cols"][2], cls="why2")]
+        rows = [{"cb": Raw('<span class="cb"></span>'), "issue": Raw(f'{pill(f["sev"])} <b>{esc(f["issue"])}</b>'),
+                 "fix": f["fix"]} for f in b["rows"]]
+        return box("stop", b["head"], b["sub"], layout.table(cols, rows, keep="whole", cls="ctrt"))
+    if b["kind"] == "accept":
+        cols = [Col("term", "", cls="term"), Col("value", "", cls="now"), Col("bench", "", cls="why2")]
+        rows = [{"term": Raw(f"<b>{esc(r['term'])}</b>"), "value": r["value"], "bench": r["bench"]} for r in b["rows"]]
+        return box("", b["head"], b["sub"], layout.table(cols, rows, keep="whole", cls="ctrt", head=False))
+    cols = [Col(0, b["cols"][0], cls="term"), Col(1, b["cols"][1]), Col(2, b["cols"][2], cls="now")]
+    rows = [[Raw(f"<b>{esc(r[0])}</b>"), r[1], r[2]] for r in b["rows"]]
+    return box("cmp", b["head"], b["sub"], layout.table(cols, rows, keep="whole", cls="ctrt"))
+
+
+def kpis(v):
+    items = []
+    for i, k in enumerate(v["kpis"]):
+        cls = f't-{k["tone"] or "plain"}' + (" vnote" if i == 1 else "")
+        items.append((k["label"], k["value"], k.get("note") or "", cls))
+    return layout.tiles(items, n=4, cls="kpis")
+
+
+def risks_table(v):
+    none = L_["risks_see_fixes"] if v["action"] == "INCOMPLETE" else L_["no_risks"]  # DS-106
+    if not v["risks"]:
+        return layout.table([Col(0, "")], [[none]], keep="whole", head=False)
+    cols = [Col("sev", "", cls="c lvl"), Col("issue", "")]
+    return layout.table(cols, [{"sev": pill(r["sev"]), "issue": r["issue"]} for r in v["risks"]], keep="whole", head=False, cls="risks")
+
+
+def net_sheet_table(ns):
+    cols = [Col("label", L_["th_line_item"], cls="lbl")] + [Col(i, c, align="num", cls="hl" if i == 0 else "")
+                                                            for i, c in enumerate(ns["columns"])]
+
+    def cells(r, best=False):
+        out = {"label": r["label"]}
+        for i, c in enumerate(r["cells"]):
+            cls = " ".join(x for x in ("neg" if c.get("neg") and not best else "", c.get("cls", "")) if x)
+            out[i] = Raw(f'<span class="{cls}">{esc(c["text"])}</span>') if cls else c["text"]
+        return out
+    rows = [cells(r) for r in ns["rows"]] + [cells(ns["net"]), cells(ns["holding"]), cells(ns["net_adj"], True),
+                                             cells(ns["vs_target"])]
+    n = len(ns["rows"])
+    classes = {n: "total", n + 2: "total2", n + 3: "alt"}
+    caps = "".join(f'<span><b>{esc(c["term"])}</b>: {esc(c["text"])}</span>' for c in ns["captions"])
+    return (f'<h2>{esc(ns["head"])} <span class="h2s">{esc(ns["sub"])}</span></h2>'
+            + layout.table(cols, rows, keep="whole", cls="netsheet", row_classes=classes)
+            + f'<div class="legend caps">{caps}</div>')
+
+
+TH_PX = 8 * 96 / 72  # a table header's 8pt type (report.css th), in px
+SWATCH = {"hot": "color-mix(in srgb,var(--risk-base) 55%,#fff)", "warm": "var(--caution-border)",
+          "close": "var(--brand-deep)", "deadline": "var(--risk-base)"}
+
+
+def timeline_table(tl):
+    """The contingency timeline: one shaded row per window, the closing's cell and the seller's deadline; the legend
+    names only what's drawn (layout.Chart)."""
+    chart = layout.Chart()
+    ncell, per = tl["ncell"], tl["per_week"]
+
+    def gx(i):
+        c = "wk " if i % per == 0 else ""
+        return c + ("dl" if tl["deadline_cell"] is not None and i == tl["deadline_cell"] else "")
+    # A week's date prints only where it fits its columns (measured with the bundled font): the day cells share what
+    # the name, days and end columns (37%) leave of the page width
+    cell_px = layout.Fit().content_px()[0] * 0.63 / ncell
+    head = (f'<tr><th class="tlname">{esc(tl["head"][0])}</th><th class="n tld">{esc(tl["head"][1])}</th>'
+            f'<th class="n tle">{esc(tl["head"][2])}</th>'
+            + "".join(f'<th colspan="{w["span"]}" class="c nw">'
+                      + (esc(w["label"]) if layout.text_width(w["label"], TH_PX, bold=True) <= w["span"] * cell_px - 12 else "")
+                      + "</th>" for w in tl["weeks"]) + "</tr>")
+    body = ""
+    for r in tl["rows"]:
+        if r["on"]:
+            chart.mark(r["kind"], tl["legend"][r["kind"]], "bar", SWATCH[r["kind"]])
+        cells = "".join(f'<td class="gantt {gx(i)} {"on-" + r["kind"] if i < r["on"] else ""}"><div></div></td>' for i in range(ncell))
+        body += f'<tr><td>{esc(r["name"])}</td><td class="n">{esc(r["days"])}</td><td class="n">{esc(r["end"])}</td>{cells}</tr>'
+    c = tl["closing"]
+    chart.mark("close", tl["legend"]["close"], "bar", SWATCH["close"])
+    if tl["deadline_cell"] is not None and tl["deadline_cell"] < ncell:
+        chart.mark("deadline", tl["legend"]["deadline"], "line", SWATCH["deadline"])
+    sub = f' <span class="sm">{esc(c["sub"])}</span>' if c["sub"] else ""
+    body += (f'<tr><td><b>{esc(c["name"])}</b>{sub}</td><td class="n">{esc(c["days"])}</td><td class="n">{esc(c["end"])}</td>'
+             + "".join(f'<td class="gantt {gx(i)} {"on-close" if i == c["cell"] else ""}"><div></div></td>' for i in range(ncell))
+             + "</tr>")
+    return (f'<h2>{esc(tl["h"])} <span class="h2s">{esc(tl["subtitle"])}</span></h2>'
+            f'<div class="tbl gantt-tbl"><table style="table-layout:fixed"><thead>{head}</thead><tbody>{body}</tbody></table></div>'
+            f'<div class="tlfoot">{chart.legend()}<span class="firm">{esc(tl["firm"])}</span></div>')
+
+
+def terms_table(tm):
+    cols = [Col("term", tm["cols"][0], cls="term"), Col("offered", tm["cols"][1], cls="offered"),
+            Col("benchmark", tm["cols"][2], cls="bench"), Col("rating", tm["cols"][3], cls="c rating"),
+            Col("note", tm["cols"][4], cls="sm2 note")]
+    rows, classes = [], {}
+    if tm["who"]:
+        rows.append({"term": tm["who_label"], "offered": tm["who"]})
+        classes[0] = "who"
+    for r in tm["rows"]:
+        classes[len(rows)] = f'st-{r["status"]}'
+        rows.append({**r, "rating": Raw(f'<span class="pill {PILL[r["status"]]}">{esc(r["rating"])}</span>')})
+    return (f'<h2>{esc(tm["h"])} <span class="h2s">{esc(tm["sub"])}</span></h2>'
+            + layout.table(cols, rows, keep="brk", cls="terms", row_classes=classes))
+
+
+def scorecard_table(sc):
+    cols = [Col("label", sc["cols"][0], cls="crit"), Col("weight", sc["cols"][1], align="num"),
+            Col("score", sc["cols"][2], cls="c"), Col("why", sc["cols"][3])]
+    rows = [{"label": r["label"], "weight": r["weight"], "score": Raw(f'<span class="s{r["score"]}">{r["score"]}</span>'),
+             "why": Raw(esc(r["why"]) + (f' <span class="pill vyes">{esc(sc["agent_tag"])}</span>' if r["agent"] else ""))}
+            for r in sc["rows"]]
+    tt = sc["total"]
+    tc = BAND_TEXT[tt["cls"]]
+    total = {"label": tt["label"], "weight": tt["weight"], "score": Raw(f'<b class="{tc}">{tt["score"]}</b>'),
+             "why": Raw(f'<span class="{tc}"><b>{esc(tt["band"])}</b> · {esc(tt["scale"])}</span>')}
+    return (f'<h2>{esc(sc["h"])} <span class="h2s">{esc(sc["sub"])}</span></h2>'
+            + layout.table(cols, rows, total=total, keep="whole", cls="score")
+            + f'<div class="legend"><span>{esc(sc["legend"])}</span></div>')
+
+
+def flags_table(fl):
+    cols = [Col("sev", fl["cols"][0], cls="c lvl"), Col("issue", fl["cols"][1], cls="issue"), Col("fix", fl["cols"][2])]
+    rows = [{"sev": pill(f["sev"]), "issue": f["issue"], "fix": f["fix"]} for f in fl["rows"]]
+    if not rows:
+        rows = [{"issue": fl["none"]}]
+    return f'<h2>{esc(fl["h"])}</h2>' + layout.table(cols, rows, keep="brk", cls="flags")
+
+
+def checklist_table(ck):
+    cols = [Col("done", ck["cols"][0], cls="c cbc"), Col("item", ck["cols"][1], cls="item"), Col("note", ck["cols"][2], cls="sm2")]
+    rows = [{"done": Raw('<span class="cb on">✓</span>' if r["done"] else '<span class="cb"></span>'), "item": r["item"],
+             "note": r["note"]} for r in ck["rows"]]  # printed once: a box to tick by hand
+    return f'<h2>{esc(ck["h"])}</h2>' + layout.table(cols, rows, keep="whole", cls="ck")
+
+
+def questions_table(q, none=None):
+    cols = [Col("n", q["cols"][0], cls="c qn"), Col("q", q["cols"][1])]
+    rows = [{"n": str(i + 1), "q": x} for i, x in enumerate(q["rows"])] or [{"n": "", "q": none or ""}]
+    return f'<h2>{esc(q["h"])}</h2>' + layout.table(cols, rows, keep="whole", cls="qs")
+
+
+def single_body(M, agent):
+    v, d = M["summary"], M["doc"]
+    two = (f'<div class="two">{certainty_panel(v["certainty"])}<div><h2>{esc(L_["h_risks"])}</h2>'
+           f'{risks_table(v)}</div></div>')
+    page1 = f'{hero(v)}{page_box(v, d)}{kpis(v)}{two}{options_table(v["options"])}{closing_block(v, d["follow"])}'
+    rv = d["revive"]
+    revive = box("cmp", rv["head"], rv["sub"], counter_table(rv["cols"], rv["rows"])) if rv else ""
+    details = (f'<div class="dh pb">{esc(d["dh"])}</div><div class="treason-slot"></div><div class="opts-slot"></div>'
+               + net_sheet_table(d["net_sheet"]) + revive + timeline_table(d["timeline"]) + terms_table(d["terms"])
+               + scorecard_table(d["scorecard"]) + flags_table(d["flags"]) + checklist_table(d["checklist"])
+               + questions_table(d["questions"], d["questions"]["none"]) + questions_table(d["lender"])
+               + confirm_table(d) + closing_notes(M, agent))
+    return facts(M) + f'<div class="p1">{page1}</div>' + details
+
+
+# --- comparison ---------------------------------------------------------------
+
+def plan_box(v, d):
+    p = d["plan"]
+    pills = {"Accept": "rec", "Counter": "rec", "Wait": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
+    cols = [Col("rk", p["cols"][0], cls="rk"), Col("offer", p["cols"][1], cls="nw2"), Col("financing", p["cols"][2]),
+            Col("action", p["cols"][3], cls="c"), Col("price", p["cols"][4], align="num"),
+            Col("net", p["cols"][5], align="num"), Col("downside", p["cols"][6], align="num"),
+            Col("score", p["cols"][7], cls="c"), Col("walk", p["cols"][8], align="num"),
+            Col("close", p["cols"][9], align="num"), Col("terms", p["cols"][10], cls="why2")]
+    rows = []
+    for r in v["ranked"]:
+        rows.append({"rk": str(r["rank"]), "offer": Raw(f'<b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b>'),
+                     "financing": r["financing"],
+                     "action": Raw(f'<span class="pill {pills.get(r["action"], "med")}">{esc(r["action"])}</span>'),
+                     "price": Raw(esc(r["price_display"]) + (f'<br><span class="sm">{esc(p["escalated"])}</span>'
+                                                              if r["escalated"] else "")),
+                     "net": r["net"], "downside": Raw(f'<b>{esc(r["downside"])}</b>'),
+                     "score": Raw(f'<b class="{BAND_TEXT[r["band_class"]]}">{esc(str(r["score"]))}</b>'),
+                     "walk": r["walk"], "close": r["close"], "terms": r["terms"]})
+    inner = (layout.table(cols, rows, keep="whole", cls="rank", row_classes={0: "top"})
+             + f'<div class="note">{esc(p["note"])}</div>')
+    return box("", p["head"], p["sub"], inner)
+
+
+ACTION_COLOR = {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}
+
+
+def place_label(text, x, ya, yb, size, boxes, left, right, top, bottom):
+    """(tx, ty, anchor) for a point's label: beside its marks, right then left, at the middle, then level with the as
+    offered or downside mark, whichever covers the fewest marks and labels already placed (text measured with the
+    bundled font, layout.text_width)."""
+    w = layout.text_width(text, size, bold=True)
+    mid = (ya + yb) / 2 + size * 0.35
+    spots = []
+    for ty in (mid, min(ya, yb) - 2, max(ya, yb) + size):
+        for anchor, tx in (("start", x + 9), ("end", x - 9)):
+            x0 = tx if anchor == "start" else tx - w
+            spots.append((tx, ty, anchor, (x0, ty - size, x0 + w, ty + 2)))
+
+    def cost(s):
+        x0, y0, x1, y1 = s[3]
+        out = max(0, left - x0) + max(0, x1 - right) + max(0, top - y0) + max(0, y1 - bottom)
+        return out * 1000 + sum(max(0, min(x1, c[2]) - max(x0, c[0])) * max(0, min(y1, c[3]) - max(y0, c[1])) for c in boxes)
+    best = min(spots, key=cost)  # min keeps the first of equals
+    boxes.append(best[3])
+    return best[:3]
+
+
+def target_label_spot(label, y, left, right, boxes, size=10):
+    """(x, y, anchor) for the Target line's label: above or below the line, at the left or right end, whichever covers
+    the fewest chart marks and point labels (the first free spot in that order)."""
+    w = layout.text_width(label, size)
+
+    def overlap(b):
+        x0, y0, x1, y1 = b
+        return sum(max(0, min(x1, c[2]) - max(x0, c[0])) * max(0, min(y1, c[3]) - max(y0, c[1])) for c in boxes)
+    spots = [(left, y - 3, "start", (left, y - 12, left + w, y - 1)), (right, y - 3, "end", (right - w, y - 12, right, y - 1)),
+             (left, y + 11, "start", (left, y + 2, left + w, y + 13)), (right, y + 11, "end", (right - w, y + 2, right, y + 13))]
+    x, ty, anchor, _ = min(spots, key=lambda s: overlap(s[3]))
+    return x, ty, anchor
+
+
+def scatter(ch, W=420, H=200):
+    """Net vs. certainty: every position from the model's numbers, every label from the model's text."""
+    xmin, y0, y1 = ch["x_min"], ch["y0"], ch["y1"]
+    Lm, Rm, T, B = 46, 10, 10, 28
+    legend = layout.Chart()
+
+    def xs(val):
+        return Lm + (val - xmin) / (100 - xmin) * (W - Lm - Rm)
+
+    def ys(val):
+        return T + (1 - (val - y0) / (y1 - y0)) * (H - T - B)
+    tgt = ch["target"]
+    svg = [f'<svg viewBox="0 0 {W} {H}" class="scat">',
+           f'<rect x="{xs(70):.1f}" y="{ys(y1):.1f}" width="{xs(100) - xs(70):.1f}" '
+           f'height="{max(0, ys(tgt - (y1 - y0) * .1) - ys(y1)):.1f}" fill="var(--good-base)" opacity=".07"/>',
+           f'<text x="{xs(99):.1f}" y="{ys(y1) + 10:.1f}" text-anchor="end" class="q">{esc(ch["sweet"])}</text>']
+    for tk in ch["y_ticks"]:
+        y = ys(tk["value"])
+        svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{y:.1f}" y2="{y:.1f}" class="gl"/>'
+                   f'<text x="{Lm - 4}" y="{y + 3:.1f}" text-anchor="end" class="ax">{esc(tk["label"])}</text>')
+    for tk in ch["x_ticks"]:
+        svg.append(f'<text x="{xs(tk["value"]):.1f}" y="{H - B + 12}" text-anchor="middle" class="ax">{esc(tk["label"])}</text>')
+    svg.append(f'<text x="{(Lm + W - Rm) / 2:.1f}" y="{H - 3}" text-anchor="middle" class="ax">{esc(ch["x_title"])}</text>')
+    wsweet = layout.text_width(ch["sweet"], 8.5)
+    boxes = [(xs(99) - wsweet, ys(y1) + 2, xs(99), ys(y1) + 12)]
+    pts = []
+    for p in ch["points"]:
+        x, a, b = xs(p["score"]), ys(p["net"]), ys(p["down"])
+        boxes.append((x - 6, min(a, b) - 6, x + 6, max(a, b) + 6))
+        pts.append((p, x, a, b))
+    marks = []
+    for p, x, a, b in pts:
+        c = f'var(--{ACTION_COLOR.get(p["action"], "caution")}-base)'
+        ink = c.replace("-base)", "-strong)")  # DS-4: the base colors are for marks, never text
+        tx, ty, anchor = place_label(p["label"], x, a, b, 11, boxes, Lm, W - Rm, T, H - B)
+        legend.mark("offered", ch["legend"]["offered"], "ring", "var(--grey)")
+        legend.mark("down", ch["legend"]["down"], "dot", "var(--grey)")
+        marks.append(f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{a:.1f}" y2="{b:.1f}" stroke="{c}" stroke-width="2" opacity=".5"/>'
+                     f'<circle cx="{x:.1f}" cy="{a:.1f}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/>'
+                     f'<circle cx="{x:.1f}" cy="{b:.1f}" r="5" fill="{c}"/>'
+                     f'<text x="{tx:.1f}" y="{ty:.1f}" text-anchor="{anchor}" class="pl" style="fill:{ink}">{esc(p["label"])}</text>')
+    lx, ly, anchor = target_label_spot(ch["target_label"], ys(tgt), Lm + 3, W - Rm - 3, boxes)  # OFR-296
+    svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt):.1f}" y2="{ys(tgt):.1f}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
+               f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="{anchor}" class="ax" style="fill:var(--good-strong)">'
+               f'{esc(ch["target_label"])}</text>')
+    svg += marks + ["</svg>"]
+    keys = ('<div class="legend okey">' + "".join(f'<span><b>{esc(k["key"])}</b> {esc(k["label"])}</span>' for k in ch["keys"])
+            + "</div>")
+    return (f'<div class="chartbox">' + layout.chart_frame("".join(svg), legend.legend() + keys, title=ch["h"]) + "</div>")
+
+
+def key_terms_table(kt):
+    STATUS = {"good": "good", "caution": "caution", "risk": "risk"}
+    cols = [Col("offer", kt["offer"], cls="ktoffer")] + [Col(i, h, cls="ktc") for i, h in enumerate(kt["head"])]
+    if kt["escalation"]:
+        cols.append(Col("esc", kt["escalation"], cls="ktc"))
+    cols.append(Col("risk", kt["risk"], cls="sm2 ktrisk"))
+    rows = []
+    for r in kt["rows"]:
+        out = {"offer": Raw(f'<b>{esc(r["key"])}</b> · <b>{esc(r["label"])}</b>')}
+        for i, c in enumerate(r["cells"]):
+            word = f' <span class="sm">({esc(c["word"])})</span>' if c["word"] else ""
+            st = STATUS.get(c["status"], "")
+            out[i] = Raw(f'<span class="stc {st}">{esc(c["text"])}{word}</span>')
+        if r["escalation"] is not None:
+            out["esc"] = Raw("<br>".join(esc(p) for p in r["escalation"]))
+        out["risk"] = (Raw(f'{pill(r["risk"]["sev"])} {esc(r["risk"]["issue"])}') if r["risk"] else kt["risk_none"])
+        rows.append(out)
+    return (f'<h2>{esc(kt["h"])} <span class="h2s">{esc(kt["sub"])}</span></h2>'
+            + layout.table(cols, rows, keep="brk", cls="kt") + f'<div class="legend"><span>{esc(kt["note"])}</span></div>')
+
+
+def multi_body(M, agent):
+    v, d = M["summary"], M["doc"]
+    lower = options_table(v["options"], short=True)
+    if d["chart"]:
+        lower = f'<div class="two lower"><div>{lower}</div>{scatter(d["chart"])}</div>'
+    page1 = f"{hero(v)}{plan_box(v, d)}{lower}{closing_block(v, d['follow'])}"
+    ctr = ""
+    c = d["counter"]
+    if c:
+        cols = [Col("term", c["cols"][0]), Col("offered", c["cols"][1], cls="was2"), Col("counter", c["cols"][2], cls="now2"),
+                Col("why", c["cols"][3])]
+        rows = [{**r, "counter": Raw(f"<b>{esc(r['counter'])}</b>")} for r in c["rows"]]
+        ctr = (f'<h2>{esc(c["h"])} <span class="h2s">{esc(c["sub"])}</span></h2>'
+               + layout.table(cols, rows, keep="whole", cls="mctr", row_classes={i: "oneline" for i, r in enumerate(c["rows"]) if r["oneline"]}))
+    details = (f'<div class="dh pb">{esc(d["dh"])}</div>' + facts(M) + '<div class="treason-slot"></div><div class="chart-slot"></div><div class="opts-slot"></div>'
+               + key_terms_table(d["key_terms"]) + ctr + confirm_table(d) + closing_notes(M, agent))
+    return f'<div class="p1">{page1}</div>' + details
+
+
+# --- document ------------------------------------------------------------------
+
+def build_html(M, agent, sample=False):
+    """The report's HTML from one document model (review.result)."""
+    multi = M["mode"] == "multi"
+    body = multi_body(M, agent) if multi else single_body(M, agent)
+    theme = design.theme(agent.get("brand"), "seller")
+    with open(CSS_PATH, encoding="utf-8") as f:
+        css = f.read()
+    if multi:
+        css += "@page{size:Letter landscape}"  # the comparison is two wide tables; after report.css's portrait rule
+    return render.page(header(M, agent, sample) + body, css=css, title=M["doc"]["title"], theme_css=design.css_vars(theme),
+                       body_class="font-bundled" + (" wide" if multi else ""))
+
+
+def file_name(M):
+    return render.filename(M["doc"]["street"], M["doc"]["file_title"], ext="pdf")
+
+
+def write_pdf(M, agent, sample, out_dir):
+    path = os.path.join(out_dir, file_name(M))
+    info = layout.print_pdf(build_html(M, agent, sample), path, fit(M["mode"] == "multi"),
+                            footer_html=render.footer(M["doc"]["footer"]))
+    for line in info["checks"]:
+        print(line, file=sys.stderr)
     return path
 
 
-def build(data, fmt, out_dir, ctx):
+def compute_model(data, ctx):
+    """render.main's compute step: every document this run prints, once."""
+    return review.compute(data, ctx)
+
+
+def build(C, fmt_, out_dir, ctx):
     """A single review; or with 2+ active offers, the comparison plus a single review of each active offer, in rank
     order (OFR-318)."""
-    R = review.analyze(data, cma=review.load_cma(data, ctx.get("cma")), agent=ctx["agent"])
-    sample = ctx.get("sample") or R["sample"]
-    mode, _ = review.pick(R, ctx.get("mode") or "auto", ctx.get("offer"))
-    if mode == "multi" and len(R["active"]) >= 2:
-        paths = [write_pdf(R, ctx["agent"], sample, "multi", None, out_dir)]
-        paths += [write_pdf(R, ctx["agent"], sample, "single", o["id"], out_dir) for o in R["ranked"]]
-    else:
-        paths = [write_pdf(R, ctx["agent"], sample, ctx.get("mode") or "auto", ctx.get("offer"), out_dir)]
-    for a in R["missing"][:6]:
-        print(f"Assumed [{a['impact']}] {a['why']}", file=sys.stderr)
-    offers = R["active"] + R.get("incomplete", [])
-    sup = oe.cf.support([o["contract_form"] for o in offers],
-                        [(o["contract_form"], o.get("form_revision"),
-                          str(o.get("form_revision_source") or "").lower() == "footer") for o in offers])
-    for note in review.described_support(sup, offers)["chat_notes"]:  # iteration 10 eval 3: same line as review.py
-        print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
+    sample = bool(ctx.get("sample") or C["sample"])
+    paths = [write_pdf(M, ctx["agent"], sample, out_dir) for M in C["reports"]]
+    for line in C["agent_lines"]:
+        print(line, file=sys.stderr)
     return paths
 
 
@@ -897,8 +538,8 @@ def options(ap):
 
 
 def main(argv=None):
-    return render.main(build, formats=("pdf",), argv=argv, extra_args=options, errors=(oe.OfferError, handoff.HandoffError),
-                       labels=("offers[].label",), linked=handoff.linked)
+    return render.main(build, formats=("pdf",), argv=argv, extra_args=options, compute=compute_model,
+                       errors=(oe.OfferError, handoff.HandoffError), labels=("offers[].label",), linked=handoff.linked)
 
 
 if __name__ == "__main__":

@@ -562,7 +562,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Low",
@@ -1662,7 +1662,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Low",
@@ -2143,7 +2143,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Low",

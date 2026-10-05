@@ -52,7 +52,7 @@
      "check": "signed",
      "contract": true,
      "sev": "Blocking",
-     "topic": null
+     "topic": "contract_issue_1"
     }
    ],
    "buyer_broker_pct": 0.025,
@@ -113,7 +113,7 @@
      "check": "signed",
      "contract": true,
      "sev": "Blocking",
-     "topic": null
+     "topic": "contract_issue_1"
     },
     {
      "check": "riders",
@@ -132,11 +132,11 @@
      "check": "terms",
      "contract": true,
      "sev": "High",
-     "topic": null
+     "topic": "contract_issue_2"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "check": "terms",
@@ -629,7 +629,7 @@
      "check": "signed",
      "contract": true,
      "sev": "Blocking",
-     "topic": null
+     "topic": "contract_issue_1"
     }
    ],
    "buyer_broker_pct": 0.025,
@@ -690,7 +690,7 @@
      "check": "signed",
      "contract": true,
      "sev": "Blocking",
-     "topic": null
+     "topic": "contract_issue_1"
     },
     {
      "check": "riders",
@@ -709,11 +709,11 @@
      "check": "terms",
      "contract": true,
      "sev": "High",
-     "topic": null
+     "topic": "contract_issue_2"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "check": "terms",

@@ -48,7 +48,7 @@
 
 {{summary.data_note}}
 
-**Assumptions & Data to Confirm:**
+**What to Confirm:**
 - {{each assumptions[]: impact (High, Med or Low) + " · " + where + " · " + what}}
 
 <!-- ===== single block (mode "single"; under "### {{offer label}}" after the multi block) =====
@@ -111,13 +111,15 @@
 
 {{summary.data_note}}
 
-**Assumptions & Data to Confirm:**
+**What to Confirm:**
 - {{each assumptions[]: impact (High, Med or Low) + " · " + where + " · " + what}}
 
 <!-- ===== closing block (once, at the end) ===== -->
 **Estimated:** {{estimated_costs, joined with commas; skip when empty}}
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
+
+**Notes:** {{notes, one line each; skip when empty}}
 
 <sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = {{offers[].downside_note for the offer shown; in multi mode "if the appraisal and inspection go badly"}}. Estimates only; the title company's settlement statement governs. Commissions are negotiable and not set by law. Not legal advice.</sub>
 

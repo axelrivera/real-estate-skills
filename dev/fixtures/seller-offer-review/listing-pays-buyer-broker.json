@@ -12,7 +12,7 @@
   "built_before_1978": false,
   "hoa_monthly": 95.0,
   "highest_and_best_due": "2026-09-23 12:00",
-  "hoa_conflict": "$95 per quarter in one package, $95 per month in the other"
+  "hoa_conflict": [{"amount": 95, "per": "quarter"}, {"amount": 95, "per": "month"}]
  },
  "seller": {
   "name": "Sample Seller",

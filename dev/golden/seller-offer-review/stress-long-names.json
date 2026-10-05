@@ -72,7 +72,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -538,7 +538,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -546,7 +546,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Med",
@@ -982,7 +982,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "entity_buyer"
     },
     {
      "sev": "Med",
@@ -1435,19 +1435,19 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "loan_limit"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -1455,7 +1455,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "sev": "Med",
@@ -1925,15 +1925,15 @@
     },
     {
      "sev": "Med",
-     "topic": "financing"
+     "topic": "prequal"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -1941,15 +1941,15 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "standard_repairs"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Med",
@@ -2400,11 +2400,11 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -3034,7 +3034,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -3500,7 +3500,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -3508,7 +3508,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Med",
@@ -3944,7 +3944,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "entity_buyer"
     },
     {
      "sev": "Med",
@@ -4397,19 +4397,19 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "loan_limit"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -4417,7 +4417,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "sev": "Med",
@@ -4887,15 +4887,15 @@
     },
     {
      "sev": "Med",
-     "topic": "financing"
+     "topic": "prequal"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -4903,15 +4903,15 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "standard_repairs"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Med",
@@ -5362,11 +5362,11 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -5813,7 +5813,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -6279,7 +6279,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -6287,7 +6287,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Med",
@@ -6723,7 +6723,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "entity_buyer"
     },
     {
      "sev": "Med",
@@ -7165,11 +7165,11 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -7639,15 +7639,15 @@
     },
     {
      "sev": "Med",
-     "topic": "financing"
+     "topic": "prequal"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -7655,15 +7655,15 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "standard_repairs"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Med",
@@ -8125,19 +8125,19 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "loan_limit"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -8145,7 +8145,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "sev": "Med",

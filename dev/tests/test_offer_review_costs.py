@@ -20,6 +20,11 @@ BASE = {"analysis_date": "2026-09-23",
                     "cma_low": 390000, "cma_high": 410000, "annual_tax": 5000, "hoa_monthly": 0, "flood_disclosure": True},
         "seller": {"payoff": 200000, "listing_fee_pct": 0.025, "offered_buyer_broker_pct": 0.025}}
 
+def page(R, agent=None, sample=False, mode="auto", offer_id=None):
+    """The report's HTML, from the one document model (review.result)."""
+    return render.build_html(review.result(R, mode, offer_id), agent or {}, sample)
+
+
 
 def fixture(name):
     with open(os.path.join(FIXTURES, name)) as f:
@@ -166,7 +171,7 @@ class ListingBrokerPays(unittest.TestCase):
         o = R["offers"][0]
         self.assertEqual(line(o["target"], "bb"), 0)  # one total line in every column, the Seller's Target too
         self.assertAlmostEqual(line(o["target"], "listing") / 504000, line(o["ns"], "listing") / 489000, places=4)
-        self.assertNotIn("Buyer-Broker Comp.", [r[0] for r in render.term_rows(o, R)])
+        self.assertNotIn("Buyer-Broker Comp.", [r[0] for r in review.term_rows(o, R)])
         self.assertEqual(fields(R)["buyer_broker_paid_by"]["impact"], "med")
 
     def test_given_listing_fee(self):
@@ -204,7 +209,7 @@ class SellersTarget(unittest.TestCase):
         self.assertEqual({o["target"]["close"] for o in R["offers"]}, {R["target_close"]})
         self.assertIs(R["target"], R["ranked"][0]["target"])
         R = review.analyze(fixture("listing-pays-buyer-broker.json"))
-        self.assertIn(oe.money(R["target"]["net_adj"]), render.build_html(R, {}, mode="single", offer_id="A")[0])
+        self.assertIn(oe.money(R["target"]["net_adj"]), page(R, {}, mode="single", offer_id="A"))
         tile = next(k for k in review.single_view(R, offer(R, "A"))["kpis"] if k["label"] == "Seller's Target Net")
         self.assertEqual(tile["value"], review.money(offer(R, "A")["target"]["net_adj"]))
 
@@ -239,11 +244,11 @@ class Hoa(unittest.TestCase):
         R = review.analyze(case05())  # the packages disagree: $95 a quarter or a month
         for o in R["active"]:
             self.assertNotIn("hoa_conflict", [f.get("topic") for f in review.deal_flags(o)])  # never a top risk
-        self.assertIn("HOA to Confirm", render.snapshot(R))
-        self.assertNotIn("HOA $95", render.snapshot(R))  # the figure isn't stated
+        self.assertIn("HOA to Confirm", json.dumps(review.fact_row(R), ensure_ascii=False))
+        self.assertNotIn("HOA $95", json.dumps(review.fact_row(R), ensure_ascii=False))  # the figure isn't stated
         R = review.analyze(case05(listing={"hoa_conflict": None}))
         self.assertFalse(any(f.get("topic") == "hoa_conflict" for o in R["active"] for f in o["flags"]))
-        self.assertIn("HOA $95/mo", render.snapshot(R))
+        self.assertIn("HOA $95/mo", json.dumps(review.fact_row(R), ensure_ascii=False))
 
 
 class PropertyTax(unittest.TestCase):

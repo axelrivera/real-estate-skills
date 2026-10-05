@@ -80,7 +80,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -517,7 +517,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -1114,7 +1114,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -1551,7 +1551,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -1992,7 +1992,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -2450,7 +2450,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",

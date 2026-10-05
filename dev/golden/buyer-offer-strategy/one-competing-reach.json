@@ -266,11 +266,11 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -607,11 +607,11 @@
      ],
      [
       "listing",
-      -11622
+      -11623
      ],
      [
       "bb",
-      -11622
+      -11623
      ],
      [
       "transfer",
@@ -645,8 +645,8 @@
     "missing": {
      "count": 0
     },
-    "net": 431165,
-    "net_adj": 430340,
+    "net": 431163,
+    "net_adj": 430338,
     "price": 464900,
     "tax_bill_assumed": true
    },
@@ -732,7 +732,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -1069,11 +1069,11 @@
      ],
      [
       "listing",
-      -11622
+      -11623
      ],
      [
       "bb",
-      -11622
+      -11623
      ],
      [
       "transfer",
@@ -1107,8 +1107,8 @@
     "missing": {
      "count": 0
     },
-    "net": 431273,
-    "net_adj": 430631,
+    "net": 431271,
+    "net_adj": 430629,
     "price": 464900,
     "tax_bill_assumed": true
    },
@@ -1197,7 +1197,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -1534,11 +1534,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -1572,8 +1572,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431273,
-     "net_adj": 430631,
+     "net": 431271,
+     "net_adj": 430629,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -1659,7 +1659,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -1996,11 +1996,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -2034,8 +2034,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431273,
-     "net_adj": 430631,
+     "net": 431271,
+     "net_adj": 430629,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -2130,11 +2130,11 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -2471,11 +2471,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -2509,8 +2509,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431165,
-     "net_adj": 430340,
+     "net": 431163,
+     "net_adj": 430338,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -2770,7 +2770,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -3107,11 +3107,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -3145,8 +3145,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431273,
-     "net_adj": 430631,
+     "net": 431271,
+     "net_adj": 430629,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -3232,7 +3232,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -3569,11 +3569,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -3607,8 +3607,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431273,
-     "net_adj": 430631,
+     "net": 431271,
+     "net_adj": 430629,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -3703,11 +3703,11 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -4044,11 +4044,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -4082,8 +4082,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431165,
-     "net_adj": 430340,
+     "net": 431163,
+     "net_adj": 430338,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -4171,7 +4171,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -4508,11 +4508,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -4546,8 +4546,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431273,
-     "net_adj": 430631,
+     "net": 431271,
+     "net_adj": 430629,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -4633,7 +4633,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -4970,11 +4970,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -5008,8 +5008,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431273,
-     "net_adj": 430631,
+     "net": 431271,
+     "net_adj": 430629,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -5104,11 +5104,11 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Med",
@@ -5445,11 +5445,11 @@
       ],
       [
        "listing",
-       -11622
+       -11623
       ],
       [
        "bb",
-       -11622
+       -11623
       ],
       [
        "transfer",
@@ -5483,8 +5483,8 @@
      "missing": {
       "count": 0
      },
-     "net": 431165,
-     "net_adj": 430340,
+     "net": 431163,
+     "net_adj": 430338,
      "price": 464900,
      "tax_bill_assumed": true
     },
@@ -5519,9 +5519,9 @@
      "value": 299
     }
    ],
-   "close": "2026-11-12",
+   "close": "2026-11-02",
    "estoppel_estimate": false,
-   "holding": -825,
+   "holding": -642,
    "lines": [
     [
      "price",
@@ -5537,11 +5537,11 @@
     ],
     [
      "listing",
-     -11622
+     -11623
     ],
     [
      "bb",
-     -11622
+     -11623
     ],
     [
      "transfer",
@@ -5565,7 +5565,7 @@
     ],
     [
      "tax",
-     -3393
+     -3285
     ],
     [
      "payoff",
@@ -5575,12 +5575,12 @@
    "missing": {
     "count": 0
    },
-   "net": 431165,
-   "net_adj": 430340,
+   "net": 431271,
+   "net_adj": 430629,
    "price": 464900,
    "tax_bill_assumed": true
   },
-  "target_close": "2026-11-12"
+  "target_close": "2026-11-02"
  },
  "assumptions": [
   {
@@ -5787,7 +5787,7 @@
  "reserve_tight": null,
  "sample": false,
  "stronger_dropped": true,
- "target": 430631,
+ "target": 430629,
  "terms": {
   "lower_cost": {
    "appraisal_days": 21,

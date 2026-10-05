@@ -13,7 +13,7 @@
   "seller": {
     "name": "Sample Seller", "payoff": 238400, "listing_fee_pct": 0.03, "offered_buyer_broker_pct": 0.025,
     "holding_monthly": 2400, "deadline": "2026-11-15", "priority": "certainty",
-    "priority_note": "Close by Nov 15; wants certainty over top dollar"
+    "priority_note": "Close before the deadline; wants certainty over top dollar"
   },
   "offers": [
     {"id": "A", "status": "active", "received": "2026-09-22", "expires": "2026-09-25 17:00",
@@ -24,7 +24,7 @@
      "inspection_days": 10, "loan_approval_days": 30, "appraisal_contingency": 21, "appraisal_gap": 0,
      "closing_date": "2026-11-07", "contract_form": "as_is", "riders": ["FHA/VA Financing", "HOA"],
      "title_by": "buyer", "personal_property": "Refrigerator, washer, dryer",
-     "insurance_quote": false, "agent_track": "average", "agent_note": "Responsive; 2 closings in last 12 months"},
+     "insurance_quote": false, "agent_track": "average", "agent_note": "Responsive, with a few recent closings"},
     {"id": "B", "contract_form": "as_is", "status": "active", "buyer": "Sample Buyer", "buyer_agent": "L. Park · Coldwell Banker",
      "price": 420000, "financing": "conventional", "down_pct": 0.20, "lender": "Chase",
      "approval": "full_uw", "lender_called": true, "deposit": 15000, "seller_concessions": 0,

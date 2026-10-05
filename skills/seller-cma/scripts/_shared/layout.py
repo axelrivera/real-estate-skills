@@ -128,11 +128,12 @@ def _get(row, key):
     return row[key] if isinstance(key, int) and key < len(row) else None
 
 
-def table(cols, rows, total=None, keep="auto", cls="", row_classes=None, caption=None):
+def table(cols, rows, total=None, keep="auto", cls="", row_classes=None, caption=None, head=True):
     """A boxed table. `rows`: dicts keyed by Col.key or lists in column order. `total`: one more row, set off as
     the total (bold, a rule above). keep: "auto" (short tables stay whole, long ones run on across pages, whole rows
     only, header repeated: render.html_to_pdf marks them .brk), "brk" (always may run on) or "whole" (never splits).
-    `row_classes`: {row index: class}. `caption`: a small note under the table."""
+    `row_classes`: {row index: class}. `caption`: a small note under the table. `head=False` leaves out the header
+    row (a short list whose columns explain themselves)."""
     def tr(r, extra=""):
         tds = []
         for c in cols:
@@ -140,14 +141,15 @@ def table(cols, rows, total=None, keep="auto", cls="", row_classes=None, caption
             tds.append(f'<td class="{c.classes()}"' + (f' style="{st}"' if st else "") + f">{cell(_get(r, c.key))}</td>")
         return f'<tr class="{extra}">' + "".join(tds) + "</tr>" if extra else "<tr>" + "".join(tds) + "</tr>"
 
-    head = "".join(f'<th class="{c.classes(True)}"' + (f' style="{c._style()}"' if c._style() else "") +
-                   f">{cell(c.label)}</th>" for c in cols)
+    head_html = "".join(f'<th class="{c.classes(True)}"' + (f' style="{c._style()}"' if c._style() else "") +
+                        f">{cell(c.label)}</th>" for c in cols)
     body = [tr(r, (row_classes or {}).get(i, "")) for i, r in enumerate(rows)]
     if total is not None:
         body.append(tr(total, "total"))
     box = classes("tbl", "kit-tbl", {"brk": "brk", "whole": "whole"}.get(keep, ""), cls)
     cap = f'<p class="kit-cap">{cell(caption)}</p>' if caption else ""
-    return f'<div class="{box}"><table><thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div>{cap}'
+    thead = f"<thead><tr>{head_html}</tr></thead>" if head else ""
+    return f'<div class="{box}"><table>{thead}<tbody>{"".join(body)}</tbody></table></div>{cap}'
 
 
 # --- tiles, fact row, notes, header -------------------------------------------------

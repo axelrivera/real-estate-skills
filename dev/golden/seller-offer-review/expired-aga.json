@@ -168,7 +168,7 @@
      "contract": true,
      "request": null,
      "sev": "Med",
-     "topic": null
+     "topic": "contract_issue_1"
     },
     {
      "check": "riders",
@@ -773,7 +773,7 @@
      "contract": true,
      "request": null,
      "sev": "Med",
-     "topic": null
+     "topic": "contract_issue_1"
     },
     {
      "check": "riders",

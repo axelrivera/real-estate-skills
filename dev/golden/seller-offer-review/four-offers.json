@@ -85,23 +85,23 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "insurance_quote"
     },
     {
      "sev": "Med",
@@ -539,7 +539,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -977,7 +977,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "entity_buyer"
     },
     {
      "sev": "Med",
@@ -1447,11 +1447,11 @@
     },
     {
      "sev": "Med",
-     "topic": "financing"
+     "topic": "prequal"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -1459,17 +1459,17 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "check": "riders",
      "contract": true,
      "sev": "Med",
-     "topic": null
+     "topic": "kickout"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Med",
@@ -2054,23 +2054,23 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "insurance_quote"
     },
     {
      "sev": "Med",
@@ -2508,7 +2508,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -2946,7 +2946,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "entity_buyer"
     },
     {
      "sev": "Med",
@@ -3416,11 +3416,11 @@
     },
     {
      "sev": "Med",
-     "topic": "financing"
+     "topic": "prequal"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -3428,17 +3428,17 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "check": "riders",
      "contract": true,
      "sev": "Med",
-     "topic": null
+     "topic": "kickout"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Med",
@@ -3878,7 +3878,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -4316,7 +4316,7 @@
    "flags": [
     {
      "sev": "Low",
-     "topic": null
+     "topic": "entity_buyer"
     },
     {
      "sev": "Med",
@@ -4772,23 +4772,23 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "insurance_quote"
     },
     {
      "sev": "Med",
@@ -5262,11 +5262,11 @@
     },
     {
      "sev": "Med",
-     "topic": "financing"
+     "topic": "prequal"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Med",
@@ -5274,17 +5274,17 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "buyer_broker_ask"
     },
     {
      "check": "riders",
      "contract": true,
      "sev": "Med",
-     "topic": null
+     "topic": "kickout"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "weekend_closing"
     },
     {
      "sev": "Med",
