@@ -12,7 +12,7 @@
 
 {{when flags has items: "**Check Before Relying on These Dates:**" then "- {{each flag, in plain words}}"; flags only: agent_notes and chat_notes never go in this timeline, they go in your reply to the agent after it}}
 
-★ Critical = missing it can cost a contract right or put the deposit at risk. Effective Date {{effective.display}} ({{effective.source, or when it's empty "confirm: date the last party signed or initialed and delivered the final counteroffer"}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.{{" Lender dates are estimates." when any row or pending item has lender}} Not legal advice.
+★ Critical = {{critical_legend}}. Effective Date {{effective.display}} ({{effective.source, or when it's empty "confirm: date the last party signed or initialed and delivered the final counteroffer"}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.{{" Lender dates are estimates." when any row or pending item has lender}} Not legal advice.
 
 {{one line per rules.lines item whose text starts "Not stated in the contract": "**{{label}}:** {{text}}"}}
 

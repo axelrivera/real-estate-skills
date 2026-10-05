@@ -71,3 +71,5 @@ Either way, the reply holds, in this order, in short bullets under about 200 wor
 When the agent sends better numbers (a payoff letter, the commission, the tax bill, a title quote), put them in the same `net-sheet.json` and render again; never edit a number in the reply by hand.
 
 **A "what if" price after the sheet has three:** answer it in chat from a one-price run in a separate scratch file (`what-if.json`, a copy with only that scenario), never by replacing the delivered sheet's `net-sheet.json`, so its three prices still match the PDF. Say in one line that the PDF keeps its three prices, and offer to swap one out for a new sheet.
+
+**Follow-up replies** (a what-if, a changed number) give the new net and what changed, never the first reply's assumptions again (no HOA, the tax bill, the payoff): each was said once, and still applies unless the agent's answer changed it. Built-in costs are the state's typical charges, as the assumption line says: never call them a county's.

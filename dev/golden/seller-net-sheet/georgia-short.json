@@ -10,32 +10,32 @@
  "columns": [
   {
    "bar": {
-    "costs": 0.0704,
+    "costs": 0.0705,
     "net": 0.0,
-    "payoffs": 0.9296
+    "payoffs": 0.9295
    },
    "closing_date": "2026-11-06",
    "costs_pct": 0.0746,
    "costs_pct_display": "7.5%",
-   "net": -19741.0,
+   "net": -19241.0,
    "net_before_payoff": 305368.0,
-   "payoff_total": 325109,
+   "payoff_total": 324609,
    "price": 330000,
    "short": true,
    "total_costs": 24632.0
   },
   {
    "bar": {
-    "costs": 0.068,
+    "costs": 0.0681,
     "net": 0.0,
-    "payoffs": 0.932
+    "payoffs": 0.9319
    },
    "closing_date": "2026-11-06",
    "costs_pct": 0.0753,
    "costs_pct_display": "7.5%",
-   "net": -33826.0,
+   "net": -33326.0,
    "net_before_payoff": 291283.0,
-   "payoff_total": 325109,
+   "payoff_total": 324609,
    "price": 315000,
    "short": true,
    "total_costs": 23717.0
@@ -185,8 +185,8 @@
   },
   {
    "amounts": [
-    -311109,
-    -311109
+    -310609,
+    -310609
    ],
    "display": {
     "count": 2
@@ -207,8 +207,8 @@
   },
   {
    "amounts": [
-    -19741.0,
-    -33826.0
+    -19241.0,
+    -33326.0
    ],
    "display": {
     "count": 2

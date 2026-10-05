@@ -20,7 +20,7 @@ from _shared import finance, handoff, profiles  # noqa: E402
 
 money = finance.money
 MAX_SCENARIOS = 3  # three columns still fit on one page
-PAYOFF_CUSHION = 500  # a month's interest is added to a statement balance, plus this for payoff and release fees
+BALANCE_RATE = 4.5  # % a year: a statement balance gets a month of interest at the loan's rate, else this (as the seller CMA)
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 
 # Row groups in page order: (key, label, line keys from finance.seller_net)
@@ -148,8 +148,8 @@ def payoffs(costs):
     first, balance = _amount(costs.get("mortgage_payoff"), "costs.mortgage_payoff"), costs.get("mortgage_balance")
     if first is None and balance is not None:
         _amount(balance, "costs.mortgage_balance")
-        if balance:  # a balance isn't a payoff: add a month's interest and the release fees
-            first = round(balance * (1 + (costs.get("mortgage_rate") or 7) / 100 / 12) + PAYOFF_CUSHION)
+        if balance:  # a balance isn't a payoff: add a month's interest (a stated payoff is used as given)
+            first = round(balance * (1 + (costs.get("mortgage_rate") or BALANCE_RATE) / 100 / 12))
             est = True
         else:
             first = 0
@@ -405,13 +405,20 @@ def compute(R, market):
         said[notes[-1]] = None
         assumptions.append(f"No property tax proration yet: send {' and '.join(missing_bits)} to include it.")
         tax_missing = True
+    def typical(path):
+        """Whose typical charge a built-in value is (manual round 5 case 9): a county's own figure is "local"; a statewide
+        one names the state, never the county, so the reply can't call Florida's figures Seminole's."""
+        return "local" if market.source(path) == "county" or not st else profiles.STATES.get(st, "local")
     if "title_fees" in assumed and market.source("closing_costs.seller_title_fees") != "estimate":
-        notes.append("Title company fees are typical local charges; the title company's quote replaces them.")
+        whose = typical("closing_costs.seller_title_fees")
+        notes.append(f"Title company fees are typical {whose} charges; the title company's quote replaces them.")
         said[notes[-1]] = None
-        assumptions.append("Title company fees are the typical local charges: a title quote replaces them.")
+        assumptions.append(f"Title company fees are typical {whose} charges"
+                           + (", not a quote for this county" if whose != "local" else "") + ": a title quote replaces them.")
     # iteration 11: a built-in estoppel fee is a typical local charge too (a national estimate is labeled on its line)
     if (any(l["key"] == "estoppel" for l in first["lines"]) and market.source("closing_costs.hoa_estoppel_fee") not in ("estimate", "deal")):
-        notes.append("The HOA estoppel fee is a typical local charge; the association's fee schedule replaces it.")
+        notes.append(f"The HOA estoppel fee is a typical {typical('closing_costs.hoa_estoppel_fee')} charge; the "
+                     "association's fee schedule replaces it.")
     estimates = [a["text"] for a in first["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimates:
         notes.append(f"Estimates, not local figures: {', '.join(estimates)}. Local rates or a title quote replace them.")

@@ -1,0 +1,21 @@
+{
+  "prepared_date": "2026-09-26",
+  "closing_date": "2026-12-04",
+  "property": {
+    "address": "3318 Wren Hollow Ln",
+    "city": "Casselberry",
+    "county": "Seminole",
+    "state": "FL"
+  },
+  "scenarios": [
+    {"price": 425000, "label": "At $425,000"},
+    {"price": 410000, "label": "At $410,000"},
+    {"price": 425000, "seller_credit": 6000, "label": "At $425,000 with $6,000 Credit"}
+  ],
+  "costs": {
+    "listing_fee_pct": 0.0275,
+    "buyer_broker_fee_pct": 0.025,
+    "mortgage_payoff": 188000,
+    "annual_tax": 5400
+  }
+}

@@ -1924,7 +1924,7 @@ class Iteration12(unittest.TestCase):
 
     def test_closed_gg_window_leaves_page_one_and_the_calendar(self):
         """Evals 12, 13: with the agreement signed, Compensation Contingency Ends is closed: never the next deadline,
-        off page 1 (strip and All Key Dates) and the calendar, still in Deadline Details marked done, no star."""
+        off page 1 (strip and Key Dates) and the calendar, still in Deadline Details marked done, no star."""
         r = timeline.analyze(self._gg_signed())
         row = by_key(r)["compensation_cancel"]
         self.assertTrue(row["done"] and row["voided"] and not row["critical"])
