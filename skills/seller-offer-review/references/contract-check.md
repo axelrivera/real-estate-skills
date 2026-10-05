@@ -14,7 +14,6 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `proof_of_funds` | `proof_of_funds` is below the down payment plus the appraisal gap the buyer covers | High |
 | `counter_chain` | the live offer is weaker than the seller's last counter in `prior_counters` on inspection, loan approval, deposit, concessions or gap, or has another closing date | High |
 | `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FAR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (every offer whose rider list was read; on FAR/BAR an unread list is an assumption instead, `listing-file.md`) | High (F: Med) |
-| `rider_GG` | Rider GG attached and the compensation agreement isn't in the package, or isn't signed by both brokers yet (`compensation_agreement`: the flag names who still signs; none once `received`) | Med |
 | `escalation_form` | the Escalation Addendum's contract box (`escalation.contract_form`) names the other FAR/BAR form, or another contract, than the offer's | High |
 | `rider_K_terms` | Rider K on the Standard form: it deletes the Para. 9(a) limits and Paras. 11 and 12, but not the 125% escrow, and has no permit cooperation clause (listed with the risk flags, never a top risk) | Low |
 | `lead_paint` | built before 1978 (`year_built`, or `built_before_1978` from the seller disclosure) with no lead-based paint disclosure (Rider P) | High |

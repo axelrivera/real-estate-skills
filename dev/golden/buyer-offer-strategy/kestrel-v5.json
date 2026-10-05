@@ -298,17 +298,14 @@
     {
      "sev": "Med",
      "topic": "flood_disclosure"
-    },
-    {
-     "check": "terms",
-     "contract": true,
-     "sev": "Med",
-     "topic": "rider_GG"
     }
    ],
    "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
+   "gg_open": {
+    "count": 3
+   },
    "home_warranty": 0,
    "id": "lower_cost",
    "inspection_assumed": false,
@@ -758,17 +755,14 @@
     {
      "sev": "Med",
      "topic": "flood_disclosure"
-    },
-    {
-     "check": "terms",
-     "contract": true,
-     "sev": "Med",
-     "topic": "rider_GG"
     }
    ],
    "form_given": true,
    "gap_cover": 0,
    "gap_intent_only": false,
+   "gg_open": {
+    "count": 3
+   },
    "home_warranty": 0,
    "id": "recommended",
    "inspection_assumed": false,
@@ -1221,17 +1215,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -1681,17 +1672,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -2154,17 +2142,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "lower_cost",
     "inspection_assumed": false,
@@ -2789,17 +2774,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -3249,17 +3231,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -3722,17 +3701,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "lower_cost",
     "inspection_assumed": false,
@@ -4184,17 +4160,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -4644,17 +4617,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -5117,17 +5087,14 @@
      {
       "sev": "Med",
       "topic": "flood_disclosure"
-     },
-     {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
      }
     ],
     "form_given": true,
     "gap_cover": 0,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "lower_cost",
     "inspection_assumed": false,

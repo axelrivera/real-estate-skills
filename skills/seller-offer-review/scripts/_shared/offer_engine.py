@@ -1435,9 +1435,9 @@ def contract_checks(o, L):
         given = o.get("bb_tag") == "Requested"
         amount = (pct(o["buyer_broker_pct"], 2) if o.get("buyer_broker_amount") is None else money(o["buyer_broker_amount"])) \
             if given else None
-        gg = cf.compensation_agreement_check(o["contract_form"], o, o.get("bb_from_listing"), amount)
-        if gg:
-            add("Med", gg[0], gg[1], "terms", gg[2], "rider_GG")
+        # Never a risk flag (owner rule): an unsigned compensation agreement is a contingency of the offer, shown as its
+        # Rider GG window in the contingency timeline (rider_windows); `gg_open` keeps it for the amount question
+        o["gg_open"] = cf.compensation_agreement_check(o["contract_form"], o, o.get("bb_from_listing"), amount)
         yb = L.get("year_built")
         pre78 = yb < 1978 if yb else L.get("built_before_1978") is True  # OFR-295: the seller disclosure's answer
         if pre78 and not _has_rider(riders, "P"):
@@ -1509,6 +1509,8 @@ def contract_checks(o, L):
     if conflict:  # iteration 12: the Escalation Addendum's contract box names the other form (contract_forms' rule)
         add("High", *conflict[:2], "terms", conflict[2], "escalation_form")
     for c in o.get("contract_issues") or []:
+        if issue_topics(c) == {"rider_GG"}:  # the compensation agreement's status is a contingency (the timeline's
+            continue                         # Rider GG window), never a risk flag, however it was recorded
         sev = c.get("sev", "High")
         sev = sev if sev in CONTRACT_SEV else "High"
         add(sev, c["issue"], c.get("fix", ""), c.get("check", "signed" if sev == "Blocking" else "terms"),

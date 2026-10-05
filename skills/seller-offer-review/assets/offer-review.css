@@ -110,7 +110,7 @@ table.facts2{table-layout:fixed;width:100%} table.facts2 td{border:none;padding:
 .gantt-tbl th.tlname{width:22%} .gantt-tbl th.tld{width:6%} .gantt-tbl th.tle{width:9%} .gantt-tbl th.nw{white-space:nowrap}
 td.gantt{padding:4px 0;border-left:none;vertical-align:middle} td.gantt div{height:11px}
 td.wk{box-shadow:inset 1px 0 0 var(--brand-rule)} td.dl{box-shadow:inset -2px 0 0 var(--risk-base)}
-td.on-hot div{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} td.on-warm div{background:var(--caution-border)} td.on-close div{background:var(--brand-deep)}
+td.on-hot div{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} td.on-warm div{background:var(--caution-border)} td.on-close div{background:var(--brand-deep)} td.on-rider div{background:color-mix(in srgb,var(--brand-strong) 40%,#fff)}
 .tlfoot{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:7.2pt;color:var(--muted);margin:3px 2px 0}
 .tlfoot .kit-legend{margin:0}
 

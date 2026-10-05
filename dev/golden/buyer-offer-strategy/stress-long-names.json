@@ -196,12 +196,6 @@
      "topic": "condo_rescission"
     },
     {
-     "check": "terms",
-     "contract": true,
-     "sev": "Med",
-     "topic": "rider_GG"
-    },
-    {
      "sev": "Low",
      "topic": "roof"
     }
@@ -209,6 +203,9 @@
    "form_given": true,
    "gap_cover": 10000,
    "gap_intent_only": false,
+   "gg_open": {
+    "count": 3
+   },
    "home_warranty": 0,
    "id": "recommended",
    "inspection_assumed": false,
@@ -666,12 +663,6 @@
       "topic": "condo_rescission"
      },
      {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
-     },
-     {
       "sev": "Low",
       "topic": "roof"
      }
@@ -679,6 +670,9 @@
     "form_given": true,
     "gap_cover": 10000,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -1149,12 +1143,6 @@
       "topic": "escalation_proof"
      },
      {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
-     },
-     {
       "sev": "Low",
       "topic": "roof"
      },
@@ -1166,6 +1154,9 @@
     "form_given": true,
     "gap_cover": 10000,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -1779,12 +1770,6 @@
       "topic": "condo_rescission"
      },
      {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
-     },
-     {
       "sev": "Low",
       "topic": "roof"
      }
@@ -1792,6 +1777,9 @@
     "form_given": true,
     "gap_cover": 10000,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,
@@ -2262,12 +2250,6 @@
       "topic": "escalation_proof"
      },
      {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
-     },
-     {
       "sev": "Low",
       "topic": "roof"
      },
@@ -2279,6 +2261,9 @@
     "form_given": true,
     "gap_cover": 10000,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -2752,12 +2737,6 @@
       "topic": "escalation_proof"
      },
      {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
-     },
-     {
       "sev": "Low",
       "topic": "roof"
      },
@@ -2769,6 +2748,9 @@
     "form_given": true,
     "gap_cover": 10000,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "stronger",
     "inspection_assumed": false,
@@ -3224,12 +3206,6 @@
       "topic": "condo_rescission"
      },
      {
-      "check": "terms",
-      "contract": true,
-      "sev": "Med",
-      "topic": "rider_GG"
-     },
-     {
       "sev": "Low",
       "topic": "roof"
      }
@@ -3237,6 +3213,9 @@
     "form_given": true,
     "gap_cover": 10000,
     "gap_intent_only": false,
+    "gg_open": {
+     "count": 3
+    },
     "home_warranty": 0,
     "id": "recommended",
     "inspection_assumed": false,

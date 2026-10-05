@@ -232,7 +232,7 @@ def net_sheet_table(ns):
 
 
 TH_PX = 8 * 96 / 72  # a table header's 8pt type (report.css th), in px
-SWATCH = {"hot": "color-mix(in srgb,var(--risk-base) 55%,#fff)", "warm": "var(--caution-border)",
+SWATCH = {"hot": "color-mix(in srgb,var(--risk-base) 55%,#fff)", "warm": "var(--caution-border)", "rider": "color-mix(in srgb,var(--brand-strong) 40%,#fff)",
           "close": "var(--brand-deep)", "deadline": "var(--risk-base)"}
 
 

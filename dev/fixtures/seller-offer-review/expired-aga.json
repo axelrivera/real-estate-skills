@@ -13,9 +13,7 @@
     "appraisal_gap": 15000, "buyer_broker_form": "GG",
     "contract_issues": [
       {"sev": "Med", "issue": "The seller's property disclosure answers No to a mandatory HOA, but Rider B discloses one.",
-       "fix": "Have the seller correct the disclosure, initial the change and deliver it to the buyer.", "check": "terms"},
-      {"sev": "Low", "issue": "The Rider GG box says the Seller's Broker signs the compensation agreement; its amount isn't in the package.",
-       "fix": "Confirm the amount and that the listing broker pays it from its fee.", "check": "riders"}
+       "fix": "Have the seller correct the disclosure, initial the change and deliver it to the buyer.", "check": "terms"}
     ]
   }]
 }

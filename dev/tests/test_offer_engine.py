@@ -375,8 +375,8 @@ class ContractChecks(unittest.TestCase):
         self.assertEqual((sevs(o, "expired"), o["action"]), (["High"], "COUNTER"))
 
     def test_agent_issues_and_engine_flags(self):
-        gg = [f for f in one(fixture("expired-aga.json"))["flags"] if f["topic"] == "rider_GG"]
-        self.assertTrue(gg[0]["agent_topics"])  # the agent's Low issue, raised to the engine's level, keeps its topic
+        mine = [f for f in one(fixture("expired-aga.json"))["flags"] if "agent_topics" in f]
+        self.assertTrue(any("mandatory HOA" in f["issue"] for f in mine))  # the agent's own issue is a flag
         d = fixture("counter-chain-standard.json")
         d["offers"][0].pop("prior_counters")
         d["offers"][0]["contract_issues"] = [{"sev": "High", "issue": "Counter 2 drops the 10-day inspection period.",

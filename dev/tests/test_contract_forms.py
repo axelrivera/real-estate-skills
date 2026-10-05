@@ -253,8 +253,10 @@ class SellerEngine(unittest.TestCase):
     def test_rider_flags(self):
         _, o = offer("as_is", riders=["G", "Z", "V", "GG"], sale_contingency_days=30)
         text = " ".join(f["issue"] for f in o["flags"])
-        for code in ("G", "Z", "V", "GG"):  # each rider is flagged by its letter
+        for code in ("G", "Z", "V"):  # each rider is flagged by its letter
             self.assertRegex(text, rf"Rider {code}\b")
+        self.assertNotRegex(text, r"Rider GG\b")  # the compensation agreement is a contingency (its window), not a risk
+        self.assertIn("GG", [w[0] for w in o["rider_windows"]])
 
     def test_other_contract_in_florida(self):
         """Another contract in Florida: an unstated walk-away is a high-impact assumption, and no AS IS repair reserve."""

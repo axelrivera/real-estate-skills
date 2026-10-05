@@ -239,23 +239,27 @@ class ListingBrokerage(unittest.TestCase):
 
 
 class RiderGG(unittest.TestCase):
-    """Rider GG: the compensation agreement's status decides the flag and who is asked."""
+    """Rider GG: the compensation agreement is a contingency of the offer (its window in the timeline), never a risk."""
 
-    def test_agreement_status_sets_the_flag(self):
-        for b, flagged, asks in (({"compensation_agreement": "signed_by_buyer_broker", "buyer_broker_pct": 0.025}, True, False),
-                                 ({"compensation_agreement": "signed_by_listing_broker"}, True, True),
-                                 ({"buyer_broker_paid_by": None, "compensation_agreement": "signed_by_buyer_broker",
-                                   "buyer_broker_pct": 0.025}, True, None),
-                                 ({"compensation_agreement": "received", "buyer_broker_pct": 0.025}, False, None)):
+    def test_agreement_is_a_contingency_never_a_flag(self):
+        for b, open_ in (({"compensation_agreement": "signed_by_buyer_broker", "buyer_broker_pct": 0.025}, True),
+                         ({"compensation_agreement": "signed_by_listing_broker"}, True),
+                         ({"buyer_broker_paid_by": None, "compensation_agreement": "signed_by_buyer_broker",
+                           "buyer_broker_pct": 0.025}, True),
+                         ({"compensation_agreement": "received", "buyer_broker_pct": 0.025}, False)):
             with self.subTest(b):
                 R = review.analyze(case05(b=b))
-                f = flag(offer(R, "B"), "rider_GG")
-                self.assertEqual(f is not None, flagged)
-                if asks is not None:
-                    self.assertEqual(bool(f.get("request")), asks)  # the listing side's own signature: nothing to ask
-                self.assertIsNotNone(flag(offer(R, "A"), "rider_GG"))  # A's agreement still isn't recorded
-        b = offer(review.analyze(case05(b={"compensation_agreement": "received", "buyer_broker_pct": 0.025})), "B")
-        self.assertNotIn("GG", [w[0] for w in b["rider_windows"]])  # received: the window is over
+                for oid in ("A", "B"):
+                    self.assertIsNone(flag(offer(R, oid), "rider_GG"), oid)
+                o = offer(R, "B")
+                self.assertEqual("GG" in [w[0] for w in o["rider_windows"]], open_)
+                rows = [r["name"] for r in review.timeline(o, R)["rows"]]
+                self.assertEqual(any("(Rider GG)" in n for n in rows), open_)  # received: the window is over
+
+    def test_an_agreement_issue_the_agent_records_isnt_a_flag(self):
+        R = review.analyze(case05(b={"contract_issues": [
+            {"sev": "Med", "issue": "The compensation agreement isn't signed by the listing broker yet.", "fix": "Sign it."}]}))
+        self.assertEqual([f for f in offer(R, "B")["flags"] if "compensation agreement" in f["issue"]], [])
 
     def test_bad_status_stops_with_every_problem(self):
         with self.assertRaises(oe.OfferError) as e:
@@ -280,7 +284,7 @@ class RiderGG(unittest.TestCase):
         asked = [a["field"] for a in review.confirm_items(R)]
         self.assertNotIn("compensation_agreement", asked)
         self.assertIn("listing_fee_pct", asked)
-        self.assertIsNone(flag(R["offers"][0], "rider_GG").get("request"))
+        self.assertIsNone(flag(R["offers"][0], "rider_GG"))
 
 
 class Questions(unittest.TestCase):

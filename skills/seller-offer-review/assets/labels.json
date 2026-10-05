@@ -357,11 +357,13 @@
  "tl_appraisal": "Appraisal",
  "tl_loan": "Loan Approval",
  "tl_sale": "Sale of Buyer's Home",
+ "tl_rider": "{what} (Rider {code})",
  "tl_closing": "Closing",
  "tl_deadline": "(Deadline {date})",
  "tl_firm": "Firm after day {n} ({date}).",
  "lg_cancel_any": "Cancel for Any Reason",
  "lg_cancel_fin": "Cancel if Financing/Appraisal Fails",
+ "lg_cancel_rider": "Cancel Under a Rider",
  "lg_closing": "Closing",
  "lg_deadline": "Seller Deadline",
 

@@ -338,7 +338,7 @@ def ask_compensation_agreement(R):
     doesn't give the amount, the review asks for the signed agreement (it's in ALWAYS_ASK), folding in the offer's
     assumed buyer-broker share so the question is asked once."""
     for o in R["active"] + R["incomplete"]:
-        if o.get("bb_tag") == "Requested" or not any(f.get("topic") == "rider_GG" for f in o["flags"]):
+        if o.get("bb_tag") == "Requested" or not o.get("gg_open"):
             continue
         if o.get("bb_from_listing"):  # iteration 10 eval 6: the amount doesn't move the seller's net; the listing fee does
             fee = next((a for a in R["missing"] if a["field"] == "listing_fee_pct"), None)
@@ -1567,12 +1567,17 @@ def timeline(o, R):
                          else L_["tl_appraisal"], o["appraisal_days"], "warm"))
         rows.append(line(L_["tl_loan"], o["loan_approval_days"], "warm"))
     rows.append(line(L_["tl_sale"], o["sale_contingency_days"], "hot"))
+    # each rider's own window (Rider GG's compensation agreement, the insurance rider, attorney approval...): a
+    # contingency, with its own cancel right, never a risk flag
+    for code, d, what in o.get("rider_windows") or ():
+        rows.append(line(t("tl_rider", what=prose.title_case(what), code=code), d, "rider"))
     return {"subtitle": t("tl_sub", date=day(L["analysis_date"])), "head": L_["tl_head"], "weeks": weeks, "ncell": ncell,
             "per_week": per_wk, "rows": rows,
             "closing": {"name": L_["tl_closing"], "sub": t("tl_deadline", date=day(S["deadline"])) if S["deadline"] else "",
                         "days": str(o["close_days"]), "end": day(o["close"]), "cell": (o["close_days"] - 1) // step},
             "deadline_cell": (dl - 1) // step if dl else None,
-            "legend": {"hot": L_["lg_cancel_any"], "warm": L_["lg_cancel_fin"], "close": L_["lg_closing"],
+            "legend": {"hot": L_["lg_cancel_any"], "warm": L_["lg_cancel_fin"], "rider": L_["lg_cancel_rider"],
+                       "close": L_["lg_closing"],
                        "deadline": L_["lg_deadline"]},
             "firm": t("tl_firm", n=o["risk_days"], date=day(firm_day(o, R["costs"])[0]))}
 
