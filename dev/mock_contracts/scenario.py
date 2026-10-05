@@ -467,7 +467,7 @@ def build(spec):
                                 if c.get(k) or k in (c.get("changes") or {})} - {k for k in ("price", "closing", *(last_counter.get("changes") or {}))
                                                                                    if last_counter.get(k) or k in (last_counter.get("changes") or {})})
         if dropped_terms:
-            notes.append(f"Counter #{last_counter['number']} doesn't restate {', '.join(dropped_terms)} from earlier counters, so "
+            notes.append(f"Counter #{last_counter['number']} doesn't restate {', '.join(t.replace('_', ' ') for t in dropped_terms)} from earlier counters, so "
                          "those terms don't carry over (CO-3); the answer key uses the original offer's values.")
     accepted = stage in ("executed", "amended") or (stage == "countered" and bool(last_counter and last_counter.get("accepted")))
     if last_counter is not None:
