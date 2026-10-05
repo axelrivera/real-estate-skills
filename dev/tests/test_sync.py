@@ -104,7 +104,7 @@ class Sync(unittest.TestCase):
 
 class SkillPaths(unittest.TestCase):
     def test_no_sandbox_paths_in_skills(self):
-        """CORE-21: skills say "the outputs folder" and let the runtime decide; no /mnt paths."""
+        """Skills say "the outputs folder" and let the runtime decide; no /mnt paths."""
         root = os.path.join(os.path.dirname(__file__), "..", "..", "skills")
         for dirpath, dirnames, files in os.walk(root):
             dirnames[:] = [d for d in dirnames if d not in ("_shared", "__pycache__")]

@@ -1,4 +1,4 @@
-"""Tests for dev/package.py and dev/manual.py (REL-101, REL-102, REL-103, DOC-102)."""
+"""Tests for dev/package.py and dev/manual.py."""
 import contextlib
 import io
 import os
@@ -51,7 +51,7 @@ def git(root, *args):
 
 class Tracked(unittest.TestCase):
     def test_untracked_and_ignored_files_never_ship(self):
-        """REL-103: archives come from git ls-files, not the file system."""
+        """Archives come from git ls-files, not the file system."""
         with tempfile.TemporaryDirectory() as tmp:
             files = {".claude-plugin/plugin.json": "{}", "LICENSE": "MIT", "skills/a/SKILL.md": "x",
                      "skills/a/scripts/run.py": "", "skills/a/notes-untracked.md": "draft",
@@ -83,7 +83,7 @@ class Tracked(unittest.TestCase):
 
 class Skills(unittest.TestCase):
     def test_stale_skill_zips_are_removed(self):
-        """REL-102: a removed skill's zip (market-profile.zip) must not survive a rebuild."""
+        """A removed skill's zip (market-profile.zip) must not survive a rebuild."""
         with tempfile.TemporaryDirectory() as tmp:
             os.makedirs(os.path.join(tmp, "skills"))
             open(os.path.join(tmp, "skills", "market-profile.zip"), "w").close()
@@ -98,7 +98,7 @@ class Skills(unittest.TestCase):
 
 class Notes(unittest.TestCase):
     def test_sections_since_the_last_release(self):
-        """REL-103: notes come from status.md; an unreleased version ships with the next one."""
+        """Notes come from status.md; an unreleased version ships with the next one."""
         notes = package.release_notes(STATUS, "0.12.0", "0.10.2")
         self.assertEqual([line for line in notes.splitlines() if line.startswith("## ")],
                          ["## Fixes and Version 0.12.0", "## Contracts and Version 0.11.0"])
@@ -114,7 +114,7 @@ class Notes(unittest.TestCase):
 
 class Guide(unittest.TestCase):
     def test_guide_names_every_file_in_the_zip(self):
-        """DOC-102: the guide lists the four files the release zip holds, and ships without manual-only lines."""
+        """The guide lists the four files the release zip holds, and ships without manual-only lines."""
         text = package.guide_text("9.9.9", "real-estate-9.9.9.plugin")
         for name in ("real-estate-9.9.9.plugin", "README.md", os.path.basename(manual.PDF), "LICENSE"):
             self.assertIn(f"`{name}`", text)
@@ -124,7 +124,7 @@ class Guide(unittest.TestCase):
         self.assertNotIn("\n\n\n", text)
 
     def test_manual_is_up_to_date(self):
-        """REL-101: the committed PDF matches the guide, its images and the styles (make manual)."""
+        """The committed PDF matches the guide, its images and the styles (make manual)."""
         self.assertIsNone(manual.stale())
         with open(manual.GUIDE, encoding="utf-8") as f:
             text = f.read()

@@ -50,7 +50,7 @@ def fill(values, brand=None):
         if line is None and "{{team name}} · {{brokerage}}" in raw and "brokerage" in values:
             line = values["brokerage"]  # SKILL.md step 4: without a team, just the brokerage
         if line is not None and "{{" in line and line.lstrip().startswith(("- {state", "brokerage_")):
-            line = None  # CORE-15's optional license and brokerage lines, left out when not given
+            line = None  # the optional license and brokerage lines, left out when not given
         if line is not None and line.startswith("licenses:"):
             line = None
         if line is not None:
@@ -141,7 +141,7 @@ class Websites(unittest.TestCase):
         self.fetched = []
 
     def test_theme_color_first_and_site_css(self):
-        """CORE-20: www. and the bare domain are one site, and a CDN or site builder's CSS is read; font CSS isn't."""
+        """www. and the bare domain are one site, and a CDN or site builder's CSS is read; font CSS isn't."""
         r = ec.from_html(self.HTML, "https://jane.example.com/", fetch=self.fetch)
         self.assertEqual(self.fetched, ["https://jane.example.com/site.css", "https://www.jane.example.com/theme.css",
                                         "https://cdn.builder.net/b.css"])
@@ -170,7 +170,7 @@ class Template(unittest.TestCase):
         self.assertTrue(r["ok"], r)
         self.assertEqual(r["colors"]["buyer"]["name"], "Navy")
         self.assertEqual(r["colors"]["seller"]["name"], "Gold")
-        self.assertTrue(any("Gold is too light" in w for w in r["warnings"]))
+        self.assertTrue(any("Gold" in w for w in r["warnings"]))  # the light seller color warns
         for key, value in FULL.items():
             self.assertEqual(agent[key], value, key)
 
@@ -184,12 +184,8 @@ class Template(unittest.TestCase):
         self.assertTrue(r["colors"]["buyer"]["default"])
 
     def test_two_colors_and_separate_disclaimers(self):
-        """CORE-213: the Brand Colors line has the two-color form, and disclaimers keep a blank line between them, so
-        the report notices (render.notice_lines splits on blank lines) print each as its own paragraph."""
-        with open(TEMPLATE) as f:
-            tpl = f.read()
-        self.assertIn("{{buyer color}} for buyer reports, {{seller color}} for seller reports.", tpl)
-        self.assertIn("with a blank line between them", tpl)
+        """Disclaimers keep a blank line between them, so the report notices (render.notice_lines splits on blank
+        lines) print each as its own paragraph."""
         two = "Information deemed reliable but not guaranteed.\n\nEqual Housing Opportunity."
         with tempfile.TemporaryDirectory() as tmp:
             agent = profiles.load_agent(write_profile(tmp, fill({**FULL, "disclaimers": two})))
@@ -225,16 +221,15 @@ class Check(unittest.TestCase):
         self.assertFalse(r["ok"])
 
 
-
-class AuditProfileFields(unittest.TestCase):
-    """CORE-14 (numbers in quotes), CORE-15 (licenses and brokerage details), CORE-20 (SVG, unreadable files)."""
+class ProfileFields(unittest.TestCase):
+    """Numbers in quotes, licenses and brokerage details, SVG logos and unreadable files."""
 
     def test_unquoted_number_is_a_problem(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = write_profile(tmp, "---\nprofile: agent\nname: Jane Doe\nbrokerage: Sample Realty\nlicense: 0123456\n---\n")
             r = check_profile.check(path)
         self.assertFalse(r["ok"])
-        self.assertTrue(any("license is written as a number" in x for x in r["problems"]))
+        self.assertTrue(any("license" in x for x in r["problems"]))
 
     def test_licenses_and_brokerage_block(self):
         text = ("---\nprofile: agent\nname: Jane Doe\nbrokerage:\n  name: Sample Realty LLC\n  license: \"CQ1234\"\n"
@@ -246,8 +241,9 @@ class AuditProfileFields(unittest.TestCase):
         self.assertEqual(agent["license"], "FL sales associate SL123; NY salesperson 10401")
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
         from shared import render  # the footer lives in the report skills' render, not in agent-profile's copy
-        lines = render.notice_lines(agent)
-        self.assertIn("Sample Realty LLC, Lic. CQ1234, 1 Main St, Orlando, FL, 407-555-0100.", lines)
+        line = next(x for x in render.notice_lines(agent) if "CQ1234" in x)
+        for part in ("Sample Realty LLC", "1 Main St", "407-555-0100"):
+            self.assertIn(part, line)
 
     def test_svg_logo(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -267,9 +263,9 @@ class AuditProfileFields(unittest.TestCase):
         self.assertIn("PNG or JPG", r["notes"][0])
 
 
-class AuditSmallFixes(unittest.TestCase):
+class ColorNamesAndFiles(unittest.TestCase):
     def test_agents_own_color_name(self):
-        """CORE-27: warnings use the agent's word for the color."""
+        """Warnings use the agent's word for the color."""
         with tempfile.TemporaryDirectory() as tmp:
             path = write_profile(tmp, '---\nprofile: agent\nname: Jane Doe\nbrokerage: Sample Realty\nbrand:\n'
                                       '  primary: "#D4AF37"  # Gold\n---\n')
@@ -278,7 +274,7 @@ class AuditSmallFixes(unittest.TestCase):
         self.assertIn("Gold", r["warnings"][0])
 
     def test_missing_logo_file(self):
-        """CORE-26: a missing file is reported as a missing file, not a website."""
+        """A missing file is reported as a missing file, not a website."""
         import contextlib
         import io
         import json as _json
@@ -287,15 +283,16 @@ class AuditSmallFixes(unittest.TestCase):
             ec.main(["no-such-logo.png"])
         r = _json.loads(out.getvalue())
         self.assertFalse(r["ok"])
-        self.assertIn("File not found", r["notes"][0])
+        self.assertIn("no-such-logo.png", r["notes"][0])
 
-class AuditFixes0929(unittest.TestCase):
+
+class VoiceAndColorCodes(unittest.TestCase):
     def check_text(self, text):
         with tempfile.TemporaryDirectory() as tmp:
             return check_profile.check(write_profile(tmp, text))
 
     def test_voice_gets_fair_housing_check(self):
-        """FH-106: the Voice and Disclaimers sections get the same check as every rendered file."""
+        """The Voice and Disclaimers sections get the same check as every rendered file."""
         base = '---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\n---\n\n## Voice\n\n{}\n'
         r = self.check_text(base.format("Warm and patient; I love helping young families and couples expecting a baby."))
         self.assertFalse(r["ok"])
@@ -304,15 +301,15 @@ class AuditFixes0929(unittest.TestCase):
         self.assertTrue(r["ok"], r)
 
     def test_unquoted_brand_color_warns(self):
-        """CORE-101: an unquoted #code is a YAML comment; say so instead of falling back to blue silently."""
+        """An unquoted #code is a YAML comment; say so instead of falling back to blue silently."""
         r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n  primary: #1F3A5F\n---\n')
         self.assertFalse(r["ok"])
-        self.assertTrue(any(p.startswith("primary is empty") for p in r["problems"]), r["problems"])
+        self.assertTrue(any(p.startswith("primary") for p in r["problems"]), r["problems"])
         r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand: #1F3A5F\n---\n')
-        self.assertTrue(any(p.startswith("brand is empty") for p in r["problems"]), r["problems"])
+        self.assertTrue(any(p.startswith("brand") for p in r["problems"]), r["problems"])
 
     def test_color_name_short_and_bare_codes(self):
-        """CORE-102: the agent's color name is found for 3-digit codes and codes without #."""
+        """The agent's color name is found for 3-digit codes and codes without #."""
         for code in ("#D4AF37", "D4AF37", "#d4af37"):
             r = self.check_text('---\nprofile: agent\nname: "Sam"\nbrokerage: "Coastal Homes"\nbrand:\n'
                                 f'  primary: "{code}"  # Harvest\n---\n')

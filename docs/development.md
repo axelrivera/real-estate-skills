@@ -21,7 +21,7 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make forms-check` | Local only (the PDFs live in the git-ignored `sources/`): compares every FAR/BAR form PDF in `sources/Contracts/FARBAR/` with `dev/forms/farbar-forms.json` and reports new, removed and changed forms with a text diff and what depends on each, plus revision citations in `shared/references/farbar-*.md` or `contract_forms.VERIFIED` that don't match. `make forms-check ARGS="--accept CR-7_L"` records a reviewed form. See [Updating a Contract Form](#updating-a-contract-form) |
 | `make mock-contracts` | Local only (fills the FAR/BAR PDFs in the git-ignored `sources/`): builds every starter scenario in `dev/mock_contracts/scenarios/` into `out/mock-contracts/<name>/`, as one contract package PDF each, named after the property. `ARGS="--answer-key --scanned"` adds the answer key and a scanned copy. Any other scenario: ask the `mock-contract` skill in Claude Code. See [mock-contracts.md](mock-contracts.md) |
 | `make test` | Runs the unit tests in `dev/tests/`. With LibreOffice installed (`LO_BIN`, added at the end of `PATH`) it also checks the listing presentation's PDF copy, with a 60-second conversion limit; without it that check is skipped. The mock-contract build checks (about 17 seconds) run only with `RUN_SLOW=1 make test`; `make package` and `make package-skills` set it |
-| Coverage | `.venv/bin/python -m coverage run --source=shared,skills -m unittest discover -s dev/tests`, then `.venv/bin/python -m coverage report --omit='*/_shared/*'`. Measure before and after removing tests; line coverage must not drop |
+| Coverage | `.venv/bin/python -m coverage run --include='shared/*,skills/*' -m unittest discover -s dev/tests`, then `.venv/bin/python -m coverage report`. Skill tests run `shared/` through each skill's `scripts/_shared/` copy, so count a `shared/` module as covered by its copies too (the copies are identical). Measure before and after removing tests; line coverage must not drop more than a point or two |
 | `make golden` | Rewrites `dev/golden/` (`dev/golden.py --update`): what each skill computes for its fixtures (numbers, dates, flags), with the clock frozen. `make test` fails until the snapshots match, so an engine change that moves a number is either approved here, with the `git diff dev/golden/` explained in the commit, or fixed |
 | `make manual-kit` | Local only: builds the manual smoke-test kit into `out/manual-test/` (files to upload, prompts, expected facts). See [manual-testing.md](manual-testing.md) |
 | `make preview-design` | Renders the brand palette for sample scenarios (defaults, one color, split, pale, black, status clash) into `out/design/palettes.pdf` |
@@ -37,6 +37,18 @@ Skills run in the claude.ai / Cowork sandbox. The local environment mirrors it s
 | `make release` | From an up-to-date `main` with nothing uncommitted and no untracked file under `skills/`: checks that release `v<version>` (from `plugin.json`) doesn't exist yet and that [status.md](status.md) has a section for it, runs `make package`, then publishes the GitHub release with only the release zip. The release notes are the status.md sections for every version since the last release tag (`dev/package.py notes`, into `dist/release-notes-<version>.md`), so an unreleased version's notes ship with the next one. See [Branches](#branches) |
 | `make package-skills` | Runs the same checks, clears `dist/skills/` and `dist/dev/`, then zips every skill's tracked files into `dist/skills/<skill>.zip` for upload to claude.ai as single skills; the runtime check goes to `dist/dev/` (don't upload it) |
 | `make clean` | Removes `out/` and `dist/` |
+
+## Tests
+
+`make test` runs `dev/tests/`. What belongs there, by layer:
+
+- **Math:** finance, dates and business days, deadlines, nets, prorations, payments, scores. Table-driven (`subTest`) where cases share a shape, and properties over every fixture where they hold for any input (columns add up, no label carries a note).
+- **Rules:** contract forms and riders, flags, which question is asked, counter and backup rules, input validation. Assert keys, flags, numbers and structure.
+- **Golden:** `test_golden.py` compares every fixture's computed facts with `dev/golden/` (above). A unit test that runs an unmodified fixture and checks numbers the snapshot already pins adds nothing: change an input, or test the function on hand-built data.
+- **Layout:** `test_layout.py` prints every PDF fixture once and fails on overflow, clipping or a near-empty page. A skill test renders a PDF only to check something that pass doesn't (an element on a given page, a section kept together, a value in the PDF).
+- **Checkers and tooling:** the prose and style checks (their phrase tables are inputs), sync, lint, Python 3.11, package, evals, manual kit, mock contracts.
+
+Rules: tests never assert client sentences (wording lives in templates and labels and is reviewed there; the prose and style checks cover banned words, Title Case and em dashes). Files and classes are named by topic (`test_offer_review_counter.py`, `class Escalation`), never by the round, audit or manual case that found a bug: a new test for a fix goes into the topic it covers, and only when no existing test asserts the same behavior.
 
 ## Branches
 

@@ -109,7 +109,7 @@ class Market(unittest.TestCase):
         self.assertIn("mls_not_built_in", m.note_codes)
 
     def test_no_state_assumes_nothing_from_florida(self):
-        """CORE-8, TL-4: no silent Florida defaults; national estimates only."""
+        """No silent Florida defaults; national estimates only."""
         m = p.load_market()
         self.assertIsNone(m.state)
         self.assertEqual(m.source("closing_costs.deed_transfer_tax_rate"), "estimate")
@@ -153,7 +153,7 @@ class Market(unittest.TestCase):
         self.assertEqual(p.load_market(state="FL", county="Seminole").get("closing_costs.owner_title.payer"), "seller")
 
     def test_county_spellings(self):
-        """CORE-10: spelling variants match; an unknown Florida county gets a note."""
+        """Spelling variants match; an unknown Florida county gets a note."""
         for name in ("Miami Dade", "miami-dade county", "MIAMI-DADE"):
             self.assertEqual(p.load_market(state="FL", county=name).get("closing_costs.owner_title.payer"), "buyer", name)
         for a, b in (("St. Johns", "Saint Johns"), ("DeSoto", "De Soto County")):
@@ -188,8 +188,8 @@ class Millage(unittest.TestCase):
         self.assertEqual(len({(r["county"], r["district"]) for r in rows}), len(rows))
 
 
-class AuditMarketData(unittest.TestCase):
-    """CORE-7 (verified: docs/audits/2026-09-23-verification.md)."""
+class MlsAndTitleByCounty(unittest.TestCase):
+    """Which MLS and who pays the owner's title policy, by Florida county; ask where it varies."""
 
     def test_no_mls_without_a_county(self):
         m = p.load_market(state="FL")
@@ -212,7 +212,7 @@ class AuditMarketData(unittest.TestCase):
 
 
 class CountyForCity(unittest.TestCase):
-    def test_built_in_districts_name_the_county(self):  # OFR-213
+    def test_built_in_districts_name_the_county(self):
         self.assertEqual(p.county_for_city("FL", "Orlando"), "Orange")  # two districts, one county
         self.assertEqual(p.county_for_city("Florida", "casselberry"), "Seminole")
         self.assertIsNone(p.county_for_city("FL", "Miami"))  # no built-in district

@@ -30,10 +30,10 @@ class Phrases(unittest.TestCase):
                      "no pets", "school millage 5.249", "cul-de-sac lot, fenced yard"):
             self.assertEqual(flagged(text), [], text)
 
-    def test_phrase_table(self):
-        """Audit 2026-09-23 FH-1, FH-2: (text, flagged?). Pointers to an official source pass; claims never do."""
+    def test_official_source_pointers_and_loan_types(self):
+        """(text, flagged?). Pointers to an official source pass; claims never do; a loan type stands for terms."""
         table = [
-            # FH-1: fair-housing.md's own redirect wording must render.
+            # fair-housing.md's own redirect wording must render.
             ("School ratings are available from the district.", False),
             ("For school ratings, check with the school board.", False),
             ("Check the crime rate at the sheriff's site.", False),
@@ -47,7 +47,7 @@ class Phrases(unittest.TestCase):
             ("The district says it's a safe neighborhood.", True),
             # A pointer in one sentence doesn't excuse a claim in the next.
             ("Crime data is on the sheriff's site. School ratings are excellent.", True),
-            # FH-2: loan type stands for terms, never for the buyer.
+            # loan type stands for terms, never for the buyer.
             ("VA: strong buyer profile", True),
             ("VA buyers need not apply", True),
             ("VA financing: Tidewater notice before a low appraisal is final", False),
@@ -56,8 +56,8 @@ class Phrases(unittest.TestCase):
         for text, bad in table:
             self.assertEqual(bool(flagged(text)), bad, text)
 
-    def test_phrase_table_fh5(self):
-        """FH-5: (text, flagged?). Plurals and new phrases are caught; things that aren't places or people aren't."""
+    def test_plurals_and_area_phrases(self):
+        """(text, flagged?). Plurals and new phrases are caught; things that aren't places or people aren't."""
         table = [
             ("best neighborhoods in town", True), ("a great neighborhood", True), ("desirable area", True),
             ("family neighborhood", True), ("a family-oriented community", True), ("adult community", True),
@@ -71,11 +71,10 @@ class Phrases(unittest.TestCase):
             self.assertEqual(bool(flagged(text)), bad, text)
         self.assertIn("judging an area", flagged("a good area")[0])  # not called a crime claim
 
-    def test_phrase_table_fh106(self):
-        """Audit 2026-09-29 FH-106: (text, flagged?). Familial status (pregnancy), marital status and religion;
+    def test_familial_marital_and_religion(self):
+        """(text, flagged?). Familial status (pregnancy), marital status and religion;
         a house of worship as a landmark and "Church" in a street or place name pass."""
         table = [
-            # the audit's phrases, each rendered into a PDF before the fix
             ("Buyers are expecting their first baby", True), ("They attend the church down the street", True),
             ("a married couple with a baby on the way", True), ("near the church community", True),
             # more of the same classes
@@ -97,7 +96,7 @@ class Phrases(unittest.TestCase):
             self.assertEqual(bool(flagged(text)), bad, text)
 
     def test_offer_reasons_describe_terms(self):
-        """FH-2: the engine's own score reasons pass the check for every loan type."""
+        """The engine's own score reasons pass the check for every loan type."""
         with open(os.path.join(FIXTURES, "seller-offer-review", "four-offers.json")) as f:
             base = json.load(f)
         for fin in ("cash", "conventional", "fha", "va", "usda"):
@@ -122,7 +121,7 @@ class Phrases(unittest.TestCase):
 
 
 class PlaceNamesAndAllowList(unittest.TestCase):
-    """FH-3: proper names don't block a render; the allow list needs a reason and is reported."""
+    """Proper names don't block a render; the allow list needs a reason and is reported."""
 
     def test_place_keys_skipped(self):
         data = {"subject": {"address": "12 Christian Way", "subdivision": "Great Schools Estates", "city": "Safe Harbor",
