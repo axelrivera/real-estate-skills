@@ -10,7 +10,7 @@
 |---|{{"---:|" for each column}}
 | {{each rows: label (in bold when kind is price, subtotal or final; a group row is its label in bold with empty cells) | display, one cell per column}} |
 
-{{each notes, one bullet each}}
+{{each chat_notes, one bullet each (not notes: chat_notes leave out what the reply's assumption lines already say)}}
 
 _Estimates only, not legal, lending or tax advice. The title company's settlement statement gives the final figures._
 

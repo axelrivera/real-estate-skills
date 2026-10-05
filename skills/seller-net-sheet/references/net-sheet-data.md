@@ -24,7 +24,7 @@ Amounts are plain numbers (`214000`, never `"$214,000"`). Every `*_pct` field is
 | `city`, `county`, `state` | The location sets every local cost. The state is a two-letter code or name. Never guess the county or state from a subdivision or the MLS: ask |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. Miami-Dade's 0.45% surtax applies to every type but single-family, so it's needed there. A unit number means `condo` unless the agent says otherwise |
 | `property_type_assumed` | `true` when the type was inferred (a condo from a unit number): listed in `assumptions` and marked Assumed |
-| `hoa` | `true` when there's an HOA or condo association (adds the estoppel or HOA documents fee); `false` for none |
+| `hoa` | `true` when there's an HOA or condo association (adds the estoppel or HOA documents fee); `false` for none. Left out (and not a condo): no HOA, listed as an assumption |
 | `hoa_monthly` | Monthly dues, shown in the fact row (implies `hoa`) |
 
 ## scenarios

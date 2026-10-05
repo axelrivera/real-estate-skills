@@ -3,6 +3,9 @@
   "count": 0
  },
  "cash_at_closing": true,
+ "chat_notes": {
+  "count": 5
+ },
  "closing_date_assumed": false,
  "columns": [
   {

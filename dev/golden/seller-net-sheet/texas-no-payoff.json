@@ -1,8 +1,11 @@
 {
  "assumptions": {
-  "count": 3
+  "count": 4
  },
  "cash_at_closing": false,
+ "chat_notes": {
+  "count": 4
+ },
  "closing_date_assumed": false,
  "columns": [
   {

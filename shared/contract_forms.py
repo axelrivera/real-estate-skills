@@ -457,7 +457,7 @@ def rider_windows(form, item=None, close_days=None):
         out.append(("U", max(close_days - D["post_closing_agreement_days_before"], 0), "rent-back agreement"))
     if "DD" in codes:
         out.append(("DD", D["rental_agreements_days"] + D["rental_review_days"], "rental management review"))
-    if "GG" in codes:
+    if "GG" in codes and compensation_agreement(item) != "received":  # signed by both: the contingency is met
         out.append(("GG", D["compensation_agreement_days"] + RIDER_NOTICE_DAYS, "compensation agreement"))
     for code, field, what in (("Z", "attorney_days", "buyer's attorney approval"), ("R", "rezoning_days", "rezoning")):
         if code in codes:
@@ -474,3 +474,100 @@ def buyer_broker_as_credit(form, item=None):
     commission) doesn't use that room."""
     item = item or {}
     return form in FARBAR and ("FF" in rider_codes(item.get("riders"))[0] or str(item.get("buyer_broker_form") or "").upper() == "FF")
+
+
+# Rider GG: where the separate compensation agreement stands (an offer's `compensation_agreement`). Left out: it isn't
+# in the package. The seller's side signs as the rider's signer box says: the Seller's Broker (the listing broker) or
+# the Seller.
+COMPENSATION_AGREEMENT = ("received", "signed_by_buyer_broker", "signed_by_listing_broker", "signed_by_seller")
+_CA_ALIASES = {"signed_both": "received", "fully_signed": "received", "signed_by_both": "received"}
+
+
+def compensation_agreement(item=None):
+    """The offer's `compensation_agreement`, normalized, or None when it isn't given (or isn't a known status:
+    compensation_agreement_problems names that one)."""
+    v = (item or {}).get("compensation_agreement")
+    if v in (None, ""):
+        return None
+    s = str(v).strip().lower().replace(" ", "_").replace("-", "_")
+    s = _CA_ALIASES.get(s, s)
+    return s if s in COMPENSATION_AGREEMENT else None
+
+
+def compensation_agreement_problems(item=None, listing_pays=False, where="compensation_agreement"):
+    """`field: problem → fix` lines for a compensation agreement status that can't be right (the render stops)."""
+    item = item or {}
+    v = item.get("compensation_agreement")
+    if v in (None, ""):
+        return []
+    status = compensation_agreement(item)
+    if status is None:
+        return [f"{where}: {v!r} isn't a status → use one of {', '.join(COMPENSATION_AGREEMENT)}, or leave it out when "
+                "the agreement isn't in the package"]
+    out = []
+    if "GG" not in rider_codes(item.get("riders"))[0]:
+        out.append(f"{where}: set, but Rider GG isn't in riders → add GG to riders, or leave the status out")
+    if status == "signed_by_seller" and listing_pays:
+        out.append(f"{where}: 'signed_by_seller', but buyer_broker_paid_by says the listing broker pays → use "
+                   "'signed_by_listing_broker', or correct buyer_broker_paid_by")
+    if status == "signed_by_listing_broker" and not listing_pays:
+        out.append(f"{where}: 'signed_by_listing_broker', but the listing broker isn't the payer → set "
+                   "buyer_broker_paid_by: \"listing_broker\", or use 'signed_by_seller'")
+    if not listing_pays and item.get("buyer_broker_pct") is None and item.get("buyer_broker_amount") is None:
+        out.append(f"{where}: the agreement is in the package but its amount isn't recorded → record buyer_broker_pct "
+                   "or buyer_broker_amount from it")
+    return out
+
+
+def compensation_agreement_check(form, item=None, listing_pays=False, amount=None):
+    """Rider GG's flag for the offer review: (issue, fix, request or None), or None when there's nothing to do (the
+    agreement is in the package, signed by both). `amount` is the agreement's terms as text ("2.5%"), when known.
+
+    Rider GG (farbar-riders.md): the contract is contingent on the compensation agreement being signed and delivered
+    within the Time Period (3 days after the Effective Date if blank); if it isn't, the buyer may cancel within the next
+    3 days and get the deposit back."""
+    item = item or {}
+    if form not in FARBAR or "GG" not in rider_codes(item.get("riders"))[0]:
+        return None
+    status = compensation_agreement(item)
+    if status == "received":
+        return None
+    days = item.get("compensation_agreement_days") or RIDER_DAYS["compensation_agreement_days"]
+    ours = "the listing broker" if listing_pays else "the seller"
+    terms = (f" ({amount} to the buyer's broker" + (", paid by the listing broker)" if listing_pays else ")")) if amount else ""
+    net = "it comes out of the listing fee, so it isn't in the seller's net." if listing_pays else "its amount is in the net."
+    window = f"within {days} days after the Effective Date, or the buyer may cancel and get the deposit back"
+    if status == "signed_by_buyer_broker":
+        return (f"Rider GG: the compensation agreement{terms} is signed by the buyer's broker but not yet by {ours}.",
+                f"{ours[0].upper() + ours[1:]} signs and delivers it {window}; {net}", None)
+    if status in ("signed_by_listing_broker", "signed_by_seller"):
+        return (f"Rider GG: the compensation agreement{terms} is signed by {ours} but not yet by the buyer's broker.",
+                f"Ask the buyer's agent to have the buyer's broker sign and deliver it {window}; {net}",
+                "Please have your broker sign and deliver the compensation agreement.")
+    if listing_pays:  # not in the package: the listing side's own paperwork, nothing to ask the buyer's agent
+        return ("Rider GG: the buyer's broker compensation is in a separate compensation agreement that isn't in the "
+                "package.", f"The listing broker signs and delivers it {window}; {net}", None)
+    return ("Rider GG: the buyer's broker compensation amount is in a separate compensation agreement, not the rider.",
+            f"Get the signed agreement (due {days} days after the Effective Date if blank) and put its amount in the net.",
+            "Please send the compensation agreement for the seller's review.")
+
+
+# Addenda that print a box for the contract they go with (farbar-addenda.md: EAC-1 checks AS IS FAR/BAR, FAR/BAR,
+# CRSP, Commercial or Vacant Land), and the plain names the seller reads.
+_FORM_PLAIN = {AS_IS: "AS IS contract", STANDARD: "Standard contract"}
+
+
+def addendum_form_conflict(form, named, addendum="Escalation Addendum"):
+    """(issue, fix, request) when an addendum's contract box names another form than the offer's FAR/BAR contract, else
+    None. `named` is the box as read (anything normalize() reads; another form's name stays as written). Raises
+    FormError for text that names a FAR/BAR form without saying which."""
+    if form not in FARBAR or named in (None, ""):
+        return None
+    other = normalize(named)
+    if other == form:
+        return None
+    theirs = _FORM_PLAIN.get(other) or f"\"{named}\""
+    return (f"The {addendum} has the box checked for the {theirs}, but the offer is on the {_FORM_PLAIN[form]}.",
+            f"Have the buyer's agent correct the box to the {_FORM_PLAIN[form]} and have the buyer initial the change "
+            "before the seller signs.",
+            f"Please correct the {addendum} to check the {_FORM_PLAIN[form]} box, initialed by the buyer.")

@@ -504,7 +504,9 @@ def apply_escalations(offers, L):
         if o["repairs_owed"]:
             o["repair_limits"] = cf.repair_limits(eff, o)
         if cap and o["appraisal_risk"] and cap > appraisal_line(L) + o["gap_cover"]:
-            issues.append(("Med", f"The cap ({money(cap)}) is above what the value range and gap coverage support "
+            # iteration 12: with no CMA, list price stands in for the value; never call it a value range
+            ref = "the value range" if L["cma_provided"] else "list price"
+            issues.append(("Med", f"The cap ({money(cap)}) is above what {ref} and gap coverage support "
                                   f"({money(appraisal_line(L) + o['gap_cover'])}).",
                            "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling.",
                            "escalation_cap_over_value"))
@@ -515,6 +517,24 @@ def apply_escalations(offers, L):
                            f"Ask for a pre-approval good at {money(cap)} (or proof of the added cash) before relying on the "
                            "escalation.", "escalation_cap_over_approval"))
         o["escalation_issues"] = issues  # (sev, issue, fix, topic)
+
+
+def escalation_room(o):
+    """The escalation cap when it's above the offer's (effective) price, else None: how far the buyer's own addendum
+    says the price can go, which the counter rules use."""
+    e = o.get("escalation")
+    cap = e.get("cap") if isinstance(e, dict) else None
+    return cap if cap and cap > o["price"] else None
+
+
+def escalation_terms(o):
+    """The escalation clause in short, "Base $494,000 · +$2,000 · cap $506,000", or None without one."""
+    e = o.get("escalation")
+    if not isinstance(e, dict):
+        return None
+    inc, cap = e.get("increment"), e.get("cap")
+    return " · ".join([f"Base {money(o.get('price_base') or o['price'])}",
+                       f"+{money(inc)}" if inc else "no increment", f"cap {money(cap)}" if cap else "no cap"])
 
 
 def approval_short(o, price):
@@ -637,7 +657,7 @@ def prepare_offer(o, L, S, A):
         A.add(sc, "deposit", "unknown", "Escrow deposit not provided", "med")
     o["seller_concessions"] = given(o, "seller_concessions", 0, A, sc, "Seller concessions not provided: assumed $0", "high")
     # Rider GG signed broker to broker: the listing broker pays the buyer's broker from its own fee (listing agreement)
-    o["bb_from_listing"] = str(o.get("buyer_broker_paid_by") or "").lower().replace("_", " ") in ("listing broker", "listing")
+    o["bb_from_listing"] = listing_pays_buyer_broker(o)
     if o["bb_from_listing"]:  # OFR-259: read from Rider GG's signer box or the listing agreement; the agent confirms it
         A.add(sc, "buyer_broker_paid_by", "listing broker", "Buyer's broker paid by the listing broker from its own fee "
               "(Rider GG signed broker to broker, or the listing agreement), so it's left out of the seller's net. Confirm "
@@ -1267,14 +1287,15 @@ def contract_checks(o, L):
             add("Med", "Qualifying improvement assessment (Rider EE): the rider doesn't say who pays the unpaid balance.",
                 "Agree in Additional Terms whether the seller pays it off at closing or the buyer assumes it; check the "
                 "buyer's lender allows it.", "terms")
-        if "GG" in codes:
-            add("Med", "Rider GG: the buyer's broker compensation amount is in a separate compensation agreement, not the rider.",
-                "Get the signed agreement (due 3 days after the Effective Date if blank); the listing broker pays it from its "
-                "fee, so it isn't in the seller's net." if o.get("bb_from_listing") else
-                "Get the signed agreement (due 3 days after the Effective Date if blank) and put its amount in the net.", "terms",
-                # iteration 10 eval 6: between the brokers, the amount doesn't move the seller's net: nothing to ask
-                None if o.get("bb_from_listing") else "Please send the compensation agreement for the seller's review.",
-                "rider_GG")
+        # Rider GG: where the compensation agreement stands (iteration 12: one in the package, signed by both, raises
+        # nothing; one the listing side hasn't signed says so). Iteration 10 eval 6: paid by the listing broker, the
+        # amount doesn't move the seller's net, so there's nothing to ask the buyer's agent for.
+        given = o.get("bb_tag") == "Requested"
+        amount = (pct(o["buyer_broker_pct"], 2) if o.get("buyer_broker_amount") is None else money(o["buyer_broker_amount"])) \
+            if given else None
+        gg = cf.compensation_agreement_check(o["contract_form"], o, o.get("bb_from_listing"), amount)
+        if gg:
+            add("Med", gg[0], gg[1], "terms", gg[2], "rider_GG")
         yb = L.get("year_built")
         pre78 = yb < 1978 if yb else L.get("built_before_1978") is True  # OFR-295: the seller disclosure's answer
         if pre78 and not _has_rider(riders, "P"):
@@ -1340,6 +1361,10 @@ def contract_checks(o, L):
     if o["financed"] and o["loan_approval_days"] and o["loan_approval_days"] > o["close_days"]:
         add("Med", f"Loan approval period ({o['loan_approval_days']} days) ends after closing ({o['close_days']} days).",
             "Ask for a loan approval date before closing.", "terms", "Can the loan approval date move before closing?")
+    esc = o.get("escalation")
+    conflict = cf.addendum_form_conflict(o["contract_form"], esc.get("contract_form")) if isinstance(esc, dict) else None
+    if conflict:  # iteration 12: the Escalation Addendum's contract box names the other form (contract_forms' rule)
+        add("High", *conflict[:2], "terms", conflict[2], "escalation_form")
     for c in o.get("contract_issues") or []:
         sev = c.get("sev", "High")
         sev = sev if sev in CONTRACT_SEV else "High"
@@ -1359,6 +1384,7 @@ TOPIC_WORDS = {
     # suggestion to restate something in the next counter.
     "counter_chain": r"(doesn't|does not|didn't|did not|without) restat|(doesn't|does not|didn't|did not|won't|don't) carr(y|ies) (over|forward)|earlier counter|prior counter",
     "rider_GG": r"\bGG\b|compensation agreement",
+    "escalation_form": r"escalation addendum[^.]*\b(box|standard|as is)\b",
     "rider_K_terms": r"125% escrow|permit cooperation",
     "inspection_period": r"inspection period",
     "lead_paint": r"lead[- ](based )?paint",
@@ -1597,6 +1623,26 @@ def _counter_when(v):
     return None
 
 
+def listing_pays_buyer_broker(o):
+    """True when the listing broker pays the buyer's broker from its own fee (`buyer_broker_paid_by`)."""
+    return str(o.get("buyer_broker_paid_by") or "").lower().replace("_", " ") in ("listing broker", "listing")
+
+
+def offer_field_problems(o):
+    """The offer's own fields that can't be right (iteration 12): the Rider GG compensation agreement's status and the
+    contract box an escalation addendum checks. Every problem reads `field: problem → fix`."""
+    where = f"offers[{o.get('id', '?')}]"
+    probs = cf.compensation_agreement_problems(o, listing_pays_buyer_broker(o), f"{where}.compensation_agreement")
+    e = o.get("escalation")
+    if isinstance(e, dict) and e.get("contract_form") not in (None, ""):
+        try:
+            cf.normalize(e["contract_form"])
+        except cf.FormError:
+            probs.append(f"{where}.escalation.contract_form: {e['contract_form']!r} names a FAR/BAR form but not which "
+                         "one → use as_is or standard, as the addendum's checked box reads")
+    return probs
+
+
 def counter_changes(o, L):
     """The agent's counter terms (`counter.changes`, term -> value), checked: ({term: value}, problems). Every problem
     reads `field: problem → fix`, so one retry fixes them all. The engine writes every row's wording from these."""
@@ -1726,6 +1772,14 @@ def propose_counter(o, L, S):
         why = ("Under the value range: counter at list" if low_ball else
                f"Meets partway between this offer and the seller's last counter ({money(ceiling)})" if last.get("price") else
                "Below list: meet partway")
+        # iteration 12: an escalation cap above the price is the most the buyer has said it will pay, so the counter
+        # goes up to it (never past the ceiling); counter-rules.md rule 2
+        cap = escalation_room(o)
+        if cap and not low_ball and min(cap, ceiling) > price:
+            price = min(cap, ceiling)
+            to = "the seller's last counter" if last.get("price") else "list"
+            why = (f"The buyer's escalation cap ({money(cap)}) reaches {to}: counter at {to}" if price == ceiling else
+                   f"At the buyer's escalation cap ({money(cap)}), the most the buyer has said it will pay")
     put("price", "Price", price, why)
     gap = why = None
     if o["appraisal_risk"] and not o["appraisal_protected"]:  # an FHA/VA gap clause wouldn't bind the buyer
@@ -1823,12 +1877,19 @@ ACCEPTANCE_DAYS = 2  # a counter's time for acceptance: two days after the revie
 
 def acceptance_at(o, L):
     """When a counter's time for acceptance ends: the agent's `counter.changes.time_for_acceptance`, else two days after
-    the review, on a weekday, 5:00 PM. OFR-322: when that is the offer's own deadline to the minute, the next weekday,
+    the review (iteration 12: and at least a day after a pending call for highest and best), on a weekday, 5:00 PM.
+    OFR-322: when that is the offer's own deadline to the minute, the next weekday,
     so the counter's row never reads as no change."""
     pinned = counter_changes(o, L)[0].get("time_for_acceptance")
     if pinned:
         return pinned
     due = L["analysis_date"] + timedelta(days=ACCEPTANCE_DAYS)
+    try:  # iteration 12: with a call for highest and best out, nothing goes out before it: at least a day after it
+        hb = _d(L.get("highest_and_best_due"))
+    except ValueError:
+        hb = None
+    if hb and hb + timedelta(days=1) > due:
+        due = hb + timedelta(days=1)
     while due.weekday() >= 5:
         due += timedelta(days=1)
     if str(o.get("expires_raw") or "").strip()[:16] == f"{due:%Y-%m-%d} 17:00":
@@ -2029,7 +2090,7 @@ def analyze(data, market=None, cma=None):
               "costs, and no Florida rules without a FAR/BAR contract). Give the state for local costs", "high")
     L, S = prepare_listing(data, A, costs)
     # the agent's counter terms are checked before anything runs: every problem at once (`field: problem → fix`)
-    probs = [p for o in data.get("offers") or [] for p in counter_changes(o, L)[1]]
+    probs = [p for o in data.get("offers") or [] for p in counter_changes(o, L)[1] + offer_field_problems(o)]
     if probs:
         raise OfferError("\n".join(probs))
     offers = [prepare_offer(o, L, S, A) for o in data.get("offers") or []]

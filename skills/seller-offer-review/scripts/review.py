@@ -969,9 +969,10 @@ def multi_view(R):
             t = "Accept as written"
         elif a == "BACKUP":
             # OFR-251: the backup keeps its own price; a counter price would read as an ask. Only an escalated price
-            # differs from what the buyer wrote, and then the note says why.
+            # differs from what the buyer wrote, and then the note says so (iteration 12: the base, increment and cap are
+            # in the comparison's Escalation column, so a short note here)
             t = (f"After {top['label']}'s contract is fully signed, offer a backup position on {backup_form(o)}"
-                 + (f" (at {money(o['price'])}: {low_first(o['escalation_note'])})" if o.get("escalated") else ""))
+                 + (f" (at the escalated {money(o['price'])})" if o.get("escalated") else ""))
             if o.get("lapses_before"):  # OFR-319: the first step, or the backup lapses before it can be used
                 t = f"First ask to extend its deadline ({o['lapses_before']['ends']}) past {o['lapses_before']['until']}. " + t
         else:
@@ -994,14 +995,15 @@ def multi_view(R):
                "score": o["score"]["total"], "band_class": o["score"]["band"][0], "risk_days": o["risk_days"],
                "close": f"{o['close']:%b %-d}", "action": "Hold as Backup" if o["action"] == "BACKUP" else o["action"].title(),
                "status": {"ACCEPT": "good", "COUNTER": "good", "BACKUP": "caution", "DECLINE": "risk"}[o["action"]],
-               "terms": terms[o["id"]], "form_assumed": form_assumed(R, o)} for i, o in enumerate(rk)]
+               "terms": terms[o["id"]], "form_assumed": form_assumed(R, o),
+               "escalation": oe.escalation_terms(o)} for i, o in enumerate(rk)]  # iteration 12: base, increment, cap
     ranked += [{"rank": "—", "offer": o["label"], "key": o["key"], "id": o["id"],
                 "financing": oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.{0 if o['down_pct'] >= .1 else 1}f}%"),
                 "price": money(o["price"]), "net": "—", "downside": "—", "score": "—", "band_class": "na", "risk_days": "—",
                 "close": f"{o['close']:%b %-d}", "action": "Incomplete", "status": "risk",
                 # OFR-120: only the first letter goes lowercase, so dates and times keep their case
                 "terms": "Contract can't be reviewed as written: " + low_first(o["blocking"][0]["issue"].rstrip(".")),
-                "form_assumed": form_assumed(R, o)}
+                "form_assumed": form_assumed(R, o), "escalation": oe.escalation_terms(o)}
                for o in R["incomplete"]]
 
     most_certain = max(R["active"], key=lambda o: (o["score"]["total"], o["ns_down"]["net_adj"]))
