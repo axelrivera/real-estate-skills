@@ -1,6 +1,6 @@
 # Real Estate Skills {{VERSION}}
 
-Claude skills for real estate agents: buyer and seller CMAs, offer strategy, offer reviews and contract timelines, all with your name, brokerage and brand colors.
+Claude skills for real estate agents: buyer and seller CMAs, seller net sheets, offer strategy, offer reviews and contract timelines, all with your name, brokerage and brand colors.
 
 The download holds four files:
 
@@ -214,14 +214,18 @@ The report includes owner names, mortgage history and agent-only remarks. The sk
 
 Type **/** and the skill's name (shown next to each heading below), select it, then ask in plain words and attach the files. Claude asks for anything missing, and every question can be skipped: you'll get a report marked Preliminary instead of a stop.
 
+**Same files, same numbers.** Every price, range, net and date comes from fixed rules, so the same files give the same numbers every time. Where a call takes judgment (how hard to push on price, how firm a counter should be), Claude picks one of a few named strategies from the listing and the market, tells you which and why, and the numbers follow from it. Say so to pick another ("my buyer can't lose this one", "hold firm on price"), or give your own numbers: the report shows them as yours.
+
 **Keep a deal together.** A CMA and the offer work after it share numbers when they're in the same chat. In a new chat, upload the CMA PDF (or keep it in the deal's Project, section 7) and Claude reads the value range from it.
 
 ### Buyer CMA (/buyer-cma)
 
 What a home is worth, how the asking price compares, your buyer's real monthly cost, and a suggested opening offer with a target and a walk-away.
 
+The offer plan follows one of four approaches: **Leverage** (a home that has sat, had price cuts or a failed contract), **Standard**, **Competitive** (a new listing in a tight market) or **Must Win** (your buyer can't lose this house; only when you say so). Claude suggests one from the home's history and the market. A quick "is it priced right?" answer and the full report use the same rule, so with the same approach they give the same opening, target and walk-away.
+
 - **Upload:** the 360 Property View PDF for the listing and the comps CSV.
-- **Tell Claude:** the buyer's timeline, how they're financing (loan type, down payment) and how much they want this house.
+- **Tell Claude:** the buyer's timeline, how they're financing (loan type, down payment) and how much they want this house (that sets the approach).
 - **Example:** "Run a buyer CMA on 123 Oak St. My buyer is FHA with 3.5% down, their lease ends in March, and they love it."
 - **You get:** a PDF report to send, or a short summary in chat.
 
@@ -231,12 +235,15 @@ The strongest offer inside your buyer's limits, up to two alternatives, and how 
 
 - **Best inputs:** a buyer CMA from the same chat; the buyer's max price, cash available, reserves they want to keep and max monthly payment; and what the listing agent told you (other offers, deadline, what the seller cares about).
 - **Minimum:** the list price and the buyer's cash.
+- **What matters most to your buyer:** winning the house, a balance, or keeping cash. Claude recommends the option that fits (balance unless you say otherwise).
 - **Example:** "What should we offer? My buyer can go to $450,000, has $40,000 cash and wants to keep $10,000. The listing agent says there are two other offers and they want to close in 30 days."
-- **You get:** an Offer Options report and an Offer Package Worksheet (the contract entries, the riders and addenda by name, and a checklist). The Offer Options report shows your buyer's limits and cash: it's for your buyer only, never the listing agent.
+- **You get:** an Offer Options report and an Offer Package Worksheet (the contract entries, the riders and addenda by name, and a checklist). The Offer Options report shows your buyer's limits and cash: it's for your buyer only, never the listing agent. Its strength scorecard rates each option as the listing agent will, from facts in the offer only (financing, approval, deposit, contingencies, timing, the property); a fact you haven't given shows as Not Scored rather than a guess.
 
 ### Seller CMA (/seller-cma)
 
-A recommended list price, three pricing strategies with the seller's estimated net at each, and a launch plan.
+A recommended list price, three pricing options with the seller's estimated net at each, a chart of every nearby sale and listing by size and price, and a launch plan.
+
+The three options are always **Draw Offers** (the lower part of the supported range, to bring in competing offers), **Market Price** (the middle) and **Premium** (the upper part), each on a price buyers' search filters catch ($469,900, not $470,000). Claude recommends one from the market (supply, price cuts, how close sales come to asking) and says why. Ask for another, or give your own price. For your own listing that hasn't sold, the options are staying at the current price or a price cut.
 
 - **Upload:** the 360 Property View PDF from the last sale and the comps CSV.
 - **Tell Claude:** what the seller has updated since they bought (with years, roof first), known issues, their timeline, and their mortgage payoff if you have it.
@@ -250,7 +257,7 @@ What the seller walks away with at one price, or up to three side by side, witho
 - **Tell Claude:** the address with its city and county, the price or prices, and the mortgage payoff. The listing agreement's commission, the expected closing date and this year's tax bill sharpen it.
 - **Minimum:** the address and one price. Without the payoff, the sheet stops at the net before the payoff and is marked Preliminary.
 - **Example:** "What would my seller net at $450,000 and at $440,000 on 2250 Oak Hollow Ct in Oviedo? They owe about $214,000, my listing agreement is 3% plus 2.5% to the buyer's agent, and we expect to close in mid-December."
-- **You get:** a one-page PDF with every cost itemized and labeled where it's an estimate, or a short table in chat. Send a payoff letter, a title quote or the tax bill and Claude redoes it.
+- **You get:** a one-page PDF with every cost itemized and the estimates named once in its notes, or a short table in chat. The default commission (2.5% listing, 2.5% buyer side) is used until you give yours. Send a payoff letter, a title quote or the tax bill and Claude redoes it.
 - **Already have an offer?** Use Seller Offer Review: it nets the offer and also checks its terms.
 
 ### Seller Offer Review (/seller-offer-review)
@@ -270,6 +277,8 @@ Reviews the offers on your listing. It works two ways, depending on how many off
 
 - **Upload:** each offer (the contract with every rider, addendum and counteroffer), plus pre-approval letters or proof of funds.
 - **Best inputs:** a seller CMA from the same chat, the seller's payoff, and what matters most to them (price, speed, certainty).
+- **How firm the counter is:** **Firm** (hold the price at list or your seller's last counter), **Meet Partway** or **Terms Only** (accept the price, counter the terms). Claude suggests one from the offers in hand and your seller's priority (never Firm for a seller who wants certainty or speed). Say so to change it, or name a term to counter yourself.
+- **How likely it is to close:** a score from facts in the offer only (financing, approval, deposit, contingencies, appraisal risk, timing, the property). A fact the offer doesn't show is marked Not Scored, never guessed.
 - **Minimum:** list price, and each offer's price and financing type.
 - **You get:** a seller-ready PDF for each offer, plus a side-by-side comparison PDF when there are two or more, with a short answer in chat. When a new offer arrives, every offer's PDF is redone so they all agree. Say "just in chat" if you don't want the PDFs.
 
@@ -339,7 +348,7 @@ Start with the address, then what it is and the date: "123 Oak St, Buyer CMA, 20
 
 - **Comps go stale.** Pull a fresh export when the last one is more than two or three weeks old, and always before an offer or a price change.
 - **Download a fresh property report** when the listing's price or status has changed.
-- **Give your own costs** when you have them. Closing costs and taxes are estimated from the property's location, and each report names its estimates once, in its notes. Commission uses the default 2.5% listing and 2.5% buyer side until you give your terms. Say your numbers in the request: "Title quote is $2,150", "Listing side is 3%, buyer side 2.5%." Florida's costs are built in; other states use national estimates until you give local numbers.
+- **Give your own costs** when you have them. Closing costs and taxes are estimated from the property's location, and each report names its estimates once, in its notes. Commission uses the default 2.5% listing and 2.5% buyer side until you give your terms; your own agreements are confirmed with you in chat, never questioned in a client's report. Say your numbers in the request: "Title quote is $2,150", "Listing side is 3%, buyer side 2.5%." Florida's costs are built in; other states use national estimates until you give local numbers.
 - **Keep your profile current.** Say "My new number is..." and replace profile.md in your Projects.
 
 ### Review Before You Send
