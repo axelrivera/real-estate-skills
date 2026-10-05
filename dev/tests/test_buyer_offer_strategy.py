@@ -37,15 +37,15 @@ class MatchesPrototype(unittest.TestCase):
         d["property"]["costs"] = {"title_fees": 645}
         r = strategy.analyze(d)
         # Audit: 4% early-payment discount in the proration (OFR-14), no tax in holding costs (OFR-13)
-        # OFR-10: $363,000, the value midpoint. OFR-123: closing counts from Sep 26 (the day after the Sep 25 deadline),
-        # so the tax proration runs three days longer than when it counted from the analysis date
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331714)
-        self.assertEqual(r["target"], 335580)  # the same closing, so the same three days of proration
+        # OFR-10: $363,000, the value midpoint. OFR-123: closing counts from the expected acceptance; manual v5: the day
+        # after the Fri Sep 25 deadline is a Saturday, so from Mon Sep 28, the Time for Acceptance's business day
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 331744)
+        self.assertEqual(r["target"], 335610)  # the same closing, so the same days of proration
 
     def test_market_defaults(self):
         r = analyze("fha-competitive.json")
         # No built-in listing fee (CORE-5), $1,145 title fees; OFR-10: priced at the value midpoint, $2,000 below list
-        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333029)  # 2.5% listing fee assumed (5% total); OFR-123
+        self.assertEqual(r["O"]["recommended"]["ns"]["net_adj"], 333059)  # 2.5% listing fee assumed (5% total); OFR-123
         self.assertTrue(any(a["field"] == "listing_fee_pct" for a in r["R"]["assumptions"]))
         # CORE-16: Florida 2.5% + 0.5% prepaids, with the loan's note stamps (0.35%) and intangible tax (0.2%) itemized
         self.assertEqual(r["B"]["buyer"]["closing_cost_pct"], 0.03)
@@ -413,11 +413,12 @@ class Audit20260929(unittest.TestCase):
 
     def test_dates_count_from_the_expected_acceptance(self):  # OFR-123
         r = strategy.analyze(copy.deepcopy(self.GAP))
-        self.assertEqual(str(r["B"]["effective_date"]), "2026-09-26")
+        # the day after the analysis date is Saturday Sep 26: the dates count from Monday Sep 28, the same business day
+        # as the Time for Acceptance (manual v5), never a weekend 5:00 PM
+        self.assertEqual(str(r["B"]["effective_date"]), "2026-09-28")
         o, t = r["O"]["recommended"], r["terms"]["recommended"]
         self.assertEqual(o["close_days"], t["closing_days"])  # a 35-day close is 35 days after acceptance
         rows = {x["field"]: x["entry"] for x in strategy.worksheet(r)["rows"]}
-        # the expected acceptance is Saturday Sep 26: the Time for Acceptance moves to Monday, never a weekend 5:00 PM
         self.assertIn("September 28, 2026", rows["Time for Acceptance"])
         d = copy.deepcopy(self.GAP)
         d["expected_effective_date"] = "2026-10-01"
@@ -667,7 +668,9 @@ class Audit20260929Third(unittest.TestCase):
         d, note = strategy.risk_after(r["O"]["recommended"], r["costs"])
         self.assertTrue(strategy.dates.is_business_day(d))
         self.assertIsNotNone(note)
-        r = analyze("texas-cma-escalation.json")  # no built-in rule: the date stays, with a note to check
+        d = fixture("texas-cma-escalation.json")  # no built-in rule: the date stays, with a note to check
+        d["expected_effective_date"] = "2026-09-26"  # a Saturday acceptance, so the period ends on a weekend
+        r = strategy.analyze(d, cma=strategy.load_cma(d))
         d, note = strategy.risk_after(r["O"]["recommended"], r["costs"])
         self.assertFalse(strategy.dates.is_business_day(d))
         self.assertIsNotNone(note)
@@ -787,12 +790,13 @@ class Audit20260930Iter6(unittest.TestCase):
     def test_reply_lines_outside_the_cap(self):  # OFR-239
         r = analyze_data(copy.deepcopy(self.TX))  # highest and best, one flat number
         res = strategy.result(r)
-        self.assertEqual([x["key"] for x in res["reply_lines"]], ["flat_number", "contract_terms", "inspection_period"])
+        self.assertEqual([x["key"] for x in res["reply_lines"]], ["flat_number", "contract_terms", "inspection_period",
+                                                                  "assumptions"])
         self.assertIn(strategy.money(r["terms"]["recommended"]["price"]), res["reply_lines"][0]["text"])
         d = copy.deepcopy(self.TX)
         d["competition"]["note"] = "Listing agent: 6 offers in"
         self.assertEqual([x["key"] for x in strategy.result(analyze_data(d))["reply_lines"]],
-                         ["contract_terms", "inspection_period"])  # OFR-315: the period is still a default
+                         ["contract_terms", "inspection_period", "assumptions"])  # OFR-315: the period is still a default
         d["competition"]["highest_and_best"] = True  # the field wins over the note
         self.assertIn("flat_number", [x["key"] for x in strategy.analyze(d, cma=strategy.load_cma(d))["reply_lines"]])
         d = copy.deepcopy(self.TX)
@@ -851,7 +855,7 @@ class Audit20260930Iter6(unittest.TestCase):
         d["analysis_date"], d["competition"]["deadline"] = "2026-09-26", "Friday 5pm"
         r = strategy.analyze(d)
         self.assertEqual(r["B"]["competition"]["deadline"], "2026-10-02 17:00")
-        self.assertEqual(r["B"]["effective_date"], strategy.date(2026, 10, 3))
+        self.assertEqual(r["B"]["effective_date"], strategy.date(2026, 10, 5))  # Saturday moves to Monday (manual v5)
         a = {x["field"]: x for x in r["missing"]}
         self.assertEqual(a["deadline"]["value"], "2026-10-02 17:00")
         first = strategy.result(r)["to_confirm"][0]
@@ -960,10 +964,12 @@ class ManualTestFixes(unittest.TestCase):
         r = strategy.analyze(d, cma=strategy.load_cma(d))
         P, C = r["B"]["property"], r["B"]["competition"]
         self.assertEqual((P["dom"], P["price_cuts"]), (78, 2))
-        self.assertEqual(C["heat"], "soft")
+        self.assertEqual(C["heat"], "stale")  # manual v5: this listing, not the tight market
         self.assertEqual(C["heat_basis"], "78 days on market vs. a 23-day median")  # 2 cuts with 1.4 months of supply read normal
-        self.assertEqual(strategy.market_read(r["B"]), "This home has 78 days on market vs. a 23-day median and 2 price cuts, "
-                         "while nearby homes sold at 96.4% of original list price and there are 1.4 months of supply.")
+        self.assertEqual(strategy.market_read(r["B"]), (
+            "Tight market, stale listing", "Market tight (1.4 months of supply, sales at 96.4% of original list price); "
+            "this home stale (78 days on market vs. a 23-day median, 2 price cuts), so the leverage comes from this home's "
+            "price, not the market."))
         self.assertIn("<span>Days on Market</span><b>78</b>", buyer_render.snapshot(r))
 
     def lvl_band(self, r, k="recommended"):
@@ -1024,7 +1030,9 @@ class ManualTestFixes(unittest.TestCase):
         self.assertEqual(strategy.market_heat(P, {"months_supply": 1.4})[0], "normal")
         self.assertEqual(strategy.market_heat(P, {"months_supply": 4.2})[0], "soft")
         self.assertEqual(strategy.market_heat(P, {})[0], "soft")  # supply unknown: the cut still reads soft
-        self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 1.4, "median_dom": 23})[0], "soft")
+        # manual v5: long days on market in a tight market read stale (this listing), never a soft market
+        self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 1.4, "median_dom": 23})[0], "stale")
+        self.assertEqual(strategy.market_heat(dict(P, dom=78), {"months_supply": 4.2, "median_dom": 23})[0], "soft")
 
 
 class Iteration9Fixes(unittest.TestCase):

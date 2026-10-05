@@ -210,6 +210,7 @@ class OfferWording(unittest.TestCase):
     def test_no_stronger_reason_is_plain(self):
         why = strategy.no_stronger_reason(self.r["B"], self.r["terms"]["recommended"])
         self.assertIn("the price is inside the value range, so there's no appraisal gap to cover", why)
+        self.assertNotIn(":", why)  # printed after "No Stronger Option:" (manual v5)
         self.assertNotIn("uncovered", why)
 
     def test_labels_name_what_they_measure(self):
@@ -223,7 +224,7 @@ class OfferWording(unittest.TestCase):
 
     def test_market_read_is_one_plain_sentence(self):
         read = next(m for m in strategy.market_check(self.r["B"]) if m["label"] == "Market Read")
-        self.assertEqual(read["value"], "Soft")
+        self.assertEqual(read["value"], "Tight market, stale listing")  # manual v5: the market and this home apart
         self.assertNotIn("secondary", read["note"])
         self.assertNotIn("reads normal", read["note"])
         self.assertTrue(read["note"].endswith("."))

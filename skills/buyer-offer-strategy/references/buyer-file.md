@@ -16,7 +16,7 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 
 ## Top Level
 
-`costs` (the buyer's payment inputs, below) is a top-level block like `buyer`, not `property.costs`. `analysis_date` (default today; when the agent states today's date, use it and never question it against the computer's clock), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`.
+`costs` (the buyer's payment inputs, below) is a top-level block like `buyer`, not `property.costs`. `analysis_date` (default today; when the agent states today's date, use it and never question it against the computer's clock), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, moved to the next business day when that falls on a weekend or holiday (the same day as the default Time for Acceptance), listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`.
 
 ## property
 
@@ -39,13 +39,13 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 
 | Field | Meaning | Default |
 |---|---|---|
-| `level` | 0 only offer · 1 one competing · 2 two–three · 3 cash or 4+ | inferred from market heat (hot → 2, normal → 1, soft → 0), flagged |
+| `level` | 0 only offer · 1 one competing · 2 two–three · 3 cash or 4+ | inferred from market heat (hot → 2, normal → 1, soft or stale → 0), flagged |
 | `note` | what the listing agent said | — |
 | `deadline` | offers due ("2026-09-25 17:00" or "Fri Sep 25 · 5 PM"; the report prints both as "Fri Sep 25 · 5 PM"); the expected Effective Date is the day after. Enter a weekday alone as the agent said it ("Friday 5pm"): the script resolves it to the next one from `analysis_date` (today counts) and state that date in chat. When it lands more than 5 days out (today is the day after that weekday), the agent may have meant the one that just passed: the resolved date is a med assumption, listed in `to_confirm` right after the competition read, so the reply asks | — |
 | `highest_and_best` | the listing agent called for highest and best; read from `note` when it says so ("highest and best"). With no escalation, `reply_lines` gets the flat-number reason (`flat_number`) | from `note` |
 | `backup` | seller already has an accepted contract | — |
 
-Heat: hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM is over 1.5× the median or the price was cut. With under 3 months of supply (`market.months_supply`), a price cut alone reads normal: it says the listing was priced high, not that the market is soft. The Market Read is one plain sentence: this home's days on market and price cuts, then how nearby homes sold and the months of supply ("This home has 78 days on market vs. a 23-day median and 2 price cuts, while nearby homes sold at 96.4% of original list price and there are 1.4 months of supply."). A CMA handoff's ratio is against the original list price and is labeled Sale to Original List.
+Heat (for inferring the competition): hot if DOM is under half the median or sale-to-list is 99%+; soft if DOM is over 1.5× the median or the price was cut. With under 3 months of supply (`market.months_supply`) the market is never called soft: a price cut alone reads normal, and long days on market read stale (this listing's own read, inferred as no competing offers). The Market Read reads the market and this listing apart, in one plain sentence: "Tight market, stale listing" with "Market tight (1.4 months of supply, sales at 96.4% of original list price); this home stale (78 days on market vs. a 23-day median, 2 price cuts), so the leverage comes from this home's price, not the market." (tight under 3 months of supply, balanced 3 to 6, soft over 6, the buyer CMA's own measure). A CMA handoff's ratio is against the original list price and is labeled Sale to Original List.
 
 ## listing_side
 

@@ -34,7 +34,7 @@
    "school_mills": 5.5,
    "total_mills": 19.2
   },
-  "effective_date": "2026-09-26",
+  "effective_date": "2026-09-28",
   "flood": {
    "annual": 2400,
    "required": "lender",
@@ -126,8 +126,8 @@
    "buyer": "Buyer",
    "buyer_broker_pct": 0.025,
    "close": "2026-11-02",
-   "close_days": 37,
-   "closing_days": 37,
+   "close_days": 35,
+   "closing_days": 35,
    "contract_form": "as_is",
    "counter_risk_days": 21,
    "counter_rows": [
@@ -159,7 +159,7 @@
    "expires_today": false,
    "financed": true,
    "financing": "conventional",
-   "firm_date": "2026-10-17",
+   "firm_date": "2026-10-19",
    "flags": [
     {
      "check": "riders",
@@ -222,7 +222,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -277,7 +277,7 @@
      "count": 0
     },
     "net": 635778,
-    "net_adj": 633805,
+    "net_adj": 633911,
     "price": 689000,
     "tax_bill_assumed": true
    },
@@ -290,7 +290,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -345,7 +345,7 @@
      "count": 0
     },
     "net": 635778,
-    "net_adj": 633805,
+    "net_adj": 633911,
     "price": 689000,
     "tax_bill_assumed": true
    },
@@ -358,7 +358,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -413,12 +413,12 @@
      "count": 0
     },
     "net": 630778,
-    "net_adj": 628805,
+    "net_adj": 628911,
     "price": 689000,
     "tax_bill_assumed": true
    },
    "price": 689000,
-   "rank_value": 613647.0,
+   "rank_value": 613753.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -479,7 +479,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -534,7 +534,7 @@
      "count": 0
     },
     "net": 635778,
-    "net_adj": 633805,
+    "net_adj": 633911,
     "price": 689000,
     "tax_bill_assumed": true
    },
@@ -571,8 +571,8 @@
    "buyer": "Buyer",
    "buyer_broker_pct": 0.025,
    "close": "2026-11-02",
-   "close_days": 37,
-   "closing_days": 37,
+   "close_days": 35,
+   "closing_days": 35,
    "contract_form": "as_is",
    "counter_risk_days": 21,
    "counter_rows": [
@@ -616,7 +616,7 @@
    "expires_today": false,
    "financed": true,
    "financing": "conventional",
-   "firm_date": "2026-10-17",
+   "firm_date": "2026-10-19",
    "flags": [
     {
      "check": "riders",
@@ -687,7 +687,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -742,7 +742,7 @@
      "count": 0
     },
     "net": 646096,
-    "net_adj": 644123,
+    "net_adj": 644229,
     "price": 700000,
     "tax_bill_assumed": true
    },
@@ -755,7 +755,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -810,7 +810,7 @@
      "count": 0
     },
     "net": 646096,
-    "net_adj": 644123,
+    "net_adj": 644229,
     "price": 700000,
     "tax_bill_assumed": true
    },
@@ -823,7 +823,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -878,13 +878,13 @@
      "count": 0
     },
     "net": 641096,
-    "net_adj": 639123,
+    "net_adj": 639229,
     "price": 700000,
     "tax_bill_assumed": true
    },
    "price": 700000,
    "price_base": 700000,
-   "rank_value": 623965.0,
+   "rank_value": 624071.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -945,7 +945,7 @@
      }
     ],
     "close": "2026-11-02",
-    "holding": -1973,
+    "holding": -1867,
     "lines": [
      [
       "price",
@@ -1000,7 +1000,7 @@
      "count": 0
     },
     "net": 635778,
-    "net_adj": 633805,
+    "net_adj": 633911,
     "price": 689000,
     "tax_bill_assumed": true
    },
@@ -1040,8 +1040,8 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
-    "close_days": 37,
-    "closing_days": 37,
+    "close_days": 35,
+    "closing_days": 35,
     "contract_form": "as_is",
     "counter_risk_days": 21,
     "counter_rows": [
@@ -1085,7 +1085,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": [
      {
       "check": "riders",
@@ -1156,7 +1156,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1211,7 +1211,7 @@
       "count": 0
      },
      "net": 646096,
-     "net_adj": 644123,
+     "net_adj": 644229,
      "price": 700000,
      "tax_bill_assumed": true
     },
@@ -1224,7 +1224,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1279,7 +1279,7 @@
       "count": 0
      },
      "net": 646096,
-     "net_adj": 644123,
+     "net_adj": 644229,
      "price": 700000,
      "tax_bill_assumed": true
     },
@@ -1292,7 +1292,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1347,13 +1347,13 @@
       "count": 0
      },
      "net": 641096,
-     "net_adj": 639123,
+     "net_adj": 639229,
      "price": 700000,
      "tax_bill_assumed": true
     },
     "price": 700000,
     "price_base": 700000,
-    "rank_value": 623965.0,
+    "rank_value": 624071.0,
     "repair_reserve": 5000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1414,7 +1414,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1469,7 +1469,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -1506,8 +1506,8 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
-    "close_days": 37,
-    "closing_days": 37,
+    "close_days": 35,
+    "closing_days": 35,
     "contract_form": "as_is",
     "counter_risk_days": 21,
     "counter_rows": [
@@ -1539,7 +1539,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": [
      {
       "check": "riders",
@@ -1602,7 +1602,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1657,7 +1657,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -1670,7 +1670,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1725,7 +1725,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -1738,7 +1738,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1793,12 +1793,12 @@
       "count": 0
      },
      "net": 630778,
-     "net_adj": 628805,
+     "net_adj": 628911,
      "price": 689000,
      "tax_bill_assumed": true
     },
     "price": 689000,
-    "rank_value": 613647.0,
+    "rank_value": 613753.0,
     "repair_reserve": 5000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1859,7 +1859,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -1914,7 +1914,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -1970,7 +1970,7 @@
    "count": 0
   },
   "listing": {
-   "analysis_date": "2026-09-26",
+   "analysis_date": "2026-09-28",
    "annual_tax": 11200,
    "baths": 2,
    "beds": 3,
@@ -2106,8 +2106,8 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
-    "close_days": 37,
-    "closing_days": 37,
+    "close_days": 35,
+    "closing_days": 35,
     "contract_form": "as_is",
     "counter_risk_days": 21,
     "counter_rows": [
@@ -2151,7 +2151,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": [
      {
       "check": "riders",
@@ -2222,7 +2222,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2277,7 +2277,7 @@
       "count": 0
      },
      "net": 646096,
-     "net_adj": 644123,
+     "net_adj": 644229,
      "price": 700000,
      "tax_bill_assumed": true
     },
@@ -2290,7 +2290,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2345,7 +2345,7 @@
       "count": 0
      },
      "net": 646096,
-     "net_adj": 644123,
+     "net_adj": 644229,
      "price": 700000,
      "tax_bill_assumed": true
     },
@@ -2358,7 +2358,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2413,13 +2413,13 @@
       "count": 0
      },
      "net": 641096,
-     "net_adj": 639123,
+     "net_adj": 639229,
      "price": 700000,
      "tax_bill_assumed": true
     },
     "price": 700000,
     "price_base": 700000,
-    "rank_value": 623965.0,
+    "rank_value": 624071.0,
     "repair_reserve": 5000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2480,7 +2480,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2535,7 +2535,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -2572,8 +2572,8 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
-    "close_days": 37,
-    "closing_days": 37,
+    "close_days": 35,
+    "closing_days": 35,
     "contract_form": "as_is",
     "counter_risk_days": 21,
     "counter_rows": [
@@ -2605,7 +2605,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": [
      {
       "check": "riders",
@@ -2668,7 +2668,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2723,7 +2723,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -2736,7 +2736,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2791,7 +2791,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -2804,7 +2804,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2859,12 +2859,12 @@
       "count": 0
      },
      "net": 630778,
-     "net_adj": 628805,
+     "net_adj": 628911,
      "price": 689000,
      "tax_bill_assumed": true
     },
     "price": 689000,
-    "rank_value": 613647.0,
+    "rank_value": 613753.0,
     "repair_reserve": 5000,
     "repairs_owed": false,
     "rider_codes": [
@@ -2925,7 +2925,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -2980,7 +2980,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -3019,8 +3019,8 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
-    "close_days": 37,
-    "closing_days": 37,
+    "close_days": 35,
+    "closing_days": 35,
     "contract_form": "as_is",
     "counter_risk_days": 21,
     "counter_rows": [
@@ -3064,7 +3064,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": [
      {
       "check": "riders",
@@ -3135,7 +3135,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3190,7 +3190,7 @@
       "count": 0
      },
      "net": 646096,
-     "net_adj": 644123,
+     "net_adj": 644229,
      "price": 700000,
      "tax_bill_assumed": true
     },
@@ -3203,7 +3203,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3258,7 +3258,7 @@
       "count": 0
      },
      "net": 646096,
-     "net_adj": 644123,
+     "net_adj": 644229,
      "price": 700000,
      "tax_bill_assumed": true
     },
@@ -3271,7 +3271,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3326,13 +3326,13 @@
       "count": 0
      },
      "net": 641096,
-     "net_adj": 639123,
+     "net_adj": 639229,
      "price": 700000,
      "tax_bill_assumed": true
     },
     "price": 700000,
     "price_base": 700000,
-    "rank_value": 623965.0,
+    "rank_value": 624071.0,
     "repair_reserve": 5000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3393,7 +3393,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3448,7 +3448,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -3485,8 +3485,8 @@
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
-    "close_days": 37,
-    "closing_days": 37,
+    "close_days": 35,
+    "closing_days": 35,
     "contract_form": "as_is",
     "counter_risk_days": 21,
     "counter_rows": [
@@ -3518,7 +3518,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": [
      {
       "check": "riders",
@@ -3581,7 +3581,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3636,7 +3636,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -3649,7 +3649,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3704,7 +3704,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -3717,7 +3717,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3772,12 +3772,12 @@
       "count": 0
      },
      "net": 630778,
-     "net_adj": 628805,
+     "net_adj": 628911,
      "price": 689000,
      "tax_bill_assumed": true
     },
     "price": 689000,
-    "rank_value": 613647.0,
+    "rank_value": 613753.0,
     "repair_reserve": 5000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3838,7 +3838,7 @@
       }
      ],
      "close": "2026-11-02",
-     "holding": -1973,
+     "holding": -1867,
      "lines": [
       [
        "price",
@@ -3893,7 +3893,7 @@
       "count": 0
      },
      "net": 635778,
-     "net_adj": 633805,
+     "net_adj": 633911,
      "price": 689000,
      "tax_bill_assumed": true
     },
@@ -3924,7 +3924,7 @@
     }
    ],
    "close": "2026-11-02",
-   "holding": -1973,
+   "holding": -1867,
    "lines": [
     [
      "price",
@@ -3979,7 +3979,7 @@
     "count": 0
    },
    "net": 635778,
-   "net_adj": 633805,
+   "net_adj": 633911,
    "price": 689000,
    "tax_bill_assumed": true
   },
@@ -3996,7 +3996,7 @@
    "field": "expected_effective_date",
    "impact": "low",
    "scope": "buyer",
-   "value": "2026-09-26"
+   "value": "2026-09-28"
   },
   {
    "field": "current_tax_bill_paid",
@@ -4109,7 +4109,7 @@
    "field": "expected_effective_date",
    "impact": "low",
    "scope": "buyer",
-   "value": "2026-09-26"
+   "value": "2026-09-28"
   },
   {
    "field": "current_tax_bill_paid",
@@ -4137,13 +4137,13 @@
  },
  "reserve_tight": null,
  "sample": true,
- "target": 633805,
+ "target": 633911,
  "terms": {
   "lower_cost": {
    "appraisal_days": 21,
    "appraisal_gap": 10000,
    "buyer_broker_pct": 0.025,
-   "closing_days": 37,
+   "closing_days": 35,
    "contract_form": "as_is",
    "deposit": 21000,
    "home_warranty": 0,
@@ -4157,7 +4157,7 @@
    "appraisal_days": 21,
    "appraisal_gap": 10000,
    "buyer_broker_pct": 0.025,
-   "closing_days": 37,
+   "closing_days": 35,
    "contract_form": "as_is",
    "deposit": 21000,
    "escalation": {
