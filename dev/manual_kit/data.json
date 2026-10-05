@@ -349,7 +349,11 @@
        "action": "Deliver the written loan commitment, or notice of termination", "if_missed": "The financing contingency ends"},
       {"key": "walkthrough", "label": "Final Walk-Through", "short": "Walk-Through", "basis": "before", "days": 1,
        "party": "Buyer", "critical": false, "source": "Para. 9",
-       "action": "Walk through the property on the day before Closing", "if_missed": "Buyer closes without a final walk-through"}
+       "action": "Walk through the property on the day before Closing", "if_missed": "Buyer closes without a final walk-through"},
+      {"key": "title_commitment", "label": "Title Commitment Provided", "short": "Title Commitment", "basis": "before",
+       "days": 0, "time": "closing", "party": "Seller", "critical": false, "source": "Para. 7",
+       "action": "Olentangy Crossing Title Agency provides the title commitment to Buyer before Closing",
+       "if_missed": "The agreement states no specific remedy"}
     ]
   }
 }

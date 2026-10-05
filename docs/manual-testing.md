@@ -22,18 +22,33 @@ A short smoke test of the installed plugin before each release: one happy path p
 
 Never upload `expected.md`. Case 1 builds your real profile; every later case uses it.
 
+The test is black box: you upload files, paste prompts and read what comes back (PDFs, the PowerPoint, the calendar file, the chat reply). No step asks for a data file or anything the skill makes along the way.
+
+## Check Types
+
+Each check in `expected.md` and `results.md` has a type, so a difference between runs reads as a regression or as expected variation:
+
+| Type | What It Means | Where |
+|---|---|---|
+| Behavior | Yes or no: the skill did it or didn't (used the profile, flagged the expired listing, kept the disclaimer out of the PDF) | Every case |
+| Consistency | Two parts of the same run agree: the PDF and the reply, the PowerPoint and the PDF, case 4 and the case 3 report in the same chat | Cases 2 to 4, 6 |
+| Fixed | A number the inputs fully determine matches `expected.md` exactly | Timelines (6 to 8), the net sheet (9), the offer review's math on the package (5), the market numbers from the export (2, 3) |
+| Band | Claude's judgment (comp picks, the value range, the list price, the offer plan) sits inside `expected.md`'s sanity band | Cases 2 and 3 |
+
+Case 4 builds on the range Claude chose in case 3, so its numbers aren't fixed: check them against the case 3 report and the buyer's limits. Its `expected.md` shows a reference run, labeled as one, for orientation only.
+
 ## Cases
 
 | # | Skill | Upload | Prompt to Paste | Pass Checks |
 |---|---|---|---|---|
 | 1 | agent-profile | Nothing | "Set up my profile.", then answer with your own details | At most two rounds of questions; saves `profile.md` in the working folder; no placeholders or made-up details |
 | 2 | seller-cma | 360 report, CMA export, seller notes (new session) | "What should we list at?", then "build the listing presentation", then "add that the home is perfect for young families" | Uses the saved profile without an upload; PDF in the profile's colors; flags the 2017 expired listing; net sheet marks the 5% brokerage "Assumed"; PPTX opens with the same numbers; the fair-housing request is declined in one sentence |
-| 3 | buyer-cma | Listing flyer, 360 report, CMA export | "Is it priced right and what should we offer?" | PDF with the range, the history with both price cuts and the scatterplot; facts and tax match expected.md |
-| 4 | buyer-offer-strategy | Nothing: run in the case 3 chat, which has the buyer CMA; the buyer's limits are in the prompt | "Now help me write the offer" with cash, max price, loan and payment cap | Uses the CMA from the chat (asks for no file); Offer Options and Offer Package Worksheet PDFs; stays inside every limit; riders named by letter; worksheet shows offer terms only |
+| 3 | buyer-cma | Listing flyer, 360 report, CMA export | "Is it priced right and what should we offer?" | PDF with the range, the history with both price cuts and the scatterplot; facts, price-cut counts and market numbers match expected.md; the tax table's price is the plan's target; the offer plan sits in the sanity band |
+| 4 | buyer-offer-strategy | Nothing: run in the case 3 chat, which has the buyer CMA; the buyer's limits are in the prompt | "Now help me write the offer" with cash, max price, loan and payment cap | Uses the CMA from the chat (asks for no file); Offer Options and Offer Package Worksheet PDFs; uses the case 3 range and comps median; the price sits inside that range and at or below its walk-away; stays inside every limit; riders named by letter; worksheet shows offer terms only |
 | 5 | seller-offer-review | Step 1: the first offer; step 2: a second offer on the same listing | "Should my seller accept?", then "compare both and give me a plan" | Single-offer net and counter; AGA-1 handled; ranking and plan; no past dates in next steps |
-| 6 | contract-timeline | Executed FHA package (`asis-fha-executed`) | "Give me every deadline as a PDF and a calendar file" | Deadlines match expected.md; the ICS imports into a calendar with the right dates |
-| 7 | contract-timeline | Executed short sale package (`asis-short-sale-rent-back`) | Same as 6 | Two-phase timeline ("N days after short sale approval" rows); the PDF builds with no closing date |
-| 8 | contract-timeline | Made-up Ohio purchase agreement | Same as 6 | Timeline from the contract's own dates and rules; the best-effort disclaimer in chat only, not in the PDF or ICS |
+| 6 | contract-timeline | Executed FHA package (`asis-fha-executed`) | "Give me every deadline as a PDF and a calendar file" | Deadlines (and stars) match expected.md; the ICS imports into a calendar with the right dates; the PDF, the ICS and the reply agree |
+| 7 | contract-timeline | Executed short sale package (`asis-short-sale-rent-back`) | Same as 6 | Two-phase timeline ("N days after short sale approval" rows); the PDF builds with no closing date; Rider G's back-up box read as checked (7(b)) |
+| 8 | contract-timeline | Made-up Ohio purchase agreement | Same as 6 | Timeline from the contract's own dates and rules; closing timed in Eastern time in the calendar, everything else all-day; the best-effort disclaimer in chat only, not in the PDF or ICS |
 | 9 | seller-net-sheet | Nothing (the facts are in the prompt) | Three prices with a payoff, commission, tax bill and a December closing; then "what would they net at $400,000?" in chat | One-page PDF in the profile's colors; nets match expected.md; the tax proration reads Bill Assumed Unpaid; step 2 answers in chat without a new PDF |
 
 The exact prompts are in each case's `prompt.md`; `expected.md` repeats the checks for that case.
@@ -48,4 +63,4 @@ Shorter, to confirm the uploaded skills work outside Cowork:
 
 ## Results
 
-Fill in `out/manual-test/results.md` as you go (one row per check, a Cowork and a claude.ai column, a note for every failure) and share it back.
+Fill in `out/manual-test/results.md` as you go (one row per check with its type, a Cowork and a claude.ai column, a note for every failure) and share it back.

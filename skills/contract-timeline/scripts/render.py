@@ -11,7 +11,7 @@ import hashlib
 import html
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import timeline  # noqa: E402
@@ -28,12 +28,25 @@ def sentence_case(label):
     return " ".join(w if w.isupper() else w.lower() for w in label.split())
 
 
-def join_words(items):
-    """['a', 'b', 'c'] -> 'a, b and c'."""
-    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1] if items else ""
+period_name, join_words = timeline.period_name, timeline.join_words
 
 def _when(row):
     return datetime.strptime(row["when"], "%Y-%m-%d %H:%M")
+
+
+def _day(row):
+    """The start of a deadline's day: the strip plots every deadline on its own day's tick, so 11:59 PM never reads as
+    the next day."""
+    return datetime.combine(_when(row).date(), time())
+
+
+def strip_span(t):
+    """What the strip runs to: Closing when the closing is its last date, else its last deadline (a short sale waiting
+    on approval runs to Contract Expires; a stay after closing to the possession date)."""
+    last = max(t["rows"], key=_when)
+    if t["closing"] and _when(last).date() <= datetime.strptime(t["closing"]["date"], "%Y-%m-%d").date():
+        return "Effective Date → Closing"
+    return f'Effective Date → {last["short"]}'
 
 
 def day_label(row):
@@ -99,12 +112,24 @@ def _place(marks, W, levels, strict, budget=20000):
     return [(sd, lv, x0) for sd, lv, x0, _, _ in placed] if go(0) else None
 
 
+MIXED = "var(--text)"  # a strip label for deadlines owed by different parties on one day
+
+
+def strip_mixed(t):
+    """True when some day on the strip names deadlines owed by different parties (the legend then explains the neutral
+    color)."""
+    groups = {}
+    for r in t["rows"]:
+        groups.setdefault(_when(r).date(), []).append(r)
+    return any(len({r["party"] for r in g if not r.get("done")}) > 1 for g in groups.values())  # all done: gray
+
+
 def strip(t, colors):
     """Horizontal timeline from the Effective Date to the last date; labels in free slots above and below. Deadlines
     already done are drawn in gray."""
     dated = t["rows"]
     eff = datetime.strptime(t["effective"]["date"], "%Y-%m-%d")
-    end = max(_when(x) for x in dated) + timedelta(days=1)
+    end = max(_day(x) for x in dated) + timedelta(days=1)
     W, L, R, STEP = 740, 30, 40, 13
 
     span = (end - eff).total_seconds()
@@ -117,25 +142,25 @@ def strip(t, colors):
         groups.setdefault(_when(row).date(), []).append(row)
     def label(rows, compact):
         """TL-228: a done deadline isn't named as if it were open: the label names the open rows on that day, or reads
-        "Done" when every row is. `compact` names one row and counts the rest ("Loan Approval +1")."""
+        "Done" when every row is. `compact` names one row and counts the rest ("Loan Approval +1"). Returns the rows the
+        label stands for too, which set its color."""
         open_rows = [r for r in rows if not r.get("done")]
         named = open_rows or rows
         row = (next((r for r in named if r["key"] == "closing"), None) or next((r for r in named if r["critical"]), None)
                or named[0])
         when = _when(row)
         if not open_rows:
-            return row, f'{row["short"]} · Done'
+            return row, f'{row["short"]} · Done', named
         n = len(open_rows)
         names = row["short"] if n == 1 else f'{row["short"]} +{n - 1}' if n > 2 or compact else \
             " / ".join(r["short"] for r in open_rows)
-        return row, f'{names} · {when:%-m/%-d}'
+        return row, f'{names} · {when:%-m/%-d}', named
 
     def layout(compact):
         marks = []
         for rows in groups.values():
-            row, text = label(rows, compact)
-            when = _when(row)
-            marks.append(dict(rows=rows, row=row, when=when, x=X(when), text=text, w=_label_width(text)))
+            row, text, named = label(rows, compact)
+            marks.append(dict(rows=rows, named=named, row=row, x=X(_day(row)), text=text, w=_label_width(text)))
         return marks, place_labels([(m["x"], m["w"]) for m in marks], W)
 
     # full names when they fit on one level a side; a crowded strip names one deadline per day and counts the rest
@@ -172,8 +197,9 @@ def strip(t, colors):
     lines, dots, labels = [], [], []
     for m, (side, lv, x0) in zip(marks, spots):
         rows, row, x, w = m["rows"], m["row"], m["x"], m["w"]
-        parties = {r["party"] for r in rows}
-        col = colors.get(parties.pop(), colors["Both"]) if len(parties) == 1 else colors["Both"]
+        # the party of the deadlines the label names; deadlines owed by different parties on one day read neutral
+        parties = {r["party"] for r in m["named"]}
+        col = colors.get(next(iter(parties)), colors["Both"]) if len(parties) == 1 else MIXED
         if all(r.get("done") for r in rows):
             col = "var(--muted)"
         y = mid - 10 - lv * STEP if side == "up" else mid + 30 + lv * STEP  # below the tick labels (mid + 13)
@@ -239,18 +265,20 @@ def build_html(t, agent, sample):
     if waiting:  # Rider G before the approval: the contingency periods haven't started
         firm_label = "Your Contingencies End" if side == "buyer" else "Buyer Can Cancel Until"
         whose = "Your" if side == "buyer" else "The buyer's"
-        lead = (f'{whose} contingency periods ({esc(join_words([sentence_case(x) for x in waiting]))}) start when the buyer '
+        lead = (f'{whose} contingency periods ({esc(t["contingencies_waiting_text"])}) start when the buyer '
                 "receives the short sale approval; until then, only the dates counted from the Effective Date are set.")
     elif side == "buyer":
         firm_label = "Your Contingencies End"
         # TL-202: one "after that", with the rights that stay open as the exception
-        lead = (f'Your main protections run through <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}).'
+        lead = (f'Your main protections run through <b>{esc(firm["display"])}</b> ({day_label(firm)}, '
+                f'{esc(t["contingencies_end_period"])}).'
                 + (f" After that the deposit is at risk, except under the rights that stay open: {still_txt}." if still
                    else " After that the deposit is at risk.")
                 if firm else "No buyer contingencies: the deposit is at risk from the start." + open_txt)
     else:
         firm_label = "Buyer Can Cancel Until"
-        lead = (f'The buyer\'s main contingencies end <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(firm["short"].lower())}).'
+        lead = (f'The buyer\'s main contingencies end <b>{esc(firm["display"])}</b> ({day_label(firm)}, '
+                f'{esc(t["contingencies_end_period"])}).'
                 + (f" After that the deal is firm unless the buyer defaults, except for the rights that stay open: {still_txt}."
                    if still else " After that the deal is firm unless the buyer defaults.")
                 if firm else "No buyer contingencies: the deal is firm once the deposit is in." + open_txt)
@@ -300,9 +328,11 @@ def build_html(t, agent, sample):
     amended = (f'<div class="note-brand"><b>Includes {n} amendment{"s" if n != 1 else ""}.</b> Dates that moved show '
                '"was". See the amendment history for details.</div>') if n else ""
     legend = "".join(f'<span><i style="background:{colors[k]};border-radius:50%"></i>{k}</span>' for k in ("Buyer", "Seller", "Both"))
+    if strip_mixed(t):
+        legend += f'<span><i style="background:{MIXED};border-radius:50%"></i>Different Parties, Same Day</span>'
 
     page1 = f'''{hero}{amended}
-<h2>Timeline <span class="h2s">Effective Date → Closing</span></h2>
+<h2>Timeline <span class="h2s">{esc(strip_span(t))}</span></h2>
 <div class="panel" style="padding:2px 6px">{strip(t, colors)}</div>
 <div class="legend">{legend}<span>Filled Dot = Critical Deadline</span></div>
 <h2>All Key Dates <span class="h2s">Day = calendar days after the Effective Date · ★ = Critical · {side} items highlighted</span></h2>
@@ -363,6 +393,9 @@ def fit_page_one(pg):
     # TL-265: a fact row that runs onto a second line (a long form name) tightens its spacing and type to fit one
     pg.evaluate("""() => { const s = [...document.querySelectorAll('.factrow span')];
         if (s.length > 1 && s[s.length - 1].offsetTop > s[0].offsetTop) document.body.classList.add('tightfacts'); }""")
+    # the header's property and parties line tightens the same way when it would wrap (long names)
+    pg.evaluate("""() => { const s = [...document.querySelectorAll('.t2 .nw')];
+        if (s.length > 1 && s[s.length - 1].offsetTop > s[0].offsetTop) document.body.classList.add('tighthead'); }""")
     top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
     if top > PAGE1_LIMIT:
         pg.evaluate("() => document.body.classList.add('compact')")
@@ -389,16 +422,25 @@ def _fold(line):
     return "\r\n".join(out)
 
 
-# TL-115: timed events carry the property's zone, so a calendar in another zone shows the right hour. US rules since 2007.
-TZIDS = {"ET": "America/New_York", "CT": "America/Chicago"}
+# TL-115: timed events carry the property's zone (timeline.ZONES), so a calendar in another zone shows the right hour.
+# US rules since 2007; a zone with no daylight saving has only its standard offset.
 VTIMEZONES = {
     "America/New_York": ("-0500", "-0400", "EST", "EDT"),
     "America/Chicago": ("-0600", "-0500", "CST", "CDT"),
+    "America/Denver": ("-0700", "-0600", "MST", "MDT"),
+    "America/Phoenix": ("-0700", None, "MST", None),
+    "America/Los_Angeles": ("-0800", "-0700", "PST", "PDT"),
+    "America/Anchorage": ("-0900", "-0800", "AKST", "AKDT"),
+    "Pacific/Honolulu": ("-1000", None, "HST", None),
+    "America/Puerto_Rico": ("-0400", None, "AST", None),
 }
 
 
 def _vtimezone(tzid):
     std, dst, std_name, dst_name = VTIMEZONES[tzid]
+    if not dst:
+        return ["BEGIN:VTIMEZONE", f"TZID:{tzid}", "BEGIN:STANDARD", f"TZOFFSETFROM:{std}", f"TZOFFSETTO:{std}",
+                f"TZNAME:{std_name}", "DTSTART:19700101T000000", "END:STANDARD", "END:VTIMEZONE"]
     return ["BEGIN:VTIMEZONE", f"TZID:{tzid}",
             "BEGIN:DAYLIGHT", f"TZOFFSETFROM:{std}", f"TZOFFSETTO:{dst}", f"TZNAME:{dst_name}", "DTSTART:20070311T020000",
             "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU", "END:DAYLIGHT",
@@ -414,7 +456,7 @@ def ics(t, lender_dates=False):
     Disclosure), which are estimates, not contract dates; `lender_dates` adds them, titled "Lender Target"."""
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # when the file was made, in UTC (RFC 5545)
     what_if = "What-If: " if t.get("what_if") else ""  # TL-119: a hypothetical timeline says so in the calendar too
-    tzid = TZIDS.get(t.get("time_zone") or "", t.get("time_zone") if t.get("time_zone") in VTIMEZONES else None)
+    tzid = timeline.ZONES[t["time_zone"]][0] if t.get("time_zone") in timeline.ZONES else None
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//real-estate-skills//contract-timeline//EN", "CALSCALE:GREGORIAN",
              f"X-WR-CALNAME:{_ics_text(what_if + 'Contract Timeline: ' + t['property'])}"]
     if tzid:
@@ -428,14 +470,15 @@ def ics(t, lender_dates=False):
         lender = "Lender Target: " if r.get("lender") else ""
         when = datetime.strptime(r["when"], "%Y-%m-%d %H:%M")
         event = r.get("no_time")  # an event on a day (the walk-through), not a deadline at a time
-        all_day = event or when.strftime("%H:%M") == "23:59"
+        # a row due by the closing time is an all-day item on closing day, never a second event at the closing's hour
+        all_day = event or r.get("by_closing") or when.strftime("%H:%M") == "23:59"
         start = f"DTSTART;VALUE=DATE:{when:%Y%m%d}" if all_day else f"DTSTART{at}:{when:%Y%m%dT%H%M%S}"
         end = (f"DTEND;VALUE=DATE:{(when + timedelta(days=1)):%Y%m%d}" if all_day
                else f"DTEND{at}:{(when + timedelta(minutes=30)):%Y%m%dT%H%M%S}")
         desc = " ".join(x for x in (f"Who: {r['party']}.", r["action"] and f"{r['action']}.", r["if_missed"] and
                                     f"If missed: {r['if_missed']}.", r["rule"] and f"Rule: {r['rule']}.",
                                     r["source"] and f"Source: {r['source']}.",
-                                    "Ends at 11:59 PM." if all_day and not event else "",
+                                    "Ends at 11:59 PM." if all_day and not event and not r.get("by_closing") else "",
                                     "Due by Closing." if r.get("by_closing") else "") if x)
         lines += ["BEGIN:VEVENT", f"UID:{r['key']}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline",
                   f"SEQUENCE:{len(t.get('history') or [])}", f"DTSTAMP:{now}", start, end,
@@ -453,6 +496,9 @@ def build(deal, fmt, out_dir, ctx):
     if ctx.get("date"):
         deal = {**deal, "report_date": ctx["date"]}
     t = timeline.analyze(deal)
+    if fmt == (ctx.get("formats") or [fmt])[0]:  # once per run, whichever formats it builds
+        for w in t["warnings"]:  # a misspelled field the script ignored: fix the deal file, never pass this on
+            print(f"Deal file warning (fix it; not for the agent): {w}", file=sys.stderr)
     if fmt == "ics":
         path = os.path.join(out_dir, render.filename(t["property"].split(",")[0], "Contract Timeline", t["side"], ext="ics"))
         with open(path, "w", encoding="utf-8", newline="") as f:

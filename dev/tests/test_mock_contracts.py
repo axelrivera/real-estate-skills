@@ -208,6 +208,10 @@ class KeyMatchesPdf(unittest.TestCase):
         self.assertEqual((deal["seller_occupancy_days"], deal["short_sale_approval_days"], deal["buyer_attorney_date"]),
                          (21, 75, "2026-09-28"))
         self.assertNotIn("rent_back_monthly", deal)
+        self.assertNotIn("short_sale_backup", deal)  # no box chosen: the key leaves it out (option (a) applies)
+        # Rider G Para. 7: the checked back-up box reaches the deal file, so the manual kit's expected.md records it
+        backup = sc.build({"name": "keys", "form": "as_is", "riders": [{"code": "G", "backup_offers": "b"}]})
+        self.assertEqual(backup["key"]["contract"]["short_sale_backup"], "b")
         offer = sc.build({"name": "keys", "form": "as_is", "stage": "offer", "riders": riders})["key"]["offers"][0]
         self.assertEqual((offer["rent_back_days"], offer["rent_back_monthly"], offer["attorney_days"], offer["seller_financing"]),
                          (21, 2400, 7, 40000))
