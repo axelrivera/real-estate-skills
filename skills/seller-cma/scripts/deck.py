@@ -213,7 +213,7 @@ def deck_data(C, agent, footer):
     axis = dot_axis([x["adjusted"] for x in comps] + [rec["low"], rec["high"], rec["list_price"]])
     one = dm["market_one_period"]
     mcards = [[m["label"], *m["values"], ICONS[MARKET_ICONS.get(m["key"], "chart")]] for m in C["market_cards"]]
-    strategies = [{"label": x["label"], "list_display": x["list_price_display"], "time": x["time"],
+    strategies = [{"label": x["label"], "name": x["name"], "list_display": x["list_price_display"], "time": x["time"],
                    "expected_display": x["expected_sale_display"], "credit_display": x["seller_credit_display"],
                    "note": x["note"], "net": x["net_after_holding"], "net_display": x["net_after_holding_display"],
                    "payment_display": t("deck_per_month", amount=x["payment_display"]),

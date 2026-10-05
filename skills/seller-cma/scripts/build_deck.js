@@ -368,7 +368,9 @@ async function icon(name, color, size = 256) {
     D.strategies.forEach((st, i) => {
       const x = x0 + i * (cw + gap), y = 1.15, hl = i === ri;
       card(s, x, y, cw, 3.2, hl ? BRAND : TINT);
-      if (hl) s.addText(T.deck_recommended, { x: x + 0.22, y: y + 0.15, w: iw, h: 0.25, fontFace: FONT, fontSize: 10, bold: true, color: ON, charSpacing: 2, margin: 0, isTextBox: true });
+      // the option's name (a new listing's stance, the same words as the PDF and chat) and, on the recommended card, RECOMMENDED
+      const head = [st.name ? st.name.toUpperCase() : '', hl ? T.deck_recommended : ''].filter(Boolean).join(' · ');
+      if (head) tx(s, head, { x: x + 0.22, y: y + 0.15, w: iw, h: 0.25, size: 10, min: 8, lines: 1, bold: true, color: hl ? ON : BRAND, what: 'strategy name' });
       tx(s, st.list_display, { x: x + 0.22, y: y + 0.42, w: iw, h: 0.6, size: 30, min: 22, bold: true, color: hl ? ON : BRAND });
       const rows = [[T.deck_row_time, st.time], [T.deck_row_expected, st.expected_display], [T.deck_row_credit, st.credit_display]];
       rows.forEach((r, j) => {

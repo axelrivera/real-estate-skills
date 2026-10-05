@@ -925,6 +925,7 @@ def range_position(value, low, high):
 
 PLAN_KEYS = ("opening", "target_low", "target_high", "walk_away")
 TARGET_SPREAD = 2500  # the target is a range: the target price give or take this much, inside the plan
+TARGET_FLOOR_SHARE = 4  # the target is at least a quarter of the way from the opening to the walk-away
 DEFAULT_CREDITS = (0, 5000, 10000)  # price-vs-credit offers when report.json gives none: the opening plus each credit
 
 
@@ -938,8 +939,9 @@ def offer_plan_for(posture, low, high, median, ask, width, sale_to_list=None):
         must_win     asking, capped at range high range high
 
     The walk-away never goes above the range's high (only an agent's override does). Target: asking times the recent
-    sale-to-original-list ratio, clamped between the opening and the walk-away (the midpoint of the two without the
-    ratio); target_low and target_high are the target give or take $2,500, clamped the same way. `width` is the range's
+    sale-to-original-list ratio (the midpoint of the opening and the walk-away without the ratio), never under a
+    quarter of the way from the opening to the walk-away nor above the walk-away (plan_target); target_low and
+    target_high are the target give or take $2,500, clamped the same way. `width` is the range's
     normal width (cma.range_width's target). Returns the four numbers, the target and `basis` {step: labels.json key}
     naming what set each step, so its reason in the report is always the true one."""
     k = lambda x: fmt.half_up(x, 1000)  # noqa: E731
@@ -960,18 +962,26 @@ def offer_plan_for(posture, low, high, median, ask, width, sale_to_list=None):
             "basis": {"opening": open_basis, "target": target_basis, "walk_away": walk_basis}}
 
 
+def target_floor(opening, walk):
+    """The least a target moves up from the opening: a quarter of the way to the walk-away, to $1,000 (half up), never
+    under the opening. Above the walk-away only when the two are within a rounding step; plan_target caps it there."""
+    return max(opening, fmt.half_up(opening + (walk - opening) / TARGET_FLOOR_SHARE, 1000))
+
+
 def plan_target(opening, walk, ask, sale_to_list=None):
     """(target, target_low, target_high, basis) between an opening and a walk-away: asking times the recent
-    sale-to-original-list ratio, else their midpoint, to $1,000 (half up) and clamped between them; the target range is
-    the target give or take $2,500, clamped the same way."""
+    sale-to-original-list ratio, else their midpoint, to $1,000 (half up), never under the target floor (a quarter of
+    the way from the opening to the walk-away, target_floor) nor above the walk-away (so never above asking); the
+    target range is the target give or take $2,500, clamped the same way (its low end never under the floor)."""
     if sale_to_list:
         raw, basis = fmt.half_up(ask * sale_to_list, 1000), "ratio"
     else:
         raw, basis = fmt.half_up((opening + walk) / 2, 1000), "midpoint"
-    target = min(max(raw, opening), walk)
+    floor = target_floor(opening, walk)
+    target = min(max(raw, floor), walk)
     if target != raw:
-        basis = "ratio_up" if target > raw else "ratio_down"
-    return target, max(opening, target - TARGET_SPREAD), min(walk, target + TARGET_SPREAD), basis
+        basis = "floor" if target > raw else "ratio_down"
+    return target, max(min(floor, target), target - TARGET_SPREAD), min(walk, target + TARGET_SPREAD), basis
 
 
 def _plain_number(v):

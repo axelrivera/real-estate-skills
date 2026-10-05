@@ -145,7 +145,7 @@
  "why_opening_high": "The top of the supported range: asking is above what the comparable sales support.",
  "why_opening_walk_away": "Equal to the walk-away: the median of the adjusted comps sits below where this plan would otherwise open.",
  "why_target_ratio": "Where recent sales settled against their original asking price, applied to this home's asking price.",
- "why_target_ratio_up": "Starts at the opening offer: recent sales settled against their asking price below where this plan opens.",
+ "why_target_floor": "A quarter of the way from the opening offer to the walk-away, the least the plan moves up from its opening: recent sales settled against their asking price lower than that.",
  "why_target_ratio_down": "Ends at the walk-away: recent sales settled against their asking price above where this plan stops.",
  "why_target_midpoint": "Halfway between the opening offer and the walk-away, since there are too few recent sales to read how far below asking homes are selling.",
  "why_walk_away_median": "The median of the adjusted comps. Above it you'd be paying earlier prices and risking a low appraisal you'd have to cover in cash.",

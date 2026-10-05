@@ -149,6 +149,18 @@ class Model(unittest.TestCase):
                         if levels.get(given["condition"], mine) != mine else []
                     self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
 
+    def check_target(self, op):
+        """The target leaves room above the opening: at least a quarter of the way to the walk-away (the target range
+        too), so it's above the opening whenever the walk-away is $4,000 or more above it. An agent's own target range
+        is theirs."""
+        if op["override"] and {"target_low", "target_high"} & set(op["override"]):
+            return
+        floor = compute.target_floor(op["opening"], op["walk_away"])
+        self.assertGreaterEqual(op["target_low"], min(floor, op["target"]))
+        self.assertEqual(op["target"], min(max(op["target"], floor), op["walk_away"]))
+        if op["walk_away"] - op["opening"] >= 4000:
+            self.assertGreater(op["target"], op["opening"])
+
     def test_offer_plan_by_rule(self):
         """The posture's plan runs opening <= target_low <= target <= target_high <= walk-away, with the walk-away at or
         under asking and the range's high (only the agent's override leaves them); the same input gives the same plan;
@@ -159,6 +171,7 @@ class Model(unittest.TestCase):
             with self.subTest(seed=seed):
                 steps = [op[k] for k in ("opening", "target_low", "target", "target_high", "walk_away")]
                 self.assertEqual(steps, sorted(steps))
+                self.check_target(op)
                 if not op["override"]:
                     self.assertLessEqual(op["walk_away"], min(R["subject"]["list_price"], C["range"]["high"]))
                 self.assertEqual(set(op["override"]), set((R["offer_plan"].get("plan_override") or {})) - {"reason"})
@@ -185,6 +198,7 @@ class Model(unittest.TestCase):
                     self.assertEqual(op["posture"], posture)
                     steps = [op[k] for k in ("opening", "target_low", "target", "target_high", "walk_away")]
                     self.assertEqual(steps, sorted(steps))
+                    self.check_target(op)
                     self.assertTrue(all(row[2] for row in op["ladder"]))
                     self.assertIn(op["opening_display"], render.build_html(C, {}))
 

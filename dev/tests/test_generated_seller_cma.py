@@ -196,6 +196,38 @@ class Model(unittest.TestCase):
                 self.assertLessEqual(x["list_price"], rec["high"])
             if x["role"] == "competing":
                 self.assertGreaterEqual(x["list_price"], rec["low"])
+        if not rp and not rl:
+            self.check_standard(R, C)
+
+    def check_standard(self, R, C):
+        """A new listing: one option per stance at its point of the range, named for it (the agent's own price in place
+        of the nearest one), the stance's the recommended one; with a normal-width range all three, distinct; merged
+        ones said once in the notes; a higher price never faster to contract by the script's times."""
+        rec, strats, ri = C["recommendation"], C["strategies"], C["recommended_index"]
+        low, high = rec["low"], rec["high"]
+        roles = [x["role"] for x in strats]
+        self.assertEqual(C["listing_kind"], "standard")
+        self.assertTrue(set(roles) <= set(compute.cma.STANCES), roles)
+        self.assertEqual(len(strats) + len(C["options_merged"]), 3)
+        self.assertEqual("options_merged" in C["note_keys"], bool(C["options_merged"]))
+        own = R.get("price_override")
+        prices = compute.stance_prices(low, high)
+        for x in strats:
+            if x["agent"]:
+                self.assertTrue(own and x["recommended"])
+                self.assertEqual((x["name"], x["list_price"]), (compute.L["option_agent"], own["list_price"]))
+            else:
+                self.assertEqual(x["name"], compute.L["stance_" + x["role"]])
+                self.assertEqual(x["list_price"], prices[x["role"]])
+                self.assertTrue(low <= x["list_price"] <= high)
+            self.assertTrue(x["label"].startswith(x["name"]))
+        if not own:
+            self.assertEqual(roles[ri], C["stance"]["value"])
+            self.assertEqual(strats[ri]["list_price"], prices[C["stance"]["value"]])
+            if not rec["override"] and high - low >= 15000:  # the rule's range, normal width: three options, high to low
+                self.assertEqual(roles, ["premium", "market", "draw_offers"])
+        months = [x["months_to_contract"] for x in strats if x["time_source"] == "rule"]
+        self.assertEqual(months, sorted(months, reverse=True))
 
     def test_options_by_rule_and_reproducible(self):
         """Same inputs and stance, same prices and options (run twice from scratch)."""

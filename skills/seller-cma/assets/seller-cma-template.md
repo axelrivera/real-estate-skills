@@ -23,7 +23,7 @@
 
 **Your Pricing Options:**
 
-| List At | Time to Contract | Expected Sale | {{options_summary.net_header}} | Buyer's Payment |
+| Option | Time to Contract | Expected Sale | {{options_summary.net_header}} | Buyer's Payment |
 |---|---|---|---|---|
 | {{each strategies: label, then " ★" when recommended | time | expected_sale_display | net_after_holding_display ("pending brokerage terms" when net.incomplete is true: never show a net without the commission) | payment_display/mo}} |
 

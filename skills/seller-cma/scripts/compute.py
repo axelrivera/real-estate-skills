@@ -38,10 +38,16 @@ MONTH_DAYS = 30.44
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 NEAR_RECOMMENDED = 0.01  # CMA-288: options within 1% of each other aren't distinct strategies: the script drops one
 OPTION_STEP_MIN, OPTION_STEP_SHARE = 5000, 0.02  # one step between options: $5,000 or 2% of the price, the larger
-ROLES = ("stay", "top", "recommended", "competing")  # the options the script builds
+# The options the script builds, by role: a new listing's are the three stances (method.md, The Pricing Options); a
+# reprice keeps Stay at Current Price and its cuts; a relist a step above and below the recommended price
+STANDARD_ROLES = cma.STANCES
+LISTING_ROLES = {"standard": STANDARD_ROLES, "reprice": ("stay", "recommended", "competing"),
+                 "relist": ("top", "recommended", "competing")}
+ROLES = STANDARD_ROLES + ("stay", "top", "recommended", "competing")
 OPTION_KEYS = ("time", "seller_credit", "note", "expected_sale", "closing_date", "months_to_contract")
 # Each option's time to contract as shares of the market's recent median days on market (its low and high end, in weeks)
-TIME_SPREAD = {"stay": (1.5, 3.0), "top": (1.5, 3.0), "recommended": (0.75, 1.5), "competing": (0.25, 0.75)}
+TIME_SPREAD = {"stay": (1.5, 3.0), "top": (1.5, 3.0), "recommended": (0.75, 1.5), "competing": (0.25, 0.75),
+               "premium": (1.5, 3.0), "market": (0.75, 1.5), "draw_offers": (0.25, 0.75)}
 ASSUMED_DAYS = 30  # without an export's days on market: about a month, stated in the notes
 CREDIT_STEP = 500
 ASSUMED_SALE_TO_LIST = 0.97  # without an export or market.sale_to_list: a balanced market, after seller-paid costs
@@ -141,9 +147,11 @@ RETIRED = {
     "recommendation.midpoint": "the script computes the range and its midpoint",
     "recommendation.list_price": "the script sets the list price from pricing.stance (method.md, Pricing Stance): pick "
                                  "the stance, or put the agent's own price in price_override {list_price, reason}",
-    "pricing.strategies": "the script builds the options from pricing.stance: an option's time, seller_credit or note "
-                          "(or the agent's own expected_sale) goes in pricing.options.<stay|top|recommended|competing>, "
-                          "and the agent's own list price in price_override {list_price, reason}",
+    "pricing.strategies": "the script builds the options (one per stance; pricing.stance picks the recommended one): "
+                          "an option's time, seller_credit or note (or the agent's own expected_sale) goes in "
+                          "pricing.options.<role> (draw_offers, market, premium; a reprice: stay, recommended, "
+                          "competing; a relist: top, recommended, competing), and the agent's own list price in "
+                          "price_override {list_price, reason}",
     "pricing.recommended_index": "the script marks the recommended option (pricing.stance, or price_override)",
     "pricing.competing_offer_upside": "the notes add the competing-offer caveat on their own when that option nets more",
     "comps.summary_paragraph": "the script states the adjusted span, the median, the strongest match and the highest "
@@ -351,6 +359,28 @@ def stance_price(stance, low, high):
     return cma.list_price_at(low + cma.STANCE_SHARE[stance] * (high - low), low, high)
 
 
+def distinct(a, b):
+    """Two list prices are distinct strategies when more than 1% apart."""
+    return abs(a - b) > NEAR_RECOMMENDED * min(a, b)
+
+
+def stance_prices(low, high):
+    """A new listing's three stance prices, from the range alone (the stance only picks the recommended one): Market
+    Price at the middle, Premium at 75% of the width and Draw Offers at 25%, each on its search-bracket step
+    (stance_price). Where snapping puts Premium or Draw Offers within 1% of Market Price (search brackets are $5,000
+    apart, under 1% of a price over $500,000), it moves one step at a time away from Market Price while it stays inside
+    the range; a range too narrow for that leaves them close, and standard_options merges them."""
+    out = {s: stance_price(s, low, high) for s in STANDARD_ROLES}
+    market = out["market"]
+    for role, move in (("premium", lambda p: cma.bracket_price(cma.bracket_price(p + 1, "up"), "up")),
+                       ("draw_offers", lambda p: cma.bracket_price(p - 1, "down"))):
+        p = out[role]
+        while not distinct(p, market) and low <= move(p) <= high:
+            p = move(p)
+        out[role] = p
+    return out
+
+
 def price_cap(rp, relist, low):
     """The highest list price the options may take: a reprice's cuts stay at least 1% under the current price (unless
     the agent asked to price it higher), a relist's options at or under the failed price (unless the agent gave a
@@ -368,16 +398,53 @@ def price_cap(rp, relist, low):
     return (cap if cap >= low else exact), kind
 
 
+def listing_kind(rp, relist):
+    """"reprice", "relist" or "standard" (a new listing): which options the script builds (LISTING_ROLES)."""
+    return "reprice" if rp else "relist" if relist else "standard"
+
+
+def standard_options(stance, low, high, own):
+    """A new listing's options (method.md, The Pricing Options): one per stance (stance_prices), the stance's the
+    recommended one. The agent's own price takes the place of the stance option nearest it and is the recommended one.
+    An option within 1% of one already kept (a narrow range) isn't a distinct strategy: it merges into that one, the
+    recommended option kept first. Returns ([(role, price)] high to low, the recommended role, [(merged role, kept
+    role)])."""
+    prices = stance_prices(low, high)
+    rec = stance
+    if own is not None:
+        # the nearest; between two at the same price (a narrow range), the one on the agent's price's side, so the
+        # options keep their order (and their times) from the lowest price to the highest
+        side = STANDARD_ROLES if own < prices["market"] else STANDARD_ROLES[::-1]
+        rec = min(side, key=lambda s: abs(prices[s] - own))
+        prices[rec] = own
+    kept, merged = [(rec, prices[rec])], []
+    for role in sorted((s for s in STANDARD_ROLES if s != rec), key=lambda s: abs(prices[s] - prices[rec])):
+        into = next((r for r, p in kept if not distinct(prices[role], p)), None)
+        if into:
+            merged.append((role, into))
+        else:
+            kept.append((role, prices[role]))
+    return sorted(kept, key=lambda x: -x[1]), rec, merged
+
+
 def build_options(R, stance, low, high, rp, relist):
-    """The options by rule (method.md, The Pricing Options): the recommended price is the stance's (or the agent's
-    price_override), then one step above it (top of the range: capped at the range's high end and at a relist's failed
-    price; never on a reprice) and one below (competing offers: never under the range's low end); a reprice adds Stay at
-    Current Price, its cuts at least 1% under it. An option within 1% of one already kept isn't a distinct strategy and
-    is dropped (Stay is kept first, then the recommended price: when they meet, staying is the recommendation).
-    Returns ([(role, list_price)] in print order, the recommended option's index, the rule's price for the stance)."""
+    """The options by rule (method.md, The Pricing Options). A new listing: one per stance (standard_options). A
+    reprice or relist: the recommended price is the stance's (or the agent's price_override), then one step above it
+    (top of the range: capped at the range's high end and at a relist's failed price; never on a reprice) and one below
+    (competing offers: never under the range's low end); a reprice adds Stay at Current Price, its cuts at least 1%
+    under it. An option within 1% of one already kept isn't a distinct strategy and is dropped (Stay is kept first, then
+    the recommended price: when they meet, staying is the recommendation). Returns {options: [(role, list_price)] in
+    print order, index: the recommended option's, rule: the rule's price for the stance, kind, agent_role: the role
+    holding the agent's own price (or None), merged: [(merged role, kept role)]}."""
     own, _, errors = price_override(R)
     if errors:
         raise ReportError(stop_message(errors))
+    listing = listing_kind(rp, relist)
+    if listing == "standard":
+        options, rec_role, merged = standard_options(stance, low, high, own)
+        return {"options": options, "index": [r for r, _ in options].index(rec_role),
+                "rule": stance_prices(low, high)[stance], "kind": listing,
+                "agent_role": rec_role if own is not None else None, "merged": merged}
     cap, kind = price_cap(rp, relist, low)
     rule = stance_price(stance, low, high)
     if cap is not None:
@@ -416,24 +483,37 @@ def build_options(R, stance, low, high, rp, relist):
             kept.append((role, price))
     options = [x for x in kept if x[0] == "stay"] + sorted((x for x in kept if x[0] != "stay"), key=lambda x: -x[1])
     roles = [r for r, _ in options]
-    return options, roles.index("recommended" if "recommended" in roles else "stay"), rule
+    return {"options": options, "index": roles.index("recommended" if "recommended" in roles else "stay"),
+            "rule": rule, "kind": listing, "agent_role": "recommended" if own is not None else None, "merged": []}
+
+
+def role_problems(given, kind):
+    """pricing.options keys that belong to another kind of listing (a new listing's options are the stances; a
+    reprice's stay, recommended and competing; a relist's top, recommended and competing). A role of this kind the
+    script didn't build this time (merged in a narrow range) is simply not used."""
+    roles = LISTING_ROLES[kind]
+    words = {"standard": "a new listing", "reprice": "a reprice", "relist": "a relist"}[kind]
+    return [f"pricing.options.{role}: isn't an option of {words} → use {', '.join(roles[:-1])} or {roles[-1]}."
+            for role in given
+            if role in ROLES and role not in roles]
 
 
 def option_inputs(R):
     """The model's per-option values, pricing.options.<role> (time, seller_credit, note, or the agent's own
-    expected_sale, closing_date, months_to_contract): (options, problems). A role the script didn't build this time is
-    simply not used."""
+    expected_sale, closing_date, months_to_contract): (options, problems). Roles of another kind of listing are caught
+    once the script knows which kind this is (role_problems)."""
     opts = (R.get("pricing") or {}).get("options")
     if opts in (None, {}):
         return {}, []
     if not isinstance(opts, dict):
-        return {}, ["pricing.options: should be {role: {time, seller_credit, note}} → keyed by stay, top, recommended or "
-                    "competing; leave it out for the script's values."]
+        return {}, ["pricing.options: should be {role: {time, seller_credit, note}} → keyed by draw_offers, market or "
+                    "premium (a reprice: stay, recommended, competing; a relist: top, recommended, competing); leave it "
+                    "out for the script's values."]
     errors = []
     for role, v in opts.items():
         if role not in ROLES:
-            errors.append(f"pricing.options.{role}: isn't an option the script builds → use stay, top, recommended or "
-                          "competing.")
+            errors.append(f"pricing.options.{role}: isn't an option the script builds → use draw_offers, market or "
+                          "premium (a reprice: stay, recommended, competing; a relist: top, recommended, competing).")
             continue
         if not isinstance(v, dict):
             errors.append(f"pricing.options.{role}: should be an object → {{time, seller_credit, note}}.")
@@ -451,7 +531,7 @@ def option_inputs(R):
 
 def option_defaults(stats, cards):
     """The script's time to contract and seller credit for the options: the time from the market's recent median days
-    on market (top of range and Stay slower, competing faster), as a range of weeks; the credit is the recent share of
+    on market (Premium, top of range and Stay slower, Draw Offers and competing faster), as a range of weeks; the credit is the recent share of
     sales with seller-paid costs times their median amount, to $500 (the comps' without an export). Returns {time:
     {role: text}, credit, days, days_assumed}."""
     days = stats.get("median_days_recent")
@@ -469,15 +549,19 @@ def option_defaults(stats, cards):
             "days_assumed": assumed}
 
 
-def option_values(options, given, defaults):
-    """Each option as the net sheet reads it, {role, list_price, time, seller_credit, note}: the script's defaults,
-    with the model's pricing.options.<role> in place of any value it gives (and the agent's own expected_sale,
-    closing_date or months_to_contract when given)."""
+def option_values(built, given, defaults):
+    """Each option as the net sheet reads it, {role, name, list_price, time, seller_credit, note, agent}: the script's
+    defaults, with the model's pricing.options.<role> in place of any value it gives (and the agent's own expected_sale,
+    closing_date or months_to_contract when given). A new listing's options are named for their stance (the agent's own
+    price: Our Price); a reprice's and a relist's by their price alone."""
     out = []
-    for role, price in options:
+    for role, price in built["options"]:
         g = given.get(role) or {}
-        x = {"role": role, "list_price": price, "time": defaults["time"][role], "seller_credit": defaults["credit"],
-             "note": L["opt_note_" + role], "time_source": "rule"}
+        agent = role == built["agent_role"]
+        name = (L["option_agent"] if agent else L["stance_" + role]) if built["kind"] == "standard" else ""
+        x = {"role": role, "name": name, "agent": agent, "list_price": price, "time": defaults["time"][role],
+             "seller_credit": defaults["credit"], "note": L["opt_note_agent" if agent and name else "opt_note_" + role],
+             "time_source": "rule"}
         for k in OPTION_KEYS:
             if g.get(k) not in (None, ""):
                 x[k] = g[k]
@@ -1257,10 +1341,11 @@ def comps_first(R, market, homes=()):
     prices = {}
     for stance in cma.STANCES:
         try:
-            options, ri, _ = build_options({k: v for k, v in R.items() if k != "price_override"}, stance, rng["low"],
-                                           rng["high"], rp, relist)
-            prices[stance] = {"list_price": options[ri][1], "list_price_display": money(options[ri][1]),
-                              "options": [money(price) for _, price in options]}
+            built = build_options({k: v for k, v in R.items() if k != "price_override"}, stance, rng["low"],
+                                  rng["high"], rp, relist)
+            price = built["options"][built["index"]][1]
+            prices[stance] = {"list_price": price, "list_price_display": money(price),
+                              "options": [money(p) for _, p in built["options"]]}
         except ReportError as e:
             prices[stance] = {"problem": str(e)}
     return {
@@ -1335,11 +1420,13 @@ def compute(R, market, homes, data_file=None):
     agent_price, agent_reason, _ = price_override(R)
     stance, suggested, signals, stance_reason, problems = pick_stance(R, stats, rp is not None or relist is not None,
                                                                       agent_price)
+    option_errors += role_problems(given, listing_kind(rp, relist))
     if problems or option_errors:
         raise ReportError(stop_message(problems + option_errors))
-    options, ri, rule_price = build_options(R, stance, rec["low"], rec["high"], rp, relist)
+    built = build_options(R, stance, rec["low"], rec["high"], rp, relist)
+    ri, rule_price = built["index"], built["rule"]
     defaults = option_defaults(stats, cards)
-    strategies = option_values(options, given, defaults)
+    strategies = option_values(built, given, defaults)
     p["strategies"] = strategies  # the working copy: what the payments and the net sheet read
     rec["list_price"] = strategies[ri]["list_price"]
     roles = [x["role"] for x in strategies]
@@ -1430,8 +1517,9 @@ def compute(R, market, homes, data_file=None):
     reprice = R.get("reprice") or None
     strat = []
     for i, (x, c) in enumerate(zip(strategies, closings)):
-        row = {"label": t("strategy_stay" if i == stay else "strategy_label", price=money(x["list_price"])),
-               "role": x["role"], "time_source": x["time_source"],
+        row = {"label": t("strategy_named", name=x["name"], price=money(x["list_price"])) if x["name"] else
+               t("strategy_stay" if i == stay else "strategy_label", price=money(x["list_price"])),
+               "name": x["name"], "agent": x["agent"], "role": x["role"], "time_source": x["time_source"],
                "list_price": x["list_price"], "list_price_display": money(x["list_price"]),
                "expected_sale": x["expected_sale"], "expected_sale_display": money(x["expected_sale"]),
                "expected_sale_source": x.get("expected_sale_source"), "time": str(x.get("time") or ""),
@@ -1460,8 +1548,8 @@ def compute(R, market, homes, data_file=None):
                      "still nets more, say in pricing.note that the cut buys time and certainty, not a higher net.")
         elif stay is None and x["list_price"] > strat[ri]["list_price"]:
             warn("top_nets_more", f"The {x['list_price_display']} option nets {about(nets[i] - nets[ri])} more than the "
-                 "recommended one after holding costs. A top-of-range price takes longer and usually sells near the "
-                 "middle of the range anyway (method.md): lower its expected sale or lengthen its time, or explain in "
+                 "recommended one after holding costs. A higher price takes longer and usually sells near the "
+                 "recommended one anyway (method.md): lower its expected sale or lengthen its time, or explain in "
                  "pricing.note.")
     # CMA-319: a competing-offer option that nets more says, once in the notes, that its net depends on those offers
     caveat = len(strat) - 1 if competing and nets[-1] > nets[ri] else None
@@ -1576,6 +1664,7 @@ def compute(R, market, homes, data_file=None):
     C["max_distance"] = max((h["distance"] for h in others if h["status"] == "SOLD" and h.get("distance") is not None),
                             default=None)
     C["strategies"], C["recommended_index"] = strat, ri
+    C["listing_kind"], C["options_merged"] = built["kind"], [list(m) for m in built["merged"]]
     C["launch"] = launch
     C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "source", "filled", "agent", "capped",
                                                        "floored", "top")}
@@ -1605,6 +1694,14 @@ def compute(R, market, homes, data_file=None):
     N = notes.Notes()
     add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, caveat, bool(reprice_out), defaults,
               stay_caveat=stay is not None and stay != ri and nets[stay] > nets[ri])
+    merged = {}  # a narrow range: the stance options that came within 1% of a kept one, said once, by the kept one
+    for role, into in built["merged"]:
+        merged.setdefault(into, []).append(role)
+    if merged:
+        names = {x["role"]: x["name"] for x in strategies}
+        N.add("options_merged", " ".join(t("note_options_merged", merged=cma._and([L["stance_" + r] for r in gone]),
+                                           kept=names[into], verb="lists" if len(gone) == 1 else "list")
+                                         for into, gone in merged.items()), "info")
     if hint:
         N.add("state_unknown", t("note_state_unknown", mls=market.mls, state=hint["state_name"],
                                  line=hint["transfer_tax_label"], estimate=hint["estimate_label"],

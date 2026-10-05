@@ -244,15 +244,17 @@ class OfferPlan(unittest.TestCase):
     def test_plan_for_each_posture(self):
         """Range $455,000 to $480,000, median $469,800, width $25,000, asking $474,900, sale-to-list 97%."""
         args = (455000, 480000, 469800, 474900, 25000)
-        want = {"leverage": (449000, 470000), "standard": (455000, 470000), "competitive": (468000, 474900),
-                "must_win": (474900, 474900)}
-        for posture, (opening, walk) in want.items():
+        # (opening, target_low, target, target_high, walk-away, the target's basis): the ratio's $461,000, never under a
+        # quarter of the way from the opening to the walk-away (competitive: $470,000), never above the walk-away
+        want = {"leverage": (449000, 458500, 461000, 463500, 470000, "ratio"),
+                "standard": (455000, 459000, 461000, 463500, 470000, "ratio"),
+                "competitive": (468000, 470000, 470000, 472500, 474900, "floor"),
+                "must_win": (474900, 474900, 474900, 474900, 474900, "floor")}
+        for posture, steps in want.items():
             with self.subTest(posture):
                 p = compute.offer_plan_for(posture, *args, 0.97)
-                self.assertEqual((p["opening"], p["walk_away"]), (opening, walk))
-                target = min(max(fmt.half_up(474900 * 0.97, 1000), opening), walk)
-                self.assertEqual(p["target"], target)
-                self.assertEqual((p["target_low"], p["target_high"]), (max(opening, target - 2500), min(walk, target + 2500)))
+                self.assertEqual(tuple(p[k] for k in ("opening", "target_low", "target", "target_high", "walk_away"))
+                                 + (p["basis"]["target"],), steps)
         p = compute.offer_plan_for("standard", *args)  # no ratio: the midpoint
         self.assertEqual((p["target"], p["basis"]["target"]), (fmt.half_up((455000 + 470000) / 2, 1000), "midpoint"))
         p = compute.offer_plan_for("must_win", 455000, 470000, 462000, 474900, 25000)  # asking above the range
@@ -260,6 +262,20 @@ class OfferPlan(unittest.TestCase):
         p = compute.offer_plan_for("standard", 455000, 480000, 469800, 450000, 25000)  # asking under the range
         self.assertEqual((p["opening"], p["walk_away"]), (450000, 450000))
         self.assertEqual(p["basis"]["walk_away"], "asking")
+
+    def test_target_floor(self):
+        """The target is never under the opening plus a quarter of the gap to the walk-away ($1,000, half up), never
+        above the walk-away; it follows the ratio when that's higher."""
+        for opening, walk, ratio_target, want in ((450000, 470000, 440000, 455000), (450000, 470000, 462000, 462000),
+                                                  (452600, 456600, 400000, 454000), (452400, 452500, 400000, 452400),
+                                                  (469900, 469900, 500000, 469900)):
+            with self.subTest(opening=opening, walk=walk):
+                target, lo, hi, _ = compute.plan_target(opening, walk, 500000, ratio_target / 500000)
+                self.assertEqual(target, want)
+                self.assertTrue(opening <= lo <= target <= hi <= walk)
+                self.assertGreaterEqual(lo, min(compute.target_floor(opening, walk), target))
+                if walk - opening >= 4000:
+                    self.assertGreater(target, opening)
 
     def test_posture_and_override_in_the_report(self):
         """The posture left out is the suggested one; another needs a reason and is kept; the agent's steps replace the
