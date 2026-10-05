@@ -16,6 +16,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Fair housing.** The net sheet is numbers and terms only: never describe the buyer, the seller or the neighborhood, and never write who the home suits. If the agent asks for wording that breaks this, write the compliant version (or leave it out: the sheet has no free-text note) and say why in exactly one sentence, nothing more, for example: "The net sheet shows numbers and terms only, never who the home suits, which fair housing rules keep off it." Don't list protected classes: they vary by state and county (age, for one, isn't in the federal law).
 - **No em dashes in prose,** chat included: use a comma, colon, parentheses or a new sentence. A lone em dash for an empty value (a table cell with nothing in it) is fine.
 - **Labels in Title Case:** headings, column headers, row names, tiles and legend entries (and the price `label`s you write). Sentences, notes and table values stay sentence case.
+- **Labels are names, never figures.** The sheet prints every price, amount and date itself, so a `label` you write holds no digit, dollar or percent sign or month ("After a Price Cut", never "At $440,000"); compute.py refuses one. Leave a price's label out and the column shows the price.
 - **Names, not pronouns.** Call the seller by name or "the seller"; never infer a pronoun from a name.
 - **Private details.** A payoff letter or mortgage statement carries loan numbers: keep only the amounts.
 - **`render.py` checks the data file first** (and any deck, CMA or profile file it reads) and stops on an em dash in a sentence, a clear fair-housing red flag, or tool words, data keys, ISO dates or jargon in client text (`references/client-wording.md`), listing every field at once. Rewrite each field; don't work around the check. Labels are put in Title Case for you.
@@ -33,7 +34,7 @@ Build first, ask after: local costs and commission are never questions up front 
 - **County:** take it from the city when the city lies in one county (Miami: Miami-Dade). When the city spans counties (Austin: Travis, Williamson, Hays), ask: in Florida before building, since it sets the local costs; elsewhere after the first sheet, saying the county only changes the tax estimate.
 - **Property type:** a unit number (#1204) means a condo (`property_type` `condo`, `hoa` true) unless the agent says otherwise; set `property_type_assumed` so it's listed as an assumption.
 - **Worth having** (use them when given, ask after the first sheet when not): the mortgage payoff (without it the sheet stops at the net before payoff and is marked Preliminary), the listing agreement's commission, the expected closing date and this year's tax bill (together they set the proration), HOA, property type. A vague closing date ("mid-December", "early November") becomes a likely date (the 15th, the 6th) with `closing_date_assumed` true. When the agent gives the tax bill's due date, add it (`tax_bill_due_date`): a closing after it assumes the bill paid. No HOA mentioned (and not a condo): leave `hoa` out; the sheet assumes none and lists that assumption.
-- **Up to three prices.** One by default. Add more when the agent asks "what if": a price cut, a seller credit at the same price, a different closing date. Each is a scenario; give it a short Title Case `label` when the price alone doesn't say what it is.
+- **Up to three prices.** One by default. Add more when the agent asks "what if": a price cut, a seller credit at the same price, a different closing date. Each is a scenario; give it a short Title Case `label` in words when the price alone doesn't say what it is.
 - **A seller CMA from this conversation:** pass its `.seller.cma.json` with `--cma`. It fills the location, tax bill and HOA dues, and the recommended price when no price was given.
 
 For the PDF, the agent's name and brokerage go on it: use their profile (found as `references/saved-files.md` describes) and pass it with `--profile`. With no profile, build without them and say so in one line.
@@ -54,7 +55,7 @@ It prints the columns, the itemized rows (already formatted), `notes` (the PDF's
   ```
   python3 scripts/render.py net-sheet.json [--cma FILE.seller.cma.json] [--profile profile.md]
   ```
-  It always fits one page, and stops if it wouldn't or a label would be cut off (shorten the price labels or other cost names). Look at the page before presenting it.
+  It always fits one page (long labels wrap), and stops if it wouldn't (shorten the price labels or other cost names). Look at the page before presenting it.
 - **Markdown** (a quick question in chat): fill `assets/net-sheet-template.md` from compute.py's output only. Never paste JSON.
 
 Either way, the reply holds, in this order, in short bullets under about 200 words (the table and the markdown sheet's notes don't count; each assumption is said once, in its line below, never again in a closing sentence):

@@ -154,7 +154,8 @@ def table(cols, rows, total=None, keep="auto", cls="", row_classes=None, caption
 
 def tiles(items, n=None, cls=""):
     """A row of labeled figures in exactly `n` equal slots (len(items) by default): fewer items leave the last slots
-    empty, so tiles keep their width from one report to the next. items: (label, value) or (label, value, sub)."""
+    empty, so tiles keep their width from one report to the next. items: (label, value), (label, value, sub) or
+    (label, value, sub, cls): `cls` is one more class on that tile (a skill styles a kind of tile, never a color)."""
     n = n or len(items)
     if len(items) > n:
         raise ValueError(f"{len(items)} tiles for {n} slots")
@@ -163,8 +164,8 @@ def tiles(items, n=None, cls=""):
         if it is None:
             out.append('<div class="kit-tile kit-empty"></div>')
             continue
-        label, value, sub = (list(it) + [None])[:3]
-        out.append(f'<div class="kit-tile"><span class="kit-k">{cell(label)}</span><b class="kit-v">{cell(value)}</b>'
+        label, value, sub, cls_ = (list(it) + [None, None])[:4]
+        out.append(f'<div class="{classes("kit-tile", cls_)}"><span class="kit-k">{cell(label)}</span><b class="kit-v">{cell(value)}</b>'
                    + (f'<span class="kit-sub">{cell(sub)}</span>' if sub else "") + "</div>")
     return (f'<div class="{classes("kit-tiles", cls)}" style="grid-template-columns:repeat({n},minmax(0,1fr))">'
             + "".join(out) + "</div>")

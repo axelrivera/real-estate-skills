@@ -1,10 +1,15 @@
 {
+ "assumption_keys": [
+  "tax",
+  "title_fees",
+  "estoppel"
+ ],
  "assumptions": {
-  "count": 2
+  "count": 3
  },
  "cash_at_closing": true,
  "chat_notes": {
-  "count": 5
+  "count": 3
  },
  "closing_date_assumed": false,
  "columns": [
@@ -17,12 +22,12 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.084,
    "costs_pct_display": "8.4%",
-   "net": 180206.0,
-   "net_before_payoff": 412206.0,
+   "net": 180206,
+   "net_before_payoff": 412206,
    "payoff_total": 232000,
    "price": 450000,
    "short": false,
-   "total_costs": 37794.0
+   "total_costs": 37794
   },
   {
    "bar": {
@@ -33,12 +38,12 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.0844,
    "costs_pct_display": "8.4%",
-   "net": 170876.0,
-   "net_before_payoff": 402876.0,
+   "net": 170876,
+   "net_before_payoff": 402876,
    "payoff_total": 232000,
    "price": 440000,
    "short": false,
-   "total_costs": 37124.0
+   "total_costs": 37124
   },
   {
    "bar": {
@@ -49,30 +54,30 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.1052,
    "costs_pct_display": "10.5%",
-   "net": 170656.0,
-   "net_before_payoff": 402656.0,
+   "net": 170656,
+   "net_before_payoff": 402656,
    "payoff_total": 232000,
    "price": 450000,
    "short": false,
-   "total_costs": 47344.0
+   "total_costs": 47344
   }
  ],
  "commission_assumed": false,
  "facts": [
-  {},
-  {
-   "text": "Single-Family"
-  },
-  {},
-  {},
-  {},
-  {},
-  {}
+  "Single-Family"
  ],
  "has_tax_proration": true,
  "market_notes": {
   "count": 0
  },
+ "note_keys": [
+  "tax",
+  "title_fees",
+  "estoppel",
+  "commission",
+  "payoff",
+  "not_included"
+ ],
  "notes": {
   "count": 6
  },
@@ -98,9 +103,9 @@
   },
   {
    "amounts": [
-    -13500.0,
-    -13200.0,
-    -13500.0
+    -13500,
+    -13200,
+    -13500
    ],
    "display": {
     "count": 3
@@ -110,9 +115,9 @@
   },
   {
    "amounts": [
-    -11250.0,
-    -11000.0,
-    -11250.0
+    -11250,
+    -11000,
+    -11250
    ],
    "display": {
     "count": 3
@@ -126,9 +131,9 @@
   },
   {
    "amounts": [
-    -3150.0,
-    -3080.0,
-    -3150.0
+    -3150,
+    -3080,
+    -3150
    ],
    "display": {
     "count": 3
@@ -273,9 +278,9 @@
   },
   {
    "amounts": [
-    -37794.0,
-    -37124.0,
-    -47344.0
+    -37794,
+    -37124,
+    -47344
    ],
    "display": {
     "count": 3
@@ -285,9 +290,9 @@
   },
   {
    "amounts": [
-    412206.0,
-    402876.0,
-    402656.0
+    412206,
+    402876,
+    402656
    ],
    "display": {
     "count": 3
@@ -326,9 +331,9 @@
   },
   {
    "amounts": [
-    180206.0,
-    170876.0,
-    170656.0
+    180206,
+    170876,
+    170656
    ],
    "display": {
     "count": 3
@@ -337,6 +342,7 @@
    "kind": "final"
   }
  ],
+ "sample": false,
  "state": "FL",
  "summary_tiles": {
   "count": 0

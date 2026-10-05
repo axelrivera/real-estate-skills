@@ -120,6 +120,15 @@ class Phrases(unittest.TestCase):
         self.assertIn("- summary: em dash", str(e.exception))
 
 
+class FigureFree(unittest.TestCase):
+    def test_figures_in_model_text(self):
+        """Judgment fields and labels hold no figure the script didn't make: digits, $, %, month names."""
+        for text, found in (("After a Price Cut", []), ("At $425,000", ["$425,000"]), ("Cut 2.5%", ["2.5%"]),
+                            ("December Closing", ["December"]), ("May Close Sooner", []), ("Option 3", ["3"]),
+                            ("$450K List", ["$450K"]), ("See www.example2.com", []), ("", [])):
+            self.assertEqual(prose.figures(text), found, text)
+
+
 class PlaceNamesAndAllowList(unittest.TestCase):
     """Proper names don't block a render; the allow list needs a reason and is reported."""
 

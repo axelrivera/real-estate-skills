@@ -1,14 +1,20 @@
-"""Compute a seller net sheet (one to three prices) from net-sheet.json.
+"""Compute a seller net sheet (one to three prices) from net-sheet.json: the one document model the PDF and the
+markdown sheet are both filled from.
 
     python3 scripts/compute.py net-sheet.json [--cma FILE.seller.cma.json] [--mls NAME]
 
-Prints JSON: one column per price, the itemized rows in the PDF's order (brokerage, transfer taxes, title and
-closing, prorations, concessions, payoffs), each amount already formatted for the markdown template, plus `notes`
-(printed under the table), `assumptions` (tell the agent), `warnings` (fix or tell the agent) and `preliminary`.
-render.py builds the PDF from the same result, so chat and file always agree. Every cost comes from
-finance.seller_net: this sale's own numbers in `costs`, then the built-in local values, then national estimates.
+Prints JSON: one column per price, the itemized rows in the page's order (brokerage, transfer taxes, title and
+closing, prorations, concessions, payoffs), every amount already formatted, `notes` (the PDF's notes block),
+`chat_notes` (the markdown sheet's: the notes the reply's assumption lines don't already say), `assumptions` (one
+line each in the reply), `warnings` and `preliminary`. render.py places this same result, so chat and file agree.
+
+Every cost comes from finance.seller_net (this sale's own numbers in `costs`, then the built-in local values, then
+national estimates). Each column is a finance.Ledger: every line is rounded once, and every subtotal is the sum of
+the printed lines. Every sentence and label is a template in assets/labels.json; notes go through one notes.Notes
+registry, so each is said once, and no label carries one. The input is never changed.
 """
 import argparse
+import copy
 import json
 import os
 import re
@@ -16,39 +22,40 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import finance, handoff, profiles  # noqa: E402
+from _shared import finance, fmt, handoff, notes, profiles, prose  # noqa: E402
 
-money = finance.money
+LABELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "labels.json")
+with open(LABELS_PATH, encoding="utf-8") as _f:
+    L = json.load(_f)
+
 MAX_SCENARIOS = 3  # three columns still fit on one page
-BALANCE_RATE = 4.5  # % a year: a statement balance gets a month of interest at the loan's rate, else this (as the seller CMA)
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 
-# Row groups in page order: (key, label, line keys from finance.seller_net)
-GROUPS = (("brokerage", "Brokerage", ("listing_fee", "buyer_broker_fee")),
-          ("taxes", "Transfer Taxes", ("transfer_tax", "transfer_surtax")),
-          ("title", "Title and Closing", ("owner_title", "title_fees", "estoppel")),
-          ("prorations", "Prorations", ("tax_proration",)),
-          ("concessions", "Concessions and Other Costs", ("credit", "other")))
+# Row groups in page order: (group key, line keys from finance.seller_net)
+GROUPS = (("brokerage", ("listing_fee", "buyer_broker_fee")),
+          ("taxes", ("transfer_tax", "transfer_surtax")),
+          ("title", ("owner_title", "title_fees", "estoppel")),
+          ("prorations", ("tax_proration",)),
+          ("concessions", ("credit", "other")))
+COST_KEYS = {k for _, keys in GROUPS for k in keys}
 SMALL_WORDS = {"a", "an", "and", "of", "on", "or", "the", "to", "for", "in"}
-PROPERTY_TYPES = {"single_family": "Single-Family", "condo": "Condo", "townhouse": "Townhouse",
-                  "multifamily": "Multifamily", "land": "Land"}
-MISSING_WORDS = {"deed transfer tax": "transfer tax (or confirmation there is none)", "HOA estoppel fee": "HOA documents fee",
-                 "who pays owner's title": "who customarily pays the owner's title policy", "listing fee": "listing brokerage fee",
-                 "buyer's agent fee": "buyer's agent compensation"}
+# The reply says these notes as its assumption lines; the markdown sheet's notes are the rest (said once)
+REPLY_KINDS = ("assumption", "estimate", "chat_only")
 
 
 class NetSheetError(ValueError):
     """Something net-sheet.json needs; the message is written for the agent."""
 
 
+def t(key, **kw):
+    """A labels.json template, filled."""
+    return L[key].format(**kw)
+
+
 def title_case(text):
     """'municipal_lien_search' -> 'Municipal Lien Search', 'title company quote' -> 'Title Company Quote'."""
     words = str(text).replace("_", " ").split()
     return " ".join(w if i and w.lower() in SMALL_WORDS else w[:1].upper() + w[1:] for i, w in enumerate(words))
-
-
-def pct_text(rate):
-    return f"{rate * 100:.2f}".rstrip("0").rstrip(".")
 
 
 def _date(v, name):
@@ -68,6 +75,17 @@ def _amount(v, name):
     return v
 
 
+def _label(text, name):
+    """A label the model typed: a name only. The sheet prints every price, amount and date itself, so a figure in a
+    label could disagree with the column it names."""
+    found = prose.figures(text)
+    if found:
+        raise NetSheetError(f"{name} ({text!r}) has a figure in it ({', '.join(found)}): the sheet prints the price, "
+                            "amounts and dates itself. Name it in words (\"After a Price Cut\"), or leave a price's "
+                            "label out to show the price.")
+    return text
+
+
 def _items(v, name):
     """A list of {label, amount} (other costs, other payoffs), checked."""
     if v in (None, []):
@@ -75,25 +93,18 @@ def _items(v, name):
     if not isinstance(v, list) or not all(isinstance(o, dict) and o.get("label") for o in v):
         raise NetSheetError(f"{name} should be a list of {{label, amount}} items, like "
                             '[{"label": "Survey", "amount": 450}].')
-    return [{"label": title_case(o["label"]) if str(o["label"]).islower() else o["label"],
+    return [{"label": _label(title_case(o["label"]) if str(o["label"]).islower() else o["label"], f"{name} label"),
              "amount": _amount(o.get("amount") or 0, f"{name} ({o['label']})")} for o in v]
 
 
-def long_date(d):
-    return f"{d:%B} {d.day}, {d.year}"
-
-
-def short_date(d):
-    return f"{d:%b} {d.day}, {d.year}"
-
-
 def apply_cma(R, h):
-    """Fill what the sheet doesn't say from a seller-cma handoff for the same home: the location, the tax bill, HOA dues,
-    and the recommended list price when no price was given."""
+    """A copy of the data with what it doesn't say filled from a seller-cma handoff for the same home: the location,
+    the tax bill, HOA dues, and the recommended list price when no price was given."""
     if h.get("side") != "seller":
         raise NetSheetError("That CMA was made for a buyer. Use the seller CMA for this home, or leave it out.")
+    R = copy.deepcopy(R)
     s, p = h["subject"], R.setdefault("property", {})
-    slug = lambda a: re.sub(r"[^a-z0-9]", "", str(a or "").split(",")[0].lower())
+    slug = lambda a: re.sub(r"[^a-z0-9]", "", str(a or "").split(",")[0].lower())  # noqa: E731
     if p.get("address") and slug(p["address"]) != slug(s.get("address")):
         raise NetSheetError(f"The CMA is for {s.get('address')}, not {p['address']}: use a CMA for the same home.")
     for k in ("address", "city", "county", "state"):
@@ -105,7 +116,7 @@ def apply_cma(R, h):
     if p.get("hoa_monthly") is None and s.get("hoa_monthly") is not None:
         p["hoa_monthly"] = s["hoa_monthly"]
     if not R.get("scenarios") and h.get("recommended_list_price"):
-        R["scenarios"] = [{"price": h["recommended_list_price"], "label": "Recommended List Price"}]
+        R["scenarios"] = [{"price": h["recommended_list_price"], "label": L["col_recommended"]}]
     if not R.get("mls") and (h.get("market_profile") or {}).get("mls"):
         R["mls"] = h["market_profile"]["mls"]
     return R
@@ -125,78 +136,89 @@ def scenarios(R):
         raise NetSheetError(f"A net sheet compares at most {MAX_SCENARIOS} prices on one page; this one has {len(xs)}. "
                             "Pick the three that matter most.")
     out = []
-    for i, x in enumerate(xs, 1):
+    for i, x in enumerate(xs):
         price = x.get("price")
         if isinstance(price, bool) or not isinstance(price, (int, float)) or price <= 0:
-            raise NetSheetError(f"scenarios[{i - 1}].price should be the sale price as a number, not {price!r}.")
-        own = x.get("closing_date")  # iteration 9 evals 1, 4: a vague date ("mid-December") is marked assumed
-        out.append({"price": price, "label": x.get("label"),
-                    "credit": _amount(x.get("seller_credit"), f"scenarios[{i - 1}].seller_credit") or 0,
-                    "warranty": _amount(x.get("home_warranty"), f"scenarios[{i - 1}].home_warranty") or 0,
-                    "repairs": _amount(x.get("repairs"), f"scenarios[{i - 1}].repairs") or 0,
+            raise NetSheetError(f"scenarios[{i}].price should be the sale price as a number, not {price!r}.")
+        own = x.get("closing_date")  # a vague date ("mid-December") is marked assumed
+        out.append({"price": price, "label": _label(x["label"], f"scenarios[{i}].label") if x.get("label") else None,
+                    "credit": _amount(x.get("seller_credit"), f"scenarios[{i}].seller_credit") or 0,
+                    "warranty": _amount(x.get("home_warranty"), f"scenarios[{i}].home_warranty") or 0,
+                    "repairs": _amount(x.get("repairs"), f"scenarios[{i}].repairs") or 0,
                     "closing": _date(own or R.get("closing_date"), "closing_date"),
                     "closing_assumed": bool(x.get("closing_date_assumed") if own else R.get("closing_date_assumed"))})
-    labels = [x["label"] or (money(x["price"]) + (f" with {money(x['credit'])} Credit" if x["credit"] else "")) for x in out]
+    labels = [x["label"] or (t("col_credit", price=fmt.money(x["price"]), credit=fmt.money(x["credit"])) if x["credit"]
+                             else fmt.money(x["price"])) for x in out]
     for i, x in enumerate(out):  # two columns may not share a name
-        x["label"] = labels[i] if labels.count(labels[i]) == 1 else f"{labels[i]} (Option {i + 1})"
+        x["label"] = labels[i] if labels.count(labels[i]) == 1 else t("col_option", label=labels[i], n=i + 1)
     return out
 
 
 def payoffs(costs):
-    """([{key, label, amount}], first mortgage known?, estimated from a balance?)."""
+    """([{label, amount}], first mortgage known?, estimated from a balance?). A stated payoff is used as given; a
+    statement balance gets a month's interest (finance.payoff_from_balance)."""
     rows, known, est = [], False, False
     first, balance = _amount(costs.get("mortgage_payoff"), "costs.mortgage_payoff"), costs.get("mortgage_balance")
     if first is None and balance is not None:
         _amount(balance, "costs.mortgage_balance")
-        if balance:  # a balance isn't a payoff: add a month's interest (a stated payoff is used as given)
-            first = round(balance * (1 + (costs.get("mortgage_rate") or BALANCE_RATE) / 100 / 12))
-            est = True
-        else:
-            first = 0
+        first = finance.payoff_from_balance(balance, costs.get("mortgage_rate")) if balance else 0
+        est = bool(balance)
     if first is not None:
         known = True
         if first:
-            rows.append({"key": "payoff", "label": "Mortgage Payoff", "amount": first})  # an estimate: said in the notes
+            rows.append({"label": L["row_mortgage_payoff"], "amount": first})
     for o in _items(costs.get("other_payoffs"), "costs.other_payoffs"):
         if o["amount"]:
-            rows.append({"key": "payoff", "label": o["label"], "amount": o["amount"]})
+            rows.append({"label": o["label"], "amount": o["amount"]})
     return rows, known, est
 
 
-def summary_tiles(columns, payoff_known):
-    """The boxes that fill the tile row next to one or two price tiles, so the row is always three boxes wide and no
-    tile stretches: one price adds its seller costs and its payoffs (the price tile already shows the net before payoff
-    when the payoff isn't known, so that box asks for it); two prices add the difference between their nets, worded as
-    less to bring when the seller is short at both. Numbers already on the sheet, nothing new."""
-    if len(columns) == 1:
-        a = columns[0]
-        out = [{"label": "Seller Costs", "display": a["total_costs_display"], "note": f"{a['costs_pct_display']} of the sale price"}]
-        if not payoff_known:
-            out.append({"label": "Payoffs", "display": "Not Provided", "note": "The payoff letter shows the cash at closing"})
-        elif a["payoff_total"]:
-            out.append({"label": "Payoffs", "display": money(a["payoff_total"]), "note": "Mortgage and other payoffs"})
-        else:
-            out.append({"label": "Payoffs", "display": "$0", "note": "No mortgage or liens to pay off"})
-        return out
-    if len(columns) == 2:
-        a, b = columns
-        diff = abs(a["net"] - b["net"])
-        if round(diff) == 0:
-            return [{"label": "Difference", "display": "$0", "note": "Same net at both prices"}]
-        hi = a if a["net"] > b["net"] else b
-        return [{"label": "Difference", "display": money(diff),
-                 "note": f"Less to bring with {hi['label']}" if a["short"] and b["short"] else f"More with {hi['label']}"}]
-    return []
-
-
-def title_fee_rows(market, line):
+def title_fee_items(market, line):
     """The title company fees line, itemized by the fees it adds up (Florida: settlement, title search, municipal lien
     search, recording). A single quote stays one line."""
     fees = market.get("closing_costs.seller_title_fees") or {}
     items = [(k, v) for k, v in fees.items() if v]
     if len(items) < 2 or abs(sum(v for _, v in items) - line["amount"]) > 0.5:
         return [(line["label"], line["amount"])]
-    return [(title_case(k), v) for k, v in items]  # national estimates are named in the notes, never on the line
+    return [(title_case(k), v) for k, v in items]
+
+
+def column_ledger(x, net, market, pay_rows, label):
+    """One price's money as a finance.Ledger: the price, each cost (title fees itemized), then the payoffs. Every
+    line is rounded once; every total the page prints is a sum of these lines."""
+    led = finance.Ledger()
+    led.add("price", L["row_price"], x["price"])
+    for ln in net["lines"]:
+        if ln["key"] == "title_fees":
+            for name, amount in title_fee_items(market, ln):
+                led.cost("title_fees", name, amount)
+        else:
+            led.cost(ln["key"], label(ln), ln["amount"], rate=ln.get("rate"))
+    for r in pay_rows:
+        led.cost("payoff", r["label"], r["amount"])
+    return led
+
+
+def line_amount(led, key, label):
+    return sum(ln["amount"] for ln in led if ln["key"] == key and ln["label"] == label)
+
+
+def summary_tiles(columns, payoff_known):
+    """The boxes next to one or two price tiles (the tile row keeps three slots; a spare one stays empty): one price
+    adds its payoffs when they're known (its costs are on its own tile), two prices the difference between their nets."""
+    if len(columns) == 1:
+        a = columns[0]
+        return [{"label": L["tile_payoffs"], "display": fmt.money(a["payoff_total"]),
+                 "note": L["tile_payoffs_sub"] if a["payoff_total"] else L["tile_no_payoffs_sub"]}] if payoff_known else []
+    if len(columns) == 2:
+        a, b = columns
+        diff = abs(a["net"] - b["net"])
+        if diff == 0:
+            return [{"label": L["tile_difference"], "display": fmt.money(0), "note": L["tile_same_sub"]}]
+        hi = a if a["net"] > b["net"] else b
+        return [{"label": L["tile_difference"], "display": fmt.money(diff),
+                 "note": t("tile_less_sub" if a["short"] and b["short"] else "tile_more_sub", label=hi["label"])}]
+    return []
 
 
 def compute(R, market):
@@ -213,7 +235,7 @@ def compute(R, market):
     bf = finance.fraction(costs.get("buyer_broker_fee_pct"), "costs.buyer_broker_fee_pct")
     others = _items(costs.get("other"), "costs.other")
     pay_rows, payoff_known, payoff_est = payoffs(costs)
-    payoff_total = sum(r["amount"] for r in pay_rows)
+    payoff_total = sum(fmt.half_up(r["amount"]) for r in pay_rows)
     annual_tax = _amount(costs.get("annual_tax"), "costs.annual_tax")
     bill_paid = costs.get("current_tax_bill_paid")
     due_date = costs.get("tax_bill_due_date")
@@ -224,281 +246,234 @@ def compute(R, market):
     hoa_monthly = _amount(p.get("hoa_monthly"), "property.hoa_monthly")
     has_hoa = bool(p.get("hoa", bool(hoa_monthly)))
     kind = finance.property_type(p.get("property_type"))
+    types = L["property_types"]
 
     nets = []
     for x in xs:
         extra = list(others)
         if x["warranty"]:
-            extra.append({"label": "Home Warranty", "amount": x["warranty"]})
+            extra.append({"label": L["row_home_warranty"], "amount": x["warranty"]})
         if x["repairs"]:
-            extra.append({"label": "Repairs", "amount": x["repairs"]})
-        nets.append(finance.seller_net(x["price"], market, credit=x["credit"], payoff=payoff_total if payoff_known else None,
+            extra.append({"label": L["row_repairs"], "amount": x["repairs"]})
+        nets.append(finance.seller_net(x["price"], market, credit=x["credit"], payoff=None,
                                        listing_fee_pct=lf, buyer_broker_fee_pct=bf, has_hoa=has_hoa, other_costs=extra,
-                                       annual_tax=annual_tax, closing=x["closing"], bill_paid=bill_paid, prop_type=p.get("property_type"),
-                                       tax_due_date=due_date))
+                                       annual_tax=annual_tax, closing=x["closing"], bill_paid=bill_paid,
+                                       prop_type=p.get("property_type"), tax_due_date=due_date))
     first = nets[0]
     assumed = {a["key"] for a in first["assumed"]}
     bill_month = market.get("property_tax.bill_month") or TAX_BILL_MONTH
-    has_tax = any(l["key"] == "tax_proration" for n in nets for l in n["lines"])
-    # iteration 9 eval 4: a closing after this year's bill is due assumes it paid (finance.tax_proration)
+    has_tax = any(ln["key"] == "tax_proration" for n in nets for ln in n["lines"])
+    # a closing after this year's bill is due assumes it paid (finance.tax_proration)
     paid_assumed = [bool(x["closing"]) and finance.tax_bill_assumed_paid(x["closing"], market, bill_paid, due_date) for x in xs]
-    tax_paid_assumed = has_tax and all(paid_assumed)
     tax_assumed = has_tax and bill_paid is None and any(x["closing"] and x["closing"].month >= bill_month and not pa
                                                         for x, pa in zip(xs, paid_assumed))
     tax_mixed = has_tax and any(paid_assumed) and not all(paid_assumed)  # one closing before the due date, one after
 
     def label(line):
-        key, rate = line["key"], line["rate"]
-        if key == "listing_fee":
-            return f"Listing Brokerage ({pct_text(rate)}%)"  # a default commission is a default: no label
-        if key == "buyer_broker_fee":
-            return f"Buyer's Agent Compensation ({pct_text(rate)}%)"
-        if key == "tax_proration" and tax_mixed:
-            return "Property Tax Proration (Charge or Credit by Closing Date)"
-        if key == "tax_proration" and tax_assumed:
-            return "Property Tax Proration (Jan 1 to Closing)"  # the unpaid bill is said once, in the notes
+        key, rate = line["key"], line.get("rate")
+        if key in ("listing_fee", "buyer_broker_fee"):  # a default commission is a default: no label, no note
+            return t("row_" + key, pct=fmt.pct(rate, 2))
+        if key == "tax_proration" and tax_mixed:  # one row, though one closing is charged and another credited
+            return L["row_tax_mixed"]
         return line["label"]
 
-    # Rows: one per line key across every column (a seller credit may exist in only one), grouped as on the page
-    rows = [{"kind": "price", "key": "price", "label": "Sale Price", "amounts": [x["price"] for x in xs]}]
+    ledgers = [column_ledger(x, n, market, pay_rows, label) for x, n in zip(xs, nets)]
+
+    # Rows: one per line (key and label) across every column (a seller credit may exist in only one), as on the page
+    rows = [{"kind": "price", "key": "price", "label": L["row_price"], "amounts": [led.amount("price") for led in ledgers]}]
     if len({x["closing"] for x in xs}) > 1:  # different closing dates move the proration: show them
-        rows.append({"kind": "info", "key": "closing", "label": "Closing Date",
-                     "display": [short_date(x["closing"]) if x["closing"]
-                                 else "Not set" for x in xs]})
-    for gkey, glabel, keys in GROUPS:
+        rows.append({"kind": "info", "key": "closing", "label": L["row_closing"],
+                     "display": [fmt.date_short(x["closing"]) if x["closing"] else L["row_not_set"] for x in xs]})
+    for gkey, keys in GROUPS:
         group = []
         for key in keys:
-            if key == "other":
-                names = list(dict.fromkeys(l["label"] for n in nets for l in n["lines"] if l["key"] == "other"))
-                for name in names:
-                    group.append({"kind": "line", "key": "other", "label": name,
-                                  "amounts": [-sum(l["amount"] for l in n["lines"] if l["key"] == "other" and l["label"] == name)
-                                              for n in nets]})
-                continue
-            line = next((l for n in nets for l in n["lines"] if l["key"] == key), None)
-            if line is None:
-                continue
-            if key == "title_fees":
-                for name, amount in title_fee_rows(market, line):
-                    group.append({"kind": "line", "key": "title_fees", "label": name, "amounts": [-amount for _ in nets]})
-                continue
-            group.append({"kind": "line", "key": key, "label": label(line),
-                          "amounts": [-next((l["amount"] for l in n["lines"] if l["key"] == key), 0) for n in nets]})
+            names = list(dict.fromkeys(ln["label"] for led in ledgers for ln in led if ln["key"] == key))
+            group += [{"kind": "line", "key": key, "label": name, "amounts": [line_amount(led, key, name) for led in ledgers]}
+                      for name in names]
         if group:
-            rows.append({"kind": "group", "key": gkey, "label": glabel})
+            rows.append({"kind": "group", "key": gkey, "label": L["grp_" + gkey]})
             rows += group
-    rows.append({"kind": "subtotal", "key": "total_costs", "label": "Total Seller Costs", "amounts": [-n["total_costs"] for n in nets]})
-    finals = [n["net_before_payoff"] - payoff_total for n in nets]
-    cash = payoff_known
+    cost_lines = lambda ln: ln["key"] in COST_KEYS  # noqa: E731
+    rows.append({"kind": "subtotal", "key": "total_costs", "label": L["row_total_costs"],
+                 "amounts": [led.total(where=cost_lines) for led in ledgers]})
     if pay_rows:
-        rows.append({"kind": "subtotal", "key": "net_before_payoff", "label": "Net Before Payoff",
-                     "amounts": [n["net_before_payoff"] for n in nets]})
-        rows.append({"kind": "group", "key": "payoffs", "label": "Payoffs"})
-        rows += [{"kind": "line", "key": r["key"], "label": r["label"], "amounts": [-r["amount"] for _ in nets]} for r in pay_rows]
-    final_label = "Estimated Net to Seller" if cash else "Estimated Net Before Mortgage Payoff"
-    rows.append({"kind": "final", "key": "net", "label": final_label, "amounts": finals})
+        rows.append({"kind": "subtotal", "key": "net_before_payoff", "label": L["row_net_before_payoff"],
+                     "amounts": [led.total(where=lambda ln: ln["key"] != "payoff") for led in ledgers]})
+        rows.append({"kind": "group", "key": "payoffs", "label": L["grp_payoffs"]})
+        rows += [{"kind": "line", "key": "payoff", "label": r["label"],
+                  "amounts": [line_amount(led, "payoff", r["label"]) for led in ledgers]}
+                 for r in {r["label"]: r for r in pay_rows}.values()]
+    final_label = L["row_net"] if payoff_known else L["row_net_no_payoff"]
+    rows.append({"kind": "final", "key": "net", "label": final_label, "amounts": [led.total() for led in ledgers]})
     for r in rows:  # a line one column doesn't have (a seller credit in one option) is an empty cell, not $0
         if "amounts" in r:
-            r["display"] = ["—" if r["kind"] == "line" and not a else money(a) for a in r["amounts"]]
+            r["display"] = [fmt.EMPTY if r["kind"] == "line" and not a else fmt.money(a) for a in r["amounts"]]
 
     columns = []
-    for x, n, final in zip(xs, nets, finals):
-        span = max(x["price"], n["total_costs"] + payoff_total)  # the bar's full width: the price, or more when short
-        columns.append({"label": x["label"], "price": x["price"], "price_display": money(x["price"]),
+    for x, led in zip(xs, ledgers):
+        total_costs = -led.total(where=cost_lines)
+        net_before = led.total(where=lambda ln: ln["key"] != "payoff")
+        net = led.total()
+        span = max(x["price"], total_costs + payoff_total)  # the bar's full width: the price, or more when short
+        price = led.amount("price")
+        columns.append({"label": x["label"], "price": price, "price_display": fmt.money(price),
                         "closing_date": x["closing"].isoformat() if x["closing"] else None,
-                        "total_costs": n["total_costs"], "total_costs_display": money(n["total_costs"]),
-                        "costs_pct": n["total_costs"] / x["price"], "costs_pct_display": f"{n['total_costs'] / x['price'] * 100:.1f}%",
-                        "net_before_payoff": n["net_before_payoff"], "net_before_payoff_display": money(n["net_before_payoff"]),
-                        "payoff_total": payoff_total, "net": final, "net_display": money(final), "short": final < 0,
-                        # iteration 9 eval 4: a negative net reads as the cash the seller brings, a positive amount
-                        "tile_label": "Cash to Bring to Closing" if final < 0 else final_label,
-                        "tile_display": money(-final) if final < 0 else money(final),
-                        "bar": {"costs": max(n["total_costs"], 0) / span, "payoffs": payoff_total / span, "net": max(final, 0) / span}})
+                        "total_costs": total_costs, "total_costs_display": fmt.money(total_costs),
+                        "costs_pct": total_costs / price, "costs_pct_display": fmt.pct(total_costs / price, 1, fixed=True),
+                        "net_before_payoff": net_before, "net_before_payoff_display": fmt.money(net_before),
+                        "payoff_total": payoff_total, "net": net, "net_display": fmt.money(net), "short": net < 0,
+                        # a negative net reads as the cash the seller brings, a positive amount
+                        "tile_label": L["tile_cash_to_bring"] if net < 0 else final_label,
+                        "tile_display": fmt.money(abs(net)),
+                        "bar": {"costs": max(total_costs, 0) / span, "payoffs": payoff_total / span,
+                                "net": max(net, 0) / span}})
 
-    # Fact row: the property first, then the inputs the numbers rest on. Missing items drop out, except the ones
-    # that make the sheet Preliminary (shown in the risk color).
+    # Fact row: the property, then the inputs the numbers rest on. What's missing drops out (the Preliminary line
+    # says what the sheet is waiting for).
     facts = []
     st = market.state
     if st:
-        place = f"{title_case(str(p['county']).removesuffix(' County'))} County, {st}" if p.get("county") else profiles.STATES.get(st, st)
-        facts.append({"text": place})
-    else:
-        facts.append({"text": "State Not Provided", "risk": True})
-    type_assumed = kind in PROPERTY_TYPES and bool(p.get("property_type_assumed"))  # iteration 9 eval 5: from a unit number
-    if kind in PROPERTY_TYPES:
-        facts.append({"text": PROPERTY_TYPES[kind]})
+        place = t("fact_county", county=title_case(str(p["county"]).removesuffix(" County")), state=st) if p.get("county") \
+            else profiles.STATES.get(st, st)
+        facts.append(place)
+    if kind in types:
+        facts.append(types[kind])
     if hoa_monthly:
-        facts.append({"text": f"HOA {money(hoa_monthly)}/mo"})
+        facts.append(t("fact_hoa", amount=fmt.money(hoa_monthly)))
     elif has_hoa:
-        facts.append({"text": "HOA Dues Not Provided"})  # iteration 10 eval 5: a bare "HOA" read like a missing value
+        facts.append(L["fact_hoa_unknown"])
     elif p.get("hoa") is False or hoa_monthly == 0:
-        facts.append({"text": "No HOA"})
-    closings = {x["closing"] for x in xs}
-    if len(closings) == 1 and xs[0]["closing"]:
-        facts.append({"text": f"Closing {short_date(xs[0]['closing'])}"})
-    if not payoff_known:
-        facts.append({"text": "Payoff Not Provided", "risk": True})
-    elif payoff_total:
-        facts.append({"text": f"Payoffs {money(payoff_total)}" if len(pay_rows) > 1 else
-                      f"Payoff {money(payoff_total)}"})
-    else:
-        facts.append({"text": "No Mortgage"})
+        facts.append(L["fact_no_hoa"])
+    if len({x["closing"] for x in xs}) == 1 and xs[0]["closing"]:
+        facts.append(t("fact_closing", date=fmt.date_short(xs[0]["closing"])))
+    if payoff_known and payoff_total:
+        facts.append(t("fact_payoffs" if len(pay_rows) > 1 else "fact_payoff", amount=fmt.money(payoff_total)))
+    elif payoff_known:
+        facts.append(L["fact_no_mortgage"])
     if annual_tax:
-        facts.append({"text": f"Taxes {money(annual_tax)}/yr" + (", Paid" if bill_paid else "")})
+        facts.append(t("fact_taxes_paid" if bill_paid else "fact_taxes", amount=fmt.money(annual_tax)))
     if lf is not None and bf is not None:
-        facts.append({"text": f"Commission {pct_text(lf + bf)}% Total"})
+        facts.append(t("fact_commission", pct=fmt.pct(lf + bf, 2)))
 
-    # Notes under the table, in sentence case. Assumptions go to the agent in the reply.
-    notes, assumptions, warnings = [], [], list(dict.fromkeys(w for n in nets for w in n["warnings"]))
-    # iteration 12: the chat reply lists the assumptions, so the markdown sheet's notes (chat_notes) leave out a note
-    # an assumption already says, and use a short form where the note adds a figure (said: note -> None or short form)
-    said = {}
-    tax_missing = False
-    # Labels and facts never say Assumed or Estimate (local-costs.md): what's assumed is said once, here
-    if type_assumed:
-        notes.append(f"Property type taken as {PROPERTY_TYPES[kind].lower()}"
-                     + (" from the unit number" if kind == "condo" else "") + ".")
-        said[notes[-1]] = None
-        assumptions.append(f"The property type is assumed {PROPERTY_TYPES[kind].lower()}"
-                           + (" from the unit number" if kind == "condo" else "") + ": say if it's something else.")
+    # Notes: one registry, each said once. Labels and facts never say Assumed or Estimate: it's said here.
+    N = notes.Notes()
+    if kind in types and p.get("property_type_assumed"):  # a condo from a unit number
+        N.add("property_type", t("note_property_type_unit" if kind == "condo" else "note_property_type",
+                                 type=types[kind].lower()), "assumption")
     dated = [x for x in xs if x["closing"] and x["closing_assumed"]]
-    if dated:  # iteration 9 evals 1, 4: a vague closing date is an assumption, said in the reply and in the notes
-        when = " and ".join(dict.fromkeys(short_date(x["closing"]) for x in dated))
-        notes.append(f"Closing on {when} is an expected date; the actual date moves the tax proration.")
-        said[notes[-1]] = None
-        assumptions.append(f"Closing on {when} is assumed: the actual date replaces it (it moves the tax proration).")
-    brokerage = any(l["key"] in ("listing_fee", "buyer_broker_fee") for n in nets for l in n["lines"])
-    # A default commission is a default, not an assumption: its rates are on the lines, with no label and no note; the
-    # reply still asks for the listing agreement's terms
+    if dated:  # a vague closing date ("mid-December") is an assumption
+        N.add("closing_date", t("note_closing_date", dates=" and ".join(dict.fromkeys(fmt.date_short(x["closing"]) for x in dated))),
+              "assumption")
+    brokerage = any(ln["key"] in ("listing_fee", "buyer_broker_fee") for n in nets for ln in n["lines"])
     commission_assumed = bool(assumed & {"listing_fee", "buyer_broker_fee"})
-    if commission_assumed:
-        total = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
-        assumptions.append(f"Commission at the default {pct_text(total)}% in total (listing and buyer's agent): send the "
-                           "listing agreement's terms if they differ.")
+    if commission_assumed:  # a default, not an assumption on the page: the reply asks for the listing agreement
+        rate = sum(ln["rate"] for ln in first["lines"] if ln["key"] in ("listing_fee", "buyer_broker_fee"))
+        N.add("commission_default", t("note_commission_default", pct=fmt.pct(rate, 2)), "chat_only")
     if brokerage:
-        notes.append(finance.COMMISSION_NOTE)
+        N.add("commission", finance.COMMISSION_NOTE, "info")
+    tax_missing = False
     if has_tax:
-        tax_basis = finance.tax_proration(annual_tax, next(x["closing"] for x in xs if x["closing"]), market, bill_paid)["basis"]
-        due = finance.tax_due_date(next(x["closing"] for x in xs if x["closing"]), market, due_date)
-        due_text = f"{due:%b} {due.day}" if due else ""
+        closing = next(x["closing"] for x in xs if x["closing"])
+        basis = finance.tax_proration(annual_tax, closing, market, bill_paid)["basis"]
+        due = finance.tax_due_date(closing, market, due_date)
+        due = fmt.date_short(due, year=False) if due else ""
+        # one proration note (key "tax"), whichever way the bill falls; a mixed sheet adds the unpaid assumption once
         if bill_paid:
-            notes.append(f"Property tax: the seller paid this year's bill ({tax_basis}), so the buyer credits back closing to Dec 31.")
+            N.add("tax", t("note_tax_paid", basis=basis), "info")
+        elif all(paid_assumed):
+            N.add("tax", t("note_tax_bill_paid", basis=basis, due=due), "assumption")
         elif any(paid_assumed):
-            notes.append(f"Assumed: this year's tax bill ({tax_basis}) is paid by its {due_text} due date, before closing, so "
-                         "the buyer credits back closing to Dec 31. If it's still unpaid at closing, the seller is charged "
-                         "from Jan 1 instead.")
-            said[notes[-1]] = None
-            assumptions.append(f"This year's tax bill is assumed paid, since closing is after its {due_text} due date: say "
-                               "if it's still unpaid.")
-        elif tax_assumed:  # iteration 12: one note, not a proration note and a near-identical assumption note
-            notes.append(f"Property tax prorated from Jan 1 to the day before closing ({tax_basis}), assuming this year's "
-                         "bill is still unpaid at closing; if the seller pays it first, the buyer credits back the rest of "
-                         "the year instead.")
-            said[notes[-1]] = f"Property tax prorated from Jan 1 to the day before closing ({tax_basis})."
+            N.add("tax", t("note_tax_mixed", basis=basis, due=due), "assumption")
+            if tax_assumed:
+                N.add("tax_bill_unpaid", L["note_tax_bill_unpaid"], "assumption")
+        elif tax_assumed:
+            N.add("tax", t("note_tax_unpaid", basis=basis), "assumption")
         else:
-            notes.append(f"Property tax prorated from Jan 1 to the day before closing ({tax_basis}).")
-        if tax_assumed and any(paid_assumed):  # mixed closings: one before the due date, one after
-            notes.append("Assumed: this year's tax bill is still unpaid at closing. If the seller pays it first, the buyer "
-                         "credits back the rest of the year instead.")
-            said[notes[-1]] = None
-        if tax_assumed:
-            assumptions.append("This year's tax bill is assumed unpaid at closing: say if the seller has paid it.")
+            N.add("tax", t("note_tax", basis=basis), "info")
     elif market.get("property_tax.paid") == "arrears":
-        missing_bits = [w for w, gone in (("the tax bill", not annual_tax), ("the closing date", not any(x["closing"] for x in xs))) if gone]
-        notes.append("Not included: this year's property tax proration. Taxes here are paid in arrears, so the seller "
-                     f"credits the buyer from Jan 1; add {' and '.join(missing_bits)} to include it.")
-        said[notes[-1]] = None
-        assumptions.append(f"No property tax proration yet: send {' and '.join(missing_bits)} to include it.")
-        tax_missing = True
+        missing_bits = [w for w, gone in (("the tax bill", not annual_tax), ("the closing date", not any(x["closing"] for x in xs)))
+                        if gone]
+        tax_missing = " and ".join(missing_bits)
+
     def typical(path):
-        """Whose typical charge a built-in value is (manual round 5 case 9): a county's own figure is "local"; a statewide
-        one names the state, never the county, so the reply can't call Florida's figures Seminole's."""
+        """Whose typical charge a built-in value is: a county's own figure is "local"; a statewide one names the
+        state, never the county."""
         return "local" if market.source(path) == "county" or not st else profiles.STATES.get(st, "local")
     if "title_fees" in assumed and market.source("closing_costs.seller_title_fees") != "estimate":
-        whose = typical("closing_costs.seller_title_fees")
-        notes.append(f"Title company fees are typical {whose} charges; the title company's quote replaces them.")
-        said[notes[-1]] = None
-        assumptions.append(f"Title company fees are typical {whose} charges"
-                           + (", not a quote for this county" if whose != "local" else "") + ": a title quote replaces them.")
-    # iteration 11: a built-in estoppel fee is a typical local charge too (a national estimate is in the estimates note)
-    if (any(l["key"] == "estoppel" for l in first["lines"]) and market.source("closing_costs.hoa_estoppel_fee") not in ("estimate", "deal")):
-        notes.append(f"The HOA estoppel fee is a typical {typical('closing_costs.hoa_estoppel_fee')} charge; the "
-                     "association's fee schedule replaces it.")
+        N.add("title_fees", t("note_title_fees", whose=typical("closing_costs.seller_title_fees")), "estimate")
+    if any(ln["key"] == "estoppel" for ln in first["lines"]) and \
+            market.source("closing_costs.hoa_estoppel_fee") not in ("estimate", "deal"):
+        N.add("estoppel", t("note_estoppel", whose=typical("closing_costs.hoa_estoppel_fee")), "estimate")
     estimates = [a["text"] for a in first["assumed"] if a.get("estimate") and a["key"] not in ("listing_fee", "buyer_broker_fee")]
     if estimates:
-        notes.append(f"Estimates, not local figures: {', '.join(estimates)}. Local rates or a title quote replace them.")
-        said[notes[-1]] = None
-        assumptions.append(f"National estimates (no local figures built in): {', '.join(estimates)}.")
+        N.add("national", t("note_national", items=", ".join(estimates)), "estimate")
     if market.get("closing_costs.owner_title.payer") == "buyer":  # say why there's no owner's title line
-        notes.append("The buyer customarily pays the owner's title policy here, so it isn't a seller cost.")
-    if "no_transfer_tax" in market.note_codes:  # a no-transfer-tax state: say why there's no line, not just leave it out
-        notes.append(f"No state transfer tax in {profiles.STATES.get(st, st)}; a few cities and counties add their own, "
-                     "so confirm with the title company.")
-    missing = [MISSING_WORDS.get(m, m) for m in first["missing"]]
-    if missing:
-        notes.append(f"Not yet included, with no local figure: {', '.join(missing)}.")
+        N.add("owner_title", L["note_owner_title"], "info")
+    if "no_transfer_tax" in market.note_codes:  # a no-transfer-tax state: say why there's no line
+        N.add("transfer_tax", t("note_transfer_tax", state=profiles.STATES.get(st, st)), "info")
+    missing = [L["missing_words"].get(m, m) for m in first["missing"]]
     if payoff_known and payoff_total:
-        notes.append(("The mortgage payoff is estimated from the statement balance plus a month's interest; payoffs"
-                      if payoff_est else "Payoffs")
-                     + " are estimates until the lender's payoff letter, which adds interest through the closing date.")
-        if payoff_est:
-            assumptions.append("The mortgage payoff is estimated from the statement balance: the lender's payoff letter replaces it.")
-    elif not payoff_known:
-        notes.append("Not included: the mortgage payoff. Add it to see the cash at closing.")
-    notes.append("Not included: liens or judgments, HOA dues owed or prorated, and utility bills.")
+        N.add("payoff", L["note_payoff_balance"] if payoff_est else L["note_payoff"], "assumption" if payoff_est else "info")
+    N.add("not_included", L["note_not_included"], "info")
     if R.get("foreign_seller"):
-        notes.append("The seller is a foreign person: FIRPTA may require the buyer to withhold up to 15% of the price at "
-                     "closing. Confirm with the title company or a CPA.")
-    shortfalls = []
-    for c in columns:  # the costs and payoffs exceed the price: said first, on the page and in the reply
-        if c["short"]:
-            text = (f"At {c['price_display']} the costs and payoffs exceed the sale price: the seller would bring about "
-                    f"{money(-c['net'], 100)} to closing.")
-            shortfalls.append(text)
-            warnings.append(text + " Say so plainly in the reply.")
-    notes[:0] = shortfalls  # iteration 9 eval 4: in column order
-    # iteration 12: an HOA nobody mentioned is assumed away; say so, since its estoppel fee and dues would come off the net
+        N.add("firpta", L["note_firpta"], "info")
     if not has_hoa and p.get("hoa") is None and hoa_monthly is None and kind != "condo":
-        assumptions.append("No HOA assumed: say if there is one (its estoppel fee and any dues owed come off the net).")
-    if not st:
-        assumptions.append("The property's state wasn't given, so every cost is a national estimate: ask for the city and county.")
+        N.add("no_hoa", L["note_no_hoa"], "chat_only")  # its estoppel fee and dues would come off the net
 
-    reasons = []
-    if not st:
-        reasons.append("the property's state isn't known, so every cost is a national estimate")
+    warnings = list(dict.fromkeys(w for n in nets for w in n["warnings"]))
+    for c in columns:  # the costs and payoffs exceed the price: said first in the reply; the tile shows it on the page
+        if c["short"]:
+            warnings.append(t("warn_short", price=c["price_display"], amount=fmt.money(-c["net"], 100)))
+
+    # Why the sheet is Preliminary: said once, in its own line (never again as a note or a fact)
+    reasons = [L["reason_state"]] if not st else []
     if not payoff_known:
-        reasons.append("the mortgage payoff isn't included")
+        reasons.append(L["reason_payoff"])
     if missing:
-        reasons.append(f"there's no local figure for {', '.join(missing)}")
-    if tax_missing:  # iteration 9 eval 2: in Texas the proration can run to thousands
-        reasons.append("this year's property tax proration isn't included")
+        reasons.append(t("reason_missing", items=", ".join(missing)))
+    if tax_missing:
+        reasons.append(t("reason_tax", items=tax_missing))
+
+    tiles = summary_tiles(columns, payoff_known)
+    labels = ([r["label"] for r in rows] + [c["label"] for c in columns] + facts + [c["tile_label"] for c in columns]
+              + [s["label"] for s in tiles])
+    problems = N.label_problems(labels)
+    if problems:
+        raise NetSheetError("These labels carry a note (a report says that once, in its notes): "
+                            + "; ".join(f"{lbl!r} {why}" for lbl, why in problems) + ". Rename them.")
+
     street = p["address"].split(",")[0].strip()
     place = ", ".join(x for x in (p.get("city"), st) if x)
     prepared = _date(R.get("prepared_date"), "prepared_date") if re.match(r"^\d{4}-\d{2}-\d{2}", str(R.get("prepared_date") or "")) else None
+    reply = [it for it in N.items("chat") if it[2] in REPLY_KINDS]
     return {
         "ok": True,
+        "sample": bool(R.get("sample")),
         "address": street,
         "address_line": f"{street}, {place}" if place else street,
-        "prepared_date": long_date(prepared or date.today()) if not R.get("prepared_date") or prepared else str(R["prepared_date"]),
+        "prepared_date": fmt.date_long(prepared or date.today()) if not R.get("prepared_date") or prepared else str(R["prepared_date"]),
         "prepared_for": R.get("prepared_for"),
         "state": st,
         "facts": facts,
         "columns": columns,
-        "summary_tiles": summary_tiles(columns, payoff_known),
+        "summary_tiles": tiles,
         "rows": rows,
         "final_label": final_label,
-        "cash_at_closing": cash,
+        "cash_at_closing": payoff_known,
         "commission_assumed": commission_assumed,
         "has_tax_proration": has_tax,
         "tax_assumed_unpaid": tax_assumed,
-        "tax_assumed_paid": tax_paid_assumed,
+        "tax_assumed_paid": has_tax and all(paid_assumed),
         "closing_date_assumed": bool(dated),
-        "notes": notes,
-        # iteration 12: the markdown sheet's notes, without what the reply's assumption lines already say
-        "chat_notes": [said.get(n, n) for n in notes if said.get(n, n)],
-        "assumptions": assumptions,
+        # the notes block on the PDF (assumptions, estimates, then the rest), each said once
+        "notes": N.pdf(),
+        "note_keys": [k for k, _, _ in N.items("chat")],
+        # the reply's assumption lines; the markdown sheet's notes are the rest, so nothing is said twice
+        "assumptions": [text for _, text, _ in reply],
+        "assumption_keys": [k for k, _, _ in reply],
+        "chat_notes": [text for _, text, k in N.items("pdf") if k not in REPLY_KINDS],
         "warnings": warnings,
-        # iteration 9 evals 2, 5: a net sheet reads no MLS export, so the MLS / --columns notes don't apply
+        # a net sheet reads no MLS export, so the MLS / --columns notes don't apply
         "market_notes": [n for n in market.notes if "MLS" not in n],
         "preliminary": bool(reasons),
         "preliminary_reason": "; ".join(reasons),
@@ -506,7 +481,7 @@ def compute(R, market):
 
 
 def run(R, cma_path=None, mls_name=None):
-    """compute() from a data dict and an optional seller CMA handoff file (the same steps render.py takes)."""
+    """The document model from a data dict and an optional seller CMA handoff file (render.py's compute step)."""
     if cma_path:
         R = apply_cma(R, handoff.load(cma_path))
     return compute(R, load_market(R, mls_name))

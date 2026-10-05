@@ -1,10 +1,15 @@
 {
+ "assumption_keys": [
+  "national",
+  "commission_default",
+  "no_hoa"
+ ],
  "assumptions": {
-  "count": 4
+  "count": 3
  },
  "cash_at_closing": false,
  "chat_notes": {
-  "count": 4
+  "count": 3
  },
  "closing_date_assumed": false,
  "columns": [
@@ -17,27 +22,32 @@
    "closing_date": null,
    "costs_pct": 0.0573,
    "costs_pct_display": "5.7%",
-   "net": 494925.0,
-   "net_before_payoff": 494925.0,
+   "net": 494925,
+   "net_before_payoff": 494925,
    "payoff_total": 0,
    "price": 525000,
    "short": false,
-   "total_costs": 30075.0
+   "total_costs": 30075
   }
  ],
  "commission_assumed": true,
- "facts": [
-  {},
-  {
-   "risk": true
-  }
- ],
+ "facts": {
+  "count": 1
+ },
  "has_tax_proration": false,
  "market_notes": {
   "count": 2
  },
+ "note_keys": [
+  "national",
+  "commission",
+  "transfer_tax",
+  "not_included",
+  "commission_default",
+  "no_hoa"
+ ],
  "notes": {
-  "count": 6
+  "count": 4
  },
  "ok": true,
  "preliminary": true,
@@ -60,7 +70,7 @@
   },
   {
    "amounts": [
-    -13125.0
+    -13125
    ],
    "display": {
     "count": 1
@@ -70,7 +80,7 @@
   },
   {
    "amounts": [
-    -13125.0
+    -13125
    ],
    "display": {
     "count": 1
@@ -84,7 +94,7 @@
   },
   {
    "amounts": [
-    -2625.0
+    -2625
    ],
    "display": {
     "count": 1
@@ -104,7 +114,7 @@
   },
   {
    "amounts": [
-    -30075.0
+    -30075
    ],
    "display": {
     "count": 1
@@ -114,7 +124,7 @@
   },
   {
    "amounts": [
-    494925.0
+    494925
    ],
    "display": {
     "count": 1
@@ -123,13 +133,11 @@
    "kind": "final"
   }
  ],
+ "sample": false,
  "state": "TX",
- "summary_tiles": [
-  {},
-  {
-   "label": "Payoffs"
-  }
- ],
+ "summary_tiles": {
+  "count": 0
+ },
  "tax_assumed_paid": false,
  "tax_assumed_unpaid": false,
  "warnings": {

@@ -2,7 +2,7 @@
   "prepared_date": "2026-09-26",
   "closing_date": "2026-11-06",
   "property": {"address": "77 Pine Hollow Rd", "city": "Marietta", "county": "Cobb", "state": "GA", "hoa": false},
-  "scenarios": [{"price": 330000}, {"price": 315000, "label": "Price Cut to $315,000"}],
+  "scenarios": [{"price": 330000}, {"price": 315000, "label": "After a Price Cut"}],
   "costs": {
     "listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.025,
     "transfer_tax_rate": 0.001, "transfer_tax_label": "State Transfer Tax",

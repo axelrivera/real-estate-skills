@@ -1,4 +1,7 @@
 {
+ "assumption_keys": {
+  "count": 0
+ },
  "assumptions": {
   "count": 0
  },
@@ -17,12 +20,12 @@
    "closing_date": "2026-12-18",
    "costs_pct": 0.0625,
    "costs_pct_display": "6.2%",
-   "net": 571885.0,
-   "net_before_payoff": 571885.0,
+   "net": 571885,
+   "net_before_payoff": 571885,
    "payoff_total": 0,
    "price": 610000,
    "short": false,
-   "total_costs": 38115.0
+   "total_costs": 38115
   },
   {
    "bar": {
@@ -33,30 +36,29 @@
    "closing_date": "2026-12-18",
    "costs_pct": 0.0677,
    "costs_pct_display": "6.8%",
-   "net": 554692.5,
-   "net_before_payoff": 554692.5,
+   "net": 554692,
+   "net_before_payoff": 554692,
    "payoff_total": 0,
    "price": 595000,
    "short": false,
-   "total_costs": 40307.5
+   "total_costs": 40308
   }
  ],
  "commission_assumed": false,
  "facts": [
-  {},
-  {
-   "text": "Condo"
-  },
-  {},
-  {},
-  {},
-  {},
-  {}
+  "Condo"
  ],
  "has_tax_proration": true,
  "market_notes": {
   "count": 0
  },
+ "note_keys": [
+  "commission",
+  "tax",
+  "owner_title",
+  "not_included",
+  "firpta"
+ ],
  "notes": {
   "count": 5
  },
@@ -81,8 +83,8 @@
   },
   {
    "amounts": [
-    -18300.0,
-    -17850.0
+    -18300,
+    -17850
    ],
    "display": {
     "count": 2
@@ -92,8 +94,8 @@
   },
   {
    "amounts": [
-    -12200.0,
-    -11900.0
+    -12200,
+    -11900
    ],
    "display": {
     "count": 2
@@ -107,8 +109,8 @@
   },
   {
    "amounts": [
-    -3660.0,
-    -3570.0
+    -3660,
+    -3570
    ],
    "display": {
     "count": 2
@@ -118,8 +120,8 @@
   },
   {
    "amounts": [
-    -2745.0,
-    -2677.5
+    -2745,
+    -2678
    ],
    "display": {
     "count": 2
@@ -233,8 +235,8 @@
   },
   {
    "amounts": [
-    -38115.0,
-    -40307.5
+    -38115,
+    -40308
    ],
    "display": {
     "count": 2
@@ -244,8 +246,8 @@
   },
   {
    "amounts": [
-    571885.0,
-    554692.5
+    571885,
+    554692
    ],
    "display": {
     "count": 2
@@ -254,6 +256,7 @@
    "kind": "final"
   }
  ],
+ "sample": false,
  "state": "FL",
  "summary_tiles": [
   {

@@ -372,3 +372,17 @@ def title_labels(data, patterns):
     for p in patterns:
         data = _apply(data, re.findall(r"\*\*|\[\d*\]|[^.\[\]]+", p), title_case)
     return data
+
+
+# --- figure-free fields ---------------------------------------------------------------------------------------------
+# What the model writes is judgment and names only: every count, price, percent and date on a report comes from a
+# script. A digit, a dollar or percent sign, or a month's full name in a model field is a figure the script didn't
+# make ("May" is left out: it's also a word).
+FIGURE = re.compile(r"\$\s*[\d.,]*\d[\d.,]*[KkMm]?|\d[\d.,]*\s*%|\d+(?:[.,:/-]\d+)*|"
+                    r"\b(?:January|February|March|April|June|July|August|September|October|November|December)\b")
+
+
+def figures(text):
+    """The figures in `text` ("$425,000", "3%", "12", "December"), [] when it's figure-free. Names, ids, links and
+    emails keep their digits (EXEMPT_TEXT)."""
+    return [m.group(0).strip() for m in FIGURE.finditer(EXEMPT_TEXT.sub(" ", str(text or "")))]

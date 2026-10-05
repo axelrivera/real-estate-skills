@@ -2,9 +2,10 @@
 
     python3 scripts/render.py net-sheet.json [--cma FILE.seller.cma.json] [--profile profile.md] [--sample] [--out DIR]
 
-Every number comes from compute.py (the same result the markdown summary is filled from). The page holds the
-header, a fact row, the net for each price, the itemized table, where the price goes, and the notes. Colors follow
-the agent's seller-side brand color. Prints the path written, then the assumptions and warnings for the reply.
+compute.py builds the document model once (render.main's compute step); this file only places it with the shared
+layout kit: the header, a fact row, the net for each price, the itemized table, where the price goes, and the notes
+block. Colors follow the agent's seller-side brand color. Prints the path written, then the assumptions and
+warnings for the reply.
 """
 import html
 import os
@@ -12,141 +13,109 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compute  # noqa: E402
-from _shared import design, handoff, render  # noqa: E402
+from _shared import design, handoff, layout, render  # noqa: E402
 
 esc = html.escape
+L = compute.L
+Raw = layout.Raw
 CSS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "net-sheet.css")
-PAGE_LIMIT = 989  # px on one printed Letter page at the print viewport (11in minus 0.7in of margins, at 96 dpi)
-FINAL_NOTE = "The title company's settlement statement gives the final figures."
+# One page, always: tighter spacing first, then without the chart (it repeats the table's totals), then tighter type
+FIT = layout.Fit(one_page=True, steps=("compact", "nochart", "tight"))
+SERIES = (("costs", "lg_costs"), ("payoffs", "lg_payoffs"), ("net", None))
 
 
 def header(C, agent, sample):
-    # Results_v4 case 09: no "Seller Side" pill (a seller's net sheet has only one side); the agent's name reads as a
-    # signature, as the size of the other reports' agent line
-    tag = '<span class="sample">SAMPLE DATA</span>' if sample else ""
-    lines = [(f'Prepared for <b>{esc(C["prepared_for"])}</b> · ' if C.get("prepared_for") else "Prepared ")
-             + f'<span class="nw">{esc(C["prepared_date"])}</span>']
+    """The title and address, and on the right who it's for and the agent's name, which reads as a signature."""
+    lines = [Raw((f'Prepared for <b>{esc(C["prepared_for"])}</b> · ' if C.get("prepared_for") else "Prepared ")
+                 + f'<span class="nw">{esc(C["prepared_date"])}</span>')]
     if agent.get("name"):
-        lines.append(f'<b class="agent">{esc(agent["name"])}</b>')
-        org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
-        lic = f'Lic. {esc(str(agent["license"]))}' if agent.get("license") else ""
+        lines.append(Raw(f'<b class="agent">{esc(agent["name"])}</b>'))
+        org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
+        lic = f'Lic. {agent["license"]}' if agent.get("license") else ""
         if org or lic:
             lines.append(" · ".join(x for x in (org, lic) if x))
-    return (f'<header><div><div class="t1">Seller Net Sheet{tag}</div><div class="t2">{esc(C["address_line"])}</div></div>'
-            f'<div class="prep">{"<br>".join(lines)}</div></header>')
-
-
-def fact_row(C):
-    if not C["facts"]:  # nothing to show: no empty row between the header and the tiles
-        return ""
-    items = "".join(f'<span>{"<b class=rt>" + esc(f["text"]) + "</b>" if f.get("risk") else esc(f["text"])}</span>' for f in C["facts"])
-    return f'<div class="divrow factrow"><div>{items}</div></div>'
+    return layout.header(L["doc_title"], C["address_line"], prepared=lines, sample=sample)
 
 
 def tiles(C):
-    cols = C["columns"]
-    out = []
-    for c in cols:
-        sub = f'Sale {c["price_display"]} · costs {c["total_costs_display"]} ({c["costs_pct_display"]})'
-        out.append(f'<div class="tile"><span class="k">{esc(c["label"])}</span>'
-                   f'<b class="{"short" if c["short"] else ""}">{c["tile_display"]}</b>'
-                   f'<i>{esc(c["tile_label"])}</i><i>{esc(sub)}</i></div>')
-    # one or two prices: the spare slots show figures already on the sheet, so the row stays three boxes wide
-    out += [f'<div class="tile sum"><span class="k">{esc(t["label"])}</span>'
-            f'<b{"" if t["display"].startswith("$") else " class=word"}>{esc(t["display"])}</b><i>{esc(t["note"])}</i></div>'
-            for t in C.get("summary_tiles") or []]
-    return f'<div class="tiles">{"".join(out)}</div>'
+    """The net for each price, then (with one or two prices) summary figures already on the sheet; always three slots
+    wide, so a tile never stretches."""
+    items = []
+    for c in C["columns"]:
+        sub = Raw(esc(c["tile_label"]) + "<br>" + esc(compute.t("tile_sub", price=c["price_display"],
+                                                                 costs=c["total_costs_display"], pct=c["costs_pct_display"])))
+        items.append((c["label"], c["tile_display"], sub, "price short" if c["short"] else "price"))
+    items += [(s["label"], s["display"], s["note"], "sum") for s in C["summary_tiles"]]
+    return layout.tiles(items, n=compute.MAX_SCENARIOS, cls="net-tiles")
 
 
 def table(C):
-    cols = C["columns"]
-    head = "<tr><th></th>" + "".join(f'<th class="n">{esc(c["label"])}</th>' for c in cols) + "</tr>"
-    body = []
+    cols = [layout.Col(0, "", cls="lbl-col")] + [layout.Col(i + 1, c["label"], align="num", cls="price-col")
+                                                 for i, c in enumerate(C["columns"])]
+    rows, classes = [], {}
     for r in C["rows"]:
+        classes[len(rows)] = r["kind"]
         if r["kind"] == "group":
-            body.append(f'<tr class="group"><td colspan="{len(cols) + 1}">{esc(r["label"])}</td></tr>')
+            rows.append([r["label"]] + [""] * len(C["columns"]))
             continue
-        cells = "".join(f'<td class="n{" empty" if v == "—" else ""}{" short" if r["kind"] == "final" and c["short"] else ""}">{v}</td>'
-                        for v, c in zip(r["display"], cols))
-        body.append(f'<tr class="{r["kind"]}"><td>{esc(r["label"])}</td>{cells}</tr>')
-    widths = "<colgroup>" + "".join(f'<col style="width:{w:g}%">' for w in column_widths([c["label"] for c in cols])) + "</colgroup>"
-    return f'<div class="tbl net"><table>{widths}<thead>{head}</thead><tbody>{"".join(body)}</tbody></table></div>'
-
-
-TABLE_PX = 783  # the table's width: 8.5in less the 0.3in margins, at 96 dpi
-HEAD_PX_PER_CHAR = 6.1  # a bold 8pt header character, about; plus 16px of cell padding
-MIN_COL, MAX_COL, MIN_FIRST = 16, 27, 34  # % of the table
-
-
-def column_widths(labels):
-    """Results_v4 case 09: each price column wide enough for its header on one line ("$425,000 with $6,000 Credit"),
-    within 16% to 27% of the table, and the row names the rest (at least 34%). [first, *price columns] in %."""
-    need = [min(MAX_COL, max(MIN_COL, (len(t) * HEAD_PX_PER_CHAR + 16) / TABLE_PX * 100)) for t in labels]
-    spare = 100 - MIN_FIRST
-    if sum(need) > spare:  # too wide together: share the room, the longest give way first
-        need = [n * spare / sum(need) for n in need]
-    need = [round(n, 1) for n in need]
-    return [round(100 - sum(need), 1)] + need
+        cells = []
+        for v, c in zip(r["display"], C["columns"]):
+            if v == "—":
+                v = Raw('<span class="empty">—</span>')
+            elif r["kind"] == "final" and c["short"]:
+                v = Raw(f'<span class="short">{esc(v)}</span>')
+            cells.append(v)
+        rows.append([r["label"]] + cells)
+    return layout.table(cols, rows, keep="whole", cls="net", row_classes=classes)
 
 
 def bars(C):
+    """One stacked bar per price; the legend names only the series drawn."""
+    chart = layout.Chart()
+    names = {"costs": L["lg_costs"], "payoffs": L["lg_payoffs"],
+             "net": L["lg_net"] if C["cash_at_closing"] else L["lg_net_before"]}
     rows = []
     for c in C["columns"]:
-        segs = "".join(f'<div class="seg {k}" style="width:{c["bar"][k] * 100:.2f}%"></div>' for k in ("costs", "payoffs", "net") if c["bar"][k] > 0)
-        rows.append(f'<div class="row"><div class="lbl">{esc(c["label"])}</div><div class="track">{segs}</div>'
-                    f'<div class="val">{c["net_display"]}</div></div>')
-    legend = [("costs", "Seller Costs")] + ([("payoffs", "Payoffs")] if any(c["payoff_total"] for c in C["columns"]) else [])
-    legend.append(("net", "Net to Seller" if C["cash_at_closing"] else "Net Before Payoff"))
-    keys = "".join(f'<span><i class="{k}"></i>{t}</span>' for k, t in legend)
-    return f'<div class="bars">{"".join(rows)}</div><div class="legend">{keys}</div>'
+        segs = []
+        for k, _ in SERIES:
+            if c["bar"][k] > 0:
+                chart.mark(k, names[k], "bar", color=f"var(--bar-{k})")
+                segs.append(f'<div class="seg {k}" style="width:{c["bar"][k] * 100:.2f}%"></div>')
+        rows.append(f'<div class="lbl">{esc(c["label"])}</div><div class="track">{"".join(segs)}</div>'
+                    f'<div class="val">{esc(c["net_display"])}</div>')
+    return layout.chart_frame(f'<div class="bars">{"".join(rows)}</div>', chart.legend(), title=L["h_chart"], cls="chart")
 
 
 def build_html(C, agent, sample=False):
     with open(CSS_PATH, encoding="utf-8") as f:
         css = f.read()
-    body = [header(C, agent, sample), fact_row(C), tiles(C)]
+    body = [header(C, agent, sample), layout.fact_row(C["facts"]) if C["facts"] else "", tiles(C)]
     if C["preliminary"]:
-        body.append(f'<div class="prelim"><b>Preliminary:</b> {esc(C["preliminary_reason"][:1].upper() + C["preliminary_reason"][1:])}.</div>')
-    body += ['<h2>Itemized Estimate</h2>', table(C), f'<div class="chart"><h2>Where the Sale Price Goes</h2>{bars(C)}</div>',
-             '<ul class="notes">' + "".join(f"<li>{esc(n)}</li>" for n in C["notes"]) + "</ul>",
-             render.notices(agent, [render.NOT_ADVICE + " " + FINAL_NOTE])]
+        reason = C["preliminary_reason"]
+        body.append(f'<div class="prelim"><b>{esc(L["preliminary"])}:</b> {esc(reason[:1].upper() + reason[1:])}.</div>')
+    body += [f'<h2>{esc(L["h_itemized"])}</h2>', table(C), bars(C), layout.notes_block(C["notes"], title=None),
+             render.notices(agent, [render.NOT_ADVICE + " " + L["final_figures"]])]
     theme = design.theme(agent.get("brand"), "seller")
-    return render.page("".join(body), css=css, title="Seller Net Sheet", theme_css=design.css_vars(theme))
+    return render.page("".join(body), css=css, title=L["doc_title"], theme_css=design.css_vars(theme),
+                       body_class="font-bundled")
 
 
-def fit_one_page(pg):
-    """(height, chart dropped?, clipped labels): the compact layout when the page would run onto a second one, then without the chart
-    (it repeats the table's totals) when even that doesn't fit, as with a long disclaimer in the profile, then tighter type
-    in the table and the notes."""
-    measure = "() => document.body.getBoundingClientRect().height"
-    height = pg.evaluate(measure)
-    for step in ("compact", "nochart", "tight"):
-        if height <= PAGE_LIMIT:
-            break
-        pg.evaluate(f"() => document.body.classList.add('{step}')")
-        height = pg.evaluate(measure)
-    # iteration 9 eval 1: a price label too long for its column header was cut off with no warning
-    clipped = pg.evaluate("() => [...document.querySelectorAll('th, .tile .k, .bars .lbl')]"
-                          ".filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.textContent)")
-    return height, pg.evaluate("() => document.body.classList.contains('nochart')"), clipped
+def compute_model(data, ctx):
+    """render.main's compute step: the document model, once per run."""
+    return compute.run(data, ctx.get("cma"), ctx.get("mls"))
 
 
-def build(data, fmt, out_dir, ctx):
-    C = compute.run(data, ctx.get("cma"), ctx.get("mls"))
-    sample = ctx.get("sample") or bool(data.get("sample"))
-    path = os.path.join(out_dir, render.filename(C["address"], "Seller Net Sheet", ext="pdf"))
-    height, no_chart, clipped = render.html_to_pdf(build_html(C, ctx["agent"], sample), path, before_print=fit_one_page,
-                                          footer_html=render.footer(f"Seller Net Sheet · {C['address']}", right_pages=False))
-    if height > PAGE_LIMIT:
+def build(C, fmt, out_dir, ctx):
+    sample = bool(ctx.get("sample") or C.get("sample"))
+    path = os.path.join(out_dir, render.filename(C["address"], L["doc_title"], ext="pdf"))
+    info = layout.print_pdf(build_html(C, ctx["agent"], sample), path, FIT,
+                            footer_html=render.footer(f"{L['doc_title']} · {C['address']}", right_pages=False))
+    if info["top"] > info["limit"] or (info["pages"] and len(info["pages"]) > 1):
         os.remove(path)
-        raise compute.NetSheetError(f"The net sheet runs {height - PAGE_LIMIT:.0f}px past one page: shorten the price "
-                                    "labels or the names of other costs, or compare fewer prices.")
-    if clipped:
-        os.remove(path)
-        raise compute.NetSheetError("These labels don't fit their column and would be cut off: "
-                                    f"{', '.join(dict.fromkeys(clipped))}. Give the price a shorter label.")
-    if no_chart:
-        print("Layout: the Where the Sale Price Goes chart was left out to keep the sheet on one page.", file=sys.stderr)
+        raise compute.NetSheetError(f"The net sheet runs {max(info['top'] - info['limit'], 0):.0f}px past one page: "
+                                    "shorten the price labels or the names of other costs, or compare fewer prices.")
+    if "nochart" in info["steps"]:
+        print(f"Layout: the {L['h_chart']} chart was left out to keep the sheet on one page.", file=sys.stderr)
     for a in C["assumptions"]:
         print(f"Assumed: {a}", file=sys.stderr)
     for w in C["warnings"]:
@@ -161,7 +130,7 @@ def options(ap):
 
 
 def main(argv=None):
-    return render.main(build, formats=("pdf",), argv=argv, extra_args=options,
+    return render.main(build, formats=("pdf",), argv=argv, extra_args=options, compute=compute_model,
                        errors=(compute.NetSheetError, handoff.HandoffError),
                        labels=("scenarios[].label", "costs.other[].label", "costs.other_payoffs[].label"), linked=handoff.linked)
 
