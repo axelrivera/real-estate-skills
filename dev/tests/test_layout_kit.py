@@ -218,6 +218,30 @@ class Printed(unittest.TestCase):
             info = layout.print_pdf(tall_doc(10, tail_lines=10), path, fit)
             self.assertEqual(info["tail"], [])
 
+    def test_closing_lines_never_alone_on_the_last_page(self):
+        """A document's closing block never prints alone on a last page when the block before it can move on with it
+        and leave no page under half full: it keeps with that block when no tail step saves the page. Page 1's
+        boundary (a page break on purpose) stays."""
+        css = (".l{margin:0;height:30px} .pb{break-before:page} .d{margin:0;height:30px}"
+               " .blk{break-inside:avoid;margin:0;display:flex;flex-direction:column;justify-content:space-between}"
+               " .notices{break-inside:avoid}")
+        tails = 0
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "keep.pdf")
+            for lines in (18, 21, 25):
+                for height in range(300, 470, 40):
+                    body = ("".join(f"<p class='l'>Line {i}</p>" for i in range(5))
+                            + "<div class='pb'></div>" + "".join(f"<p class='d'>Detail {i}</p>" for i in range(lines))
+                            + f"<div class='blk' style='height:{height}px'><p>Block top</p><p>Block bottom</p></div>"
+                            + "<div class='notices'><p>Closing line one</p><p>Closing line two</p></div>")
+                    info = layout.print_pdf(render.page(body, css=css, theme_css=THEME), path, layout.Fit())
+                    tails += layout.KEEP_TAIL in info["tail"]
+                    with self.subTest(lines=lines, height=height):
+                        self.assertEqual([p[1] for p in info["pages"][:2]], ["Line 0", "Detail 0"])
+                        self.assertGreaterEqual(info["pages"][-1][0], layout.LONE_TAIL, info["pages"])
+                        self.assertTrue(all(f >= layout.HALF_EMPTY for f, _ in info["pages"][1:-1]), info["pages"])
+        self.assertTrue(tails)  # some of these heights leave the closing lines alone without the step
+
     def test_one_page_document(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "one.pdf")
