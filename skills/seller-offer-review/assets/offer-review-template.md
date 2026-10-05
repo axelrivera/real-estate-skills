@@ -25,7 +25,7 @@
 
 | # | Offer | Action | Price | Net | Downside | Certainty | Buyer Can Walk | Close | Terms / Reason |
 |---|---|---|---|---|---|---|---|---|---|
-| {{r.rank}} | {{r.offer}} ({{r.financing}}){{" (form assumed)" when r.form_assumed}} | {{r.action}} | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days + " days" when it is a number, else r.risk_days as printed}} | {{r.close}} | {{r.terms}} |
+| {{r.rank}} | {{r.offer}} ({{r.financing}}) | {{r.action}} | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days + " days" when it is a number, else r.risk_days as printed}} | {{r.close}} | {{r.terms}} |
 
 {{when any r.escalation:}} **Escalation:** {{each r with r.escalation: r.offer + ": " + r.escalation; joined with "; "}}
 

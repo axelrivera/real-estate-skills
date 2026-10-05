@@ -208,6 +208,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -276,6 +277,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -344,6 +346,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -465,6 +468,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -640,6 +644,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -708,6 +713,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -776,6 +782,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -897,6 +904,7 @@
      }
     ],
     "close": "2026-11-02",
+    "estoppel_estimate": false,
     "holding": -525,
     "lines": [
      [
@@ -1075,6 +1083,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1143,6 +1152,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1211,6 +1221,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1332,6 +1343,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1513,6 +1525,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1581,6 +1594,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1649,6 +1663,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1770,6 +1785,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -1842,6 +1858,7 @@
     "scope": "seller"
    },
    {
+    "default": true,
     "field": "listing_fee_pct",
     "impact": "med",
     "scope": "seller",
@@ -1953,6 +1970,7 @@
     "scope": "seller"
    },
    {
+    "default": true,
     "field": "listing_fee_pct",
     "impact": "med",
     "scope": "seller",
@@ -2101,6 +2119,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2169,6 +2188,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2237,6 +2257,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2358,6 +2379,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2539,6 +2561,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2607,6 +2630,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2675,6 +2699,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2796,6 +2821,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -2973,6 +2999,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3041,6 +3068,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3109,6 +3137,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3230,6 +3259,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3411,6 +3441,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3479,6 +3510,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3547,6 +3579,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3668,6 +3701,7 @@
       }
      ],
      "close": "2026-11-02",
+     "estoppel_estimate": false,
      "holding": -525,
      "lines": [
       [
@@ -3754,6 +3788,7 @@
     }
    ],
    "close": "2026-11-02",
+   "estoppel_estimate": false,
    "holding": -525,
    "lines": [
     [

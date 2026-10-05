@@ -77,8 +77,15 @@ class Payoff(unittest.TestCase):
         C, _ = run(tanager())
         row = next(r for r in C["net"]["rows"] if r["key"] == "payoff")
         self.assertEqual(row["amounts"][0], -171500)
-        self.assertEqual(row["label"], "Mortgage Payoff (Your Estimate)")
+        self.assertEqual(row["label"], "Mortgage Payoff")  # whose figure it is: said once, in the notes
         self.assertIn("payoff_seller", C["assumption_keys"])
+        # the report's own net_note already says it's the seller's estimate, so the script's note isn't added (never twice)
+        R = tanager()
+        self.assertIn("payoff", R["pricing"]["net_note"])
+        self.assertNotIn("The mortgage payoff is the seller's estimate", " ".join(C["net"]["notes"]))
+        R["pricing"].pop("net_note")
+        C, _ = run(R)
+        self.assertEqual(sum("The mortgage payoff is the seller's estimate" in n for n in C["net"]["notes"]), 1)
 
     def test_balance_gets_a_month_at_four_and_a_half(self):
         R = tanager()

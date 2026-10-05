@@ -61,10 +61,11 @@ class SingleReviewScope(unittest.TestCase):  # OFR-352
         self.assertEqual([a["where"] for a in shared], [b["label"]])
 
     def test_buyer_broker_estimate_follows_the_offer(self):
-        # B's share is Requested on its net sheet: no "buyer's broker ... assumed" estimate for it
+        # B's share is Requested on its net sheet: no default buyer's broker share named for it
         self.assertFalse(any("commission" in c for c in self.out["estimated_costs"]))
         c = review.result(self.R, "single", "C")
-        self.assertTrue(any("buyer's broker" in x and "assumed" in x for x in c["estimated_costs"]))
+        self.assertTrue(any(x.startswith("default commission") and "buyer's broker" in x for x in c["estimated_costs"]))
+        self.assertFalse(any("assumed" in x for x in c["estimated_costs"] if "commission" in x))  # a default, not an assumption
 
     def test_comparison_lists_its_own_scope(self):
         m = review.result(self.R, "multi")

@@ -89,6 +89,35 @@ def label_texts(html):
             yield el.name + ("." + ".".join(sorted(classes)) if classes else ""), el.get_text(" ", strip=True)
 
 
+# Owner rule (CLAUDE.md, local-costs.md): which figures are estimates or assumed is said once, in the notes, never inside
+# a column header, a row label, a tile or a fact chip; a default commission gets no label at all. "Estimated Net" names
+# the figure and is fine; "(Estimate)", "Assumed" and "(assumed)" marks are not.
+ESTIMATE_MARK = re.compile(r"\bassumed\b|\(estimate\b|\bestimate\)|, estimate\b|\bestimate:|\(est\.|\best\.\)",
+                           re.I)
+MARK_PLACES = "th, tr > td:first-child, .k, .lbl, .label, .tile-label, .sp-stat span, .tile i, .factrow span, dt"
+
+
+def estimate_label_errors(html):
+    """[(where, text)] for Assumed or Estimate marks in labels (headers, row labels, tiles, fact chips), and for a
+    parenthetical "(assumed)" mark in any table cell that isn't a sentence. Notes, footnotes and the assumptions
+    table's sentences may say "assumed"."""
+    soup = BeautifulSoup(html, "html.parser")
+    for el in soup.find_all(["style", "script"]):
+        el.extract()
+    out, seen = [], set()
+    for el in soup.select(MARK_PLACES):
+        text = el.get_text(" ", strip=True)
+        if text and ESTIMATE_MARK.search(text) and not is_sentence(text) and text not in seen:
+            seen.add(text)
+            out.append((el.name + ("." + ".".join(sorted(el.get("class") or [])) if el.get("class") else ""), text))
+    for el in soup.find_all("td"):
+        text = el.get_text(" ", strip=True)
+        if re.search(r"\(assumed\)|form assumed|, assumed\)", text, re.I) and not is_sentence(text) and text not in seen:
+            seen.add(text)
+            out.append(("td", text))
+    return out
+
+
 def render_fixtures(skills, tmp):
     fixtures = [f for f in sorted(glob.glob(os.path.join(ROOT, "dev", "fixtures", "*", "*.json")))
                 if os.path.basename(os.path.dirname(f)) != "_profiles"
@@ -203,6 +232,9 @@ def main(argv):
             if key not in prose and (key.startswith(("h_", "th_", "lg_", "sum_", "deck_", "net_", "pay_", "cr_")) and not is_sentence(text)
                     and title_case_errors(text)):
                 findings.append(f"label    {os.path.relpath(p, ROOT)} {key}: {text!r}")
+            if (key not in prose and isinstance(text, str) and not is_sentence(text) and ESTIMATE_MARK.search(text)
+                    and key.startswith(("h_", "th_", "lg_", "sum_", "deck_", "net_", "pay_", "cr_"))):
+                findings.append(f"estimate {os.path.relpath(p, ROOT)} {key}: {text!r}: say it once in the notes")
     with tempfile.TemporaryDirectory() as tmp:
         for name, cap, dest in render_fixtures(argv, tmp):
             seen = set()
@@ -215,6 +247,7 @@ def main(argv):
                 for node in soup.find_all(string=PROSE_DASH):
                     findings.append(f"em dash  {name} {os.path.basename(h)}: {node.strip()[:100]}")
                 findings += [f"wording  {name} {os.path.basename(h)}: {w}" for w in html_wording(soup)]
+                findings += [f"estimate {name} <{where}> {text!r}: say it once in the notes" for where, text in estimate_label_errors(doc)]
                 for where, text in label_texts(doc):
                     if text and text not in seen and not is_sentence(text) and title_case_errors(text):
                         seen.add(text)
@@ -231,8 +264,8 @@ def main(argv):
         print(line)
     dashes = sum(line.startswith("em dash") for line in findings)
     names = sum(line.startswith("old name") for line in findings)
-    wording = sum(line.startswith("wording") for line in findings)
-    print(f"{dashes} em dash(es), {names} old form name(s) and {wording} client-wording problem(s) (errors), "
+    wording = sum(line.startswith(("wording", "estimate")) for line in findings)
+    print(f"{dashes} em dash(es), {names} old form name(s) and {wording} client-wording or estimate-label problem(s) (errors), "
           f"{len(findings) - dashes - names - wording} label(s) to review")
     return 1 if dashes or names or wording else 0
 

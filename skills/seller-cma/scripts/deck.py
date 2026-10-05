@@ -326,7 +326,7 @@ def net_sub(C, L):
     # CMA-317: after holding costs it's the net sheet's "Net After Holding Costs" row, never "cash at closing" (its own row)
     held = "_holding" if C["net_basis"] == "after_holding" else ""
     basis = L(("deck_cash_free" if net["no_mortgage"] else "deck_cash" if net["cash_at_closing"] else "deck_net") + held + "_sub")
-    return basis + (f"; {L('standard_terms_sub')}" if net["standard_terms"] else "")
+    return basis  # a default commission gets no label (local-costs.md)
 
 
 def contrast_roles(colors):

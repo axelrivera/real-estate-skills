@@ -62,9 +62,6 @@ def taxes(R, market):
     return out
 
 
-ASSUMED = ", Assumed"  # CMA-227: a scenario with `assumed: true` is labeled once, never nested in parentheses
-
-
 def buyer_closing_costs(R, market, price, program, down, loan):
     """CMA-223: the buyer's closing costs at `price`, on one basis for the payment table and the credit table, and the
     offer strategy's (finance.buyer_closing_costs): the lender's figure (`credit_scenarios.closing_costs`) for the
@@ -132,7 +129,8 @@ def payments(R, market, tax_rows):
         # CMA-223: cash to close per scenario (down payment + closing costs + any broker fee), as the credit table has it
         cc, _, lender = buyer_closing_costs(R, market, price, finance.program(sc["type"]), sc["down_pct"], r["loan"])
         to_close = r["cash_down"] + cc + broker_fee_short(R, price)
-        rows.append({"label": sc["label"] + (ASSUMED if sc.get("assumed") else ""), "assumed": bool(sc.get("assumed")),
+        # CMA-227: an assumed scenario keeps its plain label; the payment note says it is assumed, once (local-costs.md)
+        rows.append({"label": sc["label"], "assumed": bool(sc.get("assumed")),
                      **r, "total_display": money(r["total"]), "cash_down_display": money(r["cash_down"]),
                      "closing_costs": cc, "lender_closing_costs": lender,
                      "cash_to_close": to_close, "cash_to_close_display": money(to_close),
@@ -149,7 +147,7 @@ def payments(R, market, tax_rows):
         alt = {"short": tax_rows[1 - ji]["short"], "delta_monthly": (tax_at(price, 1 - ji) - tax_at(price)) / 12}
     tj = tax_rows[ji]
     # CMA-204: which tax the payment uses. Two jurisdictions mean the district isn't confirmed: the payment uses the
-    # one at tax_jurisdiction_index (the higher bill by default), labeled Estimate, as is a fallback-rate estimate.
+    # one at tax_jurisdiction_index (the higher bill by default), an estimate the payment note says, as is a fallback-rate estimate.
     tax_basis = {"short": tj["short"], "unconfirmed": len(tax_rows) == 2, "estimated": bool(tj["estimated"]),
                  "basis": tj["basis"], "higher": len(tax_rows) == 2 and (tj["annual"] or 0) >= (tax_rows[1 - ji]["annual"] or 0),
                  # CMA-340: the PDF's With / No Homestead label, which `basis` doesn't carry for a fallback rate
@@ -782,7 +780,7 @@ def price_basis(price, R):
 def insurance_line(R, market):
     """The payment's homeowner's insurance: the agent's figure (`costs.payment.insurance_annual`, a quote or their own
     number) as given, else the shared estimate at the payment's price (finance.insurance_estimate: the agent's
-    `costs.insurance_rate` for this home, else the market's rate by the home's age, with its floor), labeled Estimate.
+    `costs.insurance_rate` for this home, else the market's rate by the home's age, with its floor), an estimate the notes say.
     Fills `insurance_annual` so every table uses the one figure."""
     pay = R["costs"]["payment"]
     if pay.get("insurance_annual") not in (None, ""):
@@ -934,7 +932,7 @@ def compute(R, market, homes):
         if "assum" in str(sc.get("label", "")).lower() or "(" in str(sc.get("label", "")):
             warn("scenario_label", f"costs.payment.scenarios[{i}].label is {sc['label']!r}: write the loan only "
                  "(\"Conventional, 5% Down\", no parentheses) and set \"assumed\": true when the financing is assumed; "
-                 "the report adds \"Assumed\" once.")
+                 "the report says so once, in the payment notes.")
     for r in rows[1:]:  # CMA-217: a comparison the buyer can't afford is noise; replace it with one that fits
         if r.get("cash_short"):  # CMA-236: on cash to close, the same test as the cash_short warning, not the down payment
             warn("scenario_over_cash", f"The {r['label']} scenario needs about {money(r['cash_to_close'])} to close "

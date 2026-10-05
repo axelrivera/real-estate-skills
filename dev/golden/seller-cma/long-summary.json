@@ -213,8 +213,6 @@
     "value": 1145
    }
   ],
-  "assumed_brokerage": null,
-  "assumed_brokerage_pct": null,
   "cash_at_closing": false,
   "closings": [
    "2027-01-22",
@@ -385,9 +383,6 @@
  "net_basis": "after_holding",
  "net_spread": 5016.0,
  "ok": true,
- "options_summary": {
-  "net_header_sub": null
- },
  "payments": {
   "down_pct": 0.05,
   "down_per_10k": 500.0,

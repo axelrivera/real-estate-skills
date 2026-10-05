@@ -41,7 +41,7 @@ For a PDF or deck, the agent's name and brokerage go on it: use their profile (f
 
 **Location.** The city and county set the costs, taxes and MLS. With only a street address, take them from stats.py's `subject_location` (the export's own row for the home) and say so; if it has none, ask. Never infer them from subdivision names, or the state from the MLS: build with national estimates (compute.py marks the report Preliminary), and quote compute.py's `state_unknown` assumption in the reply, which says what the MLS's state would change ("if this is Florida, the net sheet uses the 0.70% documentary stamp tax instead of the 0.4% estimate").
 
-Local costs come from the home's location: read `references/local-costs.md`, including its one rule for the property tax at closing (a closing after bills go out assumes this year's bill unpaid unless the agent says it's paid). Florida and Stellar MLS are built in; elsewhere, national estimates are labeled Estimate (never Florida's numbers), and you look up the state's transfer tax from a trusted source.
+Local costs come from the home's location: read `references/local-costs.md`, including its one rule for the property tax at closing (a closing after bills go out assumes this year's bill unpaid unless the agent says it's paid). Florida and Stellar MLS are built in; elsewhere, national estimates, named once in the net sheet's notes (never Florida's numbers), and you look up the state's transfer tax from a trusted source.
 
 ## 2. Read the Market
 

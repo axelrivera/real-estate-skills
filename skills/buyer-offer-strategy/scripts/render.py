@@ -167,7 +167,7 @@ def details(r, res):
             continue
         ns += f"<tr><td>{esc(label)}</td>" + "".join(f'<td class="n {"neg" if v < 0 else ""}">{acct(v)}</td>' for v in vals) + "</tr>"
     ns += '<tr class="total"><td>Seller Net Before Payoff</td>' + "".join(f'<td class="n">{acct(c["net"])}</td>' for _, c in cols) + "</tr>"
-    ns += '<tr><td>Seller Holding Cost to Closing (Est.)</td>' + "".join(f'<td class="n neg">{acct(c["holding"])}</td>' for _, c in cols) + "</tr>"
+    ns += '<tr><td>Seller Holding Cost to Closing</td>' + "".join(f'<td class="n neg">{acct(c["holding"])}</td>' for _, c in cols) + "</tr>"
     # a lower seller net is a number, not a status: no red or green on it
     ns += '<tr class="total2"><td>Net as the Listing Agent Sees It</td>' + "".join(
         f'<td class="n">{acct(c["net_adj"])}</td>' for _, c in cols) + "</tr>"
@@ -180,7 +180,7 @@ def details(r, res):
         f'<td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[O[k]["score"]["band"][0]]}"><b>{O[k]["score"]["total"]}</b></td>' for k in K) + "<td></td></tr>"
     cr = ""
     bb_row = [("Buyer's Broker Fee (Not Paid by Seller)", "bb_short")] if any(r["cash"][k]["bb_short"] for k in K) else []
-    for label, key in [("Down Payment", "down"), ("Closing Costs & Prepaids (Est.)", "cc"), *bb_row, ("Seller Concessions Credit", "conc"),
+    for label, key in [("Down Payment", "down"), ("Closing Costs & Prepaids", "cc"), *bb_row, ("Seller Concessions Credit", "conc"),
                        ("Cash to Close (Deposit Counts Toward This)", "to_close"), ("Appraisal Gap if the Appraisal Is Low", "gap"), ("Worst-Case Cash Needed", "worst")]:
         cr += f'<tr{" class=total" if key in ("to_close", "worst") else ""}><td>{label}</td>' + "".join(f'<td class="n">{acct(r["cash"][k][key])}</td>' for k in K) + "</tr>"
     cr += f'<tr class="total2"><td>Left in Reserve (of {money(B["buyer"]["cash_available"])})</td>' + "".join(
@@ -200,14 +200,14 @@ def details(r, res):
                  f'<td{" class=risk" if p["breaks"] else ""}>{esc(p["response"])}</td></tr>'
                  for p in res["pushback"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
     if r["missing"]:
-        asum = ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th><th>Where</th><th>What Was Assumed</th></tr></thead><tbody>'
+        asum = ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th><th>Where</th><th>What to Confirm</th></tr></thead><tbody>'
                 + "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{a["impact"].title()}</span></td><td>{esc(a["scope"].title())}</td><td>{esc(a["why"])}</td></tr>'
                           for a in r["missing"]) + "</tbody></table></div>")
     else:
         asum = '<p class="sm">All key inputs provided.</p>'
     L = r["R"]["listing"]
     lf = r["R"]["seller"]["listing_fee_pct"]
-    cost_basis = (f"Assumes a {oe.pct(lf)} listing fee" if lf else "Listing fee unknown") + "; " + "; ".join(L["cost_notes"]) + "."
+    cost_basis = (f"Listing fee {oe.pct(lf)}" if lf else "Listing fee unknown") + "; " + "; ".join(L["cost_notes"]) + "."
     state = profiles.STATES.get(L.get("state") or "", "your state")
     # manual v5: the closing-cost estimate is said once on the page: the assumptions table lists it when it was assumed
     cc_note = ("" if any(a["field"] == "closing_cost_pct" for a in r["missing"]) else

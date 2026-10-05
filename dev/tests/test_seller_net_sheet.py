@@ -56,7 +56,8 @@ class Florida(unittest.TestCase):
 
     def test_tax_after_bill_month_assumed_unpaid(self):
         r = next(r for r in self.C["rows"] if r["key"] == "tax_proration")
-        self.assertIn("Bill Assumed Unpaid", r["label"])
+        self.assertEqual(r["label"], "Property Tax Proration (Jan 1 to Closing)")  # no Assumed label
+        self.assertTrue(any("assuming this year's bill is still unpaid" in n for n in self.C["notes"]))  # said once, in a note
         self.assertTrue(self.C["tax_assumed_unpaid"])
         self.assertEqual(-r["amounts"][0], round(6200 * 0.96 * 348 / 365))  # Jan 1 to Dec 14, less the 4% discount
 
@@ -82,7 +83,9 @@ class OtherMarkets(unittest.TestCase):
         self.assertIn("payoff", C["preliminary_reason"])
         self.assertEqual(C["final_label"], "Estimated Net Before Mortgage Payoff")
         self.assertNotIn("transfer_tax", [r["key"] for r in C["rows"]])  # Texas has no state transfer tax
-        self.assertIn("Listing Brokerage (2.5%, Assumed)", [r["label"] for r in C["rows"]])
+        self.assertIn("Listing Brokerage (2.5%)", [r["label"] for r in C["rows"]])  # a default: no Assumed label
+        self.assertFalse(any("Brokerage is assumed" in n for n in C["notes"]))
+        self.assertTrue(any(a.startswith("Commission at the default 5%") for a in C["assumptions"]))  # asked in chat
         self.assertTrue(any("No state transfer tax in Texas" in n for n in C["notes"]))
         self.assertTrue(any(f["text"] == "Payoff Not Provided" and f.get("risk") for f in C["facts"]))
         self.assertFalse(any("0.70%" in r["label"] for r in C["rows"]))  # never Florida's numbers
@@ -117,7 +120,8 @@ class Iteration9(unittest.TestCase):
         d["costs"]["tax_bill_due_date"] = "10-15"  # Cobb County bills are due Oct 15; closing Nov 6
         C = compute.run(d)
         tax = next(r for r in C["rows"] if r["key"] == "tax_proration")
-        self.assertIn("Bill Assumed Paid", tax["label"])
+        self.assertEqual(tax["label"], "Property Tax Proration (Credit, Closing to Dec 31)")
+        self.assertTrue(any(n.startswith("Assumed: this year's tax bill") for n in C["notes"]))
         self.assertEqual(tax["amounts"][0], round(3900 * 56 / 365))  # a credit back to the seller
         self.assertTrue(C["tax_assumed_paid"])
         self.assertFalse(C["tax_assumed_unpaid"])
@@ -137,7 +141,8 @@ class Iteration9(unittest.TestCase):
         d["closing_date_assumed"] = True
         C = compute.run(d)
         self.assertTrue(C["closing_date_assumed"])
-        self.assertTrue(any(f["text"].startswith("Closing ") and f["text"].endswith("(Assumed)") for f in C["facts"]))
+        self.assertFalse(any("Assumed" in f["text"] for f in C["facts"]))  # local-costs.md: said once, in the notes
+        self.assertTrue(any(n.startswith("Closing on") and "expected date" in n for n in C["notes"]))
         self.assertTrue(any(a.startswith("Closing on") and "assumed" in a for a in C["assumptions"]))
         self.assertFalse(compute.run(fixture("florida-three-prices.json"))["closing_date_assumed"])
 
@@ -157,7 +162,8 @@ class Iteration9(unittest.TestCase):
         d = fixture("miami-condo-bill-paid.json")
         d["property"]["property_type_assumed"] = True
         C = compute.run(d)
-        self.assertIn("Condo (Assumed)", [f["text"] for f in C["facts"]])
+        self.assertIn("Condo", [f["text"] for f in C["facts"]])  # no Assumed label: the notes say it
+        self.assertIn("Property type taken as condo from the unit number.", C["notes"])
         self.assertTrue(any("assumed condo from the unit number" in a for a in C["assumptions"]))
 
     def test_market_notes_drop_mls(self):

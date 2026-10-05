@@ -5,8 +5,8 @@ layer: national                       # built-in estimates for any property; a s
 name: National Estimates
 as_of: 2026
 
-# Planning estimates, not local rates. Every value used from here is labeled Estimate on reports, with a line saying
-# what the agent can send to replace it. A section's key is filled only when no other layer has it, so an estimate
+# Planning estimates, not local rates. Every value used from here is named once in a report's notes, never on its
+# line, with a line saying what the agent can send to replace it. A section's key is filled only when no other layer has it, so an estimate
 # never mixes into a state's own fee list.
 
 # States with no state deed transfer tax (Arizona charges only a flat $2 affidavit fee). Best-practice assumption:

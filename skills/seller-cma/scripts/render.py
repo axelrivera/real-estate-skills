@@ -57,8 +57,6 @@ def summary_page(R, C, agent, L):
     cash, free = C["net"]["cash_at_closing"], C["net"]["no_mortgage"]
     held = "_holding" if C["net_basis"] == "after_holding" else ""  # CMA-298: nets after holding costs, as the reply quotes them
     tile = L(("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile") + held, price=money(rec["list_price"]))
-    if C["net"]["standard_terms"]:  # CMA-18: every place a net shows says the brokerage isn't the listing agreement's yet
-        tile += f" ({L('sum_standard_terms')})"
     # Results_v4: report.json's stats with placeholders filled, else the export's (or, without one, the comps': CMA-261)
     stats = [list(x) for x in C["key_stats"]] + [[C["recommended_net_display"], tile]]
     history = C.get("listing_history") or []  # Results_v4: every listing of the home that ended unsold, with dates
@@ -88,7 +86,7 @@ def summary_page(R, C, agent, L):
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_options")}</div><div class="tbl"><table><thead><tr>'
              f'<th>{L("th_list_at")}</th><th>{L("th_time_short")}</th><th class="n">{L("th_expected")}</th>'
-             f'<th class="n">{opts["net_header"]}{assumed_sub(opts["net_header_sub"])}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+             f'<th class="n">{opts["net_header"]}</th></tr></thead><tbody>{rows}</tbody></table></div>'
              f'<div class="note">{opts["note"]}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
@@ -96,11 +94,6 @@ def summary_page(R, C, agent, L):
     note = L("sum_disclaimer") + (" " + L("sum_preliminary", reason=C["preliminary_reason"]) if C["preliminary"] else "")
     o.append(f'<div class="note" style="margin-top:6px">{note}</div></div>')
     return "".join(o)
-
-
-def assumed_sub(text):
-    """Results_v4: '5% Brokerage Assumed' under a net column's header, when the brokerage is assumed."""
-    return f'<br><span class="th-sub">{esc(text)}</span>' if text else ""
 
 
 def pricing_section(R, C, L):
@@ -111,7 +104,7 @@ def pricing_section(R, C, L):
     basis = C["expected_sale_basis"]["note"]  # Results_v4: where each expected sale comes from
     b = [f'<h2>{L("h_pricing")}</h2>', f'<p>{p["intro"]}</p>',
          table([L("th_strategy"), L("th_time"), L("th_expected"),
-                L("th_cash" if cash and not held else "th_net") + assumed_sub(net["assumed_brokerage"]), L("th_expect")],  # CMA-317
+                L("th_cash" if cash and not held else "th_net"), L("th_expect")],  # CMA-317
                [[f'<strong style="white-space:nowrap">{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_after_holding_display"], x["note"]] for x in strats],
                num_cols=(2, 3), row_classes={C["recommended_index"]: "total"}),
          f'<p class="note">{(cash_note if cash else L("pricing_note" + held))} {p.get("note", "")}'

@@ -130,9 +130,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-07",
+    "estoppel_estimate": false,
     "holding": -3600,
     "lines": [
      [
@@ -198,9 +204,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-06",
+    "estoppel_estimate": false,
     "holding": -3520,
     "lines": [
      [
@@ -266,9 +278,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-07",
+    "estoppel_estimate": false,
     "holding": -3600,
     "lines": [
      [
@@ -385,9 +403,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -545,9 +569,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -613,9 +643,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -681,9 +717,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -800,9 +842,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -956,9 +1004,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -1024,9 +1078,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -1092,9 +1152,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -1209,9 +1275,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -1425,9 +1497,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-22",
+    "estoppel_estimate": false,
     "holding": -4800,
     "lines": [
      [
@@ -1493,9 +1571,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-13",
+    "estoppel_estimate": false,
     "holding": -4080,
     "lines": [
      [
@@ -1561,9 +1645,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-22",
+    "estoppel_estimate": false,
     "holding": -4800,
     "lines": [
      [
@@ -1681,9 +1771,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -2003,9 +2099,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-07",
+    "estoppel_estimate": false,
     "holding": -3600,
     "lines": [
      [
@@ -2071,9 +2173,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-06",
+    "estoppel_estimate": false,
     "holding": -3520,
     "lines": [
      [
@@ -2139,9 +2247,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-07",
+    "estoppel_estimate": false,
     "holding": -3600,
     "lines": [
      [
@@ -2258,9 +2372,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -2418,9 +2538,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -2486,9 +2612,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -2554,9 +2686,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -2673,9 +2811,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -2829,9 +2973,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -2897,9 +3047,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -2965,9 +3121,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -3082,9 +3244,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -3298,9 +3466,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-22",
+    "estoppel_estimate": false,
     "holding": -4800,
     "lines": [
      [
@@ -3366,9 +3540,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-13",
+    "estoppel_estimate": false,
     "holding": -4080,
     "lines": [
      [
@@ -3434,9 +3614,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-22",
+    "estoppel_estimate": false,
     "holding": -4800,
     "lines": [
      [
@@ -3554,9 +3740,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -3716,9 +3908,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -3784,9 +3982,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -3852,9 +4056,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -3971,9 +4181,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -4127,9 +4343,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -4195,9 +4417,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -4263,9 +4491,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-14",
+    "estoppel_estimate": false,
     "holding": -1680,
     "lines": [
      [
@@ -4380,9 +4614,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -4577,9 +4817,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-07",
+    "estoppel_estimate": false,
     "holding": -3600,
     "lines": [
      [
@@ -4645,9 +4891,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-06",
+    "estoppel_estimate": false,
     "holding": -3520,
     "lines": [
      [
@@ -4713,9 +4965,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-07",
+    "estoppel_estimate": false,
     "holding": -3600,
     "lines": [
      [
@@ -4832,9 +5090,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 770
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -5048,9 +5312,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-22",
+    "estoppel_estimate": false,
     "holding": -4800,
     "lines": [
      [
@@ -5116,9 +5386,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-13",
+    "estoppel_estimate": false,
     "holding": -4080,
     "lines": [
      [
@@ -5184,9 +5460,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-11-22",
+    "estoppel_estimate": false,
     "holding": -4800,
     "lines": [
      [
@@ -5304,9 +5586,15 @@
       "estimate": false,
       "key": "title_fees",
       "value": 1145
+     },
+     {
+      "estimate": false,
+      "key": "estoppel",
+      "value": 299
      }
     ],
     "close": "2026-10-23",
+    "estoppel_estimate": false,
     "holding": -2400,
     "lines": [
      [
@@ -5391,9 +5679,15 @@
     "estimate": false,
     "key": "title_fees",
     "value": 1145
+   },
+   {
+    "estimate": false,
+    "key": "estoppel",
+    "value": 299
    }
   ],
   "close": "2026-10-23",
+  "estoppel_estimate": false,
   "holding": -2400,
   "lines": [
    [

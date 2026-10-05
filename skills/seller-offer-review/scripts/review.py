@@ -54,7 +54,6 @@ def analyze(data, market=None, cma=None, agent=None):
         confirm_assumed_inspection(o, R["listing"])
         counter_restatements(o)
         order_flags(o)
-    label_title_fees(R)
     ask_year_built(R)
     ask_hoa_rider(R)
     ask_compensation_agreement(R)
@@ -223,15 +222,6 @@ def counter_restatements(o):
         o["counter_rows"] = [r for r in rows if r is not last] + extra + ([last] if last else [])
 
 
-def label_title_fees(R):
-    """OFR-277: title company fees from national estimates say so on the net sheet, like the owner's policy line."""
-    if R["costs"].source("closing_costs.seller_title_fees") != "estimate":
-        return
-    sheets = [R["target"]] + [s for o in R["offers"] for s in (o["ns"], o["ns_down"], o["ns_counter"], o["target"])]
-    for s in sheets:
-        s["lines"] = [(k, lab + " (Estimate)" if k == "settle" and "(Estimate)" not in lab else lab, v)
-                      for k, lab, v in s["lines"]]
-
 
 def ask_year_built(R):
     """OFR-280: with riders read from a FAR/BAR package, the lead-based paint check needs the year built; without it
@@ -381,14 +371,14 @@ def estimated_costs(R, offers):
         # OFR-293: the net sheet charges the market's total on one line when the listing broker pays the buyer's broker
         total = oe.pct(S["listing_fee_pct"] + (S["default_buyer_broker_pct"] or 0))
         mixed = len(by_listing) < len(offers)
-        out.append(f"commission ({total} total, the listing broker pays the buyer's broker"
+        out.append(f"default commission ({total} total, the listing broker pays the buyer's broker"
                    + (f"; on the other offers listing {oe.pct(S['listing_fee_pct'])}"
                       + (f" and buyer's broker {oe.pct(S['default_buyer_broker_pct'] or 0)}" if bb_assumed and "bb" in lines else "")
-                      if mixed else "") + ", assumed)")
+                      if mixed else "") + ")")
     elif S["listing_fee_assumed"] or bb_assumed:
         what = [f"listing {oe.pct(S['listing_fee_pct'])}" if S["listing_fee_assumed"] else None,
                 "buyer's broker " + oe.pct(S["default_buyer_broker_pct"] or 0) if bb_assumed and "bb" in lines else None]
-        out.append("commission (" + ", ".join(w for w in what if w) + ", assumed)")
+        out.append("default commission (" + ", ".join(w for w in what if w) + ")")  # a default, not an assumption
     src = lambda path: costs.described(path)  # noqa: E731
     rate = costs.get("closing_costs.deed_transfer_tax_rate")
     if rate and "transfer" in lines and costs.source("closing_costs.deed_transfer_tax_rate") != "deal":
@@ -409,8 +399,8 @@ def estimated_costs(R, offers):
                     f"tax proration on an estimated {money(tax['value'])} bill") + extra)
     elif unpaid and "tax" in lines:
         out.append("tax proration with this year's bill assumed unpaid")
-    if "estoppel" in lines and "(Estimate)" in lines["estoppel"]:  # iteration 9 eval 1: charged only with an HOA or a condo
-        out.append(f"{words(lines['estoppel'].split(' (')[0])} (estimate)")
+    if "estoppel" in lines and any(o["ns"].get("estoppel_estimate") for o in offers):  # iteration 9 eval 1: HOA or condo only
+        out.append(f"{words(lines['estoppel'])} (estimate)")
     if not L.get("repair_reserve_deal") and any(not o["repairs_owed"] and any(k == "repair" and v for k, _, v in o["ns_down"]["lines"])
                                                 for o in offers):  # a Standard form's repair limits are contract terms
         out.append("post-inspection credit in the downside (estimate)")
@@ -456,23 +446,26 @@ def fin_str(o):
     return oe.FIN_LABEL[o["financing"]] + ("" if not o["financed"] else f" · {o['down_pct'] * 100:.1f}% down")
 
 
-def listed_assumptions(R, multi=False, offer_id=None):
+def listed_assumptions(R, multi=False, offer_id=None, defaults=False):
     """The assumptions a report lists: all of them in a single review; in the comparison, the listing's and seller's,
     each offer's high-impact ones and any shared by several offers (the rest are in each offer's single review).
     OFR-257: the counts in the Preliminary line and the data note come from this same list, so they match the table.
     OFR-344: `offer_id` (a single review of one of several offers) drops a listing assumption that applies only to
     other offers (`offers`: the tax bill question for an offer closing in November or December), and OFR-346 an
-    assumption scoped only to other offers (their compensation agreement, their loan terms)."""
+    assumption scoped only to other offers (their compensation agreement, their loan terms). A default commission
+    (`default`) is a default, not an assumption: never listed or counted, unless `defaults` (the chat's questions)."""
     def mine(a):
         offers = [x for x in oe.scopes(a) if x.startswith("offer ")]
         return not offers or f"offer {offer_id}" in offers
     return [a for a in R["missing"] if (not multi or not a["scope"].startswith("offer ") or a["impact"] == "high"
                                         or a.get("also")) and (offer_id is None or (offer_id in a.get("offers", [offer_id])
-                                                                                    and mine(a)))]
+                                                                                    and mine(a)))
+            and (defaults or not a.get("default"))]
 
 
 # OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in the
-# data note and the assumptions), and the contract form, which each offer carries as its own "form assumed" mark
+# data note and the assumptions), and the contract form, one offer's own input (listed in the assumptions, never marked
+# in the ranking: local-costs.md, estimates and assumptions are said once, in the notes)
 SAME_FOR_EVERY_OFFER = {"payoff", "listing_fee_pct", "listing_fee_includes_buyer_broker", "state", "title_payer", "deed transfer tax", "who pays owner's title",
                         "owner's title rate", "title company fees"}
 MARKED_PER_OFFER = {"contract_form"}
@@ -483,7 +476,7 @@ def ranking_deciding(a):
 
 
 def form_assumed(R, o):
-    """OFR-306: True when this offer's contract form was assumed (a high-impact input the comparison marks per offer)."""
+    """OFR-306: True when this offer's contract form was assumed (a high-impact input, listed in the assumptions)."""
     return any(a["field"] in MARKED_PER_OFFER and f"offer {o['id']}" in oe.scopes(a) for a in R["missing"])
 
 
@@ -554,7 +547,7 @@ def confirm_items(R, limit=4, offer_id=None):
     """The assumptions that would change the answer most, for the chat reply: the high-impact gaps (up to `limit`), the
     assumed offer terms in ALWAYS_ASK (and any marked `ask`, e.g. an assumed listing fee under Rider GG), then other medium-impact gaps while there's room. OFR-352: `offer_id` (a single
     review of one of several offers) asks only what its own review lists."""
-    pool = listed_assumptions(R, offer_id=offer_id) if offer_id else R["missing"]
+    pool = listed_assumptions(R, offer_id=offer_id, defaults=True) if offer_id else R["missing"]
     asked = [a for a in pool if a["impact"] in ("high", "med")]
     terms = [a for a in asked if a["field"] in ALWAYS_ASK or a.get("ask")]
     high = [a for a in asked if a["impact"] == "high" and a not in terms][:limit]
@@ -643,7 +636,6 @@ def walk_away(o, costs):
         end, _ = oe.rolled(start + timedelta(days=wd), costs, o["close"])
         notes.append(f"For any reason until {end:%b %-d} ({wd}-day inspection period"
                      + (f", {o['contract_label']}" if o["contract_form"] in oe.cf.FARBAR else "")
-                     + (", assumed" if oe.assumed(o, "inspection_days", "contract_form") else "")  # iteration 9 eval 1
                      + f"); after that only under {open_after(o, wd)}.")
     if o.get("appraisal_form") == "aga" and ex < o["risk_days"] == o["appraisal_days"]:
         first, _ = oe.rolled(o["firm_date"] - timedelta(days=o["risk_days"] - ex), costs, o["close"])

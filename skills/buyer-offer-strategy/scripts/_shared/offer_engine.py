@@ -11,7 +11,7 @@ Rule: the engine never stops on missing data. Every missing input gets a conserv
 recorded as an assumption with an impact level (high / med / low), so the report can say what to confirm
 and mark itself Preliminary. Market costs (transfer tax, title, fees, commission, property tax, holding costs,
 inspection credit reserve) come from the built-in layers via shared.finance: local defaults where there are any
-(Florida), national estimates labeled Estimate otherwise, never another state's number. The listing file's
+(Florida), national estimates otherwise (named once in the notes), never another state's number. The listing file's
 `costs` block (a title quote, the transfer tax the skill looked up) wins over both.
 """
 import copy
@@ -200,7 +200,7 @@ class Costs:
             subs = {s for p, s in self.market.sources.items() if p.startswith(path + ".")}
             src = "state" if subs <= {"state", "county"} else src
         state = profiles.STATES.get(self.state or "", self.state or "market")
-        # OFR-253: a Florida value is labeled Assumed wherever it's described when the state came from the contract form
+        # OFR-253: a Florida value says Assumed wherever the notes describe it when the state came from the contract form
         default = f"Assumed {state} default" if self.state_assumed else f"{state} default"
         return {"deal": "this listing", "estimate": "national estimate", "state": default,
                 "county": "county default", "mls": "MLS default",
@@ -376,9 +376,12 @@ def prepare_listing(data, A, costs):
         else:
             # OFR-259: one figure, called the default commission (it's the same in every state); analyze() rewrites it
             # when the listing broker pays the buyer's broker, so it matches the net sheet's one total line
+            # A default, not an assumption (local-costs.md): `default` keeps it out of the report's assumptions table,
+            # and the chat still asks for the listing agreement's terms
             S["listing_fee_pct"] = A.add("seller", "listing_fee_pct", lf,
-                                         f"Listing brokerage fee not provided: assumed {pct(lf)} for the listing side "
-                                         "(default commission)", "med")
+                                         f"Listing brokerage fee not provided: the default {pct(lf)} for the listing side "
+                                         "is used", "med")
+            A.items[-1]["default"] = True
     S["offered_buyer_broker_pct"] = S.get("offered_buyer_broker_pct")
     S["default_buyer_broker_pct"] = (S["offered_buyer_broker_pct"] if S["offered_buyer_broker_pct"] is not None
                                      else costs.get("brokerage.buyer_broker_fee_pct"))  # 2.5% national estimate
@@ -722,13 +725,14 @@ def prepare_offer(o, L, S, A):
               "offered. Say if the buyer's agent asks for a different amount", "low")
     elif o.get("buyer_broker_pct") is None and o.get("buyer_broker_amount") is None:
         bb = S["default_buyer_broker_pct"]
-        o["bb_tag"] = "Assumed"
+        o["bb_tag"] = None  # a default commission is a default: its line carries no label
         if bb is None:
             o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", 0,
                                           "Buyer-broker compensation not stated: left out of the net", "high")
         else:  # OFR-259: same wording as the listing fee
-            o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: assumed "
-                                          f"{pct(bb)} (default commission)", "med")
+            o["buyer_broker_pct"] = A.add(sc, "buyer_broker_pct", bb, f"Buyer-broker compensation not stated: the "
+                                          f"default {pct(bb)} is used", "med")
+            A.items[-1]["default"] = True  # a default commission: asked in chat, never listed as an assumption
     else:
         o["bb_tag"] = "Requested"
         if o.get("buyer_broker_pct") is None:
@@ -896,7 +900,7 @@ def rider_money(o, A, sc):
     if "U" in codes or o.get("rent_back_days"):
         days, rent = o.get("rent_back_days"), o.get("rent_back_monthly")
         if days and rent is not None:  # OFR-118: a free ($0) rent-back is a known term, not missing data
-            lines.append(("rentback", f"Rent-Back Rent to Buyer ({days} Days, Est.)", -round(rent * days / 30)))
+            lines.append(("rentback", f"Rent-Back Rent to Buyer ({days} Days)", -round(rent * days / 30)))
         else:
             A.add(sc, "rent_back", "not counted", "Post-closing occupancy (Rider U) without its days and monthly rent: the "
                   "rent the seller pays the buyer isn't in the net", "med")
@@ -956,7 +960,7 @@ def repair_reserve(o, L):
         return o["repair_limits"]["general"], "Repairs up to the General Repair Limit (Standard)"
     if o["contract_form"] in cf.FARBAR or not L["farbar_market"] or L.get("repair_reserve_deal"):
         if L["repair_reserve_pct"]:  # OFR-254: the market's share of price to the nearest $500 (0.7% of $382,000 = $2,500)
-            return rnd(L["repair_reserve_pct"] * o["price"], REPAIR_CREDIT_STEP), "Post-Inspection Repair Credit (Est.)"
+            return rnd(L["repair_reserve_pct"] * o["price"], REPAIR_CREDIT_STEP), "Post-Inspection Repair Credit"
     return 0, None
 
 
@@ -993,34 +997,35 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         "bb": (f"Buyer-Broker Compensation ({pct(bb_pct, 2)}" + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
               else "Buyer-Broker Compensation (Paid by the Listing Broker)" if bb_from_listing else "Buyer-Broker Compensation",
         "transfer": transfer,
+        # Labels never say Estimate or Assumed (local-costs.md): the report's assumptions and notes say so, once
         "title": "Owner's Title Policy" + (" (Quote)" if "(Quote)" in found.get("title", ("",))[0] else
-                                           " (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else " (Estimate)"),
+                                           " (Promulgated Rate)" if costs.get("closing_costs.owner_title.rate_tiers") else ""),
         "settle": "Title Company Fees",
-        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Documents", CMA-262). OFR-309:
-        # labeled Estimate when the fee is a national estimate or charged only in case there's an HOA
-        "estoppel": (costs.get("closing_costs.hoa_estoppel_label") or "HOA Documents")
-                    + (" (Estimate)" if L["hoa_monthly"] is None or "(Estimate)" in found.get("estoppel", ("",))[0] else ""),
+        # CMA-109: the market's own name (Florida "HOA Estoppel Letter", elsewhere "HOA Documents", CMA-262)
+        "estoppel": costs.get("closing_costs.hoa_estoppel_label") or "HOA Documents",
     }
+    # OFR-309: the fee is an estimate when it's a national one or charged only in case there's an HOA (said in the notes)
+    estoppel_estimate = "estoppel" in found and (L["hoa_monthly"] is None
+                                                 or costs.source("closing_costs.hoa_estoppel_fee") == "estimate")
     tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
     tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
-    # OFR-313 (local-costs.md): after this year's bills go out, an unpaid bill is an assumption, and the line says so
+    # OFR-313 (local-costs.md): after this year's bills go out, an unpaid bill is an assumption, said in the assumptions
     tax_bill_assumed = tax > 0 and L["bill_paid"] is None and close.month >= L["tax_bill_month"]
-    if tax_bill_assumed and tax_label.endswith(")"):
-        tax_label = tax_label[:-1] + ", Bill Assumed Unpaid)"
     lines = [("price", "Offer Price", price), ("conc", "Seller-Paid Closing Costs / Concessions", -conc),
-             ("repair", repair_label or "Post-Inspection Repair Credit (Est.)", -repair)]
+             ("repair", repair_label or "Post-Inspection Repair Credit", -repair)]
     for key in ("listing", "bb", "transfer", "surtax", "title", "settle", "estoppel"):
         if key == "surtax" and key not in found:
             continue
         lines.append((key, labels.get(key) or found[key][0], -found.get(key, ("", 0))[1]))
     lines += [("warranty", "Home Warranty", -warranty),
               ("tax", tax_label, -tax), *extra,
-              ("payoff", "Mortgage Payoff (Est.)", -S["payoff"])]
+              ("payoff", "Mortgage Payoff", -S["payoff"])]
     net = sum(v for _, _, v in lines)
     months = max(0, (close - L["analysis_date"]).days) / 30
     holding = -round(S["holding_monthly"] * months)
     return {"lines": lines, "net": net, "holding": holding, "net_adj": net + holding, "close": close, "price": price,
-            "missing": base["missing"], "assumed": base["assumed"], "tax_bill_assumed": tax_bill_assumed}
+            "missing": base["missing"], "assumed": base["assumed"], "tax_bill_assumed": tax_bill_assumed,
+            "estoppel_estimate": estoppel_estimate}
 
 
 def appraisal_line(L):
@@ -1037,12 +1042,6 @@ def downside_price(o, L):
 
 
 # --- scoring -----------------------------------------------------------------
-
-def assumed(o, *fields):
-    """' (assumed)' when the review assumed any of these terms (iteration 9 evals 1, 3, 5), so a term nobody gave never
-    prints as a fact."""
-    return " (assumed)" if set(fields) & set(o.get("assumed_terms") or ()) else ""
-
 
 def deposit_benchmark(o, L):
     """The deposit share an offer is rated against: the market norm, at least 5% for a cash offer (OFR-15)."""
@@ -1065,7 +1064,7 @@ def auto_scores(o, L, S):
         s["financing"], why["financing"] = 5, "Cash: no loan contingency"
     elif fin == "conventional":
         s["financing"] = 4 if down >= .20 else (3 if down >= .05 else 2)
-        why["financing"] = f"Conventional, {down:.0%} down" + assumed(o, "down_pct", "financing")
+        why["financing"] = f"Conventional, {down:.0%} down"
     elif fin == "va":
         s["financing"], why["financing"] = 3, ("VA financing: Tidewater notice before a low appraisal is final; "
                                                "stricter appraisal and condition rules")
@@ -1075,7 +1074,7 @@ def auto_scores(o, L, S):
 
     ap = o["approval"]
     s["approval"] = {"pof_verified": 5, "full_uw": 5, "du_approved": 4, "preapproval": 3, "prequal": 2, "none": 1}.get(ap, 3)
-    why["approval"] = APPROVAL_LABEL.get(ap, ap) + assumed(o, "approval")
+    why["approval"] = APPROVAL_LABEL.get(ap, ap)
     if o["financed"] and not o.get("lender_called") and s["approval"] > 3:
         s["approval"] = 3
         why["approval"] += "; not yet verified by phone"
@@ -1121,15 +1120,15 @@ def auto_scores(o, L, S):
         if o["inspection_walkaway"]:
             by_insp = 5 if ins <= 7 else 4 if ins <= 10 else 3 if ins <= 14 else 2  # walk-away-for-any-reason window weighs most
             s["contingency"] = min(by_days, by_insp)
-            why["contingency"] = (f"{rd} days until firm; {ins}-day inspection" + assumed(o, "inspection_days", "contract_form")
+            why["contingency"] = (f"{rd} days until firm; {ins}-day inspection"
                                   + _window_note(o, rd))
         else:  # repair notices only (Standard): risk_days already runs through the repair election
             s["contingency"] = by_days
             why["contingency"] = (f"{rd} days until firm; {ins}-day repair-notice period, no walk-away"
-                                  + assumed(o, "inspection_days", "contract_form") + _window_note(o, rd))
+                                  + _window_note(o, rd))
 
     if o["deposit"] is None:
-        s["deposit"], why["deposit"] = 3, "Deposit not provided (assumed average)"
+        s["deposit"], why["deposit"] = 3, "Deposit not provided: scored as average"
     else:
         p = o["deposit"] / o["price"]
         s["deposit"] = 5 if p >= .10 else 4 if p >= .03 else 3 if p >= .02 else 2 if p >= .01 else 1
@@ -1144,11 +1143,11 @@ def auto_scores(o, L, S):
         margin = (dl - o["close"]).days
         s["timeline"] = 5 if margin >= 7 else 4 if margin >= 0 else 2 if margin >= -7 else 1
         why["timeline"] = (f"{o['close']:%b %-d} close, {margin} days before {dl:%b %-d} deadline" if margin >= 0
-                           else f"{o['close']:%b %-d} close is {-margin} days after {dl:%b %-d} deadline") + assumed(o, "closing_days")
+                           else f"{o['close']:%b %-d} close is {-margin} days after {dl:%b %-d} deadline")
     else:
         cd = o["close_days"]
         s["timeline"] = 5 if cd <= 30 else 4 if cd <= 45 else 3 if cd <= 60 else 2
-        why["timeline"] = f"Closes in {cd} days" + assumed(o, "closing_days") + " (no seller deadline given)"
+        why["timeline"] = f"Closes in {cd} days (no seller deadline given)"
 
     if not o["financed"]:
         s["property"], why["property"] = 5, "Cash: no lender insurance or condition requirements"
@@ -1769,7 +1768,7 @@ def _counter_fmt(o, key, v, offered=False):
     if key == "buyer_broker_pct":
         return f"{v:.1%}"
     if key == "inspection_days":
-        return f"{v} days" + (" (assumed)" if offered and o.get("inspection_assumed") else "")
+        return f"{v} days"
     if key == "loan_approval_days":
         return f"{v} days"
     if key == "sale_contingency_days":
@@ -2103,11 +2102,12 @@ def _missing_market(costs, sheet, A):
               impact.get(label, "med"))
     what = {"transfer_tax": ("transfer_tax_rate", "Transfer tax", "the state's rate"),
             "owner_title": ("title_estimate_pct", "Owner's title policy", "a title quote"),
-            "title_fees": ("title_fees", "Title company fees", "a title quote")}
+            "title_fees": ("title_fees", "Title company fees", "a title quote"),
+            "estoppel": ("hoa_estoppel_fee", "HOA documents fee", "the association's fee schedule")}
     for a in sheet["assumed"]:
         if a.get("estimate") and a["key"] in what:
             field, name, fix = what[a["key"]]
-            shown = f"{a['value'] * 100:g}% of price" if a["key"] != "title_fees" else money(a["value"])
+            shown = f"{a['value'] * 100:g}% of price" if a["key"] not in ("title_fees", "estoppel") else money(a["value"])
             A.add("listing", field, a["value"], f"{name}: national estimate of {shown} (Estimate; {fix} replaces it)", "med")
 
 
@@ -2127,7 +2127,7 @@ def analyze(data, market=None, cma=None):
     if cma:
         data = apply_cma(data, cma)
     listing = data.get("listing") or {}
-    # OFR-253: with no state, a FAR/BAR contract means Florida (its costs, labeled Assumed); anything else gets national
+    # OFR-253: with no state, a FAR/BAR contract means Florida (its costs, said in the assumptions); anything else gets national
     # estimates. The assumption says which, so its text and the net sheet always agree.
     no_state = market is None and not state_of(listing)
     farbar = no_state and any(farbar_form(o) for o in data.get("offers") or [])
@@ -2171,9 +2171,10 @@ def analyze(data, market=None, cma=None):
         A.items[-1]["offers"] = late  # OFR-344: a single review lists it only for an offer closing then
     _missing_market(costs, offers[0]["ns"], A)
     estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)
-    if L["hoa_monthly"] is None and estoppel:  # a condo with its dues unknown: the fee is charged, so say so
-        A.add("listing", "hoa_monthly", "unknown", f"Condo association dues not stated: the {estoppel[0]} "
-              f"({money(estoppel[1])}) is an estimate. Give the monthly dues", "low")
+    if L["hoa_monthly"] is None and estoppel:  # a condo with its dues unknown: the fee is charged, so say so (once)
+        said = any(a["field"] == "hoa_estoppel_fee" for a in A.items)
+        A.add("listing", "hoa_monthly", "unknown", "Condo association dues not stated" + (
+              "" if said else f": the {estoppel[0]} ({money(estoppel[1])}) is an estimate") + ". Give the monthly dues", "low")
     elif L["hoa_monthly"] is None:  # iteration 9 eval 1: no HOA fee is charged unless one is known
         A.add("listing", "hoa_monthly", "none charged", "HOA not stated: no HOA estoppel or documents fee is charged. Say "
               "whether there's an HOA (and its dues)", "low")
@@ -2228,7 +2229,7 @@ def analyze(data, market=None, cma=None):
         for a in A.items:  # OFR-127, OFR-259: the commission wording matches the net sheet's lines
             if a["field"] == "listing_fee_pct" and a["value"]:
                 total = pct(a["value"] + (S["default_buyer_broker_pct"] or 0))
-                a["why"] = (f"Listing brokerage fee not provided: assumed {total} in total (default commission); the "
+                a["why"] = (f"Listing brokerage fee not provided: the default {total} in total is used; the "
                             "listing broker pays the buyer's broker from it" if all(by_listing) else
                             a["why"] + f"; where the listing broker pays the buyer's broker, the net sheet shows the {total} "
                             "total on one line")

@@ -556,10 +556,11 @@ class EvalIteration4(unittest.TestCase):
         close = next(r for r in rows if r[0] == "Closing Date")
         self.assertIn("accept", close[2])
 
-    def test_national_title_fees_are_labeled_estimate(self):  # OFR-277
+    def test_national_title_fees_are_an_estimate_in_the_assumptions(self):  # OFR-277, owner rule: never on the line
         out = review.result(review.analyze(fixture("texas-single.json")))
         labels = [r["label"] for r in out["offers"][0]["net_sheet"]["rows"]]
-        self.assertIn("Title Company Fees (Estimate)", labels)
+        self.assertIn("Title Company Fees", labels)
+        self.assertIn("title_fees", {a["field"] for a in review.listed_assumptions(review.analyze(fixture("texas-single.json")))})
         fl = review.result(review.analyze(fixture("minimal-single.json")))
         self.assertIn("Title Company Fees", [r["label"] for r in fl["offers"][0]["net_sheet"]["rows"]])
 
@@ -672,7 +673,7 @@ class EvalIteration5(unittest.TestCase):
         data["offers"][0]["buyer_broker_paid_by"] = "listing_broker"
         R = review.analyze(data)
         est = review.estimated_costs(R, R["offers"])
-        self.assertTrue(est[0].startswith("commission (5% total"), est)
+        self.assertTrue(est[0].startswith("default commission (5% total"), est)  # a default, never "assumed"
         listing = next(lab for k, lab, _ in R["offers"][0]["ns"]["lines"] if k == "listing")
         self.assertIn("5%", listing)
 
@@ -782,7 +783,8 @@ class EvalIteration6(unittest.TestCase):
         marks = {r["key"]: r["form_assumed"] for r in s["ranked"]}
         self.assertEqual(marks, {"A": False, "B": True, "C": True, "D": True})
         doc, _, _ = review_render.build_html(R, {}, sample=False, mode="multi")
-        self.assertIn("(form assumed)", doc)
+        self.assertNotIn("form assumed", doc)  # said once, in the assumptions table (high impact: listed)
+        self.assertIn("Contract form not given", doc)
         self.assertNotIn('class="prelim"', doc)
         top = R["ranked"][0]  # the offer's own review still says it's preliminary
         self.assertTrue(review.result(R, "single", top["id"])["summary"]["preliminary"])
@@ -809,7 +811,8 @@ class EvalIteration6(unittest.TestCase):
         data["listing"].pop("hoa_monthly")
         self.assertIsNone(estoppel(data))  # iteration 9 eval 1: an unknown HOA isn't charged "in case"
         data["listing"]["property_type"] = "condo"  # a condo has an association: charged, as an estimate
-        self.assertEqual(estoppel(data), "HOA Documents (Estimate)")
+        self.assertEqual(estoppel(data), "HOA Documents")  # an estimate: said in the assumptions, not on the line
+        self.assertTrue(review.analyze(data)["offers"][0]["ns"]["estoppel_estimate"])
         self.assertEqual(estoppel(fixture("expired-aga.json")), "HOA Estoppel Letter")  # an HOA, Florida's built-in fee
 
 
@@ -841,7 +844,8 @@ class EvalIteration7(unittest.TestCase):
         R = review.analyze(data)
         o = R["offers"][0]
         self.assertTrue(o["ns"]["tax_bill_assumed"])
-        self.assertTrue(next(lab for k, lab, _ in o["ns"]["lines"] if k == "tax").endswith("Bill Assumed Unpaid)"))
+        self.assertEqual(next(lab for k, lab, _ in o["ns"]["lines"] if k == "tax"), "Property Tax Proration (Jan 1 to Closing)")
+        self.assertIn("current_tax_bill_paid", {a["field"] for a in review.listed_assumptions(R)})  # said once, there
         out = review.result(R)
         self.assertTrue(any("early-payment discount" in c and "assumed unpaid" in c for c in out["estimated_costs"]))
         self.assertTrue(any("early-payment discount" in n for n in out["cost_notes"]))
@@ -880,18 +884,19 @@ class EvalIteration9(unittest.TestCase):
         self.assertFalse(any("$619,500 price" in q for q in asks))
         self.assertTrue(any(f"good for {price}" in q for q in review_render.lender_questions(o, R)))
 
-    def test_assumed_terms_are_marked(self):  # evals 1, 3, 5
+    def test_assumed_terms_are_listed_once_not_marked(self):  # evals 1, 3, 5; owner rule: said once, in the assumptions
         R = review.analyze(fixture("minimal-single.json"))
         o = R["offers"][0]
         rows = {r[0]: r[1] for r in review_render.term_rows(o, R)}
-        self.assertEqual(rows["Approval"], "Pre-approval letter (assumed)")
-        self.assertTrue(rows["Inspection Period"].endswith("(assumed)"))
-        self.assertTrue(rows["Loan Approval Period"].endswith("(assumed)"))
-        self.assertTrue(rows["Escrow / Title Agent"].endswith("(assumed)"))
-        self.assertIn("(assumed)", o["score"]["why"]["approval"])
-        self.assertIn("assumed", review.walk_away(o, R["costs"])[1])
-        given = review.analyze(fixture("texas-single.json"))  # every term given: no marks
-        self.assertNotIn("(assumed)", json.dumps([r[1] for r in review_render.term_rows(given["offers"][0], given)]))
+        self.assertEqual(rows["Approval"], "Pre-approval letter")
+        self.assertNotIn("assumed", json.dumps(list(rows.values())))
+        self.assertNotIn("assumed", o["score"]["why"]["approval"])
+        self.assertNotIn("assumed", review.walk_away(o, R["costs"])[1])
+        listed = {a["field"] for a in review.listed_assumptions(R)}  # the one notes block still names every one
+        self.assertTrue({"approval", "inspection_days", "loan_approval_days", "contract_form"} <= listed, listed)
+        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        self.assertNotIn("(assumed)", doc)
+        self.assertNotIn("form assumed", doc)
 
     def test_disclosure_is_never_a_top_risk(self):  # evals 1, 5
         R = review.analyze(fixture("minimal-single.json"))
@@ -1078,9 +1083,12 @@ class EvalIteration11(unittest.TestCase):
         self.assertIsNone(review.single_view(R, other)["terms_reason"])
 
     def test_form_assumed_is_marked_apart_from_the_days(self):
-        """Eval 2: "7 days (AS IS) (assumed)" read as if the days were assumed when only the form was."""
+        """Eval 2: "7 days (AS IS) (assumed)" read as if the days were assumed: the form shows plain, and the assumed form
+        is listed once, in the assumptions."""
         d = fixture("minimal-single.json")
         d["offers"][0]["inspection_days"] = 7
         doc, _, _ = review_render.build_html(review.analyze(d), {}, sample=False)
-        self.assertIn("7 days (AS IS, form assumed)", doc)
+        self.assertIn("7 days (AS IS)", doc)
+        self.assertNotIn("form assumed", doc)
+        self.assertIn("Contract form not given: assumed FAR/BAR AS IS", doc)
         self.assertNotIn("7 days (AS IS) (assumed)", doc)

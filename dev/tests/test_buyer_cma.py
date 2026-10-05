@@ -561,7 +561,7 @@ class PaymentBasis(unittest.TestCase):
         tb = C["payments"]["tax_basis"]
         self.assertTrue(tb["unconfirmed"] and tb["higher"] and tb["label_estimate"])
         doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
-        self.assertIn("Estimate)", doc)
+        self.assertNotIn("Estimate)", doc)  # no label: the note under the payment table says it, once
         self.assertIn("the higher of the two", doc)
 
     def test_one_confirmed_district_is_not_an_estimate(self):
@@ -788,12 +788,16 @@ class FourthPass(unittest.TestCase):
         self.assertIn("Cash to close is the down payment plus closing costs", doc)
 
     def test_assumed_financing_is_labeled_once(self):
-        """CMA-227: `assumed: true` labels the scenario once; "Assumed" or parentheses in the label warn."""
+        """CMA-227: `assumed: true` is said once, in the payment note, never on a label or column header; "Assumed" or
+        parentheses in the label warn."""
         R, C = self.run_(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__("assumed", True))
-        self.assertEqual(C["payments"]["rows"][0]["label"], "Conventional, 5% Down, Assumed")
+        self.assertEqual(C["payments"]["rows"][0]["label"], "Conventional, 5% Down")
+        self.assertTrue(C["payments"]["rows"][0]["assumed"])
         self.assertNotIn("scenario_label", C["warning_keys"])
         doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
-        self.assertIn("Cash to Close (Conventional, 5% Down, Assumed)", doc)
+        self.assertIn("Cash to Close (Conventional, 5% Down)", doc)
+        self.assertEqual(doc.count("financing is assumed until the buyer's lender confirms it"), 1)
+        self.assertNotIn("Assumed", doc.split("</style>", 1)[1])
         self.assertNotIn("Assumed))", doc)
         _, C = self.run_(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__("label", "Conventional, 5% Down (Assumed)"))
         self.assertIn("scenario_label", C["warning_keys"])
@@ -1061,7 +1065,7 @@ class ManualSmoke(unittest.TestCase):
             R["costs"]["payment"].pop("price", None)
         R, C = self.run_(at_target)
         doc, _ = buyer_render.build_html(copy.deepcopy(R), C, [], {})
-        self.assertIn(f"Estimate at a {compute.money(C['payments']['price'])} Purchase (Target),", doc)
+        self.assertIn(f"Taxes at a {compute.money(C['payments']['price'])} Purchase (Target),", doc)
 
 
 class ManualSmokeV2(unittest.TestCase):

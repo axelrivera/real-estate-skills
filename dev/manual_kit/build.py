@@ -494,8 +494,8 @@ def case_seller_cma(pdf, checks):
         "the kit's three prices (payoff $171,500, closing December 18, 2026):", "",
         table(["Line"] + [s["label"] for s in comp["strategies"]],
               [[r["label"]] + r["display"] for r in net["rows"]]), "",
-        "- The brokerage lines must be marked as assumed (5% total: 2.5% listing, 2.5% buyer's agent), since the notes "
-        "say the terms aren't set. compute.py's assumptions:",
+        "- The brokerage lines show the default rates with no Assumed label (2.5% listing, 2.5% buyer's agent): a default, "
+        "not an assumption. Estimates are named once, in the notes. compute.py's assumptions (the reply asks):",
     ]
     lines += [f"  - {a}" for a in comp["assumptions"]] or ["  - none"]
     pay = comp["payments"]
@@ -946,7 +946,8 @@ CHECKS = {
                       ("Report PDF shows the profile's name, brokerage and colors", "both", "behavior"),
                       ("Treats the home as not listed now and flags the 2017 expired listing (price and days)", "both",
                        "behavior"),
-                      ("Net sheet marks the 5% brokerage as assumed", "both", "behavior"),
+                      ("Brokerage shown at the default rates with no Assumed label; estimates named once in the notes", "both",
+                       "behavior"),
                       ("Facts and market numbers match expected.md", "both", "fixed"),
                       ("Recommended list price inside the sanity band, or the report says why not", "both", "band"),
                       ("Listing presentation: the PPTX opens and its prices and nets match the PDF", "both", "consistency"),
@@ -1005,7 +1006,8 @@ CHECKS = {
     "09-seller-net-sheet": [("One-page PDF with the profile's name, brokerage and colors", "cowork", "behavior"),
                             ("Nets and lines match expected.md, with no questions before the first sheet", "cowork",
                              "fixed"),
-                            ("The tax proration reads Bill Assumed Unpaid and the reply says so", "cowork", "behavior"),
+                            ("The notes say the tax bill is assumed unpaid (no label on the line) and the reply says so", "cowork",
+                             "behavior"),
                             ("Step 2 answers in chat with the net in expected.md, without a new PDF", "cowork", "fixed")],
 }
 KINDS = {"behavior": "Behavior", "consistency": "Consistency", "fixed": "Fixed", "band": "Band"}
@@ -1093,7 +1095,8 @@ def case_net_sheet(checks):
         "## Step 1: The PDF", "",
         table(["Line", *[c["label"] for c in pdf["columns"]]], rows), "",
         "- One page, in the profile's colors, with the agent's name and brokerage in the header.",
-        "- The tax proration line reads \"Bill Assumed Unpaid\" (a December closing), and the reply says so.",
+        "- The tax proration line reads \"Property Tax Proration (Jan 1 to Closing)\" with no Assumed label; the notes "
+        "say the bill is assumed unpaid (a December closing), once, and the reply says so.",
         "- Title company fees show as four lines (settlement, title search, municipal lien search, recording).",
         "- The reply lists the assumptions (the unpaid tax bill, typical title fees) and offers the chat version in one line.", "",
         "## Step 2: In Chat", "",

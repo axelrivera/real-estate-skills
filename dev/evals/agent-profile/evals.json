@@ -38,7 +38,7 @@
     {
       "id": 6,
       "prompt": "Can you save that I usually do 3% listing and 2% to buyer agents, and my title company charges $850?",
-      "expected_output": "Doesn't add costs or commission to the profile; says in one line at the end that the profile never holds costs, that each report assumes 5% total commission and local estimates (labeled), and takes their numbers on the report itself, so they can just mention them when asking for a net sheet or CMA; offers in one line to set up the profile if there isn't one",
+      "expected_output": "Doesn't add costs or commission to the profile; says in one line at the end that the profile never holds costs, that each report uses the default 5% total commission and local estimates (named once in its notes), and takes their numbers on the report itself, so they can just mention them when asking for a net sheet or CMA; offers in one line to set up the profile if there isn't one",
       "files": []
     },
     {

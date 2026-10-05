@@ -46,13 +46,13 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | Field | Default if Missing | Impact |
 |---|---|---|
 | `address` | — | — |
-| `state`, `county` | state read from the address ("…, FL 32750"). Neither: an offer on a FAR/BAR contract means Florida (its costs, labeled Assumed); otherwise national estimates, never Florida's. Either way it's listed as an assumption | high |
+| `state`, `county` | state read from the address ("…, FL 32750"). Neither: an offer on a FAR/BAR contract means Florida (its costs, said in the assumptions); otherwise national estimates, never Florida's. Either way it's listed as an assumption | high |
 | `list_price` | **required** | — |
 | `beds`, `baths`, `sqft`, `year_built` | shown as "—". Without `year_built` the lead-based paint check can't run; when riders were read from a FAR/BAR package it's asked for (med). Take it from the tax record or MLS | — |
 | `built_before_1978` | `true` or `false` from the seller's property disclosure ("Was the Property built before 1978?") when the year isn't known: it runs the lead-based paint check, so the year isn't asked | asked with `year_built` | — |
 | `roof_year` | no roof penalty in scoring | med (insurance) |
 | `insurance_reports` | `true` only when the seller has current insurance inspection reports to share (Florida: 4-point and wind mitigation). A counter that shortens the inspection period offers them only then | false: never offered | — |
-| `hoa_monthly` | unknown → no HOA estoppel or documents fee is charged (a condo's is, labeled Estimate), and the assumption asks whether there's an HOA; `0` = no HOA, no fee | low |
+| `hoa_monthly` | unknown → no HOA estoppel or documents fee is charged (a condo's is, as an estimate said in the assumptions), and the assumption asks whether there's an HOA; `0` = no HOA, no fee | low |
 | `hoa_conflict` | text naming what disagrees ("$95 per quarter in one package, $95 per month in the other") when the offer packages, or a package and the listing, give different HOA assessments. Every offer gets a Low flag (topic `hoa_conflict`) and the report's chip reads "HOA to Confirm" instead of a figure. Keep `hoa_monthly` at the figure you trust most | none | — |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
@@ -179,7 +179,7 @@ The value range sets where appraisal risk starts. Use the CMA, in this order:
 2. Any other CMA (the agent's own attached CMA, a PDF from an earlier conversation, another tool's report, notes, a pasted range): read the low and high, put them in `listing.cma_low` / `cma_high`, and confirm them in one line of the reply (`value_range_confirm`: "Using your CMA's $415,000–$428,000 range.") without waiting for an answer.
 3. Nothing: leave them out. Appraisal risk is measured against list price, the answer is Preliminary, and a price over list is never countered down (the counter asks for gap coverage instead).
 
-Market costs come from the listing's state and county (`local-costs.md`): Florida closing costs, title rates and tax proration are built in; elsewhere national estimates are labeled Estimate, never Florida's numbers. Outside Florida, look up the state's transfer tax from a trusted source and put it in `listing.costs`. Without terms, commission is 5% total. `seller-costs.md` explains each line and takes a title company quote.
+Market costs come from the listing's state and county (`local-costs.md`): Florida closing costs, title rates and tax proration are built in; elsewhere national estimates, named once in the assumptions, never Florida's numbers. Outside Florida, look up the state's transfer tax from a trusted source and put it in `listing.costs`. Without terms, commission is the 5% total default, with no label. `seller-costs.md` explains each line and takes a title company quote.
 
 ## Offers Over Time
 

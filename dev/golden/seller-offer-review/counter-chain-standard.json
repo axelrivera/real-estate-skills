@@ -20,7 +20,7 @@
    ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -123,6 +123,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -191,6 +192,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -259,6 +261,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -397,6 +400,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -485,6 +489,7 @@
    "scope": "seller"
   },
   {
+   "default": true,
    "field": "listing_fee_pct",
    "impact": "med",
    "scope": "seller",
@@ -602,6 +607,7 @@
    "value": 11502
   },
   {
+   "default": true,
    "field": "listing_fee_pct",
    "impact": "med",
    "scope": "seller",
@@ -655,7 +661,7 @@
    ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -758,6 +764,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -826,6 +833,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -894,6 +902,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -1032,6 +1041,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -1118,7 +1128,7 @@
    ],
    "bb_credit": false,
    "bb_from_listing": false,
-   "bb_tag": "Assumed",
+   "bb_tag": null,
    "blocking": {
     "count": 0
    },
@@ -1221,6 +1231,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -1289,6 +1300,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -1357,6 +1369,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -1495,6 +1508,7 @@
      }
     ],
     "close": "2026-11-16",
+    "estoppel_estimate": false,
     "holding": -1020,
     "lines": [
      [
@@ -1582,6 +1596,7 @@
    }
   ],
   "close": "2026-11-16",
+  "estoppel_estimate": false,
   "holding": -1020,
   "lines": [
    [
