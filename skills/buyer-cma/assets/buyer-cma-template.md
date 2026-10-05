@@ -2,6 +2,8 @@
 
 **Suggested Opening Offer: {{offer_plan.opening_display}}** · Target {{offer_plan.target_display}} · Walk Away Above {{offer_plan.walk_away_display}}
 
+**{{offer_plan.posture_label}}** {{offer_plan.posture_line}}
+
 **Supported Value Range: {{range.display}}.** {{bottom_line.line}} {{bottom_line.why, its first sentence}}
 
 **Why This Offer:**

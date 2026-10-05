@@ -11,8 +11,9 @@ X to VE, long street and subdivision names. From that export it picks 3 to 8 com
 (size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then and
 always outside Florida), sets the time adjustment by the method's rule from the export's split (none, 1% or 2% a
 quarter), runs the comps-only stage for the adjusted values and the script's range (now and then the agent's own
-range_override instead), an offer plan inside it, a listing history across years (relists, cuts, increases, failed contracts, off-market stretches), taxes,
-payment and credit scenarios. Every judgment field is figure-free, as the skill requires. Mock data only; nothing here
+range_override instead), an offer posture (any of the four, or left out for the suggested one; now and then the
+agent's plan_override), a listing history across years (relists, cuts, increases, failed contracts, off-market
+stretches), taxes, payment and credit offers (credits only: the script prices them from the opening). Every judgment field is figure-free, as the skill requires. Mock data only; nothing here
 asserts anything: the test does.
 """
 import csv
@@ -73,6 +74,12 @@ WATCH = ("<strong>The roof.</strong> Roof age is the biggest factor in insuring 
          "ask about both.", "<strong>Permits for the renovation.</strong> Confirm the kitchen, bath and any electrical or "
          "plumbing work was permitted.", "<strong>As-Is doesn't mean no inspection.</strong> If the offer is written on "
          "the As-Is contract, you still get an inspection period.")
+POSTURES = ("leverage", "standard", "competitive", "must_win")
+POSTURE_REASONS = ("The buyer's lease ends soon, so the plan weighs winning the home over the last dollar.",
+                   "The buyer can wait for the right home, so there is no reason to stretch on this one.",
+                   "This is the floor plan the buyer has been waiting for, and similar homes have gone quickly.",
+                   "The home has sat while similar listings sold around it, which gives the buyer room.")
+OVERRIDE_REASON = "The agent set these from a conversation with the listing agent about where the seller will move."
 QUESTIONS = ("When was the roof replaced, and can you share the permit?", "How old are the AC and the water heater?",
              "Were the kitchen and bath updates permitted?", "Is the seller open to contributing toward the buyer's "
              "closing costs?", "Has any buyer inspected the home, and did any report lead to the price cuts?")
@@ -298,17 +305,19 @@ def generate(seed, out_dir):
         R["range_override"] = {"low": low, "high": high, "reason": "The agent leans toward the most recent sales, "
                                                                    "which sit lower than the rest."}
     median = statistics.median(values)
-    walk = max(low, min(high, math.floor(median / 1000) * 1000))
-    opening = low
-    t_lo = opening + round((walk - opening) / 3, -3)
-    t_hi = max(t_lo, walk - round((walk - opening) / 4, -3))
     R["bottom_line"] = {"why": "The recent sales and the best condition matches set the range; the earlier sales sit "
                                "higher."}
-    R["offer_plan"] = {"opening": opening, "target_low": t_lo, "target_high": t_hi, "walk_away": walk,
-                       "why_opening": "The bottom of the supported range, backed by the comps.",
-                       "why_target": "Where recent sales suggest this home settles.",
-                       "why_walk_away": "At or below the median of the adjusted comps, so the appraisal should hold.",
-                       "conditions": "the inspection finds nothing major and no other offers are competing"}
+    R["offer_plan"] = {"conditions": "the inspection finds nothing major and no other offers are competing"}
+    if rng.random() < 0.8:  # the model's pick, with its reason (left out: the suggested posture, no reason needed)
+        R["offer_plan"].update(posture=rng.choice(POSTURES), posture_reason=rng.choice(POSTURE_REASONS))
+    roll = rng.random()
+    if roll < 0.06:  # the agent's own numbers, in the plan's order by construction
+        R["offer_plan"]["plan_override"] = {"opening": low - 2000, "walk_away": high + 3000, "reason": OVERRIDE_REASON}
+    elif roll < 0.11:
+        R["offer_plan"]["plan_override"] = {"opening": low - 2000, "target_low": low, "target_high": low + 4000,
+                                            "walk_away": high, "reason": OVERRIDE_REASON}
+    elif roll < 0.15:
+        R["offer_plan"]["plan_override"] = {"walk_away": high, "reason": OVERRIDE_REASON}
     R["offer"] = {"bullets": ["<strong>There is room to negotiate.</strong> The home has sat, and sellers nearby are "
                               "helping with buyers' costs."]}
     R["summary_page"] = {"headline": "Open at the bottom of what recent sales support.", "why": rng.sample(WHY, 3),
@@ -359,23 +368,25 @@ def generate(seed, out_dir):
         pay["hoa_cdd_monthly"] = rng.choice((35, 120, 420, 875))
     if rng.random() < 0.2:
         pay["flood_insurance_annual"] = rng.choice((650, 1800, 4200))
-    if rng.random() < 0.4:
-        pay["price"] = rng.choice((price, opening, walk))
+    if rng.random() < 0.4:  # left out, the plan's target
+        pay["price"] = rng.choice((price, low, max(low, min(high, math.floor(median / 1000) * 1000))))
     loan, down = scen[0]["type"], scen[0]["down_pct"]
     step = max(1000, round(price * 0.01, -3))
     credits = {"loan_type": loan, "down_pct": down,
-               "scenarios": [{"price": opening + i * step, "credit": i * step} for i in range(rng.randint(2, 4))]}
+               "scenarios": [{"credit": i * step} for i in range(rng.randint(2, 4))]}
+    if rng.random() < 0.2:  # left out: the opening with no credit, then $5,000 and $10,000
+        credits.pop("scenarios")
     if rng.random() < 0.4:
         credits["closing_cost_pct"] = rng.choice((0.025, 0.03, 0.035))
     elif rng.random() < 0.2:
         credits["closing_costs"] = round(price * 0.03, -2)
     if rng.random() < 0.3:
-        credits["buydown"] = {"price": credits["scenarios"][-1]["price"], "credit": credits["scenarios"][-1]["credit"]}
+        credits["buydown"] = {"credit": (credits.get("scenarios") or [{"credit": 10000}])[-1]["credit"]}
     if rng.random() < 0.2:
         credits.update(buyer_broker_agreement_pct=0.03, seller_pays_buyer_broker_pct=rng.choice((0, 0.02, 0.025)))
     credits["takeaway"] = "A credit helps when cash is tight; a lower price helps the monthly payment."
     if rng.random() < 0.25:
-        R["offer_plan"]["credit_alt"] = dict(credits["scenarios"][-1])
+        R["offer_plan"]["credit_alt"] = {"credit": (credits.get("scenarios") or [{"credit": 10000}])[-1]["credit"]}
     costs = {"taxes": taxes, "insurance": {"drivers": "The roof's age, the wiring and plumbing era and the flood zone."},
              "payment": pay, "credit_scenarios": credits}
     if rng.random() < 0.4:

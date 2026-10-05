@@ -127,15 +127,8 @@
   "takeaway": "The market has had a long look at this home at a higher price, and no buyer has gone under contract. The new roof answers one question buyers had, but we need its permit and final inspection before writing an offer."
  },
  "offer_plan": {
-  "opening": 570000,
-  "target_low": 574000,
-  "target_high": 578000,
-  "walk_away": 580000,
-  "why_opening": "The bottom of the supported range, backed by the comps. After this long on the market and this many price cuts, the seller has reason to counter rather than ignore it.",
-  "why_target": "Where the recent sales and the typical negotiation off asking suggest this home settles.",
-  "why_walk_away": "Just under the median of the adjusted comps. Above it you'd be paying earlier prices and risking a low appraisal you'd have to cover in cash.",
+  "posture": "leverage",
   "credit_alt": {
-   "price": 580000,
    "credit": 10000
   },
   "conditions": "the new roof is permitted and passed its final inspection, the inspection finds nothing major in the original systems, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
@@ -394,20 +387,16 @@
    "closing_cost_pct": 0.03,
    "scenarios": [
     {
-     "price": 570000,
      "credit": 0
     },
     {
-     "price": 575000,
      "credit": 5000
     },
     {
-     "price": 580000,
      "credit": 10000
     }
    ],
    "buydown": {
-    "price": 580000,
     "credit": 10000
    },
    "takeaway": "A credit is worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term."

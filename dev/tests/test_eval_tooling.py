@@ -224,6 +224,22 @@ class Spread(unittest.TestCase):
         self.assertFalse([p for p in kinds if p.startswith("history.")])  # the listing history is the same
         self.assertFalse([p for p, k in kinds.items() if k == "script"], kinds)
 
+    def test_cma_posture_is_judgment_and_its_prices_follow(self):
+        """The buyer CMA's posture is the model's pick (judgment); the plan's prices are the script's from it."""
+        report = read_json(os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "hickorywood.json"))
+        export = os.path.join(ROOT, report["export"])
+        report["export"] = os.path.basename(export)
+        self.add_run("buyer-cma", 994, 1, report, "report.json", inputs=[export])
+        other = json.loads(json.dumps(report))
+        other["offer_plan"].update(posture="standard", posture_reason="The buyer would rather not test the seller.")
+        self.add_run("buyer-cma", 994, 2, other, "report.json", inputs=[export])
+        _, out = self.spread("buyer-cma")
+        (r,) = out["evals"]
+        kinds = {f["field"]: f["kind"] for f in r["fields"]}
+        self.assertEqual(kinds.get("offer_plan.posture"), "judgment")
+        self.assertEqual(kinds.get("offer_plan.opening"), "follows")
+        self.assertEqual(kinds.get("handoff.offer_plan.opening"), "follows")
+
     def test_one_run_is_not_compared_and_missing_data_is_a_problem(self):
         deal = read_json(os.path.join(ROOT, "dev", "fixtures", "contract-timeline", "buyer-fha.json"))
         self.add_run("contract-timeline", 992, 1, deal, "deal.json")
