@@ -1838,13 +1838,18 @@ def competing_offers(offers):
     return len({o.get("same_buyer") or o["id"] for o in offers if o["status"] == "active"})
 
 
-def suggest_stance(o, L):
-    """The counter stance the facts suggest: firm with two or more buyers' active offers or an offer at or above list;
-    terms_only when the price is within STANCE_NEAR of the seller's number; else meet_partway."""
-    if L.get("competing_offers", 1) >= 2 or o["price"] >= L["list_price"]:
+# Sellers who want the deal more than the last dollar: countering the most certain offer up risks losing it
+NEVER_FIRM = ("certainty", "speed")
+
+
+def suggest_stance(o, L, priority="balanced"):
+    """The counter stance the facts suggest: firm with two or more buyers' active offers or an offer at or above list
+    (never for a seller whose priority is certainty or speed); terms_only when the price is under the seller's number by
+    STANCE_NEAR or less; else meet_partway."""
+    if priority not in NEVER_FIRM and (L.get("competing_offers", 1) >= 2 or o["price"] >= L["list_price"]):
         return "firm"
     ceiling = price_ceiling(o, L)
-    if ceiling - o["price"] <= STANCE_NEAR * ceiling:
+    if 0 < ceiling - o["price"] <= STANCE_NEAR * ceiling:  # just under it; at or over it, rule 1 still applies
         return "terms_only"
     return "meet_partway"
 
@@ -2146,7 +2151,7 @@ def analyze_offer(o, L, S, costs):
     o["flags"] = flags_for(o, L, S)
     o["blocking"] = [f for f in o["flags"] if f["sev"] == "Blocking"]
     given, reason, _ = counter_stance(o)
-    suggested = suggest_stance(o, L)
+    suggested = suggest_stance(o, L, S["priority"])
     o["counter_stance"] = {"stance": given or suggested, "suggested": suggested, "given": given is not None,
                            "reason": reason}
     ct, rows = propose_counter(o, L, S)
