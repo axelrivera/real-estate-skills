@@ -32,6 +32,7 @@ HIGHEST_AND_BEST = re.compile(r"highest\s*(?:and|&)\s*best", re.I)
 # OFR-327: a costs.rate_source that names the buyer's lender or a quote ("Lender quote") is the lender's rate, not a
 # looked-up weekly average
 TIGHT_SUPPLY_MONTHS = 3  # OFR-331: under this a price cut alone doesn't read soft
+SOFT_SUPPLY_MONTHS = 6  # manual v5: over this the area's market reads soft (3 to 6 months reads balanced)
 MIN_CONCESSION_ASK = 1000  # a smaller seller-concession ask isn't worth asking for: it drops to $0 or rounds up
 LENDER_QUOTE = re.compile(r"lender|quot|loan officer|loan estimate|pre-?approv", re.I)
 CONVENTIONAL_AVERAGE = re.compile(r"freddie|pmms", re.I)  # iteration 9 eval 1: the weekly survey is conventional loans
@@ -306,10 +307,10 @@ def prepare(B, A, market=None):
     lvl = C.get("level")
     heat, basis = market_heat(P, M)
     if lvl is None:
-        lvl = {"hot": 2, "normal": 1, "soft": 0}[heat]
+        lvl = {"hot": 2, "normal": 1, "soft": 0, "stale": 0}[heat]
         signals = P.get("dom") is not None or M.get("sale_to_list") or P.get("price_cuts")
         A.add("competition", "level", COMP_LABEL[lvl],
-              (f"Competition unknown: inferred '{COMP_LABEL[lvl].lower()}' from market signals ({heat}: {basis})" if signals else
+              (f"Competition unknown: inferred '{COMP_LABEL[lvl].lower()}' from market signals ({heat_words(heat, basis)})" if signals else
                f"Competition unknown and no market data: assumed '{COMP_LABEL[lvl].lower()}' (typical)") + ". Ask the listing agent", "med")
     C["level"], C["heat"], C["heat_basis"] = lvl, heat, basis
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
@@ -354,53 +355,109 @@ def stl_label(M):
     return "Sale to Original List" if M.get("sale_to_list_basis") == "original" else "Sale to List"
 
 
+def tight_supply(M):
+    sup = M.get("months_supply")
+    return isinstance(sup, (int, float)) and not isinstance(sup, bool) and sup < TIGHT_SUPPLY_MONTHS
+
+
 def market_heat(P, M):
-    """OFR-226: (heat, the signals that decide it, in plain words). Hot when days on market are under half the median or
-    the sale-price ratio is 99%+; soft when days on market are over 1.5x the median or the price was cut (soft wins),
-    unless supply is under 3 months: then a cut reads normal (OFR-331). The words name only the deciding signals
-    ("78 days on market vs. a 23-day median"); market_read() gives the whole picture for the Market Check."""
+    """OFR-226: (heat, the signals that decide it, in plain words), for inferring the competition. Hot when days on market
+    are under half the median or the sale-price ratio is 99%+; soft when days on market are over 1.5x the median or the
+    price was cut (soft wins). With under 3 months of supply the market isn't soft (manual v5): a cut reads normal
+    (OFR-331), and long days on market read "stale", this listing's own read (no competition on it, like soft), never
+    the market's. The words name only the deciding signals ("78 days on market vs. a 23-day median"); market_read()
+    gives the whole picture for the Market Check."""
     dom, med, stl = P.get("dom"), M.get("median_dom"), M.get("sale_to_list")
+    tight = tight_supply(M)
     reads = []  # (the signal in words, what it reads)
     if dom is not None and med:
-        reads.append((f"{dom} days on market vs. a {med}-day median", "hot" if dom < 0.5 * med else "soft" if dom > 1.5 * med else "normal"))
+        reads.append((f"{dom} days on market vs. a {med}-day median",
+                      "hot" if dom < 0.5 * med else ("stale" if tight else "soft") if dom > 1.5 * med else "normal"))
     if stl:
         reads.append((f"sales at {stl * 100:.1f}% of {'original ' if M.get('sale_to_list_basis') == 'original' else ''}list price",
                       "hot" if stl >= 0.99 else "normal"))
     if P.get("price_cuts"):
         # OFR-331: with under 3 months of supply a cut says this listing was priced high, not that the market is soft
-        sup = M.get("months_supply")
-        tight = isinstance(sup, (int, float)) and sup < TIGHT_SUPPLY_MONTHS
         reads.append((cuts_words(P["price_cuts"]), "normal" if tight else "soft"))
     got = {rd for _, rd in reads}
-    heat = "soft" if "soft" in got else "hot" if "hot" in got else "normal"
+    heat = next((h for h in ("soft", "stale", "hot") if h in got), "normal")
     if not reads:
         return heat, "no market data"
     return heat, " and ".join(sig for sig, rd in reads if rd == heat)
+
+
+def heat_words(heat, basis):
+    """The inferred read in words: "market reads soft (…)", or for a stale listing in a tight market "this home reads
+    stale (…)", so a tight market is never called soft."""
+    return f"{'this home' if heat == 'stale' else 'market'} reads {heat} ({basis})"
+
+
+def area_read(M):
+    """Manual v5: the area's market on its own (tight, balanced, soft, hot), from the months of supply the CMA measured,
+    else a 99%+ sale-price ratio (hot); None with neither."""
+    sup = M.get("months_supply")
+    if isinstance(sup, (int, float)) and not isinstance(sup, bool):
+        return "tight" if sup < TIGHT_SUPPLY_MONTHS else "soft" if sup > SOFT_SUPPLY_MONTHS else "balanced"
+    return "hot" if M.get("sale_to_list") and M["sale_to_list"] >= 0.99 else None
+
+
+def listing_read(P, M):
+    """Manual v5: this listing on its own: "stale" (days on market over 1.5x the median, or a price cut), "fast"
+    (under half the median), "on pace", or None with no days on market or cuts."""
+    dom, med = P.get("dom"), M.get("median_dom")
+    if (dom is not None and med and dom > 1.5 * med) or P.get("price_cuts"):
+        return "stale"
+    if dom is not None and med:
+        return "fast" if dom < 0.5 * med else "on pace"
+    return None
 
 
 def cuts_words(n):
     return f"{n} price cut{'s' if n != 1 else ''}" if isinstance(n, int) and not isinstance(n, bool) else "a price cut"
 
 
+LISTING_WORDS = {"stale": "stale", "fast": "moving fast", "on pace": "on pace"}
+
+
 def market_read(B):
-    """The Market Check's Market Read note: one plain sentence, this listing first, then the area's sales, so a soft
-    read on this home never seems to contradict an area that softened or held."""
+    """The Market Check's Market Read as (value, note). Manual v5: the market and this listing are read apart, so a stale
+    listing never makes a tight market read soft: "Tight market, stale listing" with one plain sentence, the market
+    first (months of supply, the sale-price ratio), then this home (days on market, price cuts) and, when they
+    disagree, where the leverage is."""
     P, M = B["property"], B["market"]
-    home = []
-    if P.get("dom") is not None and M.get("median_dom"):
-        home.append(f"{P['dom']} days on market vs. a {M['median_dom']}-day median")
-    if P.get("price_cuts"):
-        home.append(cuts_words(P["price_cuts"]))
-    area = []
-    if M.get("sale_to_list"):
-        area.append(f"nearby homes sold at {M['sale_to_list'] * 100:.1f}% of "
-                    f"{'original ' if M.get('sale_to_list_basis') == 'original' else ''}list price")
+    area, home = area_read(M), listing_read(P, M)
+    area_sig = []
     if isinstance(M.get("months_supply"), (int, float)):
-        area.append(f"there are {M['months_supply']:g} months of supply")
-    parts = ([f"This home has {' and '.join(home)}"] if home else []) + ([" and ".join(area)] if area else [])
-    if parts and not home:
-        parts[0] = parts[0][:1].upper() + parts[0][1:]
-    return (", while ".join(parts) + ".") if parts else None
+        area_sig.append(f"{M['months_supply']:g} months of supply")
+    if M.get("sale_to_list"):
+        area_sig.append(f"sales at {M['sale_to_list'] * 100:.1f}% of "
+                        f"{'original ' if M.get('sale_to_list_basis') == 'original' else ''}list price")
+    home_sig = []
+    if P.get("dom") is not None and M.get("median_dom"):
+        home_sig.append(f"{P['dom']} days on market vs. a {M['median_dom']}-day median")
+    if P.get("price_cuts"):
+        home_sig.append(cuts_words(P["price_cuts"]))
+    parts = []
+    if area:
+        parts.append(f"market {area}" + (f" ({', '.join(area_sig)})" if area_sig else ""))
+    elif area_sig:
+        parts.append(f"nearby {' and '.join(area_sig)}")
+    if home:
+        parts.append(f"this home {LISTING_WORDS[home]}" + (f" ({', '.join(home_sig)})" if home_sig else ""))
+    if not parts:
+        return "—", None
+    note = "; ".join(parts)
+    if area in ("tight", "hot") and home == "stale":
+        note += ", so the leverage comes from this home's price, not the market"
+    elif area == "soft" and home == "stale":
+        note += ", so the market and this home both favor the buyer"
+    elif area in ("tight", "hot") and home == "fast":
+        note += ", so expect competition"
+    note = note[:1].upper() + note[1:] + "."
+    value = ", ".join(w for w in ((f"{area} market" if area else None),
+                                  (f"{'stale' if home == 'stale' else 'fast-moving' if home == 'fast' else 'on-pace'} listing"
+                                   if home else None)) if w)
+    return (value[:1].upper() + value[1:]) if value else "—", note
 
 
 _MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1)}
@@ -490,9 +547,15 @@ def effective_date(B, today, A):
         return _d(given_)
     due = deadline_date((B.get("worksheet") or {}).get("acceptance_deadline") or (B.get("competition") or {}).get("deadline"), today)
     eff = (due or today) + timedelta(days=1)
-    A.add("buyer", "expected_effective_date", str(eff), f"Expected acceptance not given: dates count from {eff:%b} {eff.day}, "
-          + ("the day after the offer deadline" if due else "the day after today") + ". Give the expected acceptance date "
-          "if it's different", "low")
+    # manual v5: the worksheet's Time for Acceptance is a business day at 5:00 PM, so the dates count from that same day,
+    # never from a weekend or holiday before it
+    moved = not dates.is_business_day(eff)
+    if moved:
+        eff = dates.next_business_day(eff)
+    after = "the offer deadline" if due else "today"
+    A.add("buyer", "expected_effective_date", str(eff), f"Expected acceptance not given: dates count from {eff:%a %b} {eff.day}, "
+          + (f"the first business day after {after}" if moved else f"the day after {after}") + ". Give the expected "
+          "acceptance date if it's different", "low")
     return eff
 
 
@@ -873,8 +936,77 @@ def stronger(B, t):
     return None if s == t else s
 
 
-def no_stronger_reason(B, t):
-    """OFR-205, OFR-208: why stronger() has nothing to add to the offer `t`, in one sentence."""
+def price_ceiling(B, t):
+    """Manual v5: the highest price a Stronger option may go to, with what sets it: the lowest of the top of the value
+    range (above it the appraisal needs gap coverage), the CMA's walk-away, the buyer's max and, with one competing offer
+    or fewer, list. Returns (price, words)."""
+    P, V, BU, lvl = B["property"], B["value"], B["buyer"], B["competition"]["level"]
+    walk = (B.get("cma_offer_plan") or {}).get("walk_away")
+    caps = [(V["cma_high"], f"the top of the value range ({money(V['cma_high'])})"),
+            (walk, f"your CMA's walk-away ({money(walk)})" if walk else ""),
+            (BU["max_price"], f"your max price ({money(BU['max_price'])})"),
+            (P["list_price"] if lvl <= 1 else None, f"the list price ({money(P['list_price'])})")]
+    p, words = min(((x, w) for x, w in caps if x), key=lambda c: c[0])
+    return rnd(p, 1000, "down"), words
+
+
+def smallest_ask(B, costs, t, p):
+    """The smallest seller-concession ask at price `p` that keeps every limit of the offer `t`, or None."""
+    cc = closing_costs(B, p)
+    most = int(min(cc, concession_cap(B, p)) // 100 * 100)
+    for c in [0] + list(range(MIN_CONCESSION_ASK, most + 1, 500)) + [most]:
+        if within_limits(B, costs, dict(t, price=p, seller_concessions=c)):
+            return c
+    return None
+
+
+def stronger_net(B, costs, t):
+    """Manual v5: when stronger() has nothing to add (the deposit is at 3% and no appraisal gap needs covering), the
+    terms inside every limit the listing agent would rank highest: a higher price up to price_ceiling() with the smallest
+    concession ask the buyer's cash allows at it, scored by the engine (a higher price can lower the appraisal score, so
+    more net isn't always stronger). None when nothing ranks higher. An escalating offer, one with no value range or one
+    already past the reserve floor is left as is."""
+    V, BU = B["value"], B["buyer"]
+    if t.get("escalation") or V.get("assumed") or buyer_cash(B, t)["reserve"] < BU["reserve_floor"]:
+        return None
+    top = max(price_ceiling(B, t)[0], t["price"])
+    tries = []
+    for p in range(int(t["price"]), int(top) + 1, 1000):
+        c = smallest_ask(B, costs, t, p)
+        if c is not None and p - c > t["price"] - t.get("seller_concessions", 0):
+            tries.append((f"try{len(tries)}", dict(t, price=p, seller_concessions=c)))
+    if not tries:
+        return None
+    _, O = run_engine(B, costs, [("recommended", t)] + tries)
+    lp, tgt = B["property"]["list_price"], O["recommended"]["target"]["net_adj"]
+    k, s = max(tries, key=lambda kt: (ci(O[kt[0]], tgt, lp), -kt[1]["price"]))
+    return s if ci(O[k], tgt, lp) > ci(O["recommended"], tgt, lp) else None
+
+
+def no_stronger_limits(B, costs, t):
+    """Manual v5: why no higher price or smaller concession ask fits, in words ("a higher price would break your $5,000
+    reserve floor (leaves $4,893)")."""
+    top, top_words = price_ceiling(B, t)
+    out = []
+    if t["price"] >= top:
+        out.append(f"the price is already at {top_words}")
+    else:
+        broken = limits_broken(B, costs, dict(t, price=t["price"] + 1000))
+        out.append("a higher price would break " + " and ".join(w for _, w in broken) if broken else
+                   "a higher price wouldn't rank higher with the listing agent")
+    conc = t.get("seller_concessions", 0)
+    if conc:
+        less = conc - 500 if conc - 500 >= MIN_CONCESSION_ASK else 0
+        broken = limits_broken(B, costs, dict(t, seller_concessions=less))
+        out.append("a smaller concession ask would break " + " and ".join(w for _, w in broken) if broken else
+                   "a smaller concession ask wouldn't rank higher with the listing agent")
+    return out
+
+
+def no_stronger_reason(B, t, costs=None):
+    """OFR-205, OFR-208: why stronger() has nothing to add to the offer `t`. Manual v5: two plain sentences, no colon
+    (the report prints it after "No Stronger Option:"), and the second says which limit stops a higher price or a
+    smaller concession ask, never that nothing more would make the offer stronger."""
     if buyer_cash(B, t)["reserve"] < 0:
         return "The recommended offer already needs more cash than the buyer has."
     fin = B["buyer"]["financing"]
@@ -888,8 +1020,10 @@ def no_stronger_reason(B, t):
            "the appraisal gap coverage already covers the price above the value range" if uncovered <= 0 else
            "no cash is left for more appraisal gap coverage")
     # OFR-231: the deposit as the report prints it ("$11,000 (3.1%)"), never a rounder percent beside it
-    return (f"The deposit is already {term_val('deposit', t, B)} and {gap}: nothing more would make the offer "
-            "stronger to the listing agent.")
+    first = f"The deposit is already {term_val('deposit', t, B)} and {gap}."
+    if costs is None or B["value"].get("assumed") or t.get("escalation"):
+        return first
+    return f"{first} Nothing stronger fits within your limits, since {' and '.join(no_stronger_limits(B, costs, t))}."
 
 
 COMP_WORDS = {0: "no competing offers", 1: "one competing offer", 2: "two or three competing offers",
@@ -995,6 +1129,20 @@ def reach_band(B, costs, rec):
     return t, bands[k], roomy
 
 
+def smaller_than(B, t, was):
+    """Manual v5: what a smaller concession ask is smaller than, in words the report shows: the area's typical
+    seller-paid amount when the ask is under it ("the area's typical $6,000"), else the first draft's ask."""
+    typ = B["market"].get("typical_seller_paid")
+    if isinstance(typ, (int, float)) and not isinstance(typ, bool):
+        n = typ
+    else:
+        digits = re.sub(r"[^\d.]", "", str(typ or ""))
+        n = float(digits) if re.fullmatch(r"\d+(\.\d+)?", digits) else None
+    if n and t["seller_concessions"] < n:
+        return f"the area's typical {money(n)}"
+    return money(was.get("seller_concessions", 0))
+
+
 def reach_why(B, why, t, was, band):
     """OFR-325: the reasons for the terms reach_band changed, against the competition the deal expects."""
     why = dict(why)
@@ -1012,7 +1160,7 @@ def reach_why(B, why, t, was, band):
             if not t["seller_concessions"] else
             f"A smaller ask nets the seller more: only what your cash can't cover with the {keep}"
             if t["seller_concessions"] < conc_need(B, t["price"]) + 500 else
-            "A smaller ask: it nets the seller more and lifts the outlook")
+            f"A smaller ask than {smaller_than(B, t, was)}: it nets the seller more and lifts the outlook")
     if t["deposit"] > was.get("deposit", 0):
         why["deposit"] = (f"{t['deposit'] / t['price']:.0%} shows commitment; {B['words']['deposit_refund']}; counts "
                           "toward cash to close")
@@ -1024,14 +1172,18 @@ def reach_why(B, why, t, was, band):
 
 
 def option_set(B, costs, rec):
+    """The options to score: (variants, the lower-cost reasons, whether the Stronger option is stronger_net()'s)."""
     variants = [("recommended", rec)]
-    st = stronger(B, rec)
+    st, by_net = stronger(B, rec), False
+    if not st:  # manual v5: a higher price or a smaller concession ask, inside every limit
+        st = stronger_net(B, costs, rec)
+        by_net = bool(st)
     if st:
         variants.append(("stronger", st))
     lc, lc_why = lower_cost(B, costs, rec)
     if lc:
         variants.append(("lower_cost", lc))
-    return variants, lc_why
+    return variants, lc_why, by_net
 
 
 BAND_RANK = {"strong": 3, "comp": 2, "risk": 1, "unl": 0}
@@ -1045,8 +1197,10 @@ def within_limits(B, costs, t):
             and t.get("seller_concessions", 0) <= concession_cap(B, t["price"]) + 1)
 
 
-def better_option(B, costs, terms, O, lvl):
-    """The option to recommend instead, if the rule-built offer isn't the best by the skill's own rule, else None."""
+def better_option(B, costs, terms, O, lvl, promote_stronger=True):
+    """The option to recommend instead, if the rule-built offer isn't the best by the skill's own rule, else None.
+    Manual v5: a Stronger option that only pays more (stronger_net) stays the buyer's choice, never promoted: the
+    search for the lowest-cost offer that reaches a better band is reach_band's."""
     if B.get("overrides"):
         return None  # the agent decided the terms
     lp = B["property"]["list_price"]
@@ -1054,7 +1208,8 @@ def better_option(B, costs, terms, O, lvl):
     # the outlook at every competition level, as "How It Stacks Up" prints it
     ranks = {k: [BAND_RANK[band_of(ci(O[k], tgt, lp), lv)[0]] for lv in range(4)] for k in terms}
     rank = {k: r[lvl] for k, r in ranks.items()}
-    if "stronger" in terms and rank["stronger"] > rank["recommended"] and within_limits(B, costs, terms["stronger"]):
+    if promote_stronger and "stronger" in terms and rank["stronger"] > rank["recommended"] \
+            and within_limits(B, costs, terms["stronger"]):
         return "stronger"
     # OFR-9: "best" is the strongest outlook at the lowest cost that reaches it, so a cheaper option in the same band wins.
     # iteration 9 eval 1: never an option the lower-cost rule drops (Unlikely against the expected competition at
@@ -1086,6 +1241,21 @@ def promote_why(why, lc_why, pick, t, was=None, words=None):
             refund = (words or cf.term_words(None))["deposit_refund"]
             why["deposit"] = f"{t['deposit'] / t['price']:.0%} shows commitment; {refund}; counts toward cash to close"
     return why
+
+
+def net_no_gain(rec, st):
+    """Manual v5: why the strongest terms inside the buyer's limits aren't offered: the terms they take, what the seller
+    would net, and that the outlook and score stay the same."""
+    parts = []
+    if st["price"] > rec["price"]:
+        parts.append(f"offering {money(st['price'])}")
+    c0, c1 = rec.get("seller_concessions", 0), st.get("seller_concessions", 0)
+    if c1 != c0:
+        parts.append(f"asking {f'{money(c1)} in' if c1 else 'no'} seller concessions instead of {money(c0)}")
+    gain = (st["price"] - c1) - (rec["price"] - c0)
+    what = " and ".join(parts)
+    return (f"{what[:1].upper()}{what[1:]}, the strongest terms your limits allow, would net the seller {money(gain)} more "
+            "but wouldn't change the outlook or the listing agent's score, so it isn't worth the extra cost.")
 
 
 def raised(t, was):
@@ -1144,16 +1314,16 @@ def analyze(B_in, market=None, cma=None):
             rec = t
     promoted = fuller = None
     for _ in range(2):  # "best" = strongest outlook inside the limits at the lowest cost that reaches it
-        variants, lc_why = option_set(B, costs, rec)
+        variants, lc_why, by_net = option_set(B, costs, rec)
         R, O = run_engine(B, costs, variants)
-        pick = better_option(B, costs, dict(variants), O, lvl)
+        pick = better_option(B, costs, dict(variants), O, lvl, promote_stronger=not by_net)
         if not pick or promoted:
             break
         promoted, fuller = pick, rec
         rec = dict(variants)[pick]
         why = promote_why(why, lc_why, pick, rec, fuller, B["words"])
         if pick == "lower_cost":  # OFR-9: the fuller offer stays on the table as the stronger alternative
-            variants, lc_why = [("recommended", rec), ("stronger", fuller)], {}
+            variants, lc_why, by_net = [("recommended", rec), ("stronger", fuller)], {}, False
             R, O = run_engine(B, costs, variants)
             break
     # OFR-240: the escalation question only when the offer escalates; with one flat number it would contradict the advice
@@ -1192,6 +1362,7 @@ def analyze(B_in, market=None, cma=None):
         and O["stronger"]["score"]["total"] <= O["recommended"]["score"]["total"]
     if no_gain:
         what = raised(res["terms"]["stronger"], rec)
+        net_terms = res["terms"]["stronger"] if by_net else None
         for d in (res["terms"], res["cash"], res["payment"], res["ci"], res["bands"], O):
             d.pop("stronger", None)
         res["stronger_dropped"] = True
@@ -1204,9 +1375,10 @@ def analyze(B_in, market=None, cma=None):
     absent = {}
     if "stronger" not in res["terms"]:
         absent["stronger"] = ("The recommended offer already includes the stronger terms." if promoted == "stronger" else
+                              net_no_gain(rec, net_terms) if no_gain and net_terms else
                               f"{'More ' + what if what else 'The fuller terms'} wouldn't change the outlook or the listing "
                               "agent's score, so it isn't worth the extra cash at risk." if no_gain else
-                              no_stronger_reason(B, rec))
+                              no_stronger_reason(B, rec, costs))
     if "lower_cost" not in res["terms"]:
         absent["lower_cost"] = (
             "The recommended offer is already the lower-cost version: it reaches the same outlook for less cash."
@@ -1602,7 +1774,7 @@ def summary(r):
         cc = r["cash_at_cap"]
         exposure.append([f"At the {money(t['escalation']['cap'])} cap", f"{money(cc['worst'])} · reserve {money(cc['reserve'])}"])
     # OFR-226: an inferred read names the signals it rests on
-    signal = C.get("note") or (f"None given; market reads {C['heat']} ({C['heat_basis']})" if C["heat_basis"] != "no market data"
+    signal = C.get("note") or (f"None given; {heat_words(C['heat'], C['heat_basis'])}" if C["heat_basis"] != "no market data"
                                else "None given; no market data")
     if C.get("note") and P.get("dom") is not None and B["market"].get("median_dom"):
         signal += f"; {P['dom']} days on market vs. a {B['market']['median_dom']}-day median"
@@ -1973,7 +2145,9 @@ def worksheet(r, variant=None):
     worst = (buyer_cash(B, dict(t, price=esc["cap"], appraisal_gap=esc.get("gap_at_cap", t.get("appraisal_gap", 0))))["worst"]
              if esc else r["cash"][variant]["worst"])
     fl = costs.state == "FL"
-    rider_list = ", ".join(x[0].split(" (")[0] for x in riders) or "none"
+    # manual v5: FAR/BAR riders keep their CR-7 letter or form code ("Appraisal Contingency Rider (F)"), as in section 2;
+    # another contract's generic names drop their parenthetical hints
+    rider_list = ", ".join(x[0] if farbar else x[0].split(" (")[0] for x in riders) or "none"
     package = [  # (group, item, status, note)
         ("Contract", f"{terms['title'] if farbar else 'Contract'} completed and initialed on every page", CK.get("contract", "Pending"), ""),
         ("Contract", f"Riders attached and signed: {rider_list}", CK.get("riders", "Pending"), ""),
@@ -2033,7 +2207,7 @@ def market_check(B):
             ("Months of Supply", M.get("months_supply") or "—"), ("Median Days on Market", M.get("median_dom") or "—"),
             ("Sales with Seller-Paid Buyer Costs", M.get("share_with_seller_costs") or "—"),
             ("Typical Seller-Paid Amount", M.get("typical_seller_paid") or "—"),
-            ("Market Read", B["competition"]["heat"].title(), market_read(B))]  # OFR-226: and why, in one sentence
+            ("Market Read", *market_read(B))]  # OFR-226: and why, in one sentence; manual v5: the market and this home apart
     if V.get("median_adjusted"):
         rows.insert(1, ("Median Adjusted Comp", money(V["median_adjusted"])))
     plan = B.get("cma_offer_plan") or {}
@@ -2047,6 +2221,10 @@ def result(r, variant=None):
     s = summary(r)
     B = r["B"]
     V, M = B["value"], B["market"]
+    to_confirm = [a for a in sorted(r["missing"], key=lambda a: (confirm_tier(a), oe.IMPACT_ORDER[a["impact"]],
+                                                                 a["field"] not in OFFER_QUESTIONS))
+                  if a["impact"] in ("high", "med")][:4]
+    assumed = assumed_line(r, asked=to_confirm[:2])
     return {
         "ok": True, "property": B["property"].get("address") or "", "list_price": money(B["property"]["list_price"]),
         # OFR-356: null when no CMA gave a range (list price stands in for value), never "$429,000–$429,000"
@@ -2055,24 +2233,53 @@ def result(r, variant=None):
         "market_check": market_check(B),
         "market": {"sale_to_list": f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else None,
                    "months_supply": M.get("months_supply"), "median_dom": M.get("median_dom"),
-                   "median_adjusted": money(V["median_adjusted"]) if V.get("median_adjusted") else None, "read": B["competition"]["heat"],
-                   "read_basis": B["competition"]["heat_basis"]},
+                   "median_adjusted": money(V["median_adjusted"]) if V.get("median_adjusted") else None, "read": market_read(B)[0],
+                   "read_basis": market_read(B)[1]},
         "pushback": pushback(r),
         "worksheet": worksheet(r, variant),
         # OFR-212: what to ask first, in the order the chat's one question uses: the listing agent's competition read (the
         # most valuable input, offer-rules.md) when it was inferred, then the rest by impact. OFR-222: within an impact,
         # the questions that shape the offer itself (the contract form, escalation) come before cost details. OFR-244: a
         # weekday deadline that may already have passed comes right after the competition read
-        "to_confirm": [a["why"] for a in sorted(r["missing"], key=lambda a: (confirm_tier(a), oe.IMPACT_ORDER[a["impact"]],
-                                                                            a["field"] not in OFFER_QUESTIONS))
-                       if a["impact"] in ("high", "med")][:4],
-        # OFR-239: lines the chat reply carries outside its length cap ([{key, text}])
-        "reply_lines": r.get("reply_lines") or [],
+        "to_confirm": [a["why"] for a in to_confirm],
+        # OFR-239: lines the chat reply carries outside its length cap ([{key, text}]); manual v5: `assumptions`, the
+        # assumptions behind the numbers that the reply's question doesn't ask about, in one line
+        "reply_lines": (r.get("reply_lines") or []) + ([{"key": "assumptions", "text": assumed}] if assumed else []),
         "assumptions": [{"impact": a["impact"], "where": a["scope"].title(), "what": a["why"]} for a in r["missing"]],
         "market_notes": list(r["costs"].notes),
         # chat only: the best-effort line for a contract that isn't FAR/BAR, worded for an offer being written (OFR-314)
         **cf.support([B["contract_form"]], drafting=True),
     }
+
+
+def assumed_line(r, asked=()):
+    """Manual v5: one line for the chat naming the assumptions the numbers rest on (closing costs, rate, insurance,
+    flood, the acceptance date, the tax proration, the tax estimate), so the reply never leaves them out. The ones the
+    reply's question already asks (`asked`, the first two of to_confirm) aren't repeated. None when nothing applies."""
+    B, K = r["B"], r["costs"]
+    skip = {(a["scope"], a["field"]) for a in asked}
+    words = {
+        "closing_cost_pct": lambda a: f"closing costs at {closing_cost_basis(B)}",
+        "rate": lambda a: f"a {B['costs']['rate']:g}% rate (no lender quote)",
+        "rate_source": lambda a: f"a {B['costs']['rate']:g}% rate (no lender quote)",
+        "insurance_annual": lambda a: f"insurance at {money(B['costs']['insurance_annual'])}/yr (an estimate, not a quote)"
+        if B["costs"].get("insurance_annual") else "an insurance estimate",
+        "flood_insurance_annual": lambda a: "no flood insurance in the payment",
+        "property_tax": lambda a: "an estimated property tax",
+        "expected_effective_date": lambda a: f"acceptance on {B['effective_date']:%a %b} {B['effective_date'].day}",
+        "current_tax_bill_paid": lambda a: "a tax proration that assumes the seller hasn't paid this year's bill",
+    }
+    out = []
+    for a in r["missing"]:
+        f = a["field"]
+        if f in words and (a["scope"], f) not in skip:
+            w = words[f](a)
+            if w not in out:
+                out.append(w)
+    if not out:
+        return None
+    items = out[0] if len(out) == 1 else ", ".join(out[:-1]) + f"{',' if len(out) > 2 else ''} and {out[-1]}"
+    return f"Assumed in these numbers: {items}."
 
 
 def confirm_tier(a):

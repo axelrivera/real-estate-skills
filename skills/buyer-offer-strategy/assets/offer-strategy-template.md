@@ -16,7 +16,7 @@ Strength **{{summary.strength}}/100** Â· Seller Net **{{summary.seller_net}}** Â
 
 **{{summary.options_title}}**
 
-| Option | Price | Outlook | Seller Net* | Worst Cash | Reserve | What Changes |
+| Option | Price | Outlook | Seller Net* | Worst-Case Cash | Reserve | What Changes |
 |---|---|---|---|---|---|---|
 | {{o.option}} | {{o.price}} | {{o.outlook}} | {{o.seller_net}} | {{o.worst_cash}} | {{o.reserve}} | {{o.what}} |
 

@@ -84,7 +84,7 @@
    "rate": 6.4,
    "total_mills": 19.8
   },
-  "effective_date": "2026-09-26",
+  "effective_date": "2026-09-28",
   "flood": {
    "annual": null,
    "required": null,
@@ -160,7 +160,7 @@
    },
    "buyer": "Buyer",
    "buyer_broker_pct": 0.025,
-   "close": "2026-10-26",
+   "close": "2026-10-28",
    "close_days": 30,
    "closing_days": 30,
    "contract_form": "other",
@@ -175,7 +175,7 @@
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "deposit": 18500,
     "home_warranty": 0,
     "inspection_days": 10,
@@ -192,7 +192,7 @@
    "expires_today": false,
    "financed": true,
    "financing": "conventional",
-   "firm_date": "2026-10-17",
+   "firm_date": "2026-10-19",
    "flags": {
     "count": 0
    },
@@ -225,7 +225,7 @@
       "value": 1200
      }
     ],
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "holding": -500,
     "lines": [
      [
@@ -270,7 +270,7 @@
      ],
      [
       "tax",
-      -9861
+      -9927
      ],
      [
       "payoff",
@@ -280,8 +280,8 @@
     "missing": {
      "count": 0
     },
-    "net": 567039,
-    "net_adj": 566539,
+    "net": 566973,
+    "net_adj": 566473,
     "price": 615000,
     "tax_bill_assumed": false
    },
@@ -298,7 +298,7 @@
       "value": 1200
      }
     ],
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "holding": -500,
     "lines": [
      [
@@ -343,7 +343,7 @@
      ],
      [
       "tax",
-      -9861
+      -9927
      ],
      [
       "payoff",
@@ -353,8 +353,8 @@
     "missing": {
      "count": 0
     },
-    "net": 567039,
-    "net_adj": 566539,
+    "net": 566973,
+    "net_adj": 566473,
     "price": 615000,
     "tax_bill_assumed": false
    },
@@ -371,7 +371,7 @@
       "value": 1200
      }
     ],
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "holding": -500,
     "lines": [
      [
@@ -416,7 +416,7 @@
      ],
      [
       "tax",
-      -9861
+      -9927
      ],
      [
       "payoff",
@@ -426,13 +426,13 @@
     "missing": {
      "count": 0
     },
-    "net": 567039,
-    "net_adj": 566539,
+    "net": 566973,
+    "net_adj": 566473,
     "price": 615000,
     "tax_bill_assumed": false
    },
    "price": 615000,
-   "rank_value": 559219.0,
+   "rank_value": 559153.0,
    "repair_label": null,
    "repair_reserve": 0,
    "repairs_owed": false,
@@ -492,7 +492,7 @@
       "value": 1200
      }
     ],
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "holding": -500,
     "lines": [
      [
@@ -537,7 +537,7 @@
      ],
      [
       "tax",
-      -9861
+      -9927
      ],
      [
       "payoff",
@@ -547,8 +547,8 @@
     "missing": {
      "count": 0
     },
-    "net": 562339,
-    "net_adj": 561839,
+    "net": 562273,
+    "net_adj": 561773,
     "price": 610000,
     "tax_bill_assumed": false
    },
@@ -586,7 +586,7 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "close_days": 30,
     "closing_days": 30,
     "contract_form": "other",
@@ -601,7 +601,7 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "deposit": 18500,
      "home_warranty": 0,
      "inspection_days": 10,
@@ -618,7 +618,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": {
      "count": 0
     },
@@ -651,7 +651,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -696,7 +696,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -706,8 +706,8 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
@@ -724,7 +724,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -769,7 +769,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -779,8 +779,8 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
@@ -797,7 +797,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -842,7 +842,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -852,13 +852,13 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
     "price": 615000,
-    "rank_value": 559219.0,
+    "rank_value": 559153.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -918,7 +918,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -963,7 +963,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -973,8 +973,8 @@
      "missing": {
       "count": 0
      },
-     "net": 562339,
-     "net_adj": 561839,
+     "net": 562273,
+     "net_adj": 561773,
      "price": 610000,
      "tax_bill_assumed": false
     },
@@ -1009,7 +1009,7 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "close_days": 30,
     "closing_days": 30,
     "contract_form": "other",
@@ -1024,7 +1024,7 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "deposit": 19000,
      "home_warranty": 0,
      "inspection_days": 10,
@@ -1041,7 +1041,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": {
      "count": 0
     },
@@ -1074,7 +1074,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1119,7 +1119,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1129,8 +1129,8 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
@@ -1147,7 +1147,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1192,7 +1192,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1202,8 +1202,8 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
@@ -1220,7 +1220,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1265,7 +1265,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1275,13 +1275,13 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
     "price": 632000,
-    "rank_value": 572759.0,
+    "rank_value": 572693.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -1341,7 +1341,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1386,7 +1386,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1396,8 +1396,8 @@
      "missing": {
       "count": 0
      },
-     "net": 562339,
-     "net_adj": 561839,
+     "net": 562273,
+     "net_adj": 561773,
      "price": 610000,
      "tax_bill_assumed": false
     },
@@ -1466,7 +1466,7 @@
    "count": 0
   },
   "listing": {
-   "analysis_date": "2026-09-26",
+   "analysis_date": "2026-09-28",
    "annual_tax": 12078,
    "baths": 2,
    "beds": 3,
@@ -1615,7 +1615,7 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "close_days": 30,
     "closing_days": 30,
     "contract_form": "other",
@@ -1630,7 +1630,7 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "deposit": 18500,
      "home_warranty": 0,
      "inspection_days": 10,
@@ -1647,7 +1647,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": {
      "count": 0
     },
@@ -1680,7 +1680,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1725,7 +1725,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1735,8 +1735,8 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
@@ -1753,7 +1753,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1798,7 +1798,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1808,8 +1808,8 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
@@ -1826,7 +1826,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1871,7 +1871,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -1881,13 +1881,13 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
     "price": 615000,
-    "rank_value": 559219.0,
+    "rank_value": 559153.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -1947,7 +1947,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -1992,7 +1992,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2002,8 +2002,8 @@
      "missing": {
       "count": 0
      },
-     "net": 562339,
-     "net_adj": 561839,
+     "net": 562273,
+     "net_adj": 561773,
      "price": 610000,
      "tax_bill_assumed": false
     },
@@ -2038,7 +2038,7 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "close_days": 30,
     "closing_days": 30,
     "contract_form": "other",
@@ -2053,7 +2053,7 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "deposit": 19000,
      "home_warranty": 0,
      "inspection_days": 10,
@@ -2070,7 +2070,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": {
      "count": 0
     },
@@ -2103,7 +2103,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2148,7 +2148,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2158,8 +2158,8 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
@@ -2176,7 +2176,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2221,7 +2221,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2231,8 +2231,8 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
@@ -2249,7 +2249,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2294,7 +2294,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2304,13 +2304,13 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
     "price": 632000,
-    "rank_value": 572759.0,
+    "rank_value": 572693.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -2370,7 +2370,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2415,7 +2415,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2425,8 +2425,8 @@
      "missing": {
       "count": 0
      },
-     "net": 562339,
-     "net_adj": 561839,
+     "net": 562273,
+     "net_adj": 561773,
      "price": 610000,
      "tax_bill_assumed": false
     },
@@ -2463,7 +2463,7 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "close_days": 30,
     "closing_days": 30,
     "contract_form": "other",
@@ -2478,7 +2478,7 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "deposit": 19000,
      "home_warranty": 0,
      "inspection_days": 10,
@@ -2495,7 +2495,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": {
      "count": 0
     },
@@ -2528,7 +2528,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2573,7 +2573,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2583,8 +2583,8 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
@@ -2601,7 +2601,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2646,7 +2646,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2656,8 +2656,8 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
@@ -2674,7 +2674,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2719,7 +2719,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2729,13 +2729,13 @@
      "missing": {
       "count": 0
      },
-     "net": 583019,
-     "net_adj": 582519,
+     "net": 582953,
+     "net_adj": 582453,
      "price": 632000,
      "tax_bill_assumed": false
     },
     "price": 632000,
-    "rank_value": 572759.0,
+    "rank_value": 572693.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -2795,7 +2795,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2840,7 +2840,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -2850,8 +2850,8 @@
      "missing": {
       "count": 0
      },
-     "net": 562339,
-     "net_adj": 561839,
+     "net": 562273,
+     "net_adj": 561773,
      "price": 610000,
      "tax_bill_assumed": false
     },
@@ -2886,7 +2886,7 @@
     },
     "buyer": "Buyer",
     "buyer_broker_pct": 0.025,
-    "close": "2026-10-26",
+    "close": "2026-10-28",
     "close_days": 30,
     "closing_days": 30,
     "contract_form": "other",
@@ -2901,7 +2901,7 @@
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "deposit": 18500,
      "home_warranty": 0,
      "inspection_days": 10,
@@ -2918,7 +2918,7 @@
     "expires_today": false,
     "financed": true,
     "financing": "conventional",
-    "firm_date": "2026-10-17",
+    "firm_date": "2026-10-19",
     "flags": {
      "count": 0
     },
@@ -2951,7 +2951,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -2996,7 +2996,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -3006,8 +3006,8 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
@@ -3024,7 +3024,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -3069,7 +3069,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -3079,8 +3079,8 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
@@ -3097,7 +3097,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -3142,7 +3142,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -3152,13 +3152,13 @@
      "missing": {
       "count": 0
      },
-     "net": 567039,
-     "net_adj": 566539,
+     "net": 566973,
+     "net_adj": 566473,
      "price": 615000,
      "tax_bill_assumed": false
     },
     "price": 615000,
-    "rank_value": 559219.0,
+    "rank_value": 559153.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -3218,7 +3218,7 @@
        "value": 1200
       }
      ],
-     "close": "2026-10-26",
+     "close": "2026-10-28",
      "holding": -500,
      "lines": [
       [
@@ -3263,7 +3263,7 @@
       ],
       [
        "tax",
-       -9861
+       -9927
       ],
       [
        "payoff",
@@ -3273,8 +3273,8 @@
      "missing": {
       "count": 0
      },
-     "net": 562339,
-     "net_adj": 561839,
+     "net": 562273,
+     "net_adj": 561773,
      "price": 610000,
      "tax_bill_assumed": false
     },
@@ -3309,7 +3309,7 @@
      "value": 1200
     }
    ],
-   "close": "2026-10-26",
+   "close": "2026-10-28",
    "holding": -500,
    "lines": [
     [
@@ -3354,7 +3354,7 @@
     ],
     [
      "tax",
-     -9861
+     -9927
     ],
     [
      "payoff",
@@ -3364,12 +3364,12 @@
    "missing": {
     "count": 0
    },
-   "net": 562339,
-   "net_adj": 561839,
+   "net": 562273,
+   "net_adj": 561773,
    "price": 610000,
    "tax_bill_assumed": false
   },
-  "target_close": "2026-10-26"
+  "target_close": "2026-10-28"
  },
  "assumptions": [
   {
@@ -3399,7 +3399,7 @@
    "field": "expected_effective_date",
    "impact": "low",
    "scope": "buyer",
-   "value": "2026-09-26"
+   "value": "2026-09-28"
   },
   {
    "field": "buyer_broker_agreement_pct",
@@ -3544,7 +3544,7 @@
    "field": "expected_effective_date",
    "impact": "low",
    "scope": "buyer",
-   "value": "2026-09-26"
+   "value": "2026-09-28"
   },
   {
    "field": "inspection_days",
@@ -3595,7 +3595,7 @@
  "reserve_tight": null,
  "sample": true,
  "stronger_dropped": true,
- "target": 561839,
+ "target": 561773,
  "terms": {
   "recommended": {
    "appraisal_days": 21,

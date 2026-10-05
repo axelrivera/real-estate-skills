@@ -126,7 +126,7 @@ def page1(r, s):
     absent = "".join(f'<div class="absent"><b>No {esc(a["option"])} Option:</b> {esc(a["why"])}</div>' for a in s["absent"])  # OFR-208
     return f'''{hero}{box}
 <h2>{esc(s["options_title"])} <span class="h2s">Outlook with {esc(ST.COMP_LABEL[r["B"]["competition"]["level"]])}</span></h2><div class="tbl"><table><colgroup><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:9%"></colgroup>
-<thead><tr><th>Option</th><th class="n">Price</th><th class="c">Outlook</th><th class="n">Seller Net*</th><th class="n">Worst Cash</th><th class="n">Reserve</th><th>What Changes</th></tr></thead><tbody>{opts}</tbody></table></div>{absent}
+<thead><tr><th>Option</th><th class="n">Price</th><th class="c">Outlook</th><th class="n">Seller Net*</th><th class="n">Worst-Case Cash</th><th class="n">Reserve</th><th>What Changes</th></tr></thead><tbody>{opts}</tbody></table></div>{absent}
 <div class="two">
  <div><h2>How It Stacks Up <span class="h2s">By Competition Level</span></h2><div class="tbl"><table class="bandt"><colgroup><col style="width:36%"></colgroup>
  <thead><tr><th>If the Seller Has…</th>{"".join(f'<th class="c">{esc(x)}</th>' for x in labels)}</tr></thead><tbody>{bands}</tbody></table></div>
@@ -209,6 +209,9 @@ def details(r, res):
     lf = r["R"]["seller"]["listing_fee_pct"]
     cost_basis = (f"Assumes a {oe.pct(lf)} listing fee" if lf else "Listing fee unknown") + "; " + "; ".join(L["cost_notes"]) + "."
     state = profiles.STATES.get(L.get("state") or "", "your state")
+    # manual v5: the closing-cost estimate is said once on the page: the assumptions table lists it when it was assumed
+    cc_note = ("" if any(a["field"] == "closing_cost_pct" for a in r["missing"]) else
+               f"Closing costs are figured at {esc(ST.closing_cost_basis(B))}. ")
     # OFR-208: with one option there's nothing to compare, so no amber legend
     side_title = ('1 · Options Side by Side <span class="h2s">Amber = Differs from the Recommended Offer</span>' if len(K) > 1
                   else "1 · Offer Terms")
@@ -229,7 +232,7 @@ def details(r, res):
  <div><h2>6 · Likely Pushback <span class="h2s">On the Recommended Offer</span></h2><div class="tbl"><table><colgroup><col style="width:24%"><col style="width:19%"><col style="width:19%"></colgroup>
  <thead><tr><th>Term</th><th>Yours</th><th>They May Ask</th><th>Response</th></tr></thead><tbody>{pb}</tbody></table></div></div></div>
 <h2>7 · Assumptions &amp; Data to Confirm</h2>{asum}
-<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. Closing costs are estimated at {esc(ST.closing_cost_basis(B))}; loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div></div>'''
+<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. {cc_note}Loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div></div>'''
 
 
 def options_html(r, agent, sample):

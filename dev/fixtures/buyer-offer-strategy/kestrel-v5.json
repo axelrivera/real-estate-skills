@@ -1,0 +1,32 @@
+{
+  "analysis_date": "2026-09-26",
+  "property": {"address": "2315 Sample Kestrel Ct, Casselberry, FL 32707", "list_price": 464900, "roof_year": 2010,
+               "hoa_monthly": 35, "price_cuts": 2, "dom": 78},
+  "competition": {"level": 1, "note": "Listing agent: one other offer expected"},
+  "buyer": {"financing": "conventional", "down_pct": 0.05, "first_time_buyer": true, "max_price": 460000,
+            "cash_available": 42000, "reserve_floor": 5000, "max_payment": 4000, "insurance_quote": false},
+  "costs": {"rate": 6.5},
+  "worksheet": {"contract_form": "as_is"},
+  "cma": {
+    "handoff": "cma", "version": 1, "side": "buyer", "as_of": "2026-09-26", "source": "buyer-cma",
+    "subject": {"address": "2315 Sample Kestrel Ct", "city": "Casselberry", "state": "FL", "county": "Seminole",
+                "sqft": 1920, "beds": 4, "baths": 2, "year_built": 1998, "pool": true, "list_price": 464900,
+                "dom": 78, "price_cuts": 2, "roof_year": 2010,
+                "annual_tax": 4095.13, "school_mills": 5.249, "total_mills": 18.1808, "homestead": true, "flood_zone": "X",
+                "insurance_annual": 4900, "insurance_price": 437000, "insurance_estimated": true},
+    "value": {"low": 425000, "high": 455000, "midpoint": 440000, "median_adjusted": 441625},
+    "comps": [
+      {"address": "2280 Sample Kestrel Ct", "sold_price": 462500, "seller_paid": 0, "adjusted": 452500},
+      {"address": "2355 Sample Kestrel Ct", "sold_price": 452500, "seller_paid": 5000, "adjusted": 444700},
+      {"address": "846 Sample Osprey Way", "sold_price": 447000, "seller_paid": 3000, "adjusted": 441625},
+      {"address": "1502 Sample Merlin Bend", "sold_price": 446000, "seller_paid": 5000, "adjusted": 438400},
+      {"address": "2331 Sample Kestrel Ct", "sold_price": 438000, "seller_paid": 6000, "adjusted": 428100}
+    ],
+    "market": {"split_date": "2026-07-01", "sale_to_original_list_recent": 0.9642, "median_days_recent": 23.0,
+               "share_with_seller_paid_costs_recent": 1.0, "median_seller_paid_recent": 6000.0, "months_supply": 1.4,
+               "active_count": 5},
+    "offer_plan": {"opening": 430000, "target_low": 435000, "target_high": 439000, "walk_away": 441000},
+    "recommended_list_price": null,
+    "market_profile": {"state": "FL", "mls": "Stellar"}
+  }
+}
