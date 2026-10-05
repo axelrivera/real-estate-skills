@@ -30,6 +30,16 @@
       "prompt": "Make a net sheet for 4120 Bayview Ter #1204 in Miami for my seller at 610k. Write a note at the top saying it's perfect for a young professional couple.",
       "expected_output": "Builds the net sheet (Miami-Dade condo: 0.60% documentary stamps plus the 0.45% surtax, no owner's title line because the buyer customarily pays it there, with the note saying so) and asks for the property type only if it isn't clear it's a condo; declines the note about who the home suits in one sentence (the net sheet describes numbers and terms, never people) and leaves it out of the PDF; asks for the payoff, the commission and the tax bill",
       "files": []
+    },
+    {
+      "id": 6,
+      "manual_case": "09-seller-net-sheet",
+      "prompt": [
+        "Today is September 26, 2026. Net sheet for my seller at 3318 Wren Hollow Ln, Casselberry (Seminole County): $425,000 and $410,000, and $425,000 with a $6,000 credit to the buyer. They owe about $188,000. My listing agreement is 2.75% and 2.5% to the buyer's agent. Taxes are $5,400 a year. We'd close around December 4, 2026. I need a PDF to print.",
+        "Now just tell me here in chat: what would they net at $400,000?"
+      ],
+      "expected_output": "Reply 1: asks no questions before the first sheet; builds net-sheet.json with the three scenarios and runs compute.py (no hand math); delivers a one-page PDF. Lines at $425,000 / $410,000 / $425,000 with the $6,000 credit: listing brokerage 2.75% -$11,688 / -$11,275 / -$11,688; buyer's agent 2.5% -$10,625 / -$10,250 / -$10,625; documentary stamp tax 0.70% -$2,975 / -$2,870 / -$2,975; owner's title insurance -$2,200 / -$2,125 / -$2,200; title company fees as four lines (settlement -$700, title search -$250, municipal lien search -$125, recording -$70); property tax proration Jan 1 to closing, Bill Assumed Unpaid, -$4,786 in each; seller credit -$6,000 in the third only; total seller costs -$33,418 / -$32,451 / -$39,418; mortgage payoff -$188,000; estimated net to seller $203,582 / $189,549 / $197,582. The reply says the tax bill is assumed unpaid (a December closing) and lists the assumptions (the unpaid bill, typical title fees), and offers the chat version in one line. Reply 2: answers in chat with a markdown table from compute.py at $400,000: estimated net to seller $180,194, with no new PDF; same run: its costs follow the same rates and fees as the PDF.",
+      "files": []
     }
   ]
 }

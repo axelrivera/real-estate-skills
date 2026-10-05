@@ -55,6 +55,18 @@
       "files": [
         "out/mock-contracts/standard-buyer-counter-pending/915-Saw-Grass-Pointe-Offer.pdf"
       ]
+    },
+    {
+      "id": 8,
+      "today": "2026-09-22",
+      "mock_package": "asis-offer-aga",
+      "manual_case": "05-seller-offer-review",
+      "prompt": [
+        "Today is September 22, 2026. I'm the listing agent for 2604 Sable Palm Way, Jupiter, FL 33458, listed at $504,000. We got this offer (2604-Sable-Palm-Way-Offer-Nakamura.pdf and 2604-Sable-Palm-Way-Compensation-Agreement-Nakamura.pdf). Should my seller accept, and what should we counter?",
+        "A second offer just came in on the same listing (2604-Sable-Palm-Way-Offer-Quintero.pdf and 2604-Sable-Palm-Way-Compensation-Agreement-Quintero.pdf). Compare both offers, rank them and give me a plan. I'd like the PDF for my seller."
+      ],
+      "expected_output": "Reply 1 reads the first package (offers[0] in the asis-offer-aga answer key): buyer Sawyer Nakamura, agent Kendall Castellanos of Sunward Homes Realty, AS IS, $489,000 conventional with 20% down, $20,000 in deposits, 10-day inspection, closing Nov 2, 2026, AGA-1 appraisal gap of $15,000, riders B and GG; time for acceptance Sep 23, 2026 at 5:00 PM. Recommends COUNTER with a net sheet and a counter whose price sits between the offer and the $504,000 list price; no payoff, CMA or brokerage terms given, so those are labeled assumptions (brokerage 5% total, tax bill estimated, appraisal risk against list price). Never asks who the loan officer is or whether funds are verified when the pre-approval letter shows it. The listing side named in the packages (Greenleaf Realty Partners, Dana Okafor) is raised only as a confirmation. Reply 2 adds the second offer to the same listing file: buyer Harper Quintero, agent Emery Ostrander of Tidewater Key Realty, $494,000 conventional with 10% down, $20,000 deposit, closing Oct 28, EAC-1 escalation of $2,000 over competing offers capped at $506,000, and the Notice of Multiple Offers with highest and best due Sep 23, 2026 at 12:00 PM. Both packages show the same parcel, HOA contact and $95 a month HOA fee. Ranks both with a plan: counter one and hold the other as backup once the primary contract is fully signed; shows the backup's earlier time for acceptance (Wed Sep 23, 5:00 PM) with a step to ask its agent to extend; shows the highest-and-best deadline and doesn't call for highest and best again; flags the escalation cap above what the value range and gap coverage support. No next step is dated before Sep 22, 2026. The multi-offer PDF is delivered. Same run: the nets, scores and counters in the PDF are the reply's. When the listing file matches the answer keys, the actions and nets match review.py's in the manual kit's expected.md.",
+      "files": ["out/manual-test/05-seller-offer-review/step-1/2604-Sable-Palm-Way-Offer-Nakamura.pdf", "out/manual-test/05-seller-offer-review/step-1/2604-Sable-Palm-Way-Compensation-Agreement-Nakamura.pdf", "out/manual-test/05-seller-offer-review/step-2/2604-Sable-Palm-Way-Offer-Quintero.pdf", "out/manual-test/05-seller-offer-review/step-2/2604-Sable-Palm-Way-Compensation-Agreement-Quintero.pdf"]
     }
   ]
 }

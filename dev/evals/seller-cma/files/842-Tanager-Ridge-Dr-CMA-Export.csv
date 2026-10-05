@@ -1,0 +1,27 @@
+Distance,ML Number,Status,Address,Legal Subdivision Name,Heated Area,Current Price,Close Price,Close Date,Original List Price,Contract Date,Beds,Full Baths,Year Built,Pool,CDOM,Seller Paid Buyer Costs,Lot Size Acres,Sold Terms,Public Remarks
+0.15,X9101204,SLD,818 TANAGER RIDGE DR,TANAGER RIDGE UNIT 2,1612,"$398,000","$398,000",08/28/2026,"$399,900",07/30/2026,3,2,1986,None,12,"$5,000",0.23,Conventional,"Updated kitchen with quartz counters, 2020 roof, LVP floors. Screened porch."
+0.22,X9101377,SLD,907 TANAGER RIDGE DR,TANAGER RIDGE UNIT 2,1655,"$405,000","$405,000",06/12/2026,"$405,000",05/14/2026,3,2,1987,None,6,,0.25,Cash,"Remodeled kitchen and both baths, 2022 roof, 2021 AC."
+0.31,X9101529,SLD,1012 GROSBEAK CT,TANAGER RIDGE UNIT 1,1580,"$362,000","$362,000",09/10/2026,"$379,900",08/11/2026,3,2,1985,None,41,"$7,500",0.22,FHA,"Original kitchen and baths, roof 2012. Priced for updating."
+0.28,X9101688,SLD,764 SISKIN WAY,TANAGER RIDGE UNIT 2,1702,"$412,500","$412,500",05/02/2026,"$409,900",04/05/2026,3,2,1988,None,4,,0.26,Conventional,"Fully updated: kitchen, baths, impact windows, roof 2019."
+0.44,X9101840,SLD,655 PHOEBE LN,TANAGER RIDGE UNIT 1,1540,"$378,000","$378,000",07/18/2026,"$385,000",06/19/2026,3,2,1985,None,18,"$6,000",0.21,Conventional,"Updated kitchen, original baths, 2018 roof."
+0.52,X9102011,SLD,1130 VIREO DR,TANAGER RIDGE UNIT 3,1810,"$419,000","$419,000",04/22/2026,"$425,000",03/24/2026,4,2,1989,None,15,"$4,000",0.24,Conventional,"Four bedrooms, updated kitchen, newer AC."
+0.38,X9102155,SLD,871 SISKIN WAY,TANAGER RIDGE UNIT 2,1665,"$431,000","$431,000",06/27/2026,"$429,900",05/30/2026,3,2,1987,Private,7,,0.27,Conventional,"Pool home, updated kitchen, roof 2021."
+0.61,X9102302,SLD,402 LINNET CIR,WREN MEADOW,1590,"$371,500","$371,500",08/15/2026,"$389,900",07/16/2026,3,2,1984,None,34,"$8,000",0.20,FHA,"Partially updated, roof 2016."
+0.67,X9102460,SLD,518 LINNET CIR,WREN MEADOW,1720,"$395,000","$395,000",05/20/2026,"$399,000",04/21/2026,3,2,1984,None,9,"$3,500",0.22,Conventional,"Updated baths, new flooring, 2020 roof."
+0.74,X9102613,SLD,233 TOWHEE TRL,WREN MEADOW,1480,"$349,900","$349,900",09/05/2026,"$359,900",08/06/2026,3,2,1983,None,27,"$5,000",0.19,VA,"Original condition, well kept."
+0.46,X9102777,SLD,1044 VIREO DR,TANAGER RIDGE UNIT 3,1860,"$409,000","$409,000",07/31/2026,"$424,900",07/01/2026,4,2,1989,None,29,"$9,000",0.25,Conventional,"Larger floor plan, dated kitchen, 2019 roof."
+0.19,X9102934,SLD,790 TANAGER RIDGE DR,TANAGER RIDGE UNIT 2,1640,"$384,000","$384,000",09/19/2026,"$399,900",08/20/2026,3,2,1986,None,30,"$6,500",0.24,Conventional,"Same floor plan. Updated kitchen, original baths, roof 2015."
+0.83,X9103088,SLD,615 KINGLET AVE,WREN MEADOW,1950,"$426,000","$426,000",04/10/2026,"$430,000",03/12/2026,4,2,1990,None,8,,0.26,Conventional,"Four bedrooms, remodeled 2021."
+0.57,X9103241,SLD,944 GROSBEAK CT,TANAGER RIDGE UNIT 1,1525,"$355,000","$355,000",06/05/2026,"$359,000",05/06/2026,3,2,1985,None,10,"$4,500",0.21,FHA,"Original kitchen, newer AC."
+0.90,X9103396,SLD,128 PEWEE PL,WREN MEADOW,1600,"$389,500","$389,500",07/08/2026,"$389,500",06/08/2026,3,2,1984,None,5,,0.23,Conventional,"Updated throughout, 2022 roof."
+0.25,X9104102,ACT,736 TANAGER RIDGE DR,TANAGER RIDGE UNIT 2,1690,"$414,900",,,"$424,900",,3,2,1987,None,48,,0.24,,"Updated kitchen, new AC 2025. Price improved."
+0.49,X9104255,ACT,1101 VIREO DR,TANAGER RIDGE UNIT 3,1790,"$429,000",,,"$429,000",,4,2,1989,None,12,,0.25,,"Four bedrooms, remodeled baths."
+0.62,X9104409,ACT,455 LINNET CIR,WREN MEADOW,1560,"$369,900",,,"$389,900",,3,2,1984,None,76,,0.20,,"Original kitchen, roof 2014. Motivated seller."
+0.35,X9104560,ACT,882 SISKIN WAY,TANAGER RIDGE UNIT 2,1630,"$399,900",,,"$399,900",,3,2,1987,None,9,,0.24,,"Renovated 2023, new roof."
+0.78,X9104714,ACT,301 TOWHEE TRL,WREN MEADOW,1710,"$445,000",,,"$459,000",,3,2,1984,Private,63,,0.26,,"Pool home, updated kitchen."
+0.29,X9104868,PNC,1025 GROSBEAK CT,TANAGER RIDGE UNIT 1,1575,"$389,900",,,"$389,900",,3,2,1985,None,11,,0.22,,Updated kitchen and baths.
+0.55,X9105011,PNC,679 PHOEBE LN,TANAGER RIDGE UNIT 1,1650,"$394,500",,,"$404,900",,3,2,1986,None,24,,0.23,,Newer roof and AC.
+0.33,X9105165,EXP,853 TANAGER RIDGE DR,TANAGER RIDGE UNIT 2,1640,"$419,900",,,"$434,900",,3,2,1986,None,121,,0.24,,"Same floor plan, updated kitchen."
+0.71,X9105318,EXP,587 KINGLET AVE,WREN MEADOW,1820,"$449,900",,,"$459,900",,4,2,1990,None,180,,0.25,,"Large lot, dated interior."
+0.41,X9105472,CAN,1066 VIREO DR,TANAGER RIDGE UNIT 3,1745,"$424,900",,,"$439,000",,3,2,1989,None,95,,0.25,,Updated kitchen.
+0.86,X9105626,CAN,219 PEWEE PL,WREN MEADOW,1590,"$379,000",,,"$379,000",,3,2,1984,None,40,,0.22,,Original condition.
