@@ -8,6 +8,9 @@ never a past case.
   - notes: each note is said once (by key and by text), never also in What to Confirm; no label carries a note;
   - legends name exactly the series drawn (the contingency timeline, the comparison's chart);
   - the input is unchanged;
+  - counter stance: the same inputs give the same counter; every stance renders on every input, terms_only keeps the
+    offered price, firm never asks less or allows more concessions than meet_partway, no counter above the seller's
+    number or the offer's own price;
   - printed: nothing clipped or over page 1, no near-empty page, every dollar figure and percent on the page comes from
     the model, every Respond By time is the model's, and each note prints once.
 
@@ -34,8 +37,8 @@ import placeholders  # noqa: E402
 sys.path.insert(0, os.path.join(ROOT, "dev"))
 from generators import seller_offer_review as gen  # noqa: E402
 
-review, render, notes, fmt, layout = load("seller-offer-review", "review", "render", "_shared.notes", "_shared.fmt",
-                                          "_shared.layout")
+review, render, notes, fmt, layout, oe = load("seller-offer-review", "review", "render", "_shared.notes", "_shared.fmt",
+                                              "_shared.layout", "_shared.offer_engine")
 N_CASES = int(os.environ.get("FUZZ_N", "8"))
 ALL_REPORTS = "FUZZ_N" in os.environ
 SEED = int(os.environ.get("FUZZ_SEED", "0"))
@@ -140,6 +143,37 @@ class Model(unittest.TestCase):
                 with self.subTest(seed=seed, step=step, report=M["doc"]["subtitle"]):
                     texts = list(placeholders.strings(M)) + placeholders.page_text(render.build_html(M, gen.agent(seed)))
                     self.assertEqual(placeholders.problems(texts), [])
+
+    def test_counter_is_the_same_on_the_same_inputs(self):
+        for seed, step, data, R, _ in cases():
+            again = review.analyze(data, cma=review.load_cma(data))
+            with self.subTest(seed=seed, step=step):
+                self.assertEqual([(o["counter_stance"], o["counter_terms"]) for o in R["offers"]],
+                                 [(o["counter_stance"], o["counter_terms"]) for o in again["offers"]])
+                for o in R["offers"]:  # the agent's stance when given, else the suggestion
+                    given = ((data["offers"][R["offers"].index(o)].get("counter") or {}).get("stance"))
+                    self.assertEqual(o["counter_stance"]["stance"], given or o["counter_stance"]["suggested"])
+
+    def test_every_stance_renders_and_orders_the_counter(self):
+        """Every stance on every input: terms_only keeps the offered price; firm never asks a lower price or allows more
+        concessions than meet_partway; no stance counters above the seller's number or the offer's own price."""
+        for seed, step, data, _, _ in cases():
+            by, L = {}, None
+            for stance in oe.COUNTER_STANCES:
+                d = copy.deepcopy(data)
+                for o in d["offers"]:
+                    o["counter"] = {"stance": stance, "stance_reason": "The seller chose this stance."}
+                R = review.analyze(d, cma=review.load_cma(d))
+                self.assertTrue(review.reports(R))
+                by[stance], L = {o["id"]: o for o in R["offers"]}, R["listing"]
+            for k, mp in by["meet_partway"].items():
+                firm, terms = by["firm"][k]["counter_terms"], by["terms_only"][k]["counter_terms"]
+                with self.subTest(seed=seed, step=step, offer=k):
+                    self.assertEqual(terms["price"], mp["price"])
+                    self.assertGreaterEqual(firm["price"], mp["counter_terms"]["price"])
+                    self.assertLessEqual(firm["seller_concessions"], mp["counter_terms"]["seller_concessions"])
+                    for x in (firm, mp["counter_terms"], terms):
+                        self.assertLessEqual(x["price"], max(mp["price"], oe.price_ceiling(mp, L)))
 
     def test_compute_never_changes_the_input(self):
         for seed, step, data in inputs():

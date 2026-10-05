@@ -65,13 +65,15 @@ class Results(unittest.TestCase):
         self.assertEqual(review.result(review.analyze(d), offer_id="A")["summary"]["action"], "DECLINE")
 
     def test_multi_plan_follows_the_sellers_priority(self):
-        out = review.result(review.analyze(fixture("four-offers.json")))
+        data = fixture("four-offers.json")
+        for o in data["offers"]:  # the priority on the same counter terms (four offers suggest a firm counter)
+            o["counter"] = {"stance": "meet_partway", "stance_reason": "The seller wants this buyer."}
+        out = review.result(review.analyze(data))
         s = out["summary"]
         self.assertEqual(s["headline"], "ACCEPT")  # certainty: B (86) isn't risked for a 0.7% gain
         self.assertEqual([(p["key"], p["action"]) for p in s["ranked"]],
                          [("B", "Accept"), ("C", "Hold as Backup"), ("A", "Decline"), ("D", "Decline")])
         self.assertEqual(s["offer_label"], s["ranked"][0]["offer"])
-        data = fixture("four-offers.json")
         data["seller"]["priority"] = "balanced"
         s = review.result(review.analyze(data))["summary"]
         self.assertEqual(s["headline"], "COUNTER")

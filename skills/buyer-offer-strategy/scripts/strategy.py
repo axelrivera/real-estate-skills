@@ -23,7 +23,7 @@ import sys
 from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import contract_forms as cf, dates, finance, fmt, handoff, notes, offer_engine as oe, profiles, prose  # noqa: E402
+from _shared import choices, contract_forms as cf, dates, finance, fmt, handoff, notes, offer_engine as oe, profiles, prose  # noqa: E402
 
 LABELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "labels.json")
 with open(LABELS_PATH, encoding="utf-8") as _f:
@@ -33,6 +33,12 @@ money = fmt.money
 # Competitiveness thresholds (strong / competitive / at risk) per competition level. Starting judgments.
 BANDS = {0: (55, 40, 30), 1: (65, 55, 45), 2: (75, 60, 50), 3: (85, 72, 60)}
 BAND_RANK = {"strong": 3, "comp": 2, "risk": 1, "unl": 0}
+COMPETITION_LEVELS = tuple(BANDS)  # competition.level: 0 only offer, 1 one competing, 2 two or three, 3 cash or four+
+# buyer_priority: which option better_option recommends. balanced (the default): the strongest outlook at the lowest
+# cost that reaches it; win: the option the listing agent would rank highest inside every limit (outlook, then score,
+# the cheaper one on a tie); protect_cash: the Lower-Cost option unless it drops the outlook to At Risk or Unlikely.
+# The buyer's call, never suggested from data.
+BUYER_PRIORITIES = ("win", "balanced", "protect_cash")
 OPTIONS = ("recommended", "stronger", "lower_cost")
 DEFAULT_RATE = 6.5  # national planning estimate, used only when neither the buyer file nor a lookup has a rate
 DEFAULT_RESERVE = 2000
@@ -151,6 +157,13 @@ def text_problems(data):
         probs.append(t("prob_figure", field="value.source", value=json.dumps(src), found=", ".join(prose.figures(src)),
                        fix=L_["fix_value_source"]))
     return probs
+
+
+def choice_problems(data):
+    """The categories the buyer file names (the competition level, the buyer's priority) that aren't one of the choices,
+    as `field: problem → fix` lines, every one at once (choices.pick)."""
+    return (choices.pick((data.get("competition") or {}).get("level"), COMPETITION_LEVELS, "competition.level")[1]
+            + choices.pick(data.get("buyer_priority"), BUYER_PRIORITIES, "buyer_priority", default="balanced")[1])
 
 
 def apply_cma(B, h):
@@ -389,7 +402,8 @@ def prepare(B, A, market=None):
     elif K.get("tax_rate") is not None:  # OFR-237: a given rate is used as is; no exemption is taken off it
         A.add("costs", "homestead", "as given", t("as_tax_rate_given", rate=fmt.pct(K["tax_rate"], None)), "low")
 
-    lvl = C.get("level")
+    lvl = choices.pick(C.get("level"), COMPETITION_LEVELS, "competition.level")[0]  # analyze() stops on a bad one
+    B["buyer_priority"] = choices.pick(B.get("buyer_priority"), BUYER_PRIORITIES, "buyer_priority", default="balanced")[0]
     heat, basis = market_heat(P, M)
     C["inferred"] = lvl is None
     if lvl is None:
@@ -805,8 +819,10 @@ def engine_data(B, variants):
         if riders:
             o["riders"] = riders
         offers.append(o)
-    # OFR-123: the engine counts closing and "days until firm" from the expected Effective Date
-    return {"analysis_date": str(B["effective_date"]), "listing": listing, "seller": seller, "offers": offers}
+    # OFR-123: the engine counts closing and "days until firm" from the expected Effective Date. The listing agent's
+    # likely counter takes its stance from the competition the deal expects (this buyer plus the competing offers)
+    return {"analysis_date": str(B["effective_date"]), "listing": listing, "seller": seller, "offers": offers,
+            "_competing_offers": B["competition"]["level"] + 1}
 
 
 def appraisal_kind(B, t_):
@@ -1234,23 +1250,48 @@ def option_set(B, costs, rec):
     return variants, lc_why, by_net
 
 
+def option_ranks(O, lvl, lp):
+    """{option: its outlook band's rank} against the expected competition."""
+    tgt = O["recommended"]["target"]["net_adj"]
+    return {k: BAND_RANK[band_of(ci(O[k], tgt, lp), lvl)[0]] for k in O}
+
+
 def better_option(B, costs, terms, O, lvl, promote_stronger=True):
-    """The option to recommend instead, if the rule-built offer isn't the best by the skill's own rule, else None. A
-    Stronger option that only pays more (stronger_net) stays the buyer's choice, never promoted: the search for the
-    lowest-cost offer that reaches a better band is reach_band's."""
+    """The option to recommend instead, if the rule-built offer isn't the best by the buyer's priority
+    (`buyer_priority`, BUYER_PRIORITIES), else None. Balanced: a Stronger option that only pays more (stronger_net)
+    stays the buyer's choice, never promoted: the search for the lowest-cost offer that reaches a better band is
+    reach_band's. The agent's overrides turn the choice off."""
     if B.get("overrides"):
         return None  # the agent decided the terms
-    lp = B["property"]["list_price"]
-    tgt = O["recommended"]["target"]["net_adj"]
-    rank = {k: BAND_RANK[band_of(ci(O[k], tgt, lp), lvl)[0]] for k in terms}
-    if promote_stronger and "stronger" in terms and rank["stronger"] > rank["recommended"] \
-            and within_limits(B, costs, terms["stronger"]):
+    priority = B.get("buyer_priority") or "balanced"
+    rank = option_ranks({k: O[k] for k in terms}, lvl, B["property"]["list_price"])
+    score = {k: O[k]["score"]["total"] for k in terms}
+
+    def fits(k):
+        return k in terms and within_limits(B, costs, terms[k])
+
+    def lower_cost_ok(k):
+        """Never an option the lower-cost rule drops (Unlikely against the expected competition at level 2+), and only
+        one that saves cash."""
+        return not (lvl >= 2 and rank[k] == BAND_RANK["unl"]) \
+            and buyer_cash(B, terms[k])["worst"] < buyer_cash(B, terms["recommended"])["worst"]
+
+    if priority == "win":  # the best outlook, then the best score, inside the limits; the cheaper one on a tie
+        order = {"lower_cost": 0, "recommended": 1, "stronger": 2}
+        ok = [k for k in terms if k == "recommended" or fits(k) and (k != "lower_cost" or lower_cost_ok("lower_cost"))]
+        best = max(ok, key=lambda k: (rank[k], score[k], -order[k]))
+        return None if best == "recommended" else best
+    if priority == "balanced" and promote_stronger and "stronger" in terms and rank["stronger"] > rank["recommended"] \
+            and fits("stronger"):
         return "stronger"
     # OFR-9: "best" is the strongest outlook at the lowest cost that reaches it, so a cheaper option in the same band wins;
-    # never an option the lower-cost rule drops (Unlikely against the expected competition at level 2+)
-    if "lower_cost" in terms and rank["lower_cost"] >= rank["recommended"] \
-            and not (lvl >= 2 and rank["lower_cost"] == BAND_RANK["unl"]) and within_limits(B, costs, terms["lower_cost"]) \
-            and buyer_cash(B, terms["lower_cost"])["worst"] < buyer_cash(B, terms["recommended"])["worst"]:
+    # protecting cash takes it unless it drops to At Risk or Unlikely. Never an option the lower-cost rule drops
+    # (Unlikely against the expected competition at level 2+)
+    if "lower_cost" not in terms:
+        return None
+    keeps = rank["lower_cost"] >= rank["recommended"] or (priority == "protect_cash"
+                                                          and rank["lower_cost"] >= BAND_RANK["comp"])
+    if keeps and fits("lower_cost") and lower_cost_ok("lower_cost"):
         return "lower_cost"
     return None
 
@@ -1292,7 +1333,7 @@ def analyze(B_in, market=None, cma=None):
     """The engine: the buyer file (with the CMA handoff) prepared, the offer built, its options scored. Returns the
     internal result every view reads; the input is never changed."""
     oe.check_fractions(B_in)
-    probs = text_problems(B_in)
+    probs = text_problems(B_in) + choice_problems(B_in)
     if probs:
         raise oe.OfferError("\n".join(probs))
     B0 = apply_cma(B_in, cma) if cma else copy.deepcopy(B_in)
@@ -1339,12 +1380,15 @@ def analyze(B_in, market=None, cma=None):
             w, reached = reach_why(B, w, t_, rec, band), {"from": rec, "band": band[1], "band_key": band[0], "roomy": roomy}
             rec = t_
     promoted = fuller = None
+    promoted_lifts = False
     for _ in range(2):  # "best" = strongest outlook inside the limits at the lowest cost that reaches it
         variants, lc_why, by_net = option_set(B, costs, rec)
         R, O = run_engine(B, costs, variants)
         pick = better_option(B, costs, dict(variants), O, lvl, promote_stronger=not by_net)
         if not pick or promoted:
             break
+        ranks = option_ranks(O, lvl, B["property"]["list_price"])
+        promoted_lifts = ranks[pick] > ranks["recommended"]  # the outlook moved (not only the score or the cash)
         promoted, fuller = pick, rec
         rec = dict(variants)[pick]
         w = promote_why(w, lc_why, pick, rec, fuller, B["words"])
@@ -1367,6 +1411,7 @@ def analyze(B_in, market=None, cma=None):
                       and a["scope"] != "seller" and a["field"] not in ("cma_low / cma_high", "state")]
     res = {"B": B, "R": R, "O": O, "why": w, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
            "promoted": promoted, "promoted_from": fuller if promoted else None, "reached": reached, "by_net": by_net,
+           "promoted_lifts": bool(promoted) and promoted_lifts, "buyer_priority": B["buyer_priority"],
            "assumptions": A.items + engine_assumed, "costs": costs, "sample": bool(B_in.get("sample"))}
     res["cash"] = {k: buyer_cash(B, t2) for k, t2 in variants}
     res["payment"] = {k: monthly_payment(B, costs, t2["price"]) for k, t2 in variants}
@@ -1429,7 +1474,8 @@ def absent_reasons(res, B, costs, rec, saves_nothing, unlikely, already_unlikely
         else:
             out["stronger"] = no_stronger_reason(B, rec, costs)
     if "lower_cost" not in res["terms"]:
-        out["lower_cost"] = L_["absent_lc_promoted" if promoted == "lower_cost" else "absent_lc_level0" if lvl == 0 else
+        out["lower_cost"] = L_["absent_lc_promoted_cash" if promoted == "lower_cost" and cash_first(res) else
+                               "absent_lc_promoted" if promoted == "lower_cost" else "absent_lc_level0" if lvl == 0 else
                                "absent_lc_saves_nothing" if saves_nothing else
                                "absent_lc_still_unlikely" if unlikely and already_unlikely else
                                "absent_lc_unlikely" if unlikely else "absent_lc_same"]
@@ -1552,7 +1598,7 @@ def framing(res):
     if res["reached"]:
         return "reached"
     if res["promoted"] == "lower_cost":
-        return "same_for_less"
+        return "cash_first" if cash_first(res) else "same_for_less"
     if "stronger" in O and not res["limits"].get("stronger") \
             and res["cash"]["stronger"]["reserve"] >= B["buyer"]["reserve_floor"]:
         if BAND_RANK[res["bands"]["stronger"][lvl][0]] > BAND_RANK[res["bands"]["recommended"][lvl][0]]:
@@ -1560,6 +1606,13 @@ def framing(res):
         if O["stronger"]["score"]["total"] > O["recommended"]["score"]["total"]:
             return "least_cash"
     return "best"
+
+
+def cash_first(res):
+    """The lower-cost terms were promoted at a lower outlook than the fuller terms (buyer_priority protect_cash)."""
+    lvl = res["B"]["competition"]["level"]
+    return res["promoted"] == "lower_cost" and "stronger" in res["bands"] \
+        and BAND_RANK[res["bands"]["recommended"][lvl][0]] < BAND_RANK[res["bands"]["stronger"][lvl][0]]
 
 
 def stronger_fits(r):
@@ -1851,7 +1904,10 @@ def summary(r, package_ready=False):
     hero = [lead]
     if r.get("promoted") == "stronger":  # CMA-103: only what the stronger terms actually raised
         what = raised(r["terms"]["recommended"], r.get("promoted_from"))
-        hero.append(t("hero_promoted", what=raised_words(what)) if what else L_["hero_promoted_any"])
+        lifts = "" if r.get("promoted_lifts") else "_score"  # buyer_priority win: a higher score in the same band
+        hero.append(t("hero_promoted" + lifts, what=raised_words(what)) if what else L_["hero_promoted_any" + lifts])
+    if r["buyer_priority"] != "balanced":  # the buyer's priority set the pick: its rule, in the script's words
+        hero.append(L_["priority_line"][r["buyer_priority"]])
     if BU["financing"] in ("fha", "va", "usda") and lvl >= 2:
         hero.append(t("hero_low_down_limit" if r.get("constraints") else "hero_low_down", prog=oe.FIN_LABEL[BU["financing"]]))
     if rc["reserve"] < 0:
@@ -1909,6 +1965,8 @@ def summary(r, package_ready=False):
               for k, why_ in (r.get("absent") or {}).items()]
     return {
         "outlook": br[1], "outlook_class": br[0], "framing": fr,
+        "priority": {"key": r["buyer_priority"], "name": L_["priority_name"][r["buyer_priority"]],
+                     "line": L_["priority_line"][r["buyer_priority"]] if r["buyer_priority"] != "balanced" else None},
         "competition": comp_label(lvl), "competition_inferred": bool(C.get("inferred")),
         "kicker": t("kicker", comp=comp_label(lvl) + (L_["inferred_tag"] if C.get("inferred") else "")),
         "why": " ".join(hero), "lead": lead,

@@ -31,6 +31,8 @@
 
 {{summary.plan_note}} <!-- always there: one counter or acceptance goes out at a time -->
 
+{{when summary.counter_stance:}} **Counter Stance: {{summary.counter_stance.name}}.** {{summary.counter_stance.note}}
+
 **Biggest Risk:**
 - {{each offers[]: "**" + label + ":** " + (biggest_risk, or "None major" when null)}}
 
@@ -77,6 +79,8 @@
 | Term | Buyer Offered | We Counter | Why |
 |---|---|---|---|
 | {{row.term}} | {{row.offered}} | **{{row.counter}}** | {{row.why}} |
+
+**Counter Stance: {{summary.counter.stance.name}}.** {{summary.counter.stance.note}}
 
 {{when summary.compare:}}
 **How It Compares** (vs. {{summary.compare.vs}}, the recommended offer):

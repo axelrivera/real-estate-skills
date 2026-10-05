@@ -40,6 +40,12 @@
     }
    ],
    "counter_score": 84,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
@@ -48,7 +54,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 514000,
+    "price": 515000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -175,7 +181,7 @@
     "lines": [
      [
       "price",
-      514000
+      515000
      ],
      [
       "conc",
@@ -187,19 +193,19 @@
      ],
      [
       "listing",
-      -12850
+      -12875
      ],
      [
       "bb",
-      -12850
+      -12875
      ],
      [
       "transfer",
-      -3598
+      -3605
      ],
      [
       "title",
-      -2645
+      -2650
      ],
      [
       "settle",
@@ -225,9 +231,9 @@
     "missing": {
      "count": 0
     },
-    "net": 174132,
-    "net_adj": 171974,
-    "price": 514000,
+    "net": 175070,
+    "net_adj": 172912,
+    "price": 515000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -479,6 +485,12 @@
     }
    ],
    "counter_score": 64,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -945,6 +957,7 @@
   "cma_low": 500000,
   "cma_mid": 512500.0,
   "cma_provided": true,
+  "competing_offers": 2,
   "condo": false,
   "cost_notes": {
    "count": 4
@@ -1093,6 +1106,12 @@
     }
    ],
    "counter_score": 84,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
@@ -1101,7 +1120,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 514000,
+    "price": 515000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -1228,7 +1247,7 @@
     "lines": [
      [
       "price",
-      514000
+      515000
      ],
      [
       "conc",
@@ -1240,19 +1259,19 @@
      ],
      [
       "listing",
-      -12850
+      -12875
      ],
      [
       "bb",
-      -12850
+      -12875
      ],
      [
       "transfer",
-      -3598
+      -3605
      ],
      [
       "title",
-      -2645
+      -2650
      ],
      [
       "settle",
@@ -1278,9 +1297,9 @@
     "missing": {
      "count": 0
     },
-    "net": 174132,
-    "net_adj": 171974,
-    "price": 514000,
+    "net": 175070,
+    "net_adj": 172912,
+    "price": 515000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -1532,6 +1551,12 @@
     }
    ],
    "counter_score": 64,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -1973,6 +1998,12 @@
     }
    ],
    "counter_score": 84,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 15000,
     "buyer_broker_pct": 0.025,
@@ -1981,7 +2012,7 @@
     "home_warranty": 0,
     "inspection_days": 7,
     "loan_approval_days": 21,
-    "price": 514000,
+    "price": 515000,
     "sale_contingency_days": 0,
     "seller_concessions": 0
    },
@@ -2108,7 +2139,7 @@
     "lines": [
      [
       "price",
-      514000
+      515000
      ],
      [
       "conc",
@@ -2120,19 +2151,19 @@
      ],
      [
       "listing",
-      -12850
+      -12875
      ],
      [
       "bb",
-      -12850
+      -12875
      ],
      [
       "transfer",
-      -3598
+      -3605
      ],
      [
       "title",
-      -2645
+      -2650
      ],
      [
       "settle",
@@ -2158,9 +2189,9 @@
     "missing": {
      "count": 0
     },
-    "net": 174132,
-    "net_adj": 171974,
-    "price": 514000,
+    "net": 175070,
+    "net_adj": 172912,
+    "price": 515000,
     "tax_bill_assumed": false
    },
    "ns_down": {
@@ -2412,6 +2443,12 @@
     }
    ],
    "counter_score": 64,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,

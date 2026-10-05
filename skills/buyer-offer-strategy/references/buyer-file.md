@@ -16,7 +16,7 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 
 ## Top Level
 
-`costs` (the buyer's payment inputs, below) is a top-level block like `buyer`, not `property.costs`. `analysis_date` (default today; when the agent states today's date, use it and never question it against the computer's clock), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, moved to the next business day when that falls on a weekend or holiday (the same day as the default Time for Acceptance), listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`.
+`costs` (the buyer's payment inputs, below) is a top-level block like `buyer`, not `property.costs`. `analysis_date` (default today; when the agent states today's date, use it and never question it against the computer's clock), `expected_effective_date` (`YYYY-MM-DD`: when the seller is expected to accept; closing, deposit and "days until firm" count from it, and the worksheet's Time for Acceptance defaults to it at 5:00 PM. Default: the day after the offer deadline in `worksheet.acceptance_deadline` or `competition.deadline`, else the day after `analysis_date`, moved to the next business day when that falls on a weekend or holiday (the same day as the default Time for Acceptance), listed as a low-impact assumption), `overrides`, `chosen_option`, `worksheet`, `cma`, `buyer_priority` (below).
 
 ## property
 
@@ -40,7 +40,7 @@ Numbers only, the report writes them out: `sale_to_list` (a fraction, `0.981`), 
 
 | Field | Meaning | Default |
 |---|---|---|
-| `level` | 0 only offer · 1 one competing · 2 two–three · 3 cash or 4+ | inferred from market heat (hot → 2, normal → 1, soft or stale → 0), flagged |
+| `level` | 0 only offer · 1 one competing · 2 two–three · 3 cash or 4+ (a whole number; anything else stops the run) | inferred from market heat (hot → 2, normal → 1, soft or stale → 0), flagged |
 | `note` | what the listing agent said, for you: it's read for a highest-and-best call, never printed (the report writes the Competition line from `level`) | — |
 | `deadline` | offers due ("2026-09-25 17:00" or "Fri Sep 25 · 5 PM"; the report prints both as "Fri Sep 25 · 5 PM"); the expected Effective Date is the day after. Enter a weekday alone as the agent said it ("Friday 5pm"): the script resolves it to the next one from `analysis_date` (today counts) and state that date in chat. When it lands more than 5 days out (today is the day after that weekday), the agent may have meant the one that just passed: the resolved date is a med assumption, listed in `to_confirm` right after the competition read, so the reply asks | — |
 | `highest_and_best` | the listing agent called for highest and best; read from `note` when it says so ("highest and best"). With no escalation, `reply_lines` gets the flat-number reason (`flat_number`) | from `note` |
@@ -85,6 +85,10 @@ Top level, next to `buyer`. `rate` (interest rate as a **percent**: `6.5` for 6.
 ## overrides
 
 The agent's call on any recommended term: `price`, `seller_concessions`, `deposit`, `inspection_days`, `loan_approval_days`, `appraisal_gap`, `closing_days`, `home_warranty`, `buyer_broker_pct`, `escalation`. Marked "Agent" in the report; the stronger and lower-cost options are built from the overridden offer.
+
+## buyer_priority
+
+What the buyer wants most, as the buyer or the agent said it: `win` (the terms the listing agent would rank highest inside every limit), `balanced` (the default: the strongest outlook at the lowest cost that reaches it) or `protect_cash` (the lower-cost terms unless they drop the outlook to At Risk or Unlikely). It picks which option is recommended (`offer-rules.md`); never set it from the market. Left out, it's `balanced`, with no assumption line. Any other value stops the run, naming the three. `overrides` turn the choice off.
 
 ## chosen_option
 

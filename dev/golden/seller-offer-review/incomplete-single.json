@@ -88,6 +88,12 @@
     }
    ],
    "counter_score": 61,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -524,6 +530,7 @@
   "cma_low": 338000,
   "cma_mid": 345000.0,
   "cma_provided": true,
+  "competing_offers": 1,
   "condo": false,
   "cost_notes": {
    "count": 4
@@ -665,6 +672,12 @@
     }
    ],
    "counter_score": 61,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,

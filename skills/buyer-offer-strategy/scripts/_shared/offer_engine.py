@@ -19,7 +19,7 @@ import math
 import re
 from datetime import date, datetime, time, timedelta
 
-from . import contract_forms as cf, dates, finance, fmt, profiles
+from . import choices, contract_forms as cf, dates, finance, fmt, profiles
 
 FIN_LABEL = {k: v["label"] for k, v in finance.LOAN_PROGRAMS.items()}
 APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full underwritten approval",
@@ -37,6 +37,9 @@ CRITERIA = [  # key, label, weight
 ]
 # Share of list price per 100 points of missing certainty, by the seller's priority.
 RISK_PENALTY = {"price": 0.05, "balanced": 0.10, "speed": 0.12, "certainty": 0.15}
+PRIORITIES = ("price", "balanced", "certainty", "speed")  # seller.priority, in the order the fix message names them
+STATUSES = ("active", "backup", "declined", "expired", "accepted")  # an offer's status
+RECOMMENDATIONS = ("ACCEPT", "COUNTER", "BACKUP", "DECLINE")  # the agent's own call on an offer
 IMPACT_ORDER = {"high": 0, "med": 1, "low": 2}
 ACTIVE = ("active", "backup")
 
@@ -385,7 +388,8 @@ def prepare_listing(data, A, costs):
     S["deadline"] = _d(S.get("deadline"))
     if not S["deadline"]:
         A.add("seller", "deadline", "none", "No closing deadline: timeline scored on speed alone", "med")
-    S["priority"] = S.get("priority") if S.get("priority") in RISK_PENALTY else "balanced"
+    # analyze() stops on an unknown priority before this runs; a missing one is balanced
+    S["priority"] = choices.pick(S.get("priority"), PRIORITIES, "seller.priority", default="balanced")[0]
 
     rr = costs.get("contract.inspection_credit_reserve_pct")
     L["repair_reserve_pct"] = rr or 0
@@ -687,7 +691,10 @@ def prepare_offer(o, L, S, A):
         fin = A.add(sc, "financing", "conventional", "Financing type not provided: assumed conventional", "high")
     o["financing"] = fin
     o["financed"] = fin != "cash"
-    o["status"] = o.get("status", "active")
+    # analyze() stops on an unknown status or recommendation before this runs (offer_field_problems)
+    o["status"] = choices.pick(o.get("status"), STATUSES, "status", default="active")[0]
+    if o.get("recommendation"):
+        o["recommendation"] = choices.pick(o["recommendation"], RECOMMENDATIONS, "recommendation")[0]
     o["expires_raw"] = o.get("expires")
     o["expires"] = fmt_when(o.get("expires"))
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(o["expires_raw"] or "").strip()):  # OFR-263: a date with no time
@@ -1694,6 +1701,13 @@ COUNTER_TERMS = {
 }
 COUNTER_ALIASES = {"seller_credit": "seller_concessions", "closing": "closing_date", "close": "closing_date",
                    "acceptance": "time_for_acceptance", "expires": "time_for_acceptance"}
+# counter.stance: how the counter sets the price and the concessions (counter-rules.md, Counter Stance). firm: a price
+# below the seller's number is countered at it, and concessions come down to the market norm (half, when that's less);
+# meet_partway: the rules as written (meet partway, half the concessions); terms_only: the offered price stands and only
+# the terms change. The engine suggests one (suggest_stance); the agent's pick wins, with a reason when it differs.
+COUNTER_STANCES = ("firm", "meet_partway", "terms_only")
+STANCE_NEAR = 0.01  # within 1% of the seller's number the price is close enough: counter the terms only
+COUNTER_FIELDS = ("changes", "rows", "stance", "stance_reason")  # rows: retired, named in its own problem
 
 
 def _counter_when(v):
@@ -1717,6 +1731,8 @@ def offer_field_problems(o):
     contract box an escalation addendum checks. Every problem reads `field: problem → fix`."""
     where = f"offers[{o.get('id', '?')}]"
     probs = cf.compensation_agreement_problems(o, listing_pays_buyer_broker(o), f"{where}.compensation_agreement")
+    probs += choices.pick(o.get("status"), STATUSES, f"{where}.status", default="active")[1]
+    probs += choices.pick(o.get("recommendation"), RECOMMENDATIONS, f"{where}.recommendation")[1]
     e = o.get("escalation")
     if isinstance(e, dict) and e.get("contract_form") not in (None, ""):
         try:
@@ -1747,8 +1763,9 @@ def counter_changes(o, L):
     if "rows" in ov:
         probs.append(f"{where}.rows: no longer read (the engine writes the counter table) → put each term the seller "
                      'changes in counter.changes, e.g. {"price": 499000, "inspection_days": 7}')
+    probs += counter_stance(o)[2]
     for k in ov:
-        if k not in ("changes", "rows"):
+        if k not in COUNTER_FIELDS:
             key = COUNTER_ALIASES.get(k, k)
             probs.append(f"{where}.{k}: not a counter field → move it into counter.changes"
                          + (f" as {key}" if key in COUNTER_TERMS else ""))
@@ -1794,6 +1811,54 @@ def counter_changes(o, L):
         else:
             out[key] = int(v) if key.endswith("_days") else v
     return out, probs
+
+
+def counter_stance(o):
+    """(stance or None, reason or None, problems): the agent's `counter.stance` and `counter.stance_reason`, checked."""
+    ov = o.get("counter")
+    if not isinstance(ov, dict):
+        return None, None, []
+    where = f"offers[{o.get('id', '?')}].counter"
+    stance, probs = choices.pick(ov.get("stance"), COUNTER_STANCES, f"{where}.stance")
+    reason = ov.get("stance_reason")
+    if reason is not None and not isinstance(reason, str):
+        probs.append(f"{where}.stance_reason: {reason!r} isn't text → why this stance, in words")
+        reason = None
+    return stance, (reason or "").strip() or None, probs
+
+
+def price_ceiling(o, L):
+    """The most a counter asks: the seller's own last counter price when there is one (even above list), else list."""
+    last = last_seller_counter(o) or {}
+    return last["price"] if last.get("price") else L["list_price"]
+
+
+def competing_offers(offers):
+    """How many buyers have an active offer: one buyer's alternatives (`same_buyer`) count once (OFR-101)."""
+    return len({o.get("same_buyer") or o["id"] for o in offers if o["status"] == "active"})
+
+
+def suggest_stance(o, L):
+    """The counter stance the facts suggest: firm with two or more buyers' active offers or an offer at or above list;
+    terms_only when the price is within STANCE_NEAR of the seller's number; else meet_partway."""
+    if L.get("competing_offers", 1) >= 2 or o["price"] >= L["list_price"]:
+        return "firm"
+    ceiling = price_ceiling(o, L)
+    if ceiling - o["price"] <= STANCE_NEAR * ceiling:
+        return "terms_only"
+    return "meet_partway"
+
+
+def stance_problems(offers):
+    """A stance the agent picked over the suggestion needs its reason (`field: problem → fix`)."""
+    out = []
+    for o in offers:
+        st = o.get("counter_stance") or {}
+        if st.get("given") and st["stance"] != st["suggested"] and not st.get("reason"):
+            out.append(f"offers[{o['id']}].counter.stance_reason: missing → {st['stance']} differs from the suggested "
+                       f"{st['suggested']}: say why in words (no figures), or leave counter.stance out to use the "
+                       "suggestion")
+    return out
 
 
 def _counter_fmt(o, key, v, offered=False):
@@ -1846,27 +1911,33 @@ def propose_counter(o, L, S):
         rows.append((term, _counter_fmt(o, key, o[key], True), _counter_fmt(o, key, value), why))
 
     lp, hi = L["list_price"], L["cma_high"]
+    stance = (o.get("counter_stance") or {}).get("stance") or "meet_partway"
     last = last_seller_counter(o) or {}  # negotiation history: never above the seller's last price, never weaker terms
     # ENG-2: with history, the seller's own last counter is the ceiling (even above list); list only without history
-    ceiling = last["price"] if last.get("price") else lp
+    ceiling = price_ceiling(o, L)
     uncovered = o["appraisal_risk"] and o["price"] > hi and o["gap_cover"] < o["price"] - hi
     price = why = None
+    if stance == "terms_only":  # the offered price stands; the term rules below still apply
+        pass
     # OFR-110: without a CMA the price is never countered down (list only stands in for the value)
-    if uncovered and L["cma_provided"] and (not last.get("price") or o["price"] > ceiling):
+    elif uncovered and L["cma_provided"] and (not last.get("price") or o["price"] > ceiling):
         # ENG-2: with history the seller has named a price, so an offer above it is countered back to it, never below it
         price = last["price"] if last.get("price") else rnd(hi, 1000, "down")
         why = ("Top of the value range, so the appraisal can support it" if not last.get("price") else
                RESTATE + ("; the gap coverage below covers the part above the value range" if price > hi else ""))
     elif o["price"] < ceiling:
         low_ball = L["cma_provided"] and o["price"] < L["cma_low"] and not last.get("price")
-        price = ceiling if low_ball else min(rnd((o["price"] + ceiling) / 2, 1000, "up"), ceiling)
+        firm = stance == "firm" and not low_ball
+        price = ceiling if low_ball or firm else min(rnd((o["price"] + ceiling) / 2, 1000, "up"), ceiling)
         why = ("Under the value range: counter at list" if low_ball else
+               RESTATE if firm and last.get("price") else
+               "Holds at list" if firm else
                f"Meets partway between this offer and the seller's last counter ({money(ceiling)})" if last.get("price") else
                "Below list: meet partway")
         # iteration 12: an escalation cap above the price is the most the buyer has said it will pay, so the counter
         # goes up to it (never past the ceiling); counter-rules.md rule 2
         cap = escalation_room(o)
-        if cap and not low_ball and min(cap, ceiling) > price:
+        if cap and not low_ball and not firm and min(cap, ceiling) > price:
             price = min(cap, ceiling)
             to = "the seller's last counter" if last.get("price") else "list"
             why = (f"The buyer's escalation cap ({money(cap)}) reaches {to}: counter at {to}" if price == ceiling else
@@ -1891,6 +1962,9 @@ def propose_counter(o, L, S):
             conc, why = last["seller_concessions"], RESTATE
     elif o["seller_concessions"] > N["concessions_pct"] * o["price"] + 1:
         conc, why = rnd(o["seller_concessions"] / 2, 500), "Biggest controllable drain on net"
+        norm = rnd(N["concessions_pct"] * o["price"], 500, "down")
+        if stance == "firm" and norm < conc:  # firm: no more than the market norm, never more than meeting partway
+            conc, why = norm, "Held to the market norm"
     put("seller_concessions", "Seller Concessions", conc, why)
     ob = S["offered_buyer_broker_pct"]
     bb = ob if ob is not None and o["buyer_broker_pct"] > ob + 1e-9 and not o.get("bb_from_listing") else None
@@ -2071,6 +2145,10 @@ def analyze_offer(o, L, S, costs):
     o["score"] = score_offer(o, L, S)
     o["flags"] = flags_for(o, L, S)
     o["blocking"] = [f for f in o["flags"] if f["sev"] == "Blocking"]
+    given, reason, _ = counter_stance(o)
+    suggested = suggest_stance(o, L)
+    o["counter_stance"] = {"stance": given or suggested, "suggested": suggested, "given": given is not None,
+                           "reason": reason}
     ct, rows = propose_counter(o, L, S)
     o["counter_terms"], o["counter_rows"] = ct, rows
     o["ns_counter"] = _sheet(ct, o, L, S, costs)
@@ -2196,7 +2274,8 @@ def analyze(data, market=None, cma=None):
               "costs, and no Florida rules without a FAR/BAR contract). Give the state for local costs", "high")
     L, S = prepare_listing(data, A, costs)
     # the agent's counter terms are checked before anything runs: every problem at once (`field: problem → fix`)
-    probs = [p for o in data.get("offers") or [] for p in counter_changes(o, L)[1] + offer_field_problems(o)]
+    probs = choices.pick((data.get("seller") or {}).get("priority"), PRIORITIES, "seller.priority", default="balanced")[1]
+    probs += [p for o in data.get("offers") or [] for p in counter_changes(o, L)[1] + offer_field_problems(o)]
     if probs:
         raise OfferError("\n".join(probs))
     offers = [prepare_offer(o, L, S, A) for o in data.get("offers") or []]
@@ -2204,8 +2283,13 @@ def analyze(data, market=None, cma=None):
         raise OfferError("There are no offers in the listing file.")
     apply_escalations(offers, L)
     label_offers(offers)
+    # buyer-offer-strategy's options are one buyer's alternatives: it says how many buyers it expects (`_competing_offers`)
+    L["competing_offers"] = max(competing_offers(offers), data.get("_competing_offers") or 0)
     for o in offers:
         analyze_offer(o, L, S, costs)
+    probs = stance_problems([o for o in offers if o["status"] in ACTIVE])
+    if probs:
+        raise OfferError("\n".join(probs))
     title_fee_note(L, costs, [o for o in offers if o["status"] in ACTIVE] or offers)
     for o in offers:
         if o["title_payer_by_contract"] and o["status"] in ACTIVE:

@@ -60,6 +60,8 @@ def prototype_costs(data):
     d["listing"]["costs"] = {"title_fees": 645}
     d.setdefault("seller", {}).setdefault("listing_fee_pct", 0.03)
     d["seller"].setdefault("offered_buyer_broker_pct", 0.025)
+    for o in d["offers"]:  # the prototype's counter rules are the meet-partway stance
+        o["counter"] = {**(o.get("counter") or {}), "stance": "meet_partway", "stance_reason": "The prototype's rules."}
     return d
 
 

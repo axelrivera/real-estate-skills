@@ -2,10 +2,24 @@
 
 The engine drafts a counter from the rules below. The benchmarks (deposit, concessions, inspection, loan approval) are the market's `offer_norms`, the same ones the Terms Review shows (Florida: 3%, 1.5%, 7 days, 21 days); without them, national planning norms are used (1%, 3%, 10 days, 30 days) and flagged. Each rule adds a row (term, offered, counter, why) only when it applies. The goal is a better net **and** less risk, not simply a higher price. Review the draft for realism before answering.
 
+## Counter Stance
+
+Each counter has one stance, which sets how rules 2 and 4 treat the price and the concessions. The engine suggests one from the facts; leave `counter.stance` out to use it, or pick another with a reason in words (`listing-file.md`, Agent Overrides).
+
+| Stance | Price (rule 2) | Concessions (rule 4) | Suggested When |
+|---|---|---|---|
+| `firm` | below the seller's number (list, or the seller's last counter): countered at it | down to the market norm, or half when that's less | two or more buyers have active offers, or this offer is at or above list |
+| `meet_partway` | meet partway, as rule 2 reads | half | otherwise |
+| `terms_only` | the offered price stands (rule 1 doesn't counter it down either) | half | the offer is within 1% of the seller's number |
+
+Every other rule applies under every stance, and the term rules follow the stance's price (gap coverage, the deposit norm, the updated pre-approval). The report shows the stance's name with the counter and one sentence on what it means; the agent's reason follows it when the stance differs from the suggestion.
+
+## The Rules
+
 1. **Price above value with an unfunded appraisal gap** (an appraisal contingency, price > CMA high, gap < price − CMA high) → counter at CMA high. A price the appraisal won't support is a renegotiation waiting to happen. This can lower the paper net, so the report compares the counter with both the as-offered and the downside net; the honest comparison is the downside. **Only with a CMA:** without one, list price only stands in for the value, so the price is never countered down; rule 3 asks for gap coverage and the row says a CMA would firm up the value.
-2. **Price below list** → meet partway (rounded up to $1,000). With a CMA and a price under the CMA low, counter at list. **An escalation clause whose cap is above the price** (the base price when the clause doesn't trigger, the escalated price when it does) → the counter goes up to the cap, never past list (or the seller's last counter): the cap is the most the buyer has said it will pay. The row's why names the cap.
+2. **Price below list** → meet partway (rounded up to $1,000); a `firm` counter asks list, a `terms_only` one keeps the price. With a CMA and a price under the CMA low, counter at list. **An escalation clause whose cap is above the price** (the base price when the clause doesn't trigger, the escalated price when it does) → the counter goes up to the cap, never past list (or the seller's last counter): the cap is the most the buyer has said it will pay. The row's why names the cap.
 3. **Appraisal gap:** an appraisal contingency (not FHA or VA, whose rider lets the buyer walk), and the counter price is above the CMA high (list price without a CMA) → ask the buyer to cover the difference, rounded up to $1,000.
-4. **Concessions above the norm** (Florida 1.5% of price) → counter at half.
+4. **Concessions above the norm** (Florida 1.5% of price) → counter at half; a `firm` counter at the norm when that's less.
 5. **Buyer-broker pay above what the seller agreed to offer** → counter to the agreed %.
 6. **Deposit under the norm** (Florida 3%) → the norm on the counter price for financed offers, at least 5% for cash.
 7. **Inspection period over the norm** (Florida 7 days) → the norm. The row offers the seller's insurance inspection reports up front (Florida: 4-point and wind-mitigation) only when the listing file says the seller has them (`listing.insurance_reports`); never promise reports the buyer is ordering. Only when the offer states the period: an assumed one (the form's blank default) gets no row; a Low flag asks the agent to confirm the days instead. The counter never changes a term nobody gave.
@@ -45,4 +59,4 @@ A backup whose own time for acceptance ends before the counter to the top offer 
 
 ## Overrides
 
-Different terms from the agent go in the offer's `counter.changes` (term → value; the terms are in `listing-file.md`, Agent Overrides). The engine writes every row from them, so the table, the net, the estimated counter certainty and the plan always agree: a term set to the offer's own value drops its row, and terms that follow the price (gap coverage, the deposit norm, the updated pre-approval) follow the agent's price. Never write rows by hand; a `rows` table stops the render.
+A different stance goes in `counter.stance` (with `counter.stance_reason` when it isn't the suggested one); different terms from the agent go in the offer's `counter.changes` (term → value; the terms are in `listing-file.md`, Agent Overrides). The engine writes every row from them, so the table, the net, the estimated counter certainty and the plan always agree: a term set to the offer's own value drops its row, and terms that follow the price (gap coverage, the deposit norm, the updated pre-approval) follow the agent's price. Never write rows by hand; a `rows` table stops the render.

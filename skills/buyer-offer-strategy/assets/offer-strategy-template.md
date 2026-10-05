@@ -6,7 +6,7 @@
 
 **{{summary.kicker}}: {{summary.outlook}}.** {{summary.why}}
 
-**Submit By:** {{summary.submit_by}} · **Competition:** {{summary.signal}} · **Your Limits:** {{summary.limits}}
+**Submit By:** {{summary.submit_by}} · **Competition:** {{summary.signal}} · **Your Limits:** {{summary.limits}}{{" · **Buyer's Priority:** " + summary.priority.name when summary.priority.line}}
 
 {{each summary.tiles: "**" + label + "** " + value + " (" + sub + ")", joined with " · "}}
 

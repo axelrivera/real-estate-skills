@@ -23,6 +23,7 @@
    "reserve_floor": 10000
   },
   "buyer_broker_form": "GG",
+  "buyer_priority": "balanced",
   "chosen_option": "recommended",
   "competition": {
    "heat": "normal",
@@ -148,6 +149,12 @@
     }
    ],
    "counter_score": 77,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -617,6 +624,12 @@
     }
    ],
    "counter_score": 77,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "meet_partway",
+    "suggested": "meet_partway"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -1088,6 +1101,12 @@
      }
     ],
     "counter_score": 77,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "meet_partway",
+     "suggested": "meet_partway"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -1557,6 +1576,12 @@
      }
     ],
     "counter_score": 77,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "meet_partway",
+     "suggested": "meet_partway"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -2040,6 +2065,7 @@
    "cma_low": 470000,
    "cma_mid": 482500.0,
    "cma_provided": true,
+   "competing_offers": 1,
    "condo": true,
    "cost_notes": {
     "count": 4
@@ -2197,6 +2223,12 @@
      }
     ],
     "counter_score": 77,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "meet_partway",
+     "suggested": "meet_partway"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -2666,6 +2698,12 @@
      }
     ],
     "counter_score": 77,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "meet_partway",
+     "suggested": "meet_partway"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -3133,6 +3171,12 @@
      }
     ],
     "counter_score": 77,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "meet_partway",
+     "suggested": "meet_partway"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -3601,6 +3645,12 @@
      }
     ],
     "counter_score": 77,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "meet_partway",
+     "suggested": "meet_partway"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -4174,6 +4224,7 @@
    ]
   }
  },
+ "buyer_priority": "balanced",
  "by_net": false,
  "cash": {
   "recommended": {
@@ -4258,6 +4309,7 @@
  },
  "promoted": null,
  "promoted_from": null,
+ "promoted_lifts": false,
  "reached": null,
  "reply_lines": [
   {

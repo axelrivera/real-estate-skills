@@ -24,6 +24,7 @@
    "reserve_floor": 15000
   },
   "buyer_broker_form": null,
+  "buyer_priority": "balanced",
   "cma": {
    "as_of": "2026-09-22",
    "comps": [
@@ -177,6 +178,12 @@
     "count": 0
    },
    "counter_score": 88,
+   "counter_stance": {
+    "given": false,
+    "reason": null,
+    "stance": "firm",
+    "suggested": "firm"
+   },
    "counter_terms": {
     "appraisal_gap": 0,
     "buyer_broker_pct": 0.025,
@@ -607,6 +614,12 @@
      "count": 0
     },
     "counter_score": 88,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -1034,6 +1047,12 @@
      "count": 0
     },
     "counter_score": 84,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -1492,6 +1511,7 @@
    "cma_low": 598000,
    "cma_mid": 615000,
    "cma_provided": true,
+   "competing_offers": 4,
    "condo": false,
    "cost_notes": {
     "count": 3
@@ -1644,6 +1664,12 @@
      "count": 0
     },
     "counter_score": 88,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -2071,6 +2097,12 @@
      "count": 0
     },
     "counter_score": 84,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -2500,6 +2532,12 @@
      "count": 0
     },
     "counter_score": 84,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -2927,6 +2965,12 @@
      "count": 0
     },
     "counter_score": 88,
+    "counter_stance": {
+     "given": false,
+     "reason": null,
+     "stance": "firm",
+     "suggested": "firm"
+    },
     "counter_terms": {
      "appraisal_gap": 0,
      "buyer_broker_pct": 0.025,
@@ -3496,6 +3540,7 @@
    ]
   }
  },
+ "buyer_priority": "balanced",
  "by_net": false,
  "cash": {
   "recommended": {
@@ -3640,6 +3685,7 @@
   "price_by": "rule",
   "seller_concessions": 0
  },
+ "promoted_lifts": false,
  "reached": null,
  "reply_lines": [
   {

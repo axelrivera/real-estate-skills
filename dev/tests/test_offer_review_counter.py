@@ -61,11 +61,14 @@ def rows(o):
 
 class CounterPrice(unittest.TestCase):
     def test_negotiation_history_bounds_the_price(self):
-        for prior, price, want in ((405000, 420000, 405000),  # the seller's counter above list is the ceiling
-                                   (408000, 402000, 405000),  # meet partway up to the seller's counter
-                                   (415000, 420000, 415000)):  # appraisal branch: never below the seller's counter
-            with self.subTest(prior=prior, price=price):
-                o = first(hand(price=price, prior_counters=[{"by": "seller", "price": prior}]))
+        for prior, price, stance, want in (
+                (405000, 420000, None, 405000),  # the seller's counter above list is the ceiling
+                (408000, 402000, "meet_partway", 405000),  # meet partway up to the seller's counter
+                (408000, 402000, None, 408000),  # at or above list: firm is suggested, so the seller's counter stands
+                (415000, 420000, None, 415000)):  # appraisal branch: never below the seller's counter
+            with self.subTest(prior=prior, price=price, stance=stance):
+                counter = {"stance": stance, "stance_reason": "Testing the stance."} if stance else None
+                o = first(hand(price=price, prior_counters=[{"by": "seller", "price": prior}], counter=counter))
                 self.assertEqual(o["counter_terms"]["price"], want)
         o = first(hand(price=420000, prior_counters=[{"by": "seller", "price": 415000}]))
         self.assertEqual(o["counter_terms"]["appraisal_gap"], 5000)
@@ -160,8 +163,11 @@ class CounterChanges(unittest.TestCase):
     def test_engine_value_keeps_the_rule_why(self):
         b = offer(review.analyze(case05(counter={"changes": {"price": 504000}})), "B")
         self.assertNotEqual(rows(b)["Price"][3], oe.AGENT_WHY)
-        b = offer(review.analyze(case05(escalation=None, counter={"changes": {"price": 499000}})), "B")
+        b = offer(review.analyze(case05(escalation=None, counter={
+            "changes": {"price": 499000}, "stance": "meet_partway", "stance_reason": "Testing the meet-partway rule."})), "B")
         self.assertEqual(rows(b)["Price"][3], "Below list: meet partway")
+        b = offer(review.analyze(case05(escalation=None, counter={"changes": {"price": 499000}})), "B")  # firm asks list
+        self.assertEqual(rows(b)["Price"][3], oe.AGENT_WHY)
         b = offer(review.analyze(case05(counter={"changes": {"inspection_days": 10}})), "B")
         self.assertNotIn("Inspection Period", rows(b))
         self.assertEqual(b["counter_terms"]["inspection_days"], 10)
@@ -220,6 +226,73 @@ class TimeForAcceptance(unittest.TestCase):
         self.assertEqual(oe.fmt_when_short("2026-09-24"), "Thu Sep 24")
         d["listing"]["highest_and_best_due"] = "2026-09-28 12:00"  # nothing goes out before a pending call
         self.assertEqual(rows(offer(review.analyze(d), "B"))["Time for Acceptance"][2], "Tue Sep 29, 5:00 PM")
+
+
+def stance(name, reason="The seller chose this stance."):
+    return {"stance": name, "stance_reason": reason}
+
+
+class CounterStance(unittest.TestCase):
+    """counter.stance: the engine's suggestion, what each stance does to the price and concessions, and the checks."""
+
+    def test_suggestion(self):
+        L = {"list_price": 400000}
+        for competing, price, prior, want in (
+                (1, 380000, None, "meet_partway"),
+                (2, 380000, None, "firm"),  # two buyers' active offers
+                (1, 400000, None, "firm"),  # at list
+                (1, 410000, None, "firm"),  # above list
+                (1, 396000, None, "terms_only"),  # exactly 1% under list
+                (1, 395000, None, "meet_partway"),  # just over 1% under
+                (1, 404000, 408000, "firm"),  # above list, under the seller's last counter
+                (1, 376500, 380000, "terms_only")):  # within 1% of the seller's last counter
+            with self.subTest(competing=competing, price=price, prior=prior):
+                o = {"price": price, "prior_counters": [{"by": "seller", "price": prior}] if prior else []}
+                self.assertEqual(oe.suggest_stance(o, {**L, "competing_offers": competing}), want)
+
+    def test_each_stance_sets_price_and_concessions(self):
+        base = dict(price=380000, seller_concessions=12000)  # above the norm: half is 6,000
+        got = {s: first(hand(**base, counter=stance(s)), listing={"cma_low": 370000})["counter_terms"]
+               for s in oe.COUNTER_STANCES}
+        self.assertEqual(got["meet_partway"]["price"], 390000)
+        self.assertEqual(got["firm"]["price"], 400000)
+        self.assertEqual(got["terms_only"]["price"], 380000)
+        self.assertEqual(got["meet_partway"]["seller_concessions"], 6000)
+        self.assertEqual(got["terms_only"]["seller_concessions"], 6000)
+        self.assertLessEqual(got["firm"]["seller_concessions"], got["meet_partway"]["seller_concessions"])
+        big = first(hand(price=380000, seller_concessions=30000, counter=stance("firm")))["counter_terms"]
+        norm = first(hand(price=380000, seller_concessions=30000))
+        self.assertLess(big["seller_concessions"], 15000)  # the market norm when it's under half
+        self.assertEqual(norm["counter_stance"]["stance"], "meet_partway")  # no stance given: the suggestion
+
+    def test_suggestion_is_used_and_reported(self):
+        o = first(hand(price=380000))
+        self.assertEqual(o["counter_stance"], {"stance": "meet_partway", "suggested": "meet_partway", "given": False,
+                                               "reason": None})
+        o = first(hand(price=380000, counter={"stance": "Meet partway"}))  # the suggestion itself needs no reason
+        self.assertEqual((o["counter_stance"]["stance"], o["counter_stance"]["given"]), ("meet_partway", True))
+
+    def test_a_stance_over_the_suggestion_needs_a_reason(self):
+        with self.assertRaises(oe.OfferError) as e:
+            first(hand(price=380000, counter={"stance": "firm"}))
+        self.assertIn("counter.stance_reason", str(e.exception))
+        with self.assertRaises(oe.OfferError) as e:  # words only
+            review.analyze({**copy.deepcopy(BASE), "offers": [hand(price=380000, counter=stance("firm", "Hold at $400K"))]})
+        self.assertIn("counter.stance_reason", str(e.exception))
+
+    def test_unknown_categories_stop_naming_every_choice(self):
+        for field, change, allowed in (
+                ("seller.priority", {"seller": {"priority": "top dollar"}}, oe.PRIORITIES),
+                ("offers[A].status", {"offer": {"status": "pending"}}, oe.STATUSES),
+                ("offers[A].recommendation", {"offer": {"recommendation": "reject"}}, oe.RECOMMENDATIONS),
+                ("offers[A].counter.stance", {"offer": {"counter": {"stance": "hardball"}}}, oe.COUNTER_STANCES)):
+            with self.subTest(field=field):
+                with self.assertRaises(oe.OfferError) as e:
+                    first(hand(**change.get("offer", {})), seller=change.get("seller"))
+                msg = str(e.exception)
+                self.assertIn(field + ":", msg)
+                for a in allowed:
+                    self.assertIn(a, msg)
 
 
 if __name__ == "__main__":

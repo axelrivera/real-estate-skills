@@ -39,7 +39,8 @@ PAGE1_BLOCKS = ((".p1 .hero .why", "the recommendation text"), (".p1 .ctr", "the
                 (".p1 .treason", "the Terms Reason"))
 # Page 1 fits by these steps, in order, until it fits: the compact layout; (OFR-292) the Terms Reason to the top of
 # page 2; in the comparison, the chart to page 2 (the options table then takes the full width); a tighter layout; in a
-# single review, the options table to the top of page 2. The detail pages print denser when that saves a short last page.
+# single review, the options table to the top of page 2; last, the data note (the fine print under the next step) to
+# the top of page 2. The detail pages print denser when that saves a short last page.
 STEPS = (
     "compact",
     "() => { const r = document.querySelector('.p1 .treason'), s = document.querySelector('.treason-slot');"
@@ -49,6 +50,8 @@ STEPS = (
     "tight",
     "() => { const o = document.querySelector('.p1 .optsbox'), s = document.querySelector('.opts-slot');"
     " if (o && s) s.appendChild(o); }",
+    "() => { const n = document.querySelector('.p1 .datanote'), s = document.querySelector('.datanote-slot');"
+    " if (n && s) s.appendChild(n); }",
 )
 
 
@@ -176,7 +179,8 @@ def page_box(v, d):
     if not b:
         return ""
     if b["kind"] == "counter":
-        return box("", b["head"], b["sub"], counter_table(b["cols"], b["rows"]))
+        note = f'<div class="note">{esc(b["note"])}</div>' if b.get("note") else ""
+        return box("", b["head"], b["sub"], counter_table(b["cols"], b["rows"]) + note)
     if b["kind"] == "fixes":
         cols = [Col("cb", b["cols"][0], cls="c cbc"), Col("issue", b["cols"][1], cls="issue"), Col("fix", b["cols"][2], cls="why2")]
         rows = [{"cb": Raw('<span class="cb"></span>'), "issue": Raw(f'{pill(f["sev"])} <b>{esc(f["issue"])}</b>'),
@@ -326,7 +330,7 @@ def single_body(M, agent):
     page1 = f'{hero(v)}{page_box(v, d)}{kpis(v)}{two}{options_table(v["options"])}{closing_block(v, d["follow"])}'
     rv = d["revive"]
     revive = box("cmp", rv["head"], rv["sub"], counter_table(rv["cols"], rv["rows"])) if rv else ""
-    details = (f'<div class="dh pb">{esc(d["dh"])}</div><div class="treason-slot"></div><div class="opts-slot"></div>'
+    details = (f'<div class="dh pb">{esc(d["dh"])}</div><div class="treason-slot"></div><div class="opts-slot"></div><div class="datanote-slot"></div>'
                + net_sheet_table(d["net_sheet"]) + revive + timeline_table(d["timeline"]) + terms_table(d["terms"])
                + scorecard_table(d["scorecard"]) + flags_table(d["flags"]) + checklist_table(d["checklist"])
                + questions_table(d["questions"], d["questions"]["none"]) + questions_table(d["lender"])
@@ -482,8 +486,9 @@ def multi_body(M, agent):
                 Col("why", c["cols"][3])]
         rows = [{**r, "counter": Raw(f"<b>{esc(r['counter'])}</b>")} for r in c["rows"]]
         ctr = (f'<h2>{esc(c["h"])} <span class="h2s">{esc(c["sub"])}</span></h2>'
-               + layout.table(cols, rows, keep="whole", cls="mctr", row_classes={i: "oneline" for i, r in enumerate(c["rows"]) if r["oneline"]}))
-    details = (f'<div class="dh pb">{esc(d["dh"])}</div>' + facts(M) + '<div class="treason-slot"></div><div class="chart-slot"></div><div class="opts-slot"></div>'
+               + layout.table(cols, rows, keep="whole", cls="mctr", row_classes={i: "oneline" for i, r in enumerate(c["rows"]) if r["oneline"]})
+               + (f'<p class="sm">{esc(c["note"])}</p>' if c.get("note") else ""))
+    details = (f'<div class="dh pb">{esc(d["dh"])}</div>' + facts(M) + '<div class="treason-slot"></div><div class="chart-slot"></div><div class="opts-slot"></div><div class="datanote-slot"></div>'
                + key_terms_table(d["key_terms"]) + ctr + confirm_table(d) + closing_notes(M, agent))
     return f'<div class="p1">{page1}</div>' + details
 

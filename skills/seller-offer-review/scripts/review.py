@@ -125,6 +125,10 @@ def text_problems(data):
         for k, v in (o.get("scores") or {}).items():
             if isinstance(v, dict) and v.get("why"):
                 check(f"{w}.scores.{k}.why", v["why"], words)
+        stance_reason = (o.get("counter") or {}).get("stance_reason") if isinstance(o.get("counter"), dict) else None
+        if isinstance(stance_reason, str) and stance_reason.strip():
+            check(f"{w}.counter.stance_reason", stance_reason, "say why this stance in words (the market, the seller's "
+                  "goal, the buyer's terms); the counter table prints every price and amount")
         for k, v in (o.get("checklist") or {}).items():
             if isinstance(v, dict) and v.get("note"):
                 check(f"{w}.checklist.{k}.note", v["note"], words)
@@ -884,6 +888,17 @@ def score_text(n):
     return t("score", n=n)
 
 
+def stance_view(o):
+    """The counter's stance for the report: its name (a label), the script's sentence for it, the suggestion, and the
+    agent's reason (words only) when the stance differs from the suggestion."""
+    st = o["counter_stance"]
+    differs = st["stance"] != st["suggested"]
+    return {"key": st["stance"], "name": L_["stance"][st["stance"]], "suggested": st["suggested"],
+            "suggested_name": L_["stance"][st["suggested"]], "differs": differs,
+            "line": L_["stance_line"][st["stance"]], "reason": st["reason"] if differs else None,
+            "note": " ".join(x for x in (L_["stance_line"][st["stance"]], st["reason"] if differs else None) if x)}
+
+
 # --- single offer ------------------------------------------------------------
 
 def incomplete_view(R, o):
@@ -979,7 +994,7 @@ def single_view(R, o):
     counter = None
     if act == "COUNTER" and o["counter_rows"]:
         n = len(o["counter_rows"])
-        counter = {"rows": [row(*r) for r in o["counter_rows"]],
+        counter = {"rows": [row(*r) for r in o["counter_rows"]], "stance": stance_view(o),
                    "summary": t("counter_summary_one" if n == 1 else "counter_summary", n=n, net=money(ao), counter=money(cn),
                                 d=signed(cn - ao), tail=t("counter_tail", d=signed(cn - dn)) if cn < ao else "")}
 
@@ -1253,6 +1268,7 @@ def multi_view(R):
         "plan_keys": keys,  # OFR-319, OFR-320: what the plan adds, as keys
         "priority": S.get("priority_note") or S["priority"].title(),
         "plan_summary": summary, "plan_note": note, "ranked": ranked, "options": opts,
+        "counter_stance": stance_view(top) if act == "COUNTER" and top["counter_rows"] else None,
         "preliminary": preliminary(R, top["id"], multi=True), "next_step": cap(nxt), "data_note": data_note(R, multi=True),
         "target_net": money(R["target"]["net_adj"]),
         "terms_reason": R.get("ranking_reason"),  # OFR-279: the agent's terms reason for the pick, shown on the report
@@ -1724,7 +1740,9 @@ def single_doc(R, o, v, sid):
     act = v["action"]
     box = None
     if v["counter"]:
-        box = {"kind": "counter", "head": L_["box_fallback"] if v.get("wait") else L_["box_counter"], "sub": v["counter"]["summary"],
+        st = v["counter"]["stance"]
+        box = {"kind": "counter", "head": t("box_fallback" if v.get("wait") else "box_counter", stance=st["name"].upper()),
+               "sub": v["counter"]["summary"], "note": st["note"],
                "cols": [L_["th_term"], L_["th_offered"], "", L_["th_counter"], L_["th_why"]], "rows": v["counter"]["rows"]}
     elif act == "INCOMPLETE":
         box = {"kind": "fixes", "head": L_["box_fix"], "sub": L_["box_fix_sub"],
@@ -1776,8 +1794,10 @@ def multi_doc(R, v):
     n_inc = v["offers_incomplete"]
     ctr = None
     if v["action"] == "COUNTER" and top["counter_rows"]:
+        st = stance_view(top)
         ctr = {"h": t("h_counter_fallback" if v.get("wait") else "h_counter", label=top["label"]),
-               "sub": L_["h_counter_sub_wait"] if v.get("wait") else L_["h_counter_sub"],
+               "sub": t("h_counter_sub_wait" if v.get("wait") else "h_counter_sub", stance=st["name"]),
+               "stance": st, "note": st["note"],
                "cols": [L_["th_term"], L_["th_offered_term"], L_["th_counter_short"], L_["th_why"]],
                "rows": [row(*r) for r in top["counter_rows"]]}
     return {
