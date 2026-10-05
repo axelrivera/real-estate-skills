@@ -125,6 +125,7 @@ dev/                     # dev tooling, never shipped
   runtime-check/         # diagnostic skill
   hooks/pre-commit       # runs check-sync
   sync_shared.py         # make sync / make check-sync
+  font_metrics.py        # shared/fonts/metrics.json from the bundled font, measured in Chromium (--check: is it current)
   forms_check.py         # make forms-check: FAR/BAR form PDFs vs. the manifest
   forms/farbar-forms.json # the fully supported forms: revision, text hash, what depends on each (no form text)
   mock_contracts/        # mock FAR/BAR contract packages (make mock-contracts, the mock-contract skill): build.py, scenario.py,
@@ -156,9 +157,13 @@ samples/<skill>/         # committed preview files from make samples
 | `shared/markets/states/fl.md` | Built-in Florida state layer (costs, taxes, contract rules) |
 | `shared/markets/mls/stellar.md` | Built-in Stellar MLS layer (formats, coverage), for Florida and Puerto Rico |
 | `shared/render.py` | Output location, file names, HTML → PDF with footer, and the `render.py` command line (`--profile`, `--mls`, `--sample`, plus each skill's own options through `extra_args`) |
-| `shared/report.css` | Base PDF styles on the theme variables, print-light: header rule, tables with rules, outlined hero, notes |
+| `shared/report.css` | Base PDF styles on the theme variables, print-light: header rule, tables with rules, outlined hero, notes, the layout kit's `kit-*` pieces, and the bundled font (`"Report Sans"`, opted into with body class `font-bundled`) |
+| `shared/fmt.py` | Every figure as text: money, short prices, percents, months of supply, dates, deadlines, ranges; half-up rounding ([architecture](architecture.md#shared-report-kit)) |
+| `shared/notes.py` | One notes registry per document: each note added once by key, printed once, never in a label |
+| `shared/layout.py` | The layout kit (table, tiles, fact row, notes block, header, chart frame and legend from drawn series), text measurement with the bundled font's metrics, and the one page-fit pipeline (`Fit`, `print_pdf`; keep-together groups, pagination and page read-back moved here from `cma.py`) |
+| `shared/fonts/` | Inter (OFL), regular and bold, Latin WOFF2 subsets; `metrics.json` from `dev/font_metrics.py`. Copied into every skill that renders a PDF |
 | `shared/dates.py` | US federal holidays (with observed dates) and business-day math |
-| `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net |
+| `shared/finance.py` | Loan programs and seller-contribution caps, payments, 2-1 buydown, property tax, title premium, seller net, `Ledger` (lines rounded once to the dollar, totals from the rounded lines) |
 | `shared/handoff.py` | cma-handoff v1: build, validate, read from `.cma.json` (or a fenced markdown block from older chat summaries; no longer written) |
 | `shared/contract_forms.py` | Which contract rules apply to which form and rider set: FAR/BAR AS IS (inspection walk-away, post-inspection credit) vs. Standard (repair notices, repair limits), Riders K and L on the Standard form, RESERVED riders on AS IS, rider letters from names, the verified revisions and the chat-only support notes; any other contract gets no FAR/BAR default. The offer engine, buyer-offer-strategy and contract-timeline route through it, so the forms' math never mixes |
 | `shared/offer_engine.py` | Offer analysis for both offer skills: listing and offer defaults with ranked assumptions, seller net sheet (via `finance.seller_net`), appraisal downside, certainty score, risk flags, counters, multi-offer ranking |
@@ -193,5 +198,7 @@ python scripts/render.py DATA.json --format pdf|pptx|all --out DIR
 ```
 
 Markdown output comes from templates in the skill's `assets/`, filled in by Claude, so it's checked through the evals in `dev/evals/<skill>/`, not `make outputs`.
+
+A skill on the document model passes `compute=`: `render.main(build, formats, compute=compute)` runs `compute(data, ctx)` once and hands the same result to every format's `build(result, fmt, out_dir, ctx)`, so no format recomputes or re-derives a figure.
 
 `--format` accepts only the formats that skill supports. `all` renders every one of them; if one fails (for example the deck without Node), the others are still saved and listed, and the run ends with a message naming what wasn't built. Skill options (`--cma`, `--mode`, `--option`) are added with `render.main(..., extra_args=...)` and arrive in `ctx`; input errors listed in `errors=` end the run with their plain message.

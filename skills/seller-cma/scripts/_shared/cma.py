@@ -10,11 +10,10 @@ import os
 import re
 import shutil
 import statistics
-import subprocess
 import tempfile
 from datetime import date, timedelta
 
-from . import finance, mls
+from . import finance, layout, mls
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
@@ -563,152 +562,9 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
 
 # --- keep-together groups and pagination -------------------------------------
 
-FIGURES = ("tbl", "chart-box", "comps2", "verdict", "facts")
-_TAG = re.compile(r"\s*<(\w+)([^>]*)>")
-
-
-def _tag(el):
-    m = _TAG.match(el)
-    if not m:
-        return None, set()
-    cls = re.search(r'class="([^"]*)"', m.group(2))
-    return m.group(1), set(cls.group(1).split()) if cls else set()
-
-
-def group_blocks(elements):
-    """Wrap each heading with its intro paragraphs and following figure (and notes) in a keep-together div.
-
-    `elements` is the report body as a list of top-level HTML strings. Mirrors the prototype's rules:
-    a heading keeps up to three paragraphs and one figure; a paragraph directly before a figure stays with it.
-    """
-    info = [(_tag(e), e) for e in elements]
-
-    def is_fig(i):
-        (tag, cls), _ = info[i]
-        return tag in ("ul", "ol", "footer") or (tag == "div" and bool(cls & set(FIGURES)))
-
-    def is_note(i):
-        (tag, cls), _ = info[i]
-        return (tag == "p" and "note" in cls) or (tag == "div" and "chart-read" in cls)
-
-    out, i = [], 0
-    while i < len(info):
-        (tag, _), _ = info[i]
-        group, j = [i], i + 1
-        if tag in ("h2", "h3"):
-            while j < len(info) and info[j][0][0] == "h3":
-                group.append(j); j += 1
-            n = 0
-            while j < len(info) and info[j][0][0] == "p" and n < 3:
-                group.append(j); j += 1; n += 1
-            if j < len(info) and is_fig(j):
-                group.append(j); j += 1
-                while j < len(info) and is_note(j):
-                    group.append(j); j += 1
-        elif tag == "p" and j < len(info) and is_fig(j):
-            group.append(j); j += 1
-            while j < len(info) and is_note(j):
-                group.append(j); j += 1
-        elif is_fig(i):
-            while j < len(info) and is_note(j):
-                group.append(j); j += 1
-        html_parts = [info[g][1] for g in group]
-        if len(group) > 1 or is_fig(i):
-            out.append(f'<div class="kg{" sec" if tag == "h2" else ""}">' + "".join(html_parts) + "</div>")
-        elif tag == "h2":
-            out.append(re.sub(r"^\s*<h2", '<h2 class="sec"', html_parts[0], count=1))
-        else:
-            out.append(html_parts[0])
-        i = j
-    return "".join(out)
-
-
-PAGINATE_JS = """([pageH, starts]) => {
-  // Page 1 fits itself: tighten in steps (fit1 → fit3, cumulative) until it clears the page with a small margin.
-  const one = document.querySelector('.onepage'); let fit = 0;
-  while (one && fit < 3 && one.getBoundingClientRect().height > pageH - 16) one.classList.add('fit' + (++fit));
-  const wrap = document.querySelector('.wrap');
-  const base = wrap.getBoundingClientRect().top;
-  let shift = 0; const moved = [];
-  // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
-  // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
-  // Results_v5: a table or list runs on once a fifth of the page is left (it was a third: whole pages went 35-60% empty)
-  const SAFE = 16, FLOW_ROOM = 0.2;
-  const squash = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
-  for (const el of Array.from(wrap.children)) {
-    const r = el.getBoundingClientRect();
-    const mt = parseFloat(getComputedStyle(el).marginTop) || 0;
-    let t = r.top - base - mt + shift; const h = r.height + mt;
-    let pos = ((t % pageH) + pageH) % pageH;
-    // A block the print read-back saw starting a page that this estimate put lower on the page before (drift from an
-    // earlier block that printed taller): it starts the next page here too, so what follows is placed as it prints
-    const text = squash(el.innerText);
-    if (pos > 5 && text && (starts || []).some(s => text.startsWith(s))) { shift += pageH - pos; t += pageH - pos; pos = 0; }
-    if (el.classList.contains('onepage')) window.__onepageH = h;
-    if (el.classList.contains('pb')) { if (pos > 5) shift += pageH - pos; continue; }
-    const isKeep = el.classList.contains('kg');
-    if (isKeep && h > 0.8 * pageH) el.classList.add('big');
-    const keepOK = isKeep && !el.classList.contains('big');
-    if (el.classList.contains('big')) {
-      const rows = {};
-      el.querySelectorAll('.comp').forEach(c => { const cr = c.getBoundingClientRect(); const k = Math.round(cr.top);
-        rows[k] = Math.max(rows[k] || 0, cr.height); });
-      Object.keys(rows).map(Number).sort((a, b) => a - b).forEach(top => {
-        const tt = top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
-        if (pp > 5 && pp + rows[top] > pageH - SAFE) shift += pageH - pp;
-      });
-      continue;
-    }
-    let brk = false;
-    // A group that opts in (.runon: the seller CMA's How This Was Prepared) runs on to the next page block by block
-    // instead of moving whole and leaving the page before part empty (Results_v4 case 02), once its heading and first
-    // block fit here.
-    // Results_v5: so does a group of headings and paragraphs only (no table, chart or list to keep whole), from a fifth
-    const textOnly = isKeep && Array.from(el.children).every(c => /^(H2|H3|P)$/.test(c.tagName));
-    const runon = el.classList.contains('runon') || textOnly;
-    if (pos > 5 && isKeep && runon && pos + h > pageH - SAFE && pageH - pos >= (textOnly ? FLOW_ROOM : 0.25) * pageH) {
-      const units = Array.from(el.children).slice(1);
-      if (units.length && pos + units[0].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
-        el.classList.add('split');
-        for (const u of units) {
-          const ur = u.getBoundingClientRect(), tt = ur.top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
-          if (pp > 5 && pp + ur.height > pageH - SAFE) shift += pageH - pp;
-        }
-        continue;
-      }
-    }
-    // a section never starts in the bottom quarter of a page, unless all of it fits there (Results_v5: a short section
-    // that fits stays, rather than leave the page a quarter empty)
-    if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH && !(keepOK && pos + h <= pageH - SAFE)) brk = true;
-    else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
-      // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
-      // half the page empty; it moves only when less than 40% of the page is left or it would need to shrink more.
-      const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + SAFE;
-      const sr = svg ? svg.getBoundingClientRect() : null;
-      if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
-        svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
-        el.classList.add('shrunk');
-      } else if (!svg && !el.querySelector('.tbl.whole') && pageH - pos >= FLOW_ROOM * pageH) {
-        // A table or list block that would leave this much of the page empty runs on instead, whole rows or items
-        // only, once its heading, intro and first few rows fit here (the table's header row repeats on the next page).
-        // A table marked .whole (the buyer CMA's Price vs. Seller Credit: its columns read across every row) never
-        // runs on: its block moves whole (iteration 12)
-        const tb = el.querySelector('.tbl'), rows = tb ? tb.querySelectorAll('tbody tr') : [];
-        const items = tb ? [] : el.querySelectorAll(':scope > ul > li, :scope > ol > li');
-        const parts = tb ? rows : items, keep = tb ? 3 : 2;
-        if (parts.length >= keep + 2 && pos + parts[keep - 1].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
-          el.classList.add('flow');
-          if (tb) tb.classList.add('brk');
-          const th = tb ? tb.querySelector('thead') : null;
-          // the gap left at the break and the repeated header row, roughly
-          shift += (th ? th.getBoundingClientRect().height : 0) + parts[keep].getBoundingClientRect().height;
-        } else brk = true;
-      } else brk = true;
-    }
-    if (brk) { el.classList.add('pb'); shift += pageH - pos; moved.push((el.innerText || '').split('\\n')[0].slice(0, 50)); }
-  }
-  return { moved, onepageH: window.__onepageH || 0, pageH, fit };
-}"""
+# Keep-together groups and the pagination script live in layout.py (the one page-fit pipeline); the names stay here
+# for the CMA renderers until they move to layout.print_pdf.
+FIGURES, group_blocks, PAGINATE_JS = layout.FIGURES, layout.group_blocks, layout.PAGINATE_JS
 
 PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": "0.45in"}
 CONTENT_HEIGHT_PX = 10 * 96  # 11in − 0.45in − 0.55in
@@ -1312,44 +1168,8 @@ def report_notices(C):
     return lines
 
 
-# CMA-274, CMA-276: how full each printed page is, read back from the PDF (the layout measured before printing can
-# drift a few pixels from Chromium's print layout, enough to push a block to the next page)
-HALF_EMPTY = 0.5  # a page before a kept-together block that ends above half the page leaves a gap worth fixing
-LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines
-_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
-_PAGE = re.compile(r'width="[\d.]+" height="([\d.]+)"')
-
-
-def page_fill(pdf, top_in=0.45, bottom_in=0.55):
-    """[(fill, first line)] per page: how far down the content area the text reaches (0 to 1) and the page's first
-    line, from pdftotext -bbox. None when pdftotext isn't available. The content area is the page less the top and
-    bottom margins in inches (cma.PAGE_MARGINS by default; 0.3 and 0.4 for render.html_to_pdf's default), on a page of
-    any height (a landscape page too)."""
-    tool = shutil.which("pdftotext")
-    if not tool:
-        return None
-    try:
-        out = subprocess.run([tool, "-bbox", pdf, "-"], capture_output=True, text=True, timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
-        return None
-    pages = []
-    for chunk in out.split("<page ")[1:]:
-        height = _PAGE.match(chunk)
-        top_pt, bottom_pt = top_in * 72, (float(height.group(1)) if height else 792) - bottom_in * 72
-        words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
-                 if float(y1) <= bottom_pt + 1]  # the running footer sits below the content area
-        if not words:
-            pages.append((0.0, ""))
-            continue
-        bottom = max(w[2] for w in words)
-        top = min(w[1] for w in words)
-        first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
-        pages.append((max(0.0, (bottom - top_pt) / (bottom_pt - top_pt)), first[:60]))
-    return pages
-
-
-def _squash(text):
-    return " ".join(str(text).split()).lower()
+# CMA-274, CMA-276: reading the printed pages back lives in layout.py
+HALF_EMPTY, LONE_TAIL, page_fill, _squash = layout.HALF_EMPTY, layout.LONE_TAIL, layout.page_fill, layout.squash
 
 
 def print_report(doc, path, footer_html, tail_hint="the last sections"):
@@ -1396,17 +1216,5 @@ def callout_checks(info):
     return out
 
 
-def page_checks(pages, tail_hint="the last sections"):
-    """Checks for pages 2 onward: one that ends above half the page before a block that moved on, and a last page
-    holding only a few closing lines."""
-    checks = []
-    for i in range(1, len(pages) - 1):
-        fill, _ = pages[i]
-        if fill < HALF_EMPTY:
-            checks.append(f"Page {i + 1} is only {fill:.0%} full: the next block (\"{pages[i + 1][1]}\") didn't fit and "
-                          f"starts page {i + 2}. Shorten the wording before it on page {i + 1} or in that block (its intro, "
-                          "a comp bullet, a note) so it fits, then render again.")
-    if len(pages) > 2 and pages[-1][0] < LONE_TAIL:
-        checks.append(f"The last page (page {len(pages)}) holds only a few closing lines (\"{pages[-1][1]}\"): shorten "
-                      f"{tail_hint} so they fit on the page before, then render again.")
-    return checks
+page_checks = layout.page_checks
+
