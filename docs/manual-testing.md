@@ -6,9 +6,9 @@ Content, numbers and layout are never reviewed by hand. The math is pinned by th
 
 ## Setup (Once per Release)
 
-1. Build the plugin and the kit:
+1. Build the plugin, the skill zips and the kit (a few seconds; no tests run, develop has already passed them):
    ```bash
-   make package manual-kit
+   make smoke
    ```
    The kit lands in `out/manual-test/` (git-ignored, rebuilt from scratch each run). It needs the local dev setup (`make setup`) and the FAR/BAR PDFs in `sources/` for the contract packages ([mock-contracts.md](mock-contracts.md)).
 2. In the desktop app, uninstall any older copy of the plugin and install `dist/real-estate-<version>.plugin`.
@@ -41,7 +41,7 @@ Case 5's `step-2/` folder holds a second offer on the same listing for the evals
 
 ## claude.ai Pass
 
-1. Run `make package-skills` and upload each zip in `dist/skills/` in claude.ai's skill settings.
+1. Upload each zip in `dist/skills/` in claude.ai's skill settings.
 2. Run case 1: with no working folder, the profile comes back as a file to keep.
 3. Run case 2 (upload the case 1 profile with the inputs) and case 6.
 

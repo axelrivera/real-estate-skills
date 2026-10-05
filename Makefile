@@ -12,13 +12,16 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test fuzz golden layout-check style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test check release-check smoke fuzz golden layout-check style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium, Node modules (nvm) and Python 3.11 (uv, via Homebrew if missing)"
 	@echo "make hooks          Install the git pre-commit hook (shared/ copies must be in sync)"
 	@echo "make test           Run unit tests in dev/tests/"
-	@echo "make fuzz           Run the generated tests on N inputs per skill (N=200 default, FUZZ_SEED, SKILL=<skill>)"
+	@echo "make check          The everyday gate: check-sync, lint-skills, py311, style-check and test (about 3 minutes)"
+	@echo "make release-check  Before the pull request into main: the slow mock-contract tests and make fuzz (skills in parallel)"
+	@echo "make smoke          Build what the smoke pass needs, no tests: the .plugin, the skill zips and the manual kit"
+	@echo "make fuzz           Run the generated tests on N inputs per skill, every skill in parallel (N=200 default, FUZZ_SEED, SKILL=<skill>)"
 	@echo "make golden         Rewrite dev/golden/ from the current code (review the diff; make test fails until it matches)"
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
 	@echo "make layout-check   Render every PDF fixture into $(OUT)/layout/; fail on page-1 overflow, clipped text or a near-empty page"
@@ -34,9 +37,9 @@ help:
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/ (SKILL=seller-net-sheet for one skill; stress-* with the long-name profile)"
 	@echo "make samples        Regenerate the committed preview files and samples/README.md from the mock data in dev/samples/"
 	@echo "make manual         Rebuild the PDF manual (dev/package/Real-Estate-Skills-Manual.pdf) from the agent guide and its screenshots"
-	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README + PDF manual + LICENSE)"
-	@echo "make release        From an up-to-date main: run make package, then publish GitHub release v<version> with the release zip and status.md notes"
-	@echo "make package-skills Run every check, then zip every skill into a fresh $(DIST)/skills/ (runtime-check into $(DIST)/dev/)"
+	@echo "make package        Build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README + PDF manual + LICENSE); no tests"
+	@echo "make release        From an up-to-date main: run make check and make package, then publish GitHub release v<version> with the release zip and status.md notes"
+	@echo "make package-skills Zip every skill into a fresh $(DIST)/skills/ (runtime-check into $(DIST)/dev/)"
 	@echo "make clean          Remove $(OUT)/ and $(DIST)/"
 
 # SHARP_IGNORE_GLOBAL_LIBVIPS: use sharp's bundled binaries even when Homebrew vips is installed.
@@ -66,8 +69,28 @@ test:
 
 # The generated tests at release size: N seeded inputs per skill (200 by default; FUZZ_SEED=… shifts the seeds),
 # SKILL=seller-cma for one skill. make test runs the same tests on 8 inputs.
+FUZZ_SKILLS := buyer_cma buyer_offer_strategy contract_timeline seller_cma seller_net_sheet seller_offer_review
 fuzz:
-	@FUZZ_N=$(or $(N),200) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$(or $(subst -,_,$(SKILL)),*).py'
+ifdef SKILL
+	@FUZZ_N=$(or $(N),200) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$(subst -,_,$(SKILL)).py'
+else
+	@$(MAKE) --no-print-directory -j$(words $(FUZZ_SKILLS)) $(addprefix fuzz-,$(FUZZ_SKILLS))
+endif
+
+fuzz-%:
+	@FUZZ_N=$(or $(N),200) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$*.py' \
+		> $(OUT)/fuzz-$*.log 2>&1 && echo "fuzz $*: OK" || { echo "fuzz $*: FAILED ($(OUT)/fuzz-$*.log)"; tail -5 $(OUT)/fuzz-$*.log; exit 1; }
+
+# The everyday gate (make test also prints every PDF fixture when Chromium is installed, the same check as layout-check)
+check: check-sync lint-skills py311 style-check test
+
+# Before the pull request into main (docs/release-checklist.md): the slow mock-contract tests, then make fuzz
+release-check:
+	@RUN_SLOW=1 $(MAKE) --no-print-directory test
+	@mkdir -p $(OUT) && $(MAKE) --no-print-directory fuzz
+
+# The smoke pass's files, built from a develop that already passed make check: no tests run here
+smoke: package package-skills manual-kit
 
 golden:
 	@$(PY) dev/golden.py --update
@@ -138,10 +161,9 @@ samples:
 	@$(PY) dev/samples_readme.py
 	@$(PY) dev/samples_diff.py --revert || true  # keep only real changes; build-time stamps alone are restored
 
-# make test skips the slow mock-contract tests; a build runs them (RUN_SLOW=1 make test does too)
+# make test skips the slow mock-contract tests (RUN_SLOW=1 make test, or make release-check, runs them)
 export RUN_SLOW
-package package-skills: RUN_SLOW = 1
-package: check-sync test lint-skills py311 style-check layout-check
+package:
 	@$(PY) dev/package.py plugin
 
 # The version comes from plugin.json, never an argument, so the tag and the zip can't disagree. The guards run before
@@ -154,11 +176,11 @@ release:
 	@git fetch -q origin && test "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/main)" || { echo "main isn't level with origin/main: pull or push first."; exit 1; }
 	@! gh release view v$(VERSION) >/dev/null 2>&1 || { echo "Release v$(VERSION) already exists: bump the version in .claude-plugin/plugin.json."; exit 1; }
 	@$(PY) dev/package.py notes
-	@$(MAKE) --no-print-directory package
+	@$(MAKE) --no-print-directory check package
 	@echo "Publishing v$(VERSION) with $(DIST)/real-estate-skills-$(VERSION).zip"
 	gh release create v$(VERSION) $(DIST)/real-estate-skills-$(VERSION).zip --target main --title $(VERSION) --notes-file $(DIST)/release-notes-$(VERSION).md
 
-package-skills: check-sync test lint-skills py311 style-check layout-check
+package-skills:
 	@$(PY) dev/package.py skills
 
 clean:

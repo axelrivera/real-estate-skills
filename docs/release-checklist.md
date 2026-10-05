@@ -4,13 +4,12 @@ The gate every release passes before the pull request from `develop` into `main`
 
 ## 1. Automated Checks
 
-- [ ] `make package` passes (it runs check-sync, test, lint-skills, py311, style-check and layout-check first).
-- [ ] `RUN_SLOW=1 make test` shows no skipped mock-contract tests (needs PyMuPDF and `sources/Contracts/FARBAR/`); `make package` runs this tier too.
+- [ ] `make check` passes (check-sync, lint-skills, py311, style-check and test; test prints every PDF fixture too).
+- [ ] `make release-check` passes: the slow mock-contract tests (no skips: needs PyMuPDF and `sources/Contracts/FARBAR/`) and `make fuzz` (every skill in parallel). The developer runs it before the pull request; the smoke pass never waits on it.
 - [ ] `make forms-check` reports no revised, new or removed forms, or each one is handled per [Updating a Contract Form](development.md#updating-a-contract-form).
 - [ ] `make mock-contracts ARGS="--answer-key --scanned"` builds every starter.
 - [ ] `make outputs` renders every fixture.
-- [ ] `make layout-check` passes: no page-1 overflow, clipped text or near-empty page in any fixture, stress fixtures included.
-- [ ] `make fuzz` passes: the generated tests on 200 inputs per skill, with no invariant failure (a failure is fixed in the construction, never with a check for that input; [Tests](development.md#tests)).
+- [ ] `make fuzz` (inside `make release-check`): the generated tests on 200 inputs per skill, with no invariant failure (a failure is fixed in the construction, never with a check for that input; [Tests](development.md#tests)).
 - [ ] `claude plugin validate .` passes.
 
 ## 2. Golden Results
