@@ -1,7 +1,7 @@
 """Set up an eval iteration: one folder per run of each eval with the prompt, its input files and an empty outputs folder.
 
     .venv/bin/python dev/evals/setup.py 12                                   # every eval of every skill, one run each
-    .venv/bin/python dev/evals/setup.py 12 --runs 3                          # three runs of each (the release pass)
+    .venv/bin/python dev/evals/setup.py 12 --runs 3                          # three runs of each (to measure the spread)
     .venv/bin/python dev/evals/setup.py 12 seller-offer-review               # one skill
     .venv/bin/python dev/evals/setup.py 12 --runs 3 seller-offer-review:1,4 buyer-offer-strategy:2
 

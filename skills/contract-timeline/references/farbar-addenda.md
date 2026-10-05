@@ -488,7 +488,7 @@ The contracts these were read against: Standard `FloridaRealtors/FloridaBar – 
 - **Money Effects:** a warning that the buyer's flood premium may be much higher than the seller's.
 - **Changes to the Contract:** None.
 - **Red Flags:** a payment estimate using the seller's current flood premium.
-- **Skill Use:** the timeline ignores it. The seller's review may note flood cost as a buyer-financing risk. The offer builder uses a buyer quote or labeled estimate for flood, never the seller's premium.
+- **Skill Use:** the timeline ignores it. The seller's review may note flood cost as a buyer-financing risk. The offer builder uses a buyer quote or an estimate named in its assumptions for flood, never the seller's premium.
 
 ### SUP-1 Sight Unseen Property Disclosure and Acknowledgment
 
