@@ -9,7 +9,8 @@ Each seed builds a synthetic MLS export in the Stellar CMA columns: sales over a
 $1,800,000, long street and subdivision names. From that export it picks 3 to 6 comps and adjusts them as an agent
 would (size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then
 and always outside Florida), sets the time adjustment by the method's rule from the export's split, and takes the
-script's range (now and then the agent's own range_override instead). It types no price: it picks a pricing stance
+script's range (now and then the agent's own range_override instead: a step lower, or narrow enough that the stance
+options merge). It types no price: it picks a pricing stance
 (left out for the market data's suggestion, or draw_offers, market or premium with a reason), now and then the agent's
 own price_override and per-option time, seller credit or wording, and the script builds the options. The listing is
 standard, a reprice (the current price over the range or inside it; now and then the agent asked to price it higher)
@@ -54,6 +55,9 @@ STREETS = ("Oak Hollow Ct", "Wren Hollow Ln", "Sample Heron Ln", "Bayview Ter", 
 SUBDIVISIONS = ("Fernwood Park", "Kestrel Point", "Cattail Crossing", "Spring Oaks Unit Two Replat at Hickorywood Estates",
                 "The Reserve at Whispering Cypress Hammock Phase Three", "Elm Grove", "Bayview Terrace")
 ZONES = ("X", "X", "X (lower risk)", "AE", "X500", "To confirm")
+# pricing.options keys by kind of listing: a new listing's are the stances
+ROLES = {"standard": ("draw_offers", "market", "premium"), "reprice": ("stay", "recommended", "competing"),
+         "relist": ("top", "recommended", "competing")}
 STANCE_REASONS = ("The home's updates match the strongest sales, so it can hold this price in its first weeks.",
                   "The closest matches sold quickly, and buyers in this neighborhood compare it with dated homes.",
                   "The seller would rather have a quick contract than test the top of the range.")
@@ -236,8 +240,13 @@ def generate(seed, out_dir):
     values = [c["adjusted"] for c in tmp["cards"]]
     low, high = cma.choose_range(values, market)
     override = None
-    if rng.random() < 0.1:  # now and then the agent sets the range: a step lower, shown as their choice
-        low, high = low - 5000, high - 5000
+    if rng.random() < 0.15:  # now and then the agent sets the range, shown as their choice: a step lower, or narrow
+        if rng.random() < 0.6:  # (the stance options come within 1% of each other and merge)
+            low, high = low - 5000, high - 5000
+        else:
+            mid = cma.bracket_price((low + high) / 2)
+            half = round(mid * rng.uniform(0.002, 0.02), -2)
+            low, high = mid - half, mid + half
         override = {"low": low, "high": high, "reason": "We lean toward the most recent sales, which sit lower than "
                                                         "the rest."}
     width = high - low
@@ -247,11 +256,11 @@ def generate(seed, out_dir):
     # (a reason is required only when it differs from the suggestion, and allowed when it doesn't)
     stance = rng.choice((None, None) + cma.STANCES)
     pricing = {"intro": "Realistic options, each an estimate from recent sales.",
-               "note": "The competing-offer option depends on competing offers showing up."}
+               "note": "The lower prices depend on buyers showing up in the first weeks."}
     if stance:
         pricing.update(stance=stance, stance_reason=rng.choice(STANCE_REASONS))
     options = {}  # now and then the agent's own time, seller credit or wording for an option
-    for role in ("top", "recommended", "competing", "stay"):
+    for role in ROLES[kind]:
         if rng.random() < 0.15:
             options[role] = {"time": rng.choice(("2–4 months", "45–90 days", "3–6 weeks", "1–3 weeks", "6–10 weeks"))}
         if rng.random() < 0.15:

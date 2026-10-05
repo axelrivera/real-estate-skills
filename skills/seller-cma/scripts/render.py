@@ -88,7 +88,7 @@ def page_one(C, agent):
     ri = C["recommended_index"]
     rows = [[x["label"] + (" ★" if x["recommended"] else ""), x["time"], x["expected_sale_display"],
              x["net_after_holding_display"]] for x in C["strategies"]]
-    table = layout.table([Col(0, L["th_list_at"], wrap="nowrap"), Col(1, L["th_time_short"]),
+    table = layout.table([Col(0, L["th_option"], wrap="nowrap"), Col(1, L["th_time_short"], wrap="nowrap"),
                           Col(2, L["th_expected"], align="num"), Col(3, opts["net_header"], align="num")],
                          rows, keep="whole", cls="sp-table", row_classes={ri: "rec"})
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{esc(L["sum_why"])}</div>{ul(sm["why"], "")}</div>'

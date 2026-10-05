@@ -414,6 +414,7 @@
  "listing_history": {
   "count": 0
  },
+ "listing_kind": "standard",
  "market": {
   "bullets": {
    "count": 4
@@ -538,9 +539,9 @@
  },
  "net": {
   "after_holding": [
-   424204,
-   424623,
-   415487
+   424213,
+   424630,
+   415492
   ],
   "basis": "after_holding",
   "cash_at_closing": false,
@@ -548,15 +549,15 @@
    "count": 3
   },
   "holding": [
-   -1622,
-   -1203,
-   -959
+   -1613,
+   -1196,
+   -954
   ],
   "incomplete": false,
   "missing": {
    "count": 0
   },
-  "monthly": 530,
+  "monthly": 527,
   "no_mortgage": false,
   "payoff": null,
   "payoff_estimated": false,
@@ -667,9 +668,9 @@
    },
    {
     "amounts": [
-     -1622,
-     -1203,
-     -959
+     -1613,
+     -1196,
+     -954
     ],
     "display": {
      "count": 3
@@ -679,9 +680,9 @@
    },
    {
     "amounts": [
-     424204,
-     424623,
-     415487
+     424213,
+     424630,
+     415492
     ],
     "display": {
      "count": 3
@@ -697,7 +698,7 @@
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 9136,
+ "net_spread": 9138,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -716,6 +717,9 @@
   "count": 3
  },
  "ok": true,
+ "options_merged": {
+  "count": 0
+ },
  "payments": {
   "down_display": "5%",
   "down_pct": 0.05,
@@ -738,15 +742,15 @@
   "rate_display": "6.95%",
   "rows": [
    {
-    "down": 23995,
+    "down": 23745,
     "lines": [
      [
       "pi",
-      3018
+      2986
      ],
      [
       "tax",
-      661
+      653
      ],
      [
       "ins",
@@ -754,7 +758,7 @@
      ],
      [
       "mi",
-      190
+      188
      ],
      [
       "hoa",
@@ -762,8 +766,8 @@
       0
      ]
     ],
-    "list_price": 479900,
-    "payment": 4169
+    "list_price": 474900,
+    "payment": 4127
    },
    {
     "down": 23495,
@@ -892,24 +896,27 @@
  "state_hint": null,
  "strategies": [
   {
+   "agent": false,
    "closing": "2026-12-24",
-   "down": 23995,
+   "down": 23745,
    "expected_sale": 467000,
    "expected_sale_source": "rule",
    "hold_months": 3.06,
-   "list_price": 479900,
+   "list_price": 474900,
    "months_to_contract": 1.61,
+   "name": "Premium",
    "net": 425826,
-   "net_after_holding": 424204,
-   "net_vs_recommended": -419,
-   "payment": 4169,
+   "net_after_holding": 424213,
+   "net_vs_recommended": -417,
+   "payment": 4127,
    "recommended": false,
-   "role": "top",
+   "role": "premium",
    "seller_credit": 11000,
    "stay": false,
    "time_source": "rule"
   },
   {
+   "agent": false,
    "closing": "2026-11-30",
    "down": 23495,
    "expected_sale": 467000,
@@ -918,16 +925,17 @@
    "list_price": 469900,
    "months_to_contract": 0.8,
    "net": 425826,
-   "net_after_holding": 424623,
+   "net_after_holding": 424630,
    "net_vs_recommended": 0,
    "payment": 4087,
    "recommended": true,
-   "role": "recommended",
+   "role": "market",
    "seller_credit": 11000,
    "stay": false,
    "time_source": "rule"
   },
   {
+   "agent": false,
    "closing": "2026-11-16",
    "down": 22995,
    "expected_sale": 457000,
@@ -936,11 +944,11 @@
    "list_price": 459900,
    "months_to_contract": 0.34,
    "net": 416446,
-   "net_after_holding": 415487,
-   "net_vs_recommended": -9136,
+   "net_after_holding": 415492,
+   "net_vs_recommended": -9138,
    "payment": 4004,
    "recommended": false,
-   "role": "competing",
+   "role": "draw_offers",
    "seller_credit": 11000,
    "stay": false,
    "time_source": "rule"
