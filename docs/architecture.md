@@ -97,6 +97,51 @@ Never write into the skill's own folder, which is the working directory in claud
 
 The outputs folder holds deliverables only (PDF, PowerPoint, ICS, the profile and its project instructions). Data files and handoffs are working files in a temporary folder (`mktemp -d`), never presented or offered for download (`shared/references/saved-files.md`, Working Files). render.py returns and prints only the deliverables.
 
+## Shared Report Kit
+
+The building blocks every report moves onto (skills adopt them one at a time; until then their own code still runs). The rule they enforce: a figure is computed once, formatted once, and placed; a note is said once; a label never carries a note.
+
+**Compute once.** `render.main(build, formats, compute=compute)`: `compute(data, ctx)` runs once per run and returns the document model; each format's `build(result, fmt, out_dir, ctx)` only reads and places it. Without `compute`, `build` gets the data as before.
+
+**`shared/fmt.py`: every figure as text.** Half-up rounding (half away from zero) throughout; `None` prints as the empty-value dash.
+
+| Function | Output |
+|---|---|
+| `half_up(v, unit=1)` | `2.5 → 3`, `−2.5 → −3`; `unit` 1000, 5000, 0.1… |
+| `money(v, unit=1, style="minus")` | `$474,900`, `−$1,200`; `style="accounting"` `($1,200)`, `"signed"` `+$1,200` |
+| `k(v, digits=0)` | `$455K`; `digits=1` `$432.5K`; from a million `$1.25M` (never `$1,000K`) |
+| `pct(f, digits=1, fixed=False, symbol=True)` | `2.5%`, `3%`; `fixed` keeps zeros `3.0%`; `digits=None` the `:g` form; `symbol=False` the bare number |
+| `num(v, digits=0)` | `1,850` |
+| `months(m)` | `1.3 months`, `1 month` (months of supply) |
+| `date_long(d)` / `date_short(d, year=True, weekday=False)` | `September 26, 2026` / `Sep 26, 2026`, `Sat Sep 26` |
+| `when(v, style="short")` | `Thu Sep 24, 5:00 PM`; `"dot"` `Sep 24, 2026 · 5:00 PM`; `"deadline"` `Thu Sep 24 · 5 PM`; `"long"` `September 24, 2026, 5:00 PM` |
+| `clock(t, full=True)`, `weekday(d)` | `5:00 PM` (`5 PM`), `Thursday` |
+| `range(lo, hi, f=money)` | `$420,000–$450,000`: an unspaced en dash; equal ends print once |
+| `period_labels(window)`, `unspaced(text)` | `April–June`, `July 15–September`; `April – June` → `April–June` |
+
+Dates take a `date`, a `datetime` or an ISO string and never print ISO; text that isn't a date passes through. `dev/tests/test_fmt.py` checks each function against the formatter it replaces (`finance.money`, `cma.k`, `offer_engine.short_price`/`pct`/`fmt_when`/`fmt_when_short`, both `pct_text`, `months_text`, `deadline_label`, both `period_labels`), so moving a skill is mechanical: the same text, except ties now round up.
+
+**`finance.Ledger`: columns that add up.** `add(key, label, amount)` (signed), `cost(...)` (a positive cost, stored negative), `credit(...)`: each line is rounded once, half-up to the dollar, when added. `total(keys=None)` and `costs()` sum the rounded lines, so a printed column always adds to its printed total; `amount(key)`, `rows(f=fmt.money, sign=True)`, `tuples()` (offer_engine.net_sheet's `(key, label, amount)` shape). `finance.seller_net_ledger(price, net, payoff)` wraps `seller_net`'s result.
+
+**`shared/notes.py`: one notes registry per document.** `N.add(key, text, kind)` with kind `assumption`, `estimate`, `info` or `chat_only`; a key (or the same text under another key) added twice keeps the first. `N.pdf()` lists the notes block (assumptions, estimates, then the rest, each in the order added; no chat-only notes), `N.chat()` everything. `N.label_problems(labels)` / `N.check_labels(labels)` catch a label that carries a note's text or tags itself `(Estimate)` / `(Assumed)`.
+
+**`shared/layout.py`: components and the page-fit pipeline.** Cell text is escaped; `layout.Raw(html)` passes markup a renderer built.
+
+| Piece | What it makes |
+|---|---|
+| `Col(key, label, align="text"\|"num", min, max, wrap)` + `table(cols, rows, total=None, keep="auto"\|"brk"\|"whole")` | A boxed table: headers wrap at spaces, figures right-aligned, tabular and never wrapped; an optional total row; long tables run on whole rows (`.brk`) unless `whole` |
+| `tiles(items, n)` | Exactly `n` equal slots of (label, value[, sub]); fewer items leave slots empty |
+| `fact_row(items)` | Short facts on one line between thin rules |
+| `notes_block(N)` | The notes block from a registry (or a list) |
+| `header(title, subtitle, prepared, tag, sample)`, `footer(left)` | The report header and running footer |
+| `Chart().mark(key, label, swatch)` + `chart.legend()` + `chart_frame(svg, legend, title, takeaway)` | A legend built only from series actually drawn (marked), in an outlined chart box with at most one takeaway |
+| `text_width(text, size, bold, tnum)`, `wrap_lines(text, width, size)` | Text measured with the bundled font's metrics (same units as `size`), for charts and decks |
+| `Fit(...)` + `print_pdf(doc, path, fit, footer_html)` | The one page-fit pipeline (below) |
+
+`Fit` holds a document's fit rules: `limit` (px page 1 may fill; the printable height by default), `end` (the selector that starts page 2, `.pb`; `None` when page 1 fits itself), `one_page` (the whole document is one page), `steps` (body classes or JS functions applied in order until page 1 fits), `tail` (body classes tried when the last page is under `tail_below` full, kept only when they save a page), `blocks` (page-1 blocks named when it still overflows), `paginate` (keep-together groups and run-on tables for the later pages: `group_blocks` and `PAGINATE_JS`, moved here from `cma.py`), `landscape`, `margins`. `print_pdf` prints, reads the pages back (`page_fill`, pdftotext), and prints once more when page 1 spilled (refit 40px tighter), a tail step may save the last page, or a block printed lower than estimated; the second print is kept only when it's better. It returns the steps used, page 1's height, the pages and the checks for stderr.
+
+**The bundled font.** Inter 4.1 (SIL Open Font License, `shared/fonts/LICENSE.txt`), regular and bold, subset to Latin as WOFF2 (about 30 KB each). `report.css` declares it as `"Report Sans"` (weights 600 and up use the bold file) and `render.page` inlines the files as data URIs, so the page needs no font path in the sandbox; `render.html_to_pdf` loads every face before measuring. A skill opts in with the body class `font-bundled` when it moves to the kit (until then its PDFs print in the system font). `shared/fonts/metrics.json` holds each character's advance width (and tabular digits) for `layout.text_width`, generated by `dev/font_metrics.py` in Chromium. Every skill that renders a PDF ships `fonts/` in `scripts/_shared/` (about 73 KB). The PowerPoint deck keeps Arial for PowerPoint users.
+
 ## Profiles
 
 One markdown file, `profile.md`, used as context by every other skill. It says who the agent is: name, brokerage, team, license, contact, voice, disclaimers and [brand colors](#brand-colors). Nothing about markets or costs: those come from the property (see [Local costs](#local-costs)).

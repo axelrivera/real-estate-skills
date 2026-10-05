@@ -13,6 +13,8 @@ import math
 import re
 from datetime import date
 
+from . import fmt
+
 COMMISSION_NOTE = "Commissions are negotiable and not set by law."
 SINGLE_FAMILY = "single_family"
 
@@ -295,6 +297,93 @@ def money(v, round_to=1):
     """$474,900. Negative amounts as −$1,200."""
     v = round(v / round_to) * round_to
     return ("−" if v < 0 else "") + f"${abs(v):,.0f}"
+
+
+class Ledger:
+    """Money lines that always add up: each line is rounded once, half-up to the dollar, when it's added, and every
+    total is the sum of the rounded lines, so a column of printed lines adds to its printed total.
+
+        L = finance.Ledger()
+        L.add("price", "Sale Price", 465000)
+        L.cost("listing_fee", "Listing Brokerage", 465000 * 0.0275, rate=0.0275)   # stored as −12,788
+        L.credit("deposit", "Deposit Returned", 1000.5)                              # stored as +1,001
+        L.total()                     # the net: the sum of every rounded line
+        L.costs()                     # what the costs come to, as a positive number
+        L.total(keys=("listing_fee",)), L.amount("price"), L.rows()
+
+    Amounts are signed: money in is positive, a cost is negative (cost() takes the cost as a positive number).
+    Extra keyword fields (rate, note...) ride along on the line. `raw` keeps the unrounded amount for checks only:
+    nothing prints or sums it.
+    """
+
+    def __init__(self, lines=()):
+        self.lines = []
+        for ln in lines:
+            if isinstance(ln, dict):
+                self.add(ln["key"], ln["label"], ln["amount"], **{k: v for k, v in ln.items()
+                                                                  if k not in ("key", "label", "amount", "raw")})
+            else:
+                self.add(*ln)
+
+    def add(self, key, label, amount, **meta):
+        """A signed line; returns its rounded amount."""
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise TypeError(f"{label}: a ledger amount is a number, not {amount!r}")
+        line = {"key": key, "label": label, "amount": fmt.half_up(amount), "raw": amount, **meta}
+        self.lines.append(line)
+        return line["amount"]
+
+    def cost(self, key, label, amount, **meta):
+        """A cost, given as a positive number (a negative one is a credit back); stored negative."""
+        return self.add(key, label, -amount, **meta)
+
+    def credit(self, key, label, amount, **meta):
+        return self.add(key, label, amount, **meta)
+
+    def total(self, keys=None, where=None):
+        """The sum of the rounded lines: all of them, those whose key is in `keys`, or those `where(line)` keeps."""
+        return sum(ln["amount"] for ln in self.lines
+                   if (keys is None or ln["key"] in keys) and (where is None or where(ln)))
+
+    def costs(self, keys=None):
+        """The costs (negative lines) as a positive total."""
+        return -self.total(keys, where=lambda ln: ln["amount"] < 0)
+
+    def amount(self, key, default=0):
+        """The rounded sum of the lines with this key (default when there's none)."""
+        found = [ln["amount"] for ln in self.lines if ln["key"] == key]
+        return sum(found) if found else default
+
+    def has(self, key):
+        return any(ln["key"] == key for ln in self.lines)
+
+    def rows(self, f=None, sign=True):
+        """[(label, text)] in order. `f` formats an amount (fmt.money by default); with sign=False costs print as
+        positive numbers (a net sheet whose cost column is all costs)."""
+        f = f or fmt.money
+        return [(ln["label"], f(ln["amount"] if sign else abs(ln["amount"]))) for ln in self.lines]
+
+    def tuples(self):
+        """[(key, label, amount)], the shape offer_engine.net_sheet's lines take."""
+        return [(ln["key"], ln["label"], ln["amount"]) for ln in self.lines]
+
+    def __iter__(self):
+        return iter(self.lines)
+
+    def __len__(self):
+        return len(self.lines)
+
+
+def seller_net_ledger(price, net, payoff=None, price_label="Sale Price", payoff_label="Mortgage Payoff"):
+    """A Ledger from seller_net's result: the price, each cost line (negative), then the payoff when known. Its total()
+    is the net from rounded lines (seller_net's own `net` sums unrounded ones)."""
+    led = Ledger()
+    led.add("price", price_label, price)
+    for ln in net["lines"]:
+        led.cost(ln["key"], ln["label"], ln["amount"], rate=ln.get("rate"))
+    if payoff:
+        led.cost("payoff", payoff_label, payoff)
+    return led
 
 
 def fraction(value, name, default=None, whole=False):

@@ -5,6 +5,13 @@
     if __name__ == "__main__":
         render.main(build, formats=("pdf",))
 
+or, computing once for every format (the document model):
+
+    def compute(data, ctx): ...                 # returns the one result every format reads
+    def build(result, fmt, out_dir, ctx): ...   # places it; never recomputes
+    if __name__ == "__main__":
+        render.main(build, formats=("pdf", "md"), compute=compute)
+
 ctx carries the agent's details from the profile (always a dict, empty fields when there's none), the
 MLS name, and whether this is sample data.
 
@@ -64,6 +71,24 @@ MAX_NAME = 120
 
 
 REPORT_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "report.css")
+FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+_FONT_URL = re.compile(r"url\((['\"]?)fonts/([\w.-]+\.woff2)\1\)")
+
+
+# Every font face the page declares, loaded before anything is measured (a face loads lazily on first use otherwise,
+# and text measured before it arrives is measured in the fallback font).
+LOAD_FONTS = "() => Promise.all([...document.fonts].map(f => f.load())).then(() => document.fonts.size)"
+
+
+def inline_fonts(css):
+    """The bundled font files a stylesheet names (url(fonts/...woff2)) as data URIs: the page is loaded from a string,
+    so a relative path would point nowhere, in the sandbox or locally."""
+    import base64
+
+    def data(m):
+        with open(os.path.join(FONTS_DIR, m.group(2)), "rb") as f:
+            return "url(data:font/woff2;base64," + base64.b64encode(f.read()).decode("ascii") + ")"
+    return _FONT_URL.sub(data, css)
 
 
 EHO = "Equal Housing Opportunity."
@@ -110,7 +135,7 @@ def page(body, css="", title="", theme_css="", body_class=""):
     `theme_css` is design.css_vars(theme).
     """
     with open(REPORT_CSS, encoding="utf-8") as f:
-        base = f.read()
+        base = inline_fonts(f.read())
     return (f"<!doctype html><html><head><meta charset='utf-8'><title>{html.escape(title)}</title>"
             f"<style>{base}{theme_css}{css}</style></head><body class='{body_class}'>{body}</body></html>")
 
@@ -212,6 +237,7 @@ def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_
             width = 998 if landscape else 758  # page width minus margins, at 96 dpi
             pg = browser.new_page(viewport={"width": width, "height": 1000})
             pg.set_content(doc, wait_until="load")
+            pg.evaluate(LOAD_FONTS)  # the bundled font, before anything is measured
             pg.emulate_media(media="print")
             pg.evaluate(MARK_LONG_TABLES, LONG_TABLE_PX)
             pg.evaluate(RELEASE_NOWRAP)
@@ -234,10 +260,13 @@ def write_text(text, path):
 
 
 def main(build, formats, argv=None, extra_args=None, errors=(), default="all", *, placeholders=False, labels=(),
-         agent_only=(), linked=None):
+         agent_only=(), linked=None, compute=None):
     """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--profile] [--mls] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
+    `compute(data, ctx)`, when given, runs once before any format is built; each build then gets its result in place
+    of the data (build(result, fmt, out_dir, ctx)), so every format places the same figures. Its errors stop the run
+    like bad input. Without it, build gets the data (skills not yet on the document model).
     `extra_args(parser)` adds the skill's own options (--cma, --mode...); their values arrive in `ctx` by name.
     `ctx["formats"]` lists every format this run renders, so work shared across formats can be done once;
     `ctx["data_file"]` is the data file's path (relative paths inside it can resolve beside it).
@@ -291,6 +320,8 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all", *
                "formats": todo, "data_file": args.data,
                **{k: v for k, v in vars(args).items() if k not in base}}
         check_agent(ctx["agent"])
+        if compute is not None:
+            data = compute(data, ctx)
     except (OSError, ValueError, *errors) as e:
         sys.exit(str(e))
     out_dir = output_dir(args.out)
