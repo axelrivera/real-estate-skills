@@ -19,7 +19,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import review  # noqa: E402
 from _shared import design, handoff, layout, offer_engine as oe, render  # noqa: E402
 
-esc = html.escape
+
+
+def esc(text):
+    """Escaped text; a minus sign stays joined to its figure (no line break between − and $)."""
+    return html.escape(str(text)).replace("−$", "−⁠$")
+
+
 Raw, Col = layout.Raw, layout.Col
 L_ = review.L_
 CSS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "offer-review.css")

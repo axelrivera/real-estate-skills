@@ -37,7 +37,7 @@ review, render, notes, fmt, layout = load("seller-offer-review", "review", "rend
 N_CASES = int(os.environ.get("FUZZ_N", "8"))
 ALL_REPORTS = "FUZZ_N" in os.environ
 SEED = int(os.environ.get("FUZZ_SEED", "0"))
-FIGURE = re.compile(r"[−-]?\$[\d,]+(?:\.\d+)?[KM]?|\d+(?:\.\d+)?%")
+FIGURE = re.compile(r"\$[\d,]+(?:\.\d+)?[KM]?|\d+(?:\.\d+)?%")
 
 
 def have_chromium():

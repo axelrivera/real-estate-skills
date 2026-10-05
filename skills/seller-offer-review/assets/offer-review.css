@@ -10,7 +10,9 @@ header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:
 .hero .rbo{display:block;font-size:8pt;color:var(--muted)}
 .hero .rba{display:block;font-size:7.8pt;color:var(--caution-strong);margin-top:3px} .hero .rba b{font-size:inherit;white-space:nowrap}
 /* round 3 case 05: in the narrow single-review box each other deadline is its time over its label, neither wrapping */
-.hero .hr.stack .rba b{display:block} .hero .hr.stack .rba .sep{display:none} .hero .hr.stack .rba .rbw{display:block;white-space:nowrap}
+.hero .hr.stack .rba b{display:block} .hero .hr.stack .rba .sep{display:none} .hero .hr.stack .rba .rbw{display:block}
+/* the two columns keep their shares whatever a name's length: a long label wraps inside its column */
+.hero{grid-template-columns:minmax(0,2.2fr) minmax(0,1fr)} .hero .rbo,.hero .rbw,.hero .hr div{overflow-wrap:anywhere}
 .hero .who{font-size:12.5pt;font-weight:800;color:var(--brand-ink);margin-top:2px;overflow-wrap:anywhere}
 .hero .hl.decline{border-left-color:var(--risk-base)} .hero .hl.decline .big{color:var(--risk-strong)}
 .hero .hl.backup{border-left-color:var(--brand-deep)} .hero .hl.backup .big{color:var(--brand-deep)}
