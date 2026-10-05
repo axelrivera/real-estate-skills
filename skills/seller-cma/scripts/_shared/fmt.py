@@ -14,6 +14,7 @@
     fmt.date_short("2026-09-26")      # 'Sep 26, 2026'  (year=False: 'Sep 26'; weekday=True: 'Sat Sep 26')
     fmt.when("2026-09-24 17:00")      # 'Thu Sep 24, 5:00 PM'
     fmt.range(420_000, 450_000)       # '$420,000–$450,000' (an en dash, never spaced)
+    fmt.fill("Taxes[ in {county} County] are estimated.", county="")   # 'Taxes are estimated.'
 
 Rounding is half-up (half away from zero), never Python's round-half-to-even: 0.5 -> 1, 2.5 -> 3, -2.5 -> -3.
 Every function takes a number (or a date) and returns text; None prints as the empty-value dash where noted.
@@ -245,5 +246,32 @@ def range(lo, hi, f=money):
     return a if a == b else f"{a}{EN_DASH}{b}"
 
 
+# --- templates --------------------------------------------------------------
+
+_OPTIONAL = re.compile(r"\[([^\[\]]*)\]")
+_FIELD = re.compile(r"\{(\w+)[^{}]*\}")
+_SPACES = re.compile(r" {2,}")
+_BEFORE_PUNCT = re.compile(r" +(?=[,.;:)])")
+
+
+def blank(v):
+    return v is None or (isinstance(v, str) and not v.strip())
+
+
+def fill(template, **kw):
+    """A labels.json template, filled. A part in [brackets] is printed only when every placeholder in it has a value
+    (not None, not blank), so a template names an optional field inside one ("Taxes[ in {county} County]") and reads
+    whole without it. A placeholder outside brackets prints as given; one missing from `kw` is a KeyError, as in
+    str.format. With no `kw` the template comes back as is. The result never carries a doubled space or a space before
+    punctuation."""
+    if not kw:
+        return template  # a label, or a template another step fills
+
+    def part(m):
+        return "" if any(blank(kw[f]) for f in _FIELD.findall(m.group(1))) else m.group(1)
+    text = _OPTIONAL.sub(part, template).format(**{k: ("" if v is None else v) for k, v in kw.items()})
+    return _BEFORE_PUNCT.sub("", _SPACES.sub(" ", text))
+
+
 __all__ = ["half_up", "num", "money", "k", "pct", "months", "to_date", "to_time", "date_long", "date_short",
-           "weekday", "clock", "when", "period_labels", "unspaced", "range"]
+           "weekday", "clock", "when", "period_labels", "unspaced", "range", "fill", "blank"]

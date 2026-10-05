@@ -43,7 +43,7 @@ with open(LABELS_PATH, encoding="utf-8") as _f:
 
 def label(key, **fill):
     """A labels.json template, filled: the report's wording (headings, legends, Check lines) lives there."""
-    return LABELS[key].format(**fill)
+    return fmt.fill(LABELS[key], **fill)
 
 
 class DealError(ValueError):
@@ -1752,7 +1752,7 @@ def analyze(deal, side=None):
         if voided:
             # iteration 12 evals 12, 13: a right that can no longer arise is closed, not open: it shows done (never the
             # next deadline, no calendar event, off page 1) and stays in the full table with the reason
-            r = {**r, "critical": False, "note": "; ".join(n for n in (r.get("note"), r["void_note"].format(
+            r = {**r, "critical": False, "note": "; ".join(n for n in (r.get("note"), fmt.fill(r["void_note"],
                 done=fmt.date_short(voided, year=False))) if n)}
             done_on = done_on or voided
         # TL-104: a deadline before the report date that isn't recorded as done is shown to confirm, never as due

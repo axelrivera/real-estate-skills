@@ -270,7 +270,7 @@ def deck_data(C, agent, footer):
 
 
 def t(key, **kw):
-    return L[key].format(**kw) if kw else L[key]
+    return fmt.fill(L[key], **kw)
 
 
 # --- node --------------------------------------------------------------------

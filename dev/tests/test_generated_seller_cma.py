@@ -29,6 +29,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import ROOT, load  # noqa: E402
+import placeholders  # noqa: E402
 
 sys.path.insert(0, os.path.join(ROOT, "dev"))
 from generators import seller_cma as gen  # noqa: E402
@@ -161,6 +162,17 @@ class Model(unittest.TestCase):
                     N.add(f"n{i}", text)
                 self.assertEqual(N.label_problems(compute.all_labels(C)), [])
 
+    def test_no_placeholder_left_empty(self):
+        """No sentence it writes (model, page, Check lines) shows a placeholder left empty (placeholders.py)."""
+        for seed, _, C in cases():
+            with self.subTest(seed=seed):
+                agent = gen.agent(seed)
+                texts = list(placeholders.strings(C)) + placeholders.page_text(render.build_html(C, agent))
+                if C["deck"]:  # the deck's own wording; its labels are templates the deck fills
+                    D = deck.deck_data(C, agent, render.footer_label(C, agent, "", False))
+                    texts += list(placeholders.strings({k: v for k, v in D.items() if k != "labels"}))
+                self.assertEqual(placeholders.problems(texts), [])
+
     def test_compute_never_changes_the_input(self):
         for seed in range(SEED, SEED + min(N_CASES, 3)):
             d = os.path.join(TMP, f"in{seed}")
@@ -218,6 +230,7 @@ class Printed(unittest.TestCase):
                     (path,) = render.build(C, "pdf", tmp, {"agent": agent})
                 for bad in ("clipped", "overflows", "doesn't fit on one page"):
                     self.assertNotIn(bad, err.getvalue())
+                self.assertEqual(placeholders.problems(err.getvalue().splitlines()), [])
                 pages = layout.page_fill(path, 0.45, 0.55)
                 self.assertTrue(pages)
                 middle = [i + 1 for i, (fill, _) in enumerate(pages) if 0 < i < len(pages) - 1 and fill < layout.HALF_EMPTY]

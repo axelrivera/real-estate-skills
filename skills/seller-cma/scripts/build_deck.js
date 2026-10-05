@@ -474,19 +474,29 @@ async function icon(name, color, size = 256) {
   const rest = (W - 2 * M - 3.6);
   const appendix = (s, table, cols, note, speaker) => {
     const nRows = table.length;
-    // a label that wraps makes its row taller in every renderer: count each row's lines at 10pt
-    const lines = table.map(r => Math.max(1, ...r.map((c, j) => Math.min(4, lineCount(String(c.text), 10, cols[j] - 0.14, !!c.options.bold)))));
-    const extra = lines.reduce((a, k) => a + (k - 1), 0);
-    const tableH = rh => lines.reduce((a, k) => a + Math.max(rh, k * 10 * LEAD / 72 + 0.06), 0);
-    let noteSize = 10, noteH = 0;
-    for (; noteSize >= 8; noteSize -= 0.5) { noteH = textH(note, noteSize, W - 2 * M); if (TY + tableH(0.24) + 0.15 + noteH <= BOTTOM) break; }
-    noteSize = Math.max(noteSize, 8);
+    // a label that wraps makes its row taller in every renderer: count each row's lines at the table's size
+    const linesAt = pt => table.map(r => Math.max(1, ...r.map((c, j) => Math.min(4, lineCount(String(c.text), pt, cols[j] - 0.14, !!c.options.bold)))));
+    const minRow = pt => pt * LEAD / 72 + 0.06;
+    const tableH = (rh, pt, lines) => lines.reduce((a, k) => a + Math.max(rh, k * pt * LEAD / 72 + 0.06), 0);
+    // the table steps down to 9pt and the note to 8pt, together, until both fit above the footer (the longest net
+    // sheet, every optional cost in it, needs the smallest pair); the check below names what still doesn't
+    let pt = 10, noteSize = 10, noteH = 0, lines = linesAt(10);
+    search: for (pt = 10; pt >= 9; pt -= 1) {
+      lines = linesAt(pt);
+      for (noteSize = 10; noteSize >= 8; noteSize -= 0.5) {
+        noteH = textH(note, noteSize, W - 2 * M);
+        if (TY + tableH(minRow(pt), pt, lines) + 0.15 + noteH <= BOTTOM) break search;
+      }
+    }
+    pt = Math.max(pt, 9); noteSize = Math.max(noteSize, 8);
+    lines = linesAt(pt);
     noteH = textH(note, noteSize, W - 2 * M);
-    const rowH = Math.max(0.22, Math.min(0.32, (BOTTOM - TY - 0.15 - noteH - extra * 10 * LEAD / 72) / nRows));
-    const fontSize = rowH >= 0.28 && !extra ? 11 : 10;
+    const extra = lines.reduce((a, k) => a + (k - 1), 0);
+    const rowH = Math.max(minRow(pt), Math.min(0.32, (BOTTOM - TY - 0.15 - noteH - extra * pt * LEAD / 72) / nRows));
+    const fontSize = pt === 10 && rowH >= 0.28 && !extra ? 11 : pt;
     s.addTable(table, { x: M, y: TY, w: W - 2 * M, colW: cols, rowH, fontFace: FONT, fontSize, color: INK, valign: 'middle',
                         margin: [0.02, 0.06, 0.02, 0.06] });
-    const y = TY + tableH(rowH) + 0.15;
+    const y = TY + tableH(rowH, pt, lines) + 0.15;
     if (y + noteH > BOTTOM + 0.01) {
       const room = BOTTOM - y;
       const most = fitChars(note, t => textH(t, noteSize, W - 2 * M) <= room);

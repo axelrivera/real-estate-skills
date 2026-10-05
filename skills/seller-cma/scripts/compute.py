@@ -50,7 +50,7 @@ class ReportError(ValueError):
 
 def t(key, **kw):
     """A labels.json template, filled."""
-    return L[key].format(**kw) if kw else L[key]
+    return fmt.fill(L[key], **kw)
 
 
 def word(key, reprice=False, **kw):

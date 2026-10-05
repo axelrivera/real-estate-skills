@@ -29,6 +29,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import ROOT, load  # noqa: E402
+import placeholders  # noqa: E402
 
 sys.path.insert(0, os.path.join(ROOT, "dev"))
 from generators import buyer_offer_strategy as gen  # noqa: E402
@@ -154,6 +155,15 @@ class Model(unittest.TestCase):
                 for i, text in enumerate(said):
                     N.add(f"n{i}", text)
                 self.assertEqual(N.label_problems(strategy.labels_of(M)), [])
+
+    def test_no_placeholder_left_empty(self):
+        """No sentence it writes (model, page, Check lines) shows a placeholder left empty (placeholders.py)."""
+        for seed, _, r, M in cases():
+            with self.subTest(seed=seed):
+                agent = gen.agent(seed)
+                texts = list(placeholders.strings(M)) + placeholders.page_text(render.options_html(M, agent)) + \
+                    placeholders.page_text(render.worksheet_html(M, agent))
+                self.assertEqual(placeholders.problems(texts), [])
 
     def test_compute_never_changes_the_input(self):
         for seed in range(SEED, SEED + N_CASES):
