@@ -416,7 +416,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -425,17 +424,8 @@
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 61
+    "total": 61,
+    "weight": 95
    },
    "seller_concessions": 7000,
    "short_sale": false,
@@ -517,6 +507,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  ],
@@ -1000,7 +993,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -1009,17 +1001,8 @@
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 61
+    "total": 61,
+    "weight": 95
    },
    "seller_concessions": 7000,
    "short_sale": false,
@@ -1101,6 +1084,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  ],

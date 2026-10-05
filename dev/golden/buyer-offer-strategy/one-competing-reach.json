@@ -11,7 +11,6 @@
    }
   ],
   "buyer": {
-   "agent_track": "average",
    "approval": "preapproval",
    "cash_available": 42000,
    "closing_cost_pct": 0.03,
@@ -195,7 +194,6 @@
     "nets_less"
    ],
    "aga_named": false,
-   "agent_track": "average",
    "appraisal_days": 38,
    "appraisal_form": "F",
    "appraisal_gap": 0,
@@ -566,7 +564,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -575,17 +572,8 @@
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 65
+    "total": 65,
+    "weight": 95
    },
    "seller_concessions": 13100,
    "short_sale": false,
@@ -667,13 +655,15 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   "recommended": {
    "_appraisal_basis": "F",
    "action": "BACKUP",
    "aga_named": false,
-   "agent_track": "average",
    "appraisal_days": 28,
    "appraisal_form": "F",
    "appraisal_gap": 0,
@@ -735,7 +725,7 @@
    },
    "deposit": 13500,
    "down_pct": 0.05,
-   "downside_price": 440000,
+   "downside_price": 439000,
    "expires": null,
    "expires_raw": null,
    "expires_today": false,
@@ -800,7 +790,7 @@
     "lines": [
      [
       "price",
-      440000
+      439000
      ],
      [
       "conc",
@@ -812,19 +802,19 @@
      ],
      [
       "listing",
-      -11000
+      -10975
      ],
      [
       "bb",
-      -11000
+      -10975
      ],
      [
       "transfer",
-      -3080
+      -3073
      ],
      [
       "title",
-      -2275
+      -2270
      ],
      [
       "settle",
@@ -850,9 +840,9 @@
     "missing": {
      "count": 0
     },
-    "net": 406416,
-    "net_adj": 405774,
-    "price": 440000,
+    "net": 405478,
+    "net_adj": 404836,
+    "price": 439000,
     "tax_bill_assumed": true
    },
    "ns_counter": {
@@ -948,7 +938,7 @@
     "lines": [
      [
       "price",
-      440000
+      439000
      ],
      [
       "conc",
@@ -960,19 +950,19 @@
      ],
      [
       "listing",
-      -11000
+      -10975
      ],
      [
       "bb",
-      -11000
+      -10975
      ],
      [
       "transfer",
-      -3080
+      -3073
      ],
      [
       "title",
-      -2275
+      -2270
      ],
      [
       "settle",
@@ -998,13 +988,13 @@
     "missing": {
      "count": 0
     },
-    "net": 403416,
-    "net_adj": 402774,
-    "price": 440000,
+    "net": 402478,
+    "net_adj": 401836,
+    "price": 439000,
     "tax_bill_assumed": true
    },
-   "price": 440000,
-   "rank_value": 389756.8,
+   "price": 439000,
+   "rank_value": 389283.7,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": [
@@ -1034,7 +1024,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 3,
@@ -1043,17 +1032,8 @@
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 72
+    "total": 73,
+    "weight": 95
    },
    "seller_concessions": 1500,
    "short_sale": false,
@@ -1135,6 +1115,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  },
@@ -1144,7 +1127,6 @@
     "_appraisal_basis": "F",
     "action": "BACKUP",
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 28,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -1206,7 +1188,7 @@
     },
     "deposit": 13500,
     "down_pct": 0.05,
-    "downside_price": 440000,
+    "downside_price": 439000,
     "expires": null,
     "expires_raw": null,
     "expires_today": false,
@@ -1271,7 +1253,7 @@
      "lines": [
       [
        "price",
-       440000
+       439000
       ],
       [
        "conc",
@@ -1283,19 +1265,19 @@
       ],
       [
        "listing",
-       -11000
+       -10975
       ],
       [
        "bb",
-       -11000
+       -10975
       ],
       [
        "transfer",
-       -3080
+       -3073
       ],
       [
        "title",
-       -2275
+       -2270
       ],
       [
        "settle",
@@ -1321,9 +1303,9 @@
      "missing": {
       "count": 0
      },
-     "net": 406416,
-     "net_adj": 405774,
-     "price": 440000,
+     "net": 405478,
+     "net_adj": 404836,
+     "price": 439000,
      "tax_bill_assumed": true
     },
     "ns_counter": {
@@ -1419,7 +1401,7 @@
      "lines": [
       [
        "price",
-       440000
+       439000
       ],
       [
        "conc",
@@ -1431,19 +1413,19 @@
       ],
       [
        "listing",
-       -11000
+       -10975
       ],
       [
        "bb",
-       -11000
+       -10975
       ],
       [
        "transfer",
-       -3080
+       -3073
       ],
       [
        "title",
-       -2275
+       -2270
       ],
       [
        "settle",
@@ -1469,13 +1451,13 @@
      "missing": {
       "count": 0
      },
-     "net": 403416,
-     "net_adj": 402774,
-     "price": 440000,
+     "net": 402478,
+     "net_adj": 401836,
+     "price": 439000,
      "tax_bill_assumed": true
     },
-    "price": 440000,
-    "rank_value": 389756.8,
+    "price": 439000,
+    "rank_value": 389283.7,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1505,7 +1487,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 3,
@@ -1514,17 +1495,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 72
+     "total": 73,
+     "weight": 95
     },
     "seller_concessions": 1500,
     "short_sale": false,
@@ -1606,13 +1578,15 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
     "_appraisal_basis": "F",
     "action": "COUNTER",
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 28,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -1943,7 +1917,7 @@
      "tax_bill_assumed": true
     },
     "price": 442000,
-    "rank_value": 392132.8,
+    "rank_value": 392597.7,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -1973,7 +1947,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 3,
@@ -1982,17 +1955,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 72
+     "total": 73,
+     "weight": 95
     },
     "seller_concessions": 1000,
     "short_sale": false,
@@ -2074,6 +2038,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
@@ -2083,7 +2050,6 @@
      "nets_less"
     ],
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 38,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -2454,7 +2420,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 2,
@@ -2463,17 +2428,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 65
+     "total": 65,
+     "weight": 95
     },
     "seller_concessions": 13100,
     "short_sale": false,
@@ -2555,6 +2511,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    }
   ],
@@ -2736,7 +2695,6 @@
     "_appraisal_basis": "F",
     "action": "BACKUP",
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 28,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -2798,7 +2756,7 @@
     },
     "deposit": 13500,
     "down_pct": 0.05,
-    "downside_price": 440000,
+    "downside_price": 439000,
     "expires": null,
     "expires_raw": null,
     "expires_today": false,
@@ -2863,7 +2821,7 @@
      "lines": [
       [
        "price",
-       440000
+       439000
       ],
       [
        "conc",
@@ -2875,19 +2833,19 @@
       ],
       [
        "listing",
-       -11000
+       -10975
       ],
       [
        "bb",
-       -11000
+       -10975
       ],
       [
        "transfer",
-       -3080
+       -3073
       ],
       [
        "title",
-       -2275
+       -2270
       ],
       [
        "settle",
@@ -2913,9 +2871,9 @@
      "missing": {
       "count": 0
      },
-     "net": 406416,
-     "net_adj": 405774,
-     "price": 440000,
+     "net": 405478,
+     "net_adj": 404836,
+     "price": 439000,
      "tax_bill_assumed": true
     },
     "ns_counter": {
@@ -3011,7 +2969,7 @@
      "lines": [
       [
        "price",
-       440000
+       439000
       ],
       [
        "conc",
@@ -3023,19 +2981,19 @@
       ],
       [
        "listing",
-       -11000
+       -10975
       ],
       [
        "bb",
-       -11000
+       -10975
       ],
       [
        "transfer",
-       -3080
+       -3073
       ],
       [
        "title",
-       -2275
+       -2270
       ],
       [
        "settle",
@@ -3061,13 +3019,13 @@
      "missing": {
       "count": 0
      },
-     "net": 403416,
-     "net_adj": 402774,
-     "price": 440000,
+     "net": 402478,
+     "net_adj": 401836,
+     "price": 439000,
      "tax_bill_assumed": true
     },
-    "price": 440000,
-    "rank_value": 389756.8,
+    "price": 439000,
+    "rank_value": 389283.7,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3097,7 +3055,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 3,
@@ -3106,17 +3063,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 72
+     "total": 73,
+     "weight": 95
     },
     "seller_concessions": 1500,
     "short_sale": false,
@@ -3198,13 +3146,15 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
     "_appraisal_basis": "F",
     "action": "COUNTER",
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 28,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -3535,7 +3485,7 @@
      "tax_bill_assumed": true
     },
     "price": 442000,
-    "rank_value": 392132.8,
+    "rank_value": 392597.7,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -3565,7 +3515,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 3,
@@ -3574,17 +3523,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 72
+     "total": 73,
+     "weight": 95
     },
     "seller_concessions": 1000,
     "short_sale": false,
@@ -3666,6 +3606,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
@@ -3675,7 +3618,6 @@
      "nets_less"
     ],
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 38,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -4046,7 +3988,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 2,
@@ -4055,17 +3996,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 65
+     "total": 65,
+     "weight": 95
     },
     "seller_concessions": 13100,
     "short_sale": false,
@@ -4147,6 +4079,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    }
   ],
@@ -4155,7 +4090,6 @@
     "_appraisal_basis": "F",
     "action": "COUNTER",
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 28,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -4486,7 +4420,7 @@
      "tax_bill_assumed": true
     },
     "price": 442000,
-    "rank_value": 392132.8,
+    "rank_value": 392597.7,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -4516,7 +4450,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 3,
@@ -4525,17 +4458,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 72
+     "total": 73,
+     "weight": 95
     },
     "seller_concessions": 1000,
     "short_sale": false,
@@ -4617,13 +4541,15 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
     "_appraisal_basis": "F",
     "action": "BACKUP",
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 28,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -4685,7 +4611,7 @@
     },
     "deposit": 13500,
     "down_pct": 0.05,
-    "downside_price": 440000,
+    "downside_price": 439000,
     "expires": null,
     "expires_raw": null,
     "expires_today": false,
@@ -4750,7 +4676,7 @@
      "lines": [
       [
        "price",
-       440000
+       439000
       ],
       [
        "conc",
@@ -4762,19 +4688,19 @@
       ],
       [
        "listing",
-       -11000
+       -10975
       ],
       [
        "bb",
-       -11000
+       -10975
       ],
       [
        "transfer",
-       -3080
+       -3073
       ],
       [
        "title",
-       -2275
+       -2270
       ],
       [
        "settle",
@@ -4800,9 +4726,9 @@
      "missing": {
       "count": 0
      },
-     "net": 406416,
-     "net_adj": 405774,
-     "price": 440000,
+     "net": 405478,
+     "net_adj": 404836,
+     "price": 439000,
      "tax_bill_assumed": true
     },
     "ns_counter": {
@@ -4898,7 +4824,7 @@
      "lines": [
       [
        "price",
-       440000
+       439000
       ],
       [
        "conc",
@@ -4910,19 +4836,19 @@
       ],
       [
        "listing",
-       -11000
+       -10975
       ],
       [
        "bb",
-       -11000
+       -10975
       ],
       [
        "transfer",
-       -3080
+       -3073
       ],
       [
        "title",
-       -2275
+       -2270
       ],
       [
        "settle",
@@ -4948,13 +4874,13 @@
      "missing": {
       "count": 0
      },
-     "net": 403416,
-     "net_adj": 402774,
-     "price": 440000,
+     "net": 402478,
+     "net_adj": 401836,
+     "price": 439000,
      "tax_bill_assumed": true
     },
-    "price": 440000,
-    "rank_value": 389756.8,
+    "price": 439000,
+    "rank_value": 389283.7,
     "repair_reserve": 3000,
     "repairs_owed": false,
     "rider_codes": [
@@ -4984,7 +4910,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 3,
@@ -4993,17 +4918,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 72
+     "total": 73,
+     "weight": 95
     },
     "seller_concessions": 1500,
     "short_sale": false,
@@ -5085,6 +5001,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
@@ -5094,7 +5013,6 @@
      "nets_less"
     ],
     "aga_named": false,
-    "agent_track": "average",
     "appraisal_days": 38,
     "appraisal_form": "F",
     "appraisal_gap": 0,
@@ -5465,7 +5383,6 @@
       "Workable"
      ],
      "scores": {
-      "agent": 3,
       "appraisal": 5,
       "approval": 3,
       "contingency": 2,
@@ -5474,17 +5391,8 @@
       "property": 3,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 65
+     "total": 65,
+     "weight": 95
     },
     "seller_concessions": 13100,
     "short_sale": false,
@@ -5566,6 +5474,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    }
   ],
@@ -5751,28 +5662,28 @@
   },
   "recommended": {
    "bb_short": 0,
-   "cc": 15499,
+   "cc": 15464,
    "conc": -1500,
-   "down": 22000,
+   "down": 21950,
    "gap": 0,
-   "reserve": 6001,
-   "to_close": 35999,
+   "reserve": 6086,
+   "to_close": 35914,
    "wasted_conc": 0,
-   "worst": 35999
+   "worst": 35914
   }
  },
  "cash_at_cap": null,
  "chosen": "recommended",
  "ci": {
   "lower_cost": 23.46,
-  "recommended": 45.27
+  "recommended": 45.26
  },
  "constraints": {
   "count": 0
  },
  "dropped_stronger": {
   "by_net": true,
-  "net_change": 2376,
+  "net_change": 3314,
   "raised": {
    "count": 0
   },
@@ -5868,7 +5779,7 @@
  },
  "payment": {
   "lower_cost": 3869,
-  "recommended": 3885
+  "recommended": 3877
  },
  "promoted": null,
  "promoted_from": null,
@@ -5903,7 +5814,7 @@
    "loan_approval_days": 30,
    "price": 442000,
    "price_by": "reach",
-   "seller_concessions": 3500
+   "seller_concessions": 4500
   }
  },
  "reply_lines": [
@@ -5943,7 +5854,7 @@
    "inspection_days": 10,
    "insurance_quote": null,
    "loan_approval_days": 30,
-   "price": 440000,
+   "price": 439000,
    "price_by": "reach",
    "seller_concessions": 1500
   }

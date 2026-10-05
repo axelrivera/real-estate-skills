@@ -42,7 +42,7 @@ BUYER_PRIORITIES = ("win", "balanced", "protect_cash")
 OPTIONS = ("recommended", "stronger", "lower_cost")
 DEFAULT_RATE = 6.5  # national planning estimate, used only when neither the buyer file nor a lookup has a rate
 DEFAULT_RESERVE = 2000
-OFFER_QUESTIONS = ("contract_name", "escalation_accepted")  # OFR-222: shape the offer itself, so asked first in to_confirm
+OFFER_QUESTIONS = ("contract_name", "inspection_walkaway", "escalation_accepted")  # OFR-222: shape the offer itself, so asked first in to_confirm
 HIGHEST_AND_BEST = re.compile(r"highest\s*(?:and|&)\s*best", re.I)  # OFR-239: as the agent words it in competition.note
 TIGHT_SUPPLY_MONTHS = 3  # OFR-331: under this a price cut alone doesn't read soft
 SOFT_SUPPLY_MONTHS = 6  # over this the area's market reads soft (3 to 6 months reads balanced)
@@ -159,11 +159,17 @@ def text_problems(data):
     return probs
 
 
+RETIRED_BUYER_FIELDS = ("agent_track",)  # the strength score reads facts only (shared/offer_engine.CRITERIA)
+
+
 def choice_problems(data):
     """The categories the buyer file names (the competition level, the buyer's priority) that aren't one of the choices,
     as `field: problem → fix` lines, every one at once (choices.pick)."""
+    BU = data.get("buyer") or {}
     return (choices.pick((data.get("competition") or {}).get("level"), COMPETITION_LEVELS, "competition.level")[1]
-            + choices.pick(data.get("buyer_priority"), BUYER_PRIORITIES, "buyer_priority", default="balanced")[1])
+            + choices.pick(data.get("buyer_priority"), BUYER_PRIORITIES, "buyer_priority", default="balanced")[1]
+            + choices.pick(BU.get("approval"), oe.APPROVALS, "buyer.approval")[1]
+            + [t("prob_retired", field=f"buyer.{k}") for k in RETIRED_BUYER_FIELDS if k in BU])
 
 
 def apply_cma(B, h):
@@ -335,9 +341,9 @@ def prepare(B, A, market=None):
                                                             rate=fmt.pct(x["rate"], None)) for x in B["loan_taxes"]]))
         A.add("buyer", "closing_cost_pct", BU["closing_cost_pct"], t("as_closing_costs", basis=closing_cost_basis(B), src=src),
               "low")
+    # the package's letter (the worksheet checklist's pre-approval or proof of funds): a term of the offer being written
     BU["approval"] = BU.get("approval") or ("pof_verified" if fin == "cash" else "preapproval")
     BU["lender_min_close_days"] = BU.get("lender_min_close_days") or (21 if fin == "cash" else 35)
-    BU.setdefault("agent_track", "average")
     B["payment_assumed"] = []  # OFR-228: the payment inputs that are estimates, named when the payment limit sets the price
     # OFR-241: the skill looks up the latest Freddie Mac weekly 30-year rate when the agent gives none (costs.rate with
     # costs.rate_source naming the week); the built-in rate is only the offline fallback, said in the assumptions
@@ -798,7 +804,7 @@ def engine_data(B, variants):
     for vid, t_ in variants:
         o = {"id": vid, "price": t_["price"], "financing": BU["financing"], "down_pct": BU["down_pct"], "approval": BU["approval"],
              "lender_called": BU.get("lender_called", False), "insurance_quote": t_.get("insurance_quote", BU.get("insurance_quote")),
-             "agent_track": BU.get("agent_track"), "buyer": "Buyer",
+             "buyer": "Buyer",
              "same_buyer": "buyer"}  # OFR-101: the options are one buyer's alternatives, never each other's competition
         for k in ("deposit", "seller_concessions", "buyer_broker_pct", "home_warranty", "inspection_days", "loan_approval_days",
                   "appraisal_gap", "closing_days", "sale_contingency_days", "kickout", "escalation", "contract_form"):
@@ -806,6 +812,9 @@ def engine_data(B, variants):
                 o[k] = t_[k]
         if B.get("repair_limits"):
             o["repair_limits"] = B["repair_limits"]
+        walk = (B.get("worksheet") or {}).get("inspection_walkaway")
+        if walk is not None and B["contract_form"] not in cf.FARBAR:  # another contract's inspection terms, as confirmed
+            o["inspection_walkaway"] = walk
         fin = BU["financing"]
         riders = [B["buyer_broker_form"]] if B.get("buyer_broker_form") and t_.get("buyer_broker_pct") else []
         kind = appraisal_kind(B, t_)
@@ -1409,6 +1418,8 @@ def analyze(B_in, market=None, cma=None):
         A.add("buyer", "loan_limit", "check", loan_notes["recommended"], "high")
     engine_assumed = [tax_bill(B, costs, O, a) for a in R["assumptions"] if not a["scope"].startswith("offer")
                       and a["scope"] != "seller" and a["field"] not in ("cma_low / cma_high", "state")]
+    # a buyer fact the scorecard can't score without (the approval level), as the engine words it: said once
+    engine_assumed += [{**a, "scope": "buyer"} for a in R["assumptions"] if a["scope"] == "offer recommended" and a.get("unscores")]
     res = {"B": B, "R": R, "O": O, "why": w, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
            "promoted": promoted, "promoted_from": fuller if promoted else None, "reached": reached, "by_net": by_net,
            "promoted_lifts": bool(promoted) and promoted_lifts, "buyer_priority": B["buyer_priority"],
@@ -1440,7 +1451,7 @@ def analyze(B_in, market=None, cma=None):
         res["stronger_dropped"] = True
     res["dropped_stronger"] = dropped
     for k in O:  # OFR-216: the scorecard says what's known about the quote, never that one is planned when it isn't
-        if res["terms"][k].get("insurance_quote") is None:
+        if res["terms"][k].get("insurance_quote") is None and O[k]["score"]["why"]["property"] is not None:
             sw = O[k]["score"]["why"]
             sw["property"] = (L_["sc_no_issues"] if sw["property"] == "No known condition or insurance issues"
                               else sw["property"]) + L_["sc_no_quote"]
@@ -2119,10 +2130,12 @@ def net_sheet(r):
 def scorecard(r):
     O, rec = r["O"], r["O"]["recommended"]
     rows = [{"key": key, "label": label, "weight": t("weight", n=wt),
-             "scores": [O[k]["score"]["scores"][key] for k in O], "why": cap(str(rec["score"]["why"][key]))}
+             "scores": [O[k]["score"]["scores"][key] for k in O],
+             "why": L_["sc_not_scored"] if rec["score"]["why"][key] is None else cap(str(rec["score"]["why"][key]))}
             for key, label, wt in oe.CRITERIA]
-    total = {"label": L_["sc_total"], "weight": t("weight", n=100), "scores": [O[k]["score"]["total"] for k in O],
-             "bands": [O[k]["score"]["band"][0] for k in O]}
+    # every option reads the same buyer facts, so the same criteria are scored: the total's weight is the scored weight
+    total = {"label": L_["sc_total"], "weight": t("weight", n=rec["score"]["weight"]),
+             "scores": [O[k]["score"]["total"] for k in O], "bands": [O[k]["score"]["band"][0] for k in O]}
     return {"rows": rows, "total": total}
 
 

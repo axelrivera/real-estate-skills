@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import review  # noqa: E402
-from _shared import design, handoff, layout, offer_engine as oe, render  # noqa: E402
+from _shared import design, fmt, handoff, layout, offer_engine as oe, render  # noqa: E402
 
 
 
@@ -290,8 +290,8 @@ def terms_table(tm):
 def scorecard_table(sc):
     cols = [Col("label", sc["cols"][0], cls="crit"), Col("weight", sc["cols"][1], align="num"),
             Col("score", sc["cols"][2], cls="c"), Col("why", sc["cols"][3])]
-    rows = [{"label": r["label"], "weight": r["weight"], "score": Raw(f'<span class="s{r["score"]}">{r["score"]}</span>'),
-             "why": Raw(esc(r["why"]) + (f' <span class="pill vyes">{esc(sc["agent_tag"])}</span>' if r["agent"] else ""))}
+    rows = [{"label": r["label"], "weight": r["weight"], "why": r["why"],
+             "score": fmt.EMPTY if r["score"] is None else Raw(f'<span class="s{r["score"]}">{r["score"]}</span>')}
             for r in sc["rows"]]
     tt = sc["total"]
     tc = BAND_TEXT[tt["cls"]]

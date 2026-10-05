@@ -5,6 +5,9 @@ never a past case.
   - money: every net sheet column's lines add up to its net, the net plus holding to the net after holding, and the
     key numbers show those nets;
   - one target closing per report: every offer's Seller's Target closes on the report's one date;
+  - scores read facts only: each certainty total is the scaled sum of its scored rows, every score is 1-5 with its
+    reason, a criterion whose fact the offer leaves out (deposit, approval, closing) has no score, one whose fact is
+    given has one, and the scorecard prints the rest Not scored over the scored weight;
   - notes: each note is said once (by key and by text), never also in What to Confirm; no label carries a note;
   - legends name exactly the series drawn (the contingency timeline, the comparison's chart);
   - the input is unchanged;
@@ -122,6 +125,36 @@ class Model(unittest.TestCase):
                     ch = M["doc"].get("chart")
                     if ch:
                         self.assertIn(review.day(R["target_close"]), ch["target_label"])
+
+    def test_scores_read_facts_only(self):
+        W = {k: w for k, _, w in oe.CRITERIA}
+        reads = {"deposit": lambda x: x.get("deposit") is None, "approval": lambda x: x.get("approval") in (None, ""),
+                 "timeline": lambda x: not (x.get("closing_date") or x.get("closing_days"))}
+        for seed, step, data, R, docs in cases():
+            given = {x.get("id", "A"): x for x in data["offers"]}
+            for o in R["offers"]:
+                sc = o["score"]
+                with self.subTest(seed=seed, step=step, offer=o["id"]):
+                    scored = [k for k in W if sc["scores"][k] is not None]
+                    self.assertEqual(sc["weight"], sum(W[k] for k in scored))
+                    self.assertEqual(sc["total"], fmt.half_up(100 * sum(W[k] * sc["scores"][k] / 5 for k in scored)
+                                                              / sc["weight"]))
+                    for k in W:
+                        self.assertEqual(sc["scores"][k] is None, sc["why"][k] is None)
+                        self.assertIn(sc["scores"][k], (None, 1, 2, 3, 4, 5))
+                    for k, missing in reads.items():
+                        self.assertEqual(sc["scores"][k] is None, missing(given[o["id"]]), k)
+            for M in docs:
+                card = M["doc"].get("scorecard")
+                if not card:
+                    continue
+                o = next(x for x in R["offers"] if x["id"] == M["summary"]["offer"])
+                with self.subTest(seed=seed, step=step, report=M["doc"]["subtitle"]):
+                    self.assertEqual(card["total"]["weight"], fmt.pct(o["score"]["weight"] / 100, 0))
+                    for row in card["rows"]:
+                        self.assertEqual(row["score"], o["score"]["scores"][row["key"]])
+                        if row["score"] is None:
+                            self.assertEqual(row["why"], review.L_["sc_not_scored"])
 
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, step, _, R, docs in cases():

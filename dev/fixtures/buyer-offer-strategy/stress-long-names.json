@@ -22,7 +22,7 @@
     "name": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot",
     "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
     "max_price": 720000, "cash_available": 210000, "reserve_floor": 15000,
-    "buyer_broker_agreement_pct": 0.025, "insurance_quote": true, "agent_track": "strong"
+    "buyer_broker_agreement_pct": 0.025, "insurance_quote": true
   },
   "worksheet": {
     "buyer_names": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot, as Joint Tenants with Right of Survivorship",

@@ -8,8 +8,7 @@
    }
   ],
   "buyer": {
-   "agent_track": "strong",
-   "approval": "du_approved",
+   "approval": "full_uw",
    "cash_available": 26000,
    "closing_cost_pct": 0.03,
    "down_pct": 0.035,
@@ -101,7 +100,6 @@
    "_appraisal_basis": "E",
    "action": "BACKUP",
    "aga_named": false,
-   "agent_track": "strong",
    "appraisal_contingency": 21,
    "appraisal_days": 35,
    "appraisal_form": null,
@@ -111,7 +109,7 @@
    "appraisal_risk": true,
    "appraisal_waived": false,
    "appraised": true,
-   "approval": "du_approved",
+   "approval": "full_uw",
    "assumed_terms": [
     "title_by"
    ],
@@ -447,26 +445,16 @@
      "Workable"
     ],
     "scores": {
-     "agent": 5,
      "appraisal": 5,
-     "approval": 4,
+     "approval": 5,
      "contingency": 2,
      "deposit": 3,
      "financing": 2,
      "property": 2,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 65
+    "total": 65,
+    "weight": 95
    },
    "seller_concessions": 6500,
    "short_sale": false,
@@ -543,13 +531,15 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   "recommended": {
    "_appraisal_basis": "E",
    "action": "COUNTER",
    "aga_named": false,
-   "agent_track": "strong",
    "appraisal_contingency": 21,
    "appraisal_days": 35,
    "appraisal_form": null,
@@ -559,7 +549,7 @@
    "appraisal_risk": true,
    "appraisal_waived": false,
    "appraised": true,
-   "approval": "du_approved",
+   "approval": "full_uw",
    "assumed_terms": [
     "title_by"
    ],
@@ -889,26 +879,16 @@
      "Workable"
     ],
     "scores": {
-     "agent": 5,
      "appraisal": 5,
-     "approval": 4,
+     "approval": 5,
      "contingency": 2,
      "deposit": 4,
      "financing": 2,
      "property": 2,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 67
+    "total": 67,
+    "weight": 95
    },
    "seller_concessions": 2000,
    "short_sale": false,
@@ -985,6 +965,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  },
@@ -994,7 +977,6 @@
     "_appraisal_basis": "E",
     "action": "COUNTER",
     "aga_named": false,
-    "agent_track": "strong",
     "appraisal_contingency": 21,
     "appraisal_days": 35,
     "appraisal_form": null,
@@ -1004,7 +986,7 @@
     "appraisal_risk": true,
     "appraisal_waived": false,
     "appraised": true,
-    "approval": "du_approved",
+    "approval": "full_uw",
     "assumed_terms": [
      "title_by"
     ],
@@ -1334,26 +1316,16 @@
       "Workable"
      ],
      "scores": {
-      "agent": 5,
       "appraisal": 5,
-      "approval": 4,
+      "approval": 5,
       "contingency": 2,
       "deposit": 4,
       "financing": 2,
       "property": 2,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 67
+     "total": 67,
+     "weight": 95
     },
     "seller_concessions": 2000,
     "short_sale": false,
@@ -1430,13 +1402,15 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
     "_appraisal_basis": "E",
     "action": "BACKUP",
     "aga_named": false,
-    "agent_track": "strong",
     "appraisal_contingency": 21,
     "appraisal_days": 35,
     "appraisal_form": null,
@@ -1446,7 +1420,7 @@
     "appraisal_risk": true,
     "appraisal_waived": false,
     "appraised": true,
-    "approval": "du_approved",
+    "approval": "full_uw",
     "assumed_terms": [
      "title_by"
     ],
@@ -1782,26 +1756,16 @@
       "Workable"
      ],
      "scores": {
-      "agent": 5,
       "appraisal": 5,
-      "approval": 4,
+      "approval": 5,
       "contingency": 2,
       "deposit": 3,
       "financing": 2,
       "property": 2,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 65
+     "total": 65,
+     "weight": 95
     },
     "seller_concessions": 6500,
     "short_sale": false,
@@ -1878,6 +1842,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    }
   ],
@@ -2043,7 +2010,6 @@
     "_appraisal_basis": "E",
     "action": "COUNTER",
     "aga_named": false,
-    "agent_track": "strong",
     "appraisal_contingency": 21,
     "appraisal_days": 35,
     "appraisal_form": null,
@@ -2053,7 +2019,7 @@
     "appraisal_risk": true,
     "appraisal_waived": false,
     "appraised": true,
-    "approval": "du_approved",
+    "approval": "full_uw",
     "assumed_terms": [
      "title_by"
     ],
@@ -2383,26 +2349,16 @@
       "Workable"
      ],
      "scores": {
-      "agent": 5,
       "appraisal": 5,
-      "approval": 4,
+      "approval": 5,
       "contingency": 2,
       "deposit": 4,
       "financing": 2,
       "property": 2,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 67
+     "total": 67,
+     "weight": 95
     },
     "seller_concessions": 2000,
     "short_sale": false,
@@ -2479,13 +2435,15 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
     "_appraisal_basis": "E",
     "action": "BACKUP",
     "aga_named": false,
-    "agent_track": "strong",
     "appraisal_contingency": 21,
     "appraisal_days": 35,
     "appraisal_form": null,
@@ -2495,7 +2453,7 @@
     "appraisal_risk": true,
     "appraisal_waived": false,
     "appraised": true,
-    "approval": "du_approved",
+    "approval": "full_uw",
     "assumed_terms": [
      "title_by"
     ],
@@ -2831,26 +2789,16 @@
       "Workable"
      ],
      "scores": {
-      "agent": 5,
       "appraisal": 5,
-      "approval": 4,
+      "approval": 5,
       "contingency": 2,
       "deposit": 3,
       "financing": 2,
       "property": 2,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 65
+     "total": 65,
+     "weight": 95
     },
     "seller_concessions": 6500,
     "short_sale": false,
@@ -2927,6 +2875,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    }
   ],
@@ -2935,7 +2886,6 @@
     "_appraisal_basis": "E",
     "action": "COUNTER",
     "aga_named": false,
-    "agent_track": "strong",
     "appraisal_contingency": 21,
     "appraisal_days": 35,
     "appraisal_form": null,
@@ -2945,7 +2895,7 @@
     "appraisal_risk": true,
     "appraisal_waived": false,
     "appraised": true,
-    "approval": "du_approved",
+    "approval": "full_uw",
     "assumed_terms": [
      "title_by"
     ],
@@ -3275,26 +3225,16 @@
       "Workable"
      ],
      "scores": {
-      "agent": 5,
       "appraisal": 5,
-      "approval": 4,
+      "approval": 5,
       "contingency": 2,
       "deposit": 4,
       "financing": 2,
       "property": 2,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 67
+     "total": 67,
+     "weight": 95
     },
     "seller_concessions": 2000,
     "short_sale": false,
@@ -3371,13 +3311,15 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    },
    {
     "_appraisal_basis": "E",
     "action": "BACKUP",
     "aga_named": false,
-    "agent_track": "strong",
     "appraisal_contingency": 21,
     "appraisal_days": 35,
     "appraisal_form": null,
@@ -3387,7 +3329,7 @@
     "appraisal_risk": true,
     "appraisal_waived": false,
     "appraised": true,
-    "approval": "du_approved",
+    "approval": "full_uw",
     "assumed_terms": [
      "title_by"
     ],
@@ -3723,26 +3665,16 @@
       "Workable"
      ],
      "scores": {
-      "agent": 5,
       "appraisal": 5,
-      "approval": 4,
+      "approval": 5,
       "contingency": 2,
       "deposit": 3,
       "financing": 2,
       "property": 2,
       "timeline": 4
      },
-     "src": {
-      "agent": "auto",
-      "appraisal": "auto",
-      "approval": "auto",
-      "contingency": "auto",
-      "deposit": "auto",
-      "financing": "auto",
-      "property": "auto",
-      "timeline": "auto"
-     },
-     "total": 65
+     "total": 65,
+     "weight": 95
     },
     "seller_concessions": 6500,
     "short_sale": false,
@@ -3819,6 +3751,9 @@
     "title_by": "seller",
     "title_payer": "seller",
     "title_payer_by_contract": false,
+    "unknown": {
+     "count": 0
+    },
     "walkaway_days": 10
    }
   ],

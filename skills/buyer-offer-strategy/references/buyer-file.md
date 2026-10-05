@@ -69,18 +69,19 @@ Top level, next to `buyer`. `rate` (interest rate as a **percent**: `6.5` for 6.
 | `reserve_floor` | $2,000 | med |
 | `max_payment` | none | — |
 | `closing_cost_pct` | the shared rule the buyer CMA uses, so both give the same cash to close: market buyer closing costs + 0.5% prepaids (national 3% + 0.5%); cash: half the market figure. The market's loan taxes (Florida: documentary stamps on the note and intangible tax) are added on top, and the report says "of price plus loan taxes". A value given here is the all-in share, used as is | low |
-| `approval` | `preapproval` (`pof_verified` for cash). Values: `none`, `prequal`, `preapproval`, `du_approved` (pre-approval with an automated DU/LP approval), `full_uw` (underwriter approval), `pof_verified` (cash) | — |
+| `approval` | `preapproval` (`pof_verified` for cash): the letter the offer package attaches (the worksheet checklist). Any other value stops the run. Values: `none`, `prequal`, `preapproval`, `du_approved` (pre-approval with an automated DU/LP approval), `full_uw` (underwriter approval), `pof_verified` (cash) | — |
 | `lender_called` | false. True only when the agent says they talked to the lender about the financing: scored as verified approval; the worksheet's closing note says the financing was confirmed, not the date | — |
 | `lender_confirmed_timeline` | false. True only when the lender confirmed it can close on the planned timeline: the closing note says so and the checklist's "Lender confirms a N-day close" box is ticked | — |
 | `insurance_quote` | false, unless `costs.insurance_annual` is given: a premium entered there counts as a quote in hand (set `false` when that number is only an estimate). True when the buyer already has a quote for this address; `"planned"` only when the agent says one is coming. Only a quote in hand is scored; a planned one is a to-do | — |
 | `va_later_use`, `va_exempt` | VA only: a later use of the benefit (higher funding fee under 5% down), or exempt from the fee | false |
 | `lender_min_close_days` | 35 financed / 21 cash | — |
-| `agent_track` | `average`: how a listing agent would rate the buyer's agent | — |
 | `buyer_broker_agreement_pct` | none (flagged): the rate in the buyer's own broker agreement. When the seller pays less, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" line in cash to close and counts in every limit | med |
 | `needs_sale` | false (adds the sale-of-buyer's-property rider and a kick-out clause; the options are scored with both) | — |
 | `sale_contingency_days` | 21 when `needs_sale` (flagged): days until the buyer's sale must close | med |
 | `buyer_broker_form` | FAR/BAR: `GG` (a separate compensation agreement, the default) or `FF` (a seller credit to the buyer, which comes out of the loan program's concession limit) | — |
 | `checklist` | package checklist statuses: `contract` `riders` `terms` `pre_approval` `funds` `insurance` `agency` `bb` `wire` `lead` `inspector` `lender_close` | Pending |
+
+`agent_track` is retired: the strength score reads only facts from the offer, the contract and the property, and a file that still has it stops the run naming the field.
 
 ## overrides
 
@@ -96,4 +97,4 @@ What the buyer wants most, as the buyer or the agent said it: `win` (the terms t
 
 ## worksheet
 
-`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id` (both copied exactly from the property report or tax record, never invented; a buyer CMA handoff fills them), `hoa_name`, `personal_property`, `acceptance_deadline` (the Time for Acceptance; default the expected Effective Date at 5:00 PM, moved to the next business day when that falls on a weekend or holiday, past the offers-due deadline), `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name for any contract that isn't FAR/BAR; read on a best-effort basis). Missing names print as red blanks.
+`buyer_names`, `escrow_agent`, `title_agent`, `legal_description`, `parcel_id` (both copied exactly from the property report or tax record, never invented; a buyer CMA handoff fills them), `hoa_name`, `personal_property`, `acceptance_deadline` (the Time for Acceptance; default the expected Effective Date at 5:00 PM, moved to the next business day when that falls on a weekend or holiday, past the offers-due deadline), `contract_form` (`as_is` / `standard`, Florida; the options are scored on this same form, AS IS when blank and flagged), `repair_limits` (Standard only), `contract_name` (the form's name for any contract that isn't FAR/BAR; read on a best-effort basis), `inspection_walkaway` (any contract that isn't FAR/BAR: `true` when its inspection or option period lets the buyer cancel for any reason, `false` for a repair or objection process only; left out, Contingency Exposure isn't scored). Missing names print as red blanks.

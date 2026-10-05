@@ -9,9 +9,10 @@ proposed counter; with 2+ active offers, a ranking and a response plan.
 
 Rule: the engine never stops on missing data. Every missing input gets a conservative default and is
 recorded as an assumption with an impact level (high / med / low), so the report can say what to confirm
-and mark itself Preliminary. Market costs (transfer tax, title, fees, commission, property tax, holding costs,
-inspection credit reserve) come from the built-in layers via shared.finance: local defaults where there are any
-(Florida), national estimates otherwise (named once in the notes), never another state's number. The listing file's
+and mark itself Preliminary. The certainty score never reads such a stand-in: a criterion whose fact is missing isn't
+scored and the total is scaled over the rest (score_offer); only an offer with no fact any criterion reads stops.
+Market costs (transfer tax, title, fees, commission, property tax, holding costs, inspection credit reserve) come
+from the built-in layers via shared.finance: local defaults where there are any (Florida), national estimates otherwise (named once in the notes), never another state's number. The listing file's
 `costs` block (a title quote, the transfer tax the skill looked up) wins over both.
 """
 import copy
@@ -25,7 +26,7 @@ FIN_LABEL = {k: v["label"] for k, v in finance.LOAN_PROGRAMS.items()}
 APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full underwritten approval",
                   "du_approved": "Automated underwriting approval (DU/LP)", "preapproval": "Pre-approval letter",
                   "prequal": "Pre-qualification only", "none": "No approval provided"}
-CRITERIA = [  # key, label, weight
+CRITERIA = [  # key, label, weight: every score reads facts from the offer, the contract and the property, never opinions
     ("financing", "Financing Type & Down Payment", 20),
     ("approval", "Approval / Funds Verified", 10),
     ("appraisal", "Appraisal Risk", 20),
@@ -33,8 +34,19 @@ CRITERIA = [  # key, label, weight
     ("deposit", "Deposit Strength", 10),
     ("timeline", "Fit with Seller's Timeline", 10),
     ("property", "Property-Condition / Insurance Risk", 10),
-    ("agent", "Buyer Agent Track Record", 5),
 ]
+CRITERION_LABEL = {k: lab for k, lab, _ in CRITERIA}
+APPROVALS = tuple(APPROVAL_LABEL)  # offers[].approval
+# Offer fields no longer read. Each stops the run with its fix (offer_field_problems): scores follow the rubric only, so
+# the way to change one is to correct the fact it reads.
+_NOT_OPINION = "no longer read: the certainty score reads only facts from the offer, the contract and the property"
+RETIRED_OFFER_FIELDS = {
+    "agent_track": f"{_NOT_OPINION} → remove it",
+    "agent_note": f"{_NOT_OPINION} → remove it",
+    "scores": "no longer read: every score follows the rubric → remove it, and correct the fact the score reads instead "
+              "(financing, down_pct, approval, lender_called, deposit, inspection_days, loan_approval_days, closing_date, "
+              "riders, insurance_quote, or the listing's roof_year and flood_zone)",
+}
 # Share of list price per 100 points of missing certainty, by the seller's priority.
 RISK_PENALTY = {"price": 0.05, "balanced": 0.10, "speed": 0.12, "certainty": 0.15}
 PRIORITIES = ("price", "balanced", "certainty", "speed")  # seller.priority, in the order the fix message names them
@@ -685,10 +697,12 @@ def prepare_offer(o, L, S, A):
     sc = f"offer {k}"
     if not o.get("price"):
         raise OfferError(f"Offer {k} needs a price.")
+    unknown = set()  # the score facts the engine stands a value in for (score_inputs): their criteria aren't scored
     fin = (o.get("financing") or "").lower()
     fin = finance.ALIASES.get(fin, fin)
     if fin not in FIN_LABEL:
         fin = A.add(sc, "financing", "conventional", "Financing type not provided: assumed conventional", "high")
+        unknown.add("financing")
     o["financing"] = fin
     o["financed"] = fin != "cash"
     # analyze() stops on an unknown status or recommendation before this runs (offer_field_problems)
@@ -716,12 +730,17 @@ def prepare_offer(o, L, S, A):
     loan = o.get("loan_amount")
     if fin != "cash" and o.get("down_pct") is None and loan and 0 < loan <= o["price"]:
         o["down_pct"] = round(1 - loan / o["price"], 4)  # the contract's loan amount gives the down payment
+    if fin != "cash" and o.get("down_pct") in (None, ""):
+        unknown.add("down_pct")
+    if o.get("approval") in (None, ""):
+        unknown.add("approval")
     o["down_pct"] = 1.0 if fin == "cash" else given(
         o, "down_pct", dflt_down, A, sc, f"Down payment not provided: assumed {fmt.pct(dflt_down, None)} for {FIN_LABEL[fin]}", "med")
     o["approval"] = given(o, "approval", "preapproval" if o["financed"] else "none", A, sc, "Approval level not provided", "med")
     o["deposit"] = o.get("deposit")
     if o["deposit"] is None:
         A.add(sc, "deposit", "unknown", "Escrow deposit not provided", "med")
+        unknown.add("deposit")
     o["seller_concessions"] = given(o, "seller_concessions", 0, A, sc, "Seller concessions not provided: assumed $0", "high")
     # Rider GG signed broker to broker: the listing broker pays the buyer's broker from its own fee (listing agreement)
     o["bb_from_listing"] = listing_pays_buyer_broker(o)
@@ -765,6 +784,8 @@ def prepare_offer(o, L, S, A):
                      "Contract form not given: assumed FAR/BAR AS IS. The Standard form has no inspection walk-away and makes "
                      "the seller pay repairs up to its repair limits, so confirm which form was used", "high") \
             if L["farbar_market"] else cf.OTHER
+        if L["farbar_market"]:
+            unknown.add("contract_form")
     if form == cf.OTHER and raw_form and not o.get("contract_name"):  # OFR-113: keep the form's own name for the label
         o["contract_name"] = str(raw_form)
     o["contract_form"] = form
@@ -783,11 +804,16 @@ def prepare_offer(o, L, S, A):
         o["inspection_walkaway"] = A.add(sc, "inspection_walkaway", True,
                                          "Whether this contract's inspection period lets the buyer cancel for any reason "
                                          "wasn't given: assumed it does. Confirm it in the contract", "high")
+        unknown.add("inspection_walkaway")
     o["inspection_assumed"] = o.get("inspection_days") in (None, "")
     blank = cf.inspection_days_default(form)  # ENG-7: the form's own blank (15 on FAR/BAR), else the national 10 days
+    if o["inspection_assumed"] and not blank:  # a form's own blank is a contract term; another contract's isn't known
+        unknown.add("inspection_days")
     o["inspection_days"] = given(o, "inspection_days", blank or NATIONAL_NORMS["inspection_days"], A, sc,
                                  f"Inspection period not provided: {blank} days, the form's default when blank" if blank else
                                  f"Inspection period not provided: assumed {NATIONAL_NORMS['inspection_days']} days", "med")
+    if o["financed"] and o.get("loan_approval_days") in (None, "") and form not in cf.FARBAR:
+        unknown.add("loan_approval_days")  # FAR/BAR's blank is 30 days (Para. 8(b)(2)); another contract's isn't known
     o["loan_approval_days"] = 0 if not o["financed"] else given(
         o, "loan_approval_days", 30, A, sc, "Loan approval period not provided: assumed 30 days", "low")
     ac = o.get("appraisal_contingency")
@@ -808,9 +834,12 @@ def prepare_offer(o, L, S, A):
     elif ac is None and o["financed"]:
         A.add(sc, "appraisal_contingency", "21 days", "Appraisal terms not provided: assumed a 21-day contingency (conservative)", "med")
         ac = 21
+        unknown.add("appraisal_contingency")
     # FHA and VA: the amendatory clause / escape clause can't be waived; the buyer may walk if the appraisal is low
     # up to closing, so a waiver is ignored and a gap clause is stated intent only (OFR-3, OFR-17).
     o["appraisal_protected"] = o["financed"] and o["financing"] in ("fha", "va")
+    if o["appraisal_protected"]:  # the FHA/VA protection runs to closing whatever the file says: the window is known
+        unknown.discard("appraisal_contingency")
     if o["appraisal_protected"] and ac is False:
         A.add(sc, "appraisal_contingency", "protected to closing",
               f"{FIN_LABEL[o['financing']]} appraisal protection can't be waived (amendatory clause): treated as protected to closing",
@@ -843,6 +872,8 @@ def prepare_offer(o, L, S, A):
     else:
         given_days = o.get("closing_days")
         days = given_days or A.add(sc, "closing_days", 45 if o["financed"] else 30, "Closing date not provided", "med")
+        if not given_days:
+            unknown.add("closing_days")
         o["close"] = eff + timedelta(days=days)
         o["close_terms"] = (f"{days} days after acceptance, about {fmt.when(o['close'])}" if given_days else
                             f"Not given (assumed about {fmt.when(o['close'])})")
@@ -861,8 +892,16 @@ def prepare_offer(o, L, S, A):
     if o["appraisal_protected"]:
         o["_appraisal_basis"] = "E"  # protection runs to closing
     rider_money(o, A, sc)
+    if any(a["scope"] == sc and a["field"].startswith("rider_") for a in A.items):
+        unknown.add("rider_dates")  # a rider's cancel window without its date
     set_windows(o)
     o["firm_date"] = eff + timedelta(days=o["risk_days"])
+    o["unknown"] = sorted(unknown)
+    for a in A.items:  # each stand-in's assumption says, once, which criteria it leaves out of the score
+        off = unscored_by(o, _fact_of(a["field"])) if a["scope"] == sc else []
+        if off:
+            a["why"] += f". {_names(off)} {'is' if len(off) == 1 else 'are'} not scored without it"
+            a["unscores"] = off
     # iteration 9 evals 1, 3, 5: the terms the review assumed, so every place that prints one as a term marks it
     o["assumed_terms"] = sorted({a["field"] for a in A.items if a["scope"] == sc})
     o["form_given"] = raw_form not in (None, "")  # iteration 9 eval 3: an offer described in chat names no form
@@ -930,8 +969,8 @@ def rider_money(o, A, sc):
     # they count toward "days until firm" like the inspection period (contract_forms.rider_windows)
     _, missing = cf.rider_windows(o["contract_form"], rider_item(o), o["close_days"])  # the windows themselves: set_windows()
     for code in missing:
-        A.add(sc, f"rider_{code}", "not counted", f"{cf.rider_name(code)} attached without its date: its cancel window isn't "
-              "counted, so the offer may be less firm than it scores. Get the date from the rider", "med")
+        A.add(sc, f"rider_{code}", "not counted", f"{cf.rider_name(code)} attached without its date: its cancel window "
+              "isn't known. Get the date from the rider", "med")
     o["bb_credit"] = cf.buyer_broker_as_credit(o["contract_form"], o)
 
 
@@ -1098,7 +1137,7 @@ def auto_scores(o, L, S):
                                   + ", stricter appraisal and condition rules")
 
     ap = o["approval"]
-    s["approval"] = {"pof_verified": 5, "full_uw": 5, "du_approved": 4, "preapproval": 3, "prequal": 2, "none": 1}.get(ap, 3)
+    s["approval"] = {"pof_verified": 5, "full_uw": 5, "du_approved": 4, "preapproval": 3, "prequal": 2, "none": 1}[ap]
     why["approval"] = APPROVAL_LABEL.get(ap, ap)
     if o["financed"] and not o.get("lender_called") and s["approval"] > 3:
         s["approval"] = 3
@@ -1152,9 +1191,7 @@ def auto_scores(o, L, S):
             why["contingency"] = (f"{rd} days until firm; {ins}-day repair-notice period, no walk-away"
                                   + _window_note(o, rd))
 
-    if o["deposit"] is None:
-        s["deposit"], why["deposit"] = 3, "Deposit not provided: scored as average"
-    else:
+    if o["deposit"] is not None:  # no deposit given: not scored (score_offer)
         p = o["deposit"] / o["price"]
         s["deposit"] = 5 if p >= .10 else 4 if p >= .03 else 3 if p >= .02 else 2 if p >= .01 else 1
         # iteration 10 eval 3: kept in line with the Terms Review's rating on the same benchmark (deposit_status), so
@@ -1203,11 +1240,6 @@ def auto_scores(o, L, S):
             notes.append("insurance quote planned before submitting (scored once in hand)")
         s["property"] = max(1, min(5, v))
         why["property"] = "; ".join(notes) or "No known condition or insurance issues"
-
-    tr = (o.get("agent_track") or "").lower()
-    s["agent"] = {"strong": 5, "average": 3, "weak": 2}.get(tr, 3)
-    why["agent"] = o.get("agent_note") or {"strong": "Experienced, responsive",
-                                           "weak": "Limited track record / slow to respond"}.get(tr, "Not assessed yet")
     return s, why
 
 
@@ -1215,21 +1247,55 @@ def band(score):
     return ("hi", "Strong") if score >= 80 else (("mid", "Workable") if score >= 60 else ("lo", "Weak"))
 
 
+def score_inputs(o):
+    """{criterion: the offer facts its rule reads that can be missing}. A fact the offer doesn't give gets a stand-in so
+    the net sheet runs (an assumption), but no criterion scores a stand-in: it's left out (score_offer)."""
+    return {"financing": ["financing"] + (["down_pct"] if o["financing"] == "conventional" else []),
+            "approval": ["approval"],
+            "appraisal": ["financing", "appraisal_contingency"],
+            "contingency": ["contract_form", "inspection_walkaway", "inspection_days", "loan_approval_days",
+                            "appraisal_contingency", "rider_dates"]
+            + (["closing_days"] if o["risk_days"] >= o["close_days"] else []),  # the closing caps the windows
+            "deposit": ["deposit"],
+            "timeline": ["closing_days"],
+            "property": ["financing"]}
+
+
+def _fact_of(field):
+    return "rider_dates" if field.startswith("rider_") else field
+
+
+def _names(keys):
+    names = [CRITERION_LABEL[k] for k in keys]
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def unscored_by(o, fact):
+    """The criteria (in CRITERIA order) a missing fact leaves out of the score."""
+    if fact not in (o.get("unknown") or ()):
+        return []
+    reads = score_inputs(o)
+    return [k for k, _, _ in CRITERIA if fact in reads[k]]
+
+
 def score_offer(o, L, S):
+    """The certainty score: each criterion by its rule (auto_scores), from facts only. A criterion whose fact isn't
+    known (`unknown`: the deposit, the closing date, the approval level...) isn't scored, and the total is scaled over
+    the criteria that were: half_up(100 × Σ(weight × score / 5) / Σ scored weights). `scores[k]` and `why[k]` are None
+    for a criterion that isn't scored; `unscored` names the missing facts behind each; `weight` is the scored weight."""
     s, why = auto_scores(o, L, S)
-    src = {k: "auto" for k in s}
-    for k, v in (o.get("scores") or {}).items():
-        if k not in s:
-            continue
-        if isinstance(v, dict):
-            s[k] = v.get("score", s[k])
-            why[k] = v.get("why", why[k])
-            src[k] = "agent"
-        elif v is not None:
-            s[k] = v
-            src[k] = "agent"
-    total = round(sum(w * s[k] / 5 for k, _, w in CRITERIA))
-    return {"scores": s, "why": why, "src": src, "total": total, "band": band(total)}
+    unknown = set(o.get("unknown") or ())
+    unscored = {k: [f for f in facts if f in unknown] for k, facts in score_inputs(o).items() if unknown & set(facts)}
+    for k, _, _ in CRITERIA:
+        if k in unscored or s.get(k) is None:
+            s[k], why[k] = None, None
+            unscored.setdefault(k, [])
+    weight = sum(w for k, _, w in CRITERIA if s[k] is not None)
+    if not weight:
+        raise OfferError(f"Offer {o['id']}: none of its certainty criteria can be scored without the facts they read. "
+                         "Give at least the financing type and the escrow deposit")
+    total = fmt.half_up(100 * sum(w * s[k] / 5 for k, _, w in CRITERIA if s[k] is not None) / weight)
+    return {"scores": s, "why": why, "unscored": unscored, "weight": weight, "total": total, "band": band(total)}
 
 
 # --- flags -------------------------------------------------------------------
@@ -1733,6 +1799,8 @@ def offer_field_problems(o):
     probs = cf.compensation_agreement_problems(o, listing_pays_buyer_broker(o), f"{where}.compensation_agreement")
     probs += choices.pick(o.get("status"), STATUSES, f"{where}.status", default="active")[1]
     probs += choices.pick(o.get("recommendation"), RECOMMENDATIONS, f"{where}.recommendation")[1]
+    probs += choices.pick(o.get("approval"), APPROVALS, f"{where}.approval")[1]
+    probs += [f"{where}.{k}: {fix}" for k, fix in RETIRED_OFFER_FIELDS.items() if k in o]
     e = o.get("escalation")
     if isinstance(e, dict) and e.get("contract_form") not in (None, ""):
         try:
@@ -2141,6 +2209,10 @@ def _sheet(t, o, L, S, costs, repair=0):
                      o.get("bb_from_listing", False))
 
 
+COUNTER_FACTS = {"deposit": "deposit", "close": "closing_days", "inspection_days": "inspection_days",
+                 "loan_approval_days": "loan_approval_days"}  # counter term -> the score fact it states
+
+
 def analyze_offer(o, L, S, costs):
     repair, o["repair_label"] = repair_reserve(o, L)
     o["repair_reserve"] = repair
@@ -2166,6 +2238,9 @@ def analyze_offer(o, L, S, costs):
         oc["aga_valuation_days"] = ct["aga_valuation_days"]
     oc["close_days"] = (oc["close"] - L["analysis_date"]).days
     set_windows(oc)  # ENG-14: windows tied to the closing date follow the counter's closing
+    # a term the counter states is known: its criterion is scored on the counter
+    oc["unknown"] = [f for f in o["unknown"] if not any(f == fact and ct.get(term) not in (None, o.get(term))
+                                                        for term, fact in COUNTER_FACTS.items())]
     if o["financed"] and o["approval"] in ("prequal", "none"):
         oc["approval"] = "preapproval"
     o["counter_score"], o["counter_risk_days"] = score_offer(oc, L, S)["total"], oc["risk_days"]

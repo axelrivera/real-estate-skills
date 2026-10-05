@@ -10,7 +10,7 @@ PDF agree. See references/listing-file.md for the input.
 
 Every label and sentence this script writes is a template in assets/labels.json. Notes go through one notes.Notes
 registry per document, keyed like the assumption that says the same thing, so each is said once and no label carries
-one. Text the model writes (the terms reason, the priority note, names, scores' reasons, checklist notes, the issues it
+one. Text the model writes (the terms reason, the priority note, names, checklist notes, the issues it
 read in a contract) is checked for figures (prose.figures): the script prints every figure itself. The input is never
 changed.
 """
@@ -120,11 +120,6 @@ def text_problems(data):
         if o.get("label"):
             check(f"{w}.label", o["label"], "name the offer in words (the buyer's agent and brokerage); the report adds "
                   "the price itself")
-        if o.get("agent_note"):
-            check(f"{w}.agent_note", o["agent_note"], words)
-        for k, v in (o.get("scores") or {}).items():
-            if isinstance(v, dict) and v.get("why"):
-                check(f"{w}.scores.{k}.why", v["why"], words)
         stance_reason = (o.get("counter") or {}).get("stance_reason") if isinstance(o.get("counter"), dict) else None
         if isinstance(stance_reason, str) and stance_reason.strip():
             check(f"{w}.counter.stance_reason", stance_reason, "say why this stance in words (the market, the seller's "
@@ -667,17 +662,19 @@ def to_confirm(R, limit=4, offer_id=None):
     return out
 
 
-THREAT_KEYS = ("appraisal", "contingency", "timeline", "approval", "financing", "deposit", "property", "agent")
+THREAT_KEYS = ("appraisal", "contingency", "timeline", "approval", "financing", "deposit", "property")
 # OFR-304: a certainty criterion's score as a flag severity (4 and 5 are no threat)
 THREAT_SEV = {1: "High", 2: "Med", 3: "Low"}
 SEV_RANK = {"Blocking": 0, "High": 1, "Med": 2, "Low": 3}
 
 
 def threat_key(o):
-    """The certainty criterion that costs the most points (weight × shortfall), or None when every one scores 4+."""
+    """The scored certainty criterion that costs the most points (weight × shortfall), or None when every one scores
+    4+ (a criterion that isn't scored is never the threat)."""
     weights = {k: w for k, _, w in oe.CRITERIA}
     s = o["score"]["scores"]
-    worst = min(THREAT_KEYS, key=lambda k: (-weights[k] * (5 - s[k]), THREAT_KEYS.index(k)))
+    scored = [k for k in THREAT_KEYS if s[k] is not None]
+    worst = min(scored, key=lambda k: (-weights[k] * (5 - s[k]), THREAT_KEYS.index(k)))
     return None if s[worst] >= 4 else worst
 
 
@@ -1578,14 +1575,17 @@ def timeline(o, R):
 
 
 def scorecard(o):
-    rows = []
+    """Every criterion with its weight; one without the fact it reads shows "Not scored" and no number (the notes say
+    which fact was missing), and the total row's weight is the scored weight the total is scaled over."""
+    sc, rows = o["score"], []
     for k, lab, w in oe.CRITERIA:
-        rows.append({"label": lab, "weight": fmt.pct(w / 100, 0), "score": o["score"]["scores"][k],
-                     "why": o["score"]["why"][k], "agent": o["score"]["src"][k] != "auto"})
-    b = o["score"]["band"]
-    return {"rows": rows, "total": {"label": L_["sc_total"], "weight": fmt.pct(1, 0), "score": o["score"]["total"],
+        v = sc["scores"][k]
+        rows.append({"key": k, "label": lab, "weight": fmt.pct(w / 100, 0), "score": v,
+                     "why": sc["why"][k] if v is not None else L_["sc_not_scored"]})
+    b = sc["band"]
+    return {"rows": rows, "total": {"label": L_["sc_total"], "weight": fmt.pct(sc["weight"] / 100, 0), "score": sc["total"],
                                     "band": b[1], "cls": b[0], "scale": L_["sc_scale"]},
-            "legend": L_["sc_legend"], "agent_tag": L_["sc_agent"]}
+            "legend": L_["sc_legend"]}
 
 
 # --- the comparison's chart ----------------------------------------------------------

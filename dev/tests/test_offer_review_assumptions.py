@@ -145,7 +145,8 @@ class ToConfirm(unittest.TestCase):
         rows = {r[0]: r[1] for r in review.term_rows(o, R)}
         self.assertEqual(rows["Inspection Period"], "7 days (AS IS)")  # the form shows plain
         self.assertNotIn("assumed", json.dumps(list(rows.values())))
-        self.assertNotIn("assumed", o["score"]["why"]["approval"])
+        for why in o["score"]["why"].values():  # the reasons of the criteria that were scored
+            self.assertNotIn("assumed", why or "")
         self.assertNotIn("assumed", review.walk_away(o, R["costs"])[1])
         self.assertNotIn("(assumed)", page(R, {}, sample=False))
         listed = {a["field"] for a in review.listed_assumptions(review.analyze(fixture("minimal-single.json")))}

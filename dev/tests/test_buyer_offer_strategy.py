@@ -46,6 +46,12 @@ def gatlin(**buyer):
             "buyer": {"cash_available": 38000, **buyer}}
 
 
+def roofed(d, year=2011):
+    """The same input with a roof that age: the insurance and condition criterion scores lower without a quote in hand."""
+    d["property"]["roof_year"] = year
+    return d
+
+
 def cypress():
     """An FHA buyer whose payment limit caps the price below the value range, against 2-3 competing offers."""
     d = {"analysis_date": "2026-09-26",
@@ -224,12 +230,12 @@ class Limits(unittest.TestCase):
 class Options(unittest.TestCase):
     def test_stronger_is_recommended_when_it_lifts_the_outlook_inside_limits(self):
         """Only a quote in hand is scored, so the buyer here has one."""
-        r = run(gatlin(insurance_quote=True))
+        r = run(roofed(gatlin(insurance_quote=True)))
         lvl = r["B"]["competition"]["level"]
         self.assertEqual(r["promoted"], "stronger")
         self.assertEqual(r["bands"]["recommended"][lvl][0], "strong")
         self.assertEqual(r["R"]["listing"]["state"], "FL")  # read from "Orlando, FL" without a ZIP
-        r = run(gatlin())  # no quote: not promoted, but kept as an option when it scores higher
+        r = run(roofed(gatlin()))  # no quote: not promoted, but kept as an option when it scores higher
         self.assertTrue(strategy.stronger_fits(r))
         self.assertIn("stronger", r["terms"])
         self.assertGreater(r["O"]["stronger"]["score"]["total"], r["O"]["recommended"]["score"]["total"])
@@ -323,10 +329,10 @@ class Options(unittest.TestCase):
 class BuyerPriority(unittest.TestCase):
     """buyer_priority picks the recommended option; competition.level and buyer_priority take only their choices."""
 
-    def with_priority(self, name, priority):
+    def with_priority(self, name, priority, roof=None):
         d = fixture(name)
         d["buyer_priority"] = priority
-        return run(d)
+        return run(roofed(d, roof) if roof else d)
 
     def test_missing_is_balanced_with_no_assumption(self):
         r = analyze("minimal.json")
@@ -335,7 +341,7 @@ class BuyerPriority(unittest.TestCase):
         self.assertEqual(r["terms"]["recommended"], self.with_priority("minimal.json", "balanced")["terms"]["recommended"])
 
     def test_win_takes_the_higher_score_inside_the_limits(self):
-        bal, win = analyze("minimal.json"), self.with_priority("minimal.json", "win")
+        bal, win = analyze("condo-flood.json"), self.with_priority("condo-flood.json", "win")
         self.assertIsNone(bal["promoted"])
         self.assertEqual(win["promoted"], "stronger")
         self.assertGreater(win["O"]["recommended"]["score"]["total"], bal["O"]["recommended"]["score"]["total"])
@@ -343,7 +349,9 @@ class BuyerPriority(unittest.TestCase):
         self.assertEqual(strategy.result(win)["summary"]["priority"]["key"], "win")
 
     def test_protect_cash_takes_less_cash_unless_at_risk(self):
-        bal, pc = analyze("stress-long-names.json"), self.with_priority("stress-long-names.json", "protect_cash")
+        # a newer roof keeps the fuller offer in the Strong band, so protecting cash gives something up
+        bal = self.with_priority("stress-long-names.json", "balanced", roof=2016)
+        pc = self.with_priority("stress-long-names.json", "protect_cash", roof=2016)
         self.assertIsNone(bal["promoted"])
         self.assertEqual((pc["promoted"], pc["framing"]), ("lower_cost", "cash_first"))
         lvl = pc["B"]["competition"]["level"]
@@ -578,10 +586,10 @@ class Insurance(unittest.TestCase):
     def test_quote_in_hand(self):
         """Only a quote in hand is scored: a planned quote is a to-do; a given premium is a quote unless marked
         otherwise, and then stays an assumption."""
-        r = run(gatlin())
+        r = run(roofed(gatlin()))
         self.assertIsNone(r["promoted"])
         self.assertIsNone(r["terms"]["recommended"]["insurance_quote"])
-        r = run(gatlin(insurance_quote="planned"))
+        r = run(roofed(gatlin(insurance_quote="planned")))
         self.assertIsNone(r["promoted"])
         self.assertEqual(r["terms"]["recommended"]["insurance_quote"], "planned")
         d = gatlin()

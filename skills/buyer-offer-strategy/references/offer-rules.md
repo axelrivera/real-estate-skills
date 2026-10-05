@@ -61,4 +61,4 @@ Below "At Risk" is "Unlikely". These are starting judgments, not probabilities; 
 
 ## Strength Score
 
-The listing side's certainty scorecard, eight criteria weighted to 100: financing 20, approval 10, appraisal risk 20, contingency exposure 15, deposit 10, fit with the seller's timeline 10, property condition / insurance 10, buyer agent track record 5. The report's scorecard shows each option's scores and why.
+The listing side's certainty scorecard, seven criteria scored from facts only: financing 20, approval 10, appraisal risk 20, contingency exposure 15, deposit 10, fit with the seller's timeline 10, property condition / insurance 10. The weights add to 95 and the total is scaled to 100 over the criteria scored; a criterion whose fact isn't known (another state's contract with no word on whether its inspection period is a walk-away: `worksheet.inspection_walkaway`) shows Not scored, and the notes say which fact was missing. The report's scorecard shows each option's scores and why.

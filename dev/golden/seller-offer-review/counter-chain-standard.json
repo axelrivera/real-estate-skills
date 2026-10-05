@@ -46,7 +46,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 77,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -340,7 +340,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544572.0,
+   "rank_value": 545211.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -373,7 +373,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 3,
@@ -382,17 +381,8 @@
      "property": 4,
      "timeline": 3
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 76
+    "total": 77,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -469,6 +459,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": true,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 0
   }
  ],
@@ -694,7 +687,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 77,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -988,7 +981,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544572.0,
+   "rank_value": 545211.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -1021,7 +1014,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 3,
@@ -1030,17 +1022,8 @@
      "property": 4,
      "timeline": 3
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 76
+    "total": 77,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1117,6 +1100,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": true,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 0
   }
  ],
@@ -1167,7 +1153,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 77,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1461,7 +1447,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544572.0,
+   "rank_value": 545211.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -1494,7 +1480,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 3,
@@ -1503,17 +1488,8 @@
      "property": 4,
      "timeline": 3
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 76
+    "total": 77,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1590,6 +1566,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": true,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 0
   }
  ],

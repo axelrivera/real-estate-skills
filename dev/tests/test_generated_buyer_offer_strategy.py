@@ -6,6 +6,8 @@ document model and the printed pages, for any valid input. Never a sentence, nev
     cash less the worst case;
   - limits: the recommended offer is inside every buyer limit (max price, payment, reserve floor, the program's
     concession cap) unless the model says it breaks one, and then it names one;
+  - scores read facts only: each option's strength total is the scaled sum of its scored rows, and every option is
+    scored over the same criteria (the scorecard's one total weight);
   - the worksheet is offer terms only: changing the buyer's max, cash, reserve and payment limit leaves it unchanged;
   - notes: each note once (by key and by text), never also in What to Confirm; no label carries a note;
   - the input is unchanged;
@@ -167,6 +169,22 @@ class Model(unittest.TestCase):
                     # for gaining nothing)
                     if "stronger" in pc["bands"]:
                         self.assertEqual(strategy.BAND_RANK[pc["bands"]["stronger"][lvl][0]], rank["protect_cash"])
+
+    def test_scores_read_facts_only(self):
+        W = {k: w for k, _, w in strategy.oe.CRITERIA}
+        for seed, _, r, M in cases():
+            with self.subTest(seed=seed):
+                for o in r["O"].values():
+                    sc = o["score"]
+                    scored = [k for k in W if sc["scores"][k] is not None]
+                    self.assertEqual(sc["weight"], sum(W[k] for k in scored))
+                    self.assertEqual(sc["total"], fmt.half_up(100 * sum(W[k] * sc["scores"][k] / 5 for k in scored)
+                                                              / sc["weight"]))
+                self.assertEqual(len({o["score"]["weight"] for o in r["O"].values()}), 1)
+                card = M["detail"]["scorecard"]
+                self.assertEqual(card["total"]["weight"], strategy.t("weight", n=r["O"]["recommended"]["score"]["weight"]))
+                for row in card["rows"]:
+                    self.assertEqual(row["scores"], [o["score"]["scores"][row["key"]] for o in r["O"].values()])
 
     def test_worksheet_is_offer_terms_only(self):
         for seed, _, r, M in cases():
