@@ -217,7 +217,9 @@ def strip(t, colors):
         r = 6 if row["key"] == "closing" else 4.2
         critical = any(r_["critical"] and not r_.get("done") for r_ in rows)
         dots.append(f'<circle cx="{x:.1f}" cy="{mid}" r="{r}" fill="{col if critical else "#fff"}" stroke="{col}" stroke-width="1.6"/>')
-        labels.append(f'<text x="{cx:.1f}" y="{y}" class="lbl" text-anchor="middle" style="fill:{col}">{esc(m["text"])}</text>')
+        # a white copy under the label instead of an outline with paint-order, which some PDF viewers smear
+        labels.append(f'<text x="{cx:.1f}" y="{y}" class="lbl halo" aria-hidden="true" text-anchor="middle">{esc(m["text"])}</text>'
+                      f'<text x="{cx:.1f}" y="{y}" class="lbl" text-anchor="middle" style="fill:{col}">{esc(m["text"])}</text>')
     s += lines + dots + labels  # leaders under the dots and labels; labels carry a white halo (timeline.css)
     s.append("</svg>")
     return "".join(s)

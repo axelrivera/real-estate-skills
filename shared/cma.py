@@ -275,7 +275,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
              for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
     bx, by, anchor, box = next((sp for sp in spots if not _hits(sp[3], marks, [])), spots[0])
     placer.boxes.append(box)
-    o.append(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>')
+    o.append(_halo(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>'))
     o.append(placer.place(sx, sy, sc.get("subject_label_pos", "left"), sc.get("subject_label", display_address(subject_address)),
                           "lbl-subj", 14, 13, bold=True, droppable=True))
     points = {}
@@ -308,8 +308,20 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
 
 
 def _text_w(text, size, bold=False):
-    """About how wide a chart label draws (sans-serif letters and digits average ~0.56 em, bold ~0.6)."""
-    return len(text) * size * (0.6 if bold else 0.56)
+    """About how wide a chart label draws (sans-serif letters and digits average ~0.56 em, bold ~0.6), plus room for the
+    wider fallback fonts some sandboxes print with (Results_v5: a band label measured for Helvetica ran into a marker)."""
+    return len(text) * size * (0.6 if bold else 0.56) * FONT_SLACK
+
+
+FONT_SLACK = 1.15
+
+
+def _halo(svg_text):
+    """A label drawn twice: first a background-colored copy with a thick outline, then the label itself with no outline.
+    One outlined copy (paint-order: stroke) smeared in viewers that ignore paint-order or draw the outline in the text's
+    color (Results_v5 case 02); a separate copy whose fill and outline are both the background reads in every viewer."""
+    under = svg_text.replace('class="', 'aria-hidden="true" class="halo ', 1)
+    return under + svg_text
 
 
 def _hits(box, marks, boxes, count=False):
@@ -433,10 +445,10 @@ def _label(px, py, side, text, cls, gap):
     """A chart label beside a point: side is left, right, above or below."""
     if side in ("above", "below"):
         ty = py - gap - 2 if side == "above" else py + gap + 10
-        return f'<text x="{px:.1f}" y="{ty:.1f}" text-anchor="middle" class="{cls}">{esc(text)}</text>'
+        return _halo(f'<text x="{px:.1f}" y="{ty:.1f}" text-anchor="middle" class="{cls}">{esc(text)}</text>')
     left = side == "left"
-    return (f'<text x="{px - gap if left else px + gap:.1f}" y="{py + 4:.1f}" text-anchor="{"end" if left else "start"}" '
-            f'class="{cls}">{esc(text)}</text>')
+    return _halo(f'<text x="{px - gap if left else px + gap:.1f}" y="{py + 4:.1f}" text-anchor="{"end" if left else "start"}" '
+                 f'class="{cls}">{esc(text)}</text>')
 
 
 def scatter_legend(L, subject, counts):
