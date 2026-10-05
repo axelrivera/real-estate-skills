@@ -2,7 +2,7 @@
 
 A smoke test of the installed plugin, once per release: about ten yes/no checks in about twenty minutes, in the desktop app (Cowork) and then a shorter pass in claude.ai. It covers only what automation can't reach: the plugin installs, the profile is saved and found, uploads are read, a chat carries the buyer CMA into the offer, and the files are delivered and open (the PowerPoint in PowerPoint or Keynote, the calendar file in a calendar app).
 
-Content, numbers and layout are never reviewed by hand. The math is pinned by the golden snapshots, every page and slide is checked over generated inputs (`make fuzz`), and what Claude reads, asks and writes is graded by the evals ([development.md](development.md#tests)). A wrong number seen during the smoke pass is still a bug: write it in the results and reproduce it with the case's mirroring eval.
+Content, numbers and layout are never reviewed by hand. The math is pinned by the golden snapshots, every page and slide is checked over generated inputs (`make fuzz`, fresh seeds every run), and what Claude reads, asks and writes is graded by the evals ([development.md](development.md#tests)). A wrong number seen during the smoke pass is still a bug: write it in the results and reproduce it with the case's mirroring eval.
 
 ## Setup (Once per Release)
 

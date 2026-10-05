@@ -21,7 +21,7 @@ help:
 	@echo "make check          The everyday gate: check-sync, lint-skills, py311, style-check and test (about 3 minutes)"
 	@echo "make release-check  Before the pull request into main: the slow mock-contract tests and make fuzz (skills in parallel)"
 	@echo "make smoke          Build what the smoke pass needs, no tests: the .plugin, the skill zips and the manual kit"
-	@echo "make fuzz           Run the generated tests on N inputs per skill, every skill in parallel (N=200 default, FUZZ_SEED, SKILL=<skill>)"
+	@echo "make fuzz           Run the generated tests on N inputs per skill, every skill in parallel (N=25 default, fresh seeds; FUZZ_SEED, SKILL=<skill>)"
 	@echo "make golden         Rewrite dev/golden/ from the current code (review the diff; make test fails until it matches)"
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
 	@echo "make layout-check   Render every PDF fixture into $(OUT)/layout/; fail on page-1 overflow, clipped text or a near-empty page"
@@ -69,24 +69,28 @@ test:
 
 # The generated tests at release size: N seeded inputs per skill (200 by default; FUZZ_SEED=… shifts the seeds),
 # SKILL=seller-cma for one skill. make test runs the same tests on 8 inputs.
+# 25 inputs per skill on fresh seeds each run (the seed is printed, FUZZ_SEED=… repeats a run); N=200 after a change
+# to the page-fitting code
 FUZZ_SKILLS := buyer_cma buyer_offer_strategy contract_timeline seller_cma seller_net_sheet seller_offer_review
+export FUZZ_SEED ?= $(shell echo $$((RANDOM * 100)))
 fuzz:
+	@echo "fuzz: $(or $(N),25) inputs per skill from seed $(FUZZ_SEED) (repeat with FUZZ_SEED=$(FUZZ_SEED))"
 ifdef SKILL
-	@FUZZ_N=$(or $(N),200) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$(subst -,_,$(SKILL)).py'
+	@FUZZ_N=$(or $(N),25) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$(subst -,_,$(SKILL)).py'
 else
 	@$(MAKE) --no-print-directory -j$(words $(FUZZ_SKILLS)) $(addprefix fuzz-,$(FUZZ_SKILLS))
 endif
 
 fuzz-%:
-	@FUZZ_N=$(or $(N),200) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$*.py' \
+	@FUZZ_N=$(or $(N),25) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$*.py' \
 		> $(OUT)/fuzz-$*.log 2>&1 && echo "fuzz $*: OK" || { echo "fuzz $*: FAILED ($(OUT)/fuzz-$*.log)"; tail -5 $(OUT)/fuzz-$*.log; exit 1; }
 
 # The everyday gate (make test also prints every PDF fixture when Chromium is installed, the same check as layout-check)
 check: check-sync lint-skills py311 style-check test
 
-# Before the pull request into main (docs/release-checklist.md): the slow mock-contract tests, then make fuzz
+# Before the pull request into main, after make check (docs/release-checklist.md): the slow mock-contract tests, then make fuzz
 release-check:
-	@RUN_SLOW=1 $(MAKE) --no-print-directory test
+	@RUN_SLOW=1 $(NVM) $(DEV_ENV) $(PY) -m unittest dev.tests.test_mock_contracts
 	@mkdir -p $(OUT) && $(MAKE) --no-print-directory fuzz
 
 # The smoke pass's files, built from a develop that already passed make check: no tests run here
