@@ -455,7 +455,7 @@ PAGINATE_JS = """([pageH, starts, minRows = 3]) => {
   // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
   // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
   // Results_v5: a table or list runs on once a fifth of the page is left (it was a third: whole pages went 35-60% empty)
-  const SAFE = 16, FLOW_ROOM = 0.2;
+  const SAFE = 16, FLOW_ROOM = 0.2, PLAIN_WHOLE = 0.15;
   const squash = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
   // A kept group that runs on: each of `units` stays whole and starts the next page when it doesn't fit this one
   const split = (el, units) => {
@@ -477,6 +477,13 @@ PAGINATE_JS = """([pageH, starts, minRows = 3]) => {
     if (el.classList.contains('onepage')) window.__onepageH = h;
     if (el.classList.contains('pb')) { if (pos > 5) shift += pageH - pos; continue; }
     const isKeep = el.classList.contains('kg');
+    // A short plain block (a paragraph between groups) that would reach the page's bottom margin starts the next page:
+    // the print moves it whole (a split paragraph keeps whole lines and at least two of them a side) where this
+    // estimate would let it run on, so what follows printed lower than placed here
+    if (pos > 5 && !isKeep && !el.classList.contains('onepage') && h > 0 && h <= PLAIN_WHOLE * pageH
+        && pos + h > pageH - SAFE) {
+      el.classList.add('pb'); shift += pageH - pos; continue;
+    }
     if (isKeep && h > 0.8 * pageH) el.classList.add('big');
     const keepOK = isKeep && !el.classList.contains('big');
     if (el.classList.contains('big')) {
