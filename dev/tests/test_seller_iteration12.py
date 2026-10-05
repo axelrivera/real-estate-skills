@@ -95,7 +95,7 @@ class EscalationForm(unittest.TestCase):
         return {"escalation": {"cap": 506000, "increment": 2000, "proof": True, "contract_form": form}}
 
     def test_standard_box_on_as_is_offer(self):
-        R = review.analyze(case05(b=self.esc("Residential Contract for Sale and Purchase (FR/BAR)")))
+        R = review.analyze(case05(b=self.esc("Residential Contract for Sale and Purchase (FR/BAR)")))  # legacy name on the form, still read
         f = flag(offer(R, "B"), "escalation_form")
         self.assertEqual(f["sev"], "High")
         self.assertIn("Standard contract", f["issue"])
