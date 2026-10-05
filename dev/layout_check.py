@@ -5,7 +5,9 @@ profile, dev/fixtures/_profiles/stress.md), then fails on:
   - a page-1 overflow warning ("... overflows by ...px") or a clip warning ("Check: ... clipped", from
     shared/render.py html_to_pdf) on stderr;
   - a near-empty page, read from the PDF with cma.page_fill: a page between the first and the last under half full
-    (MIDDLE), or a last page after page 1 under 15% full (TAIL).
+    (MIDDLE), or a last page after page 1 under 15% full (TAIL);
+  - a table split against the rule (fewer than 3 of its rows on a page, a total apart from the 2 rows above it, a
+    table under 8 rows split at all), read back from the printed PDF by the layout probe (LAYOUT_PROBE=1, on here).
 ALLOW lists the few pages a fixture leaves near-empty on purpose, each with its reason.
 
     .venv/bin/python dev/layout_check.py [skill ...]     # renders into out/layout/, exits 1 on any problem
@@ -35,7 +37,7 @@ SKILLS = {
 }
 # (skill/fixture, PDF file name, page) -> why that page may be near-empty. Only for fixtures that are extreme on purpose.
 ALLOW = {}
-WARNINGS = ("overflows by", "clipped", "doesn't fit on one page")
+WARNINGS = ("overflows by", "clipped", "doesn't fit on one page", "split table")
 
 
 def fixtures(skills=None):
@@ -74,7 +76,7 @@ def check(skill, fixture, out_root):
     os.makedirs(dest)
     args = [sys.executable, os.path.join(ROOT, "skills", skill, "scripts", "render.py"), fixture, "--format", fmt,
             "--out", dest, "--profile", profile_for(fixture)]
-    env = dict(os.environ, OUTPUT_DIR=dest, NODE_PATH=os.path.join(ROOT, "dev", "node_modules"))
+    env = dict(os.environ, OUTPUT_DIR=dest, NODE_PATH=os.path.join(ROOT, "dev", "node_modules"), LAYOUT_PROBE="1")
     r = subprocess.run(args, cwd=ROOT, env=env, capture_output=True, text=True)
     if r.returncode:
         return ident, [], [f"{ident}: didn't render: {r.stderr.strip()[-400:]}"]

@@ -3,13 +3,13 @@
 `assets/example-report.json` is a complete, approved report: copy it and replace every value. report.json holds two kinds of fields:
 
 - **Data** copied from the sources: prices, dates, the history grid, each comp's sale and adjustments, the payment inputs. Money fields marked *number* are plain numbers (no `$` or commas).
-- **Judgment** in your words: why the range sits where it does, why each step of the plan, what it assumes, the watch items and questions. Judgment fields carry **no figures**: no digits, `$`, `%` or month names (`{placeholders}` neither). The script writes every count, price, percent, date and comparison itself, from the numbers, in its own sentences next to yours; a figure typed into a judgment field stops compute.py and render.py, naming each field. Write "the spring sales", "repeated price cuts", "the four-point inspection", never "April" or "4 cuts". Body text may contain `<strong>` and `<em>`, nothing else.
+- **Judgment** in your words: why the range sits where it does, why each step of the plan, what it assumes, the watch items and questions. Judgment fields carry **no figures**: no digits, `$`, `%`, months, seasons or weekdays (`{placeholders}` neither), and never describe the people who own or live in the home (vacant, a tenant, relocating, their family): compute.py stops on either. The script writes every count, price, percent, date and comparison itself, from the numbers, in its own sentences next to yours; a figure typed into a judgment field stops compute.py and render.py, naming each field. Write "the earlier sales", "repeated price cuts", "the four-point inspection", never "April", "the spring sales" or "4 cuts". Body text may contain `<strong>` and `<em>`, nothing else.
 
 Fields the script now writes itself (a `paragraph`, an `intro`, `key_stats`, the market table, a card's `meta`, a scenario's `label`) stop the run with a note saying where your judgment goes instead.
 
 ## Contents
 
-- Top level · subject · summary_page · bottom_line · history · offer_plan · offer · comps · scatter · competition · market · costs · watch
+- Top level · subject · summary_page · bottom_line · range_override · history · offer_plan · offer · comps · scatter · competition · market · costs · watch
 
 ## Top Level
 
@@ -44,7 +44,8 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 | `as_is_public` | Optional: `true` only when the public remarks or the flyer say As-Is. Without it, compute.py warns on a judgment sentence that states the seller's As-Is preference (`listing-sheet.md`) |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily` or `land`. A condo follows `condo.md` |
 | `facts` | The listing's own facts as `[label, value]`, copied from the property report, labels in Title Case: Lot, Built, Pool, Garage, HOA / CDD, Flood Zone. The script puts List Price, Price per Sq Ft, Beds / Baths and Living Area first, from the numbers |
-| `summary` | Judgment, 1–2 sentences: what the home is and anything unusual about the sale (vacant, trust or estate owner), figure-free |
+| `condition` | Its level on the condition ladder (`condition-ladder.md`), from the listing's own words: each comp is adjusted by the difference between its level and this one |
+| `summary` | Judgment, 1–2 sentences: what the home is and anything unusual about the sale (an As-Is sale the public remarks state), figure-free; never who owns or lives in it |
 
 ## summary_page
 
@@ -52,7 +53,11 @@ All judgment, figure-free: `label` (default "Buyer Summary"), `headline` (under 
 
 ## bottom_line
 
-`low`, `high` (*numbers*: the supported range, `method.md`); `why`: judgment, 2–3 sentences on why the range sits where it does (which sales it leans on). The script says where asking sits in the range and quotes the median adjusted comp.
+`why`: judgment, 2–3 sentences on why the range sits where it does (which sales it leans on). The range is the script's, by the rule in `method.md`: never type `low` or `high` (compute.py stops on them). The script says where asking sits in the range and quotes the median adjusted comp.
+
+## range_override
+
+Only when the agent chose the range themselves: `{low, high, reason}` (*numbers*, and judgment: why, in words, no figures). The report uses it and says beside it that it's the agent's judgment, with the method's range for comparison; compute.py still warns when it's wider than the cap, too narrow or set by one comp.
 
 ## history (whenever there's more than the current listing)
 
@@ -85,11 +90,13 @@ Optional `heading` (default "Negotiating Points") and 2–4 `bullets`, each star
 
 ## comps
 
-- `cards` (3–6): `address` (as the export spells the street), `sold_price` *number*, `seller_concessions` *number* (0 if none), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Renovation", "amount": 45000}`), optional `close_date` (`YYYY-MM-DD`, when the export doesn't have the sale), and 1–3 `bullets`: judgment, why the sale is a comp and what its adjustments are about, in words. The card's sale line (price, date, size, beds and baths, pool, lot, distance) comes from the export, and each adjustment prints with its amount, adding up to the adjusted value. compute.py computes each adjusted value (sale price − concessions + adjustments) and the summary table; never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
+- `cards` (3–6): `address` (as the export spells the street), `sold_price` *number*, `seller_concessions` *number* (0 if none), `condition` (its level on the condition ladder, `condition-ladder.md`: `original`, `cosmetic`, `baths_only`, `kitchen_only`, `kitchen_and_baths`, `full_renovation` or `new`), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Pool", "amount": 25000}`; never a condition amount: the script adds the condition line from the levels, and stops on a typed one), optional `close_date` (`YYYY-MM-DD`, when the export doesn't have the sale), and 1–3 `bullets`: judgment, why the sale is a comp and what its adjustments are about, in words. The card's sale line (price, date, size, beds and baths, pool, lot, distance) comes from the export, and each adjustment prints with its amount, adding up to the adjusted value. compute.py computes each adjusted value (sale price − concessions + adjustments) and the summary table; never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
 - `time_adjustment` (optional, `method.md`, Time): `{rate_per_quarter, prices, cutoff}`. The script adds each card's time line and names the rate and cutoff in the method line.
 - Judgment: `intro` (how the comps were chosen), `method_note` (caveats the method line doesn't say: condition is judged from listing text, a departure from the built-in rates), `lean` (which way the range leans and why). The script writes the count and dates of the sales and the method line naming each kind of adjustment used, with its amounts.
 
-At the comps-only stage (the gut check, or the first run to set the range) a card needs only `address`, `sold_price`, `seller_concessions` and `adjustments`.
+- Optional `condition_values`: `{level: dollars over an original home}`, from paired sales or the agent's rates, scaled to the price: needed outside the built-in market (and for a home outside `cma.calibrated_for` when the agent has better rates).
+
+At the comps-only stage (the gut check, or the first run, which prints the range) a card needs only `address`, `sold_price`, `seller_concessions`, `condition` and `adjustments`, and `subject` its `condition`.
 
 ## scatter (standard)
 

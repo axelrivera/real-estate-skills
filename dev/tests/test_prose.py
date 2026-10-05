@@ -129,6 +129,34 @@ class FigureFree(unittest.TestCase):
             self.assertEqual(prose.figures(text), found, text)
 
 
+class DatesInWordsAndPeople(unittest.TestCase):
+    """Judgment fields carry no date in words (a month, a season, a weekday) and never describe the people who own or
+    live in the home; contract data keeps them (it isn't checked with people())."""
+
+    def test_dates_in_words(self):
+        for text in ("Sold in the spring.", "The Spring Sales Set the Range", "since early summer", "by May", "in mid-May",
+                     "an autumn listing", "closings this fall", "the fall market", "Open house Sunday",
+                     "Showings on Saturdays", "since last winter", "two winters ago"):
+            self.assertTrue(prose.figures(text), text)
+        for text in ("May Close Sooner", "It may need a roof.", "Prices could fall further.", "A fall in prices",
+                     "Winter Park sales", "near Spring Hill", "in Altamonte Springs", "Summer Lakes Dr",
+                     "The earlier sales sit higher.", "a recent sale"):
+            self.assertEqual(prose.figures(text), [], text)
+
+    def test_people(self):
+        for text in ("The seller lives in Ohio now.", "The house is vacant.", "Owner-occupied until closing.",
+                     "A tenant is in place through spring.", "Occupied by the owner's family.", "The sellers are moving.",
+                     "They are relocating for work.", "The owners are divorcing.", "Their family has outgrown it.",
+                     "The estate sale is handled by heirs.", "A job transfer means a quick sale.", "moving out by June",
+                     "The owner passed away last year.", "Financial hardship drives the price."):
+            self.assertTrue(prose.people(text), text)
+        for text in ("Move-in ready, with a new roof.", "Homes were moving faster in the spring market.",
+                     "A vacant lot sits behind it.", "Leased land: confirm the ground rent.", "The seller pays part of "
+                     "the buyer's costs.", "Built for a growing kitchen garden.", "Living area is the county's figure.",
+                     "Ask the listing agent about the roof permit."):
+            self.assertEqual(prose.people(text), [], text)
+
+
 class PlaceNamesAndAllowList(unittest.TestCase):
     """Proper names don't block a render; the allow list needs a reason and is reported."""
 

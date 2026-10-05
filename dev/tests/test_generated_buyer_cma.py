@@ -8,7 +8,8 @@ printed report, for any valid input. Never a sentence, never a past case.
   - notes: each note is said once (by key and by text) and printed once; no label carries a note;
   - the scatter's legend names exactly the series drawn;
   - compute never changes its input; every dollar figure and percent on the page comes from the model;
-  - printed: nothing clipped or over a page, page 1 on one page, no page between the first and last under half full.
+  - printed: nothing clipped or over a page, page 1 on one page, no page between the first and last under half full,
+    no table split against the rule (3 rows a side, a total with the 2 rows above it, a small table whole).
 
 FUZZ_N inputs (8 by default; FUZZ_N=200 before a release), seeds from FUZZ_SEED (0). The printed checks need Chromium
 and pdftotext and run on the first PRINT_N of them (all by default).
@@ -23,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import ROOT, load  # noqa: E402
@@ -123,11 +125,29 @@ class Model(unittest.TestCase):
                         want = -want if info["falling"] else want
                     self.assertEqual(sum(lines), want)
 
-    def test_range_within_the_cap(self):
-        for seed, _, C in cases():
+    def test_range_by_the_rule(self):
+        """The range is the shared rule's for the adjusted comps (cma.choose_range), so it passes every range check;
+        an agent's range_override is used as given and said beside the method's. Each condition line is the levels'
+        difference."""
+        for seed, R, C in cases():
             with self.subTest(seed=seed):
-                self.assertFalse({"range_wide", "range_one_comp", "range_narrow"} & set(C["warning_keys"]))
-                self.assertLessEqual(C["range"]["width"], C["range"]["cap"] + 1)
+                market = compute.load_inputs(R)[0]
+                values = [c["adjusted"] for c in C["comps"]["cards"]]
+                rule = cma.choose_range(values, market)
+                over = R.get("range_override")
+                self.assertEqual((C["range"]["low"], C["range"]["high"]), (over["low"], over["high"]) if over else rule)
+                self.assertEqual(C["range"]["override"], bool(over))
+                if over:
+                    self.assertIn(fmt.range(*rule), C["bottom_line"]["line"])
+                else:
+                    self.assertFalse({"range_wide", "range_one_comp", "range_narrow"} & set(C["warning_keys"]))
+                    self.assertLessEqual(C["range"]["width"], C["range"]["cap"] + 1)
+                levels = cma.condition_values(market, R["comps"].get("condition_values"))
+                mine = levels.get(R["subject"]["condition"], 0)
+                for card, given in zip(C["comps"]["cards"], R["comps"]["cards"]):
+                    lines = [fmt.money(mine - levels[given["condition"]], style="signed")] \
+                        if levels.get(given["condition"], mine) != mine else []
+                    self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
 
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, _, C in cases():
@@ -177,6 +197,7 @@ class Model(unittest.TestCase):
 
 
 @unittest.skipUnless(PRINTS, "needs Chromium and pdftotext")
+@mock.patch.dict(os.environ, {"LAYOUT_PROBE": "1"})  # the layout probe: printed tables read back for the split rule
 class Printed(unittest.TestCase):
     def test_nothing_clipped_page_one_fits_no_near_empty_page(self):
         for seed, _, C in cases()[:PRINT_N]:
@@ -185,7 +206,7 @@ class Printed(unittest.TestCase):
                 err = io.StringIO()
                 with contextlib.redirect_stderr(err):
                     (path,) = render.build(C, "pdf", tmp, {"agent": agent})
-                for bad in ("clipped", "overflows", "doesn't fit on one page"):
+                for bad in ("clipped", "overflows", "doesn't fit on one page", "split table"):
                     self.assertNotIn(bad, err.getvalue())
                 self.assertEqual(placeholders.problems(err.getvalue().splitlines()), [])
                 pages = layout.page_fill(path, 0.45, 0.55)

@@ -21,6 +21,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 
@@ -314,7 +315,137 @@ def group_blocks(elements):
     return "".join(out)
 
 
-PAGINATE_JS = """([pageH, starts]) => {
+# --- where a table may split -------------------------------------------------------------------------------------
+# One rule for every table in every PDF: a table splits across pages only with at least SPLIT_MIN_ROWS body rows on each
+# side; a summary row (a total, a subtotal, the final line) stays with the SPLIT_MIN_ROWS - 1 rows above it; a small
+# table never splits: fewer than SPLIT_MIN_TABLE body rows that together take less than SMALL_TABLE_SHARE of the page.
+# A table that tall in fewer rows (offers side by side, each row a paragraph) is as tall as a section: it runs on rather
+# than leave the page before it half empty, with at least TALL_MIN_ROWS rows a side when it has under 2 * SPLIT_MIN_ROWS
+# (each such row is several lines), and never with fewer than 2 * TALL_MIN_ROWS rows. TABLE_BREAKS_JS sets it on the rows
+# themselves (break-before: avoid where a break isn't allowed, break-inside: avoid on a small table) and marks each
+# table data-split="whole" or "rows", before anything is measured, so the print keeps it for any data; PAGINATE_JS
+# lets a table run on only when it's "rows", and the probe (table_split_problems) checks the printed PDF by the marks.
+SPLIT_MIN_ROWS = 3
+SPLIT_MIN_TABLE = 8
+TALL_MIN_ROWS = 2
+SMALL_TABLE_SHARE = 0.25
+SUMMARY_ROWS = ("total", "total2", "subtotal", "final")  # row classes that sum up the rows above them
+TABLE_BREAKS_JS = r"""([minRows, minTable, summary, wholePx, tallRows]) => {
+  const isSum = r => summary.some(c => r.classList.contains(c));
+  let n = 0;
+  for (const tb of document.querySelectorAll('table')) {
+    if (tb.closest('svg')) continue;
+    const rows = Array.from(tb.tBodies).flatMap(b => Array.from(b.rows));
+    if (!rows.length) continue;
+    n++;
+    const box = tb.closest('.tbl') || tb;
+    rows.forEach(r => { r.style.breakInside = 'avoid'; });
+    const tall = tb.getBoundingClientRect().height > wholePx;
+    const side = rows.length >= 2 * minRows ? minRows : tallRows;
+    if (rows.length < 2 * side || (rows.length < minTable && !tall)) {
+      for (const e of [box, tb]) { e.style.breakInside = 'avoid'; e.dataset.split = 'whole'; }
+      continue;
+    }
+    for (const e of [box, tb]) { if (e === box) e.style.breakInside = 'auto'; e.dataset.split = 'rows'; e.dataset.side = side; }
+    if (box !== tb) box.classList.add('brk');  // its outline moves to the table (report.css): no empty band at a break
+    const avoid = new Set();
+    for (let i = 1; i < side; i++) avoid.add(i);
+    for (let i = rows.length - side + 1; i < rows.length; i++) avoid.add(i);
+    rows.forEach((r, i) => { if (isSum(r)) for (let k = Math.max(1, i - minRows + 2); k <= i; k++) avoid.add(k); });
+    avoid.forEach(i => { rows[i].style.breakBefore = 'avoid'; });
+  }
+  return n;
+}"""
+
+
+def table_break_rules(pg, page_px):
+    """Apply the table-split rule (TABLE_BREAKS_JS) to every table on the page; `page_px` is the printable height.
+    Returns how many tables it set."""
+    return pg.evaluate(TABLE_BREAKS_JS, [SPLIT_MIN_ROWS, SPLIT_MIN_TABLE, list(SUMMARY_ROWS), SMALL_TABLE_SHARE * page_px,
+                                         TALL_MIN_ROWS])
+
+
+# The layout probe (dev only: LAYOUT_PROBE=1, set by make layout-check and the generated tests): before printing, a
+# tiny marker in each table row's first cell (PROBE_MARK, nearly transparent, positioned so it moves nothing); after
+# printing, the markers read back from the PDF say which page each row printed on, and table_split_problems checks
+# the split rule against them. A client PDF never carries a marker: the probe is off unless the variable is set.
+PROBE_ENV = "LAYOUT_PROBE"
+PROBE_WORD = re.compile(r"qq(\d+)x(\d+)qq")
+PROBE_JS = r"""([summary]) => {
+  const out = [];
+  for (const tb of document.querySelectorAll('table')) {
+    if (tb.closest('svg')) continue;
+    const rows = Array.from(tb.tBodies).flatMap(b => Array.from(b.rows));
+    if (!rows.length || !tb.getClientRects().length) continue;
+    const t = out.length;
+    rows.forEach((r, i) => {
+      const td = r.cells[0]; if (!td) return;
+      td.style.position = 'relative';
+      const s = document.createElement('span');
+      s.textContent = `qq${t}x${i}qq`;
+      s.style.cssText = 'position:absolute;left:0;top:0;font-size:1px;line-height:1px;color:rgba(255,255,255,0.01);' +
+                        'white-space:nowrap;pointer-events:none';
+      td.appendChild(s);
+    });
+    out.push({n: rows.length, whole: tb.dataset.split !== 'rows', side: parseInt(tb.dataset.side || '0', 10),
+              summary: rows.map((r, i) => summary.some(c => r.classList.contains(c)) ? i : -1).filter(i => i >= 0),
+              first: (rows[0].innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40)});
+  }
+  return out;
+}"""
+
+
+def probing():
+    return bool(os.environ.get(PROBE_ENV))
+
+
+def probe_rows(pg):
+    """Mark every table row for the read-back (PROBE_JS). Returns the tables: [{n, whole, summary, first}]."""
+    return pg.evaluate(PROBE_JS, [list(SUMMARY_ROWS)])
+
+
+def row_pages(pdf):
+    """{(table, row): page} from the probe's markers in a printed PDF (pages from 1). {} without pdftotext."""
+    tool = shutil.which("pdftotext")
+    if not tool:
+        return {}
+    try:
+        text = subprocess.run([tool, pdf, "-"], capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    out = {}
+    for page, chunk in enumerate(text.split("\f"), 1):
+        for t, r in PROBE_WORD.findall(chunk):
+            out.setdefault((int(t), int(r)), page)
+    return out
+
+
+def table_split_problems(tables, pages, name=""):
+    """Where a printed table broke the split rule, as sentences: a small table (TABLE_BREAKS_JS marked it whole) split
+    at all, a page holding fewer rows of a split table than its side minimum, or a summary row printed apart from the
+    rows above it. `tables` is probe_rows' list, `pages` row_pages' map."""
+    out = []
+    for t, tb in enumerate(tables or []):
+        where = [pages.get((t, i)) for i in range(tb["n"])]
+        if None in where or len(set(where)) < 2:
+            continue
+        label = f"{name}: the table starting \"{tb['first']}\""
+        if tb["whole"]:
+            out.append(f"{label} is small ({tb['n']} rows) yet is a split table (pages {where[0]} to {where[-1]}); "
+                       "a small table never splits")
+            continue
+        for p in sorted(set(where)):
+            k = where.count(p)
+            if k < (tb.get("side") or SPLIT_MIN_ROWS):
+                out.append(f"{label}: page {p} holds only {k} row{'s' if k != 1 else ''} of a split table")
+        for i in tb["summary"]:
+            lo = max(0, i - SPLIT_MIN_ROWS + 1)
+            if len(set(where[lo:i + 1])) > 1:
+                out.append(f"{label}: its summary row {i + 1} printed apart from the rows above it in a split table")
+    return out
+
+
+PAGINATE_JS = """([pageH, starts, minRows = 3]) => {
   // Page 1 fits itself: tighten in steps (fit1 → fit3, cumulative) until it clears the page with a small margin.
   const one = document.querySelector('.onepage'); let fit = 0;
   while (one && fit < 3 && one.getBoundingClientRect().height > pageH - 16) one.classList.add('fit' + (++fit));
@@ -402,8 +533,11 @@ PAGINATE_JS = """([pageH, starts]) => {
         // runs on: its block moves whole (iteration 12)
         const tb = el.querySelector('.tbl'), rows = tb ? tb.querySelectorAll('tbody tr') : [];
         const items = tb ? [] : el.querySelectorAll(':scope > ul > li, :scope > ol > li');
-        const parts = tb ? rows : items, keep = tb ? 3 : 2;
-        if (parts.length >= keep + 2 && pos + parts[keep - 1].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
+        // A table runs on only when the split rule lets it (TABLE_BREAKS_JS marked it data-split="rows"), with
+        // SPLIT_MIN_ROWS of its rows here; the rows' own break rules keep as many for the next page
+        const parts = tb ? rows : items, keep = tb ? (parseInt(tb.dataset.side, 10) || minRows) : 2;
+        const enough = tb ? tb.dataset.split === 'rows' : parts.length >= keep + 2;
+        if (enough && pos + parts[keep - 1].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
           el.classList.add('flow');
           if (tb) tb.classList.add('brk');
           const th = tb ? tb.querySelector('thead') : null;
@@ -445,7 +579,8 @@ def page_fill(pdf, top_in=0.45, bottom_in=0.55):
         height = _PAGE.match(chunk)
         top_pt, bottom_pt = top_in * 72, (float(height.group(1)) if height else 792) - bottom_in * 72
         words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
-                 if float(y1) <= bottom_pt + 1]  # the running footer sits below the content area
+                 if float(y1) <= bottom_pt + 1  # the running footer sits below the content area
+                 and not PROBE_WORD.fullmatch(html.unescape(t))]  # the layout probe's row markers aren't content
         if not words:
             pages.append((0.0, ""))
             continue
@@ -562,6 +697,7 @@ def fit_page(pg, fit, limit=None, starts=(), tail=False):
     limit = fit.page_limit() if limit is None else limit
     width, height = fit.content_px()
     pg.set_viewport_size({"width": width, "height": 1000})
+    table_break_rules(pg, height)
     top, used = pg.evaluate(_MEASURE, [fit.end, fit.one_page]), []
     for step in fit.steps:
         if top <= limit:
@@ -572,7 +708,7 @@ def fit_page(pg, fit, limit=None, starts=(), tail=False):
     info = {"top": top, "limit": limit, "steps": used, "blocks": [], "tail": [],
             "end_line": "" if fit.one_page else pg.evaluate(_FIRST_LINE, fit.end)}
     if fit.paginate:
-        res = pg.evaluate(PAGINATE_JS, [height, list(starts)])
+        res = pg.evaluate(PAGINATE_JS, [height, list(starts), SPLIT_MIN_ROWS])
         info["paginate"] = {"moved": res["moved"], "page1_px": round(res["onepageH"]), "fit_level": res["fit"]}
     if tail and fit.tail:
         pages = _page_count(pg, fit)
@@ -624,9 +760,17 @@ def print_pdf(doc, path, fit=None, footer_html=None):
     margins = fit.page_margins()
     top_in, bottom_in = _inches(margins["top"]), _inches(margins["bottom"])
 
+    probe = probing()
+
+    def before(pg, limit, starts, tail):
+        info = fit_page(pg, fit, limit, starts, tail)
+        if probe:  # last, after every measurement: the markers move nothing, but nothing measures them either
+            info["probe_tables"] = probe_rows(pg)
+        return info
+
     def once(target, limit=None, starts=(), tail=False):
         info = render.html_to_pdf(doc, target, margins=margins, footer_html=footer_html, landscape=fit.landscape,
-                                  before_print=lambda pg: fit_page(pg, fit, limit, starts, tail))
+                                  before_print=lambda pg: before(pg, limit, starts, tail))
         return info, page_fill(target, top_in, bottom_in)
 
     info, pages = once(path)
@@ -653,5 +797,8 @@ def print_pdf(doc, path, fit=None, footer_html=None):
                       f"blocks are {what}. Shorten the text that fills them.")
     if fit.paginate and pages:
         checks += page_checks(pages, fit.tail_hint)
-    return {**info, "pages": pages, "problems": found, "checks": checks}
+    splits = table_split_problems(info.get("probe_tables"), row_pages(path), os.path.basename(path)) if probe else []
+    for line in splits:  # dev only (LAYOUT_PROBE): make layout-check and the generated tests read stderr
+        print(f"Check: {line}.", file=sys.stderr)
+    return {**info, "pages": pages, "problems": found, "checks": checks, "table_splits": splits}
 

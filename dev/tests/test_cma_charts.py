@@ -14,8 +14,9 @@ cma, fmt, kit = compute.cma, compute.fmt, seller_render.layout
 
 
 def scatter_args(R):
+    C, _ = run(R)
     return (R["subject"]["sqft"], R["recommendation"]["list_price"], R["subject"]["mls_address"],
-            (R["recommendation"]["low"], R["recommendation"]["high"]), compute.labeler(),
+            (C["recommendation"]["low"], C["recommendation"]["high"]), compute.labeler(),
             [cd["address"] for cd in R["comps"]["cards"]])
 
 

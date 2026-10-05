@@ -8,7 +8,8 @@ Everything you write into the data file can reach a client, so write it in the c
 |---|---|
 | Tool words: placeholder, JSON, data file, script, schema, re-run, export, CSV | The client's words: "estimate", "the report", "we'll update the report", "MLS records" |
 | Empty or unfinished values: null, undefined, NaN, TODO, TBD | The value, or leave the field out |
-| A figure in a judgment field or label: digits, `$`, `%`, a month's name | Words ("the spring sales", "After a Price Cut"): the report prints every figure itself |
+| A figure in a judgment field or label: digits, `$`, `%`, a month, a season or a weekday | Words ("the earlier sales", "After a Price Cut"): the report prints every figure and date itself |
+| Who owns or lives in the home in a judgment field: vacant, a tenant, owner-occupied, relocating, divorcing, their family | The home, the numbers and the terms: occupancy and the seller's reasons stay with the agent (fair housing and privacy). Contract data, like a lease the contract assigns, is quoted as data |
 | A `{placeholder}` | The words: the report fills nothing into what you write |
 | Data keys in a sentence: `insurance_annual`, `closing_date` | Plain words: "yearly insurance", "closing date" |
 | ISO dates in a sentence: 2026-09-26 | Sep 26, 2026 |

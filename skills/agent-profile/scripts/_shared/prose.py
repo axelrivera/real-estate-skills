@@ -377,13 +377,57 @@ def title_labels(data, patterns):
 
 # --- figure-free fields ---------------------------------------------------------------------------------------------
 # What the model writes is judgment and names only: every count, price, percent and date on a report comes from a
-# script. A digit, a dollar or percent sign, or a month's full name in a model field is a figure the script didn't
-# make ("May" is left out: it's also a word).
-FIGURE = re.compile(r"\$\s*[\d.,]*\d[\d.,]*[KkMm]?|\d[\d.,]*\s*%|\d+(?:[.,:/-]\d+)*|"
-                    r"\b(?:January|February|March|April|June|July|August|September|October|November|December)\b")
+# script. A digit, a dollar or percent sign, or a date in words (a month, a season, a weekday) in a model field is a
+# figure the script didn't make. "May" counts only after a word that makes it a month ("in May", "by May"), "fall" only
+# as a season ("this fall", "fall sales", never "prices could fall"), and a season that starts a place name ("Winter
+# Park", "Spring Hill") or reads as one ("Altamonte Springs": never a season in the plural) is the place.
+_PLACE_WORD = (r"Park|Gardens?|Springs?|Hill|Haven|Lakes?|Harbor|Ridge|Creek|Grove|Oaks?|Woods?|Village|Isles?|River|"
+               r"Bay|Beach|Key|Estates|Meadows?|Crossing|Landing|Cove|Square|Commons|Terrace|Trail|Run|Pointe?|Glen|"
+               r"Valley|Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Way|Lane|Ln|Court|Ct|Boulevard|Blvd|Place|Pl|Circle|Cir")
+FIGURE = re.compile(
+    r"\$\s*[\d.,]*\d[\d.,]*[KkMm]?|\d[\d.,]*\s*%|\d+(?:[.,:/-]\d+)*"
+    r"|\b(?:January|February|March|April|June|July|August|September|October|November|December)\b"
+    r"|\b(?:in|by|of|early|late|mid|until|since|through|during|last|next|this)[- ]May\b"
+    rf"|\b(?i:spring|(?:summer|winter|autumn)s?)\b(?!\s+(?:{_PLACE_WORD})\b)"
+    r"|\b(?i:(?:this|last|next|in|early|late|mid|by|until|since|through|during|over)\s+(?:the\s+)?fall)\b"
+    r"(?!\s+(?i:in|of|through|off|short|behind|apart|back|below|under|out)\b)"
+    r"|\b(?i:fall\s+(?:sales?|market|season|listings?|closings?|months?|buyers?))\b"
+    r"|\b(?i:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b")
 
 
 def figures(text):
-    """The figures in `text` ("$425,000", "3%", "12", "December"), [] when it's figure-free. Names, ids, links and
-    emails keep their digits (EXEMPT_TEXT)."""
+    """The figures in `text` ("$425,000", "3%", "12", "December", "spring", "Friday"), [] when it's figure-free.
+    Names, ids, links and emails keep their digits (EXEMPT_TEXT)."""
     return [m.group(0).strip() for m in FIGURE.finditer(EXEMPT_TEXT.sub(" ", str(text or "")))]
+
+
+# --- people in judgment fields -----------------------------------------------------------------------------------
+# A judgment field describes the home, the numbers and the terms, never the people: who lives there, whether it's
+# vacant or rented, why the seller is selling. That's the agent's to know (Realtor Remarks, the seller's own story),
+# not a client file's, and describing occupants can steer (fair housing). Contract data (a lease the contract
+# assigns, a tenant's possession date) is quoted as data and isn't checked here.
+_OCCUPANT = (r"(?:sellers?|owners?|they|family|occupants?|tenants?|renters?|he|she|we|buyers?)")
+PEOPLE = re.compile(
+    r"\b(?:lives?|living|lived)\s+(?:in|there|here|at|on)\b"
+    r"|\b(?:owner|tenant|renter|seller)[- ]occupied\b|\boccupied\s+by\b|\boccupan(?:t|ts|cy)\b"
+    r"|\btenants?\b|\brenters?\b"
+    r"|\bvacant\b(?!\s+(?:lots?|land|parcels?|acreage)\b)"
+    rf"|\b{_OCCUPANT}(?:'s|'re|\s+(?:is|are|was|were|will\s+be|have\s+been|has\s+been))?\s+"
+    r"(?:moving|relocating|downsizing|divorcing|retiring|leaving|separating)\b"
+    r"|\b(?:moving|moved|move)\s+(?:out|away|abroad|closer)\b"
+    r"|\brelocat(?:e|es|ed|ing|ion)\b|\bdivorc(?:e|ed|es|ing)\b|\blegal(?:ly)?\s+separat\w*\b"
+    r"|\b(?:their|his|her|the\s+(?:sellers?|owners?)'s?|the\s+(?:sellers?|owners?)')\s+"
+    r"(?:famil(?:y|ies)|kids|children|spouse|wife|husband|parents?|mother|father|job|health|divorce|estate|situation)\b"
+    r"|\bpassed\s+away\b|\bdeceased\b|\bprobate\b|\bheirs?\b|\bestate\s+sale\b"
+    r"|\bjob\s+(?:transfer|loss|change)\b|\b(?:deployed|deployment)\b|\bPCS\s+orders?\b"
+    r"|\bfinancial\s+(?:hardship|trouble|distress)\b|\bhardship\b", re.I)
+
+
+def people(text):
+    """Phrases in `text` that describe the seller or the people living in the home ("lives in", "tenant", "vacant",
+    "relocating", "their family"), [] when there are none. For judgment fields only, never contract data."""
+    return [m.group(0).strip() for m in PEOPLE.finditer(EXEMPT_TEXT.sub(" ", str(text or "")))]
+
+
+PEOPLE_FIX = ("describe the home, the numbers and the terms, never the people: who lives there, whether it's vacant "
+              "or rented and why the seller is selling stay with the agent (fair housing, and the seller's privacy)")

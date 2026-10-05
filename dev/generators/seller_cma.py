@@ -7,8 +7,9 @@
 Each seed builds a synthetic MLS export in the Stellar CMA columns: sales over about six months with a market split
 (the recent ones a little lower or higher), active, pending and expired listings, prices from about $180,000 to
 $1,800,000, long street and subdivision names. From that export it picks 3 to 6 comps and adjusts them as an agent
-would (size, condition, pool, lot), sets the time adjustment by the method's rule from the export's split, and a range
-the shared range rule accepts. The pricing options are standard (top of range, recommended, competing offer), a reprice
+would (size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then
+and always outside Florida), sets the time adjustment by the method's rule from the export's split, and takes the
+script's range (now and then the agent's own range_override instead). The pricing options are standard (top of range, recommended, competing offer), a reprice
 (Stay at Current Price, then cuts) or a relist (the failed price caps the options, two or three of them). The costs vary:
 a stated payoff, a loan balance, no mortgage or none given; a tax bill with closings across the year end; an HOA or
 none; Florida or another state. About half carry the deck's wording. Every judgment field is figure-free, as the skill
@@ -51,9 +52,9 @@ SUBDIVISIONS = ("Fernwood Park", "Kestrel Point", "Cattail Crossing", "Spring Oa
                 "The Reserve at Whispering Cypress Hammock Phase Three", "Elm Grove", "Bayview Terrace")
 ZONES = ("X", "X", "X (lower risk)", "AE", "X500", "To confirm")
 WHY = ("The closest sales nearby, adjusted to your home, center near where we recommend listing.",
-       "The market cooled since spring: buyers negotiate again, and many sellers help with buyer costs.",
+       "The market cooled since early in the year: buyers negotiate again, and many sellers help with buyer costs.",
        "Well-priced homes nearby are going under contract fast; overpriced ones are sitting and cutting their price.",
-       "The most recent sales landed lower than the spring ones, so a price near the middle of the range gives the "
+       "The most recent sales landed lower than the earlier ones, so a price near the middle of the range gives the "
        "home its best first weeks and keeps the appraisal in reach.")
 MEANS = ("<strong>Expect to negotiate.</strong> Recent buyers paid less than the original asking price and many asked the "
          "seller to cover part of their closing costs.",
@@ -63,7 +64,7 @@ MEANS = ("<strong>Expect to negotiate.</strong> Recent buyers paid less than the
 BULLETS = ("A close match in condition and size, sold in the same market.", "The seller paid part of the buyer's costs, "
            "which comes off the price.", "Its larger lot backs onto conservation, which buyers pay more for.",
            "Original kitchen and baths, so it's adjusted up for the updates this home has.",
-           "Sold in the spring, when rates were lower and homes were moving faster.")
+           "Sold earlier in the year, when rates were lower and homes were moving faster.")
 NOTES = ("Updated kitchen, same size, no pool.", "Larger but dated. Cut once already and still sitting.",
          "Renovated and went under contract within days.", "Original condition; the price leaves room for a remodel.",
          "A light fixer on a busy road with an oversized lot that backs onto the community's retention pond and trail.")
@@ -82,7 +83,7 @@ NEEDS = ("The roof permit and replacement date, plus any wind-mitigation report.
          "The age of the AC, water heater and pool equipment.", "Copies of any permits for the remodel work.",
          "Anything you know that affects the home's value or condition, such as past leaks, insurance claims or repairs.",
          "Your mortgage payoff statement, so we can turn the net estimates into cash at closing.",
-         "When you would like to close, and whether the home will be occupied or vacant during showings.")
+         "When you would like to close, and how you would like showings to work.")
 
 
 def money_cell(v):
@@ -191,14 +192,13 @@ def generate(seed, out_dir):
                                                                                           diff * 75 * scale)), -2)})
         if h["private_pool"] != pool:
             adj.append({"label": "Pool", "amount": round((25000 if pool else -25000) * scale, -2)})
-        if rng.random() < 0.5:
-            adj.append({"label": rng.choice(("Renovation", "Partial Update vs. Full Renovation", "Kitchen Only")),
-                        "amount": round(rng.choice((15000, 30000, -15000, 40000)) * scale, -2)})
         if rng.random() < 0.2:
             adj.append({"label": rng.choice(("Larger Corner Lot", "Pond Lot", "Documented Recent Systems")),
                         "amount": round(-rng.choice((5000, 10000)) * scale, -2)})
         cards.append({"address": cma.display_address(h["address"]), "sold_price": h["close_price"],
-                      "seller_concessions": h.get("seller_paid") or 0, "adjustments": adj,
+                      "seller_concessions": h.get("seller_paid") or 0,
+                      "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
+                      "adjustments": adj,
                       "bullets": rng.sample(BULLETS, rng.randint(1, 3))})
     comps = {"cards": cards, "intro": "The closest matches in size and condition, including the ones that argue for a "
                                       "lower price.",
@@ -206,12 +206,23 @@ def generate(seed, out_dir):
              "lean": "The range leans on the most recent sales and the best condition matches."}
     if rate:
         comps["time_adjustment"] = {"rate_per_quarter": rate, "prices": direction}
-    # the adjusted values, as the skill sees them before setting the range
+    # the condition ladder's dollars: the market's (Florida), else the agent's or paired sales', scaled to the price
+    if not florida or rng.random() < 0.3:
+        fl = profiles.load_market(state="FL", county="Seminole").get("cma.adjustments.condition_levels")
+        comps["condition_values"] = {lv: round(v * scale, -2) for lv, v in fl.items()}
+    subject_level = rng.choice(cma.CONDITION_LEVELS[:-1])
+    # the adjusted values and the range, as the skill's comps stage prints them before any pricing
     tmp = copy.deepcopy(comps)
+    cma.apply_condition_adjustments(tmp, {"condition": subject_level}, market)
     cma.apply_time_adjustments(tmp, homes, as_of.isoformat(), split)
     cma.derive_comps(tmp)
     values = [c["adjusted"] for c in tmp["cards"]]
-    low, high = cma.passing_range(values, market)
+    low, high = cma.choose_range(values, market)
+    override = None
+    if rng.random() < 0.1:  # now and then the agent sets the range: a step lower, shown as their choice
+        low, high = low - 5000, high - 5000
+        override = {"low": low, "high": high, "reason": "We lean toward the most recent sales, which sit lower than "
+                                                        "the rest."}
     median = statistics.median(values)
     rec = min(max(math.floor(median / 5000) * 5000 - 100, low + 100 if low + 100 <= high else low), high)
     step = max(5000, int(round(price * 0.02, -3)))
@@ -233,11 +244,12 @@ def generate(seed, out_dir):
                      "facts": [["Lot", "0.24 acre"], ["Built", "Block"], ["Pool", "Private" if pool else "None"],
                                ["Garage", "Two-car attached"], ["Flood Zone", rng.choice(ZONES)],
                                ["Recent Updates", "Kitchen, baths, floors"]],
-                     "summary": "An updated home with a remodeled kitchen and new flooring, as described by you."},
+                     "summary": "An updated home with a remodeled kitchen and new flooring, as described by you.",
+                     "condition": subject_level},
          "summary_page": {"headline": "Priced where recent sales support, for the strongest first weeks on the market.",
                           "why": rng.sample(WHY, 3), "next_step": "Review this plan together, sign the listing "
                                                                   "agreement, and get the home ready to go live."},
-         "recommendation": {"list_price": rec, "low": low, "high": high,
+         "recommendation": {"list_price": rec,
                             "why": "It leaves room for the negotiating that is normal now and looks fairly priced in its "
                                    "first weeks on the market."},
          "means": rng.sample(MEANS, rng.randint(2, 4)), "comps": comps,
@@ -252,6 +264,8 @@ def generate(seed, out_dir):
          "prep": {"intro": "These steps cost little and remove the questions that slow buyers down.",
                   "items": [dict(zip(("step", "detail", "short", "icon"), p)) for p in rng.sample(PREP, rng.randint(5, 7))]},
          "needs": rng.sample(NEEDS, rng.randint(4, 6))}
+    if override:
+        R["range_override"] = override
     if kind == "reprice":  # the agent's own listing: Stay at Current Price, then cuts
         current = rec + step
         strategies[0].update(note="Has sat without an offer at this price", time=rng.choice(("2–4 months", "6–10 weeks")))

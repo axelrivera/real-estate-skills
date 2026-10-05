@@ -179,12 +179,16 @@ cma:                                  # calibrated on Central Florida (Seminole 
   adjustments:
     living_area_per_sqft: 75          # for differences under about 300 sq ft
     pool: 25000
-    full_renovation_vs_dated: [40000, 45000]
-    full_vs_partial_renovation: 30000
-    kitchen_only_vs_dated: 15000      # a partial update: kitchen updated, baths and the rest original (45,000 - 30,000)
-    baths_only_vs_dated: 10000        # a partial update: baths updated, kitchen and the rest original
-                                      # condition is a ladder: dated 0, baths only, kitchen only, full; a comp is
-                                      # adjusted by the difference between its rung and the subject's
+    condition_levels:                 # the condition ladder (references/condition-ladder.md): each level's value over an
+      original: 0                     # original (dated) home; the script adjusts a comp by the subject's value minus its own
+      cosmetic: 5000                  # paint, flooring, fixtures, counters; kitchen cabinets and baths original
+      baths_only: 10000               # every full bath updated; kitchen and the rest original
+      kitchen_only: 15000             # kitchen updated; baths (or all but some of them) original
+      kitchen_and_baths: 25000        # kitchen and every full bath updated (15,000 + 10,000); the rest original
+      full_renovation: 45000          # renovated throughout: kitchen, baths, flooring and finishes (about 30,000 over a
+                                      # kitchen-only or baths-only update)
+      new: 50000                      # new or like new (built or gutted in the last few years); the roof still uses
+                                      # roof_age, and no documented_recent_systems goes with it
     roof_age:                         # shingle roof's value by its age on the as-of date, against one under 10 years;
       - {years: [0, 9], value: 0}     # a comp is adjusted by the difference between its band and the subject's
       - {years: [10, 14], value: -5000}

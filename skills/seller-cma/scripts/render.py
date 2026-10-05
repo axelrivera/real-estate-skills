@@ -315,6 +315,9 @@ def print_chart_notes(chart_notes):
 def compute_model(data, ctx):
     """render.main's compute step: the document model, once per run, with the checks every format needs."""
     C = compute.run(data, ctx.get("mls"), ctx.get("data_file"))
+    if C.get("stage") != "full":
+        raise compute.ReportError("report.json has only the comps: add recommendation.list_price, pricing, costs and "
+                                  "buyer_payment for the report.")
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))
     if C["net"]["incomplete"]:

@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import date, datetime
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -39,7 +40,7 @@ PROFILES = os.path.join(ROOT, "dev", "fixtures", "_profiles")
 RENDER = os.path.join(ROOT, "skills", "contract-timeline", "scripts", "render.py")
 MONTH = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*"
 FIGURE = re.compile(rf"\b{MONTH} \d{{1,2}}(?:, \d{{4}})?|\$[\d,]+(?:\.\d\d)?|\b\d{{1,2}}:\d\d [AP]M")
-WARNINGS = ("overflows by", "clipped", "doesn't fit on one page")
+WARNINGS = ("overflows by", "clipped", "doesn't fit on one page", "split table")
 
 
 def profile(seed):
@@ -187,6 +188,7 @@ class Generated(unittest.TestCase):
                                                                                sample=bool(deal.get("sample"))))
                 self.assertEqual(placeholders.problems(texts), [])
 
+    @mock.patch.dict(os.environ, {"LAYOUT_PROBE": "1"})  # the layout probe: printed tables read back for the split rule
     def test_files(self):
         """The PDF prints without overflow, clipping or a near-empty page; the calendar holds exactly the report's
         open rows, on the dates and times the report shows; no note reaches the calendar."""

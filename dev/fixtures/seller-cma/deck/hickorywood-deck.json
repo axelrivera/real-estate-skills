@@ -35,9 +35,9 @@
   "602 Mockingbird Ln": "Same floor plan; partly updated",
   "621 Little Wekiva Rd": "Renovated; bigger canal lot"
  },
- "comps_takeaway": "The two highest sold in the spring. The recent sales point to the middle of the range.",
+ "comps_takeaway": "The two highest sold earlier in the year. The recent sales point to the middle of the range.",
  "scatter_takeaway": "Renovated pool homes sell well above the neighborhood trend.",
- "market_title": "The Market Shifted Since Spring",
+ "market_title": "The Market Has Shifted",
  "market_takeaway": "Buyers are negotiating again.",
  "competition": [
   [
@@ -82,7 +82,7 @@
   "drivers": "These are the features the adjustments credit your home for. The roof and permits need paperwork before buyers and appraisers will pay for them.",
   "comps": "Each dot is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
   "scatter": "Every sale and listing nearby. The dashed line is size alone; renovation and a pool push homes above it.",
-  "market": "The earlier period is the spring sales; now is the summer sales. The report's market table has every figure.",
+  "market": "The earlier period holds the older sales; now holds the recent ones. The report's market table has every figure.",
   "competition": "These are the homes a buyer will likely tour alongside yours.",
   "strategies": "Expected sale prices and timelines are estimates from recent sales. The competing-offer option assumes a smaller seller credit.",
   "nets": "The appendix has every line of the net sheet, and the notes say what each rests on.",

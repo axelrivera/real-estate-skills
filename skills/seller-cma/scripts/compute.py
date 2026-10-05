@@ -126,6 +126,11 @@ RETIRED = {
     "summary_page.expected_sale": "the script writes the expected sale from the recommended option",
     "recommendation.paragraph": "the script states the range, the median and where the price sits: write why this "
                                 "price (no figures) in recommendation.why",
+    "recommendation.low": "the script sets the range from the adjusted comps (method.md, Range and Recommended Price): "
+                          "leave it out, or put the agent's own range in range_override {low, high, reason}",
+    "recommendation.high": "the script sets the range from the adjusted comps (method.md, Range and Recommended Price): "
+                           "leave it out, or put the agent's own range in range_override {low, high, reason}",
+    "recommendation.midpoint": "the script computes the range and its midpoint",
     "comps.summary_paragraph": "the script states the adjusted span, the median, the strongest match and the highest "
                                "sale: write which way the range leans and why (no figures) in comps.lean",
     "scatter.intro": "the script describes what the chart plots",
@@ -158,7 +163,7 @@ RETIRED_EACH = {
 # count, price, percent and date itself, so a figure typed here could disagree with the one beside it.
 JUDGMENT = (
     "subject.summary", "subject.facts[][0]", "summary_page.label", "summary_page.headline", "summary_page.why[]",
-    "summary_page.next_step", "recommendation.why", "means[]", "comps.intro", "comps.method_note", "comps.lean",
+    "summary_page.next_step", "recommendation.why", "range_override.reason", "means[]", "comps.intro", "comps.method_note", "comps.lean",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
     "competition.intro", "competition.rows[][6]", "market.bullets[]", "pricing.intro", "pricing.note",
     "pricing.strategies[].note", "prep.intro", "prep.items[].step", "prep.items[].detail", "prep.items[].short",
@@ -213,10 +218,14 @@ def schema_errors(R):
     for pattern in JUDGMENT:
         for path, v in _walk(R, _parts(pattern), ""):
             if isinstance(v, str):
-                found = prose.figures(re.sub(r"<[^>]+>", " ", v)) + re.findall(r"\{\w*\}", v)
+                text = re.sub(r"<[^>]+>", " ", v)
+                found = prose.figures(text) + re.findall(r"\{\w*\}", v)
                 if found:
                     out.append(f"{path}: has {', '.join(repr(x) for x in found)} → the report prints every count, price, "
                                "percent and date itself; write this in words, without the figure.")
+                who = prose.people(text)
+                if who:
+                    out.append(f"{path}: has {', '.join(repr(x) for x in who)} → {prose.PEOPLE_FIX}.")
     return out
 
 
@@ -932,6 +941,77 @@ def payment_note(R, pay):
 
 # --- the document model ------------------------------------------------------------------------------------------------
 
+def prepare_comps(R, homes, warn, market):
+    """Condition adjustments (the condition ladder) and time adjustments by the shared rules, then each adjusted value
+    from its parts (cma.derive_comps). Returns (the market split, time info, condition info)."""
+    for i, c in enumerate(R["comps"]["cards"]):
+        if not isinstance(c, dict) or not c.get("address") or not isinstance(c.get("adjustments"), list):
+            raise ReportError(f"comps.cards[{i}] needs address, sold_price, seller_concessions, condition and adjustments "
+                              "([{label, amount}], empty when there are none): the script adds them up.")
+    if not R["comps"]["cards"]:
+        raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
+    split = cma.default_split(R, homes)
+    cond_errors, cond_info = cma.apply_condition_adjustments(R["comps"], R["subject"], market)
+    time_errors, time_info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
+    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + cond_errors + time_errors
+    if errors:
+        raise ReportError(stop_message(errors))
+    try:
+        warn("derive_comps", *cma.derive_comps(R["comps"]))
+    except ValueError as e:
+        raise ReportError(str(e)) from e
+    return split, time_info, cond_info
+
+
+def supported_range(R, values, market):
+    """The range by the shared rule (cma.choose_range), or the agent's range_override, written into the working copy's
+    recommendation so every figure after it uses the one range. Returns resolve_range's dict."""
+    rng, errors = cma.resolve_range(values, market, R.get("range_override"))
+    if errors:
+        raise ReportError(stop_message(errors))
+    rec = R.setdefault("recommendation", {})
+    rec["low"], rec["high"] = rng["low"], rng["high"]
+    return rng
+
+
+def end_sentence(text):
+    """A final period for wording that completes a sentence, when it has none."""
+    s = str(text or "").rstrip()
+    return s if not s or re.search(r"[.!?][\"')\]]*$", re.sub(r"<[^>]+>", "", s)) else s + "."
+
+
+def comps_first(R, market, homes=()):
+    """The adjusted comps and the supported range alone, before any pricing exists: the median, the spread, the range
+    the list price and the options are chosen inside, and the outlier and adjustment warnings. Writes no handoff."""
+    R = copy.deepcopy(R)
+    _require(R, "subject.address", "comps.cards")
+    errors = schema_errors({k: v for k, v in R.items() if k != "deck"})
+    if errors:
+        raise ReportError(stop_message(errors))
+    warnings, warning_keys, warn = _warner()
+    prepare_comps(R, homes, warn, market)
+    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
+    values = [c["adjusted"] for c in R["comps"]["cards"]]
+    median_adjusted = statistics.median(values)
+    rng = supported_range(R, values, market)
+    for key, text in cma.range_warnings(rng, values, market):
+        warn(key, text)
+    return {
+        "ok": True, "stage": "comps",
+        "next": "Choose recommendation.list_price inside this range and the pricing options, add costs and "
+                "buyer_payment, then run compute.py again for the nets, the payments and the handoff.",
+        "subject": {"address": R["subject"]["address"]},
+        "median_adjusted": median_adjusted,
+        "median_adjusted_display": money(median_rounded(median_adjusted, len(values))),
+        "adjusted_min": min(values), "adjusted_max": max(values),
+        "range": {"low": rng["low"], "high": rng["high"], "display": fmt.range(rng["low"], rng["high"]),
+                  "override": rng["override"]},
+        "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+                        for r in R["comps"].get("summary_rows", [])],
+        "warnings": warnings, "warning_keys": warning_keys, "market_notes": market.notes,
+    }
+
+
 def compute(R, market, homes, data_file=None):
     """The document model from report.json (never changed), the market and the export's homes."""
     R = copy.deepcopy(R)
@@ -941,8 +1021,8 @@ def compute(R, market, homes, data_file=None):
     errors = schema_errors(R if content is not None else {k: v for k, v in R.items() if k != "deck"})
     if errors:
         raise ReportError(stop_message(errors))
-    _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "recommendation.low", "recommendation.high",
-             "comps.cards", "pricing.strategies", "buyer_payment.rate")
+    _require(R, "subject.address", "subject.sqft", "recommendation.list_price", "comps.cards", "pricing.strategies",
+             "buyer_payment.rate")
     for block in ("costs", "buyer_payment"):  # units before any math: fractions stay fractions, interest stays a percent
         try:
             finance.check_units(R.get(block) or {}, block)
@@ -964,8 +1044,6 @@ def compute(R, market, homes, data_file=None):
     for i, it in enumerate(items):
         if not (isinstance(it, dict) and str(it.get("step") or "").strip()):
             raise ReportError(f"prep.items[{i}] needs step (a few words), detail and short.")
-    if rec["low"] > rec["high"]:
-        raise ReportError("recommendation.low is above recommendation.high.")
     ri = p.get("recommended_index", 1)
     if not 0 <= ri < len(strategies):
         raise ReportError("pricing.recommended_index doesn't point at a strategy.")
@@ -975,29 +1053,17 @@ def compute(R, market, homes, data_file=None):
     warnings, warning_keys, warn = _warner()
     insurance = insurance_line(R, market)
 
-    # comps: the script's time adjustments, then each adjusted value from its parts
-    for i, c in enumerate(R["comps"]["cards"]):
-        if not isinstance(c, dict) or not c.get("address") or not isinstance(c.get("adjustments"), list):
-            raise ReportError(f"comps.cards[{i}] needs address, sold_price, seller_concessions and adjustments "
-                              "([{label, amount}], empty when there are none): the script adds them up.")
-    if not R["comps"]["cards"]:
-        raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
-    split = cma.default_split(R, homes)
-    time_errors, time_info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
-    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + time_errors
-    try:
-        warn("derive_comps", *cma.derive_comps(R["comps"]))
-    except ValueError as e:
-        raise ReportError(str(e)) from e
+    # comps: the script's condition and time adjustments, then each adjusted value from its parts, then the range
+    split, time_info, cond_info = prepare_comps(R, homes, warn, market)
     history, history_errors = listing_history(R, homes, relist)
-    errors += history_errors
-    if errors:
-        raise ReportError(stop_message(errors))
+    if history_errors:
+        raise ReportError(stop_message(history_errors))
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))  # CMA-110
     warn("time_undated", *cma.time_warnings(time_info))
     cards = R["comps"]["cards"]
     values = [c["adjusted"] for c in cards]
     median_adjusted = statistics.median(values)
+    range_info = supported_range(R, values, market)
     address = s.get("mls_address", s["address"])
 
     # the export: market stats and the chart's points and trend (drawn once, by render and the deck alike)
@@ -1199,7 +1265,7 @@ def compute(R, market, homes, data_file=None):
         "list_price": rec["list_price"], "list_price_display": money(rec["list_price"]), "low": rec["low"],
         "high": rec["high"], "range_display": fmt.range(rec["low"], rec["high"]),
         "range_k": fmt.range(rec["low"], rec["high"], fmt.k),
-        "midpoint": rec.get("midpoint", (rec["low"] + rec["high"]) / 2),
+        "midpoint": (rec["low"] + rec["high"]) / 2,
         "expected_sale": expected_rec, "expected_sale_display": t("sum_expected_value", amount=money(expected_rec)),
         "expected_sub": L["deck_expected_sub" if expected_rec < rec["list_price"] else "deck_expected_sub_at"],
         "position": L[pos_key],
@@ -1207,7 +1273,10 @@ def compute(R, market, homes, data_file=None):
                   price=money(rec["list_price"]), position=L[pos_key], vs=vs_median(rec["list_price"], shown)),
         "verdict": rw("verdict_price", price=money(rec["list_price"])),
         "caption": rw("verdict_caption", range=fmt.range(rec["low"], rec["high"])),
-        "why": rec.get("why", "")}
+        "why": rec.get("why", ""), "override": range_info["override"]}
+    if range_info["override"]:  # the agent's own range, said once beside it, with the method's for comparison
+        C["recommendation"]["line"] += " " + t("line_range_override", rule=fmt.range(range_info["rule_low"],
+                                               range_info["rule_high"]), reason=end_sentence(range_info["reason"]))
     C["reprice"], C["relist"], C["listing_history"] = reprice_out, relist_out, history
     C["history_line"] = " ".join(e["text"] for e in history)
     C["price_history"] = (reprice_out or relist_out or {}).get("price_history")
@@ -1218,7 +1287,7 @@ def compute(R, market, homes, data_file=None):
     comps = R["comps"]
     C["comps"] = {
         "intro": comps.get("intro", ""), "count_line": comps_count_line(cards, homes, split),
-        "method": cma.adjustment_summary(cards, time_info, money), "method_note": comps.get("method_note", ""),
+        "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": card_models, "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), money(r[3])] for r in comps["summary_rows"]],
         "subject_row": [rw("subject_row"), money(rec["list_price"]), fmt.EMPTY, t("range_cell", range=C["recommendation"]["range_k"])],
@@ -1230,6 +1299,7 @@ def compute(R, market, homes, data_file=None):
     C["comps_table"] = [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "seller_paid_display": money(r[2]),
                          "adjusted_display": money(r[3])} for r in comps["summary_rows"]]
     C["time_adjustment"] = time_info
+    C["condition"] = cond_info
     C["scatter"] = scatter_model(R, s, pts, fit, rec, rw) if pts else None
     C["trend"] = ({"at_subject": fit["at_subject"], "at_subject_display": money(fit["at_subject"], 1000), "r2": fit["r2"],
                    "r2_key": mls.r2_key(fit["r2"])} if fit else None)
@@ -1495,7 +1565,7 @@ def handoff_model(R, s, market, rec, median_adjusted, stats, costs_in, as_of):
                                          flood_zone=bp_in.get("flood_zone") or next((v for lbl, v in s.get("facts") or []
                                                                                      if str(lbl).lower() == "flood zone"), None),
                                          roof_year=s.get("roof_year"))},
-        value={"low": rec["low"], "high": rec["high"], "midpoint": rec.get("midpoint", (rec["low"] + rec["high"]) / 2),
+        value={"low": rec["low"], "high": rec["high"], "midpoint": (rec["low"] + rec["high"]) / 2,
                "median_adjusted": median_adjusted},
         comps=[{"address": r[0], "sold_price": r[1], "seller_paid": r[2], "adjusted": r[3]}
                for r in R["comps"].get("summary_rows", [])],
@@ -1528,10 +1598,15 @@ def load_inputs(R, mls_name=None, data_file=None):
     return market, homes
 
 
+def comps_only(R):
+    """Only the subject and the comps so far (no pricing yet): compute.py prints the adjusted comps and the range."""
+    return not R.get("pricing") and not (R.get("recommendation") or {}).get("list_price")
+
+
 def run(R, mls_name=None, data_file=None):
-    """The document model from a report dict: render.py's compute step."""
+    """The document model (or, with only the comps, the comps stage) from a report dict: render.py's compute step."""
     market, homes = load_inputs(R, mls_name, data_file)
-    return compute(R, market, homes, data_file)
+    return comps_first(R, market, homes) if comps_only(R) else compute(R, market, homes, data_file)
 
 
 def public(C):
@@ -1550,11 +1625,12 @@ def main(argv=None):
         R = json.load(f)
     try:
         result = run(R, a.mls, a.report)
-        path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)),
-                            handoff.filename(R["subject"]["address"], "seller"))
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(result["handoff"], f, indent=2)
-        result["handoff_file"] = path
+        if result.get("stage") == "full":
+            path = os.path.join(a.out or os.path.dirname(os.path.abspath(a.report)),
+                                handoff.filename(R["subject"]["address"], "seller"))
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(result["handoff"], f, indent=2)
+            result["handoff_file"] = path
         result = public(result)
     except (ReportError, profiles.ProfileError, mls.ExportError, handoff.HandoffError, KeyError, ValueError, OSError) as e:
         result = {"ok": False, "problems": [str(e) if not isinstance(e, KeyError) else f"report.json is missing {e}"]}

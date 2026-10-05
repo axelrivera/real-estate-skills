@@ -11,9 +11,9 @@
   "count": 4
  },
  "chat_notes": {
-  "count": 3
+  "count": 4
  },
- "competing_offer_caveat": null,
+ "competing_offer_caveat": 2,
  "competition": {
   "rows": [
    [
@@ -105,7 +105,7 @@
      "pool"
     ],
     "sold_price": 495000,
-    "strongest": false
+    "strongest": true
    },
    {
     "adjusted": 469800,
@@ -121,9 +121,9 @@
      {
       "count": 2
      },
-     [
-      "Renovation"
-     ],
+     {
+      "count": 2
+     },
      [
       "Size"
      ]
@@ -132,7 +132,7 @@
      "pool"
     ],
     "sold_price": 427000,
-    "strongest": true
+    "strongest": false
    },
    {
     "adjusted": 440200,
@@ -220,7 +220,7 @@
    }
   ],
   "strongest": {
-   "index": 2
+   "index": 1
   },
   "subject_row": {
    "count": 4
@@ -262,6 +262,18 @@
   {},
   {}
  ],
+ "condition": {
+  "subject": "full_renovation",
+  "values": {
+   "baths_only": 10000,
+   "cosmetic": 5000,
+   "full_renovation": 45000,
+   "kitchen_and_baths": 25000,
+   "kitchen_only": 15000,
+   "new": 50000,
+   "original": 0
+  }
+ },
  "data_source": {
   "as_of": "2026-09-22",
   "export": true,
@@ -422,10 +434,10 @@
    "year_built": 1972
   },
   "value": {
-   "high": 480000,
-   "low": 455000,
+   "high": 490000,
+   "low": 465000,
    "median_adjusted": 476900.0,
-   "midpoint": 467500.0
+   "midpoint": 477500.0
   },
   "version": 1
  },
@@ -566,7 +578,7 @@
   "after_holding": [
    423519,
    424563,
-   419558
+   428938
   ],
   "basis": "after_holding",
   "cash_at_closing": false,
@@ -591,7 +603,7 @@
     "amounts": [
      466000,
      466000,
-     455000
+     465000
     ],
     "display": {
      "count": 3
@@ -611,7 +623,7 @@
     "amounts": [
      -11650,
      -11650,
-     -11375
+     -11625
     ],
     "display": {
      "count": 3
@@ -623,7 +635,7 @@
     "amounts": [
      -11650,
      -11650,
-     -11375
+     -11625
     ],
     "display": {
      "count": 3
@@ -635,7 +647,7 @@
     "amounts": [
      -3262,
      -3262,
-     -3185
+     -3255
     ],
     "display": {
      "count": 3
@@ -647,7 +659,7 @@
     "amounts": [
      -2405,
      -2405,
-     -2350
+     -2400
     ],
     "display": {
      "count": 3
@@ -683,7 +695,7 @@
     "amounts": [
      425888,
      425888,
-     420570
+     429950
     ],
     "display": {
      "count": 3
@@ -707,7 +719,7 @@
     "amounts": [
      423519,
      424563,
-     419558
+     428938
     ],
     "display": {
      "count": 3
@@ -719,22 +731,23 @@
   "totals": [
    425888,
    425888,
-   420570
+   429950
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 5005,
+ "net_spread": 5419,
  "note_keys": [
   "expected_sale",
   "holding",
   "title_fees",
   "payment",
+  "competing",
   "commission",
   "not_included",
   "flood"
  ],
  "notes": {
-  "count": 7
+  "count": 8
  },
  "notices": {
   "count": 3
@@ -876,10 +889,11 @@
  "price_history": null,
  "recommendation": {
   "expected_sale": 466000,
-  "high": 480000,
+  "high": 490000,
   "list_price": 469900,
-  "low": 455000,
-  "midpoint": 467500.0
+  "low": 465000,
+  "midpoint": 477500.0,
+  "override": false
  },
  "recommended_index": 1,
  "relist": null,
@@ -938,14 +952,14 @@
   {
    "closing": "2026-11-19",
    "down": 22995,
-   "expected_sale": 455000,
+   "expected_sale": 465000,
    "expected_sale_source": "rule",
    "hold_months": 1.91,
    "list_price": 459900,
    "months_to_contract": 0.46,
-   "net": 420570,
-   "net_after_holding": 419558,
-   "net_vs_recommended": -5005,
+   "net": 429950,
+   "net_after_holding": 428938,
+   "net_vs_recommended": 4375,
    "payment": 3984,
    "recommended": false,
    "seller_credit": 5000,

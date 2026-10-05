@@ -1,6 +1,6 @@
 # Listing Presentation: Slides and `deck` Wording
 
-The deck is the conversation piece for the appointment; the PDF report is the leave-behind, so slides carry only the notices they must, and the detail behind a table goes in its speaker notes. It shows only the findings that drive the price, in the order a seller follows the logic. Every figure, date and count on a slide comes from compute.py (the same figures as the PDF, already formatted), and every color from the agent's brand palette. `deck` in report.json holds only condensed judgment wording and speaker notes, figure-free like the report's (no digits, `$`, `%`, month names or `{placeholders}`: compute.py names any field that has one); start from `assets/example-deck-content.json`.
+The deck is the conversation piece for the appointment; the PDF report is the leave-behind, so slides carry only the notices they must, and the detail behind a table goes in its speaker notes. It shows only the findings that drive the price, in the order a seller follows the logic. Every figure, date and count on a slide comes from compute.py (the same figures as the PDF, already formatted), and every color from the agent's brand palette. `deck` in report.json holds only condensed judgment wording and speaker notes, figure-free like the report's (no digits, `$`, `%`, months, seasons, weekdays or `{placeholders}`, and nothing about who owns or lives in the home: compute.py names any field that has one); start from `assets/example-deck-content.json`.
 
 ## Slide Map (Fixed Order)
 

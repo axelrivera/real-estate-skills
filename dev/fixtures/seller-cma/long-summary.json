@@ -66,23 +66,22 @@
     "Kitchen, baths, floors, roof"
    ]
   ],
-  "summary": "A four-bedroom block pool home in Spring Oaks with a renovated kitchen (new cabinets, stone counters, stainless appliances), remodeled baths, new flooring, fresh paint, a new roof and water heater, and a resurfaced pool, as described by you. This analysis estimates what the home is worth in today's market, recommends a list price, and shows what each pricing choice is likely to net you."
+  "summary": "A four-bedroom block pool home in Spring Oaks with a renovated kitchen (new cabinets, stone counters, stainless appliances), remodeled baths, new flooring, fresh paint, a new roof and water heater, and a resurfaced pool, as described by you. This analysis estimates what the home is worth in today's market, recommends a list price, and shows what each pricing choice is likely to net you.",
+  "condition": "full_renovation"
  },
  "summary_page": {
   "label": "Seller Summary",
   "headline": "Priced in the middle of what recent sales support, so the home looks fairly priced in its first weeks, when buyer attention is highest.",
   "why": [
-   "The closest Spring Oaks pool sales, adjusted to your home, center right where we recommend listing, and the two highest sold in a stronger spring market.",
-   "The market cooled over the summer: buyers negotiate again, homes take longer to go under contract, and most sellers now help with buyer costs.",
+   "The closest Spring Oaks pool sales, adjusted to your home, center right where we recommend listing, and the two highest sold in a stronger market earlier in the year.",
+   "The market cooled in recent months: buyers negotiate again, homes take longer to go under contract, and most sellers now help with buyer costs.",
    "Well-priced renovated pool homes nearby are going under contract within days, while the overpriced ones are sitting and cutting their price."
   ],
   "next_step": "Review this plan together, sign the listing agreement, order the inspections and gather the permits, then go live with photos and the documents ready."
  },
  "recommendation": {
   "list_price": 469900,
-  "low": 455000,
-  "high": 480000,
-  "why": "It leaves room for the negotiating that is normal right now, and it presents the home as fairly priced during its first few weeks on the market, when buyer attention is highest. The two sales that would support a higher price closed in the spring, when mortgage rates were lower and homes sold faster than they do now."
+  "why": "It leaves room for the negotiating that is normal right now, and it presents the home as fairly priced during its first few weeks on the market, when buyer attention is highest. The two sales that would support a higher price closed earlier in the year, when mortgage rates were lower and homes sold faster than they do now."
  },
  "means": [
   "<strong>Expect to negotiate.</strong> Recent buyers nearby paid less than the original asking price and most asked the seller to cover part of their closing costs. Plan for both from the start rather than treating them as a setback.",
@@ -98,6 +97,7 @@
     "address": "622 Spring Oaks Blvd",
     "sold_price": 505500,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -117,6 +117,7 @@
     "address": "516 Oakwood Ct",
     "sold_price": 495000,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -135,11 +136,8 @@
     "address": "745 Little Wekiva Cir",
     "sold_price": 427000,
     "seller_concessions": 500,
+    "condition": "original",
     "adjustments": [
-     {
-      "label": "Renovation",
-      "amount": 45000
-     },
      {
       "label": "Size",
       "amount": -1700
@@ -154,12 +152,8 @@
     "address": "602 Mockingbird Ln",
     "sold_price": 429000,
     "seller_concessions": 12000,
-    "adjustments": [
-     {
-      "label": "Partial Update vs. Full Renovation",
-      "amount": 30000
-     }
-    ],
+    "condition": "kitchen_only",
+    "adjustments": [],
     "bullets": [
      "Same size and likely the same floor plan, one street over."
     ]
@@ -168,6 +162,7 @@
     "address": "621 Little Wekiva Rd",
     "sold_price": 465000,
     "seller_concessions": 13071,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Larger Canal Lot",
@@ -186,6 +181,7 @@
     "address": "900 Extra Comp Ln",
     "sold_price": 505500,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -206,7 +202,7 @@
   "time_adjustment": {
    "rate_per_quarter": 0.01
   },
-  "lean": "The two highest are the closest matches to your home's condition but sold in a stronger spring market; the two lowest needed the largest adjustments."
+  "lean": "The two highest are the closest matches to your home's condition but sold in a stronger market earlier in the year; the two lowest needed the largest adjustments."
  },
  "scatter": {
   "heading": "Where Your Home Fits in the Neighborhood",
@@ -308,9 +304,9 @@
  },
  "market": {
   "bullets": [
-   "<strong>Buyers are negotiating again.</strong> Since the summer, homes nearby sold further under their original asking price and took longer to go under contract than in the spring.",
-   "<strong>Inventory is balanced.</strong> More homes are for sale than in the spring, and many have already cut their price.",
-   "<strong>Mortgage rates are up</strong> from the spring sales, so buyers' budgets stretch less than they did then.",
+   "<strong>Buyers are negotiating again.</strong> In recent months, homes nearby sold further under their original asking price and took longer to go under contract than earlier in the year.",
+   "<strong>Inventory is balanced.</strong> More homes are for sale than earlier in the year, and many have already cut their price.",
+   "<strong>Mortgage rates are up</strong> from the earlier sales, so buyers' budgets stretch less than they did then.",
    "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in the next few weeks gives the home its best window before the holidays."
   ]
  },
@@ -400,7 +396,7 @@
   "The electrical panel brand, whether the home has aluminum branch wiring, and whether the plumbing has been updated: common questions for homes of this era.",
   "Anything you know that affects the home's value or condition, such as past leaks, insurance claims, or repairs. Florida law requires sellers to disclose known material defects.",
   "Your estimated mortgage payoff, so we can turn the net estimates into cash at closing.",
-  "When you would like to close, and whether the home will be occupied or vacant during showings."
+  "When you would like to close, and how you would like showings to work."
  ],
  "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
  "split_date": "2026-07-01",
