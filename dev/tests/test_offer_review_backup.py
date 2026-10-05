@@ -36,6 +36,11 @@ NO_CALL = {"highest_and_best_due": None}
 PASSED = {"highest_and_best_due": "2026-09-21 12:00"}
 
 
+def page(R, oid):
+    """A single review's HTML, from the one document model (review.result)."""
+    return render.build_html(review.result(R, "single", oid), {})
+
+
 def offer(R, oid):
     return next(o for o in R["offers"] if o["id"] == oid)
 
@@ -88,7 +93,7 @@ class HighestAndBest(unittest.TestCase):
         self.assertEqual((m["headline"], b["headline"], m["wait"]), ("COUNTER", "COUNTER", None))
         self.assertEqual(m["ranked"][0]["action"], "Counter")
         self.assertTrue(m["options"][0]["recommended"])
-        self.assertIn("OUR COUNTER", render.single_html(R, offer(R, "B"), b)[2])
+        self.assertIn("OUR COUNTER", page(R, "B"))
 
 
 class WaitForFinalOffers(unittest.TestCase):
@@ -121,7 +126,7 @@ class WaitForFinalOffers(unittest.TestCase):
         self.assertEqual(b["options"][0]["option"], "Wait for Final Offers")
         self.assertFalse(next(o for o in b["options"] if o["option"] == "Counter")["recommended"])
         self.assertEqual(b["counter"]["rows"][0]["counter"], "$504,000")  # the fallback's terms are all there
-        html = render.single_html(self.R, offer(self.R, "B"), b)[2]
+        html = page(self.R, "B")
         self.assertIn("FALLBACK COUNTER", html)
         self.assertNotIn("OUR COUNTER", html)
 

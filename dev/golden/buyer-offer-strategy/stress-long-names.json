@@ -176,7 +176,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -194,7 +194,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "roof"
     }
    ],
    "form_given": true,
@@ -657,7 +657,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "flood_zone"
     },
     {
      "sev": "Med",
@@ -679,11 +679,11 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "roof"
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     }
    ],
    "form_given": true,
@@ -1150,7 +1150,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -1172,11 +1172,11 @@
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "escalation"
      }
     ],
     "form_given": true,
@@ -1628,7 +1628,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -1646,7 +1646,7 @@
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "roof"
      }
     ],
     "form_given": true,
@@ -2266,7 +2266,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -2288,11 +2288,11 @@
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "escalation"
      }
     ],
     "form_given": true,
@@ -2744,7 +2744,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -2762,7 +2762,7 @@
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "roof"
      }
     ],
     "form_given": true,
@@ -3227,7 +3227,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -3249,11 +3249,11 @@
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "roof"
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "escalation"
      }
     ],
     "form_given": true,
@@ -3705,7 +3705,7 @@
      },
      {
       "sev": "Med",
-      "topic": null
+      "topic": "flood_zone"
      },
      {
       "sev": "Med",
@@ -3723,7 +3723,7 @@
      },
      {
       "sev": "Low",
-      "topic": null
+      "topic": "roof"
      }
     ],
     "form_given": true,

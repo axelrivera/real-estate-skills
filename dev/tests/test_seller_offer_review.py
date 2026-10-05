@@ -20,6 +20,11 @@ SAMPLE = os.path.join(ROOT, "dev", "samples", "seller-offer-review.json")
 TEMPLATE = os.path.join(ROOT, "skills", "seller-offer-review", "assets", "offer-review-template.md")
 AGENT = {"name": "Jane Doe", "brokerage": "Sunshine Realty", "team": None, "license": None, "brand": {"primary": "#0B6E4F"}}
 
+def page(R, agent=None, sample=False, mode="auto", offer_id=None):
+    """The report's HTML, from the one document model (review.result)."""
+    return review_render.build_html(review.result(R, mode, offer_id), agent or {}, sample)
+
+
 
 def fixture(name):
     with open(os.path.join(FIXTURES, name)) as f:
@@ -103,7 +108,7 @@ class Results(unittest.TestCase):
         R = review.analyze(fixture("texas-single.json"))
         out = review.result(R)
         self.assertNotRegex(json.dumps(out["summary"]) + json.dumps(out["assumptions"]), r"Offer [A-D]\b")
-        self.assertNotRegex(review_render.build_html(R, {}, sample=False)[0], r"Offer [A-D]\b")
+        self.assertNotRegex(page(R, {}, sample=False), r"Offer [A-D]\b")
 
     def test_incomplete_contract_gets_no_recommendation(self):
         s = review.result(review.analyze(fixture("incomplete-single.json")))["summary"]
@@ -117,7 +122,7 @@ class Results(unittest.TestCase):
         R = review.analyze(d)
         s = review.result(R)["summary"]
         self.assertEqual([(r["rank"], r["offer"], r["action"]) for r in s["ranked"]][-1], ("—", "Díaz · eXp Realty", "Incomplete"))
-        self.assertEqual(s["offers_active"], 4)
+        self.assertEqual((s["offers_active"], s["offers_incomplete"]), (3, 1))
         self.assertEqual(review.result(R, "single", R["incomplete"][0]["id"])["summary"]["action"], "INCOMPLETE")
 
     def test_ranked_rows_carry_the_id_for_each_single_review(self):
@@ -199,7 +204,7 @@ class Support(unittest.TestCase):
         self.assertEqual(review.result(review.analyze(data), mode="multi")["support"], "best_effort")
 
     def test_note_never_on_the_report(self):
-        doc, _, _ = review_render.build_html(review.analyze(fixture("texas-single.json")), {}, sample=False)
+        doc = page(review.analyze(fixture("texas-single.json")), {}, sample=False)
         for note in (oe.cf.DESCRIBED_NOTE, oe.cf.BEST_EFFORT_NOTE):
             self.assertNotIn(note, doc)
         self.assertNotIn("Florida", doc)
@@ -207,14 +212,13 @@ class Support(unittest.TestCase):
 
 class Pdf(unittest.TestCase):
     def test_theme_and_profile(self):
-        doc, mode, o = review_render.build_html(review.analyze(fixture("two-offers-accept.json")), AGENT, sample=True)
-        self.assertEqual((mode, o), ("multi", None))
+        doc = page(review.analyze(fixture("two-offers-accept.json")), AGENT, sample=True)
         self.assertIn("B (#1)", doc)  # a letter only with its rank
         self.assertIn("--brand:#0B6E4F", doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)  # no license in the profile: nothing printed
         self.assertNotIn("#C2410C", doc)  # the default orange isn't hard-coded anywhere
-        doc, _, _ = review_render.build_html(review.analyze(fixture("minimal-single.json")), {}, sample=False)
+        doc = page(review.analyze(fixture("minimal-single.json")), {}, sample=False)
         self.assertIn("--brand:#C2410C", doc)  # seller default from shared/design
         self.assertNotIn("None", doc.split("<body")[1].split("</header>")[0])  # no agent lines without a profile
 
@@ -224,26 +228,26 @@ class Pdf(unittest.TestCase):
         for i in range(5):  # nine offers: rows, not columns, and no chart past six
             data["offers"].append(dict(base, id="EFGHI"[i], price=base["price"] - 1000 * (i + 1),
                                        buyer_agent=f"Agent{i} · Brokerage{i}"))
-        doc, mode, _ = review_render.build_html(review.analyze(data), AGENT, sample=True)
-        self.assertEqual(mode, "multi")
-        self.assertEqual(doc.count('<td class="rk">'), 9)
+        doc = page(review.analyze(data), AGENT, sample=True)
+        self.assertEqual(len(re.findall(r'<td class="[^"]*\brk\b', doc)), 9)
         self.assertNotIn('class="scat"', doc)
-        doc, _, _ = review_render.build_html(review.analyze(fixture("four-offers.json")), AGENT, sample=True)
+        doc = page(review.analyze(fixture("four-offers.json")), AGENT, sample=True)
         self.assertIn('class="scat"', doc)
         self.assertIn("@page{size:Letter landscape}", doc)
-        single, _, _ = review_render.build_html(review.analyze(fixture("minimal-single.json")), {}, sample=False)
+        single = page(review.analyze(fixture("minimal-single.json")), {}, sample=False)
         self.assertNotIn("@page{size:Letter landscape}", single)
 
     def test_comparison_comes_with_each_single_review(self):
         """Two or more active offers: the comparison plus a single review of each, in rank order; one offer asked for:
         just its review."""
         saved = review_render.write_pdf
-        review_render.write_pdf = lambda R, agent, sample, mode, oid, out: f"{mode}:{oid}"
+        review_render.write_pdf = lambda M, agent, sample, out: f"{M['mode']}:{M['summary']['offer'] if M['mode'] == 'single' else None}"
         try:
             with contextlib.redirect_stderr(io.StringIO()):
                 ctx = {"agent": {}, "mode": None, "offer": None}
-                paths = review_render.build(fixture("two-offers-accept.json"), "pdf", "/tmp", ctx)
-                one = review_render.build(fixture("two-offers-accept.json"), "pdf", "/tmp", dict(ctx, mode="single", offer="B"))
+                built = [review_render.build(review.compute(fixture("two-offers-accept.json"), c), "pdf", "/tmp", c)
+                         for c in (ctx, dict(ctx, mode="single", offer="B"))]
+                paths, one = built
         finally:
             review_render.write_pdf = saved
         self.assertEqual(paths, ["multi:None", "single:B", "single:C"])
@@ -264,14 +268,14 @@ class Pdf(unittest.TestCase):
         data = fixture("minimal-single.json")
         data["offers"][0].update(contract_form="standard", riders=["K"])
         R = review.analyze(data)
-        rows = {r[0]: r[1] for r in review_render.term_rows(R["offers"][0], R)}
+        rows = {r[0]: r[1] for r in review.term_rows(R["offers"][0], R)}
         self.assertEqual(rows["Contract / Riders"], "Standard + As Is Rider (K)")
 
     def test_inspection_chart_rolls_like_page_one(self):
         """Day 15 from Sep 26 is Sun Oct 11 and Mon Oct 12 is Columbus Day: the chart and page one both end Oct 13."""
         d = fixture("minimal-single.json")
         d["analysis_date"] = "2026-09-26"
-        doc, _, _ = review_render.build_html(review.analyze(d), {}, sample=False)
+        doc = page(review.analyze(d), {}, sample=False)
         row = doc[doc.index("Inspection (Right to Cancel)"):][:200]
         self.assertIn("Oct 13", row)
         self.assertNotIn("Oct 11", row)
@@ -281,40 +285,6 @@ class Pdf(unittest.TestCase):
                                                         [(40, 88, 90, 110)])
         self.assertEqual((x, anchor), (407, "end"))
         self.assertEqual(review_render.target_label_spot("Target", 100, 45, 407, [])[2], "start")
-
-
-class ShortLastPage(unittest.TestCase):
-    """A last page under SHORT_TAIL full prints denser, kept only when that saves a page."""
-
-    def run_write(self, fills):
-        calls, it = [], iter(fills)
-
-        class Page:
-            def evaluate(self, js):
-                calls[-1] = "dense" if "dense" in js else calls[-1]
-
-        def to_pdf(doc, path, footer_html=None, landscape=False, before_print=None):
-            calls.append("normal")
-            return before_print(Page())
-
-        saved = (review_render.render.html_to_pdf, review_render.pages, review_render.fit_page_one)
-        review_render.render.html_to_pdf, review_render.pages = to_pdf, lambda path: next(it)
-        review_render.fit_page_one = lambda pg, fit: (0, [])
-        try:
-            review_render.write_pdf(review.analyze(fixture("listing-pays-buyer-broker.json")), {}, False, "single", "B", "/tmp")
-        finally:
-            review_render.render.html_to_pdf, review_render.pages, review_render.fit_page_one = saved
-        return calls
-
-    def test_dense_tail(self):
-        def four(tail):
-            return [(0.93, ""), (0.9, "Detailed Analysis"), (0.95, ""), (tail, "")]
-        three = [(0.93, ""), (0.9, "Detailed Analysis"), (0.98, "")]
-        for fills, want in (([four(0.28), four(0.28), three], ["normal", "dense"]),  # saves a page: kept
-                            ([four(0.30), four(0.30), four(0.30)], ["normal", "dense", "normal"]),  # saves nothing
-                            ([four(0.5), four(0.5)], ["normal"])):  # a fuller last page is left alone
-            with self.subTest(want=want):
-                self.assertEqual(self.run_write(fills), want)
 
 
 class Lapsed(unittest.TestCase):
@@ -339,7 +309,7 @@ class Lapsed(unittest.TestCase):
         R = review.analyze(fixture("expired-aga.json"))
         last = review.result(R)["summary"]["revive"]["rows"][-1]
         self.assertEqual((last["term"], last["counter"]), ("Time for Acceptance", "Mon Sep 28, 5:00 PM"))
-        doc, _, _ = review_render.build_html(R, {}, sample=False)
+        doc = page(R, {}, sample=False)
         self.assertIn("Counter (Reference)", doc)
         self.assertNotIn("Proposed Counter", doc)
 
@@ -348,7 +318,7 @@ class Lapsed(unittest.TestCase):
         data["offers"].append(dict(data["offers"][0], id="B", expires="2026-10-30 17:00", price=480000))
         data["offers"].append(dict(data["offers"][0], id="C", expires="2026-10-30 17:00", price=470000))
         s = review.result(review.analyze(data), mode="multi")["summary"]
-        self.assertEqual((s["offers_active"] - s["offers_incomplete"], s["offers_incomplete"]), (2, 1))  # 2 active, 1 incomplete
+        self.assertEqual((s["offers_active"], s["offers_incomplete"]), (2, 1))  # incomplete offers aren't active
         self.assertEqual([r["action"] for r in s["ranked"]].count("Incomplete"), 1)
 
 
@@ -444,7 +414,7 @@ class Plan(unittest.TestCase):
         self.assertEqual(review.multi_view(R)["terms_reason"], data["ranking_reason"])
         self.assertEqual(review.single_view(R, R["ranked"][0])["terms_reason"], data["ranking_reason"])
         self.assertIsNone(review.single_view(R, R["ranked"][1])["terms_reason"])
-        self.assertIn("Terms Reason:", review_render.build_html(R, {}, sample=False, mode="multi")[0])
+        self.assertIn("Terms Reason:", page(R, {}, sample=False, mode="multi"))
 
 
 if __name__ == "__main__":

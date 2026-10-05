@@ -26,6 +26,7 @@ One JSON file per property, with every offer in it. `scripts/review.py` analyzes
 - Offer Names
 - Agent Overrides (per Offer)
 - Value Range and Costs
+- Words Only, Figures from the Script
 - Offers Over Time
 
 ## Top Level
@@ -53,7 +54,7 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `roof_year` | no roof penalty in scoring | med (insurance) |
 | `insurance_reports` | `true` only when the seller has current insurance inspection reports to share (Florida: 4-point and wind mitigation). A counter that shortens the inspection period offers them only then | false: never offered | — |
 | `hoa_monthly` | unknown → no HOA estoppel or documents fee is charged (a condo's is, as an estimate said in the assumptions), and the assumption asks whether there's an HOA; `0` = no HOA, no fee | low |
-| `hoa_conflict` | text naming what disagrees ("$95 per quarter in one package, $95 per month in the other") when the offer packages, or a package and the listing, give different HOA assessments. Every offer gets a Low flag (topic `hoa_conflict`) and the report's chip reads "HOA to Confirm" instead of a figure. Keep `hoa_monthly` at the figure you trust most | none | — |
+| `hoa_conflict` | the amounts that disagree, as a list (`[{"amount": 95, "per": "quarter"}, {"amount": 95, "per": "month"}]`; the script words them), or `true`, when the offer packages, or a package and the listing, give different HOA assessments. Every offer gets a Low flag (topic `hoa_conflict`) and the report's chip reads "HOA to Confirm" instead of a figure. Keep `hoa_monthly` at the figure you trust most | none | — |
 | `hoa_approval_required` | false | low |
 | `flood_zone` | not scored | low |
 | `cma_low`, `cma_high` (`cma_mid` optional: the CMA's midpoint or median adjusted comp price) | from `--cma`; else both = list price, appraisal risk measured vs. list. A range given here (not by `--cma`) comes back as `value_range_confirm`, the one line the reply uses to confirm it | **high** |
@@ -93,7 +94,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
 | `deadline` | none; timeline scored on speed | med |
 | `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty) | med |
-| `priority_note` | shown instead of the priority word | — |
+| `priority_note` | shown instead of the priority word: words only, no dates or amounts ("close before the deadline; certainty over top dollar"); the deadline goes in `deadline` | — |
 
 ## offers[]
 
@@ -151,10 +152,10 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `loan_amount` | $ from the financing paragraph | none; checked against the down payment when given | — |
 | `balance_to_close` | $ the balance due at closing (FAR/BAR Para. 2(e)) of the live terms. With the deposit and loan amount it must add up to the price; a counter that changed the price without restating them is raised (`loan_amount`) | none; not checked | — |
 | `escalation` | `{cap, increment, proof, contract_form, paid_in_cash, proof_of_funds}`; the offer is scored at the price it reaches against the other offers, and the counter goes up to a cap above the price (`counter-rules.md`, rule 2). `contract_form` is the contract box the Escalation Addendum checks (`as_is` or `standard`): one naming the other form is a High issue (`escalation_form`). `paid_in_cash`: `true` when the added amount is paid in cash at closing (EAC-1 (a), proof of funds attached), `false` when it's financed (b); left out on EAC-1, the form's default (cash). Cash is checked against `proof_of_funds` (the proof attached to the addendum, when it's a separate document, else the offer's), financed or unstated against the pre-approval letter; a flag only when that doesn't cover the cap. EAC-1 states how a competing offer is proven (a redacted copy from the seller), so it isn't asked | none | — |
-| `personal_property`, `occupancy`, `other_terms` | text | — | — |
+| `personal_property`, `occupancy`, `other_terms` | the contract's terms as written (printed as they are in the Terms Review) | — | — |
 | `insurance_quote` | `true` (a quote in hand, scored), `false` (none yet), or `"planned"` (the buyer's agent says one is coming: noted, not scored until it's in hand) | unknown | — |
 | `agent_track` | `strong` `average` `weak` | scored 3 | — |
-| `agent_note` | text for the scorecard | — | — |
+| `agent_note` | the agent's read of the buyer's agent for the scorecard, in words (no counts or dates) | — | — |
 
 ### Offer Names
 
@@ -180,6 +181,10 @@ The value range sets where appraisal risk starts. Use the CMA, in this order:
 3. Nothing: leave them out. Appraisal risk is measured against list price, the answer is Preliminary, and a price over list is never countered down (the counter asks for gap coverage instead).
 
 Market costs come from the listing's state and county (`local-costs.md`): Florida closing costs, title rates and tax proration are built in; elsewhere national estimates, named once in the assumptions, never Florida's numbers. Outside Florida, look up the state's transfer tax from a trusted source and put it in `listing.costs`. Without terms, commission is the 5% total default, with no label. `seller-costs.md` explains each line and takes a title company quote.
+
+## Words Only, Figures from the Script
+
+The report prints every price, amount, date and count itself, so the text you write never states one: `ranking_reason`, `priority_note`, `label`, `agent_note`, `scores.*.why`, `checklist.*.note` and `listing.hoa_conflict` as text are words only, and the `issue`, `fix` and `request` of `flags` and `contract_issues` say what's wrong without restating the contract's numbers (a contract reference such as "paragraph 1", "Para. 9(c)" or "Rider GG" is fine). `review.py` and `render.py` stop on a figure in any of them and name each field to rewrite. Contract terms read as written (`other_terms`, `personal_property`, `occupancy`) are data and keep their figures.
 
 ## Offers Over Time
 

@@ -145,7 +145,7 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
@@ -2304,7 +2304,7 @@
     "flags": [
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
@@ -3779,7 +3779,7 @@
     "flags": [
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
@@ -5078,7 +5078,7 @@
     "flags": [
      {
       "sev": "Med",
-      "topic": null
+      "topic": "deposit_low"
      },
      {
       "sev": "Med",
@@ -5464,9 +5464,9 @@
      "value": 1145
     }
    ],
-   "close": "2026-11-09",
+   "close": "2026-10-29",
    "estoppel_estimate": false,
-   "holding": -767,
+   "holding": -583,
    "lines": [
     [
      "price",
@@ -5510,7 +5510,7 @@
     ],
     [
      "tax",
-     -5760
+     -5557
     ],
     [
      "payoff",
@@ -5520,12 +5520,12 @@
    "missing": {
     "count": 0
    },
-   "net": 395422,
-   "net_adj": 394655,
+   "net": 395625,
+   "net_adj": 395042,
    "price": 429000,
-   "tax_bill_assumed": true
+   "tax_bill_assumed": false
   },
-  "target_close": "2026-11-09"
+  "target_close": "2026-10-29"
  },
  "assumptions": [
   {

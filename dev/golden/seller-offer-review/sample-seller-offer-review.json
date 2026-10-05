@@ -502,11 +502,11 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
@@ -1555,11 +1555,11 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
@@ -2435,11 +2435,11 @@
    "flags": [
     {
      "sev": "Med",
-     "topic": null
+     "topic": "concessions_offset"
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",

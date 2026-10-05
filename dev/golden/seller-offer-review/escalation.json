@@ -82,7 +82,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Med",
@@ -926,7 +926,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
@@ -1507,7 +1507,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Med",
@@ -2351,7 +2351,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",
@@ -2783,7 +2783,7 @@
     },
     {
      "sev": "Low",
-     "topic": null
+     "topic": "escalation"
     },
     {
      "sev": "Med",
@@ -3627,7 +3627,7 @@
     },
     {
      "sev": "Med",
-     "topic": null
+     "topic": "deposit_low"
     },
     {
      "sev": "Med",

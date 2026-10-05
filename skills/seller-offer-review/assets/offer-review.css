@@ -1,7 +1,9 @@
-/* Offer review: styles on top of the shared report.css. Brand colors come from theme variables;
-   good / caution / risk use the fixed status variables. Never hard-code a brand color here. */
+/* Offer review: styles on top of the shared report.css and the layout kit (kit classes are styled only under this
+   skill's own classes). Brand colors come from theme variables; good / caution / risk use the fixed status variables.
+   Never hard-code a brand color here. */
 /* DS-103: a long offer name wraps the subtitle, never the prepared-for date or the respond-by time */
 header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto}
+.t2{overflow-wrap:anywhere}
 .hero .hr b{white-space:nowrap}
 .hero{margin:6px 0}
 .hero .big{font-size:25pt;letter-spacing:.04em;line-height:1.05}
@@ -9,112 +11,125 @@ header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:
 .hero .rba{display:block;font-size:7.8pt;color:var(--caution-strong);margin-top:3px} .hero .rba b{font-size:inherit;white-space:nowrap}
 /* round 3 case 05: in the narrow single-review box each other deadline is its time over its label, neither wrapping */
 .hero .hr.stack .rba b{display:block} .hero .hr.stack .rba .sep{display:none} .hero .hr.stack .rba .rbw{display:block;white-space:nowrap}
-/* a deadline in a table cell stays on one line ("Thu Sep 24, 5:00 PM") */
-td.oneline{white-space:nowrap}
-/* OFR-326: long detail tables may break across pages, row by row, with the header repeated (report.css keeps a .tbl whole) */
-.tbl.split{break-inside:auto} .tbl.split thead{display:table-header-group} .tbl.split tr{break-inside:avoid}
-.hero .who{font-size:12.5pt;font-weight:800;color:var(--brand-ink);margin-top:2px}
-.legend.okey{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:7.4pt} .legend.okey span{margin:0}
-.legend.okey b{color:var(--brand-ink);margin-right:3px}
-.rank th:nth-child(n+3),.rank td:nth-child(n+3){padding-left:3px;padding-right:3px}
-.rank{table-layout:fixed} .rank td.why2{font-size:7.6pt;color:var(--text)} .rank td.nw{overflow-wrap:anywhere}
-.kt td{font-size:7.8pt;vertical-align:top} .kt th{font-size:7pt}
+.hero .who{font-size:12.5pt;font-weight:800;color:var(--brand-ink);margin-top:2px;overflow-wrap:anywhere}
 .hero .hl.decline{border-left-color:var(--risk-base)} .hero .hl.decline .big{color:var(--risk-strong)}
 .hero .hl.backup{border-left-color:var(--brand-deep)} .hero .hl.backup .big{color:var(--brand-deep)}
 
-/* status text and cells */
-.gt{color:var(--good-strong);font-weight:700} .rt{color:var(--risk-strong);font-weight:700}
+/* status text */
+.rt{color:var(--risk-strong);font-weight:700}
 .hit{color:var(--good-strong)} .midt{color:var(--caution-strong)} .lot{color:var(--risk-strong)}
-/* status cells: a thin left mark in the status color, no fill */
-td.good{box-shadow:inset 3px 0 0 var(--good-base)} td.caution{box-shadow:inset 3px 0 0 var(--caution-base)} td.risk{box-shadow:inset 3px 0 0 var(--risk-base)}
-td.best{color:var(--good-strong);font-weight:700} td.worst{color:var(--risk-strong);font-weight:700}
-td.neg{color:var(--muted)}
-td.hl{color:var(--brand-strong);font-weight:700} th.hl{color:var(--brand-strong);border-bottom-width:3px}
-tr.total td{font-weight:700;border-top:2px solid var(--brand)}
-tr.total2 td{font-weight:800;font-size:9.4pt;border-top:2px solid var(--brand);border-bottom:2px solid var(--brand)}
-tr.alt td{color:var(--muted);font-size:7.8pt}
+/* status rows and cells: a thin left mark in the status color, no fill */
+.terms tr.st-good td.offered,.opts tr.st-good td.what{box-shadow:inset 3px 0 0 var(--good-base)}
+.terms tr.st-caution td.offered,.opts tr.st-caution td.what{box-shadow:inset 3px 0 0 var(--caution-base)}
+.terms tr.st-risk td.offered,.opts tr.st-risk td.what{box-shadow:inset 3px 0 0 var(--risk-base)}
+.stc{display:block;padding-left:5px} .stc.good{box-shadow:inset 3px 0 0 var(--good-base)}
+.stc.caution{box-shadow:inset 3px 0 0 var(--caution-base)} .stc.risk{box-shadow:inset 3px 0 0 var(--risk-base)}
+.best{color:var(--good-strong);font-weight:700} .worst{color:var(--risk-strong);font-weight:700}
+.neg{color:var(--muted)}
+.netsheet td.hl,.netsheet th.hl{color:var(--brand-strong);font-weight:700} .netsheet th.hl{border-bottom-width:3px}
+.netsheet td.hl .neg{color:var(--brand-strong)}
+.kit-tbl tr.total2 td{font-weight:800;font-size:9.4pt;border-top:2px solid var(--brand);border-bottom:2px solid var(--brand)}
+.kit-tbl tr.alt td{color:var(--muted);font-size:7.8pt}
+.legend.caps{flex-direction:column;gap:1px}
 .pill.high{background:var(--risk-bg);color:var(--risk-strong)} .pill.med{background:var(--caution-bg);color:var(--caution-strong)}
 .pill.low{background:var(--good-bg);color:var(--good-strong)}
 .pill.vyes{background:var(--good-bg);color:var(--good-strong)}
+.pill.blocking{color:var(--risk-strong);box-shadow:inset 0 0 0 1.2px var(--risk-base);font-weight:800}
+.pill.rec{background:var(--good-bg);color:var(--good-strong);box-shadow:inset 0 0 0 1px var(--good-base)}
 .cb{display:inline-block;width:11px;height:11px;border:1.3px solid var(--brand-ink);border-radius:2px;vertical-align:middle;
  font-size:9px;line-height:10px;text-align:center;font-weight:900;color:var(--good-strong)} .cb.on{border-color:var(--good-base)}
-.pill.rec{background:var(--good-bg);color:var(--good-strong);box-shadow:inset 0 0 0 1px var(--good-base)}
 /* 1-5 scores: colored numbers, the extremes in bold */
 .s5{color:var(--good-strong);font-weight:800} .s4{color:var(--good-strong)}
-.s3{color:var(--caution-strong)} .s2{color:var(--risk-strong)}
-.s1{color:var(--risk-strong);font-weight:800}
+.s3{color:var(--caution-strong)} .s2{color:var(--risk-strong)} .s1{color:var(--risk-strong);font-weight:800}
+.sm2{font-size:7.4pt}
+/* column widths */
+.score td.crit{width:28%} .flags td.lvl{width:8%} .flags td.issue{width:50%} .ck td.cbc{width:5%} .ck td.item{width:45%}
+.qs td.qn{width:5%;color:var(--brand-ink);font-weight:700} .confirm td.imp{width:9%} .confirm td.where{width:20%}
+.terms td.term{width:17%} .terms td.offered{width:23%} .terms td.bench{width:20%} .terms td.rating{width:9%}
+.terms tr.who td.offered{box-shadow:none}
+.netsheet td.lbl{width:34%}
+.kit-tbl td.lvl{width:12%} .risks td{font-size:8.2pt}
 
-/* counter / plan box: green because it is the recommended move. Outlined, no fills */
+/* the box under the answer (counter, plan): green because it is the recommended move. Outlined, no fills */
 .ctr{border:2px solid var(--good-base);border-radius:6px;overflow:hidden;margin:0 0 7px;break-inside:avoid}
+.ctr .tbl{border:none;border-radius:0}
 .ctrh{color:var(--good-strong);border-bottom:1.5px solid var(--good-base);padding:5px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .ctrh span{font-size:12pt;font-weight:900;letter-spacing:.06em;white-space:nowrap} .ctrh em{font-style:normal;font-size:8.8pt;text-align:right} .ctrh em b{font-size:10.5pt}
 .ctr th{color:var(--good-strong);border-bottom:1px solid var(--good-border);font-size:7.6pt;text-transform:uppercase;letter-spacing:.04em}
-.ctr td{padding:3px 8px;font-size:9pt} .ctr td.was{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--grey)}
-.ctr td.arr{color:var(--good-base);font-weight:800;text-align:center;padding:3px 0} .ctr td.now{color:var(--good-strong);font-weight:800;font-size:9.6pt}
-.ctr td.why2{font-size:7.9pt;color:var(--muted)} .ctr td{border-top-color:var(--good-border)}
+.ctr td{padding:3px 8px;font-size:9pt;border-top-color:var(--good-border)}
+.ctr td.term{width:19%} .ctr td.was{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--grey);width:18%}
+.ctr td.arr{color:var(--good-base);font-weight:800;text-align:center;padding:3px 0;width:3%}
+.ctr td.now{color:var(--good-strong);font-weight:800;font-size:9.6pt;width:21%}
+.ctr td.why2{font-size:7.9pt;color:var(--muted)} .ctr td.issue{width:50%} .ctr td.cbc{width:5%}
+/* a deadline stays on one line ("Thu Sep 24, 5:00 PM", fmt.when) */
+.ctr .kit-tbl tr.oneline td.was,.ctr .kit-tbl tr.oneline td.now,.mctr.kit-tbl tr.oneline td,.kit-tbl.mctr tr.oneline td.was2,.kit-tbl.mctr tr.oneline td.now2{white-space:nowrap}
 .ctr .note{padding:4px 10px;font-size:7.9pt;color:var(--muted);border-top:1px solid var(--good-border)}
 .ctr.cmp{border-color:var(--brand-deep)} .ctr.cmp .ctrh{color:var(--brand-deep);border-bottom-color:var(--brand-deep)}
+.ctr.cmp th{color:var(--brand-deep);border-bottom-color:var(--brand-rule)}
+.ctr.stop{border-color:var(--risk-base)} .ctr.stop .ctrh{color:var(--risk-strong);border-bottom-color:var(--risk-base)}
+.ctr.stop th{color:var(--risk-strong);border-bottom-color:var(--risk-border)} .ctr.stop td{border-top-color:var(--risk-border)}
+.mctr td.now2{color:var(--good-strong)}
 
-/* key numbers */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.kpis>div{border:1px solid var(--brand-rule);border-top:3px solid var(--brand);border-radius:5px;padding:5px 8px}
-.kpis span{display:block;font-size:7pt;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.kpis b{display:block;font-size:17pt;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
-.kpis b.brand{color:var(--brand-ink)} .kpis b.good{color:var(--good-strong)}
-.kpis i{font-style:normal;font-size:7.6pt;color:var(--muted)} .kpis i.good{color:var(--good-strong);font-weight:700} .kpis i.risk{color:var(--risk-strong);font-weight:700}
-.kpis .kgood{border-top-color:var(--good-base)}
+/* key numbers: four outlined tiles */
+.kpis.kit-tiles{gap:6px;margin:0}
+.kpis .kit-tile{border:1px solid var(--brand-rule);border-top:3px solid var(--brand);border-radius:5px;padding:5px 8px}
+.kpis .kit-tile:first-child{padding-left:8px;border-left:1px solid var(--brand-rule)}
+.kpis .kit-v{font-size:17pt;font-weight:800;line-height:1.15;color:var(--text);font-variant-numeric:tabular-nums}
+.kpis .kit-sub{font-size:7.6pt}
+.kpis .t-brand .kit-v{color:var(--brand-ink)} .kpis .t-good:not(.vnote) .kit-v{color:var(--good-strong)}
+.kpis .t-good .kit-sub{color:var(--good-strong);font-weight:700} .kpis .t-risk .kit-sub{color:var(--risk-strong);font-weight:700}
+.kpis .t-good:not(.vnote){border-top-color:var(--good-base)}
 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.lower{grid-template-columns:1.35fr 1fr} .lower.solo{grid-template-columns:1fr}
 .gauge b{font-size:24pt;font-weight:900;line-height:1} .gauge span{font-size:9pt;color:var(--muted);margin-left:3px}
 .meter{height:9px;background:var(--brand-rule);border-radius:3px;margin-top:4px;overflow:hidden}
 .bar{height:100%} .bar.hi{background:var(--good-base)} .bar.mid{background:var(--caution-base)} .bar.lo{background:var(--risk-base)}
-table.facts2{table-layout:fixed;width:100%} table.facts2 td{border:none;padding:2px 0;background:transparent!important;font-size:8.4pt} table.facts2 td:first-child{width:42%;padding-right:8px} table.facts2 td.n{white-space:normal}
-tr.recrow td{font-weight:700} tr.recrow td:first-child{box-shadow:inset 3px 0 0 var(--good-base)}
+table.facts2{table-layout:fixed;width:100%} table.facts2 td{border:none;padding:2px 0;font-size:8.4pt} table.facts2 td:first-child{width:42%;padding-right:8px} table.facts2 td.n{white-space:normal}
+.opts tr.recrow td{font-weight:700} .opts td.opt{width:26%}
 .nextstep{margin-top:6px;border:1.5px solid var(--brand-deep);padding:5px 10px;border-radius:4px;font-size:8.6pt} .nextstep b:first-child{color:var(--brand-deep)}
 .prelim{margin-top:6px;border-left:4px solid var(--caution-base);color:var(--caution-strong);padding:3px 10px;font-size:8.4pt}
-.qs td:first-child{color:var(--brand-ink);font-weight:700;text-align:center}
+.datanote{margin-top:4px}
 
 /* ranking and chart */
-.rank td{font-size:8.8pt;vertical-align:middle} .rank td.rk{font-size:13pt;font-weight:900;color:var(--brand-ink);text-align:center}
+.rank{table-layout:fixed} .rank td{font-size:8.8pt;vertical-align:middle} .rank td.why2{font-size:7.6pt;color:var(--text);width:24%}
+.rank td.rk{font-size:13pt;font-weight:900;color:var(--brand-ink);text-align:center;width:3%} .rank td.nw2{overflow-wrap:anywhere;width:17%}
+.rank th,.rank td{padding-left:3px;padding-right:3px}
 .rank tr.top td{font-weight:700} .rank tr.top td.rk{color:var(--good-strong);box-shadow:inset 3px 0 0 var(--good-base)}
+.rank .pill{white-space:nowrap}
+.chartbox .kit-chart{margin:0}
 .scat{width:100%;display:block} .scat .ax{font-size:10px;fill:var(--muted)} .scat .gl{stroke:var(--brand-rule)}
 .scat .pl{font-size:11px;font-weight:800} .scat .q{font-size:8.5px;fill:var(--muted);font-style:italic}
+.legend.okey{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;font-size:7.4pt;margin-top:3px} .legend.okey span{margin:0}
+.legend.okey b{color:var(--brand-ink);margin-right:3px}
+.kt td{font-size:7.8pt;vertical-align:top} .kt th{font-size:7pt} .kt td.ktoffer{width:11%;overflow-wrap:anywhere}
 
-/* contingency timelines */
+/* contingency timeline */
+.gantt-tbl th.tlname{width:22%} .gantt-tbl th.tld{width:6%} .gantt-tbl th.tle{width:9%} .gantt-tbl th.nw{white-space:nowrap}
 td.gantt{padding:4px 0;border-left:none;vertical-align:middle} td.gantt div{height:11px}
 td.wk{box-shadow:inset 1px 0 0 var(--brand-rule)} td.dl{box-shadow:inset -2px 0 0 var(--risk-base)}
 td.on-hot div{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} td.on-warm div{background:var(--caution-border)} td.on-close div{background:var(--brand-deep)}
-td.tc{text-align:center;font-size:7pt;padding:3px 2px;border-left:1px solid #fff}
-td.hot{background:var(--risk-border)!important;color:var(--risk-strong)} td.warm{background:var(--caution-bg)!important;color:var(--caution-strong)}
-td.safe{background:var(--good-bg)!important;color:var(--good-strong)}
-td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow:inset 0 0 0 1.5px var(--brand-deep)}
-.legend i.hot{background:color-mix(in srgb,var(--risk-base) 55%,#fff)} .legend i.warm{background:var(--caution-border)} .legend i.closei{background:var(--brand-deep)}
-.legend i.safe{background:var(--good-bg);border:1px solid var(--good-border)} .legend i.dl{background:var(--risk-base);width:2px}
-.sm2{font-size:6.8pt;font-weight:400;opacity:.9}
+.tlfoot{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:7.2pt;color:var(--muted);margin:3px 2px 0}
+.tlfoot .kit-legend{margin:0}
 
 /* compact page 1 when it would spill onto page 2 */
 .compact .hero .big{font-size:20pt} .compact .hero .who{font-size:11pt} .compact .hero .why{font-size:8pt} .compact .hero .hl,.compact .hero .hr{padding:6px 10px}
 .compact .ctr td{padding:1.5px 7px;font-size:8.3pt} .compact .ctr td.now{font-size:8.8pt} .compact .ctr td.why2{font-size:7.4pt}
-.compact .kpis b{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
+.compact .kpis .kit-v{font-size:14pt} .compact .gauge b{font-size:19pt} .compact table.facts2 td{padding:1px 0}
 .compact .p1 td{padding-top:1.4px;padding-bottom:1.4px} .compact .rank td{font-size:8.2pt} .compact .rank td.rk{font-size:11pt}
 .compact .ctr .note{padding:3px 10px;font-size:7.4pt} .compact .legend.okey{font-size:7pt} .compact h2{margin:5px 0 2px} .compact .prelim{padding:3px 8px;font-size:7.8pt;margin-top:4px}
-.compact .scat{height:170px} .compact .nextstep{margin-top:4px;padding:3px 10px;font-size:8.2pt} /* OFR-292: room for four offers */
-/* tighter still, after the movable blocks went to page 2 (render.FIT_STEPS) */
+.compact .scat{max-height:170px} .compact .nextstep{margin-top:4px;padding:3px 10px;font-size:8.2pt}
+/* tighter still, after the movable blocks went to page 2 */
 .tight .hero{margin:3px 0} .tight .hero .why{font-size:7.6pt;line-height:1.25} .tight .hero .big{font-size:17pt}
-.tight .kpis>div{padding:3px 6px} .tight .kpis b{font-size:12.5pt} .tight h2{margin:3px 0 1px}
+.tight .kpis .kit-tile{padding:3px 6px} .tight .kpis .kit-v{font-size:12.5pt} .tight h2{margin:3px 0 1px}
 .tight .p1 td{padding-top:1px;padding-bottom:1px} .tight .p1 .legend{margin-top:1px} .tight .ctr{margin-bottom:4px}
 .tight .nextstep{font-size:7.8pt;padding:2px 8px} .tight .prelim{font-size:7.4pt;padding:2px 8px}
-/* denser detail pages, when the last page would hold only a few closing lines (render.page_problems) */
-.dense .p1 ~ * td,.dense .p1 ~ * th{padding-top:1px;padding-bottom:1px} .dense .p1 ~ h2{margin:5px 0 2px}
-.dense .p1 ~ .legend{margin-top:1px} .dense .fine{font-size:6.5pt;line-height:1.2;margin-top:3px}
+.tight .rank td{font-size:7.8pt} .tight .rank td.why2{font-size:7.2pt} .tight .hero .rba{font-size:7.4pt}
+/* denser detail pages, when the last page would hold only a few closing lines */
+.dense .dh ~ * td,.dense .dh ~ * th{padding-top:1px;padding-bottom:1px} .dense .dh ~ h2{margin:5px 0 2px}
+.dense .kit-notes{font-size:6.9pt;line-height:1.2;margin-top:4px}
 /* the comparison's chart, moved to page 2 when page 1 is full: kept at its page-1 size */
 .chart-slot .chartbox{width:58%}
 
 /* the comparison prints landscape */
-.wide .snap div b{white-space:nowrap} .wide .rank .pill{white-space:nowrap} .wide .legend.okey{grid-template-columns:1fr 1fr 1fr}
-.wide .p1 .legend.okey{grid-template-columns:1fr 1fr} /* the page-1 chart is narrow: two keys a row, so each fits on one line */
-
-/* contract can't be reviewed as written: no recommendation, only what to fix */
-.pill.blocking{color:var(--risk-strong);box-shadow:inset 0 0 0 1.2px var(--risk-base);font-weight:800}
-.ctr.stop{border-color:var(--risk-base)} .ctr.stop .ctrh{color:var(--risk-strong);border-bottom-color:var(--risk-base)}
-.ctr.stop th{color:var(--risk-strong);border-bottom-color:var(--risk-border)} .ctr.stop td{border-top-color:var(--risk-border)}
+.wide .legend.okey{grid-template-columns:1fr 1fr 1fr} .wide .p1 .legend.okey{grid-template-columns:1fr 1fr}

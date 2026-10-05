@@ -229,7 +229,7 @@ class Scoring(unittest.TestCase):
         self.assertEqual(oe.deposit_status(o, T["listing"]), "good")
         self.assertNotIn("Escrow Deposit", [r[0] for r in o["counter_rows"]])
         R = review.analyze(fixture("texas-single.json"))
-        row = next(r for r in render.term_rows(R["offers"][0], R) if r[0] == "Escrow Deposit")
+        row = next(r for r in review.term_rows(R["offers"][0], R) if r[0] == "Escrow Deposit")
         self.assertEqual(row[3], "good")  # the terms table rates it the same
 
 
@@ -369,7 +369,10 @@ class ContractChecks(unittest.TestCase):
 
 class Deadlines(unittest.TestCase):
     def test_target_closes_on_a_business_day(self):
-        self.assertEqual(oe.analyze(fixture("four-offers.json"))["target_close"].isoformat(), "2026-11-13")  # Sun Nov 15
+        R = oe.analyze(fixture("four-offers.json"))
+        self.assertEqual(R["target_close"], R["ranked"][0]["close"])  # one target closing: the recommended offer's
+        # with nothing ranked, the latest closing capped at the seller's deadline, a business day (Sun Nov 15 -> Fri Nov 13)
+        self.assertEqual(oe.report_target_close([], R["active"], R["listing"], R["seller"]).isoformat(), "2026-11-13")
 
     def test_no_contingency_outlives_closing(self):
         d = fixture("minimal-single.json")

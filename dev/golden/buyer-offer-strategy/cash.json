@@ -3641,9 +3641,9 @@
      "value": 1145
     }
    ],
-   "close": "2026-10-26",
+   "close": "2026-10-15",
    "estoppel_estimate": false,
-   "holding": -533,
+   "holding": -350,
    "lines": [
     [
      "price",
@@ -3687,7 +3687,7 @@
     ],
     [
      "tax",
-     -4076
+     -3925
     ],
     [
      "payoff",
@@ -3697,12 +3697,12 @@
    "missing": {
     "count": 0
    },
-   "net": 379284,
-   "net_adj": 378751,
+   "net": 379435,
+   "net_adj": 379085,
    "price": 410000,
    "tax_bill_assumed": false
   },
-  "target_close": "2026-10-26"
+  "target_close": "2026-10-15"
  },
  "assumptions": [
   {

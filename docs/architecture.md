@@ -121,7 +121,7 @@ The building blocks every report moves onto (skills adopt them one at a time; un
 
 Dates take a `date`, a `datetime` or an ISO string and never print ISO; text that isn't a date passes through. `dev/tests/test_fmt.py` checks each function against the formatter it replaces (`finance.money`, `cma.k`, `offer_engine.short_price`/`pct`/`fmt_when`/`fmt_when_short`, seller-cma's `pct_text`, `months_text`, `deadline_label`, both `period_labels`), so moving a skill is mechanical: the same text, except ties now round up. When a skill's own formatter is deleted, its leg of that comparison goes with it.
 
-**`finance.Ledger`: columns that add up.** `add(key, label, amount)` (signed), `cost(...)` (a positive cost, stored negative), `credit(...)`: each line is rounded once, half-up to the dollar, when added. `total(keys=None)` and `costs()` sum the rounded lines, so a printed column always adds to its printed total; `amount(key)`, `rows(f=fmt.money, sign=True)`, `tuples()` (offer_engine.net_sheet's `(key, label, amount)` shape). `finance.seller_net_ledger(price, net, payoff)` wraps `seller_net`'s result.
+**`finance.Ledger`: columns that add up.** `add(key, label, amount)` (signed), `cost(...)` (a positive cost, stored negative), `credit(...)`: each line is rounded once, half-up to the dollar, when added. `total(keys=None)` and `costs()` sum the rounded lines, so a printed column always adds to its printed total; `amount(key)`, `rows(f=fmt.money, sign=True)`, `tuples()` (offer_engine.net_sheet's `(key, label, amount)` shape). `finance.seller_net_ledger(price, net, payoff)` wraps `seller_net`'s result. `offer_engine.net_sheet` builds every offer's net on one (`ledger` on the sheet; `lines` its rounded lines, `net` their sum, `holding` rounded the same way), so both offer skills' net sheets add up.
 
 **`shared/notes.py`: one notes registry per document.** `N.add(key, text, kind)` with kind `assumption`, `estimate`, `info` or `chat_only`; a key (or the same text under another key) added twice keeps the first. `N.pdf()` lists the notes block (assumptions, estimates, then the rest, each in the order added; no chat-only notes), `N.chat()` everything. `N.label_problems(labels)` / `N.check_labels(labels)` catch a label that carries a note's text or tags itself `(Estimate)` / `(Assumed)`.
 
@@ -129,7 +129,7 @@ Dates take a `date`, a `datetime` or an ISO string and never print ISO; text tha
 
 | Piece | What it makes |
 |---|---|
-| `Col(key, label, align="text"\|"num", min, max, wrap)` + `table(cols, rows, total=None, keep="auto"\|"brk"\|"whole")` | A boxed table: headers wrap at spaces, figures right-aligned, tabular and never wrapped; an optional total row; long tables run on whole rows (`.brk`) unless `whole` |
+| `Col(key, label, align="text"\|"num", min, max, wrap)` + `table(cols, rows, total=None, keep="auto"\|"brk"\|"whole", head=True)` | A boxed table: headers wrap at spaces, figures right-aligned, tabular and never wrapped; an optional total row; long tables run on whole rows (`.brk`) unless `whole`; `head=False` for a short list with no header row |
 | `tiles(items, n)` | Exactly `n` equal slots of (label, value[, sub[, cls]]); fewer items leave slots empty; `cls` marks a kind of tile for the skill's CSS |
 | `fact_row(items)` | Short facts on one line between thin rules |
 | `notes_block(N)` | The notes block from a registry (or a list) |
@@ -146,7 +146,7 @@ Dates take a `date`, a `datetime` or an ISO string and never print ISO; text tha
 
 ### Migrating a Skill
 
-The seller net sheet is the reference migration: `skills/seller-net-sheet/scripts/compute.py` and `render.py`, `assets/labels.json`, `dev/generators/seller_net_sheet.py` and `dev/tests/test_generated_seller_net_sheet.py`. Each skill moves in one pass, in this order:
+The seller net sheet is the reference migration: `skills/seller-net-sheet/scripts/compute.py` and `render.py`, `assets/labels.json`, `dev/generators/seller_net_sheet.py` and `dev/tests/test_generated_seller_net_sheet.py`. The seller offer review shows the same pass on a multi-document skill: `review.compute` builds every report a run prints (the comparison and each single review) as `review.result` models, with flags keyed by topic, notes keyed like the assumptions that say the same thing, and a What to Confirm table beside one notes block. Each skill moves in one pass, in this order:
 
 1. **One document model.** `compute` returns one dict: each figure as a number and as its display text (formatted once), the rows, facts, tiles, notes and flags. `render.py` passes it as `render.main(..., compute=...)`, and each format's `build(result, ...)` only places it. The markdown template is filled from the same printed JSON. Compute copies the data before filling anything in (a handoff's defaults too): it never changes its input.
 2. **Wording in `assets/labels.json`.** Every label and sentence a script writes is a key there, filled with `str.format`: headings (`h_`), legends (`lg_`), rows, facts, tiles, notes (`note_<registry key>`), Preliminary reasons, warnings. `make style-check` holds the `h_`, `th_`, `lg_`, `sum_`… keys to Title Case, so sentences use other prefixes. Code keeps no client wording of its own.

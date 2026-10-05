@@ -19,7 +19,7 @@ import math
 import re
 from datetime import date, datetime, time, timedelta
 
-from . import contract_forms as cf, dates, finance, profiles
+from . import contract_forms as cf, dates, finance, fmt, profiles
 
 FIN_LABEL = {k: v["label"] for k, v in finance.LOAN_PROGRAMS.items()}
 APPROVAL_LABEL = {"pof_verified": "Proof of funds verified", "full_uw": "Full underwritten approval",
@@ -58,36 +58,26 @@ def rnd(v, step=1000, how="round"):
     return int(f(v / step) * step)
 
 
-money = finance.money
+money = fmt.money  # every figure through shared/fmt (half-up)
 
 
 def pct(v, digits=1):
-    """0.025 -> '2.5%'; trailing zeros dropped (0.03 -> '3%')."""
-    s = f"{v * 100:.{digits}f}".rstrip("0").rstrip(".")
-    return f"{s}%"
+    """0.025 -> '2.5%'; trailing zeros dropped (0.03 -> '3%'): fmt.pct."""
+    return fmt.pct(v, digits)
 
 
 def fmt_when(v):
-    """'2026-09-25 17:00' -> 'Sep 25, 2026 · 5:00 PM'; a date alone -> 'Sep 25, 2026'; other text passes through."""
-    if not v:
-        return None
-    for fmt, out in (("%Y-%m-%d %H:%M", "%b %-d, %Y · %-I:%M %p"), ("%Y-%m-%d", "%b %-d, %Y")):
-        try:
-            return datetime.strptime(str(v)[:16 if "H" in fmt else 10], fmt).strftime(out)
-        except ValueError:
-            continue
-    return str(v)
+    """'2026-09-25 17:00' -> 'Sep 25, 2026 · 5:00 PM'; a date alone -> 'Sep 25, 2026'; other text passes through;
+    nothing -> None (fmt.when, "dot")."""
+    return fmt.when(str(v).strip(), "dot") if v else None
 
 
 def fmt_when_short(v):
     """'2026-09-24 17:00' -> 'Thu Sep 24, 5:00 PM', the one short form a deadline takes where space is tight (the
     counter table's Time for Acceptance, the Respond By box; the review's year is on the page); a date alone ->
-    'Thu Sep 24'; other text as fmt_when."""
-    for fmt, n, out in (("%Y-%m-%d %H:%M", 16, "%a %b %-d, %-I:%M %p"), ("%Y-%m-%d", 10, "%a %b %-d")):
-        try:
-            return datetime.strptime(str(v or "").strip()[:n], fmt).strftime(out)
-        except ValueError:
-            continue
+    'Thu Sep 24'; other text as fmt_when (fmt.when, "short")."""
+    if fmt.to_date(str(v or "").strip()):
+        return fmt.when(str(v).strip(), "short")
     return fmt_when(v)
 
 
@@ -293,7 +283,7 @@ def listing_tax(L, lp, costs):
         tax = finance.property_tax(lp, costs, total_mills=mills, homestead=False)
         return {**tax, "basis": f"{mills:g} mills on the list price, no exemptions"}, origin
     if rate is not None:  # a fraction, checked with the other rates (finance.check_units)
-        return {"annual": lp * rate, "basis": f"{rate * 100:g}% of list price", "estimated": True}, origin
+        return {"annual": lp * rate, "basis": f"{fmt.pct(rate, None)} of list price", "estimated": True}, origin
     tax = finance.property_tax(lp, costs)
     basis = tax["basis"].removeprefix("about ").replace("of price", "of list price")
     return {**tax, "basis": basis}, costs.described("property_tax.fallback_rate")
@@ -407,33 +397,50 @@ def prepare_listing(data, A, costs):
     return L, S
 
 
+class Note(str):
+    """A note's text that carries its key (`.key`), so a report's notes registry (shared/notes.py) says each once. It
+    is a plain string everywhere else."""
+
+    def __new__(cls, text, key):
+        s = super().__new__(cls, text)
+        s.key = key
+        return s
+
+
 def cost_notes(costs, L):
-    """Where each market cost came from, in plain words, for the fine print and the markdown summary."""
+    """Where each market cost came from, in plain words, for the fine print and the markdown summary. Each is a Note
+    keyed like the assumption that says the same thing (`deed transfer tax`, `title_fees`...), so a report that lists
+    the assumption doesn't repeat it as a note."""
     notes = []
     rate = costs.get("closing_costs.deed_transfer_tax_rate")
     name = costs.get("closing_costs.deed_transfer_tax_label") or "Deed transfer tax"
     if rate:
         payer = costs.get("closing_costs.deed_transfer_tax_payer") or "seller"
-        notes.append(f"{name} {rate * 100:.2f}%, {payer} pays ({costs.described('closing_costs.deed_transfer_tax_rate')})")
+        notes.append(Note(f"{name} {fmt.pct(rate, 2, fixed=True)}, {payer} pays "
+                          f"({costs.described('closing_costs.deed_transfer_tax_rate')})", "transfer_tax_rate"))
     elif rate == 0:
-        notes.append(f"No deed transfer tax in this market ({costs.described('closing_costs.deed_transfer_tax_rate')})")
+        notes.append(Note(f"No deed transfer tax in this market ({costs.described('closing_costs.deed_transfer_tax_rate')})",
+                          "transfer_tax_rate"))
     else:
-        notes.append("Deed transfer tax: not known for this market, left out")
+        notes.append(Note("Deed transfer tax: not known for this market, left out", "deed transfer tax"))
     payer = L["title_customary_payer"]
     if payer == "seller":
         how = "promulgated rate" if costs.get("closing_costs.owner_title.rate_tiers") else "estimate"
-        notes.append(f"Owner's title policy paid by the seller ({how}, {costs.described('closing_costs.owner_title.payer')})")
+        notes.append(Note(f"Owner's title policy paid by the seller ({how}, "
+                          f"{costs.described('closing_costs.owner_title.payer')})", "title_payer"))
     elif payer:
-        notes.append(f"Owner's title policy customarily paid by the {payer} ({costs.described('closing_costs.owner_title.payer')}; "
-                     "an offer's contract terms govern it, as noted per offer)")
+        notes.append(Note(f"Owner's title policy customarily paid by the {payer} "
+                          f"({costs.described('closing_costs.owner_title.payer')}; an offer's contract terms govern it, as "
+                          "noted per offer)", "title_payer"))
     fees = costs.get("closing_costs.seller_title_fees")
     if fees:
-        notes.append(f"Title company fees {money(sum(fees.values()))} ({costs.described('closing_costs.seller_title_fees')}; "
-                     "the title company's quote wins)")
+        notes.append(Note(f"Title company fees {money(sum(fees.values()))} "
+                          f"({costs.described('closing_costs.seller_title_fees')}; the title company's quote wins)", "title_fees"))
     discount = costs.get("property_tax.early_payment_discount")
     if discount and L.get("annual_tax") and L.get("tax_in_arrears"):  # OFR-313: the proration's discount, said out loud
-        notes.append(f"Property tax prorated from Jan 1 to the day before closing, allowing the {discount * 100:g}% "
-                     f"early-payment discount ({costs.described('property_tax.early_payment_discount')})")
+        notes.append(Note(f"Property tax prorated from Jan 1 to the day before closing, allowing the "
+                          f"{fmt.pct(discount, None)} early-payment discount "
+                          f"({costs.described('property_tax.early_payment_discount')})", "tax_discount"))
     return notes
 
 
@@ -445,10 +452,10 @@ def title_fee_note(L, costs, offers):
     if i is None or not amounts:
         return
     what = money(amounts[0]) if len(amounts) == 1 else f"{money(amounts[0])} to {money(amounts[-1])} by offer"
-    L["cost_notes"][i] = (f"Title company fees {what} ({costs.described('closing_costs.seller_title_fees')}"
-                          + ("; the Para. 9(c) box sets which searches the seller pays" if any(box_title_fees(o, costs) is not None
-                                                                                                  for o in offers) else "")
-                          + "; the title company's quote wins)")
+    L["cost_notes"][i] = Note(f"Title company fees {what} ({costs.described('closing_costs.seller_title_fees')}"
+                              + ("; the Para. 9(c) box sets which searches the seller pays"
+                                 if any(box_title_fees(o, costs) is not None for o in offers) else "")
+                              + "; the title company's quote wins)", "title_fees")
 
 
 # --- offer labels --------------------------------------------------------------
@@ -471,11 +478,8 @@ def surname(name):
 
 
 def short_price(v):
-    """$432K, $432.5K, $1.25M."""
-    if v >= 1_000_000:
-        return f"${v / 1_000_000:.2f}".rstrip("0").rstrip(".") + "M"
-    k = round(v / 100) / 10
-    return f"${k:,.0f}K" if k == int(k) else f"${k:,.1f}K"
+    """$432K, $432.5K, $1.25M (fmt.k)."""
+    return fmt.k(v, 1)
 
 
 def apply_escalations(offers, L):
@@ -484,6 +488,9 @@ def apply_escalations(offers, L):
     are the other offers' base prices, never the same buyer's alternatives (`same_buyer`). Everything after this (net,
     score, rank, counter) uses the effective price."""
     live = [o for o in offers if o["status"] in ACTIVE]
+    for o in offers:  # a declined or expired offer keeps its clause as written: nothing to escalate against
+        if o.get("escalation") and o not in live:
+            o["escalation_note"], o["escalation_issues"] = "Escalation clause", []
     base = {id(o): o["price"] for o in live}
     for o in live:
         e = o.get("escalation")
@@ -701,7 +708,7 @@ def prepare_offer(o, L, S, A):
     if fin != "cash" and o.get("down_pct") is None and loan and 0 < loan <= o["price"]:
         o["down_pct"] = round(1 - loan / o["price"], 4)  # the contract's loan amount gives the down payment
     o["down_pct"] = 1.0 if fin == "cash" else given(
-        o, "down_pct", dflt_down, A, sc, f"Down payment not provided: assumed {dflt_down * 100:g}% for {FIN_LABEL[fin]}", "med")
+        o, "down_pct", dflt_down, A, sc, f"Down payment not provided: assumed {fmt.pct(dflt_down, None)} for {FIN_LABEL[fin]}", "med")
     o["approval"] = given(o, "approval", "preapproval" if o["financed"] else "none", A, sc, "Approval level not provided", "med")
     o["deposit"] = o.get("deposit")
     if o["deposit"] is None:
@@ -828,8 +835,8 @@ def prepare_offer(o, L, S, A):
         given_days = o.get("closing_days")
         days = given_days or A.add(sc, "closing_days", 45 if o["financed"] else 30, "Closing date not provided", "med")
         o["close"] = eff + timedelta(days=days)
-        o["close_terms"] = (f"{days} days after acceptance, about {o['close']:%a %b %-d}" if given_days else
-                            f"Not given (assumed about {o['close']:%a %b %-d})")
+        o["close_terms"] = (f"{days} days after acceptance, about {fmt.when(o['close'])}" if given_days else
+                            f"Not given (assumed about {fmt.when(o['close'])})")
     o["close_days"] = (o["close"] - eff).days
     # FAR/BAR Para. 9(c): the party who designates the Closing Agent pays the owner's policy, so the contract's box sets
     # who pays it on this offer; a title_payer the agent put in the listing's costs still wins
@@ -900,7 +907,7 @@ def rider_money(o, A, sc):
     if "U" in codes or o.get("rent_back_days"):
         days, rent = o.get("rent_back_days"), o.get("rent_back_monthly")
         if days and rent is not None:  # OFR-118: a free ($0) rent-back is a known term, not missing data
-            lines.append(("rentback", f"Rent-Back Rent to Buyer ({days} Days)", -round(rent * days / 30)))
+            lines.append(("rentback", f"Rent-Back Rent to Buyer ({days} Days)", -rent * days / 30))
         else:
             A.add(sc, "rent_back", "not counted", "Post-closing occupancy (Rider U) without its days and monthly rent: the "
                   "rent the seller pays the buyer isn't in the net", "med")
@@ -972,7 +979,9 @@ _LINE_KEYS = {"listing_fee": "listing", "buyer_broker_fee": "bb", "transfer_tax"
 
 def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repair_label=None, bb_tag=None, extra=(),
               bb_from_listing=False):
-    """Seller net at `price`, itemized with stable keys. Market costs and the tax proration come from finance.
+    """Seller net at `price`, itemized with stable keys on a finance.Ledger (`ledger`; `lines` are its rounded lines and
+    `net` their sum; `holding` is rounded the same way and `net_adj` = net + holding). Market costs and the tax
+    proration come from finance.
     `extra` are the offer's rider money lines, (key, label, amount), placed before the payoff (rider_money).
     `bb_from_listing`: the listing broker pays the buyer's broker from its fee, so the seller pays only the listing fee
     (an assumed listing fee then covers both sides, the market's total)."""
@@ -989,7 +998,7 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     for ln in base["lines"]:
         key = _LINE_KEYS.get(ln["key"])
         if key:
-            found[key] = (ln["label"], round(ln["amount"]))
+            found[key] = (ln["label"], ln["amount"])
     transfer = found.get("transfer", ("",))[0] or "Deed Transfer Tax"  # the market's own name (e.g. documentary stamp tax)
     labels = {
         "listing": (f"Listing Brokerage ({pct(listing_pct)}" + (", Pays the Buyer's Broker)" if bb_from_listing else ")"))
@@ -1008,22 +1017,29 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     estoppel_estimate = "estoppel" in found and (L["hoa_monthly"] is None
                                                  or costs.source("closing_costs.hoa_estoppel_fee") == "estimate")
     tax_label = next((ln["label"] for ln in base["lines"] if ln["key"] == "tax_proration"), "Property Tax Proration")
-    tax = next((round(ln["amount"]) for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
-    # OFR-313 (local-costs.md): after this year's bills go out, an unpaid bill is an assumption, said in the assumptions
-    tax_bill_assumed = tax > 0 and L["bill_paid"] is None and close.month >= L["tax_bill_month"]
-    lines = [("price", "Offer Price", price), ("conc", "Seller-Paid Closing Costs / Concessions", -conc),
-             ("repair", repair_label or "Post-Inspection Repair Credit", -repair)]
+    tax = next((ln["amount"] for ln in base["lines"] if ln["key"] == "tax_proration"), 0)
+    # One finance.Ledger: each line rounded once (half-up, to the dollar), the net the sum of the rounded lines, so the
+    # printed column adds up. `lines` keeps the (key, label, amount) shape both offer skills read.
+    led = finance.Ledger()
+    led.add("price", "Offer Price", price)
+    led.cost("conc", "Seller-Paid Closing Costs / Concessions", conc)
+    led.cost("repair", repair_label or "Post-Inspection Repair Credit", repair)
     for key in ("listing", "bb", "transfer", "surtax", "title", "settle", "estoppel"):
         if key == "surtax" and key not in found:
             continue
-        lines.append((key, labels.get(key) or found[key][0], -found.get(key, ("", 0))[1]))
-    lines += [("warranty", "Home Warranty", -warranty),
-              ("tax", tax_label, -tax), *extra,
-              ("payoff", "Mortgage Payoff", -S["payoff"])]
-    net = sum(v for _, _, v in lines)
+        led.cost(key, labels.get(key) or found[key][0], found.get(key, ("", 0))[1])
+    led.cost("warranty", "Home Warranty", warranty)
+    led.cost("tax", tax_label, tax)
+    for key, label, amount in extra:
+        led.add(key, label, amount)
+    led.cost("payoff", "Mortgage Payoff", S["payoff"])
+    # OFR-313 (local-costs.md): after this year's bills go out, an unpaid bill is an assumption, said in the assumptions
+    tax_bill_assumed = led.amount("tax") < 0 and L["bill_paid"] is None and close.month >= L["tax_bill_month"]
+    net = led.total()
     months = max(0, (close - L["analysis_date"]).days) / 30
-    holding = -round(S["holding_monthly"] * months)
-    return {"lines": lines, "net": net, "holding": holding, "net_adj": net + holding, "close": close, "price": price,
+    holding = -fmt.half_up(S["holding_monthly"] * months)
+    return {"lines": [(k, lab, v or 0) for k, lab, v in led.tuples()], "ledger": led, "net": net, "holding": holding,
+            "net_adj": net + holding, "close": close, "price": price,
             "missing": base["missing"], "assumed": base["assumed"], "tax_bill_assumed": tax_bill_assumed,
             "estoppel_estimate": estoppel_estimate}
 
@@ -1064,12 +1080,12 @@ def auto_scores(o, L, S):
         s["financing"], why["financing"] = 5, "Cash: no loan contingency"
     elif fin == "conventional":
         s["financing"] = 4 if down >= .20 else (3 if down >= .05 else 2)
-        why["financing"] = f"Conventional, {down:.0%} down"
+        why["financing"] = f"Conventional, {fmt.pct(down, 0)} down"
     elif fin == "va":
         s["financing"], why["financing"] = 3, ("VA financing: Tidewater notice before a low appraisal is final; "
                                                "stricter appraisal and condition rules")
     else:
-        s["financing"], why["financing"] = 2, (f"{FIN_LABEL[fin]}, {down:.1%} down" + (": appraisal protection to closing" if fin == "fha" else "")
+        s["financing"], why["financing"] = 2, (f"{FIN_LABEL[fin]}, {fmt.pct(down, 1, fixed=True)} down" + (": appraisal protection to closing" if fin == "fha" else "")
                                   + ", stricter appraisal and condition rules")
 
     ap = o["approval"]
@@ -1136,14 +1152,16 @@ def auto_scores(o, L, S):
         # a deposit at the norm is never "Favorable" there and weak here: at or above it scores 3+, under half of it 2-
         lo, hi = {"good": (3, 5), "caution": (2, 3), "risk": (1, 2)}[deposit_status(o, L)]
         s["deposit"] = min(max(s["deposit"], lo), hi)
-        why["deposit"] = f"{money(o['deposit'])} = {p:.1%} of price"
+        why["deposit"] = f"{money(o['deposit'])} = {fmt.pct(p, 1, fixed=True)} of price"
 
     dl = S["deadline"]
     if dl:
         margin = (dl - o["close"]).days
         s["timeline"] = 5 if margin >= 7 else 4 if margin >= 0 else 2 if margin >= -7 else 1
-        why["timeline"] = (f"{o['close']:%b %-d} close, {margin} days before {dl:%b %-d} deadline" if margin >= 0
-                           else f"{o['close']:%b %-d} close is {-margin} days after {dl:%b %-d} deadline")
+        why["timeline"] = (f"{fmt.date_short(o['close'], year=False)} close, {margin} days before {fmt.date_short(dl, year=False)} deadline"
+                           if margin >= 0 else
+                           f"{fmt.date_short(o['close'], year=False)} close is {-margin} days after "
+                           f"{fmt.date_short(dl, year=False)} deadline")
     else:
         cd = o["close_days"]
         s["timeline"] = 5 if cd <= 30 else 4 if cd <= 45 else 3 if cd <= 60 else 2
@@ -1269,7 +1287,7 @@ def contract_checks(o, L):
     exp = o.get("approval_expires")  # a date, or None (prepare_offer records free text as an assumption)
     if o["financed"] and exp and o.get("close") and exp < o["close"]:
         e, c = exp, o["close"]
-        add("Med", f"The pre-approval letter expires {e:%b} {e.day}, {e.year}, before the {c:%b} {c.day} closing.", "Ask for the lender to extend or update it; it's routine, but confirm before relying on the date.",
+        add("Med", f"The pre-approval letter expires {fmt.date_short(e)}, before the {fmt.date_short(c, year=False)} closing.", "Ask for the lender to extend or update it; it's routine, but confirm before relying on the date.",
             "terms", "Please confirm the pre-approval will be extended or updated through closing.", "approval_expires")
     funds = o.get("proof_of_funds")
     if funds:  # verified cash: the down payment (price less the loan; deposits are part of it) plus an appraisal gap
@@ -1316,24 +1334,25 @@ def contract_checks(o, L):
         if "G" in codes:
             add("High", "Short sale (Rider G): the contract isn't firm until the seller's lender approves it (90 days after the "
                         "Effective Date if blank), and most deadlines restart when the buyer receives the approval.",
-                "Set the seller's expectations on timing; the lender sets the final net.", "terms")
+                "Set the seller's expectations on timing; the lender sets the final net.", "terms", topic="short_sale")
         for code, who in (("Z", "buyer"), ("Y", "seller")):
             if code in codes:
                 add("Med", f"{who.title()}'s attorney approval (Rider {code}): the {who} may cancel for any reason until the "
                            "rider's date.", "Keep the date short and confirm it's filled in.", "terms",
-                    "Please confirm the attorney approval date in the rider." if code == "Z" else None)
+                    "Please confirm the attorney approval date in the rider." if code == "Z" else None, f"attorney_{code}")
         if "V" in codes and "X" not in codes:
             add("Med", "Sale-of-home contingency (Rider V) without a kick-out clause (Rider X): the seller can't keep marketing.",
-                "Counter with the Kick-Out Clause Rider.", "riders", "Would the buyer accept the Kick-Out Clause Rider (X)?")
+                "Counter with the Kick-Out Clause Rider.", "riders", "Would the buyer accept the Kick-Out Clause Rider (X)?",
+                "kickout")
         if o.get("inspection_watch"):  # iteration 10 eval 5: the inspection rider's watch items, as in chat
             add("Low", *o["inspection_watch"], "terms", topic="rider_K_terms")
         if "D" in codes:
             add("Med", "Mortgage assumption (Rider D): the rider sets no deadline for the lender's approval.",
-                "Add an approval deadline in Additional Terms.", "terms")
+                "Add an approval deadline in Additional Terms.", "terms", topic="rider_D")
         if "EE" in codes and not o.get("assessment_payoff"):
             add("Med", "Qualifying improvement assessment (Rider EE): the rider doesn't say who pays the unpaid balance.",
                 "Agree in Additional Terms whether the seller pays it off at closing or the buyer assumes it; check the "
-                "buyer's lender allows it.", "terms")
+                "buyer's lender allows it.", "terms", topic="rider_EE")
         # Rider GG: where the compensation agreement stands (iteration 12: one in the package, signed by both, raises
         # nothing; one the listing side hasn't signed says so). Iteration 10 eval 6: paid by the listing broker, the
         # amount doesn't move the seller's net, so there's nothing to ask the buyer's agent for.
@@ -1365,7 +1384,7 @@ def contract_checks(o, L):
                 "the loan type (the Appraisal Gap Addendum is for conventional or cash offers).", "aga_loan_type")
         if not o["appraisal_gap"]:
             add("Med", "Appraisal Gap Addendum (AGA-1) without a Gap Amount.", "Ask for the Gap Amount.", "terms",
-                "Please fill in the Gap Amount on the Appraisal Gap Addendum.")
+                "Please fill in the Gap Amount on the Appraisal Gap Addendum.", "aga_gap_amount")
         full = o.get("aga_window_full")
         if full and full > o["close_days"]:  # OFR-106
             add("Med", f"The Appraisal Gap Addendum's valuation and renegotiation periods ({full} days) run past the {o['close_days']}-day closing.",
@@ -1407,7 +1426,8 @@ def contract_checks(o, L):
             None, "buyer_changes")
     if o["financed"] and o["loan_approval_days"] and o["loan_approval_days"] > o["close_days"]:
         add("Med", f"Loan approval period ({o['loan_approval_days']} days) ends after closing ({o['close_days']} days).",
-            "Ask for a loan approval date before closing.", "terms", "Can the loan approval date move before closing?")
+            "Ask for a loan approval date before closing.", "terms", "Can the loan approval date move before closing?",
+            "loan_approval_after_closing")
     esc = o.get("escalation")
     conflict = cf.addendum_form_conflict(o["contract_form"], esc.get("contract_form")) if isinstance(esc, dict) else None
     if conflict:  # iteration 12: the Escalation Addendum's contract box names the other form (contract_forms' rule)
@@ -1485,7 +1505,7 @@ def last_seller_counter(o):
 def _term_text(key, v):
     if key == "closing_date":
         d = _d(v)
-        return f"{d:%b} {d.day}, {d.year}"
+        return fmt.date_short(d)
     return f"{v} days" if key.endswith("_days") else money(v)
 
 
@@ -1546,7 +1566,8 @@ def flags_for(o, L, S):
             add("High" if exp > .01 * o["price"] else "Med",
                 f"Price is {money(o['price'] - appraisal_line(L))} over {ref} with {cover} {what}.",
                 "Counter with an appraisal gap clause, or treat the appraised value as the real price." if not o["appraisal_protected"]
-                else "Treat the appraised value as the real price: the FHA/VA rider lets the buyer walk if it comes in low.")
+                else "Treat the appraised value as the real price: the FHA/VA rider lets the buyer walk if it comes in low.",
+                "appraisal_gap")
     if o["appraisal_protected"] and o["appraisal_gap"]:
         add("Med", f"{FIN_LABEL[o['financing']]} appraisal gap clause ({money(o['appraisal_gap'])}): the buyer can still cancel "
                    "if the appraisal is low (amendatory clause), so it shows intent only.",
@@ -1566,33 +1587,35 @@ def flags_for(o, L, S):
         note = finance.loan_limit_note(o.get("loan_amount") or finance.loan_amount(o["price"], o["financing"], o["down_pct"]),
                                        o["financing"], L["loan_limits"], L.get("state"), L.get("county"))
         if note:  # OFR-11
-            add("High" if "can't be FHA" in note else "Med", note, "Ask the buyer's agent for the lender's confirmation.")
+            add("High" if "can't be FHA" in note else "Med", note, "Ask the buyer's agent for the lender's confirmation.",
+                "loan_limit_fha" if "can't be FHA" in note else "loan_limit")
     extras = o["seller_concessions"] + o["home_warranty"]
     if o["price"] > L["list_price"] and extras >= (o["price"] - L["list_price"]):
         add("Med", f"Concessions + warranty ({money(extras)}) cancel out the {money(o['price'] - L['list_price'])} over list.",
-            "Compare on the net line, not the headline price.")
+            "Compare on the net line, not the headline price.", "concessions_offset")
     if o["sale_contingency_days"]:
         add("High", f"Contingent on sale of buyer's home ({o['sale_contingency_days']} days)"
                     f"{'' if o['kickout'] else ' with no kick-out clause'}.",
             # iteration 10 eval 2: never ask for the kick-out the offer already has
             "Only accept with a short contingency window; the kick-out clause is already in." if o["kickout"] else
-            "Only accept with a 72-hour kick-out and a short contingency window.")
+            "Only accept with a 72-hour kick-out and a short contingency window.", "sale_contingency")
     if o["financed"] and o["approval"] in ("prequal", "none"):
         add("High" if o["approval"] == "none" else "Med", "Buyer has only a pre-qualification (or no approval).",
-            "Require a full pre-approval within 3 days.")
+            "Require a full pre-approval within 3 days.", "prequal")
     if o["deposit"] is not None and o["deposit"] / o["price"] < L["deposit_norm"] / 2:
-        add("Med", f"Deposit is {o['deposit'] / o['price']:.1%} of price.", f"Counter for {pct(L['deposit_norm'])} or a larger additional deposit.")
+        add("Med", f"Deposit is {fmt.pct(o['deposit'] / o['price'], 1, fixed=True)} of price.", f"Counter for {pct(L['deposit_norm'])} or a larger additional deposit.",
+            "deposit_low")
     roof = L.get("roof_year")
     if o["financed"] and roof and L["analysis_date"].year - roof >= 14:
         if o.get("insurance_quote") is True:
             add("Low", f"{L['analysis_date'].year - roof}-yr roof: the buyer has a quote; confirm it covers the roof as is.",
-                "Ask the buyer's agent for the quote's roof conditions.")
+                "Ask the buyer's agent for the quote's roof conditions.", "roof")
         else:
             add("Med", f"{L['analysis_date'].year - roof}-yr roof: buyer's insurer may require roof work or decline coverage.",
-                f"Provide a roof certification and the {L['reports']} up front.")
+                f"Provide a roof certification and the {L['reports']} up front.", "roof")
     fz = (L.get("flood_zone") or "").upper()
     if o["financed"] and fz[:1] in ("A", "V"):
-        add("Med", f"Flood zone {fz}: lender will require flood insurance.", "Confirm the buyer has a flood quote.")
+        add("Med", f"Flood zone {fz}: lender will require flood insurance.", "Confirm the buyer has a flood quote.", "flood_zone")
     rule = L["flood_disclosure_rule"]
     if rule and L["flood_disclosure"] is not True:  # the listing side's job: no request to the buyer's agent
         add("Med", f"The seller's flood disclosure ({rule.get('statute', 'state law')}) isn't confirmed as given.",
@@ -1609,9 +1632,10 @@ def flags_for(o, L, S):
                 "Deliver the association documents" + (", the milestone summary and the SIRS" if cr.get("sirs_milestone") else "")
                 + " right after acceptance: the deal isn't firm until the buyer's windows pass.", "condo_rescission")
     if S["deadline"] and o["close"] > S["deadline"]:
-        add("High", f"Closing {o['close']:%b %-d} is after the seller's {S['deadline']:%b %-d} deadline.", "Counter the closing date.")
+        add("High", f"Closing {fmt.date_short(o['close'], year=False)} is after the seller's {fmt.date_short(S['deadline'], year=False)} deadline.", "Counter the closing date.",
+            "past_deadline")
     if o["close"].weekday() >= 5:
-        add("Low", f"{o['close']:%b %-d} is a {o['close']:%A}.", "Move closing to the prior Friday.")
+        add("Low", f"{fmt.date_short(o['close'], year=False)} is a {fmt.weekday(o['close'])}.", "Move closing to the prior Friday.", "weekend_closing")
     if o["inspection_days"] >= 15 and "inspection_days" not in [g[3] for g in chain_gaps(o)]:  # else the chain issue says it
         # iteration 10 eval 1: the same number as the Terms Review benchmark and the counter (the market norm)
         add("Med", f"{o['inspection_days']}-day inspection period.", f"Counter to {L['norms']['inspection_days']} days.",
@@ -1619,24 +1643,35 @@ def flags_for(o, L, S):
     if o["repairs_owed"]:
         lim = o["repair_limits"]
         add("Med", f"{o['contract_title']}: the seller pays repairs up to {money(lim['general'])} general, {money(lim['wdo'])} WDO "
-                   f"and {money(lim['permit'])} permits (Para. 9(a)).", "Price that in, or counter on the AS IS form.")
+                   f"and {money(lim['permit'])} permits (Para. 9(a)).", "Price that in, or counter on the AS IS form.",
+            "standard_repairs")
     ob = S["offered_buyer_broker_pct"]
     if ob is not None and o["buyer_broker_pct"] > ob + 1e-9 and not o.get("bb_from_listing"):
-        add("Med", f"Buyer-broker request ({o['buyer_broker_pct']:.1%}) exceeds the {ob:.1%} the seller agreed to offer.",
-            "Counter to the agreed amount.")
+        add("Med", f"Buyer-broker request ({fmt.pct(o['buyer_broker_pct'], 1, fixed=True)}) exceeds the {fmt.pct(ob, 1, fixed=True)} the seller agreed to offer.",
+            "Counter to the agreed amount.", "buyer_broker_ask")
     if any(t in o["buyer"].upper() for t in (" LLC", " INC", " TRUST", " CORP")):
-        add("Low", "Entity buyer.", "Confirm signer authority and that funds are in the entity's name.")
+        add("Low", "Entity buyer.", "Confirm signer authority and that funds are in the entity's name.",
+            "entity_buyer")
     if o.get("escalation"):
         for sev, issue, fix, topic in o.get("escalation_issues") or []:
             add(sev, issue, fix, topic)
-        add("Low", o["escalation_note"] + ".", "Confirm the competing offer's price terms before signing.")
+        add("Low", o["escalation_note"] + ".", "Confirm the competing offer's price terms before signing.", "escalation")
     if L.get("hoa_approval_required"):
-        add("Low", "HOA approval required.", "Confirm the association's approval timeline fits the closing date.")
+        add("Low", "HOA approval required.", "Confirm the association's approval timeline fits the closing date.",
+            "hoa_approval")
     if o["financed"] and o.get("insurance_quote") is False:
-        add("Low", "Buyer has no insurance quote yet.", "Ask for a quote before countering.")
+        add("Low", "Buyer has no insurance quote yet.", "Ask for a quote before countering.", "insurance_quote")
     for f in o.get("flags") or []:
-        F.append({"sev": f.get("sev", "Med"), "issue": f["issue"], "fix": f.get("fix", "")})
+        F.append({"sev": f.get("sev", "Med"), "issue": f["issue"], "fix": f.get("fix", ""), "topic": f.get("topic")})
     F = dedupe_flags(F + contract_checks(o, L))
+    # Every flag carries a topic key, so ordering, dedupe and tests use keys, never words: what the agent wrote without
+    # one is numbered in order (agent_flag_1, contract_issue_1)
+    n = {"agent": 0, "contract": 0}
+    for f in F:
+        if not f.get("topic"):
+            kind = "contract" if f.get("contract") else "agent"
+            n[kind] += 1
+            f["topic"] = f"{'contract_issue' if kind == 'contract' else 'agent_flag'}_{n[kind]}"
     order = {"Blocking": -1, "High": 0, "Med": 1, "Low": 2}
     return sorted(F, key=lambda f: order.get(f["sev"], 1))
 
@@ -1766,7 +1801,7 @@ def _counter_fmt(o, key, v, offered=False):
     if key == "appraisal_gap":
         return money(v) if v else "None"
     if key == "buyer_broker_pct":
-        return f"{v:.1%}"
+        return fmt.pct(v, 1, fixed=True)
     if key == "inspection_days":
         return f"{v} days"
     if key == "loan_approval_days":
@@ -1778,7 +1813,7 @@ def _counter_fmt(o, key, v, offered=False):
     if key == "home_warranty":
         return f"Seller pays {money(v)}" if v else ("None" if offered else "Buyer pays")
     if key == "close":
-        return (o.get("close_terms") or f"{v:%a %b %-d}") if offered else f"{v:%a %b %-d}"
+        return (o.get("close_terms") or fmt.when(v)) if offered else fmt.when(v)
     return str(v)
 
 
@@ -2077,6 +2112,17 @@ def target_net(L, S, costs, close, o=None, bb_from_listing=None):
                      bb_from_listing=bb_from_listing)
 
 
+def report_target_close(ranked, active, L, S):
+    """The one closing date a report's Seller's Target closes on (every report on the listing, the comparison's chart
+    and each single review): the recommended offer's closing. With no ranked offer, the latest active closing (30 days
+    out without one), capped at the seller's deadline and moved to the business day before (iteration 10 eval 4: a
+    weekend deadline, Sun Nov 15, closes on the Friday before)."""
+    if ranked:
+        return ranked[0]["close"]
+    close_ref = max((o["close"] for o in active), default=L["analysis_date"] + timedelta(days=30))
+    return dates.previous_business_day(min(close_ref, S["deadline"] or close_ref))
+
+
 def single_recommendation(o, tgt, priority="balanced"):
     if o.get("recommendation"):
         return o["recommendation"].upper()
@@ -2107,7 +2153,7 @@ def _missing_market(costs, sheet, A):
     for a in sheet["assumed"]:
         if a.get("estimate") and a["key"] in what:
             field, name, fix = what[a["key"]]
-            shown = f"{a['value'] * 100:g}% of price" if a["key"] not in ("title_fees", "estoppel") else money(a["value"])
+            shown = f"{fmt.pct(a['value'], None)} of price" if a["key"] not in ("title_fees", "estoppel") else money(a["value"])
             A.add("listing", field, a["value"], f"{name}: national estimate of {shown} (Estimate; {fix} replaces it)", "med")
 
 
@@ -2161,8 +2207,8 @@ def analyze(data, market=None, cma=None):
     title_fee_note(L, costs, [o for o in offers if o["status"] in ACTIVE] or offers)
     for o in offers:
         if o["title_payer_by_contract"] and o["status"] in ACTIVE:
-            L["cost_notes"].append(f"{o['label']}: owner's title policy paid by the {o['title_payer']}, who chooses the closing "
-                                   "agent under the contract")
+            L["cost_notes"].append(Note(f"{o['label']}: owner's title policy paid by the {o['title_payer']}, who chooses "
+                                        "the closing agent under the contract", f"title_payer:{o['id']}"))
     late = [o["id"] for o in offers if o["status"] in ACTIVE and o["close"].month >= L["tax_bill_month"]]
     if L["bill_paid"] is None and L["annual_tax"] and L["tax_in_arrears"] and late:
         A.add("listing", "current_tax_bill_paid", False,
@@ -2187,22 +2233,18 @@ def analyze(data, market=None, cma=None):
            "incomplete": [o for o in live_offers if o["blocking"]],
            "market_notes": [n for n in costs.notes if "MLS" not in n],  # offers don't use MLS files
            "sample": bool(data.get("sample"))}
-    close_ref = max((o["close"] for o in active), default=L["analysis_date"] + timedelta(days=30))
-    # OFR-339: when the listing broker pays the buyer's broker on every active offer, so does the report's target;
-    # otherwise the chart's target took the buyer's broker fee off on top of a listing fee that already covers it
-    # the report target closes on the latest active closing (or the seller's deadline); each offer's own target closes
-    # on that offer's date, so the two differ by the proration and holding costs: the chart label names its date
-    # iteration 10 eval 4: a closing is a business day, so a weekend deadline (Sun Nov 15) closes on the Friday before
-    res["target_close"] = dates.previous_business_day(min(close_ref, S["deadline"] or close_ref))
-    res["target"] = target_net(L, S, costs, res["target_close"],
-                               bb_from_listing=bool(active) and all(o.get("bb_from_listing") for o in active))
-    for o in offers:
+    for o in offers:  # each offer's own target, on its own closing date (the recommendation compares with it)
         o["target"] = target_net(L, S, costs, o["close"], o)
     pen = RISK_PENALTY[S["priority"]]
     for o in active:
         o["rank_value"] = o["ns_down"]["net_adj"] - (100 - o["score"]["total"]) / 100 * pen * L["list_price"]
     ranked = sorted(active, key=lambda o: o["rank_value"], reverse=True)
     res["ranked"] = ranked
+    # The report's one target closing (report_target_close); OFR-339: when the listing broker pays the buyer's broker
+    # on every active offer, so does the report's target
+    res["target_close"] = report_target_close(ranked, active, L, S)
+    res["target"] = target_net(L, S, costs, res["target_close"],
+                               bb_from_listing=bool(active) and all(o.get("bb_from_listing") for o in active))
     res["mode"] = "multi" if len(active) >= 2 else "single"
     if res["mode"] == "single":
         for o in active:
@@ -2257,7 +2299,7 @@ def decline_reasons(o, top, S):
     if o["approval"] in ("prequal", "none") and o["financed"]:
         found.append(("prequal", "pre-qual only"))
     if S["deadline"] and o["close"] > S["deadline"]:
-        found.append(("past_deadline", f"closes past {S['deadline']:%b %-d} deadline"))
+        found.append(("past_deadline", f"closes past {fmt.date_short(S['deadline'], year=False)} deadline"))
     if not found:
         net, top_net = o["ns"]["net_adj"], top["ns"]["net_adj"]
         sure, top_sure = o["score"]["total"], top["score"]["total"]

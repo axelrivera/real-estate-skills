@@ -17,6 +17,11 @@ FIXTURES = os.path.join(ROOT, "dev", "fixtures", "seller-offer-review")
 SAMPLE = os.path.join(ROOT, "dev", "samples", "seller-offer-review.json")
 PROFILE = {"brokerage": "LPT Realty, LLC"}
 
+def page(R, agent=None, sample=False, mode="auto", offer_id=None):
+    """The report's HTML, from the one document model (review.result)."""
+    return render.build_html(review.result(R, mode, offer_id), agent or {}, sample)
+
+
 
 def fixture(name):
     with open(os.path.join(FIXTURES, name)) as f:
@@ -78,8 +83,8 @@ class Scope(unittest.TestCase):
         listed = review.listed_assumptions(R, multi=True)
         self.assertIn("title_by", [a["field"] for a in listed])  # shared by several offers, so the comparison lists it
         self.assertTrue(review.multi_view(R)["data_note"].startswith(f"{len(listed)} input"))
-        doc = render.build_html(R, {}, sample=False, mode="multi")[0]
-        self.assertEqual(doc.split("Assumptions &amp; Data to Confirm</h2>")[-1].count('<span class="pill '), len(listed))
+        doc = page(R, {}, sample=False, mode="multi")
+        self.assertEqual(doc.split("What to Confirm</h2>")[-1].split('class="kit-notes')[0].count('<span class="pill '), len(listed))
 
     def test_offer_scoped_items_stay_on_their_review(self):
         R = review.analyze(fixture("four-offers.json"))
@@ -96,8 +101,8 @@ class Scope(unittest.TestCase):
         a = next(a for a in R["missing"] if a.get("also") and a["scope"].startswith("offer "))
         ids = [x[6:] for x in [a["scope"], *a["also"]] if x.startswith("offer ")]
         others = [o["label"] for o in R["offers"] if o["id"] in ids[1:]]
-        self.assertFalse([lab for lab in others if lab in render.assumptions_table(R, offer_id=ids[0])])
-        self.assertTrue(all(lab in render.assumptions_table(R, multi=True) for lab in others))
+        self.assertFalse([lab for lab in others if lab in json.dumps(review.result(R, "single", ids[0])["doc"]["confirm"], ensure_ascii=False)])
+        self.assertTrue(all(lab in json.dumps(review.result(R, "multi")["doc"]["confirm"], ensure_ascii=False) for lab in others))
 
 
 class ToConfirm(unittest.TestCase):
@@ -137,12 +142,12 @@ class ToConfirm(unittest.TestCase):
         d["offers"][0]["inspection_days"] = 7
         R = review.analyze(d)
         o = R["offers"][0]
-        rows = {r[0]: r[1] for r in render.term_rows(o, R)}
+        rows = {r[0]: r[1] for r in review.term_rows(o, R)}
         self.assertEqual(rows["Inspection Period"], "7 days (AS IS)")  # the form shows plain
         self.assertNotIn("assumed", json.dumps(list(rows.values())))
         self.assertNotIn("assumed", o["score"]["why"]["approval"])
         self.assertNotIn("assumed", review.walk_away(o, R["costs"])[1])
-        self.assertNotIn("(assumed)", render.build_html(R, {}, sample=False)[0])
+        self.assertNotIn("(assumed)", page(R, {}, sample=False))
         listed = {a["field"] for a in review.listed_assumptions(review.analyze(fixture("minimal-single.json")))}
         self.assertLessEqual({"approval", "inspection_days", "loan_approval_days", "contract_form"}, listed)
 
@@ -154,7 +159,7 @@ class ToConfirm(unittest.TestCase):
         s = review.result(R, "multi")["summary"]
         self.assertIsNone(s["preliminary"])  # the form alone doesn't decide the ranking
         self.assertEqual({r["key"]: r["form_assumed"] for r in s["ranked"]}, {"A": False, "B": True, "C": True, "D": True})
-        self.assertNotIn('class="prelim"', render.build_html(R, {}, sample=False, mode="multi")[0])
+        self.assertNotIn('class="prelim"', page(R, {}, sample=False, mode="multi"))
         self.assertTrue(review.result(R, "single", R["ranked"][0]["id"])["summary"]["preliminary"])
 
     def test_rider_bookkeeping_doesnt_move_the_review(self):
@@ -276,15 +281,15 @@ class Questions(unittest.TestCase):
     def test_documents_in_the_package_arent_asked_for(self):
         d = case05(listing={"highest_and_best_due": None})
         R = review.analyze(d)
-        without = render.questions(offer(R, "B"), R)
+        without = review.questions(offer(R, "B"), R)
         d["offers"][1]["loan_officer"] = "Riley Galloway"
         R = review.analyze(d)
-        self.assertEqual(len(without) - len(render.questions(offer(R, "B"), R)), 1)  # a named loan officer
+        self.assertEqual(len(without) - len(review.questions(offer(R, "B"), R)), 1)  # a named loan officer
         counts = {}
         for pof in (None, 90000, 156000):  # covers the down payment, the counter and the $15,000 gap at $156,000
             R = review.analyze(case05(a={"proof_of_funds": pof}))
-            counts[pof] = len(render.lender_questions(offer(R, "A"), R))
-            self.assertEqual(render.funds_shown(offer(R, "A"), 15000), pof == 156000, pof)
+            counts[pof] = len(review.lender_questions(offer(R, "A"), R))
+            self.assertEqual(review.funds_shown(offer(R, "A"), 15000), pof == 156000, pof)
         self.assertEqual(counts[None] - counts[156000], 1)
 
     def test_short_names_keep_offers_apart(self):
