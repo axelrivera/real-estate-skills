@@ -147,15 +147,12 @@
   "takeaway": "The market has had a long look at this home at about today's price, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the last contract fell apart before writing an offer."
  },
  "offer_plan": {
-  "opening": 455000,
-  "target_low": 460000,
-  "target_high": 465000,
-  "walk_away": 470000,
-  "why_opening": "The bottom of the supported range, backed by the comps. After this much time on the market and this many price cuts, the seller has reason to counter rather than ignore it.",
-  "why_target": "Where recent sales and the typical negotiation off asking suggest this home settles.",
-  "why_walk_away": "At the median of the adjusted comps. Above it you'd be paying earlier prices and risking a low appraisal you'd have to cover in cash.",
+  "posture": "leverage",
+  "plan_override": {
+   "opening": 452000,
+   "reason": "You asked to open a little closer to the range, so the seller reads the offer as serious from the first round."
+  },
   "credit_alt": {
-   "price": 465000,
    "credit": 10000
   },
   "conditions": "the roof is documented as new, the failed contract fell through for reasons unrelated to the house, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
@@ -449,20 +446,16 @@
    "closing_cost_pct": 0.03,
    "scenarios": [
     {
-     "price": 455000,
      "credit": 0
     },
     {
-     "price": 460000,
      "credit": 5000
     },
     {
-     "price": 465000,
      "credit": 10000
     }
    ],
    "buydown": {
-    "price": 465000,
     "credit": 10000
    },
    "takeaway": "A credit is worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term."

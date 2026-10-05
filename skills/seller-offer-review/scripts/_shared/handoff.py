@@ -64,14 +64,18 @@ def subject_facts(**facts):
 
 
 def build(side, as_of, subject, value, comps, market=None, offer_plan=None, recommended_list_price=None,
-          market_profile=None, source=None):
-    """Assemble and validate a handoff dict. Money as plain numbers; dates as YYYY-MM-DD."""
+          market_profile=None, source=None, posture=None):
+    """Assemble and validate a handoff dict. Money as plain numbers; dates as YYYY-MM-DD. `posture` (the buyer CMA's
+    offer posture: leverage, standard, competitive or must_win) is optional and still v1: a reader that doesn't know it
+    ignores it, and `offer_plan` keeps its numbers' shape (opening, target_low, target_high, walk_away)."""
     h = {
         "handoff": KIND, "version": VERSION, "side": side, "as_of": as_of, "source": source or f"{side}-cma",
         "subject": subject, "value": value, "comps": comps, "market": market or {},
         "offer_plan": offer_plan, "recommended_list_price": recommended_list_price,
         "market_profile": market_profile or {},
     }
+    if posture is not None:
+        h["posture"] = posture
     validate(h)
     return h
 
@@ -89,6 +93,8 @@ def validate(h):
         raise HandoffError(f"The CMA handoff's value range is missing {', '.join(missing)}.")
     if h["value"]["low"] > h["value"]["high"]:
         raise HandoffError("The CMA handoff's value range is reversed (low above high).")
+    if "posture" in h and not isinstance(h["posture"], str):
+        raise HandoffError(f"The CMA handoff's posture isn't a name ({h['posture']!r}).")
     for key, typ in SUBJECT_OPTIONAL.items():
         v = h["subject"].get(key)
         if v is None:

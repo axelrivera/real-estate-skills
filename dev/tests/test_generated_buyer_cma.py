@@ -149,6 +149,61 @@ class Model(unittest.TestCase):
                         if levels.get(given["condition"], mine) != mine else []
                     self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
 
+    def test_offer_plan_by_rule(self):
+        """The posture's plan runs opening <= target_low <= target <= target_high <= walk-away, with the walk-away at or
+        under asking and the range's high (only the agent's override leaves them); the same input gives the same plan;
+        every credit offer is the opening plus its credit; a posture left out is the suggested one; the handoff carries
+        the posture and the plan's numbers."""
+        for seed, R, C in cases():
+            op = C["offer_plan"]
+            with self.subTest(seed=seed):
+                steps = [op[k] for k in ("opening", "target_low", "target", "target_high", "walk_away")]
+                self.assertEqual(steps, sorted(steps))
+                if not op["override"]:
+                    self.assertLessEqual(op["walk_away"], min(R["subject"]["list_price"], C["range"]["high"]))
+                self.assertEqual(set(op["override"]), set((R["offer_plan"].get("plan_override") or {})) - {"reason"})
+                if not R["offer_plan"].get("posture"):
+                    self.assertEqual(op["posture"], op["posture_suggested"])
+                again = compute.run(R)["offer_plan"]
+                self.assertEqual([again[k] for k in compute.PLAN_KEYS + ("target", "posture")],
+                                 [op[k] for k in compute.PLAN_KEYS + ("target", "posture")])
+                for col in (C["credit"] or {}).get("columns", []):
+                    self.assertEqual(col["price"] - col["credit"], op["opening"])
+                self.assertEqual(C["handoff"]["posture"], op["posture"])
+                self.assertEqual(C["handoff"]["offer_plan"], {k: op[k] for k in compute.PLAN_KEYS})
+
+    def test_every_posture_renders(self):
+        """Each of the four postures computes and renders for every input, its ladder in order, with each step's reason
+        from labels.json."""
+        for seed, R, _ in cases():
+            for posture in cma.POSTURES:
+                with self.subTest(seed=seed, posture=posture):
+                    R2 = copy.deepcopy(R)
+                    R2["offer_plan"].update(posture=posture, posture_reason="The buyer's own situation sets the plan.")
+                    C = compute.run(R2)
+                    op = C["offer_plan"]
+                    self.assertEqual(op["posture"], posture)
+                    steps = [op[k] for k in ("opening", "target_low", "target", "target_high", "walk_away")]
+                    self.assertEqual(steps, sorted(steps))
+                    self.assertTrue(all(row[2] for row in op["ladder"]))
+                    self.assertIn(op["opening_display"], render.build_html(C, {}))
+
+    def test_gut_check_agrees_with_the_report(self):
+        """The gut check's rough plan is the full report's plan with the suggested posture, on the same comps."""
+        for seed, R, _ in cases():
+            with self.subTest(seed=seed):
+                G = {k: copy.deepcopy(R[k]) for k in ("subject", "split_date", "as_of", "export", "mls", "history",
+                                                      "range_override") if k in R}
+                G["comps"] = {k: copy.deepcopy(v) for k, v in R["comps"].items()
+                              if k in ("cards", "time_adjustment", "condition_values")}
+                rough = compute.run(G)["rough"]
+                R2 = copy.deepcopy(R)
+                for k in ("posture", "posture_reason", "plan_override"):
+                    R2["offer_plan"].pop(k, None)
+                op = compute.run(R2)["offer_plan"]
+                self.assertEqual([rough[k] for k in ("posture", "opening", "target", "walk_away")],
+                                 [op[k] for k in ("posture", "opening", "target", "walk_away")])
+
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, _, C in cases():
             with self.subTest(seed=seed):

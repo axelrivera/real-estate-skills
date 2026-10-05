@@ -676,6 +676,34 @@ def range_warnings(bl, values, market):
     return out
 
 
+# --- the buyer's offer posture -------------------------------------------------------
+
+# Strategy categories (plan: model picks, script prices): the buyer CMA's offer plan is set by a posture. The script
+# suggests one from the listing's history and the market; the model keeps it or picks another with a reason. must_win
+# is the buyer's situation (the agent's call), never suggested from data.
+POSTURES = ("leverage", "standard", "competitive", "must_win")
+LEVERAGE_CUTS = 2  # price cuts since the last sale that give the buyer leverage
+LEVERAGE_DOM_TIMES = 2  # days on market at least this many times the market's recent median
+COMPETITIVE_DOM = 14  # a listing this new...
+COMPETITIVE_SUPPLY = 3  # ...in a market under this many months of supply draws competing offers
+
+
+def suggest_posture(history, stats):
+    """The offer posture the data suggests: `leverage` when the history since the last sale has a failed contract, 2
+    or more price cuts, or days on market at least twice the market's recent median; `competitive` when the listing
+    has been on the market 14 days or fewer and the market has under 3 months of supply; else `standard`.
+    `history` is the buyer CMA's history counts (failed_contracts, price_cuts, active_days) or None; `stats` the
+    market numbers (median_days_recent, months_supply), any of them missing. A signal that's missing never fires."""
+    h, s = history or {}, stats or {}
+    dom, median_days, supply = h.get("active_days"), s.get("median_days_recent"), s.get("months_supply")
+    if (h.get("failed_contracts") or 0) >= 1 or (h.get("price_cuts") or 0) >= LEVERAGE_CUTS \
+            or (dom is not None and median_days and dom >= LEVERAGE_DOM_TIMES * median_days):
+        return "leverage"
+    if dom is not None and dom <= COMPETITIVE_DOM and supply is not None and supply < COMPETITIVE_SUPPLY:
+        return "competitive"
+    return "standard"
+
+
 # --- adjustment kinds ------------------------------------------------------------
 
 # A comp adjustment's category (`kind`), so text that lists what was adjusted uses fixed plain words, never the

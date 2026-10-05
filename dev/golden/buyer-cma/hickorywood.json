@@ -265,8 +265,8 @@
      "count": 4
     },
     [
-     "+$42",
-     "+$82"
+     "+$40",
+     "+$80"
     ],
     {
      "count": 4
@@ -349,63 +349,63 @@
  },
  "credit": {
   "buydown": {
-   "cost": 10300,
+   "cost": 10100,
    "covered": false,
    "credit": 10000,
-   "full": 4025,
-   "price": 465000,
-   "year1": 3459,
-   "year2": 3735
+   "full": 3976,
+   "price": 459000,
+   "year1": 3418,
+   "year2": 3690
   },
   "closing_costs_given": false,
   "columns": [
    {
-    "appraisal_room": 14800,
+    "appraisal_room": 20800,
     "bb_short": 0,
-    "cap": 13650,
-    "cash": 36400,
+    "cap": 13470,
+    "cash": 35920,
     "cash_left": null,
     "cash_lines": [
      [
       "down",
-      22750
+      22450
      ],
      [
       "closing",
-      13650
+      13470
      ]
     ],
     "cash_saved": 0,
     "cash_short": null,
-    "closing_costs": 13650,
+    "closing_costs": 13470,
     "credit": 0,
     "credit_applied": 0,
-    "down": 22750,
+    "down": 22450,
     "extra": 0,
-    "loan": 432250,
+    "loan": 426550,
     "loan_taxes": 0,
-    "net": 455000,
+    "net": 449000,
     "over_cap": false,
     "over_costs": false,
     "payback_years": null,
-    "payment": 3943,
-    "pi": 2861,
-    "price": 455000
+    "payment": 3896,
+    "pi": 2824,
+    "price": 449000
    },
    {
-    "appraisal_room": 9800,
+    "appraisal_room": 15800,
     "bb_short": 0,
-    "cap": 13800,
-    "cash": 31800,
+    "cap": 13620,
+    "cash": 31320,
     "cash_left": null,
     "cash_lines": [
      [
       "down",
-      23000
+      22700
      ],
      [
       "closing",
-      13800
+      13620
      ],
      [
       "credit",
@@ -414,35 +414,35 @@
     ],
     "cash_saved": 4600,
     "cash_short": null,
-    "closing_costs": 13800,
+    "closing_costs": 13620,
     "credit": 5000,
     "credit_applied": 5000,
-    "down": 23000,
-    "extra": 42,
-    "loan": 437000,
+    "down": 22700,
+    "extra": 40,
+    "loan": 431300,
     "loan_taxes": 0,
-    "net": 455000,
+    "net": 449000,
     "over_cap": false,
     "over_costs": false,
-    "payback_years": 9.13,
-    "payment": 3985,
-    "pi": 2893,
-    "price": 460000
+    "payback_years": 9.58,
+    "payment": 3936,
+    "pi": 2855,
+    "price": 454000
    },
    {
-    "appraisal_room": 4800,
+    "appraisal_room": 10800,
     "bb_short": 0,
-    "cap": 13950,
-    "cash": 27200,
+    "cap": 13770,
+    "cash": 26720,
     "cash_left": null,
     "cash_lines": [
      [
       "down",
-      23250
+      22950
      ],
      [
       "closing",
-      13950
+      13770
      ],
      [
       "credit",
@@ -451,26 +451,26 @@
     ],
     "cash_saved": 9200,
     "cash_short": null,
-    "closing_costs": 13950,
+    "closing_costs": 13770,
     "credit": 10000,
     "credit_applied": 10000,
-    "down": 23250,
-    "extra": 82,
-    "loan": 441750,
+    "down": 22950,
+    "extra": 80,
+    "loan": 436050,
     "loan_taxes": 0,
-    "net": 455000,
+    "net": 449000,
     "over_cap": false,
     "over_costs": false,
-    "payback_years": 9.35,
-    "payment": 4025,
-    "pi": 2924,
-    "price": 465000
+    "payback_years": 9.58,
+    "payment": 3976,
+    "pi": 2886,
+    "price": 459000
    }
   ],
   "down_pct": 0.05,
   "per_5k": {
    "cash": 4600,
-   "monthly": 42
+   "monthly": 40
   },
   "program": "conventional",
   "seller_cost_parts": {
@@ -480,10 +480,10 @@
  },
  "credit_alt": {
   "base_credit": 0,
-  "base_price": 455000,
+  "base_price": 449000,
   "cash_saved": 9200,
   "credit": 10000,
-  "price": 465000
+  "price": 459000
  },
  "current_bill": 2731,
  "data_source": {
@@ -535,11 +535,12 @@
    "state": "FL"
   },
   "offer_plan": {
-   "opening": 455000,
-   "target_high": 465000,
-   "target_low": 460000,
+   "opening": 449000,
+   "target_high": 451500,
+   "target_low": 449000,
    "walk_away": 470000
   },
+  "posture": "leverage",
   "recommended_list_price": null,
   "side": "buyer",
   "source": "buyer-cma",
@@ -812,6 +813,11 @@
   }
  },
  "offer_plan": {
+  "basis": {
+   "opening": "below_range",
+   "target": "ratio_up",
+   "walk_away": "median"
+  },
   "ladder": [
    {
     "count": 3
@@ -823,10 +829,16 @@
     "count": 3
    }
   ],
-  "opening": 455000,
-  "target": 462500,
-  "target_high": 465000,
-  "target_low": 460000,
+  "opening": 449000,
+  "override": {
+   "count": 0
+  },
+  "posture": "leverage",
+  "posture_name": "Leverage",
+  "posture_suggested": "leverage",
+  "target": 449000,
+  "target_high": 451500,
+  "target_low": 449000,
   "walk_away": 470000
  },
  "ok": true,

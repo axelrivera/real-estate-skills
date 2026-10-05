@@ -134,6 +134,7 @@ def history(C):
 def offer_plan(C):
     op, off = C["offer_plan"], C["offer"]
     out = [f'<h3>{esc(L["h_offer_plan"])}</h3>', p(esc(op["intro"])),
+           p(f'<strong>{esc(op["posture_label"])}</strong> {op["posture_line"]}'),
            layout.table([Col(0, L["th_step"], wrap="nowrap"), Col(1, L["th_amount"], align="num"), Col(2, L["th_why"])],
                         [[r[0], r[1], raw(r[2])] for r in op["ladder"]], row_classes={0: "total"})]
     if op["credit_alt"]:

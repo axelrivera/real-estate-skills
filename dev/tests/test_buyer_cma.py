@@ -69,19 +69,21 @@ def with_events(events, locality_mls="O6433709"):
 
 
 def fha_buyer(cash, credit_alt=False):
-    """FHA 3.5% as the buyer's own program, paid at a $464,000 target, no lender closing figure; with `credit_alt`, a
-    $470,000 price with a $10,000 credit in the table and the plan."""
+    """FHA 3.5% as the buyer's own program, the agent's $464,000 opening (plan_override) and the payment at it, no lender
+    closing figure; credit offers at the opening and $5,000 over; with `credit_alt`, a $10,000 credit ($474,000) in the
+    table and the plan."""
     def change(R):
         R["costs"]["buyer_cash"] = cash
+        R["offer_plan"]["plan_override"] = {"opening": 464000, "reason": "The agent opens closer to asking."}
         R["costs"]["payment"]["price"] = 464000
         R["costs"]["payment"]["scenarios"] = [{"type": "fha", "down_pct": 0.035}, {"type": "conventional", "down_pct": 0.03}]
         cs = R["costs"]["credit_scenarios"]
-        cs.update(loan_type="fha", down_pct=0.035, scenarios=[{"price": 464000, "credit": 0}, {"price": 469000, "credit": 5000}])
+        cs.update(loan_type="fha", down_pct=0.035, scenarios=[{"credit": 0}, {"credit": 5000}])
         cs.pop("closing_cost_pct")
         cs.pop("buydown")
         if credit_alt:
-            cs["scenarios"].append({"price": 470000, "credit": 10000})
-            R["offer_plan"]["credit_alt"] = {"price": 470000, "credit": 10000}
+            cs["scenarios"].append({"credit": 10000})
+            R["offer_plan"]["credit_alt"] = {"credit": 10000}
     return change
 
 
@@ -149,7 +151,8 @@ def cli(R, *args, export_beside=False):
 class Inputs(unittest.TestCase):
     def test_input_errors(self):
         """Formatted numbers, no comps, a scenario without down_pct, rates as the wrong unit, a bad tax index, a
-        missing field, an opening above the walk-away and an unknown history change are plain errors."""
+        missing field, an unknown posture, a posture other than the suggested one without a reason, an override without
+        a reason or above the walk-away, typed plan prices and an unknown history change are plain errors."""
         changes = (lambda R: R["competition"]["rows"][0].__setitem__(2, "$474,500"),
                    lambda R: R["comps"].__setitem__("cards", []),
                    lambda R: R["costs"]["payment"]["scenarios"][0].pop("down_pct"),
@@ -162,7 +165,15 @@ class Inputs(unittest.TestCase):
                    lambda R: R["comps"]["cards"][0].pop("condition"),
                    lambda R: R["comps"]["cards"][0]["adjustments"].append({"label": "Updated Kitchen", "amount": 15000}),
                    lambda R: R["subject"].__setitem__("condition", "renovated"),
-                   lambda R: R["offer_plan"].__setitem__("opening", R["offer_plan"]["walk_away"] + 5000),
+                   lambda R: R["offer_plan"].__setitem__("posture", "aggressive"),
+                   lambda R: R["offer_plan"].__setitem__("posture", "must_win"),  # never suggested: needs a reason
+                   lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": 450000}),
+                   lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": 600000, "reason": "Our call."}),
+                   lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": "$450,000", "reason": "Our call."}),
+                   lambda R: R["offer_plan"].__setitem__("opening", 450000),  # the script sets the plan
+                   lambda R: R["offer_plan"].__setitem__("why_target", "Where homes settle."),
+                   lambda R: R["costs"]["credit_scenarios"]["scenarios"][0].__setitem__("price", 449000),
+                   lambda R: R["costs"]["credit_scenarios"]["scenarios"][0].__setitem__("credit", "none"),
                    with_events([{"date": "2026-01-16", "change": "relisted?"}]))
         for i, change in enumerate(changes):
             with self.subTest(i), self.assertRaises(compute.ReportError):
@@ -209,14 +220,71 @@ class Inputs(unittest.TestCase):
         self.assertFalse([k for k in out if k.startswith("_")])
 
 
+class OfferPlan(unittest.TestCase):
+    """The model picks a posture; the script suggests one from the data and sets the numbers by rule."""
+
+    def test_suggested_posture(self):
+        """leverage: a failed contract, 2+ cuts, or days on market at least twice the market's median; competitive: 14
+        days or fewer in under 3 months of supply; else standard. A missing signal never fires; must_win never."""
+        cases = [({"failed_contracts": 1}, {}, "leverage"),
+                 ({"price_cuts": 2}, {}, "leverage"),
+                 ({"price_cuts": 1, "active_days": 40}, {"median_days_recent": 20}, "leverage"),
+                 ({"price_cuts": 1, "active_days": 39}, {"median_days_recent": 20}, "standard"),
+                 ({"active_days": 14}, {"months_supply": 2.9}, "competitive"),
+                 ({"active_days": 15}, {"months_supply": 2.9}, "standard"),
+                 ({"active_days": 14}, {"months_supply": 3.0}, "standard"),
+                 ({"active_days": 10}, {}, "standard"),
+                 ({"active_days": 10, "failed_contracts": 1}, {"months_supply": 1.5}, "leverage"),
+                 (None, {"months_supply": 1.5, "median_days_recent": 5}, "standard"),
+                 (None, None, "standard")]
+        for hist, stats, want in cases:
+            with self.subTest(hist=hist, stats=stats):
+                self.assertEqual(cma.suggest_posture(hist, stats), want)
+
+    def test_plan_for_each_posture(self):
+        """Range $455,000 to $480,000, median $469,800, width $25,000, asking $474,900, sale-to-list 97%."""
+        args = (455000, 480000, 469800, 474900, 25000)
+        want = {"leverage": (449000, 470000), "standard": (455000, 470000), "competitive": (468000, 474900),
+                "must_win": (474900, 474900)}
+        for posture, (opening, walk) in want.items():
+            with self.subTest(posture):
+                p = compute.offer_plan_for(posture, *args, 0.97)
+                self.assertEqual((p["opening"], p["walk_away"]), (opening, walk))
+                target = min(max(fmt.half_up(474900 * 0.97, 1000), opening), walk)
+                self.assertEqual(p["target"], target)
+                self.assertEqual((p["target_low"], p["target_high"]), (max(opening, target - 2500), min(walk, target + 2500)))
+        p = compute.offer_plan_for("standard", *args)  # no ratio: the midpoint
+        self.assertEqual((p["target"], p["basis"]["target"]), (fmt.half_up((455000 + 470000) / 2, 1000), "midpoint"))
+        p = compute.offer_plan_for("must_win", 455000, 470000, 462000, 474900, 25000)  # asking above the range
+        self.assertEqual((p["opening"], p["walk_away"], p["basis"]["opening"]), (470000, 470000, "high"))
+        p = compute.offer_plan_for("standard", 455000, 480000, 469800, 450000, 25000)  # asking under the range
+        self.assertEqual((p["opening"], p["walk_away"]), (450000, 450000))
+        self.assertEqual(p["basis"]["walk_away"], "asking")
+
+    def test_posture_and_override_in_the_report(self):
+        """The posture left out is the suggested one; another needs a reason and is kept; the agent's steps replace the
+        posture's, the target is re-set between the agent's ends and the override shows as theirs."""
+        _, C, _ = run(lambda R: R["offer_plan"].pop("posture"))
+        self.assertEqual(C["offer_plan"]["posture"], C["offer_plan"]["posture_suggested"])
+        _, C, _ = run(lambda R: R["offer_plan"].update(posture="competitive", posture_reason="The buyer can't lose it."))
+        op = C["offer_plan"]
+        self.assertEqual((op["posture"], op["posture_suggested"]), ("competitive", "leverage"))
+        self.assertEqual(op["opening"], fmt.half_up((C["range"]["low"] + C["range"]["high"]) / 2, 1000))
+        _, C, _ = run(lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": 460000, "reason": "Our call."}))
+        op = C["offer_plan"]
+        self.assertEqual((op["opening"], op["override"], op["basis"]["opening"]), (460000, ["opening"], "override"))
+        self.assertTrue(op["opening"] <= op["target_low"] <= op["target"] <= op["target_high"] <= op["walk_away"])
+        self.assertEqual(C["credit"]["columns"][0]["price"], 460000)  # the credit offers follow the plan's opening
+
+
 class Warnings(unittest.TestCase):
     def test_credit_warnings(self):
         self.assertEqual(warnings(lambda R: R["costs"]["credit_scenarios"]["scenarios"].append(
-            {"price": 480000, "credit": 25000})), ["credit_over_cap"])
+            {"credit": 25000})), ["credit_over_cap"])
 
-        def plan(R):
-            R["offer_plan"]["walk_away"] = 490000
-            R["offer_plan"]["credit_alt"] = {"price": 470000, "credit": 7000}
+        def plan(R):  # above the range only by the agent's override
+            R["offer_plan"]["plan_override"] = {"walk_away": 490000, "reason": "The buyer accepts appraisal-gap risk."}
+            R["offer_plan"]["credit_alt"] = {"credit": 7000}
         _, C, _ = run(plan)
         self.assertIn("walk_away_above_range", C["warning_keys"])
         self.assertIn("credit_alt_mismatch", C["warning_keys"])
@@ -254,10 +322,7 @@ class Warnings(unittest.TestCase):
         self.assertEqual(keys.count("range_one_comp"), 1)
         self.assertIn("range_wide", keys)
 
-        def wide(R):
-            override(400000, 480000)(R)
-            R["offer_plan"]["opening"] = 400000
-        keys = warnings(wide)
+        keys = warnings(override(400000, 480000))
         self.assertIn("range_wide", keys)
         self.assertEqual(keys.count("range_one_comp"), 1)  # the low end, below $435,000
 
@@ -286,7 +351,8 @@ class Handoff(unittest.TestCase):
                          (C["history"]["active_days"], C["history"]["price_cuts"]))
         self.assertEqual(h["value"]["midpoint"], C["range"]["midpoint"])
         self.assertEqual(h["subject"]["insurance_annual"], C["payments"]["insurance_annual"])
-        self.assertEqual(h["offer_plan"]["opening"], C["offer_plan"]["opening"])
+        self.assertEqual(h["offer_plan"], {k: C["offer_plan"][k] for k in compute.PLAN_KEYS})  # the numbers' shape
+        self.assertEqual(h["posture"], C["offer_plan"]["posture"])
         self.assertEqual(h["market"]["months_supply"], C["market_stats"]["months_supply"])
         bad = copy.deepcopy(h)
         bad["subject"]["price_cuts"] = "two"
@@ -316,14 +382,18 @@ class CompsFirst(unittest.TestCase):
             market, homes = compute.load_inputs(R)
             return compute.comps_first(R, market, homes)
         out = comps_only()
-        rough, median = out["rough"], out["median_adjusted"]
+        rough = out["rough"]
         self.assertEqual((rough["range"]["low"], rough["range"]["high"]),
                          (out["adjusted_min"] // 1000 * 1000, -(-out["adjusted_max"] // 1000) * 1000))
-        self.assertEqual(rough["walk_away"], median // 1000 * 1000)
-        self.assertEqual(rough["opening"], (median - 25000 / 2) // 1000 * 1000)
-        self.assertTrue(rough["opening"] <= rough["target"] <= rough["walk_away"])
         self.assertEqual(out["history"]["price_cuts"], 4)  # the gut check counts the history too
         self.assertEqual(out["warning_keys"], [])
+        # the quick answer and the full report agree: the full report with the suggested posture has the same plan
+        def suggested(R):
+            R["offer_plan"].pop("posture")
+        _, C, _ = run(suggested)
+        self.assertEqual(rough["posture"], C["offer_plan"]["posture_suggested"])
+        self.assertEqual([rough[k] for k in ("opening", "target", "walk_away")],
+                         [C["offer_plan"][k] for k in ("opening", "target", "walk_away")])
         rough = comps_only(list_price=440000)["rough"]  # never above asking
         self.assertEqual(rough["walk_away"], 440000)
         self.assertTrue(rough["capped_at_asking"])
@@ -381,7 +451,7 @@ class History(unittest.TestCase):
         fixed[4] = {**fixed[4], "date": "2026-01-20"}  # a row whose removal alone restores the order is named alone
         _, C, _ = run(with_events(fixed))
         self.assertEqual(C["history"]["out_of_order"], [[4]])
-        _, C, _ = run(lambda R: R.pop("history"))
+        _, C, _ = run(lambda R: (R.pop("history"), R["offer_plan"].pop("posture")))
         self.assertIsNone(C["history"])
         self.assertIsNone(C["history_section"])
 
@@ -503,8 +573,7 @@ class Payments(unittest.TestCase):
             R["costs"]["payment"].pop("price")
             R["costs"]["taxes"].pop("purchase_price")
         R, C, _ = run(change)
-        op = R["offer_plan"]
-        self.assertEqual(C["payments"]["price"], fmt.half_up((op["target_low"] + op["target_high"]) / 2))
+        self.assertEqual(C["payments"]["price"], C["offer_plan"]["target"])
         self.assertEqual(C["payments"]["price_basis"], "target")
         self.assertIn(C["payments"]["price_display"], C["costs"]["taxes"]["header"])  # page 1's tax and payment agree
 
@@ -553,7 +622,7 @@ class Payments(unittest.TestCase):
     def test_cash_short_names_the_fitting_credit_option(self):
         _, C, _ = run(fha_buyer(30000, credit_alt=True))
         self.assertIn("cash_short", C["warning_keys"])
-        self.assertEqual((C["cash_fit"]["price"], C["cash_fit"]["credit"]), (470000, 10000))
+        self.assertEqual((C["cash_fit"]["price"], C["cash_fit"]["credit"]), (474000, 10000))
         self.assertLessEqual(C["cash_fit"]["cash"], 30000)
         self.assertTrue(C["summary"]["cash_fit_line"])
         _, C, _ = run(fha_buyer(5000, credit_alt=True))  # nothing fits
@@ -626,7 +695,6 @@ class Credit(unittest.TestCase):
         """A competing listing's adjusted price and its place in the range come from the script, in its note."""
         def pool(R):
             R["range_override"] = {"low": 435000, "high": 450000, "reason": "The agent leans on the pool sales."}
-            R["offer_plan"].update(opening=435000, target_low=440000, target_high=444000, walk_away=446000)
             R["offer_plan"].pop("credit_alt", None)
             R["competition"]["rows"][0][2] = 424500
             R["competition"]["rows"][0][6] = "No pool."
@@ -782,8 +850,8 @@ class Pdf(unittest.TestCase):
                                                   {"type": "fha", "down_pct": 0.035, "assumed": True},
                                                   {"type": "conventional", "down_pct": 0.2, "assumed": True}]
             cs = R["costs"]["credit_scenarios"]
-            cs["scenarios"] = [{"price": 1435000, "credit": 0}, {"price": 1445000, "credit": 10000},
-                               {"price": 1455000, "credit": 20000}, {"price": 1465000, "credit": 30000}]
+            R["offer_plan"]["plan_override"] = {"opening": 1435000, "walk_away": 1465000, "reason": "Stress sizes."}
+            cs["scenarios"] = [{"credit": 0}, {"credit": 10000}, {"credit": 20000}, {"credit": 30000}]
             cs.pop("buydown", None)
         _, C, _ = run(wide)
         doc = html(C)
