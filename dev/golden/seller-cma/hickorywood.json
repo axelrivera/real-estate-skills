@@ -26,6 +26,23 @@
   "export": true,
   "mls": "Stellar"
  },
+ "expected_sale_basis": {
+  "agent": [
+   0,
+   1,
+   2
+  ],
+  "capped": false,
+  "filled": {
+   "count": 0
+  },
+  "ratio": 0.9386,
+  "ratio_display": "93.9%",
+  "source": "export",
+  "top": {
+   "count": 0
+  }
+ },
  "handoff": {
   "as_of": "2026-09-22",
   "comps": [
@@ -95,11 +112,63 @@
   },
   "version": 1
  },
+ "key_stats": [
+  {
+   "count": 2
+  },
+  [
+   "93.9%"
+  ],
+  {
+   "count": 2
+  }
+ ],
+ "listing_history": {
+  "count": 0
+ },
  "market_note_keys": {
   "count": 0
  },
  "market_notes": {
   "count": 0
+ },
+ "market_numbers": {
+  "credit_share_early": "50%",
+  "credit_share_recent": "89%",
+  "days_early": "8",
+  "days_recent": "22",
+  "sale_to_list_early": "98.7%",
+  "sale_to_list_recent": "93.9%",
+  "sold_early": "24",
+  "sold_recent": "9",
+  "split_month": "July",
+  "window_start_month": "April"
+ },
+ "market_table": {
+  "columns": {
+   "count": 3
+  },
+  "rows": [
+   [
+    "24",
+    "9"
+   ],
+   [
+    "98.7%",
+    "93.9%"
+   ],
+   [
+    "8",
+    "22"
+   ],
+   [
+    "50%",
+    "89%"
+   ],
+   {
+    "count": 3
+   }
+  ]
  },
  "max_distance": 0.92,
  "median_adjusted": 469800,
@@ -118,7 +187,14 @@
     "value": 1145
    }
   ],
+  "assumed_brokerage": null,
+  "assumed_brokerage_pct": null,
   "cash_at_closing": false,
+  "closings": [
+   "2027-01-22",
+   "2026-11-23",
+   "2026-11-05"
+  ],
   "columns": [
    {
     "net": null,
@@ -283,6 +359,9 @@
  "net_basis": "after_holding",
  "net_spread": 3532.0,
  "ok": true,
+ "options_summary": {
+  "net_header_sub": null
+ },
  "payments": {
   "down_pct": 0.05,
   "down_per_10k": 500.0,
@@ -324,11 +403,22 @@
   "total_mills": 17.57
  },
  "placeholders": {
+  "credit_share_early": "50%",
+  "credit_share_recent": "89%",
+  "days_early": "8",
+  "days_recent": "22",
   "per_10k": "$80",
-  "r2_share": "most"
+  "r2_share": "most",
+  "sale_to_list_early": "98.7%",
+  "sale_to_list_recent": "93.9%",
+  "sold_early": "24",
+  "sold_recent": "9",
+  "split_month": "July",
+  "window_start_month": "April"
  },
  "preliminary": false,
  "recommendation": {
+  "expected_sale_value": 462000,
   "high": 480000,
   "list_price": 469900,
   "low": 455000
@@ -341,6 +431,7 @@
   {
    "down": 23995.0,
    "expected_sale": 463000,
+   "expected_sale_source": "agent",
    "list_price": 479900,
    "net": 423074.0,
    "net_after_holding": 420954.0,
@@ -352,6 +443,7 @@
   {
    "down": 23495.0,
    "expected_sale": 462000,
+   "expected_sale_source": "agent",
    "list_price": 469900,
    "net": 422136.0,
    "net_after_holding": 421060.0,
@@ -363,6 +455,7 @@
   {
    "down": 22995.0,
    "expected_sale": 460000,
+   "expected_sale_source": "agent",
    "list_price": 459900,
    "net": 425260.0,
    "net_after_holding": 424486.0,
@@ -389,7 +482,7 @@
     "count": 2
    },
    [
-    "95.2%"
+    "93.9%"
    ],
    {
     "count": 2

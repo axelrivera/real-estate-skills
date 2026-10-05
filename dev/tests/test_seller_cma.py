@@ -643,7 +643,7 @@ class AuditLowCma(unittest.TestCase):
         cards = [{"adjustments": [{"label": "Size", "amount": 1800}, {"label": "Larger Corner Lot", "amount": -5000}],
                   "seller_concessions": 0},
                  {"adjustments": [{"label": "Size", "amount": -900}], "seller_concessions": 5000}]
-        self.assertEqual(deck.adjustment_words(cards), "size, larger corner lot and seller credits")
+        self.assertEqual(deck.adjustment_words(cards), "size, lot and seller credits")
 
     def test_payoff_from_a_balance_is_an_estimate(self):
         R = report()
@@ -674,12 +674,17 @@ class AuditMoneyLines(unittest.TestCase):
         R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-01")
         C, _ = run(R)
         tax = row(C, "tax_proration")
-        self.assertEqual(tax["amounts"][0], -round(6000 * 0.96 * 334 / 365))
+        self.assertEqual(C["net"]["closings"][1], "2026-12-01")  # the recommended option closes by the seller's goal
+        self.assertEqual(tax["amounts"][1], -round(6000 * 0.96 * 334 / 365))
         R["costs"]["current_tax_bill_paid"] = True
         C, _ = run(R)
-        self.assertEqual(row(C, "tax_proration")["amounts"][0], round(6000 * 0.96 * 31 / 365))
+        self.assertEqual(row(C, "tax_proration")["amounts"][1], round(6000 * 0.96 * 31 / 365))
         R = report()
-        R["costs"]["annual_tax"] = 6000
+        R["costs"]["annual_tax"] = 6000  # Results_v4: no closing date: each option's time to contract sets it
+        C = run(R)[0]
+        self.assertNotIn("tax_no_closing_date", C["warning_keys"])
+        self.assertEqual(C["net"]["closings"], ["2027-01-22", "2026-11-23", "2026-11-05"])
+        R["pricing"]["strategies"] = [{**x, "time": ""} for x in R["pricing"]["strategies"]]  # nothing to date it by
         self.assertIn("tax_no_closing_date", run(R)[0]["warning_keys"])
         self.assertIn("Not included: this year's property tax proration", " ".join(run(report())[0]["net"]["notes"]))
 
@@ -772,14 +777,16 @@ class SecondPass(unittest.TestCase):
         tax = row(C, "tax_proration")
         self.assertTrue(C["net"]["tax_assumed"])
         self.assertEqual(tax["label"], compute.labels(R)("net_tax_proration_assumed"))
-        self.assertLess(tax["amounts"][0], 0)  # a cost to the seller
+        self.assertLess(tax["amounts"][1], 0)  # a cost to the seller
         self.assertTrue(any("current_tax_bill_paid" in a for a in C["assumptions"]))
         R["costs"]["current_tax_bill_paid"] = True
         C, _ = run(R)
         self.assertFalse(C["net"]["tax_assumed"])
-        self.assertGreater(row(C, "tax_proration")["amounts"][0], 0)  # the buyer credits back Dec 15 to Dec 31
+        self.assertGreater(row(C, "tax_proration")["amounts"][1], 0)  # the buyer credits back Dec 15 to Dec 31
         R = report()
-        R["costs"].update(annual_tax=6000, expected_closing_date="2026-09-15")  # before bills go out: no assumption
+        R["costs"]["annual_tax"] = 6000  # before bills go out: no assumption
+        for x in R["pricing"]["strategies"]:
+            x["closing_date"] = "2026-09-15"
         self.assertFalse(run(R)[0]["net"]["tax_assumed"])
 
     def test_holding_note_states_the_loan_rate_and_tax(self):
@@ -1453,10 +1460,9 @@ class SixthPass(unittest.TestCase):
         R["pricing"]["strategies"][0].pop("expected_sale")
         with self.assertRaises(compute.ReportError):
             run(R)
-        R = report()  # only a reprice's Stay may leave it out
+        R = report()  # Results_v4: any option may leave it out; the rule fills it
         R["pricing"]["strategies"][0].pop("expected_sale")
-        with self.assertRaises(compute.ReportError):
-            run(R)
+        self.assertEqual(run(R)[0]["strategies"][0]["expected_sale_source"], "rule")
 
     def test_method_time_adjustment_base_and_no_tildes(self):
         """CMA-301: the time adjustment's base is the sale price minus seller-paid costs; no "~" in the references."""
@@ -1570,7 +1576,8 @@ class EighthPass(unittest.TestCase):
         self.assertNotIn(caveat, doc)
 
     def test_months_supply_placeholder(self):
-        """CMA-320: months of supply comes from stats.py through {months_supply}; a typed figure warns."""
+        """CMA-320: months of supply comes from stats.py through {months_supply}; a typed figure stops the render
+        (Results_v4: like any typed stat)."""
         R = report()
         C, homes = run(R)
         self.assertEqual(C["placeholders"]["months_supply"], compute.months_text(C["handoff"]["market"]["months_supply"]))
@@ -1579,7 +1586,10 @@ class EighthPass(unittest.TestCase):
         doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
         self.assertIn(f'about {C["placeholders"]["months_supply"]} of supply', doc)
         R["market"]["bullets"][2] = "Only five homes are for sale nearby, about a month and a half of supply."
-        self.assertIn("months_supply_typed", run(R)[0]["warning_keys"])
+        with self.assertRaisesRegex(compute.ReportError, r"market\.bullets\[2\]: states months of supply.*→ write \{months_supply\}"):
+            run(R)
+        R["market"]["bullets"][2] = "Buyers have plenty of inventory to choose from."  # no figure: nothing typed
+        run(R)
         self.assertEqual((compute.months_text(1.3), compute.months_text(1.0)), ("1.3 months", "1 month"))
 
     def test_method_note_adjustments_are_short_and_once_each(self):
@@ -1589,7 +1599,7 @@ class EighthPass(unittest.TestCase):
         cards = [mk("Original Hall Bath", "Older Roof", "Size"),
                  mk("Kitchen, Hall Bath and Floors", "Remodeled Primary Bath", "Market Since the Sale")]
         self.assertEqual(deck.adjustment_words(cards),
-                         "baths, roof, size, kitchen, floors, market since the sale and seller credits")
+                         "condition and updates, roof and systems, size, market changes since each sale and seller credits")
 
     def test_higher_price_never_expects_a_lower_sale(self):
         """CMA-323: $399,900 expected to sell for less than $394,900 warns."""
@@ -1634,7 +1644,8 @@ class ChatTemplate(unittest.TestCase):
         self.assertNotIn("recommendation.paragraph", text)
         C, _ = run(report())
         paths = ["subject.address", "preliminary_reason", "recommendation.list_price_display", "recommendation.range_display",
-                 "summary_page.expected_sale", "summary_page.headline", "recommendation_paragraph", "summary_page.why",
+                 "recommendation.expected_sale", "summary_page.headline", "recommendation_paragraph", "summary_page.why",
+                 "expected_sale_basis.note",
                  "median_adjusted_display", "comps_table", "options_summary.net_header", "net.standard_terms",
                  "net.incomplete", "options_summary.note", "payments.per_10k_display", "net.notes", "net_spread_about",
                  "payments.basis_note", "payments.flood.annual", "payments.flood.required", "first_steps_heading",
@@ -1702,3 +1713,206 @@ class ChatTemplate(unittest.TestCase):
         R["costs"] = {}
         self.assertTrue(run(R)[0]["net"]["standard_terms"])
 
+
+
+class ResultsV4(unittest.TestCase):
+    """Results_v4 case 02: script-owned values, typed data that stops the render, and the layout fixes."""
+
+    def no_typed(self):
+        R = report()
+        for x in R["pricing"]["strategies"]:
+            x.pop("expected_sale")
+        return R
+
+    def test_expected_sale_rule(self):
+        """List x the recent sale-to-original-list ratio plus the option's credit, to $500; the top option expects the
+        recommended one's sale; page 1 and slide 2 say "About ..." from the recommended option, never typed."""
+        R = self.no_typed()
+        C, homes = run(R)
+        ratio = C["handoff"]["market"]["sale_to_original_list_recent"]
+        top, rec, low = C["strategies"]
+        for x in (rec, low):
+            self.assertEqual(x["expected_sale"], round((x["list_price"] * ratio + x["seller_credit"]) / 500) * 500)
+            self.assertEqual(x["expected_sale_source"], "rule")
+        self.assertEqual(top["expected_sale"], rec["expected_sale"])  # a higher price buys time, not a higher sale
+        self.assertEqual(C["recommendation"]["expected_sale"], "About " + rec["expected_sale_display"])
+        self.assertIn(f"{ratio * 100:.1f}%", C["expected_sale_basis"]["note"])
+        again, _ = run(R)  # the same data, run again (render.py runs compute once per format): the same figures
+        self.assertEqual([x["expected_sale"] for x in again["strategies"]], [x["expected_sale"] for x in C["strategies"]])
+        R["summary_page"]["expected_sale"] = "Upper $380,000s to about $390,000"  # a typed phrase is never shown
+        C, _ = run(R)
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertNotIn("Upper $380,000s", doc)
+        self.assertIn("About " + rec["expected_sale_display"], doc)
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+        self.assertEqual(D["expected_sale"], "About " + rec["expected_sale_display"])
+
+    def test_expected_sale_caps_and_agent_figure(self):
+        R = texas(self.no_typed())
+        R["market"]["sale_to_list"] = 1.05  # a hot market's ratio: still never above list (but the last) or the range
+        C, _ = run(R)
+        self.assertEqual(C["expected_sale_basis"]["source"], "report")
+        high = R["recommendation"]["high"]
+        for i, x in enumerate(C["strategies"]):
+            self.assertLessEqual(x["expected_sale"], high)
+            if i < 2:
+                self.assertLessEqual(x["expected_sale"], x["list_price"])
+        self.assertIn("never above the list price", C["expected_sale_basis"]["note"])
+        R = report()  # a typed figure is the agent's own, and the report says so
+        R["pricing"]["strategies"][2].pop("expected_sale")
+        C, _ = run(R)
+        self.assertEqual([x["expected_sale_source"] for x in C["strategies"]], ["agent", "agent", "rule"])
+        self.assertIn("$479,900 and $469,900 options' expected sales are our own estimates", C["expected_sale_basis"]["note"])
+
+    def test_no_ratio_is_assumed(self):
+        C, _ = run(texas(self.no_typed()))
+        self.assertEqual(C["expected_sale_basis"]["source"], "assumed")
+        self.assertIn("expected_sale_ratio", C["assumption_keys"])
+
+    def test_typed_stats_stop_with_every_problem(self):
+        R = report()
+        R["summary_page"]["key_stats"][1][0] = "95.2%"
+        R["market"]["rows"][2][2] = "30"
+        with self.assertRaises(compute.ReportError) as e:
+            run(R)
+        msg = str(e.exception)
+        self.assertIn("2 things to fix", msg)
+        self.assertIn('summary_page.key_stats[1][0]: "95.2%"', msg)
+        self.assertIn("→ write {sale_to_list_recent}", msg)
+        self.assertIn('market.rows[2][2]: "30"', msg)
+        self.assertIn("{days_recent}", msg)
+
+    def test_market_table_and_stats_come_from_the_export(self):
+        R = report()
+        R["market"].pop("rows"), R["market"].pop("columns"), R["summary_page"].pop("key_stats")
+        C, homes = run(R)
+        n = C["market_numbers"]
+        self.assertEqual(C["market_table"]["columns"], ["", "April–June", "July–September"])
+        self.assertIn(["Typical Sale vs. Original Asking Price", n["sale_to_list_early"], n["sale_to_list_recent"]],
+                      C["market_table"]["rows"])
+        self.assertEqual(C["key_stats"][1][0], n["sale_to_list_recent"])
+        with open(R["deck"]) as f:
+            R["deck"] = json.load(f)
+        R["deck"].pop("market_stats")
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+        self.assertEqual(D["content"]["market_stats"][0][1:3], [n["sale_to_list_early"], n["sale_to_list_recent"]])
+
+    def test_split_month_is_the_periods(self):
+        R = report()
+        R["comps"]["method_note"] = "About 1.5% per quarter off sales from before August, since prices softened."
+        with self.assertRaisesRegex(compute.ReportError, r'comps\.method_note: says "before August".*\{split_month\}'):
+            run(R)
+        R["comps"]["method_note"] = "About 1.5% per quarter off sales from before {split_month}."
+        R["summary_page"]["why"][0] = "The home has sat since January without an offer."  # not a period boundary
+        self.assertEqual(run(R)[0]["placeholders"]["split_month"], "July")
+
+    def test_launch_plan_steps_come_from_the_report(self):
+        R = report()
+        with open(R["deck"]) as f:
+            R["deck"] = json.load(f)
+        R["deck"]["launch_plan"].append(["Professional Staging", "A stager furnishes every room", "staging"])
+        with self.assertRaisesRegex(compute.ReportError, r'deck\.launch_plan\[\d\]: "Professional Staging" isn\'t one of'):
+            run(R)
+        R["deck"]["launch_plan"].pop()
+        run(R)
+
+    def test_adjustment_kinds(self):
+        R = report()
+        R["comps"]["cards"][0]["adjustments"][0]["kind"] = "vibes"
+        with self.assertRaisesRegex(compute.ReportError, r"comps\.cards\[0\]\.adjustments\[0\]\.kind: 'vibes'"):
+            run(R)
+        cards = [{"adjustments": [{"label": "Hall Bath (Not in Its Listing)", "amount": 10000},
+                                  {"label": "Something Odd", "amount": 2000, "kind": "pool"}], "seller_concessions": 0}]
+        self.assertEqual(deck.adjustment_words(cards), "condition and updates and pool")
+
+    def test_range_warnings_run_here_too(self):
+        R = report()
+        R["recommendation"].update(low=400000, high=520000)
+        keys = run(R)[0]["warning_keys"]
+        self.assertIn("range_wide", keys)
+        self.assertIn("range_one_comp", keys)
+
+    def test_listing_history_on_page_one_and_the_deck(self):
+        R = report()
+        R["listing_history"] = [{"status": "expired", "price": 229900, "original_price": 239900, "ended": "2017-03",
+                                 "days_on_market": 184}]
+        C, homes = run(R)
+        text = "Expired in March 2017 after 184 days at $229,900, first listed at $239,900."
+        self.assertEqual([e["text"] for e in C["listing_history"]], [text])
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn(text, doc.split('class="pb"')[0])  # page 1
+        self.assertEqual(deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")["history"], text)
+        R["listing_history"] = [{"status": "sold", "price": 1}]
+        with self.assertRaisesRegex(compute.ReportError, r"listing_history\[0\]"):
+            run(R)
+
+    def test_each_option_prorates_to_its_own_closing(self):
+        """Dec 18 for every option, though the slowest closes in January: now each closing follows its time."""
+        from datetime import date
+        R = report()
+        R["costs"].update(annual_tax=6000, expected_closing_date="2026-12-18")
+        C, _ = run(R)
+        self.assertEqual(C["net"]["closings"], ["2027-01-22", "2026-12-18", "2026-12-18"])
+        tax = row(C, "tax_proration")["amounts"]
+        jan = (date(2027, 1, 22) - date(2027, 1, 1)).days
+        self.assertEqual(tax[0], -(round(6000 * 0.96) + round(6000 * 0.96 * jan / 365)))  # this year's bill, then 2027's
+        self.assertEqual(tax[1], -round(6000 * 0.96 * (date(2026, 12, 18) - date(2026, 1, 1)).days / 365))
+        notes = " ".join(C["net"]["notes"])
+        self.assertIn("closes in 2027", notes)
+        self.assertIn("own expected closing", notes)
+
+    def test_assumed_brokerage_beside_every_net(self):
+        R = report()
+        R["costs"] = {}
+        C, homes = run(R)
+        self.assertEqual(C["options_summary"]["net_header_sub"], "5% Brokerage Assumed")
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertEqual(doc.count("5% Brokerage Assumed"), 2)  # page 1's options table and the pricing table
+        self.assertIn("Brokerage is assumed at 5%", C["options_summary"]["note"])
+
+    def test_report_carries_equal_housing_and_runs_on(self):
+        R = report()
+        C, homes = run(R)
+        doc, _ = seller_render.build_html(copy.deepcopy(R), C, homes, AGENT)
+        self.assertIn("Equal Housing Opportunity.", doc)
+        self.assertIn('class="kg sec runon"', doc)  # the method may run on to a last page
+
+    def test_crowded_callouts_are_left_off(self):
+        checks, _ = seller_render.scatter_checks({"labels_dropped": ["882 Siskin Way (For Sale)", "Your Home"]}, "Your Home")
+        self.assertEqual(len(checks), 1)
+        self.assertIn("882 Siskin Way (For Sale)", checks[0])
+        self.assertNotIn("Your Home", checks[0])
+
+    def test_deck_scatter_fits_its_data(self):
+        R = report()
+        C, homes = run(R)
+        sc = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")["scatter"]
+        ys = [p[1] for s in sc["series"] for p in s["points"]] + sc["band"]
+        self.assertLessEqual(sc["y_max"] - max(ys), sc["y_step"] + 10000)
+        self.assertLessEqual(min(ys) - sc["y_min"], sc["y_step"] + 10000)
+        self.assertEqual(sc["band"], [R["recommendation"]["low"], R["recommendation"]["high"]])
+
+    def test_deck_tables_are_print_light(self):
+        if not node_ready():
+            self.skipTest("Node with pptxgenjs, react-icons and sharp isn't resolvable here.")
+        R = report()
+        C, homes = run(R)
+        D = deck.deck_data(copy.deepcopy(R), C, homes, AGENT, compute.labels(R), "footer")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "deck.pptx")
+            with contextlib.redirect_stderr(io.StringIO()):
+                deck.build_pptx(D, path)
+            with zipfile.ZipFile(path) as z:
+                names = sorted((n for n in z.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", n)),
+                               key=lambda n: int(re.search(r"\d+", n).group()))
+                tables = [z.read(n).decode() for n in names[-2:]]
+                chart = next(z.read(n).decode() for n in z.namelist() if n.startswith("ppt/charts/chart")
+                             and b"<c:scatterChart>" in z.read(n))
+        for xml in tables:  # no filled header and no banded rows: every cell is white (the rules aside)
+            cells = [re.sub(r"<a:ln[LRTB]\b.*?</a:ln[LRTB]>", "", c, flags=re.S) for c in re.findall(r"<a:tcPr.*?</a:tcPr>", xml, re.S)]
+            fills = {f for c in cells for f in re.findall(r'<a:srgbClr val="(\w+)"', c)}
+            self.assertTrue(cells)
+            self.assertLessEqual(fills, {D["colors"]["bg"]})
+        self.assertNotIn("<c:legend>", chart)  # the legend is drawn as shapes matching the markers
+        for slate in ("A3ADB6", "B8C2CC", "5A6672"):  # the old slate grays: a second, blue hue
+            self.assertNotIn(slate, chart)

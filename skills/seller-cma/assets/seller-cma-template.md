@@ -2,11 +2,11 @@
 
 {{"**Preliminary:** " + preliminary_reason, when preliminary is true}}
 
-**{{"New List Price" when reprice is set, else "Recommended List Price"}}: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{summary_page.expected_sale}}
+**{{"New List Price" when reprice is set, else "Recommended List Price"}}: {{recommendation.list_price_display}}** · **Supported Value Range:** {{recommendation.range_display}} · **Expected Sale:** {{recommendation.expected_sale}}
 
 {{summary_page.headline, when there is one}}
 
-{{reprice.price_history when reprice is set, or relist.price_history when relist is set}} {{recommendation_paragraph, shortened to 2 sentences}}
+{{reprice.price_history when reprice is set, or relist.price_history when relist is set}} {{"Listing history: " + each listing_history[].text, when there are any}} {{recommendation_paragraph, shortened to 2 sentences}}
 
 **Why This Price:**
 - {{summary_page.why[0]}}
@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | {{each strategies, row i: "Stay at " + list_price_display when i is reprice.stay_index, else list_price_display; " ★" when recommended | time | expected_sale_display | net_after_holding_display ("pending brokerage terms" when net.incomplete is true: never show a net without the commission) | payment_display/mo}} |
 
-{{options_summary.note}} Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
+{{options_summary.note}} {{expected_sale_basis.note}} Every $10,000 in price is about {{payments.per_10k_display}} a month to a buyer. {{one line naming any placeholder in net.notes, such as the brokerage}}
 
 {{one line comparing the options, on the table's basis: each other strategy's net_vs_recommended_about, and net_spread_about}}
 

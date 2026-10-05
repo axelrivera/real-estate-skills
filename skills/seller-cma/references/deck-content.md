@@ -7,12 +7,12 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | # | Slide | Numbers from | Wording from `deck` |
 |---|---|---|---|
 | 1 | Title (dark) | agent's profile, date | `title`, `subtitle` |
-| 2 | Our Recommendation | recommendation, `summary_page.expected_sale` | `recommendation_why`, optional `expected_sub` |
+| 2 | Our Recommendation | recommendation, the recommended option's expected sale, the listing history | `recommendation_why`, optional `expected_sub` |
 | 3 | How We Priced It (4 numbered steps and the recommendation card) | sales in the export, comps, adjusted min/max/median, list price | optional `sold_line`, `comps_basis` |
 | 4 | What Buyers Will Pay For (the paperwork box only when there are `document_items`) | — | `value_drivers`, `document_items` |
 | 5 | What Comparable Homes Sold For (dot plot, range band, price line) | comp cards' adjusted values | `comp_lines`, `comps_takeaway` |
-| 6 | Where Your Home Fits in the Neighborhood, or `scatter_title` (native scatter; left out when there's no MLS export) | export + the comp cards | `scatter_takeaway`, optional `scatter_title` |
-| 7 | How the Market Has Changed (or `market_title`) | — | `market_title`, `market_periods`, `market_period_labels`, `market_stats`, `market_takeaway` |
+| 6 | Where Your Home Fits in the Neighborhood, or `scatter_title` (native scatter with the supported range band and a legend drawn as the markers; left out when there's no MLS export) | export + the comp cards | `scatter_takeaway`, optional `scatter_title` |
+| 7 | How the Market Has Changed (or `market_title`) | the export's two periods | `market_title`, `market_periods`, `market_period_labels`, optional `market_stats`, `market_takeaway` |
 | 8 | Your Competition (1–3 cards; fewer when there are fewer real competitors) | prices from the report's competition table | `competition`, `competition_takeaway` |
 | 9 | Three Ways to Price It (the title follows the number of strategies) | strategies | `strategy_takeaway` |
 | 10 | What You Walk Away With (native column chart) | computed nets | `strategy_takeaway` |
@@ -39,9 +39,9 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `market_title` | Optional slide title in Title Case; default "How the Market Has Changed" |
 | `market_periods` | Optional `[earlier, recent]` for the subtitle ("April–June"); default from the split date |
 | `market_period_labels` | Optional short tags on each card; default "Earlier" / "Now" |
-| `market_stats` | 2–4 `[label, earlier value, recent value, icon]`, labels in Title Case, from stats.py (plus the rate change only when you found a sourced earlier rate; otherwise leave that card out). Without an export there are no two periods: write 2–4 one-value cards, `[label, value, icon]`, from the sales you were given (median adjusted value, price per sq ft, the share with seller credits), never a split you'd have to invent |
+| `market_stats` | With an export, leave it out: the cards are the export's sale vs. original price, days to contract, share with seller credits and typical credit. To add the rate change (only when you found a sourced earlier rate), write 2–4 `[label, earlier value, recent value, icon]`, labels in Title Case, the export's numbers as placeholders (`{sale_to_list_early}`, `{sale_to_list_recent}`, `{days_early}`...): a typed one that disagrees stops the render. Without an export there are no two periods: write 2–4 one-value cards, `[label, value, icon]`, from the sales you were given (median adjusted value, price per sq ft, the share with seller credits), never a split you'd have to invent |
 | `competition` | 1–3 `[address, status line, one-line why]`, only real competitors; the address must be in the report's competition rows (the price comes from there) |
-| `launch_plan` | 3–6 `[short heading, one line, icon]`, headings in Title Case |
+| `launch_plan` | 3–6 `[short heading, one line, icon]`, headings in Title Case. Each card is one of the report's Before We List steps (`prep.items`' bold leads), never a service the agent didn't name (a lockbox, staging): compute.py stops on a heading that isn't one |
 | `needs_short` | Up to 5 short items from `needs` |
 | `timeline` | 2–5 `[when, what]` ("This Week", "Week 2"), including the price-review point |
 | `adjustments_summary` | One sentence with the adjustment rates used (from `method_note`); it goes in the appendix's speaker notes |

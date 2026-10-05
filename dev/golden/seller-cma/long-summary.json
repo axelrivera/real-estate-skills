@@ -2,12 +2,13 @@
  "adjusted_max": 492300,
  "adjusted_min": 436200,
  "assumption_keys": [
+  "expected_below_range",
   "title_fees_built_in"
  ],
  "assumptions": {
-  "count": 1
+  "count": 2
  },
- "competing_offer_caveat": 2,
+ "competing_offer_caveat": null,
  "comps_table": [
   {
    "seller_paid_display": "$0"
@@ -28,6 +29,23 @@
   "as_of": "2026-09-22",
   "export": true,
   "mls": "Stellar"
+ },
+ "expected_sale_basis": {
+  "agent": {
+   "count": 0
+  },
+  "capped": false,
+  "filled": [
+   0,
+   1,
+   2
+  ],
+  "ratio": 0.9386,
+  "ratio_display": "93.9%",
+  "source": "export",
+  "top": [
+   0
+  ]
  },
  "handoff": {
   "as_of": "2026-09-22",
@@ -103,11 +121,71 @@
   },
   "version": 1
  },
+ "key_stats": [
+  {
+   "count": 2
+  },
+  [
+   "93.9%"
+  ],
+  {
+   "count": 2
+  }
+ ],
+ "listing_history": [
+  {
+   "days": 184,
+   "original_price": 434900,
+   "price": 419900,
+   "status": "expired"
+  }
+ ],
  "market_note_keys": {
   "count": 0
  },
  "market_notes": {
   "count": 0
+ },
+ "market_numbers": {
+  "credit_share_early": "50%",
+  "credit_share_recent": "89%",
+  "days_early": "8",
+  "days_recent": "22",
+  "sale_to_list_early": "98.7%",
+  "sale_to_list_recent": "93.9%",
+  "sold_early": "24",
+  "sold_recent": "9",
+  "split_month": "July",
+  "window_start_month": "April"
+ },
+ "market_table": {
+  "columns": {
+   "count": 3
+  },
+  "rows": [
+   [
+    "24",
+    "9"
+   ],
+   {
+    "count": 3
+   },
+   [
+    "98.7%",
+    "93.9%"
+   ],
+   [
+    "8",
+    "22"
+   ],
+   [
+    "50%",
+    "89%"
+   ],
+   {
+    "count": 3
+   }
+  ]
  },
  "max_distance": 0.92,
  "median_adjusted": 476800.0,
@@ -115,9 +193,9 @@
  "n_sold": 33,
  "net": {
   "after_holding": [
-   420954.0,
-   421060.0,
-   424486.0
+   409698.0,
+   410742.0,
+   402442.5
   ],
   "assumed": [
    {
@@ -126,22 +204,29 @@
     "value": 1145
    }
   ],
+  "assumed_brokerage": null,
+  "assumed_brokerage_pct": null,
   "cash_at_closing": false,
+  "closings": [
+   "2027-01-22",
+   "2026-11-23",
+   "2026-11-05"
+  ],
   "columns": [
    {
     "net": null,
-    "net_before_payoff": 423074.0,
-    "total_costs": 39926.0
+    "net_before_payoff": 411818.0,
+    "total_costs": 39182.0
    },
    {
     "net": null,
-    "net_before_payoff": 422136.0,
-    "total_costs": 39864.0
+    "net_before_payoff": 411818.0,
+    "total_costs": 39182.0
    },
    {
     "net": null,
-    "net_before_payoff": 425260.0,
-    "total_costs": 34740.0
+    "net_before_payoff": 403216.5,
+    "total_costs": 33283.5
    }
   ],
   "has_tax": false,
@@ -168,9 +253,9 @@
   "rows": [
    {
     "amounts": [
-     463000,
-     462000,
-     460000
+     451000,
+     451000,
+     436500
     ],
     "display": {
      "count": 3
@@ -179,9 +264,9 @@
    },
    {
     "amounts": [
-     -11575.0,
-     -11550.0,
-     -11500.0
+     -11275.0,
+     -11275.0,
+     -10912.5
     ],
     "display": {
      "count": 3
@@ -190,9 +275,9 @@
    },
    {
     "amounts": [
-     -11575.0,
-     -11550.0,
-     -11500.0
+     -11275.0,
+     -11275.0,
+     -10912.5
     ],
     "display": {
      "count": 3
@@ -201,9 +286,9 @@
    },
    {
     "amounts": [
-     -3241.0,
-     -3234.0,
-     -3220.0
+     -3157.0,
+     -3157.0,
+     -3055.5
     ],
     "display": {
      "count": 3
@@ -212,9 +297,9 @@
    },
    {
     "amounts": [
-     -2390,
-     -2385,
-     -2375
+     -2330,
+     -2330,
+     -2258
     ],
     "display": {
      "count": 3
@@ -245,9 +330,9 @@
    },
    {
     "amounts": [
-     423074.0,
-     422136.0,
-     425260.0
+     411818.0,
+     411818.0,
+     403216.5
     ],
     "display": {
      "count": 3
@@ -267,9 +352,9 @@
    },
    {
     "amounts": [
-     420954.0,
-     421060.0,
-     424486.0
+     409698.0,
+     410742.0,
+     402442.5
     ],
     "display": {
      "count": 3
@@ -280,17 +365,20 @@
   "standard_terms": false,
   "tax_assumed": false,
   "totals": [
-   423074.0,
-   422136.0,
-   425260.0
+   411818.0,
+   411818.0,
+   403216.5
   ],
   "warnings": {
    "count": 0
   }
  },
  "net_basis": "after_holding",
- "net_spread": 3532.0,
+ "net_spread": 8299.5,
  "ok": true,
+ "options_summary": {
+  "net_header_sub": null
+ },
  "payments": {
   "down_pct": 0.05,
   "down_per_10k": 500.0,
@@ -332,11 +420,22 @@
   "total_mills": 17.57
  },
  "placeholders": {
+  "credit_share_early": "50%",
+  "credit_share_recent": "89%",
+  "days_early": "8",
+  "days_recent": "22",
   "per_10k": "$80",
-  "r2_share": "most"
+  "r2_share": "most",
+  "sale_to_list_early": "98.7%",
+  "sale_to_list_recent": "93.9%",
+  "sold_early": "24",
+  "sold_recent": "9",
+  "split_month": "July",
+  "window_start_month": "April"
  },
  "preliminary": false,
  "recommendation": {
+  "expected_sale_value": 451000,
   "high": 480000,
   "list_price": 469900,
   "low": 455000
@@ -348,21 +447,23 @@
  "strategies": [
   {
    "down": 23995.0,
-   "expected_sale": 463000,
+   "expected_sale": 451000,
+   "expected_sale_source": "rule",
    "list_price": 479900,
-   "net": 423074.0,
-   "net_after_holding": 420954.0,
-   "net_vs_recommended": -106.0,
+   "net": 411818.0,
+   "net_after_holding": 409698.0,
+   "net_vs_recommended": -1044.0,
    "payment": 4146.69,
    "recommended": false,
    "seller_credit": 10000
   },
   {
    "down": 23495.0,
-   "expected_sale": 462000,
+   "expected_sale": 451000,
+   "expected_sale_source": "rule",
    "list_price": 469900,
-   "net": 422136.0,
-   "net_after_holding": 421060.0,
+   "net": 411818.0,
+   "net_after_holding": 410742.0,
    "net_vs_recommended": 0.0,
    "payment": 4065.2,
    "recommended": true,
@@ -370,11 +471,12 @@
   },
   {
    "down": 22995.0,
-   "expected_sale": 460000,
+   "expected_sale": 436500,
+   "expected_sale_source": "rule",
    "list_price": 459900,
-   "net": 425260.0,
-   "net_after_holding": 424486.0,
-   "net_vs_recommended": 3426.0,
+   "net": 403216.5,
+   "net_after_holding": 402442.5,
+   "net_vs_recommended": -8299.5,
    "payment": 3983.72,
    "recommended": false,
    "seller_credit": 5000
@@ -397,7 +499,7 @@
     "count": 2
    },
    [
-    "95.2%"
+    "93.9%"
    ],
    {
     "count": 2

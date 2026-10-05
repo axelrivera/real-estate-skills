@@ -58,13 +58,11 @@ def summary_page(R, C, agent, L):
     tile = L(("sum_cash_free_tile" if free else "sum_cash_tile" if cash else "sum_net_tile") + held, price=money(rec["list_price"]))
     if C["net"]["standard_terms"]:  # CMA-18: every place a net shows says the brokerage isn't the listing agreement's yet
         tile += f" ({L('sum_standard_terms')})"
-    stats = list(sp.get("key_stats") or [])[:3]
-    # CMA-261: without an export there's no sale-to-list ratio or days-on-market trend: the comps fill the empty tiles
-    fallback = [[C["median_adjusted_display"], L("sum_stat_median", n=C["n_comps"])],
-                [f'{k(C["adjusted_min"])}–{k(C["adjusted_max"])}', L("sum_stat_span")],
-                [str(C["n_comps"]), L("sum_stat_comps")]]
-    stats += [f for f in fallback if f[1] not in {x[1] for x in stats}][:3 - len(stats)]
-    stats += [[C["recommended_net_display"], tile]]
+    # Results_v4: report.json's stats with placeholders filled, else the export's (or, without one, the comps': CMA-261)
+    stats = [list(x) for x in C["key_stats"]] + [[C["recommended_net_display"], tile]]
+    history = C.get("listing_history") or []  # Results_v4: every listing of the home that ended unsold, with dates
+    history_line = (f'<div class="line"><b>{L("sum_history")}</b> {esc(" ".join(e["text"] for e in history))}</div>'
+                    if history else "")
     left = agent_block(agent, L)
     tags = f'<span class="tag prelim">{L("preliminary")}</span><br>' if C["preliminary"] else ""
     o = ['<div class="onepage">',
@@ -74,8 +72,8 @@ def summary_page(R, C, agent, L):
          '<div class="sp-hero"><div class="sp-rec">'
          f'<div class="lbl">{L("sum_rec")}</div><div class="price">{money(rec["list_price"])}</div>'
          f'<div class="line">{L("sum_range_line")} <b>{money(rec["low"])} – {money(rec["high"])}</b></div>'
-         f'<div class="line">{L("sum_expected")} <b>{sp["expected_sale"]}</b></div>'
-         f'<div class="line" style="margin-top:6px">{sp["headline"]}</div></div>'
+         f'<div class="line">{L("sum_expected")} <b>{C["recommendation"]["expected_sale"]}</b></div>'
+         + history_line + f'<div class="line" style="margin-top:6px">{sp["headline"]}</div></div>'
          '<div class="sp-stats">' + "".join(f'<div class="sp-stat"><b>{v}</b><span>{lbl}</span></div>' for v, lbl in stats) + "</div></div>",
          f'<div class="sp-h">{L("sum_comps_h")} <span style="font-weight:400;color:var(--muted)">· {L("sum_shaded")}</span></div>',
          '<div class="sp-dot">' + cma.dotplot(R["comps"]["cards"], rec["low"], rec["high"], rec["list_price"],
@@ -89,7 +87,7 @@ def summary_page(R, C, agent, L):
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{L("sum_why")}</div>{ul(sp["why"], "")}</div>'
              f'<div class="sp-table"><div class="sp-h">{L("sum_options")}</div><div class="tbl"><table><thead><tr>'
              f'<th>{L("th_list_at")}</th><th>{L("th_time_short")}</th><th class="n">{L("th_expected")}</th>'
-             f'<th class="n">{opts["net_header"]}</th></tr></thead><tbody>{rows}</tbody></table></div>'
+             f'<th class="n">{opts["net_header"]}{assumed_sub(opts["net_header_sub"])}</th></tr></thead><tbody>{rows}</tbody></table></div>'
              f'<div class="note">{opts["note"]}</div></div></div>')
     o.append(f'<div class="sp-h">{L("sum_first")}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sp["first_steps"]) + "</div>")
@@ -99,16 +97,24 @@ def summary_page(R, C, agent, L):
     return "".join(o)
 
 
+def assumed_sub(text):
+    """Results_v4: '5% Brokerage Assumed' under a net column's header, when the brokerage is assumed."""
+    return f'<br><span class="th-sub">{esc(text)}</span>' if text else ""
+
+
 def pricing_section(R, C, L):
     p, strats, net = R["pricing"], C["strategies"], C["net"]
     cash = net["cash_at_closing"]
     held = "_holding" if C["net_basis"] == "after_holding" else ""  # CMA-298: the same nets as page 1 and the reply
     cash_note = L(("pricing_note_free" if net["no_mortgage"] else "pricing_note_cash") + held)
+    basis = C["expected_sale_basis"]["note"]  # Results_v4: where each expected sale comes from
     b = [f'<h2>{L("h_pricing")}</h2>', f'<p>{p["intro"]}</p>',
-         table([L("th_strategy"), L("th_time"), L("th_expected"), L("th_cash" if cash and not held else "th_net"), L("th_expect")],  # CMA-317
+         table([L("th_strategy"), L("th_time"), L("th_expected"),
+                L("th_cash" if cash and not held else "th_net") + assumed_sub(net["assumed_brokerage"]), L("th_expect")],  # CMA-317
                [[f'<strong style="white-space:nowrap">{x["label"]}</strong>', x["time"], x["expected_sale_display"], x["net_after_holding_display"], x["note"]] for x in strats],
                num_cols=(2, 3), row_classes={C["recommended_index"]: "total"}),
-         f'<p class="note">{(cash_note if cash else L("pricing_note" + held))} {p.get("note", "")}</p>',
+         f'<p class="note">{(cash_note if cash else L("pricing_note" + held))} {p.get("note", "")}'
+         + (f" {esc(basis)}" if basis else "") + "</p>",
          f'<h3>{L("h_net")}</h3>', f'<p>{p.get("net_intro") or L("net_intro")}</p>']
     rows = [[r["label"]] + r["display"] for r in net["rows"]]
     b.append(table([L("th_at_closing")] + [x["label"] for x in strats], rows, num_cols=tuple(range(1, len(strats) + 1)),
@@ -158,8 +164,8 @@ def body(R, C, homes, agent, L):
     if sc and homes:
         sc = {"subject_label": L("subject_label"), **sc}
         svg, info = cma.scatter(homes, sc, s["sqft"], rec["list_price"], s.get("mls_address", s["address"]), (rec["low"], rec["high"]), L,
-                                [cd["address"] for cd in R["comps"]["cards"]])
-        checks, notes = scatter_checks(info)
+                                [cd["address"] for cd in R["comps"]["cards"]], drop_crowded=True)
+        checks, notes = scatter_checks(info, sc["subject_label"])
         C.setdefault("render_checks", []).extend(checks)
         C.setdefault("render_check_keys", []).extend(["scatter_labels"] * len(checks))
         C.setdefault("render_notes", []).extend(notes)
@@ -176,9 +182,11 @@ def body(R, C, homes, agent, L):
     b += [f'<h2>{L("h_competition")}</h2>', f'<p>{cp["intro"]}</p>',
           table([L("th_address"), L("th_status"), L("th_price"), L("th_sqft"), L("th_pool"), L("th_days"), L("th_notes")],
                 [[r[0], r[1], money(r[2]), f"{int(r[3]):,}", r[4], r[5], r[6]] for r in cp["rows"]], num_cols=(2, 3, 5))]
-    m = R["market"]
-    b += [f'<h2>{L("h_market")}</h2>', f'<p>{m["intro"]}</p>',
-          table(m["columns"], m["rows"], num_cols=tuple(range(1, len(m["columns"])))), ul(m["bullets"])]
+    m, mt = R["market"], C.get("market_table")  # Results_v4: the export's numbers, never typed
+    b += [f'<h2>{L("h_market")}</h2>', f'<p>{m["intro"]}</p>']
+    if mt:
+        b.append(table(mt["columns"], mt["rows"], num_cols=tuple(range(1, len(mt["columns"])))))
+    b.append(ul(m["bullets"]))
 
     b += pricing_section(R, C, L)
     b += payments_section(R, C, L)
@@ -191,18 +199,27 @@ def body(R, C, homes, agent, L):
 def closing(R, C, agent, L):
     """CMA-276: How This Was Prepared, the footer and the closing notices kept together, so the notices never sit
     alone on a last page."""
-    return ('<div class="kg sec">' + f'<h2>{L("h_method")}</h2>' + "".join(f"<p>{x}</p>" for x in R["method"])
-            + footer_block(agent, R, L) + render.notices(agent, cma.report_notices(C)) + "</div>")
+    # Results_v4 case 02: the section may run on to a last page (paragraph by paragraph, the signature and notices
+    # together) rather than move whole and leave the page before half empty. The seller CMA carries the launch plan
+    # and is the listing presentation's leave-behind, so it's a marketing piece: the Equal Housing Opportunity
+    # statement, as on the deck (references/fair-housing.md)
+    return ('<div class="kg sec runon">' + f'<h2>{L("h_method")}</h2>' + "".join(f"<p>{x}</p>" for x in R["method"])
+            + "<div>" + footer_block(agent, R, L) + render.notices(agent, cma.report_notices(C), marketing=True) + "</div></div>")
 
 
-def scatter_checks(info):
+def scatter_checks(info, subject=None):
     """CMA-267: (checks, information): chart labels that still cover a marker (the subject's included) or another
-    label, and labels placed on another side than asked because that side was crowded."""
+    label, callouts left off for want of a clear spot, and labels placed on another side than asked because that side
+    was crowded. `subject` is the subject's label: left off, the legend still names it."""
     checks, notes = [], []
     if info.get("labels_overlapping") or info.get("crowded_labels"):
         names = list(dict.fromkeys([*(info.get("labels_overlapping") or []), *(info.get("crowded_labels") or [])]))
         checks.append("Scatter labels still cover a marker or another label (" + ", ".join(names) + "): drop that "
                       "callout or shorten its label, then render again.")
+    dropped = [t for t in info.get("labels_dropped") or [] if t != subject]  # Results_v4: left off, never crowded
+    if dropped:
+        checks.append("Scatter callouts left off, with no clear spot beside their homes (" + ", ".join(dropped) + "): "
+                      "shorten the label or pick another home, then render again.")
     moved = [m for m in info.get("labels_moved") or [] if m[0] not in (info.get("labels_overlapping") or [])]
     if moved:
         notes.append("Scatter labels moved to stay clear of markers (information; the side is a preference): "

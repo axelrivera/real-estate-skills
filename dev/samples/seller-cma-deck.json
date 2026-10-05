@@ -58,8 +58,8 @@
  "market_stats": [
   [
    "Sale vs. Original Price",
-   "100%",
-   "95.2%",
+   "{sale_to_list_early}",
+   "{sale_to_list_recent}",
    "percent"
   ],
   [
@@ -117,11 +117,6 @@
    "Gather Permits",
    "Kitchen, baths, electrical, plumbing",
    "permit"
-  ],
-  [
-   "Easy Showings",
-   "Lockbox access with short notice",
-   "showings"
   ],
   [
    "Seller-Credit Budget",

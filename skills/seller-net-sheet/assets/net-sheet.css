@@ -1,6 +1,8 @@
 /* Seller net sheet: one page, on top of the shared report.css. Brand colors come from theme variables; never
    hard-code one here. Print-light: outlined tiles, rules and colored type; fill only where it's the data (the bars). */
-header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto}
+header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto;font-size:8.4pt;line-height:1.35}
+/* the agent's name reads as a signature, not a footnote (Results_v4 case 09) */
+.prep b.agent{font-size:11.5pt;font-weight:800;color:var(--text)}
 /* as in the other reports: with no fact row, the tiles sit right under the header and draw the line themselves */
 header:has(+ .tiles){border-bottom:none;padding-bottom:0}
 
@@ -44,6 +46,7 @@ header:has(+ .tiles){border-bottom:none;padding-bottom:0}
 
 /* compact: used only when the page would otherwise run onto a second one */
 body.compact .tile{padding:4px 10px} body.compact .tile b{font-size:17pt;margin:0}
+body.compact .prep{font-size:7.8pt;line-height:1.25} body.compact .prep b.agent{font-size:10pt}
 body.compact .net td{padding:1.2px 8px} body.compact .net tr.group td{padding-top:3px}
 body.compact h2{margin:6px 0 2px} body.compact .bars .row{margin:2px 0}
 body.compact .notes{font-size:7pt;margin-top:5px} body.compact .notices{margin-top:6px}

@@ -51,8 +51,8 @@
  "market_stats": [
   [
    "Sale vs. Original Price",
-   "100%",
-   "95.2%"
+   "{sale_to_list_early}",
+   "{sale_to_list_recent}"
   ],
   [
    "Days to Contract",
@@ -103,10 +103,6 @@
   [
    "Gather Permits",
    "Kitchen, baths, electrical, plumbing"
-  ],
-  [
-   "Easy Showings",
-   "Lockbox access with short notice"
   ],
   [
    "Seller-Credit Budget",

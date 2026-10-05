@@ -152,3 +152,11 @@ class Formats(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Neutrals(unittest.TestCase):
+    def test_neutrals_are_true_grays(self):
+        """Results_v4 case 09: a slate gray (#B8C2CC) read as a second, blue hue on the net sheet's payoff bar."""
+        for name, hx in d.NEUTRALS.items():
+            self.assertLess(d.to_oklch(hx)[1], 0.005, name)
+        self.assertGreaterEqual(d.contrast(d.NEUTRALS["muted"]), d.AA)  # still readable as text

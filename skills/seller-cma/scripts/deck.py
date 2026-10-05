@@ -69,10 +69,14 @@ def load_content(R):
             c = json.load(f)
     if not isinstance(c, dict):
         raise DeckError("report.json needs `deck` with the listing presentation's wording (see references/deck-content.md).")
-    required = {k: t for k, t in REQUIRED.items() if k != "scatter_takeaway" or R.get("export")}  # no export: no scatter slide
+    # no export: no scatter slide; with one, the market cards come from its numbers when they're left out (Results_v4)
+    required = {k: t for k, t in REQUIRED.items() if (k != "scatter_takeaway" or R.get("export"))
+                and not (k == "market_stats" and R.get("export") and c.get("market_stats") is None)}
     problems = [f"deck.{key} is missing" for key, typ in required.items() if not isinstance(c.get(key), typ)]
     problems += [f"deck.{key} needs {lo} to {hi} items" for key, (lo, hi) in COUNTS.items()
                  if isinstance(c.get(key), list) and not lo <= len(c[key]) <= hi]
+    if c.get("expected_sale") is not None:  # Results_v4: the recommended option's number, never a typed phrase
+        problems.append("deck.expected_sale is typed: leave it out (the slide shows the recommended option's expected sale)")
     stats = [m for m in c.get("market_stats") or [] if isinstance(m, list)]
     if len({one_period(m, R) for m in stats}) > 1:
         problems.append("deck.market_stats mixes one-value and two-period items: use one form for all")
@@ -105,29 +109,30 @@ def _norm(address):
     return " ".join(str(address).upper().replace(".", "").split())
 
 
-CONDITION_WORDS = re.compile(r"^(?:(?:original|older|old|newer|new|remodeled|updated|renovated|your)\s+)+")
+# The plain words for each adjustment kind (cma.ADJUSTMENT_KINDS), the same on every deck
+ADJ_KIND_WORDS = {"size": "size", "pool": "pool", "garage": "garage", "condition": "condition and updates",
+                  "age": "roof and systems", "lot": "lot", "view": "view or water", "location": "location",
+                  "time": "market changes since each sale", "credits": "seller credits", "other": "other differences"}
 
 
 def adjustment_words(cards):
-    """'size, larger corner lot, seller credits and market since the sale': the adjustments actually made (CMA-26).
-    CMA-321: a short list of what was adjusted, each once: compound labels split ("Kitchen, Hall Bath and Floors"),
-    condition words dropped ("Original Hall Bath" and "Hall Bath" are one item), and two or more baths read "baths"."""
+    """'size, condition and updates, market changes since each sale and seller credits': what was adjusted, each kind
+    once, in the order first used (CMA-26). Results_v4 case 02: fixed plain words per adjustment kind (the card's
+    `kind`, else cma.adjustment_kind from its label), never the label's own wording ("hall bath (not in its listing)")."""
     seen = []
     for c in cards:
         for a in c.get("adjustments") or []:
-            label = " ".join(w if w.isupper() else w.lower() for w in str(a.get("label", "")).split())
-            for word in re.split(r",\s*|\s+and\s+", label):
-                word = CONDITION_WORDS.sub("", word).strip()
-                if word and word not in seen:
-                    seen.append(word)
-    baths = [w for w in seen if w == "bath" or w.endswith(" bath")]
-    if len(baths) > 1:
-        seen = [("baths" if w == baths[0] else w) for w in seen if w not in baths[1:]]
-    if any(c.get("seller_concessions") for c in cards):
-        seen.append("seller credits")
-    if not seen:
+            if isinstance(a, dict) and not a.get("amount"):
+                continue
+            kind = cma.adjustment_kind(a)
+            if kind not in seen:
+                seen.append(kind)
+    if any(c.get("seller_concessions") for c in cards) and "credits" not in seen:
+        seen.append("credits")
+    items = [ADJ_KIND_WORDS[k] for k in seen]
+    if not items:
         return ""
-    return seen[0] if len(seen) == 1 else ", ".join(seen[:-1]) + " and " + seen[-1]
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
 
 
 def period_labels(window):
@@ -165,12 +170,20 @@ def scatter_data(homes, R, C, L):
     if fit:
         x0, x1 = min(xs), max(xs)
         trend = [[x0 + (x1 - x0) * i / 27, fit["intercept"] + fit["slope"] * (x0 + (x1 - x0) * i / 27)] for i in range(28)]
-    subject = [[s["sqft"], R["recommendation"]["list_price"]]]
+    rec = R["recommendation"]
+    subject = [[s["sqft"], rec["list_price"]]]
     order = (("sold", pts["sold"]), ("active", pts["active"]), ("trend", trend), ("comp", pts["comp"]), ("subject", subject))
     series = [{"key": key, "name": L(f"deck_series_{key}"), "points": p} for key, p in order if p]  # background first
+    # Results_v4 case 02: the axes fit the homes plotted and the supported range (as the PDF's chart), never a fixed
+    # $50,000 grid that ran to $500K; the range is drawn as a band behind the points
+    ys = [p[1] for ser in series for p in ser["points"]] + [rec["low"], rec["high"]]
+    step = cma.nice_step(max(ys) - min(ys) + 20000, 7)
     return {"points": pts, "series": series,
-            "trend_note": trend_note(fit, R["recommendation"]["list_price"], L),
-            "axis_x": L("axis_x"), "axis_y": L("axis_y")}
+            "trend_note": trend_note(fit, rec["list_price"], L),
+            "axis_x": L("axis_x"), "axis_y": L("axis_y"),
+            "y_min": math.floor((min(ys) - 10000) / step) * step, "y_max": math.ceil((max(ys) + 10000) / step) * step,
+            "y_step": step, "x_min": math.floor((min(xs) - 50) / 200) * 200, "x_max": math.ceil((max(xs) + 50) / 200) * 200,
+            "band": [rec["low"], rec["high"]], "band_label": f'{L("band")} {k(rec["low"])}–{k(rec["high"])}'}
 
 
 def trend_note(fit, price, L):
@@ -189,6 +202,8 @@ def deck_data(R, C, homes, agent, L, footer):
     content = _fill(content, C["placeholders"])  # CMA-265: the same values the report fills (compute.py)
     notes = content.get("notes") or {}
     content["notes"] = {key: notes.get(key, "") for key in NOTE_KEYS}
+    if content.get("market_stats") is None:  # Results_v4: the export's two periods, never typed
+        content["market_stats"] = market_cards(C.get("market_numbers") or {}, L)
 
     prices = {_norm(r[0]): r[2] for r in R["competition"]["rows"]}
     cards = []
@@ -230,7 +245,7 @@ def deck_data(R, C, homes, agent, L, footer):
     k_strats = len(C["strategies"])
     L_deck["deck_strat_title"] = L(f"deck_strat_title_{k_strats}")
     ri = C["recommended_index"]
-    expected = R["pricing"]["strategies"][ri]["expected_sale"]
+    expected = C["strategies"][ri]["expected_sale"]
     L_deck["deck_expected_sub"] = content.get("expected_sub") or L(
         "deck_expected_sub" if expected < rec["list_price"] else "deck_expected_sub_at")
     if content.get("scatter_title"):
@@ -272,7 +287,9 @@ def deck_data(R, C, homes, agent, L, footer):
         "rec": {"list_price": rec["list_price"], "low": rec["low"], "high": rec["high"],
                 "list_display": money(rec["list_price"]), "range_display": f'{k(rec["low"])} – {k(rec["high"])}',
                 "low_k": k(rec["low"]), "high_k": k(rec["high"])},
-        "expected_sale": content.get("expected_sale") or R["summary_page"]["expected_sale"],
+        "expected_sale": C["recommendation"]["expected_sale"],  # Results_v4: the recommended option's number
+        # Results_v4: the home's listings that ended unsold, with dates and first prices (slide 2)
+        "history": " ".join(e["text"] for e in C.get("listing_history") or []),
         # CMA-271: without an export the sales reviewed are the comps: one step says it, not two ("3 reviewed", "3 closest")
         "method": {"n_sold": None if not window and not content.get("sold_line") else
                    C.get("n_sold") or len(R["comps"].get("summary_rows") or R["comps"]["cards"]),
@@ -298,6 +315,7 @@ def deck_data(R, C, homes, agent, L, footer):
         "net_sub": net_sub(C, L),
         "net_spread_display": C["net_spread_display"],
         "net_rows": [[r["label"]] + r["display"] for r in net["rows"]],
+        "net_total_rows": [i for i, r in enumerate(net["rows"]) if r["key"] in ("total", "after_holding")],
         "net_note": net_note,
         "net_speaker": net_speaker,
         "appendix_comps": [[r[0], money(r[1]), money(r[2]), money(r[3], 100)] for r in R["comps"]["summary_rows"]],  # CMA-289
@@ -308,6 +326,16 @@ def deck_data(R, C, homes, agent, L, footer):
         "appendix_note": comps_note,
         "appendix_speaker": comps_speaker,
     }
+
+
+MARKET_CARDS = (("sale_to_list", "percent"), ("days", "time"), ("credit_share", "money"), ("credit_amount", "dollar"))
+
+
+def market_cards(numbers, L):
+    """The market slide's cards from the export's numbers (compute.py's market_numbers): sale vs. original price, days
+    to contract, the share of sales with seller credits and the typical credit, each [label, earlier, recent, icon]."""
+    return [[L("deck_mk_" + stem), numbers[f"{stem}_early"], numbers[f"{stem}_recent"], icon]
+            for stem, icon in MARKET_CARDS if f"{stem}_early" in numbers and f"{stem}_recent" in numbers]
 
 
 def net_sub(C, L):
@@ -433,8 +461,8 @@ def _restyle(ser, colors, keys):
     elif kind == "sold":
         # background: small solid dots, no outline (LibreOffice, which makes the PDF copy, ignores marker transparency)
         ser = mk.sub(_marker("circle", 5, colors["grey_pale"], None), ser, 1)
-    elif kind == "active":
-        ser = mk.sub(_marker("circle", 7, colors["grey"], colors["grey"], 15875), ser, 1)  # darker than other sales: the listings to watch
+    elif kind == "active":  # a solid true gray (LibreOffice drops a hollow marker's ring): the listings to watch
+        ser = mk.sub(_marker("circle", 7, colors["grey"], colors["grey"], 15875), ser, 1)
     elif kind == "trend":
         ser = mk.sub('<c:marker><c:symbol val="none"/></c:marker>', ser, 1)
         ser = re.sub(r"(<c:spPr>.*?)<a:ln[^>]*>\s*<a:noFill/>\s*</a:ln>",

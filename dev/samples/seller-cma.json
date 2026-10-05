@@ -62,22 +62,7 @@
  },
  "summary_page": {
   "label": "Seller Summary",
-  "expected_sale": "Low-to-mid $460,000s",
   "headline": "Priced at the middle of what recent sales support, for the strongest first weeks on the market.",
-  "key_stats": [
-   [
-    "{median_adjusted}",
-    "Median of the Five Closest Sales, Adjusted to Your Home"
-   ],
-   [
-    "95.2%",
-    "Sale Price vs. Original Asking Price for Nearby Homes Since July"
-   ],
-   [
-    "22 days",
-    "Typical Time to Go Under Contract Now, Up from About 8 in the Spring"
-   ]
-  ],
   "why": [
    "The five closest Fernwood Park pool sales, adjusted to your home, center on about $469,800.",
    "The market cooled since spring: homes now sell about 5% under asking, and nearly nine in ten sellers help with buyer costs.",
@@ -331,38 +316,6 @@
  },
  "market": {
   "intro": "We looked at 33 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
-  "columns": [
-   "",
-   "April – June",
-   "July – Mid-Sept"
-  ],
-  "rows": [
-   [
-    "Homes Sold",
-    "24",
-    "9"
-   ],
-   [
-    "Typical Sale vs. Original Asking Price",
-    "100%",
-    "95.2%"
-   ],
-   [
-    "Typical Days to Go Under Contract",
-    "8",
-    "22"
-   ],
-   [
-    "Sales with Seller-Paid Buyer Costs",
-    "50%",
-    "89%"
-   ],
-   [
-    "Typical Seller-Paid Amount",
-    "$8,250",
-    "$12,100"
-   ]
-  ],
   "bullets": [
    "<strong>Buyers are negotiating again.</strong> Since July, homes nearby sold for about 5% under their original asking price and took almost three times as long to go under contract as in the spring.",
    "<strong>Inventory is balanced.</strong> There are 15 other homes for sale nearby, about {months_supply} of supply at the summer pace, and more than half have already cut their price.",
@@ -378,7 +331,6 @@
    {
     "label": "List at $479,900",
     "list_price": 479900,
-    "expected_sale": 463000,
     "time": "2–4 months",
     "seller_credit": 10000,
     "note": "Tests the top of the range; likely needs a price cut before an offer"
@@ -386,7 +338,6 @@
    {
     "label": "List at $469,900",
     "list_price": 469900,
-    "expected_sale": 462000,
     "time": "3–6 weeks",
     "seller_credit": 10000,
     "note": "Priced at the middle of recent adjusted sales; room to negotiate"
@@ -394,7 +345,6 @@
    {
     "label": "List at $459,900",
     "list_price": 459900,
-    "expected_sale": 460000,
     "time": "1–3 weeks",
     "seller_credit": 5000,
     "note": "Aims for competing offers; depends on them materializing"

@@ -14,7 +14,7 @@ import os
 import re
 import statistics
 import sys
-from datetime import date
+from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _shared import cma, finance, handoff, mls, profiles  # noqa: E402
@@ -181,6 +181,52 @@ def stay_rule(R, homes, x, median_adjusted, split_date):
     return {"gross": round((value + (x.get("seller_credit") or 0)) / 1000) * 1000, "ratio": ratio, "n": n}
 
 
+ASSUMED_SALE_TO_LIST = 0.97  # without an export or market.sale_to_list: a balanced market, after seller-paid costs
+EXPECTED_STEP = 500
+
+
+def fill_expected_sales(R, strategies, stats, stay, competing):
+    """Results_v4 case 02: each option's expected sale by one rule, so two runs agree: its list price times the recent
+    sale-to-original-list ratio (net of seller-paid costs: stats.py's, else `market.sale_to_list`, else 97% assumed),
+    plus its own seller credit (the net sheet takes it off), to the nearest $500. Then capped: never above the list
+    price (except the competing-offer option, the last), never above the supported range, and a higher list price
+    never expects less than a lower one. An expected_sale in report.json is the agent's figure and is kept. A reprice's
+    Stay has its own rule (stay_rule). Fills the strategies in place; returns the basis for the report's note."""
+    m = R.get("market") or {}
+    if stats.get("sale_to_original_list_recent"):
+        ratio, source = stats["sale_to_original_list_recent"], "export"
+    elif isinstance(m.get("sale_to_list"), (int, float)) and 0.5 < m["sale_to_list"] <= 1.2:
+        ratio, source = m["sale_to_list"], "report"
+    else:
+        ratio, source = ASSUMED_SALE_TO_LIST, "assumed"
+    high, last = R["recommendation"]["high"], len(strategies) - 1
+    filled = [i for i, x in enumerate(strategies) if i != stay and x.get("expected_sale") is None]
+    agent = [i for i, x in enumerate(strategies) if i != stay and i not in filled]
+    capped = False
+    for i in filled:
+        x = strategies[i]
+        v = round((x["list_price"] * ratio + (x.get("seller_credit") or 0)) / EXPECTED_STEP) * EXPECTED_STEP
+        cap = min(high, x["list_price"]) if not (competing and i == last) else high
+        capped |= v > cap
+        x["expected_sale"], x["expected_sale_source"] = min(v, cap), "rule"
+    # An option above the recommended price sells near the middle anyway (method.md, the top of the range): it expects
+    # the recommended option's sale, and its price costs time and holding costs, not price
+    ri = (R.get("pricing") or {}).get("recommended_index", 1)
+    top = [i for i in filled if i != ri and strategies[i]["list_price"] > strategies[ri]["list_price"]]
+    for i in top:
+        strategies[i]["expected_sale"] = min(strategies[i]["expected_sale"], strategies[ri]["expected_sale"])
+    floor = 0  # by list price, low to high: a higher price expects at least what a lower one does
+    for i in sorted((i for i in range(len(strategies)) if i != stay), key=lambda i: strategies[i]["list_price"]):
+        x = strategies[i]
+        if i in filled and x["expected_sale"] < floor:
+            x["expected_sale"] = min(floor, x["list_price"])
+        floor = max(floor, x["expected_sale"])
+    for i in agent:
+        strategies[i]["expected_sale_source"] = "agent"
+    return {"ratio": ratio, "ratio_display": f"{ratio * 100:.1f}%", "source": source, "filled": filled, "agent": agent,
+            "capped": capped, "top": top}
+
+
 def _require(R, *paths):
     for path in paths:
         node = R
@@ -239,20 +285,27 @@ def net_sheet(R, market, L):
     has_hoa = bool(costs.get("hoa", s.get("hoa", False)))
     title_fees = costs.get("title_fees")  # the title company's quote: a total or {name: amount}
     annual_tax, bill_paid = costs.get("annual_tax"), costs.get("current_tax_bill_paid")
-    cols = []
-    for x in strategies:
-        closing = _date(x.get("closing_date") or costs.get("expected_closing_date"), "expected_closing_date")
+    as_of = _date(R.get("as_of"), "as_of") or date.today()
+    closings = [option_closing(R, x, as_of) for x in strategies]  # Results_v4: each option's own closing
+    cols, next_year = [], []
+    for x, closing in zip(strategies, closings):
+        later = bool(closing and closing.year > as_of.year)
         n = finance.seller_net(x["expected_sale"], market, credit=x.get("seller_credit", 0) or 0, payoff=payoff,
                                listing_fee_pct=lf, buyer_broker_fee_pct=bf, has_hoa=has_hoa,
                                other_costs=sum(o["amount"] for o in others), title_fees=title_fees,
-                               annual_tax=annual_tax, closing=closing, bill_paid=bill_paid, prop_type=s.get("property_type"))
+                               annual_tax=annual_tax, closing=closing, bill_paid=None if later else bill_paid,
+                               prop_type=s.get("property_type"))
+        extra = prior_year_bill(annual_tax, market, bill_paid, as_of) if later else 0
+        if extra:  # a closing next year: this year's whole bill (assumed unpaid), plus next year's share to closing
+            _add_to_line(n, "tax_proration", extra)
+            next_year.append(x)
         cols.append(n)
     # CMA-254: one rule for a closing after this year's bill is out: unless the agent says the seller paid it, the bill
     # is assumed unpaid, so the seller's share (Jan 1 to closing) is charged, and the line says it's assumed
     bill_month = market.get("property_tax.bill_month") or TAX_BILL_MONTH
-    closings = [_date(x.get("closing_date") or costs.get("expected_closing_date"), "expected_closing_date") for x in strategies]
-    tax_assumed = bool(annual_tax) and bill_paid is None and any(  # past the due date the bill is assumed paid instead
-        c and c.month >= bill_month and not finance.tax_bill_assumed_paid(c, market, bill_paid) for c in closings)
+    tax_assumed = bool(annual_tax) and bill_paid is None and (bool(next_year) or any(  # past the due date: assumed paid
+        c and c.year == as_of.year and c.month >= bill_month and not finance.tax_bill_assumed_paid(c, market, bill_paid)
+        for c in closings))
     first = cols[0]
     assumed_keys = {a["key"] for a in first["assumed"]}
 
@@ -315,8 +368,8 @@ def net_sheet(R, market, L):
                        tax=L("net_holding_tax_in" if has_tax else "net_holding_tax_out"))
                      + (" " + L("net_holding_left_out", items=" and ".join(left_out)) if left_out else ""))
     standard_terms = bool(assumed_keys & {"listing_fee", "buyer_broker_fee"})
+    total_pct = sum(l["rate"] or 0 for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
     if standard_terms:
-        total_pct = sum(l["rate"] for l in first["lines"] if l["key"] in ("listing_fee", "buyer_broker_fee"))
         notes.append(L("net_placeholder_note", pct=pct_text(total_pct)))
         key_notes.append(notes[-1])
     if any(l["key"] in ("listing_fee", "buyer_broker_fee") for c in cols for l in c["lines"]):
@@ -326,6 +379,13 @@ def net_sheet(R, market, L):
         notes.append(L("net_tax_note"))
     if tax_assumed and has_tax:
         notes.append(L("net_tax_assumed_note"))
+    if next_year and has_tax:
+        notes.append(L("net_tax_next_year_note" + ("" if len(next_year) == 1 else "_many"),
+                       options=_and([money(x["list_price"]) for x in next_year]), year=str(as_of.year),
+                       next=str(as_of.year + 1)))
+    if has_tax and len({c for c in closings if c}) > 1:
+        notes.append(L("net_tax_closings_note", dates="; ".join(
+            f"{money(x['list_price'])}: {cma.long_date(c.isoformat())}" for x, c in zip(strategies, closings) if c)))
     fees = market.get("closing_costs.seller_title_fees")
     if "title_fees" in assumed_keys and market.source("closing_costs.seller_title_fees") != "estimate":
         items = ", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())
@@ -343,8 +403,48 @@ def net_sheet(R, market, L):
             "incomplete": bool({"listing fee", "buyer's agent fee"} & set(first["missing"])),
             "payoff": payoff, "payoff_estimated": payoff_est, "cash_at_closing": cash,
             "holding_rate_assumed": bool(holding and payoff and not costs.get("mortgage_rate")), "holding_rate": loan_rate, "no_mortgage": payoff == 0, "standard_terms": standard_terms, "has_tax": has_tax,
+            # Results_v4: beside every net when the brokerage is assumed ("5% Brokerage Assumed")
+            "assumed_brokerage": L("th_assumed_sub", pct=pct_text(total_pct)) if standard_terms else None,
+            "assumed_brokerage_pct": pct_text(total_pct) if standard_terms else None,
             "tax_assumed": tax_assumed and has_tax,
+            "closings": [c.isoformat() if c else None for c in closings],
             "warnings": list(dict.fromkeys(w for c in cols for w in c["warnings"]))}
+
+
+def option_closing(R, x, as_of):
+    """Results_v4 case 02: an option's closing date, for its tax proration. Its own `closing_date`; else the later of
+    costs.expected_closing_date (the seller's goal) and when its time to contract plus a month to close puts it (a
+    slower price can't close by the goal); None with neither."""
+    own = _date(x.get("closing_date"), "closing_date")
+    if own:
+        return own
+    target = _date((R.get("costs") or {}).get("expected_closing_date"), "expected_closing_date")
+    months = x.get("months_to_contract") if x.get("months_to_contract") is not None else finance.months_in(x.get("time"))
+    est = as_of + timedelta(days=round((months + CONTRACT_TO_CLOSE_MONTHS) * 30.44)) if months is not None else None
+    return max(d for d in (target, est) if d) if target or est else None
+
+
+def prior_year_bill(annual_tax, market, bill_paid, as_of):
+    """This year's whole tax bill, owed at a closing early next year when it's still unpaid: taxes paid in arrears,
+    the agent hasn't said it's paid, and the bill isn't due before the year ends (Florida's run to March). 0 otherwise.
+    At the early-payment discount, like the proration."""
+    if not annual_tax or bill_paid or market.get("property_tax.paid") == "advance":
+        return 0
+    if finance.tax_due_date(date(as_of.year, 12, 31), market) is not None:  # due within the year: paid by then
+        return 0
+    return round(annual_tax * (1 - (market.get("property_tax.early_payment_discount") or 0)))
+
+
+def _add_to_line(n, key, extra):
+    """Add `extra` to the seller_net result's `key` line and its totals."""
+    for line in n["lines"]:
+        if line["key"] == key:
+            line["amount"] += extra
+    n["items"] = [(l["label"], l["amount"]) for l in n["lines"]]
+    n["total_costs"] += extra
+    n["net_before_payoff"] -= extra
+    if n["net"] is not None:
+        n["net"] -= extra
 
 
 def state_hint(R, market, L, ri, net):
@@ -439,8 +539,11 @@ def options_summary(C, L):
     co = C.get("competing_offer_caveat")  # CMA-319: the competing-offer option nets more only if those offers show up
     if co is not None:
         note += " " + L("sum_options_note_competing", price=strats[co]["list_price_display"])
+    if net["standard_terms"]:  # Results_v4: the assumed brokerage is named beside the nets, not only on the tile
+        note += " " + L("sum_options_note_assumed", pct=net["assumed_brokerage_pct"])
     # CMA-317: "cash" names the net sheet's cash-at-closing row; after holding costs the column is a net
-    return {"net_header": L("th_est_cash" if cash and not held else "th_est_net"), "note": note}
+    return {"net_header": L("th_est_cash" if cash and not held else "th_est_net"), "note": note,
+            "net_header_sub": net["assumed_brokerage"]}
 
 
 # --- placeholders ----------------------------------------------------------------
@@ -456,23 +559,261 @@ def months_text(months):
 SUPPLY_WORDS = re.compile(r"\bof (?:\w+ )?(?:supply|inventory)\b", re.I)
 
 
-def typed_supply_warnings(R, months, path="$"):
-    """CMA-320: wording that states months of supply ("about a month and a half of supply") without
-    {months_supply}: a figure typed by hand, not stats.py's."""
-    out = []
+def _strings(R, path=""):
+    """(path, text) for every string in the report's wording (labels and the export's column map left out)."""
     if isinstance(R, str):
-        if SUPPLY_WORDS.search(R) and "{months_supply}" not in R:
-            out.append(f"{path} states a supply figure in its own words. Write {{months_supply}} (stats.py's recent pace, "
-                       f"{months_text(months)}), never a typed figure." if months is not None else
-                       f"{path} states a supply figure, but there's no export to compute months of supply from: leave it out.")
+        yield path, R
     elif isinstance(R, list):
         for i, v in enumerate(R):
-            out += typed_supply_warnings(v, months, f"{path}[{i}]")
+            yield from _strings(v, f"{path}[{i}]")
     elif isinstance(R, dict):
         for key, v in R.items():
             if key not in ("labels", "export_columns"):
-                out += typed_supply_warnings(v, months, f"{path}.{key}")
+                yield from _strings(v, f"{path}.{key}" if path else key)
+
+
+def typed_supply_errors(R, months):
+    """CMA-320: wording that states months of supply ("about a month and a half of supply") without
+    {months_supply}: a figure typed by hand, not stats.py's. Results_v4: it stops the render, like any typed stat."""
+    out = []
+    for path, text in _strings(R):
+        if SUPPLY_WORDS.search(text) and re.search(r"\bmonths?\b", text, re.I) and "{months_supply}" not in text:
+            out.append(f"{path}: states months of supply in its own words → write {{months_supply}} (stats.py's recent "
+                       f"pace, {months_text(months)})." if months is not None else
+                       f"{path}: states months of supply, but there's no export to compute it from → leave it out.")
     return out
+
+
+# --- market numbers: typed stats come from the export ------------------------------
+
+# (placeholder stem, period_stats key, how it prints): {sale_to_list_recent} and the rest, from stats.py's periods
+MARKET_METRICS = (("sold", "n", lambda v: f"{v:,.0f}"),
+                  ("median_price", "median_price", lambda v: money(v)),
+                  ("sale_to_list", "median_sale_to_original_list", lambda v: f"{v * 100:.1f}%"),
+                  ("days", "median_days_on_market", lambda v: f"{v:.0f}"),
+                  ("credit_share", "share_with_seller_paid_costs", lambda v: f"{v * 100:.0f}%"),
+                  ("credit_amount", "median_seller_paid_when_paid", lambda v: money(v)))
+METRIC_WORDS = {"sold": "number of sales", "median_price": "typical sale price",
+                "sale_to_list": "sale-to-original-list ratio (after seller-paid costs)", "days": "typical days to contract",
+                "credit_share": "share of sales with seller-paid costs", "credit_amount": "typical seller-paid amount"}
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+          "November", "December")
+
+
+def split_words(window):
+    """'July', or 'July 15' for a split mid-month: where the recent period starts."""
+    d = date.fromisoformat(window["split_date"])
+    return MONTHS[d.month - 1] + ("" if d.day == 1 else f" {d.day}")
+
+
+def market_numbers(st):
+    """({placeholder: display}, {metric: {period: value}}) for the earlier and recent periods, from stats.py's
+    market_stats; ({}, {}) without an export."""
+    if not st:
+        return {}, {}
+    values, raw = {}, {}
+    # an export with no seller-paid column reads as no credits at all: then the credit numbers are unknown, not 0%
+    no_credits = not (st["sold_all"].get("share_with_seller_paid_costs") or 0)
+    for stem, key, show in MARKET_METRICS:
+        if no_credits and stem in ("credit_share", "credit_amount"):
+            continue
+        for period, block in (("early", st["sold_early"]), ("recent", st["sold_recent"])):
+            v = block.get(key)
+            if v is None:
+                continue
+            values[f"{stem}_{period}"] = show(v)
+            raw.setdefault(stem, {})[period] = v * 100 if stem in ("sale_to_list", "credit_share") else v
+    values["split_month"] = split_words(st["window"])
+    values["window_start_month"] = MONTHS[date.fromisoformat(st["window"]["first_close"]).month - 1]
+    return values, raw
+
+
+def stat_metric(label):
+    """Which market number a typed stat's label names ('Sale Price vs. Original Asking Price' → sale_to_list), or
+    None (a mortgage rate, the median adjusted value: not a market-period number)."""
+    t = str(label).lower()
+    if re.search(r"adjust|\bcomps?\b|per sq|/sq|square f|supply|rate\b", t):
+        return None
+    if re.search(r"\bvs\.?\b|asking|to[- ]list|original", t) and re.search(r"sale|sold|price", t):
+        return "sale_to_list"
+    if re.search(r"sales with|share|percent|% of", t) and re.search(r"seller|credit|concession|help", t):
+        return "credit_share"
+    if re.search(r"seller|credit|concession|help", t):
+        return "credit_amount"
+    if re.search(r"\bdays?\b|time to|under contract", t):
+        return "days"
+    if re.search(r"price", t):
+        return "median_price"
+    if re.search(r"homes sold|\bsales\b|\bsold\b", t):
+        return "sold"
+    return None
+
+
+_NUM = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
+
+
+def _agrees(metric, typed, value):
+    """Whether a typed figure ('95.2%', '$6,500', '28 days') is the export's value as it would be rounded."""
+    m = _NUM.search(str(typed))
+    if not m:
+        return True  # words only ("Up"): nothing typed to check
+    n = float(m.group(0).replace(",", ""))
+    if metric in ("sale_to_list", "credit_share"):
+        return abs(n - value) <= (0.051 if "." in m.group(0) else 0.51)
+    if metric == "days":
+        return abs(n - value) <= 0.51
+    if metric == "sold":
+        return abs(n - value) < 0.01
+    if metric == "credit_amount":
+        return abs(n - value) <= max(250, 0.025 * value)
+    return abs(n - value) <= max(1000, 0.005 * value)  # median_price
+
+
+def typed_stat_errors(R, deck_content, raw, values):
+    """Results_v4: a market number typed into key_stats, market.rows or deck.market_stats must be the export's own
+    (to its rounding); one that disagrees stops the render, naming the placeholder that fills it. Values already
+    written as placeholders agree by construction."""
+    if not raw:
+        return []
+    out = []
+
+    def check(path, label, typed, periods):
+        metric = stat_metric(label)
+        if not metric or metric not in raw:
+            return
+        typed = cma.fill(str(typed), values)
+        got = {p: raw[metric][p] for p in periods if p in raw[metric]}
+        if not got or any(_agrees(metric, typed, v) for v in got.values()):
+            return
+        p = "recent" if "recent" in got else next(iter(got))
+        out.append(f'{path}: "{typed}" isn\'t the export\'s {p} {METRIC_WORDS[metric]} ({values[f"{metric}_{p}"]}) → '
+                   f"write {{{metric}_{p}}}, or leave the stat out and the report fills it from the export.")
+
+    for i, st in enumerate((R.get("summary_page") or {}).get("key_stats") or []):
+        if isinstance(st, list) and len(st) >= 2:
+            check(f"summary_page.key_stats[{i}][0]", st[1], st[0], ("recent", "early"))
+    m = R.get("market") or {}
+    two = len(m.get("columns") or []) == 3
+    for i, r in enumerate(m.get("rows") or []):
+        if isinstance(r, list) and len(r) >= 2:
+            for j, cell in enumerate(r[1:3], start=1):
+                check(f"market.rows[{i}][{j}]", r[0], cell, (("early", "recent")[j - 1],) if two else ("early", "recent"))
+    for i, st in enumerate((deck_content or {}).get("market_stats") or []):
+        if isinstance(st, list) and len(st) >= 3:
+            for j, period in ((1, "early"), (2, "recent")):
+                check(f"deck.market_stats[{i}][{j}]", st[0], st[j], (period,))
+    return out
+
+
+MONTH_PHRASE = re.compile(r"\b(before|since|after)\s+(?:early\s+|late\s+|mid-?\s*)?(" + "|".join(MONTHS) + r")\b(?!\s+\d)")
+MONTH_FIELDS = ("comps", "market", "means", "summary_page.why", "summary_page.key_stats", "scatter")
+SALES_WORDS = re.compile(r"\b(sales?|sold|homes|prices|market|quarter|adjust\w*|closed)\b", re.I)
+
+
+def split_month_errors(R, values):
+    """Results_v4 case 02: "sales from before August" when the recent period starts in July. A market or comp sentence
+    that puts a period boundary at a month (a sales word within a few words of "before/since/after <Month>") must use
+    the split's month ({split_month}) or the window's first month. "The home has sat since January" isn't one."""
+    if "split_month" not in values:
+        return []
+    allowed = {values["split_month"].split()[0], values["window_start_month"]}
+    out = []
+    for key in MONTH_FIELDS:
+        node = R
+        for part in key.split("."):
+            node = node.get(part) if isinstance(node, dict) else None
+        for path, text in _strings(node, key):
+            for m in MONTH_PHRASE.finditer(text):
+                near = " ".join(text[:m.start()].split()[-6:] + text[m.end():].split()[:5])
+                if m.group(2) not in allowed and SALES_WORDS.search(near):
+                    out.append(f'{path}: says "{m.group(0)}", but the recent period starts {values["split_month"]} → '
+                               f'write "{m.group(1)} {{split_month}}" (filled as "{values["split_month"]}").')
+    return out
+
+
+GENERIC_WORDS = {"home", "house", "list", "listing", "launch", "price", "ready", "plan", "step", "steps", "your", "with",
+                 "from", "that", "this", "before", "after", "week", "weeks", "make", "keep", "time", "early", "first"}
+
+
+def _words(text):
+    return {w for w in re.findall(r"[a-z]+", re.sub(r"<[^>]+>", " ", str(text).lower())) if len(w) >= 4} - GENERIC_WORDS
+
+
+def _same_word(a, b):
+    short, long_ = sorted((a, b), key=len)
+    return long_.startswith(short) or a[:5] == b[:5]
+
+
+def launch_plan_errors(R, deck_content):
+    """Results_v4 case 02: a launch-plan card the agent never gave ("Easy Showings: lockbox access"). Each card's
+    heading must name one of the report's Before We List steps (prep.items' bold leads, or page 1's first steps)."""
+    plan = (deck_content or {}).get("launch_plan") or []
+    leads = [re.search(r"<strong>(.*?)</strong>", str(i)) for i in (R.get("prep") or {}).get("items") or []]
+    sources = [_words(m.group(1)) for m in leads if m]
+    sources += [_words(s[0]) for s in (R.get("summary_page") or {}).get("first_steps") or [] if isinstance(s, list) and s]
+    if not plan or not sources:
+        return []
+    out = []
+    for i, item in enumerate(plan):
+        heading = item[0] if isinstance(item, list) and item else ""
+        words = _words(heading)
+        if words and not any(_same_word(a, b) for src in sources for a in words for b in src):
+            out.append(f'deck.launch_plan[{i}]: "{heading}" isn\'t one of the report\'s Before We List steps → use a step '
+                       "from prep.items (its bold lead), or add it there first if the agent asked for it.")
+    return out
+
+
+# --- listing history ----------------------------------------------------------------
+
+HISTORY_STATUSES = {"expired": "expired", "withdrawn": "withdrawn", "canceled": "canceled", "cancelled": "canceled"}
+
+
+def _when(value):
+    """'March 2017' from 2017-03-15 or 2017-03, '2017' from 2017; None when there's none."""
+    v = str(value or "").strip()
+    m = re.match(r"^(\d{4})(?:-(\d{1,2}))?", v)
+    if not m:
+        return None
+    return f"{MONTHS[int(m.group(2)) - 1]} {m.group(1)}" if m.group(2) and 1 <= int(m.group(2)) <= 12 else m.group(1)
+
+
+def listing_history(R, homes, relist, L):
+    """Results_v4 case 02: the home's own listings that ended unsold (expired, withdrawn, canceled), however long ago,
+    each with its price, first price and date, for page 1, the deck and the reply. report.json's `listing_history`
+    (from the property report), else the export's own rows, plus a relist's failed listing. Returns (events, errors)."""
+    given, errors, events = R.get("listing_history"), [], []
+    if given is not None and not isinstance(given, list):
+        return [], ["listing_history: should be a list of {status, price, original_price, ended, days_on_market} → "
+                    "one item per listing that ended unsold."]
+    for i, e in enumerate(given or []):
+        status = HISTORY_STATUSES.get(str((e or {}).get("status", "")).lower()) if isinstance(e, dict) else None
+        if not status or not isinstance(e.get("price"), (int, float)):
+            errors.append(f"listing_history[{i}]: needs status (expired, withdrawn or canceled) and price as a number → "
+                          "take them from the property report's history.")
+            continue
+        events.append({"status": status, "price": e["price"], "original_price": e.get("original_price"),
+                       "when": _when(e.get("ended") or e.get("listed")), "days": e.get("days_on_market")})
+    if given is None:
+        address = R["subject"].get("mls_address", R["subject"]["address"])
+        for h in homes:
+            if h["status"] in FAILED and h.get("current_price") and mls.same_address(h["address"], address):
+                d = h.get("close_date") or h.get("contract_date")
+                events.append({"status": h["status"].lower(), "price": h["current_price"],
+                               "original_price": h.get("original_list_price"), "when": _when(d.isoformat() if d else None),
+                               "days": h.get("days_on_market")})
+    if relist and str(relist.get("status") or "expired").lower() in HISTORY_STATUSES \
+            and not any(e["price"] == relist["failed_price"] for e in events):
+        events.append({"status": HISTORY_STATUSES[str(relist.get("status") or "expired").lower()],
+                       "price": relist["failed_price"], "original_price": relist.get("original_price"), "when": None,
+                       "days": relist.get("days_on_market")})
+    for e in events:
+        first = e["original_price"] if isinstance(e["original_price"], (int, float)) and e["original_price"] > e["price"] else None
+        e["text"] = (L("hist_" + e["status"]) + (L("hist_in", when=e["when"]) if e["when"] else "")
+                     + (L("hist_after", days=f'{e["days"]:g}') if isinstance(e["days"], (int, float)) else "")
+                     + L("hist_at", price=money(e["price"])) + (L("hist_first", price=money(first)) if first else "")
+                     + ("" if e["when"] else L("hist_undated")) + ".")
+        e["price_display"], e["original_price_display"] = money(e["price"]), money(first) if first else None
+    return events, errors
 
 
 def placeholder_values(R, median_display, recommended_net, spread, spread_about, pay, trend, L, relist=None, reprice=None,
@@ -526,17 +867,86 @@ def placeholder_warnings(R, values):
 DOLLARS = re.compile(r"\$\s?(\d[\d,]*)(?:\.\d+)?\s*([kK]\b)?")
 
 
-def driver_amount_warnings(R):
-    """CMA-284: a dollar figure in a deck value driver ("worth about $25,000") must be one of the report's comp
-    adjustments (to within 2% or $500), or nothing in the report supports it."""
+def deck_content(R):
+    """report.json's `deck` wording (an object, or a path to a JSON file), or None (render.py names a missing or
+    broken deck file)."""
     content = R.get("deck")
     if isinstance(content, str):
         try:
             with open(content, encoding="utf-8") as f:
                 content = json.load(f)
         except (OSError, ValueError):
-            return []  # render.py names a missing or broken deck file
-    if not isinstance(content, dict):
+            return None
+    return content if isinstance(content, dict) else None
+
+
+def expected_basis(basis, strategies, values, L):
+    """Results_v4: the sentence under the pricing table that says where each expected sale comes from, naming any
+    option whose figure is the agent's own."""
+    parts = []
+    if basis["filled"]:
+        key = {"export": "expected_basis_export", "report": "expected_basis_report"}.get(basis["source"], "expected_basis_assumed")
+        parts.append(L(key, ratio=basis["ratio_display"], since=values.get("split_month", ""))
+                     + (L("expected_basis_capped") if basis["capped"] else "") + ".")
+        if basis["top"]:  # a higher price buys time on the market, not a higher sale
+            parts.append(L("expected_basis_top", prices=_and([money(strategies[i]["list_price"]) for i in basis["top"]])))
+    if basis["agent"]:
+        prices = _and([money(strategies[i]["list_price"]) for i in basis["agent"]])
+        parts.append(L("expected_basis_agent" if len(basis["agent"]) == 1 else "expected_basis_agent_many", prices=prices))
+    return " ".join(parts)
+
+
+def page_one_stats(R, values, median_display, L, n, lo, hi):
+    """Page 1's three key stats: report.json's (placeholders filled), else from the export (the median adjusted value,
+    the recent sale-to-list ratio, days to contract now), else from the comps (CMA-261). Never typed figures."""
+    given = [list(x) for x in cma.fill((R.get("summary_page") or {}).get("key_stats") or [], values)][:3]
+    if "sale_to_list_recent" in values and "days_recent" in values:
+        auto = [[median_display, L("sum_stat_median", n=n)],
+                [values["sale_to_list_recent"], L("sum_stat_ratio", since=values["split_month"])],
+                [L("sum_stat_days_value", days=values["days_recent"]), L("sum_stat_days", since=values["split_month"])]]
+    else:
+        auto = [[median_display, L("sum_stat_median", n=n)], [f"{cma.k(lo)}–{cma.k(hi)}", L("sum_stat_span")],
+                [str(n), L("sum_stat_comps")]]
+    return given + [a for a in auto if a[1] not in {g[1] for g in given if len(g) > 1}][:3 - len(given)]
+
+
+MARKET_ROWS = ("sold", "median_price", "sale_to_list", "days", "credit_share", "credit_amount")
+
+
+def market_rows(R, numbers, window, L):
+    """The market table: report.json's `market.columns` and `rows` (placeholders filled) when given, else built from
+    the export's two periods (Results_v4: never typed). None without either."""
+    m = R.get("market") or {}
+    if m.get("rows"):
+        return {"columns": cma.fill(m.get("columns") or [], numbers), "rows": cma.fill(m["rows"], numbers)}
+    if not numbers or not window:
+        return None
+    rows = [[L("mk_" + stem), numbers.get(f"{stem}_early", "—"), numbers.get(f"{stem}_recent", "—")]
+            for stem in MARKET_ROWS if f"{stem}_recent" in numbers]
+    return {"columns": [""] + period_labels(window), "rows": rows}
+
+
+def period_labels(window):
+    """CMA-25: labels from the actual bounds. A split on the 1st reads as whole months ("April–June", "July–September");
+    a mid-month split shows the day, so no days are dropped ("April–July 14", "July 15–September")."""
+    split = date.fromisoformat(window["split_date"])
+    before = split - timedelta(days=1)
+    y = window["first_close"][:4] != window["last_close"][:4]  # across New Year: name the years
+    month = lambda iso: (lambda d: MONTHS[d.month - 1] + (f" {d.year}" if y else ""))(date.fromisoformat(iso))
+    first, last = month(window["first_close"]), month(window["last_close"])
+    if split.day == 1:
+        b, a = MONTHS[before.month - 1] + (f" {before.year}" if y else ""), MONTHS[split.month - 1] + (f" {split.year}" if y else "")
+    else:
+        b = f"{MONTHS[before.month - 1]} {before.day}" + (f", {before.year}" if y else "")
+        a = f"{MONTHS[split.month - 1]} {split.day}" + (f", {split.year}" if y else "")
+    return [f"{first}–{b}", f"{a}–{last}"]
+
+
+def driver_amount_warnings(R):
+    """CMA-284: a dollar figure in a deck value driver ("worth about $25,000") must be one of the report's comp
+    adjustments (to within 2% or $500), or nothing in the report supports it."""
+    content = deck_content(R)
+    if not content:
         return []
     amounts = [abs(a["amount"]) for c in R["comps"]["cards"] for a in c.get("adjustments") or []
                if isinstance(a, dict) and isinstance(a.get("amount"), (int, float)) and a["amount"]]
@@ -584,9 +994,12 @@ def compute(R, market, homes):
         if not isinstance(x.get("list_price"), (int, float)):
             raise ReportError("Every pricing strategy needs list_price as a number.")
     stay = check_reprice(R, strategies)
-    for i, x in enumerate(strategies):  # CMA-300: a reprice's Stay may leave expected_sale out; the rule fills it below
-        if not isinstance(x.get("expected_sale"), (int, float)) and not (i == stay and x.get("expected_sale") is None):
-            raise ReportError("Every pricing strategy needs expected_sale as a number.")
+    for i, x in enumerate(strategies):  # Results_v4: expected_sale is the script's unless the agent gave one
+        if x.get("expected_sale_source") in ("rule", "stay_rule"):  # filled by an earlier run on this same data
+            x.pop("expected_sale", None)
+        if x.get("expected_sale") is not None and not isinstance(x["expected_sale"], (int, float)):
+            raise ReportError(f"pricing.strategies[{i}].expected_sale: {x['expected_sale']!r} isn't a number → give the "
+                              "agent's figure as a plain number, or leave it out and compute.py fills it by the rule.")
     relist = check_relist(R, strategies, homes, stay)  # CMA-277
     ri = p.get("recommended_index", 1)
     if not 0 <= ri < len(strategies):
@@ -630,7 +1043,8 @@ def compute(R, market, homes):
         n_sold = st["sold_all"]["n"]
         max_dist = max((h["distance"] for h in others if h["status"] == "SOLD" and h.get("distance") is not None), default=None)
     else:
-        window, n_sold, max_dist = None, None, None
+        window, n_sold, max_dist, st = None, None, None, None
+    errors = cma.adjustment_kind_errors(R["comps"]["cards"])  # Results_v4: data the model wrote that's wrong stops the render
     # CMA-300: Stay at Current Price's expected sale by the one rule (method.md, A Reprice). Left out of report.json, it's
     # filled from the rule, so the first run never guesses it
     rule = stay_rule(R, homes, strategies[stay], median_adjusted, (window or {}).get("split_date")) if stay is not None else None
@@ -640,6 +1054,22 @@ def compute(R, market, homes):
             raise ReportError("Stay at Current Price needs expected_sale as a number: without an MLS export there are no sales "
                               "to apply the rule to, so apply it to the sales you were given (method.md, A Reprice).")
         strategies[stay]["expected_sale"] = rule["gross"]
+        strategies[stay]["expected_sale_source"] = "stay_rule"
+    if rec["low"] > rec["high"]:
+        raise ReportError("recommendation.low is above recommendation.high.")
+    # the last option is the competing-offer price: of three strategies, or of a reprice's Stay plus two or three cuts
+    # CMA-288: or of two, once a relist drops the top option: the last one when it's below the recommended one
+    competing = len(strategies) - 1 != ri and strategies[-1]["list_price"] < strategies[ri]["list_price"]
+    basis = fill_expected_sales(R, strategies, stats, stay, competing)  # Results_v4: the rule, not a typed guess
+    if ri in basis["filled"] and strategies[ri]["expected_sale"] < rec["low"]:
+        assume("expected_below_range", f"The recommended option's expected sale ({money(strategies[ri]['expected_sale'])}) is "
+               f"below the supported range ({money(rec['low'])} – {money(rec['high'])}): it's the list price times the "
+               f"recent {basis['ratio_display']} sale-to-original-list ratio, which includes overpriced listings. Say so in "
+               "the reply; if the agent expects more, their own figure goes in that option's expected_sale.")
+    if basis["source"] == "assumed" and basis["filled"]:
+        assume("expected_sale_ratio", f"Expected sales assume {basis['ratio_display']} of list after seller-paid costs "
+               "(no MLS export to measure it from). The recent sale-to-original-list ratio of the sales reviewed "
+               "(market.sale_to_list, a fraction) replaces it.")
 
     scope =cma.adjustment_scope_warning(market, (R.get("subject") or {}).get("county"), rec["list_price"])  # CMA-10
     if scope:
@@ -654,15 +1084,10 @@ def compute(R, market, homes):
                         f"{money(rec['low'])} – {money(rec['high'])}: move it inside, or widen the range and say why.")
     if strategies[ri]["list_price"] != rec["list_price"]:
         warn("list_mismatch", "The recommended strategy's list price doesn't match recommendation.list_price.")
-    # the last option is the competing-offer price: of three strategies, or of a reprice's Stay plus two or three cuts
-    # CMA-288: or of two, once a relist drops the top option: the last one when it's below the recommended one
-    competing = len(strategies) - 1 != ri and strategies[-1]["list_price"] < strategies[ri]["list_price"]
     for i, x in enumerate(strategies[:-1] if competing else strategies):  # CMA-20
         if x["expected_sale"] > x["list_price"]:  # only the competing-offer option (the last of three) may sell above list
             raise ReportError(f"pricing.strategies[{i}] expects to sell at {money(x['expected_sale'])}, above its "
                               f"{money(x['list_price'])} list price. Only the competing-offer option (the last) can.")
-    if rec["low"] > rec["high"]:
-        raise ReportError("recommendation.low is above recommendation.high.")
     for x in strategies:
         if x["expected_sale"] > rec["high"]:
             warn("expected_above_range", f"The expected sale {money(x['expected_sale'])} is above the supported range: "
@@ -677,6 +1102,8 @@ def compute(R, market, homes):
                      f"below the {money(lo['list_price'])} option's {money(lo['expected_sale'])}. A higher list price "
                      f"sells at least as high, only slower: give it at least {money(lo['expected_sale'])} (its longer time "
                      "and holding costs already make it net less).")
+    for key, text in cma.range_warnings(rec, [c["adjusted"] for c in R["comps"]["cards"]], market):  # CMA-296, as buyer-cma
+        warn(key, text)
 
     net = net_sheet(R, market, L)
     warn("title_quote", *net["warnings"])  # CORE-9: a title quote below the published rate
@@ -797,6 +1224,7 @@ def compute(R, market, homes):
         row = {"label": x.get("label") or L("strategy_label", price=money(x["list_price"])),
                "list_price": x["list_price"], "list_price_display": money(x["list_price"]),
                "expected_sale": x["expected_sale"], "expected_sale_display": money(x["expected_sale"]),
+               "expected_sale_source": x.get("expected_sale_source"),  # rule, agent, or a reprice's stay_rule
                "time": x.get("time", ""), "seller_credit": x.get("seller_credit", 0) or 0,
                "seller_credit_display": money(x.get("seller_credit", 0) or 0), "note": x.get("note", ""),
                "net": net["totals"][i], "net_display": money(net["totals"][i]), "recommended": i == ri,
@@ -873,9 +1301,23 @@ def compute(R, market, homes):
     # CMA-298: the recommended net, like every option compare, after holding costs (page 1, the reply and the deck agree)
     values = placeholder_values(R, median_display, strat_out[ri]["net_after_holding_display"], money(max(nets) - min(nets)),
                                 about(max(nets) - min(nets)), pay, trend, L, relist, reprice_out, stats.get("months_supply"))
+    numbers, raw = market_numbers(st)  # Results_v4: every market-period number, as {sale_to_list_recent} and the rest
+    values.update(numbers)
     warn("unfilled_placeholder", *placeholder_warnings(R, values))
-    warn("months_supply_typed", *typed_supply_warnings(R, stats.get("months_supply")))  # CMA-320
     warn("driver_amount", *driver_amount_warnings(R))  # CMA-284
+    # Results_v4: wrong data the model wrote stops the render, every problem at once (field: problem → fix)
+    content = deck_content(R)
+    history, history_errors = listing_history(R, homes, relist, L)
+    errors += (typed_supply_errors(R, stats.get("months_supply")) + typed_stat_errors(R, content, raw, values)  # CMA-320
+               + split_month_errors(R, values) + launch_plan_errors(R, content) + history_errors)
+    if errors:
+        raise ReportError(f"report.json has {len(errors)} thing{'s' if len(errors) > 1 else ''} to fix before the "
+                          "files are built:\n" + "\n".join("- " + e for e in errors))
+    expected_rec = strategies[ri]["expected_sale"]
+    expected_note = expected_basis(basis, strategies, values, L)
+    key_stats = page_one_stats(R, values, median_display, L, len(R["comps"]["cards"]),
+                               min(c["adjusted"] for c in R["comps"]["cards"]), max(c["adjusted"] for c in R["comps"]["cards"]))
+    market_table = market_rows(R, numbers, window, L)
     # CMA-325: the chat template's date written out ("September 26, 2026"), never the ISO form
     data_source = {"mls": market.mls, "as_of": as_of, "as_of_display": cma.long_date(as_of), "export": bool(homes)}
     # CMA-279: an export read with the MLS's own built-in columns shows which MLS it is: "assumed" is noise then
@@ -893,7 +1335,14 @@ def compute(R, market, homes):
         "recommendation": {"list_price": rec["list_price"], "list_price_display": money(rec["list_price"]),
                            "low": rec["low"], "high": rec["high"],
                            "range_display": f"{money(rec['low'])} – {money(rec['high'])}",
-                           "expected_sale": cma.fill((R.get("summary_page") or {}).get("expected_sale", ""), values)},
+                           # Results_v4: from the recommended option's number, never a typed phrase
+                           "expected_sale": L("sum_expected_value", amount=money(expected_rec)),
+                           "expected_sale_value": expected_rec},
+        "expected_sale_basis": {**basis, "note": expected_note},
+        "listing_history": history,
+        "key_stats": key_stats,
+        "market_table": market_table,
+        "market_numbers": numbers,
         "median_adjusted": median_adjusted, "median_adjusted_display": median_display,
         "adjusted_min": min(c["adjusted"] for c in R["comps"]["cards"]),
         "adjusted_max": max(c["adjusted"] for c in R["comps"]["cards"]),
@@ -915,7 +1364,8 @@ def compute(R, market, homes):
         "trend": trend,
         "placeholders": values,
         # the chat template's wording, with every {placeholder} filled as the PDF fills it
-        "summary_page": cma.fill(R.get("summary_page") or {}, values),
+        "summary_page": {**cma.fill(R.get("summary_page") or {}, values), "key_stats": key_stats,
+                         "expected_sale": L("sum_expected_value", amount=money(expected_rec))},
         "recommendation_paragraph": cma.fill(rec.get("paragraph", ""), values),
         "window": window, "n_sold": n_sold, "max_distance": max_dist,
         "handoff": h,

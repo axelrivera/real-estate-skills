@@ -21,10 +21,10 @@ const K = D.colors;
 // brand_ink (4.5:1 on white) carries large brand text and fills behind white text; brand_strong (7:1) carries small
 // brand text, also on the tints; mark (3:1) is chart marks and accent bars; brand_deep (10:1) is the dark slides, with
 // on_dark text; on_ink is secondary text on brand_ink fills (deck.py contrast_roles). The tints are brand_callout
-// (cards), brand_rule (lines, stronger panels) and brand_panel (table banding). The subject home and the reference
-// lines are black (text), never a color of their own.
+// (cards, the scatter's range band) and brand_rule (lines, table rules, stronger panels); tables have no fills. The
+// subject home and the reference lines are black (text), never a color of their own; the grays are true grays.
 const BRAND = K.brand_ink, MARK = K.mark, ON = K.on_brand, DEEP = K.brand_deep, STRONG = K.brand_strong, INK = K.text,
-  MUTED = K.muted, TINT = K.brand_callout, LINE = K.brand_rule, PANEL = K.brand_panel, GRAY = K.grey, WHITE = K.bg,
+  MUTED = K.muted, TINT = K.brand_callout, LINE = K.brand_rule, WHITE = K.bg,
   ON_DARK = K.on_dark, ON_INK = K.on_ink;
 const FONT = 'Arial';
 const fmt = (s, v) => s.replace(/\{(\w+)\}/g, (m, key) => (key in v ? v[key] : m));
@@ -127,7 +127,13 @@ async function icon(name, color, size = 256) {
     const s = content('recommendation'); title(s, T.deck_rec_title);
     s.addText(T.deck_rec_label, { x: M, y: 1.35, w: 4.6, h: 0.35, fontFace: FONT, fontSize: 14, color: MUTED, margin: 0, isTextBox: true });
     tx(s, D.rec.list_display, { x: M, y: 1.7, w: 4.8, h: 1.2, size: 64, min: 44, bold: true, color: BRAND });
-    tx(s, C.recommendation_why, { x: M, y: 3.1, w: 4.6, h: 1.4, size: 15, min: 12, lines: 5, color: INK, valign: 'top', what: 'deck.recommendation_why' });
+    const hist = D.history;  // Results_v4 case 02: the home's listings that ended unsold, with dates and first prices
+    tx(s, C.recommendation_why, { x: M, y: 3.1, w: 4.6, h: hist ? 1.0 : 1.4, size: 15, min: 12, lines: hist ? 3 : 5, color: INK, valign: 'top', what: 'deck.recommendation_why' });
+    if (hist) {
+      const lead = T.deck_history + ': ', hs = fit(lead + hist, 4.6, 0.62, { size: 11, min: 9, lines: 3, what: 'the listing history (listing_history)' });
+      s.addText([{ text: lead, options: { bold: true, color: STRONG } }, { text: hist, options: { color: MUTED } }],
+        { x: M, y: 4.2, w: 4.6, h: 0.62, fontFace: FONT, fontSize: hs, margin: 0, valign: 'top', isTextBox: true });
+    }
     const cards = [[T.deck_range_card, D.rec.range_display, T.deck_range_sub], [T.deck_expected_card, D.expected_sale, T.deck_expected_sub]];
     cards.forEach((c, i) => {
       const y = 1.35 + i * 1.6;
@@ -224,23 +230,49 @@ async function icon(name, color, size = 256) {
   // the slide; the takeaway is a narrow column beside it, marked by a thin accent bar.
   if (D.scatter) {
     const s = content('scatter'); title(s, T.deck_scatter_title);
-    const COLOR = { comp: MARK, sold: GRAY, active: GRAY, trend: MUTED, subject: INK };
-    const series = D.scatter.series.map(sr => [sr.name, sr.points]);
+    const SC = D.scatter;
+    // Brand shades and true grays only (deck.py style_scatter sets the markers): comps in the brand's mark, other sales a
+    // pale gray dot, listings a larger gray dot, the trend a dashed gray line, the subject a black diamond
+    const COLOR = { comp: MARK, sold: K.grey_pale, active: K.grey, trend: MUTED, subject: INK };
+    const series = SC.series.map(sr => [sr.name, sr.points]);
     const xs = [], cols = series.map(() => []);
     series.forEach(([, pts], si) => pts.forEach(p => { xs.push(p[0]); series.forEach((_, sj) => cols[sj].push(sj === si ? p[1] : null)); }));
     const data = [{ name: 'X', values: xs }].concat(series.map(([nm], i) => ({ name: nm, values: cols[i] })));
-    const allY = series.flatMap(([, p]) => p.map(q => q[1]));
+    // The plot area is placed by hand (fractions of the chart box), so the supported range band drawn behind the
+    // chart lines up with the price axis, as on the PDF's chart (Results_v4 case 02)
+    const ch = { x: M - 0.1, y: 0.95, w: 7.15, h: 3.75 }, lay = { x: 0.12, y: 0.03, w: 0.85, h: 0.8 };
+    const plot = { x: ch.x + lay.x * ch.w, y: ch.y + lay.y * ch.h, w: lay.w * ch.w, h: lay.h * ch.h };
+    const Y = v => plot.y + (SC.y_max - v) / (SC.y_max - SC.y_min) * plot.h;
+    const [bl, bh] = SC.band.map(v => Math.min(Math.max(v, SC.y_min), SC.y_max));
+    s.addShape(pres.shapes.RECTANGLE, { x: plot.x, y: Y(bh), w: plot.w, h: Y(bl) - Y(bh), fill: { color: TINT }, line: { color: TINT, width: 0 } });
+    s.addText(SC.band_label, { x: plot.x + 0.08, y: Y(bh) + 0.03, w: 3.0, h: 0.22, fontFace: FONT, fontSize: 9, bold: true, color: STRONG, margin: 0, isTextBox: true });
     s.addChart(pres.charts.SCATTER, data, {
-      x: M - 0.1, y: 0.95, w: 7.15, h: 4.3, lineSize: 0, lineDataSymbol: 'circle', lineDataSymbolSize: 7,
-      chartColors: D.scatter.series.map(sr => COLOR[sr.key]),
-      valAxisMinVal: Math.floor((Math.min(...allY) - 20000) / 50000) * 50000, valAxisMaxVal: Math.ceil((Math.max(...allY) + 20000) / 50000) * 50000,
-      catAxisMinVal: Math.floor((Math.min(...xs) - 50) / 200) * 200, catAxisMaxVal: Math.ceil((Math.max(...xs) + 50) / 200) * 200,
+      ...ch, layout: lay, lineSize: 0, lineDataSymbol: 'circle', lineDataSymbolSize: 7,
+      chartColors: SC.series.map(sr => COLOR[sr.key]),
+      valAxisMinVal: SC.y_min, valAxisMaxVal: SC.y_max, valAxisMajorUnit: SC.y_step,
+      catAxisMinVal: SC.x_min, catAxisMaxVal: SC.x_max,
       valAxisLabelFormatCode: '$#,##0,"K"', catAxisLabelFormatCode: '#,##0',
       valAxisLabelFontSize: 10, catAxisLabelFontSize: 10, valAxisLabelColor: MUTED, catAxisLabelColor: MUTED,
-      showValAxisTitle: true, valAxisTitle: D.scatter.axis_y, valAxisTitleFontSize: 10, valAxisTitleColor: MUTED,
-      showCatAxisTitle: true, catAxisTitle: D.scatter.axis_x, catAxisTitleFontSize: 10, catAxisTitleColor: MUTED,
+      showValAxisTitle: true, valAxisTitle: SC.axis_y, valAxisTitleFontSize: 10, valAxisTitleColor: MUTED,
+      showCatAxisTitle: true, catAxisTitle: SC.axis_x, catAxisTitleFontSize: 10, catAxisTitleColor: MUTED,
       valGridLine: { color: LINE, size: 0.5 }, catGridLine: { color: LINE, size: 0.5 },
-      showLegend: true, legendPos: 'b', legendFontSize: 10, legendColor: INK,
+      showLegend: false,  // drawn below as shapes, so each key is the marker's own shape in every viewer
+    });
+    // the legend: each entry the same shape as its marker (no renderer's default legend symbols)
+    const LG = { comp: ['oval', MARK, MARK], sold: ['oval', K.grey_pale, K.grey_pale], active: ['oval', K.grey, K.grey], subject: ['diamond', INK, INK] };
+    let lx = M + 0.1;
+    const ly = ch.y + ch.h + 0.12;
+    SC.series.forEach(sr => {
+      if (sr.key === 'trend') {
+        s.addShape(pres.shapes.LINE, { x: lx, y: ly + 0.08, w: 0.26, h: 0, line: { color: MUTED, width: 1.25, dashType: 'dash' } });
+      } else {
+        const [shape, fill, line] = LG[sr.key], d = shape === 'diamond' ? 0.16 : sr.key === 'sold' ? 0.1 : 0.13;
+        s.addShape(shape === 'diamond' ? pres.shapes.DIAMOND : pres.shapes.OVAL, { x: lx + (0.26 - d) / 2, y: ly + 0.08 - d / 2, w: d, h: d,
+          fill: { color: fill }, line: { color: line, width: 0.5 } });
+      }
+      const w = textW(sr.name, 9) + 0.05;
+      s.addText(sr.name, { x: lx + 0.32, y: ly, w, h: 0.18, fontFace: FONT, fontSize: 9, color: INK, margin: 0, valign: 'middle', isTextBox: true });
+      lx += 0.32 + w + 0.2;
     });
     const cx = 7.75, cw = W - M - cx;
     s.addShape(pres.shapes.RECTANGLE, { x: cx - 0.15, y: 1.25, w: 0.05, h: 3.3, fill: { color: MARK }, line: { color: MARK } });
@@ -388,9 +420,15 @@ async function icon(name, color, size = 256) {
   }
 
   // Appendix tables: row height and font follow the row count and the note under the table, so the note always
-  // starts below the last row (renderers grow a row to fit its text: keep the cell margins small).
+  // starts below the last row (renderers grow a row to fit its text: keep the cell margins small). Print-light, as
+  // the PDF (Results_v4 case 02): no filled header or banded rows; the header is brand type over a brand rule, rows
+  // are split by thin tinted rules, and totals are bold over a brand rule.
   const TY = 1.1, BOTTOM = H - 0.45;
-  const head = cells => cells.map((h, j) => ({ text: h, options: { bold: true, color: ON, fill: { color: BRAND }, align: j === 0 ? 'left' : 'right' } }));
+  const NONE = { type: 'none' }, rule = (color, pt) => ({ type: 'solid', pt, color });
+  const cell = (text, j, o = {}) => ({ text, options: { align: j === 0 ? 'left' : 'right', fill: { color: WHITE }, ...o } });
+  const head = cells => cells.map((h, j) => cell(h, j, { bold: true, color: STRONG, border: [NONE, NONE, rule(MARK, 1.5), NONE] }));
+  const body = (cells, total) => cells.map((v, j) => cell(v, j, { bold: total,
+    border: [total ? rule(MARK, 1.25) : NONE, NONE, rule(LINE, 0.5), NONE] }));
   const rest = (W - 2 * M - 3.6);
   const appendix = (s, table, cols, note, speaker) => {
     const nRows = table.length;
@@ -401,7 +439,7 @@ async function icon(name, color, size = 256) {
     const rowH = Math.max(0.24, Math.min(0.32, (BOTTOM - TY - 0.15 - noteH) / nRows));
     const fontSize = rowH >= 0.28 ? 11 : 10;
     s.addTable(table, { x: M, y: TY, w: W - 2 * M, colW: cols, rowH, fontFace: FONT, fontSize, color: INK, valign: 'middle',
-                        border: { type: 'solid', pt: 0.5, color: LINE }, margin: [0.02, 0.06, 0.02, 0.06] });
+                        margin: [0.02, 0.06, 0.02, 0.06] });
     const y = TY + nRows * rowH + 0.15;
     if (y + noteH > BOTTOM + 0.02) checks.push(`slide ${slideNo} (${where}): the table and its note don't fit together; shorten the note and rebuild.`);
     s.addText(note, { x: M, y, w: W - 2 * M, h: Math.max(0.2, BOTTOM - y), fontFace: FONT, fontSize: noteSize, color: MUTED, margin: 0, valign: 'top', isTextBox: true });
@@ -411,20 +449,17 @@ async function icon(name, color, size = 256) {
   // Appendix A: net sheet
   {
     const s = content('appendix: net sheet'); title(s, T.deck_app_net_title);
-    const k = D.strategies.length;
-    const rows = D.net_rows.map((r, i) => r.map((v, j) => {
-      const last = i === D.net_rows.length - 1;
-      return { text: v, options: { bold: last, align: j === 0 ? 'left' : 'right', fill: { color: last ? TINT : (i % 2 ? PANEL : WHITE) } } };
-    }));
+    const k = D.strategies.length, totals = new Set(D.net_total_rows || [D.net_rows.length - 1]);
+    const rows = D.net_rows.map((r, i) => body(r, totals.has(i)));
     appendix(s, [head([D.net_head].concat(D.strategies.map(x => x.label)))].concat(rows), [3.6].concat(Array(k).fill(rest / k)), D.net_note, D.net_speaker);
     footer(s);
   }
 
-  // Appendix B: comparable sales + disclaimer
+  // Appendix B: comparable sales + disclaimer; the home's own row bold over a rule, as on the PDF
   {
     const s = content('appendix: comparable sales'); title(s, T.deck_app_comps_title);
-    const rows = D.appendix_comps.map((r, i) => r.map((v, j) => ({ text: v, options: { align: j === 0 ? 'left' : 'right', fill: { color: i % 2 ? PANEL : WHITE } } })));
-    rows.push(D.subject_row.map((v, j) => ({ text: v, options: { bold: j !== 2, color: INK, align: j === 0 ? 'left' : 'right', fill: { color: LINE } } })));
+    const rows = D.appendix_comps.map(r => body(r, false));
+    rows.push(body(D.subject_row, true));
     appendix(s, [head(D.table_head)].concat(rows), [3.6, rest / 3, rest / 3, rest / 3], D.appendix_note, D.appendix_speaker);
     footer(s);
   }
