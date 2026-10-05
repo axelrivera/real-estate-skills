@@ -32,12 +32,10 @@ Case 1 builds your real profile; every later case uses it. The test is black box
 | 2 | seller-cma | 360 report (PDF), CMA export (CSV), seller notes; new session | The saved profile is used without an upload (claude.ai: the uploaded one); the uploads are read (the expired listing and the export's sales appear); the listing presentation opens in PowerPoint or Keynote |
 | 3 | buyer-cma | Listing flyer, 360 report, CMA export | The buyer CMA PDF is delivered and opens |
 | 4 | buyer-offer-strategy | Nothing: same chat as case 3 | The offer uses the buyer CMA without asking for an upload, and both PDFs are delivered |
-| 5 | seller-offer-review | The step-1 offer package | The package is read and the offer review PDF is delivered |
+| 5 | seller-offer-review | The step-1 offer package, then the step-2 offer in the same chat | Step 1: the package is read and the offer review PDF is delivered; step 2: the chat keeps the first offer, compares both and delivers the comparison PDF |
 | 6 | contract-timeline | Executed FHA package | The calendar file imports into a calendar app with closing on the right date |
 | 7 | contract-timeline | Made-up Ohio purchase agreement | The best-effort line is in the chat reply only, never in the PDF or the calendar file |
 | 8 | seller-net-sheet | Nothing (the facts are in the prompt) | The net sheet PDF is delivered on one page |
-
-Case 5's `step-2/` folder holds a second offer on the same listing for the evals; the smoke pass doesn't use it.
 
 ## claude.ai Pass
 

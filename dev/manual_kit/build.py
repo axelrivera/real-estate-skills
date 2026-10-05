@@ -100,10 +100,12 @@ def write_csv(path, rows):
             w.writerow(r)
 
 
-def prompt_md(case, uploads, steps, today=TODAY, note=None):
+def prompt_md(case, uploads, steps, today=TODAY, note=None, upload_note=None):
     """prompt.md: what to upload and the prompts to paste, in order."""
     lines = [f"# {case}", ""]
     lines += ["## Upload", ""] + ([f"- `{u}`" for u in uploads] if uploads else ["Nothing."]) + [""]
+    if upload_note:
+        lines += [upload_note, ""]
     lines += ["## Prompts", ""]
     for i, s in enumerate(steps, 1):
         lines += [f"**{s.get('title', f'Step {i}')}**", ""]
@@ -112,12 +114,7 @@ def prompt_md(case, uploads, steps, today=TODAY, note=None):
         lines += ["```text", s["text"], "```", ""]
     if note:
         lines += [note, ""]
-    if any("Today is" in s["text"] for s in steps):
-        lines += [f"Date assumed: {long_date(today)}. Keep the \"Today is\" sentence in the prompt so dates line up with "
-                  "expected.md."]
-    else:  # a follow-up in an earlier case's chat: that prompt set the date
-        lines += [f"Date assumed: {long_date(today)}, set by the earlier prompt in this chat."]
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip() + "\n"
 
 
 # --- PDF rendering (Playwright, the dev Chromium from make setup) --------------------
@@ -405,7 +402,8 @@ def case_seller_cma(pdf):
             f"Today is {long_date(TODAY)}. I have a listing appointment for {h['address']} in {h['city']}. Attached are "
             "the MLS 360 property report, my CMA export and my notes from the call with the sellers. What should we list "
             "at? I need the seller CMA report."},
-        {"title": "Step 2", "text": "Now build the listing presentation for the appointment."}]))
+        {"title": "Step 2 (same chat)", "text": "Now build the listing presentation for the appointment."}],
+        upload_note="claude.ai only: also upload the `profile.md` case 1 gave you (Cowork finds it in the working folder)."))
 
 
 def case_buyer_cma(pdf):
@@ -420,9 +418,7 @@ def case_buyer_cma(pdf):
                  "--county", h["county"], "--mls-number", h["mls"], "--split-date", h["split_date"], "--as-of", TODAY])
     if not stats.get("ok") or not stats.get("subject_row"):
         raise KitError(f"buyer stats.py didn't find the subject row: {stats.get('problems') or stats.get('market_notes')}")
-    hist = h["report_360"]["history"][0]["rows"]
     expected_md(case, "Case 3", [
-        f"The listing: {money(h['list_price'])}, MLS# {h['mls']}, two price cuts ({hist[1][0]} and {hist[0][0]}).",
         "File delivered: the buyer CMA PDF."])
     write(os.path.join(d, "prompt.md"), prompt_md("Case 3: Buyer CMA", [h["flyer_file"], h["report_file"],
                                                                          h["export_file"]], [
@@ -446,8 +442,8 @@ def case_offer_strategy():
 
 
 def case_offer_review():
-    """Two offers on one listing: the smoke pass uploads step 1 only; step 2 is the second offer the mirroring eval
-    (seller-offer-review eval 8) adds in the same chat."""
+    """Two offers on one listing: step 1 uploads the first, step 2 the second in the same chat (as the mirroring eval,
+    seller-offer-review eval 8, does)."""
     case, o = "05-seller-offer-review", D["offer_review"]
     d = os.path.join(OUT, case)
     aga_dir, aga_key, aga_pdfs = build_package(f"dev/mock_contracts/scenarios/{o['starter']}.json", o["starter"])
@@ -469,17 +465,19 @@ def case_offer_review():
         os.makedirs(os.path.join(d, step), exist_ok=True)
         for p in pdfs:
             shutil.copy(os.path.join(src_dir, p), os.path.join(d, step, p.replace(".pdf", f"-{buyer}.pdf")))
-    a = aga_key["offers"][0]
+    a, b = aga_key["offers"][0], b_key["offers"][0]
+    who = lambda x: f"{money(x['price'])} from {x['buyer']} (buyer's agent {x['buyer_agent']}, {x['buyer_brokerage']})"
     expected_md(case, "Case 5", [
-        f"The offer read from the package: {money(a['price'])} from {a['buyer_agent']} of {a['buyer_brokerage']}.",
-        "File delivered: the offer review PDF."],
-        intro="Upload step-1 only. step-2/ holds a second offer on the same listing for the evals; this pass doesn't "
-              "use it.")
-    up1 = [f"step-1/{p}" for p in sorted(os.listdir(os.path.join(d, "step-1")))]
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 5: Seller Offer Review", up1, [
-        {"title": "Prompt", "upload": up1, "text":
+        f"Step 1, the first offer: {who(a)}. File delivered: the offer review PDF.",
+        f"Step 2, the second offer: {who(b)}. Files delivered: the comparison PDF and a review PDF for each offer."])
+    up1, up2 = ([f"{st}/{p}" for p in sorted(os.listdir(os.path.join(d, st)))] for st in ("step-1", "step-2"))
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 5: Seller Offer Review", up1 + up2, [
+        {"title": "Step 1 (new session)", "upload": up1, "text":
             f"Today is {long_date(o['today'])}. I'm the listing agent for {aga_key['listing']['address']}, listed at "
-            f"{money(o['list_price'])}. We got this offer. Should my seller accept, and what should we counter?"}],
+            f"{money(o['list_price'])}. We got this offer. Should my seller accept, and what should we counter?"},
+        {"title": "Step 2 (same chat)", "upload": up2, "text":
+            "A second offer just came in on the same listing. Compare both offers, rank them and give me a plan. I'd "
+            "like the PDF for my seller."}],
         today=o["today"]))
 
 
@@ -569,7 +567,9 @@ CHECKS = {
     "03-buyer-cma": [("The buyer CMA PDF is delivered and opens", "cowork")],
     "04-buyer-offer-strategy": [("In the same chat, the offer uses the buyer CMA without asking for an upload, and "
                                  "both PDFs are delivered", "cowork")],
-    "05-seller-offer-review": [("The offer package is read and the offer review PDF is delivered", "cowork")],
+    "05-seller-offer-review": [("Step 1: the offer package is read and the offer review PDF is delivered", "cowork"),
+                               ("Step 2: the same chat keeps the first offer, compares both and delivers the comparison "
+                                "PDF", "cowork")],
     "06-contract-timeline-fha": [("The calendar file imports into a calendar app with closing on the right date",
                                   "both")],
     "07-contract-timeline-other-state": [("The best-effort line is in the chat reply only, never in the PDF or the "
@@ -608,11 +608,11 @@ def readme_md():
             ["02-seller-cma", "seller-cma", "360 report, CMA export, seller notes"],
             ["03-buyer-cma", "buyer-cma", "listing flyer, 360 report, CMA export"],
             ["04-buyer-offer-strategy", "buyer-offer-strategy", "nothing: continue the case 3 chat"],
-            ["05-seller-offer-review", "seller-offer-review", "the step-1 offer package"],
+            ["05-seller-offer-review", "seller-offer-review", "the step-1 offer, then the step-2 offer in the same chat"],
             ["06-contract-timeline-fha", "contract-timeline", "executed FHA package"],
             ["07-contract-timeline-other-state", "contract-timeline", "Ohio purchase agreement"],
             ["08-seller-net-sheet", "seller-net-sheet", "nothing"]]), "",
-        "claude.ai pass: upload `dist/skills/*.zip`, then run cases 1, 2 and 6.",
+        "claude.ai pass: upload `dist/skills/*.zip`, then run cases 1, 2 (with the case 1 `profile.md`) and 6.",
     ])
 
 
