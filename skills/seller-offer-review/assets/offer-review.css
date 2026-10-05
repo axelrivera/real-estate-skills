@@ -1,7 +1,7 @@
 /* Offer review: styles on top of the shared report.css. Brand colors come from theme variables;
    good / caution / risk use the fixed status variables. Never hard-code a brand color here. */
 /* DS-103: a long offer name wraps the subtitle, never the prepared-for date or the respond-by time */
-header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto;white-space:nowrap}
+header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:0 0 auto}
 .hero .hr b{white-space:nowrap}
 .hero{margin:6px 0}
 .hero .big{font-size:25pt;letter-spacing:.04em;line-height:1.05}

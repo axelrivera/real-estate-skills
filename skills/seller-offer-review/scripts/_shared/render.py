@@ -102,13 +102,14 @@ def page(body, css="", title="", theme_css="", body_class=""):
 
 
 def footer(left, right_pages=True):
-    """Chromium footer template: `left` text and 'Page X of Y'."""
+    """Chromium footer template: `left` text and 'Page X of Y'. A long left text wraps; the page count never does."""
     pages = ('Page <span class="pageNumber"></span> of <span class="totalPages"></span>'
              if right_pages else "")
     from .design import NEUTRALS  # the footer can't read the page's CSS variables: the muted gray, true gray
     return (f'<div style="font-size:7pt;color:{NEUTRALS["muted"]};width:100%;padding:0 0.3in;display:flex;'
             'justify-content:space-between;font-family:Helvetica,Arial,sans-serif">'
-            f"<span>{html.escape(left)}</span><span>{pages}</span></div>")
+            f'<span style="min-width:0">{html.escape(left)}</span>'
+            f'<span style="white-space:nowrap;padding-left:12px">{pages}</span></div>')
 
 
 # OFR-329: a table box (.tbl) taller than this (about a seventh of a printed Letter page, six or seven rows) may run
@@ -118,12 +119,75 @@ MARK_LONG_TABLES = ("px => { for (const t of document.querySelectorAll('.tbl')) 
                     "if (t.getBoundingClientRect().height > px) t.classList.add('brk'); }")
 
 
+# A page wider than the printable width (a long name in a piece kept on one line, white-space: nowrap) prints shrunk or
+# cut off: release those pieces, the widest first, until the page fits. It runs before and after before_print, so a
+# report that fits at its normal widths is untouched. Returns how many it released.
+RELEASE_NOWRAP = r"""() => {
+  const doc = document.documentElement, over = () => doc.scrollWidth > window.innerWidth + 1;
+  if (!over()) return 0;
+  const kept = [...document.body.querySelectorAll('*')].filter(e => !e.closest('svg') &&
+    getComputedStyle(e).whiteSpace === 'nowrap' && (e.innerText || '').trim().includes(' '))
+    .sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width);
+  let n = 0;
+  for (const e of kept) {
+    if (!over()) break;
+    e.style.whiteSpace = 'normal';
+    n++;
+  }
+  return n;
+}"""
+
+
+# Content the print would cut off, measured after before_print at the layout it prints: a box that hides its overflow
+# (overflow hidden or clip) with content wider or taller than the box, text cut to an ellipsis, and a page whose
+# content runs wider than the printable width. [(where, text)]; `where` is "tag.class", or "page" for the page width.
+FIND_CLIPPED = r"""() => {
+  const out = [], seen = new Set();
+  const where = e => e.tagName.toLowerCase() + [...e.classList].map(c => '.' + c).join('');
+  const text = e => (e.innerText || e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  for (const e of document.body.querySelectorAll('*')) {
+    if (e.closest('svg')) continue;
+    const s = getComputedStyle(e);
+    if (s.display === 'none' || s.visibility === 'hidden') continue;
+    const hides = v => v === 'hidden' || v === 'clip';
+    const wide = hides(s.overflowX) && e.scrollWidth > e.clientWidth + 1;
+    const tall = hides(s.overflowY) && e.scrollHeight > e.clientHeight + 1;
+    const ellipsis = s.textOverflow === 'ellipsis' && e.scrollWidth > e.clientWidth + 1;
+    if ((wide || tall || ellipsis) && text(e) && ![...seen].some(p => p.contains(e))) {
+      seen.add(e);
+      out.push([where(e), text(e)]);
+    }
+  }
+  const doc = document.documentElement;
+  if (doc.scrollWidth > window.innerWidth + 1) {
+    const over = [...document.body.querySelectorAll('*')].filter(e => !e.closest('svg') && e.children.length === 0 &&
+      e.getBoundingClientRect().right > window.innerWidth + 1 && text(e));
+    out.push(['page', over.length ? text(over[0]) : `content ${doc.scrollWidth - window.innerWidth}px wider than the page`]);
+  }
+  return out;
+}"""
+
+
+def clip_warnings(name, clipped):
+    """One stderr line per clipped box, in the same style as the page-1 overflow warnings."""
+    out = []
+    for where, text in clipped:
+        if where == "page":
+            out.append(f"Check: {name}: clipped: text runs past the page's right edge (\"{text}\"), so the print "
+                       "shrinks or cuts it. Shorten it.")
+        else:
+            out.append(f"Check: {name}: clipped: {where} \"{text}\". Shorten the text that fills it.")
+    return out
+
+
 def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_print=None, landscape=False):
     """Print HTML to PDF with Chromium (print media, backgrounds on).
 
     Long tables are marked .brk first (LONG_TABLE_PX), so they can run across pages.
     `before_print(page)` can measure or adjust layout first; its return value is returned.
     `landscape` turns the page (11in wide); layout is measured at the matching width.
+    A page wider than the printable width first lets its one-line pieces wrap (RELEASE_NOWRAP). After before_print,
+    content the print would still cut off (FIND_CLIPPED) is reported on stderr ("Check: ... clipped").
     """
     from playwright.sync_api import sync_playwright
 
@@ -136,7 +200,11 @@ def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_
             pg.set_content(doc, wait_until="load")
             pg.emulate_media(media="print")
             pg.evaluate(MARK_LONG_TABLES, LONG_TABLE_PX)
+            pg.evaluate(RELEASE_NOWRAP)
             info = before_print(pg) if before_print else None
+            pg.evaluate(RELEASE_NOWRAP)
+            for line in clip_warnings(os.path.basename(path), pg.evaluate(FIND_CLIPPED)):
+                print(line, file=sys.stderr)
             pg.pdf(path=path, format=fmt, landscape=landscape, print_background=True, margin=margins,
                    display_header_footer=bool(footer_html), header_template="<span></span>",
                    footer_template=footer_html or "<span></span>")

@@ -9,7 +9,7 @@ header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:1
   border-bottom:2px solid var(--brand);padding-bottom:12px;margin-bottom:16px}
 .wm-name{font-size:17pt;font-weight:700;line-height:1.1}
 .wm-sub{font-size:8pt;letter-spacing:.22em;color:var(--muted);margin-top:4px;text-transform:uppercase}
-.prep{font-size:9.5pt;color:var(--muted);text-align:right}
+.prep{font-size:9.5pt;color:var(--muted);text-align:right;flex:0 0 auto} header.top>:first-child{min-width:0} /* a long agent name or brokerage wraps on the left; the tag and date keep their width */
 .prep .tag{display:inline-block;font-size:8pt;font-weight:700;color:var(--brand-ink);border:1.5px solid var(--brand-ink);
   border-radius:4px;padding:0 6px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
 h1{font-size:22pt;line-height:1.2;margin:0 0 2px}

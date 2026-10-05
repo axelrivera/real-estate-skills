@@ -13,7 +13,8 @@ header{display:flex;justify-content:space-between;align-items:flex-end;border-bo
 header:has(+ .hero, + .p1 > .hero:first-child){border-bottom:none;padding-bottom:0}
 .t1{font-size:15pt;font-weight:800;color:var(--brand-strong);line-height:1.05}
 .t2{font-size:9pt;color:var(--muted)}
-.prep{text-align:right;font-size:7.8pt;color:var(--muted)} .prep b{color:var(--text)}
+/* a long name or brokerage wraps inside the prepared-for block, which never takes more than about half the header */
+.prep{text-align:right;font-size:7.8pt;color:var(--muted);max-width:56%} .prep b{color:var(--text)} .prep .nw{white-space:nowrap}
 .viewtag{display:inline-block;font-size:8pt;font-weight:700;color:var(--brand-ink);border:1.5px solid var(--brand-ink);border-radius:4px;
  padding:0 6px;margin-left:6px;vertical-align:middle;letter-spacing:.04em;text-transform:uppercase}
 .sample{display:inline-block;color:var(--muted);border:1.2px solid var(--muted);font-size:6.8pt;font-weight:700;letter-spacing:.12em;

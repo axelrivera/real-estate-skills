@@ -238,7 +238,8 @@ def options_html(r, agent, sample):
     B = r["B"]
     P = B["property"]
     sub = f'{esc(P.get("address") or "")} · List {money(P["list_price"])} · {oe.FIN_LABEL[B["buyer"]["financing"]]} offer'
-    prep = f'Prepared for <b>{esc(B["buyer"].get("name") or "Buyer")}</b> · {B["analysis_date"]:%B %-d, %Y}{agent_lines(agent)}'
+    prep = (f'Prepared for <b>{esc(B["buyer"].get("name") or "Buyer")}</b> · '
+            f'<span class="nw">{B["analysis_date"]:%B %-d, %Y}</span>{agent_lines(agent)}')
     body = (header("Offer Options", sub, prep, sample) + snapshot(r) + f'<div class="p1">{page1(r, s)}</div>' + details(r, res)
             + render.notices(agent))
     theme = design.theme(agent.get("brand"), "buyer")
@@ -269,7 +270,7 @@ def worksheet_html(r, agent, sample, variant=None):
                  '<td class="write"></td><td class="write"></td></tr>' for x in W["package"])
     verify = ("verify every paragraph and rider against the current FAR/BAR form version" if W["farbar"]
               else "match each entry to your contract by name (paragraph numbers vary by form)")
-    prep = f'Draft prepared {B["analysis_date"]:%B %-d, %Y}{agent_lines(agent)}'
+    prep = f'Draft prepared <span class="nw">{B["analysis_date"]:%B %-d, %Y}</span>{agent_lines(agent)}'
     sub = f'{esc(B["property"].get("address") or "")} · {oe.FIN_LABEL[B["buyer"]["financing"]]} · {W["price"]} · {W["option"].lower()} offer'
     body = f'''{header("Offer Package Worksheet", sub, prep, sample)}
 <div class="draftbar"><b>DRAFT FOR THE AGENT.</b> Enter in {esc(W["software"])} and {verify}. Red brackets = fill in. Suggested language is for broker review, not legal advice.</div>
@@ -302,10 +303,13 @@ def page_count(pg):
 
 
 def fit_page_one(pg):
-    top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
-    if top > PAGE1_LIMIT:
-        pg.evaluate("() => document.body.classList.add('compact')")
-        top = pg.evaluate("() => document.querySelector('.pb').getBoundingClientRect().top")
+    measure = "() => document.querySelector('.pb').getBoundingClientRect().top"
+    top = pg.evaluate(measure)
+    for step in ("compact", "tight"):  # the compact layout, then tighter still (long names in the header)
+        if top <= PAGE1_LIMIT:
+            break
+        pg.evaluate(f"() => document.body.classList.add('{step}')")
+        top = pg.evaluate(measure)
     # iteration 9 eval 1: a short tail (a few assumption rows and the fine print) alone on the last page is pulled back
     # by tightening the detail pages; kept only when it saves the page
     pages = page_count(pg)

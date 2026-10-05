@@ -305,8 +305,8 @@ def _build(R, fmt, out_dir, ctx):
     if fmt == "pdf":
         doc, L = build_html(R, C, homes, agent)
         path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Seller CMA", ext="pdf"))
-        info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(footer_label(R, C, agent, L, L("doc_label"), sample)),
-                                  before_print=cma.paginate)
+        info, pages = cma.print_report(doc, path, render.footer(footer_label(R, C, agent, L, L("doc_label"), sample)),
+                                       "the needs list, the launch steps or the method")
         written.append(path)
         for c in C.get("render_checks", []):
             print(f"Check: {c}", file=sys.stderr)
@@ -316,7 +316,6 @@ def _build(R, fmt, out_dir, ctx):
             print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
         elif info["summary_page"]["fit_level"]:
             print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
-        pages = page_fill(path)
         if pages is None and info["moved"]:  # no pdftotext here: the old information line
             print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
         for c in page_checks(pages or [], L):
