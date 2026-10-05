@@ -28,7 +28,7 @@
  "sum_costs": "What It Will Cost You",
  "sum_tax_now": "Seller's Tax Bill (What the Listing Shows)",
  "sum_tax_yours": "Your Estimated Tax Bill, {homestead}",
- "sum_tax_yours_if": "Your Estimated Tax Bill if {short}, {homestead}",
+ "sum_tax_yours_if": "Your Estimated Tax Bill ({short}, {homestead})",
  "sum_pay_row": "Monthly Payment ({label})",
  "sum_cash_row": "Cash to Close ({label})",
  "sum_check": "Check Before You Offer",
