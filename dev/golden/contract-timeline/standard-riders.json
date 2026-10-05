@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 8
+  "count": 7
  },
  "chat_notes": {
   "count": 0
@@ -23,6 +23,7 @@
   "party": "Buyer",
   "past": false,
   "past_display": null,
+  "voided": false,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-10-26 23:59"
@@ -49,6 +50,7 @@
   "past": false,
   "past_display": null,
   "short": "Deposit",
+  "voided": false,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-09-28 23:59"
@@ -60,6 +62,7 @@
  "flags": {
   "count": 2
  },
+ "form_family": "farbar",
  "history": {
   "count": 0
  },
@@ -93,8 +96,7 @@
   "rider_u_6b",
   "default:compensation_agreement",
   "default:title",
-  "default:post_closing_agreement",
-  "default:survey"
+  "default:post_closing_agreement"
  ],
  "ok": true,
  "open_rights": {
@@ -117,6 +119,7 @@
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -137,6 +140,7 @@
    "party": "Both",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -157,6 +161,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -177,6 +182,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -197,6 +203,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -231,6 +238,7 @@
    "past": false,
    "past_display": null,
    "short": "Deposit",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-28 23:59"
@@ -249,6 +257,7 @@
    "party": "Both",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-28 23:59"
@@ -267,6 +276,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-09-30 23:59"
@@ -285,6 +295,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-01 23:59"
@@ -303,6 +314,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-05 23:59"
@@ -321,6 +333,7 @@
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-15 23:59"
@@ -339,6 +352,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-16 23:59"
@@ -357,6 +371,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-19 23:59"
@@ -375,6 +390,7 @@
    "party": "Both",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-20 23:59"
@@ -393,6 +409,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-23 23:59"
@@ -411,6 +428,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-26 23:59"
@@ -430,6 +448,7 @@
    "past": false,
    "past_display": null,
    "short": "Survey",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-26 23:59"
@@ -448,6 +467,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-27 23:59"
@@ -466,6 +486,7 @@
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-29 23:59"
@@ -485,6 +506,7 @@
    "past": false,
    "past_display": null,
    "short": "Walk-Through",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-29 23:59"
@@ -505,6 +527,7 @@
    "past": false,
    "past_display": null,
    "short": "Closing",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-10-30 10:00"
@@ -523,6 +546,7 @@
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-13 23:59"
