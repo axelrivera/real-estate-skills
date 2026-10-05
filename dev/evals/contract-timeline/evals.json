@@ -89,6 +89,29 @@
       "legacy_name": true, "prompt": "Executed yesterday (10/1) on 88 Willow Bend Dr in Sanford, Seminole County: FR/BAR AS IS, $412,000 conventional, no riders, built 2004, seller pays title. Deposit due in 3 days, loan application 5 days, 10 day inspection period, 30 day loan approval, closing 11/13/2026. When does my buyer's inspection period end and what's due before then?",
       "expected_output": "Reads the old form name the agent typed as the FAR/BAR AS IS contract with full built-in rules (no best-effort disclaimer, no question about which form); runs the script rather than hand math; inspection period ends Tue Oct 13 at 11:59 PM (Day 10 is Sun Oct 11 and Mon Oct 12 is Columbus Day, so it moves to the next business day) and says so; before then the initial deposit is due Mon Oct 5 (Day 3 falls on a Sunday) and the loan application Tue Oct 6; answers in chat in a few lines and offers the full timeline PDF or calendar in one line; every mention of the form in the reply and any file says FAR/BAR, never the old name",
       "files": []
+    },
+    {
+      "id": 12,
+      "mock_package": "asis-fha-executed",
+      "manual_case": "06-contract-timeline-fha",
+      "prompt": "Today is September 26, 2026. Here's my buyer's executed contract package for 1532 Cypress Bend Dr, Casselberry. Give me every deadline as a PDF timeline and a calendar file.",
+      "expected_output": "Buyer side (Jordan Avery). AS IS, FHA $365,000, riders FHA/VA Financing (E), Homeowners'/Flood Insurance (H) and Buyer's Broker Compensation (GG). Effective Date Fri Sep 25, 2026 (the seller's signature, 4:15 PM). Deposit due Mon Sep 28 and the compensation agreement signed by Mon Sep 28, both shown done (escrow receipt and signed agreement in the package) or due on that date. Loan application Wed Sep 30; compensation contingency ends Thu Oct 1; inspection period (right to cancel) ends Mon Oct 5; insurance contingency Mon Oct 5; title evidence Thu Oct 15 (15 days before closing, form default); insurance bound Fri Oct 23 (lender target); loan approval ends Mon Oct 26; survey deadline Mon Oct 26 with the safe-by note (Fri Oct 23, counted back from closing); closing disclosure Tue Oct 27; seller's right to terminate Thu Oct 29; walk-through Thu Oct 29; closing Fri Oct 30 at 10:00 AM (time assumed and said so). Waiting on an event, undated: FHA low-appraisal election (3 days after the appraisal), title defect notice and survey defect notice. The FHA appraisal note appears. Delivers the PDF and the calendar file; same run: every date and time in the calendar file is the PDF's.",
+      "files": ["out/mock-contracts/asis-fha-executed/1532-Cypress-Bend-Dr-Contract.pdf", "out/mock-contracts/asis-fha-executed/1532-Cypress-Bend-Dr-Compensation-Agreement.pdf"]
+    },
+    {
+      "id": 13,
+      "mock_package": "asis-short-sale-rent-back",
+      "manual_case": "07-contract-timeline-short-sale",
+      "prompt": "Today is September 26, 2026. Here's my buyer's executed short sale contract for 6027 Osprey Ridge Ln, Lakeland. Build the deadline timeline: PDF and calendar file.",
+      "expected_output": "Buyer side (Blake Prescott). AS IS, FHA $289,900; riders FHA/VA Financing (E), Short Sale (G: 7-day application, 60-day approval deadline, back-up offers allowed, box 7(b) checked), Post-Closing Occupancy (U: 14 days, $1,850 a month) and Buyer's Broker Compensation (GG). Effective Date Tue Sep 22, 2026 (the seller's signature, 1:08 PM). Dated now: deposit Fri Sep 25 and compensation agreement Fri Sep 25 (done per the package, or due that day), compensation contingency Mon Sep 28, seller gets the short sale application Tue Sep 29, seller returns the completed forms Mon Oct 5, short sale approval deadline Mon Nov 23, contract expires without approval Wed Dec 23. Two phases: loan application, inspection, loan approval and the closing read \"N days after short sale approval\" (closing 45 days after the approval, Rider G Para. 6), and every date counted back from closing and the seller's possession (14 days after closing) wait on it; the Dec 22 written in Para. 4 is not used as the closing. The PDF builds with no closing date; the calendar file holds only dated rows, the same dates as the PDF (same run). Says to send the approval date to date the rest.",
+      "files": ["out/mock-contracts/asis-short-sale-rent-back/6027-Osprey-Ridge-Ln-Contract.pdf", "out/mock-contracts/asis-short-sale-rent-back/6027-Osprey-Ridge-Ln-Compensation-Agreement.pdf"]
+    },
+    {
+      "id": 14,
+      "manual_case": "08-contract-timeline-other-state",
+      "prompt": "Today is September 26, 2026. Here's my buyer's signed purchase agreement for a home in Westerville, Ohio. Lay out every deadline for my buyer: I need the PDF timeline and a calendar file.",
+      "expected_output": "Works from the contract's own dates and time rules (Para. 10: calendar days from the day after the Effective Date, ending 11:59 PM; a period ending on a Saturday, Sunday or federal holiday moves to the next business day), with no Florida rules, FAR/BAR paragraphs or Florida costs. Effective Date Thu Sep 24, 2026 (the seller's signature, 11:45 AM). Earnest money ($5,000 to Olentangy Crossing Title Agency) Mon Sep 28 (day 3 is Sun Sep 27, rolled); loan application Tue Sep 29; inspection period ends Mon Oct 5 (day 10 is Sun Oct 4, rolled); appraisal contingency Thu Oct 8; financing contingency Thu Oct 15; final walk-through Thu Oct 29; closing Fri Oct 30 at 1:00 PM. The best-effort disclaimer is in the chat reply only, never in the PDF or the calendar file. Delivers both files; same run: the calendar file's dates and times are the PDF's.",
+      "files": ["dev/evals/contract-timeline/files/4127-Larchmere-Trace-Purchase-Agreement.pdf"]
     }
   ]
 }

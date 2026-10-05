@@ -23,7 +23,7 @@ The gate every release passes before the pull request from `develop` into `main`
 ## 4. Evals
 
 - [ ] List what changed since the last release: `git diff --stat v<last>..develop -- skills shared`. A change in `shared/` counts for every skill that copies it.
-- [ ] Re-run the evals of every changed skill ([development.md](development.md#evals)), including the mock-package evals for contract skills. The pass rate is no lower than the last iteration's.
+- [ ] Run the full eval pass three times (`dev/evals/setup.py N --runs 3`, every skill, including the mock-package and manual-kit evals; [development.md](development.md#evals)). The spread report (`dev/evals/spread.py N`) shows no script-owned differences, and the pass rate is no lower than the last full pass.
 - [ ] Re-run the fair-housing evals whenever a template, reference or prose script changed.
 - [ ] Every failed expectation and real friction item is fixed, or recorded in [status.md](status.md) with a reason.
 
