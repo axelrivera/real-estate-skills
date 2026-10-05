@@ -27,11 +27,15 @@ VALUE_KEYS = ("low", "high", "midpoint")
 # for the seller's proration), the flood zone (a FEMA code only), HOA dues and the roof year. CMA-328: the listing's
 # days on market (`dom`: active days since the last sale, counted on `as_of`, a number) and how many price cuts since then (`price_cuts`, an integer count), for
 # the buyer's offer outlook. `hoa_frequency` (monthly, quarterly, semiannual or annual): how the association bills the
-# dues, so the HOA rider shows the amount as billed.
+# dues, so the HOA rider shows the amount as billed. Iteration 12: the buyer CMA's homeowner's insurance
+# (`insurance_annual`, the figure its payment used; `insurance_price`, the price it was estimated at; `insurance_estimated`,
+# false when it was the agent's figure), so the offer's payment uses the same premium; the property report's
+# `legal_description` and `parcel_id` (the county's tax ID), for the offer worksheet's paragraph 1.
 NUMBER = (int, float)
 SUBJECT_OPTIONAL = {"annual_tax": NUMBER, "school_mills": NUMBER, "total_mills": NUMBER, "homestead": bool,
                     "flood_zone": str, "hoa_monthly": NUMBER, "hoa_frequency": str, "roof_year": int, "dom": NUMBER,
-                    "price_cuts": int}
+                    "price_cuts": int, "insurance_annual": NUMBER, "insurance_price": NUMBER, "insurance_estimated": bool,
+                    "legal_description": str, "parcel_id": str}
 _FEMA = re.compile(r"^\s*(A99|AE|AH|AO|AR|A|VE|V|X500|X|B|C|D)\b", re.I)
 
 
@@ -52,7 +56,8 @@ def subject_facts(**facts):
     if "flood_zone" in facts:
         facts["flood_zone"] = flood_code(facts["flood_zone"])
     typ = SUBJECT_OPTIONAL
-    return {k: v for k, v in facts.items() if v is not None and k in typ and isinstance(v, typ[k])
+    facts = {k: v.strip() if isinstance(v, str) else v for k, v in facts.items()}
+    return {k: v for k, v in facts.items() if v not in (None, "") and k in typ and isinstance(v, typ[k])
             and (typ[k] is bool or not isinstance(v, bool))}
 
 

@@ -341,7 +341,19 @@ def build(data, fmt, out_dir, ctx):
         ctx["chat_noted"] = True
         for note in oe.cf.support([r["B"]["contract_form"]], drafting=True)["chat_notes"]:
             print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
+        if profile_check(ctx["agent"]):  # iteration 12: the same reminder the CMA renders print
+            print(f"Check: {profile_check(ctx['agent'])}", file=sys.stderr)
     return [path]
+
+
+def profile_check(agent):
+    """A chat reminder when the agent's name or brokerage is missing, or None (as the buyer CMA's render.py). Never
+    printed in the PDFs: they simply leave the missing parts out."""
+    gaps = [w for w, f in (("agent name", "name"), ("brokerage", "brokerage")) if not agent.get(f)]
+    if not gaps:
+        return None
+    return (f"{'no profile' if len(gaps) == 2 else 'profile incomplete'}: {' and '.join(gaps)} missing, so the PDFs "
+            "carry none. Ask the agent for them (or use their saved profile with --profile) and render again.")
 
 
 def options(ap):

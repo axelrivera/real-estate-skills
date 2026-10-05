@@ -4013,7 +4013,7 @@
   },
   {
    "field": "current_tax_bill_paid",
-   "impact": "med",
+   "impact": "low",
    "offers": [
     "recommended",
     "lower_cost"
@@ -4107,16 +4107,6 @@
    "scope": "buyer"
   },
   {
-   "field": "current_tax_bill_paid",
-   "impact": "med",
-   "offers": [
-    "recommended",
-    "lower_cost"
-   ],
-   "scope": "listing",
-   "value": false
-  },
-  {
    "field": "closing_cost_pct",
    "impact": "low",
    "scope": "buyer",
@@ -4138,6 +4128,16 @@
    "impact": "low",
    "scope": "buyer",
    "value": "2026-09-27"
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "low",
+   "offers": [
+    "recommended",
+    "lower_cost"
+   ],
+   "scope": "listing",
+   "value": false
   }
  ],
  "overrides": {

@@ -181,7 +181,18 @@ cma:                                  # calibrated on Central Florida (Seminole 
     pool: 25000
     full_renovation_vs_dated: [40000, 45000]
     full_vs_partial_renovation: 30000
-    documented_recent_systems: -5000
+    kitchen_only_vs_dated: 15000      # a partial update: kitchen updated, baths and the rest original (45,000 - 30,000)
+    baths_only_vs_dated: 10000        # a partial update: baths updated, kitchen and the rest original
+                                      # condition is a ladder: dated 0, baths only, kitchen only, full; a comp is
+                                      # adjusted by the difference between its rung and the subject's
+    roof_age:                         # shingle roof's value by its age on the as-of date, against one under 10 years;
+      - {years: [0, 9], value: 0}     # a comp is adjusted by the difference between its band and the subject's
+      - {years: [10, 14], value: -5000}
+      - {years: [15, 19], value: -10000}   # past what many Florida insurers write without an inspection
+      - {years: [20, 99], value: -15000}
+    roof_age_tile_metal_factor: 2     # a tile or metal roof lasts about twice as long: double each band's years
+    documented_recent_systems: -5000  # newer AC, water heater or other system the subject can't match; the roof
+                                      # uses roof_age instead, never both
     lot_or_water_premium: [-10000, -5000]
     market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last 6 weeks or so
 

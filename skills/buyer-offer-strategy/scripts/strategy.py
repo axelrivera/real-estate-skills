@@ -70,6 +70,20 @@ def apply_cma(B, h):
         for key in ("school_mills", "total_mills", "homestead"):
             if s.get(key) is not None and K.get(key) is None:
                 K[key] = s[key]
+    # iteration 12: the premium the buyer CMA's payment used, so the two reports show the same insurance and payment at
+    # the same price; the buyer file's own premium or rate wins. An older handoff without it: the estimate is figured at
+    # the CMA's target price, the price its payment used, not at list
+    if K.get("insurance_annual") is None and K.get("insurance_rate") is None:
+        if isinstance(s.get("insurance_annual"), (int, float)):
+            K["insurance_annual"] = s["insurance_annual"]
+            B["_cma_insurance"] = {"annual": s["insurance_annual"], "price": s.get("insurance_price"),
+                                   "estimated": s.get("insurance_estimated", True)}
+        elif (h.get("offer_plan") or {}).get("opening") is not None:
+            B["_insurance_price"] = target_price(h["offer_plan"])
+    W = B.setdefault("worksheet", {})  # iteration 12: the property report's legal description and tax ID, for paragraph 1
+    for key in ("legal_description", "parcel_id"):
+        if s.get(key) and not W.get(key):
+            W[key] = s[key]
     mp = h.get("market_profile") or {}
     if mp.get("state") and not P.get("state"):
         P["state"] = mp["state"]
@@ -98,6 +112,15 @@ def apply_cma(B, h):
     if h.get("offer_plan") and not B.get("cma_offer_plan"):
         B["cma_offer_plan"] = h["offer_plan"]
     return B
+
+
+def target_price(op):
+    """The CMA offer plan's target, as the buyer CMA figures its payment: the middle of target_low to target_high, else
+    the one given, else the opening."""
+    lo, hi = op.get("target_low"), op.get("target_high")
+    if lo is not None and hi is not None:
+        return (lo + hi) / 2
+    return lo if lo is not None else hi if hi is not None else op.get("opening")
 
 
 def cma_source(h):
@@ -222,17 +245,25 @@ def prepare(B, A, market=None):
                          "weekly 30-year rate)", "low")
     if not 1 <= K["rate"] < 20:
         raise oe.OfferError(f"costs.rate is {K['rate']}: write the interest rate as a percent, 6.5 for 6.5%.")
-    if K.get("insurance_annual") is not None and BU.get("insurance_quote") is None:
+    cma_ins = B.get("_cma_insurance")
+    if K.get("insurance_annual") is not None and BU.get("insurance_quote") is None and not cma_ins:
         BU["insurance_quote"] = True  # OFR-217: a premium given for this address is a quote in hand
-    if K.get("insurance_annual") is None:
+    if cma_ins and cma_ins["estimated"] and not quote_in_hand(BU):  # iteration 12: the buyer CMA's estimate, carried over
+        at = f" at {money(cma_ins['price'])}" if cma_ins.get("price") else ""
+        B["payment_assumed"].append(f"estimated {money(K['insurance_annual'])}/yr insurance")
+        A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: {money(K['insurance_annual'])}/yr, "
+              f"the buyer CMA's estimate{at}, so both reports use the same premium. Get a quote for this address", "low")
+    elif K.get("insurance_annual") is None:
         yb = P.get("year_built")
-        est = finance.insurance_estimate(lp, costs, yb, K.get("insurance_rate"))
+        basis = B.get("_insurance_price") or lp  # iteration 12: an older CMA handoff's target price, as its payment used
+        est = finance.insurance_estimate(basis, costs, yb, K.get("insurance_rate"))
         src = ("your rate for this home" if est["source"] == "agent" else
                costs.described("buyer_costs.insurance_rate") if est["source"] == "market" else "national planning estimate")
         K["insurance_annual"] = est["annual"]
         B["payment_assumed"].append(f"estimated {money(K['insurance_annual'])}/yr insurance")
         A.add("costs", "insurance_annual", K["insurance_annual"], f"Insurance not provided: estimated at {money(K['insurance_annual'])}/yr "
-              f"({src}" + (f", x{est['age_factor']:g} for a {yb} home" if est["age_factor"] > 1 else "") + "). Get a quote "
+              f"({src}" + (f", x{est['age_factor']:g} for a {yb} home" if est["age_factor"] > 1 else "")
+              + (f", at the buyer CMA's {money(basis)} target price" if basis != lp else "") + "). Get a quote "
               "for this address", "low")
     elif not quote_in_hand(BU):  # OFR-328: a premium typed in with no quote in hand (false or planned) is an estimate
         B["payment_assumed"].append(f"estimated {money(K['insurance_annual'])}/yr insurance")
@@ -1137,8 +1168,8 @@ def analyze(B_in, market=None, cma=None):
                                              BU0["financing"], limits, P0.get("state"), P0.get("county")) for k, t in variants}
     if loan_notes.get("recommended"):
         A.add("buyer", "loan_limit", "check", loan_notes["recommended"], "high")
-    engine_assumed = [a for a in R["assumptions"] if not a["scope"].startswith("offer") and a["scope"] != "seller"
-                      and a["field"] not in ("cma_low / cma_high", "state")]
+    engine_assumed = [tax_bill_note(B, costs, O, a) for a in R["assumptions"] if not a["scope"].startswith("offer")
+                      and a["scope"] != "seller" and a["field"] not in ("cma_low / cma_high", "state")]
     res = {"B": B, "R": R, "O": O, "why": why, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
            "promoted": promoted, "promoted_from": fuller if promoted else None, "reached": reached,
            "assumptions": A.items + engine_assumed, "costs": costs, "sample": bool(B_in.get("sample"))}
@@ -1236,6 +1267,23 @@ def analyze(B_in, market=None, cma=None):
     return res
 
 
+def tax_bill_note(B, costs, O, a):
+    """Iteration 12: the engine asks whether the seller has paid this year's tax bill when the closing falls after the
+    bills go out (Florida: Nov 1). Before the bills are out nobody can have paid one, so the question can't be answered
+    yet: it becomes a low-impact note (not asked), saying what the proration assumes and what changes it."""
+    if a["field"] != "current_tax_bill_paid":
+        return a
+    today = _d(B.get("analysis_date")) or date.today()
+    closes = [O[k]["close"] for k in O if O[k].get("close")]
+    month = costs.get("property_tax.bill_month") or oe.TAX_BILL_MONTH
+    if not closes or today >= date(min(closes).year, month, 1):
+        return a  # the bills are out: the seller may have paid, so ask
+    close = min(closes)
+    return {**a, "impact": "low", "why": f"Closing on {close:%b} {close.day}, after this year's tax bills go out "
+            f"({date(close.year, month, 1):%B} 1): the proration assumes the seller hasn't paid the bill by then (the seller "
+            "credits the buyer from Jan 1). If the seller pays it before closing, the buyer credits the seller instead"}
+
+
 def highest_and_best(C):
     """OFR-239: the listing agent called for highest and best (`competition.highest_and_best`, or said so in the note)."""
     hb = C.get("highest_and_best")
@@ -1285,8 +1333,15 @@ def reply_lines(B, rec):
     """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `flat_number` (a
     highest-and-best round with no escalation: why one flat number), `contract_terms` (a contract that isn't FAR/BAR:
     the form-specific terms come from the agent's contract, never from Florida's rules) and `inspection_period` (the
-    same contract with the period's length not set by the agent: it's a generic default to check locally, OFR-315)."""
+    same contract with the period's length not set by the agent: it's a generic default to check locally, OFR-315) and
+    `seller_timeline` (`property.seller_flexible_close`: ask whether another closing date helps the seller)."""
     out = []
+    P = B["property"]
+    if P.get("seller_flexible_close") and not P.get("seller_deadline"):
+        # iteration 12: from the listing agent or the Realtor Remarks, so chat only, never in the report
+        out.append({"key": "seller_timeline", "text": "The seller is flexible on the closing date, so this offer's "
+                    "closing fits. Ask the listing agent whether a different date would help the seller: it costs the "
+                    "buyer nothing and can set this offer apart."})
     if highest_and_best(B["competition"]) and not rec.get("escalation"):
         out.append({"key": "flat_number", "text": "In a highest-and-best round many listing agents want one flat number, so "
                     f"{money(rec['price'])} goes in as the single price, with no escalation clause."})
@@ -1609,9 +1664,14 @@ def pushback(r):
     B, costs, V = r["B"], r["costs"], r["B"]["value"]
     o, t = r["O"]["recommended"], r["terms"]["recommended"]
     ct = o.get("counter_terms") or {}
+    # iteration 12: appraisal gap coverage is asked only for a price above the value range: the offer's own, or the
+    # countered price when the buyer could take it (one that breaks a limit is held, so its gap never comes up)
+    price_held = "price" in ct and bool(limits_broken(B, costs, dict(t, price=ct["price"])))
+    final = t["price"] if price_held else ct.get("price", t["price"])
+    no_gap = not V.get("assumed") and V.get("cma_high") is not None and final <= V["cma_high"]
     rows = []
     for term, yours, ask, _ in o.get("counter_rows") or []:
-        if term == "Time for Acceptance":
+        if term == "Time for Acceptance" or term == "Appraisal Gap Coverage" and no_gap:
             continue
         key = PUSHBACK_KEYS.get(term)
         broken = limits_broken(B, costs, dict(t, **{key: ct[key]})) if key and key in ct else []
@@ -1686,6 +1746,15 @@ def para_key(row):
     return (int(m.group(1)), m.group(2) or "") if m else (0, "")
 
 
+def legal_entry(W):
+    """Iteration 12: the worksheet's Legal Description / Parcel ID entry, both in the Enter column ("LOT 87 ... · Parcel
+    ID 22-21-30-..."); a missing part prints as a red blank, never invented."""
+    legal, pid = W.get("legal_description"), W.get("parcel_id")
+    if not legal and not pid:
+        return blank("from the county property appraiser")
+    return f"{legal or blank('legal description')} · Parcel ID {pid or blank('from the county property appraiser')}"
+
+
 def worksheet(r, variant=None):
     """Contract entries, riders, additional terms, documents to request and the package checklist for one option.
 
@@ -1727,7 +1796,8 @@ def worksheet(r, variant=None):
         (para("1"), "Buyer(s)", W.get("buyer_names") or blank("buyer names exactly as on pre-approval"), "Match the pre-approval letter"),
         (para("1"), "Seller(s)", blank("from listing / tax record"), ""),
         (para("1"), "Property Address", P.get("address") or blank("address"), ""),
-        (para("1"), "Legal Description / Parcel ID", W.get("legal_description") or blank("from the county property appraiser"), W.get("parcel_id") or ""),
+        (para("1"), "Legal Description / Parcel ID", legal_entry(W), "Check against the county property appraiser's record"
+         if W.get("legal_description") or W.get("parcel_id") else ""),
         (para("1"), "Personal Property Included", W.get("personal_property") or blank("items in MLS (range, refrigerator, washer/dryer…)"),
          "List anything the buyer expects to stay"),
         (para("2"), "Purchase Price", f"**{money(price)}**", ""),

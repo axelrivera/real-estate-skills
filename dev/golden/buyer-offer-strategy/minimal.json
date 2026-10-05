@@ -5569,7 +5569,7 @@
   },
   {
    "field": "current_tax_bill_paid",
-   "impact": "med",
+   "impact": "low",
    "offers": [
     "lower_cost"
    ],
@@ -5737,15 +5737,6 @@
    "scope": "buyer"
   },
   {
-   "field": "current_tax_bill_paid",
-   "impact": "med",
-   "offers": [
-    "lower_cost"
-   ],
-   "scope": "listing",
-   "value": false
-  },
-  {
    "field": "county",
    "impact": "low",
    "scope": "property",
@@ -5785,6 +5776,15 @@
    "impact": "low",
    "scope": "buyer",
    "value": "2026-09-24"
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "low",
+   "offers": [
+    "lower_cost"
+   ],
+   "scope": "listing",
+   "value": false
   }
  ],
  "overrides": {

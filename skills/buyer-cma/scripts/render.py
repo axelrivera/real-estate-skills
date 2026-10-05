@@ -114,14 +114,17 @@ def tax_which_note(pay, L):
     return ""
 
 
-def history_rows(h, hist, L):
-    """The history table: the rows as written, else built from history.events (CMA-201), so no price is typed."""
+def history_rows(h, hist, L, as_of=None):
+    """The history table: the rows as written, else built from history.events (CMA-201), so no price is typed. A date
+    shows its year when the year changes from the row before or isn't the report's year (iteration 12: a bare "May 22"
+    under "Mar 31, 2015" read as this year)."""
     if h.get("rows"):
         return h["rows"]
+    this_year = date.fromisoformat(str(as_of)[:10]).year if as_of else date.today().year
     out, year, n_listed = [], None, 0
     for e in (hist or {}).get("timeline", []):
         d = date.fromisoformat(e["date"])
-        when = f"{d:%b %-d, %Y}" if d.year != year else f"{d:%b %-d}"
+        when = f"{d:%b %-d, %Y}" if d.year != year or d.year != this_year else f"{d:%b %-d}"
         year = d.year
         kind = e["kind"]
         if kind == "listed":
@@ -211,7 +214,8 @@ def credit_section(R, C, L):
         cc += L("cr_cc_taxes", amt=money(cols[0]["loan_taxes"]), price=money(cols[0]["price"]),
                 names=" and ".join(x.lower() for x in cr["loan_tax_labels"]))
     out = [f'<h3>{L("h_credit")}</h3>', f'<p>{cs["intro"]}</p>',
-           wrap_head(table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"})),
+           wrap_head(table(head, rows, num_cols=tuple(range(1, len(head))), row_classes={4: "total"})).replace(
+               '<div class="tbl wrap-head">', '<div class="tbl wrap-head whole">', 1),  # iteration 12: never split
            f'<p class="note">{L("cr_note", cc=cc)}{seller_cost_note(cr, L)}'
            + (" " + L("cash_note", cash=C["payments"]["buyer_cash_display"]) if C["payments"].get("buyer_cash") else "") + "</p>"]
     if cs.get("after_paragraph"):
@@ -252,7 +256,7 @@ def body(R, C, homes, agent, L):
     if R.get("history"):
         h = R["history"]
         b += [f'<h3>{title_case(h["heading"])}</h3>', f'<p>{h["intro"]}</p>',
-              table([L("th_date"), L("th_event"), L("th_price")], history_rows(h, C.get("history"), L), num_cols=(2,))]
+              table([L("th_date"), L("th_event"), L("th_price")], history_rows(h, C.get("history"), L, R.get("as_of") or (C.get("data_source") or {}).get("as_of")), num_cols=(2,))]
         if h.get("after"):
             b.append(f'<p>{h["after"]}</p>')
     target = money(op["target_low"]) + (f"–{money(op['target_high'])}" if op.get("target_high") and op["target_high"] != op["target_low"] else "")
