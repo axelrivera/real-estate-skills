@@ -145,7 +145,7 @@
  "range_word": "Range",
 
  "h_scatter": "The Whole Neighborhood at a Glance",
- "line_scatter_intro": "Every sale and listing in the export from {lo} to {hi} sq ft, plotted by size and price.",
+ "line_scatter_intro": "Every recent sale and listing in the MLS records from {lo} to {hi} sq ft, plotted by size and price.",
  "line_r2": "Size alone explains {share} of the differences in sale prices here, so the dashed line isn't a value estimate for this home.",
  "band": "Supported Range",
  "lg_comp": "Comparable Sales",
@@ -184,7 +184,7 @@
  "line_comp_adjusted": "Adjusted to this home: about {amount}, {position}.",
 
  "h_market": "The Market Right Now",
- "line_market_intro": "{n} sales in the export closed from {first} to {last}. {active} other homes are for sale now{supply}.",
+ "line_market_intro": "{n} sales in the MLS records closed from {first} to {last}. {active} other homes are for sale now{supply}.",
  "line_market_supply": ", {months} of supply at the recent pace of sales",
  "th_mk_sold": "Homes Sold",
  "th_mk_price": "Median Sale Price",
@@ -300,7 +300,7 @@
  "h_questions": "Questions for the Listing Agent",
 
  "h_method": "How This Was Prepared",
- "line_sources_export": "Sales: {n} closed sales from {first} to {last}, plus {listings}, from the MLS export.",
+ "line_sources_export": "Sales: {n} closed sales from {first} to {last}, plus {listings}, from MLS records.",
  "line_sources_listings": "{active} active, {pending} pending and {ended} expired or canceled listings",
  "line_sources_other": "Also: {list}.",
  "line_shelf_life": "Market conditions change, so refresh this analysis if no offer is made within a few weeks.",

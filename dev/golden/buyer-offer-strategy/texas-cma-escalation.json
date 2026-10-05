@@ -3541,6 +3541,7 @@
   }
  },
  "framing": "same_for_less",
+ "higher_price": null,
  "limits": {
   "recommended": {
    "count": 0

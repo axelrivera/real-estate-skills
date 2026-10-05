@@ -180,6 +180,8 @@ def apply_cma(B, h):
                                    "estimated": s.get("insurance_estimated", True)}
         elif (h.get("offer_plan") or {}).get("opening") is not None:
             B["_insurance_price"] = target_price(h["offer_plan"])
+    if isinstance(s.get("rate"), (int, float)):  # the rate the CMA's payment used: compared with this offer's own rate
+        B["_cma_rate"] = {"rate": s["rate"], "week": s.get("rate_week")}
     W = B.setdefault("worksheet", {})  # the property report's legal description and tax ID, for paragraph 1
     for key in ("legal_description", "parcel_id"):
         if s.get(key) and not W.get(key):
@@ -1404,8 +1406,10 @@ def analyze(B_in, market=None, cma=None):
     res["reserve_tight"], res["reserve_alt"] = tight_reserve(B, costs, res, res["cash"]["recommended"])
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
+    res["higher_price"] = higher_price(B, costs, res)
     res["reply_lines"] = reply_lines(B, rec) + ([{"key": "tight_reserve", "text": res["reserve_tight"]}]
-                                                 if res["reserve_tight"] else [])
+                                                 if res["reserve_tight"] else []) \
+        + ([{"key": "higher_price", "text": res["higher_price"]["text"]}] if res["higher_price"] else [])
     res["framing"] = framing(res)
     return res
 
@@ -1618,13 +1622,56 @@ def tight_reserve(B, costs, res, rc):
     return line, alt
 
 
+def higher_price(B, costs, res):
+    """Whether a price above the recommended one, still inside the buyer's own limits (max price, payment, cash with the
+    reserve kept), would lift the outlook, from the engine: {price, band, lifts, text}, or None when nothing higher fits
+    those limits, the outlook is already Strong, the offer escalates, the agent set the terms or there's no value range.
+    The band search stops at price_ceiling() (the CMA's walk-away, the value range's top, list with little competition);
+    this answers what the buyer's own limits allow past it, with the appraisal risk that comes with it."""
+    rec, lvl = res["terms"]["recommended"], B["competition"]["level"]
+    now = res["bands"]["recommended"][lvl]
+    if res["overrides"] or rec.get("escalation") or B["value"].get("assumed") or now[0] == "strong":
+        return None
+    lo, hi = int(rec["price"]) // 1000 + 1, int(B["buyer"]["max_price"]) // 1000  # in thousands
+    if lo > hi or not within_limits(B, costs, dict(rec, price=lo * 1000)):
+        return None
+    while lo < hi:  # the highest price inside every limit (each limit tightens as the price rises)
+        mid = (lo + hi + 1) // 2
+        lo, hi = (mid, hi) if within_limits(B, costs, dict(rec, price=mid * 1000)) else (lo, mid - 1)
+    price = lo * 1000
+    _, O = run_engine(B, costs, [("recommended", rec), ("higher", dict(rec, price=price, price_by="higher"))])
+    band = band_of(ci(O["higher"], O["higher"]["target"]["net_adj"], B["property"]["list_price"]), lvl)
+    lifts = BAND_RANK[band[0]] > BAND_RANK[now[0]]
+    above = price > B["value"]["cma_high"]
+    text = t("hp_lifts" if lifts else "hp_same", price=money(price), band=against(B, band[1]), now=now[1],
+             risk=L_["hp_appraisal"] if above else "")
+    return {"price": price, "band": band[1], "band_key": band[0], "lifts": lifts, "above_range": above, "text": text}
+
+
+def rate_line(B):
+    """The line saying which rate each report used, when the buyer CMA's payment used another rate than this offer's (a
+    lender's quote replacing the weekly average), so the two payments at one price don't read as an error; else None."""
+    cma = B.get("_cma_rate")
+    rate, source = B["costs"]["rate"], B["costs"].get("rate_source")
+    if not cma or abs(cma["rate"] - rate) < 0.005:
+        return None
+    week = t("rate_week", date=fmt.date_long(cma["week"])) if cma.get("week") else ""
+    whose = (L_["rate_lender"] if source and LENDER_QUOTE.search(str(source)) else
+             t("rate_from", source=source) if source else L_["rate_given"])
+    return t("rl_rate_differs", cma=fmt.pct(cma["rate"] / 100, None), week=week, rate=fmt.pct(rate / 100, None),
+             whose=whose)
+
+
 def reply_lines(B, rec):
     """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `seller_timeline` (the seller is
     flexible on the closing date: ask whether another date helps), `flat_number` (a highest-and-best round with no
     escalation: why one flat number), `contract_terms` (a contract that isn't FAR/BAR: the form-specific terms come from
-    the agent's contract) and `inspection_period` (that contract with the period's length not set by the agent)."""
+    the agent's contract), `inspection_period` (that contract with the period's length not set by the agent) and
+    `rate_differs` (the buyer CMA's payment used another rate: which rate each report used)."""
     out = []
     P = B["property"]
+    if rate_line(B):
+        out.append({"key": "rate_differs", "text": rate_line(B)})
     if P.get("seller_flexible_close") and not P.get("seller_deadline"):
         out.append({"key": "seller_timeline", "text": L_["rl_seller_timeline"]})  # chat only, never in the report
     if highest_and_best(B["competition"]) and not rec.get("escalation"):
@@ -1875,6 +1922,7 @@ def summary(r, package_ready=False):
         # OFR-208: one option is "Your Offer", and each option that isn't offered says why
         "options_title": L_["h_options" if len(O) > 1 else "h_offer"], "options_sub": t("h_options_sub", comp=comp_label(lvl)),
         "absent": absent, "exposure": exposure, "constraints": r["constraints"],
+        "higher_price": (r.get("higher_price") or {}).get("text"),  # what a higher price inside the limits would do
         "cautions": [r["reserve_tight"]] if r.get("reserve_tight") else [],  # OFR-338: within the limits, not a Limit line
         "breaks_limits": broken,
         "next_step": next_step(B, due, len(O), package_ready, opt_name(r["chosen"])),

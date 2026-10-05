@@ -24,7 +24,7 @@ header:has(+ .net-tiles){border-bottom:none;padding-bottom:0}
 /* the itemized table: row labels wrap; a price header wraps anywhere rather than widen its column past the page */
 .net td{padding:2.4px 8px} .net th{padding:4px 8px}
 .net th.n{text-align:right}
-.net th.price-col{overflow-wrap:anywhere;width:19%}
+.net th.price-col{overflow-wrap:anywhere;width:19%} .net th .nw{white-space:nowrap}
 .net td.lbl-col{overflow-wrap:anywhere}
 .net tr.group td{padding-top:6px;color:var(--brand-ink);font-weight:700;font-size:7.6pt;text-transform:uppercase;letter-spacing:.05em}
 .net tr.line td:first-child{padding-left:16px}

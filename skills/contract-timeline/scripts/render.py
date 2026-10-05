@@ -416,11 +416,9 @@ def build_html(t, agent, sample):
     body = (f'<div class="pb"></div><div class="dh">{lbl("h_details")}</div>{details}'
             f'<div class="appx"><div class="dh" style="margin-top:10px">{lbl("h_appendix")}</div>'
             f'{hist_html}<h2>{lbl("h_method")}</h2>{method}'
-            f'<div class="fine">{esc(lbl("fine", family=t["rules"]["family"], lender=lender))}</div></div>')
+            f'<div class="fine">{esc(lbl("fine", family=t["rules"]["family"], lender=lender, documents=join_words([lbl("doc_" + k) for k in t["documents"]])))}</div></div>')
 
-    # TL-265: each piece keeps its words together and a line breaks only before a separator, never mid-name
-    pieces = (t["property"], "· " + (t["buyer"] or "Buyer"), "/ " + (t["seller"] or "Seller"))
-    sub = Raw(" ".join(f'<span class="nw">{esc(x)}</span>' for x in pieces))
+    sub = Raw(header_line(t))
     tag = lbl("tag_what_if" if t.get("what_if") else "tag_view", side=Side)  # TL-119: a hypothetical timeline says so
     head = layout.header(lbl("doc_title"), sub, prepared_lines(t, agent), tag=tag, sample=sample)
     doc = head + layout.fact_row(terms) + f'<div class="p1">{page1}</div>' + body
@@ -485,7 +483,12 @@ def _vtimezone(tzid):
             "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU", "END:STANDARD", "END:VTIMEZONE"]
 
 
-END_OF_DAY = time(23, 59)
+
+def header_line(t):
+    """The header's property and parties: each piece keeps its words together (TL-265), and each separator ends the
+    piece before it, so a line breaks after a separator and never starts with one ("· Buyer", "/ Seller")."""
+    pieces = (t["property"] + " ·", (t["buyer"] or "Buyer") + " /", t["seller"] or "Seller")
+    return " ".join(f'<span class="nw">{esc(x)}</span>' for x in pieces)
 
 
 def calendar_rows(t, lender_dates=False):
@@ -493,10 +496,18 @@ def calendar_rows(t, lender_dates=False):
     return [r for r in t["rows"] if not r.get("done") and not r.get("past") and (lender_dates or not r.get("lender"))]
 
 
+def due_text(r):
+    """What the report prints after a row's day, as the calendar title says it: "by 11:59 PM", "by 5:00 PM ET",
+    "by Closing", "before Closing", or "" for a day alone. Taken from the row's display, so the two never differ."""
+    tail = r["display"].split(" · ", 1)[1] if " · " in r["display"] else ""
+    return tail if not tail or tail.startswith(("by ", "before ")) else "by " + tail
+
+
 def ics(t, lender_dates=False):
-    """TL-20: the closing calendar as an .ics file. End-of-day deadlines are all-day events; the rest are timed in the
-    property's time zone (TZID) when it's known; critical ones get a reminder the day before (at 9:00 AM for an
-    all-day event). SEQUENCE counts the amendments, so a re-imported calendar replaces the older events. Deadlines
+    """TL-20: the closing calendar as an .ics file. A deadline is an all-day event on its due day, its title ending
+    with the time it's due by as the report prints it ("by 11:59 PM", "by Closing"), so no calendar shows a deadline
+    as an event that starts at that time. The closing and possession are appointments, timed in the property's time
+    zone (TZID) when it's known. Critical deadlines get a reminder the day before (9:00 AM for an all-day event). SEQUENCE counts the amendments, so a re-imported calendar replaces the older events. Deadlines
     already done or past (TL-104) are left out, and so are the lender's targets (TL-252: insurance bound, the Closing
     Disclosure), which are estimates, not contract dates; `lender_dates` adds them, titled "Lender Target"."""
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # when the file was made, in UTC (RFC 5545)
@@ -510,20 +521,20 @@ def ics(t, lender_dates=False):
     for r in calendar_rows(t, lender_dates):
         lender = lbl("ics_lender") if r.get("lender") else ""
         when = _when(r)
-        event = r.get("no_time")  # an event on a day (the walk-through), not a deadline at a time
-        # a row due by the closing time is an all-day item on closing day, never a second event at the closing's hour
-        all_day = event or r.get("by_closing") or when.time() == END_OF_DAY
+        # one rule: only an appointment (the closing, possession) is timed; a deadline, a row due by the closing time and
+        # an event on a day (the walk-through) are all-day items, the deadline's time in the title
+        all_day = not (r.get("appointment") and not r.get("no_time"))
+        due = "" if not all_day else due_text(r)
         start = f"DTSTART;VALUE=DATE:{when:%Y%m%d}" if all_day else f"DTSTART{at}:{when:%Y%m%dT%H%M%S}"
         end = (f"DTEND;VALUE=DATE:{(when + timedelta(days=1)):%Y%m%d}" if all_day
                else f"DTEND{at}:{(when + timedelta(minutes=30)):%Y%m%dT%H%M%S}")
         desc = " ".join(x for x in (lbl("ics_who", party=r["party"]), r["action"] and f"{r['action']}.",
                                     r["if_missed"] and lbl("ics_if_missed", text=r["if_missed"]),
-                                    r["rule"] and lbl("ics_rule", text=r["rule"]), r["source"] and lbl("ics_source", text=r["source"]),
-                                    lbl("ics_ends", time=fmt.clock(END_OF_DAY)) if all_day and not event and not r.get("by_closing") else "",
-                                    lbl("ics_by_closing") if r.get("by_closing") else "") if x)
+                                    r["rule"] and lbl("ics_rule", text=r["rule"]), r["source"] and lbl("ics_source", text=r["source"]))
+                if x)
         lines += ["BEGIN:VEVENT", f"UID:{r['key']}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline",
                   f"SEQUENCE:{len(t.get('history') or [])}", f"DTSTAMP:{now}", start, end,
-                  f"SUMMARY:{_ics_text(what_if + lender + r['label'] + (' ★' if r['critical'] and not lender else ''))}",
+                  f"SUMMARY:{_ics_text(what_if + lender + r['label'] + (' ★' if r['critical'] and not lender else '') + (lbl('ics_due', due=due) if due else ''))}",
                   f"DESCRIPTION:{_ics_text(desc)}"]
         if r["critical"] and not lender:  # the day before: 9:00 AM for an all-day event (its start is midnight), else 24 hours ahead
             lines += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_ics_text(r['label'])}",

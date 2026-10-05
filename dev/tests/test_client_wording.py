@@ -59,6 +59,8 @@ class Rules(unittest.TestCase):
             ("See the data file.", '"data file": a tool word'),
             ("Re-run once the roof year is known.", '"Re-run": a tool word'),
             ("The script estimates insurance.", '"script": a tool word'),
+            ("Every sale in the export.", '"export": a tool word'),
+            ("Sales from the CSV.", '"CSV": a tool word'),
             ("Taxes: null", '"null": an empty value printed as text → leave the field out'),
             ("Closing undefined", '"undefined": an empty value'),
             ("Rate TBD", '"TBD": unfinished text'),

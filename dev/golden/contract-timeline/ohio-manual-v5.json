@@ -10,6 +10,7 @@
   "day": 36
  },
  "contingencies_end": {
+  "appointment": false,
   "broker": false,
   "by_closing": false,
   "contingency": true,
@@ -32,12 +33,16 @@
  "contingencies_waiting": {
   "count": 0
  },
+ "documents": [
+  "contract"
+ ],
  "effective": {
   "date": "2026-09-24",
   "signed": "2026-09-24 11:45"
  },
  "financing": "Conventional",
  "first_deadline": {
+  "appointment": false,
   "broker": false,
   "by_closing": false,
   "contingency": false,
@@ -90,6 +95,9 @@
  "open_rights": {
   "count": 0
  },
+ "open_rules": {
+  "count": 0
+ },
  "pending": {
   "count": 0
  },
@@ -99,6 +107,7 @@
  },
  "rows": [
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -119,6 +128,7 @@
    "when": "2026-09-28 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -139,6 +149,7 @@
    "when": "2026-09-29 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -160,6 +171,7 @@
    "when": "2026-10-05 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -181,6 +193,7 @@
    "when": "2026-10-08 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -201,6 +214,7 @@
    "when": "2026-10-15 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -222,6 +236,7 @@
    "when": "2026-10-29 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": true,
    "contingency": false,
@@ -242,6 +257,7 @@
    "when": "2026-10-30 13:00"
   },
   {
+   "appointment": true,
    "broker": false,
    "by_closing": false,
    "contingency": false,

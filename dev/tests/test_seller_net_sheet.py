@@ -227,6 +227,24 @@ class Page(unittest.TestCase):
                 doc = render.build_html(C, {})
                 self.assertEqual(len(re.findall(r'class="kit-tile[ "]', doc)), compute.MAX_SCENARIOS)
 
+    def test_tiles_and_headers_say_the_price_once(self):
+        """A price tile prints its price once (the default label names it, so the line under it gives the costs only),
+        and a column header breaks only between the pieces the script built, each kept on one line."""
+        d = fixture("florida-three-prices.json")
+        d["scenarios"] = [{"price": 425000}, {"price": 410000, "label": "Quick Sale"},
+                          {"price": 425000, "seller_credit": 6000}]
+        C = compute.run(d)
+        tiles = re.findall(r'<div class="kit-tile price[^"]*">(.*?)</div>', render.tiles(C))
+        self.assertEqual(len(tiles), 3)
+        for c, tile in zip(C["columns"], tiles):
+            self.assertEqual(tile.count(render.esc(c["price_display"])), 1, tile)
+        head = render.table(C).split("</thead>")[0]
+        for c in C["columns"]:
+            if c["names_price"]:
+                for p in c["label_parts"]:
+                    self.assertIn(f'<span class="nw">{render.esc(p)}</span>', head)
+        self.assertEqual(C["columns"][2]["label_parts"][0], C["columns"][2]["price_display"])
+
     def test_no_fact_row_means_no_header_rule(self):
         C = compute.run(fixture("florida-three-prices.json"))
         self.assertIn("factrow", render.build_html(C, {}).split("</style>")[-1])

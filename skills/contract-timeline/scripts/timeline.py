@@ -1150,6 +1150,9 @@ def compute(c, extra_deadlines, rules, farbar):
             counted = closing - timedelta(days=int(days))
             if not x.get("business") and r["when"].date() > counted:  # TL-226: extended forward, closer to closing
                 r["rolled_from"] = counted
+            # a before-closing rollover rule changes this date only when the count lands on a weekend or holiday
+            r["back_off_day"] = (not x.get("business") and roll is not False
+                                 and not dates.is_business_day(counted, rules["_extra_holidays"]))
             r["rule"] = ("By Closing" if by_closing and int(days) == 0 else "Closing day" if int(days) == 0 else
                          f"{_plural(int(days), 'day')} before Closing (TRID business days: Saturdays count)" if x.get("business") == "trid" else
                          f"{_span(days, x.get('business'))} before Closing")
@@ -1176,6 +1179,8 @@ def compute(c, extra_deadlines, rules, farbar):
                                  + (after_approval if x.get("from_approval") else "after Effective Date")))
                 elif closing:
                     when, note, moved = backward(closing, int(part["days"]), rules)
+                    if not dates.is_business_day(closing - timedelta(days=int(part["days"])), rules["_extra_holidays"]):
+                        r["back_off_day"] = True
                     opts.append((when, note, moved, f"{_plural(int(part['days']), 'day')} before Closing"))
             r["when"], r["note"], r["moved_from"], first = min(opts, key=lambda o: o[0])
             r["rule"] = "Earlier of " + " or ".join(o[3] for o in opts) + (f": {first}" if len(opts) > 1 else "")
@@ -1214,6 +1219,7 @@ def compute(c, extra_deadlines, rules, farbar):
             r["when"], r["note"], r["moved_from"] = _override(override, rules, roll)
             r["rule"] = "Specific date in contract / amendment"
             r.pop("rolled_from", None)
+            r.pop("back_off_day", None)
         if x.get("cap_at_closing") and r["when"] and closing_dt and r["when"] > closing_dt:
             r["when"], r["moved_from"] = closing_dt, None
             r["note"] = "; ".join(n for n in (r.get("note"), "the right ends at closing") if n)
@@ -1638,7 +1644,7 @@ def extension_readings(history, current, rules, eff, farbar):
 # a typo that would drop a deadline silently, so it comes back as a warning to fix.
 KNOWN_CONTRACT_KEYS = frozenset("""
     form_family form contract_form contract_name blanks form_revision form_revision_source effective_date effective_date_source
-    effective_date_signed
+    effective_date_signed acceptance_deadline
     closing_date closing_time closing_source closing_if_missed possession_date possession_time possession_note possession_source
     possession_if_missed occupancy built_before_1978 effective_date_delivered
     property buyer seller price escrow_agent deposit_amount deposit_amount_str deposit_days additional_deposit_amount
@@ -1723,6 +1729,10 @@ def analyze(deal, side=None):
     if farbar:
         _check_riders(current_contract)
     current = compute(current_contract, deal.get("deadlines") or [], rules, farbar)
+    # an open before-closing rollover rule is asked (and named on the report) only when a date counted back from closing
+    # lands on a weekend or holiday, the one case where the other reading would give a different date
+    if not any(r.get("back_off_day") and r["when"] for r in current):
+        rules = {**rules, "_unknown": [k for k in rules.get("_unknown") or [] if k != "before_closing_rollover"]}
     was = {r["key"]: r["when"] for r in original}
     eff = _d(current_contract["effective_date"])
 
@@ -1773,6 +1783,8 @@ def analyze(deal, side=None):
             "past": past, "past_display": "Past, Confirm" if past else None,
             "waits_on_approval": bool(r.get("from_approval") and not r["when"]),
             "no_time": bool(r.get("no_time")), "by_closing": bool(r.get("by_closing")),
+            # the closing and possession happen at a time (an appointment); every other row is due by its time
+            "appointment": r["basis"] in ("closing", "possession", "pending_closing"),
             "lender": bool(r.get("lender")),  # a lender's target or rule, not a contract deadline
             "broker": bool(r.get("broker")),  # TL-246: between the brokers (Rider GG)
             "voided": bool(voided),  # a cancel right that can't arise any more (Rider GG's agreement signed)
@@ -1853,7 +1865,7 @@ def analyze(deal, side=None):
              + ("time. Para. 3(b) counts the day the signed copy was delivered: if it reached the other side on a later "
                 "day, send that date and every period counted from the Effective Date moves with it" if farbar else
                 "time. If the contract counts the Effective Date from delivery, not signing alone, send the delivery "
-                "date: every period counted from it moves with it"))
+                "date: every period counted from it moves with it") + acceptance_text(current_contract))
     if eff > today and not deal.get("what_if"):  # TL-119
         # TL-243: what_if only matters for a file (the PDF or calendar). Without a closing date there's no report to label
         # (a quick question), so the note doesn't suggest it
@@ -2087,6 +2099,9 @@ def analyze(deal, side=None):
             [f"{_field_label(k)}: {_was(k, h['before'].get(k), farbar)} → {_field_value(k, v)}" for k, v in h["changes"].items()] +
             [f"{names.get(k, k.replace('_', ' '))} → {_value_text(v)}" for k, v in h["date_overrides"].items()])}
             for h in history],
+        # the document kinds this package holds, so the report's fine print names only those it was computed from
+        "documents": documents(current_contract, history, farbar),
+        "open_rules": unknown,  # the time rules the contract doesn't state that the agent is asked (rules_unknown)
         "flags": [t for _, t, kind in items if kind != "chat_only"],  # the report's Check lines (N.pdf())
         "flag_keys": [k for k, _, kind in items if kind != "chat_only"],
         # for the agent in chat: the script's notes, then the agent's own (keys "agent:...")
@@ -2133,6 +2148,32 @@ def period_name(short):
     while len(words) > 1 and words[-1].lower() in ("ends", "period", "deadline"):
         words.pop()
     return _sentence_case(" ".join(words))
+
+
+def acceptance_text(c):
+    """The time for acceptance (contract_forms), added to the no-delivery note when the last signature came on its day
+    or later: delivery after it is the open question, so the note names the deadline and asks, never calls the offer
+    lapsed. Empty otherwise."""
+    acc = cf.acceptance_deadline(c.get("contract_form") or cf.OTHER, c)
+    signed = c.get("effective_date_signed") or c.get("effective_date")
+    due_day, signed_day = (fmt.to_date(acc["due"]) if acc else None), fmt.to_date(signed)
+    if not acc or not due_day or not signed_day or signed_day < due_day:
+        return ""
+    due_t, signed_t = fmt.to_time(acc["due"]), fmt.to_time(signed)
+    after = signed_day > due_day or bool(due_t and signed_t and signed_t > due_t)
+    cite = acc["cite"][0].upper() + acc["cite"][1:]
+    return (f". {cite} required the signed copy delivered by {fmt.when(acc['due'])}, and the last signature came "
+            f"{'after that' if after else 'the same day'} ({fmt.when(signed)}): confirm with the other agent when it was "
+            "delivered" + (" and that both sides went ahead with the contract" if after else ""))
+
+
+def documents(contract, history, farbar):
+    """The kinds of document the dates were read from, in package order: the contract, then its riders, the
+    counteroffers and the amendments, each only when the deal records one."""
+    riders = cf.rider_codes(contract.get("riders"))[0] if farbar else contract.get("riders")
+    counters = contract.get("counter_chain") or "counter" in str(contract.get("effective_date_source") or "").lower()
+    return ["contract"] + [k for k, has in (("riders", riders), ("counteroffers", counters),
+                                            ("amendments", history)) if has]
 
 
 def join_words(items):

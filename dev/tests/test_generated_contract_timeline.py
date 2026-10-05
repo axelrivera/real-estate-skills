@@ -66,12 +66,14 @@ def text_of(doc):
 
 
 def ics_events(text):
-    """{row key: (date, time or None)} from the calendar."""
+    """{row key: (date, time or None, title)} from the calendar."""
     out = {}
-    for ev in text.replace("\r\n ", "").split("BEGIN:VEVENT")[1:]:
+    for ev in re.sub(r"\r?\n ", "", text).split("BEGIN:VEVENT")[1:]:  # unfolded (a text-mode read drops the \r)
         key = re.search(r"UID:([^\r\n]+?)-[0-9a-f]{10}@", ev).group(1)
         m = re.search(r"DTSTART(?:;VALUE=DATE|;TZID=[^:]+)?:(\d{8})(?:T(\d{4}))?", ev)
-        out[key] = (datetime.strptime(m.group(1), "%Y%m%d").date(), m.group(2) and f"{m.group(2)[:2]}:{m.group(2)[2:]}")
+        title = re.search(r"SUMMARY:([^\r\n]*)", ev).group(1).replace("\\,", ",").replace("\\;", ";")
+        out[key] = (datetime.strptime(m.group(1), "%Y%m%d").date(), m.group(2) and f"{m.group(2)[:2]}:{m.group(2)[2:]}",
+                    title)
     return out
 
 
@@ -210,10 +212,16 @@ class Generated(unittest.TestCase):
                 want = timeline_render.calendar_rows(t)
                 self.assertEqual(set(events), {r["key"] for r in want})
                 for r in want:
-                    d, tm = events[r["key"]]
+                    # the calendar and the PDF agree: the same day; only an appointment (closing, possession) is timed,
+                    # at its time; a deadline is all-day and its title carries the time the PDF prints after the day
+                    d, tm, title = events[r["key"]]
                     self.assertEqual(d, date.fromisoformat(r["when"][:10]), r["key"])
+                    self.assertEqual(bool(tm), r["appointment"] and not r["no_time"], r["key"])
                     if tm:
                         self.assertEqual(tm, r["when"][11:16], r["key"])
+                    else:
+                        tail = r["display"].split(" · ", 1)[1] if " · " in r["display"] else ""
+                        self.assertTrue(title.endswith(f"{tail})") if tail else not title.endswith(")"), (r["key"], title))
                     self.assertIn(timeline.fmt.date_short(d, year=False, weekday=True), r["display"])
                 for note in t["agent_notes"] + t["chat_notes"] + t["flags"]:
                     self.assertNotIn(timeline_render._ics_text(note), cal.replace("\r\n ", ""))  # the whole note

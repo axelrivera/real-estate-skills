@@ -3972,6 +3972,13 @@
  },
  "dropped_stronger": null,
  "framing": "best",
+ "higher_price": {
+  "above_range": false,
+  "band": "Competitive",
+  "band_key": "comp",
+  "lifts": false,
+  "price": 365000
+ },
  "lc_why": {
   "deposit": {
    "key": "why_deposit",
@@ -4048,6 +4055,9 @@
  "reply_lines": [
   {
    "key": "tight_reserve"
+  },
+  {
+   "key": "higher_price"
   }
  ],
  "reserve_alt": null,

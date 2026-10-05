@@ -21,6 +21,7 @@
 | {{o.option}} | {{o.price}} | {{o.outlook}} | {{o.seller_net}} | {{o.worst_cash}} | {{o.reserve}} | {{o.what}} |
 
 {{each summary.absent: "**" + label + "** " + why, one line each; skip when empty}}
+{{"**Higher Price:** " + summary.higher_price; skip when empty}}
 
 **How It Stacks Up** (By Competition Level)
 
@@ -28,7 +29,7 @@
 |---|---|
 | {{b.level}} | {{each b.values: value.band, one column each}} |
 
-{{each reply_lines except key "tight_reserve" (it's summary.cautions, below): text, one line each; skip when empty}}
+{{each reply_lines except keys "tight_reserve" (it's summary.cautions, below) and "higher_price" (above): text, one line each; skip when empty}}
 
 **Your Exposure: Recommended Offer**
 

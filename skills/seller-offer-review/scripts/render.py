@@ -339,7 +339,7 @@ def single_body(M, agent):
 def plan_box(v, d):
     p = d["plan"]
     pills = {"Accept": "rec", "Counter": "rec", "Wait": "rec", "Hold as Backup": "med", "Decline": "high", "Incomplete": "blocking"}
-    cols = [Col("rk", p["cols"][0], cls="rk"), Col("offer", p["cols"][1], cls="nw2"), Col("financing", p["cols"][2]),
+    cols = [Col("rk", p["cols"][0], cls="rk"), Col("offer", p["cols"][1], cls="nw2"), Col("financing", p["cols"][2], wrap="nowrap"),
             Col("action", p["cols"][3], cls="c"), Col("price", p["cols"][4], align="num"),
             Col("net", p["cols"][5], align="num"), Col("downside", p["cols"][6], align="num"),
             Col("score", p["cols"][7], cls="c"), Col("walk", p["cols"][8], align="num"),

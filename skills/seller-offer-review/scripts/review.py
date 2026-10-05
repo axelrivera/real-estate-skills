@@ -924,12 +924,22 @@ def incomplete_view(R, o):
     }
 
 
+CERTAINTY_GAP = 5  # points: a smaller difference in certainty scores is "about the same", never more or most certain
+
+
+def certainty_side(diff):
+    """1, -1 or 0: whether a difference in certainty points is big enough to call one side more certain (CERTAINTY_GAP).
+    Every comparative certainty word the script writes goes through it."""
+    return 0 if abs(diff) < CERTAINTY_GAP else (1 if diff > 0 else -1)
+
+
 def counter_what(vs_offer, vs_downside, certainty_, act):
     """OFR-16: the Counter row says what actually changes: net up or down, certainty up or down."""
     net = (t("cw_net_up", d=signed(vs_offer)) if vs_offer >= 0 else
            t("cw_net_down", d=signed(vs_offer), dn=signed(vs_downside)))
-    sure = L_["cw_more"] if certainty_ > 0 else L_["cw_less"] if certainty_ < 0 else L_["cw_same"]
-    text = (t("cw_points", net=net, sure=sure, pts=("+" if certainty_ > 0 else fmt.MINUS) + str(abs(certainty_)))
+    sure = {1: L_["cw_more"], -1: L_["cw_less"], 0: L_["cw_same"]}[certainty_side(certainty_)]
+    pts = ("+" if certainty_ > 0 else fmt.MINUS) + str(abs(certainty_))
+    text = (t("cw_points" if abs(certainty_) != 1 else "cw_point", net=net, sure=sure, pts=pts)
             if certainty_ else f"{net}; {sure}")  # OFR-290
     return text if act == "COUNTER" else text + L_["cw_risks"]
 
@@ -954,7 +964,7 @@ def single_view(R, o):
             s.append(L_["why_gap"])
         if o["sale_contingency_days"]:
             s.append(L_["why_sale"])
-        risk = L_["why_cuts_risk"] if o["counter_score"] > o["score"]["total"] else L_["why_same_risk"]
+        risk = L_["why_cuts_risk"] if certainty_side(o["counter_score"] - o["score"]["total"]) > 0 else L_["why_same_risk"]
         s.append(t("why_lifts", lift=money(cn - ao), risk=risk) if cn >= ao else t("why_protects", d=signed(cn - dn)))
         why = " ".join(s)
     elif act == "ACCEPT":
@@ -1204,11 +1214,14 @@ def multi_view(R):
                      "certainty": t("score_approx", n=top["counter_score"]), "status": "caution",
                      "what": t("opt_counter_anyway_what", gain=signed(g))})
     if most_certain is not top:
+        plan_score = top["counter_score"] if act == "COUNTER" else top["score"]["total"]
         opts.append({"option": t("opt_accept_now", label=most_certain["label"]),
                      "short": t("opt_accept_now", label=most_certain["key"]),
                      "net": money(most_certain["ns"]["net_adj"]), "recommended": False,
                      "certainty": score_text(most_certain["score"]["total"]), "status": "caution",
                      "what": t("opt_accept_now_what", close=day(most_certain["close"]),
+                               sure=L_["now_most" if certainty_side(most_certain["score"]["total"] - plan_score) > 0
+                                       else "now_same"],
                                less=money(top_net - most_certain["ns"]["net_adj"]))})
     if not hb:  # OFR-320: a call for highest and best already out isn't offered again
         opts.append({"option": L_["opt_hb"], "net": L_["unknown"], "certainty": L_["varies"], "status": "caution",

@@ -6,6 +6,7 @@ import contextlib
 import io
 import json
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -148,6 +149,26 @@ class FarbarRows(unittest.TestCase):
         r = timeline.analyze(fha(effective_date_source="Seller's signature (Dotloop)"))
         self.assertNotIn("Dotloop", r["effective"]["source"])
         self.assertEqual(timeline.no_platform("Signed via DocuSign on the acceptance"), "Signed on the acceptance")
+
+    def test_acceptance_deadline_joins_the_delivery_note(self):
+        """With no delivery recorded and the last signature on the time-for-acceptance day or after it, the delivery
+        note carries that time (contract_forms: Para. 3(a) on FAR/BAR); a signature the day before leaves it out."""
+        def note(**c):
+            r = timeline.analyze(fha(effective_date_delivered=False, **c))
+            return r["agent_notes"][r["note_keys"].index("effective_delivery_unconfirmed")]
+        due = "2026-09-25 17:00"  # the fixture's last signature is 4:12 PM that day
+        plain = note()
+        for acceptance in (due, "2026-09-25 16:00"):  # the same day, then before the signature
+            with_due = note(acceptance_deadline=acceptance)
+            self.assertIn(timeline.fmt.when(acceptance), with_due)
+            self.assertIn("Para. 3(a)", with_due)
+            self.assertNotEqual(with_due, plain)
+        self.assertEqual(note(acceptance_deadline="2026-09-26 17:00"), plain)  # signed the day before: not asked
+        r = timeline.analyze(fha(acceptance_deadline=due))  # delivered: no question at all
+        self.assertNotIn("effective_delivery_unconfirmed", r["note_keys"])
+        self.assertNotIn("unknown_key", r["warning_keys"])
+        self.assertEqual(timeline.cf.acceptance_deadline("as_is", {"acceptance_deadline": due})["cite"], "Para. 3(a)")
+        self.assertIsNone(timeline.cf.acceptance_deadline("as_is", {}))
 
     def test_effective_source_states_no_date_of_its_own(self):
         """The source's time stamp is a field the script prints: a date or time written into the source (or into an
@@ -721,6 +742,42 @@ class OtherContracts(unittest.TestCase):
         row["receipt_date"] = str(date.fromisoformat(row["receipt_date"]) + timedelta(days=7))
         moved = by_key(timeline.analyze(deal))["title_commitment"]["when"]
         self.assertEqual((datetime.fromisoformat(moved) - datetime.fromisoformat(base)).days, 7)
+
+    def test_before_closing_rule_asked_only_when_it_moves_a_date(self):
+        """An unstated before-closing rollover is asked (and named on the report) only when a date counted back from
+        closing lands on a weekend or holiday, the one case where the other reading gives another date."""
+        d = fixture("ohio-manual-v5.json")
+        del d["rules"]["before_closing_rollover"]
+        r = timeline.analyze(d)  # closing Fri Oct 30: the walk-through (Thu) and the title commitment (Fri) are weekdays
+        self.assertNotIn("before_closing_rollover", r["open_rules"])
+        self.assertNotIn("rules_unknown", r["note_keys"])
+        d["contract"]["closing_date"] = "2026-11-02"  # Mon: the walk-through counts back to Sun Nov 1
+        r = timeline.analyze(d)
+        self.assertIn("before_closing_rollover", r["open_rules"])
+        self.assertIn("rules_unknown", r["note_keys"])
+
+    def test_fine_print_names_only_the_documents_present(self):
+        """The report says it was computed from the document kinds the deal holds, never ones it doesn't."""
+        lbl = timeline_render.lbl
+        cases = ((fixture("ohio-manual-v5.json"), ["contract"]),
+                 (fha(effective_date_source="Seller's signature on the contract"), ["contract", "riders"]),
+                 (fha(), ["contract", "riders", "counteroffers"]))  # the source names Counteroffer #1
+        amended = fha(counter_chain=["CO #1: price and closing"])
+        amended["amendments"] = [{"date": "2026-09-26", "description": "Extend", "changes": {"loan_approval_days": 25}}]
+        cases += ((amended, ["contract", "riders", "counteroffers", "amendments"]),)
+        for deal, want in cases:
+            t = timeline.analyze(deal)
+            self.assertEqual(t["documents"], want)
+            fine = re.search(r'<div class="fine">(.*?)</div>', timeline_render.build_html(t, {}, sample=True)).group(1)
+            for kind in ("riders", "counteroffers", "amendments"):
+                self.assertEqual(timeline_render.esc(lbl("doc_" + kind)) in fine, kind in want, kind)
+
+    def test_header_separators_never_start_a_line(self):
+        """Each header piece ends with its separator, so a wrapped line starts with a name, never "/" or "·"."""
+        t = timeline.analyze(fixture("ohio-manual-v5.json"))
+        pieces = re.findall(r'<span class="nw">([^<]*)</span>', timeline_render.header_line(t))
+        self.assertEqual(len(pieces), 3)
+        self.assertFalse([p for p in pieces if p.lstrip()[:1] in ("/", "·")])
 
     def test_support_notes_are_chat_only(self):
         """The best-effort disclaimer and the FAR/BAR revision note go in chat_notes only: never agent_notes (which can

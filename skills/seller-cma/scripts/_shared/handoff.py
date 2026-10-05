@@ -30,12 +30,14 @@ VALUE_KEYS = ("low", "high", "midpoint")
 # dues, so the HOA rider shows the amount as billed. Iteration 12: the buyer CMA's homeowner's insurance
 # (`insurance_annual`, the figure its payment used; `insurance_price`, the price it was estimated at; `insurance_estimated`,
 # false when it was the agent's figure), so the offer's payment uses the same premium; the property report's
-# `legal_description` and `parcel_id` (the county's tax ID), for the offer worksheet's paragraph 1.
+# `legal_description` and `parcel_id` (the county's tax ID), for the offer worksheet's paragraph 1. The rate the buyer
+# CMA's payment used (`rate`, a percent; `rate_week`, the survey's week as YYYY-MM-DD), so the offer can say which rate
+# each report used when the lender's differs.
 NUMBER = (int, float)
 SUBJECT_OPTIONAL = {"annual_tax": NUMBER, "school_mills": NUMBER, "total_mills": NUMBER, "homestead": bool,
                     "flood_zone": str, "hoa_monthly": NUMBER, "hoa_frequency": str, "roof_year": int, "dom": NUMBER,
                     "price_cuts": int, "insurance_annual": NUMBER, "insurance_price": NUMBER, "insurance_estimated": bool,
-                    "legal_description": str, "parcel_id": str}
+                    "legal_description": str, "parcel_id": str, "rate": NUMBER, "rate_week": str}
 _FEMA = re.compile(r"^\s*(A99|AE|AH|AO|AR|A|VE|V|X500|X|B|C|D)\b", re.I)
 
 

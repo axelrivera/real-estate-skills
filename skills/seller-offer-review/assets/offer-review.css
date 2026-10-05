@@ -94,8 +94,8 @@ table.facts2{table-layout:fixed;width:100%} table.facts2 td{border:none;padding:
 .datanote{margin-top:4px}
 
 /* ranking and chart */
-.rank{table-layout:fixed} .rank td{font-size:8.8pt;vertical-align:middle} .rank td.why2{font-size:7.6pt;color:var(--text);width:24%}
-.rank td.rk{font-size:13pt;font-weight:900;color:var(--brand-ink);text-align:center;width:3%} .rank td.nw2{overflow-wrap:anywhere;width:17%}
+.rank{table-layout:fixed} .rank td{font-size:8.8pt;vertical-align:middle} .rank td.why2{font-size:7.6pt;color:var(--text);width:31%}
+.rank td.rk{font-size:13pt;font-weight:900;color:var(--brand-ink);text-align:center;width:3%} .rank td.nw2{overflow-wrap:anywhere;width:15%}
 .rank th,.rank td{padding-left:3px;padding-right:3px}
 .rank tr.top td{font-weight:700} .rank tr.top td.rk{color:var(--good-strong);box-shadow:inset 3px 0 0 var(--good-base)}
 .rank .pill{white-space:nowrap}
