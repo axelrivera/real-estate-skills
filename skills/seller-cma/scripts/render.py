@@ -117,7 +117,7 @@ def home(C):
 def bottom_line(C):
     rec = C["recommendation"]
     hist = [x for x in (C["price_history"], C["history_line"] and t("line_history", text=C["history_line"])) if x]
-    body = " ".join([esc(rec["line"])] + [esc(h) for h in hist])
+    body = " ".join([esc(rec["line"]), esc(C["stance"]["line"])] + [esc(h) for h in hist])
     out = [f'<h2>{esc(L["h_bottom"])}</h2>',
            f'<div class="verdict"><div class="range">{esc(rec["verdict"])}</div>'
            f'<div class="mid">{esc(rec["caption"])}</div><p>{body}</p>'
@@ -316,8 +316,8 @@ def compute_model(data, ctx):
     """render.main's compute step: the document model, once per run, with the checks every format needs."""
     C = compute.run(data, ctx.get("mls"), ctx.get("data_file"))
     if C.get("stage") != "full":
-        raise compute.ReportError("report.json has only the comps: add recommendation.list_price, pricing, costs and "
-                                  "buyer_payment for the report.")
+        raise compute.ReportError("report.json has only the comps: add pricing (its stance), costs and buyer_payment "
+                                  "for the report.")
     if C["payments"] is None:
         raise compute.ReportError("Buyer payments need a property tax rate: " + "; ".join(C["warnings"]))
     if C["net"]["incomplete"]:

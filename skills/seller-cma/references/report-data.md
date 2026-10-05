@@ -9,7 +9,7 @@ Fields the script now writes itself (`recommendation.paragraph`, `summary_page.k
 
 ## Contents
 
-- Top level · subject · summary_page · recommendation · range_override · means · comps · scatter · competition · market · pricing · costs · buyer_payment · prep, needs, sources · deck
+- Top level · subject · summary_page · recommendation · range_override · price_override · means · comps · scatter · competition · market · pricing · costs · buyer_payment · prep, needs, sources · deck
 
 ## Top Level
 
@@ -24,9 +24,9 @@ Fields the script now writes itself (`recommendation.paragraph`, `summary_page.k
 | `export_columns` | For an MLS that isn't built in: `{field name: export header}` for `address`, `status`, `living_area`, `close_price`, `current_price` and any others the export has (same as stats.py `--columns`) |
 | `deck` | The listing presentation's wording, as an object inside report.json (a path to a JSON file also works, beside report.json). See `deck-content.md` |
 | `preliminary` | Optional: mark the report Preliminary yourself with the reason as a short sentence, figure-free ("the home's condition and the tax bill are still to be confirmed, so the figures may change."), or `true` for a general reason. compute.py also sets it when a cost has no value at all, or the state isn't known; page 1 and the chat reply use `preliminary_reason` |
-| `reprice` | Only for the agent's own current listing, priced again: stats.py's `reprice`, `{current_price, days_on_market}` (*numbers*) and optional `original_price` (compute.py also finds it in the export). The report and reply show its price history (`price_history`). Adds the Stay at Current Price check, "New List Price" wording and the "Before We Reprice" headings. The other options must be price cuts; `allow_increase: true` only when the agent asked to price it higher. Never for another brokerage's listing. compute.py gives Stay's expected sale by the rule in `method.md` (`reprice.stay_expected_sale`), and fills it when Stay's `expected_sale` is left out |
+| `reprice` | Only for the agent's own current listing, priced again: stats.py's `reprice`, `{current_price, days_on_market}` (*numbers*) and optional `original_price` (compute.py also finds it in the export). The report and reply show its price history (`price_history`). Adds the Stay at Current Price option, "New List Price" wording and the "Before We Reprice" headings. The other options are price cuts of at least 1%; `allow_increase: true` only when the agent asked to price it higher. Never for another brokerage's listing. compute.py gives Stay's expected sale by the rule in `method.md` (`reprice.stay_expected_sale`); an agent's own figure goes in `pricing.options.stay.expected_sale` |
 | `listing_history` | Every listing of the home that ended unsold (expired, withdrawn, canceled), however long ago, from the property report: `[{status, price, original_price, ended, days_on_market}]` (`price`, `original_price` *numbers*; `ended` `YYYY-MM-DD`, `YYYY-MM` or `YYYY`). compute.py writes `history_line` ("Expired in March 2017 after 184 days at $229,900, first listed at $239,900."), for page 1, the deck and the reply. Left out, the export's own rows fill it |
-| `relist` | When the home's own earlier listing expired, was canceled or withdrawn within the last 12 months (or undated), or the agent chose to treat a live listing as failed: stats.py's `relist` (`failed_price` *number*, optional `status`, `days_on_market`, `original_price`). No option may list above `failed_price` unless `reason_above` gives the agent's reason, figure-free (`method.md`, A Relist); compute.py also finds it in the export when this is left out |
+| `relist` | When the home's own earlier listing expired, was canceled or withdrawn within the last 12 months (or undated), or the agent chose to treat a live listing as failed: stats.py's `relist` (`failed_price` *number*, optional `status`, `days_on_market`, `original_price`). compute.py caps every option at `failed_price` unless `reason_above` gives the agent's reason, figure-free (`method.md`, A Relist); compute.py also finds it in the export when this is left out |
 | `sources` | Optional: other sources by name, figure-free ("the property details and tax bill you provided"). The script lists the export's sales and listings and the rate's survey itself |
 
 The agent's name, team, brokerage, license and contact come from the agent's profile (`--profile`), never from report.json; only the fields the profile has are shown.
@@ -54,11 +54,15 @@ All judgment, figure-free: `label` (default "Seller Summary"), `headline` (about
 
 ## recommendation
 
-`list_price` (*number*, inside the range); `why`: judgment, 2–3 sentences on why this price and why a higher first price is a risk. The range is the script's, by the rule in `method.md`: run compute.py first with only `subject` and `comps` (no `pricing`) and it prints the range and the median to choose the price inside; never type `low`, `high` or `midpoint` (compute.py stops on them). The script states the range, the median adjusted value and where the list price sits against both.
+`why`: judgment, 2–3 sentences on why this price and why a higher first price is a risk. The range and the list price are the script's (`method.md`): run compute.py first with only `subject` and `comps` (no `pricing` or `buyer_payment`) and it prints the range, the median and the stance the market data suggests, with each stance's price; never type `list_price`, `low`, `high` or `midpoint` (compute.py stops on them). The script states the range, the median adjusted value and where the list price sits against both.
 
 ## range_override
 
 Only when the agent chose the range themselves: `{low, high, reason}` (*numbers*, and judgment: why, in words, no figures). The report uses it and says beside it that it's the agent's judgment, with the method's range for comparison; compute.py still warns when it's wider than the cap, too narrow or set by one comp.
+
+## price_override
+
+Only when the agent chose the list price themselves: `{list_price, reason}` (*number*, and judgment: why, in words, no figures). The report shows it as the agent's, beside the stance's price, and the other options are built around it. On a reprice it must be a cut of at least 1% (unless `reprice.allow_increase`); on a relist, at or under the failed price (unless `relist.reason_above`). compute.py warns when it's outside the range.
 
 ## means
 
@@ -88,9 +92,9 @@ Judgment `intro`; `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), day
 | Field | Notes |
 |---|---|
 | `intro` | Judgment: frames the options as estimates and what really differs. The script adds how far apart the nets are |
-| `strategies` | 3 of `{list_price, time, seller_credit, note}` (*numbers* for the money; `note` judgment), plus `expected_sale` only when the agent gave their own figure: left out, compute.py sets it by the rule (`method.md`), in order: top of the range, recommended, competing-offer (a reprice: "Stay at Current Price" first, at `reprice.current_price`, then the cuts; a relist caps the top-of-range option at `relist.failed_price` or drops it). The script names each option ("List at $469,900", "Stay at $479,900"). `time` is a range with its unit ("3–6 weeks"); optional `months_to_contract` (a number) overrides it; optional `closing_date` (`YYYY-MM-DD`) fixes that option's closing. Only the competing-offer option may have `expected_sale` above its list price. A higher list price never expects a lower sale than a lower one (compute.py warns `expected_sale_order`) |
-| `recommended_index` | The recommended row (usually 1); its `list_price` must equal `recommendation.list_price` |
-| `competing_offer_upside` | `true` when the competing-offer option nets more than the recommended one and `note` says that net depends on competing offers showing up (clears compute.py's `bottom_nets_more` warning). The notes then carry that caveat on their own |
+| `stance` | `draw_offers`, `market` or `premium` (`method.md`, Pricing Stance). Left out, the one the market data suggests. The script sets the list price from it and builds the options, in order: top of the range, recommended, competing-offer (a reprice: "Stay at Current Price" first, then cuts; a relist caps them at the failed price), dropping any within 1% of another. It names each option ("List at $469,900", "Stay at $479,900") |
+| `stance_reason` | Judgment, figure-free: why this home takes a different stance than the suggestion (required then; shown beside the stance either way) |
+| `options` | Optional, only for the agent's own figures, keyed by `stay`, `top`, `recommended` or `competing`: `time` (a range with its unit, "3–6 weeks"), `months_to_contract` (a number), `seller_credit` (*number*), `note` (judgment), `expected_sale` (*number*: only the competing-offer option may sit above its list price), `closing_date` (`YYYY-MM-DD`). Left out, each is the script's: time from recent days on market, the credit from recent seller-paid costs, a note per option. An option the script didn't build is ignored |
 | `note` | Judgment: the assumption behind any difference between options |
 
 **One closing per option.** Each option closes on its own `closing_date`, else the later of `costs.expected_closing_date` and the launch date plus its time to contract plus a month to close. That one date sets its tax proration and its holding costs (from the report date to that closing); the net sheet shows it as Expected Closing.

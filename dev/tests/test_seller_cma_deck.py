@@ -98,8 +98,7 @@ class Content(unittest.TestCase):
         self.assertEqual(D["labels"]["deck_strat_title"], compute.t(f"deck_strat_title_{len(C['strategies'])}"))
         self.assertEqual(D["labels"]["deck_expected_sub"], compute.t("deck_expected_sub"))
         self.assertEqual(D["method"]["steps"][1][1], compute.t("deck_step_comps"))
-        ri = R["pricing"]["recommended_index"]
-        R["pricing"]["strategies"][ri]["expected_sale"] = R["recommendation"]["list_price"]  # sells at list
+        R["pricing"]["options"] = {"recommended": {"expected_sale": C["recommendation"]["list_price"]}}  # sells at list
         R["deck"]["comps_basis"] = "size, floor, view and building"
         D, _ = data(R)
         self.assertEqual(D["labels"]["deck_expected_sub"], compute.t("deck_expected_sub_at"))

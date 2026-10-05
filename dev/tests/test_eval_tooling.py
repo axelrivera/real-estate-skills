@@ -271,7 +271,9 @@ class Spread(unittest.TestCase):
     def test_follows_judgment_only_when_a_root_moved(self):
         self.assertEqual(spread.classify("seller-cma", "strategies[0].net", True), "follows")
         self.assertEqual(spread.classify("seller-cma", "strategies[0].net", False), "script")
-        self.assertEqual(spread.classify("seller-cma", "strategies[0].list_price", False), "judgment")
+        self.assertEqual(spread.classify("seller-cma", "strategies[0].list_price", False), "script")  # by the stance
+        self.assertEqual(spread.classify("seller-cma", "strategies[0].list_price", True), "follows")
+        self.assertEqual(spread.classify("seller-cma", "stance.value", False), "judgment")
         self.assertEqual(spread.classify("seller-cma", "payments.rate", True), "script")
         self.assertEqual(spread.classify("contract-timeline", "rows[3].when", True), "script")
 

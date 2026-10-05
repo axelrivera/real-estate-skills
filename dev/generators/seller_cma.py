@@ -9,8 +9,12 @@ Each seed builds a synthetic MLS export in the Stellar CMA columns: sales over a
 $1,800,000, long street and subdivision names. From that export it picks 3 to 6 comps and adjusts them as an agent
 would (size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then
 and always outside Florida), sets the time adjustment by the method's rule from the export's split, and takes the
-script's range (now and then the agent's own range_override instead). The pricing options are standard (top of range, recommended, competing offer), a reprice
-(Stay at Current Price, then cuts) or a relist (the failed price caps the options, two or three of them). The costs vary:
+script's range (now and then the agent's own range_override instead). It types no price: it picks a pricing stance
+(left out for the market data's suggestion, or draw_offers, market or premium with a reason), now and then the agent's
+own price_override and per-option time, seller credit or wording, and the script builds the options. The listing is
+standard, a reprice (the current price over the range or inside it; now and then the agent asked to price it higher)
+or a relist (the failed price over the range or inside it, capping the options; now and then a reason to go above
+it). The costs vary:
 a stated payoff, a loan balance, no mortgage or none given; a tax bill with closings across the year end; an HOA or
 none; Florida or another state. About half carry the deck's wording. Every judgment field is figure-free, as the skill
 requires. Mock data only; nothing here asserts anything: the test does.
@@ -20,7 +24,6 @@ import csv
 import math
 import os
 import random
-import statistics
 import sys
 from datetime import date, timedelta
 
@@ -51,6 +54,9 @@ STREETS = ("Oak Hollow Ct", "Wren Hollow Ln", "Sample Heron Ln", "Bayview Ter", 
 SUBDIVISIONS = ("Fernwood Park", "Kestrel Point", "Cattail Crossing", "Spring Oaks Unit Two Replat at Hickorywood Estates",
                 "The Reserve at Whispering Cypress Hammock Phase Three", "Elm Grove", "Bayview Terrace")
 ZONES = ("X", "X", "X (lower risk)", "AE", "X500", "To confirm")
+STANCE_REASONS = ("The home's updates match the strongest sales, so it can hold this price in its first weeks.",
+                  "The closest matches sold quickly, and buyers in this neighborhood compare it with dated homes.",
+                  "The seller would rather have a quick contract than test the top of the range.")
 WHY = ("The closest sales nearby, adjusted to your home, center near where we recommend listing.",
        "The market cooled since early in the year: buyers negotiate again, and many sellers help with buyer costs.",
        "Well-priced homes nearby are going under contract fast; overpriced ones are sitting and cutting their price.",
@@ -94,10 +100,10 @@ def us(d):
     return f"{d.month:02d}/{d.day:02d}/{d.year}"
 
 
-def home_row(rng, status, price, sqft, close=None, sub="", address=None, pool=None, paid=0, original=None):
+def home_row(rng, status, price, sqft, close=None, sub="", address=None, pool=None, paid=0, original=None, current=None):
     return {"Distance": f"{rng.uniform(0.05, 1.4):.2f}", "ML Number": f"O{rng.randint(6400000, 6499999)}",
             "Status": status, "Address": address, "Legal Subdivision Name": sub.upper(), "Heated Area": str(sqft),
-            "Current Price": money_cell(price), "Close Price": money_cell(price) if status == "SLD" else "",
+            "Current Price": money_cell(current or price), "Close Price": money_cell(price) if status == "SLD" else "",
             "Close Date": us(close) if close else "", "Original List Price": money_cell(original or price),
             "Contract Date": us(close - timedelta(days=30)) if close else "",
             "Beds": str(max(1, round(sqft / 550))), "Full Baths": str(max(1, round(sqft / 900))),
@@ -107,8 +113,16 @@ def home_row(rng, status, price, sqft, close=None, sub="", address=None, pool=No
             "Property Style": "Single Family Residence", "Flood Zone Code": "X", "Public Remarks": "Mock listing."}
 
 
+# How the market leans, so the suggested pricing stance varies: (active listings, the share of them with a price cut,
+# what sales got against their final asking price)
+TEMPERS = {"hot": ((1, 4), 0.1, (1.0, 1.03)), "balanced": ((3, 12), 0.3, (0.97, 1.0)),
+           "cool": ((14, 40), 0.6, (0.92, 0.97))}
+
+
 def export(rng, as_of, split, subject):
     ppsf, sqft, sub = subject["ppsf"], subject["sqft"], subject["subdivision"]
+    (act_lo, act_hi), cut_share, (fin_lo, fin_hi) = TEMPERS[rng.choice(tuple(TEMPERS))]
+    final_list = rng.random() < 0.6  # sold rows carry their final list price (else the sale price echoed back)
     drift = rng.choice((-0.04, -0.02, 0.0, 0.02))
     rows, used = [], {subject["mls_address"]}
 
@@ -125,14 +139,17 @@ def export(rng, as_of, split, subject):
         factor = (1 + drift) if close >= split else 1.0
         price = round(size * ppsf * rng.uniform(0.88, 1.12) * factor, -2)
         ratio = rng.uniform(0.93, 1.01) * (1 + drift if close >= split else 1)
+        final = round(price / rng.uniform(fin_lo, fin_hi), -2)
         rows.append(home_row(rng, "SLD", price, size, close, sub, addr(), pool=rng.random() < 0.5,
-                             paid=rng.choice((0, 0, 3000, 8000, round(price * 0.02, -2))), original=round(price / ratio, -2)))
-    for status, n in (("ACT", rng.randint(2, 12)), ("PNC", rng.randint(0, 4)), ("EXP", rng.randint(0, 3))):
+                             paid=rng.choice((0, 0, 3000, 8000, round(price * 0.02, -2))),
+                             original=max(final, round(price / ratio, -2)), current=final if final_list else None))
+    for status, n in (("ACT", rng.randint(act_lo, act_hi)), ("PNC", rng.randint(0, 4)), ("EXP", rng.randint(0, 3))):
         for _ in range(n):
             size = max(600, round(sqft * rng.uniform(0.65, 1.4)))
             price = round(size * ppsf * rng.uniform(0.88, 1.15), -2)
+            cut = status == "ACT" and rng.random() < cut_share
             rows.append(home_row(rng, status, price, size, None, sub, addr(), pool=rng.random() < 0.5,
-                                 original=round(price * rng.uniform(1.0, 1.08), -2)))
+                                 original=round(price * rng.uniform(1.01, 1.08), -2) if cut else price))
     rng.shuffle(rows)
     return rows
 
@@ -223,18 +240,26 @@ def generate(seed, out_dir):
         low, high = low - 5000, high - 5000
         override = {"low": low, "high": high, "reason": "We lean toward the most recent sales, which sit lower than "
                                                         "the rest."}
-    median = statistics.median(values)
-    rec = min(max(math.floor(median / 5000) * 5000 - 100, low + 100 if low + 100 <= high else low), high)
-    step = max(5000, int(round(price * 0.02, -3)))
+    width = high - low
+    step = max(5000, 0.02 * (low + high) / 2)
     kind = rng.choice(("standard", "standard", "reprice", "relist"))
-    credit = lambda: rng.choice((0, 3000, 5000, 10000))  # noqa: E731
-    times = ("2–4 months", "45–90 days", "3–6 weeks", "1–3 weeks", "6–10 weeks")
-    strategies = [{"list_price": rec + step, "time": rng.choice(times[:2]), "seller_credit": credit(),
-                   "note": "Tests the top of the range; likely needs a price cut before an offer"},
-                  {"list_price": rec, "time": times[2], "seller_credit": credit(),
-                   "note": "Priced near the middle of recent adjusted sales; room to negotiate"},
-                  {"list_price": rec - step, "time": times[3], "seller_credit": credit(),
-                   "note": "Aims for competing offers; depends on them showing up"}]
+    # the pricing stance: left out (the market data's suggestion) or one of the three, always with a reason when given
+    # (a reason is required only when it differs from the suggestion, and allowed when it doesn't)
+    stance = rng.choice((None, None) + cma.STANCES)
+    pricing = {"intro": "Realistic options, each an estimate from recent sales.",
+               "note": "The competing-offer option depends on competing offers showing up."}
+    if stance:
+        pricing.update(stance=stance, stance_reason=rng.choice(STANCE_REASONS))
+    options = {}  # now and then the agent's own time, seller credit or wording for an option
+    for role in ("top", "recommended", "competing", "stay"):
+        if rng.random() < 0.15:
+            options[role] = {"time": rng.choice(("2–4 months", "45–90 days", "3–6 weeks", "1–3 weeks", "6–10 weeks"))}
+        if rng.random() < 0.15:
+            options.setdefault(role, {})["seller_credit"] = rng.choice((0, 3000, 5000, 10000))
+        if rng.random() < 0.1:
+            options.setdefault(role, {})["note"] = "Our read of how buyers will respond at this price"
+    if options:
+        pricing["options"] = options
     R = {"prepared_date": as_of.isoformat(), "as_of": as_of.isoformat(), "export": path, "split_date": split.isoformat(),
          "subject": {"address": f"{number} {street}", "mls_address": subject["mls_address"], "city": city, "state": state,
                      "county": county, "locality": f"{city}, {state} {rng.randint(32000, 34999)} · {sub} · {county} County",
@@ -249,16 +274,13 @@ def generate(seed, out_dir):
          "summary_page": {"headline": "Priced where recent sales support, for the strongest first weeks on the market.",
                           "why": rng.sample(WHY, 3), "next_step": "Review this plan together, sign the listing "
                                                                   "agreement, and get the home ready to go live."},
-         "recommendation": {"list_price": rec,
-                            "why": "It leaves room for the negotiating that is normal now and looks fairly priced in its "
+         "recommendation": {"why": "It leaves room for the negotiating that is normal now and looks fairly priced in its "
                                    "first weeks on the market."},
          "means": rng.sample(MEANS, rng.randint(2, 4)), "comps": comps,
          "competition": {"intro": "The homes buyers will tour alongside yours.", "rows": []},
          "market": {"bullets": ["<strong>Buyers are negotiating again.</strong> Homes take longer to go under contract.",
                                 "<strong>Timing.</strong> Fewer buyers shop over the holidays."]},
-         "pricing": {"intro": "Realistic options, each an estimate from recent sales.", "recommended_index": 1,
-                     "competing_offer_upside": True, "strategies": strategies,
-                     "note": "The competing-offer option depends on competing offers showing up."},
+         "pricing": pricing,
          "costs": {}, "buyer_payment": {"rate": round(rng.uniform(5.6, 7.6), 2), "loan_type": rng.choice(("conventional", "fha")),
                                         "down_pct": rng.choice((0.035, 0.05, 0.1, 0.2))},
          "prep": {"intro": "These steps cost little and remove the questions that slow buyers down.",
@@ -266,23 +288,33 @@ def generate(seed, out_dir):
          "needs": rng.sample(NEEDS, rng.randint(4, 6))}
     if override:
         R["range_override"] = override
-    if kind == "reprice":  # the agent's own listing: Stay at Current Price, then cuts
-        current = rec + step
-        strategies[0].update(note="Has sat without an offer at this price", time=rng.choice(("2–4 months", "6–10 weeks")))
+    if rng.random() < 0.1:  # now and then the agent's own list price, anywhere from a step under the range to one above
+        R["price_override"] = {"list_price": int(round(rng.uniform(low - step, high + step), -2)),
+                               "reason": "We want the price to land in the search the most active buyers here use."}
+    if kind == "reprice":  # the agent's own listing: Stay at Current Price, then cuts (over the range, or inside it)
+        where = rng.choice(("above", "above", "inside", "increase"))
+        current = cma.bracket_price(rng.uniform(high, high + 2 * step) if where == "above"
+                                    else rng.uniform(low + 0.6 * width, high))
         R["reprice"] = {"current_price": current, "days_on_market": rng.randint(30, 120)}
+        if where == "increase":  # the agent asked to price it higher
+            R["reprice"]["allow_increase"] = True
         if rng.random() < 0.5:
-            R["reprice"]["original_price"] = current + step
-    elif kind == "relist":  # the failed price caps the options: two or three of them
+            R["reprice"]["original_price"] = int(current + step)
+        own = (R.get("price_override") or {}).get("list_price")
+        if own and (not R["reprice"].get("allow_increase") or abs(own - current) <= 0.01 * current):
+            R["price_override"]["list_price"] = min(own, int(current * 0.98) // 100 * 100)  # a cut of at least 1%
+    elif kind == "relist":  # the failed price caps the options: over the range, or inside it (two or three options)
         days = rng.randint(40, 200)
+        failed = cma.bracket_price(rng.uniform(high, high + 2 * step)) if rng.random() < 0.4 else \
+            max(low + 1000, int(round(rng.uniform(low + 0.3 * width, high), -2)))
+        R["relist"] = {"failed_price": failed, "status": rng.choice(("expired", "withdrawn", "canceled")),
+                       "days_on_market": days}
+        if rng.random() < 0.15:
+            R["relist"]["reason_above"] = "The kitchen and baths were remodeled since that listing ended."
         if rng.random() < 0.5:
-            R["relist"] = {"failed_price": rec + step, "status": "expired", "days_on_market": days}
-        else:
-            strategies.pop(0)
-            R["pricing"]["recommended_index"] = 0
-            R["relist"] = {"failed_price": rec + rng.choice((0, 1000)), "status": rng.choice(("expired", "withdrawn")),
-                           "days_on_market": days}
-        if rng.random() < 0.5:
-            R["relist"]["original_price"] = R["relist"]["failed_price"] + step
+            R["relist"]["original_price"] = int(failed + step)
+        if R.get("price_override") and not R["relist"].get("reason_above"):
+            R["price_override"]["list_price"] = min(R["price_override"]["list_price"], failed)
     if rng.random() < 0.3:
         R["listing_history"] = [{"status": "expired", "price": round(price * 0.6, -3), "original_price": round(price * 0.63, -3),
                                  "ended": f"{rng.randint(2012, 2020)}-0{rng.randint(1, 9)}", "days_on_market": rng.randint(60, 200)}]

@@ -97,68 +97,85 @@ class ListedNow(unittest.TestCase):
 
 
 class Reprice(unittest.TestCase):
-    def test_validation(self):
-        R = reprice()
-        R["pricing"]["strategies"].pop(0)
-        R["pricing"]["recommended_index"] = 0
-        with self.assertRaises(compute.ReportError):
-            run(R)
+    def test_stay_then_cuts_only(self):
+        """Stay at Current Price first, then cuts at least 1% under it; no top-of-range option, even when the current
+        price sits inside the range. The agent asking to price it higher lifts the cap; when the stance's price meets
+        the current one, staying is the recommendation."""
         R = reprice()
         R["reprice"].pop("days_on_market")
         with self.assertRaises(compute.ReportError):
             run(R)
-        R = reprice(current=469900)  # inside the range: a top-of-range option would be a raise
-        R["pricing"]["strategies"] = [R["pricing"]["strategies"][0]] + report()["pricing"]["strategies"]
-        R["pricing"]["recommended_index"] = 2
-        R["pricing"]["strategies"][2]["list_price"] = 464900
-        R["recommendation"]["list_price"] = 464900
-        with self.assertRaisesRegex(compute.ReportError, "cuts only"):
+        for current in (469900, 479900, 489900):
+            with self.subTest(current=current):
+                R = reprice(current=current)
+                C, _ = run(R)
+                roles = [x["role"] for x in C["strategies"]]
+                self.assertEqual((roles[0], C["strategies"][0]["list_price"]), ("stay", current))
+                self.assertNotIn("top", roles)
+                self.assertTrue(all(x["list_price"] <= current * 0.99 for x in C["strategies"][1:]))
+                self.assertLessEqual({"current_price": current, "days_on_market": 60, "stay_index": 0}.items(),
+                                     C["reprice"].items())
+                for stance in ("draw_offers", "premium"):  # never above the cap, whatever the stance
+                    R["pricing"]["stance"] = stance
+                    self.assertTrue(all(x["list_price"] <= current * 0.99 for x in run(R)[0]["strategies"][1:]))
+        R = reprice(current=469900)
+        R["reprice"]["allow_increase"] = True  # the market stance's price is the current one: stay is the recommendation
+        C, _ = run(R)
+        self.assertEqual(C["recommended_index"], 0)
+        self.assertTrue(C["strategies"][0]["stay"] and C["strategies"][0]["recommended"])
+        R = reprice(current=469900)
+        R["price_override"] = {"list_price": 469000, "reason": "The agent's own price."}  # not a 1% cut
+        with self.assertRaisesRegex(compute.ReportError, r"price_override\.list_price"):
             run(R)
-        R["reprice"]["allow_increase"] = True
-        run(R)
+        R = reprice(current=456000)  # no cut left inside the range
+        with self.assertRaisesRegex(compute.ReportError, r"reprice: "):
+            run(R)
 
     def test_output(self):
-        R = report()
-        stay = {"list_price": 489900, "expected_sale": 462000, "time": "60–120 days", "seller_credit": 10000,
-                "note": "Has sat at this price"}
-        R["pricing"]["strategies"].insert(0, stay)
-        R["pricing"]["recommended_index"] = 2
-        R["reprice"] = {"current_price": 489900, "days_on_market": 74}
+        R = reprice(current=489900)
+        R["reprice"]["days_on_market"] = 74
         C, homes = run(R)
-        self.assertLessEqual({"current_price": 489900, "days_on_market": 74, "stay_index": 0}.items(), C["reprice"].items())
-        self.assertEqual(len(C["strategies"]), 4)
-        self.assertTrue(C["strategies"][2]["recommended"])
+        self.assertEqual([x["role"] for x in C["strategies"]], ["stay", "recommended", "competing"])
+        self.assertTrue(C["strategies"][1]["recommended"])
         self.assertEqual(C["summary"]["first_heading"], compute.word("sum_first", True))  # the reprice's own labels
         self.assertNotEqual(C["summary"]["first_heading"], run(report())[0]["summary"]["first_heading"])
         self.assertEqual(C["strategies"][0]["label"], compute.t("strategy_stay", price="$489,900"))
         self.assertIsNone(run(report())[0]["reprice"])
-        R["pricing"]["strategies"][3]["expected_sale"] = 461000  # the competing-offer option (last) may sell above list
+        R["pricing"]["options"]["competing"] = {"expected_sale": 461000}  # the competing-offer option may sell above list
         run(R)
 
     def test_stay_expected_sale_rule(self):
         """Current price x the ratio of sales that sat as long, or the median adjusted value if lower, plus its credit;
-        a higher figure warns, a missing one is filled."""
+        a higher figure warns, a missing one is filled. Stay netting more says so in the notes, or warns on the
+        agent's own figures."""
         R = reprice()
         C, _ = run(R)
         rp = C["reprice"]
-        expected = min(479900 * rp["stay_ratio"], C["median_adjusted"]) + R["pricing"]["strategies"][0]["seller_credit"]
+        expected = min(479900 * rp["stay_ratio"], C["median_adjusted"]) + R["pricing"]["options"]["stay"]["seller_credit"]
         self.assertAlmostEqual(rp["stay_expected_sale"], expected, delta=600)
         self.assertGreaterEqual(rp["stay_ratio_sales"], 3)
-        R["pricing"]["strategies"][0]["expected_sale"] = rp["stay_expected_sale"] + 5000
+        R["pricing"]["options"]["stay"]["expected_sale"] = rp["stay_expected_sale"] + 5000
         self.assertIn("stay_expected_high", run(R)[0]["warning_keys"])
-        R["pricing"]["strategies"][0].pop("expected_sale")
+        R["pricing"]["options"]["stay"].pop("expected_sale")
         C, _ = run(R)
         self.assertEqual(C["strategies"][0]["expected_sale"], rp["stay_expected_sale"])
         self.assertTrue(C["reprice"]["stay_expected_filled"])
         self.assertNotIn("stay_expected_high", C["warning_keys"])
         R = texas(reprice())  # no export: nothing to derive it from
         self.assertNotIn("stay_expected_sale", run(copy.deepcopy(R))[0]["reprice"])
-        R["pricing"]["strategies"][0].pop("expected_sale")
-        with self.assertRaises(compute.ReportError):
+        R["pricing"]["options"]["stay"].pop("expected_sale")
+        with self.assertRaisesRegex(compute.ReportError, r"options\.stay\.expected_sale"):
             run(R)
         R = reprice()
-        R["pricing"]["strategies"][0].update(expected_sale=475000, time="1–2 months")
-        self.assertIn("stay_nets_more", run(R)[0]["warning_keys"])
+        R["pricing"]["options"]["stay"].update(expected_sale=475000, time="1–2 months")
+        C, _ = run(R)
+        self.assertIn("stay_nets_more", C["warning_keys"])
+        self.assertIn("stay_caveat", C["note_keys"])
+        R["pricing"].pop("options")  # the script's own Stay figures: the notes say it, nothing to fix
+        C, _ = run(R)
+        nets = [x["net_after_holding"] for x in C["strategies"]]
+        self.assertNotIn("stay_nets_more", C["warning_keys"])
+        self.assertEqual("stay_caveat" in C["note_keys"], nets[0] > nets[C["recommended_index"]])
 
     def test_asks_for_the_listing_agreement(self):
         R = reprice()
@@ -192,42 +209,46 @@ class Reprice(unittest.TestCase):
 
 class Relist(unittest.TestCase):
     def test_failed_price_caps_the_options(self):
+        """No option above the failed price unless the agent gave a reason; a top option the cap squeezes within 1% of
+        the recommended price is dropped; a failed price under the range stops for the agent's call."""
         R = report()
         R["relist"] = {"failed_price": 474900, "status": "expired", "days_on_market": 92}
-        with self.assertRaisesRegex(compute.ReportError, "relist.reason_above"):
-            run(R)  # the fixture's top-of-range option is $479,900
-        R["relist"]["reason_above"] = "The kitchen and baths were redone after that listing ended."
-        self.assertEqual(run(R)[0]["relist"]["failed_price"], 474900)
-        R = report()
-        R["relist"] = {"failed_price": 474900}
-        R["pricing"]["strategies"][0]["list_price"] = 474900
         C, _ = run(R)
+        listed = [x["list_price"] for x in C["strategies"]]
+        self.assertEqual(max(listed), 474900)
         self.assertEqual((C["relist"]["source"], C["relist"]["failed_price_display"]), ("report", "$474,900"))
         self.assertIn("$474,900", C["price_history"])
+        R["relist"]["reason_above"] = "The kitchen and baths were redone after that listing ended."
+        self.assertGreater(max(x["list_price"] for x in run(R)[0]["strategies"]), 474900)
+        R = report()
+        R["relist"] = {"failed_price": 472900}  # the cap leaves no distinct option above the recommended price
+        C, _ = run(R)
+        self.assertEqual([x["role"] for x in C["strategies"]], ["recommended", "competing"])
+        self.assertEqual(C["recommended_index"], 0)
+        R["pricing"]["stance"] = "premium"  # the stance's price is capped too
+        self.assertTrue(all(x["list_price"] <= 472900 for x in run(R)[0]["strategies"]))
+        R = report()
+        R["relist"] = {"failed_price": 456000}  # no bracket step left inside the range: at the failed price
+        self.assertEqual(run(R)[0]["recommendation"]["list_price"], 456000)
+        R["relist"]["failed_price"] = 445000  # under the range: the agent decides
+        with self.assertRaisesRegex(compute.ReportError, r"relist\.reason_above"):
+            run(R)
+        R["price_override"] = {"list_price": 444900, "reason": "The agent's own price."}
+        self.assertEqual(run(R)[0]["recommendation"]["list_price"], 444900)
+        R["price_override"]["list_price"] = 459900  # the agent's price above the failed one still needs the reason
+        with self.assertRaisesRegex(compute.ReportError, r"relist\.reason_above"):
+            run(R)
         R = reprice(current=474900)  # a reprice has its own rule
         R["relist"] = {"failed_price": 469900}
         self.assertIsNone(run(R)[0]["relist"])
-        R = report()
-        R["relist"] = {"failed_price": 474900}
-        R["pricing"]["strategies"][0]["list_price"] = 472900
-        self.assertIn("top_near_recommended", run(R)[0]["warning_keys"])
-        R["pricing"]["strategies"][0]["list_price"] = 474900  # just over 1% above $469,900
-        self.assertNotIn("top_near_recommended", run(R)[0]["warning_keys"])
-        R["pricing"]["strategies"].pop(0)
-        R["pricing"]["recommended_index"] = 0
-        C, _ = run(R)
-        self.assertNotIn("top_near_recommended", C["warning_keys"])
-        self.assertEqual(len(C["strategies"]), 2)
 
     def test_found_in_the_export(self):
         R = report()
         R["export"] = EVAL_EXPORT
-        with self.assertRaises(compute.ReportError):
-            run(R)
-        R["pricing"]["strategies"][0]["list_price"] = 474900
         C, _ = run(R)
         self.assertEqual((C["relist"]["failed_price"], C["relist"]["status"], C["relist"]["source"]),
                          (474900, "expired", "export"))
+        self.assertTrue(all(x["list_price"] <= 474900 for x in C["strategies"]))
         self.assertEqual((C["relist"]["original_price"], C["relist"]["original_price_display"]), (484900, "$484,900"))
         _, r = stats_main([EVAL_EXPORT, "--address", "517 HICKORYWOOD AVE", "--sqft", "1849", "--mls", "Stellar", *FL])
         self.assertEqual((r["relist"]["failed_price"], r["relist"]["status"], r["mls"]), (474900, "expired", "Stellar"))

@@ -1,5 +1,6 @@
-"""seller-cma compute.py rules: costs and nets, one closing per option, buyer payments, warnings, the expected-sale rule,
-the judgment-only schema, other markets, the handoff and the chat template.
+"""seller-cma compute.py rules: the pricing stance and the options it sets, costs and nets, one closing per option,
+buyer payments, warnings, the expected-sale rule, the judgment-only schema, other markets, the handoff and the chat
+template.
 
 The nets, payments and keys of the unmodified fixtures are pinned by golden (dev/golden/seller-cma/); these tests change
 an input and check the rule. The shared helpers here (report, run, row, texas, tanager, reprice, card, AGENT) are
@@ -77,11 +78,11 @@ def texas(R):
 
 
 def reprice(current=479900):
-    """The agent's own listing at `current`, 60 days on market: Stay at Current Price plus cuts."""
+    """The agent's own listing at `current`, 60 days on market: Stay at Current Price (the agent's own figures for it)
+    plus cuts."""
     R = report()
-    stay = {"list_price": current, "expected_sale": 458000, "time": "2–4 months", "seller_credit": 10000,
-            "note": "Has sat without an offer"}
-    R["pricing"]["strategies"] = [stay] + R["pricing"]["strategies"][1:]
+    R["pricing"]["options"] = {"stay": {"expected_sale": 458000, "time": "2–4 months", "seller_credit": 10000,
+                                        "note": "Has sat without an offer"}}
     R["reprice"] = {"current_price": current, "days_on_market": 60}
     return R
 
@@ -117,12 +118,102 @@ class Handoff(unittest.TestCase):
             self.assertEqual(R, before)
 
 
+class Stance(unittest.TestCase):
+    """The model picks a pricing stance; the script turns it into the list price and the options, by rule."""
+
+    def test_suggest_stance_thresholds(self):
+        cases = (({}, "market"), ({"months_supply": 6}, "draw_offers"), ({"months_supply": 5.9}, "market"),
+                 ({"active_share_with_price_cut": 0.40}, "draw_offers"), ({"active_share_with_price_cut": 0.39}, "market"),
+                 ({"sale_to_final_list_recent": 0.969}, "draw_offers"), ({"sale_to_final_list_recent": 0.97}, "market"),
+                 ({"months_supply": 2.9, "sale_to_final_list_recent": 1.0}, "premium"),
+                 ({"months_supply": 3.0, "sale_to_final_list_recent": 1.0}, "market"),
+                 ({"months_supply": 2.9, "sale_to_final_list_recent": 0.999}, "market"),
+                 ({"months_supply": 2.9}, "market"),
+                 ({"months_supply": 2.0, "sale_to_final_list_recent": 1.02, "active_share_with_price_cut": 0.5}, "draw_offers"))
+        for stats, want in cases:
+            with self.subTest(stats=stats):
+                self.assertEqual(compute.cma.suggest_stance(stats)[0], want)
+        hot = {"months_supply": 1.5, "sale_to_final_list_recent": 1.02}
+        self.assertEqual(compute.cma.suggest_stance(hot, failed=True)[0], "market")  # a reprice or relist: never premium
+
+    def test_list_price_at_snaps_to_a_bracket_inside_the_range(self):
+        at, bracket = compute.cma.list_price_at, compute.cma.bracket_price
+        for point, low, high, want in ((467000, 455000, 480000, 464900), (467500, 455000, 480000, 469900),
+                                       (455500, 455000, 480000, 459900), (479600, 455000, 480000, 479900),
+                                       (1236000, 1200000, 1270000, 1239000), (1004000, 970000, 1030000, 999000),
+                                       (456000, 455000, 457000, 456000)):  # narrower than a step: the point itself
+            with self.subTest(point=point):
+                self.assertEqual(at(point, low, high), want)
+        self.assertEqual((bracket(474900, "down"), bracket(474000, "down"), bracket(465000, "up"), bracket(469900, "up")),
+                         (474900, 469900, 469900, 469900))
+        self.assertEqual(bracket(1255000, "down"), 1249000)
+
+    def test_each_stance_sets_the_price_and_the_options(self):
+        R = report()
+        low, high = run(R)[0]["recommendation"]["low"], run(R)[0]["recommendation"]["high"]
+        prices = {}
+        for stance in compute.cma.STANCES:
+            with self.subTest(stance=stance):
+                R["pricing"]["stance"] = stance
+                C, _ = run(R)
+                rec = C["recommendation"]["list_price"]
+                share = compute.cma.STANCE_SHARE[stance]
+                self.assertEqual(rec, compute.cma.list_price_at(low + share * (high - low), low, high))
+                self.assertEqual(C["stance"]["value"], stance)
+                listed = [x["list_price"] for x in C["strategies"]]
+                self.assertEqual(listed, sorted(listed, reverse=True))
+                self.assertTrue(all(a - b > 0.01 * b for a, b in zip(listed, listed[1:])))
+                self.assertTrue(all(low <= p <= high for p in listed))
+                self.assertEqual([x["list_price"] for x in run(R)[0]["strategies"]], listed)  # the same pick, the same
+                prices[stance] = rec
+        self.assertLess(prices["draw_offers"], prices["market"])
+        self.assertLess(prices["market"], prices["premium"])
+
+    def test_the_suggestion_when_left_out_and_a_reason_when_it_differs(self):
+        R = report()
+        R["pricing"].pop("stance")
+        R["pricing"].pop("stance_reason")
+        C, _ = run(R)
+        self.assertEqual(C["stance"]["value"], C["stance"]["suggested"])
+        self.assertFalse(C["stance"]["differs"])
+        C, _ = run(report())
+        self.assertTrue(C["stance"]["differs"])
+        self.assertIn(C["stance"]["name"], C["stance"]["line"])
+        self.assertIn(C["stance"]["line"], seller_render.build_html(C, AGENT).replace("&#x27;", "'"))
+
+    def test_the_agents_own_price(self):
+        R = report()
+        R["price_override"] = {"list_price": 472500, "reason": "The agent wants the price in the search most buyers use."}
+        C, _ = run(R)
+        self.assertEqual(C["recommendation"]["list_price"], 472500)
+        self.assertTrue(C["stance"]["agent_price"] and C["recommendation"]["price_override"])
+        self.assertIn(C["stance"]["rule_price_display"], C["stance"]["line"])
+        self.assertEqual(C["handoff"]["recommended_list_price"], 472500)
+        listed = [x["list_price"] for x in C["strategies"]]
+        self.assertIn(472500, listed)
+        self.assertTrue(all(a - b > 0.01 * b for a, b in zip(listed, listed[1:])))
+
+    def test_the_comps_stage_prints_the_suggestion_and_each_stances_price(self):
+        R = report()
+        for k in ("pricing", "costs", "buyer_payment"):
+            R.pop(k)
+        C = compute.run(R)
+        self.assertEqual(C["stage"], "comps")
+        self.assertIn(C["stance"]["suggested"], compute.cma.STANCES)
+        R2 = report()
+        for stance in compute.cma.STANCES:
+            R2["pricing"]["stance"] = stance
+            self.assertEqual(C["stance"]["prices"][stance]["list_price"], run(R2)[0]["recommendation"]["list_price"])
+
+
 class Costs(unittest.TestCase):
     def test_agent_terms_replace_the_defaults(self):
         R = report()
         R["costs"] = {"listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.02}
         C, _ = run(R)
-        self.assertEqual((row(C, "listing_fee")["amounts"][0], row(C, "buyer_broker_fee")["amounts"][0]), (-13890, -9260))
+        sale = C["strategies"][0]["expected_sale"]
+        self.assertEqual((row(C, "listing_fee")["amounts"][0], row(C, "buyer_broker_fee")["amounts"][0]),
+                         (-compute.fmt.half_up(0.03 * sale), -compute.fmt.half_up(0.02 * sale)))
         self.assertNotIn("commission_default", C["assumption_keys"])
         R["costs"] = {"listing_fee_pct": 0.025, "buyer_broker_fee_pct": 0}
         self.assertNotIn("buyer_broker_fee", {r["key"] for r in run(R)[0]["net"]["rows"]})
@@ -140,7 +231,8 @@ class Costs(unittest.TestCase):
         R = report()
         R["costs"] = {}
         C, _ = run(R)
-        self.assertEqual(row(C, "listing_fee")["amounts"][1], -compute.fmt.half_up(0.025 * 462000))
+        self.assertEqual(row(C, "listing_fee")["amounts"][1],
+                         -compute.fmt.half_up(0.025 * C["strategies"][1]["expected_sale"]))
         self.assertFalse(C["net"]["incomplete"])
         self.assertIn("commission_default", C["assumption_keys"])
         self.assertNotIn("commission_default", [k for k in C["note_keys"] if C["notes"] and k in C["chat_notes"]])
@@ -151,8 +243,8 @@ class Costs(unittest.TestCase):
         for credits in ((0, 10000, 0), (10000, 0, 0), (0, 0, 5000)):
             with self.subTest(credits=credits):
                 R = report()
-                for x, c in zip(R["pricing"]["strategies"], credits):
-                    x["seller_credit"] = c
+                R["pricing"]["options"] = {role: {"seller_credit": c} for role, c in
+                                           zip(("top", "recommended", "competing"), credits)}
                 C, _ = run(R)
                 self.assertEqual(row(C, "credit")["amounts"], [-c for c in credits])
                 self.assertEqual(row(C, "credit")["display"].count(compute.fmt.EMPTY), credits.count(0))
@@ -195,7 +287,7 @@ class OneClosing(unittest.TestCase):
         C, _ = run(R)
         as_of = date.fromisoformat(R["as_of"])
         closings = [date.fromisoformat(x["closing"]) for x in C["strategies"]]
-        self.assertEqual(closings[1:], [date(2026, 12, 18)] * 2)  # the seller's goal when the time allows it
+        self.assertEqual(closings[1:], [date(2026, 12, 18)])  # the seller's goal when the time allows it
         self.assertGreater(closings[0], date(2026, 12, 18))  # a slower option can't close by it
         self.assertEqual(row(C, "closing")["display"], [compute.fmt.date_short(d) for d in closings])
         monthly = C["net"]["monthly"]
@@ -204,7 +296,7 @@ class OneClosing(unittest.TestCase):
             self.assertAlmostEqual(-hold, monthly * x["hold_months"], delta=monthly * 0.01 + 1)
         tax = row(C, "tax_proration")["amounts"]
         self.assertEqual(tax[1], -compute.fmt.half_up(3505.61 * 0.96 * (date(2026, 12, 18) - date(2026, 1, 1)).days / 365))
-        self.assertEqual(row(C, "tax_prior_year")["display"][1:], [compute.fmt.EMPTY] * 2)  # only the 2027 closing
+        self.assertEqual(row(C, "tax_prior_year")["display"][1:], [compute.fmt.EMPTY])  # only the 2027 closing
         self.assertIn("tax", C["assumption_keys"])
 
     def test_launch_date_moves_every_closing_it_sets(self):
@@ -217,7 +309,8 @@ class OneClosing(unittest.TestCase):
         self.assertTrue(all(y > x for x, y in zip(a, b)))
         self.assertEqual(C["launch"]["date"], "2026-10-30")
         self.assertIn(compute.fmt.date_long("2026-10-30"), C["summary"]["launch_line"])
-        R["pricing"]["strategies"] = [{**x, "time": ""} for x in R["pricing"]["strategies"]]  # nothing to date it by
+        R["pricing"]["options"] = {role: {"time": "when the market allows"}  # nothing to date it by
+                                   for role in ("top", "recommended", "competing")}
         C, _ = run(R)
         self.assertIn("tax_no_closing_date", C["warning_keys"])
         self.assertIsNone(C["net"]["after_holding"])
@@ -332,12 +425,15 @@ class Warnings(unittest.TestCase):
             R["subject"].pop("county")
             R["mls"] = "Stellar"
 
-        cases = [
-            ("list_outside_range", edit(("recommendation", "list_price"), 489900)),
-            ("expected_above_range", edit(("pricing", "strategies", 2, "expected_sale"), 485000)),
-            ("top_nets_more", edit(("pricing", "strategies", 0, "expected_sale"), 470000)),
-            ("expected_sale_order", edit(("pricing", "strategies", 0, "expected_sale"), 461000)),
-            ("bottom_nets_more", lambda R: R["pricing"].pop("competing_offer_upside")),
+        def agent_option(role, **values):
+            return lambda R: R["pricing"].__setitem__("options", {role: values})
+
+        cases = [  # only the agent's own figures can trip these: the script's are inside the rules by construction
+            ("list_outside_range", lambda R: R.__setitem__("price_override", {"list_price": 489900,
+                                                                               "reason": "The agent's own price."})),
+            ("expected_above_range", agent_option("competing", expected_sale=485000)),
+            ("top_nets_more", agent_option("top", expected_sale=474000)),
+            ("expected_sale_order", agent_option("top", expected_sale=461000)),
             ("range_wide", lambda R: R.__setitem__("range_override", {"low": 400000, "high": 520000,
                                                                        "reason": "The agent's own range."})),
             ("no_county", no_county),
@@ -353,10 +449,25 @@ class Warnings(unittest.TestCase):
 
     def test_report_errors(self):
         def above_list(R):
-            R["pricing"]["strategies"][0]["expected_sale"] = 485000
+            R["pricing"]["options"] = {"top": {"expected_sale": 485000}}
 
-        def missing(R):
-            del R["recommendation"]["list_price"]
+        def typed_price(R):
+            R["recommendation"]["list_price"] = 469900  # the stance sets it, or the agent's price_override
+
+        def typed_options(R):
+            R["pricing"]["strategies"] = [{"list_price": 469900, "time": "3–6 weeks"}]
+
+        def unknown_stance(R):
+            R["pricing"]["stance"] = "aggressive"
+
+        def no_reason(R):
+            R["pricing"].update(stance="premium", stance_reason="")
+
+        def unknown_role(R):
+            R["pricing"]["options"] = {"bottom": {"time": "1–3 weeks"}}
+
+        def override_no_reason(R):
+            R["price_override"] = {"list_price": 472500}
 
         def typed_range(R):
             R["recommendation"]["low"] = 455000  # the script sets the range
@@ -370,7 +481,10 @@ class Warnings(unittest.TestCase):
         def bad_history(R):
             R["listing_history"] = [{"status": "sold", "price": 1}]
 
-        for change, pattern in ((above_list, r"strategies\[0\]"), (missing, ""), (bad_history, r"listing_history\[0\]"),
+        for change, pattern in ((above_list, r"options\.top\.expected_sale"), (typed_price, r"recommendation\.list_price"),
+                                (typed_options, r"pricing\.strategies"), (unknown_stance, r"pricing\.stance: 'aggressive'"),
+                                (no_reason, r"pricing\.stance_reason"), (unknown_role, r"pricing\.options\.bottom"),
+                                (override_no_reason, r"price_override\.reason"), (bad_history, r"listing_history\[0\]"),
                                 (typed_range, r"recommendation\.low"), (typed_condition, r"cards\[1\]\.adjustments"),
                                 (no_level, r"subject\.condition")):
             with self.subTest(change.__name__):
@@ -382,14 +496,8 @@ class Warnings(unittest.TestCase):
 class ExpectedSale(unittest.TestCase):
     """List x the recent sale-to-final-list ratio plus the option's credit, to $500, inside the range."""
 
-    def no_typed(self, R=None):
-        R = R or report()
-        for x in R["pricing"]["strategies"]:
-            x.pop("expected_sale", None)
-        return R
-
     def test_rule(self):
-        R = self.no_typed()
+        R = report()
         C, _ = run(R)
         ratio = C["expected_sale_basis"]["ratio"]
         top, rec, low = C["strategies"]
@@ -401,13 +509,13 @@ class ExpectedSale(unittest.TestCase):
         self.assertEqual(top["expected_sale"], rec["expected_sale"])  # a higher price buys time, not a higher sale
         self.assertEqual(run(R)[0]["strategies"], C["strategies"])  # the same input, the same figures
         R = report()
-        R["pricing"]["strategies"][2].pop("expected_sale")  # a typed figure is the agent's own
-        C, _ = run(R)
+        R["pricing"]["options"] = {"top": {"expected_sale": 467000}, "recommended": {"expected_sale": 466000}}
+        C, _ = run(R)  # a typed figure is the agent's own
         self.assertEqual([x["expected_sale_source"] for x in C["strategies"]], ["agent", "agent", "rule"])
         self.assertIn("expected_agent", C["note_keys"])
 
     def test_caps_floor_and_assumed_ratio(self):
-        R = texas(self.no_typed())
+        R = texas(report())
         R["market"]["sale_to_list"] = 1.05
         C, _ = run(R)
         self.assertEqual(C["expected_sale_basis"]["source"], "report")
@@ -415,13 +523,15 @@ class ExpectedSale(unittest.TestCase):
             self.assertLessEqual(x["expected_sale"], C["recommendation"]["high"])
             if i < 2:
                 self.assertLessEqual(x["expected_sale"], x["list_price"])
-        C, _ = run(texas(self.no_typed()))
+        C, _ = run(texas(report()))
         self.assertEqual(C["expected_sale_basis"]["source"], "assumed")
         self.assertIn("expected_sale", C["assumption_keys"])
-        R = tanager()
-        self.assertEqual([x["expected_sale"] for x in run(R)[0]["strategies"]], [384500, 384500, 380000])
+        R = tanager()  # the rule's figure falls under the range: each option expects the bottom of it
+        C, _ = run(R)
+        self.assertEqual({x["expected_sale"] for x in C["strategies"]}, {C["recommendation"]["low"]})
+        self.assertTrue(C["expected_sale_basis"]["floored"])
         R["range_override"] = {"low": 385000, "high": 390000, "reason": "The agent's own range."}
-        self.assertEqual([x["expected_sale"] for x in run(R)[0]["strategies"]], [385000, 385000, 385000])
+        self.assertEqual({x["expected_sale"] for x in run(R)[0]["strategies"]}, {385000})
 
     def test_ratio_from_an_export_that_carries_the_final_list(self):
         market, homes = compute.load_inputs(tanager())
@@ -446,11 +556,14 @@ class JudgmentOnly(unittest.TestCase):
         R["deck"]["comp_lines"][next(iter(R["deck"]["comp_lines"]))] = "Sold in {launch_when}"
         R["recommendation"]["paragraph"] = "Priced well."
         R["comps"]["cards"][0]["meta"] = "Sold $1"
+        R["pricing"]["stance_reason"] = "Sales here close at 99% of asking."
+        R["pricing"]["options"] = {"top": {"note": "Sits for 60 days"}}
         with self.assertRaises(compute.ReportError) as e:
             run(R)
         msg = str(e.exception)
         for part in ("summary_page.why[1]", "comps.lean", "competition.rows[0][6]", "deck.comp_lines.",
-                     "recommendation.paragraph", "comps.cards[0].meta"):
+                     "recommendation.paragraph", "comps.cards[0].meta", "pricing.stance_reason",
+                     "pricing.options.top.note"):
             self.assertIn(part, msg)
         R = report()
         R["prep"]["items"][0] = "<strong>Document the roof.</strong> Permits."

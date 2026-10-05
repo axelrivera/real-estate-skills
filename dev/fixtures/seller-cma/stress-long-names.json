@@ -80,7 +80,6 @@
   "next_step": "Review this plan together, sign the listing agreement, and get the home ready to go live."
  },
  "recommendation": {
-  "list_price": 469900,
   "why": "It leaves room for the negotiating that is normal right now, and it presents the home as fairly priced during its first few weeks on the market, when buyer attention is highest. The two sales that would support a higher price closed earlier in the year, when mortgage rates were lower and homes sold faster than they do now."
  },
  "means": [
@@ -311,29 +310,9 @@
   ]
  },
  "pricing": {
+  "stance": "market",
+  "stance_reason": "the home's documented updates match the strongest sales, which sit near the middle of the range, so it can hold a middle price even with the price cuts around it.",
   "intro": "Three realistic options. Expected sale prices and timelines are our estimates from recent sales. The nets are close, so the real difference between them is time and risk.",
-  "recommended_index": 1,
-  "competing_offer_upside": true,
-  "strategies": [
-   {
-    "list_price": 479900,
-    "time": "2–4 months",
-    "seller_credit": 10000,
-    "note": "Tests the top of the range; likely needs a price cut before an offer"
-   },
-   {
-    "list_price": 469900,
-    "time": "3–6 weeks",
-    "seller_credit": 10000,
-    "note": "Priced at the middle of recent adjusted sales; room to negotiate"
-   },
-   {
-    "list_price": 459900,
-    "time": "1–3 weeks",
-    "seller_credit": 5000,
-    "note": "Aims for competing offers; depends on them materializing"
-   }
-  ],
   "note": "The competing-offer option assumes a smaller seller credit, because competing offers usually ask for less help; if they don't show up, its net falls."
  },
  "costs": {
