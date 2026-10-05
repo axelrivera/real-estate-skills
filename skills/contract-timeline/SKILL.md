@@ -52,7 +52,7 @@ Florida rules are built in; for any other contract the time rules come from the 
 python3 scripts/timeline.py deal.json [--side buyer|seller]   # --side overrides the deal file's side
 ```
 
-It prints every date already formatted, or `ok: false` with `problems` to fix. `warnings` are for you: a contract field or `blanks` name the script doesn't read (most often a misspelled name that would drop a deadline). Fix each and re-run; never pass one on. Spot-check before going further: the deposit and loan application dates, anything extended to the next business day, and a closing date that extended past a weekend or holiday.
+It prints every date already formatted, or `ok: false` with `problems` to fix. `warnings` are for you (`render.py` prints them too): a contract field or `blanks` name the script doesn't read (most often a misspelled name that would drop a deadline). Fix each and re-run; never pass one on. Spot-check before going further: the deposit and loan application dates, anything extended to the next business day, and a closing date that extended past a weekend or holiday.
 
 The script adds its own `flags` and `agent_notes` (listed in `references/deal-file.md`, Script Notes), each with a stable key in `flag_keys` and `note_keys`; don't add those yourself. Run the script before writing your own notes, and add one only when its subject isn't among the `note_keys`. When yours overlaps a script note, give it that key (`{"key": "money_mismatch", "text": "..."}`, or the deadline's key): the script keeps its own wording, or, with no script note on that deadline, starts your note with the row's label and date. Pass the `agent_notes` on in plain words, never restated as a second line in your own words, and the `chat_notes` once.
 

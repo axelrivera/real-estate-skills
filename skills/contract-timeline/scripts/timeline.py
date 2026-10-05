@@ -117,25 +117,97 @@ def load_rules(deal, farbar=True):
         raise DealError(str(e)) from None
     rules["_extra_holidays"] = extra
     rules["_tz"], rules["_tz_note"] = time_zone(deal, rules)
+    rules["_tz_note_key"] = ("time_zone_assumed" if str(rules["_tz_note"]).startswith("Time zone not given")
+                             else "time_zone_split")
     return rules, market
 
 
 CONTRACT_HOLIDAY = "a holiday the contract lists"  # TL-114: reads as "falls on a holiday the contract lists (Thu Nov 26)"
 
 
+# The property's time zone: the printed abbreviation, the calendar's IANA zone (TZID) and its name for notes
+ZONES = {"ET": ("America/New_York", "Eastern"), "CT": ("America/Chicago", "Central"),
+         "MT": ("America/Denver", "Mountain"), "MST": ("America/Phoenix", "Mountain standard (no daylight saving)"),
+         "PT": ("America/Los_Angeles", "Pacific"), "AKT": ("America/Anchorage", "Alaska"),
+         "HT": ("Pacific/Honolulu", "Hawaii"), "AT": ("America/Puerto_Rico", "Atlantic")}
+ZONE_ALIASES = {"EST": "ET", "EDT": "ET", "EASTERN": "ET", "CST": "CT", "CDT": "CT", "CENTRAL": "CT",
+                "MDT": "MT", "MOUNTAIN": "MT", "PST": "PT", "PDT": "PT", "PACIFIC": "PT",
+                "AKST": "AKT", "AKDT": "AKT", "ALASKA": "AKT", "HST": "HT", "HAWAII": "HT", "AST": "AT", "ATLANTIC": "AT",
+                **{iana.upper(): abbr for abbr, (iana, _) in ZONES.items()}}
+# Each state's zone, or the zone most of its people live in when it spans two
+STATE_ZONES = {**dict.fromkeys("CT DE DC GA ME MD MA NH NJ NY NC OH PA RI SC VT VA WV FL IN KY MI".split(), "ET"),
+               **dict.fromkeys("AL AR IL IA LA MN MS MO OK WI TN TX KS NE ND SD".split(), "CT"),
+               **dict.fromkeys("CO MT NM UT WY ID".split(), "MT"), "AZ": "MST",
+               **dict.fromkeys("CA NV OR WA".split(), "PT"), "AK": "AKT", "HI": "HT", "PR": "AT", "VI": "AT"}
+# Counties on the state's other zone, where that's certain. In a state whose list is complete (COMPLETE_ZONE_LISTS)
+# every other county is on the state's zone; elsewhere the state's zone is used and the agent is asked to confirm it.
+# Florida's are in its market file (fl.md)
+OTHER_ZONE_COUNTIES = {
+    "TX": {"MT": ["El Paso", "Hudspeth"]},
+    "TN": {"ET": ["Anderson", "Blount", "Bradley", "Campbell", "Carter", "Claiborne", "Cocke", "Grainger", "Greene",
+                  "Hamblen", "Hamilton", "Hancock", "Hawkins", "Jefferson", "Johnson", "Knox", "Loudon", "McMinn",
+                  "Meigs", "Monroe", "Morgan", "Polk", "Rhea", "Roane", "Scott", "Sevier", "Sullivan", "Unicoi",
+                  "Union", "Washington"]},
+    "KY": {"CT": ["Allen", "Ballard", "Barren", "Breckinridge", "Butler", "Caldwell", "Calloway", "Carlisle",
+                  "Christian", "Crittenden", "Daviess", "Edmonson", "Fulton", "Graves", "Grayson", "Hancock",
+                  "Henderson", "Hickman", "Hopkins", "Livingston", "Logan", "Lyon", "Marshall", "McCracken", "McLean",
+                  "Monroe", "Muhlenberg", "Ohio", "Simpson", "Todd", "Trigg", "Union", "Warren", "Webster"]},
+    "IN": {"CT": ["Lake", "Porter", "LaPorte", "La Porte", "Newton", "Jasper", "Starke", "Gibson", "Posey",
+                  "Vanderburgh", "Warrick", "Spencer", "Perry"]},
+    "MI": {"CT": ["Gogebic", "Iron", "Dickinson", "Menominee"]},
+    "KS": {"MT": ["Greeley", "Hamilton", "Sherman", "Wallace"]},
+    "ID": {"PT": ["Benewah", "Bonner", "Boundary", "Clearwater", "Kootenai", "Latah", "Lewis", "Nez Perce", "Shoshone"],
+           "ask": ["Idaho"]},
+    "OR": {"MT": ["Malheur"]},
+    "SD": {"MT": ["Pennington", "Meade", "Lawrence", "Butte", "Custer", "Fall River"]},
+    "NE": {}, "ND": {}, "AK": {},
+}
+COMPLETE_ZONE_LISTS = {"TX", "IN", "MI", "KS", "OR"}
+STATE_NAMES = {"FL": "Florida", "TX": "Texas", "TN": "Tennessee", "KY": "Kentucky", "IN": "Indiana", "MI": "Michigan",
+               "KS": "Kansas", "ID": "Idaho", "OR": "Oregon", "SD": "South Dakota", "NE": "Nebraska",
+               "ND": "North Dakota", "AK": "Alaska"}
+
+
+def _zone(value, state=""):
+    """'CT', 'Central', 'CDT' or 'America/Chicago' -> 'CT'. 'MST' is Arizona's year-round zone there, else Mountain."""
+    v = str(value).strip().upper()
+    if v == "MST":
+        return "MST" if state == "AZ" else "MT"
+    zone = v if v in ZONES else ZONE_ALIASES.get(v)
+    if not zone:
+        raise DealError(f"time_zone {value!r} isn't a US time zone: use ET, CT, MT, MST (Arizona), PT, AKT, HT or "
+                        "AT, or an IANA name such as America/Chicago.")
+    return zone
+
+
 def time_zone(deal, rules):
-    """(zone, note): the deal's `time_zone`, else the market's for the county (TL-19). Times print with the zone when it
-    isn't the market's usual one ("5:00 PM CT" in the western Panhandle)."""
+    """(zone, note): the deal's `time_zone`, else the market's for the county (TL-19), else the zone the state and county
+    use. A state that spans two zones, with a county not known to be on the other one, uses the zone most of the state
+    uses, and the note asks the agent to confirm it. Times print with the zone when it isn't the state's usual one
+    ("5:00 PM CT" in the western Panhandle); the calendar always carries it (TZID)."""
+    state = profiles.state_code(deal.get("state")) or str(deal.get("state") or "").strip().upper()
+    main = _zone(rules["time_zone"], state) if rules.get("time_zone") else STATE_ZONES.get(state)
+    rules["time_zone"] = main  # the usual zone, which times don't repeat
     if deal.get("time_zone"):
-        return deal["time_zone"], None
-    county = str(deal.get("county") or "").lower().removesuffix(" county")
-    for zone, names in (rules.get("time_zone_counties") or {}).items():
+        return _zone(deal["time_zone"], state), None
+    county_name = str(deal.get("county") or "").strip()
+    county = county_name.lower().removesuffix(" county")
+    market_counties = rules.get("time_zone_counties")
+    lists = market_counties if market_counties is not None else OTHER_ZONE_COUNTIES.get(state, {})
+    name = ZONES[main][1] if main else ""
+    for zone, names in lists.items():
         if county and county in {str(n).lower() for n in names}:
             if zone == "ask":
-                return None, (f"{deal.get('county')} County spans two time zones: confirm the property's time zone "
-                              "before relying on a time of day.")
-            return zone, None
-    return rules.get("time_zone"), None
+                return main, (f"{county_name.removesuffix(' County')} County spans two time zones: confirm the property's "
+                              "time zone before relying on a time of day"
+                              + (f" (the calendar uses {name} time until then)." if main else "."))
+            return _zone(zone, state), None
+    settled = county and state in COMPLETE_ZONE_LISTS  # every county not listed is on the state's zone
+    if market_counties is None and state in OTHER_ZONE_COUNTIES and main and not settled:
+        where = f"{county_name.removesuffix(' County')} County" if county else "the property's county"
+        return main, (f"Time zone not given: used {name} time, the zone most of {STATE_NAMES.get(state, state)} uses. "
+                      f"The state spans two time zones: confirm it for {where} before relying on a time of day.")
+    return main, None
 
 
 # --- period math --------------------------------------------------------------
@@ -699,7 +771,8 @@ def rider_rows(c, has, add):
             if_missed="The buyer's 3-day cancel window opens")
         add(key="compensation_cancel", label="Compensation Contingency Ends", short="Compensation Contingency", basis="after",
             from_key="compensation_agreement", days=3, source="Rider GG", party="Buyer", critical=True, contingency=True,
-            broker=True,
+            broker=True, void_if_done="compensation_agreement",  # signed and delivered: the cancel right never arises
+            void_note="The agreement was signed and delivered {done}, so this cancel right doesn't arise",
             action="If the agreement wasn't signed and delivered, the buyer may deliver written notice to cancel",
             if_missed="The contingency ends; the buyer proceeds")
     if has("N") and c.get("cccl_requested"):
@@ -884,6 +957,18 @@ def check_inputs(c, extra_deadlines):
 
 
 CUSTOM_BASES = ("after", "before", "date", "event")
+WALKTHROUGH = re.compile(r"walk[\s_-]*through", re.I)
+
+
+def _is_event(x):
+    """A custom deadline that is something done on a day (the final walk-through), not a deadline at a time: shown as
+    the date alone and an all-day calendar item, as the FAR/BAR walk-through is, unless the contract sets its `time`.
+    `event` says so; without it, a walk-through by its key or label is one."""
+    if x.get("time"):
+        return False
+    if x.get("event") is not None:
+        return bool(x["event"])
+    return bool(WALKTHROUGH.search(f'{x.get("key", "")} {x.get("label", "")}'))
 PARTIES = ("Buyer", "Seller", "Both")
 
 
@@ -913,6 +998,8 @@ def _check_deadline(x, i):
             raise DealError(f"{name} has time {t!r}: use HH:MM (\"17:00\") or \"closing\".")
     if x.get("rollover") is not None and not isinstance(x["rollover"], bool):
         raise DealError(f"{name} has rollover {x['rollover']!r}: use true or false.")
+    if x.get("event") is not None and not isinstance(x["event"], bool):
+        raise DealError(f"{name} has event {x['event']!r}: use true or false.")
 
 
 def compute(c, extra_deadlines, rules, farbar):
@@ -945,7 +1032,8 @@ def compute(c, extra_deadlines, rules, farbar):
     closing = closing_dt.date() if closing_dt else None
 
     items = (farbar_deadlines(c) if farbar else []) + [
-        dict(x, party=str(x["party"]).title(), contingency=x.get("contingency", False)) for x in extra_deadlines]
+        dict(x, party=str(x["party"]).title(), contingency=x.get("contingency", False),
+             **({"no_time": True} if _is_event(x) else {})) for x in extra_deadlines]
     if closing:
         items += closing_rows(c, farbar)
     elif short_sale:  # the closing waits for the approval: shown as pending, never dated from the Effective Date
@@ -1558,6 +1646,12 @@ def analyze(deal, side=None):
     for r in current:
         moved = was.get(r["key"]) if was.get(r["key"]) != r["when"] else None
         done_on = completed.get(r["key"])
+        # a right that arises only if another deadline is missed (Rider GG's cancel window) loses its star once that
+        # deadline is done: missing it can no longer cost anything
+        voided = completed.get(r.get("void_if_done") or "")
+        if voided:
+            r = {**r, "critical": False, "note": "; ".join(n for n in (r.get("note"), r["void_note"].format(
+                done=f"{voided:%b %-d}")) if n)}
         # TL-104: a deadline before the report date that isn't recorded as done is shown to confirm, never as due
         past = bool(r["when"] and not done_on and r["when"].date() < today)
         rows.append({
@@ -1636,7 +1730,7 @@ def analyze(deal, side=None):
                      if farbar else [])
     # chat_notes (the best-effort and revision notes) stay in chat_notes only: agent_notes can reach a template (TL-107)
     if rules.get("_tz_note"):  # TL-108: a question for the agent, not a line for the client
-        note("time_zone_split", rules["_tz_note"])
+        note(rules["_tz_note_key"], rules["_tz_note"])
     if farbar:  # TL-101: a rider name that isn't a CR-7 rider adds no dates, so say so rather than drop it silently
         unread = cf.rider_codes(current_contract.get("riders"))[1]
         if unread:
@@ -1840,7 +1934,7 @@ def analyze(deal, side=None):
         "buyer": contract.get("buyer", ""), "seller": contract.get("seller", ""),
         "price": f"${price:,.0f}" if price else None,
         "what_if": bool(deal.get("what_if")),
-        "time_zone": rules.get("_tz"),  # ET, CT or None (not known): the calendar's TZID
+        "time_zone": rules.get("_tz"),  # ET, CT... (ZONES) or None (a state not in STATE_ZONES): the calendar's TZID
         "financing": FINANCING.get(contract.get("financing", ""), contract.get("financing") or None),
         "contract_label": _contract_label(current_contract) if farbar else contract.get("form") or "Contract",
         "escrow_agent": contract.get("escrow_agent"),
@@ -1858,6 +1952,10 @@ def analyze(deal, side=None):
                         if r["when"] and history and was.get(r["key"]) is None],
         "contingencies_end": firm,
         "contingencies_waiting": [r["short"] for r in waiting],
+        # the same as words for a sentence ("inspection and loan approval"; "financing"), so no reply or report
+        # joins the short names by hand ("inspection ends and loan approval")
+        "contingencies_waiting_text": join_words([period_name(r["short"]) for r in waiting]),
+        "contingencies_end_period": period_name(firm["short"]) if firm else None,
         "short_sale": ({"approval_received": f"{approval:%b %-d, %Y}" if approval else None,
                         "closing_days": int(current_contract.get("short_sale_closing_days") or 45)} if short_sale else None),
         "open_rights": open_rights,
@@ -1885,6 +1983,25 @@ def analyze(deal, side=None):
             "lines": rules_text(rules, eff, timed, any(r.get("no_time") for r in current if r["when"])),
         },
     }
+
+
+def _sentence_case(label):
+    """'HOA Review' -> 'HOA review': lower-case the words, keep acronyms (HOA, FHA/VA)."""
+    return " ".join(w if w.isupper() else w.lower() for w in label.split())
+
+
+def period_name(short):
+    """A deadline's short name as the period it ends, for a sentence: 'Inspection Ends' -> 'inspection',
+    'Loan Approval' -> 'loan approval', 'HOA Review Period Ends' -> 'HOA review'."""
+    words = short.split()
+    while len(words) > 1 and words[-1].lower() in ("ends", "period", "deadline"):
+        words.pop()
+    return _sentence_case(" ".join(words))
+
+
+def join_words(items):
+    """['a', 'b', 'c'] -> 'a, b and c'."""
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1] if items else ""
 
 
 def _contract_label(c):

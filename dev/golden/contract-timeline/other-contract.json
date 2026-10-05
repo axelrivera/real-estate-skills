@@ -28,6 +28,7 @@
   "was": null,
   "when": "2026-12-11 23:59"
  },
+ "contingencies_end_period": "financing",
  "contingencies_waiting": {
   "count": 0
  },
@@ -204,7 +205,7 @@
  "short_sale": null,
  "side": "buyer",
  "support": "best_effort",
- "time_zone": null,
+ "time_zone": "ET",
  "warning_keys": {
   "count": 0
  },
