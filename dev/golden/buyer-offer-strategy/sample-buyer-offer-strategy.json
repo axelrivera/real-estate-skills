@@ -2,7 +2,10 @@
  "B": {
   "analysis_date": "2026-09-23",
   "bb_request": [
-   0.025
+   0.025,
+   {
+    "key": "why_bb_offered"
+   }
   ],
   "buyer": {
    "agent_track": "strong",
@@ -23,6 +26,7 @@
   "chosen_option": "recommended",
   "competition": {
    "heat": "hot",
+   "inferred": false,
    "level": 2
   },
   "contract_form": "as_is",
@@ -57,7 +61,8 @@
    "median_dom": 34,
    "months_supply": 3.8,
    "sale_to_list": 0.981,
-   "share_with_seller_costs": "44%"
+   "share_with_seller_costs": 0.44,
+   "typical_seller_paid": 6500
   },
   "payment_assumed": {
    "count": 1
@@ -3931,6 +3936,7 @@
    ]
   }
  },
+ "by_net": false,
  "cash": {
   "lower_cost": {
    "bb_short": 0,
@@ -3963,6 +3969,17 @@
  },
  "constraints": {
   "count": 0
+ },
+ "dropped_stronger": null,
+ "framing": "best",
+ "lc_why": {
+  "deposit": {
+   "key": "why_deposit",
+   "pct": "2%"
+  },
+  "seller_concessions": {
+   "key": "why_lc_conc"
+  }
  },
  "limits": {
   "lower_cost": {
@@ -4033,6 +4050,7 @@
    "key": "tight_reserve"
   }
  ],
+ "reserve_alt": null,
  "sample": true,
  "target": 336935,
  "terms": {
@@ -4048,6 +4066,7 @@
    "insurance_quote": null,
    "loan_approval_days": 30,
    "price": 363000,
+   "price_by": "rule",
    "seller_concessions": 6500
   },
   "recommended": {
@@ -4062,7 +4081,45 @@
    "insurance_quote": null,
    "loan_approval_days": 30,
    "price": 363000,
+   "price_by": "rule",
    "seller_concessions": 2000
+  }
+ },
+ "why": {
+  "appraisal_gap": {
+   "key": "why_gap_inside"
+  },
+  "buyer_broker_pct": {
+   "key": "why_bb_offered"
+  },
+  "closing_days": {
+   "key": "why_close_fast"
+  },
+  "deposit": {
+   "key": "why_deposit",
+   "pct": "3%"
+  },
+  "escalation": {
+   "key": "why_esc_low_down"
+  },
+  "home_warranty": {
+   "key": "why_warranty"
+  },
+  "inspection_days": {
+   "key": "why_insp_full"
+  },
+  "insurance_quote": {
+   "key": "why_ins_get"
+  },
+  "loan_approval_days": {
+   "key": "why_loan_30"
+  },
+  "price": {
+   "down": "3.5%",
+   "key": "why_price_low_down"
+  },
+  "seller_concessions": {
+   "key": "why_conc_need"
   }
  }
 }

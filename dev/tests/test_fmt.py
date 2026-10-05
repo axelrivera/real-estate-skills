@@ -172,15 +172,12 @@ class Dates(unittest.TestCase):
             self.assertRegex(fmt.when(f"{d} {h:02d}:{m:02d}"), r"^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d\d [AP]M$")
 
     def test_agrees_with_the_when_forms_it_replaces(self):
-        (st,) = load("buyer-offer-strategy", "strategy")
         rng = random.Random(14)
         for d in self.days(300):
             stamp = f"{d} {rng.randint(0, 23):02d}:{rng.choice([0, 5, 30]):02d}"
             for v in (stamp, d.isoformat()):
                 self.assertEqual(fmt.when(v), oe.fmt_when_short(v))
                 self.assertEqual(fmt.when(v, "dot"), oe.fmt_when(v))
-                self.assertEqual(fmt.when(v, "deadline"), st.deadline_label(v))
-                self.assertEqual(fmt.when(v, "long"), st.deadline_label(v, long=True))
             self.assertEqual(fmt.date_long(d), cma.long_date(d.isoformat()))
 
     def test_text_passes_through(self):

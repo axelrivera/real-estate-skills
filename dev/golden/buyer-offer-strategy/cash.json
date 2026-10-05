@@ -2,7 +2,10 @@
  "B": {
   "analysis_date": "2026-09-23",
   "bb_request": [
-   0.025
+   0.025,
+   {
+    "key": "why_bb_offered"
+   }
   ],
   "buyer": {
    "agent_track": "average",
@@ -22,6 +25,7 @@
   "chosen_option": "recommended",
   "competition": {
    "heat": "soft",
+   "inferred": false,
    "level": 1
   },
   "contract_form": "as_is",
@@ -3777,6 +3781,7 @@
    ]
   }
  },
+ "by_net": false,
  "cash": {
   "recommended": {
    "bb_short": 0,
@@ -3810,6 +3815,8 @@
  "constraints": {
   "count": 0
  },
+ "dropped_stronger": null,
+ "framing": "same_for_less",
  "limits": {
   "recommended": {
    "count": 0
@@ -3872,12 +3879,14 @@
   "inspection_days": 10,
   "insurance_quote": true,
   "price": 402000,
+  "price_by": "rule",
   "seller_concessions": 0
  },
  "reached": null,
  "reply_lines": {
   "count": 0
  },
+ "reserve_alt": null,
  "reserve_tight": null,
  "sample": true,
  "target": 378751,
@@ -3892,6 +3901,7 @@
    "inspection_days": 10,
    "insurance_quote": true,
    "price": 394000,
+   "price_by": "rule",
    "seller_concessions": 0
   },
   "stronger": {
@@ -3904,7 +3914,38 @@
    "inspection_days": 10,
    "insurance_quote": true,
    "price": 402000,
+   "price_by": "rule",
    "seller_concessions": 0
+  }
+ },
+ "why": {
+  "appraisal_gap": {
+   "key": "why_gap_cash"
+  },
+  "buyer_broker_pct": {
+   "key": "why_bb_offered"
+  },
+  "closing_days": {
+   "key": "why_close_easy"
+  },
+  "deposit": {
+   "key": "why_deposit",
+   "pct": "3%"
+  },
+  "home_warranty": {
+   "key": "why_warranty"
+  },
+  "inspection_days": {
+   "key": "why_insp_full"
+  },
+  "insurance_quote": {
+   "key": "why_ins_quote"
+  },
+  "price": {
+   "key": "why_promo_price"
+  },
+  "seller_concessions": {
+   "key": "why_conc_none"
   }
  }
 }

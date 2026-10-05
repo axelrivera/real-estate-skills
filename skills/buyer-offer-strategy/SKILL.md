@@ -59,7 +59,7 @@ Local costs come from the property's location (`references/local-costs.md`): Flo
 python3 scripts/strategy.py buyer.json [--cma file.cma.json] [--option recommended|stronger|lower_cost]
 ```
 
-It prints every value already formatted: the page-1 summary, the options side by side, the market check, the worksheet for the chosen option, and the assumptions. Review with judgment; the rules in `references/offer-rules.md` are a first draft. Does the price fit the home's condition? Are the concessions realistic here? Is the inspection period right for the home's age? Record decisions as `overrides`. Loan program caps and payment rules are in `references/loan-programs.md`.
+It prints the document model, every value already formatted and every sentence written by the script: the page-1 summary, the detail tables, the worksheet for the chosen option, the assumptions, the notes (each once) and the chat lines. The PDFs and the markdown template place this same model; quote its sentences, never reword their figures. Fields you write are words or numbers, never figures in text (`references/buyer-file.md`): a value range's `source` names it in words, and market stats are numbers. Review with judgment; the rules in `references/offer-rules.md` are a first draft. Does the price fit the home's condition? Are the concessions realistic here? Is the inspection period right for the home's age? Record decisions as `overrides`. Loan program caps and payment rules are in `references/loan-programs.md`.
 
 ## 3. Deliver
 

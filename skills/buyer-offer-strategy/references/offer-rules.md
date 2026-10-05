@@ -35,7 +35,7 @@ From the listing agent's statement when available; otherwise inferred from marke
 
 ## Likely Pushback
 
-The report's pushback table takes the listing agent's likely counter on each term. An ask that would break one of the buyer's limits (max price, max payment, cash, reserve floor) is answered "hold" with the limit it breaks and the number (the payment at the asked price, the reserve it would leave); the appraisal is never the only reason given when a limit is the real one.
+The report's pushback table takes the listing agent's likely counter on each term. An ask that would break one of the buyer's limits (max price, max payment, cash, reserve floor) or go past the CMA's walk-away is answered "hold" with the limit it breaks and the number (the payment at the asked price, the reserve it would leave); the appraisal is never the only reason given when a limit is the real one.
 
 ## Outlook Bands
 

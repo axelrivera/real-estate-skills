@@ -4,7 +4,10 @@
   "_cma_side_note": null,
   "analysis_date": "2026-09-23",
   "bb_request": [
-   0.025
+   0.025,
+   {
+    "key": "why_bb_offered"
+   }
   ],
   "buyer": {
    "agent_track": "strong",
@@ -76,6 +79,7 @@
   },
   "competition": {
    "heat": "hot",
+   "inferred": false,
    "level": 3
   },
   "contract_form": "other",
@@ -122,6 +126,7 @@
   "sample": true,
   "seller_annual_tax": 12078,
   "value": {
+   "as_of": "2026-09-22",
    "cma_high": 632000,
    "cma_low": 598000,
    "median_adjusted": 618500,
@@ -3491,6 +3496,7 @@
    ]
   }
  },
+ "by_net": false,
  "cash": {
   "recommended": {
    "bb_short": 0,
@@ -3512,6 +3518,29 @@
  "constraints": {
   "count": 0
  },
+ "dropped_stronger": {
+  "by_net": false,
+  "net_change": 15980,
+  "raised": [
+   "raised_deposit"
+  ],
+  "terms": {
+   "appraisal_days": 21,
+   "appraisal_gap": 0,
+   "buyer_broker_pct": 0.025,
+   "closing_days": 30,
+   "contract_form": "other",
+   "deposit": 19000,
+   "home_warranty": 0,
+   "inspection_days": 10,
+   "insurance_quote": true,
+   "loan_approval_days": 21,
+   "price": 632000,
+   "price_by": "rule",
+   "seller_concessions": 0
+  }
+ },
+ "framing": "same_for_less",
  "limits": {
   "recommended": {
    "count": 0
@@ -3607,6 +3636,7 @@
   "insurance_quote": true,
   "loan_approval_days": 21,
   "price": 632000,
+  "price_by": "rule",
   "seller_concessions": 0
  },
  "reached": null,
@@ -3621,6 +3651,7 @@
    "key": "inspection_period"
   }
  ],
+ "reserve_alt": null,
  "reserve_tight": null,
  "sample": true,
  "stronger_dropped": true,
@@ -3638,7 +3669,46 @@
    "insurance_quote": true,
    "loan_approval_days": 21,
    "price": 615000,
+   "price_by": "rule",
    "seller_concessions": 0
+  }
+ },
+ "why": {
+  "appraisal_gap": {
+   "key": "why_gap_inside"
+  },
+  "buyer_broker_pct": {
+   "key": "why_bb_offered"
+  },
+  "closing_days": {
+   "key": "why_close_fast"
+  },
+  "deposit": {
+   "key": "why_deposit",
+   "pct": "3%"
+  },
+  "home_warranty": {
+   "key": "why_warranty"
+  },
+  "inspection_days": {
+   "adds": [
+    {
+     "key": "add_insp_generic"
+    }
+   ],
+   "key": "why_insp_full"
+  },
+  "insurance_quote": {
+   "key": "why_ins_quote"
+  },
+  "loan_approval_days": {
+   "key": "why_loan_21"
+  },
+  "price": {
+   "key": "why_promo_price"
+  },
+  "seller_concessions": {
+   "key": "why_conc_none"
   }
  }
 }

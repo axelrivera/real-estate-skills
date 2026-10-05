@@ -1,26 +1,26 @@
-<!-- Fill from scripts/strategy.py output. Values come from the JSON as printed; never recompute them.
+<!-- Fill from scripts/strategy.py output. Every value comes from the JSON as printed; never recompute or reword one.
      The full answer is the block down to the disclaimers; the sections after it are on request only.
      chat_notes (the best-effort line for a contract that isn't FAR/BAR) goes in chat, word for word, in its own paragraph after the answer; never in a saved markdown report. -->
 
 ## Offer Options: {{property}} (List {{list_price}})
 
-**Recommended Offer:** {{summary.outlook}} with {{summary.competition}}. {{summary.why}}
+**{{summary.kicker}}: {{summary.outlook}}.** {{summary.why}}
 
 **Submit By:** {{summary.submit_by}} · **Competition:** {{summary.signal}} · **Your Limits:** {{summary.limits}}
 
-Strength **{{summary.strength}}/100** · Seller Net **{{summary.seller_net}}** · Your Worst-Case Cash **{{summary.worst_cash}}**
+{{each summary.tiles: "**" + label + "** " + value + " (" + sub + ")", joined with " · "}}
 
 | Term | Offer | Why |
 |---|---|---|
-| {{t.term}} | **{{t.offer}}**{{on the Price row only: " (value range " + value_range + ")", or " (value range not provided)" when value_range is null}} | {{t.why}}{{" (Agent)" when t.agent}} |
+| {{t.term}} | **{{t.offer}}**{{on the Price row only: " (" + summary.price_note + ")"}} | {{t.why}}{{" (Agent)" when t.agent}} |
 
-**{{summary.options_title}}**
+**{{summary.options_title}}** ({{summary.options_sub}})
 
 | Option | Price | Outlook | Seller Net* | Worst-Case Cash | Reserve | What Changes |
 |---|---|---|---|---|---|---|
 | {{o.option}} | {{o.price}} | {{o.outlook}} | {{o.seller_net}} | {{o.worst_cash}} | {{o.reserve}} | {{o.what}} |
 
-{{each summary.absent: "**No " + option + " Option:** " + why, one line each; skip when empty}}
+{{each summary.absent: "**" + label + "** " + why, one line each; skip when empty}}
 
 **How It Stacks Up** (By Competition Level)
 
@@ -34,7 +34,7 @@ Strength **{{summary.strength}}/100** · Seller Net **{{summary.seller_net}}** �
 
 | Item | Amount |
 |---|---|
-| {{e[0], for each pair e in summary.exposure}} | {{e[1]}} |
+| {{e.label, for each entry e of summary.exposure}} | {{e.value}} |
 
 {{each summary.constraints: "**Limit:** " + text}}
 
@@ -46,7 +46,7 @@ Strength **{{summary.strength}}/100** · Seller Net **{{summary.seller_net}}** �
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
 
-<sub>*Seller net before mortgage payoff, as a listing agent would calculate it. Outlook is an estimate from the offer's terms and market signals; other offers and the seller's priorities are unknown. Financing: {{summary.financing}}. Payments and closing costs are estimates; the lender's Loan Estimate governs. Not legal or financial advice.</sub>
+<sub>*Seller net before mortgage payoff, as a listing agent would calculate it. Financing: {{summary.financing}}. {{notes, each once, in order}}</sub>
 
 {{the agent's disclaimers from their profile, verbatim, one line each, then the brokerage's license, office address and phone in one line when the profile has them; skip when there are none}}
 
@@ -74,13 +74,13 @@ Strength **{{summary.strength}}/100** · Seller Net **{{summary.seller_net}}** �
 |---|---|---|---|
 | {{p.term}} | {{p.yours}} | {{p.ask}} | {{p.response}} |
 
-<!-- One row per entry p of pushback[]. When pushback is empty, write instead: "Nothing obvious: the offer already meets the listing-side benchmarks." -->
+<!-- One row per entry p of pushback[]. When pushback is empty, write detail.pushback_none instead. -->
 
-### Assumptions & Data to Confirm
+### Assumptions and Data to Confirm
 
 | Impact | Where | What to Confirm |
 |---|---|---|
-| {{a.impact in Title Case: High, Med, Low}} | {{a.where}} | {{a.what}} |
+| {{a.impact_label}} | {{a.where}} | {{a.what}} |
 
 <!-- One row per entry a of assumptions[]. When assumptions is empty, write instead: "All key inputs provided." -->
 

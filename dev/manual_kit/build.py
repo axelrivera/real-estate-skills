@@ -714,7 +714,7 @@ def strategy_summary(out, lim, reference_intro=()):
              f"## Reference Recommended Offer: {s['outlook']}, Strength {s['strength']}/100", "",
              f"Reference value range (the kit's case 3 picks): {out['value_range']}. Competition: {s['competition']}.", "",
              table(["Term", "Offer", "Why"], [[t["term"], t["offer"].replace("**", ""), t["why"]] for t in s["terms"]]), "",
-             table(["Cash and Payment", "Amount"], [[a, b] for a, b in s["exposure"]]), ""]
+             table(["Cash and Payment", "Amount"], [[e["label"], e["value"]] for e in s["exposure"]]), ""]
     notes = list(s.get("constraints") or []) + [x["text"] for x in out.get("reply_lines") or []
                                                if x["text"] not in (s.get("constraints") or [])]
     if notes:  # OFR-332 and the like: on page 1 and in the reply (the numbers in them move with the range)
