@@ -49,7 +49,7 @@ This sale's own numbers. Each one replaces a built-in value or an estimate (`ref
 |---|---|
 | `listing_fee_pct`, `buyer_broker_fee_pct` | The listing agreement's terms (`0` when the seller won't pay the buyer's agent). Without them, 2.5% each, labeled Assumed |
 | `mortgage_payoff` | The first mortgage payoff from a payoff letter or the seller's figure. `0` when the home is owned free and clear |
-| `mortgage_balance`, `mortgage_rate` | A monthly statement's balance and rate, when there's no payoff figure: compute.py adds a month's interest and $500 of fees, labeled "Estimate from Balance" |
+| `mortgage_balance`, `mortgage_rate` | A monthly statement's balance and rate, when there's no payoff figure: compute.py adds a month's interest at `mortgage_rate` (4.5% when not given), labeled "Estimate from Balance". A payoff figure the agent states ("they owe about $188,000") is `mortgage_payoff`, used as given |
 | `other_payoffs` | `[{label, amount}]`: a second mortgage, a HELOC, a solar loan or lease buyout. Each is its own row |
 | `annual_tax` | This year's tax bill (the MLS sheet or the property report has it). With a closing date it adds the proration |
 | `current_tax_bill_paid` | `true` only when the agent says the seller already paid this year's bill; `false` when the agent says it's unpaid |

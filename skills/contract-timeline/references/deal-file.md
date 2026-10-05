@@ -79,9 +79,9 @@ Required for contracts that aren't FAR/BAR; optional extras for FAR/BAR. One ent
 | `event` | `true` for something done on a day rather than a deadline at a time (a final walk-through): it shows the date alone and is an all-day calendar item, like the FAR/BAR walk-through. A walk-through is one without it, unless the contract sets its `time`. A row due by the closing time (`time: "closing"`) is an all-day calendar item too, never a second event at the closing's hour |
 | `receipt_date`, `what` | For an `after` period that runs from someone's receipt rather than the Effective Date (20 days after the title company receives the contract): the receipt date and what was received ("title company's receipt of the contract"). Without the date, ask for it |
 | `party` | Required: `Buyer`, `Seller` or `Both`, from who the contract says acts. A duty the contract gives someone else (the escrow agent provides the title commitment) goes to the side whose duty it serves, with that person named in `action`: title work backs the seller's duty to convey title, so `Seller`. `Both` is only for a step both parties take (the closing, an agreement both sign) |
-| `critical` | Missing it can cost a contract right or put the deposit at risk |
+| `critical` | Missing it can cost a contract right or put the deposit at risk (another contract: a deadline the contract makes time-sensitive; the report's star legend says so, never the deposit) |
 | `contingency` | It's a buyer protection that ends on this date (drives "your contingencies end") |
-| `source`, `action`, `if_missed` | Paragraph, what to do, consequence, in the contract's words. When the contract states no consequence, `if_missed` says so ("The agreement states no specific remedy"); never write one it doesn't state |
+| `source`, `action`, `if_missed` | Paragraph, what to do, consequence, in the contract's words, with a party inside a sentence written "the buyer" / "the seller" ("written notice to the seller"); the script lowercases a bare "to Seller" for you. When the contract states no consequence, `if_missed` says so ("The agreement states no specific remedy"); never write one it doesn't state |
 
 ## rules
 

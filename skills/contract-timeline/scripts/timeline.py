@@ -235,7 +235,7 @@ def forward(start, days, rules, business=False, end_time=None, rollover=None):
     if rolls and not dates.is_business_day(d, extra):
         nd = dates.next_business_day(d, extra)
         rt = _t(rules["rollover_time"])
-        notes.append(f"ends on {_on(d, nd, extra)}: extended to {_clock(rt)} {nd:%a %b %-d}")
+        notes.append(_rolled(d, nd, extra, rt))
         return datetime.combine(nd, rt), "; ".join(notes)
     return datetime.combine(d, _t(end_time or rules["end_time"])), "; ".join(notes)
 
@@ -246,7 +246,7 @@ def backward(closing, days, rules, business=False, at=None, rollover=None):
     extra = rules["_extra_holidays"]
     t = at or _t(rules["before_closing_time"])
     if business == "trid":  # TL-17: Reg Z business days (Saturdays count; Sundays and federal holidays don't)
-        return datetime.combine(dates.add_trid_days(closing, -days), t), "TRID business days (Saturdays count)"
+        return datetime.combine(dates.add_trid_days(closing, -days), t), ""  # the row's rule names the count (round 5)
     if business:
         return datetime.combine(dates.add_business_days(closing, -days, extra), t), "business days (weekends and holidays skipped)"
     d = closing - timedelta(days=days)
@@ -257,7 +257,7 @@ def backward(closing, days, rules, business=False, at=None, rollover=None):
         return datetime.combine(nd, t), f"falls on {_on(d, nd, extra)}: moved earlier to {nd:%a %b %-d} (conservative)"
     if not dates.is_business_day(d, extra) and rules["before_closing_rollover"] == "next_business_day":
         nd = dates.next_business_day(d, extra)
-        return datetime.combine(nd, t), f"falls on {_on(d, nd, extra)}: extended to {nd:%a %b %-d}"
+        return datetime.combine(nd, t), _rolled(d, nd, extra, t)
     return datetime.combine(d, t), ""
 
 
@@ -276,6 +276,15 @@ def _on(d, nd, extra, dated=True):
             passed.append(f"{x:%a %b %-d} is {dates.holiday_name(x, extra)}")
         x += step
     return text + (f" ({'; '.join(passed)})" if passed else "")
+
+
+CRITICAL_LEGEND = {"farbar": "missing it can cost a contract right or put the deposit at risk",
+                   "other": "a deadline the contract makes time-sensitive; If Missed says what the contract provides"}
+
+
+def _rolled(d, nd, extra, t):
+    """The one way a moved date reads (manual round 5 case 6): "falls on a Sunday: extended to the end of Mon Oct 26"."""
+    return f"falls on {_on(d, nd, extra)}: extended to {_clock(t)} {nd:%a %b %-d}"
 
 
 def _clock(t):
@@ -955,7 +964,7 @@ def _override(value, rules, rollover=None):
     rolls = rollover if rollover is not None else rules["weekend_holiday_rollover"] == "next_business_day"
     if not dates.is_business_day(d, extra) and rolls:
         nd = dates.next_business_day(d, extra)
-        return datetime.combine(nd, _t(rules["rollover_time"])), f"falls on {_on(d, nd, extra)}: extended to {nd:%a %b %-d}"
+        return datetime.combine(nd, _t(rules["rollover_time"])), _rolled(d, nd, extra, _t(rules["rollover_time"]))
     return datetime.combine(d, _t(rules["end_time"])), ""
 
 
@@ -1031,6 +1040,16 @@ def _check_deadline(x, i):
         raise DealError(f"{name} has event {x['event']!r}: use true or false.")
 
 
+_PARTY_MID = re.compile(r"(?<=[A-Za-z0-9,;)] )(?:[Tt]he )?(Buyer|Seller)(?!(?:'s)? [A-Z])('s)?\b")
+
+
+def party_words(text):
+    """A party named inside a sentence reads like the built-in rows (manual round 5 case 8): "written notice to Buyer"
+    becomes "written notice to the buyer"; a sentence may still start "Buyer ..." or "Seller ...", and a capitalized
+    name that runs on ("Seller's Disclosure", "Buyer Broker") is left alone."""
+    return _PARTY_MID.sub(lambda m: f"the {m.group(1).lower()}{m.group(2) or ''}", text)
+
+
 def compute(c, extra_deadlines, rules, farbar):
     check_inputs(c, extra_deadlines)
     eff, extra = _d(c["effective_date"]), rules["_extra_holidays"]
@@ -1062,6 +1081,7 @@ def compute(c, extra_deadlines, rules, farbar):
 
     items = (farbar_deadlines(c) if farbar else []) + [
         dict(x, party=str(x["party"]).title(), contingency=x.get("contingency", False),
+             **{f: party_words(x[f]) for f in ("action", "if_missed") if isinstance(x.get(f), str)},
              **({"no_time": True} if _is_event(x) else {})) for x in extra_deadlines]
     if closing:
         items += closing_rows(c, farbar)
@@ -1120,7 +1140,7 @@ def compute(c, extra_deadlines, rules, farbar):
             if not x.get("business") and r["when"].date() > counted:  # TL-226: extended forward, closer to closing
                 r["rolled_from"] = counted
             r["rule"] = ("By Closing" if by_closing and int(days) == 0 else "Closing day" if int(days) == 0 else
-                         f"{_plural(int(days), 'day')} before Closing (TRID business days)" if x.get("business") == "trid" else
+                         f"{_plural(int(days), 'day')} before Closing (TRID business days: Saturdays count)" if x.get("business") == "trid" else
                          f"{_span(days, x.get('business'))} before Closing")
         elif basis == "date" and not x.get("date"):  # a date blank with no form default (Riders R, V, W, Y, Z)
             r["when"], r["rule"] = None, x.get("blank_rule", "Date written in the rider")
@@ -1953,7 +1973,8 @@ def analyze(deal, side=None):
             note("short_sale_waiting", "Short sale approval not received yet: every period except the deposit and the short sale "
                                "rows waits for it (Rider G, Para. 5). Send the date the buyer receives it: those rows are "
                                "dated from it")
-        if "GG" in cf.rider_codes(current_contract.get("riders"))[0]:
+        # manual round 5 case 7: once the agreement is signed, neither reading changes a date: nothing to ask
+        if "GG" in cf.rider_codes(current_contract.get("riders"))[0] and "compensation_agreement" not in completed:
             note("short_sale_gg", "Rider GG is counted from the Effective Date, as its own words say; Rider G Para. 5 "
                                "(all other periods run from the approval) could be read to move it. Confirm which reading the parties use",
                  GG_KEYS)
@@ -1990,6 +2011,8 @@ def analyze(deal, side=None):
         "financing": FINANCING.get(contract.get("financing", ""), contract.get("financing") or None),
         # iteration 12 eval 14: "farbar" or "other"; another contract's report states no consequence it doesn't record
         "form_family": "farbar" if farbar else "other",
+        # manual round 5 case 8: the star's meaning; another contract's states no FAR/BAR consequence (deposit at risk)
+        "critical_legend": CRITICAL_LEGEND["farbar" if farbar else "other"],
         "contract_label": _contract_label(current_contract) if farbar else contract.get("form") or "Contract",
         "escrow_agent": contract.get("escrow_agent"),
         "effective": {"date": str(eff), "display": f"{eff:%b %-d, %Y}", "short": f"{eff:%b %-d}",

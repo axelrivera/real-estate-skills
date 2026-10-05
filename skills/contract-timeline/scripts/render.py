@@ -41,7 +41,7 @@ def _day(row):
 
 
 def page_one_rows(t):
-    """The rows page 1 shows (the strip and All Key Dates): every dated row except a cancel window that can no longer
+    """The rows page 1 shows (the strip and Key Dates): every dated row except a cancel window that can no longer
     arise (Rider GG's once the agreement is signed, iteration 12). The Deadline Details table keeps it, marked done."""
     return [r for r in t["rows"] if not r.get("voided")]
 
@@ -346,14 +346,18 @@ def build_html(t, agent, sample):
     if strip_mixed(t):
         legend += f'<span><i style="background:{MIXED};border-radius:50%"></i>Different Parties, Same Day</span>'
 
+    # manual round 5 case 8: another contract's star states no FAR/BAR consequence; page 1 has no If Missed column
+    legend1 = ("missing it can cost a contract right (such as the right to cancel) or put the deposit at risk"
+               if t.get("form_family") != "other" else "a deadline the contract makes time-sensitive; Deadline Details "
+               "says what the contract provides if it's missed")
     page1 = f'''{hero}{amended}
 <h2>Timeline <span class="h2s">{esc(strip_span(t))}</span></h2>
 <div class="panel" style="padding:2px 6px">{strip(t, colors)}</div>
 <div class="legend">{legend}<span>Filled Dot = Critical Deadline</span></div>
-<h2>All Key Dates <span class="h2s">Day = calendar days after the Effective Date · ★ = Critical · {side} items highlighted</span></h2>
+<h2>Key Dates <span class="h2s">Day = calendar days after the Effective Date · ★ = Critical · {side} items highlighted</span></h2>
 <div class="tbl brk"><table class="kd"><colgroup><col style="width:22%"><col style="width:9%"><col style="width:57%"></colgroup>
 <thead><tr><th class="n">Date</th><th class="n">Day</th><th>Deadline</th><th>Who</th></tr></thead><tbody>{key_rows}</tbody></table></div>
-<div class="sm" style="margin-top:3px"><span class="crit">★</span> Critical = missing it can cost a contract right (such as the right to cancel) or put the deposit at risk.</div>
+<div class="sm" style="margin-top:3px"><span class="crit">★</span> Critical = {esc(legend1)}.</div>
 {pending}{flags}'''
 
     detail_rows = "".join(
@@ -381,7 +385,7 @@ def build_html(t, agent, sample):
     # TL-262: the lender-estimate line only when the report shows a lender's target (insurance bound, Closing Disclosure)
     lender_line = " Lender dates are estimates." if any(r.get("lender") for r in t["rows"] + t["pending"]) else ""
     details = f'''<div class="pb"></div><div class="dh">Deadline Details</div>
-<div class="sm" style="margin-bottom:4px"><span class="crit">★</span> Critical = missing it can cost a contract right or put the deposit at risk.</div>
+<div class="sm" style="margin-bottom:4px"><span class="crit">★</span> Critical = {esc(t["critical_legend"])}.</div>
 <div class="tbl brk"><table class="det"><colgroup><col style="width:14%"><col style="width:20%"><col style="width:7%"><col style="width:19%"><col style="width:22%"></colgroup>
 <thead><tr><th class="n">Date</th><th>Deadline · Source</th><th>Who</th><th>Rule</th><th>Action</th><th>If Missed</th></tr></thead><tbody>{detail_rows}</tbody></table></div>
 <div class="appx"><div class="dh" style="margin-top:10px">Appendix: Amendments and Date Rules</div>
@@ -507,6 +511,20 @@ def ics(t, lender_dates=False):
     return "\r\n".join(_fold(x) for x in lines) + "\r\n"
 
 
+def calendar_lender_rows(t, lender_dates=False):
+    """The lender's targets the calendar leaves out (dated, open), in date order; none with --lender-dates."""
+    if lender_dates:
+        return []
+    return [r for r in t["rows"] if r.get("lender") and not r.get("done") and not r.get("past")]
+
+
+def lender_calendar_note(rows):
+    names = timeline.join_words([f'{r["label"].replace(" (Lender Target)", "")} ({r["display"].split(" · ")[0]})'
+                                 for r in rows])
+    return (f"The calendar leaves out the lender's targets, {names}: they're estimates, not contract dates. "
+            "Say so in one line and offer to add them (render with --lender-dates, titled Lender Target).")
+
+
 def build(deal, fmt, out_dir, ctx):
     if ctx.get("date"):
         deal = {**deal, "report_date": ctx["date"]}
@@ -518,6 +536,9 @@ def build(deal, fmt, out_dir, ctx):
         path = os.path.join(out_dir, render.filename(t["property"].split(",")[0], "Contract Timeline", t["side"], ext="ics"))
         with open(path, "w", encoding="utf-8", newline="") as f:
             f.write(ics(t, ctx.get("lender_dates")))
+        left_out = calendar_lender_rows(t, ctx.get("lender_dates"))
+        if left_out:  # manual round 5 case 6: the reply says in one line which estimates the calendar leaves out
+            print("For the agent, in chat only: " + lender_calendar_note(left_out), file=sys.stderr)
         return [path]
     if not t["closing"] and not t.get("short_sale"):  # a short sale before approval has no closing date yet
         raise timeline.DealError("The report needs the closing date: add contract.closing_date and re-run.")

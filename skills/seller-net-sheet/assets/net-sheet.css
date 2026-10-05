@@ -31,8 +31,8 @@ header:has(+ .tiles){border-bottom:none;padding-bottom:0}
 .net tr.final td.short{color:var(--risk-strong)}
 
 /* where the price goes: one stacked bar per price (the fills are the data) */
-.bars{margin-top:2px}
-.bars .row{display:grid;grid-template-columns:150px 1fr 88px;align-items:center;gap:8px;margin:4px 0}
+.bars{margin-top:6px;display:grid;grid-template-columns:fit-content(45%) 1fr 88px;align-items:center;gap:4px 8px} /* one grid: the label column fits the longest label */
+.bars .row{display:contents}
 .bars .lbl{font-size:8pt;font-weight:700;color:var(--text)}
 .bars .track{display:flex;height:12px;border-radius:3px;overflow:hidden;border:1px solid var(--brand-rule)}
 .bars .seg.costs{background:var(--brand-accent)} .bars .seg.payoffs{background:var(--grey-light)} .bars .seg.net{background:var(--brand)}
@@ -48,7 +48,7 @@ header:has(+ .tiles){border-bottom:none;padding-bottom:0}
 body.compact .tile{padding:4px 10px} body.compact .tile b{font-size:17pt;margin:0}
 body.compact .prep{font-size:7.8pt;line-height:1.25} body.compact .prep b.agent{font-size:10pt}
 body.compact .net td{padding:1.2px 8px} body.compact .net tr.group td{padding-top:3px}
-body.compact h2{margin:6px 0 2px} body.compact .bars .row{margin:2px 0}
+body.compact h2{margin:6px 0 2px} body.compact .bars{row-gap:2px;margin-top:4px}
 body.compact .notes{font-size:7pt;margin-top:5px} body.compact .notices{margin-top:6px}
 body.nochart .chart{display:none}
 /* tight: after the chart is left out, when a long disclaimer or long labels still run past the page */

@@ -105,7 +105,7 @@ class OtherMarkets(unittest.TestCase):
         self.assertTrue(C["warnings"] and "bring about" in C["warnings"][0])
         self.assertIn("bring about", C["notes"][0])
         payoff = next(r for r in C["rows"] if r["label"].startswith("Mortgage Payoff"))
-        self.assertEqual(-payoff["amounts"][0], round(309000 * (1 + 6.25 / 1200) + 500))
+        self.assertEqual(-payoff["amounts"][0], round(309000 * (1 + 6.25 / 1200)))  # a month of interest, no hidden fees (round 5)
         self.assertEqual(row(C, "Solar Panel Loan")["amounts"][0], -14000)
 
 
@@ -166,7 +166,7 @@ class Iteration9(unittest.TestCase):
 
     def test_builtin_estoppel_fee_is_noted(self):  # iteration 11: a built-in local fee says it's typical, like title fees
         r = compute.run(fixture("florida-three-prices.json"))
-        self.assertTrue(any("estoppel fee is a typical local charge" in n for n in r["notes"]))
+        self.assertTrue(any("estoppel fee is a typical Florida charge" in n for n in r["notes"]))
         # the deal's own figure (Miami fixture) and a national estimate (Texas, labeled on its line) need no note
         self.assertFalse(any("estoppel" in n for n in compute.run(fixture("miami-condo-bill-paid.json"))["notes"]))
         self.assertFalse(any("estoppel" in n for n in compute.run(fixture("texas-no-payoff.json"))["notes"]))
