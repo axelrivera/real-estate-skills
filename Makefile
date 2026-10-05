@@ -12,12 +12,13 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test golden layout-check style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test fuzz golden layout-check style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium, Node modules (nvm) and Python 3.11 (uv, via Homebrew if missing)"
 	@echo "make hooks          Install the git pre-commit hook (shared/ copies must be in sync)"
 	@echo "make test           Run unit tests in dev/tests/"
+	@echo "make fuzz           Run the generated tests on N inputs per skill (N=200 default, FUZZ_SEED, SKILL=<skill>)"
 	@echo "make golden         Rewrite dev/golden/ from the current code (review the diff; make test fails until it matches)"
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
 	@echo "make layout-check   Render every PDF fixture into $(OUT)/layout/; fail on page-1 overflow, clipped text or a near-empty page"
@@ -27,7 +28,7 @@ help:
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
 	@echo "make forms-check    Compare the FAR/BAR form PDFs in sources/ with dev/forms/farbar-forms.json (ARGS=\"--accept CR-7_L\")"
 	@echo "make mock-contracts Build every mock FAR/BAR contract package in dev/mock_contracts/scenarios/ into $(OUT)/mock-contracts/ (ARGS=\"--answer-key --scanned\")"
-	@echo "make manual-kit     Build the manual smoke-test kit into $(OUT)/manual-test/ (local only; see docs/manual-testing.md)"
+	@echo "make manual-kit     Build the release smoke-test kit into $(OUT)/manual-test/ (local only; see docs/manual-testing.md)"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
 	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/ (SKILL=seller-net-sheet for one skill; stress-* with the long-name profile)"
@@ -62,6 +63,11 @@ layout-check:
 
 test:
 	@PATH="$$PATH:$(LO_BIN)" $(PY) -m unittest discover -s dev/tests  # LibreOffice, when installed, for the deck-PDF check
+
+# The generated tests at release size: N seeded inputs per skill (200 by default; FUZZ_SEED=… shifts the seeds),
+# SKILL=seller-cma for one skill. make test runs the same tests on 8 inputs.
+fuzz:
+	@FUZZ_N=$(or $(N),200) $(NVM) $(DEV_ENV) $(PY) -m unittest discover -s dev/tests -p 'test_generated_$(or $(subst -,_,$(SKILL)),*).py'
 
 golden:
 	@$(PY) dev/golden.py --update

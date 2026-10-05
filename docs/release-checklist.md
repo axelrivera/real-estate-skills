@@ -10,6 +10,7 @@ The gate every release passes before the pull request from `develop` into `main`
 - [ ] `make mock-contracts ARGS="--answer-key --scanned"` builds every starter.
 - [ ] `make outputs` renders every fixture.
 - [ ] `make layout-check` passes: no page-1 overflow, clipped text or near-empty page in any fixture, stress fixtures included.
+- [ ] `make fuzz` passes: the generated tests on 200 inputs per skill, with no invariant failure (a failure is fixed in the construction, never with a check for that input; [Tests](development.md#tests)).
 - [ ] `claude plugin validate .` passes.
 
 ## 2. Golden Results
@@ -19,12 +20,12 @@ The gate every release passes before the pull request from `develop` into `main`
 ## 3. Samples
 
 - [ ] `make samples`, then check what changed with `git diff --stat samples/`. Samples carry their build time, so every file shows as changed; a change is real only when the page text differs (`dev/samples_diff.py`).
-- [ ] Open the regenerated PDFs, PPTX and ICS and look at them: layout, colors, no overflowing text, nothing a client shouldn't see.
+- [ ] Commit the samples whose page text changed. Layout and overflow are covered by `make layout-check` and `make fuzz`, not by eye.
 
 ## 4. Evals
 
 - [ ] List what changed since the last release: `git diff --stat v<last>..develop -- skills shared`. A change in `shared/` counts for every skill that copies it.
-- [ ] Run the full eval pass three times (`dev/evals/setup.py N --runs 3`, every skill, including the mock-package and manual-kit evals; [development.md](development.md#evals)). The spread report (`dev/evals/spread.py N`) shows no script-owned differences, and the pass rate is no lower than the last full pass.
+- [ ] Run the full eval pass once (`dev/evals/setup.py N`, every skill, including the mock-package and smoke-kit mirrors; [development.md](development.md#evals)), graded checks first. The pass rate is no lower than the last full pass. An expectation that passed last time and fails now is re-run three times (`--runs 3 <skill>:<id>`) and compared with `dev/evals/spread.py N` before it's called a regression: the spread shows no script-owned differences.
 - [ ] Re-run the fair-housing evals whenever a template, reference or prose script changed.
 - [ ] Every failed expectation and real friction item is fixed, or recorded in [status.md](status.md) with a reason.
 
@@ -36,7 +37,7 @@ The gate every release passes before the pull request from `develop` into `main`
 
 ## 6. Manual Smoke Test
 
-- [ ] Run [manual-testing.md](manual-testing.md) on the packaged build in the desktop app (Cowork) and in claude.ai, with the old plugins uninstalled. Every case passes, or its failure is fixed and the case re-run.
+- [ ] Run the smoke pass in [manual-testing.md](manual-testing.md) (`make manual-kit`, about ten yes/no checks, twenty minutes) on the packaged build in the desktop app (Cowork) and in claude.ai, with any older copy uninstalled. Every check is a Yes, or its failure is fixed and the case re-run.
 
 ## 7. Version and Notes
 

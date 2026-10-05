@@ -138,6 +138,8 @@ class EvalFiles(unittest.TestCase):
                     if f.startswith(("out/mock-contracts/", "out/manual-test/")):
                         self.assertNotIn("/key/", f, where)
                         self.assertNotEqual(os.path.basename(f), "expected.md", where)
+                        if f.startswith("out/manual-test/"):  # the smoke kit builds the case that holds it
+                            self.assertIn(f'"{f.split("/")[2]}"', kit, f"{where}: {f}")
                     else:
                         self.assertTrue(os.path.isfile(os.path.join(ROOT, f)), f"{where}: {f}")
 
