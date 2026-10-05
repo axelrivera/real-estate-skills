@@ -185,7 +185,7 @@
   ]
  },
  "comps": {
-  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Cattail Crossing pool homes of about 2,200–2,300 square feet, built in the late 1990s. We included the ones that argue against a lower price. For each sale, we adjust for differences so it reflects what that home would have sold for if it were this one.",
+  "intro": "We looked at every sale within one mile since April 2026 and chose the {comps_count} closest matches: Cattail Crossing pool homes of about 2,200–2,300 square feet, built in the late 1990s. We included the ones that argue against a lower price. For each sale, we adjust for differences so it reflects what that home would have sold for if it were this one.",
   "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000–$45,000 for a home that hadn't been updated to this level; $5,000 for documented recent systems this home can't yet match; $10,000 for a pond lot; about 1.5% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
   "cards": [
    {
@@ -200,17 +200,13 @@
      {
       "label": "Documented Recent Systems",
       "amount": -5000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -9000
      }
     ],
     "meta": "Sold $612,000 · April 30, 2026 · 2,248 sq ft · 4/3 · pool · 0.24 acre · 0.1 mi",
     "bullets": [
      "The strongest sale for the seller's price. Renovated in 2023 on the same street, and sold above asking in five days with no seller help.",
      "Slightly larger: minus about $2,500. It came with a permitted 2023 AC; this home's AC age isn't listed, so that home gets a small edge: minus $5,000.",
-     "It sold in April, when rates were lower and homes were moving faster: minus about $9,000."
+     "It sold in April, when rates were lower and homes were moving faster: minus about {time_amount}."
     ]
    },
    {
@@ -225,17 +221,13 @@
      {
       "label": "Pond Lot",
       "amount": -10000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -4000
      }
     ],
     "meta": "Sold $598,500 · June 19, 2026 · 2,190 sq ft · 4/3 · pool · 0.31-acre pond lot · 0.3 mi",
     "bullets": [
      "A renovated pool home that went under contract in eight days at nearly full price.",
      "A bit smaller: plus $1,800. It backs onto the pond on a larger lot, which buyers pay more for: minus $10,000.",
-     "Early summer sale: minus about $4,000 for the market since then."
+     "Early summer sale: minus about {time_amount} for the market since then."
     ]
    },
    {
@@ -266,17 +258,13 @@
      {
       "label": "Partial Update vs. Full Renovation",
       "amount": 30000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -8400
      }
     ],
     "meta": "Sold $561,000 · May 15, 2026 · 2,214 sq ft · 4/3 · pool · 0.2 mi",
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
      "The seller paid $11,000 of the buyer's costs, so the seller actually received $550,000.",
-     "Updated kitchen but original baths, not a full remodel: plus $30,000. Spring sale: minus about $8,400."
+     "Updated kitchen but original baths, not a full remodel: plus $30,000. Spring sale: minus about {time_amount}."
     ]
    },
    {
@@ -297,7 +285,11 @@
     ]
    }
   ],
-  "summary_paragraph": "The adjusted values run from about $572,000 to $595,000, with a median of {median_adjusted}. We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales support the same picture: 1409 Arrowroot Way (updated, pool) sold for $566,000 in May, and 1586 Buttonbush Dr (renovated, no pool) sold for $552,000 in June."
+  "summary_paragraph": "The adjusted values run from about $572,000 to $595,000, with a median of {median_adjusted}. We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales support the same picture: 1409 Arrowroot Way (updated, pool) sold for $566,000 in May, and 1586 Buttonbush Dr (renovated, no pool) sold for $552,000 in June.",
+  "time_adjustment": {
+   "rate_per_quarter": 0.01,
+   "cutoff": "2026-07-01"
+  }
  },
  "scatter": {
   "heading": "The Whole Neighborhood at a Glance",

@@ -1,6 +1,6 @@
 {
- "adjusted_max": 492300,
- "adjusted_min": 436200,
+ "adjusted_max": 493900,
+ "adjusted_min": 435900,
  "cash_fit": null,
  "competition_estimates": {
   "count": 0
@@ -118,12 +118,12 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 492300,
+    "adjusted": 493900,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 483800,
+    "adjusted": 484000,
     "seller_paid": 0,
     "sold_price": 495000
    },
@@ -133,12 +133,12 @@
     "sold_price": 427000
    },
    {
-    "adjusted": 438400,
+    "adjusted": 440200,
     "seller_paid": 12000,
     "sold_price": 429000
    },
    {
-    "adjusted": 436200,
+    "adjusted": 435900,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -451,9 +451,24 @@
   "tax_index": 1
  },
  "placeholders": {
+  "comps_count": "five",
+  "comps_since_split": "one",
+  "comps_with_age": "one",
+  "comps_with_condition": "two",
+  "comps_with_credits": "three",
+  "comps_with_garage": "zero",
+  "comps_with_location": "zero",
+  "comps_with_lot": "one",
+  "comps_with_other": "zero",
+  "comps_with_pool": "zero",
+  "comps_with_size": "four",
+  "comps_with_time": "four",
+  "comps_with_view": "one",
   "credit_monthly_per_5k": "$41",
   "price_cut_count": "4",
-  "price_cut_pct": "4.0%"
+  "price_cut_pct": "4.0%",
+  "time_cutoff": "July",
+  "time_rate": "1%"
  },
  "range": {
   "high": 480000,
@@ -493,7 +508,7 @@
   {
    "annual": 5931.54,
    "estimated": false,
-   "monthly_display": "$494",
+   "monthly_display": "$492",
    "problem": null,
    "school_mills": 5.25,
    "short": "Unincorporated",
@@ -502,13 +517,23 @@
   {
    "annual": 7838.0,
    "estimated": false,
-   "monthly_display": "$653",
+   "monthly_display": "$650",
    "problem": null,
    "school_mills": 5.25,
    "short": "City",
    "total_mills": 18.18
   }
  ],
+ "time_adjustment": {
+  "cutoff": "2026-07-01",
+  "cutoff_display": "July",
+  "falling": true,
+  "rate": 0.01,
+  "rate_display": "1%",
+  "undated": {
+   "count": 0
+  }
+ },
  "trend": {
   "at_subject": 443061.34,
   "r2": 0.8286,

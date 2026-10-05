@@ -12,7 +12,7 @@ import shutil
 import statistics
 import subprocess
 import tempfile
-from datetime import date
+from datetime import date, timedelta
 
 from . import finance, mls
 
@@ -47,6 +47,7 @@ def css():
 # --- html building blocks ----------------------------------------------------
 
 def table(head, rows, num_cols=(), row_classes=None):
+    head = [unspaced_range(h) for h in head]  # Results_v5: "April – June" reads "April–June" in a header
     th = "".join(f'<th class="n">{h}</th>' if i in num_cols else f"<th>{h}</th>" for i, h in enumerate(head))
     body = []
     for ri, r in enumerate(rows):
@@ -121,7 +122,13 @@ def fill(value, values):
     """Replace {median_adjusted}-style placeholders in every string of `value` (report wording), so numbers the
     scripts compute aren't typed by hand. Unknown names are left as written."""
     if isinstance(value, str):
-        return re.sub(r"\{(\w+)\}", lambda m: values.get(m.group(1), m.group(0)), value)
+        def one(m):
+            v = values.get(m.group(1), m.group(0))
+            # a value that opens a sentence ("{comps_since_split} sales closed..."): its first letter upper case
+            if v[:1].islower() and re.search(r"(^|[.!?]\s+|<strong>)$", value[:m.start()]):
+                return v[0].upper() + v[1:]
+            return v
+        return re.sub(r"\{(\w+)\}", one, value)
     if isinstance(value, list):
         return [fill(v, values) for v in value]
     if isinstance(value, dict):
@@ -625,7 +632,8 @@ PAGINATE_JS = """([pageH, starts]) => {
   let shift = 0; const moved = [];
   // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
   // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
-  const SAFE = 16, FLOW_ROOM = 0.35;
+  // Results_v5: a table or list runs on once a fifth of the page is left (it was a third: whole pages went 35-60% empty)
+  const SAFE = 16, FLOW_ROOM = 0.2;
   const squash = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
   for (const el of Array.from(wrap.children)) {
     const r = el.getBoundingClientRect();
@@ -655,7 +663,10 @@ PAGINATE_JS = """([pageH, starts]) => {
     // A group that opts in (.runon: the seller CMA's How This Was Prepared) runs on to the next page block by block
     // instead of moving whole and leaving the page before part empty (Results_v4 case 02), once its heading and first
     // block fit here.
-    if (pos > 5 && isKeep && el.classList.contains('runon') && pos + h > pageH - SAFE && pageH - pos >= 0.25 * pageH) {
+    // Results_v5: so does a group of headings and paragraphs only (no table, chart or list to keep whole), from a fifth
+    const textOnly = isKeep && Array.from(el.children).every(c => /^(H2|H3|P)$/.test(c.tagName));
+    const runon = el.classList.contains('runon') || textOnly;
+    if (pos > 5 && isKeep && runon && pos + h > pageH - SAFE && pageH - pos >= (textOnly ? FLOW_ROOM : 0.25) * pageH) {
       const units = Array.from(el.children).slice(1);
       if (units.length && pos + units[0].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
         el.classList.add('split');
@@ -666,7 +677,9 @@ PAGINATE_JS = """([pageH, starts]) => {
         continue;
       }
     }
-    if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH) brk = true;
+    // a section never starts in the bottom quarter of a page, unless all of it fits there (Results_v5: a short section
+    // that fits stays, rather than leave the page a quarter empty)
+    if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH && !(keepOK && pos + h <= pageH - SAFE)) brk = true;
     else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
       // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
       // half the page empty; it moves only when less than 40% of the page is left or it would need to shrink more.
@@ -777,53 +790,85 @@ def outlier_warnings(cards, share=OUTLIER_SHARE):
     return out
 
 
+RANGE_WIDTH_SHARE = 0.06  # Results_v5: the supported range is at most about 6% of the value wide (method.md)
+RANGE_STEP = 5000  # each end of the range is rounded to $5,000
+
+
+def range_width(median, market=None):
+    """Results_v5 (owner decision A): how wide the supported range may be, as {cap, floor, target}. `cap` is about 6%
+    of the median adjusted value (`cma.range_width_pct` in the market overrides the share; an agent's older dollar
+    `cma.typical_range_width` is still honored as the cap); `floor` is half of it; `target` is the widest $5,000 step
+    under the cap (at least the floor), the width a range normally has. $440,000 gives a cap of $26,400 and a $25,000
+    target; $386,800 a cap of $23,208 and a $20,000 target."""
+    pct = market.get("cma.range_width_pct") if market is not None else None
+    dollars = market.get("cma.typical_range_width") if market is not None and not pct else None
+    cap = dollars or (pct or RANGE_WIDTH_SHARE) * median
+    floor = cap / 2
+    target = max(math.floor(cap / RANGE_STEP) * RANGE_STEP, math.ceil(floor / RANGE_STEP) * RANGE_STEP)
+    return {"cap": cap, "floor": floor, "target": target}
+
+
 def range_bounds(values, market):
-    """CMA-296, iteration 12: the widest range the comps support without one sale setting an end, as (low, high, typical).
-    Each end may reach the second-lowest / second-highest adjusted value (the lowest / highest with 3 comps or fewer),
-    rounded outward to $5,000, or half the market's typical width (`cma.typical_range_width`; 5% of the median where
-    none is built in) from the median, rounded outward to $5,000, whichever is farther: tightly clustered comps never
-    force a range narrower than the method's normal width."""
+    """CMA-296, iteration 12: the widest span the comps support without one sale setting an end, as (low, high, target
+    width). Each end may reach the second-lowest / second-highest adjusted value (the lowest / highest with 3 comps or
+    fewer), rounded outward to $5,000, or half the target width from the median, rounded outward to $5,000, whichever
+    is farther: tightly clustered comps never force a range narrower than the method's normal width. A range must
+    also stay within range_width's cap (Results_v5): the bounds say where its ends may sit, not how wide it may be."""
     v = sorted(values)
     median = statistics.median(v)
-    typical = (market.get("cma.typical_range_width") if market is not None else None) or 0.05 * median
+    target = range_width(median, market)["target"]
     lo, hi = (v[1], v[-2]) if len(v) >= 4 else (v[0], v[-1])
-    low = min(math.floor(lo / 5000) * 5000, math.floor((median - typical / 2) / 5000) * 5000)
-    high = max(math.ceil(hi / 5000) * 5000, math.ceil((median + typical / 2) / 5000) * 5000)
-    return low, high, typical
+    low = min(math.floor(lo / RANGE_STEP) * RANGE_STEP, math.floor((median - target / 2) / RANGE_STEP) * RANGE_STEP)
+    high = max(math.ceil(hi / RANGE_STEP) * RANGE_STEP, math.ceil((median + target / 2) / RANGE_STEP) * RANGE_STEP)
+    return low, high, target
+
+
+def passing_range(values, market):
+    """One range that passes every range check: the target width centered on the median (ends to $5,000), moved inside
+    the bounds when the rounding put an end outside them."""
+    median = statistics.median(values)
+    low_ok, high_ok, target = range_bounds(values, market)
+    lo = round((median - target / 2) / RANGE_STEP) * RANGE_STEP
+    lo = min(max(lo, low_ok), high_ok - target)
+    return lo, lo + target
 
 
 def range_warnings(bl, values, market):
-    """CMA-296: the supported range against the adjusted comps (method.md), for the buyer and seller CMAs alike.
-    `bl` has `low` and `high`. Returns [(key, text)], each naming a range that passes. `range_wide`: wider than twice
-    the market's typical width. `range_one_comp`: an end past `range_bounds`, so a single comp sets it. `range_narrow`:
-    under half the typical width, narrower than the comps can promise."""
+    """CMA-296, Results_v5: the supported range against the adjusted comps (method.md), for the buyer and seller CMAs
+    alike. `bl` has `low` and `high`. Returns [(key, text)], each saying what passes and naming a range that does, which
+    is never wider than the cap nor narrower than the floor. `range_wide`: wider than about 6% of the median (the cap).
+    `range_one_comp`: an end past `range_bounds`, so a single comp sets it. `range_narrow`: under half the cap, narrower
+    than the comps can promise."""
     if not values:
         return []
     median = statistics.median(values)
-    low_ok, high_ok, typical = range_bounds(values, market)
-    # the typical range centered on the median, rounded to $5,000, inside the bounds: one range that always passes
-    ex_lo = max(low_ok, round((median - typical / 2) / 5000) * 5000)
-    ex_hi = min(high_ok, round((median + typical / 2) / 5000) * 5000)
+    low_ok, high_ok, _ = range_bounds(values, market)
+    w = range_width(median, market)
+    widest = math.floor(w["cap"] / RANGE_STEP) * RANGE_STEP
+    narrowest = math.ceil(w["floor"] / RANGE_STEP) * RANGE_STEP
+    ex_lo, ex_hi = passing_range(values, market)
     example = f"{money(ex_lo)} – {money(ex_hi)}"
-    passes = (f"Any range inside {money(low_ok)} – {money(high_ok)} and no wider than {money(2 * typical, 1000)} passes; "
-              f"about {money(typical, 1000)} wide is typical (for example {example}).")
+    sizes = (f"{money(narrowest)} to {money(widest)} wide" if widest > narrowest else f"{money(widest)} wide")
+    passes = (f"A range passes when both ends sit inside {money(low_ok)} – {money(high_ok)} and it's {sizes} "
+              f"(about {w['floor'] / median:.0%} to {w['cap'] / median:.0%} of the median adjusted value, {money(median)}); "
+              f"for example {example}.")
     out = []
     width = bl["high"] - bl["low"]
-    if width > 2 * typical + 1:
-        out.append(("range_wide", f"The range is {money(width)} wide, more than twice the typical {money(typical, 1000)}: "
-                    "the comps disagree more than a range can absorb. Replace the weakest match (the largest adjustments, "
-                    "the farthest or oldest sale) and re-run, or keep it and say in the bottom line why it's this wide. "
-                    + passes))
+    if width > w["cap"] + 1:
+        out.append(("range_wide", f"The range is {money(width)} wide, more than about {w['cap'] / median:.0%} of the median adjusted value "
+                    f"({money(w['cap'], 100)}): wider than the comps support, and it pulls the price ends apart. Narrow it "
+                    "around the best matches; if the comps truly disagree, replace the weakest match (the largest "
+                    "adjustments, the farthest or oldest sale) and re-run. " + passes))
     if bl["high"] > high_ok:
         out.append(("range_one_comp", f"The top of the range ({money(bl['high'])}) is above {money(high_ok)}: only one sale "
                     f"supports it. Bring it to {money(high_ok)} or below. " + passes))
     if bl["low"] < low_ok:
         out.append(("range_one_comp", f"The bottom of the range ({money(bl['low'])}) is below {money(low_ok)}: only one sale "
                     f"supports it. Bring it to {money(low_ok)} or above. " + passes))
-    if width < typical / 2:
-        out.append(("range_narrow", f"The range is {money(width)} wide, under half the typical {money(typical, 1000)}: "
-                    "adjusted comps can't promise a value that precise, even when they agree. Widen it around the median "
-                    f"adjusted value ({money(median)}), for example to {example}. " + passes.split("; ")[0] + "."))
+    if width < w["floor"] - 1:
+        out.append(("range_narrow", f"The range is {money(width)} wide, under half the widest a range may be "
+                    f"({money(w['floor'], 100)}): adjusted comps can't promise a value that precise, even when they agree. "
+                    f"Widen it around the median adjusted value ({money(median)}). " + passes))
     return out
 
 
@@ -834,7 +879,9 @@ def range_warnings(bl, values, market):
 ADJUSTMENT_KINDS = ("size", "pool", "garage", "condition", "age", "lot", "view", "location", "time", "credits", "other")
 # Kind inferred from a label when none is given: the first kind with a matching word, in this order
 _KIND_WORDS = (
-    ("time", r"market|since the sale|time|months?|quarter|rates?|sold in|appreciation|softening"),
+    ("time", r"market|since the sale|time|months?|quarter|rates?|sold in|appreciation|softening|slowdown|sale date|"
+             r"(?:earlier|older|spring|summer|fall|winter|january|february|march|april|may|june|july|august|september|"
+             r"october|november|december) sale"),
     ("credits", r"credit|concession|seller[- ]paid|seller help"),
     ("pool", r"pool|spa"),
     ("garage", r"garage|carport|parking"),
@@ -864,6 +911,384 @@ def adjustment_kind_errors(cards):
                 out.append(f"comps.cards[{i}].adjustments[{j}].kind: {a['kind']!r} isn't a kind → use one of "
                            f"{', '.join(ADJUSTMENT_KINDS)}, or leave it out to take it from the label.")
     return out
+
+
+# The plain words for each adjustment kind, the same in every report and deck
+ADJ_KIND_WORDS = {"size": "size", "pool": "pool", "garage": "garage", "condition": "condition and updates",
+                  "age": "roof and systems", "lot": "lot", "view": "view or water", "location": "location",
+                  "time": "market changes since each sale", "credits": "seller credits", "other": "other differences"}
+
+
+def _and(items):
+    items = [i for i in items if i]
+    return ", ".join(items[:-1]) + " and " + items[-1] if len(items) > 1 else "".join(items)
+
+
+def adjustment_kinds_used(cards):
+    """Each adjustment kind the comps use (an adjustment with an amount), once, in the order first used, plus
+    `credits` when any sale had seller-paid costs (they come off its price)."""
+    seen = []
+    for c in cards or []:
+        for a in c.get("adjustments") or []:
+            if isinstance(a, dict) and not a.get("amount"):
+                continue
+            kind = adjustment_kind(a)
+            if kind not in seen:
+                seen.append(kind)
+    if any(c.get("seller_concessions") for c in cards or []) and "credits" not in seen:
+        seen.append("credits")
+    return seen
+
+
+def adjustment_words(cards):
+    """'size, condition and updates, market changes since each sale and seller credits' (CMA-26): what was adjusted,
+    each kind once, in fixed plain words, never the label's own wording."""
+    return _and([ADJ_KIND_WORDS[k] for k in adjustment_kinds_used(cards)])
+
+
+def adjustment_summary(cards, time_info=None):
+    """Results_v5 case 02: the method line's list of what was adjusted, generated from the comps so it names every kind
+    actually used, each with its amounts: 'Adjusted for size (plus or minus up to $7,500), condition and updates
+    ($5,000 to $25,000), market changes since each sale (1.5% a quarter for sales before July) and seller credits (taken
+    off each sale price).' `time_info` is apply_time_adjustments' info, for the rate and cutoff. '' with no adjustments."""
+    parts = []
+    for kind in adjustment_kinds_used(cards):
+        amounts = sorted({abs(a["amount"]) for c in cards for a in c.get("adjustments") or []
+                          if isinstance(a, dict) and isinstance(a.get("amount"), (int, float)) and a["amount"]
+                          and adjustment_kind(a) == kind})
+        if kind == "time" and time_info:
+            detail = (f"{time_info['rate_display']} a quarter {'off' if time_info['falling'] else 'added to'} sales "
+                      f"before {time_info['cutoff_display']}")
+        elif kind == "credits" and not amounts:
+            detail = "taken off each sale price"
+        elif not amounts:
+            detail = ""
+        elif len(amounts) == 1:
+            detail = money(amounts[0])
+        else:
+            detail = f"{money(amounts[0])} to {money(amounts[-1])}"
+        parts.append(ADJ_KIND_WORDS[kind] + (f" ({detail})" if detail else ""))
+    return f"Adjusted for {_and(parts)}." if parts else ""
+
+
+# --- time adjustments: script-owned (Results_v5) ------------------------------------
+
+QUARTER_DAYS = 365.25 / 4
+TIME_LABEL = "Market Change Since the Sale"  # the card label of a time adjustment the script adds
+_LONG_DATE = re.compile(r"\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+"
+                        r"(\d{1,2}),\s+(\d{4})\b")
+MONTH_NAMES = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+               "November", "December")
+
+
+def _iso(value):
+    try:
+        return date.fromisoformat(str(value)[:10]) if value not in (None, "") else None
+    except ValueError:
+        return None
+
+
+def comp_close_date(card, homes=()):
+    """A comp's close date: the card's `close_date` (YYYY-MM-DD), else the export's sold row for its address, else
+    the date written in its `meta` line ("Sold $384,000 · September 19, 2026 · ..."). None when there's none."""
+    d = _iso(card.get("close_date"))
+    if d:
+        return d
+    row = next((h for h in homes or () if h.get("status") == "SOLD" and h.get("close_date")
+                and mls.same_address(_street(h["address"]), _street(card.get("address", "")))), None)
+    if row:
+        return row["close_date"] if isinstance(row["close_date"], date) else _iso(row["close_date"])
+    m = _LONG_DATE.search(str(card.get("meta", "")))
+    if m:
+        return date(int(m.group(3)), MONTH_NAMES.index(m.group(1)) + 1, int(m.group(2)))
+    return None
+
+
+def default_split(R, homes=()):
+    """The market split date: report.json's `split_date`, else stats.py's default (90 days before the last sale)."""
+    d = _iso(R.get("split_date"))
+    if d:
+        return d
+    sold = [h["close_date"] for h in homes or () if h.get("status") == "SOLD" and isinstance(h.get("close_date"), date)]
+    return max(sold) - timedelta(days=90) if sold else None
+
+
+def day_words(d):
+    """'July' for the 1st of a month, 'August 15' otherwise: a cutoff or split as the report writes it."""
+    return MONTH_NAMES[d.month - 1] + ("" if d.day == 1 else f" {d.day}")
+
+
+def _pct(rate):
+    return f"{rate * 100:.2f}".rstrip("0").rstrip(".") + "%"
+
+
+def apply_time_adjustments(comps, homes, as_of, split):
+    """Results_v5: time adjustments are the script's, by one rule. `comps.time_adjustment` states the method:
+    {rate_per_quarter (a fraction, 0.015 for 1.5%), prices ("falling", the default, or "rising"), cutoff (YYYY-MM-DD,
+    default the market split)}. Each comp that closed before the cutoff gets the rate times the quarters from its close
+    date to the as-of date, on its price net of seller-paid costs, to $100 (minus when prices are falling); a sale on or
+    after the cutoff gets none. The script adds the adjustment (kind "time"), or checks one typed on the card: a typed
+    amount that disagrees, or a time adjustment on a sale after the cutoff, is an error. Each card's bullets may say
+    `{time_amount}`. Returns (errors as `field: problem → fix`, info for the method line and placeholders or None)."""
+    cards = comps.get("cards") or []
+    spec = comps.get("time_adjustment")
+    typed = [(i, j, a) for i, c in enumerate(cards) for j, a in enumerate(c.get("adjustments") or [])
+             if isinstance(a, dict) and adjustment_kind(a) == "time"]
+    if spec in (None, {}, False):
+        return [f"comps.cards[{i}].adjustments[{j}]: a time adjustment ({money(a['amount']) if isinstance(a.get('amount'), (int, float)) else a.get('amount')}) "
+                "typed by hand → state the method once in comps.time_adjustment ({\"rate_per_quarter\": 0.015} for 1.5% a "
+                "quarter, plus \"cutoff\" when it isn't the market split) and leave the amount out: the script figures each "
+                "sale's from its close date." for i, j, a in typed if a.get("source") != "script"], None
+    errors = []
+    if not isinstance(spec, dict):
+        return ["comps.time_adjustment: should be {rate_per_quarter, prices, cutoff} → for example "
+                "{\"rate_per_quarter\": 0.015}."], None
+    rate = spec.get("rate_per_quarter")
+    if isinstance(rate, bool) or not isinstance(rate, (int, float)) or not 0 < rate <= 0.05:
+        errors.append(f"comps.time_adjustment.rate_per_quarter: {rate!r} → a fraction per quarter between 0 and 0.05 "
+                      "(0.015 for 1.5%); with no change in prices, leave comps.time_adjustment out.")
+    prices = spec.get("prices", "falling")
+    if prices not in ("falling", "rising"):
+        errors.append(f"comps.time_adjustment.prices: {prices!r} → \"falling\" (older sales come down) or \"rising\".")
+    cutoff = _iso(spec.get("cutoff")) if spec.get("cutoff") else split
+    if spec.get("cutoff") and not cutoff:
+        errors.append(f"comps.time_adjustment.cutoff: {spec['cutoff']!r} → a date like 2026-07-01, or leave it out for "
+                      "the market split.")
+    elif cutoff is None:
+        errors.append("comps.time_adjustment.cutoff: no cutoff and no market split → give split_date (or the cutoff).")
+    end = _iso(as_of) or date.today()
+    if errors:
+        return errors, None
+    falling = prices == "falling"
+    by_card, undated = {}, []
+    for i, j, a in typed:
+        by_card.setdefault(i, []).append((j, a))
+    for i, c in enumerate(cards):
+        closed = comp_close_date(c, homes)
+        where = f"comps.cards[{i}]"
+        if closed is None:  # missing data never stops a render: no date, no time adjustment (the caller warns)
+            undated.append(c.get("address", "?"))
+            continue
+        sold, conc = c.get("sold_price"), c.get("seller_concessions") or 0
+        if not isinstance(sold, (int, float)) or not isinstance(conc, (int, float)):
+            continue  # derive_comps names it
+        amount = 0
+        if closed < cutoff:
+            amount = round((sold - conc) * rate * max((end - closed).days, 0) / QUARTER_DAYS / 100) * 100
+            amount = -amount if falling else amount
+        mine = by_card.get(i, [])
+        if len(mine) > 1:
+            errors.append(f"{where}.adjustments: {len(mine)} time adjustments → keep one, or leave them out and the "
+                          "script adds it.")
+            continue
+        if mine:
+            j, a = mine[0]
+            got = a.get("amount")
+            off = not isinstance(got, (int, float)) or abs(got - amount) > max(300, 0.05 * abs(amount))
+            if off and a.get("source") != "script":
+                why = (f"it closed {long_date(closed.isoformat())}, on or after the {long_date(cutoff.isoformat())} cutoff, so it "
+                       "gets none" if not amount else
+                       f"{_pct(rate)} a quarter from its {long_date(closed.isoformat())} close to {long_date(end.isoformat())} "
+                       f"gives {money(amount)}")
+                errors.append(f"{where}.adjustments[{j}]: the time adjustment is {money(got) if isinstance(got, (int, float)) else repr(got)}, "
+                              f"but {why} → leave the amount out (delete the line) and the script adds it.")
+                continue
+            if amount:
+                a.update(amount=amount, kind="time", source="script")
+            else:
+                c["adjustments"].pop(j)
+        elif amount:
+            c.setdefault("adjustments", []).append({"label": TIME_LABEL, "amount": amount, "kind": "time", "source": "script"})
+        c["time_amount"] = amount
+        bullets = c.get("bullets") or []
+        if any("{time_amount}" in str(b) for b in bullets):
+            if not amount:
+                errors.append(f"{where}.bullets: says {{time_amount}}, but this sale closed on or after the cutoff and "
+                              "gets no time adjustment → drop that sentence.")
+            else:
+                c["bullets"] = [str(b).replace("{time_amount}", money(abs(amount))) for b in bullets]
+    info = {"rate": rate, "rate_display": _pct(rate), "falling": falling, "cutoff": cutoff.isoformat(),
+            "cutoff_display": day_words(cutoff), "undated": undated}
+    return errors, info
+
+
+def time_warnings(info):
+    """A comp with no close date gets no time adjustment: say which, so the agent can add close_date."""
+    return [f"{a}: no close date (card close_date, the export or its meta line), so it has no time adjustment. Add "
+            "close_date (YYYY-MM-DD) to the card and re-run." for a in (info or {}).get("undated") or []]
+
+
+def time_values(info):
+    """{time_rate} ('1.5%') and {time_cutoff} ('July', 'August 15') for the method wording."""
+    return {"time_rate": info["rate_display"], "time_cutoff": info["cutoff_display"]} if info else {}
+
+
+_TIME_SENTENCE = re.compile(r"\bper quarter\b|\ba quarter\b|\btime adjust", re.I)
+_BEFORE_MONTH = re.compile(r"\b(?:before|prior to|until)\s+(?:early\s+|late\s+|mid-?\s*)?(" + "|".join(MONTH_NAMES) + r")\b")
+_PERCENT = re.compile(r"(\d+(?:\.\d+)?)\s*%")
+
+
+def time_method_errors(fields, info):
+    """Results_v5: the method's stated time adjustment must be the one applied: in a sentence about the quarterly
+    adjustment, a typed percent other than the rate, or 'before <Month>' at another month than the cutoff, is an
+    error (write {time_rate} and {time_cutoff}). `fields`: [(path, text)]."""
+    if not info:
+        return []
+    out = []
+    for path, text in fields:
+        for sentence in re.split(r"(?<=[.!?;])\s+", re.sub(r"<[^>]+>", "", str(text))):
+            if not _TIME_SENTENCE.search(sentence):
+                continue
+            pcts = [float(p) for p in _PERCENT.findall(sentence)]
+            if pcts and not any(abs(p - info["rate"] * 100) < 0.01 for p in pcts):
+                out.append(f'{path}: says "{_PERCENT.search(sentence).group(0)}" a quarter, but the time adjustment applied '
+                           f"is {info['rate_display']} → write {{time_rate}}.")
+            cut = info["cutoff_display"].split()[0]
+            for m in _BEFORE_MONTH.finditer(sentence):
+                if m.group(1) != cut:
+                    out.append(f'{path}: says "{m.group(0)}", but the time adjustment applies to sales before '
+                               f"{info['cutoff_display']} → write \"before {{time_cutoff}}\".")
+    return out
+
+
+# --- comp facts for the wording, and the light check of comp prose (Results_v5) ------------------
+
+NUMBER_WORDS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
+
+
+def number_word(n):
+    return NUMBER_WORDS[n] if 0 <= n < len(NUMBER_WORDS) else f"{n:,}"
+
+
+def comp_facts(cards, homes, split, as_of=None, fmt=money):
+    """Results_v5: the facts comp wording usually states, as placeholders: {comps_count}, {comps_since_split} (closed on
+    or after the market split), {comps_with_<kind>} (comps with an adjustment of that kind, e.g. {comps_with_age}:
+    roof and systems; credits also counts seller-paid costs), {newest_comp} and {newest_comp_date}, {adjusted_min},
+    {adjusted_max}, {adjusted_median} (with `fmt`). Counts are words ('four'). Returns (values, raw) where raw holds
+    the numbers the prose check compares against."""
+    dated = [(c, comp_close_date(c, homes)) for c in cards]
+    since = [c for c, d in dated if d and split and d >= split]
+    kinds = {k: sum(1 for c in cards if any(isinstance(a, dict) and a.get("amount") and adjustment_kind(a) == k
+                                              for a in c.get("adjustments") or [])
+                     or (k == "credits" and c.get("seller_concessions")))
+             for k in ADJUSTMENT_KINDS}
+    values = {"comps_count": number_word(len(cards)), "comps_since_split": number_word(len(since)),
+              **{f"comps_with_{k}": number_word(n) for k, n in kinds.items()}}
+    adjusted = [c["adjusted"] for c in cards if isinstance(c.get("adjusted"), (int, float))]
+    if adjusted:
+        values.update(adjusted_min=fmt(min(adjusted)), adjusted_max=fmt(max(adjusted)),
+                      adjusted_median=fmt(statistics.median(adjusted)))
+    known = [(c, d) for c, d in dated if d]
+    newest = max(d for _, d in known) if known else None
+    if newest:
+        top = next(c for c, d in known if d == newest)
+        values.update(newest_comp=display_address(top["address"]), newest_comp_date=f"{MONTH_NAMES[newest.month - 1]} {newest.day}")
+    raw = {"n": len(cards), "n_since": len(since), "kinds": kinds, "dates": [d for _, d in dated], "newest": newest,
+           "adjusted": adjusted, "sold": [c.get("sold_price") for c in cards],
+           "adjusted_since": [c["adjusted"] for c in since if isinstance(c.get("adjusted"), (int, float))],
+           "sold_since": [c.get("sold_price") for c in since],
+           "split_month": MONTH_NAMES[split.month - 1] if split else None, "addresses": [c.get("address", "") for c in cards]}
+    return values, raw
+
+
+_COUNT = re.compile(r"\b(?P<n>" + "|".join(NUMBER_WORDS[2:11]) + r")\s+(?:of\s+(?:the|these|our)\s+)?"
+                    r"(?P<mid>(?:[A-Za-z][\w'-]*\s+){0,3}?)(?P<noun>sales|comps|comparables|comparable sales|matches|homes)\b",
+                    re.I)
+_COMP_WORDS = re.compile(r"\b(closest|best|nearest|comparable|comps?|matches)\b", re.I)
+_SINCE = re.compile(r"\b(?:since|after|from)\s+(?:early\s+|mid-?\s*|late\s+)?(" + "|".join(MONTH_NAMES) + r")\b")
+_WITH = re.compile(r"^\s+with\s+(?:an?\s+|the\s+)?((?:[\w-]+\s*){1,4})", re.I)
+_BAND = re.compile(r"(?:\b(?P<q1>low|lower|mid|middle|high|upper)(?:[- ]to[- ](?P<q2>mid|middle|high|upper))?[- ]?)?"
+                   r"\$(?P<d>\d{1,3}),?(?P<z>0)00s\b", re.I)
+_NEWEST = re.compile(r"\b(newest|most recent|latest)\b(?:\s+[\w-]+){0,2}?\s+(sale|sales|close|closing|comp|sold|match)\b", re.I)
+_LISTING_WORDS = re.compile(r"\b(listings?|for sale|asking|listed|active)\b", re.I)
+
+
+def _band(m):
+    """(low, high) of a '$440,000s' band ('$400,000s' spans $100,000), narrowed by low / mid / high, $1,000 loose."""
+    d = int(m.group("d"))
+    base, span = d * 1000, 100000 if d % 100 == 0 else 10000 if d % 10 == 0 else 1000
+    q1, q2 = (m.group("q1") or "").lower(), (m.group("q2") or "").lower()
+    part = {"low": (0, 0.5), "lower": (0, 0.5), "mid": (0.25, 0.75), "middle": (0.25, 0.75), "high": (0.5, 1),
+            "upper": (0.5, 1)}
+    lo, hi = part.get(q1, (0, 1))
+    if q2:
+        hi = part[q2][1]
+    return base + lo * span - 1000, base + hi * span + 1000
+
+
+def comp_prose_errors(fields, raw, extra_counts=()):
+    """Results_v5: a light check of comp and scatter wording against the comps, kept conservative. A number-word count
+    of comps ("the three sales that closed since July", "four comps with newer roofs", "the five closest matches") that
+    isn't the comps' own count; a "$440,000s" band the comps it names don't sit in; "the newest sale" for a comp that
+    isn't the newest. `fields`: [(path, text)]; `raw` from comp_facts; `extra_counts`: other counts a "since <split>"
+    sentence may mean (the export's sales since the split). Each as `field: problem → fix`."""
+    out = []
+    since_ok = {raw["n_since"], *extra_counts}
+    for item in fields:
+        path, text = item[:2]
+        card = re.match(r"^comps\.cards\[(\d+)\]", path)
+        card_index = item[2] if len(item) > 2 else int(card.group(1)) if card else None
+        for sentence in re.split(r"(?<=[.!?])\s+", re.sub(r"<[^>]+>", "", str(text))):
+            since_split = any(m.group(1) == raw["split_month"] for m in _SINCE.finditer(sentence))
+            for m in _COUNT.finditer(sentence):
+                n, noun = NUMBER_WORDS.index(m.group("n").lower()), m.group("noun").lower()
+                w = _WITH.match(sentence[m.end():])
+                kind = adjustment_kind({"label": w.group(1)}) if w else None
+                if kind and kind != "other":
+                    if n != raw["kinds"].get(kind, n):
+                        out.append(f'{path}: says "{m.group(0)} with {w.group(1).strip()}", but {number_word(raw["kinds"][kind])} '
+                                   f"of the comps have a {ADJ_KIND_WORDS[kind]} adjustment → write {{comps_with_{kind}}}.")
+                elif since_split:
+                    if n not in since_ok:
+                        out.append(f'{path}: says "{m.group(0)}" since {raw["split_month"]}, but '
+                                   f"{number_word(raw['n_since'])} of the comps closed since then → write {{comps_since_split}}.")
+                elif noun != "homes" and (noun in ("comps", "comparables", "comparable sales", "matches")
+                                          or _COMP_WORDS.search(m.group("mid") or "")):
+                    if n not in (raw["n"], raw["n_since"]):
+                        out.append(f'{path}: says "{m.group(0)}", but the report has {number_word(raw["n"])} comps → '
+                                   "write {comps_count}.")
+            named = _COMP_WORDS.search(sentence) or _COUNT.search(sentence) or re.search(r"\badjust", sentence, re.I)
+            if named and not _LISTING_WORDS.search(sentence):
+                group = (raw["adjusted_since"], raw["sold_since"]) if since_split else (raw["adjusted"], raw["sold"])
+                for m in _BAND.finditer(sentence):
+                    lo, hi = _band(m)
+                    if group[0] and not any(vals and all(lo <= v <= hi for v in vals if isinstance(v, (int, float)))
+                                            for vals in group):
+                        out.append(f'{path}: says "{m.group(0)}", but the comps it names run from {money(min(group[0]))} '
+                                   f"to {money(max(group[0]))} adjusted → write {{adjusted_min}} to {{adjusted_max}}.")
+            if raw["newest"] and _NEWEST.search(sentence):
+                if card_index is not None:
+                    i = card_index
+                    d = raw["dates"][i] if i < len(raw["dates"]) else None
+                    if d and d < raw["newest"]:
+                        out.append(f'{path}: calls this sale "{_NEWEST.search(sentence).group(0)}", but a comp closed later '
+                                   f"({long_date(raw['newest'].isoformat())}) → say {{newest_comp}} ({{newest_comp_date}}) is "
+                                   "the newest, or drop it.")
+                else:
+                    hit = [i for i, a in enumerate(raw["addresses"]) if a and _street(a).split(" ")[0] in sentence.split()
+                           and _street(a).split(" ")[1:2] and _street(a).split(" ")[1].lower() in sentence.lower()]
+                    if len(hit) == 1 and raw["dates"][hit[0]] and raw["dates"][hit[0]] < raw["newest"]:
+                        out.append(f'{path}: calls {display_address(raw["addresses"][hit[0]])} '
+                                   f'"{_NEWEST.search(sentence).group(0)}", but a comp closed later → write {{newest_comp}}.')
+    return out
+
+
+# --- dates in history tables, and column headers -------------------------------------
+
+def history_date_labels(dates, this_year=None):
+    """Results_v5 case 03: 'Jul 10, 2026' on every row when the rows span more than one year (or their one year isn't
+    `this_year`), so a bare 'Aug 14' never reads as another row's year; 'Jul 10' on every row when all are this year."""
+    years = {d.year for d in dates}
+    short = len(years) == 1 and (this_year is None or years == {this_year})
+    return [f"{d:%b} {d.day}" if short else f"{d:%b} {d.day}, {d.year}" for d in dates]
+
+
+_SPACED_RANGE = re.compile(r"(?<=\w)\s+[–-]\s+(?=\w)")
+
+
+def unspaced_range(text):
+    """Results_v5: 'April – June' in a column header reads 'April–June' (an en dash, no spaces)."""
+    return _SPACED_RANGE.sub("–", str(text))
 
 
 def long_date(value):

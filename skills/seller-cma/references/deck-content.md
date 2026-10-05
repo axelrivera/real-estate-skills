@@ -30,7 +30,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `recommendation_why` | One sentence, about 25 words at most |
 | `value_drivers` | 2–4 `[heading, one line, icon]`, headings in Title Case: the features the adjustments credit for this home. A dollar figure in a driver must be one of this report's comp adjustments ("Worth $30,000 to $45,000 against the partly updated and dated sales" only when those adjustments are on the comp cards); when every comp shares the feature, there's no adjustment, so say what it does without a number. compute.py warns `driver_amount` on any other figure |
 | `document_items` | 0–2 `[heading, one line, icon]`, headings in Title Case: upgrades this home has that need paperwork to count (a roof or permits the seller controls). None is fine: the box is left out |
-| `comp_lines` | `{comp card address: "why it matters, under 45 characters"}` |
+| `comp_lines` | `{comp card address: "why it matters, under 45 characters"}`. The slide leads the strongest match's line with "Strongest match" itself (compute.py's pick: the smallest adjustments inside the range); never call a comp the strongest, best or closest match here |
 | `*_takeaway` | One or two short sentences: the single point of that slide |
 | `sold_line` | Optional; default "sales within a mile since April", from the export's distances and dates. Without an export the slide starts at the comps (no separate "sales reviewed" step); write `sold_line` only when you reviewed more sales than you used |
 | `comps_basis` | Optional; what the comps were matched on, for step 2 ("size, pool, age and neighborhood"; "size, floor, view and building" for a condo). Default "closest matches to your home" |
@@ -43,7 +43,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `competition` | 1–3 `[address, status line, one-line why]`, only real competitors; the address must be in the report's competition rows (the price comes from there) |
 | `launch_plan` | 3–6 `[short heading, one line, icon]`, headings in Title Case. Each card is one of the report's Before We List steps, its heading that step's name: a `prep.items` bold lead or a `summary_page.first_steps` heading, in Title Case without the period ("Decide on a seller-credit budget now." is "Decide on a Seller-Credit Budget Now"; case, punctuation and articles don't matter, a new short name like "Seller-Credit Budget" isn't). Never a service the agent didn't name (a lockbox, staging): compute.py stops on a heading that isn't a step name and lists the names that pass |
 | `needs_short` | Up to 5 short items from `needs` |
-| `timeline` | 2–5 `[when, what]` ("This Week", "Week 2"), including the price-review point |
+| `timeline` | 2–5 `[when, what]` ("This Week", "Week 2"), including the price-review point. The go-live step's `when` is `{launch_when}` (or `{launch_date}`), the same launch date as the report |
 | `adjustments_summary` | One sentence with the adjustment rates used (from `method_note`); it goes in the appendix's speaker notes |
 | `notes` | Speaker notes keyed `recommendation, method, drivers, comps, scatter, market, competition, strategies, nets, payments, launch, next`: where each number comes from and what the agent should say |
 

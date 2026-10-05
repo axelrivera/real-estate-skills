@@ -175,7 +175,7 @@ cma:                                  # calibrated on Central Florida (Seminole 
     price_range: [300000, 700000]
   radius_miles: 1
   lookback_months: 6
-  typical_range_width: 25000
+  range_width_pct: 0.06               # Results_v5: the supported range is at most about 6% of the value wide
   adjustments:
     living_area_per_sqft: 75          # for differences under about 300 sq ft
     pool: 25000

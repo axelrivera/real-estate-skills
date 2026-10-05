@@ -264,14 +264,17 @@
  "sum_history": "Listing History:",
  "th_assumed_sub": "{pct}% Brokerage Assumed",
  "sum_options_note_assumed": "Brokerage is assumed at {pct}% until the listing agreement sets it.",
- "expected_basis_export": "Each expected sale is the list price times {ratio}, what nearby homes sold since {since} got against their final asking price after seller-paid costs, plus that option's seller credit, rounded to $500",
- "expected_basis_report": "Each expected sale is the list price times {ratio}, what the sales we reviewed got against their final asking price after seller-paid costs, plus that option's seller credit, rounded to $500",
- "expected_basis_assumed": "Each expected sale assumes {ratio} of the list price after seller-paid costs, plus that option's seller credit, rounded to $500",
+ "expected_basis_export": "Expected sales: each option's list price times {ratio}, what nearby homes sold since {since} got against their final asking price after seller-paid costs, plus that option's seller credit, rounded to $500",
+ "expected_basis_report": "Expected sales: each option's list price times {ratio}, what the sales we reviewed got against their final asking price after seller-paid costs, plus that option's seller credit, rounded to $500",
+ "expected_basis_assumed": "Expected sales: each option's list price times an assumed {ratio} (what homes typically get against their final asking price after seller-paid costs), plus that option's seller credit, rounded to $500",
  "expected_basis_capped": ", and never above the list price or the top of the supported range",
- "expected_basis_floored": ". It's never below the bottom of the supported range: the comps are already net of seller credits, so the range is the home's value",
+ "expected_basis_floored": ", and never below the bottom of the supported range, since the comps are already net of seller credits",
  "expected_basis_agent": "The {prices} option's expected sale is our own estimate.",
  "expected_basis_agent_many": "The {prices} options' expected sales are our own estimates.",
- "expected_basis_top": "At {prices}, the expected sale is the recommended option's: a higher price buys time on the market, not a higher sale.",
+ "expected_basis_top": "At {prices}, the expected sale is the recommended option's: a higher list price buys time on the market, not a higher sale.",
+ "expected_plain": "Expected sales are our estimates of where each price is likely to end up, from what recent buyers nearby paid.",
+ "expected_plain_top": "At {prices} we expect about the same sale as at the recommended price: a home priced above the range usually sells after a cut, so the higher price costs time rather than adding to the sale.",
+ "deck_strongest": "Strongest match",
  "mk_sold": "Homes Sold",
  "mk_median_price": "Typical Sale Price",
  "mk_sale_to_list": "Typical Sale vs. Original Asking Price",
@@ -359,6 +362,7 @@
   "hist_after",
   "hist_at",
   "hist_first",
-  "hist_undated"
+  "hist_undated",
+  "deck_strongest"
  ]
 }

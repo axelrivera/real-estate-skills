@@ -106,7 +106,7 @@
   "<strong>Documentation is worth money.</strong> Your updates are the reason this home can sell near the top of the neighborhood. Permits and dates for the roof and the renovation turn them from claims into value a buyer and an appraiser can rely on."
  ],
  "comps": {
-  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Spring Oaks pool homes of about 1,800–1,900 square feet, built in the 1970s. Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
+  "intro": "We looked at every sale within one mile since April 2026 and chose the {comps_count} closest matches: Spring Oaks pool homes of about 1,800–1,900 square feet, built in the 1970s. Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
   "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000–$45,000 for a home that hadn't been renovated to this level; $5,000–$10,000 for a noticeably larger or better lot; 1–2% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
   "cards": [
    {
@@ -121,17 +121,13 @@
      {
       "label": "Larger Corner Lot",
       "amount": -5000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -10000
      }
     ],
     "meta": "Sold $505,500 · April 24, 2026 · 1,824 sq ft · 4/2 · pool · 0.29-acre corner lot · 0.2 mi",
     "bullets": [
      "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
      "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more than yours: minus $5,000.",
-     "It sold in April, when rates were lower and homes were moving faster: minus about $10,000."
+     "It sold in April, when rates were lower and homes were moving faster: minus about {time_amount}."
     ]
    },
    {
@@ -146,17 +142,13 @@
      {
       "label": "Documented Recent Systems",
       "amount": -5000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -5000
      }
     ],
     "meta": "Sold $495,000 · June 26, 2026 · 1,865 sq ft · 4/2 · pool · 1972 · 0.3 mi",
     "bullets": [
      "Same year and nearly the same size. Sold above asking in five days.",
-     "It came with a documented 2020 roof, AC, electrical, and windows. Until we have your records for the AC, electrical, and windows, it gets a small edge: minus $5,000.",
-     "Early summer sale: minus about $5,000 for the market since then."
+     "It came with a documented 2020 roof, AC, electrical, and windows. Until we have your records for the AC, electrical, and windows, it gets a small edge: minus {time_amount}.",
+     "Early summer sale: minus about {time_amount} for the market since then."
     ]
    },
    {
@@ -187,17 +179,13 @@
      {
       "label": "Partial Update vs. Full Renovation",
       "amount": 30000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -8600
      }
     ],
     "meta": "Sold $429,000 · April 27, 2026 · 1,849 sq ft · 4/2 · pool · 0.1 mi",
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
      "The seller paid $12,000 of the buyer's costs, so the seller actually received about $417,000.",
-     "Partly updated (new appliances, stone counters) but not a full renovation: plus $30,000. Spring sale: minus about $8,600."
+     "Partly updated (new appliances, stone counters) but not a full renovation: plus $30,000. Spring sale: minus about {time_amount}."
     ]
    },
    {
@@ -210,10 +198,6 @@
       "amount": -10000
      },
      {
-      "label": "Market Since the Sale",
-      "amount": -4500
-     },
-     {
       "label": "Size",
       "amount": -1229
      }
@@ -222,7 +206,7 @@
     "bullets": [
      "A renovated pool home with new windows. It was listed at $484,900 and sold for $465,000.",
      "The seller paid about $13,000 of the buyer's costs, so the seller netted about $452,000.",
-     "It sits on nearly twice the land, backing onto a canal: minus $10,000. Early summer sale: minus about $4,500."
+     "It sits on nearly twice the land, backing onto a canal: minus $10,000. Early summer sale: minus about {time_amount}."
     ]
    },
    {
@@ -237,21 +221,20 @@
      {
       "label": "Larger Corner Lot",
       "amount": -5000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -10000
      }
     ],
     "meta": "Sold $505,500 · April 24, 2026 · 1,824 sq ft · 4/2 · pool · 0.29-acre corner lot · 0.2 mi",
     "bullets": [
      "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
      "About the same size, so almost no adjustment. Its larger fenced corner lot, with room for a boat or RV, is worth a bit more than yours: minus $5,000.",
-     "It sold in April, when rates were lower and homes were moving faster: minus about $10,000."
+     "It sold in April, when rates were lower and homes were moving faster: minus about {time_amount}."
     ]
    }
   ],
-  "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. The two highest are the closest matches to your home's condition but sold in a stronger spring market; the two lowest needed the largest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May."
+  "summary_paragraph": "The adjusted values run from about $436,000 to $492,000, with a median of $469,800. The two highest are the closest matches to your home's condition but sold in a stronger spring market; the two lowest needed the largest adjustments. Other Spring Oaks sales support the same picture: 607 Green Briar Blvd (a 2014 renovation, pool) sold for $427,000 in April, and 623 Lakespur Ln (renovated, no pool) sold for $435,000 in May.",
+  "time_adjustment": {
+   "rate_per_quarter": 0.01
+  }
  },
  "scatter": {
   "heading": "Where Your Home Fits in the Neighborhood",

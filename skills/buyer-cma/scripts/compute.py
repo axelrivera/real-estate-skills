@@ -502,12 +502,12 @@ def export_mls_warning(R, homes):
 def rough_plan(R, market, median, lo, hi):
     """CMA-202: the gut check's rough numbers, before any range or offer plan exists. Rough range: the adjusted comps'
     span. Rough walk-away: the median adjusted value, rounded down to $1,000 (offer-plan.md: at or below the median).
-    Rough opening: the median minus half the market's typical range width (5% of the median where none is built in),
-    rounded down to $1,000: the bottom of a typical range centered on the median, where offer-plan.md opens. Rough
+    Rough opening: the median minus half the range's target width (cma.range_width: the widest $5,000 step under about
+    6% of the median), rounded down to $1,000: the bottom of a typical range centered on the median, where offer-plan.md opens. Rough
     target: halfway between, to the nearest $1,000. None goes above the asking price. The range is rounded outward to
     $1,000, like the plan (CMA-215)."""
     ask = R["subject"]["list_price"]
-    width = market.get("cma.typical_range_width") or 0.05 * median
+    width = cma.range_width(median, market)["target"]  # Results_v5: the method's normal range width (shared/cma.py)
     walk = min(math.floor(median / 1000) * 1000, ask)
     opening = min(math.floor((median - width / 2) / 1000) * 1000, walk)
     target = min(max(round((opening + walk) / 2000) * 1000, opening), walk)
@@ -576,6 +576,35 @@ def placeholder_warnings(R, values, extra=()):
 range_warnings = cma.range_warnings  # CMA-296: shared with the seller CMA (shared/cma.py)
 
 
+def stop_message(errors):
+    return (f"report.json has {len(errors)} thing{'s' if len(errors) > 1 else ''} to fix before the files are built:\n"
+            + "\n".join("- " + e for e in errors))
+
+
+def comp_time(R, homes):
+    """Results_v5: the comps' time adjustments by the shared rule (comps.time_adjustment), before they're summed.
+    Returns (errors, the rule's info or None, the market split)."""
+    split = cma.default_split(R, homes)
+    errors, info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
+    return cma.adjustment_kind_errors(R["comps"]["cards"]) + errors, info, split
+
+
+def comp_values(R, homes, values, info, split, extra_counts=()):
+    """Results_v5: add the comp placeholders ({comps_count}, {comps_since_split}, {comps_with_<kind>}, {newest_comp},
+    {newest_comp_date}, {adjusted_min}, {adjusted_max}, {time_rate}, {time_cutoff}) to `values`, and return the
+    errors in comp and scatter wording that contradicts the comps or the stated time adjustment."""
+    values.update(cma.time_values(info))
+    facts, raw = cma.comp_facts(R["comps"]["cards"], homes, split, R.get("as_of"), money)
+    for key, v in facts.items():
+        values.setdefault(key, v)
+    c, sc = R["comps"], R.get("scatter") or {}
+    fields = [(f"comps.{k}", c[k]) for k in ("intro", "summary_paragraph") if isinstance(c.get(k), str)]
+    fields += [(f"comps.cards[{i}].bullets[{j}]", b) for i, cd in enumerate(c["cards"]) for j, b in enumerate(cd.get("bullets") or [])]
+    fields += [(f"scatter.{k}", sc[k]) for k in ("intro", "after_paragraph") if isinstance(sc.get(k), str)]
+    return (cma.time_method_errors([(f"comps.{k}", cma.fill(c.get(k, ""), values)) for k in ("method_note", "intro")], info)
+            + cma.comp_prose_errors([(p, cma.fill(t, values)) for p, t in fields], raw, extra_counts))
+
+
 def comp_count_warnings(cards):
     """No comps is an error; fewer than 3 is thin support and a warning."""
     if not cards:
@@ -603,10 +632,14 @@ def comps_first(R, market, homes=()):
     _require(R, "subject.address", "subject.list_price", "comps.cards")
     warnings, warning_keys, warn = _warner()
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
+    time_errors, time_info, split = comp_time(R, homes)
     try:
         warn("derive_comps", *cma.derive_comps(R["comps"]))
     except ValueError as e:
         raise ReportError(str(e)) from e
+    if time_errors:
+        raise ReportError(stop_message(time_errors))
+    warn("time_undated", *cma.time_warnings(time_info))
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
     s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
@@ -615,6 +648,7 @@ def comps_first(R, market, homes=()):
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
     fills = placeholder_values(median_adjusted, hist, count=len(values))  # CMA-203
+    comp_values(R, homes, fills, time_info, split)  # Results_v5
     warn("unfilled_placeholder", *placeholder_warnings(R, fills, RENDER_PLACEHOLDERS + COMPETITION_PLACEHOLDERS))
     return {
         "ok": True, "stage": "comps",
@@ -769,7 +803,8 @@ def market_rows(R, prices):
     if not prices or None in prices or len(m.get("columns") or []) != 3 \
             or any(MEDIAN_PRICE_ROW.search(str(r[0])) and "vs" not in str(r[0]).lower() for r in rows if r):
         return rows
-    return rows[:1] + [["Median Sale Price", money(prices[0], 1000), money(prices[1], 1000)]] + rows[1:]
+    # Results_v5: to the dollar, as the market numbers print everywhere else ($469,250, never $469,000)
+    return rows[:1] + [["Median Sale Price", money(prices[0]), money(prices[1])]] + rows[1:]
 
 
 def default_prices(R):
@@ -813,10 +848,14 @@ def compute(R, market, homes):
         raise ReportError("bottom_line.low is above bottom_line.high.")
     warnings, warning_keys, warn = _warner()
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
+    time_errors, time_info, split = comp_time(R, homes)  # Results_v5: the time adjustments are the script's
     try:
         warn("derive_comps", *cma.derive_comps(R["comps"]))  # adjusted values and summary rows computed from their parts
     except ValueError as e:
         raise ReportError(str(e)) from e
+    if time_errors:
+        raise ReportError(stop_message(time_errors))
+    warn("time_undated", *cma.time_warnings(time_info))
     warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
     for i, r in enumerate((R.get("competition") or {}).get("rows", [])):
         if len(r) < 7 or not all(isinstance(r[j], (int, float)) and not isinstance(r[j], bool) for j in (2, 3)):
@@ -933,6 +972,10 @@ def compute(R, market, homes):
         values["credit_alt_cash_saved"] = alt["cash_saved_display"]
     if stats.get("months_supply") is not None:  # CMA-310: quoted, never rounded by hand
         values["months_supply"] = f"{stats['months_supply']:.1f} months"
+    # Results_v5: the comps' counts, span and newest sale, the time rule; wording that contradicts them stops
+    errors = comp_values(R, homes, values, time_info, split, [st["sold_recent"]["n"]] if homes else [])
+    if errors:
+        raise ReportError(stop_message(errors))
     warn("unfilled_placeholder", *placeholder_warnings(R, values, RENDER_PLACEHOLDERS))
     as_of = R.get("as_of") or date.today().isoformat()
     tj, pay_in = tax_rows[ji], R["costs"]["payment"]
@@ -978,8 +1021,10 @@ def compute(R, market, homes):
         "offer_plan": {"opening": money(op["opening"]), "walk_away": money(op["walk_away"]),
                        "target": money(op.get("target_low", op["opening"])) + (
                            f"–{money(op['target_high'])}" if op.get("target_high") and op["target_high"] != op.get("target_low") else "")},
-        "taxes": [{**j, "annual_display": money(j["annual"], 100) if j["annual"] is not None else None,
-                   "monthly_display": money(j["annual"] / 12) if j["annual"] is not None else None} for j in tax_rows],
+        # Results_v5: the yearly tax to $100 and the monthly from that same figure, so the two reconcile
+        "taxes": [{**j, "annual_display": money(finance.tax_pair(j["annual"])[0]) if j["annual"] is not None else None,
+                   "monthly_display": money(finance.tax_pair(j["annual"])[1]) if j["annual"] is not None else None}
+                  for j in tax_rows],
         "current_bill": R["costs"]["taxes"].get("current_bill"),
         "current_bill_display": money(R["costs"]["taxes"]["current_bill"]) if R["costs"]["taxes"].get("current_bill") else None,
         "payments": {**pay, "insurance": insurance} if pay else pay,
@@ -987,6 +1032,8 @@ def compute(R, market, homes):
         "credit_alt": alt,  # CMA-308
         "competition_estimates": competing,  # CMA-327
         "market_rows": market_rows(R, market_prices),
+        "adjustment_summary": cma.adjustment_summary(R["comps"]["cards"], time_info),  # Results_v5: the method line
+        "time_adjustment": time_info,
         # CMA-235: the credit option that fits the buyer's cash, named by the cash_short warning
         "cash_fit": {**{k: cash_fit[k] for k in ("price", "credit", "cash")},  # CMA-295: the chat template quotes it
                      **{k + "_display": money(cash_fit[k]) for k in ("price", "credit", "cash")}} if cash_fit else None,

@@ -23,7 +23,7 @@ const K = D.colors;
 // on_dark text; on_ink is secondary text on brand_ink fills (deck.py contrast_roles). The tints are brand_callout
 // (cards, the scatter's range band) and brand_rule (lines, table rules, stronger panels); tables have no fills. The
 // subject home and the reference lines are black (text), never a color of their own; the grays are true grays.
-const BRAND = K.brand_ink, MARK = K.mark, ON = K.on_brand, DEEP = K.brand_deep, STRONG = K.brand_strong, INK = K.text,
+const BRAND = K.brand_ink, MARK = K.mark, COMP = K.comp, ON = K.on_brand, DEEP = K.brand_deep, STRONG = K.brand_strong, INK = K.text,
   MUTED = K.muted, TINT = K.brand_callout, LINE = K.brand_rule, WHITE = K.bg,
   ON_DARK = K.on_dark, ON_INK = K.on_ink;
 const FONT = 'Arial';
@@ -231,7 +231,7 @@ async function icon(name, color, size = 256) {
       const y = top + i * rowH;
       tx(s, c.address, { x: M, y, w: 3.6, h: 0.24, size: 12, min: 10, bold: true, color: INK });
       tx(s, c.line, { x: M, y: y + 0.22, w: 3.6, h: 0.22, size: 9.5, min: 8.5, color: MUTED, what: 'deck.comp_lines' });
-      s.addShape(pres.shapes.OVAL, { x: X(c.adjusted) - 0.09, y: y + 0.13, w: 0.18, h: 0.18, fill: { color: MARK }, line: { color: WHITE, width: 1 } });
+      s.addShape(pres.shapes.OVAL, { x: X(c.adjusted) - 0.09, y: y + 0.13, w: 0.18, h: 0.18, fill: { color: COMP }, line: { color: WHITE, width: 1 } });
       // CMA-253: a value the recommended-price line would strike through goes on the dot's left
       const xr = X(D.rec.list_price), struck = xr >= X(c.adjusted) + 0.08 && xr <= X(c.adjusted) + 0.55;
       s.addText(c.adjusted_k, { x: struck ? X(c.adjusted) - 0.82 : X(c.adjusted) + 0.12, y: y + 0.08, w: 0.7, h: 0.26, fontFace: FONT, fontSize: 10,
@@ -249,9 +249,10 @@ async function icon(name, color, size = 256) {
   if (D.scatter) {
     const s = content('scatter'); title(s, T.deck_scatter_title);
     const SC = D.scatter;
-    // Brand shades and true grays only (deck.py style_scatter sets the markers): comps in the brand's mark, other sales a
-    // pale gray dot, listings a larger gray dot, the trend a dashed gray line, the subject a black diamond
-    const COLOR = { comp: MARK, sold: K.grey_pale, active: K.grey, trend: MUTED, subject: INK };
+    // Brand shades and true grays only (deck.py style_scatter sets the markers), as the PDF's chart (Results_v5): comps
+    // in the brand itself, other sales a pale gray dot, listings an open gray ring, the trend a dashed gray line, the
+    // subject a black diamond
+    const COLOR = { comp: COMP, sold: K.grey_pale, active: MUTED, trend: MUTED, subject: INK };
     const series = SC.series.map(sr => [sr.name, sr.points]);
     const xs = [], cols = series.map(() => []);
     series.forEach(([, pts], si) => pts.forEach(p => { xs.push(p[0]); series.forEach((_, sj) => cols[sj].push(sj === si ? p[1] : null)); }));
@@ -263,7 +264,6 @@ async function icon(name, color, size = 256) {
     const Y = v => plot.y + (SC.y_max - v) / (SC.y_max - SC.y_min) * plot.h;
     const [bl, bh] = SC.band.map(v => Math.min(Math.max(v, SC.y_min), SC.y_max));
     s.addShape(pres.shapes.RECTANGLE, { x: plot.x, y: Y(bh), w: plot.w, h: Y(bl) - Y(bh), fill: { color: TINT }, line: { color: TINT, width: 0 } });
-    s.addText(SC.band_label, { x: plot.x + 0.08, y: Y(bh) + 0.03, w: 3.0, h: 0.22, fontFace: FONT, fontSize: 9, bold: true, color: STRONG, margin: 0, isTextBox: true });
     s.addChart(pres.charts.SCATTER, data, {
       ...ch, layout: lay, lineSize: 0, lineDataSymbol: 'circle', lineDataSymbolSize: 7,
       chartColors: SC.series.map(sr => COLOR[sr.key]),
@@ -276,8 +276,19 @@ async function icon(name, color, size = 256) {
       valGridLine: { color: LINE, size: 0.5 }, catGridLine: { color: LINE, size: 0.5 },
       showLegend: false,  // drawn below as shapes, so each key is the marker's own shape in every viewer
     });
+    // Results_v5 case 02: the range's label sits on a tinted box of its own, drawn over the chart so no gridline runs
+    // through it, in the first corner of the band (inside it, top then bottom; left then right) clear of every point
+    const X = v => plot.x + (v - SC.x_min) / (SC.x_max - SC.x_min) * plot.w;
+    const lw = textW(SC.band_label, 9, true) + 0.12, lh = 0.2;
+    const pts = SC.series.filter(sr => sr.key !== 'trend').flatMap(sr => sr.points.map(p => [X(p[0]), Y(p[1])]));
+    const clear = (x, y) => !pts.some(([px, py]) => px > x - 0.08 && px < x + lw + 0.08 && py > y - 0.08 && py < y + lh + 0.08);
+    const spots = [[plot.x + 0.06, Y(bh) + 0.03], [plot.x + plot.w - lw - 0.06, Y(bh) + 0.03],
+                   [plot.x + 0.06, Y(bl) - lh - 0.03], [plot.x + plot.w - lw - 0.06, Y(bl) - lh - 0.03]];
+    const [bx, by] = spots.find(([x, y]) => clear(x, y)) || spots[0];
+    s.addText(SC.band_label, { x: bx, y: by, w: lw, h: lh, fontFace: FONT, fontSize: 9, bold: true, color: STRONG, margin: [0, 0.06, 0, 0.06],
+      fill: { color: TINT }, valign: 'middle', isTextBox: true });
     // the legend: each entry the same shape as its marker (no renderer's default legend symbols)
-    const LG = { comp: ['oval', MARK, MARK], sold: ['oval', K.grey_pale, K.grey_pale], active: ['oval', K.grey, K.grey], subject: ['diamond', INK, INK] };
+    const LG = { comp: ['oval', COMP, COMP], sold: ['oval', K.grey_pale, K.grey_pale], active: ['oval', WHITE, MUTED], subject: ['diamond', INK, INK] };
     let lx = M + 0.1;
     const ly = ch.y + ch.h + 0.12;
     SC.series.forEach(sr => {
@@ -286,7 +297,7 @@ async function icon(name, color, size = 256) {
       } else {
         const [shape, fill, line] = LG[sr.key], d = shape === 'diamond' ? 0.16 : sr.key === 'sold' ? 0.1 : 0.13;
         s.addShape(shape === 'diamond' ? pres.shapes.DIAMOND : pres.shapes.OVAL, { x: lx + (0.26 - d) / 2, y: ly + 0.08 - d / 2, w: d, h: d,
-          fill: { color: fill }, line: { color: line, width: 0.5 } });
+          fill: { color: fill }, line: { color: line, width: sr.key === 'active' ? 1.25 : 0.5 } });
       }
       const w = textW(sr.name, 9) + 0.05;
       s.addText(sr.name, { x: lx + 0.32, y: ly, w, h: 0.18, fontFace: FONT, fontSize: 9, color: INK, margin: 0, valign: 'middle', isTextBox: true });
@@ -454,15 +465,20 @@ async function icon(name, color, size = 256) {
   const rest = (W - 2 * M - 3.6);
   const appendix = (s, table, cols, note, speaker) => {
     const nRows = table.length;
+    // Results_v5 case 02: a label that wraps makes its row taller in every renderer, so count each row's lines (at
+    // 10pt, the smaller table size) and leave room for them, or the note lands on the footer
+    const lines = table.map(r => Math.max(1, ...r.map((c, j) => Math.min(4, lineCount(String(c.text), 10, cols[j] - 0.14, !!c.options.bold)))));
+    const extra = lines.reduce((a, n) => a + (n - 1), 0);
+    const tableH = rh => lines.reduce((a, n) => a + Math.max(rh, n * 10 * LEAD / 72 + 0.06), 0);
     let noteSize = 10, noteH = 0;
     const need = sz => lineCount(note, sz, W - 2 * M) * sz * LEAD / 72;
-    for (; noteSize >= 8; noteSize -= 0.5) { noteH = need(noteSize); if (TY + nRows * 0.24 + 0.15 + noteH <= BOTTOM) break; }
+    for (; noteSize >= 8; noteSize -= 0.5) { noteH = need(noteSize); if (TY + tableH(0.24) + 0.15 + noteH <= BOTTOM) break; }
     noteSize = Math.max(noteSize, 8);
-    const rowH = Math.max(0.24, Math.min(0.32, (BOTTOM - TY - 0.15 - noteH) / nRows));
-    const fontSize = rowH >= 0.28 ? 11 : 10;
+    const rowH = Math.max(0.24, Math.min(0.32, (BOTTOM - TY - 0.15 - noteH - extra * 10 * LEAD / 72) / nRows));
+    const fontSize = rowH >= 0.28 && !extra ? 11 : 10;
     s.addTable(table, { x: M, y: TY, w: W - 2 * M, colW: cols, rowH, fontFace: FONT, fontSize, color: INK, valign: 'middle',
                         margin: [0.02, 0.06, 0.02, 0.06] });
-    const y = TY + nRows * rowH + 0.15;
+    const y = TY + tableH(rowH) + 0.15;
     if (y + noteH > BOTTOM + 0.02) {
       const room = BOTTOM + 0.02 - y;
       const most = fitChars(note, t => lineCount(t, noteSize, W - 2 * M) * noteSize * LEAD / 72 <= room);

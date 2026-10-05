@@ -120,12 +120,13 @@ def history_rows(h, hist, L, as_of=None):
     under "Mar 31, 2015" read as this year)."""
     if h.get("rows"):
         return h["rows"]
+    timeline = (hist or {}).get("timeline", [])
+    # Results_v5: the year on every row when the rows span more than one year (a bare "Aug 14" under 2015 rows misread)
+    dates = [date.fromisoformat(e["date"]) for e in timeline]
     this_year = date.fromisoformat(str(as_of)[:10]).year if as_of else date.today().year
-    out, year, n_listed = [], None, 0
-    for e in (hist or {}).get("timeline", []):
-        d = date.fromisoformat(e["date"])
-        when = f"{d:%b %-d, %Y}" if d.year != year or d.year != this_year else f"{d:%b %-d}"
-        year = d.year
+    whens = cma.history_date_labels(dates, this_year)
+    out, n_listed = [], 0
+    for e, when in zip(timeline, whens):
         kind = e["kind"]
         if kind == "listed":
             n_listed += 1
@@ -169,7 +170,7 @@ def summary_page(R, C, agent, L):
     yours = L("sum_tax_yours_est" if pay["tax_basis"]["label_estimate"] else "sum_tax_yours",
               short=pay["tax_basis"]["short"], homestead=homestead_label(R, L))  # CMA-204
     rows = [[L("sum_tax_now"), money(bill) + L("per_year") if bill else L("not_available")],
-            [yours, "≈ " + money(tax["annual"], 100) + L("per_year")],
+            [yours, "≈ " + money(finance.tax_pair(tax["annual"])[0]) + L("per_year")],  # Results_v5: reconciles with /mo
             [L("sum_pay_row", label=first["label"]), money(first["total"]) + L("per_month")],
             [L("sum_cash_row", label=first["label"]),  # CMA-223: cash to close, with its closing costs
              money(first["cash_to_close"]) + cash_flag(first.get("cash_short"), pay, L)]]
@@ -276,7 +277,9 @@ def body(R, C, homes, agent, L):
     b += [f'<h3>{title_case(R["offer"].get("heading", L("h_offer")))}</h3>', ul(R["offer"]["bullets"])]
 
     c = R["comps"]
-    b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{c["method_note"]}</p>',
+    # Results_v5: the method line opens with what was adjusted, generated from the comps so it names every kind used
+    method_note = " ".join(x for x in (C.get("adjustment_summary"), c["method_note"]) if x)
+    b += [f'<h2>{L("h_compared")}</h2>', f'<p>{c["intro"]}</p>', f'<p class="note">{method_note}</p>',
           '<div class="comps2">' + "".join(
               f'<div class="comp"><div class="comp-h"><b>{esc(cma.display_address(cd["address"]))}</b><span class="adj">{L("adjusted")} {money(cd["adjusted"])}</span></div>'
               f'<div class="meta">{cd["meta"]}</div>{ul(cd["bullets"], "")}</div>' for cd in c["cards"]) + "</div>"]
@@ -316,7 +319,7 @@ def body(R, C, homes, agent, L):
     bill = t.get("current_bill")  # optional: new construction and land-only bills have none
     seller_row = L("seller_bill", year=t["current_year"]) if t.get("current_year") else L("seller_bill_no_year")
     trows = [[seller_row, money(bill), money(bill / 12)] if bill else [seller_row, L("not_available"), "—"]]
-    trows += [[L("your_bill", label=j["label"]), "≈ " + money(j["annual"], 100), "≈ " + money(j["annual"] / 12)] for j in C["taxes"]]
+    trows += [[L("your_bill", label=j["label"]), "≈ " + j["annual_display"], "≈ " + j["monthly_display"]] for j in C["taxes"]]
     homestead = homestead_label(R, L)
     tax_basis = compute.price_basis(t["purchase_price"], R)  # CMA-315: which of the plan's prices the tax is at
     b.append(table([L("tax_header", price=money(t["purchase_price"]), homestead=homestead,
