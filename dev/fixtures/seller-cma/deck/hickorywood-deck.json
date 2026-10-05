@@ -1,6 +1,4 @@
 {
- "title": "Pricing 517 Hickorywood Ave",
- "subtitle": "Listing Presentation · Altamonte Springs, Spring Oaks",
  "recommendation_why": "It sits at the middle of what recent sales support and gives you the strongest launch, when buyer attention is highest.",
  "value_drivers": [
   [
@@ -31,90 +29,34 @@
   ]
  ],
  "comp_lines": {
-  "622 Spring Oaks Blvd": "Renovated pool home; April, before rates rose",
+  "622 Spring Oaks Blvd": "A close match in size and condition",
   "516 Oakwood Ct": "Same year and size; systems documented",
   "745 Little Wekiva Cir": "Most recent pool sale; not renovated",
   "602 Mockingbird Ln": "Same floor plan; partly updated",
   "621 Little Wekiva Rd": "Renovated; bigger canal lot"
  },
  "comps_takeaway": "The two highest sold in the spring. The recent sales point to the middle of the range.",
- "scatter_takeaway": "Renovated pool homes sell well above the neighborhood trend. At {list_price}, yours sits among them without testing the ceiling.",
+ "scatter_takeaway": "Renovated pool homes sell well above the neighborhood trend.",
  "market_title": "The Market Shifted Since Spring",
- "market_periods": [
-  "April–June",
-  "July–mid-September"
- ],
- "market_period_labels": [
-  "Spring",
-  "Now"
- ],
- "market_stats": [
-  [
-   "Sale vs. Original Price",
-   "{sale_to_list_early}",
-   "{sale_to_list_recent}"
-  ],
-  [
-   "Days to Contract",
-   "8",
-   "22"
-  ],
-  [
-   "Sales with Seller Credits",
-   "50%",
-   "89%"
-  ],
-  [
-   "30-Year Mortgage Rate",
-   "About 6.3%",
-   "6.95%"
-  ]
- ],
- "market_takeaway": "Buyers are negotiating again. Price for the market we have now, not the one from April.",
+ "market_takeaway": "Buyers are negotiating again.",
  "competition": [
   [
    "644 Peachwood Dr",
-   "For sale · 91 days",
    "Renovated, same size, no pool. The value alternative buyers will tour."
   ],
   [
    "412 Majorca Ave",
-   "Under contract in 9 days",
    "Renovated pool home. Priced right, it sold fast."
   ],
   [
    "394 Barberry Ln",
-   "For sale · 57 days",
    "Updated pool home. Priced above the market, and sitting."
   ]
  ],
  "competition_takeaway": "Well-priced renovated pool homes are moving. Overpriced ones sit.",
  "strategy_takeaway": "All three net within a few thousand dollars. The real choice is time and risk.",
- "payment_takeaway": "Buyers shop by payment. Every $10,000 is about {per_10k} a month to them.",
- "launch_plan": [
-  [
-   "Document the Roof",
-   "Permit and date, ready to share"
-  ],
-  [
-   "Pre-Listing Inspection",
-   "Plus 4-point and wind-mitigation reports"
-  ],
-  [
-   "Gather Permits",
-   "Kitchen, baths, electrical, plumbing"
-  ],
-  [
-   "Decide on a Seller-Credit Budget",
-   "Decide it now, before offers arrive"
-  ],
-  [
-   "Agree on a Review Point",
-   "Steady showings but no offer? Revisit the price"
-  ]
- ],
+ "payment_takeaway": "Buyers shop by payment.",
  "needs_short": [
-  "Roof permit and date, plus any 4-point or wind-mitigation report",
   "Ages of AC, water heater, and pool equipment",
   "Renovation permits",
   "Anything known about leaks, claims, or repairs",
@@ -122,34 +64,29 @@
  ],
  "timeline": [
   [
-   "This Week",
-   "Sign listing agreement; order inspections"
+   "now",
+   "Sign the listing agreement; order the inspections"
   ],
   [
-   "Week 2",
-   "Photos, documents, and pricing review"
+   "before",
+   "Photos, documents and a final pricing review"
   ],
   [
-   "{launch_when}",
-   "Go live at {list_price}"
-  ],
-  [
-   "Week 6",
-   "Price review if no offer"
+   "after",
+   "Price review if steady showings bring no offer"
   ]
  ],
- "adjustments_summary": "Adjustments: about $75 per sq ft of size difference; $30,000–$45,000 for renovation level; $5,000–$10,000 for larger or better lots; 1–2% for market change since the sale; seller-paid costs subtracted.",
  "notes": {
   "recommendation": "Lead with the answer. The rest of the presentation shows how we got here.",
-  "method": "33 sales within a mile since April; we kept the 5 closest in size, pool, age and neighborhood, adjusted each for differences from your home, and the median adjusted value is about $469,800.",
+  "method": "We started from every nearby sale, kept the closest matches in size, pool, age and neighborhood, and adjusted each for its differences from your home.",
   "drivers": "These are the features the adjustments credit your home for. The roof and permits need paperwork before buyers and appraisers will pay for them.",
-  "comps": "Each bar is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
-  "scatter": "Every sale and listing within a mile. The dotted line is size alone; renovation and pool push homes above it.",
-  "market": "Spring = April to June sales; summer = July to mid-September. Rates are the Freddie Mac 30-year average.",
+  "comps": "Each dot is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
+  "scatter": "Every sale and listing nearby. The dashed line is size alone; renovation and a pool push homes above it.",
+  "market": "The earlier period is the spring sales; now is the summer sales. The report's market table has every figure.",
   "competition": "These are the homes a buyer will likely tour alongside yours.",
-  "strategies": "Expected sale prices and timelines are estimates from recent sales. The $459,900 option assumes competing offers reduce the seller credit to $5,000.",
-  "nets": "Before mortgage payoff. Brokerage is assumed at 2.5% + 2.5% until we finalize the listing agreement.",
-  "payments": "Conventional loan, 5% down, 6.95%, city taxes with homestead, $3,600 insurance, 0.5% PMI.",
+  "strategies": "Expected sale prices and timelines are estimates from recent sales. The competing-offer option assumes a smaller seller credit.",
+  "nets": "The appendix has every line of the net sheet, and the notes say what each rests on.",
+  "payments": "Buyers shop by payment; the report's notes give the loan and tax basis.",
   "launch": "Low-cost steps that remove the questions that cost sellers money at the negotiating table.",
   "next": "Confirm the documents and the launch date."
  }

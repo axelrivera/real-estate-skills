@@ -10,12 +10,12 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.dirname(__file__))
 from test_seller_cma import compute, report, run, seller_render  # noqa: E402
 
-cma = compute.cma
+cma, fmt, kit = compute.cma, compute.fmt, seller_render.layout
 
 
 def scatter_args(R):
     return (R["subject"]["sqft"], R["recommendation"]["list_price"], R["subject"]["mls_address"],
-            (R["recommendation"]["low"], R["recommendation"]["high"]), compute.labels(R),
+            (R["recommendation"]["low"], R["recommendation"]["high"]), compute.labeler(),
             [cd["address"] for cd in R["comps"]["cards"]])
 
 
@@ -49,7 +49,7 @@ class ScatterLabels(unittest.TestCase):
         _, homes = run(R)
         sc = {**R["scatter"], "subject_label": "Your Home"}
         for side in ("left", "right", "above", "below"):
-            sc["callouts"] = [{**R["scatter"]["callouts"][0], "side": side}]
+            sc["callouts"] = [{**R["scatter"]["callouts"][0], "label": "A Callout", "side": side}]
             _, info = cma.scatter(homes, sc, *scatter_args(R))
             label = sc["callouts"][0]["label"]
             self.assertTrue(all(m[1] == side for m in info["labels_moved"] if m[0] == label))
@@ -78,7 +78,7 @@ class DotPlot(unittest.TestCase):
         anchors = dict((cls, a) for a, cls in re.findall(r'text-anchor="(\w+)" class="dp-(mark|second)-lbl"', svg))
         self.assertEqual(set(anchors), {"mark", "second"})
         self.assertNotEqual(anchors["mark"], anchors["second"])
-        self.assertEqual((cma.k(455000), cma.k(1250000), cma.k(2000000)), ("$455K", "$1.25M", "$2M"))
+        self.assertEqual((fmt.k(455000), fmt.k(1250000), fmt.k(2000000)), ("$455K", "$1.25M", "$2M"))
         cards = [{"address": f"{i} Bay Dr", "adjusted": v} for i, v in enumerate((1210000, 1390000, 1480000, 1620000, 1790000))]
         svg = cma.dotplot(cards, 1400000, 1600000, 1550000, "Asking")
         self.assertLessEqual(len(svg.split('class="dp-tick">')[1:]), 8)
@@ -103,7 +103,8 @@ class ChartFit(unittest.TestCase):
                               '<div style="height:260px"></div></div></div>', css=cma.css())
 
             def measure(pg):
-                cma.paginate(pg)
+                pg.set_viewport_size({"width": 730, "height": 1000})
+                pg.evaluate(kit.PAGINATE_JS, [960, []])
                 return pg.evaluate("() => { const g = document.querySelector('.kg');"
                                    "return {pb: g.classList.contains('pb'), w: g.querySelector('svg').style.width}; }")
             with tempfile.TemporaryDirectory() as tmp:

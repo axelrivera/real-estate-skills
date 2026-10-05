@@ -36,8 +36,9 @@ class SharedMath(unittest.TestCase):
         R = {"subject": {"address": "2250 Oak Hollow Ct", "state": "FL", "county": "Seminole", "property_type": "single_family"},
              "costs": costs, "pricing": {"strategies": [{"list_price": 515000, "expected_sale": 515000, "seller_credit": 10000}]}}
         market = profiles.load_market(state="FL", county="Seminole").with_deal(costs)
-        cma_rows = cma_compute.net_sheet(R, market, cma_compute.labels(R))["rows"]
-        want = sum(fmt.half_up(r["amounts"][0]) for r in cma_rows if r["key"] not in ("total", "holding", "after_holding"))
+        closing = [{"date": cma_compute.fmt.to_date("2026-11-20"), "hold_months": None, "months_to_contract": None}]
+        net = cma_compute.net_sheet(R, market, R["pricing"]["strategies"], closing, cma_compute.fmt.to_date("2026-09-26"))
+        want = net["ledgers"][0].total()
         data = {"property": {"address": "2250 Oak Hollow Ct", "state": "FL", "county": "Seminole", "property_type": "single_family",
                              "hoa": True},
                 "closing_date": "2026-11-20", "scenarios": [{"price": 515000, "seller_credit": 10000}],

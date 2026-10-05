@@ -4,7 +4,7 @@
 
 When the agent's profile has a `Voice` section, match its tone and word choice in the prose you write; the rules below and the Guardrails still win.
 
-Write to the homeowner ("your home"), in plain language. Every number gets a sentence saying what it means for their price or their net. No selling adjectives, and don't flatter the home: a seller who lists too high loses the first weeks, when buyer attention is highest. Give a range and a recommendation, never a promise. Write as the agent's analysis and don't mention the tools that produced it. When the agent's profile has a voice section, follow it within these rules.
+Write to the homeowner ("your home"), in plain language. The script prints every number with its own sentence; your words say what it means for their price or their net, without repeating the figure. No selling adjectives, and don't flatter the home: a seller who lists too high loses the first weeks, when buyer attention is highest. Give a range and a recommendation, never a promise. Write as the agent's analysis and don't mention the tools that produced it. When the agent's profile has a voice section, follow it within these rules.
 
 **Style and fair housing:** follow the Guardrails in SKILL.md: no em dashes, labels in Title Case, and describe the home and the numbers, never people (`references/fair-housing.md`).
 
@@ -12,19 +12,19 @@ Write to the homeowner ("your home"), in plain language. Every number gets a sen
 
 Page 1 summary → the home → the bottom line and what it means → comparable sales (cards, table, scatterplot) → competition → market → choosing a list price → estimated net proceeds → what your price means to buyers → before we list → what we need from you → how this was prepared.
 
-- **Bottom line:** the range, the recommended price and why, and why a higher first price is a risk, in 4–5 sentences.
+- **Bottom line:** the script states the range, the median and where the price sits; `recommendation.why` says why this price and why a higher first price is a risk, in 2–3 sentences.
 - **What this means:** expected negotiation (from the recent sale-to-list and concession data), the first-weeks window, the appraisal ceiling, and what documentation is worth.
-- **Comps:** each card explains its adjustments in sentences with dollar amounts, every one over $1,000 (a small size adjustment too), so the adjusted value adds up. Include the sales that argue for a lower price.
+- **Comps:** each card's adjustments print with their amounts, adding up to its adjusted value; its bullets say in words why the sale is a comp and what the adjustments are about. Include the sales that argue for a lower price.
 - **Competition:** 5–9 rows, actives, pendings, and any expired listing that shows what the market rejected. The notes say why each matters to this seller.
-- **Market:** the table from stats.py, then 3–5 bullets that each tie a number to price or timing. Months of supply is `{months_supply}`, never typed.
-- **Pricing:** the three options as estimates, saying whether the nets are close and what really differs (time and risk). The net sheet's note names what isn't included.
+- **Market:** the script's table, then 3–5 bullets that each say what a finding means for price or timing, in words: the table carries the numbers.
+- **Pricing:** the three options as estimates and what really differs (time and risk); the script says how far apart the nets are, and the notes name what isn't included.
 - **Before we list:** low-cost steps that remove the questions that cost sellers money (roof documentation, pre-listing and insurance inspections, permits, the public record, easy showings, a seller-credit budget, a review point).
 - **What we need from you:** specific, answerable requests.
-- **Method:** sources with dates, then, once, that this is a broker's opinion of value and not an appraisal, that nets are estimates the closing agent will finalize, and the report's shelf life.
+- **Method:** the script lists the sources and the shelf life, and the closing notices say, once, that this is an opinion of price and not an appraisal; name any other source in `sources`.
 
 ## Page 1 (Write It Last)
 
-The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. Three `key_stats` (without an export, page 1 fills any you leave out from the comps), three `why` bullets, three `first_steps`. Anything page 1 says must be supported later in the report.
+The flyer for sellers who won't read the report. Someone who reads only page 1 knows the recommended price, range and expected sale; the key numbers behind the price; the comps at a glance; the three options with their nets; the first three things to do; and the next step. The key numbers, the options and the first three steps (the first three `prep.items`) are the script's; you write the headline, three `why` bullets and the next step, figure-free. Anything page 1 says must be supported later in the report.
 
 ## After Rendering
 

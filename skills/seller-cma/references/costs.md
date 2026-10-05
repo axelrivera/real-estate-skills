@@ -21,7 +21,7 @@ compute.py runs each strategy's expected sale price through the shared seller-ne
 
 **Holding costs.** With each option's `time` (or `months_to_contract`), the table adds holding costs until closing: HOA, insurance, utilities, and loan interest on the payoff at `costs.mortgage_rate` when given, else 4.5% a year, assumed; the note under the table states the rate and the payoff it's on. No payoff given: no loan interest, and the note says so (ask for the payoff when it matters). Property tax is in the proration, never counted twice; when the proration is left out, the note says tax isn't included. **Miami-Dade:** give `subject.property_type`; every type but single-family owes the 0.45% surtax.
 
-**Not in the table** (write them in `pricing.net_note`): repairs after inspection, and any carrying costs the holding-cost rows don't cover. If the seller is a foreign person, flag FIRPTA withholding and refer them to the title company or a CPA; it isn't computed.
+**Not in the table** (the notes say so on their own): repairs after inspection, and any carrying costs the holding-cost rows don't cover. If the seller is a foreign person, flag FIRPTA withholding and refer them to the title company or a CPA; it isn't computed.
 
 ## Buyer Payments
 
