@@ -229,13 +229,13 @@ class Limits(unittest.TestCase):
 
 class Options(unittest.TestCase):
     def test_stronger_is_recommended_when_it_lifts_the_outlook_inside_limits(self):
-        """Only a quote in hand is scored, so the buyer here has one."""
-        r = run(roofed(gatlin(insurance_quote=True)))
+        """Only a quote in hand is scored, so the buyer here has one (a 2014 roof: Stronger's deposit crosses into Strong)."""
+        r = run(roofed(gatlin(insurance_quote=True), 2014))
         lvl = r["B"]["competition"]["level"]
         self.assertEqual(r["promoted"], "stronger")
         self.assertEqual(r["bands"]["recommended"][lvl][0], "strong")
         self.assertEqual(r["R"]["listing"]["state"], "FL")  # read from "Orlando, FL" without a ZIP
-        r = run(roofed(gatlin()))  # no quote: not promoted, but kept as an option when it scores higher
+        r = run(roofed(gatlin(), 2014))  # no quote: not promoted, but kept as an option when it scores higher
         self.assertTrue(strategy.stronger_fits(r))
         self.assertIn("stronger", r["terms"])
         self.assertGreater(r["O"]["stronger"]["score"]["total"], r["O"]["recommended"]["score"]["total"])

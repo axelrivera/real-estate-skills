@@ -41,7 +41,7 @@
      "count": 4
     }
    ],
-   "counter_score": 81,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -319,7 +319,7 @@
    },
    "price": 406000,
    "price_base": 400000,
-   "rank_value": 178887.5,
+   "rank_value": 178688.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -348,8 +348,8 @@
      "property": 5,
      "timeline": 4
     },
-    "total": 79,
-    "weight": 95
+    "total": 78,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -472,7 +472,7 @@
      "count": 4
     }
    ],
-   "counter_score": 81,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -730,7 +730,7 @@
     "tax_bill_assumed": false
    },
    "price": 405000,
-   "rank_value": 177949.5,
+   "rank_value": 177750.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -759,8 +759,8 @@
      "property": 5,
      "timeline": 4
     },
-    "total": 79,
-    "weight": 95
+    "total": 78,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -893,7 +893,7 @@
      "count": 4
     }
    ],
-   "counter_score": 65,
+   "counter_score": 64,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1157,7 +1157,7 @@
     "tax_bill_assumed": true
    },
    "price": 395000,
-   "rank_value": 158604.5,
+   "rank_value": 158405.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -1186,8 +1186,8 @@
      "property": 3,
      "timeline": 4
     },
-    "total": 61,
-    "weight": 95
+    "total": 60,
+    "weight": 100
    },
    "seller_concessions": 6000,
    "short_sale": false,
@@ -1462,7 +1462,7 @@
      "count": 4
     }
    ],
-   "counter_score": 81,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1740,7 +1740,7 @@
    },
    "price": 406000,
    "price_base": 400000,
-   "rank_value": 178887.5,
+   "rank_value": 178688.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -1769,8 +1769,8 @@
      "property": 5,
      "timeline": 4
     },
-    "total": 79,
-    "weight": 95
+    "total": 78,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1893,7 +1893,7 @@
      "count": 4
     }
    ],
-   "counter_score": 81,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -2151,7 +2151,7 @@
     "tax_bill_assumed": false
    },
    "price": 405000,
-   "rank_value": 177949.5,
+   "rank_value": 177750.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -2180,8 +2180,8 @@
      "property": 5,
      "timeline": 4
     },
-    "total": 79,
-    "weight": 95
+    "total": 78,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -2314,7 +2314,7 @@
      "count": 4
     }
    ],
-   "counter_score": 65,
+   "counter_score": 64,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -2578,7 +2578,7 @@
     "tax_bill_assumed": true
    },
    "price": 395000,
-   "rank_value": 158604.5,
+   "rank_value": 158405.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -2607,8 +2607,8 @@
      "property": 3,
      "timeline": 4
     },
-    "total": 61,
-    "weight": 95
+    "total": 60,
+    "weight": 100
    },
    "seller_concessions": 6000,
    "short_sale": false,
@@ -2733,7 +2733,7 @@
      "count": 4
     }
    ],
-   "counter_score": 81,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -3011,7 +3011,7 @@
    },
    "price": 406000,
    "price_base": 400000,
-   "rank_value": 178887.5,
+   "rank_value": 178688.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -3040,8 +3040,8 @@
      "property": 5,
      "timeline": 4
     },
-    "total": 79,
-    "weight": 95
+    "total": 78,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -3164,7 +3164,7 @@
      "count": 4
     }
    ],
-   "counter_score": 81,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -3422,7 +3422,7 @@
     "tax_bill_assumed": false
    },
    "price": 405000,
-   "rank_value": 177949.5,
+   "rank_value": 177750.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -3451,8 +3451,8 @@
      "property": 5,
      "timeline": 4
     },
-    "total": 79,
-    "weight": 95
+    "total": 78,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -3585,7 +3585,7 @@
      "count": 4
     }
    ],
-   "counter_score": 65,
+   "counter_score": 64,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -3849,7 +3849,7 @@
     "tax_bill_assumed": true
    },
    "price": 395000,
-   "rank_value": 158604.5,
+   "rank_value": 158405.0,
    "repair_reserve": 3000,
    "repairs_owed": false,
    "rider_codes": {
@@ -3878,8 +3878,8 @@
      "property": 3,
      "timeline": 4
     },
-    "total": 61,
-    "weight": 95
+    "total": 60,
+    "weight": 100
    },
    "seller_concessions": 6000,
    "short_sale": false,

@@ -288,7 +288,7 @@ def terms_table(tm):
 
 
 def scorecard_table(sc):
-    cols = [Col("label", sc["cols"][0], cls="crit"), Col("weight", sc["cols"][1], align="num"),
+    cols = [Col("label", sc["cols"][0]), Col("weight", sc["cols"][1], align="num"),
             Col("score", sc["cols"][2], cls="c"), Col("why", sc["cols"][3])]
     rows = [{"label": r["label"], "weight": r["weight"], "why": r["why"],
              "score": fmt.EMPTY if r["score"] is None else Raw(f'<span class="s{r["score"]}">{r["score"]}</span>')}

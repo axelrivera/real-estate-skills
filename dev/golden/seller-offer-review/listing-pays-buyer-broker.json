@@ -53,7 +53,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 74,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -336,7 +336,7 @@
    },
    "price": 489000,
    "proof_of_funds": 156000,
-   "rank_value": 433402.0,
+   "rank_value": 432394.0,
    "received": "2026-09-21 19:05",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -374,8 +374,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 76,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -514,7 +514,7 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 74,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -814,7 +814,7 @@
    "price": 494000,
    "price_base": 494000,
    "proof_of_funds": 88000,
-   "rank_value": 437815.0,
+   "rank_value": 437311.0,
    "received": "2026-09-22 14:15",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -852,8 +852,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 75,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1154,7 +1154,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 74,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1437,7 +1437,7 @@
    },
    "price": 489000,
    "proof_of_funds": 156000,
-   "rank_value": 433402.0,
+   "rank_value": 432394.0,
    "received": "2026-09-21 19:05",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -1475,8 +1475,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 76,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1615,7 +1615,7 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 74,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1915,7 +1915,7 @@
    "price": 494000,
    "price_base": 494000,
    "proof_of_funds": 88000,
-   "rank_value": 437815.0,
+   "rank_value": 437311.0,
    "received": "2026-09-22 14:15",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -1953,8 +1953,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 75,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -2095,7 +2095,7 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 74,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -2395,7 +2395,7 @@
    "price": 494000,
    "price_base": 494000,
    "proof_of_funds": 88000,
-   "rank_value": 437815.0,
+   "rank_value": 437311.0,
    "received": "2026-09-22 14:15",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -2433,8 +2433,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 75,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -2574,7 +2574,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 74,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -2857,7 +2857,7 @@
    },
    "price": 489000,
    "proof_of_funds": 156000,
-   "rank_value": 433402.0,
+   "rank_value": 432394.0,
    "received": "2026-09-21 19:05",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -2895,8 +2895,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 76,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,

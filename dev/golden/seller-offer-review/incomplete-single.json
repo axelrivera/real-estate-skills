@@ -87,7 +87,7 @@
      "count": 4
     }
    ],
-   "counter_score": 61,
+   "counter_score": 60,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -424,8 +424,8 @@
      "property": 3,
      "timeline": 4
     },
-    "total": 61,
-    "weight": 95
+    "total": 60,
+    "weight": 100
    },
    "seller_concessions": 7000,
    "short_sale": false,
@@ -664,7 +664,7 @@
      "count": 4
     }
    ],
-   "counter_score": 61,
+   "counter_score": 60,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1001,8 +1001,8 @@
      "property": 3,
      "timeline": 4
     },
-    "total": 61,
-    "weight": 95
+    "total": 60,
+    "weight": 100
    },
    "seller_concessions": 7000,
    "short_sale": false,

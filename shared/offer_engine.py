@@ -30,7 +30,7 @@ CRITERIA = [  # key, label, weight: every score reads facts from the offer, the 
     ("financing", "Financing Type & Down Payment", 20),
     ("approval", "Approval / Funds Verified", 10),
     ("appraisal", "Appraisal Risk", 20),
-    ("contingency", "Contingency Exposure", 15),
+    ("contingency", "Contingency Exposure", 20),
     ("deposit", "Deposit Strength", 10),
     ("timeline", "Fit with Seller's Timeline", 10),
     ("property", "Property-Condition / Insurance Risk", 10),

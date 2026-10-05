@@ -178,7 +178,7 @@
    "counter_rows": {
     "count": 0
    },
-   "counter_score": 87,
+   "counter_score": 86,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -448,7 +448,7 @@
     "tax_bill_assumed": false
    },
    "price": 615000,
-   "rank_value": 558543.0,
+   "rank_value": 557933.0,
    "repair_label": null,
    "repair_reserve": 0,
    "repairs_owed": false,
@@ -479,8 +479,8 @@
      "property": 5,
      "timeline": 5
     },
-    "total": 87,
-    "weight": 95
+    "total": 86,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -606,7 +606,7 @@
     "counter_rows": {
      "count": 0
     },
-    "counter_score": 87,
+    "counter_score": 86,
     "counter_stance": {
      "given": false,
      "reason": null,
@@ -876,7 +876,7 @@
      "tax_bill_assumed": false
     },
     "price": 615000,
-    "rank_value": 558543.0,
+    "rank_value": 557933.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -907,8 +907,8 @@
       "property": 5,
       "timeline": 5
      },
-     "total": 87,
-     "weight": 95
+     "total": 86,
+     "weight": 100
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -1031,7 +1031,7 @@
     "counter_rows": {
      "count": 0
     },
-    "counter_score": 83,
+    "counter_score": 82,
     "counter_stance": {
      "given": false,
      "reason": null,
@@ -1301,7 +1301,7 @@
      "tax_bill_assumed": false
     },
     "price": 632000,
-    "rank_value": 572083.0,
+    "rank_value": 571473.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -1332,8 +1332,8 @@
       "property": 5,
       "timeline": 5
      },
-     "total": 83,
-     "weight": 95
+     "total": 82,
+     "weight": 100
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -1624,7 +1624,7 @@
     "counter_rows": {
      "count": 0
     },
-    "counter_score": 87,
+    "counter_score": 86,
     "counter_stance": {
      "given": false,
      "reason": null,
@@ -1894,7 +1894,7 @@
      "tax_bill_assumed": false
     },
     "price": 615000,
-    "rank_value": 558543.0,
+    "rank_value": 557933.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -1925,8 +1925,8 @@
       "property": 5,
       "timeline": 5
      },
-     "total": 87,
-     "weight": 95
+     "total": 86,
+     "weight": 100
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -2049,7 +2049,7 @@
     "counter_rows": {
      "count": 0
     },
-    "counter_score": 83,
+    "counter_score": 82,
     "counter_stance": {
      "given": false,
      "reason": null,
@@ -2319,7 +2319,7 @@
      "tax_bill_assumed": false
     },
     "price": 632000,
-    "rank_value": 572083.0,
+    "rank_value": 571473.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -2350,8 +2350,8 @@
       "property": 5,
       "timeline": 5
      },
-     "total": 83,
-     "weight": 95
+     "total": 82,
+     "weight": 100
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -2476,7 +2476,7 @@
     "counter_rows": {
      "count": 0
     },
-    "counter_score": 83,
+    "counter_score": 82,
     "counter_stance": {
      "given": false,
      "reason": null,
@@ -2746,7 +2746,7 @@
      "tax_bill_assumed": false
     },
     "price": 632000,
-    "rank_value": 572083.0,
+    "rank_value": 571473.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -2777,8 +2777,8 @@
       "property": 5,
       "timeline": 5
      },
-     "total": 83,
-     "weight": 95
+     "total": 82,
+     "weight": 100
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -2901,7 +2901,7 @@
     "counter_rows": {
      "count": 0
     },
-    "counter_score": 87,
+    "counter_score": 86,
     "counter_stance": {
      "given": false,
      "reason": null,
@@ -3171,7 +3171,7 @@
      "tax_bill_assumed": false
     },
     "price": 615000,
-    "rank_value": 558543.0,
+    "rank_value": 557933.0,
     "repair_label": null,
     "repair_reserve": 0,
     "repairs_owed": false,
@@ -3202,8 +3202,8 @@
       "property": 5,
       "timeline": 5
      },
-     "total": 87,
-     "weight": 95
+     "total": 86,
+     "weight": 100
     },
     "seller_concessions": 0,
     "short_sale": false,
@@ -3483,7 +3483,7 @@
  "cash_at_cap": null,
  "chosen": "recommended",
  "ci": {
-  "recommended": 90.85
+  "recommended": 89.85
  },
  "constraints": {
   "count": 0

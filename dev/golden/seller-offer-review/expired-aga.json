@@ -127,7 +127,7 @@
      "count": 4
     }
    ],
-   "counter_score": 79,
+   "counter_score": 78,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -459,8 +459,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 76,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -732,7 +732,7 @@
      "count": 4
     }
    ],
-   "counter_score": 79,
+   "counter_score": 78,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1064,8 +1064,8 @@
      "property": 4,
      "timeline": 4
     },
-    "total": 76,
-    "weight": 95
+    "total": 74,
+    "weight": 100
    },
    "seller_concessions": 0,
    "short_sale": false,

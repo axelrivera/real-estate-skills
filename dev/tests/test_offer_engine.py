@@ -95,12 +95,12 @@ class MatchesPrototype(unittest.TestCase):
         got = {o["id"]: (o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"], o["score"]["total"],
                          o["counter_score"], o["action"]) for o in R["ranked"]}
         self.assertEqual(got, {
-            "B": (145851, 142851, 148650, 85, 81, "ACCEPT"),  # the seller wants certainty: no counter for a 0.7% gain
+            "B": (145851, 142851, 148650, 84, 80, "ACCEPT"),  # the seller wants certainty: no counter for a 0.7% gain
             "C": (134729, 131729, 153489, 100, 98, "BACKUP"),
             # downside from the CMA high; FHA appraisal protection runs to closing, so no gap coverage is asked; the
             # proration allows Florida's 4% early-payment discount; the buyer designates the Closing Agent (9(c)(ii))
-            "A": (145319, 138567, 148211, 55, 63, "DECLINE"),
-            "D": (154485, 140349, 146337, 44, 65, "DECLINE"),  # a kick-out clause (Rider X): contingency 2, not 1
+            "A": (145319, 138567, 148211, 54, 62, "DECLINE"),
+            "D": (154485, 140349, 146337, 44, 64, "DECLINE"),  # a kick-out clause (Rider X): contingency 2, not 1
         })
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
         self.assertEqual(R["mode"], "multi")
@@ -119,7 +119,7 @@ class MatchesPrototype(unittest.TestCase):
         R = oe.analyze(prototype_costs(fixture("two-offers-accept.json")))
         b = by_id(R)["B"]
         self.assertEqual((b["ns"]["net_adj"], b["ns_down"]["net_adj"], b["ns_counter"]["net_adj"]), (170598, 167098, 172474))
-        self.assertEqual((b["score"]["total"], b["counter_score"], b["action"]), (87, 83, "ACCEPT"))
+        self.assertEqual((b["score"]["total"], b["counter_score"], b["action"]), (86, 82, "ACCEPT"))
         self.assertEqual(by_id(R)["C"]["action"], "DECLINE")
 
 
