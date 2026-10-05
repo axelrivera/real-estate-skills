@@ -73,4 +73,4 @@ A blank that the form fills in is not an issue: record the form's value and say 
 
 ## Writing an Issue
 
-One short sentence for `issue` naming the paragraph or rider; `fix` says what gets it resolved; `request` is the sentence for the buyer's agent ("Please have the second buyer sign and initial every page."). Describe the document, never the buyer (fair housing).
+One short sentence for `issue` naming the paragraph or rider; `fix` says what gets it resolved (the listing side by role, "the listing broker", never a brokerage name the profile doesn't confirm); name each form by its plain name ("the compensation agreement", "the Appraisal Gap Addendum"), never by its code alone (CASSB-1, AGA-1): the reader is the seller; `request` is the sentence for the buyer's agent ("Please have the second buyer sign and initial every page."). Describe the document, never the buyer (fair housing).

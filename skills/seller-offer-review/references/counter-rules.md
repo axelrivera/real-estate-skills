@@ -23,7 +23,7 @@ When the seller has already countered (`prior_counters`), the draft builds on th
 
 - **Price** never goes above the seller's last counter price, which is the ceiling even when it's above list. Below it, meet partway between the offer and that price (rounded up to $1,000, never above it). An offer above it with an unfunded gap is countered back to the seller's last price, never below it (rule 1 doesn't cut under the seller's own counter); rule 3 asks for gap coverage above the value range.
 - **Terms the seller already asked for** (inspection and loan approval days, deposit, concessions, gap coverage, closing date) are restated as the seller last countered them when the offer is weaker, with the why "Restates the seller's last counter". The draft doesn't go back to a harder ask than the seller's last counter: that retracts a concession and stalls the deal. Terms the offer already meets get no row.
-- If the agent's own counter goes above the seller's last price or asks for less than the seller's last terms, say why in its `rows`.
+- If the agent's own counter goes above the seller's last price or asks for less than the seller's last terms, its rows read "Set by the seller": say why in chat.
 
 A buyer's counter that drops a term the seller countered (under FAR/BAR CO-3 only what a counter restates carries) is raised as a High issue (`counter_chain`), and the draft restates the term.
 
@@ -31,7 +31,7 @@ A term the buyer's counter changed that no seller counter addressed (`buyer_chan
 
 ## One Live Contract at a Time
 
-Never recommend two live counters or a backup request while the primary deal isn't fully signed: two acceptances can mean two binding contracts. Offer the backup position only after the primary contract is fully signed, on the Back-Up Contract rider. Two live counters only with a multiple counter-offer form that makes each counter subject to the seller's final acceptance. Telling other buyers' agents about the seller's plans or the competing offers needs the seller's written authorization (NAR Standard of Practice 1-15).
+Never recommend two live counters or a backup request while the primary deal isn't fully signed: two acceptances can mean two binding contracts. Offer the backup position only after the primary contract is fully signed, on the Back-Up Contract Rider (W). Two live counters only with a multiple counter-offer form that makes each counter subject to the seller's final acceptance. Telling other buyers' agents about the seller's plans or the competing offers needs the seller's written authorization (NAR Standard of Practice 1-15).
 
 ## Appraisal Terms
 
@@ -39,10 +39,10 @@ Appraisal risk starts at the top of the CMA range. With a CMA, a price above it 
 
 ## Multiple Offers
 
-Only the top-ranked offer gets a counter. The backup is offered a backup position (Back-Up Contract rider) only after the primary contract is fully signed, and gets its own counter only if the first deal falls through. The plan always says only one counter or acceptance goes out at a time, an acceptance plan too.
+Only the top-ranked offer gets a counter. The backup is offered a backup position (Back-Up Contract Rider (W)) only after the primary contract is fully signed, and gets its own counter only if the first deal falls through. The plan always says only one counter or acceptance goes out at a time, an acceptance plan too.
 
 A backup whose own time for acceptance ends before the counter to the top offer does would lapse before it can be used. The engine flags it (`backup_lapses`), shows its deadline under Respond By, and the plan's first step is to ask its agent to extend the time for acceptance past the counter's (or to answer it first). With a call for highest and best already out (`listing.highest_and_best_due`), nothing goes out before its deadline: the review is run again on the final offers, and another call isn't offered.
 
 ## Overrides
 
-Different terms from the agent go in the offer's `counter` object: individual terms, or `rows` to replace the table. The net and the estimated counter certainty recompute from the terms, so check that rows and terms match.
+Different terms from the agent go in the offer's `counter.changes` (term → value; the terms are in `listing-file.md`, Agent Overrides). The engine writes every row from them, so the table, the net, the estimated counter certainty and the plan always agree: a term set to the offer's own value drops its row, and terms that follow the price (gap coverage, the deposit norm, the updated pre-approval) follow the agent's price. Never write rows by hand; a `rows` table stops the render.

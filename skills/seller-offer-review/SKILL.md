@@ -27,7 +27,7 @@ The engine fills anything missing with a conservative default and records it as 
 
 ## 1. Build the Listing File
 
-When the agent states today's date ("Today is September 22"), that is today: write it as `analysis_date`, and never question it against the computer's clock (the sandbox clock can be off). One JSON file per property, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files); the fields are in `references/listing-file.md`. It's a working file: never hand it to the agent or offer it for download. A new offer or counter later in the conversation goes into the same file (Offers Over Time in `references/listing-file.md`). In a new conversation, rebuild it from the documents the agent uploads again, plus the numbers from the earlier report the agent gives (payoff, CMA range, commission). Record `buyer_agent` and `buyer_brokerage` from the contract ("Morales · Palmetto Coast Realty"); when the agent says "Offer B", match it to the id.
+When the agent states today's date ("Today is September 22"), that is today: write it as `analysis_date`, and never question it against the computer's clock (the sandbox clock can be off). One JSON file per property, in a temporary folder, never the outputs folder (`references/saved-files.md`, Working Files); the fields are in `references/listing-file.md`. It's a working file: never hand it to the agent or offer it for download. A new offer or counter later in the conversation goes into the same file (Offers Over Time in `references/listing-file.md`). In a new conversation, rebuild it from the documents the agent uploads again, plus the numbers from the earlier report the agent gives (payoff, CMA range, commission). Record `buyer_agent` and `buyer_brokerage` from the contract ("Morales · Palmetto Coast Realty"), and the listing brokerage it names in `listing_brokerage`; when the agent says "Offer B", match it to the id.
 
 - **Contract or offer uploaded:** read all of it, riders and counteroffers included (`pdftotext -layout`, or read scanned pages directly); `references/contract-fields.md` says where each field lives. FAR/BAR: `references/farbar-riders.md`, `references/farbar-addenda.md` and `references/farbar-contract.md`; any other contract: `references/other-contracts.md`. Check it's complete with `references/contract-check.md` (and `references/farbar-package-check.md`) and record what the engine doesn't raise in `contract_issues`. No seller-paid costs in it: `seller_concessions: 0`. A counteroffer chain: the terms that would govern if signed, and the seller's earlier counters in `prior_counters`. A condo: also `references/condo.md`.
 - **Rider GG:** the buyer's broker compensation amount is in a separate compensation agreement, not the rider. When its signer box is checked for the Seller's Broker (an agreement between the Seller's Broker and the Buyer's Broker), the listing broker pays it: set `buyer_broker_paid_by: "listing_broker"` on that offer, so the net has no buyer-broker line. Record `buyer_broker_pct` or `buyer_broker_amount` only from that agreement; when the seller pays it and the amount isn't in the package, `to_confirm` asks for the signed compensation agreement (the amount): ask for it, and never state a buyer-broker percentage the package doesn't give.
@@ -44,14 +44,14 @@ Record only what the documents or the agent say: the engine's default is labeled
 ## 2. Run and Review
 
 ```
-python3 scripts/review.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID]
+python3 scripts/review.py listing.json [--cma file.cma.json] [--mode single|multi] [--offer ID] [--profile profile.md]
 ```
 
 It prints every value already formatted: the page-1 summary, each offer's net sheet, and the assumptions ranked by impact. Read it critically before answering; the rules are a first draft and the agent's judgment wins.
 
 - **Scores** follow `references/scoring-rubric.md`. When the agent knows something the contract can't show (the lender call went badly), set `scores.<criterion>` with a `why`.
 - **Counters** follow `references/counter-rules.md`. Check the counter is realistic for this buyer: with a CMA, a price above the value range is countered back to its top; without one the price stands and the counter asks for gap coverage; FHA and VA buyers are never asked for gap coverage. The counter never changes a term nobody gave (an assumed inspection period): ask the agent to confirm it instead. When a buyer's counter changed a term the seller never answered, or left the loan amount and balance to close at an earlier price, the counter has a row for it; keep those rows.
-- **Overrides:** `counter`, `recommendation` or `status` in the offer when the agent decides differently. Never change a number to make the recommendation look better.
+- **Overrides:** `counter.changes` (term → value; the engine writes the rows), `recommendation` or `status` in the offer when the agent decides differently. Never change a number to make the recommendation look better.
 
 ## 3. Deliver
 

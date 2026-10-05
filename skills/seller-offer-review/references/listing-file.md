@@ -108,6 +108,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `received` | `YYYY-MM-DD HH:MM`, for the record (not scored) | — | — |
 | `buyer` | name(s) on the contract; shown once, as contract identification | not shown | — |
 | `buyer_agent`, `buyer_brokerage` | the buyer's agent and their brokerage, as on the contract | name falls back to price and financing | — |
+| `listing_brokerage` | the listing brokerage the contract's broker block (or the compensation agreement) names | none; when it isn't the profile's brokerage (or the offers name different ones), the review asks once to confirm the listing side | — |
 | `lender` | text | — | — |
 | `loan_officer` | the name that signs the pre-approval letter: the questions then don't ask who it is, and the call is to that person | — | — |
 | `price` | number | **required** | — |
@@ -162,7 +163,7 @@ A single-offer review carries the name too (under the headline and in the PDF fi
 ### Agent Overrides (per Offer)
 
 - `scores`: `{"appraisal": {"score": 2, "why": "Appraisers here run low"}, "agent": 5}`. Keys: `financing` `approval` `appraisal` `contingency` `deposit` `timeline` `property` `agent`. Marked "Agent" in the report.
-- `counter`: any computed term (`price`, `seller_concessions`, `appraisal_gap`, `deposit`, `inspection_days`, `home_warranty`, `buyer_broker_pct`, `closing_date`), or the whole table as `rows: [[term, offered, counter, why], …]`. The counter net and certainty recompute from the terms, so keep rows and terms consistent.
+- `counter`: `{"changes": {term: value}}`, only the terms the agent sets: `price`, `seller_concessions` (or `seller_credit`), `appraisal_gap`, `deposit` (dollars); `inspection_days`, `loan_approval_days`, `aga_valuation_days`, `sale_contingency_days` (whole days); `buyer_broker_pct` (a fraction); `home_warranty` (what the seller pays, 0 = the buyer pays); `closing_date` (`YYYY-MM-DD`); `time_for_acceptance` (`YYYY-MM-DD HH:MM`). The engine writes every row from them: a term equal to the offer's drops its row, a different one gets a row ("Set by the seller" when the rules wouldn't have set it), and the terms that follow the price (gap coverage, the deposit, the updated pre-approval) follow the agent's price. The net and certainty recompute from the same terms. Never write the table's wording: `counter.rows` and terms outside `changes` stop the render, each named as `field: problem → fix`.
 - `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE`.
 - `checklist`: `{"signed": "Yes", "deposit": {"status": "Yes", "note": "Wire confirmed 9/24"}}`. Keys: `signed` `lender` `deposit` `riders` `insurance` `bb` `net`, and `flood` (the seller's flood disclosure, where the market requires one; `listing.flood_disclosure: true` ticks it). Values `Yes` `No` `Pending` `N/A`.
 - `flags`: extra flags `[{"sev": "High", "issue": "…", "fix": "…"}]`.

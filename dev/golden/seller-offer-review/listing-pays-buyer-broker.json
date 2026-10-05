@@ -374,8 +374,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-02",
-    "holding": -888,
+    "close": "2026-10-28",
+    "holding": -780,
     "lines": [
      [
       "price",
@@ -419,7 +419,7 @@
      ],
      [
       "tax",
-      -7277
+      -7158
      ],
      [
       "payoff",
@@ -429,10 +429,10 @@
     "missing": {
      "count": 0
     },
-    "net": 463956,
-    "net_adj": 463068,
+    "net": 464075,
+    "net_adj": 463295,
     "price": 504000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -517,6 +517,10 @@
     [
      "Med",
      "escalation_cap_over_value"
+    ],
+    [
+     "Med",
+     "escalation_cap_over_approval"
     ]
    ],
    "expires_raw": "2026-09-24 17:00",
@@ -525,6 +529,10 @@
    "financing": "conventional",
    "firm_date": "2026-10-22",
    "flags": [
+    {
+     "sev": "Med",
+     "topic": "escalation_cap_over_approval"
+    },
     {
      "sev": "Med",
      "topic": "escalation_cap_over_value"
@@ -940,7 +948,8 @@
   }
  ],
  "highest_and_best": {
-  "pending": true
+  "pending": true,
+  "raw": "2026-09-23 12:00"
  },
  "incomplete": {
   "count": 0
@@ -1425,8 +1434,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-02",
-    "holding": -888,
+    "close": "2026-10-28",
+    "holding": -780,
     "lines": [
      [
       "price",
@@ -1470,7 +1479,7 @@
      ],
      [
       "tax",
-      -7277
+      -7158
      ],
      [
       "payoff",
@@ -1480,10 +1489,10 @@
     "missing": {
      "count": 0
     },
-    "net": 463956,
-    "net_adj": 463068,
+    "net": 464075,
+    "net_adj": 463295,
     "price": 504000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -1568,6 +1577,10 @@
     [
      "Med",
      "escalation_cap_over_value"
+    ],
+    [
+     "Med",
+     "escalation_cap_over_approval"
     ]
    ],
    "expires_raw": "2026-09-24 17:00",
@@ -1576,6 +1589,10 @@
    "financing": "conventional",
    "firm_date": "2026-10-22",
    "flags": [
+    {
+     "sev": "Med",
+     "topic": "escalation_cap_over_approval"
+    },
     {
      "sev": "Med",
      "topic": "escalation_cap_over_value"
@@ -2025,6 +2042,10 @@
     [
      "Med",
      "escalation_cap_over_value"
+    ],
+    [
+     "Med",
+     "escalation_cap_over_approval"
     ]
    ],
    "expires_raw": "2026-09-24 17:00",
@@ -2033,6 +2054,10 @@
    "financing": "conventional",
    "firm_date": "2026-10-22",
    "flags": [
+    {
+     "sev": "Med",
+     "topic": "escalation_cap_over_approval"
+    },
     {
      "sev": "Med",
      "topic": "escalation_cap_over_value"
@@ -2776,8 +2801,8 @@
       "value": 1145
      }
     ],
-    "close": "2026-11-02",
-    "holding": -888,
+    "close": "2026-10-28",
+    "holding": -780,
     "lines": [
      [
       "price",
@@ -2821,7 +2846,7 @@
      ],
      [
       "tax",
-      -7277
+      -7158
      ],
      [
       "payoff",
@@ -2831,10 +2856,10 @@
     "missing": {
      "count": 0
     },
-    "net": 463956,
-    "net_adj": 463068,
+    "net": 464075,
+    "net_adj": 463295,
     "price": 504000,
-    "tax_bill_assumed": true
+    "tax_bill_assumed": false
    },
    "title_by": "seller",
    "title_payer": "seller",
@@ -2863,8 +2888,8 @@
     "value": 1145
    }
   ],
-  "close": "2026-11-02",
-  "holding": -888,
+  "close": "2026-10-28",
+  "holding": -780,
   "lines": [
    [
     "price",
@@ -2908,7 +2933,7 @@
    ],
    [
     "tax",
-    -7277
+    -7158
    ],
    [
     "payoff",
@@ -2918,10 +2943,10 @@
   "missing": {
    "count": 0
   },
-  "net": 463956,
-  "net_adj": 463068,
+  "net": 464075,
+  "net_adj": 463295,
   "price": 504000,
-  "tax_bill_assumed": true
+  "tax_bill_assumed": false
  },
- "target_close": "2026-11-02"
+ "target_close": "2026-10-28"
 }

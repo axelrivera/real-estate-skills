@@ -63,7 +63,7 @@ class BackupLapses(unittest.TestCase):  # OFR-319
         self.assertIn("backup_lapses", a["flag_keys"])
         self.assertIn("backup_lapses", s["plan_keys"])
         also = {x["key"]: x for x in s["respond_by_also"]}
-        self.assertEqual(also["backup_lapses"]["when"], offer(R, "A")["expires"])
+        self.assertEqual(also["backup_lapses"]["when"], "Wed Sep 23, 5:00 PM")  # the Respond By box's short form
         self.assertIsNotNone(offer(R, "A").get("lapses_before"))
         self.assertIn("Will the buyer extend", " ".join(render.questions(offer(R, "A"), R)))
 
@@ -88,7 +88,7 @@ class HighestAndBest(unittest.TestCase):  # OFR-320
         self.assertNotIn("Call for Highest & Best", self.options(out))
         self.assertIn("highest_and_best_pending", s["plan_keys"])
         self.assertEqual(s["respond_by_also"][0]["key"], "highest_and_best")
-        self.assertEqual(s["respond_by_also"][0]["when"], oe.fmt_when("2026-09-23 12:00"))
+        self.assertEqual(s["respond_by_also"][0]["when"], "Wed Sep 23, 12:00 PM")
 
     def test_passed_call_is_not_a_deadline(self):
         _, out = multi(data({"highest_and_best_due": "2026-09-21 12:00"}))

@@ -15,6 +15,8 @@ import html
 import math
 import os
 import re
+import shutil
+import subprocess
 import sys
 from datetime import timedelta
 
@@ -131,9 +133,9 @@ def options_table(opts, widths=(24, 13, 15), short=False):
         f'{" <span class=sm>(Recommended)</span>" if x["recommended"] else ""}</td><td class="n">{esc(x["net"])}</td>'
         f'<td class="c">{esc(x["certainty"])}</td><td class="{x["status"]}">{esc(x["what"])}</td></tr>' for x in opts)
     cols = "".join(f'<col style="width:{w}%">' for w in widths)
-    return (f'<h2>Your Options</h2><div class="tbl opts"><table><colgroup>{cols}</colgroup>'
+    return (f'<div class="optsbox"><h2>Your Options</h2><div class="tbl opts"><table><colgroup>{cols}</colgroup>'
             f'<thead><tr><th>Option</th><th class="n">Net After Holding</th><th class="c">Certainty</th><th>What Happens</th></tr></thead>'
-            f'<tbody>{rows}</tbody></table></div>')
+            f'<tbody>{rows}</tbody></table></div></div>')
 
 
 def closing_block(v):
@@ -299,8 +301,10 @@ def lender_questions(o, R):
                 "Can the bank confirm the balance in writing to the escrow agent?"]
     fin = oe.FIN_LABEL[o["financing"]]
     fin = fin if fin.isupper() else fin.lower()  # "an FHA loan", "a conventional loan"
+    pof = o.get("proof_of_funds")  # the package's proof of funds already shows the assets: never asked again
     Q = ["What conditions are left on the underwriting approval?" if o["approval"] == "full_uw" else
-         "Has the file been through automated underwriting (DU or LP), and are income, assets and credit verified with documents?"]
+         "Has the file been through automated underwriting (DU or LP), and are income "
+         + ("and credit" if pof else "assets and credit") + " verified with documents?"]
     conc = f", with {money(o['seller_concessions'])} in seller concessions" if o["seller_concessions"] else ""
     # iteration 9 eval 7: when the seller counters (or a lapsed offer's reference counter) changes the price, ask at it
     price = o["counter_terms"]["price"] if o.get("action") in ("COUNTER", "INCOMPLETE") and o["counter_rows"] else o["price"]
@@ -313,7 +317,9 @@ def lender_questions(o, R):
         Q.append(f"Is the approval good for {money(price)} with {o['down_pct'] * 100:.1f}% down on {a_loan}{conc}?")
     gap = max(o["appraisal_gap"], o["counter_terms"]["appraisal_gap"] if o.get("action") == "COUNTER" else 0)
     if not funds_shown(o, gap):  # OFR-321: a verification of funds in the package already answers it
-        Q.append("Are funds verified for the down payment and closing costs"
+        price = max(o["price"], o["counter_terms"]["price"] if o.get("action") == "COUNTER" else 0)
+        Q.append((f"The proof of funds shows {money(pof)}: is there cash for the down payment at {money(price)} and closing costs"
+                  if pof else "Are funds verified for the down payment and closing costs")
                  + (f", plus an appraisal gap of up to {money(gap)}?" if gap else "?"))
     if o["financing"] in ("fha", "va", "usda"):
         roof = f" (roof {L['roof_year']})" if L.get("roof_year") else ""
@@ -381,7 +387,9 @@ def gantt(o, R):
     per_wk = max(1, 7 // step)
     hdr = '<tr><th style="width:22%">Contingency</th><th class="n" style="width:6%">Days</th><th class="n" style="width:9%">Ends</th>'
     for i in range(0, ncell, per_wk):
-        hdr += f'<th colspan="{min(per_wk, ncell - i)}" class="c">{(L["analysis_date"] + timedelta(days=i * step)):%b %-d}</th>'
+        n = min(per_wk, ncell - i)  # a short last week gets no date: too narrow for one, it would wrap ("Nov / 3")
+        day = f"{(L['analysis_date'] + timedelta(days=i * step)):%b %-d}" if n >= min(3, per_wk) else ""
+        hdr += f'<th colspan="{n}" class="c" style="white-space:nowrap">{day}</th>'
     hdr += "</tr>"
 
     def gx(i):
@@ -525,11 +533,11 @@ def single_html(R, o, v):
                   'recommendation</em></div><table><colgroup><col style="width:18%"><col style="width:15%"><col style="width:3%">'
                   '<col style="width:17%"><col></colgroup><thead><tr><th>Term</th><th>Buyer Offered</th><th></th>'
                   f'<th>A Counter Could Say</th><th>Why</th></tr></thead><tbody>{rr}</tbody></table></div>')
-    details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div><div class="treason-slot"></div>
+    details = f'''<div class="pb"></div><div class="dh">Detailed Analysis</div><div class="treason-slot"></div><div class="opts-slot"></div>
 <h2>1 · Seller Net Sheet <span class="h2s">As Offered vs. Downside{", Counter" if o["counter_rows"] else ""} and the Seller's Target Terms</span></h2>
 <div class="tbl"><table><colgroup><col style="width:{36 if len(cols) <= 4 else 30}%"></colgroup><thead><tr><th>Line Item</th>{heads}</tr></thead><tbody>{ns}</tbody></table></div>
 <div class="legend"><span><b>Downside</b>: {caption}.</span>
-<span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., same closing date.</span></div>
+<span><b>Seller's Target</b>: list price, no concessions, agreed buyer-broker comp., {target_basis(R, o)}.</span></div>
 {revive}<h2>2 · Contingency Timeline <span class="h2s">Shaded = Buyer Can Still Cancel · Days from {L["analysis_date"]:%b %-d} (Assumed Effective Date)</span></h2>{gantt(o, R)}
 <h2>3 · Terms Review <span class="h2s">Each Term Against the Seller's Preference or Local Norm</span></h2>
 <div class="tbl split"><table><colgroup><col style="width:17%"><col style="width:23%"><col style="width:20%"><col style="width:9%"></colgroup>
@@ -551,6 +559,12 @@ def single_html(R, o, v):
 
 
 # --- multiple offers -----------------------------------------------------------
+
+def target_basis(R, o):
+    """The target's closing basis in words: one target per listing, on the recommended offer's closing date."""
+    close = R.get("target_close") or o["close"]
+    return "same closing date" if close == o["close"] else f"closing {close:%b %-d} (the recommended offer's date)"
+
 
 def scatter(R, W=300, H=230):
     offs = R["active"]
@@ -595,7 +609,8 @@ def scatter(R, W=300, H=230):
         marks.append(f'<line x1="{x}" x2="{x}" y1="{a}" y2="{b}" stroke="{c}" stroke-width="2" opacity=".5"/>'
                      f'<circle cx="{x}" cy="{a}" r="5" fill="#fff" stroke="{c}" stroke-width="2"/><circle cx="{x}" cy="{b}" r="5" fill="{c}"/>'
                      f'<text x="{tx}" y="{ty}" text-anchor="{"end" if right else "start"}" class="pl" style="fill:{ink[o["action"]]}">{esc(text)}</text>')
-    label = f"Target {money(tgt)} (Clean Offer at List, Closing {R['target_close']:%b %-d})"
+    close = R.get("target_close")  # the one target every report shows, on the recommended offer's closing date
+    label = f"Target {money(tgt)} (Clean Offer at List" + (f", Closing {close:%b %-d})" if close else ")")
     lx, ly, anchor = target_label_spot(label, ys(tgt), Lm + 3, W - Rm - 3, boxes)  # OFR-296: never over a point's label
     svg.append(f'<line x1="{Lm}" x2="{W - Rm}" y1="{ys(tgt)}" y2="{ys(tgt)}" stroke="var(--good-base)" stroke-dasharray="4 3"/>'
                f'<text x="{lx}" y="{ly}" text-anchor="{anchor}" class="ax" style="fill:var(--good-strong)">{esc(label)}</text>')
@@ -646,18 +661,18 @@ def multi_html(R, v):
     rows = "".join(
         f'<tr class="{"top" if r["rank"] == 1 else ""}"><td class="rk">{r["rank"]}</td><td class="nw"><b>{esc(r["key"])}</b> · <b>{esc(r["offer"])}</b>{FORM_MARK if r.get("form_assumed") else ""}</td>'
         f'<td>{esc(r["financing"])}</td><td class="c"><span class="pill {pill[r["action"]]}">{esc(r["action"])}</span></td>'
-        f'<td class="n">{r["price"]}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
+        f'<td class="n">{r["price"].replace(" (escalated)", "<br><span class=sm>escalated</span>")}</td><td class="n">{r["net"]}</td><td class="n"><b>{r["downside"]}</b></td>'
         f'<td class="c {band[r["band_class"]]}"><b>{r["score"]}</b></td><td class="n">{r["risk_days"]}{"" if r["risk_days"] == "—" else " d"}</td><td class="n">{r["close"]}</td>'
         f'<td class="why2">{esc(r["terms"])}</td></tr>' for r in v["ranked"])
     decision = f'''<div class="ctr"><div class="ctrh"><span>OUR PLAN</span><em>{md(v["plan_summary"])}</em></div>
- <table class="rank"><colgroup><col style="width:3%"><col style="width:19%"><col style="width:10%"><col style="width:9%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
+ <table class="rank"><colgroup><col style="width:3%"><col style="width:17%"><col style="width:9%"><col style="width:9%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:4%"><col style="width:4%"><col style="width:5%"></colgroup>
  <thead><tr><th></th><th>Offer</th><th>Financing</th><th class="c">Action</th><th class="n">Price</th><th class="n">Net</th><th class="n">Downside</th><th class="c">Cert.</th><th class="n">Walk</th><th class="n">Close</th><th>Terms / Reason</th></tr></thead><tbody>{rows}</tbody></table>
  <div class="note"><b>Net</b> = after all costs &amp; holding, as offered. <b>Downside</b> = if the appraisal and inspection go badly. <b>Walk</b> = days the buyer can still walk away.{FORM_NOTE if any(r.get("form_assumed") for r in v["ranked"]) else ""} {esc(v["plan_note"])}</div></div>'''
     if len(R["active"]) <= CHART_MAX:
-        chart = (f'<div><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
+        chart = (f'<div class="chartbox"><h2>Net vs. Certainty</h2><div class="panel">{scatter(R, 420, 200)}<div class="legend" style="margin:0">'
                  '<span><i style="background:#fff;border:1.5px solid var(--grey);border-radius:50%"></i>As Offered</span>'
                  f'<span><i style="background:var(--grey);border-radius:50%"></i>Downside</span></div>{key_legend(rk)}</div></div>')
-        lower = f'<div class="two" style="grid-template-columns:1.35fr 1fr"><div>{options_table(v["options"], (26, 13, 11), True)}</div>{chart}</div>'
+        lower = f'<div class="two lower" style="grid-template-columns:1.35fr 1fr"><div>{options_table(v["options"], (26, 13, 11), True)}</div>{chart}</div>'
     else:
         lower = options_table(v["options"], (28, 12, 10), True)
     page1 = f"{hero(v)}{decision}{lower}{closing_block(v)}"
@@ -682,7 +697,7 @@ def multi_html(R, v):
                + "</tbody></table></div>")
     # OFR-324: the page title and the table heading say different things
     details = f'''<div class="pb"></div><div class="dh">Offer Details</div>
-{snapshot(R)}<div class="treason-slot"></div>
+{snapshot(R)}<div class="treason-slot"></div><div class="chart-slot"></div>
 <h2>Key Terms Side by Side <span class="h2s">Favorable · Watch · Weak</span></h2>
 <div class="tbl"><table class="kt"><colgroup><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:9%"></colgroup><thead><tr><th>Offer</th>{head}<th>Biggest Risk</th></tr></thead><tbody>{body}</tbody></table></div>
 <div class="legend"><span>Each offer has its own single review (a separate PDF) with the full net sheet, contingency timeline, terms review, certainty scorecard, risk flags and checklist.</span></div>
@@ -718,17 +733,30 @@ PAGE1_BLOCKS = ((".p1 .hero .why", "the recommendation text"), (".p1 .ctr", "the
                 (".p1 .treason", "the Terms Reason"))
 
 
+# Steps that fit page 1, in order, until it fits: the compact layout; (OFR-292) the Terms Reason to the top of page 2;
+# in the comparison, the chart to page 2 (the options table then takes the full width); a tighter layout; in a single
+# review, the options table to the top of page 2. Page 1 never spills onto a near-empty page 2.
+FIT_STEPS = (
+    "() => document.body.classList.add('compact')",
+    "() => { const r = document.querySelector('.p1 .treason'), s = document.querySelector('.treason-slot');"
+    " if (r && s) s.appendChild(r); }",
+    "() => { const c = document.querySelector('.p1 .chartbox'), s = document.querySelector('.chart-slot');"
+    " if (c && s) { s.appendChild(c); document.querySelector('.p1 .lower').style.gridTemplateColumns = '1fr'; } }",
+    "() => document.body.classList.add('tight')",
+    "() => { const o = document.querySelector('.p1 > .optsbox'), s = document.querySelector('.opts-slot');"
+    " if (o && s) s.appendChild(o); }",
+)
+
+
 def fit_page_one(pg, limit=PAGE1_LIMIT):
-    """Measure page 1 and fit it: first the compact layout, then (OFR-292) the Terms Reason moves to the top of page 2.
-    Returns (top, blocks): where page 2 starts and, when page 1 still spills, its data-driven blocks by height."""
+    """Measure page 1 and fit it, a step at a time (FIT_STEPS) until it fits. Returns (top, blocks): where page 2
+    starts and, when page 1 still spills, its data-driven blocks by height."""
     measure = "() => document.querySelector('.pb').getBoundingClientRect().top"
     top = pg.evaluate(measure)
-    if top > limit:
-        pg.evaluate("() => document.body.classList.add('compact')")
-        top = pg.evaluate(measure)
-    if top > limit:
-        pg.evaluate("() => { const r = document.querySelector('.p1 .treason'), s = document.querySelector('.treason-slot');"
-                    " if (r && s) s.appendChild(r); }")
+    for step in FIT_STEPS:
+        if top <= limit:
+            break
+        pg.evaluate(step)
         top = pg.evaluate(measure)
     blocks = []
     if top > limit:
@@ -736,6 +764,54 @@ def fit_page_one(pg, limit=PAGE1_LIMIT):
                               " return e ? e.getBoundingClientRect().height : 0; })", [s for s, _ in PAGE1_BLOCKS])
         blocks = sorted(((h, name) for h, (_, name) in zip(heights, PAGE1_BLOCKS) if h), reverse=True)
     return top, blocks
+
+
+DETAIL_HEADS = ("Detailed Analysis", "Offer Details")  # the heading page 2 starts with (.dh)
+SPILL_RETRY_PX = 40  # Chromium's print layout can run a little longer than the measured one (CMA-274): refit this much tighter
+
+
+LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines: the detail pages print denser instead
+_PAGE = re.compile(r'<page width="[\d.]+" height="([\d.]+)">')
+_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
+MARGIN_TOP, MARGIN_BOTTOM = 0.3 * 72, 0.4 * 72  # the page margins (render.html_to_pdf), in PDF points
+
+
+def pages(path):
+    """[(fill, first line)] per printed page: how far down the content area the text reaches (0 to 1) and the page's
+    first line, from pdftotext -bbox (the running footer, in the bottom margin, isn't counted). None without pdftotext."""
+    tool = shutil.which("pdftotext")
+    if not tool:
+        return None
+    try:
+        out = subprocess.run([tool, "-bbox", path, "-"], capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    found = []
+    for chunk in out.split("<page ")[1:]:
+        height = float(_PAGE.match("<page " + chunk).group(1))
+        bottom_edge = height - MARGIN_BOTTOM
+        words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
+                 if float(y1) <= bottom_edge + 1]
+        if not words:
+            found.append((0.0, ""))
+            continue
+        top = min(w[1] for w in words)
+        first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
+        found.append((max(0.0, (max(w[2] for w in words) - MARGIN_TOP) / (bottom_edge - MARGIN_TOP)), first))
+    return found
+
+
+def page_problems(found):
+    """What the printed pages show that the layout check before printing can't: page 1 spilling onto page 2 (page 2
+    doesn't start with the detail heading), and a last page holding only a few closing lines. [] when fine or unread."""
+    if not found:
+        return []
+    out = []
+    if len(found) > 1 and not found[1][1].startswith(DETAIL_HEADS):
+        out.append("spill")
+    if len(found) > 2 and found[-1][0] < LONE_TAIL:
+        out.append("tail")
+    return out
 
 
 def overflow_warning(name, top, limit, blocks):
@@ -751,17 +827,29 @@ def write_pdf(R, agent, sample, mode, offer_id, out_dir):
     path = os.path.join(out_dir, name)
     label = f"Single Offer Review · Seller Side · {street} · {o['label']}" if mode == "single" else f"Multiple Offer Review · Seller Side · {street}"
     limit = PAGE1_LIMIT_WIDE if mode == "multi" else PAGE1_LIMIT
-    top, blocks = render.html_to_pdf(doc, path, footer_html=render.footer(label), landscape=mode == "multi",
-                                     before_print=lambda pg: fit_page_one(pg, limit))
-    if top > limit:
-        print(overflow_warning(name, top, limit, blocks), file=sys.stderr)
+    def pdf(fit, dense=False):
+        def before(pg):
+            if dense:  # the detail pages print denser, so the last page isn't a few closing lines alone
+                pg.evaluate("() => document.body.classList.add('dense')")
+            return fit_page_one(pg, fit)
+        return render.html_to_pdf(doc, path, footer_html=render.footer(label), landscape=mode == "multi",
+                                  before_print=before)
+    fit, dense = limit, False
+    top, blocks = pdf(fit)
+    found = page_problems(pages(path)) if top <= fit else []
+    if found:  # the print ran longer than measured (CMA-274), or left a near-empty last page: print it again
+        fit = limit - SPILL_RETRY_PX if "spill" in found else limit
+        dense = "tail" in found
+        top, blocks = pdf(fit, dense)
+    if top > fit:
+        print(overflow_warning(name, top, fit, blocks), file=sys.stderr)
     return path
 
 
 def build(data, fmt, out_dir, ctx):
     """A single review; or with 2+ active offers, the comparison plus a single review of each active offer, in rank
     order (OFR-318)."""
-    R = review.analyze(data, cma=review.load_cma(data, ctx.get("cma")))
+    R = review.analyze(data, cma=review.load_cma(data, ctx.get("cma")), agent=ctx["agent"])
     sample = ctx.get("sample") or R["sample"]
     mode, _ = review.pick(R, ctx.get("mode") or "auto", ctx.get("offer"))
     if mode == "multi" and len(R["active"]) >= 2:

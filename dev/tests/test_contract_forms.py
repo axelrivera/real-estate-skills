@@ -157,7 +157,7 @@ class AppraisalForm(unittest.TestCase):
         self.assertLess(o["A"]["risk_days"], o["B"]["risk_days"])
         self.assertGreaterEqual(o["A"]["score"]["total"], o["B"]["score"]["total"])
         self.assertEqual(R["ranked"][0]["id"], "A")  # same price and gap: the shorter window ranks first
-        self.assertIn("(AGA-1)", o["A"]["score"]["why"]["appraisal"])
+        self.assertIn("(Appraisal Gap Addendum)", o["A"]["score"]["why"]["appraisal"])
 
     def test_short_close_makes_little_difference(self):
         _, o = self.two(40)
