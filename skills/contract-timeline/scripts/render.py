@@ -40,10 +40,16 @@ def _day(row):
     return datetime.combine(_when(row).date(), time())
 
 
+def page_one_rows(t):
+    """The rows page 1 shows (the strip and All Key Dates): every dated row except a cancel window that can no longer
+    arise (Rider GG's once the agreement is signed, iteration 12). The Deadline Details table keeps it, marked done."""
+    return [r for r in t["rows"] if not r.get("voided")]
+
+
 def strip_span(t):
     """What the strip runs to: Closing when the closing is its last date, else its last deadline (a short sale waiting
     on approval runs to Contract Expires; a stay after closing to the possession date)."""
-    last = max(t["rows"], key=_when)
+    last = max(page_one_rows(t), key=_when)
     if t["closing"] and _when(last).date() <= datetime.strptime(t["closing"]["date"], "%Y-%m-%d").date():
         return "Effective Date → Closing"
     return f'Effective Date → {last["short"]}'
@@ -119,7 +125,7 @@ def strip_mixed(t):
     """True when some day on the strip names deadlines owed by different parties (the legend then explains the neutral
     color)."""
     groups = {}
-    for r in t["rows"]:
+    for r in page_one_rows(t):
         groups.setdefault(_when(r).date(), []).append(r)
     return any(len({r["party"] for r in g if not r.get("done")}) > 1 for g in groups.values())  # all done: gray
 
@@ -127,7 +133,7 @@ def strip_mixed(t):
 def strip(t, colors):
     """Horizontal timeline from the Effective Date to the last date; labels in free slots above and below. Deadlines
     already done are drawn in gray."""
-    dated = t["rows"]
+    dated = page_one_rows(t)
     eff = datetime.strptime(t["effective"]["date"], "%Y-%m-%d")
     end = max(_day(x) for x in dated) + timedelta(days=1)
     W, L, R, STEP = 740, 30, 40, 13
@@ -267,6 +273,13 @@ def build_html(t, agent, sample):
         whose = "Your" if side == "buyer" else "The buyer's"
         lead = (f'{whose} contingency periods ({esc(t["contingencies_waiting_text"])}) start when the buyer '
                 "receives the short sale approval; until then, only the dates counted from the Effective Date are set.")
+    elif t.get("form_family") == "other":
+        # iteration 12 eval 14: another contract's report states no consequence (the deposit at risk, a firm deal) that
+        # the deal file doesn't record from the contract
+        firm_label = "Your Contingencies End" if side == "buyer" else "Buyer Can Cancel Until"
+        whose = "Your main protections run through" if side == "buyer" else "The buyer's main contingencies end"
+        lead = (f'{whose} <b>{esc(firm["display"])}</b> ({day_label(firm)}, {esc(t["contingencies_end_period"])}).'
+                + open_txt if firm else "No buyer contingencies are recorded." + open_txt)
     elif side == "buyer":
         firm_label = "Your Contingencies End"
         # TL-202: one "after that", with the rights that stay open as the exception
@@ -316,7 +329,7 @@ def build_html(t, agent, sample):
         f'<tr class="{row_class(r)}"><td class="n"><b>{esc(r["display"])}</b></td><td class="n">{day_label(r)}</td>'
         f'<td>{esc(r["label"])}{star(r)}'
         f'{(" <span class=was>was " + esc(r["was"]) + "</span>") if r["was"] else ""}{done_pill(r)}</td>'
-        f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in t["rows"])
+        f'<td>{party_pill(r["party"], colors, ink)}</td></tr>' for r in page_one_rows(t))
     # dates that wait for an event (a receipt, the short sale approval) close the table: "Pending" in the narrow date
     # column, and what starts the clock under the deadline's name (TL-224)
     key_rows += "".join(

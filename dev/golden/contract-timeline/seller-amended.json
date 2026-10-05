@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 11
+  "count": 9
  },
  "chat_notes": {
   "count": 0
@@ -23,6 +23,7 @@
   "party": "Buyer",
   "past": false,
   "past_display": null,
+  "voided": false,
   "waits_on_approval": false,
   "when": "2026-12-10 23:59"
  },
@@ -47,6 +48,7 @@
   "party": "Buyer",
   "past": false,
   "past_display": null,
+  "voided": false,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-11-23 23:59"
@@ -57,6 +59,7 @@
  "flags": {
   "count": 1
  },
+ "form_family": "farbar",
  "history": [
   {
    "before": {
@@ -113,9 +116,7 @@
   "year_built_without_rider_p",
   "default:deposit",
   "default:loan_app",
-  "default:lead_paint",
   "default:title",
-  "default:survey",
   "closing_time_assumed",
   "title_by_unknown"
  ],
@@ -140,6 +141,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -160,6 +162,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -180,6 +183,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -204,6 +208,7 @@
    "party": "Buyer",
    "past": true,
    "short": "Deposit",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-05 23:59"
@@ -221,6 +226,7 @@
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-09 23:59"
@@ -238,6 +244,7 @@
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
@@ -255,6 +262,7 @@
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
@@ -272,6 +280,7 @@
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
@@ -290,6 +299,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-23 23:59"
@@ -308,6 +318,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-11-25 17:00"
   },
@@ -325,6 +336,7 @@
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-03 23:59"
   },
@@ -342,6 +354,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-10 23:59"
   },
@@ -359,6 +372,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-11 23:59"
   },
@@ -376,6 +390,7 @@
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-14 23:59"
   },
@@ -394,6 +409,7 @@
    "past": false,
    "past_display": null,
    "short": "Survey",
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-14 23:59"
   },
@@ -411,6 +427,7 @@
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-15 23:59"
   },
@@ -429,6 +446,7 @@
    "past": false,
    "past_display": null,
    "short": "Walk-Through",
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-17 23:59"
   },
@@ -448,6 +466,7 @@
    "past": false,
    "past_display": null,
    "short": "Closing",
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-18 10:00"
   }
