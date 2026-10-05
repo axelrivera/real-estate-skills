@@ -147,10 +147,15 @@ def scenarios(R):
                     "repairs": _amount(x.get("repairs"), f"scenarios[{i}].repairs") or 0,
                     "closing": _date(own or R.get("closing_date"), "closing_date"),
                     "closing_assumed": bool(x.get("closing_date_assumed") if own else R.get("closing_date_assumed"))})
-    labels = [x["label"] or (t("col_credit", price=fmt.money(x["price"]), credit=fmt.money(x["credit"])) if x["credit"]
-                             else fmt.money(x["price"])) for x in out]
+    # a label in pieces that each stay on one line: the price, then "with $6,000 Credit", so a header that wraps breaks
+    # between them, never inside one. The default label names the price, so the tile under it doesn't repeat it.
+    parts = [[x["label"]] if x["label"] else [fmt.money(x["price"])]
+             + ([t("col_credit_tail", credit=fmt.money(x["credit"]))] if x["credit"] else []) for x in out]
+    labels = [" ".join(p) for p in parts]
     for i, x in enumerate(out):  # two columns may not share a name
-        x["label"] = labels[i] if labels.count(labels[i]) == 1 else t("col_option", label=labels[i], n=i + 1)
+        x["names_price"] = not x["label"]
+        x["label_parts"] = parts[i] + ([] if labels.count(labels[i]) == 1 else [t("col_option_tail", n=i + 1)])
+        x["label"] = " ".join(x["label_parts"])
     return out
 
 
@@ -316,7 +321,8 @@ def compute(R, market):
         net = led.total()
         span = max(x["price"], total_costs + payoff_total)  # the bar's full width: the price, or more when short
         price = led.amount("price")
-        columns.append({"label": x["label"], "price": price, "price_display": fmt.money(price),
+        columns.append({"label": x["label"], "label_parts": x["label_parts"], "names_price": x["names_price"],
+                        "price": price, "price_display": fmt.money(price),
                         "closing_date": x["closing"].isoformat() if x["closing"] else None,
                         "total_costs": total_costs, "total_costs_display": fmt.money(total_costs),
                         "costs_pct": total_costs / price, "costs_pct_display": fmt.pct(total_costs / price, 1, fixed=True),

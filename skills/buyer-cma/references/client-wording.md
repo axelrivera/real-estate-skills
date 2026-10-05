@@ -6,7 +6,7 @@ Everything you write into the data file can reach a client, so write it in the c
 
 | Don't Write | Write Instead |
 |---|---|
-| Tool words: placeholder, JSON, data file, script, schema, re-run | The client's words: "estimate", "the report", "we'll update the report" |
+| Tool words: placeholder, JSON, data file, script, schema, re-run, export, CSV | The client's words: "estimate", "the report", "we'll update the report", "MLS records" |
 | Empty or unfinished values: null, undefined, NaN, TODO, TBD | The value, or leave the field out |
 | A figure in a judgment field or label: digits, `$`, `%`, a month's name | Words ("the spring sales", "After a Price Cut"): the report prints every figure itself |
 | A `{placeholder}` | The words: the report fills nothing into what you write |

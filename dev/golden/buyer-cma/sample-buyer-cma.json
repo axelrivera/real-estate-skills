@@ -546,6 +546,8 @@
    "list_price": 474900,
    "pool": true,
    "price_cuts": 4,
+   "rate": 6.95,
+   "rate_week": "2026-09-17",
    "school_mills": 5.25,
    "sqft": 1849,
    "state": "FL",

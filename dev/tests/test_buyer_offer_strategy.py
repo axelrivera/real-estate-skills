@@ -702,7 +702,49 @@ class ReplyLines(unittest.TestCase):
         r = run(d)
         self.assertTrue(r["terms"]["recommended"].get("escalation"))
         self.assertEqual([x["key"] for x in r["reply_lines"] if x["key"] != "tight_reserve"], ["contract_terms"])
-        self.assertEqual([x["key"] for x in analyze("fha-competitive.json")["reply_lines"]], ["tight_reserve"])
+        self.assertEqual([x["key"] for x in analyze("fha-competitive.json")["reply_lines"]],
+                         ["tight_reserve", "higher_price"])
+
+    def test_higher_price_inside_the_limits(self):
+        """Below Strong, the report says what the highest price inside the buyer's own limits would do: that price is
+        above the recommended one, inside every limit with $1,000 more breaking one (or the max), `lifts` follows the
+        band ranks, and the line reaches the chat once and the PDF once."""
+        seen = 0
+        for name in sorted(os.listdir(FIXTURES)):
+            r = analyze(name)
+            hp, rec, lvl = r["higher_price"], r["terms"]["recommended"], r["B"]["competition"]["level"]
+            if r["bands"]["recommended"][lvl][0] == "strong" or r["overrides"] or rec.get("escalation"):
+                self.assertIsNone(hp, name)
+                continue
+            if hp is None:
+                continue
+            seen += 1
+            B, costs = r["B"], r["costs"]
+            self.assertGreater(hp["price"], rec["price"], name)
+            self.assertTrue(strategy.within_limits(B, costs, dict(rec, price=hp["price"])), name)
+            self.assertTrue(hp["price"] + 1000 > B["buyer"]["max_price"]
+                            or not strategy.within_limits(B, costs, dict(rec, price=hp["price"] + 1000)), name)
+            self.assertEqual(hp["lifts"], strategy.BAND_RANK[hp["band_key"]]
+                             > strategy.BAND_RANK[r["bands"]["recommended"][lvl][0]], name)
+            self.assertEqual([x["key"] for x in r["reply_lines"]].count("higher_price"), 1)
+            self.assertEqual(buyer_render.options_html(strategy.result(r), {}).count(buyer_render.esc(hp["text"])), 1)
+        self.assertTrue(seen)
+
+    def test_rate_line_when_the_cma_used_another_rate(self):
+        """With a CMA handoff whose payment used another rate, a reply line says which rate each report used; the same
+        rate, or no rate in the handoff, adds none."""
+        d = fixture("one-competing-reach.json")
+        h = strategy.load_cma(d)
+        if h is None:
+            self.skipTest("fixture has no CMA handoff")
+        keys = lambda h_: [x["key"] for x in strategy.analyze(d, cma=h_)["reply_lines"]]  # noqa: E731
+        rate = strategy.analyze(d, cma=h)["B"]["costs"]["rate"]
+        for cma_rate, want in ((rate + 0.5, True), (rate, False), (None, False)):
+            h2 = copy.deepcopy(h)
+            h2["subject"].pop("rate", None)
+            if cma_rate is not None:
+                h2["subject"]["rate"] = cma_rate
+            self.assertEqual("rate_differs" in keys(h2), want, cma_rate)
 
     def test_option_period_is_a_default_to_confirm(self):
         r = analyze("texas-cma-escalation.json")

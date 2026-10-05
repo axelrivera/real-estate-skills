@@ -42,15 +42,22 @@ def tiles(C):
     wide, so a tile never stretches."""
     items = []
     for c in C["columns"]:
-        sub = Raw(esc(c["tile_label"]) + "<br>" + esc(compute.t("tile_sub", price=c["price_display"],
-                                                                 costs=c["total_costs_display"], pct=c["costs_pct_display"])))
+        # the tile's label already names the price when it's the default one, so the line under it gives the costs only
+        sub = Raw(esc(c["tile_label"]) + "<br>" + esc(compute.t("tile_sub_costs" if c["names_price"] else "tile_sub",
+                                                                 price=c["price_display"], costs=c["total_costs_display"],
+                                                                 pct=c["costs_pct_display"])))
         items.append((c["label"], c["tile_display"], sub, "price short" if c["short"] else "price"))
     items += [(s["label"], s["display"], s["note"], "sum") for s in C["summary_tiles"]]
     return layout.tiles(items, n=compute.MAX_SCENARIOS, cls="net-tiles")
 
 
 def table(C):
-    cols = [layout.Col(0, "", cls="lbl-col")] + [layout.Col(i + 1, c["label"], align="num", cls="price-col")
+    # each piece the script builds keeps its words together, so a long header breaks between pieces ("$425,000" /
+    # "with $6,000 Credit"), never mid-amount; the agent's own label wraps like any text
+    def head(c):
+        return Raw(" ".join(esc(p) if i == 0 and not c["names_price"] else f'<span class="nw">{esc(p)}</span>'
+                            for i, p in enumerate(c["label_parts"])))
+    cols = [layout.Col(0, "", cls="lbl-col")] + [layout.Col(i + 1, head(c), align="num", cls="price-col")
                                                  for i, c in enumerate(C["columns"])]
     rows, classes = [], {}
     for r in C["rows"]:

@@ -5724,6 +5724,12 @@
   }
  },
  "framing": "reached",
+ "higher_price": {
+  "above_range": true,
+  "band_key": "risk",
+  "lifts": false,
+  "price": 451000
+ },
  "lc_why": {
   "closing_days": {
    "key": "why_close_easy"
@@ -5830,9 +5836,11 @@
    "seller_concessions": 3500
   }
  },
- "reply_lines": {
-  "count": 0
- },
+ "reply_lines": [
+  {
+   "key": "higher_price"
+  }
+ ],
  "reserve_alt": null,
  "reserve_tight": null,
  "sample": false,

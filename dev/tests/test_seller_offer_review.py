@@ -371,6 +371,24 @@ class Risks(unittest.TestCase):
 
 
 class Plan(unittest.TestCase):
+    def test_certainty_words_need_a_real_gap(self):
+        """A certainty difference under CERTAINTY_GAP points is "about the same" everywhere the script compares two
+        offers or an offer and its counter; at the gap or more it says which side is more certain."""
+        gap = review.CERTAINTY_GAP
+        for d in range(-12, 13):
+            want = 0 if abs(d) < gap else (1 if d > 0 else -1)
+            self.assertEqual(review.certainty_side(d), want, d)
+            sure = {1: "cw_more", -1: "cw_less", 0: "cw_same"}[want]
+            self.assertIn(review.L_[sure], review.counter_what(1000, 500, d, "COUNTER"), d)
+        R = review.analyze(fixture("two-offers-accept.json"))
+        top, other = R["ranked"][0], R["ranked"][1]
+        for diff, key in ((1, "now_same"), (gap, "now_most")):  # the other offer scores that much above the plan
+            plan = top["counter_score"] if top["action"] == "COUNTER" else top["score"]["total"]
+            other["score"] = dict(other["score"], total=plan + diff)
+            opts = review.multi_view(R)["options"]
+            now = [o for o in opts if o["option"] == review.t("opt_accept_now", label=other["label"])]
+            self.assertTrue(now and review.L_[key] in now[0]["what"], (diff, opts))
+
     def test_no_zero_gain_counter_option(self):
         R = review.analyze(fixture("two-offers-accept.json"))
         top = R["ranked"][0]

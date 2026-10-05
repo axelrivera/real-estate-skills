@@ -4210,6 +4210,13 @@
  },
  "dropped_stronger": null,
  "framing": "least_cash",
+ "higher_price": {
+  "above_range": false,
+  "band": "Competitive",
+  "band_key": "comp",
+  "lifts": false,
+  "price": 490000
+ },
  "limits": {
   "recommended": {
    "count": 0
@@ -4252,9 +4259,11 @@
  "promoted": null,
  "promoted_from": null,
  "reached": null,
- "reply_lines": {
-  "count": 0
- },
+ "reply_lines": [
+  {
+   "key": "higher_price"
+  }
+ ],
  "reserve_alt": null,
  "reserve_tight": null,
  "sample": true,

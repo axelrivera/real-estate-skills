@@ -125,6 +125,7 @@ TOOL_WORDS = [
     (r"\bplaceholders?\b", re.I, "a tool word", "write the number, or label it Estimate or Assumed"),
     (r"\bJSON\b|\bdata[- ]files?\b|\bschemas?\b|\bscripts?\b", re.I, "a tool word",
      "say what it is in the client's words (the report, the numbers, the listing)"),
+    (r"\bexports?\b|\bCSVs?\b", re.I, "a tool word", 'say where it came from in the client\'s words ("MLS records", "recent sales")'),
     (r"\bre-?run(?:s|ning)?\b", re.I, "a tool word", 'say what happens in the client\'s words ("we\'ll update the report")'),
     (r"\bnull\b(?!\s+and\s+void)|\bundefined\b", re.I, "an empty value printed as text",
      "leave the field out (the report shows its default)"),

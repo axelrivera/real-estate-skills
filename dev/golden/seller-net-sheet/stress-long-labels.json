@@ -22,6 +22,10 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.0853,
    "costs_pct_display": "8.5%",
+   "label_parts": {
+    "count": 1
+   },
+   "names_price": false,
    "net": 288218,
    "net_before_payoff": 630218,
    "payoff_total": 342000,
@@ -38,6 +42,10 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.0859,
    "costs_pct_display": "8.6%",
+   "label_parts": {
+    "count": 1
+   },
+   "names_price": false,
    "net": 269558,
    "net_before_payoff": 611558,
    "payoff_total": 342000,
@@ -54,6 +62,10 @@
    "closing_date": "2026-12-15",
    "costs_pct": 0.1037,
    "costs_pct_display": "10.4%",
+   "label_parts": {
+    "count": 1
+   },
+   "names_price": false,
    "net": 275568,
    "net_before_payoff": 617568,
    "payoff_total": 342000,

@@ -383,6 +383,22 @@ def escalation_proof_stated(form, item=None):
     return bool(e.get("proof")) or eac_named(form, item)
 
 
+# Para. 3(a), both forms: unless signed by both parties and an executed copy delivered on or before the written time for
+# acceptance, the offer is withdrawn; a counter-offer's time is 2 days after the day it was delivered unless stated.
+# Neither rolls over a weekend or holiday (Standard F's exception).
+ACCEPTANCE_COUNTER_DAYS = 2
+
+
+def acceptance_deadline(form, item=None):
+    """The time for acceptance as recorded (`acceptance_deadline`, "YYYY-MM-DD HH:MM" or "YYYY-MM-DD"), with what sets
+    it: {"due": str, "cite": "Para. 3(a)"} on FAR/BAR, the contract's own on another form; None when not recorded."""
+    item = item or {}
+    due = str(item.get("acceptance_deadline") or "").strip()
+    if not due:
+        return None
+    return {"due": due, "cite": "Para. 3(a)" if form in FARBAR else "the contract's time for acceptance"}
+
+
 def appraisal_in_loan_approval(form, item=None, financing=None):
     """True when a FAR/BAR financed offer has no appraisal rider or addendum (no F, E or AGA-1): Para. 8(b)(2) makes
     the lender's appraisal part of Loan Approval, so the appraisal window is the Loan Approval Period (both forms)."""

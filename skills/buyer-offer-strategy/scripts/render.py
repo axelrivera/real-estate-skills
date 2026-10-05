@@ -131,6 +131,8 @@ def options_table(s):
     classes = {i: " ".join(c for c in ("recrow" if x["key"] == "recommended" else "", f'st-{x["status"]}' if x["status"] else "") if c)
                for i, x in enumerate(s["options"])}
     absent = "".join(f'<div class="absent"><b>{esc(a["label"])}</b> {esc(a["why"])}</div>' for a in s["absent"])
+    if s.get("higher_price"):  # what a higher price inside the buyer's limits would do to the outlook
+        absent += f'<div class="absent"><b>{esc(L_["hp_label"])}</b> {esc(s["higher_price"])}</div>'
     return (h2(s["options_title"], s["options_sub"]) + layout.table(cols, rows, keep="whole", cls="opts", row_classes=classes)
             + absent)
 

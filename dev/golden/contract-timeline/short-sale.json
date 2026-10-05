@@ -11,12 +11,17 @@
  "contingencies_waiting": {
   "count": 2
  },
+ "documents": [
+  "contract",
+  "riders"
+ ],
  "effective": {
   "date": "2026-09-22",
   "signed": "2026-09-22 13:08"
  },
  "financing": "FHA",
  "first_deadline": {
+  "appointment": false,
   "broker": true,
   "by_closing": false,
   "contingency": true,
@@ -92,8 +97,12 @@
  "open_rights": {
   "count": 3
  },
+ "open_rules": {
+  "count": 0
+ },
  "pending": [
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -116,6 +125,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -138,6 +148,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -160,6 +171,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -182,6 +194,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -204,6 +217,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -226,6 +240,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -248,6 +263,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -270,6 +286,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -292,6 +309,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -314,6 +332,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -336,6 +355,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -359,6 +379,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -381,6 +402,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -404,6 +426,7 @@
    "when": null
   },
   {
+   "appointment": true,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -428,6 +451,7 @@
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -456,6 +480,7 @@
  },
  "rows": [
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -476,6 +501,7 @@
    "when": "2026-09-25 23:59"
   },
   {
+   "appointment": false,
    "broker": true,
    "by_closing": false,
    "contingency": false,
@@ -495,6 +521,7 @@
    "when": "2026-09-25 23:59"
   },
   {
+   "appointment": false,
    "broker": true,
    "by_closing": false,
    "contingency": true,
@@ -515,6 +542,7 @@
    "when": "2026-09-28 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -535,6 +563,7 @@
    "when": "2026-09-29 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -555,6 +584,7 @@
    "when": "2026-10-05 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -575,6 +605,7 @@
    "when": "2026-11-23 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,

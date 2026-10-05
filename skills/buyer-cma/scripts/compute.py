@@ -1387,6 +1387,7 @@ def compute(R, market, homes):
                                          # the worksheet's legal description and tax ID
                                          insurance_annual=insurance["annual"], insurance_price=pay["price"],
                                          insurance_estimated=bool(insurance["estimated"]),
+                                         rate=pay["rate"], rate_week=R["costs"]["payment"].get("rate_week"),
                                          legal_description=s.get("legal_description"), parcel_id=s.get("parcel_id"))},
         value={"low": bl["low"], "high": bl["high"], "midpoint": rng["midpoint"], "median_adjusted": median_adjusted},
         comps=[{"address": r[0], "sold_price": r[1], "seller_paid": r[2], "adjusted": r[3]} for r in comps["summary_rows"]],

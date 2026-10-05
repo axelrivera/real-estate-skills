@@ -41,7 +41,7 @@ class Calendar(unittest.TestCase):
         cls.fha = timeline.analyze(fixture("buyer-fha.json"))
 
     def test_structure(self):
-        """One event per contract row (lender targets left out), all-day events for end-of-day deadlines, an alarm per
+        """One event per contract row (lender targets left out), all-day events for deadlines, an alarm per
         critical row, folded lines, a UTC stamp and UIDs stable across runs."""
         t = self.fha
         text = timeline_render.ics(t)

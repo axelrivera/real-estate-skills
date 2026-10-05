@@ -4297,6 +4297,7 @@
  },
  "dropped_stronger": null,
  "framing": "best",
+ "higher_price": null,
  "lc_why": {
   "escalation": {
    "key": "why_esc"

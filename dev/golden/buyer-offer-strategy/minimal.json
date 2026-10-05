@@ -5735,6 +5735,7 @@
  },
  "dropped_stronger": null,
  "framing": "least_cash",
+ "higher_price": null,
  "lc_why": {
   "closing_days": {
    "key": "why_close_easy"
