@@ -538,9 +538,9 @@
  },
  "net": {
   "after_holding": [
-   424213,
-   424630,
-   415492
+   424222,
+   424636,
+   415497
   ],
   "basis": "after_holding",
   "cash_at_closing": false,
@@ -548,15 +548,15 @@
    "count": 3
   },
   "holding": [
-   -1613,
-   -1196,
-   -954
+   -1604,
+   -1190,
+   -949
   ],
   "incomplete": false,
   "missing": {
    "count": 0
   },
-  "monthly": 527,
+  "monthly": 524,
   "no_mortgage": false,
   "payoff": null,
   "payoff_estimated": false,
@@ -667,9 +667,9 @@
    },
    {
     "amounts": [
-     -1613,
-     -1196,
-     -954
+     -1604,
+     -1190,
+     -949
     ],
     "display": {
      "count": 3
@@ -679,9 +679,9 @@
    },
    {
     "amounts": [
-     424213,
-     424630,
-     415492
+     424222,
+     424636,
+     415497
     ],
     "display": {
      "count": 3
@@ -697,7 +697,7 @@
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 9138,
+ "net_spread": 9139,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -905,8 +905,8 @@
    "months_to_contract": 1.61,
    "name": "Premium",
    "net": 425826,
-   "net_after_holding": 424213,
-   "net_vs_recommended": -417,
+   "net_after_holding": 424222,
+   "net_vs_recommended": -414,
    "payment": 4106,
    "recommended": false,
    "role": "premium",
@@ -924,7 +924,7 @@
    "list_price": 469900,
    "months_to_contract": 0.8,
    "net": 425826,
-   "net_after_holding": 424630,
+   "net_after_holding": 424636,
    "net_vs_recommended": 0,
    "payment": 4065,
    "recommended": true,
@@ -943,8 +943,8 @@
    "list_price": 459900,
    "months_to_contract": 0.34,
    "net": 416446,
-   "net_after_holding": 415492,
-   "net_vs_recommended": -9138,
+   "net_after_holding": 415497,
+   "net_vs_recommended": -9139,
    "payment": 3984,
    "recommended": false,
    "role": "draw_offers",

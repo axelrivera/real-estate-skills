@@ -273,7 +273,7 @@
  "note_holding_loan_rate": "loan interest at the seller's {rate} rate on the {payoff} payoff",
  "note_holding_loan_assumed": "loan interest on the {payoff} payoff at an assumed {rate} a year",
  "note_holding_hoa": "HOA",
- "note_holding_insurance": "insurance",
+ "note_holding_insurance": "insurance at the recommended {price} list price",
  "note_holding_utilities": "utilities",
  "note_holding_no_loan": "no loan interest, since there's no mortgage",
  "note_holding_loan_unknown": "no loan interest, since no mortgage payoff was given",

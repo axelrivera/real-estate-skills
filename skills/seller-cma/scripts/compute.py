@@ -835,10 +835,13 @@ def payoff_of(costs):
     return None, False
 
 
-def net_sheet(R, market, strategies, closings, as_of):
+def net_sheet(R, market, strategies, closings, as_of, ri):
     """Each option's money as a finance.Ledger at its expected sale: the costs (finance.seller_net), this year's whole
     tax bill when an option closes next year, the payoff, then the holding costs from the report date to that option's
-    closing. Every line is rounded once; every total is a sum of the printed lines."""
+    closing. Every line is rounded once; every total is a sum of the printed lines. The monthly holding cost is one
+    figure for every option, on one basis: the recommended option's (`ri`) list price for the part that depends on a
+    price (insurance), the deal's own facts for the rest (payoff, rate, HOA, utilities), so the options' order never
+    changes it."""
     costs, s = R.get("costs") or {}, R["subject"]
     lf, bf = _frac(costs, "listing_fee_pct", "costs"), _frac(costs, "buyer_broker_fee_pct", "costs")
     others = costs.get("other") or []
@@ -846,7 +849,8 @@ def net_sheet(R, market, strategies, closings, as_of):
     has_hoa = bool(costs.get("hoa", s.get("hoa", False)))
     annual_tax, bill_paid = costs.get("annual_tax"), costs.get("current_tax_bill_paid")
     loan_rate = costs["mortgage_rate"] / 100 if costs.get("mortgage_rate") else finance.PAYOFF_INTEREST
-    monthly, left_out = finance.holding_monthly(strategies[0]["list_price"], market, payoff, costs.get("hoa_monthly"), loan_rate)
+    basis_price = strategies[ri]["list_price"]
+    monthly, left_out = finance.holding_monthly(basis_price, market, payoff, costs.get("hoa_monthly"), loan_rate)
     holding = bool(monthly) and all(c["hold_months"] is not None for c in closings)
     raw, ledgers, next_year = [], [], []
     for i, (x, c) in enumerate(zip(strategies, closings)):
@@ -872,8 +876,8 @@ def net_sheet(R, market, strategies, closings, as_of):
             led.cost("holding", L["net_holding"], monthly * c["hold_months"])
         ledgers.append(led)
     return {"ledgers": ledgers, "raw": raw, "payoff": payoff, "payoff_estimated": payoff_est, "monthly": monthly,
-            "left_out": left_out, "holding": holding, "loan_rate": loan_rate, "next_year": next_year,
-            "cash": payoff is not None, "no_mortgage": payoff == 0}
+            "left_out": left_out, "holding": holding, "loan_rate": loan_rate, "basis_price": basis_price,
+            "next_year": next_year, "cash": payoff is not None, "no_mortgage": payoff == 0}
 
 
 def net_rows(net, strategies, closings):
@@ -930,7 +934,7 @@ def state_hint(R, market, strategies, closings, as_of, ri, base):
     if len(states) != 1:
         return None
     other = profiles.load_market(state=states[0], mls=market.mls).with_deal(R.get("costs"))
-    alt = net_sheet(R, other, strategies, closings, as_of)
+    alt = net_sheet(R, other, strategies, closings, as_of, ri)
     line = lambda n: next((ln["label"] for ln in n["ledgers"][ri] if ln["key"] == "transfer_tax"), L["hint_no_transfer_tax"])
     diff = alt["ledgers"][ri].total() - base["ledgers"][ri].total()
     return {"state": states[0], "state_name": profiles.STATES.get(states[0], states[0]), "transfer_tax_label": line(alt),
@@ -1211,7 +1215,8 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
                            rate=fmt.pct(net["loan_rate"], 2), payoff=money(net["payoff"])))
         if costs.get("hoa_monthly"):
             parts.append(L["note_holding_hoa"])
-        parts += [L["note_holding_" + p] for p in ("insurance", "utilities") if p not in net["left_out"]]
+        parts += [t("note_holding_" + p, price=money(net["basis_price"])) for p in ("insurance", "utilities")
+                  if p not in net["left_out"]]
         loan = cma._and(parts) + ("" if net["payoff"] else "; " + L["note_holding_no_loan" if net["no_mortgage"]
                                                                    else "note_holding_loan_unknown"])
         text = t("note_holding", monthly=money(net["monthly"], 10), loan=loan)
@@ -1477,7 +1482,7 @@ def compute(R, market, homes, data_file=None):
     # one closing per option, then the net sheet and the payments
     launch = launch_info(R, as_of)
     closings = option_closings(R, strategies, as_of, launch)
-    net = net_sheet(R, market, strategies, closings, as_of)
+    net = net_sheet(R, market, strategies, closings, as_of, ri)
     warn("title_quote", *dict.fromkeys(w for n in net["raw"] for w in n["warnings"]))
     missing = list(dict.fromkeys(MISSING_WORDS.get(m, m) for m in net["raw"][0]["missing"]))
     incomplete = bool({"listing fee", "buyer's agent fee"} & set(net["raw"][0]["missing"]))
