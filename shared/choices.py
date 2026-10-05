@@ -21,13 +21,13 @@ def pick(value, allowed, field, default=None):
     order in the fix message. A value that isn't allowed returns the default and one problem."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return default, []
-    if isinstance(value, bool):
-        key = None
-    elif isinstance(value, int) and value in allowed:
-        return value, []
+    numeric = all(isinstance(a, int) for a in allowed)  # numbered levels take the number itself, not "2" or True
+    if numeric:
+        key = value if isinstance(value, int) and not isinstance(value, bool) else None
+        by_key = {a: a for a in allowed}
     else:
-        key = norm(value)
-    by_key = {norm(a): a for a in allowed}
+        key = None if isinstance(value, bool) else norm(value)
+        by_key = {norm(a): a for a in allowed}
     if key in by_key:
         return by_key[key], []
     options = ", ".join(str(a) for a in allowed)
