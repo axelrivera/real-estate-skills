@@ -37,13 +37,30 @@ class SharedMath(unittest.TestCase):
              "costs": costs, "pricing": {"strategies": [{"list_price": 515000, "expected_sale": 515000, "seller_credit": 10000}]}}
         market = profiles.load_market(state="FL", county="Seminole").with_deal(costs)
         closing = [{"date": cma_compute.fmt.to_date("2026-11-20"), "hold_months": None, "months_to_contract": None}]
-        net = cma_compute.net_sheet(R, market, R["pricing"]["strategies"], closing, cma_compute.fmt.to_date("2026-09-26"))
+        net = cma_compute.net_sheet(R, market, R["pricing"]["strategies"], closing, cma_compute.fmt.to_date("2026-09-26"), 0)
         want = net["ledgers"][0].total()
         data = {"property": {"address": "2250 Oak Hollow Ct", "state": "FL", "county": "Seminole", "property_type": "single_family",
                              "hoa": True},
                 "closing_date": "2026-11-20", "scenarios": [{"price": 515000, "seller_credit": 10000}],
                 "costs": {k: v for k, v in costs.items() if k not in ("expected_closing_date", "hoa")}}
         self.assertEqual(compute.run(data)["columns"][0]["net"], want)
+
+    def test_holding_cost_rests_on_the_recommended_price(self):
+        """The monthly holding cost is one figure on one basis (the recommended option's list price): the options'
+        order never changes it."""
+        costs = {"listing_fee_pct": 0.025, "buyer_broker_fee_pct": 0.025, "mortgage_payoff": 301000, "hoa_monthly": 150}
+        R = {"subject": {"address": "2250 Oak Hollow Ct", "state": "FL", "county": "Seminole"}, "costs": costs}
+        market = profiles.load_market(state="FL", county="Seminole").with_deal(costs)
+        options = [{"list_price": p, "expected_sale": p} for p in (560000, 525000, 499000)]
+        closings = [{"date": cma_compute.fmt.to_date(d), "hold_months": m, "months_to_contract": None}
+                    for d, m in (("2027-01-20", 3.8), ("2026-12-10", 2.5), ("2026-11-20", 1.8))]
+        as_of = cma_compute.fmt.to_date("2026-09-26")
+        for rec in range(3):
+            monthly = {cma_compute.net_sheet(R, market, [options[i] for i in order], [closings[i] for i in order], as_of,
+                                             order.index(rec))["monthly"] for order in ((0, 1, 2), (2, 1, 0), (1, 2, 0))}
+            want = finance.holding_monthly(options[rec]["list_price"], market, 301000, 150,
+                                           finance.PAYOFF_INTEREST)[0]
+            self.assertEqual(monthly, {want})
 
     def test_no_mls_notes(self):
         """A net sheet reads no MLS export: the market's MLS notes never reach it."""

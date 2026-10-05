@@ -643,7 +643,8 @@ class Fit:
     steps: tried in order, cumulative, until page 1 fits: a body class name ("compact") or a JS function
         ("() => ..."). Each is applied only while page 1 is still over the limit.
     tail: body class names tried when the last page is under `tail_below` full (a denser detail section), each
-        kept only when it saves a page without pushing page 1 over its limit.
+        kept only when it saves a page without pushing page 1 over its limit. Every Fit then tries KEEP_TAIL when the
+        last page still holds only a few closing lines (under LONE_TAIL), with or without tail steps of its own.
     tail_below: how empty a last page must be before the tail steps are tried (LONE_TAIL; 1.0 tries them always).
     blocks: (selector, name) of page 1's data-driven blocks, named tallest first when page 1 still overflows.
     paginate: the later pages keep heading groups together and let long tables run on (group_blocks markup inside a
@@ -691,11 +692,53 @@ _MEASURE = """([end, one]) => { if (one) return document.body.getBoundingClientR
 _FIRST_LINE = """(end) => { const e = end ? document.querySelector(end) : null;
   return e ? (e.innerText || '').trim().split('\\n')[0] : ''; }"""
 _PAGES = re.compile(rb"/Type\s*/Page(?![a-zA-Z])")
+# The tail step every Fit tries last, after its own: when the last page would still hold only a few closing lines,
+# the document's last block (the closing notices) keeps with the block before it, so that block moves on with it and
+# the last page holds both. A last block that starts a page on purpose (break-before: page, a .pb section) is left as
+# it is. Kept only when the last page then fills past LONE_TAIL with no page added and no page between the first and
+# the last left under half full that wasn't before.
+KEEP_TAIL = "keep-tail"
+_KEEP_TAIL_JS = """(on) => { const e = document.body.lastElementChild; if (!e) return false;
+  if (!on) { if (e.dataset.keepTail) { e.style.breakBefore = ''; delete e.dataset.keepTail; } return false; }
+  if (getComputedStyle(e).breakBefore !== 'auto') return false;
+  e.style.breakBefore = 'avoid'; e.dataset.keepTail = '1'; return true; }"""
+
+
+def _print(pg, fit):
+    return pg.pdf(format="Letter", landscape=fit.landscape, print_background=True, margin=fit.page_margins())
 
 
 def _page_count(pg, fit):
-    return len(_PAGES.findall(pg.pdf(format="Letter", landscape=fit.landscape, print_background=True,
-                                     margin=fit.page_margins())))
+    return len(_PAGES.findall(_print(pg, fit)))
+
+
+def _fills(pg, fit):
+    """The page_fill read-back of the page as it prints now (None without pdftotext)."""
+    m = fit.page_margins()
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "fit.pdf")
+        with open(path, "wb") as f:
+            f.write(_print(pg, fit))
+        return page_fill(path, _inches(m["top"]), _inches(m["bottom"]))
+
+
+def _lone_tail(pages):
+    return bool(pages) and len(pages) > 1 and pages[-1][0] < LONE_TAIL
+
+
+def _keep_tail(pg, fit):
+    """Try KEEP_TAIL on a last page holding only a few closing lines; True when it's kept."""
+    before = _fills(pg, fit)
+    if not _lone_tail(before):
+        return False
+    if not pg.evaluate(_KEEP_TAIL_JS, True):
+        return False
+    after = _fills(pg, fit)
+    gaps = lambda pages: sum(f < HALF_EMPTY for f, _ in pages[1:-1])
+    if after and len(after) <= len(before) and not _lone_tail(after) and gaps(after) <= gaps(before):
+        return True
+    pg.evaluate(_KEEP_TAIL_JS, False)
+    return False
 
 
 def fit_page(pg, fit, limit=None, starts=(), tail=False):
@@ -717,8 +760,8 @@ def fit_page(pg, fit, limit=None, starts=(), tail=False):
     if fit.paginate:
         res = pg.evaluate(PAGINATE_JS, [height, list(starts), SPLIT_MIN_ROWS])
         info["paginate"] = {"moved": res["moved"], "page1_px": round(res["onepageH"]), "fit_level": res["fit"]}
-    if tail and fit.tail:
-        pages = _page_count(pg, fit)
+    if tail:
+        pages = _page_count(pg, fit) if fit.tail else 0
         for step in fit.tail:
             pg.evaluate(f"() => document.body.classList.add({json.dumps(step)})")
             now = _page_count(pg, fit)
@@ -727,6 +770,8 @@ def fit_page(pg, fit, limit=None, starts=(), tail=False):
                 pages = now
             else:
                 pg.evaluate(f"() => document.body.classList.remove({json.dumps(step)})")
+        if _keep_tail(pg, fit):
+            info["tail"].append(KEEP_TAIL)
     if top > limit and fit.blocks:
         heights = pg.evaluate("(sels) => sels.map(s => { const e = document.querySelector(s);"
                               " return e ? e.getBoundingClientRect().height : 0; })", [s for s, _ in fit.blocks])
@@ -736,7 +781,8 @@ def fit_page(pg, fit, limit=None, starts=(), tail=False):
 
 def problems(pages, info, fit):
     """What the printed pages show: "spill" (page 1 ran onto page 2 although the measure said it fit), "tail" (a last
-    page after the detail pages' first under fit.tail_below full, which tail steps may save), "gap" (with
+    page after the detail pages' first under fit.tail_below full, which tail steps may save, or any last page after the
+    first under LONE_TAIL full, which KEEP_TAIL may fill), "gap" (with
     fit.paginate, a page between the first and the last under half full). [] when fine or when the pages couldn't be
     read."""
     if not pages:
@@ -749,7 +795,7 @@ def problems(pages, info, fit):
     elif fitted and len(pages) > 1 and info["end_line"] and \
             not squash(pages[1][1]).startswith(squash(info["end_line"])[:20]):
         out.append("spill")
-    if fit.tail and len(pages) > (1 if fit.one_page else 2) and pages[-1][0] < fit.tail_below:
+    if (fit.tail and len(pages) > (1 if fit.one_page else 2) and pages[-1][0] < fit.tail_below) or _lone_tail(pages):
         out.append("tail")
     if fit.paginate and any(f < HALF_EMPTY for f, _ in pages[1:-1]):
         out.append("gap")
