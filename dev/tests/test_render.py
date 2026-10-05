@@ -17,6 +17,12 @@ class Filenames(unittest.TestCase):
         self.assertEqual(render.filename("12 Peña Ct, #4", "Timeline", ext=".md"), "12-Pena-Ct-4-Timeline.md")
         self.assertEqual(render.filename("", None, ext="pdf"), "output.pdf")
 
+    def test_filename_length_capped(self):
+        name = render.filename("1234 " + "Very Long Street Name " * 8, "Offer From " + "Buyer Name " * 10, "Offer Review", ext="pdf")
+        self.assertLessEqual(len(name), render.MAX_NAME + 4)
+        self.assertTrue(name.endswith("-Offer-Review.pdf"))
+        self.assertTrue(name.startswith("1234-Very-Long"))
+
 
 class OutputDir(unittest.TestCase):
     def test_precedence(self):

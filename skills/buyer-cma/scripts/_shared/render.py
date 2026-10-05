@@ -43,10 +43,24 @@ def output_dir(explicit=None):
 
 def filename(*parts, ext):
     """'1438 Buttonbush Dr', 'Buyer CMA' -> '1438-Buttonbush-Dr-Buyer-CMA.pdf'. ASCII, no spaces."""
-    text = " ".join(str(p) for p in parts if p)
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    slug = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-")
-    return f"{slug or 'output'}.{ext.lstrip('.')}"
+    def slug(text):
+        text = unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode()
+        return re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-")
+
+    words = [w for w in (slug(p) for p in parts if p) if w]
+    # Long names would pass the filesystem's 255-byte limit: shorten the leading parts, keep the last (the file type).
+    while len("-".join(words)) > MAX_NAME and len(words) > 1:
+        over = len("-".join(words)) - MAX_NAME
+        # The address (first) goes last: middle parts such as a buyer's name are cut first.
+        i = max(range(len(words) - 1), key=lambda k: (len(words[k]) > 24 and (k > 0 or len(words) == 2), len(words[k])))
+        cut = words[i][:max(len(words[i]) - over, 24)].rstrip("-")
+        if cut == words[i]:
+            break
+        words[i] = cut
+    return f"{'-'.join(words) or 'output'}.{ext.lstrip('.')}"
+
+
+MAX_NAME = 120
 
 
 REPORT_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "report.css")
