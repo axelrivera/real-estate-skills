@@ -68,7 +68,7 @@ class PaymentTableFits(unittest.TestCase):
         market, homes = compute.load_inputs(R)
         C = compute.compute(R, market, homes)
         doc, _ = cma_render.build_html(copy.deepcopy(R), C, homes, {})
-        self.assertEqual(doc.count('class="tbl wrap-head"'), 2)
+        self.assertEqual(doc.count('class="tbl wrap-head'), 2)  # the credit table's is also .whole (iteration 12)
         p, b, pg = browser_page(doc)
         try:
             self.assertEqual(pg.evaluate(CLIPPED), [])

@@ -950,7 +950,12 @@ def compute(R, market, homes):
                                          hoa_monthly=s.get("hoa_monthly"), hoa_frequency=s.get("hoa_frequency"),
                                          roof_year=s.get("roof_year"),
                                          # CMA-328: the history's counts since the last sale, for the offer's outlook
-                                         dom=(hist or {}).get("active_days"), price_cuts=(hist or {}).get("price_cuts"))},
+                                         dom=(hist or {}).get("active_days"), price_cuts=(hist or {}).get("price_cuts"),
+                                         # iteration 12: the payment's premium and the price it was figured at, so the
+                                         # offer's payment uses the same one; the worksheet's legal description and tax ID
+                                         insurance_annual=insurance["annual"], insurance_price=pay_in.get("price"),
+                                         insurance_estimated=bool(insurance["estimated"]),
+                                         legal_description=s.get("legal_description"), parcel_id=s.get("parcel_id"))},
         value={"low": bl["low"], "high": bl["high"], "midpoint": bl.get("midpoint", (bl["low"] + bl["high"]) / 2),
                "median_adjusted": median_adjusted},
         comps=[{"address": r[0], "sold_price": r[1], "seller_paid": r[2], "adjusted": r[3]} for r in R["comps"].get("summary_rows", [])],

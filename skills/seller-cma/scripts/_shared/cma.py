@@ -663,9 +663,11 @@ PAGINATE_JS = """([pageH, starts]) => {
       if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
         svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
         el.classList.add('shrunk');
-      } else if (!svg && pageH - pos >= FLOW_ROOM * pageH) {
+      } else if (!svg && !el.querySelector('.tbl.whole') && pageH - pos >= FLOW_ROOM * pageH) {
         // A table or list block that would leave this much of the page empty runs on instead, whole rows or items
-        // only, once its heading, intro and first few rows fit here (the table's header row repeats on the next page)
+        // only, once its heading, intro and first few rows fit here (the table's header row repeats on the next page).
+        // A table marked .whole (the buyer CMA's Price vs. Seller Credit: its columns read across every row) never
+        // runs on: its block moves whole (iteration 12)
         const tb = el.querySelector('.tbl'), rows = tb ? tb.querySelectorAll('tbody tr') : [];
         const items = tb ? [] : el.querySelectorAll(':scope > ul > li, :scope > ol > li');
         const parts = tb ? rows : items, keep = tb ? 3 : 2;
