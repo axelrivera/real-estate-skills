@@ -347,7 +347,7 @@ Seller disclosures are set under `disclosures` instead (see [Package Contents](#
 - Each change to a contract blank (`price`, `closing` and the `changes` keys) is typed next to the offered value, which is struck through, with the seller's initials in the margin beside it.
 - A new price (or additional deposit) also changes Para. 2's loan amount, at the offer's loan-to-value, and balance to close, so those lines are struck and retyped too and the page still adds up.
 - `terms`, `included` and `excluded` go on Para. 20's empty lines after the buyer's own additional terms, as "Seller's counter-offer: ...", initialed the same way.
-- **Accepted:** the buyer initials beside each change, next to the seller's. The last initial is the Effective Date, and the key's `effective_date_source` reads "Buyer's initials on the Seller's counter-offer changes (Para. 3(b))".
+- **Accepted:** the buyer initials beside each change, next to the seller's. The last initial is the Effective Date, and the key's `effective_date_source` reads "Buyer's initials on the Seller's counter-offer changes (Para. 3(b))", with the stamp in `effective_date_signed`.
 - **Pending** (`stage: countered`, not accepted): only the seller's marks, and the key is the offer's listing file.
 - No CO-3 goes in the package. A `deadline` stops the build: the contract has no blank for a new acceptance deadline.
 

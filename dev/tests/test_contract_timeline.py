@@ -33,6 +33,8 @@ def by_key(result):
 def fha(**contract):
     """buyer-fha.json (AS IS, Riders E and H, effective Fri 2026-09-25, closing Fri 2026-10-30) with contract changes."""
     d = fixture("buyer-fha.json")
+    if "effective_date" in contract:  # the last signature's stamp belongs to the fixture's own Effective Date
+        d["contract"].pop("effective_date_signed", None)
     d["contract"].update(contract)
     return d
 
@@ -75,7 +77,6 @@ class FarbarRows(unittest.TestCase):
         r = timeline.analyze(fha(association_approval="unknown", preapproval_expires="2026-10-20"))
         self.assertTrue({"assoc_apply", "assoc_approval"} <= set(by_key(r)))
         self.assertIn("assoc_box_blank", r["flag_keys"])
-        self.assertIn("assoc_box_blank", r["note_keys"])
         self.assertIn("preapproval_expires", r["note_keys"])
         self.assertEqual(len(r["flags"]), len(r["flag_keys"]))  # every flag the script adds has a key
 
@@ -144,9 +145,28 @@ class FarbarRows(unittest.TestCase):
         o = fixture("other-contract.json")
         o["contract"]["effective_date_delivered"] = False
         self.assertIn("effective_delivery_unconfirmed", timeline.analyze(o)["note_keys"])
-        r = timeline.analyze(fha(effective_date_source="Seller's signature, 9/22/26 1:08 PM EDT (Dotloop)"))
+        r = timeline.analyze(fha(effective_date_source="Seller's signature (Dotloop)"))
         self.assertNotIn("Dotloop", r["effective"]["source"])
-        self.assertEqual(timeline.no_platform("Signed via DocuSign 9/22"), "Signed 9/22")
+        self.assertEqual(timeline.no_platform("Signed via DocuSign on the acceptance"), "Signed on the acceptance")
+
+    def test_effective_source_states_no_date_of_its_own(self):
+        """The source's time stamp is a field the script prints: a date or time written into the source (or into an
+        amendment's description) stops the run, and a stamp after the Effective Date can't be."""
+        r = timeline.analyze(fha())
+        self.assertEqual(r["effective"]["signed"], "2026-09-25 16:12")
+        self.assertIn(timeline.fmt.when("2026-09-25 16:12", "dot"), r["effective"]["source"])
+        for text in ("Seller's signature, 9/22/26", "Buyer's initials at 4:12 PM", "Signed Sept 22", "Signed 2026-09-22"):
+            with self.assertRaisesRegex(timeline.DealError, "effective_date_source"):
+                timeline.analyze(fha(effective_date_source=text))
+        for text in ("Seller's initials on Counteroffer #2", "Buyer's initials on the changes (Para. 3(b))",
+                     "Second seller's signature on Addendum No. 1 (CR-7)"):
+            timeline.analyze(fha(effective_date_source=text))
+        with self.assertRaisesRegex(timeline.DealError, "effective_date_signed"):
+            timeline.analyze(fha(effective_date_signed="2026-09-26 09:00"))
+        d = fha()
+        d["amendments"] = [{"date": "2026-09-26", "description": "Extend closing to Nov 6", "changes": {}}]
+        with self.assertRaisesRegex(timeline.DealError, r"amendments\[0\]\.description"):
+            timeline.analyze(d)
 
 
 class FirstDeadline(unittest.TestCase):
@@ -669,6 +689,26 @@ class AgentNotes(unittest.TestCase):
         r = timeline.analyze(d)
         self.assertEqual(len(r["flags"]), len({f.lower() for f in r["flags"]}))
         self.assertEqual(r["agent_notes"].count(note), 1)
+
+    def test_dedupe_is_by_key_and_check_lines_are_the_scripts(self):
+        """The agent's notes are deduplicated by key, never by wording; a deal file's own flags never print on the
+        report: they reach the agent as notes unless keyed to a Check line the script raised."""
+        d = fha(preapproval_expires="2026-10-20")
+        paraphrase = "Ask the lender to extend the pre-approval, which expires before closing"
+        d["agent_notes"] = [paraphrase, {"key": "default:title", "text": "Title days were blank"}]
+        d["flags"] = [{"key": "loan_approval_near_closing", "text": "Loan approval is tight"},
+                      {"key": "after_closing", "text": "Inspection ends after closing"}, "Seller asked about the shed"]
+        r = timeline.analyze(d)
+        self.assertIn(paraphrase, r["agent_notes"])  # other words, no key: passed on as written
+        self.assertIn("default:title", r["merged_agent_notes"])
+        self.assertIn("loan_approval_near_closing", r["merged_agent_notes"])
+        self.assertNotIn("after_closing", r["flag_keys"])  # a key the script didn't raise is an agent note, not a Check line
+        self.assertIn("Inspection ends after closing", r["agent_notes"])
+        self.assertIn("Seller asked about the shed", r["agent_notes"])
+        self.assertTrue(set(r["flag_keys"]) <= timeline.FLAG_KEYS)
+        self.assertEqual(len(r["flags"]), len(r["flag_keys"]))
+        for text in ("Loan approval is tight", "Inspection ends after closing", "Seller asked about the shed"):
+            self.assertNotIn(text, " ".join(r["flags"]))
 
 
 class OtherContracts(unittest.TestCase):

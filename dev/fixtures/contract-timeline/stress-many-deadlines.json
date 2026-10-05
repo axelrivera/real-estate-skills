@@ -14,7 +14,8 @@
     "price": 689000,
     "financing": "conventional",
     "effective_date": "2026-09-25",
-    "effective_date_source": "Seller's initials on Counteroffer #2, 9/25/2026 4:12 PM",
+    "effective_date_source": "Seller's initials on Counteroffer #2",
+    "effective_date_signed": "2026-09-25 16:12",
     "closing_date": "2026-11-13",
     "closing_time": "10:00",
     "escrow_agent": "Coldwater Bay Title Insurance Agency of the Palm Beaches, LLC",
@@ -48,6 +49,5 @@
     {"key": "flood_quote", "label": "Binding Flood Insurance Quote Received from the Buyer's Insurance Agent", "short": "Flood Quote", "basis": "after", "days": 12, "party": "Buyer", "critical": false, "source": "Additional Terms, Para. 5", "action": "Get a binding flood and wind insurance quote for the lender", "if_missed": "Loan approval may be delayed"},
     {"key": "walk_through", "label": "Final Walk-Through and Personal Property Inspection", "short": "Walk-Through", "basis": "before", "days": 1, "party": "Buyer", "critical": false, "source": "Para. 13", "action": "Walk the unit and the storage locker and confirm repairs and personal property", "if_missed": "Problems found after closing are harder to resolve"}
   ],
-  "amendments": [],
-  "flags": []
+  "amendments": []
 }

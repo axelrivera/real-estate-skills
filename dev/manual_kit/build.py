@@ -49,6 +49,12 @@ class KitError(RuntimeError):
 
 # --- helpers -------------------------------------------------------------------
 
+
+def signed_stamp(text):
+    """'09/24/2026 11:45 AM' -> '2026-09-24 11:45' (a deal file's effective_date_signed)."""
+    from datetime import datetime
+    return datetime.strptime(text, "%m/%d/%Y %I:%M %p").strftime("%Y-%m-%d %H:%M")
+
 def rel(path):
     return os.path.relpath(path, ROOT)
 
@@ -886,8 +892,8 @@ def case_other_state(pdf, checks):
             "rules": a["rules"],
             "contract": {"form_family": "other", "form": a["title"], "property": a["property"], "buyer": a["buyer"],
                          "seller": a["seller"], "price": a["price"], "financing": "conventional",
-                         "effective_date": a["effective_date"], "effective_date_source": "Seller's signature, "
-                         + a["seller_signed"], "closing_date": a["closing_date"], "closing_time": a["closing_time"],
+                         "effective_date": a["effective_date"], "effective_date_source": "Seller's signature",
+                         "effective_date_signed": signed_stamp(a["seller_signed"]), "closing_date": a["closing_date"], "closing_time": a["closing_time"],
                          "escrow_agent": a["escrow_agent"]},
             "deadlines": a["deadlines"], "amendments": []}
     work = os.path.join(WORK, "other-state")

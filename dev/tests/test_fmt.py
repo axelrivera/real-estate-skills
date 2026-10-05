@@ -158,7 +158,7 @@ class Dates(unittest.TestCase):
         for d in self.days():
             stamp = f"{d.isoformat()} {rng.randint(0, 23):02d}:{rng.choice([0, 15, 30, 59]):02d}"
             outs = [fmt.date_long(d), fmt.date_short(d), fmt.date_short(d, False, True), fmt.date_short(d.isoformat())]
-            outs += [fmt.when(x, s) for x in (stamp, d.isoformat(), d) for s in ("short", "dot", "deadline", "long")]
+            outs += [fmt.when(x, s) for x in (stamp, d.isoformat(), d) for s in ("short", "dot", "deadline", "long", "row")]
             for o in outs:
                 self.assertNotRegex(o, ISO)
 

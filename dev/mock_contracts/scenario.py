@@ -957,19 +957,21 @@ def _answer_key(spec, ctx, form, docs, counters, amendments, stage, effective, r
         closing = _d(c["closing"]) if c.get("closing") else closing
         changed.update(c.get("changes") or {})
     if accepted and last is not None and last["method"] == "contract":
-        source = f"Buyer's initials on the Seller's counter-offer changes (Para. 3(b)), {when(effective)}"
+        source = "Buyer's initials on the Seller's counter-offer changes (Para. 3(b))"
     elif accepted and last is not None:
         party = "Seller" if last["by"] == "buyer" else "Buyer"
-        source = f"{party}'s signature on Counter Offer #{last['number']}, {when(effective)}"
+        source = f"{party}'s signature on Counter Offer #{last['number']}"
     elif accepted:
-        source = f"Seller's signature on the contract, {when(effective)}"
+        source = "Seller's signature on the contract"
     else:
         source = None
     contract = {
         "form_family": "farbar", "contract_form": form, "form_revision": cf.VERIFIED[FAMILY[form]], "form_revision_source": "footer",
         "property": ctx["property_address"], "buyer": ctx["buyer_names"], "seller": ctx["seller_names"], "price": price,
         "financing": ctx["financing"], "effective_date": effective.date().isoformat() if effective else None,
-        "effective_date_source": source, "closing_date": closing.isoformat(),
+        "effective_date_source": source,  # the stamp is its own field: the report prints it (no date in the text)
+        "effective_date_signed": effective.strftime("%Y-%m-%d %H:%M") if effective else None,
+        "closing_date": closing.isoformat(),
         "escrow_agent": ctx["escrow_name"], "deposit_amount_str": f"${ctx['deposit_initial']:,.0f}",
         "deposit_days": 0 if ctx["deposit_with_offer"] else (ctx["deposit_days"] or 3),
         "loan_application_days": None if ctx["financing"] == "cash" else ctx["loan_application_days"] or 5,

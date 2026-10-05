@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 0
+  "count": 2
  },
  "chat_notes": {
   "count": 1
@@ -19,6 +19,7 @@
   "done_display": null,
   "key": "financing",
   "lender": false,
+  "moved_from": null,
   "no_time": false,
   "party": "Buyer",
   "past": false,
@@ -34,7 +35,8 @@
   "count": 0
  },
  "effective": {
-  "date": "2026-11-20"
+  "date": "2026-11-20",
+  "signed": null
  },
  "financing": "Conventional",
  "first_deadline": {
@@ -47,6 +49,7 @@
   "done_display": null,
   "key": "earnest_money",
   "lender": false,
+  "moved_from": null,
   "no_time": false,
   "party": "Buyer",
   "past": false,
@@ -60,7 +63,7 @@
   "count": 0
  },
  "flags": {
-  "count": 2
+  "count": 0
  },
  "form_family": "other",
  "history": {
@@ -107,6 +110,7 @@
    "done_display": null,
    "key": "earnest_money",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
@@ -126,6 +130,7 @@
    "done_display": null,
    "key": "walkaway_period",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
@@ -145,6 +150,7 @@
    "done_display": null,
    "key": "title_commitment",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Seller",
    "past": false,
@@ -165,6 +171,7 @@
    "done_display": null,
    "key": "financing",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
@@ -186,6 +193,7 @@
    "key": "closing",
    "label": "Closing",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Both",
    "past": false,

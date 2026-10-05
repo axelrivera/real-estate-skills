@@ -10,7 +10,7 @@
 
 {{when history has items: "**Amendment History:**" then one line per item, in order: "- {{name, or description when name is empty}}{{", signed " + date_display when date_display}}: {{summary}}."}}
 
-{{when flags has items: "**Check Before Relying on These Dates:**" then "- {{each flag, in plain words}}"; flags only: agent_notes and chat_notes never go in this timeline, they go in your reply to the agent after it}}
+{{when flags has items: "**Check Before Relying on These Dates:**" then "- {{each flag, as written}}"; flags only (the script's Check lines): agent_notes and chat_notes never go in this timeline, they go in your reply to the agent after it}}
 
 ★ Critical = {{critical_legend}}. Effective Date {{effective.display}} ({{effective.source, or when it's empty "confirm: date the last party signed or initialed and delivered the final counteroffer"}}). Dates follow {{rules.family}}; confirm them with the escrow or title agent.{{" Lender dates are estimates." when any row or pending item has lender}} Not legal advice.
 
