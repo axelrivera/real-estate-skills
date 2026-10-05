@@ -14,7 +14,8 @@
     "price": 365000,
     "financing": "fha",
     "effective_date": "2026-09-25",
-    "effective_date_source": "Seller's initials on Counteroffer #1, 9/25/2026 4:12 PM",
+    "effective_date_source": "Seller's initials on Counteroffer #1",
+    "effective_date_signed": "2026-09-25 16:12",
     "closing_date": "2026-10-30",
     "closing_time": "10:00",
     "escrow_agent": "Sample Title Co.",
@@ -28,6 +29,5 @@
     "year_built": 1994,
     "title_by": "seller"
   },
-  "amendments": [],
-  "flags": []
+  "amendments": []
 }

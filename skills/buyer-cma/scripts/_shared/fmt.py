@@ -192,6 +192,7 @@ def when(value, style="short"):
     dot       'Sep 24, 2026 · 5:00 PM'  (date alone: 'Sep 24, 2026')
     deadline  'Thu Sep 24 · 5 PM'       (date alone: 'Thu Sep 24')
     long      'September 24, 2026, 5:00 PM' (date alone: 'September 24, 2026')
+    row       'Thu Sep 24 · 5:00 PM'    (date alone: 'Thu Sep 24'), a timeline row's date and time
     Text that isn't a date passes through; None -> ''.
     """
     d = to_date(value)
@@ -206,6 +207,8 @@ def when(value, style="short"):
         return date_short(d, year=False, weekday=True) + (f" · {clock(t, full=False)}" if t else "")
     if style == "long":
         return date_long(d) + (f", {clock(t)}" if t else "")
+    if style == "row":
+        return date_short(d, year=False, weekday=True) + (f" · {clock(t)}" if t else "")
     raise ValueError(f"unknown when style {style!r}")
 
 

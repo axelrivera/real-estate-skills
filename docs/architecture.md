@@ -114,7 +114,7 @@ The building blocks every report moves onto (skills adopt them one at a time; un
 | `num(v, digits=0)` | `1,850` |
 | `months(m)` | `1.3 months`, `1 month` (months of supply) |
 | `date_long(d)` / `date_short(d, year=True, weekday=False)` | `September 26, 2026` / `Sep 26, 2026`, `Sat Sep 26` |
-| `when(v, style="short")` | `Thu Sep 24, 5:00 PM`; `"dot"` `Sep 24, 2026 · 5:00 PM`; `"deadline"` `Thu Sep 24 · 5 PM`; `"long"` `September 24, 2026, 5:00 PM` |
+| `when(v, style="short")` | `Thu Sep 24, 5:00 PM`; `"dot"` `Sep 24, 2026 · 5:00 PM`; `"deadline"` `Thu Sep 24 · 5 PM`; `"long"` `September 24, 2026, 5:00 PM`; `"row"` `Thu Sep 24 · 5:00 PM` (a timeline row) |
 | `clock(t, full=True)`, `weekday(d)` | `5:00 PM` (`5 PM`), `Thursday` |
 | `range(lo, hi, f=money)` | `$420,000–$450,000`: an unspaced en dash; equal ends print once |
 | `period_labels(window)`, `unspaced(text)` | `April–June`, `July 15–September`; `April – June` → `April–June` |

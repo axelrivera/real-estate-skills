@@ -257,9 +257,10 @@ class Packages(unittest.TestCase):
         self.assertNotIn("Licensed to dotloop", text)  # the source account's name is redacted
         # two sellers sign a few minutes apart: the Effective Date is the second signature (Para. 3(b)).
         c = sc.build(spec("asis-fha-executed"))["key"]["contract"]
-        self.assertEqual(c["effective_date_source"], "Seller's signature on the contract, 09/25/2026 4:15 PM")
+        self.assertEqual((c["effective_date_source"], c["effective_date_signed"]),
+                         ("Seller's signature on the contract", "2026-09-25 16:15"))
         c = sc.build({**spec("standard-counter-chain"), "buyers": ["Emerson Delacroix", "Ellis Delacroix"]})["key"]["contract"]
-        self.assertTrue(c["effective_date_source"].endswith("09/25/2026 12:28 PM"), c["effective_date_source"])
+        self.assertEqual(c["effective_date_signed"], "2026-09-25 12:28")
         key = sc.build(spec("asis-fha-executed"))["key"]
         receipt = key["mock"]["deposits_received"][0]["date"]
         self.assertEqual(key["completed"], {"deposit": f"{receipt[6:10]}-{receipt[:2]}-{receipt[3:5]}"})

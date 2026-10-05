@@ -23,7 +23,8 @@
   "price": 389000,
   "financing": "conventional",
   "effective_date": "2026-09-24",
-  "effective_date_source": "Seller's signature on the agreement, 09/24/2026 11:45 AM (Para. 11 and signature page)",
+  "effective_date_source": "Seller's signature on the agreement (Para. 11 and signature page)",
+  "effective_date_signed": "2026-09-24 11:45",
   "closing_date": "2026-10-30",
   "closing_time": "13:00",
   "escrow_agent": "Olentangy Crossing Title Agency"

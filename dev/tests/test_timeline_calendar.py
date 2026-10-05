@@ -85,8 +85,7 @@ class Calendar(unittest.TestCase):
         for lender_dates, printed in ((False, True), (True, False)):
             err = io.StringIO()
             with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(err):
-                timeline_render.build(copy.deepcopy(fixture("buyer-fha.json")), "ics", tmp,
-                                      {"agent": {}, "formats": ["ics"], "lender_dates": lender_dates})
+                timeline_render.build(t, "ics", tmp, {"agent": {}, "formats": ["ics"], "lender_dates": lender_dates})
             self.assertEqual(note in err.getvalue(), printed)
 
     def test_zone_reminders_and_sequence(self):
@@ -181,7 +180,7 @@ class Strip(unittest.TestCase):
         loan_app = by_key(t)["loan_app"]
         done_both = dict(loan_app, key="signed", label="Agreement Signed", short="Agreement", party="Both", done=True,
                          done_display="Done Sep 26")
-        self.assertIn('style="fill:#b">Loan App · 9/30', timeline_render.strip(dict(t, rows=t["rows"] + [done_both]), colors))
+        self.assertIn('style="fill:#b">Loan App · Sep 30', timeline_render.strip(dict(t, rows=t["rows"] + [done_both]), colors))
         seller = dict(loan_app, key="seller_thing", label="Seller Thing", short="Seller Thing", party="Seller")
         mixed = dict(t, rows=t["rows"] + [seller])
         self.assertIn(f'style="fill:{timeline_render.MIXED}">', timeline_render.strip(mixed, colors))
@@ -191,7 +190,7 @@ class Strip(unittest.TestCase):
         d["completed"] = {"deposit": "2026-09-26"}
         svg = timeline_render.strip(timeline.analyze(d), COLORS)
         self.assertIn("Deposit · Done", svg)
-        self.assertNotIn("Deposit · 9/28", svg)
+        self.assertNotIn("Deposit · Sep 28", svg)
 
 
 class Render(unittest.TestCase):
@@ -220,8 +219,7 @@ class Render(unittest.TestCase):
             with open(src, "w") as f:
                 json.dump(deal, f)
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-                timeline_render.render.main(timeline_render.build, formats=("pdf", "ics"),
-                                            argv=[src, "--format", "ics", "--out", tmp])
+                timeline_render.main([src, "--format", "ics", "--out", tmp])
         self.assertTrue(out.getvalue().strip().endswith(".ics"))
         self.assertEqual(err.getvalue().count("'inspection_dayz'"), 1)
 

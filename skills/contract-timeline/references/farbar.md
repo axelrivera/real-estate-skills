@@ -14,7 +14,7 @@ For the FAR/BAR AS IS and Standard contracts. Set `"form_family": "farbar"` and 
 
 | Field | Where to Look | Blank = Form Default |
 |---|---|---|
-| `effective_date`, `effective_date_source` | Para. 3(b): when the last party signed or initialed **and delivered** the final offer or counteroffer. The source cites Para. 3(b) and the signature or initial, also for a counter made on the contract (never the paragraph whose value was changed) | No default (ask) |
+| `effective_date`, `effective_date_source`, `effective_date_signed` | Para. 3(b): when the last party signed or initialed **and delivered** the final offer or counteroffer. The source cites Para. 3(b) and the signature or initial, also for a counter made on the contract (never the paragraph whose value was changed), with no date or time; the stamp goes in `effective_date_signed` | No default (ask) |
 | `deposit_days`; `deposit_amount` (number) or `deposit_amount_str` (as written), either one | Para. 2(a) | 3 days |
 | `additional_deposit_days`; `additional_deposit_amount` (number) or `additional_deposit_amount_str` (as written), either one | Para. 2(b). The row appears when either amount or the days are given; a blank amount means no additional deposit: leave them all out | 10 days, only when an amount is written |
 | `financing`, `loan_application_days`, `loan_approval_days` | Para. 8 | 5 days, 30 days |
