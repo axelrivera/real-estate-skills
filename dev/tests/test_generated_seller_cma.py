@@ -153,6 +153,75 @@ class Model(unittest.TestCase):
                         if levels.get(given["condition"], mine) != mine else []
                     self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
 
+    def check_options(self, R, C):
+        """The options the stance sets, by rule: the recommended price inside the range on a search-bracket step (or at
+        the cap a relist or reprice sets), Stay first on a reprice and the rest strictly descending, every two at least
+        1% apart, nothing above a relist's failed price or a reprice's current price unless the agent allowed it."""
+        rec, strats = C["recommendation"], C["strategies"]
+        prices = [x["list_price"] for x in strats]
+        stance = C["stance"]
+        given = (R.get("pricing") or {}).get("stance")
+        self.assertEqual(stance["value"], given or stance["suggested"])
+        if R.get("reprice") or R.get("relist"):
+            self.assertNotEqual(stance["suggested"], "premium")
+        self.assertEqual(rec["list_price"], prices[C["recommended_index"]])
+        self.assertTrue(strats[C["recommended_index"]]["recommended"])
+        rp, rl = R.get("reprice"), R.get("relist")
+        if not R.get("price_override"):
+            price = rec["list_price"]
+            self.assertTrue(rec["low"] <= price <= rec["high"], (price, rec["low"], rec["high"]))
+            on_step = ((price + 100) % 5000 == 0 if price < 1_000_000 else (price + 1000) % 10000 == 0) \
+                or price == 999000  # the $10,000 steps' first one, just under $1M
+            caps = {rl["failed_price"]} if rl else {int(rp["current_price"] * 0.99) // 100 * 100} if rp else set()
+            self.assertTrue(on_step or price in caps or C["recommendation"]["override"], price)
+        else:
+            self.assertEqual(rec["list_price"], R["price_override"]["list_price"])
+            self.assertTrue(stance["agent_price"])
+        if rp:
+            self.assertEqual(strats[0]["role"], "stay")
+            self.assertEqual(prices[0], rp["current_price"])
+            if not rp.get("allow_increase"):
+                self.assertTrue(all(p <= rp["current_price"] * 0.99 for p in prices[1:]), prices)
+        else:
+            self.assertNotIn("stay", [x["role"] for x in strats])
+        rest = prices[1:] if rp else prices
+        self.assertEqual(rest, sorted(rest, reverse=True))
+        for i, a in enumerate(prices):
+            for b in prices[i + 1:]:
+                self.assertGreater(abs(a - b), 0.01 * min(a, b), prices)
+        if rl and not rl.get("reason_above"):
+            self.assertTrue(all(p <= rl["failed_price"] for p in prices), (prices, rl["failed_price"]))
+        for x in strats:
+            if x["role"] == "top":
+                self.assertLessEqual(x["list_price"], rec["high"])
+            if x["role"] == "competing":
+                self.assertGreaterEqual(x["list_price"], rec["low"])
+
+    def test_options_by_rule_and_reproducible(self):
+        """Same inputs and stance, same prices and options (run twice from scratch)."""
+        for seed, R, C in cases():
+            with self.subTest(seed=seed):
+                self.check_options(R, C)
+                agent = bool(R["pricing"].get("options") or R.get("price_override"))  # warnings only on the agent's figures
+                for key in ("list_outside_range", "expected_above_range", "expected_sale_order", "top_nets_more",
+                            "stay_nets_more"):
+                    if key in C["warning_keys"]:
+                        self.assertTrue(agent, key)
+                again = compute.run(copy.deepcopy(R))
+                key = lambda M: [(x["role"], x["list_price"], x["expected_sale"], x["time"], x["seller_credit"])  # noqa: E731
+                                 for x in M["strategies"]]
+                self.assertEqual(key(again), key(C))
+
+    def test_every_stance_renders(self):
+        """Each of the three stances builds valid options for every input (a stance other than the suggestion with
+        its reason)."""
+        for seed, R, _ in cases():
+            for stance in compute.cma.STANCES:
+                with self.subTest(seed=seed, stance=stance):
+                    R2 = copy.deepcopy(R)
+                    R2["pricing"].update(stance=stance, stance_reason="Our read of this home against the closest sales.")
+                    self.check_options(R2, compute.run(R2))
+
     def test_one_closing_per_option(self):
         for seed, R, C in cases():
             with self.subTest(seed=seed):

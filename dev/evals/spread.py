@@ -86,10 +86,11 @@ SPEC = {
                    r"total_mills|tax_estimated)$",
                    r"^net\.(holding_rate|holding_rate_assumed|payoff|payoff_estimated|tax_assumed|has_tax|no_mortgage|"
                    r"standard_terms|assumed)"],
+        # the comps and the pricing stance are judgment; the range, the list price and the options follow from them
         "roots": [r"^comps_table\[", r"^adjusted_(min|max)$", r"^median_adjusted$", r"^n_comps$", r"^max_distance$",
-                  r"^recommendation\.", r"^recommended_index$", r"^strategies\[\d+\]\.(list_price|expected_sale|seller_credit)$",
-                  r"^handoff\.(comps|value|offer_plan|recommended_list_price)"],
-        "derived": [r"^strategies\[", r"^net\.", r"^net_basis$", r"^net_spread$", r"^payments\.",
+                  r"^stance\.value$", r"^handoff\.(comps|offer_plan)"],
+        "derived": [r"^recommendation\.", r"^recommended_index$", r"^stance\.", r"^handoff\.(value|recommended_list_price)",
+                    r"^strategies\[", r"^net\.", r"^net_basis$", r"^net_spread$", r"^payments\.",
                     r"^competing_offer_caveat$", r"^warnings", r"^warning_keys", r"^placeholders\."],
         "text": [r"^summary_page\.(why|first_steps)"],
     },

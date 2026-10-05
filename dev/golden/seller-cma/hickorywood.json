@@ -2,17 +2,20 @@
  "adjusted_max": 493900,
  "adjusted_min": 435900,
  "assumption_keys": [
+  "expected_sale",
+  "option_time",
+  "option_credit",
   "holding",
   "title_fees",
   "payment"
  ],
  "assumptions": {
-  "count": 3
+  "count": 6
  },
  "chat_notes": {
-  "count": 5
+  "count": 3
  },
- "competing_offer_caveat": 2,
+ "competing_offer_caveat": null,
  "competition": {
   "rows": [
    [
@@ -316,22 +319,22 @@
   "count": 2
  },
  "expected_sale_basis": {
-  "agent": [
+  "agent": {
+   "count": 0
+  },
+  "capped": false,
+  "filled": [
    0,
    1,
    2
   ],
-  "capped": false,
-  "filled": {
-   "count": 0
-  },
   "floored": false,
   "ratio": 0.97,
   "ratio_display": "97.0%",
   "source": "assumed",
-  "top": {
-   "count": 0
-  }
+  "top": [
+   0
+  ]
  },
  "handoff": {
   "as_of": "2026-09-22",
@@ -365,6 +368,7 @@
   "handoff": "cma",
   "market": {
    "active_count": 14,
+   "active_share_with_price_cut": 0.571,
    "median_days_recent": 22.0,
    "median_seller_paid_recent": 12100.0,
    "months_supply": 3.5,
@@ -507,6 +511,7 @@
  },
  "market_stats": {
   "active_count": 14,
+  "active_share_with_price_cut": 0.571,
   "median_days_recent": 22.0,
   "median_seller_paid_recent": 12100.0,
   "months_supply": 3.5,
@@ -532,9 +537,9 @@
  },
  "net": {
   "after_holding": [
-   420705,
-   420811,
-   424248
+   424204,
+   424623,
+   415487
   ],
   "basis": "after_holding",
   "cash_at_closing": false,
@@ -542,9 +547,9 @@
    "count": 3
   },
   "holding": [
-   -2369,
-   -1325,
-   -1012
+   -1622,
+   -1203,
+   -959
   ],
   "incomplete": false,
   "missing": {
@@ -557,9 +562,9 @@
   "rows": [
    {
     "amounts": [
-     463000,
-     462000,
-     460000
+     467000,
+     467000,
+     457000
     ],
     "display": {
      "count": 3
@@ -577,9 +582,9 @@
    },
    {
     "amounts": [
-     -11575,
-     -11550,
-     -11500
+     -11675,
+     -11675,
+     -11425
     ],
     "display": {
      "count": 3
@@ -589,9 +594,9 @@
    },
    {
     "amounts": [
-     -11575,
-     -11550,
-     -11500
+     -11675,
+     -11675,
+     -11425
     ],
     "display": {
      "count": 3
@@ -601,9 +606,9 @@
    },
    {
     "amounts": [
-     -3241,
-     -3234,
-     -3220
+     -3269,
+     -3269,
+     -3199
     ],
     "display": {
      "count": 3
@@ -613,9 +618,9 @@
    },
    {
     "amounts": [
-     -2390,
-     -2385,
-     -2375
+     -2410,
+     -2410,
+     -2360
     ],
     "display": {
      "count": 3
@@ -637,9 +642,9 @@
    },
    {
     "amounts": [
-     -10000,
-     -10000,
-     -5000
+     -11000,
+     -11000,
+     -11000
     ],
     "display": {
      "count": 3
@@ -649,9 +654,9 @@
    },
    {
     "amounts": [
-     423074,
-     422136,
-     425260
+     425826,
+     425826,
+     416446
     ],
     "display": {
      "count": 3
@@ -661,9 +666,9 @@
    },
    {
     "amounts": [
-     -2369,
-     -1325,
-     -1012
+     -1622,
+     -1203,
+     -959
     ],
     "display": {
      "count": 3
@@ -673,9 +678,9 @@
    },
    {
     "amounts": [
-     420705,
-     420811,
-     424248
+     424204,
+     424623,
+     415487
     ],
     "display": {
      "count": 3
@@ -685,25 +690,26 @@
    }
   ],
   "totals": [
-   423074,
-   422136,
-   425260
+   425826,
+   425826,
+   416446
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 3543,
+ "net_spread": 9136,
  "note_keys": [
+  "expected_sale",
+  "option_time",
+  "option_credit",
   "holding",
   "title_fees",
   "payment",
-  "expected_agent",
-  "competing",
   "commission",
   "not_included",
   "flood"
  ],
  "notes": {
-  "count": 8
+  "count": 9
  },
  "notices": {
   "count": 3
@@ -844,12 +850,13 @@
  },
  "price_history": null,
  "recommendation": {
-  "expected_sale": 462000,
+  "expected_sale": 467000,
   "high": 480000,
   "list_price": 469900,
   "low": 455000,
   "midpoint": 467500.0,
-  "override": false
+  "override": false,
+  "price_override": false
  },
  "recommended_index": 1,
  "relist": null,
@@ -871,55 +878,71 @@
   }
  },
  "stage": "full",
+ "stance": {
+  "agent_price": false,
+  "differs": true,
+  "rule_price": 469900,
+  "signals": [
+   "price_cuts"
+  ],
+  "suggested": "draw_offers",
+  "value": "market"
+ },
  "state_hint": null,
  "strategies": [
   {
-   "closing": "2027-02-05",
+   "closing": "2026-12-24",
    "down": 23995,
-   "expected_sale": 463000,
-   "expected_sale_source": "agent",
-   "hold_months": 4.47,
+   "expected_sale": 467000,
+   "expected_sale_source": "rule",
+   "hold_months": 3.06,
    "list_price": 479900,
-   "months_to_contract": 3.0,
-   "net": 423074,
-   "net_after_holding": 420705,
-   "net_vs_recommended": -106,
+   "months_to_contract": 1.61,
+   "net": 425826,
+   "net_after_holding": 424204,
+   "net_vs_recommended": -419,
    "payment": 4147,
    "recommended": false,
-   "seller_credit": 10000,
-   "stay": false
+   "role": "top",
+   "seller_credit": 11000,
+   "stay": false,
+   "time_source": "rule"
   },
   {
-   "closing": "2026-12-07",
+   "closing": "2026-11-30",
    "down": 23495,
-   "expected_sale": 462000,
-   "expected_sale_source": "agent",
-   "hold_months": 2.5,
+   "expected_sale": 467000,
+   "expected_sale_source": "rule",
+   "hold_months": 2.27,
    "list_price": 469900,
-   "months_to_contract": 1.03,
-   "net": 422136,
-   "net_after_holding": 420811,
+   "months_to_contract": 0.8,
+   "net": 425826,
+   "net_after_holding": 424623,
    "net_vs_recommended": 0,
    "payment": 4065,
    "recommended": true,
-   "seller_credit": 10000,
-   "stay": false
+   "role": "recommended",
+   "seller_credit": 11000,
+   "stay": false,
+   "time_source": "rule"
   },
   {
-   "closing": "2026-11-19",
+   "closing": "2026-11-16",
    "down": 22995,
-   "expected_sale": 460000,
-   "expected_sale_source": "agent",
-   "hold_months": 1.91,
+   "expected_sale": 457000,
+   "expected_sale_source": "rule",
+   "hold_months": 1.81,
    "list_price": 459900,
-   "months_to_contract": 0.46,
-   "net": 425260,
-   "net_after_holding": 424248,
-   "net_vs_recommended": 3437,
+   "months_to_contract": 0.34,
+   "net": 416446,
+   "net_after_holding": 415487,
+   "net_vs_recommended": -9136,
    "payment": 3984,
    "recommended": false,
-   "seller_credit": 5000,
-   "stay": false
+   "role": "competing",
+   "seller_credit": 11000,
+   "stay": false,
+   "time_source": "rule"
   }
  ],
  "subject": {

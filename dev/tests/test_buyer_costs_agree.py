@@ -134,7 +134,7 @@ class SameInsurance(unittest.TestCase):
         R["buyer_payment"].pop("insurance_annual")
         market, homes = seller_compute.load_inputs(R)
         C = seller_compute.compute(R, market, homes)
-        est = seller_compute.finance.insurance_estimate(R["recommendation"]["list_price"], market,
+        est = seller_compute.finance.insurance_estimate(C["recommendation"]["list_price"], market,
                                                         R["subject"].get("year_built"))["annual"]
         self.assertEqual(C["payments"]["insurance_annual"], est)
         self.assertTrue(C["payments"]["insurance_estimated"])

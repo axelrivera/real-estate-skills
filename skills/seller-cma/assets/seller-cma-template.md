@@ -6,7 +6,7 @@
 
 {{summary.headline, when there is one}}
 
-{{recommendation.line}} {{price_history, when it is set}} {{"Listing history: " + history_line, when it isn't empty}} {{recommendation.why, its first sentence}}
+{{recommendation.line}} {{stance.line}} {{price_history, when it is set}} {{"Listing history: " + history_line, when it isn't empty}} {{recommendation.why, its first sentence}}
 
 **Why This Price:**
 - {{summary.why[0]}}

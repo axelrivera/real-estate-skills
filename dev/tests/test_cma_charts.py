@@ -15,7 +15,7 @@ cma, fmt, kit = compute.cma, compute.fmt, seller_render.layout
 
 def scatter_args(R):
     C, _ = run(R)
-    return (R["subject"]["sqft"], R["recommendation"]["list_price"], R["subject"]["mls_address"],
+    return (R["subject"]["sqft"], C["recommendation"]["list_price"], R["subject"]["mls_address"],
             (C["recommendation"]["low"], C["recommendation"]["high"]), compute.labeler(),
             [cd["address"] for cd in R["comps"]["cards"]])
 
@@ -28,7 +28,7 @@ class ScatterLabels(unittest.TestCase):
         # a callout at the subject's own price and nearly its size, asked for on the subject label's side
         near = next(h for h in homes if h["status"] == "SOLD" and h.get("living_area")
                     and 0 < h["living_area"] - 1849 < 120 and h["address"] != R["subject"]["mls_address"])
-        near["close_price"] = R["recommendation"]["list_price"]
+        near["close_price"] = run(R)[0]["recommendation"]["list_price"]
         sc["callouts"] = [{"address": near["address"], "label": "Twin Sale", "side": "left"}]
         svg, info = cma.scatter(homes, sc, *scatter_args(R))
         self.assertEqual(info["crowded_labels"], [])

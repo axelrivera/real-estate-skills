@@ -676,6 +676,69 @@ def range_warnings(bl, values, market):
     return out
 
 
+# --- the seller's pricing stance and the list price it sets ----------------------
+
+# A seller CMA's pricing stance (method.md, Pricing Stance): the model picks one, the script turns it into the price.
+# Each stance sets the list price at a share of the supported range's width.
+STANCES = ("draw_offers", "market", "premium")
+STANCE_SHARE = {"draw_offers": 0.25, "market": 0.5, "premium": 0.75}
+DRAW_SUPPLY, DRAW_CUT_SHARE, DRAW_SALE_TO_LIST = 6, 0.40, 0.97  # any one suggests drawing offers
+PREMIUM_SUPPLY, PREMIUM_SALE_TO_LIST = 3, 1.00  # both together suggest a premium
+
+
+def suggest_stance(stats, failed=False):
+    """(stance, signals): the pricing stance the market data suggests, and the signals behind it. `stats` has the
+    seller CMA's market numbers (`months_supply`, `active_share_with_price_cut`, `sale_to_final_list_recent`; any may be
+    missing). draw_offers when months of supply is 6 or more, 40% or more of the active listings have cut their price,
+    or recent sales closed under 97% of their final asking price; premium when supply is under 3 months and recent
+    sales closed at or above their final asking price; else market. A reprice or relist (`failed`: the market already
+    turned a price down) never suggests premium. Signals: supply_high, price_cuts, sale_below_list, supply_low,
+    sale_at_list."""
+    supply = stats.get("months_supply")
+    cuts = stats.get("active_share_with_price_cut")
+    ratio = stats.get("sale_to_final_list_recent")
+    draw = [key for key, hit in (("supply_high", supply is not None and supply >= DRAW_SUPPLY),
+                                 ("price_cuts", cuts is not None and cuts >= DRAW_CUT_SHARE),
+                                 ("sale_below_list", ratio is not None and ratio < DRAW_SALE_TO_LIST)) if hit]
+    if draw:
+        return "draw_offers", draw
+    if (not failed and supply is not None and supply < PREMIUM_SUPPLY and ratio is not None
+            and ratio >= PREMIUM_SALE_TO_LIST):
+        return "premium", ["supply_low", "sale_at_list"]
+    return "market", []
+
+
+def _bracket(value):
+    """(step, offset) of the portal search brackets at a price: $5,000 steps less $100 under $1M, $10,000 steps less
+    $1,000 above."""
+    return (10000, 1000) if value >= 1_000_000 else (5000, 100)
+
+
+def bracket_price(value, way="nearest"):
+    """A list price on a search-bracket step, just under a round number ($469,900; $1,249,000 above $1M): the nearest
+    step to `value`, or the highest step at or under it (`down`), or the lowest at or over it (`up`)."""
+    step, off = _bracket(value)
+    if way == "nearest":
+        return fmt.half_up(value / step) * step - off
+    k = (value + off) / step
+    return (math.floor(k) if way == "down" else math.ceil(k)) * step - off
+
+
+def list_price_at(point, low, high):
+    """The list price for a point inside the supported range (low + the stance's share of the width): the nearest
+    search-bracket step to it (bracket_price), and when that falls outside the range, the next step inward. A range
+    narrower than one step (an agent's own) takes the point itself, to the nearest $100."""
+    price = bracket_price(point)
+    step, _ = _bracket(point)
+    if price < low:
+        price += step
+    elif price > high:
+        price -= step
+    if not low <= price <= high:
+        price = min(max(fmt.half_up(point, 100), low), high)
+    return price
+
+
 # --- adjustment kinds ------------------------------------------------------------
 
 # A comp adjustment's category (`kind`), so text that lists what was adjusted uses fixed plain words, never the
