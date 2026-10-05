@@ -113,7 +113,6 @@
  "eff_after_today": "today",
  "as_contract_form": "Contract form not chosen: planned on the FAR/BAR AS IS, the usual form for a competitive offer. If the buyer will use the Standard form, say so: its repair limits and inspection rules change the numbers",
  "as_sale_days": "Buyer needs to sell first, no sale deadline given: planned on 21 days with a kick-out clause. Set the date the buyer's sale can close",
- "as_bb_agreement": "Buyer-broker agreement not given: cash to close leaves out any fee the seller doesn't pay. Enter the agreement's rate so the shortfall is counted",
  "as_dom_aged": "Days on market: {dom}, the CMA's {was} as of {date} plus the {since} {days} since",
  "day_one": "day",
  "day_many": "days",

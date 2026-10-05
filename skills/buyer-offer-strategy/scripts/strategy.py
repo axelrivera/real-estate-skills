@@ -444,8 +444,8 @@ def prepare(B, A, market=None):
     B["buyer_broker_form"] = route if form in cf.FARBAR and B["bb_request"][0] else None
     if BU.get("needs_sale") and not BU.get("sale_contingency_days"):
         A.add("buyer", "sale_contingency_days", 21, L_["as_sale_days"], "med")
-    if BU.get("buyer_broker_agreement_pct") is None:
-        A.add("buyer", "buyer_broker_agreement_pct", "not given", L_["as_bb_agreement"], "med")
+    # The buyer's own broker agreement is the agent's own business with their client: never an assumption or a risk in
+    # the buyer's report. Given, a fee the seller doesn't cover is the buyer's cost (cash to close); not given, none is.
     return B, costs
 
 

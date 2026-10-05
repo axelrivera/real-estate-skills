@@ -75,7 +75,7 @@ Top level, next to `buyer`. `rate` (interest rate as a **percent**: `6.5` for 6.
 | `insurance_quote` | false, unless `costs.insurance_annual` is given: a premium entered there counts as a quote in hand (set `false` when that number is only an estimate). True when the buyer already has a quote for this address; `"planned"` only when the agent says one is coming. Only a quote in hand is scored; a planned one is a to-do | — |
 | `va_later_use`, `va_exempt` | VA only: a later use of the benefit (higher funding fee under 5% down), or exempt from the fee | false |
 | `lender_min_close_days` | 35 financed / 21 cash | — |
-| `buyer_broker_agreement_pct` | none (flagged): the rate in the buyer's own broker agreement. When the seller pays less, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" line in cash to close and counts in every limit | med |
+| `buyer_broker_agreement_pct` | none: the rate in the buyer's own broker agreement, when the agent gives it. When the seller pays less, the difference is a "Buyer's Broker Fee (Not Paid by Seller)" line in cash to close and counts in every limit. Never asked about or listed as an assumption: it's the agent's own agreement with their client | — |
 | `needs_sale` | false (adds the sale-of-buyer's-property rider and a kick-out clause; the options are scored with both) | — |
 | `sale_contingency_days` | 21 when `needs_sale` (flagged): days until the buyer's sale must close | med |
 | `buyer_broker_form` | FAR/BAR: `GG` (a separate compensation agreement, the default) or `FF` (a seller credit to the buyer, which comes out of the loan program's concession limit) | — |

@@ -3722,11 +3722,6 @@
    "impact": "high",
    "scope": "buyer",
    "value": "as_is"
-  },
-  {
-   "field": "buyer_broker_agreement_pct",
-   "impact": "med",
-   "scope": "buyer"
   }
  ],
  "bands": {
@@ -3819,11 +3814,6 @@
    "impact": "high",
    "scope": "buyer",
    "value": "as_is"
-  },
-  {
-   "field": "buyer_broker_agreement_pct",
-   "impact": "med",
-   "scope": "buyer"
   },
   {
    "field": "closing_cost_pct",

@@ -5593,11 +5593,6 @@
    "value": "2026-09-28"
   },
   {
-   "field": "buyer_broker_agreement_pct",
-   "impact": "med",
-   "scope": "buyer"
-  },
-  {
    "field": "current_tax_bill_paid",
    "impact": "low",
    "offers": [
@@ -5734,11 +5729,6 @@
   }
  },
  "missing": [
-  {
-   "field": "buyer_broker_agreement_pct",
-   "impact": "med",
-   "scope": "buyer"
-  },
   {
    "field": "closing_cost_pct",
    "impact": "low",
