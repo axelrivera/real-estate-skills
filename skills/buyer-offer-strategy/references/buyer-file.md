@@ -29,18 +29,19 @@ Fastest start: `--cma file.cma.json` (a buyer CMA's `cma-handoff v1`), or the ha
 | `cma_low`, `cma_high` | list price for both | **high** |
 | `midpoint` | average of low and high | — |
 | `median_adjusted` | midpoint; used as the price anchor when there's little competition | — |
-| `source` | — | label only |
+| `source` | — | where the range came from, in words ("buyer CMA", "the agent's CMA PDF"): no figures, the report prints them |
+| `as_of` | — | the CMA's date, `YYYY-MM-DD` (a handoff fills it) |
 
 ## market
 
-`sale_to_list` (0–1), `months_supply`, `median_dom`, `share_with_seller_costs`, `typical_seller_paid`: the market read and page-1 context.
+Numbers only, the report writes them out: `sale_to_list` (a fraction, `0.981`), `months_supply` (`1.4`), `median_dom` (`23`), `share_with_seller_costs` (a fraction, `0.44`), `typical_seller_paid` (dollars, `6500`). A buyer CMA handoff fills them. Text such as "44%" is refused with the fix.
 
 ## competition
 
 | Field | Meaning | Default |
 |---|---|---|
 | `level` | 0 only offer · 1 one competing · 2 two–three · 3 cash or 4+ | inferred from market heat (hot → 2, normal → 1, soft or stale → 0), flagged |
-| `note` | what the listing agent said | — |
+| `note` | what the listing agent said, for you: it's read for a highest-and-best call, never printed (the report writes the Competition line from `level`) | — |
 | `deadline` | offers due ("2026-09-25 17:00" or "Fri Sep 25 · 5 PM"; the report prints both as "Fri Sep 25 · 5 PM"); the expected Effective Date is the day after. Enter a weekday alone as the agent said it ("Friday 5pm"): the script resolves it to the next one from `analysis_date` (today counts) and state that date in chat. When it lands more than 5 days out (today is the day after that weekday), the agent may have meant the one that just passed: the resolved date is a med assumption, listed in `to_confirm` right after the competition read, so the reply asks | — |
 | `highest_and_best` | the listing agent called for highest and best; read from `note` when it says so ("highest and best"). With no escalation, `reply_lines` gets the flat-number reason (`flat_number`) | from `note` |
 | `backup` | seller already has an accepted contract | — |

@@ -62,7 +62,8 @@ class FloridaWorksheet(unittest.TestCase):
                          ["Rider B", "Rider F", "Rider GG", "Appraisal Gap Addendum (AGA-1)"])
         b = next(x for x in W["riders"] if cf.rider_code(x["rider"]) == "B")
         self.assertIn("$105 per quarter", b["inputs"])  # $35/mo, as billed
-        self.assertIn("$35/mo", strategy.hoa_dues({"hoa_monthly": 35}))
+        self.assertIn("$35", strategy.hoa_dues({"hoa_monthly": 35}))  # no billing period: the monthly figure and a blank
+        self.assertIn("[", strategy.hoa_dues({"hoa_monthly": 35}))
         item = next(p["item"] for p in W["package"] if p["item"].startswith("Riders attached"))
         for code in ("(B)", "(F)", "(H)", "(GG)"):
             self.assertIn(code, item)
@@ -147,7 +148,7 @@ class OtherContractWorksheet(unittest.TestCase):
         labels = [t["term"] for t in res["summary"]["terms"]] + [x["term"] for x in res["side_by_side"]]
         self.assertIn(words["inspection_label"], labels)
         self.assertNotIn("Inspection Period", labels + [p["term"] for p in res["pushback"]])
-        self.assertIn(words["deposit_refund"], self.r["why"]["deposit"])
+        self.assertEqual(words["deposit_refund"], self.r["why"]["deposit"]["refund"])
         fl = analyze("fha-competitive.json")
         self.assertEqual(fl["B"]["words"], cf.term_words(cf.AS_IS))
         self.assertIsNone(fl["B"]["words"]["appraisal_addendum"])
@@ -166,11 +167,12 @@ class MarkdownTemplate(unittest.TestCase):
         for root, key in re.findall(r"\b(summary|worksheet)\.([a-z_]+)", self.text):
             self.assertIn(key, res[root], f"{root}.{key}")
         loops = {"t": res["summary"]["terms"], "o": res["summary"]["options"], "b": res["summary"]["bands"],
+                 "e": res["summary"]["exposure"],
                  "row": res["side_by_side"], "m": res["market_check"], "p": res["pushback"],
                  "a": strategy.result(analyze("fha-competitive.json"))["assumptions"]}
-        for var, key in re.findall(r"\b(t|o|b|row|m|p|a)\.([a-z_]+)", self.text):
+        for var, key in re.findall(r"\b(t|o|b|e|row|m|p|a)\.([a-z_]+)", self.text):
             self.assertIn(key, loops[var][0], f"{var}.{key}")
-        for key in ("property", "list_price", "value_range", "reply_lines", "to_confirm", "side_by_side", "market_check",
+        for key in ("property", "list_price", "reply_lines", "to_confirm", "side_by_side", "market_check",
                     "pushback", "assumptions", "chat_notes"):
             self.assertIn(key, self.text)
             self.assertIn(key, res)
@@ -193,7 +195,7 @@ class MarkdownTemplate(unittest.TestCase):
         r = analyze("condo-flood.json")  # the side-by-side ends with the payment
         rows = strategy.result(r)["side_by_side"]
         self.assertEqual(rows[-1]["key"], "payment")
-        self.assertEqual(rows[-1]["values"], [f"${r['payment'][k]:,}" for k in r["O"]])
+        self.assertEqual(rows[-1]["values"], [strategy.per_month(r["payment"][k]) for k in r["O"]])
         self.assertNotIn("payment", [x["key"] for x in rows[:-1]])
 
     def test_handoff_file_via_cli(self):
@@ -211,28 +213,33 @@ class MarkdownTemplate(unittest.TestCase):
         res = json.loads(out.getvalue())
         self.assertEqual(code, 0)
         self.assertEqual(res["value_range"], "$598,000–$632,000")
-        self.assertEqual(res["market"]["median_adjusted"], "$618,500")
+        self.assertIn({"label": "Median Adjusted Comp", "value": "$618,500", "note": None}, res["market_check"])
 
 
 class Pdf(unittest.TestCase):
+    """The renderer places the document model (strategy.result); its layout properties are in
+    test_generated_buyer_offer_strategy.py."""
+
     @classmethod
     def setUpClass(cls):
         cls.r = analyze("fha-competitive.json")
+        cls.M = strategy.result(cls.r, package_ready=True)
 
     def test_options_page_brand_and_agent(self):
-        doc = buyer_render.options_html(self.r, {"name": "Jane Doe", "brokerage": "Sunshine Realty"}, sample=True)
+        doc = buyer_render.options_html(self.M, {"name": "Jane Doe", "brokerage": "Sunshine Realty"}, sample=True)
         self.assertIn("--brand:#1A74AD", doc)  # buyer blue by default
-        self.assertIn("Buyer Side", doc)
+        self.assertIn(strategy.L_["tag"], doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
-        self.assertEqual(buyer_render.details(self.r, strategy.result(self.r)).count('class="pb"'), 1)  # one break
+        self.assertIn("font-bundled", doc)
+        self.assertEqual(doc.count('class="dh pb"'), 1)  # one break, before the detail pages
 
     def test_worksheet_hides_the_buyers_limits_and_takes_an_option(self):
-        doc, _ = buyer_render.worksheet_html(self.r, {}, sample=False)
+        doc = buyer_render.worksheet_html(self.M, {}, sample=False)
         for secret in ("$375,000", "$26,000", "$3,200"):
             self.assertNotIn(secret, doc)
-        self.assertIn('<span class="fill">[from listing / tax record]</span>', doc)
-        _, w = buyer_render.worksheet_html(self.r, {}, sample=False, variant="lower_cost")  # the option chosen
+        self.assertIn('<span class="fill">[', doc)
+        w = strategy.result(self.r, "lower_cost")["worksheet"]  # the option chosen
         self.assertEqual(w["price"], strategy.money(self.r["terms"]["lower_cost"]["price"]))
         with self.assertRaises(strategy.oe.OfferError):
             strategy.worksheet(self.r, "nope")
@@ -248,10 +255,16 @@ class Pdf(unittest.TestCase):
         self.assertEqual(strategy.reserve_status(r["B"], 9000), "")
         ctr = re.search(r"\.ctr\{[^}]*\}", buyer_render.css("options")).group(0)
         self.assertIn("var(--brand)", ctr)
-        doc = buyer_render.options_html(r, {}, False)
-        self.assertIn('<b class="ct">', doc)  # Left in Reserve in caution
-        self.assertNotIn('class="gt"', doc)
-        self.assertIn('<div class="cnote">', buyer_render.page1(r, s))  # the thin cushion, caution style
+        doc = buyer_render.options_html(strategy.result(r), {}, False)
+        self.assertIn("t-caution", doc)  # Left in Reserve in caution
+        self.assertIn('<div class="cnote">', doc)  # the thin cushion, caution style
+
+    def test_next_step_never_offers_what_the_run_delivers(self):
+        """With the worksheet made in the same run, the next step submits it; a quick answer offers to prepare it."""
+        r = analyze("kestrel-v5.json")
+        quick, files = strategy.result(r)["summary"]["next_step"], strategy.result(r, package_ready=True)["summary"]["next_step"]
+        self.assertNotEqual(quick, files)
+        self.assertEqual(files, strategy.next_step(r["B"], "", len(r["O"]), True, strategy.opt_name("recommended")))
 
     def test_renders_both_pdfs(self):
         with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -269,44 +282,14 @@ class Pdf(unittest.TestCase):
             with open(path, "w") as f:
                 json.dump(fixture("texas-cma-escalation.json"), f)
             err = io.StringIO()
-            with mock.patch.object(buyer_render.render, "html_to_pdf", return_value=0), \
+            with mock.patch.object(buyer_render.layout, "print_pdf", return_value={"checks": []}), \
                     contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
                 buyer_render.main([path, "--format", "all", "--out", tmp])
         self.assertEqual(err.getvalue().count(cf.BEST_EFFORT_OFFER_NOTE), 1)
-        err = io.StringIO()
-        with mock.patch.object(buyer_render.render, "html_to_pdf", return_value=0), contextlib.redirect_stderr(err), \
-                tempfile.TemporaryDirectory() as out:
-            ctx = {"agent": {}}
-            d = fixture("one-competing-reach.json")
-            buyer_render.build(d, "options", out, ctx)
-            buyer_render.build(d, "worksheet", out, ctx)
         self.assertEqual(err.getvalue().count("no profile"), 1)
         self.assertIn("no profile", buyer_render.profile_check({}))
         self.assertIn("profile incomplete", buyer_render.profile_check({"name": "A"}))
         self.assertIsNone(buyer_render.profile_check({"name": "A", "brokerage": "B"}))
-
-    def test_short_tail_is_pulled_back_a_page(self):
-        class Page:
-            def __init__(self, pages, tight):
-                self.cls, self.pages, self.tight = set(), pages, tight
-
-            def evaluate(self, js):
-                if "getBoundingClientRect" in js:
-                    return 900
-                for verb in ("add", "remove"):
-                    if f".{verb}('tail')" in js:
-                        getattr(self.cls, "add" if verb == "add" else "discard")("tail")
-
-            def pdf(self, **_):
-                n = self.tight if "tail" in self.cls else self.pages
-                return b"/Type /Pages " + b"/Type /Page " * n
-
-        saves = Page(4, 3)
-        buyer_render.fit_page_one(saves)
-        self.assertIn("tail", saves.cls)
-        same = Page(3, 3)
-        buyer_render.fit_page_one(same)
-        self.assertNotIn("tail", same.cls)
 
 
 if __name__ == "__main__":

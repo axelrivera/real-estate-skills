@@ -199,7 +199,7 @@ def loan_taxes(loan, market):
     """Taxes on a buyer's loan from the market layer (`buyer_costs.loan_taxes`: [{label, rate}] on the loan amount;
     Florida: note stamps 0.35% and intangible tax 0.2%). [] for a cash purchase or a market without them."""
     rows = (market.get("buyer_costs.loan_taxes") if market is not None else None) or []
-    return [{"label": r["label"], "rate": r["rate"], "amount": round(loan * r["rate"])} for r in rows if loan and r.get("rate")]
+    return [{"label": r["label"], "rate": r["rate"], "amount": fmt.half_up(loan * r["rate"])} for r in rows if loan and r.get("rate")]
 
 
 # One buyer closing-cost rule for every skill (the buyer CMA's payment and credit tables, the offer strategy's cash),
@@ -229,7 +229,7 @@ def buyer_closing_costs(price, loan, market=None, cash=False, pct=None, amount=N
         return {"amount": round(price * pct), "pct": pct, "loan_taxes": [], "source": "agent"}
     share = buyer_closing_pct(market, cash)
     taxes = [] if cash else loan_taxes(loan, market)
-    return {"amount": round(price * share + sum(t["amount"] for t in taxes)), "pct": share, "loan_taxes": taxes,
+    return {"amount": fmt.half_up(price * share + sum(t["amount"] for t in taxes)), "pct": share, "loan_taxes": taxes,
             "source": "estimate"}
 
 

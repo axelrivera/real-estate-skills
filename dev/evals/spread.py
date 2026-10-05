@@ -96,8 +96,9 @@ SPEC = {
     "buyer-offer-strategy": {
         "script": [],
         "roots": [r"^B\.value", r"^B\.market"],
-        "derived": [r"^(O|R|terms|cash|payment|bands|ci|limits)\.", r"^(target|reached|promoted|promoted_from|"
-                    r"cash_at_cap|chosen)$", r"^constraints", r"^reply_lines"],
+        "derived": [r"^(O|R|terms|cash|payment|bands|ci|limits|why|lc_why|reached|promoted_from|dropped_stronger|"
+                    r"reserve_alt|cash_at_cap)\.", r"^(target|reached|promoted|promoted_from|cash_at_cap|chosen|framing|"
+                    r"by_net|reserve_alt|dropped_stronger)$", r"^constraints", r"^reply_lines", r"^absent"],
         "text": [],
     },
     # The offers, list price and CMA range come from the eval's files and prompt, and the engine sets the counter:

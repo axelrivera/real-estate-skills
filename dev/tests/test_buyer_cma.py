@@ -578,8 +578,8 @@ class Payments(unittest.TestCase):
         _, C, _ = run(lambda R: R["costs"]["credit_scenarios"].pop("closing_cost_pct"))
         col = C["credit"]["columns"][0]
         loan = compute.finance.loan_amount(col["price"], "conventional", C["credit"]["down_pct"])
-        self.assertEqual(col["loan_taxes"], round(loan * 0.0035) + round(loan * 0.002))
-        self.assertEqual(col["closing_costs"], round(col["price"] * 0.03 + col["loan_taxes"]))
+        self.assertEqual(col["loan_taxes"], compute.fmt.half_up(loan * 0.0035) + compute.fmt.half_up(loan * 0.002))
+        self.assertEqual(col["closing_costs"], compute.fmt.half_up(col["price"] * 0.03 + col["loan_taxes"]))
         self.assertIn("closing_costs", C["assumption_keys"])  # an estimate, said once
 
 

@@ -3,11 +3,12 @@
     python3 scripts/render.py buyer.json [--format options|worksheet|all] [--cma file.cma.json] [--option recommended|stronger|lower_cost]
                               [--profile profile.md] [--sample] [--out DIR]
 
-Options report, page 1: the recommended offer with a reason for every term, the alternatives, the outlook at
-four competition levels and the buyer's cash exposure; the pages after it hold the detail.
-Worksheet: contract entries, riders with suggested inputs, draft additional terms and the package checklist
-for the chosen option. It prints offer terms only, never the buyer's max, cash or reserve.
-Colors follow the agent's buyer-side brand color.
+strategy.py builds the document model once (render.main's compute step): every figure, label and note is already in
+it. This file only places it with the shared layout kit. Options report, page 1: the recommended offer with a reason
+for every term, the key numbers, the alternatives, the outlook at four competition levels and the buyer's cash
+exposure; the pages after it hold the detail, the assumptions and the notes. Worksheet: contract entries, riders with
+suggested inputs, draft additional terms and the package checklist for the chosen option; it prints offer terms only,
+never the buyer's max, cash or reserve. Colors follow the agent's buyer-side brand color.
 """
 import html
 import os
@@ -16,30 +17,41 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import strategy as ST  # noqa: E402
-from _shared import design, handoff, offer_engine as oe, profiles, render  # noqa: E402
+from _shared import design, handoff, layout, offer_engine as oe, render  # noqa: E402
 
-esc = html.escape
-money = oe.money
+Raw, Col = layout.Raw, layout.Col
+L_ = ST.L_
 HERE = os.path.dirname(os.path.abspath(__file__))
-CSS = {"options": os.path.join(HERE, "..", "assets", "offer-options.css"), "worksheet": os.path.join(HERE, "..", "assets", "worksheet.css")}
-PAGE1_LIMIT = 989  # px available on page 1 at the print viewport
-MARGINS = {"top": "0.3in", "right": "0.3in", "bottom": "0.4in", "left": "0.3in"}  # the shared render default, named
+CSS = {"options": os.path.join(HERE, "..", "assets", "offer-options.css"),
+       "worksheet": os.path.join(HERE, "..", "assets", "worksheet.css")}
+BAND_TEXT = {"hi": "hit", "mid": "midt", "lo": "lot"}
+STATUS_TEXT = {"risk": "rt", "caution": "ct", "": ""}
+
+# page 1's blocks that grow with the data, named in the overflow warning (the tallest ones first)
+PAGE1_BLOCKS = ((".p1 .hero", "the recommendation and its side panel"), (".p1 .ctr", "the recommended terms and reasons"),
+                (".p1 .opts", "the options table"), (".p1 .absent", "the missing-option lines"),
+                (".p1 .two", "the outlook and exposure row"), (".p1 .limit", "the Limit lines"),
+                (".p1 .prelim", "the Preliminary line"))
+# Page 1 fits by these steps, in order, until it fits: the compact layout; the outlook and exposure row to the top of
+# page 2 (the options table above it keeps each option's outlook and cash); a tighter layout.
+STEPS = ("compact",
+         "() => { const t = document.querySelector('.p1 .two'), s = document.querySelector('.two-slot');"
+         " if (t && s) s.appendChild(t); }",
+         "tight")
+OPTIONS_FIT = layout.Fit(end=".dh", steps=STEPS, tail=("tail",), blocks=PAGE1_BLOCKS,
+                         tail_hint="the assumptions and notes")
+WORKSHEET_FIT = layout.Fit(end=None, tail=("dense",), tail_hint="the checklist and the documents to request")
+
+
+def esc(text):
+    """Escaped text; a minus sign stays joined to its figure."""
+    return html.escape(str(text)).replace("−$", "−⁠$")
 
 
 def md(text):
     """Escape, then **bold** -> <b> and [blank] -> red fill-in."""
     out = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc(text or ""))
-    return re.sub(r"\[([^\]]+)\]", r'<span class="fill">[\1]</span>', out)
-
-
-def sentence(text):
-    """OFR-206: a reason starts with a capital ("buyer has insurance quote" -> "Buyer has insurance quote")."""
-    text = str(text or "")
-    return text[:1].upper() + text[1:]
-
-
-def acct(v):
-    return money(v) if v >= 0 else f"({money(-v)})"
+    return Raw(re.sub(r"\[([^\]]+)\]", r'<span class="fill">[\1]</span>', out))
 
 
 def css(kind):
@@ -47,311 +59,286 @@ def css(kind):
         return f.read()
 
 
-def agent_lines(agent):
-    if not agent.get("name"):
-        return ""
-    out = f'<br><b>{esc(agent["name"])}</b>'
-    org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
-    lic = f'Lic. {esc(str(agent["license"]))}' if agent.get("license") else ""
-    if org or lic:
-        out += "<br>" + " · ".join(x for x in (org, lic) if x)
-    return out
+def prepared(lead, M, agent, who=True):
+    lines = [Raw(f'{esc(lead)} ' + (f'<b>{esc(M["prepared_for"])}</b> · ' if who else "")
+                 + f'<span class="nw">{esc(M["date"])}</span>')]
+    if agent.get("name"):
+        lines.append(Raw(f'<b>{esc(agent["name"])}</b>'))
+        org = " · ".join(str(agent[f]) for f in ("team", "brokerage") if agent.get(f))
+        lic = f'Lic. {agent["license"]}' if agent.get("license") else ""
+        if org or lic:
+            lines.append(" · ".join(x for x in (org, lic) if x))
+    return lines
 
 
-def header(title, sub, prep, sample):
-    tag = '<span class="viewtag">Buyer Side</span>' + ('<span class="sample">SAMPLE DATA</span>' if sample else "")
-    return f'<header><div><div class="t1">{title}{tag}</div><div class="t2">{sub}</div></div><div class="prep">{prep}</div></header>'
+def pill(cls, text):
+    return Raw(f'<span class="pill b-{esc(cls)}">{esc(text)}</span>')
 
 
-def band_pill(b):
-    return f'<span class="pill b-{b["class"]}">{esc(b["band"])}</span>'
+def h2(title, sub=""):
+    return f'<h2>{esc(title)}' + (f' <span class="h2s">{esc(sub)}</span>' if sub else "") + "</h2>"
+
+
+def sec(head, body, whole=True):
+    """A section: its heading kept with what follows, and (whole) the section kept on one page."""
+    return f'<section class="sec{" whole" if whole else ""}">{head}{body}</section>'
 
 
 # --- Offer Options report --------------------------------------------------------
 
-def snapshot(r):
+def snapshot(M):
     """Home facts in a divider row, then the market and deadline strip: one value per cell."""
-    B = r["B"]
-    P, M, C = B["property"], B["market"], B["competition"]
-    facts = [f"{P['beds']} bed" if P.get("beds") else None, f"{P['baths']} bath" if P.get("baths") else None,
-             f"{P['sqft']:,} sq ft" if P.get("sqft") else None, f"built {P['year_built']}" if P.get("year_built") else None,
-             f"roof {P['roof_year']}" if P.get("roof_year") else None]
-    facts = [x for x in facts if x]
-    row = f'<div class="divrow factrow"><div>{"".join(f"<span>{esc(x)}</span>" for x in facts)}</div></div>' if facts else ""
-    cells = [(ST.stl_label(M), f"{M['sale_to_list'] * 100:.1f}%" if M.get("sale_to_list") else None),
-             ("Months of Supply", M.get("months_supply")), ("Days on Market", P.get("dom")),
-             ("Median Days on Market", M.get("median_dom")), ("Offers Due", esc(ST.deadline_label(C.get("deadline"))) or None)]
-    cells = [(a, b) for a, b in cells if b is not None and b != ""]  # missing values drop out rather than show a dash
-    if not cells:
+    sn = M["snapshot"]
+    row = layout.fact_row(sn["facts"]) if sn["facts"] else ""
+    if not sn["cells"]:
         return row
-    cols = " ".join("1.6fr" if a == "Offers Due" else "1fr" for a, _ in cells)
+    cols = " ".join("1.6fr" if c["label"] == L_["snap_due"] else "1fr" for c in sn["cells"])
     return (row + f'<div class="snap" style="grid-template-columns:{cols}">'
-            + "".join(f"<div><span>{a}</span><b>{b}</b></div>" for a, b in cells) + "</div>")
+            + "".join(f'<div><span>{esc(c["label"])}</span><b>{esc(c["value"])}</b></div>' for c in sn["cells"]) + "</div>")
 
 
-def value_note(V):
-    """Second line under the offer price: the value range it sits in."""
-    if V.get("assumed"):
-        return '<small>Value range not provided</small>'
-    return f'<small>Value range ${V["cma_low"] / 1000:,.0f}K–${V["cma_high"] / 1000:,.0f}K</small>'
+def hero(s):
+    side = "".join(f"<dt>{esc(L_[k])}</dt><dd>{esc(v)}</dd>" for k, v in
+                   (("k_competition", s["signal"]), ("k_financing", s["financing"]), ("k_limits", s["limits"])))
+    why = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", esc(s["why"]))
+    return (f'<div class="hero"><div class="hl"><span class="k">{esc(s["kicker"])}</span>'
+            f'<div class="big2">{esc(s["outlook"].upper())}</div><div class="why">{why}</div></div>'
+            f'<div class="hr"><span class="k">{esc(L_["k_submit_by"])}</span><b>{esc(s["submit_by"])}</b><dl>{side}</dl></div></div>')
 
 
-def page1(r, s):
-    labels = s["option_labels"]
-    hero = (f'<div class="hero"><div class="hl"><span class="k">Recommended Offer · Outlook with {esc(s["competition"])}</span>'
-            f'<div class="big2">{esc(s["outlook"].upper())}</div><div class="why">{md(s["why"])}</div></div>'
-            f'<div class="hr"><span class="k">Submit By</span><b>{esc(s["submit_by"])}</b><dl>'
-            + "".join(f"<dt>{a}</dt><dd>{esc(b)}</dd>" for a, b in (("Competition", s["signal"]), ("Financing", s["financing"]),
-                                                                  ("Your Limits", s["limits"])))
-            + "</dl></div></div>")
-    agent_pill = ' <span class="pill vyes">Agent</span>'
-    vnote = value_note(r["B"]["value"])
-    rows = "".join(f'<tr><td><b>{esc(t["term"])}</b></td><td class="val">{esc(t["offer"])}{vnote if t["term"] == "Price" else ""}</td><td class="why2">{esc(t["why"])}'
-                   f'{agent_pill if t["agent"] else ""}</td></tr>' for t in s["terms"])
-    box = (f'<div class="ctr"><div class="ctrh"><span>RECOMMENDED OFFER</span><em>Strength <b>{s["strength"]}</b> · Seller Net <b>{s["seller_net"]}</b>'
-           f' · Your Worst-Case Cash <b>{s["worst_cash"]}</b></em></div><table><colgroup><col style="width:20%"><col style="width:24%"><col></colgroup>'
-           f'<thead><tr><th>Term</th><th>Offer</th><th>Why</th></tr></thead><tbody>{rows}</tbody></table></div>')
-    opts = "".join(f'<tr class="{"recrow" if x["key"] == "recommended" else ""}"><td><b>{esc(x["option"])}</b></td><td class="n">{x["price"]}</td>'
-                   f'<td class="c">{band_pill({"band": x["outlook"], "class": x["outlook_class"]})}</td><td class="n">{x["seller_net"]}</td>'
-                   f'<td class="n">{x["worst_cash"]}</td><td class="n">{x["reserve"]}</td><td class="{x["status"]}">{esc(x["what"])}</td></tr>'
-                   for x in s["options"])
-    bands = "".join(f"<tr><td>{esc(b['level'])}</td>" + "".join(f"<td>{band_pill(v)}</td>" for v in b["values"]) + "</tr>" for b in s["bands"])
-    # the reserve's status color agrees with the warnings under it: red below the floor, amber on a thin cushion
-    rs = {"risk": "rt", "caution": "ct"}.get(s["reserve_status"], "")
-    exp = "".join(f'<tr><td>{esc(a)}</td><td class="n"><b class="{rs if a == "Left in Reserve" else ""}">'
-                  f'{esc(b)}</b></td></tr>' for a, b in s["exposure"])
-    limits = "".join(f'<div class="limit"><b>Limit:</b> {esc(c)}</div>' for c in s["constraints"])
-    limits += "".join(f'<div class="cnote">{esc(c)}</div>' for c in s.get("cautions") or [])  # OFR-338: inside the limits
+def tiles(s):
+    items = [(x["label"], x["value"], x["sub"], "t-" + (x.get("status") or "plain")) for x in s["tiles"]]
+    return layout.tiles(items, n=4, cls="p1tiles")
+
+
+def terms_box(s):
+    cols = [Col("term", L_["th_term"], cls="term"), Col("offer", L_["th_offer"], cls="val"), Col("why", L_["th_why"], cls="why2")]
+    agent = f' <span class="pill vyes">{esc(L_["lbl_agent"])}</span>'
+    rows = [{"term": Raw(f'<b>{esc(x["term"])}</b>'),
+             "offer": Raw(esc(x["offer"]) + (f'<small>{esc(s["price_note"])}</small>' if x["key"] == "price" else "")),
+             "why": Raw(esc(x["why"]) + (agent if x["agent"] else ""))} for x in s["terms"]]
+    return (f'<div class="ctr"><div class="ctrh"><span>{esc(L_["h_offer_box"])}</span></div>'
+            + layout.table(cols, rows, keep="whole", cls="ctrt") + "</div>")
+
+
+def options_table(s):
+    cols = [Col("option", L_["th_option"], cls="opt"), Col("price", L_["th_price"], align="num"),
+            Col("outlook", L_["th_outlook"], cls="c"), Col("net", L_["th_seller_net"], align="num"),
+            Col("worst", L_["th_worst"], align="num"), Col("reserve", L_["th_reserve"], align="num"),
+            Col("what", L_["th_what_changes"], cls="what")]
+    rows = [{"option": Raw(f'<b>{esc(x["option"])}</b>'), "price": x["price"], "outlook": pill(x["outlook_class"], x["outlook"]),
+             "net": x["seller_net"], "worst": x["worst_cash"], "reserve": x["reserve"], "what": x["what"]} for x in s["options"]]
+    classes = {i: " ".join(c for c in ("recrow" if x["key"] == "recommended" else "", f'st-{x["status"]}' if x["status"] else "") if c)
+               for i, x in enumerate(s["options"])}
+    absent = "".join(f'<div class="absent"><b>{esc(a["label"])}</b> {esc(a["why"])}</div>' for a in s["absent"])
+    return (h2(s["options_title"], s["options_sub"]) + layout.table(cols, rows, keep="whole", cls="opts", row_classes=classes)
+            + absent)
+
+
+def stack_and_exposure(s):
+    cols = [Col("level", L_["th_if_seller_has"], cls="lvl")] + [Col(i, lab, cls="c") for i, lab in enumerate(s["option_labels"])]
+    rows = [{"level": Raw(f'<b>{esc(b["level"])}</b>') if b["expected"] else b["level"],
+             **{i: pill(v["class"], v["band"]) for i, v in enumerate(b["values"])}} for b in s["bands"]]
+    stack = (h2(L_["h_stack"], L_["h_stack_sub"]) + layout.table(cols, rows, keep="whole", cls="bandt")
+             + f'<div class="legend"><span>{esc(L_["lg_bands"])}</span></div>')
+    ex = layout.table([Col("label", "", cls="exl"), Col("value", "", align="num", wrap="wrap", cls="exv")],
+                      [{"label": e["label"], "value": Raw(f"<b>{esc(e['value'])}</b>")} for e in s["exposure"]],
+                      keep="whole", cls="exp", head=False)
+    return f'<div class="two"><div>{stack}</div><div>{h2(L_["h_exposure"], L_["h_exposure_sub"])}{ex}</div></div>'
+
+
+def page1(M):
+    s = M["summary"]
+    limits = "".join(f'<div class="limit"><b>{esc(L_["lbl_limit"])}</b> {esc(c)}</div>' for c in s["constraints"])
+    limits += "".join(f'<div class="cnote">{esc(c)}</div>' for c in s["cautions"])  # OFR-338: inside the limits
     pre = f'<div class="prelim">{md(s["preliminary"])}</div>' if s["preliminary"] else ""
-    absent = "".join(f'<div class="absent"><b>No {esc(a["option"])} Option:</b> {esc(a["why"])}</div>' for a in s["absent"])  # OFR-208
-    return f'''{hero}{box}
-<h2>{esc(s["options_title"])} <span class="h2s">Outlook with {esc(ST.COMP_LABEL[r["B"]["competition"]["level"]])}</span></h2><div class="tbl"><table><colgroup><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:9%"></colgroup>
-<thead><tr><th>Option</th><th class="n">Price</th><th class="c">Outlook</th><th class="n">Seller Net*</th><th class="n">Worst-Case Cash</th><th class="n">Reserve</th><th>What Changes</th></tr></thead><tbody>{opts}</tbody></table></div>{absent}
-<div class="two">
- <div><h2>How It Stacks Up <span class="h2s">By Competition Level</span></h2><div class="tbl"><table class="bandt"><colgroup><col style="width:36%"></colgroup>
- <thead><tr><th>If the Seller Has…</th>{"".join(f'<th class="c">{esc(x)}</th>' for x in labels)}</tr></thead><tbody>{bands}</tbody></table></div>
- <div class="legend"><span>Bands combine strength score and seller net vs. a clean offer at list. An estimate, not a probability.</span></div></div>
- <div><h2>Your Exposure <span class="h2s">Recommended Offer</span></h2><div class="panel"><table class="exp">{exp}</table></div></div></div>
-{limits}{pre}<div class="nextstep"><b>Next Step:</b> {esc(s["next_step"])}</div>
-<div class="fine" style="margin-top:4px">*Seller net before mortgage payoff, as a listing agent would calculate it. Outlook is an estimate from the offer's terms and market signals; other offers and the seller's priorities are unknown. Not legal or financial advice.</div>'''
+    return (hero(s) + tiles(s) + terms_box(s) + options_table(s) + stack_and_exposure(s) + limits + pre
+            + f'<div class="nextstep"><b>{esc(L_["lbl_next_step"])}</b> {esc(s["next_step"])}</div>'
+            + f'<div class="fine">{esc(L_["fine_p1"])}</div>')
 
 
-RESERVE_CELL = {"risk": "worst", "caution": "thin", "": ""}  # Left in Reserve: status only below the floor or on a thin cushion
+def money_cells(cells, cls_of=None):
+    out = {}
+    for i, c in enumerate(cells):
+        cls = cls_of(c) if cls_of else ""
+        out[i] = Raw(f'<span class="{cls}">{esc(c["text"])}</span>') if cls else c["text"]
+    return out
 
 
-def details(r, res):
-    B, O = r["B"], r["O"]
-    K = list(O)
-    rec = O["recommended"]
-    tgt = rec["target"]
-    labels = [ST.OPTION_LABEL[k] for k in K]
-    hdr = "".join(f"<th>{x}</th>" for x in labels)
-    hdrn = "".join(f'<th class="n">{x}</th>' for x in labels)
-    side = ""
-    for row in res["side_by_side"]:  # OFR-360: the payment row comes last and is never amber
-        vals = row["values"]
-        side += f"<tr><td>{esc(row['term'])}</td>" + "".join(
-            f"<td>{esc(v)}</td>" if row["key"] == "payment" else f'<td class="{"" if i == 0 or v == vals[0] else "caution"}">{esc(v)}</td>'
-            for i, v in enumerate(vals)) + "</tr>"
-    cols = [(ST.OPTION_LABEL[k], O[k]["ns"]) for k in K] + [("Clean Offer at List", tgt)]
-    ns = ""
-    line_labels = {}
-    for _, c in cols:  # by line key, not position: a rider line can be on one column and not another
-        for key, label, _ in c["lines"]:
-            line_labels.setdefault(key, label)
-    for key, label in line_labels.items():
-        if key == "payoff":
-            continue
-        vals = [next((amt for k, _, amt in c["lines"] if k == key), 0) for _, c in cols]
-        if all(v == 0 for v in vals):
-            continue
-        ns += f"<tr><td>{esc(label)}</td>" + "".join(f'<td class="n {"neg" if v < 0 else ""}">{acct(v)}</td>' for v in vals) + "</tr>"
-    ns += '<tr class="total"><td>Seller Net Before Payoff</td>' + "".join(f'<td class="n">{acct(c["net"])}</td>' for _, c in cols) + "</tr>"
-    ns += '<tr><td>Seller Holding Cost to Closing</td>' + "".join(f'<td class="n neg">{acct(c["holding"])}</td>' for _, c in cols) + "</tr>"
-    # a lower seller net is a number, not a status: no red or green on it
-    ns += '<tr class="total2"><td>Net as the Listing Agent Sees It</td>' + "".join(
-        f'<td class="n">{acct(c["net_adj"])}</td>' for _, c in cols) + "</tr>"
-    ns += f'<tr class="alt"><td>{esc(ST.downside_label(O))}</td>' + "".join(f'<td class="n">{acct(O[k]["ns_down"]["net_adj"])}</td>' for k in K) + '<td class="n">—</td></tr>'
-    sc = ""
-    for key, label, w in oe.CRITERIA:
-        sc += f'<tr><td>{label}</td><td class="n">{w}%</td>' + "".join(f'<td class="c s{O[k]["score"]["scores"][key]}">{O[k]["score"]["scores"][key]}</td>' for k in K) \
-              + f'<td class="sm" style="color:var(--text)">{esc(sentence(rec["score"]["why"][key]))}</td></tr>'
-    sc += '<tr class="total"><td>Strength Score</td><td class="n">100%</td>' + "".join(
-        f'<td class="c {({"hi": "hit", "mid": "midt", "lo": "lot"})[O[k]["score"]["band"][0]]}"><b>{O[k]["score"]["total"]}</b></td>' for k in K) + "<td></td></tr>"
-    cr = ""
-    bb_row = [("Buyer's Broker Fee (Not Paid by Seller)", "bb_short")] if any(r["cash"][k]["bb_short"] for k in K) else []
-    for label, key in [("Down Payment", "down"), ("Closing Costs & Prepaids", "cc"), *bb_row, ("Seller Concessions Credit", "conc"),
-                       ("Cash to Close (Deposit Counts Toward This)", "to_close"), ("Appraisal Gap if the Appraisal Is Low", "gap"), ("Worst-Case Cash Needed", "worst")]:
-        cr += f'<tr{" class=total" if key in ("to_close", "worst") else ""}><td>{label}</td>' + "".join(f'<td class="n">{acct(r["cash"][k][key])}</td>' for k in K) + "</tr>"
-    cr += f'<tr class="total2"><td>Left in Reserve (of {money(B["buyer"]["cash_available"])})</td>' + "".join(
-        f'<td class="n {RESERVE_CELL[ST.reserve_status(B, r["cash"][k]["reserve"])]}">{acct(r["cash"][k]["reserve"])}</td>' for k in K) + "</tr>"
-    # OFR-219: the date as the contract's weekend and holiday rule leaves it
-    # OFR-316: on a contract that isn't FAR/BAR the date is counted from the offer's periods: marked to confirm
-    confirm = " (confirm)" if B["words"]["deposit_risk_confirm"] else ""
-    cr += '<tr><td>Deposit at Risk After</td>' + "".join(f'<td class="n">{ST.risk_after(O[k], r["costs"])[0]:%b %-d} · {money(O[k]["deposit"])}{confirm}</td>' for k in K) + "</tr>"
-    if any(ST.appraisal_until(O[k], B, r["costs"]) for k in K):  # OFR-210: the appraisal protection on its own row
-        # with an appraisal contingency the cell names its date, even when it ends before the deposit is at risk
-        cr += '<tr><td>Low-Appraisal Protection</td>' + "".join(
-            f'<td class="n">{esc(ST.appraisal_protection(O[k], B, r["costs"]) or "—")}</td>' for k in K) + "</tr>"
-    mkt = "".join(f"<tr><td>{m['label']}</td><td><b>{esc(m['value'])}</b>"  # OFR-359: rows shared with the markdown answer
-                  + (f"<br><small>{esc(m['note'])}</small>" if m["note"] else "") + "</td></tr>" for m in res["market_check"])
-    # OFR-214: an ask past one of the buyer's limits is answered with that limit (strategy.pushback)
-    pb = "".join(f'<tr><td>{esc(p["term"])}</td><td>{esc(p["yours"])}</td><td class="caution">{esc(p["ask"])}</td>'
-                 f'<td{" class=risk" if p["breaks"] else ""}>{esc(p["response"])}</td></tr>'
-                 for p in res["pushback"]) or '<tr><td colspan="4">Nothing obvious: the offer already meets the listing-side benchmarks.</td></tr>'
-    if r["missing"]:
-        asum = ('<div class="tbl"><table><colgroup><col style="width:9%"><col style="width:12%"></colgroup><thead><tr><th class="c">Impact</th><th>Where</th><th>What to Confirm</th></tr></thead><tbody>'
-                + "".join(f'<tr><td class="c"><span class="pill {a["impact"]}">{a["impact"].title()}</span></td><td>{esc(a["scope"].title())}</td><td>{esc(a["why"])}</td></tr>'
-                          for a in r["missing"]) + "</tbody></table></div>")
-    else:
-        asum = '<p class="sm">All key inputs provided.</p>'
-    L = r["R"]["listing"]
-    lf = r["R"]["seller"]["listing_fee_pct"]
-    cost_basis = (f"Listing fee {oe.pct(lf)}" if lf else "Listing fee unknown") + "; " + "; ".join(L["cost_notes"]) + "."
-    state = profiles.STATES.get(L.get("state") or "", "your state")
-    # manual v5: the closing-cost estimate is said once on the page: the assumptions table lists it when it was assumed
-    cc_note = ("" if any(a["field"] == "closing_cost_pct" for a in r["missing"]) else
-               f"Closing costs are figured at {esc(ST.closing_cost_basis(B))}. ")
-    # OFR-208: with one option there's nothing to compare, so no amber legend
-    side_title = ('1 · Options Side by Side <span class="h2s">Amber = Differs from the Recommended Offer</span>' if len(K) > 1
-                  else "1 · Offer Terms")
-    return f'''<div class="pb"></div><div class="det"><div class="dh">Detailed Analysis</div>
-<h2>{side_title}</h2>
-<div class="tbl"><table><colgroup><col style="width:22%"></colgroup><thead><tr><th>Term</th>{hdr}</tr></thead><tbody>{side}</tbody></table></div>
-<h2>2 · How the Listing Agent Will See Each Option <span class="h2s">Seller Net Sheet, Before Mortgage Payoff</span></h2>
-<div class="tbl"><table><colgroup><col style="width:32%"></colgroup><thead><tr><th>Line Item</th>{hdrn}<th class="n">Clean Offer at List</th></tr></thead><tbody>{ns}</tbody></table></div>
-<div class="legend"><span>{esc(cost_basis)}</span></div>
-<h2>3 · Strength Scorecard <span class="h2s">The Same Criteria a Listing Agent Uses · 1 = Weak · 5 = Strong</span></h2>
-<div class="tbl"><table><colgroup><col style="width:27%"><col style="width:7%">{"".join('<col style="width:8%">' for _ in K)}</colgroup>
-<thead><tr><th>Criterion</th><th class="n">Weight</th>{"".join(f'<th class="c nw">{x}</th>' for x in labels)}<th>Recommended: Why</th></tr></thead><tbody>{sc}</tbody></table></div>
-<h2>4 · Your Cash &amp; Risk</h2>
-<div class="tbl"><table><colgroup><col style="width:38%"></colgroup><thead><tr><th>Item</th>{hdrn}</tr></thead><tbody>{cr}</tbody></table></div>
-<div class="legend"><span>Worst case: the appraisal comes in low and you cover the gap. Payment uses {B["costs"]["rate"]}% and post-purchase taxes; your lender's Loan Estimate governs.</span></div>
-<div class="two" style="margin-top:0">
- <div><h2>5 · Market Check</h2><div class="tbl"><table><tbody>{mkt}</tbody></table></div></div>
- <div><h2>6 · Likely Pushback <span class="h2s">On the Recommended Offer</span></h2><div class="tbl"><table><colgroup><col style="width:24%"><col style="width:19%"><col style="width:19%"></colgroup>
- <thead><tr><th>Term</th><th>Yours</th><th>They May Ask</th><th>Response</th></tr></thead><tbody>{pb}</tbody></table></div></div></div>
-<h2>7 · Assumptions &amp; Data to Confirm</h2>{asum}
-<div class="fine">Strength scores use the same rubric as the listing-side offer review. Outlook bands are estimates: the number and terms of other offers and the seller's priorities are unknown, and a seller may choose any offer. {cc_note}Loan program limits change, so confirm with the lender. Not legal or financial advice; for contract questions, consult a real estate attorney licensed in {esc(state)}.</div></div>'''
+def side_table(d, labels):
+    one = d["one_option"]
+    cols = [Col("term", L_["th_term"], cls="term")] + [Col(i, lab) for i, lab in enumerate(labels)]
+    rows = []
+    for r in d["side_by_side"]:
+        row = {"term": r["term"]}
+        for i, v in enumerate(r["values"]):
+            row[i] = Raw(f'<span class="dif">{esc(v)}</span>') if r["differs"][i] else v
+        rows.append(row)
+    title = h2(L_["h_side_one"]) if one else h2(L_["h_side"], L_["h_side_sub"])
+    return sec(title, layout.table(cols, rows, keep="whole", cls="side"))
 
 
-def options_html(r, agent, sample):
-    res = ST.result(r)
-    s = res["summary"]
-    B = r["B"]
-    P = B["property"]
-    sub = f'{esc(P.get("address") or "")} · List {money(P["list_price"])} · {oe.FIN_LABEL[B["buyer"]["financing"]]} offer'
-    prep = (f'Prepared for <b>{esc(B["buyer"].get("name") or "Buyer")}</b> · '
-            f'<span class="nw">{B["analysis_date"]:%B %-d, %Y}</span>{agent_lines(agent)}')
-    body = (header("Offer Options", sub, prep, sample) + snapshot(r) + f'<div class="p1">{page1(r, s)}</div>' + details(r, res)
-            + render.notices(agent))
+def net_table(ns):
+    cols = [Col("label", L_["th_line_item"], cls="lbl")] + [Col(i, c, align="num") for i, c in enumerate(ns["columns"])]
+    neg = lambda c: "neg" if (c["amount"] or 0) < 0 else ""  # noqa: E731
+    rows = [{"label": r["label"], **money_cells(r["cells"], neg)} for r in ns["rows"]]
+    rows += [{"label": ns[k]["label"], **money_cells(ns[k]["cells"])} for k in ("net", "holding", "net_adj", "downside")]
+    n = len(ns["rows"])
+    return sec(h2(L_["h_net"], L_["h_net_sub"]),
+               layout.table(cols, rows, keep="whole", cls="netsheet", row_classes={n: "total", n + 2: "total2", n + 3: "alt"}))
+
+
+def score_table(sc, labels):
+    cols = ([Col("label", L_["th_criterion"], cls="crit2"), Col("weight", L_["th_weight"], align="num")]
+            + [Col(i, lab, cls="c sc") for i, lab in enumerate(labels)] + [Col("why", L_["th_rec_why"], cls="sm")])
+    rows = [{"label": r["label"], "weight": r["weight"], "why": r["why"],
+             **{i: Raw(f'<span class="s{v}">{v}</span>') for i, v in enumerate(r["scores"])}} for r in sc["rows"]]
+    tt = sc["total"]
+    total = {"label": tt["label"], "weight": tt["weight"],
+             **{i: Raw(f'<b class="{BAND_TEXT.get(b, "")}">{v}</b>') for i, (v, b) in enumerate(zip(tt["scores"], tt["bands"]))}}
+    return sec(h2(L_["h_scorecard"], L_["h_scorecard_sub"]), layout.table(cols, rows, total=total, keep="whole", cls="score"))
+
+
+def cash_table(ct):
+    cols = [Col("label", L_["th_item"], cls="lbl")] + [Col(i, c, align="num") for i, c in enumerate(ct["columns"])]
+    rows = [{"label": r["label"], **money_cells(r["cells"])} for r in ct["rows"]]
+    classes = {}
+    for k in ("to_close", "gap", "worst"):
+        if k != "gap":
+            classes[len(rows)] = "total"
+        rows.append({"label": ct[k]["label"], **money_cells(ct[k]["cells"])})
+    classes[len(rows)] = "total2"
+    rows.append({"label": ct["reserve"]["label"],
+                 **money_cells(ct["reserve"]["cells"], lambda c: STATUS_TEXT.get(c.get("status") or "", ""))})
+    for k in ("risk_after", "protection"):
+        if k in ct:
+            rows.append({"label": ct[k]["label"], **{i: Raw(f'<span class="wrapc">{esc(c)}</span>') for i, c in enumerate(ct[k]["cells"])}})
+    return sec(h2(L_["h_cash"]), layout.table(cols, rows, keep="whole", cls="cash", row_classes=classes))
+
+
+def market_table(mc):
+    cols = [Col("label", "", cls="mlbl"), Col("value", "")]
+    rows = [{"label": m["label"], "value": Raw(f"<b>{esc(m['value'])}</b>" + (f"<small>{esc(m['note'])}</small>" if m["note"] else ""))}
+            for m in mc]
+    return sec(h2(L_["h_market"]), layout.table(cols, rows, keep="whole", cls="mkt", head=False))
+
+
+def pushback_table(d):
+    cols = [Col("term", L_["th_term"], cls="pterm"), Col("yours", L_["th_yours"], cls="pval"), Col("ask", L_["th_ask"], cls="pval ask"),
+            Col("response", L_["th_response"])]
+    rows = [{**p, "response": Raw(f'<span class="{"hold" if p["breaks"] else ""}">{esc(p["response"])}</span>')}
+            for p in d["pushback"]] or [{"term": d["pushback_none"]}]
+    return sec(h2(L_["h_pushback"], L_["h_pushback_sub"]), layout.table(cols, rows, keep="whole", cls="pbk"))
+
+
+def confirm_table(M):
+    if not M["assumptions"]:
+        return sec(h2(L_["h_confirm"]), f'<p class="sm">{esc(L_["confirm_none"])}</p>')
+    cols = [Col("impact", L_["th_impact"], cls="c imp"), Col("where", L_["th_where"], cls="where"), Col("what", L_["th_what"])]
+    rows = [{"impact": Raw(f'<span class="pill {a["impact"]}">{esc(a["impact_label"])}</span>'), "where": a["where"],
+             "what": a["what"]} for a in M["assumptions"]]
+    return sec(h2(L_["h_confirm"]), layout.table(cols, rows, keep="brk", cls="confirm"), whole=False)
+
+
+def details(M, agent):
+    d, labels = M["detail"], M["summary"]["option_labels"]
+    return (f'<div class="dh pb">{esc(L_["dh_options"])}</div><div class="two-slot"></div><div class="det">'
+            + side_table(d, labels) + net_table(d["net_sheet"]) + score_table(d["scorecard"], labels) + cash_table(d["cash"])
+            + f'<div class="two det2"><div>{market_table(d["market_check"])}</div><div>{pushback_table(d)}</div></div>'
+            + confirm_table(M) + layout.notes_block(M["notes"], title=L_["h_notes"]) + "</div>" + render.notices(agent))
+
+
+def options_html(M, agent, sample=False):
+    sub = ST.t("sub_options", address=M["property"], price=M["list_price"], financing=M["financing_label"])
+    head = layout.header(L_["doc_options"], sub, prepared(L_["prepared_for"], M, agent), tag=L_["tag"], sample=sample)
+    body = head + snapshot(M) + f'<div class="p1">{page1(M)}</div>' + details(M, agent)
     theme = design.theme(agent.get("brand"), "buyer")
-    return render.page(body, css=css("options"), title="Offer Options", theme_css=design.css_vars(theme))
+    return render.page(body, css=css("options"), title=L_["doc_options"], theme_css=design.css_vars(theme), body_class="font-bundled")
 
 
 # --- Offer Package Worksheet -----------------------------------------------------
 
-def worksheet_html(r, agent, sample, variant=None):
-    W = ST.worksheet(r, variant)
-    B = r["B"]
-    rows = "".join(f'<tr><td class="c">{esc(x["para"]) or "—"}</td><td>{esc(x["field"])}</td><td class="ent">{md(x["entry"])}</td>'
-                   f'<td class="src">{esc(x["note"])}</td></tr>' for x in W["rows"])
-    riders = "".join(f'<tr><td><b>{esc(x["rider"])}</b></td><td>{md(x["inputs"])}</td><td class="src">{esc(x["why"])}</td></tr>' for x in W["riders"]) \
-        or '<tr><td colspan="3">No riders needed.</td></tr>'
+def worksheet_html(M, agent, sample=False):
+    W = M["worksheet"]
+    cols = [Col("para", L_["th_para"], cls="c para"), Col("field", L_["th_field"], cls="fld"), Col("entry", L_["th_enter"], cls="ent"),
+            Col("note", L_["th_note"], cls="src")] if W["farbar"] else \
+        [Col("field", L_["th_field"], cls="fld"), Col("entry", L_["th_enter"], cls="ent"), Col("note", L_["th_note"], cls="src")]
+    rows = [{**x, "entry": md(x["entry"])} for x in W["rows"]]
+    rcols = [Col("rider", L_["th_rider"], cls="rider"), Col("inputs", L_["th_inputs"], cls="inputs"), Col("why", L_["th_why"], cls="src")]
+    riders = [{"rider": Raw(f'<b>{esc(x["rider"])}</b>'), "inputs": md(x["inputs"]), "why": x["why"]} for x in W["riders"]] \
+        or [{"rider": L_["no_riders"]}]
     clauses = "".join(f'<div class="clause"><b class="t">{esc(x["title"])}</b>{esc(x["text"])}</div>' for x in W["clauses"])
-    docs = "".join(f'<tr><td><span class="cb"></span> {esc(d)}</td></tr>' for d in W["docs"])  # same box as the checklist
-    def hint(note):
-        return f'<span class="hint">{esc(note)}</span>' if note else ""
-
     done = ("yes", "done", "true", "✓")
 
     def box(status):  # OFR-206: "Never" (a thing to leave out) is a cross, never a tick
         if str(status).lower() == "never":
-            return '<b class="never">✕</b>'
-        return f'<span class="cb{" on" if str(status).lower() in done else ""}"></span>'
-    pk = "".join(f'<tr><td class="c">{box(x["status"])}</td><td class="src">{esc(x["group"])}</td><td>{esc(x["item"])}{hint(x["note"])}</td>'
-                 '<td class="write"></td><td class="write"></td></tr>' for x in W["package"])
-    verify = ("verify every paragraph and rider against the current FAR/BAR form version" if W["farbar"]
-              else "match each entry to your contract by name (paragraph numbers vary by form)")
-    prep = f'Draft prepared <span class="nw">{B["analysis_date"]:%B %-d, %Y}</span>{agent_lines(agent)}'
-    sub = f'{esc(B["property"].get("address") or "")} · {oe.FIN_LABEL[B["buyer"]["financing"]]} · {W["price"]} · {W["option"].lower()} offer'
-    body = f'''{header("Offer Package Worksheet", sub, prep, sample)}
-<div class="draftbar"><b>DRAFT FOR THE AGENT.</b> Enter in {esc(W["software"])} and {verify}. Red brackets = fill in. Suggested language is for broker review, not legal advice.</div>
-<div class="goal"><b>Contract Form:</b> {esc(W["form_name"])}. {esc(W["form_why"])}</div>
-<h2>1 · Contract Entries</h2>
-<div class="tbl"><table class="ws"><colgroup><col style="width:8%"><col style="width:22%"><col style="width:40%"></colgroup>
-<thead><tr><th class="c">Para.</th><th>Field</th><th>Enter</th><th>Note</th></tr></thead><tbody>{rows}</tbody></table></div>
-<h2>2 · Riders to Attach <span class="h2s">With Suggested Inputs</span></h2>
-<div class="tbl"><table class="ws"><colgroup><col style="width:27%"><col style="width:43%"></colgroup>
-<thead><tr><th>Rider</th><th>Suggested Inputs</th><th>Why</th></tr></thead><tbody>{riders}</tbody></table></div>
-<h2>3 · Additional Terms <span class="h2s">Draft Language</span></h2>{clauses}
-<h2>4 · Offer Package Checklist</h2>
-<div class="tbl pk"><table class="ws"><colgroup><col style="width:5%"><col style="width:11%"><col style="width:48%"><col style="width:12%"></colgroup>
-<thead><tr><th class="c">✓</th><th>Group</th><th>Item</th><th>Date</th><th>Notes</th></tr></thead><tbody>{pk}</tbody></table></div>
-<h2>5 · Request from the Seller After Acceptance</h2><div class="tbl"><table class="docs"><tbody>{docs}</tbody></table></div>
-<div class="fine">Generated from the same analysis as the Offer Options report. {"Paragraph numbers follow the FAR/BAR AS IS contract and may differ by form version. " if W["farbar"] else ""}Rider availability depends on your form set. Draft clause language must be reviewed by the agent and broker; consult a real estate attorney for legal questions.</div>'''
+            return Raw('<b class="never">✕</b>')
+        return Raw(f'<span class="cb{" on" if str(status).lower() in done else ""}"></span>')
+    pcols = [Col("box", L_["th_check"], cls="c cbc"), Col("group", L_["th_group"], cls="src grp"), Col("item", L_["th_item"], cls="item"),
+             Col("date", L_["th_date"], cls="write"), Col("notes", L_["th_notes"], cls="write")]
+    pk = [{"box": box(x["status"]), "group": x["group"],
+           "item": Raw(esc(x["item"]) + (f'<span class="hint">{esc(x["note"])}</span>' if x["note"] else ""))} for x in W["package"]]
+    boxes = [Raw(f'<span class="cb"></span> {esc(d)}') for d in W["docs"]]
+    half = (len(boxes) + 1) // 2  # two columns, read down the first, then the second
+    docs = layout.table([Col(0, ""), Col(1, "")], [[boxes[i], boxes[i + half] if i + half < len(boxes) else ""]
+                                                   for i in range(half)], keep="whole", cls="docs", head=False)
+    draft = ST.t("ws_draft_farbar" if W["farbar"] else "ws_draft_other", software=W["software"])
+    sub = ST.t("sub_worksheet", address=M["property"], financing=M["financing_label"], price=W["price"], option=W["option"].lower())
+    body = (layout.header(L_["doc_worksheet"], sub, prepared(L_["draft_prepared"], M, agent, who=False), tag=L_["tag"], sample=sample)
+            + f'<div class="draftbar"><b>{esc(L_["ws_draft"])}</b> {esc(draft)}</div>'
+            + f'<div class="goal"><b>{esc(L_["lbl_contract_form"])}</b> {esc(W["form_name"])}. {esc(W["form_why"])}</div>'
+            + sec(h2(L_["h_entries"]), layout.table(cols, rows, keep="brk", cls="ws entries"), whole=False)
+            + sec(h2(L_["h_riders"], L_["h_riders_sub"]), layout.table(rcols, riders, keep="brk", cls="ws riders"), whole=False)
+            + sec(h2(L_["h_terms"], L_["h_terms_sub"]), clauses, whole=False)
+            + sec(h2(L_["h_checklist"]), layout.table(pcols, pk, keep="brk", cls="ws pk"), whole=False)
+            + sec(h2(L_["h_request"]), docs)
+            + f'<div class="fine">{esc(ST.t("ws_fine", farbar=L_["ws_fine_farbar"] if W["farbar"] else ""))}</div>'
+            + render.notices(agent))
     theme = design.theme(agent.get("brand"), "buyer")
-    return render.page(body + render.notices(agent), css=css("worksheet"), title="Offer Package Worksheet",
-                       theme_css=design.css_vars(theme)), W
+    return render.page(body, css=css("worksheet"), title=L_["doc_worksheet"], theme_css=design.css_vars(theme),
+                       body_class="font-bundled")
 
 
 # --- files -----------------------------------------------------------------------
 
-PAGE = re.compile(rb"/Type\s*/Page(?![a-zA-Z])")
+def write_options(M, agent, sample, out_dir):
+    path = os.path.join(out_dir, render.filename(M["street"], L_["file_options"], ext="pdf"))
+    footer = ST.t("footer_options", name=M["prepared_for"] if M["prepared_for"] != L_["buyer_word"] else L_["footer_buyer"],
+                  street=M["street"])  # OFR-32
+    info = layout.print_pdf(options_html(M, agent, sample), path, OPTIONS_FIT, footer_html=render.footer(footer))
+    for line in info["checks"]:
+        print(line, file=sys.stderr)
+    return path
 
 
-def page_count(pg):
-    """Pages the report prints to, at the margins html_to_pdf uses (the footer sits in the margin)."""
-    return len(PAGE.findall(pg.pdf(format="Letter", print_background=True, margin=MARGINS)))
+def write_worksheet(M, agent, sample, out_dir):
+    W = M["worksheet"]
+    path = os.path.join(out_dir, render.filename(M["street"], L_["file_worksheet"], ext="pdf"))
+    info = layout.print_pdf(worksheet_html(M, agent, sample), path, WORKSHEET_FIT,
+                            footer_html=render.footer(ST.t("footer_worksheet", street=M["street"])))
+    for line in info["checks"]:
+        print(line, file=sys.stderr)
+    print(f"Worksheet ({W['option'].lower()} offer): {len(W['riders'])} rider(s), {len(W['clauses'])} clause draft(s), "
+          f"{W['blanks']} blank(s) to fill", file=sys.stderr)
+    return path
 
 
-def fit_page_one(pg):
-    measure = "() => document.querySelector('.pb').getBoundingClientRect().top"
-    top = pg.evaluate(measure)
-    for step in ("compact", "tight"):  # the compact layout, then tighter still (long names in the header)
-        if top <= PAGE1_LIMIT:
-            break
-        pg.evaluate(f"() => document.body.classList.add('{step}')")
-        top = pg.evaluate(measure)
-    # iteration 9 eval 1: a short tail (a few assumption rows and the fine print) alone on the last page is pulled back
-    # by tightening the detail pages; kept only when it saves the page
-    pages = page_count(pg)
-    pg.evaluate("() => document.body.classList.add('tail')")
-    if page_count(pg) >= pages:
-        pg.evaluate("() => document.body.classList.remove('tail')")
-    return top
-
-
-def build(data, fmt, out_dir, ctx):
-    r = ST.analyze(data, cma=ST.load_cma(data, ctx.get("cma")))
-    option = ctx.get("option")
-    sample = ctx.get("sample") or r["sample"]
-    street = (r["B"]["property"].get("address") or "Property").split(",")[0]
-    if fmt == "options":
-        path = os.path.join(out_dir, render.filename(street, "Offer Options", ext="pdf"))
-        top = render.html_to_pdf(options_html(r, ctx["agent"], sample), path, margins=MARGINS, before_print=fit_page_one,
-                                 footer_html=render.footer(f"Offer Options · Prepared for {r['B']['buyer'].get('name') or 'the Buyer'} · "
-                                                           f"Not for the Listing Side · {street}"))  # OFR-32
-        if top > PAGE1_LIMIT:
-            print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; shorten the longest notes or reasons.", file=sys.stderr)
-    else:
-        doc, W = worksheet_html(r, ctx["agent"], sample, option)
-        path = os.path.join(out_dir, render.filename(street, "Offer Package", ext="pdf"))
-        render.html_to_pdf(doc, path, footer_html=render.footer(f"Offer Package Worksheet · Buyer Side · {street} · Draft"))
-        print(f"Worksheet ({W['option'].lower()} offer): {len(W['riders'])} rider(s), {len(W['clauses'])} clause draft(s), {W['blanks']} blank(s) to fill",
-              file=sys.stderr)
+def build(C, fmt, out_dir, ctx):
+    M = C["model"]
+    sample = bool(ctx.get("sample") or C["sample"])
+    path = (write_options if fmt == "options" else write_worksheet)(M, ctx["agent"], sample, out_dir)
     if not ctx.get("chat_noted"):  # OFR-203: once per run, not once per file
         ctx["chat_noted"] = True
-        for note in oe.cf.support([r["B"]["contract_form"]], drafting=True)["chat_notes"]:
-            print(f"For the agent (chat only, never on the report): {note}", file=sys.stderr)
-        if profile_check(ctx["agent"]):  # iteration 12: the same reminder the CMA renders print
+        for line in C["agent_lines"]:
+            print(line, file=sys.stderr)
+        if profile_check(ctx["agent"]):  # the same reminder the CMA renders print
             print(f"Check: {profile_check(ctx['agent'])}", file=sys.stderr)
     return [path]
 
 
 def profile_check(agent):
-    """A chat reminder when the agent's name or brokerage is missing, or None (as the buyer CMA's render.py). Never
-    printed in the PDFs: they simply leave the missing parts out."""
+    """A chat reminder when the agent's name or brokerage is missing, or None. Never printed in the PDFs: they simply
+    leave the missing parts out."""
     gaps = [w for w, f in (("agent name", "name"), ("brokerage", "brokerage")) if not agent.get(f)]
     if not gaps:
         return None
@@ -361,12 +348,12 @@ def profile_check(agent):
 
 def options(ap):
     ap.add_argument("--cma", help="cma-handoff v1 file (.cma.json or markdown with the block)")
-    ap.add_argument("--option", choices=list(ST.OPTION_LABEL), help="option for the worksheet (default: the file's chosen_option)")
+    ap.add_argument("--option", choices=list(ST.OPTIONS), help="option for the worksheet (default: the file's chosen_option)")
 
 
 def main(argv=None):
-    return render.main(build, formats=("options", "worksheet"), argv=argv, extra_args=options,
-                       errors=(oe.OfferError, handoff.HandoffError), agent_only=("worksheet",), linked=handoff.linked)
+    return render.main(build, formats=("options", "worksheet"), argv=argv, extra_args=options, compute=ST.compute,
+                       errors=(oe.OfferError, handoff.HandoffError, ST.notes.NotesError), agent_only=("worksheet",), linked=handoff.linked)
 
 
 if __name__ == "__main__":

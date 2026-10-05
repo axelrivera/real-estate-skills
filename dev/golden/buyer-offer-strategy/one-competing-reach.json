@@ -4,7 +4,11 @@
   "_cma_side_note": null,
   "analysis_date": "2026-09-26",
   "bb_request": [
-   0.025
+   0.025,
+   {
+    "key": "why_bb_default",
+    "pct": "2.5%"
+   }
   ],
   "buyer": {
    "agent_track": "average",
@@ -106,6 +110,7 @@
   },
   "competition": {
    "heat": "stale",
+   "inferred": false,
    "level": 1
   },
   "contract_form": "as_is",
@@ -141,7 +146,8 @@
    "months_supply": 1.4,
    "sale_to_list": 0.9642,
    "sale_to_list_basis": "original",
-   "share_with_seller_costs": "100%"
+   "share_with_seller_costs": 1.0,
+   "typical_seller_paid": 6000.0
   },
   "payment_assumed": {
    "count": 1
@@ -164,6 +170,7 @@
   },
   "repair_limits": null,
   "value": {
+   "as_of": "2026-09-26",
    "cma_high": 450000,
    "cma_low": 435000,
    "median_adjusted": 446625,
@@ -5660,6 +5667,7 @@
    ]
   }
  },
+ "by_net": true,
  "cash": {
   "lower_cost": {
    "bb_short": 0,
@@ -5692,6 +5700,44 @@
  },
  "constraints": {
   "count": 0
+ },
+ "dropped_stronger": {
+  "by_net": true,
+  "net_change": 2376,
+  "raised": {
+   "count": 0
+  },
+  "terms": {
+   "appraisal_days": 21,
+   "appraisal_gap": 0,
+   "buyer_broker_pct": 0.025,
+   "closing_days": 35,
+   "contract_form": "as_is",
+   "deposit": 13500,
+   "home_warranty": 0,
+   "inspection_days": 10,
+   "insurance_quote": null,
+   "loan_approval_days": 30,
+   "price": 442000,
+   "price_by": "reach",
+   "seller_concessions": 1000
+  }
+ },
+ "framing": "reached",
+ "lc_why": {
+  "closing_days": {
+   "key": "why_close_easy"
+  },
+  "deposit": {
+   "key": "why_deposit",
+   "pct": "1%"
+  },
+  "price": {
+   "key": "why_lc_price"
+  },
+  "seller_concessions": {
+   "key": "why_lc_conc"
+  }
  },
  "limits": {
   "lower_cost": {
@@ -5752,6 +5798,7 @@
  "promoted": null,
  "promoted_from": null,
  "reached": {
+  "band_key": "risk",
   "from": {
    "appraisal_days": 21,
    "appraisal_gap": 0,
@@ -5764,6 +5811,7 @@
    "insurance_quote": null,
    "loan_approval_days": 30,
    "price": 447000,
+   "price_by": "rule",
    "seller_concessions": 8000
   },
   "roomy": {
@@ -5778,12 +5826,14 @@
    "insurance_quote": null,
    "loan_approval_days": 30,
    "price": 442000,
+   "price_by": "reach",
    "seller_concessions": 3500
   }
  },
  "reply_lines": {
   "count": 0
  },
+ "reserve_alt": null,
  "reserve_tight": null,
  "sample": false,
  "stronger_dropped": true,
@@ -5801,6 +5851,7 @@
    "insurance_quote": null,
    "loan_approval_days": 30,
    "price": 438000,
+   "price_by": "rule",
    "seller_concessions": 13100
   },
   "recommended": {
@@ -5815,7 +5866,42 @@
    "insurance_quote": null,
    "loan_approval_days": 30,
    "price": 440000,
+   "price_by": "reach",
    "seller_concessions": 1500
+  }
+ },
+ "why": {
+  "appraisal_gap": {
+   "key": "why_gap_inside"
+  },
+  "buyer_broker_pct": {
+   "key": "why_bb_default",
+   "pct": "2.5%"
+  },
+  "closing_days": {
+   "key": "why_close_fast"
+  },
+  "deposit": {
+   "key": "why_deposit",
+   "pct": "3%"
+  },
+  "home_warranty": {
+   "key": "why_warranty"
+  },
+  "inspection_days": {
+   "key": "why_insp_full"
+  },
+  "insurance_quote": {
+   "key": "why_ins_get"
+  },
+  "loan_approval_days": {
+   "key": "why_loan_30"
+  },
+  "price": {
+   "key": "why_reach_price"
+  },
+  "seller_concessions": {
+   "key": "why_reach_conc_smaller"
   }
  }
 }

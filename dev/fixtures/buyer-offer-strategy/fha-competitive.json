@@ -12,7 +12,7 @@
     "hoa_monthly": 0, "flood_zone": "X", "annual_tax": 4600
   },
   "value": {"cma_low": 355000, "cma_high": 372000, "source": "buyer CMA"},
-  "market": {"sale_to_list": 0.981, "months_supply": 3.8, "median_dom": 34, "share_with_seller_costs": "44%", "typical_seller_paid": "$6,500"},
+  "market": {"sale_to_list": 0.981, "months_supply": 3.8, "median_dom": 34, "share_with_seller_costs": 0.44, "typical_seller_paid": 6500},
   "competition": {"level": 2, "note": "Listing agent: 2 other offers expected", "deadline": "Fri Sep 25 · 5 PM"},
   "listing_side": {"buyer_broker_offered_pct": 0.025},
   "costs": {"rate": 6.5, "insurance_annual": 3400, "total_mills": 18.1808, "school_mills": 5.249, "homestead": true},
