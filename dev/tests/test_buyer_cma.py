@@ -1,5 +1,6 @@
 """Tests for skills/buyer-cma/scripts (compute.py, stats.py, render.py). Facts of the unmodified fixtures are pinned by
-golden (dev/golden/buyer-cma/); these tests change an input or call a function on built input."""
+golden (dev/golden/buyer-cma/); generated inputs (test_generated_buyer_cma.py) check that every table adds up, each note
+is said once and every figure comes from the model. These tests change an input and assert keys, flags and numbers."""
 import contextlib
 import copy
 import io
@@ -16,10 +17,24 @@ SKILL = os.path.join(ROOT, "skills", "buyer-cma")
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 
-compute, buyer_render, buyer_stats, handoff, profiles, cma = load(
-    "buyer-cma", "compute", "render", "stats", "_shared.handoff", "_shared.profiles", "_shared.cma")
+compute, buyer_render, buyer_stats, handoff, profiles, cma, fmt, layout = load(
+    "buyer-cma", "compute", "render", "stats", "_shared.handoff", "_shared.profiles", "_shared.cma", "_shared.fmt",
+    "_shared.layout")
 
 FIXTURE = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "hickorywood.json")
+
+
+def have_chromium():
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            return os.path.exists(p.chromium.executable_path)
+    except Exception:  # noqa: BLE001 - no Playwright, or no browser installed
+        return False
+
+
+CHROMIUM = have_chromium()
+NEEDS_CHROMIUM = unittest.skipUnless(CHROMIUM, "needs Chromium (make setup)")
 
 
 def report():
@@ -42,8 +57,8 @@ def warnings(change=None):
     return run(change)[1]["warning_keys"]
 
 
-def html(R, C, homes=(), agent=None):
-    return buyer_render.build_html(copy.deepcopy(R), C, list(homes), agent or {})[0]
+def html(C, agent=None):
+    return buyer_render.build_html(C, agent or {})
 
 
 def with_events(events, locality_mls="O6433709"):
@@ -59,8 +74,7 @@ def fha_buyer(cash, credit_alt=False):
     def change(R):
         R["costs"]["buyer_cash"] = cash
         R["costs"]["payment"]["price"] = 464000
-        R["costs"]["payment"]["scenarios"] = [{"label": "FHA, 3.5% Down", "type": "fha", "down_pct": 0.035},
-                                              {"label": "Conventional, 3% Down", "type": "conventional", "down_pct": 0.03}]
+        R["costs"]["payment"]["scenarios"] = [{"type": "fha", "down_pct": 0.035}, {"type": "conventional", "down_pct": 0.03}]
         cs = R["costs"]["credit_scenarios"]
         cs.update(loan_type="fha", down_pct=0.035, scenarios=[{"price": 464000, "credit": 0}, {"price": 469000, "credit": 5000}])
         cs.pop("closing_cost_pct")
@@ -73,7 +87,7 @@ def fha_buyer(cash, credit_alt=False):
 
 def six_comps(R):
     """A sixth comp that makes the median a midpoint (not a whole $100)."""
-    extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "meta": "", "bullets": [],
+    extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "bullets": [],
              "adjustments": [{"label": "Test", "amount": 0}]}
     R["comps"]["cards"].append(extra)
     mid = sorted(c["sold_price"] - (c.get("seller_concessions") or 0) + sum(a["amount"] for a in c["adjustments"])
@@ -110,7 +124,6 @@ def sold_history(R):
     R["as_of"] = "2026-09-26"
     R["subject"]["list_price"] = 464900
     with_events(SOLD_GRID, "X9061187")(R)
-    R["history"].pop("rows", None)
 
 
 def cli(R, *args, export_beside=False):
@@ -145,6 +158,27 @@ class Inputs(unittest.TestCase):
             with self.subTest(i), self.assertRaises(compute.ReportError):
                 run(change)
 
+    def test_judgment_fields_are_figure_free_and_retired_fields_are_named(self):
+        """A figure typed into a judgment field, or a field the script now writes, stops the run naming each one."""
+        def typed(R):
+            R["summary_page"]["why"][0] = "The comps center on about $469,800."
+            R["offer"]["bullets"][0] += " Cut four times since January."
+            R["bottom_line"]["paragraph"] = "Asking sits inside the range."
+            R["comps"]["cards"][0]["meta"] = "Sold $505,500"
+        with self.assertRaises(compute.ReportError) as e:
+            run(typed)
+        msg = str(e.exception)
+        for path in ("summary_page.why[0]", "offer.bullets[0]", "bottom_line.paragraph", "comps.cards[0].meta"):
+            self.assertIn(path, msg)
+        self.assertEqual(compute.schema_errors(report()), [])
+
+    def test_compute_never_changes_its_input(self):
+        R = report()
+        before = copy.deepcopy(R)
+        market, homes = compute.load_inputs(R)
+        compute.compute(R, market, homes)
+        self.assertEqual(R, before)
+
     def test_mls_option(self):
         R = report()
         R["subject"]["county"] = "Brevard"  # not Stellar: no MLS assumed, so the export can't be read
@@ -156,12 +190,13 @@ class Inputs(unittest.TestCase):
 
     def test_cli_finds_the_export_and_writes_the_handoff_beside_the_report(self):
         """The export resolves beside report.json; the handoff is a working file there (never the outputs folder),
-        named for the side."""
+        named for the side; the printed model leaves out the export's homes."""
         code, out, _, tmp = cli(report(), export_beside=True)
         self.assertEqual(code, 0)
         self.assertTrue(out["ok"])
         self.assertTrue(out["handoff_file"].endswith(".buyer.cma.json"))
         self.assertEqual(os.path.dirname(out["handoff_file"]), tmp)
+        self.assertFalse([k for k in out if k.startswith("_")])
 
 
 class Warnings(unittest.TestCase):
@@ -176,6 +211,7 @@ class Warnings(unittest.TestCase):
         self.assertIn("walk_away_above_range", C["warning_keys"])
         self.assertIn("credit_alt_mismatch", C["warning_keys"])
         self.assertIsNone(C["credit_alt"])
+        self.assertIsNone(C["offer_plan"]["credit_alt"])
         self.assertEqual(len(C["warnings"]), len(C["warning_keys"]))
 
     def test_thin_comps_and_an_outlier(self):
@@ -186,9 +222,8 @@ class Warnings(unittest.TestCase):
         self.assertTrue(hits[0].startswith(R["comps"]["cards"][0]["address"]))  # names the comp
 
     def test_adjustment_rates_outside_their_area(self):
-        _, C, _ = run(lambda R: R["subject"].__setitem__("county", "Hillsborough"))  # Stellar, not where the rates were set
+        _, C, _ = run(lambda R: R["subject"].__setitem__("county", "Hillsborough"))
         self.assertIn("adjustment_scope", C["warning_keys"])
-        self.assertTrue(any("Hillsborough" in w for w in C["warnings"]))
         m = profiles.load_market(state="FL", county="Seminole")  # the built-in partial-update and roof-age rates
         self.assertEqual((m.get("cma.adjustments.kitchen_only_vs_dated"), m.get("cma.adjustments.baths_only_vs_dated")),
                          (15000, 10000))
@@ -227,12 +262,6 @@ class Warnings(unittest.TestCase):
             R["subject"]["as_is_public"] = True
         self.assertNotIn("as_is_private", warnings(public))
 
-    def test_fractional_days_in_the_market_table(self):
-        """A median of an even count ("7.5 days") is rounded to a whole day, half up."""
-        _, C, _ = run(lambda R: R["market"]["rows"][2].__setitem__(2, "7.5 days"))
-        self.assertIn("8 days", C["warnings"][C["warning_keys"].index("market_days_rounding")])
-        self.assertNotIn("market_days_rounding", warnings())
-
 
 class Handoff(unittest.TestCase):
     def test_handoff_is_valid_and_carries_the_history(self):
@@ -242,6 +271,10 @@ class Handoff(unittest.TestCase):
         self.assertEqual(len(C["comps_table"]), len(h["comps"]))  # the chat template's rows
         self.assertEqual((h["subject"]["dom"], h["subject"]["price_cuts"]),
                          (C["history"]["active_days"], C["history"]["price_cuts"]))
+        self.assertEqual(h["value"]["midpoint"], C["range"]["midpoint"])
+        self.assertEqual(h["subject"]["insurance_annual"], C["payments"]["insurance_annual"])
+        self.assertEqual(h["offer_plan"]["opening"], C["offer_plan"]["opening"])
+        self.assertEqual(h["market"]["months_supply"], C["market_stats"]["months_supply"])
         bad = copy.deepcopy(h)
         bad["subject"]["price_cuts"] = "two"
         with self.assertRaises(handoff.HandoffError):
@@ -271,8 +304,6 @@ class CompsFirst(unittest.TestCase):
             return compute.comps_first(R, market, homes)
         out = comps_only()
         rough, median = out["rough"], out["median_adjusted"]
-        # the adjusted span rounded outward to $1,000; the walk-away at or below the median; the opening half of
-        # Florida's typical range width below it
         self.assertEqual((rough["range"]["low"], rough["range"]["high"]),
                          (out["adjusted_min"] // 1000 * 1000, -(-out["adjusted_max"] // 1000) * 1000))
         self.assertEqual(rough["walk_away"], median // 1000 * 1000)
@@ -318,8 +349,7 @@ class History(unittest.TestCase):
         self.assertEqual(h["price_cut_pct"], round(19400 / 483900, 4))
         self.assertEqual((h["failed_contracts"], h["listings"]), (1, 2))
         self.assertEqual(h["active_days"], 83 + 36)  # the CANC row's DOM, then Aug 17 to as_of Sep 22
-        self.assertEqual((C["placeholders"]["price_cuts"], C["placeholders"]["price_increases"]),
-                         ("4 price cuts", "1 price increase"))
+        self.assertEqual(len(C["history_section"]["rows"]), len(EVAL_GRID))
 
     def test_order_and_mls_warnings(self):
         _, C, _ = run(with_events(EVAL_GRID))
@@ -338,13 +368,9 @@ class History(unittest.TestCase):
         fixed[4] = {**fixed[4], "date": "2026-01-20"}  # a row whose removal alone restores the order is named alone
         _, C, _ = run(with_events(fixed))
         self.assertEqual(C["history"]["out_of_order"], [[4]])
-
-        def rows_only(R):
-            R["history"].pop("events")
-            R["history"]["rows"] = [["Jan 16, 2026", "First listed", "$483,900"]]
-        _, C, _ = run(rows_only)
-        self.assertIn("history_no_events", C["warning_keys"])
+        _, C, _ = run(lambda R: R.pop("history"))
         self.assertIsNone(C["history"])
+        self.assertIsNone(C["history_section"])
 
     def test_active_days(self):
         """Without a DOM, the calendar count (pending and off-market days don't count); a CDOM on the first listing
@@ -358,7 +384,7 @@ class History(unittest.TestCase):
         later_cdom = copy.deepcopy(EVAL_GRID)
         later_cdom[0]["cdom"] = 119
         repeat = copy.deepcopy(no_dom)
-        repeat[9]["note"] = "Taken off the market (off and on twice through Mar 5)"
+        repeat[9]["note"] = "Taken off the market (off and on twice)"
         repeat_days = copy.deepcopy(repeat)
         repeat_days[9]["days_on"] = 10
         repeat_dom = copy.deepcopy(repeat)
@@ -378,24 +404,22 @@ class History(unittest.TestCase):
                 self.assertFalse(lacks & set(C["warning_keys"]))
 
     def test_asking_vs_the_last_contract(self):
-        """Asking $474,900 is $400 above the $474,500 it was listed at when the April contract was signed."""
+        """Asking $474,900 is $400 above the $474,500 it was listed at when the April contract was signed; the
+        history's sentence says so from those numbers."""
         def at(price):
             def change(R):
                 R["subject"]["list_price"] = price
                 with_events(EVAL_GRID)(R)
             return change
         _, C, _ = run(at(474900))
-        h, ph = C["history"], C["placeholders"]
+        h = C["history"]
         self.assertEqual((h["last_contract_date"], h["last_contract_price"], h["vs_last_contract"]), ("2026-04-11", 474500, 400))
-        self.assertEqual((ph["vs_last_contract"], ph["last_contract_price"]), ("$400 above", "$474,500"))
-        self.assertEqual(run(at(470000))[1]["placeholders"]["vs_last_contract"], "$4,500 below")
-
-        def no_contract(R):
-            with_events([e for e in EVAL_GRID if e["change"] != "PNC"])(R)
-            R["offer"]["bullets"].append("Asking is {vs_last_contract} the last contract.")
-        _, C, _ = run(no_contract)
+        self.assertEqual(h["display"]["vs_last_contract"], compute.t("vs_above", amt="$400"))
+        self.assertTrue(any("$474,500" in line for line in C["history_section"]["lines"]))
+        self.assertEqual(run(at(470000))[1]["history"]["display"]["vs_last_contract"], compute.t("vs_below", amt="$4,500"))
+        _, C, _ = run(with_events([e for e in EVAL_GRID if e["change"] != "PNC"]))
         self.assertNotIn("vs_last_contract", C["history"])
-        self.assertIn("unfilled_placeholder", C["warning_keys"])
+        self.assertNotIn("vs_last_contract", C["history"]["display"])
 
     def test_counts_start_after_the_last_sale(self):
         """An earlier owner's listing that sold stays in the table, with its year, but not in the counts."""
@@ -406,11 +430,10 @@ class History(unittest.TestCase):
         self.assertEqual((h["first_listed"], h["first_list_price"]), ("2026-07-10", 489900))
         self.assertEqual(h["counted_since_sale"], "2015-05-22")
         self.assertNotIn("last_contract_price", h)  # the only contract was the earlier owner's
-        self.assertEqual(len(h["timeline"]), 6)
-        hist = {"timeline": [{"date": d, "kind": "listed", "price": 1, "delta": 0} for d in
-                             ("2015-03-31", "2015-04-21", "2015-05-22", "2026-07-10", "2026-08-14")]}
-        rows = [r[0] for r in buyer_render.history_rows({}, hist, lambda key, **kw: key, "2026-09-26")]
-        self.assertEqual(rows, ["Mar 31, 2015", "Apr 21, 2015", "May 22, 2015", "Jul 10, 2026", "Aug 14, 2026"])
+        rows = C["history_section"]["rows"]
+        self.assertEqual([r[0] for r in rows][:3], ["Mar 31, 2015", "Apr 21, 2015", "May 22, 2015"])
+        self.assertTrue(all(r[0].endswith(", 2026") for r in rows[3:]))  # every row carries its year
+        self.assertEqual(compute.history_dates([fmt.to_date("2026-08-14")], 2026), ["Aug 14"])
 
 
 class Taxes(unittest.TestCase):
@@ -419,39 +442,45 @@ class Taxes(unittest.TestCase):
             R["subject"].update(state="TX", county="Travis")
             R.pop("export")
             for j in R["costs"]["taxes"]["jurisdictions"]:
-                j.pop("school_mills", None), j.pop("total_mills", None)
+                j.pop("school_mills", None), j.pop("total_mills", None), j.pop("district", None)
         _, C, _ = run(texas)
-        self.assertAlmostEqual(C["payments"]["rows"][0]["tax"], 474900 * 0.011 / 12)  # the national estimate
+        annual = fmt.half_up(474900 * 0.011)  # the national estimate, to the dollar
+        self.assertEqual(C["taxes"][0]["annual"], annual)
+        self.assertEqual(C["payments"]["rows"][0]["tax"], fmt.half_up(annual / 12))  # the table's figure, monthly
         self.assertIn("tax_estimated", C["warning_keys"])
+        self.assertIn("tax_basis", C["note_keys"])
+        self.assertEqual(C["market"]["rows"], [])  # no export, no market table (the bullets stay)
 
         def millage(R):
             texas(R)
             R["costs"]["taxes"]["jurisdictions"] = [{"label": "in Austin", "short": "Austin", "school_mills": 9.5, "total_mills": 19.0}]
             R["costs"]["payment"]["tax_jurisdiction_index"] = 0
         _, C, _ = run(millage)
-        self.assertAlmostEqual(C["taxes"][0]["annual"], 474900 * 19.0 / 1000)  # no Florida homestead in Texas
-        self.assertIsNotNone(C["payments"])
+        self.assertEqual(C["taxes"][0]["annual"], fmt.half_up(474900 * 19.0 / 1000))  # no Florida homestead in Texas
+        self.assertNotIn("tax_file", C["note_keys"])
 
     def test_district_basis(self):
-        """An unconfirmed district uses the higher bill, flagged once; one confirmed district isn't an estimate."""
+        """An unconfirmed district uses the higher bill, said once in the notes; one confirmed district isn't."""
         _, C, _ = run(lambda R: R["costs"]["payment"].pop("tax_jurisdiction_index"))
         annual = [t["annual"] for t in C["taxes"]]
         self.assertEqual(C["payments"]["tax_index"], annual.index(max(annual)))
         tb = C["payments"]["tax_basis"]
         self.assertTrue(tb["unconfirmed"] and tb["higher"] and tb["label_estimate"])
+        self.assertIn("tax_basis", C["note_keys"])
 
         def one(R):
             R["costs"]["taxes"]["jurisdictions"] = R["costs"]["taxes"]["jurisdictions"][:1]
             R["costs"]["payment"]["tax_jurisdiction_index"] = 0
-        self.assertFalse(run(one)[1]["payments"]["tax_basis"]["label_estimate"])
+        _, C, _ = run(one)
+        self.assertFalse(C["payments"]["tax_basis"]["label_estimate"])
+        self.assertNotIn("tax_basis", C["note_keys"])
 
-    def test_no_bill_and_no_homestead_render(self):
-        R, C, homes = run(lambda R: R["costs"]["taxes"].pop("current_bill"))  # new construction
-        self.assertIn("Not available", html(R, C, homes))
-        R, C, _ = run(lambda R: R["costs"]["taxes"].__setitem__("homestead", False))
-        doc = html(R, C)
-        self.assertNotIn("With Homestead", doc)
-        self.assertIn("No Homestead", doc)
+    def test_no_bill_and_no_homestead(self):
+        _, C, _ = run(lambda R: R["costs"]["taxes"].pop("current_bill"))  # new construction
+        self.assertEqual(C["costs"]["taxes"]["rows"][0][1], compute.L["not_available"])
+        _, C, _ = run(lambda R: R["costs"]["taxes"].__setitem__("homestead", False))
+        self.assertIn(compute.L["no_homestead"], C["costs"]["taxes"]["header"])
+        self.assertFalse({"tax_file", "tax_portability"} & set(C["note_keys"]))
 
 
 class Payments(unittest.TestCase):
@@ -461,9 +490,9 @@ class Payments(unittest.TestCase):
             R["costs"]["taxes"].pop("purchase_price")
         R, C, _ = run(change)
         op = R["offer_plan"]
-        self.assertEqual(C["payments"]["price"], (op["target_low"] + op["target_high"]) / 2)
+        self.assertEqual(C["payments"]["price"], fmt.half_up((op["target_low"] + op["target_high"]) / 2))
         self.assertEqual(C["payments"]["price_basis"], "target")
-        self.assertEqual(R["costs"]["taxes"]["purchase_price"], C["payments"]["price"])  # page 1's tax and payment agree
+        self.assertIn(C["payments"]["price_display"], C["costs"]["taxes"]["header"])  # page 1's tax and payment agree
 
     def test_cash_checks(self):
         """Over the buyer's cash: cash_short per credit column and own program; within 5%: cash_tight; a comparison
@@ -471,13 +500,13 @@ class Payments(unittest.TestCase):
         _, C, _ = run(lambda R: R["costs"].__setitem__("buyer_cash", 30000))
         short = [c for c in C["credit"]["columns"] if c["cash"] > 30000]
         self.assertTrue(short)
-        self.assertTrue(all(c["cash_short"] == round(c["cash"] - 30000) for c in short))
+        self.assertTrue(all(c["cash_short"] == c["cash"] - 30000 for c in short))
         rows = C["payments"]["rows"]
         self.assertTrue(rows[2]["cash_short"])
         self.assertEqual(C["warning_keys"].count("cash_short"), len(short) + bool(rows[0]["cash_short"]))
         need = run()[1]["credit"]["columns"][0]["cash"]
-        _, C, _ = run(lambda R: R["costs"].__setitem__("buyer_cash", round(need + 500)))
-        self.assertEqual(C["credit"]["columns"][0]["cash_left"], round(round(need + 500) - need))
+        _, C, _ = run(lambda R: R["costs"].__setitem__("buyer_cash", need + 500))
+        self.assertEqual(C["credit"]["columns"][0]["cash_left"], 500)
         self.assertIn("cash_tight", C["warning_keys"])
         self.assertEqual(C["warning_keys"].count("scenario_over_cash"), 1)  # Conventional, 20% Down
         self.assertFalse({"cash_short", "cash_tight", "scenario_over_cash"}
@@ -489,17 +518,17 @@ class Payments(unittest.TestCase):
         _, C, _ = run(fha_buyer(30000))
         first, col = C["payments"]["rows"][0], C["credit"]["columns"][0]
         self.assertEqual(first["cash_to_close"], first["cash_down"] + first["closing_costs"])
-        self.assertAlmostEqual(first["cash_to_close"], col["cash"])  # same price, no credit: the same basis
+        self.assertEqual(first["cash_to_close"], col["cash"])  # same price, no credit: the same ledger
         self.assertIsNone(first["down_short"])  # the down payment alone fits
-        self.assertEqual(first["cash_short"], round(first["cash_to_close"] - 30000))
+        self.assertEqual(first["cash_short"], first["cash_to_close"] - 30000)
         need = first["cash_to_close"]
-        _, C, _ = run(fha_buyer(round(need + 500)))
-        self.assertEqual(C["payments"]["rows"][0]["cash_left"], round(round(need + 500) - need))
+        _, C, _ = run(fha_buyer(need + 500))
+        self.assertEqual(C["payments"]["rows"][0]["cash_left"], 500)
         self.assertIn("cash_tight", C["warning_keys"])
 
         def conv5(R):
             fha_buyer(30000)(R)
-            R["costs"]["payment"]["scenarios"][1] = {"label": "Conventional, 5% Down", "type": "conventional", "down_pct": 0.05}
+            R["costs"]["payment"]["scenarios"][1] = {"type": "conventional", "down_pct": 0.05}
         _, C, _ = run(conv5)
         row = C["payments"]["rows"][1]
         self.assertIsNone(row["down_short"])  # $23,200 down fits $30,000
@@ -512,28 +541,35 @@ class Payments(unittest.TestCase):
         self.assertIn("cash_short", C["warning_keys"])
         self.assertEqual((C["cash_fit"]["price"], C["cash_fit"]["credit"]), (470000, 10000))
         self.assertLessEqual(C["cash_fit"]["cash"], 30000)
+        self.assertTrue(C["summary"]["cash_fit_line"])
         _, C, _ = run(fha_buyer(5000, credit_alt=True))  # nothing fits
         self.assertIsNone(C["cash_fit"])
+        self.assertEqual(C["summary"]["cash_fit_line"], "")
         self.assertIn("cash_short", C["warning_keys"])
 
-    def test_assumed_financing_is_a_flag_not_a_label(self):
+    def test_scenario_labels_and_assumed_financing(self):
+        """Each scenario is named from its type and down payment; assumed financing is a note, said once, never a label."""
         _, C, _ = run(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__("assumed", True))
-        self.assertEqual(C["payments"]["rows"][0]["label"], "Conventional, 5% Down")
-        self.assertTrue(C["payments"]["rows"][0]["assumed"])
-        self.assertNotIn("scenario_label", C["warning_keys"])
-        self.assertIn("scenario_label", warnings(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__(
-            "label", "Conventional, 5% Down (Assumed)")))
+        rows = C["payments"]["rows"]
+        self.assertEqual([r["label"] for r in rows], ["Conventional, 5% Down", "FHA, 3.5% Down", "Conventional, 20% Down"])
+        self.assertTrue(rows[0]["assumed"])
+        self.assertEqual(C["assumption_keys"].count("financing_assumed"), 1)
+        self.assertNotIn("financing_assumed", run()[1]["note_keys"])
+        with self.assertRaises(compute.ReportError):
+            run(lambda R: R["costs"]["payment"]["scenarios"][0].__setitem__("label", "Conventional, 5% Down (Assumed)"))
+        self.assertEqual(compute.scenario_label({"type": "va", "down_pct": 0}), "VA, No Down Payment")
 
     def test_flood_line(self):
         """The payment has a flood line: a quote, or "Get a Quote" (never $0); zone AE is lender-required."""
-        R, C, _ = run()
+        _, C, _ = run()
         pay = C["payments"]
         self.assertIsNone(pay["flood"]["annual"])
         self.assertTrue(all(r["flood"] is None for r in pay["rows"]))
-        self.assertIn("Get a Quote", html(R, C))
+        flood_row = next(r for r in C["costs"]["payment"]["rows"] if r[0] == compute.L["pay_flood"])
+        self.assertEqual(set(flood_row[1:]), {compute.L["pay_flood_quote"]})
         _, quoted, _ = run(lambda R: R["costs"]["payment"].__setitem__("flood_insurance_annual", 1800))
         for a, b in zip(pay["rows"], quoted["payments"]["rows"]):
-            self.assertAlmostEqual(b["total"] - a["total"], 150)
+            self.assertEqual(b["total"] - a["total"], 150)
         _, C, _ = run(lambda R: R["costs"]["payment"].__setitem__("flood_zone", "AE"))
         self.assertEqual(C["payments"]["flood"]["required"], "lender")
 
@@ -541,82 +577,55 @@ class Payments(unittest.TestCase):
         """Florida's 2.5% plus 0.5% prepaids, plus note stamps and intangible tax on the loan."""
         _, C, _ = run(lambda R: R["costs"]["credit_scenarios"].pop("closing_cost_pct"))
         col = C["credit"]["columns"][0]
-        self.assertEqual(col["loan_taxes"], round(col["loan"] * 0.0035) + round(col["loan"] * 0.002))
+        loan = compute.finance.loan_amount(col["price"], "conventional", C["credit"]["down_pct"])
+        self.assertEqual(col["loan_taxes"], round(loan * 0.0035) + round(loan * 0.002))
         self.assertEqual(col["closing_costs"], round(col["price"] * 0.03 + col["loan_taxes"]))
+        self.assertIn("closing_costs", C["assumption_keys"])  # an estimate, said once
 
 
 class Credit(unittest.TestCase):
     def test_seller_cost_and_trade_off_per_credit(self):
-        R, C, _ = run(lambda R: R["costs"]["credit_scenarios"].__setitem__("seller_pays_buyer_broker_pct", 0.025))
+        _, C, _ = run(lambda R: R["costs"]["credit_scenarios"].__setitem__("seller_pays_buyer_broker_pct", 0.025))
         self.assertEqual(C["credit"]["seller_cost_per_10k"], 320)  # 0.7% doc stamps + 2.5% buyer-broker pay
-        doc = html(R, C)
-        self.assertIn("$320", doc)
-        self.assertNotIn("Same Seller Net", doc)  # price minus credit isn't the same net to the seller
+        self.assertTrue(any("$320" in n for n in C["notes"]))
         _, C, _ = run()
-        cols = C["credit"]["columns"]
-        per = 5000 / (cols[1]["credit"] - cols[0]["credit"])
-        self.assertEqual(C["placeholders"]["credit_monthly_per_5k"], f"${round((cols[1]['payment'] - cols[0]['payment']) * per):,}")
-        self.assertEqual(C["placeholders"]["credit_cash_per_5k"], f"${round((cols[0]['cash'] - cols[1]['cash']) * per, -2):,.0f}")
+        cols, per = C["credit"]["columns"], C["credit"]["per_5k"]
+        scale = 5000 / (cols[1]["credit"] - cols[0]["credit"])
+        self.assertEqual(per["monthly"], fmt.half_up((cols[1]["payment"] - cols[0]["payment"]) * scale))
+        self.assertEqual(per["cash"], fmt.half_up((cols[0]["cash"] - cols[1]["cash"]) * scale, 100))
+        self.assertIn(fmt.money(per["cash"]), C["costs"]["credit"]["per_5k"])
 
     def test_median_quoted_rounded(self):
         """An even number of comps has a midpoint median, quoted to the nearest $100; the credit table's room below
         it uses the median as quoted. Five comps: one comp's own value, to the dollar."""
-        R, C, _ = run(six_comps)
+        _, C, _ = run(six_comps)
         self.assertNotEqual(C["median_adjusted"] % 100, 0)
-        self.assertEqual(C["median_adjusted_display"], compute.money(C["median_adjusted"], 100))
-        self.assertEqual(C["placeholders"]["median_adjusted"], C["median_adjusted_display"])
-        shown = compute.median_rounded(C["median_adjusted"], len(R["comps"]["cards"]))
+        self.assertEqual(C["median_adjusted_display"], fmt.money(C["median_adjusted"], 100))
+        shown = compute.median_rounded(C["median_adjusted"], 6)
         for col in C["credit"]["columns"]:
             self.assertEqual(col["appraisal_room"], shown - col["price"])
-        doc = html(R, C)
-        self.assertIn(C["median_adjusted_display"], doc)
-        self.assertNotIn(compute.money(C["median_adjusted"]), doc)
+        self.assertIn(C["median_adjusted_display"], C["bottom_line"]["line"])
         _, C, _ = run()
-        self.assertEqual(C["median_adjusted_display"], compute.money(C["median_adjusted"]))
+        self.assertEqual(C["median_adjusted_display"], fmt.money(C["median_adjusted"]))
 
     def test_competing_listing_position_is_computed(self):
-        """A competing listing's adjusted price and its place in the range come from the script; a note that places it
-        by hand warns."""
+        """A competing listing's adjusted price and its place in the range come from the script, in its note."""
         def pool(R):
-            R["bottom_line"].update(low=435000, high=450000, midpoint=442500)
+            R["bottom_line"].update(low=435000, high=450000)
             R["offer_plan"].update(opening=435000, target_low=440000, target_high=444000, walk_away=446000)
             R["offer_plan"].pop("credit_alt", None)
             R["competition"]["rows"][0][2] = 424500
-            R["competition"]["rows"][0][6] = "No pool. Add about $25,000 for a pool: {adjusted_estimate}, {range_position}."
+            R["competition"]["rows"][0][6] = "No pool."
             R["competition"]["adjustments"] = {"644 PEACHWOOD DR": [{"label": "Pool", "amount": 25000}]}
-        R, C, _ = run(pool)
+        _, C, _ = run(pool)
         est = C["competition_estimates"][0]
-        self.assertEqual((est["adjusted"], est["range_position"]), (449500, "near the top of this home's range"))
-        self.assertIn("$449,500", R["competition"]["rows"][0][6])
-        self.assertFalse({"unfilled_placeholder", "range_position_typed"} & set(C["warning_keys"]))
-        self.assertEqual(compute.range_position(430000, 435000, 450000), "below this home's range")
-        self.assertEqual(compute.range_position(442000, 435000, 450000), "in the middle of this home's range")
-        self.assertIn("range_position_typed", warnings(lambda R: R["competition"]["rows"][0].__setitem__(
-            6, "Add about $25,000 for a pool and it lands near the bottom of this home's range.")))
-
-
-class Placeholders(unittest.TestCase):
-    def test_filled_everywhere(self):
-        def change(R):
-            R["comps"]["summary_paragraph"] = "The median is {median_adjusted}, after {price_cuts}."
-            R["market"]["bullets"][0] = "<strong>Supply.</strong> About {months_supply} at the recent pace."
-            R["as_of"] = "2026-09-26"
-        R, C, homes = run(change)
-        self.assertNotIn("unfilled_placeholder", C["warning_keys"])
-        doc = html(R, C, homes)
-        self.assertIn(C["median_adjusted_display"], doc)
-        self.assertNotIn("{median_adjusted}", doc)
-        self.assertEqual(C["summary_page"]["key_stats"][0][0], C["median_adjusted_display"])  # the chat template's copy
-        self.assertRegex(C["placeholders"]["months_supply"], r"^\d+\.\d months$")
-        self.assertEqual(C["data_source"]["as_of_display"], "September 26, 2026")
-        self.assertEqual(compute.end_sentence("before you sign"), "before you sign.")
-        self.assertEqual(compute.end_sentence("before you sign."), "before you sign.")
-        self.assertEqual(compute.end_sentence("(see the roof)."), "(see the roof).")
-
-    def test_unknown_placeholder_warns(self):
-        _, C, _ = run(lambda R: R["watch"]["items"].__setitem__(0, R["watch"]["items"][0] + " {median_value}"))
-        self.assertEqual(C["warning_keys"], ["unfilled_placeholder"])
-        self.assertIn("$.watch.items[0]", C["warnings"][0])
+        self.assertEqual(est["adjusted"], 449500)
+        self.assertEqual(est["range_position"], compute.t("comp_position", position=compute.L["pos_top"]))
+        self.assertIn("$449,500", C["competition"]["rows"][0][6])
+        self.assertEqual(compute.range_position(430000, 435000, 450000), "pos_below")
+        self.assertEqual(compute.range_position(442000, 435000, 450000), "pos_middle")
+        with self.assertRaises(compute.ReportError):
+            run(lambda R: R["competition"].__setitem__("adjustments", {"1 NOWHERE LN": [{"label": "Pool", "amount": 1}]}))
 
 
 class ScatterLabels(unittest.TestCase):
@@ -636,6 +645,11 @@ class ScatterLabels(unittest.TestCase):
         placer.place(100, 104, "right", "1471 Sedgefield", "lbl", 10, 12)  # another label counts
         self.assertEqual((len(placer.moved), placer.overlapping), (1, []))
 
+    def test_boxes_are_measured_like_the_other_labels(self):
+        b = cma._LabelPlacer.box(0, 0, "right", "1512 Buttonbush Dr", 0, 12)
+        self.assertAlmostEqual(b[2] - b[0], cma._text_w("1512 Buttonbush Dr", 12))
+        self.assertGreater(cma._text_w("WWW", 12), cma._text_w("iii", 12))  # the font's own widths, not a count
+
     def test_leader_line_and_dropped_label(self):
         ring = [(70, 100, 6.5), (130, 100, 6.5), (140, 80, 6.5), (140, 120, 6.5)]  # beside, above and below are covered
         placer = cma._LabelPlacer([(100, 100, 10)] + ring, (0, 0, 400, 400))
@@ -649,15 +663,19 @@ class ScatterLabels(unittest.TestCase):
         self.assertTrue(placer.place(200, 200, "right", "622 Spring Oaks", "lbl", 10, 12))  # not droppable: prints
         self.assertEqual(placer.overlapping, ["622 Spring Oaks"])
 
-    def test_render_reports_labels_and_unplotted_callouts(self):
-        R, C, homes = run()
-        html(R, C, homes)
-        self.assertEqual(C["scatter_labels"], {"moved": [], "overlapping": [], "leader": [], "dropped": []})
-        self.assertEqual(C["callout_checks"], [])
-        R["scatter"]["callouts"] = R["scatter"]["callouts"] + [{"address": "1 NOWHERE LN", "label": "Missing", "side": "left"}]
-        html(R, C, homes)
-        self.assertEqual(len(C["callout_checks"]), 1)  # named, not dropped silently
-        self.assertIn("1 NOWHERE LN", C["callout_checks"][0])
+    def test_render_reports_labels_unplotted_callouts_and_the_legend(self):
+        _, C, _ = run()
+        out = {}
+        doc = buyer_render.build_html(C, {}, notes_out=out)
+        self.assertEqual(out["callout_checks"], [])
+        drawn = {k for k, n in (("comp", "m-comp"), ("sold", "m-sold"), ("active", "m-active"), ("trend", 'class="trend"'))
+                 if n in doc.split('class="scatter"', 1)[1].split("</svg>", 1)[0]} | {"subject"}
+        self.assertEqual(set(re.findall(r'data-series="(\w+)"', doc)), drawn)  # the legend names what's drawn
+        _, C, _ = run(lambda R: R["scatter"]["callouts"].append({"address": "1 NOWHERE LN", "side": "left"}))
+        out = {}
+        buyer_render.build_html(C, {}, notes_out=out)
+        self.assertEqual(len(out["callout_checks"]), 1)  # named, not dropped silently
+        self.assertIn("1 NOWHERE LN", out["callout_checks"][0])
 
 
 class Addresses(unittest.TestCase):
@@ -671,20 +689,25 @@ class Addresses(unittest.TestCase):
         def upper(R):
             for c in R["comps"]["cards"]:
                 c["address"] = c["address"].upper()
-        R, C, homes = run(upper)
+        R, C, _ = run(upper)
         self.assertTrue(all(r["address"] == cma.display_address(r["address"].upper()) for r in C["comps_table"]))
-        doc = html(R, C, homes)
+        doc = html(C)
         for card in R["comps"]["cards"]:
             self.assertNotIn(card["address"], doc)
             self.assertIn(cma.display_address(card["address"]), doc)
         self.assertIn('class="m-comp', doc)  # still matched to the export's rows
-        sc = {"subject_label": "517 Hickorywood", "callouts": [{"address": "1512 BUTTONBUSH DR", "label": "1512 Buttonbush"}]}
-        out = buyer_render.chart_labels(sc, {"address": "517 Hickorywood Ave"})
-        self.assertEqual((out["subject_label"], out["callouts"][0]["label"]), ("517 Hickorywood Ave", "1512 Buttonbush Dr"))
+        self.assertTrue(all(len(c["meta"]) > 2 for c in C["comps"]["cards"]))  # the sale line read from the export
+
+    def test_dot_plot_address_column_fits_the_longest_address(self):
+        long = [{"address": "12345 North Lake Buena Vista Boulevard Unit 1204", "adjusted": 450000},
+                {"address": "1 Elm St", "adjusted": 460000}]
+        svg = cma.dotplot(long, 440000, 470000, 455000, "Asking")
+        self.assertIn('textLength="', svg)  # the long one fitted to the widest column
+        self.assertNotIn('textLength="', cma.dotplot(long[1:], 440000, 470000, 455000, "Asking"))
 
 
 def browser_page(doc, width=730):
-    """A Chromium page laid out at print width, as html_to_pdf and cma.paginate measure it."""
+    """A Chromium page laid out at print width, as html_to_pdf and the paginator measure it."""
     from playwright.sync_api import sync_playwright
     p = sync_playwright().start()
     b = p.chromium.launch()
@@ -696,10 +719,10 @@ def browser_page(doc, width=730):
 
 class Pdf(unittest.TestCase):
     def test_brand_side_agent_and_profile_check(self):
-        R, C, homes = run()
+        _, C, _ = run()
         agent = {"name": "Jane Doe", "brokerage": "Sunshine Realty", "team": None, "license": None, "phone": None,
                  "email": None, "website": None, "brand": {"buyer_primary": "#0B6E4F"}}
-        doc = html(R, C, homes, agent)
+        doc = html(C, agent)
         self.assertIn("--brand:#0B6E4F", doc)
         self.assertIn("Buyer Summary", doc)  # the side shows in the page-1 label; no separate pill
         self.assertNotIn('class="tag', doc)
@@ -707,49 +730,50 @@ class Pdf(unittest.TestCase):
         self.assertNotIn("Lic.", doc)
         self.assertIn("--subject:var(--text)", doc)  # the subject is black, never a status color or a second hue
         self.assertNotIn("var(--party", doc)
+        self.assertIn("font-bundled", doc)
         self.assertIn("no profile", buyer_render.profile_check(profiles.load_agent(None)))  # chat only
         self.assertIsNone(buyer_render.profile_check({"name": "Dana Reyes", "brokerage": "Lakeside Realty"}))
         self.assertIn("profile incomplete", buyer_render.profile_check({"name": "Dana Reyes"}))
-        self.assertNotIn("no profile", html(R, C, (), profiles.load_agent(None)))
+        self.assertNotIn("no profile", html(C, profiles.load_agent(None)))
 
-    def test_market_table_has_the_median_sale_price(self):
-        R, C, _ = run()
-        rows = C["market_rows"]
-        self.assertEqual(rows[1][0], "Median Sale Price")
-        self.assertTrue(all(v.startswith("$") for v in rows[1][1:]))
-        R["market"]["rows"].insert(1, ["Median Sale Price", "$450,000", "$440,000"])  # a table that has one gets no second
-        self.assertEqual(sum(r[0] == "Median Sale Price" for r in compute.market_rows(R, [1, 2])), 1)
-        self.assertEqual(compute.market_rows(R, None), R["market"]["rows"])  # no export: as written
+    def test_market_table_from_the_export(self):
+        """The market table is built from the export's split: the periods named, sales counted, the subject's own past
+        sale left out."""
+        _, C, homes = run()
+        m = C["market"]
+        self.assertEqual(len(m["columns"]), 3)
+        self.assertEqual(m["rows"][0][0], compute.L["th_mk_sold"])
+        sold = [h for h in homes if h["status"] == "SOLD" and h.get("close_price") and h.get("close_date")
+                and not compute.mls.same_address(h["address"], C["subject"]["mls_address"])]
+        self.assertEqual(sum(int(v) for v in m["rows"][0][1:]), len(sold))
+        self.assertTrue(all(v.startswith("$") or v == fmt.EMPTY for v in m["rows"][1][1:]))
 
+    @NEEDS_CHROMIUM
     def test_full_pdf(self):
         with tempfile.TemporaryDirectory() as tmp:
+            C = compute.run(report())
             with contextlib.redirect_stderr(io.StringIO()):
-                paths = buyer_render.build(report(), "pdf", tmp, {"agent": profiles.load_agent(None), "market": None,
-                                                                  "sample": True})
+                paths = buyer_render.build(C, "pdf", tmp, {"agent": profiles.load_agent(None), "sample": True})
             with open(paths[0], "rb") as f:
                 self.assertEqual(f.read(5), b"%PDF-")
             self.assertEqual(paths, [paths[0]])  # the PDF only: no JSON handed to the agent
             self.assertFalse([f for f in os.listdir(tmp) if f.endswith(".json")])
 
-    def test_widest_tables_wrap_and_credit_table_stays_whole(self):
-        """Seven-figure prices and three scenarios: the payment and credit table headers wrap instead of clipping; the
-        credit table is kept whole by the paginator."""
+    @NEEDS_CHROMIUM
+    def test_widest_tables_wrap(self):
+        """Seven-figure prices, three scenarios and four credit splits: the table headers wrap instead of clipping."""
         def wide(R):
             R["costs"]["payment"]["price"] = 1442000
-            R["costs"]["payment"]["scenarios"] = [
-                {"label": "Conventional, 5% Down", "type": "conventional", "down_pct": 0.05, "assumed": True},
-                {"label": "FHA, 3.5% Down", "type": "fha", "down_pct": 0.035, "assumed": True},
-                {"label": "Conventional, 20% Down", "type": "conventional", "down_pct": 0.2, "assumed": True}]
+            R["costs"]["payment"]["scenarios"] = [{"type": "conventional", "down_pct": 0.05, "assumed": True},
+                                                  {"type": "fha", "down_pct": 0.035, "assumed": True},
+                                                  {"type": "conventional", "down_pct": 0.2, "assumed": True}]
             cs = R["costs"]["credit_scenarios"]
             cs["scenarios"] = [{"price": 1435000, "credit": 0}, {"price": 1445000, "credit": 10000},
                                {"price": 1455000, "credit": 20000}, {"price": 1465000, "credit": 30000}]
             cs.pop("buydown", None)
-        R, C, homes = run(wide)
-        doc = html(R, C, homes)
-        self.assertEqual(doc.count('class="tbl wrap-head'), 2)
-        self.assertIn('class="tbl wrap-head whole"', "".join(buyer_render.credit_section(
-            R, C, cma.Labels(buyer_render.ASSETS, R.get("labels")))))
-        self.assertIn("!el.querySelector('.tbl.whole')", cma.PAGINATE_JS)
+        _, C, _ = run(wide)
+        doc = html(C)
+        self.assertIn('data-shrink="', doc)  # the scatter may shrink to finish a page
         p, b, pg = browser_page(doc)
         try:
             clipped = pg.evaluate("""() => [...document.querySelectorAll('.tbl')].filter(t => t.scrollWidth > t.clientWidth + 1)
@@ -759,31 +783,11 @@ class Pdf(unittest.TestCase):
             b.close()
             p.stop()
 
-    def test_a_table_block_runs_on_rather_than_leave_half_a_page(self):
-        """A table block that doesn't fit with a third of the page or more left runs on (whole rows, header repeated)
-        once its heading, intro and first rows fit."""
-        filler = [f"<p>{'Filler text for the page. ' * 30}</p>" for _ in range(4)]  # about half a page
-        rows = [[f"Row {i}", "$1,000", "$2,000"] for i in range(24)]
-        blocks = filler + ["<h3>Estimated Monthly Payment</h3>", "<p>Intro.</p>",
-                           cma.table(["Per Month", "A", "B"], rows, num_cols=(1, 2)), '<p class="note">Note.</p>']
-        doc = ('<html><head><style>' + cma.css() + '</style></head><body><div class="wrap"><div class="onepage">P1</div>'
-               '<div class="pb"></div>' + cma.group_blocks(blocks) + "</div></body></html>")
-        p, b, pg = browser_page(doc)
-        try:
-            cma.paginate(pg)
-            flow = pg.evaluate("() => [...document.querySelectorAll('.kg.flow')].map(e => e.querySelector('h3').textContent)")
-            self.assertEqual(flow, ["Estimated Monthly Payment"])
-            self.assertTrue(pg.evaluate("() => document.querySelector('.kg.flow .tbl').classList.contains('brk')"))
-        finally:
-            b.close()
-            p.stop()
-
 
 class ChatTemplate(unittest.TestCase):
     """The chat template follows page 1 of the PDF, and every compute.py path it quotes exists."""
     TEMPLATE = os.path.join(SKILL, "assets", "buyer-cma-template.md")
     PATH = re.compile(r"\b[a-z][a-z_0-9]*(?:\[[^\]]+\]|\.[a-z][a-z_0-9]*)+")
-    BARE = ("bottom_line_paragraph", "median_adjusted_display", "current_bill_display", "comps_table", "cash_fit")
 
     @staticmethod
     def short(R):
@@ -813,31 +817,24 @@ class ChatTemplate(unittest.TestCase):
             text = f.read()
         paths = sorted({m.group(0) for m in self.PATH.finditer(text) if "." in m.group(0) or "[" in m.group(0)})
         self.assertIn("payments.rows[0].cash_short_display", paths)
-        self.assertIn("summary_page.check_first[0][1]", paths)
+        self.assertIn("summary.check_first[0][1]", paths)
         for change in (None, self.short):
             _, C, _ = run(change)
             for p in paths:
                 with self.subTest(path=p, short=bool(change)):
                     self.resolve(C, p, nullable=change is None)
-            for name in self.BARE:
-                self.assertIn(name, C)
-        with open(os.path.join(SKILL, "assets", "labels.json")) as f:
-            labels = json.load(f)
         for key in ("sum_why", "sum_comps_h", "sum_costs", "sum_check"):
-            self.assertIn(f"**{labels[key]}", text)
+            self.assertIn(f"**{compute.L[key]}", text)
 
     def test_display_values_for_the_template(self):
         _, C, _ = run(self.short)
-        pay, first = C["payments"], C["payments"]["rows"][0]
+        first = C["payments"]["rows"][0]
         self.assertTrue(first["cash_short"])
-        self.assertEqual(first["cash_short_display"], compute.money(first["cash_short"]))
-        self.assertEqual(pay["closing"]["pct_display"], f'{pay["closing"]["pct"] * 100:g}%')
-        self.assertTrue(pay["tax_basis"]["homestead"])
-        self.assertEqual(C["history"]["counted_since_sale_display"], "May 22, 2015")
-        self.assertTrue(all(isinstance(v, str) for v in C["placeholders"].values()))  # never a None placeholder
+        self.assertEqual(first["cash_short_display"], fmt.money(first["cash_short"]))
+        self.assertEqual(C["history"]["display"]["counted_since_sale"], "May 22, 2015")
         _, C, _ = run(lambda R: R["costs"]["taxes"].__setitem__("homestead", False))
         self.assertFalse(C["payments"]["tax_basis"]["homestead"])
-        self.assertIsNone(C["history"]["counted_since_sale_display"])
+        self.assertIsNone(C["history"]["display"]["counted_since_sale"])
         self.assertIsNone(C["payments"]["rows"][0]["cash_short_display"])
 
 

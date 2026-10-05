@@ -84,7 +84,8 @@ def cma(skill):
         os.chdir(ROOT)  # export paths in fixtures are relative to the repo root
         try:
             market, homes = compute.load_inputs(R, None, path)
-            return compute.compute(R, market, homes)
+            C = compute.compute(R, market, homes)
+            return compute.public(C) if hasattr(compute, "public") else C  # without the export's homes (render's own)
         finally:
             os.chdir(cwd)
     return run

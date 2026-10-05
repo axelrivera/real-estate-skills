@@ -434,7 +434,7 @@ def case_seller_cma(pdf, checks):
         "recommendation": {**base["recommendation"], **ref["recommendation"]},
         "costs": ref["costs"], "buyer_payment": ref["buyer_payment"],
     })
-    base["comps"]["cards"] = [{**c, "meta": "", "bullets": ["Reference comp."]} for c in ref["comps"]]
+    base["comps"]["cards"] = [{**c, "bullets": ["Reference comp."]} for c in ref["comps"]]
     base["pricing"]["strategies"] = ref["strategies"]
     base["pricing"]["recommended_index"] = 1
     base["scatter"]["callouts"] = []
@@ -562,9 +562,9 @@ def case_buyer_cma(pdf, checks):
         "locality": f"{h['city']}, {h['state']} {h['zip']} · Kestrel Point · {h['county']} County · MLS {h['mls']}"})
     base["bottom_line"].update(ref["bottom_line"])
     base["offer_plan"].update(ref["offer_plan"])
-    base["comps"]["cards"] = [{**c, "meta": "", "bullets": ["Reference comp."]} for c in ref["comps"]]
+    base["comps"]["cards"] = [{**c, "bullets": ["Reference comp."]} for c in ref["comps"]]
     base["scatter"]["callouts"] = []
-    base["history"] = {"heading": "Price History", "intro": "The full history:", "after": "", "events": history_events(h)}
+    base["history"] = {"events": history_events(h)}
     base["costs"]["taxes"].update(ref["taxes"])
     base["costs"]["taxes"].pop("purchase_price", None)  # CMA-315: the skill's default, taxes at the payment's price
     base["costs"]["payment"].update({**ref["payment"], "tax_jurisdiction_index": 0})
@@ -628,7 +628,8 @@ def case_buyer_cma(pdf, checks):
         f"({comp['payments']['price_display']}). The skill figures taxes at the payment's price, the target, so with "
         "Claude's own plan the dollars move with its target; the report's tax table names that price:", "",
         table(["Jurisdiction", "Basis", "A Year", "A Month"],
-              [[t["label"], t["basis"], t["annual_display"], t["monthly_display"]] for t in comp["taxes"]]), "",
+              [[t["label"], f'{t["total_mills"]:.4f} mills' if t["total_mills"] is not None else "estimate",
+                t["annual_display"], t["monthly_display"]] for t in comp["taxes"]]), "",
         f"The listing shows the seller's {comp['current_bill_display']} bill; the report must say the buyer's bill "
         "resets at the purchase price.", "",
     ]

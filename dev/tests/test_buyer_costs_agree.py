@@ -70,7 +70,8 @@ class SameCashToClose(unittest.TestCase):
         R["costs"]["credit_scenarios"]["closing_cost_pct"] = 0.04
         C = run_cma(R)
         self.assertEqual(C["payments"]["rows"][0]["closing_costs"], round(C["payments"]["price"] * 0.04))
-        self.assertTrue(C["payments"]["closing"]["given"])
+        self.assertIn("closing_costs", C["note_keys"])  # the agent's share: a note, not an estimate to confirm
+        self.assertNotIn("closing_costs", C["assumption_keys"])
 
 
 class SameInsurance(unittest.TestCase):
@@ -92,7 +93,8 @@ class SameInsurance(unittest.TestCase):
         self.assertEqual(strategy.monthly_payment(B, costs, pay["price"]), round(row["total"]))
         self.assertEqual(round(pay["price"] * 0.05) + strategy.closing_costs(B, pay["price"]), round(row["cash_to_close"]))
         tax = next(t for t in self.C["taxes"] if t.get("total_mills") == self.C["handoff"]["subject"]["total_mills"])
-        self.assertAlmostEqual(strategy.property_tax(B, costs, pay["price"])["annual"], tax["annual"], places=2)
+        self.assertAlmostEqual(strategy.property_tax(B, costs, pay["price"])["annual"], tax["annual_exact"], places=2)
+        self.assertEqual(tax["annual"], round(tax["annual_exact"]))  # the CMA prints it to the dollar
         self.assertIsNone(B["buyer"].get("insurance_quote"))  # an estimate carried over is never a quote in hand
         self.assertEqual(offer(self.R, self.C["handoff"], insurance_annual=4100)["B"]["costs"]["insurance_annual"], 4100)
 
@@ -117,7 +119,7 @@ class SameInsurance(unittest.TestCase):
         price = C["payments"]["price"]
         self.assertEqual(C["payments"]["insurance_annual"], cma_compute.finance.insurance_estimate(price, market, 1972)["annual"])
         self.assertTrue(C["payments"]["insurance"]["estimated"])
-        self.assertEqual(C["placeholders"]["insurance_annual"], cma_compute.money(C["payments"]["insurance_annual"]))
+        self.assertTrue(any(cma_compute.money(C["payments"]["insurance_annual"]) in n for n in C["notes"]))  # said once
         R = cma_report(estimate_insurance=True)
         R["costs"]["insurance_rate"] = 0.012  # the agent's rate still sets the buyer's estimate
         C = run_cma(R)

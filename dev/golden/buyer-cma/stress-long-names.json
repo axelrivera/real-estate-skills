@@ -1,9 +1,235 @@
 {
- "adjusted_max": 493900,
+ "adjusted_max": 495300,
  "adjusted_min": 435900,
+ "assumption_keys": [
+  "tax_basis",
+  "tax_assessed",
+  "insurance",
+  "mortgage_insurance"
+ ],
+ "assumptions": {
+  "count": 4
+ },
  "cash_fit": null,
+ "chat_notes": {
+  "count": 7
+ },
+ "competition": {
+  "rows": [
+   [
+    "No",
+    "91"
+   ],
+   [
+    "Yes",
+    "57"
+   ],
+   [
+    "Yes",
+    "302"
+   ],
+   [
+    "Yes",
+    "51"
+   ],
+   [
+    "No",
+    "63"
+   ],
+   [
+    "Yes",
+    "9"
+   ],
+   [
+    "Yes",
+    "14"
+   ],
+   [
+    "Expired",
+    "No",
+    "114"
+   ]
+  ]
+ },
  "competition_estimates": {
   "count": 0
+ },
+ "comps": {
+  "cards": [
+   {
+    "adjusted": 493900,
+    "adjusted_k": "$494K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": "2026-04-24",
+    "lines": [
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 484000,
+    "adjusted_k": "$484K",
+    "bullets": {
+     "count": 2
+    },
+    "close_date": "2026-06-26",
+    "lines": [
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 469800,
+    "adjusted_k": "$470K",
+    "bullets": {
+     "count": 2
+    },
+    "close_date": "2026-08-20",
+    "lines": [
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     [
+      "Renovation"
+     ],
+     [
+      "Size"
+     ]
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 440200,
+    "adjusted_k": "$440K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": "2026-04-27",
+    "lines": [
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 435900,
+    "adjusted_k": "$436K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": "2026-06-18",
+    "lines": [
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 495300,
+    "adjusted_k": "$495K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": null,
+    "lines": [
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     }
+    ],
+    "meta": {
+     "count": 1
+    }
+   }
+  ],
+  "subject_row": {
+   "count": 4
+  },
+  "table": [
+   [
+    "$0"
+   ],
+   [
+    "$0"
+   ],
+   [
+    "$0"
+   ],
+   [
+    "$500"
+   ],
+   {
+    "count": 4
+   },
+   {
+    "count": 4
+   }
+  ]
  },
  "comps_table": [
   {},
@@ -13,89 +239,254 @@
   {},
   {}
  ],
+ "costs": {
+  "credit": {
+   "cash_flags": {
+    "count": 3
+   },
+   "cash_row": 7,
+   "credit_flags": {
+    "count": 3
+   },
+   "header": {
+    "count": 4
+   },
+   "rows": [
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    [
+     "+$42",
+     "+$82"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ]
+  },
+  "payment": {
+   "alt_row": 10,
+   "cash_flags": {
+    "count": 3
+   },
+   "cash_row": 2,
+   "header": {
+    "count": 4
+   },
+   "rows": [
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    [
+     "$632",
+     "$632",
+     "$632"
+    ],
+    [
+     "$533",
+     "$533",
+     "$533"
+    ],
+    {
+     "count": 4
+    },
+    [
+     "$188",
+     "$210",
+     "$0"
+    ],
+    [
+     "$0",
+     "$0",
+     "$0"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "total_row": 9
+  },
+  "taxes": {
+   "rows": [
+    [
+     "$228"
+    ],
+    {
+     "count": 3
+    },
+    {
+     "count": 3
+    }
+   ]
+  }
+ },
  "credit": {
   "buydown": {
-   "cost": 10272.6,
+   "cost": 10300,
    "covered": false,
    "credit": 10000,
-   "full": 4258.61,
+   "full": 4258,
    "price": 465000,
-   "year1": 3692.38,
-   "year2": 3968.78
+   "year1": 3692,
+   "year2": 3968
   },
-  "closing_cost_pct": 0.03,
   "closing_costs_given": false,
-  "closing_pct_given": true,
   "columns": [
    {
     "appraisal_room": 21900,
     "bb_short": 0,
-    "cap": 13650.0,
-    "cash": 36400.0,
+    "cap": 13650,
+    "cash": 36400,
     "cash_left": null,
-    "cash_saved": 0.0,
+    "cash_lines": [
+     [
+      "down",
+      22750
+     ],
+     [
+      "closing",
+      13650
+     ]
+    ],
+    "cash_saved": 0,
     "cash_short": null,
     "closing_costs": 13650,
     "credit": 0,
-    "extra": 0.0,
-    "loan": 432250.0,
+    "credit_applied": 0,
+    "down": 22750,
+    "extra": 0,
+    "loan": 432250,
     "loan_taxes": 0,
     "net": 455000,
     "over_cap": false,
     "over_costs": false,
     "payback_years": null,
-    "payment": 4177.12,
-    "pi": 2861.27,
+    "payment": 4176,
+    "pi": 2861,
     "price": 455000
    },
    {
     "appraisal_room": 16900,
     "bb_short": 0,
-    "cap": 13800.0,
-    "cash": 31800.0,
+    "cap": 13800,
+    "cash": 31800,
     "cash_left": null,
-    "cash_saved": 4600.0,
+    "cash_lines": [
+     [
+      "down",
+      23000
+     ],
+     [
+      "closing",
+      13800
+     ],
+     [
+      "credit",
+      -5000
+     ]
+    ],
+    "cash_saved": 4600,
     "cash_short": null,
     "closing_costs": 13800,
     "credit": 5000,
-    "extra": 40.74,
-    "loan": 437000.0,
+    "credit_applied": 5000,
+    "down": 23000,
+    "extra": 42,
+    "loan": 437000,
     "loan_taxes": 0,
     "net": 455000,
     "over_cap": false,
     "over_costs": false,
-    "payback_years": 9.41,
-    "payment": 4217.87,
-    "pi": 2892.71,
+    "payback_years": 9.13,
+    "payment": 4218,
+    "pi": 2893,
     "price": 460000
    },
    {
     "appraisal_room": 11900,
     "bb_short": 0,
-    "cap": 13950.0,
-    "cash": 27200.0,
+    "cap": 13950,
+    "cash": 27200,
     "cash_left": null,
-    "cash_saved": 9200.0,
+    "cash_lines": [
+     [
+      "down",
+      23250
+     ],
+     [
+      "closing",
+      13950
+     ],
+     [
+      "credit",
+      -10000
+     ]
+    ],
+    "cash_saved": 9200,
     "cash_short": null,
     "closing_costs": 13950,
     "credit": 10000,
-    "extra": 81.48,
-    "loan": 441750.0,
+    "credit_applied": 10000,
+    "down": 23250,
+    "extra": 82,
+    "loan": 441750,
     "loan_taxes": 0,
     "net": 455000,
     "over_cap": false,
     "over_costs": false,
-    "payback_years": 9.41,
-    "payment": 4258.61,
-    "pi": 2924.15,
+    "payback_years": 9.35,
+    "payment": 4258,
+    "pi": 2924,
     "price": 465000
    }
   ],
   "down_pct": 0.05,
-  "loan_tax_labels": {
-   "count": 0
+  "per_5k": {
+   "cash": 4600,
+   "monthly": 42
   },
-  "prepaids": false,
   "program": "conventional",
   "seller_cost_parts": {
    "count": 1
@@ -105,7 +496,7 @@
  "credit_alt": {
   "base_credit": 0,
   "base_price": 455000,
-  "cash_saved": 9200.0,
+  "cash_saved": 9200,
   "credit": 10000,
   "price": 465000
  },
@@ -119,12 +510,12 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 493900,
+    "adjusted": 495300,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 486900,
+    "adjusted": 493900,
     "seller_paid": 0,
     "sold_price": 505500
    },
@@ -203,10 +594,9 @@
  "history": {
   "active_days": 119,
   "counted_since_sale": null,
-  "counted_since_sale_display": null,
   "current_price": 474900,
   "display": {
-   "price_cut_count": "4",
+   "counted_since_sale": null,
    "price_cut_pct": "4.0%"
   },
   "events": 12,
@@ -322,52 +712,153 @@
   ],
   "vs_last_contract": 400
  },
+ "history_section": {
+  "lines": {
+   "count": 3
+  },
+  "rows": [
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   }
+  ]
+ },
+ "market": {
+  "bullets": {
+   "count": 4
+  },
+  "columns": {
+   "count": 3
+  },
+  "rows": [
+   [
+    "24",
+    "9"
+   ],
+   {
+    "count": 3
+   },
+   [
+    "98.7%",
+    "93.9%"
+   ],
+   {
+    "count": 3
+   },
+   [
+    "50%",
+    "89%"
+   ],
+   {
+    "count": 3
+   }
+  ]
+ },
  "market_notes": {
   "count": 1
  },
- "market_rows": [
-  [
-   "25",
-   "10"
-  ],
-  {
-   "count": 3
-  },
-  [
-   "100%",
-   "96.5%"
-  ],
-  [
-   "9",
-   "18"
-  ],
-  [
-   "56%",
-   "80%"
-  ],
-  {
+ "market_stats": {
+  "active_count": 14,
+  "median_days_recent": 22.0,
+  "median_seller_paid_recent": 12100.0,
+  "months_supply": 3.5,
+  "sale_to_original_list_recent": 0.9386,
+  "share_with_seller_paid_costs_recent": 0.889,
+  "split_date": "2026-07-01"
+ },
+ "median_adjusted": 476900.0,
+ "median_shown": 476900,
+ "method": {
+  "lines": {
    "count": 3
   }
+ },
+ "note_keys": [
+  "tax_basis",
+  "tax_assessed",
+  "insurance",
+  "mortgage_insurance",
+  "tax_millage",
+  "tax_file",
+  "tax_portability",
+  "closing_costs",
+  "flood",
+  "credit_limits",
+  "seller_cost"
  ],
- "median_adjusted": 476900.0,
+ "notes": {
+  "count": 11
+ },
+ "notices": {
+  "count": 3
+ },
+ "offer": {
+  "bullets": {
+   "count": 3
+  }
+ },
+ "offer_plan": {
+  "ladder": [
+   {
+    "count": 3
+   },
+   [
+    "Target"
+   ],
+   {
+    "count": 3
+   }
+  ],
+  "opening": 455000,
+  "target": 462500,
+  "target_high": 465000,
+  "target_low": 460000,
+  "walk_away": 470000
+ },
  "ok": true,
  "payments": {
   "alt_jurisdiction": {
-   "delta_monthly": -137.26,
-   "short": "Unincorporated"
+   "short": "Unincorporated",
+   "totals": [
+    4201,
+    4324,
+    3542
+   ]
   },
   "buyer_cash": null,
   "buyer_cash_display": null,
-  "closing": {
-   "given": true,
-   "lender_amount": null,
-   "loan_tax_labels": {
-    "count": 0
-   },
-   "pct": 0.03,
-   "pct_display": "3%",
-   "prepaids": false
-  },
   "flood": {
    "annual": null,
    "required": "citizens_value",
@@ -381,70 +872,177 @@
    "source": "market"
   },
   "insurance_annual": 6400.0,
-  "per_10k": 81.48,
+  "per_10k": 81,
+  "per_10k_display": "$81",
   "price": 474900,
   "price_basis": "asking",
   "rate": 6.95,
+  "rate_display": "6.95%",
   "rows": [
    {
     "assumed": false,
-    "cash_down": 23745.0,
+    "bb_short": 0,
+    "cash_down": 23745,
     "cash_left": null,
     "cash_left_display": null,
+    "cash_lines": [
+     [
+      "down",
+      23745
+     ],
+     [
+      "closing",
+      14247
+     ]
+    ],
     "cash_short": null,
     "cash_short_display": null,
-    "cash_to_close": 37992.0,
+    "cash_to_close": 37992,
     "closing_costs": 14247,
+    "down_pct": 0.05,
     "down_short": null,
     "flood": null,
     "hoa": 0,
-    "ins": 533.33,
+    "ins": 533,
     "lender_closing_costs": false,
     "loan": 451155.0,
-    "mi": 187.98,
-    "pi": 2986.41,
-    "tax": 631.55,
-    "total": 4339.28
+    "mi": 188,
+    "monthly": [
+     [
+      "pi",
+      2986
+     ],
+     [
+      "tax",
+      632
+     ],
+     [
+      "ins",
+      533
+     ],
+     [
+      "mi",
+      188
+     ],
+     [
+      "hoa",
+      0
+     ]
+    ],
+    "pi": 2986,
+    "program": "conventional",
+    "tax": 632,
+    "total": 4339
    },
    {
     "assumed": false,
-    "cash_down": 16621.5,
+    "bb_short": 0,
+    "cash_down": 16622,
     "cash_left": null,
     "cash_left_display": null,
+    "cash_lines": [
+     [
+      "down",
+      16622
+     ],
+     [
+      "closing",
+      14247
+     ]
+    ],
     "cash_short": null,
     "cash_short_display": null,
-    "cash_to_close": 30868.5,
+    "cash_to_close": 30869,
     "closing_costs": 14247,
+    "down_pct": 0.035,
     "down_short": null,
     "flood": null,
     "hoa": 0,
-    "ins": 533.33,
+    "ins": 533,
     "lender_closing_costs": false,
     "loan": 466298.37,
-    "mi": 210.04,
-    "pi": 3086.65,
-    "tax": 631.55,
-    "total": 4461.58
+    "mi": 210,
+    "monthly": [
+     [
+      "pi",
+      3087
+     ],
+     [
+      "tax",
+      632
+     ],
+     [
+      "ins",
+      533
+     ],
+     [
+      "mi",
+      210
+     ],
+     [
+      "hoa",
+      0
+     ]
+    ],
+    "pi": 3087,
+    "program": "fha",
+    "tax": 632,
+    "total": 4462
    },
    {
     "assumed": false,
-    "cash_down": 94980.0,
+    "bb_short": 0,
+    "cash_down": 94980,
     "cash_left": null,
     "cash_left_display": null,
+    "cash_lines": [
+     [
+      "down",
+      94980
+     ],
+     [
+      "closing",
+      14247
+     ]
+    ],
     "cash_short": null,
     "cash_short_display": null,
-    "cash_to_close": 109227.0,
+    "cash_to_close": 109227,
     "closing_costs": 14247,
+    "down_pct": 0.2,
     "down_short": null,
     "flood": null,
     "hoa": 0,
-    "ins": 533.33,
+    "ins": 533,
     "lender_closing_costs": false,
     "loan": 379920.0,
-    "mi": 0.0,
-    "pi": 2514.87,
-    "tax": 631.55,
-    "total": 3679.76
+    "mi": 0,
+    "monthly": [
+     [
+      "pi",
+      2515
+     ],
+     [
+      "tax",
+      632
+     ],
+     [
+      "ins",
+      533
+     ],
+     [
+      "mi",
+      0
+     ],
+     [
+      "hoa",
+      0
+     ]
+    ],
+    "pi": 2515,
+    "program": "conventional",
+    "tax": 632,
+    "total": 3680
    }
   ],
   "tax_basis": {
@@ -457,34 +1055,69 @@
   },
   "tax_index": 1
  },
- "placeholders": {
-  "comps_count": "six",
-  "comps_since_split": "one",
-  "comps_with_age": "one",
-  "comps_with_condition": "two",
-  "comps_with_credits": "three",
-  "comps_with_garage": "zero",
-  "comps_with_location": "zero",
-  "comps_with_lot": "two",
-  "comps_with_other": "zero",
-  "comps_with_pool": "zero",
-  "comps_with_size": "five",
-  "comps_with_time": "five",
-  "comps_with_view": "one",
-  "credit_monthly_per_5k": "$41",
-  "price_cut_count": "4",
-  "price_cut_pct": "4.0%",
-  "time_cutoff": "July",
-  "time_rate": "1%"
- },
  "range": {
+  "cap": 28614.0,
   "high": 480000,
-  "low": 455000
+  "low": 455000,
+  "midpoint": 467500,
+  "width": 25000
  },
+ "sample": true,
+ "scatter": {
+  "callouts": [
+   {
+    "side": "left"
+   },
+   {
+    "side": "right"
+   }
+  ],
+  "subject_label_pos": "left",
+  "trend": {
+   "side": "above"
+  }
+ },
+ "stage": "full",
  "subject": {
-  "list_price": 474900
+  "facts": [
+   {
+    "count": 2
+   },
+   [
+    "$257"
+   ],
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   },
+   [
+    "Lot"
+   ],
+   [
+    "Built"
+   ],
+   [
+    "Pool"
+   ],
+   [
+    "Garage"
+   ],
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "list_price": 474900,
+  "sqft": 1849,
+  "summary_facts": [
+   "pool"
+  ]
  },
- "summary_page": {
+ "summary": {
   "check_first": [
    {
     "count": 2
@@ -496,13 +1129,56 @@
     "count": 2
    }
   ],
-  "key_stats": [
+  "comps": [
+   {
+    "adjusted": 493900,
+    "adjusted_k": "$494K"
+   },
+   {
+    "adjusted": 484000,
+    "adjusted_k": "$484K"
+   },
+   {
+    "adjusted": 469800,
+    "adjusted_k": "$470K"
+   },
+   {
+    "adjusted": 440200,
+    "adjusted_k": "$440K"
+   },
+   {
+    "adjusted": 435900,
+    "adjusted_k": "$436K"
+   },
+   {
+    "adjusted": 495300,
+    "adjusted_k": "$495K"
+   }
+  ],
+  "cost_rows": [
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   }
+  ],
+  "tiles": [
    {
     "count": 2
    },
    [
-    "96.5%"
+    "93.9%"
    ],
+   {
+    "count": 2
+   },
    {
     "count": 2
    }
@@ -513,22 +1189,28 @@
  },
  "taxes": [
   {
-   "annual": 5931.54,
+   "annual": 5932,
+   "annual_exact": 5931.54,
    "estimated": false,
-   "monthly_display": "$492",
+   "monthly": 494,
+   "monthly_display": "$494",
    "problem": null,
    "school_mills": 5.25,
    "short": "Unincorporated",
-   "total_mills": 13.68
+   "total_mills": 13.68,
+   "year": null
   },
   {
-   "annual": 7578.61,
+   "annual": 7579,
+   "annual_exact": 7578.61,
    "estimated": false,
-   "monthly_display": "$633",
+   "monthly": 632,
+   "monthly_display": "$632",
    "problem": null,
    "school_mills": 5.25,
    "short": "City",
-   "total_mills": 17.57
+   "total_mills": 17.57,
+   "year": null
   }
  ],
  "time_adjustment": {
@@ -538,7 +1220,7 @@
   "rate": 0.01,
   "rate_display": "1%",
   "undated": {
-   "count": 0
+   "count": 1
   }
  },
  "trend": {
@@ -546,10 +1228,18 @@
   "r2": 0.8286,
   "r2_key": "r2_most"
  },
- "warning_keys": {
-  "count": 0
- },
+ "warning_keys": [
+  "time_undated"
+ ],
  "warnings": {
-  "count": 0
+  "count": 1
+ },
+ "watch": {
+  "items": {
+   "count": 7
+  },
+  "questions": {
+   "count": 6
+  }
  }
 }

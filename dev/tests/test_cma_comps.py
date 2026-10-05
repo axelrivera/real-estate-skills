@@ -9,7 +9,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import load  # noqa: E402
 from test_seller_cma import card, compute, run, tanager  # noqa: E402
 
-buyer = load("buyer-cma", "compute")[0]
 cma, finance = compute.cma, compute.finance
 
 
@@ -151,9 +150,6 @@ class Formats(unittest.TestCase):
         self.assertEqual(cma.unspaced_range("July - Mid-Sept"), "July–Mid-Sept")
         self.assertEqual(cma.history_date_labels([date(2015, 3, 31), date(2026, 8, 14)], 2026), ["Mar 31, 2015", "Aug 14, 2026"])
         self.assertEqual(cma.history_date_labels([date(2026, 8, 14)], 2026), ["Aug 14"])
-        rows = buyer.market_rows({"market": {"columns": ["", "A", "B"], "rows": [["Homes Sold", "7", "8"]]}},
-                                 [469250, 451500])
-        self.assertEqual(rows[1], ["Median Sale Price", "$469,250", "$451,500"])
 
 
 if __name__ == "__main__":

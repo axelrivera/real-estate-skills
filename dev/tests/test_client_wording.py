@@ -110,7 +110,7 @@ class Rules(unittest.TestCase):
     def test_placeholders_the_skill_fills_pass(self):
         data = {"why": ["Adjusted comps center on {median_adjusted}.", "{active_days} on the market"]}
         self.assertTrue(problems(data))
-        self.assertEqual(problems(data, placeholders=True), [])  # buyer-cma and seller-cma fill and name their own
+        self.assertEqual(problems(data, placeholders=True), [])  # seller-cma fills and names its own
 
     def test_agent_only_text_may_use_jargon_but_not_tool_words(self):
         data = {"worksheet": {"note": "95% LTV, EMD in 3 days"}, "summary": "95% LTV"}
@@ -198,7 +198,7 @@ class OtherFiles(unittest.TestCase):
 
     def test_fixtures_and_samples_pass(self):
         root = os.path.join(HERE, "..", "..")
-        fills = {"buyer-cma", "seller-cma"}
+        fills = {"seller-cma"}  # buyer-cma writes every figure itself: its fixtures carry no {placeholders}
         for folder in ("fixtures", "samples"):
             for dirpath, _, names in os.walk(os.path.join(root, "dev", folder)):
                 for n in names:
