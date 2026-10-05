@@ -115,13 +115,13 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `price` | number | **required** | — |
 | `financing` | `cash` `conventional` `fha` `va` `usda` | conventional | high |
 | `down_pct` | 0–1 | from `loan_amount` and `price` when both are given; else FHA .035, VA/USDA 0, conventional .10 | med |
-| `approval` | `pof_verified` `full_uw` `du_approved` `preapproval` `prequal` `none` | preapproval (financed) | med |
+| `approval` | `pof_verified` `full_uw` `du_approved` `preapproval` `prequal` `none` (any other value stops the run) | not scored; the net and flags read a pre-approval (financed) | med |
 | `approval_expires` | the expiration date on the pre-approval letter (`YYYY-MM-DD`). Before closing: a Med issue. Text that isn't a date ("30 days from issue") is recorded as an assumption, not checked | none | low |
 | `proof_of_funds` | $ the buyer's proof of funds verifies (bank letter or statement). Below the down payment plus any appraisal gap the buyer covers, it's a High issue | none | — |
 | `approval_documented` | `true` when the pre-approval letter says the lender reviewed the buyer's credit report, income and asset documentation: the loan officer is asked only about automated underwriting | false | — |
 | `approval_max_price`, `approval_max_loan` | the caps printed on the pre-approval letter. A price (or loan) above them is a High issue, and a counter above the price cap asks for an updated letter | none | — |
 | `lender_called` | bool | false → approval score capped at 3 | — |
-| `deposit` | total escrow $ | unknown → scored 3, and always in `to_confirm` | med |
+| `deposit` | total escrow $ | unknown: Deposit Strength not scored, and always in `to_confirm` | med |
 | `seller_concessions` | $; `0` when the contract or offer you read has no seller-paid closing costs or concessions | 0 | **high** |
 | `buyer_broker_pct` or `buyer_broker_amount` | | seller's offered %, else 2.5% assumed | **high** when the seller offered, med when assumed |
 | `home_warranty` | $ seller pays | 0 | — |
@@ -154,8 +154,8 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `escalation` | `{cap, increment, proof, contract_form, paid_in_cash, proof_of_funds}`; the offer is scored at the price it reaches against the other offers, and the counter goes up to a cap above the price (`counter-rules.md`, rule 2). `contract_form` is the contract box the Escalation Addendum checks (`as_is` or `standard`): one naming the other form is a High issue (`escalation_form`). `paid_in_cash`: `true` when the added amount is paid in cash at closing (EAC-1 (a), proof of funds attached), `false` when it's financed (b); left out on EAC-1, the form's default (cash). Cash is checked against `proof_of_funds` (the proof attached to the addendum, when it's a separate document, else the offer's), financed or unstated against the pre-approval letter; a flag only when that doesn't cover the cap. `proof` is a short string: how the escalation clause says a competing offer is proven, as written ("redacted copy of the competing offer's signature page and price terms"); leave it out when the clause says nothing (the script then asks). EAC-1 states how a competing offer is proven (a redacted copy from the seller), so on EAC-1 `proof` isn't needed and it isn't asked | none | — |
 | `personal_property`, `occupancy`, `other_terms` | the contract's terms as written (printed as they are in the Terms Review) | — | — |
 | `insurance_quote` | `true` (a quote in hand, scored), `false` (none yet), or `"planned"` (the buyer's agent says one is coming: noted, not scored until it's in hand) | unknown | — |
-| `agent_track` | `strong` `average` `weak` | scored 3 | — |
-| `agent_note` | the agent's read of the buyer's agent for the scorecard, in words (no counts or dates) | — | — |
+
+A fact a certainty criterion reads that the offer leaves out (the financing, a conventional down payment, the approval, the deposit, the closing date) leaves that criterion Not scored (`scoring-rubric.md`, Missing Facts). `scores`, `agent_track` and `agent_note` are retired: every score follows the rubric from the facts above, and a file that still has one stops the run naming the field. A score changes only when a fact it reads is corrected.
 
 ### Offer Names
 
@@ -165,7 +165,6 @@ A single-offer review carries the name too (under the headline and in the PDF fi
 
 ### Agent Overrides (per Offer)
 
-- `scores`: `{"appraisal": {"score": 2, "why": "Appraisers here run low"}, "agent": 5}`. Keys: `financing` `approval` `appraisal` `contingency` `deposit` `timeline` `property` `agent`. Marked "Agent" in the report.
 - `counter`: `{"changes": {term: value}}`, only the terms the agent sets: `price`, `seller_concessions` (or `seller_credit`), `appraisal_gap`, `deposit` (dollars); `inspection_days`, `loan_approval_days`, `aga_valuation_days`, `sale_contingency_days` (whole days); `buyer_broker_pct` (a fraction); `home_warranty` (what the seller pays, 0 = the buyer pays); `closing_date` (`YYYY-MM-DD`); `time_for_acceptance` (`YYYY-MM-DD HH:MM`). The engine writes every row from them: a term equal to the offer's drops its row, a different one gets a row ("Set by the seller" when the rules wouldn't have set it), and the terms that follow the price (gap coverage, the deposit, the updated pre-approval) follow the agent's price. The net and certainty recompute from the same terms. Never write the table's wording: `counter.rows` and terms outside `changes` stop the render, each named as `field: problem → fix`.
 - `counter.stance`: how the counter sets the price and concessions, `firm`, `meet_partway` or `terms_only` (`counter-rules.md`, Counter Stance). Leave it out to use the stance the engine suggests (each offer's `counter_stance.suggested`, and the counter's stance in the output); set it when the seller wants another, with `counter.stance_reason` in words (the market, the seller's goal, the buyer's terms; no figures), required when it differs from the suggestion. `counter.changes` still pins single terms over the stance. Any other value stops the render, naming the three.
 - `recommendation`: `ACCEPT` / `COUNTER` / `BACKUP` / `DECLINE` (any other value stops the render).
@@ -185,7 +184,7 @@ Market costs come from the listing's state and county (`local-costs.md`): Florid
 
 ## Words Only, Figures from the Script
 
-The report prints every price, amount, date and count itself, so the text you write never states one: `ranking_reason`, `priority_note`, `label`, `agent_note`, `scores.*.why`, `checklist.*.note`, `counter.stance_reason` and `listing.hoa_conflict` as text are words only, and the `issue`, `fix` and `request` of `flags` and `contract_issues` say what's wrong without restating the contract's numbers (a contract reference such as "paragraph 1", "Para. 9(c)" or "Rider GG" is fine). `review.py` and `render.py` stop on a figure in any of them and name each field to rewrite. Contract terms read as written (`other_terms`, `personal_property`, `occupancy`) are data and keep their figures.
+The report prints every price, amount, date and count itself, so the text you write never states one: `ranking_reason`, `priority_note`, `label`, `checklist.*.note`, `counter.stance_reason` and `listing.hoa_conflict` as text are words only, and the `issue`, `fix` and `request` of `flags` and `contract_issues` say what's wrong without restating the contract's numbers (a contract reference such as "paragraph 1", "Para. 9(c)" or "Rider GG" is fine). `review.py` and `render.py` stop on a figure in any of them and name each field to rewrite. Contract terms read as written (`other_terms`, `personal_property`, `occupancy`) are data and keep their figures.
 
 ## Offers Over Time
 

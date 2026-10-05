@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import strategy as ST  # noqa: E402
-from _shared import design, handoff, layout, offer_engine as oe, render  # noqa: E402
+from _shared import design, fmt, handoff, layout, offer_engine as oe, render  # noqa: E402
 
 Raw, Col = layout.Raw, layout.Col
 L_ = ST.L_
@@ -194,7 +194,8 @@ def score_table(sc, labels):
     cols = ([Col("label", L_["th_criterion"], cls="crit2"), Col("weight", L_["th_weight"], align="num")]
             + [Col(i, lab, cls="c sc") for i, lab in enumerate(labels)] + [Col("why", L_["th_rec_why"], cls="sm")])
     rows = [{"label": r["label"], "weight": r["weight"], "why": r["why"],
-             **{i: Raw(f'<span class="s{v}">{v}</span>') for i, v in enumerate(r["scores"])}} for r in sc["rows"]]
+             **{i: fmt.EMPTY if v is None else Raw(f'<span class="s{v}">{v}</span>') for i, v in enumerate(r["scores"])}}
+            for r in sc["rows"]]
     tt = sc["total"]
     total = {"label": tt["label"], "weight": tt["weight"],
              **{i: Raw(f'<b class="{BAND_TEXT.get(b, "")}">{v}</b>') for i, (v, b) in enumerate(zip(tt["scores"], tt["bands"]))}}

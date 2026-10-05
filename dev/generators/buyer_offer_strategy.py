@@ -117,7 +117,7 @@ def generate(seed):
         BU["max_payment"] = int(round(lp * (0.0085 if tight else 0.012), -2))
     for k, v in (("approval", rng.choice(("preapproval", "du_approved", "full_uw"))), ("lender_called", True),
                  ("lender_confirmed_timeline", True), ("insurance_quote", rng.choice((True, False, "planned"))),
-                 ("agent_track", rng.choice(("strong", "average"))), ("buyer_broker_agreement_pct", rng.choice((0.025, 0.03))),
+                 ("buyer_broker_agreement_pct", rng.choice((0.025, 0.03))),
                  ("needs_sale", True)):
         if _maybe(rng, 0.3 if k != "needs_sale" else 0.1):
             BU[k] = v

@@ -44,7 +44,7 @@
      "count": 4
     }
    ],
-   "counter_score": 63,
+   "counter_score": 70,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -304,7 +304,7 @@
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 334095.0,
+   "rank_value": 336818.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -325,26 +325,32 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
-     "approval": 3,
-     "contingency": 2,
-     "deposit": 3,
+     "approval": null,
+     "contingency": null,
+     "deposit": null,
      "financing": 2,
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
+    "total": 70,
+    "unscored": {
+     "approval": [
+      "approval"
+     ],
+     "contingency": [
+      "contract_form"
+     ],
+     "deposit": [
+      "deposit"
+     ]
     },
-    "total": 63
+    "weight": 60,
+    "why": {
+     "approval": null,
+     "contingency": null,
+     "deposit": null
+    }
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -421,6 +427,12 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": [
+    "approval",
+    "contract_form",
+    "deposit",
+    "down_pct"
+   ],
    "walkaway_days": 15
   }
  ],
@@ -466,11 +478,17 @@
   {
    "field": "approval",
    "impact": "med",
+   "unscores": [
+    "approval"
+   ],
    "value": "preapproval"
   },
   {
    "field": "deposit",
    "impact": "med",
+   "unscores": [
+    "deposit"
+   ],
    "value": "unknown"
   },
   {
@@ -487,6 +505,9 @@
   {
    "field": "contract_form",
    "impact": "high",
+   "unscores": [
+    "contingency"
+   ],
    "value": "as_is"
   },
   {
@@ -591,6 +612,9 @@
   {
    "field": "contract_form",
    "impact": "high",
+   "unscores": [
+    "contingency"
+   ],
    "value": "as_is"
   },
   {
@@ -620,11 +644,17 @@
   {
    "field": "approval",
    "impact": "med",
+   "unscores": [
+    "approval"
+   ],
    "value": "preapproval"
   },
   {
    "field": "deposit",
    "impact": "med",
+   "unscores": [
+    "deposit"
+   ],
    "value": "unknown"
   },
   {
@@ -705,7 +735,7 @@
      "count": 4
     }
    ],
-   "counter_score": 63,
+   "counter_score": 70,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -965,7 +995,7 @@
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 334095.0,
+   "rank_value": 336818.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -986,26 +1016,32 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
-     "approval": 3,
-     "contingency": 2,
-     "deposit": 3,
+     "approval": null,
+     "contingency": null,
+     "deposit": null,
      "financing": 2,
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
+    "total": 70,
+    "unscored": {
+     "approval": [
+      "approval"
+     ],
+     "contingency": [
+      "contract_form"
+     ],
+     "deposit": [
+      "deposit"
+     ]
     },
-    "total": 63
+    "weight": 60,
+    "why": {
+     "approval": null,
+     "contingency": null,
+     "deposit": null
+    }
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1082,6 +1118,12 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": [
+    "approval",
+    "contract_form",
+    "deposit",
+    "down_pct"
+   ],
    "walkaway_days": 15
   }
  ],
@@ -1130,7 +1172,7 @@
      "count": 4
     }
    ],
-   "counter_score": 63,
+   "counter_score": 70,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1390,7 +1432,7 @@
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 334095.0,
+   "rank_value": 336818.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -1411,26 +1453,32 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
-     "approval": 3,
-     "contingency": 2,
-     "deposit": 3,
+     "approval": null,
+     "contingency": null,
+     "deposit": null,
      "financing": 2,
      "property": 3,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
+    "total": 70,
+    "unscored": {
+     "approval": [
+      "approval"
+     ],
+     "contingency": [
+      "contract_form"
+     ],
+     "deposit": [
+      "deposit"
+     ]
     },
-    "total": 63
+    "weight": 60,
+    "why": {
+     "approval": null,
+     "contingency": null,
+     "deposit": null
+    }
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1507,6 +1555,12 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": [
+    "approval",
+    "contract_form",
+    "deposit",
+    "down_pct"
+   ],
    "walkaway_days": 15
   }
  ],

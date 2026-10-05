@@ -106,7 +106,7 @@ class Phrases(unittest.TestCase):
                 o.pop("down_pct", None)
             R = offer_engine.analyze(data)
             self.assertEqual(prose.issues(R), [], fin)
-            reasons = " ".join(o["score"]["why"]["financing"] for o in R["offers"])
+            reasons = " ".join(o["score"]["why"]["financing"] or "" for o in R["offers"])
             self.assertNotIn("profile", reasons)
             self.assertNotIn("cushion", reasons)
 

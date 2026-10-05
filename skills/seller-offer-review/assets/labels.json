@@ -85,7 +85,7 @@
  "th_what_happens": "What Happens",
 
  "threat": {"appraisal": "Appraisal", "contingency": "Contingencies", "timeline": "Closing date", "approval": "Loan approval",
-            "financing": "Financing", "deposit": "Low deposit", "property": "Insurance / condition", "agent": "Buyer's agent"},
+            "financing": "Financing", "deposit": "Low deposit", "property": "Insurance / condition"},
  "threat_none": "None major",
  "threat_issue": "{threat} ({why}).",
 
@@ -425,8 +425,8 @@
  "th_score": "Score",
  "sc_total": "Certainty Score",
  "sc_scale": "80+ strong · 60–79 workable · under 60 weak",
- "sc_legend": "Scores are drafted automatically from the offer's terms; scores the agent set are marked Agent.",
- "sc_agent": "Agent",
+ "sc_legend": "Every score follows the rubric from the offer, the contract and the property. A criterion without its fact isn't scored, and the total is scaled to 100 over the weight that is.",
+ "sc_not_scored": "Not scored",
 
  "h_flags": "5 · Risk Flags",
  "th_level": "Level",
@@ -496,7 +496,7 @@
  "note_standard_instead": " (on the Standard form, repairs up to its General Repair Limit instead)",
  "note_standard": " and, on the Standard form, repairs up to its General Repair Limit",
  "note_final": "Actual costs come from the title company's settlement statement.",
- "note_certainty": "Certainty scores reflect the listing agent's professional judgment, not a guarantee of performance.",
+ "note_certainty": "Certainty scores follow fixed rules from the offer's terms, the contract and the property; they are not a guarantee of performance.",
  "note_legal": "For contract terms, consult a real estate attorney licensed in {state}.",
  "your_state": "your state",
 

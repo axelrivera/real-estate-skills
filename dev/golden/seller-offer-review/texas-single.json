@@ -38,7 +38,7 @@
      "count": 4
     }
    ],
-   "counter_score": 78,
+   "counter_score": 83,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -307,7 +307,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 314682.0,
+   "rank_value": 317732.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -330,26 +330,24 @@
      "Strong"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 4,
-     "contingency": 3,
+     "contingency": null,
      "deposit": 3,
      "financing": 4,
      "property": 5,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
+    "total": 85,
+    "unscored": {
+     "contingency": [
+      "inspection_walkaway"
+     ]
     },
-    "total": 80
+    "weight": 80,
+    "why": {
+     "contingency": null
+    }
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -431,6 +429,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": [
+    "inspection_walkaway"
+   ],
    "walkaway_days": 7
   }
  ],
@@ -460,6 +461,9 @@
   {
    "field": "inspection_walkaway",
    "impact": "high",
+   "unscores": [
+    "contingency"
+   ],
    "value": true
   },
   {
@@ -554,6 +558,9 @@
   {
    "field": "inspection_walkaway",
    "impact": "high",
+   "unscores": [
+    "contingency"
+   ],
    "value": true
   },
   {
@@ -637,7 +644,7 @@
      "count": 4
     }
    ],
-   "counter_score": 78,
+   "counter_score": 83,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -906,7 +913,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 314682.0,
+   "rank_value": 317732.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -929,26 +936,24 @@
      "Strong"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 4,
-     "contingency": 3,
+     "contingency": null,
      "deposit": 3,
      "financing": 4,
      "property": 5,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
+    "total": 85,
+    "unscored": {
+     "contingency": [
+      "inspection_walkaway"
+     ]
     },
-    "total": 80
+    "weight": 80,
+    "why": {
+     "contingency": null
+    }
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -1030,6 +1035,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": [
+    "inspection_walkaway"
+   ],
    "walkaway_days": 7
   }
  ],
@@ -1072,7 +1080,7 @@
      "count": 4
     }
    ],
-   "counter_score": 78,
+   "counter_score": 83,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1341,7 +1349,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 314682.0,
+   "rank_value": 317732.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -1364,26 +1372,24 @@
      "Strong"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 4,
-     "contingency": 3,
+     "contingency": null,
      "deposit": 3,
      "financing": 4,
      "property": 5,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
+    "total": 85,
+    "unscored": {
+     "contingency": [
+      "inspection_walkaway"
+     ]
     },
-    "total": 80
+    "weight": 80,
+    "why": {
+     "contingency": null
+    }
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -1465,6 +1471,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": [
+    "inspection_walkaway"
+   ],
    "walkaway_days": 7
   }
  ],

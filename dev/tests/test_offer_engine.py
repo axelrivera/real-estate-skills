@@ -86,19 +86,21 @@ def sevs(o, topic):
 
 
 class MatchesPrototype(unittest.TestCase):
-    """Given the prototype's own cost assumptions, every net, score and action matches its sample reports."""
+    """Given the prototype's own cost assumptions, every net and action matches its sample reports. The scores read
+    facts only (no rating of the buyer's agent, no stand-in for a missing fact), so they move a point or so from the
+    prototype's."""
 
     def test_four_offers(self):
         R = oe.analyze(prototype_costs(fixture("four-offers.json")))
         got = {o["id"]: (o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"], o["score"]["total"],
                          o["counter_score"], o["action"]) for o in R["ranked"]}
         self.assertEqual(got, {
-            "B": (145851, 142851, 148650, 86, 82, "ACCEPT"),  # the seller wants certainty: no counter for a 0.7% gain
+            "B": (145851, 142851, 148650, 85, 81, "ACCEPT"),  # the seller wants certainty: no counter for a 0.7% gain
             "C": (134729, 131729, 153489, 100, 98, "BACKUP"),
             # downside from the CMA high; FHA appraisal protection runs to closing, so no gap coverage is asked; the
             # proration allows Florida's 4% early-payment discount; the buyer designates the Closing Agent (9(c)(ii))
             "A": (145319, 138567, 148211, 55, 63, "DECLINE"),
-            "D": (154485, 140349, 146337, 45, 65, "DECLINE"),  # a kick-out clause (Rider X): contingency 2, not 1
+            "D": (154485, 140349, 146337, 44, 65, "DECLINE"),  # a kick-out clause (Rider X): contingency 2, not 1
         })
         self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
         self.assertEqual(R["mode"], "multi")
@@ -107,7 +109,9 @@ class MatchesPrototype(unittest.TestCase):
         R = oe.analyze(prototype_costs(fixture("minimal-single.json")))
         o = R["offers"][0]
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349578, 347078, 353310))
-        self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))
+        # no deposit, approval or contract form given: scored over financing, appraisal, timeline and property
+        self.assertEqual((o["score"]["total"], o["action"]), (70, "COUNTER"))
+        self.assertEqual(set(o["score"]["unscored"]), {"approval", "contingency", "deposit"})
         self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Time for Acceptance"])
         self.assertEqual(R["seller"]["holding_monthly"], 500)  # HOA and loan interest; tax is in the proration
 
@@ -115,7 +119,7 @@ class MatchesPrototype(unittest.TestCase):
         R = oe.analyze(prototype_costs(fixture("two-offers-accept.json")))
         b = by_id(R)["B"]
         self.assertEqual((b["ns"]["net_adj"], b["ns_down"]["net_adj"], b["ns_counter"]["net_adj"]), (170598, 167098, 172474))
-        self.assertEqual((b["score"]["total"], b["counter_score"], b["action"]), (88, 84, "ACCEPT"))
+        self.assertEqual((b["score"]["total"], b["counter_score"], b["action"]), (87, 83, "ACCEPT"))
         self.assertEqual(by_id(R)["C"]["action"], "DECLINE")
 
 
@@ -207,12 +211,39 @@ class Handoff(unittest.TestCase):
 
 
 class Scoring(unittest.TestCase):
-    def test_agent_overrides(self):
+    def test_scores_follow_the_rubric_only(self):
+        """No score is set by hand or by opinion: a file that still carries one stops the run, naming each field."""
         d = fixture("minimal-single.json")
-        d["offers"][0]["scores"] = {"agent": {"score": 5, "why": "Closed 3 deals with them"}}
-        d["offers"][0]["recommendation"] = "accept"
-        o = one(d)
-        self.assertEqual((o["score"]["scores"]["agent"], o["score"]["src"]["agent"], o["action"]), (5, "agent", "ACCEPT"))
+        d["offers"][0].update(scores={"appraisal": 5}, agent_track="strong", agent_note="Responsive")
+        with self.assertRaises(oe.OfferError) as e:
+            oe.analyze(d)
+        for field in ("offers[A].scores", "offers[A].agent_track", "offers[A].agent_note"):
+            self.assertIn(field, str(e.exception))
+        self.assertNotIn("agent", [k for k, _, _ in oe.CRITERIA])
+
+    def test_unknown_fact_is_not_scored_and_the_total_scales(self):
+        """A criterion whose fact is missing is left out, never given a middle score, and the total is scaled over the
+        weight that was scored; giving the fact scores it."""
+        d = fixture("two-offers-accept.json")
+        given = by_id(oe.analyze(d))["B"]["score"]
+        del d["offers"][next(i for i, o in enumerate(d["offers"]) if o["id"] == "B")]["deposit"]
+        sc = by_id(oe.analyze(d))["B"]["score"]
+        self.assertIsNone(sc["scores"]["deposit"])
+        self.assertEqual(sc["unscored"], {"deposit": ["deposit"]})
+        self.assertEqual(sc["weight"], given["weight"] - dict((k, w) for k, _, w in oe.CRITERIA)["deposit"])
+        for s in (given, sc):
+            pts = sum(w * s["scores"][k] / 5 for k, _, w in oe.CRITERIA if s["scores"][k] is not None)
+            self.assertEqual(s["total"], oe.fmt.half_up(100 * pts / s["weight"]))
+        for k in sc["scores"]:
+            if k != "deposit":
+                self.assertEqual(sc["scores"][k], given["scores"][k])
+
+    def test_unknown_approval_value_stops(self):
+        d = fixture("minimal-single.json")
+        d["offers"][0]["approval"] = "pre-approved letter"
+        with self.assertRaises(oe.OfferError) as e:
+            oe.analyze(d)
+        self.assertIn("offers[A].approval", str(e.exception))
 
     def test_seller_side_limits(self):
         d = fixture("two-offers-accept.json")

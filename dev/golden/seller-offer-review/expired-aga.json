@@ -127,7 +127,7 @@
      "count": 4
     }
    ],
-   "counter_score": 78,
+   "counter_score": 79,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -451,7 +451,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -460,17 +459,8 @@
      "property": 4,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 75
+    "total": 76,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -552,6 +542,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  ],
@@ -739,7 +732,7 @@
      "count": 4
     }
    ],
-   "counter_score": 78,
+   "counter_score": 79,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1063,7 +1056,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -1072,17 +1064,8 @@
      "property": 4,
      "timeline": 4
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 75
+    "total": 76,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1164,6 +1147,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  ],

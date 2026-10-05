@@ -48,7 +48,7 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -323,7 +323,7 @@
    },
    "price": 679000,
    "proof_of_funds": 180000,
-   "rank_value": 598652.0,
+   "rank_value": 599341.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -347,7 +347,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -356,17 +355,8 @@
      "property": 3,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 75
+    "total": 76,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -448,6 +438,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -498,7 +491,7 @@
      "count": 4
     }
    ],
-   "counter_score": 70,
+   "counter_score": 71,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -828,7 +821,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 2,
      "approval": 3,
      "contingency": 3,
@@ -837,17 +829,8 @@
      "property": 3,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 60
+    "total": 60,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -929,6 +912,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -970,7 +956,7 @@
      "count": 4
     }
    ],
-   "counter_score": 96,
+   "counter_score": 98,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1244,7 +1230,7 @@
     "tax_bill_assumed": false
    },
    "price": 655000,
-   "rank_value": 593827.0,
+   "rank_value": 595205.0,
    "repair_reserve": 4500,
    "repairs_owed": false,
    "rider_codes": [
@@ -1268,7 +1254,6 @@
      "Strong"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 5,
      "contingency": 5,
@@ -1277,17 +1262,8 @@
      "property": 5,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 98
+    "total": 100,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -1369,6 +1345,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 5
   },
   {
@@ -1723,7 +1702,7 @@
     "tax_bill_assumed": true
    },
    "price": 695000,
-   "rank_value": 570992.0,
+   "rank_value": 570303.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -1749,7 +1728,6 @@
      "Weak"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 3,
      "approval": 3,
      "contingency": 1,
@@ -1758,17 +1736,8 @@
      "property": 2,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 50
+    "total": 49,
+    "weight": 95
    },
    "seller_concessions": 15000,
    "short_sale": false,
@@ -1850,6 +1819,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 15
   },
   {
@@ -2223,7 +2195,7 @@
     "tax_bill_assumed": true
    },
    "price": 700000,
-   "rank_value": 573587.0,
+   "rank_value": 572898.0,
    "repair_limits": {
     "general": 10500,
     "permit": 10500,
@@ -2256,7 +2228,6 @@
      "Weak"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 2,
      "approval": 2,
      "contingency": 2,
@@ -2265,17 +2236,8 @@
      "property": 3,
      "timeline": 2
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 47
+    "total": 46,
+    "weight": 95
    },
    "seller_concessions": 5000,
    "short_sale": false,
@@ -2357,6 +2319,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 0
   },
   {
@@ -2710,7 +2675,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -2719,17 +2683,8 @@
      "property": 2,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 65
+    "total": 65,
+    "weight": 95
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -2811,6 +2766,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  ],
@@ -3047,7 +3005,7 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -3322,7 +3280,7 @@
    },
    "price": 679000,
    "proof_of_funds": 180000,
-   "rank_value": 598652.0,
+   "rank_value": 599341.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -3346,7 +3304,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -3355,17 +3312,8 @@
      "property": 3,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 75
+    "total": 76,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -3447,6 +3395,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -3497,7 +3448,7 @@
      "count": 4
     }
    ],
-   "counter_score": 70,
+   "counter_score": 71,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -3827,7 +3778,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 2,
      "approval": 3,
      "contingency": 3,
@@ -3836,17 +3786,8 @@
      "property": 3,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 60
+    "total": 60,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -3928,6 +3869,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -3969,7 +3913,7 @@
      "count": 4
     }
    ],
-   "counter_score": 96,
+   "counter_score": 98,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -4243,7 +4187,7 @@
     "tax_bill_assumed": false
    },
    "price": 655000,
-   "rank_value": 593827.0,
+   "rank_value": 595205.0,
    "repair_reserve": 4500,
    "repairs_owed": false,
    "rider_codes": [
@@ -4267,7 +4211,6 @@
      "Strong"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 5,
      "contingency": 5,
@@ -4276,17 +4219,8 @@
      "property": 5,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 98
+    "total": 100,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -4368,6 +4302,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 5
   },
   {
@@ -4722,7 +4659,7 @@
     "tax_bill_assumed": true
    },
    "price": 695000,
-   "rank_value": 570992.0,
+   "rank_value": 570303.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -4748,7 +4685,6 @@
      "Weak"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 3,
      "approval": 3,
      "contingency": 1,
@@ -4757,17 +4693,8 @@
      "property": 2,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 50
+    "total": 49,
+    "weight": 95
    },
    "seller_concessions": 15000,
    "short_sale": false,
@@ -4849,6 +4776,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 15
   },
   {
@@ -5222,7 +5152,7 @@
     "tax_bill_assumed": true
    },
    "price": 700000,
-   "rank_value": 573587.0,
+   "rank_value": 572898.0,
    "repair_limits": {
     "general": 10500,
     "permit": 10500,
@@ -5255,7 +5185,6 @@
      "Weak"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 2,
      "approval": 2,
      "contingency": 2,
@@ -5264,17 +5193,8 @@
      "property": 3,
      "timeline": 2
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 47
+    "total": 46,
+    "weight": 95
    },
    "seller_concessions": 5000,
    "short_sale": false,
@@ -5356,6 +5276,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 0
   },
   {
@@ -5709,7 +5632,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -5718,17 +5640,8 @@
      "property": 2,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 65
+    "total": 65,
+    "weight": 95
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -5810,6 +5723,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   }
  ],
@@ -5862,7 +5778,7 @@
      "count": 4
     }
    ],
-   "counter_score": 75,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -6137,7 +6053,7 @@
    },
    "price": 679000,
    "proof_of_funds": 180000,
-   "rank_value": 598652.0,
+   "rank_value": 599341.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -6161,7 +6077,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -6170,17 +6085,8 @@
      "property": 3,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 75
+    "total": 76,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -6262,6 +6168,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -6312,7 +6221,7 @@
      "count": 4
     }
    ],
-   "counter_score": 70,
+   "counter_score": 71,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -6642,7 +6551,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 2,
      "approval": 3,
      "contingency": 3,
@@ -6651,17 +6559,8 @@
      "property": 3,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 60
+    "total": 60,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -6743,6 +6642,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -6784,7 +6686,7 @@
      "count": 4
     }
    ],
-   "counter_score": 96,
+   "counter_score": 98,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -7058,7 +6960,7 @@
     "tax_bill_assumed": false
    },
    "price": 655000,
-   "rank_value": 593827.0,
+   "rank_value": 595205.0,
    "repair_reserve": 4500,
    "repairs_owed": false,
    "rider_codes": [
@@ -7082,7 +6984,6 @@
      "Strong"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 5,
      "contingency": 5,
@@ -7091,17 +6992,8 @@
      "property": 5,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 98
+    "total": 100,
+    "weight": 95
    },
    "seller_concessions": 0,
    "short_sale": false,
@@ -7183,6 +7075,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 5
   },
   {
@@ -7536,7 +7431,6 @@
      "Workable"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 5,
      "approval": 3,
      "contingency": 2,
@@ -7545,17 +7439,8 @@
      "property": 2,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 65
+    "total": 65,
+    "weight": 95
    },
    "seller_concessions": 8000,
    "short_sale": false,
@@ -7637,6 +7522,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 10
   },
   {
@@ -8010,7 +7898,7 @@
     "tax_bill_assumed": true
    },
    "price": 700000,
-   "rank_value": 573587.0,
+   "rank_value": 572898.0,
    "repair_limits": {
     "general": 10500,
     "permit": 10500,
@@ -8043,7 +7931,6 @@
      "Weak"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 2,
      "approval": 2,
      "contingency": 2,
@@ -8052,17 +7939,8 @@
      "property": 3,
      "timeline": 2
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 47
+    "total": 46,
+    "weight": 95
    },
    "seller_concessions": 5000,
    "short_sale": false,
@@ -8144,6 +8022,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 0
   },
   {
@@ -8498,7 +8379,7 @@
     "tax_bill_assumed": true
    },
    "price": 695000,
-   "rank_value": 570992.0,
+   "rank_value": 570303.0,
    "repair_reserve": 5000,
    "repairs_owed": false,
    "rider_codes": [
@@ -8524,7 +8405,6 @@
      "Weak"
     ],
     "scores": {
-     "agent": 3,
      "appraisal": 3,
      "approval": 3,
      "contingency": 1,
@@ -8533,17 +8413,8 @@
      "property": 2,
      "timeline": 5
     },
-    "src": {
-     "agent": "auto",
-     "appraisal": "auto",
-     "approval": "auto",
-     "contingency": "auto",
-     "deposit": "auto",
-     "financing": "auto",
-     "property": "auto",
-     "timeline": "auto"
-    },
-    "total": 50
+    "total": 49,
+    "weight": 95
    },
    "seller_concessions": 15000,
    "short_sale": false,
@@ -8625,6 +8496,9 @@
    "title_by": "seller",
    "title_payer": "seller",
    "title_payer_by_contract": false,
+   "unknown": {
+    "count": 0
+   },
    "walkaway_days": 15
   }
  ],

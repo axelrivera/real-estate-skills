@@ -35,6 +35,7 @@
 
  "prob_market_number": "{field}: {value} isn't a number → {fix}",
  "prob_figure": "{field}: {value} has a figure in it ({found}) → {fix}",
+ "prob_retired": "{field}: no longer read: the strength score reads only facts from the offer, the contract and the property → remove it",
  "fix_market": {"sale_to_list": "write the sale-to-list ratio as a fraction, 0.981 for 98.1%",
                 "months_supply": "write the months of supply as a number, 1.4",
                 "median_dom": "write the median days on market as a number, 23",
@@ -441,6 +442,7 @@
  "th_rec_why": "Recommended: Why",
  "weight": "{n}%",
  "sc_total": "Strength Score",
+ "sc_not_scored": "Not scored",
  "sc_no_issues": "No known condition issues",
  "sc_no_quote": "; no insurance quote yet, scored once in hand",
  "h_cash": "4 · Your Cash and Risk",

@@ -61,17 +61,18 @@ def offer(rng, i, lp, florida, cma_high):
     elif fin == "fha":
         o["down_pct"] = 0.035
     if fin != "cash":
-        o["approval"] = rng.choice(("preapproval", "du_approved", "full_uw", "prequal"))
+        if rng.random() < 0.85:  # left out: Approval / Funds Verified isn't scored
+            o["approval"] = rng.choice(("preapproval", "du_approved", "full_uw", "prequal"))
         o["lender"] = rng.choice(LENDERS)
         o["lender_called"] = rng.random() < 0.4
         o["loan_approval_days"] = rng.choice((21, 25, 30, 45))
         if rng.random() < 0.3:
             o["approval_max_price"] = o["price"] + rng.choice((0, 5000, -3000))
-    else:
+    elif rng.random() < 0.85:
         o["approval"] = rng.choice(("pof_verified", "none"))
         if rng.random() < 0.5:
             o["proof_of_funds"] = int(o["price"] * rng.uniform(0.9, 1.3))
-    if rng.random() < 0.85:
+    if rng.random() < 0.85:  # left out: Deposit Strength isn't scored
         o["deposit"] = int(round(o["price"] * rng.choice((0.005, 0.01, 0.03, 0.1)), -2))
     o["seller_concessions"] = rng.choice((0, 0, 0, 3000, 8000, 15000))
     if rng.random() < 0.7:
@@ -132,8 +133,6 @@ def offer(rng, i, lp, florida, cma_high):
                                  "fix": "Ask the buyer's agent for the complete contract.", "check": "signed"}]
     if rng.random() < 0.3:  # the agent's counter stance, with its reason (needed when it isn't the suggested one)
         o["counter"] = {"stance": rng.choice(STANCES), "stance_reason": rng.choice(STANCE_REASONS)}
-    if rng.random() < 0.3:
-        o["agent_track"] = rng.choice(("strong", "average", "weak"))
     if rng.random() < 0.3:
         o["insurance_quote"] = rng.choice((True, False, "planned"))
     return o
