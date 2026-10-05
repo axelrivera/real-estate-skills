@@ -50,7 +50,9 @@ def pctx(v, d=1):
 # --- shared blocks -------------------------------------------------------------
 
 def prepared_block(R, agent):
-    lines = [f'Prepared for <b>{esc(R["seller"].get("name") or "Seller")}</b> · {R["listing"]["analysis_date"]:%B %-d, %Y}']
+    # DS-103: the date never wraps; a name too long for the block wraps between words (report.css caps its width)
+    lines = [f'Prepared for <b>{esc(R["seller"].get("name") or "Seller")}</b> · '
+             f'<span class="nw">{R["listing"]["analysis_date"]:%B %-d, %Y}</span>']
     if agent.get("name"):
         lines.append(f'<b>{esc(agent["name"])}</b>')
         org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))

@@ -1,0 +1,178 @@
+{
+ "sample": true,
+ "analysis_date": "2026-09-22",
+ "listing": {
+  "address": "11820 Whispering Cypress Hammock Boulevard Building 4 Unit 1204, Palm Beach Gardens, FL 33418",
+  "state": "FL",
+  "county": "Palm Beach",
+  "list_price": 689000,
+  "beds": 4,
+  "baths": 3,
+  "sqft": 2610,
+  "year_built": 2004,
+  "roof_year": 2019,
+  "hoa_monthly": 210,
+  "flood_zone": "AE",
+  "highest_and_best_due": "2026-09-23 12:00"
+ },
+ "seller": {
+  "name": "Sample Seller-Hollingsworth, Trustee of the Hollingsworth-Vandermeer Family Revocable Living Trust",
+  "listing_fee_pct": 0.03,
+  "offered_buyer_broker_pct": 0.025,
+  "deadline": "2026-11-20",
+  "priority": "balanced"
+ },
+ "offers": [
+  {
+   "id": "A",
+   "status": "active",
+   "expires": "2026-09-23 17:00",
+   "buyer": "Sample Buyer",
+   "buyer_agent": "Kendall Castellanos-Whitfield",
+   "buyer_brokerage": "Sunward Homes Realty of the Palm Beaches",
+   "contract_form": "as_is",
+   "price": 679000,
+   "financing": "conventional",
+   "down_pct": 0.2,
+   "approval": "preapproval",
+   "approval_max_price": 679000,
+   "proof_of_funds": 180000,
+   "deposit": 25000,
+   "seller_concessions": 0,
+   "buyer_broker_pct": 0.025,
+   "closing_date": "2026-11-02",
+   "inspection_days": 10,
+   "loan_approval_days": 30,
+   "riders": [
+    "B"
+   ],
+   "appraisal_gap": 15000,
+   "addenda": [
+    "Appraisal Gap Addendum (AGA-1)"
+   ]
+  },
+  {
+   "id": "B",
+   "status": "active",
+   "expires": "2026-09-24 17:00",
+   "buyer": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot, as Joint Tenants with Right of Survivorship",
+   "buyer_agent": "Maximiliana Alexandra Castellanos-Whitfield-Vandersloot",
+   "buyer_brokerage": "Tidewater Key International Realty and Relocation Partners of the Palm Beaches, LLC",
+   "contract_form": "as_is",
+   "price": 684000,
+   "financing": "conventional",
+   "down_pct": 0.1,
+   "approval": "preapproval",
+   "approval_max_price": 684000,
+   "approval_max_loan": 615600,
+   "proof_of_funds": 95000,
+   "deposit": 20000,
+   "seller_concessions": 0,
+   "buyer_broker_pct": 0.025,
+   "closing_date": "2026-10-28",
+   "inspection_days": 10,
+   "loan_approval_days": 30,
+   "riders": [
+    "B"
+   ],
+   "escalation": {
+    "cap": 699000,
+    "increment": 2000,
+    "proof": true
+   }
+  },
+  {
+   "id": "C",
+   "status": "active",
+   "expires": "2026-09-24 17:00",
+   "buyer": "Sample Holdings LLC",
+   "buyer_agent": "Rosalind Díaz-Montgomery",
+   "buyer_brokerage": "eXp Realty",
+   "contract_form": "as_is",
+   "price": 655000,
+   "financing": "cash",
+   "approval": "pof_verified",
+   "deposit": 66000,
+   "seller_concessions": 0,
+   "buyer_broker_pct": 0.025,
+   "closing_days": 21,
+   "inspection_days": 5,
+   "riders": [
+    "B"
+   ]
+  },
+  {
+   "id": "D",
+   "status": "active",
+   "expires": "2026-09-25 17:00",
+   "buyer": "Sample Buyer",
+   "buyer_agent": "Jonathan Morales",
+   "buyer_brokerage": "Keller Williams Realty Jupiter",
+   "contract_form": "as_is",
+   "price": 695000,
+   "financing": "fha",
+   "down_pct": 0.035,
+   "approval": "du_approved",
+   "deposit": 7000,
+   "seller_concessions": 15000,
+   "buyer_broker_pct": 0.03,
+   "home_warranty": 650,
+   "closing_date": "2026-11-13",
+   "inspection_days": 15,
+   "loan_approval_days": 30,
+   "riders": [
+    "B",
+    "E"
+   ]
+  },
+  {
+   "id": "E",
+   "status": "active",
+   "expires": "2026-09-25 17:00",
+   "buyer": "Sample Buyer",
+   "buyer_agent": "Margaret Lee-Okonkwo",
+   "buyer_brokerage": "Independent Realty Partners",
+   "contract_form": "standard",
+   "price": 700000,
+   "financing": "conventional",
+   "down_pct": 0.1,
+   "approval": "prequal",
+   "deposit": 10000,
+   "seller_concessions": 5000,
+   "buyer_broker_pct": 0.03,
+   "closing_days": 60,
+   "inspection_days": 15,
+   "loan_approval_days": 40,
+   "sale_contingency_days": 45,
+   "kickout": true,
+   "riders": [
+    "B",
+    "V",
+    "X"
+   ]
+  },
+  {
+   "id": "F",
+   "status": "active",
+   "expires": "2026-09-24 17:00",
+   "buyer": "Sample Buyer",
+   "buyer_agent": "Priya Natarajan",
+   "buyer_brokerage": "Coldwell Banker Realty",
+   "contract_form": "as_is",
+   "price": 672000,
+   "financing": "va",
+   "down_pct": 0.0,
+   "approval": "preapproval",
+   "deposit": 10000,
+   "seller_concessions": 8000,
+   "buyer_broker_pct": 0.025,
+   "closing_date": "2026-11-06",
+   "inspection_days": 10,
+   "loan_approval_days": 30,
+   "riders": [
+    "B",
+    "E"
+   ]
+  }
+ ]
+}

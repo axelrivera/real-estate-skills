@@ -512,7 +512,7 @@ def build(deal, fmt, out_dir, ctx):
     top = render.html_to_pdf(doc, path, footer_html=render.footer(f'Contract Timeline · {t["property"]}'),
                              before_print=fit_page_one)
     if top > PAGE1_LIMIT:
-        print(f"Page 1 overflows by {top - PAGE1_LIMIT:.0f}px; the key-dates table continues on page 2.", file=sys.stderr)
+        print("Layout (information): the key-dates table runs onto page 2 and the details follow it there.", file=sys.stderr)
     for flag in t["flags"]:
         print(f"Check (on the report): {flag}", file=sys.stderr)
     for note in t["agent_notes"] + t.get("chat_notes", []):

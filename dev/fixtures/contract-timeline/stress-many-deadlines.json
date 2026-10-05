@@ -1,0 +1,53 @@
+{
+  "side": "buyer",
+  "sample": true,
+  "report_date": "2026-09-26",
+  "state": "FL",
+  "county": "Palm Beach",
+  "client": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot",
+  "contract": {
+    "form_family": "farbar",
+    "contract_form": "standard",
+    "property": "11820 Whispering Cypress Hammock Boulevard Building 4 Unit 1204, Palm Beach Gardens, FL 33418",
+    "buyer": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot",
+    "seller": "Sample Seller-Hollingsworth, Trustee of the Hollingsworth-Vandermeer Family Trust",
+    "price": 689000,
+    "financing": "conventional",
+    "effective_date": "2026-09-25",
+    "effective_date_source": "Seller's initials on Counteroffer #2, 9/25/2026 4:12 PM",
+    "closing_date": "2026-11-13",
+    "closing_time": "10:00",
+    "escrow_agent": "Coldwater Bay Title Insurance Agency of the Palm Beaches, LLC",
+    "deposit_amount_str": "$25,000",
+    "deposit_days": 3,
+    "additional_deposit_amount_str": "$40,000",
+    "additional_deposit_days": 10,
+    "loan_application_days": 5,
+    "loan_approval_days": 30,
+    "inspection_days": 15,
+    "appraisal_days": 21,
+    "riders": [
+      "Condominium Association",
+      "Homeowners' Association",
+      "Appraisal Contingency",
+      "Flood Disclosure",
+      "Lead-Based Paint",
+      "Coastal Construction Control Line"
+    ],
+    "hoa": true,
+    "year_built": 1974,
+    "title_by": "seller"
+  },
+  "deadlines": [
+    {"key": "association_documents", "label": "Condominium Association Documents, Budget, Reserve Study and Milestone Inspection Report Delivered", "short": "Condo Documents", "basis": "after", "days": 5, "party": "Seller", "critical": true, "source": "Additional Terms, Para. 1", "action": "Deliver the declaration, bylaws, rules, budget, reserve study, milestone inspection report and the latest financial statements", "if_missed": "Buyer's review period starts only when they arrive"},
+    {"key": "condo_review", "label": "Buyer's Condominium Document Review and Rescission Period Ends", "short": "Condo Review", "basis": "after", "days": 8, "time": "17:00", "party": "Buyer", "critical": true, "contingency": true, "source": "Additional Terms, Para. 1", "action": "Review every document and give written notice of cancellation if not proceeding", "if_missed": "The right to cancel under the condominium review ends"},
+    {"key": "association_approval_application", "label": "Association Purchase Approval Application and Interview Request Submitted", "short": "Association Application", "basis": "after", "days": 7, "party": "Buyer", "critical": false, "source": "Additional Terms, Para. 2", "action": "Submit the association's purchase application, fee and background check consent", "if_missed": "Association approval may not arrive before closing"},
+    {"key": "association_approval", "label": "Association Approval of the Purchase Received in Writing", "short": "Association Approval", "basis": "before", "days": 10, "party": "Both", "critical": true, "source": "Additional Terms, Para. 2", "action": "Get the association's written approval of the sale and the buyers", "if_missed": "Either party may cancel and the deposit is returned"},
+    {"key": "special_assessment_estoppel", "label": "Special Assessment and Estoppel Certificate Ordered from the Association", "short": "Estoppel", "basis": "after", "days": 10, "party": "Seller", "critical": false, "source": "Additional Terms, Para. 3", "action": "Order the estoppel certificate and disclose any pending special assessment", "if_missed": "Closing figures may be late"},
+    {"key": "elevation_survey", "label": "Boundary and Elevation Survey with Flood Elevation Certificate Delivered", "short": "Survey", "basis": "after", "days": 20, "party": "Buyer", "critical": false, "source": "Additional Terms, Para. 4", "action": "Order the survey and the elevation certificate for the flood insurance quote", "if_missed": "Survey objections may come after the title cure period"},
+    {"key": "flood_quote", "label": "Binding Flood Insurance Quote Received from the Buyer's Insurance Agent", "short": "Flood Quote", "basis": "after", "days": 12, "party": "Buyer", "critical": false, "source": "Additional Terms, Para. 5", "action": "Get a binding flood and wind insurance quote for the lender", "if_missed": "Loan approval may be delayed"},
+    {"key": "walk_through", "label": "Final Walk-Through and Personal Property Inspection", "short": "Walk-Through", "basis": "before", "days": 1, "party": "Buyer", "critical": false, "source": "Para. 13", "action": "Walk the unit and the storage locker and confirm repairs and personal property", "if_missed": "Problems found after closing are harder to resolve"}
+  ],
+  "amendments": [],
+  "flags": []
+}

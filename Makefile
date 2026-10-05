@@ -12,7 +12,7 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test golden style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test golden layout-check style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium, Node modules (nvm) and Python 3.11 (uv, via Homebrew if missing)"
@@ -20,6 +20,7 @@ help:
 	@echo "make test           Run unit tests in dev/tests/"
 	@echo "make golden         Rewrite dev/golden/ from the current code (review the diff; make test fails until it matches)"
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
+	@echo "make layout-check   Render every PDF fixture into $(OUT)/layout/; fail on page-1 overflow, clipped text or a near-empty page"
 	@echo "make lint-skills    Check every SKILL.md: frontmatter, description length, Guardrails first, paths"
 	@echo "make py311          Compile shipped Python with Python 3.11 (the Cowork runtime; uv's when not on PATH)"
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
@@ -29,7 +30,7 @@ help:
 	@echo "make manual-kit     Build the manual smoke-test kit into $(OUT)/manual-test/ (local only; see docs/manual-testing.md)"
 	@echo "make runtime-check  Run the runtime check against the local environment"
 	@echo "make preview-design Render brand palettes for sample scenarios into $(OUT)/design/"
-	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/ (SKILL=seller-net-sheet for one skill)"
+	@echo "make outputs        Render every skill fixture in dev/fixtures/ into $(OUT)/ (SKILL=seller-net-sheet for one skill; stress-* with the long-name profile)"
 	@echo "make samples        Regenerate the committed preview files and samples/README.md from the mock data in dev/samples/"
 	@echo "make manual         Rebuild the PDF manual (dev/package/Real-Estate-Skills-Manual.pdf) from the agent guide and its screenshots"
 	@echo "make package        Run every check, then build $(DIST)/real-estate-<version>.plugin and the release zip (plugin + README + PDF manual + LICENSE)"
@@ -54,6 +55,10 @@ hooks:
 
 style-check:
 	@$(NVM) $(DEV_ENV) $(PY) dev/style_check.py
+
+# Every PDF fixture printed and read back (dev/layout_check.py); make test runs the same check when Chromium is installed
+layout-check:
+	@$(NVM) $(DEV_ENV) $(PY) dev/layout_check.py $(SKILL)
 
 test:
 	@PATH="$$PATH:$(LO_BIN)" $(PY) -m unittest discover -s dev/tests  # LibreOffice, when installed, for the deck-PDF check
@@ -104,11 +109,12 @@ runtime-check:
 outputs:
 	@for f in $(filter-out dev/fixtures/_profiles/%,$(wildcard dev/fixtures/$(or $(SKILL),*)/*.json)); do \
 		skill=$$(basename $$(dirname $$f)); name=$$(basename $$f .json); \
-		dir=skills/$$skill; \
+		dir=skills/$$skill; profile=profile; \
+		case $$name in stress-*) profile=stress;; esac; \
 		echo "$$skill: $$name"; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="$(OUT)/$$skill/$$name" \
 			$(PY) $$dir/scripts/render.py $$f --format all --out "$(OUT)/$$skill/$$name" \
-			$(if $(wildcard dev/fixtures/_profiles/profile.md),--profile dev/fixtures/_profiles/profile.md) || exit 1; \
+			--profile dev/fixtures/_profiles/$$profile.md || exit 1; \
 	done
 
 # One happy-path sample per skill for previews, committed. Inputs in dev/samples/ are fully mocked.
@@ -129,7 +135,7 @@ samples:
 # make test skips the slow mock-contract tests; a build runs them (RUN_SLOW=1 make test does too)
 export RUN_SLOW
 package package-skills: RUN_SLOW = 1
-package: check-sync test lint-skills py311 style-check
+package: check-sync test lint-skills py311 style-check layout-check
 	@$(PY) dev/package.py plugin
 
 # The version comes from plugin.json, never an argument, so the tag and the zip can't disagree. The guards run before
@@ -146,7 +152,7 @@ release:
 	@echo "Publishing v$(VERSION) with $(DIST)/real-estate-skills-$(VERSION).zip"
 	gh release create v$(VERSION) $(DIST)/real-estate-skills-$(VERSION).zip --target main --title $(VERSION) --notes-file $(DIST)/release-notes-$(VERSION).md
 
-package-skills: check-sync test lint-skills py311 style-check
+package-skills: check-sync test lint-skills py311 style-check layout-check
 	@$(PY) dev/package.py skills
 
 clean:

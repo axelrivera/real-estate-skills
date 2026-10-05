@@ -1891,6 +1891,8 @@ class PageLayout(unittest.TestCase):
 
     def test_header_stays_on_one_line(self):
         for name, (path, deal) in self.pdfs.items():
+            if name.startswith("stress-"):  # names too long for one line wrap on purpose (test_layout covers them)
+                continue
             words = page_fill(path)[0][1]
             first = next(w for w in words if w[2] == deal["contract"]["property"].split()[0])
             # the seller's last name after the address (on the seller side it's in the Prepared line too, above)

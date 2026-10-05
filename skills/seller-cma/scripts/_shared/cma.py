@@ -11,6 +11,7 @@ import re
 import shutil
 import statistics
 import subprocess
+import tempfile
 from datetime import date
 
 from . import finance, mls
@@ -603,7 +604,7 @@ def group_blocks(elements):
     return "".join(out)
 
 
-PAGINATE_JS = """(pageH) => {
+PAGINATE_JS = """([pageH, starts]) => {
   // Page 1 fits itself: tighten in steps (fit1 → fit3, cumulative) until it clears the page with a small margin.
   const one = document.querySelector('.onepage'); let fit = 0;
   while (one && fit < 3 && one.getBoundingClientRect().height > pageH - 16) one.classList.add('fit' + (++fit));
@@ -613,11 +614,16 @@ PAGINATE_JS = """(pageH) => {
   // Print layout runs a few pixels taller than this screen estimate, so a block must fit with room to spare;
   // otherwise it splits or moves at print time and leaves a gap the shrink rule never saw (CMA-274).
   const SAFE = 16, FLOW_ROOM = 0.35;
+  const squash = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
   for (const el of Array.from(wrap.children)) {
     const r = el.getBoundingClientRect();
     const mt = parseFloat(getComputedStyle(el).marginTop) || 0;
-    const t = r.top - base - mt + shift, h = r.height + mt;
-    const pos = ((t % pageH) + pageH) % pageH;
+    let t = r.top - base - mt + shift; const h = r.height + mt;
+    let pos = ((t % pageH) + pageH) % pageH;
+    // A block the print read-back saw starting a page that this estimate put lower on the page before (drift from an
+    // earlier block that printed taller): it starts the next page here too, so what follows is placed as it prints
+    const text = squash(el.innerText);
+    if (pos > 5 && text && (starts || []).some(s => text.startsWith(s))) { shift += pageH - pos; t += pageH - pos; pos = 0; }
     if (el.classList.contains('onepage')) window.__onepageH = h;
     if (el.classList.contains('pb')) { if (pos > 5) shift += pageH - pos; continue; }
     const isKeep = el.classList.contains('kg');
@@ -681,11 +687,12 @@ PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": 
 CONTENT_HEIGHT_PX = 10 * 96  # 11in − 0.45in − 0.55in
 
 
-def paginate(pg):
+def paginate(pg, starts=()):
     """Before printing: fit page 1 on one page (fit_level 0-3), then move groups so none splits
-    and no section starts in the bottom quarter of a page."""
+    and no section starts in the bottom quarter of a page. `starts`: the first words of blocks a print read-back saw
+    starting a page (print_report)."""
     pg.set_viewport_size({"width": 730, "height": 1000})  # 8.5in − 2 × 0.45in
-    res = pg.evaluate(PAGINATE_JS, CONTENT_HEIGHT_PX)
+    res = pg.evaluate(PAGINATE_JS, [CONTENT_HEIGHT_PX, list(starts)])
     return {"moved": res["moved"], "summary_page": {"height_px": round(res["onepageH"]), "page_px": res["pageH"],
                                                     "fits": res["onepageH"] <= res["pageH"], "fit_level": res["fit"]}}
 
@@ -848,15 +855,17 @@ def report_notices(C):
 
 # CMA-274, CMA-276: how full each printed page is, read back from the PDF (the layout measured before printing can
 # drift a few pixels from Chromium's print layout, enough to push a block to the next page)
-PAGE_TOP, PAGE_BOTTOM = 0.45 * 72, 792 - 0.55 * 72  # the content area in PDF points (cma.PAGE_MARGINS, Letter)
 HALF_EMPTY = 0.5  # a page before a kept-together block that ends above half the page leaves a gap worth fixing
 LONE_TAIL = 0.15  # a last page this empty holds only a few closing lines
 _WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="[\d.]+" yMax="([\d.]+)">([^<]*)</word>')
+_PAGE = re.compile(r'width="[\d.]+" height="([\d.]+)"')
 
 
-def page_fill(pdf):
+def page_fill(pdf, top_in=0.45, bottom_in=0.55):
     """[(fill, first line)] per page: how far down the content area the text reaches (0 to 1) and the page's first
-    line, from pdftotext -bbox. None when pdftotext isn't available."""
+    line, from pdftotext -bbox. None when pdftotext isn't available. The content area is the page less the top and
+    bottom margins in inches (cma.PAGE_MARGINS by default; 0.3 and 0.4 for render.html_to_pdf's default), on a page of
+    any height (a landscape page too)."""
     tool = shutil.which("pdftotext")
     if not tool:
         return None
@@ -866,16 +875,48 @@ def page_fill(pdf):
         return None
     pages = []
     for chunk in out.split("<page ")[1:]:
+        height = _PAGE.match(chunk)
+        top_pt, bottom_pt = top_in * 72, (float(height.group(1)) if height else 792) - bottom_in * 72
         words = [(float(x), float(y0), float(y1), html.unescape(t)) for x, y0, y1, t in _WORD.findall(chunk)
-                 if float(y1) <= PAGE_BOTTOM + 1]  # the running footer sits below the content area
+                 if float(y1) <= bottom_pt + 1]  # the running footer sits below the content area
         if not words:
             pages.append((0.0, ""))
             continue
         bottom = max(w[2] for w in words)
         top = min(w[1] for w in words)
         first = " ".join(w[3] for w in sorted((w for w in words if w[1] - top < 3), key=lambda w: w[0]))
-        pages.append((max(0.0, (bottom - PAGE_TOP) / (PAGE_BOTTOM - PAGE_TOP)), first[:60]))
+        pages.append((max(0.0, (bottom - top_pt) / (bottom_pt - top_pt)), first[:60]))
     return pages
+
+
+def _squash(text):
+    return " ".join(str(text).split()).lower()
+
+
+def print_report(doc, path, footer_html, tail_hint="the last sections"):
+    """Print a CMA report (paginate, then the PDF), read the pages back (page_fill) and, when a page before the last
+    is under half full because the block starting it printed lower than paginate estimated (CMA-274 drift: an earlier
+    block printed taller), print it again with that block starting its page in the estimate, so the blocks after it
+    are placed (and a scatter shrunk to fit) as they print. The second print is kept only when it has fewer page checks.
+    Returns (paginate's info, pages or None)."""
+    from . import render
+    info = render.html_to_pdf(doc, path, margins=PAGE_MARGINS, footer_html=footer_html, before_print=paginate)
+    pages = page_fill(path)
+    if not pages:
+        return info, pages
+    starts = [_squash(pages[i][1])[:30] for i in range(1, len(pages) - 1) if pages[i][0] < HALF_EMPTY and pages[i][1].strip()]
+    checks = page_checks(pages, tail_hint)
+    if not starts or not checks:
+        return info, pages
+    with tempfile.TemporaryDirectory() as tmp:
+        second = os.path.join(tmp, os.path.basename(path))
+        retry = render.html_to_pdf(doc, second, margins=PAGE_MARGINS, footer_html=footer_html,
+                                   before_print=lambda pg: paginate(pg, starts))
+        again = page_fill(second)
+        if again is not None and len(page_checks(again, tail_hint)) < len(checks):
+            shutil.move(second, path)
+            return retry, again
+    return info, pages
 
 
 CALLOUT_REASONS = {"size": "left off the chart for its size (scatter.min_size_ratio / max_size_ratio)",

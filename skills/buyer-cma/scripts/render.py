@@ -427,15 +427,15 @@ def build(R, fmt, out_dir, ctx):
     if ctx.get("sample") or R.get("sample"):
         label = "SAMPLE DATA · " + label
     path = os.path.join(out_dir, render.filename(R["subject"]["address"], "Buyer CMA", ext="pdf"))
-    info = render.html_to_pdf(doc, path, margins=cma.PAGE_MARGINS, footer_html=render.footer(label), before_print=cma.paginate)
+    tail = "the watch items, the questions or the method"
+    info, pages = cma.print_report(doc, path, render.footer(label), tail)  # CMA-274: pages read back from the PDF
     if not info["summary_page"]["fits"]:
         print("Page 1 doesn't fit on one page: shorten the summary wording (never drop an element).", file=sys.stderr)
     elif info["summary_page"]["fit_level"]:
         print(f"Page 1 ran long and was tightened (step {info['summary_page']['fit_level']} of 3) to fit.", file=sys.stderr)
-    pages = cma.page_fill(path)  # CMA-274: how full each printed page is, from the PDF
     if pages is None and info["moved"]:  # no pdftotext here: the old information line
         print("Kept together on a new page (information; check that page for a large empty gap): " + "; ".join(info["moved"]), file=sys.stderr)
-    for c in cma.page_checks(pages or [], "the watch items, the questions or the method"):
+    for c in cma.page_checks(pages or [], tail):
         print(f"Check: {c}", file=sys.stderr)
     labels = C.get("scatter_labels") or {}
     for text, asked, used in labels.get("moved", []):

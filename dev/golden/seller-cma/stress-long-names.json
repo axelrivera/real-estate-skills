@@ -1,0 +1,529 @@
+{
+ "adjusted_max": 492300,
+ "adjusted_min": 436200,
+ "assumption_keys": [
+  "expected_below_range",
+  "title_fees_built_in"
+ ],
+ "assumptions": {
+  "count": 2
+ },
+ "competing_offer_caveat": null,
+ "comps_table": [
+  {
+   "seller_paid_display": "$0"
+  },
+  {
+   "seller_paid_display": "$0"
+  },
+  {
+   "seller_paid_display": "$0"
+  },
+  {
+   "seller_paid_display": "$500"
+  },
+  {},
+  {}
+ ],
+ "data_source": {
+  "as_of": "2026-09-22",
+  "export": true,
+  "mls": "Stellar"
+ },
+ "expected_sale_basis": {
+  "agent": {
+   "count": 0
+  },
+  "capped": false,
+  "filled": [
+   0,
+   1,
+   2
+  ],
+  "ratio": 0.9386,
+  "ratio_display": "93.9%",
+  "source": "export",
+  "top": [
+   0
+  ]
+ },
+ "handoff": {
+  "as_of": "2026-09-22",
+  "comps": [
+   {
+    "adjusted": 492300,
+    "seller_paid": 0,
+    "sold_price": 505500
+   },
+   {
+    "adjusted": 485300,
+    "seller_paid": 0,
+    "sold_price": 505500
+   },
+   {
+    "adjusted": 483800,
+    "seller_paid": 0,
+    "sold_price": 495000
+   },
+   {
+    "adjusted": 469800,
+    "seller_paid": 500,
+    "sold_price": 427000
+   },
+   {
+    "adjusted": 438400,
+    "seller_paid": 12000,
+    "sold_price": 429000
+   },
+   {
+    "adjusted": 436200,
+    "seller_paid": 13071,
+    "sold_price": 465000
+   }
+  ],
+  "handoff": "cma",
+  "market": {
+   "active_count": 14,
+   "median_days_recent": 22.0,
+   "median_seller_paid_recent": 12100.0,
+   "months_supply": 3.5,
+   "sale_to_original_list_recent": 0.9386,
+   "share_with_seller_paid_costs_recent": 0.889,
+   "split_date": "2026-07-01"
+  },
+  "market_profile": {
+   "mls": "Stellar",
+   "state": "FL"
+  },
+  "offer_plan": null,
+  "recommended_list_price": 469900,
+  "side": "seller",
+  "source": "seller-cma",
+  "subject": {
+   "baths": 2,
+   "beds": 4,
+   "county": "Seminole",
+   "flood_zone": "X",
+   "hoa_monthly": 0,
+   "homestead": true,
+   "pool": true,
+   "school_mills": 5.25,
+   "sqft": 1849,
+   "state": "FL",
+   "total_mills": 17.57,
+   "year_built": 1972
+  },
+  "value": {
+   "high": 480000,
+   "low": 455000,
+   "median_adjusted": 476800.0,
+   "midpoint": 467500.0
+  },
+  "version": 1
+ },
+ "key_stats": [
+  {
+   "count": 2
+  },
+  [
+   "93.9%"
+  ],
+  {
+   "count": 2
+  }
+ ],
+ "listing_history": [
+  {
+   "days": 184,
+   "original_price": 434900,
+   "price": 419900,
+   "status": "expired"
+  }
+ ],
+ "market_note_keys": {
+  "count": 0
+ },
+ "market_notes": {
+  "count": 0
+ },
+ "market_numbers": {
+  "credit_share_early": "50%",
+  "credit_share_recent": "89%",
+  "days_early": "8",
+  "days_recent": "22",
+  "sale_to_list_early": "98.7%",
+  "sale_to_list_recent": "93.9%",
+  "sold_early": "24",
+  "sold_recent": "9",
+  "split_month": "July",
+  "window_start_month": "April"
+ },
+ "market_table": {
+  "columns": {
+   "count": 3
+  },
+  "rows": [
+   [
+    "24",
+    "9"
+   ],
+   {
+    "count": 3
+   },
+   [
+    "98.7%",
+    "93.9%"
+   ],
+   [
+    "8",
+    "22"
+   ],
+   [
+    "50%",
+    "89%"
+   ],
+   {
+    "count": 3
+   }
+  ]
+ },
+ "max_distance": 0.92,
+ "median_adjusted": 476800.0,
+ "n_comps": 6,
+ "n_sold": 33,
+ "net": {
+  "after_holding": [
+   409698.0,
+   410742.0,
+   402442.5
+  ],
+  "assumed": [
+   {
+    "estimate": false,
+    "key": "title_fees",
+    "value": 1145
+   }
+  ],
+  "assumed_brokerage": null,
+  "assumed_brokerage_pct": null,
+  "cash_at_closing": false,
+  "closings": [
+   "2027-01-22",
+   "2026-11-23",
+   "2026-11-05"
+  ],
+  "columns": [
+   {
+    "net": null,
+    "net_before_payoff": 411818.0,
+    "total_costs": 39182.0
+   },
+   {
+    "net": null,
+    "net_before_payoff": 411818.0,
+    "total_costs": 39182.0
+   },
+   {
+    "net": null,
+    "net_before_payoff": 403216.5,
+    "total_costs": 33283.5
+   }
+  ],
+  "has_tax": false,
+  "holding": [
+   2120,
+   1076,
+   774
+  ],
+  "holding_rate": 0.045,
+  "holding_rate_assumed": false,
+  "incomplete": false,
+  "key_notes": {
+   "count": 1
+  },
+  "missing": {
+   "count": 0
+  },
+  "no_mortgage": false,
+  "notes": {
+   "count": 4
+  },
+  "payoff": null,
+  "payoff_estimated": false,
+  "rows": [
+   {
+    "amounts": [
+     451000,
+     451000,
+     436500
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "sale"
+   },
+   {
+    "amounts": [
+     -11275.0,
+     -11275.0,
+     -10912.5
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "listing_fee"
+   },
+   {
+    "amounts": [
+     -11275.0,
+     -11275.0,
+     -10912.5
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "buyer_broker_fee"
+   },
+   {
+    "amounts": [
+     -3157.0,
+     -3157.0,
+     -3055.5
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "transfer_tax"
+   },
+   {
+    "amounts": [
+     -2330,
+     -2330,
+     -2258
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "owner_title"
+   },
+   {
+    "amounts": [
+     -1145,
+     -1145,
+     -1145
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "title_fees"
+   },
+   {
+    "amounts": [
+     -10000,
+     -10000,
+     -5000
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "credit"
+   },
+   {
+    "amounts": [
+     411818.0,
+     411818.0,
+     403216.5
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "total"
+   },
+   {
+    "amounts": [
+     -2120,
+     -1076,
+     -774
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "holding"
+   },
+   {
+    "amounts": [
+     409698.0,
+     410742.0,
+     402442.5
+    ],
+    "display": {
+     "count": 3
+    },
+    "key": "after_holding"
+   }
+  ],
+  "standard_terms": false,
+  "tax_assumed": false,
+  "totals": [
+   411818.0,
+   411818.0,
+   403216.5
+  ],
+  "warnings": {
+   "count": 0
+  }
+ },
+ "net_basis": "after_holding",
+ "net_spread": 8299.5,
+ "ok": true,
+ "options_summary": {
+  "net_header_sub": null
+ },
+ "payments": {
+  "down_pct": 0.05,
+  "down_per_10k": 500.0,
+  "down_per_10k_display": "$500",
+  "flood": {
+   "annual": null,
+   "required": "citizens_value",
+   "sfha": false
+  },
+  "homestead": true,
+  "homestead_applied": true,
+  "insurance_annual": 3600,
+  "loan_type": "conventional",
+  "per_10k": 81.48,
+  "per_10k_display": "$80",
+  "rate": 6.95,
+  "rows": [
+   {
+    "down": 23995.0,
+    "list_price": 479900,
+    "payment": 4146.69,
+    "tax_monthly": 638.87
+   },
+   {
+    "down": 23495.0,
+    "list_price": 469900,
+    "payment": 4065.2,
+    "tax_monthly": 624.23
+   },
+   {
+    "down": 22995.0,
+    "list_price": 459900,
+    "payment": 3983.72,
+    "tax_monthly": 609.59
+   }
+  ],
+  "school_mills": 5.25,
+  "tax_estimated": false,
+  "total_mills": 17.57
+ },
+ "placeholders": {
+  "credit_share_early": "50%",
+  "credit_share_recent": "89%",
+  "days_early": "8",
+  "days_recent": "22",
+  "per_10k": "$80",
+  "r2_share": "most",
+  "sale_to_list_early": "98.7%",
+  "sale_to_list_recent": "93.9%",
+  "sold_early": "24",
+  "sold_recent": "9",
+  "split_month": "July",
+  "window_start_month": "April"
+ },
+ "preliminary": false,
+ "recommendation": {
+  "expected_sale_value": 451000,
+  "high": 480000,
+  "list_price": 469900,
+  "low": 455000
+ },
+ "recommended_index": 1,
+ "relist": null,
+ "reprice": null,
+ "state_hint": null,
+ "strategies": [
+  {
+   "down": 23995.0,
+   "expected_sale": 451000,
+   "expected_sale_source": "rule",
+   "list_price": 479900,
+   "net": 411818.0,
+   "net_after_holding": 409698.0,
+   "net_vs_recommended": -1044.0,
+   "payment": 4146.69,
+   "recommended": false,
+   "seller_credit": 10000
+  },
+  {
+   "down": 23495.0,
+   "expected_sale": 451000,
+   "expected_sale_source": "rule",
+   "list_price": 469900,
+   "net": 411818.0,
+   "net_after_holding": 410742.0,
+   "net_vs_recommended": 0.0,
+   "payment": 4065.2,
+   "recommended": true,
+   "seller_credit": 10000
+  },
+  {
+   "down": 22995.0,
+   "expected_sale": 436500,
+   "expected_sale_source": "rule",
+   "list_price": 459900,
+   "net": 403216.5,
+   "net_after_holding": 402442.5,
+   "net_vs_recommended": -8299.5,
+   "payment": 3983.72,
+   "recommended": false,
+   "seller_credit": 5000
+  }
+ ],
+ "summary_page": {
+  "first_steps": [
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "key_stats": [
+   {
+    "count": 2
+   },
+   [
+    "93.9%"
+   ],
+   {
+    "count": 2
+   }
+  ],
+  "why": {
+   "count": 3
+  }
+ },
+ "trend": {
+  "at_subject": 443061.34,
+  "r2": 0.8286,
+  "r2_key": "r2_most"
+ },
+ "warning_keys": {
+  "count": 0
+ },
+ "warnings": {
+  "count": 0
+ },
+ "window": {
+  "as_of": "2026-09-22",
+  "first_close": "2026-04-08",
+  "last_close": "2026-09-15",
+  "split_date": "2026-07-01"
+ }
+}

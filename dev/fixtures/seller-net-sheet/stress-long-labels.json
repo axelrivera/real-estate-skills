@@ -1,0 +1,28 @@
+{
+  "prepared_date": "2026-10-01",
+  "prepared_for": "Sample Seller-Hollingsworth and Sample Co-Seller-Vandermeer, Trustees",
+  "closing_date": "2026-12-15",
+  "property": {
+    "address": "11820 Whispering Cypress Hammock Boulevard Building 4 Unit 1204",
+    "city": "Palm Beach Gardens",
+    "county": "Palm Beach",
+    "state": "FL",
+    "property_type": "condo",
+    "hoa": true,
+    "hoa_monthly": 925
+  },
+  "scenarios": [
+    {"price": 689000, "label": "Current List Price, As Is with No Seller Help"},
+    {"price": 669000, "label": "After the Planned October Price Reduction"},
+    {"price": 689000, "label": "Full Price with $12,000 Credit and Home Warranty", "seller_credit": 12000, "home_warranty": 650}
+  ],
+  "costs": {
+    "listing_fee_pct": 0.03,
+    "buyer_broker_fee_pct": 0.025,
+    "mortgage_payoff": 314000,
+    "other_payoffs": [{"label": "Home Equity Line of Credit with Second Lender", "amount": 28000}],
+    "annual_tax": 11200,
+    "other": [{"label": "Condominium Association Estoppel Certificate and Rush Fee", "amount": 549},
+              {"label": "Final Water and Sewer Bill Holdback", "amount": 300}]
+  }
+}

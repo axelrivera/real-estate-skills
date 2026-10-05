@@ -24,7 +24,8 @@ def header(C, agent, sample):
     # Results_v4 case 09: no "Seller Side" pill (a seller's net sheet has only one side); the agent's name reads as a
     # signature, as the size of the other reports' agent line
     tag = '<span class="sample">SAMPLE DATA</span>' if sample else ""
-    lines = [(f'Prepared for <b>{esc(C["prepared_for"])}</b> · ' if C.get("prepared_for") else "Prepared ") + esc(C["prepared_date"])]
+    lines = [(f'Prepared for <b>{esc(C["prepared_for"])}</b> · ' if C.get("prepared_for") else "Prepared ")
+             + f'<span class="nw">{esc(C["prepared_date"])}</span>']
     if agent.get("name"):
         lines.append(f'<b class="agent">{esc(agent["name"])}</b>')
         org = " · ".join(esc(str(agent[f])) for f in ("team", "brokerage") if agent.get(f))
@@ -115,10 +116,11 @@ def build_html(C, agent, sample=False):
 
 def fit_one_page(pg):
     """(height, chart dropped?, clipped labels): the compact layout when the page would run onto a second one, then without the chart
-    (it repeats the table's totals) when even that doesn't fit, as with a long disclaimer in the profile."""
+    (it repeats the table's totals) when even that doesn't fit, as with a long disclaimer in the profile, then tighter type
+    in the table and the notes."""
     measure = "() => document.body.getBoundingClientRect().height"
     height = pg.evaluate(measure)
-    for step in ("compact", "nochart"):
+    for step in ("compact", "nochart", "tight"):
         if height <= PAGE_LIMIT:
             break
         pg.evaluate(f"() => document.body.classList.add('{step}')")
