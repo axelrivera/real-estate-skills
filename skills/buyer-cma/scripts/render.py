@@ -14,7 +14,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compute  # noqa: E402
-from _shared import cma, design, finance, render  # noqa: E402
+from _shared import cma, design, finance, prose, render  # noqa: E402
 
 ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
 money, table, ul, k = finance.money, cma.table, cma.ul, cma.k
@@ -237,22 +237,7 @@ def chart_labels(sc, s):
             "callouts": [{**c, "label": cma.display_address(c["address"])} for c in sc.get("callouts") or []]}
 
 
-MINOR_WORDS = {"a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet", "as", "at", "by", "in", "of", "off",
-               "on", "per", "to", "up", "via", "vs", "vs.", "from", "into", "with", "than", "if"}
-
-
-def title_case(text):
-    """A heading the report data writes, in Title Case as every label is (CLAUDE.md): each word capitalized except short
-    joining words inside it; words that already carry a capital ("iPhone", "HOA") are kept as written."""
-    words = str(text).split(" ")
-    out = []
-    for i, w in enumerate(words):
-        m = re.match(r"^([^A-Za-z]*)([a-z])(.*)$", w)
-        inner = 0 < i < len(words) - 1 and w.lower().strip(",:;") in MINOR_WORDS
-        if m and not inner and not any(c.isupper() for c in m.group(3)) and not w.startswith(("{", "<")):
-            w = m.group(1) + m.group(2).upper() + m.group(3)
-        out.append(w)
-    return " ".join(out)
+title_case = prose.title_case  # a heading the report data writes, in Title Case as every label is (CLAUDE.md)
 
 
 def body(R, C, homes, agent, L):
@@ -425,6 +410,11 @@ def profile_check(agent):
             "carries none. Ask the agent for them (or use their saved profile with --profile) and render again.")
 
 
+# Label fields the model types, put in Title Case before the build (shared/prose.py title_labels)
+LABEL_FIELDS = ("**.heading", "summary_page.label", "summary_page.key_stats[][1]", "summary_page.check_first[][0]",
+                "costs.payment.scenarios[].label", "comps.cards[].adjustments[].label")
+
+
 def build(R, fmt, out_dir, ctx):
     market, homes = compute.load_inputs(R, ctx.get("mls"), ctx.get("data_file"))
     C = compute.compute(R, market, homes)
@@ -471,6 +461,7 @@ def build(R, fmt, out_dir, ctx):
 
 if __name__ == "__main__":
     try:
-        render.main(build, formats=("pdf",), errors=(compute.ReportError, compute.mls.ExportError))
+        render.main(build, formats=("pdf",), errors=(compute.ReportError, compute.mls.ExportError), placeholders=True,
+                    labels=LABEL_FIELDS)
     except KeyError as e:
         sys.exit(f"report.json is missing {e}")

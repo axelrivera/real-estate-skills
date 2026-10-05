@@ -9,6 +9,8 @@ is printed, then checks:
     sentence-style finding headings and fragments are accepted exceptions;
   - markdown headings in SKILL.md, references and templates that aren't Title Case (file names, field keys and
     `code` keep their own spelling);
+  - client wording (shared/prose.py wording_issues: tool words, unfilled {placeholders}, data keys, ISO dates in a
+    sentence, jargon) in report HTML, so text the scripts write gets the check the data file gets at run time: an error;
   - the legacy form name (FR/BAR, frbar, FRBAR) in any tracked text file or report HTML: always an error. The forms are
     FAR/BAR (farbar, FARBAR); a line that reads the old name as legacy input says "legacy" and is allowed.
 
@@ -25,6 +27,7 @@ import tempfile
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from shared import prose  # noqa: E402
 from shared.prose import PROSE_DASH  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -135,6 +138,37 @@ def heading_errors(text):
     return title_case_errors(re.sub(r"`[^`]*`|\b[\w-]+\.(?:json|md|py|csv|js|ics)\b", "X", text))
 
 
+def html_wording(soup):
+    """Client-wording problems (shared/prose.py: tool words, unfilled {placeholders}, data keys, ISO dates, jargon) in a
+    rendered report's text, script-written text included: the data file is checked at run time, the scripts' own
+    wording only here. Each problem once per file, with the text around it. A draft for the agent (the offer package
+    worksheet, marked by its draft bar) may use jargon agents use (LTV), as `agent_only` data text may."""
+    out, seen = [], set()
+    jargon = soup.find(class_="draftbar") is None
+    for el in soup.find_all(["style", "script"]):
+        el.extract()
+    for node in soup.find_all(string=True):
+        text = " ".join(node.split())
+        for problem in prose.wording_issues(text, jargon=jargon) if text else ():
+            if problem not in seen:
+                seen.add(problem)
+                out.append(f"{problem} in {text[:90]!r}")
+    return out
+
+
+def ics_wording(text):
+    """Client-wording problems in a calendar file's event titles, descriptions and locations (unfolded, unescaped)."""
+    text = re.sub(r"\r?\n[ \t]", "", text)  # RFC 5545 line folding
+    out, seen = [], set()
+    for m in re.finditer(r"^(?:SUMMARY|DESCRIPTION|LOCATION)[^:]*:(.*)$", text, re.M):
+        value = re.sub(r"\\([,;\\])", r"\1", m.group(1)).replace("\\n", " ").replace("\\N", " ")
+        for problem in prose.wording_issues(value):
+            if problem not in seen:
+                seen.add(problem)
+                out.append(f"{problem} in {value[:90]!r}")
+    return out
+
+
 def main(argv):
     findings = old_name_errors()
     shipped = [p for p in glob.glob(os.path.join(ROOT, "skills", "**", "*"), recursive=True)
@@ -176,8 +210,10 @@ def main(argv):
                     doc = f.read()
                 if OLD_NAME.search(doc):
                     findings.append(f"old name {name} {os.path.basename(h)}")
-                for node in BeautifulSoup(doc, "html.parser").find_all(string=PROSE_DASH):
+                soup = BeautifulSoup(doc, "html.parser")
+                for node in soup.find_all(string=PROSE_DASH):
                     findings.append(f"em dash  {name} {os.path.basename(h)}: {node.strip()[:100]}")
+                findings += [f"wording  {name} {os.path.basename(h)}: {w}" for w in html_wording(soup)]
                 for where, text in label_texts(doc):
                     if text and text not in seen and not is_sentence(text) and title_case_errors(text):
                         seen.add(text)
@@ -187,12 +223,17 @@ def main(argv):
                     with open(p, encoding="utf-8") as f:
                         if PROSE_DASH.search(f.read()):
                             findings.append(f"em dash  {name} {os.path.relpath(p, dest)}")
+                elif p.endswith(".ics"):
+                    with open(p, encoding="utf-8") as f:
+                        findings += [f"wording  {name} {os.path.relpath(p, dest)}: {w}" for w in ics_wording(f.read())]
     for line in findings:
         print(line)
     dashes = sum(line.startswith("em dash") for line in findings)
     names = sum(line.startswith("old name") for line in findings)
-    print(f"{dashes} em dash(es) and {names} old form name(s) (errors), {len(findings) - dashes - names} label(s) to review")
-    return 1 if dashes or names else 0
+    wording = sum(line.startswith("wording") for line in findings)
+    print(f"{dashes} em dash(es), {names} old form name(s) and {wording} client-wording problem(s) (errors), "
+          f"{len(findings) - dashes - names - wording} label(s) to review")
+    return 1 if dashes or names or wording else 0
 
 
 if __name__ == "__main__":

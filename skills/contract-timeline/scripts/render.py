@@ -527,4 +527,5 @@ def extra_args(ap):
 
 
 if __name__ == "__main__":
-    render.main(build, formats=("pdf", "ics"), errors=(timeline.DealError,), extra_args=extra_args)
+    render.main(build, formats=("pdf", "ics"), errors=(timeline.DealError,), extra_args=extra_args,
+                labels=("deadlines[].label", "deadlines[].short"))

@@ -151,7 +151,8 @@ def write_text(text, path):
     return path
 
 
-def main(build, formats, argv=None, extra_args=None, errors=(), default="all"):
+def main(build, formats, argv=None, extra_args=None, errors=(), default="all", *, placeholders=False, labels=(),
+         agent_only=(), linked=None):
     """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--profile] [--mls] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
@@ -160,8 +161,15 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all"):
     `ctx["data_file"]` is the data file's path (relative paths inside it can resolve beside it).
     `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
     `default` is the --format used when none is given ("all", or one format a skill builds unless asked for more).
-    Before anything is built, the data's text is checked (prose.check: no em dashes, no fair-housing
-    red flags); a problem stops the run with the fields to rewrite. Allow-list entries it used go to stderr.
+    Before anything is built, the data's text is checked (prose.issues: no em dashes, no fair-housing red flags, no
+    tool words, data keys, ISO dates or jargon in client text), and so are the other files the run reads (`linked`)
+    and the profile's voice and disclaimers; every problem stops the run at once, listed as `field: problem → fix`.
+    Allow-list entries it used go to stderr. Missing data never stops it here: only wrong wording does.
+    `placeholders`: the skill fills {name} placeholders in its wording itself (and names any it can't).
+    `labels`: label fields the model types (prose.title_labels patterns), put in Title Case before the build.
+    `agent_only`: top-level keys whose text only the agent sees (jargon allowed there).
+    `linked(data, args)`: [(name, object)] for the other JSON the render reads (a deck file, a CMA handoff), each
+    checked like the data file.
     With several formats, one that fails doesn't stop the others: the files that were made are printed,
     then the run exits with a message naming what wasn't built.
     Prints each path, one per line, so Claude can present them.
@@ -185,9 +193,19 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all"):
     try:
         with open(args.data, encoding="utf-8") as f:
             data = json.load(f)
-        for phrase, reason in prose.check(data):  # logged so the agent can see what was let through
+        agent = profiles.load_agent(args.profile)
+        used, allow = [], prose.allow_list(data)
+        wording = {"placeholders": placeholders, "agent_only": agent_only}
+        found = prose.issues(data, used, **wording)
+        for name, obj in (linked(data, vars(args)) if linked else ()):
+            found += prose.issues(obj, used, root=name, allow=allow + prose.allow_list(obj), **wording)
+        found += prose.issues({"voice": agent["voice"], "disclaimers": agent["disclaimers"]}, used, root="profile",
+                              rules=prose.PROFILE_RULES, allow=allow)
+        prose.report(found)
+        for phrase, reason in used:  # logged so the agent can see what was let through
             print(f'Fair-housing allow list: "{phrase}" ({reason})', file=sys.stderr)
-        ctx = {"agent": profiles.load_agent(args.profile), "mls": args.mls, "sample": args.sample,
+        data = prose.title_labels(data, labels)
+        ctx = {"agent": agent, "mls": args.mls, "sample": args.sample,
                "formats": todo, "data_file": args.data,
                **{k: v for k, v in vars(args).items() if k not in base}}
         check_agent(ctx["agent"])

@@ -18,7 +18,7 @@ These apply to everything this skill writes: files, chat replies, and text the a
 - **Labels in Title Case:** headings, column headers, row names, tiles and legend entries (and the price `label`s you write). Sentences, notes and table values stay sentence case.
 - **Names, not pronouns.** Call the seller by name or "the seller"; never infer a pronoun from a name.
 - **Private details.** A payoff letter or mortgage statement carries loan numbers: keep only the amounts.
-- **`render.py` checks the data file first** and stops on an em dash in a sentence or a clear fair-housing red flag, naming each field. Rewrite the field; don't work around the check.
+- **`render.py` checks the data file first** (and any deck, CMA or profile file it reads) and stops on an em dash in a sentence, a clear fair-housing red flag, or tool words, data keys, ISO dates or jargon in client text (`references/client-wording.md`), listing every field at once. Rewrite each field; don't work around the check. Labels are put in Title Case for you.
 
 ## When to Use Another Skill's Job Instead
 

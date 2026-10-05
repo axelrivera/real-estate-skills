@@ -337,7 +337,7 @@ def prepare_listing(data, A, costs):
         A.add("listing", "owner_title.quote", "check", w, "med")
     L["loan_limits"] = profiles.loan_limits()
     L["farbar_market"] = cf.farbar_market(costs.get("contract.forms"))
-    L["reports"] = "4-point and wind-mit reports" if costs.state == "FL" else "existing inspection and insurance reports"
+    L["reports"] = "4-point and wind mitigation reports" if costs.state == "FL" else "existing inspection and insurance reports"
     # OFR-311: only a seller who has these reports can share them; never offered when the listing file doesn't say so
     L["insurance_reports"] = L.get("insurance_reports") is True
     # OFR-15: one set of benchmarks for the review and the counter, from the market; national planning norms otherwise

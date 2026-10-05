@@ -347,7 +347,7 @@ def options(ap):
 
 def main(argv=None):
     return render.main(build, formats=("options", "worksheet"), argv=argv, extra_args=options,
-                       errors=(oe.OfferError, handoff.HandoffError))
+                       errors=(oe.OfferError, handoff.HandoffError), agent_only=("worksheet",), linked=handoff.linked)
 
 
 if __name__ == "__main__":

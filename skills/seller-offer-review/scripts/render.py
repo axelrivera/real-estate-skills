@@ -875,7 +875,8 @@ def options(ap):
 
 
 def main(argv=None):
-    return render.main(build, formats=("pdf",), argv=argv, extra_args=options, errors=(oe.OfferError, handoff.HandoffError))
+    return render.main(build, formats=("pdf",), argv=argv, extra_args=options, errors=(oe.OfferError, handoff.HandoffError),
+                       labels=("offers[].label",), linked=handoff.linked)
 
 
 if __name__ == "__main__":

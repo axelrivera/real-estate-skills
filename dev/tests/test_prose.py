@@ -118,7 +118,7 @@ class Phrases(unittest.TestCase):
         self.assertEqual([p for p, _ in found], ["$.summary"])
         with self.assertRaises(prose.ProseError) as e:
             prose.check(data)
-        self.assertIn("$.summary", str(e.exception))
+        self.assertIn("- summary: em dash", str(e.exception))
 
 
 class PlaceNamesAndAllowList(unittest.TestCase):
@@ -157,7 +157,7 @@ class RenderStops(unittest.TestCase):
                 json.dump({"findings": ["Great for young families"]}, f)
             with self.assertRaises(SystemExit) as e:
                 render.main(lambda *a: built.append(a) or [], ("pdf",), [src, "--out", tmp])
-        self.assertIn("$.findings[0]", str(e.exception.code))
+        self.assertIn("- findings[0]: ", str(e.exception.code))
         self.assertEqual(built, [])
 
     def test_allow_list_is_logged(self):
