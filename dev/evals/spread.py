@@ -72,13 +72,14 @@ def detect(data):
 #   text:    counts of sentences the model wrote (why, first steps): judgment
 SPEC = {
     "buyer-cma": {
-        "script": [r"^payments\.(rate|insurance_annual|flood|closing)$",
-                   r"^credit\.(closing_cost_pct|closing_costs_given|program|down_pct|loan_tax_labels)"],
-        "roots": [r"^comps_table\[", r"^adjusted_(min|max)$", r"^median_adjusted$", r"^range\.",
-                  r"^handoff\.(comps|value|offer_plan)", r"^payments\.price$"],
+        "script": [r"^payments\.(rate|insurance_annual|flood)$",
+                   r"^credit\.(closing_costs_given|program|down_pct)"],
+        "roots": [r"^comps_table\[", r"^adjusted_(min|max)$", r"^median_(adjusted|shown)$", r"^range\.",
+                  r"^handoff\.(comps|value|offer_plan)", r"^payments\.price$", r"^comps\.", r"^offer_plan\."],
         "derived": [r"^payments\.", r"^taxes\[", r"^credit\.", r"^credit_alt\.", r"^cash_fit", r"^competition_estimates",
-                    r"^warnings", r"^warning_keys", r"^placeholders\.", r"^handoff\.recommended_list_price"],
-        "text": [r"^summary_page\.(why|check_first)"],
+                    r"^warnings", r"^warning_keys", r"^handoff\.recommended_list_price", r"^costs\.", r"^summary\.",
+                    r"^competition\.", r"^notes", r"^note_keys", r"^assumption", r"^chat_notes"],
+        "text": [r"^summary\.(why|check_first)"],
     },
     "seller-cma": {
         "script": [r"^payments\.(rate|insurance_annual|flood|homestead|homestead_applied|loan_type|down_pct|school_mills|"

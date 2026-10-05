@@ -1,0 +1,41 @@
+/* Buyer CMA: loaded after report.css and shared/cma.css. Styles the layout kit's pieces under this report's own
+   classes (never the kit itself). Theme variables only. */
+
+/* page 1: the key numbers as four outlined tiles, two rows of two (layout.tiles), value above its label */
+.bcma .sp-stats{display:flex;flex-direction:column;gap:6px}
+.bcma .sp-tiles{margin:0;gap:6px}
+.bcma .sp-tiles .kit-tile{display:flex;flex-direction:column;border:1px solid var(--brand-rule);border-top:3px solid var(--brand);
+  border-radius:6px;padding:6px 10px}
+.bcma .sp-tiles .kit-tile:first-child{padding-left:10px;border-left:1px solid var(--brand-rule)}
+.bcma .sp-tiles .kit-v{order:-1;font-size:15pt;line-height:1.15;font-variant-numeric:tabular-nums}
+.bcma .sp-tiles .kit-k{font-size:8.5pt;text-transform:none;letter-spacing:0;line-height:1.25}
+.bcma .sp-rec .headline{margin-top:6px}
+.bcma .sp-sub{font-weight:400;color:var(--muted)}
+.bcma .sp-table{margin:0 0 4px}
+.bcma .sp-table table{font-size:9pt}
+.bcma .sp-table th,.bcma .sp-table td{padding:4px 6px}
+.bcma .sp-table th{color:var(--brand-strong)}
+.bcma .sp-table tr.rec td{font-weight:700;color:var(--brand-strong)}
+.bcma .sp-table tr.rec td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+.bcma .sp-table .flag{font-size:8.5pt}
+.bcma .fitline{margin:2px 0 4px}
+.bcma .onepage .details{margin-top:6px}
+.bcma .onepage.fit1 .sp-tiles .kit-tile{padding:5px 9px}
+.bcma .onepage.fit2 .sp-tiles .kit-v{font-size:13.5pt} .bcma .onepage.fit2 .sp-tiles .kit-k{font-size:8pt}
+.bcma .onepage.fit3 .sp-tiles .kit-tile{padding:4px 8px} .bcma .onepage.fit3 .sp-tiles .kit-v{font-size:12.5pt}
+.bcma .onepage.fit3 .sp-tiles .kit-k{font-size:7.6pt} .bcma .onepage.fit3 .sp-stats{gap:5px}
+.bcma .onepage.fit2 .sp-table table{font-size:8.5pt} .bcma .onepage.fit3 .sp-table table{font-size:8pt}
+
+/* the comp cards: each adjustment on its own short line, sale price to adjusted value */
+.bcma .adj-lines{display:flex;flex-wrap:wrap;gap:1px 12px;font-size:8.5pt;margin:0 0 4px;font-variant-numeric:tabular-nums}
+.bcma .adj-lines i{font-style:normal;color:var(--muted)}
+
+/* the scatter in the kit's chart box: the legend under the drawing */
+.bcma .kit-chart .legend{margin:4px 4px 2px;font-size:8.5pt}
+
+/* the one notes block, at the end of the cost section */
+.bcma .cost-notes{font-size:8.3pt;margin-top:12px}
+.bcma .cost-notes li{margin:0 0 3px}
+
+/* a cash or credit flag under a figure wraps inside its column, so a long flag never widens a number column */
+.bcma .kit-tbl td .flag{white-space:normal;display:block;font-size:8pt;line-height:1.25}

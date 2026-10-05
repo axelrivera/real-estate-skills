@@ -7,7 +7,7 @@ One opening offer, a target and a walk-away. They're a negotiating plan for this
 - **Opening:** normally at or near the bottom of the supported range. Go lower only with strong leverage (long time on market, several cuts, vacant, failed contract), and never so low the listing agent won't counter. For a new listing, a home drawing multiple offers, or a buyer who can't lose this house, open near the middle of the range or at asking, and say why.
 - **Target:** where the recent sale-to-list ratio and concession data suggest the home settles.
 - **Walk-away:** generally at or below the median adjusted comp. Never above the top of the range unless the buyer explicitly accepts appraisal-gap risk, and say so if they do. This number protects first-time buyers from creeping up in a counteroffer.
-- **Credit alternative:** when the buyer is cash-tight, a price-plus-credit option with about the same price minus credit as the opening offer. It must match one of the credit scenarios. The higher price raises the down payment and closing costs, so it saves less cash than the credit: quote the saving with `{credit_alt_cash_saved}` (compute.py's `credit_alt.cash_saved`), never the credit amount as the cash saved.
+- **Credit alternative:** when the buyer is cash-tight, a price-plus-credit option with about the same price minus credit as the opening offer. It must match one of the credit scenarios. The higher price raises the down payment and closing costs, so it saves less cash than the credit: the script says what it really saves (compute.py's `credit_alt.cash_saved`), never the credit amount as the cash saved.
 - **Conditions:** what the plan assumes (the roof, a failed contract's cause, no competing offers…), so the buyer knows which answers would change it.
 
 ## The Rough Plan (Gut Check)
@@ -33,4 +33,4 @@ None goes above the asking price (`capped_at_asking` says when the median is hig
 - Use the lender's closing-cost estimate when you have it (`closing_costs`); otherwise compute.py uses the market's share of price plus the taxes on the loan, itemized on the loan amount (Florida: 2.5% of price plus the documentary stamp tax on the note, 0.35%, and the intangible tax, 0.2%; elsewhere the national 3% estimate), and the report labels it. `closing_cost_pct` replaces the share and drops the itemized loan taxes.
 - compute.py flags any credit over the program limit or over the closing costs. Fix the scenario rather than leaving the flag: a credit above actual costs is simply lost.
 - Optional `buydown`: the same credit spent on a temporary 2-1 rate buydown. The script prices it and says plainly when the credit doesn't cover it.
-- `after_paragraph` explains the trade-off for this buyer: cash-tight vs. staying long term.
+- `takeaway` explains the trade-off for this buyer in words: cash-tight vs. staying long term. The script says what each $5,000 of credit saves and costs a month.

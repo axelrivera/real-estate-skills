@@ -204,7 +204,8 @@ def scatter_points(homes, sc, subject_sqft, subject_address, comps=()):
     return pts, excluded, fit
 
 
-def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=(), drop_crowded=False):
+def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=(), drop_crowded=False, points=None,
+            chart=None, band_label=None, kfmt=None):
     """Price vs. size for sold and active homes near the subject's size, with the supported range band.
 
     `comps`: the comp cards' addresses, drawn as comparable sales. `drop_crowded` (the seller CMA): labels stay
@@ -214,8 +215,12 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     Label sides: left, right, above or below.
     Returns (svg, info) where info has trend_at_subject, r2, excluded [(address, sqft, kind, reason)], n_sold, n_active,
     counts {kind: n} for scatter_legend, and callouts_dropped for callouts whose home isn't on the chart.
+    `points`: scatter_points' result, computed once by the caller's document model (the trend it states is the one
+    drawn). `chart`: a layout.Chart, marked with each series as it's drawn, so its legend names only what's on the chart.
+    `band_label`: the range band's text as the caller formats it; `kfmt`: the tick formatter (cma.k by default).
     """
-    pts, excluded, fit = scatter_points(homes, sc, subject_sqft, subject_address, comps)
+    kf = kfmt or k
+    pts, excluded, fit = points or scatter_points(homes, sc, subject_sqft, subject_address, comps)
     sold, act = pts["comp"] + pts["sold"], pts["active"]
     kind = {id(h): k for k, hs in pts.items() for h in hs}
 
@@ -245,7 +250,7 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
          ]
     for v in _ticks(Y0, Y1, ystep):
         o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
-                 f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{k(v)}</text>')
+                 f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{kf(v)}</text>')
     step = nice_step(X1 - X0, 8)
     for v in _ticks(math.ceil(X0 / step) * step, X1, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T}" y2="{H - B}" class="grid"/>'
@@ -256,13 +261,16 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         xa, xb = X0 + 50, X1 - 50
         o.append(f'<line x1="{x(xa):.1f}" y1="{y(fit["intercept"] + fit["slope"] * xa):.1f}" '
                  f'x2="{x(xb):.1f}" y2="{y(fit["intercept"] + fit["slope"] * xb):.1f}" class="trend"/>')
+        _mark(chart, "trend", L)
     def sale(h):
+        _mark(chart, cat(h), L)
         o.append(shape(cat(h), x(h["living_area"]), y(h["close_price"]), False,
                        f'{display_address(h["address"])}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
 
     for h in pts["sold"]:  # background first, comps and the subject on top
         sale(h)
     for h in act:
+        _mark(chart, "active", L)
         o.append(shape("active", x(h["living_area"]), y(h["current_price"]), True,
                        f'{display_address(h["address"])}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
     for h in pts["comp"]:
@@ -270,12 +278,15 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(display_address(subject_address))}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
+    if chart is not None:
+        chart.mark("subject", L("lg_subject", subject=sc.get("subject_label", display_address(subject_address))),
+                   LEGEND_SWATCHES["subject"])
     # CMA-205, CMA-253: labels step aside from the markers (and each other) instead of printing over them; the band's
     # label goes in the first corner clear of markers
     marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
     marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
     placer = _LabelPlacer(marks, (Lm, T, W - R, H - B), gap=LABEL_GAP if drop_crowded else 0)
-    band_text = f'{L("band")} {k(band[0])}–{k(band[1])}'
+    band_text = band_label or f'{L("band")} {k(band[0])}–{k(band[1])}'
     band_w = _text_w(band_text, 12, bold=True)
     spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
              for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
@@ -314,9 +325,10 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
 
 
 def _text_w(text, size, bold=False):
-    """About how wide a chart label draws (sans-serif letters and digits average ~0.56 em, bold ~0.6), plus room for the
-    wider fallback fonts some sandboxes print with (Results_v5: a band label measured for Helvetica ran into a marker)."""
-    return len(text) * size * (0.6 if bold else 0.56) * FONT_SLACK
+    """How wide a chart label draws: measured with the bundled font's metrics (layout.text_width), plus room for the
+    wider fallback fonts a report that hasn't switched the bundled font on may print with (Results_v5: a band label
+    measured for Helvetica ran into a marker). Every label box on a chart is measured here."""
+    return layout.text_width(text, size, bold) * FONT_SLACK
 
 
 FONT_SLACK = 1.15
@@ -361,7 +373,7 @@ class _LabelPlacer:
 
     @staticmethod
     def box(px, py, side, text, gap, size, bold=False):
-        w, h = len(text) * size * (0.6 if bold else 0.55), size
+        w, h = _text_w(text, size, bold), size  # the same measure as every other chart label (FONT_SLACK included)
         if side in ("above", "below"):
             base = py - gap - 2 if side == "above" else py + gap + 10
             return px - w / 2, base - 0.8 * h, px + w / 2, base + 0.2 * h
@@ -457,6 +469,21 @@ def _label(px, py, side, text, cls, gap):
                  f'class="{cls}">{esc(text)}</text>')
 
 
+LEGEND_SWATCHES = {
+    "comp": '<circle cx="7" cy="7" r="5.5" class="m-comp"/>',
+    "sold": '<circle cx="7" cy="7" r="4" class="m-sold"/>',
+    "active": '<circle cx="7" cy="7" r="5.5" class="m-active hol"/>',
+    "trend": '<line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>',
+    "subject": '<path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--subject)"/>',
+}
+
+
+def _mark(chart, kind, L):
+    """Record one drawn mark of a series on a layout.Chart (its legend names only the series drawn)."""
+    if chart is not None:
+        chart.mark(kind, L("lg_" + kind), LEGEND_SWATCHES[kind])
+
+
 def scatter_legend(L, subject, counts):
     """Only the entries with something on the chart: `counts` is scatter()'s info["counts"]."""
     entries = [
@@ -512,13 +539,21 @@ def excluded_note(excluded, L):
 
 # --- dot plot (page 1) ---------------------------------------------------------
 
-def dotplot(cards, low, high, marker_price, marker_label, second=None):
-    """Adjusted comps against the supported range, with the asking (or list) price marked."""
+DOT_ADDR_PX, DOT_ADDR_MIN, DOT_ADDR_MAX = 11.5, 190, 300  # the address column: its font size and width bounds
+
+
+def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None):
+    """Adjusted comps against the supported range, with the asking (or list) price marked. The address column is as
+    wide as its longest address, measured (DOT_ADDR_MIN to DOT_ADDR_MAX); an address wider still is fitted to it.
+    `kfmt` formats the values and ticks (cma.k by default)."""
+    k_ = kfmt or k
     cs = sorted(cards, key=lambda c: -c["adjusted"])
     vals = [c["adjusted"] for c in cs] + [low, high, marker_price] + ([second[0]] if second else [])
     step = nice_step(max(vals) - min(vals) + 16000, 6)
     lo, hi = math.floor((min(vals) - 8000) / step) * step, math.ceil((max(vals) + 8000) / step) * step
-    W, Lm, R, T = 730, 190, 20, 26
+    widths = [_text_w(display_address(c["address"]), DOT_ADDR_PX) for c in cs]
+    W, R, T = 730, 20, 26
+    Lm = min(max(DOT_ADDR_MIN, max(widths, default=0) + 14), DOT_ADDR_MAX)
     row = 21 if len(cs) <= 5 else 18  # six comps: tighter rows, same label size
     H = T + row * len(cs) + 26
 
@@ -529,7 +564,7 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
          f'<rect x="{x(low):.1f}" y="{T - 8}" width="{x(high) - x(low):.1f}" height="{row * len(cs) + 8}" class="dp-band"/>']
     for v in _ticks(lo, hi, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T - 8}" y2="{T + row * len(cs)}" class="dp-grid"/>'
-                 f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">{k(v)}</text>')
+                 f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">{k_(v)}</text>')
     xm = x(marker_price)
     xs = x(second[0]) if second is not None else None
     # CMA-23: labels never sit on each other or run off the chart. Two close markers put their labels on opposite
@@ -547,13 +582,14 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None):
                  f'<text x="{xs + shift[s_pos]:.1f}" y="{T - 16}" text-anchor="{s_pos}" class="dp-second-lbl">{esc(second[1])}</text>')
     lines = [v for v in (xm, xs) if v is not None]
     for i, c in enumerate(cs):
-        cy, cx, val = T + i * row + row / 2 - 4, x(c["adjusted"]), k(c["adjusted"])
+        cy, cx, val = T + i * row + row / 2 - 4, x(c["adjusted"]), k_(c["adjusted"])
         w = _text_w(val, 12)
+        squeeze = f' textLength="{Lm - 14:.0f}" lengthAdjust="spacingAndGlyphs"' if widths[i] > Lm - 14 else ""
         # CMA-253: a value label that a price line would strike through goes on the dot's left, when that side is clear
         left = (any(cx + 8 <= v <= cx + 12 + w for v in lines) and cx - 12 - w > Lm
                 and not any(cx - 12 - w <= v <= cx - 8 for v in lines))
         anchor = ' text-anchor="end"' if left else ""
-        o.append(f'<text x="0" y="{cy + 4:.1f}" class="dp-addr">{esc(display_address(c["address"]))}</text>'
+        o.append(f'<text x="0" y="{cy + 4:.1f}"{squeeze} class="dp-addr">{esc(display_address(c["address"]))}</text>'
                  f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="6" class="dp-dot"/>'
                  f'<text x="{cx - 10 if left else cx + 10:.1f}" y="{cy + 4:.1f}"{anchor} class="dp-val">{val}</text>')
     o.append("</svg>")
@@ -802,11 +838,13 @@ def adjustment_words(cards):
     return _and([ADJ_KIND_WORDS[k] for k in adjustment_kinds_used(cards)])
 
 
-def adjustment_summary(cards, time_info=None):
+def adjustment_summary(cards, time_info=None, f=None):
     """Results_v5 case 02: the method line's list of what was adjusted, generated from the comps so it names every kind
     actually used, each with its amounts: 'Adjusted for size (plus or minus up to $7,500), condition and updates
     ($5,000 to $25,000), market changes since each sale (1.5% a quarter for sales before July) and seller credits (taken
-    off each sale price).' `time_info` is apply_time_adjustments' info, for the rate and cutoff. '' with no adjustments."""
+    off each sale price).' `time_info` is apply_time_adjustments' info, for the rate and cutoff. '' with no adjustments.
+    `f` formats the amounts (finance.money by default; a skill on the report kit passes fmt.money)."""
+    f = f or money
     parts = []
     for kind in adjustment_kinds_used(cards):
         amounts = sorted({abs(a["amount"]) for c in cards for a in c.get("adjustments") or []
@@ -820,9 +858,9 @@ def adjustment_summary(cards, time_info=None):
         elif not amounts:
             detail = ""
         elif len(amounts) == 1:
-            detail = money(amounts[0])
+            detail = f(amounts[0])
         else:
-            detail = f"{money(amounts[0])} to {money(amounts[-1])}"
+            detail = f"{f(amounts[0])} to {f(amounts[-1])}"
         parts.append(ADJ_KIND_WORDS[kind] + (f" ({detail})" if detail else ""))
     return f"Adjusted for {_and(parts)}." if parts else ""
 

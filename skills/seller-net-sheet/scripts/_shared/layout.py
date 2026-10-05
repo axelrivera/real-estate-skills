@@ -372,11 +372,13 @@ PAGINATE_JS = """([pageH, starts]) => {
     // that fits stays, rather than leave the page a quarter empty)
     if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH && !(keepOK && pos + h <= pageH - SAFE)) brk = true;
     else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
-      // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most) rather than move and leave
-      // half the page empty; it moves only when less than 40% of the page is left or it would need to shrink more.
+      // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most, or what its data-shrink
+      // allows) rather than move and leave half the page empty; it moves only when less than 40% of the page is left
+      // or it would need to shrink more.
       const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + SAFE;
       const sr = svg ? svg.getBoundingClientRect() : null;
-      if (sr && pageH - pos >= 0.4 * pageH && over <= 0.2 * sr.height) {
+      const most = svg ? (parseFloat(svg.dataset.shrink) || 0.2) : 0.2;
+      if (sr && pageH - pos >= 0.4 * pageH && over <= most * sr.height) {
         svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
         el.classList.add('shrunk');
       } else if (!svg && !el.querySelector('.tbl.whole') && pageH - pos >= FLOW_ROOM * pageH) {
