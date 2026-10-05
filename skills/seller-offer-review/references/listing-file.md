@@ -63,7 +63,7 @@ The agent's name, brokerage and brand colors come from the agent's profile (`--p
 | `current_tax_bill_paid` | `true` once the seller paid this year's bill; else false, and asked for Nov and Dec closings | med |
 | `property_type` | `single_family`, `condo`, `townhouse`, `multifamily`, `land`. `condo` adds the condo rider, FHA/VA project approval and rescission checks (`condo.md`). Missing: Miami-Dade's surtax is left out and flagged | med in Miami-Dade |
 | `flood_disclosure` | `true` once the seller's flood disclosure (Florida: s. 689.302) has been given to the buyer; else flagged for the listing side where the market requires it | — |
-| `highest_and_best_due` | `YYYY-MM-DD HH:MM`: the deadline of a call for highest and best already out (FAR/BAR: the Deadline on a signed NMOB-1 Notice of Multiple Offers in any package). It shows under Respond By, the plan holds every response until it passes, a counter's time for acceptance ends at least a day after it, and another call isn't offered | none: "Call for Highest & Best" is one of the options | — |
+| `highest_and_best_due` | `YYYY-MM-DD HH:MM`: the deadline of a call for highest and best already out (FAR/BAR: the Deadline on a signed NMOB-1 Notice of Multiple Offers in any package). While it's pending it is the Respond By deadline and the plan is to wait for the final offers, then decide (`summary.wait`; the counter or acceptance is the fallback), a counter's time for acceptance ends at least a day after it, and another call isn't offered | none: "Call for Highest & Best" is one of the options | — |
 | `costs` | market values; see below | — |
 
 ### costs (This Deal's Own Numbers, Optional)
@@ -117,6 +117,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `approval` | `pof_verified` `full_uw` `du_approved` `preapproval` `prequal` `none` | preapproval (financed) | med |
 | `approval_expires` | the expiration date on the pre-approval letter (`YYYY-MM-DD`). Before closing: a Med issue. Text that isn't a date ("30 days from issue") is recorded as an assumption, not checked | none | low |
 | `proof_of_funds` | $ the buyer's proof of funds verifies (bank letter or statement). Below the down payment plus any appraisal gap the buyer covers, it's a High issue | none | — |
+| `approval_documented` | `true` when the pre-approval letter says the lender reviewed the buyer's credit report, income and asset documentation: the loan officer is asked only about automated underwriting | false | — |
 | `approval_max_price`, `approval_max_loan` | the caps printed on the pre-approval letter. A price (or loan) above them is a High issue, and a counter above the price cap asks for an updated letter | none | — |
 | `lender_called` | bool | false → approval score capped at 3 | — |
 | `deposit` | total escrow $ | unknown → scored 3, and always in `to_confirm` | med |
@@ -149,7 +150,7 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `assessment_payoff` | Rider EE or the CDD addendum: an assessment balance the seller agrees to pay at closing | 0; flagged when Rider EE is attached | — |
 | `loan_amount` | $ from the financing paragraph | none; checked against the down payment when given | — |
 | `balance_to_close` | $ the balance due at closing (FAR/BAR Para. 2(e)) of the live terms. With the deposit and loan amount it must add up to the price; a counter that changed the price without restating them is raised (`loan_amount`) | none; not checked | — |
-| `escalation` | `{cap, increment, proof, contract_form}`; the offer is scored at the price it reaches against the other offers, and the counter goes up to a cap above the price (`counter-rules.md`, rule 2). `contract_form` is the contract box the Escalation Addendum checks (`as_is` or `standard`): one naming the other form is a High issue (`escalation_form`) | none | — |
+| `escalation` | `{cap, increment, proof, contract_form, paid_in_cash, proof_of_funds}`; the offer is scored at the price it reaches against the other offers, and the counter goes up to a cap above the price (`counter-rules.md`, rule 2). `contract_form` is the contract box the Escalation Addendum checks (`as_is` or `standard`): one naming the other form is a High issue (`escalation_form`). `paid_in_cash`: `true` when the added amount is paid in cash at closing (EAC-1 (a), proof of funds attached), `false` when it's financed (b); left out on EAC-1, the form's default (cash). Cash is checked against `proof_of_funds` (the proof attached to the addendum, when it's a separate document, else the offer's), financed or unstated against the pre-approval letter; a flag only when that doesn't cover the cap. EAC-1 states how a competing offer is proven (a redacted copy from the seller), so it isn't asked | none | — |
 | `personal_property`, `occupancy`, `other_terms` | text | — | — |
 | `insurance_quote` | `true` (a quote in hand, scored), `false` (none yet), or `"planned"` (the buyer's agent says one is coming: noted, not scored until it's in hand) | unknown | — |
 | `agent_track` | `strong` `average` `weak` | scored 3 | — |

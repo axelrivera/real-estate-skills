@@ -15,6 +15,8 @@
 <!-- ===== multi block (mode "multi") ===== -->
 **{{summary.title}}.** {{summary.why}}
 
+{{when summary.wait:}} The plan is to wait for the final offers (due {{summary.wait.due}}), then decide. {{summary.wait.fallback}}, as below.
+
 **Respond By:** {{summary.respond_by}} ({{summary.respond_by_offer}}, when present)
 
 {{when summary.respond_by_also:}} **Also Due:** {{each summary.respond_by_also: when + ", " + what; joined with "; "}}
@@ -70,7 +72,7 @@
 | {{row.term}} | {{row.offered}} | {{row.counter}} | {{row.why}} |
 
 {{when summary.counter:}}
-**Our Counter** ({{summary.counter.summary}}):
+**{{"Fallback Counter" when summary.wait, else "Our Counter"}}** ({{summary.counter.summary}}):
 
 | Term | Buyer Offered | We Counter | Why |
 |---|---|---|---|

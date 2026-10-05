@@ -155,19 +155,22 @@ class ListingSide(unittest.TestCase):
         self.assertEqual(self.item(review.analyze(case05(listing_brokerage="Greenleaf Realty Partners"))), [])
 
 
+FINANCED = {"cap": 506000, "increment": 2000, "proof": True, "paid_in_cash": False}  # EAC-1 (b): the loan grows
+
+
 class FinancingChecks(unittest.TestCase):
     def test_pre_approval_below_the_escalation_cap_is_a_risk(self):
-        b = offer(review.analyze(case05()), "B")  # letter to $494,000, cap $506,000
+        b = offer(review.analyze(case05(escalation=FINANCED)), "B")  # letter to $494,000, cap $506,000
         f = next(f for f in b["flags"] if f.get("topic") == "escalation_cap_over_approval")
         self.assertEqual(f["sev"], "Med")
         self.assertIn("$506,000", f["issue"])
 
     def test_letter_covering_the_cap_is_not_flagged(self):
-        b = offer(review.analyze(case05(approval_max_price=510000, approval_max_loan=460000)), "B")
+        b = offer(review.analyze(case05(approval_max_price=510000, approval_max_loan=460000, escalation=FINANCED)), "B")
         self.assertNotIn("escalation_cap_over_approval", [f.get("topic") for f in b["flags"]])
 
     def test_loan_cap_below_the_loan_at_the_cap(self):
-        b = offer(review.analyze(case05(approval_max_price=None)), "B")  # $444,600 loan cap; at $506,000 the loan is higher
+        b = offer(review.analyze(case05(approval_max_price=None, escalation=FINANCED)), "B")  # $444,600 loan cap
         self.assertIn("escalation_cap_over_approval", [f.get("topic") for f in b["flags"]])
 
     def test_proof_of_funds_answers_the_funds_question(self):
@@ -206,7 +209,8 @@ class Wording(unittest.TestCase):
 
     def test_respond_by_lines_are_short(self):
         s = review.single_view(*(lambda R: (R, offer(R, "B")))(review.analyze(fixture("listing-pays-buyer-broker.json"))))
-        self.assertEqual(s["respond_by_also"][0]["when"], "Wed Sep 23, 12:00 PM")
+        # round 3 case 05: highest and best pending is the Respond By deadline; the offer's own follows
+        self.assertEqual((s["respond_by"], s["respond_by_also"][0]["when"]), ("Wed Sep 23, 12:00 PM", "Thu Sep 24, 5:00 PM"))
         self.assertEqual(review.short_when("2026-09-23"), None)
 
     def test_gantt_short_last_week_has_no_date(self):

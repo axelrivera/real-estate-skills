@@ -79,6 +79,18 @@ def fmt_when(v):
     return str(v)
 
 
+def fmt_when_short(v):
+    """'2026-09-24 17:00' -> 'Thu Sep 24, 5:00 PM', the one short form a deadline takes where space is tight (the
+    counter table's Time for Acceptance, the Respond By box; the review's year is on the page); a date alone ->
+    'Thu Sep 24'; other text as fmt_when."""
+    for fmt, n, out in (("%Y-%m-%d %H:%M", 16, "%a %b %-d, %-I:%M %p"), ("%Y-%m-%d", 10, "%a %b %-d")):
+        try:
+            return datetime.strptime(str(v or "").strip()[:n], fmt).strftime(out)
+        except ValueError:
+            continue
+    return fmt_when(v)
+
+
 def prior_weekday(d):
     while d.weekday() >= 5:
         d -= timedelta(days=1)
@@ -481,7 +493,7 @@ def apply_escalations(offers, L):
         if not inc:
             issues.append(("Med", "Escalation clause with no increment.", "Ask for the increment over a competing offer.",
                            "escalation_increment"))
-        if e.get("proof") is None:
+        if e.get("proof") is None and not cf.escalation_proof_stated(o["contract_form"], o):  # EAC-1 states it
             issues.append(("Med", "The escalation clause doesn't say how a competing offer is proven.",
                            "Require a redacted copy of the competing offer's signature page and price terms.", "escalation_proof"))
         # OFR-101: offers with the same `same_buyer` key are one buyer's alternatives, never each other's competition
@@ -510,13 +522,49 @@ def apply_escalations(offers, L):
                                   f"({money(appraisal_line(L) + o['gap_cover'])}).",
                            "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling.",
                            "escalation_cap_over_value"))
-        over = approval_short(o, cap)
-        if over and not approval_short(o, eff):  # a letter already short at the price is the approval_cap flag's
-            issues.append(("Med", f"The pre-approval letter ({over}) doesn't cover the escalation cap ({money(cap)}): if the "
-                                  "price escalates, the loan may not.",
-                           f"Ask for a pre-approval good at {money(cap)} (or proof of the added cash) before relying on the "
-                           "escalation.", "escalation_cap_over_approval"))
+        issues += escalation_funding(o, cap, eff)
         o["escalation_issues"] = issues  # (sev, issue, fix, topic)
+
+
+def escalation_cash_need(o, price):
+    """The cash a financed buyer brings at `price` when the escalated amount is paid in cash: the price less the loan
+    as written (deposits are part of it), plus an appraisal gap the buyer covers on a loan the appraisal caps."""
+    loan = o.get("loan_amount") or finance.loan_amount(o.get("price_base") or o["price"], o["financing"], o["down_pct"])
+    gap = (o.get("appraisal_gap") or 0) if not o.get("appraisal_protected") else 0
+    return price - loan + gap
+
+
+def escalation_funding(o, cap, eff):
+    """Round 3 case 05: whether the escalated amount is funded at the cap, as the addendum says it's paid
+    (contract_forms.escalation_paid_in_cash): in cash (EAC-1 (a), with proof of funds attached), by the proof of
+    funds in the package (`escalation.proof_of_funds`, else the offer's `proof_of_funds`); financed or not stated, by
+    the pre-approval letter. A flag only when that doesn't cover it, and the fix never asks for a document the
+    package already has. [(sev, issue, fix, topic)]"""
+    if not cap or not o["financed"] or cap <= eff:
+        return []
+    e = o["escalation"]
+    funds = e.get("proof_of_funds") or o.get("proof_of_funds")
+    if cf.escalation_paid_in_cash(o["contract_form"], o):
+        need = escalation_cash_need(o, cap)
+        if funds and funds >= need:
+            return []
+        if funds:
+            return [("Med", f"The escalation is paid in cash at closing, and the proof of funds ({money(funds)}) doesn't "
+                            f"cover the {money(need)} the buyer brings at the cap ({money(cap)}).",
+                     f"Ask for proof of funds of at least {money(need)} plus closing costs before relying on the escalation.",
+                     "escalation_cash_short")]
+        return [("Med", "The escalation is paid in cash at closing, but no proof of funds is in the package.",
+                 f"Ask for the proof of funds the addendum calls for, at least {money(need)} plus closing costs, before "
+                 "relying on the escalation.", "escalation_cash_short")]
+    over = approval_short(o, cap)
+    if not over or approval_short(o, eff):  # a letter already short at the price is the approval_cap flag's
+        return []
+    covered = funds and funds >= escalation_cash_need(o, cap)
+    fix = (f"Ask for a pre-approval good at {money(cap)} before relying on the escalation; the proof of funds in the "
+           f"package ({money(funds)}) would cover the added amount in cash." if covered else
+           f"Ask for a pre-approval good at {money(cap)} (or proof of the added cash) before relying on the escalation.")
+    return [("Med", f"The pre-approval letter ({over}) doesn't cover the escalation cap ({money(cap)}): if the price "
+                    "escalates, the loan may not.", fix, "escalation_cap_over_approval")]
 
 
 def escalation_room(o):
@@ -1640,6 +1688,13 @@ def offer_field_problems(o):
         except cf.FormError:
             probs.append(f"{where}.escalation.contract_form: {e['contract_form']!r} names a FAR/BAR form but not which "
                          "one → use as_is or standard, as the addendum's checked box reads")
+    if isinstance(e, dict) and e.get("paid_in_cash") is not None and not isinstance(e["paid_in_cash"], bool):
+        probs.append(f"{where}.escalation.paid_in_cash: {e['paid_in_cash']!r} isn't true or false → true when the "
+                     "addendum has the escalation paid in cash at closing, false when it's financed")
+    pof = e.get("proof_of_funds") if isinstance(e, dict) else None
+    if pof is not None and (isinstance(pof, bool) or not isinstance(pof, (int, float)) or pof <= 0):
+        probs.append(f"{where}.escalation.proof_of_funds: {pof!r} isn't an amount → the dollars the proof of funds "
+                     "attached to the addendum shows, e.g. 88000 (leave it out when it's the offer's proof_of_funds)")
     return probs
 
 
@@ -1907,13 +1962,16 @@ def acceptance_due(o, L):
 def acceptance_row(o, L):
     """The Time for Acceptance row every counter carries (OFR-122): the buyer's deadline to sign the counter."""
     at = acceptance_at(o, L)
-    was = o.get("expires") or "Not stated"
+    # round 3 case 05: both sides in one short form ("Thu Sep 24, 5:00 PM"), so the row reads alike and fits one line
+    raw = str(o.get("expires_raw") or "").strip()
+    was = ((fmt_when_short(raw) + (", end of day" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw) else "")) if raw else
+           o.get("expires")) or "Not stated"
     # OFR-262: an estimated deadline (counted from the signature date) has only likely passed, never as a fact
     why = ("The offer's own deadline has passed: this sets a new one" if o.get("lapsed") == "passed" else
            "The offer's own deadline has likely passed: this sets a new one" if o.get("lapsed") == "likely" else
            "A firm deadline for the buyer to answer the counter")
     return ("Time for Acceptance", {"passed": f"Passed ({was})", "likely": f"Likely passed ({was})"}.get(o.get("lapsed"), was),
-            f"{at:%a %b %-d}, {at:%-I:%M %p}", why)
+            fmt_when_short(f"{at:%Y-%m-%d %H:%M}"), why)
 
 
 # --- per-offer and listing-level analysis ------------------------------------

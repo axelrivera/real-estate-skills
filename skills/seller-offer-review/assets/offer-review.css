@@ -7,6 +7,10 @@ header>div:first-child{flex:1 1 auto;min-width:0;padding-right:10px} .prep{flex:
 .hero .big{font-size:25pt;letter-spacing:.04em;line-height:1.05}
 .hero .rbo{display:block;font-size:8pt;color:var(--muted)}
 .hero .rba{display:block;font-size:7.8pt;color:var(--caution-strong);margin-top:3px} .hero .rba b{font-size:inherit;white-space:nowrap}
+/* round 3 case 05: in the narrow single-review box each other deadline is its time over its label, neither wrapping */
+.hero .hr.stack .rba b{display:block} .hero .hr.stack .rba .sep{display:none} .hero .hr.stack .rba .rbw{display:block;white-space:nowrap}
+/* a deadline in a table cell stays on one line ("Thu Sep 24, 5:00 PM") */
+td.oneline{white-space:nowrap}
 /* OFR-326: long detail tables may break across pages, row by row, with the header repeated (report.css keeps a .tbl whole) */
 .tbl.split{break-inside:auto} .tbl.split thead{display:table-header-group} .tbl.split tr{break-inside:avoid}
 .hero .who{font-size:12.5pt;font-weight:800;color:var(--brand-ink);margin-top:2px}
@@ -101,8 +105,8 @@ td.close{color:var(--brand-deep);font-weight:800;letter-spacing:.05em;box-shadow
 .tight .p1 td{padding-top:1px;padding-bottom:1px} .tight .p1 .legend{margin-top:1px} .tight .ctr{margin-bottom:4px}
 .tight .nextstep{font-size:7.8pt;padding:2px 8px} .tight .prelim{font-size:7.4pt;padding:2px 8px}
 /* denser detail pages, when the last page would hold only a few closing lines (render.page_problems) */
-.dense .p1 ~ * td,.dense .p1 ~ * th{padding-top:1.3px;padding-bottom:1.3px} .dense .p1 ~ h2{margin:6px 0 2px}
-.dense .p1 ~ .legend{margin-top:1px} .dense .fine{font-size:6.5pt;line-height:1.25}
+.dense .p1 ~ * td,.dense .p1 ~ * th{padding-top:1px;padding-bottom:1px} .dense .p1 ~ h2{margin:5px 0 2px}
+.dense .p1 ~ .legend{margin-top:1px} .dense .fine{font-size:6.5pt;line-height:1.2;margin-top:3px}
 /* the comparison's chart, moved to page 2 when page 1 is full: kept at its page-1 size */
 .chart-slot .chartbox{width:58%}
 

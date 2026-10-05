@@ -517,10 +517,6 @@
     [
      "Med",
      "escalation_cap_over_value"
-    ],
-    [
-     "Med",
-     "escalation_cap_over_approval"
     ]
    ],
    "expires_raw": "2026-09-24 17:00",
@@ -529,10 +525,6 @@
    "financing": "conventional",
    "firm_date": "2026-10-22",
    "flags": [
-    {
-     "sev": "Med",
-     "topic": "escalation_cap_over_approval"
-    },
     {
      "sev": "Med",
      "topic": "escalation_cap_over_value"
@@ -1577,10 +1569,6 @@
     [
      "Med",
      "escalation_cap_over_value"
-    ],
-    [
-     "Med",
-     "escalation_cap_over_approval"
     ]
    ],
    "expires_raw": "2026-09-24 17:00",
@@ -1589,10 +1577,6 @@
    "financing": "conventional",
    "firm_date": "2026-10-22",
    "flags": [
-    {
-     "sev": "Med",
-     "topic": "escalation_cap_over_approval"
-    },
     {
      "sev": "Med",
      "topic": "escalation_cap_over_value"
@@ -2042,10 +2026,6 @@
     [
      "Med",
      "escalation_cap_over_value"
-    ],
-    [
-     "Med",
-     "escalation_cap_over_approval"
     ]
    ],
    "expires_raw": "2026-09-24 17:00",
@@ -2054,10 +2034,6 @@
    "financing": "conventional",
    "firm_date": "2026-10-22",
    "flags": [
-    {
-     "sev": "Med",
-     "topic": "escalation_cap_over_approval"
-    },
     {
      "sev": "Med",
      "topic": "escalation_cap_over_value"
