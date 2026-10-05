@@ -514,24 +514,16 @@ PAGINATE_JS = """([pageH, starts, minRows = 3]) => {
     // that fits stays, rather than leave the page a quarter empty)
     if (pos > 5 && el.classList.contains('sec') && pos > 0.75 * pageH && !(keepOK && pos + h <= pageH - SAFE)) brk = true;
     else if (pos > 5 && keepOK && pos + h > pageH - SAFE) {
-      // CMA-252: a scatter that almost fits the rest of a page shrinks (to 80% at most, or what its data-shrink
-      // allows) rather than move and leave half the page empty; it moves only when less than 40% of the page is left
-      // or it would need to shrink more.
-      const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + SAFE;
-      const sr = svg ? svg.getBoundingClientRect() : null;
-      const most = svg ? (parseFloat(svg.dataset.shrink) || 0.2) : 0.2;
-      const shrink = by => { svg.style.width = (sr.width * (sr.height - by) / sr.height) + 'px'; el.classList.add('shrunk'); };
-      // The notes after a group's figure (an excluded-homes note, a chart's read-out box) may follow it to the next
-      // page: when the heading, intro and figure fit here (the scatter shrinking within its limit), only the notes
-      // move, rather than the whole group leaving half the page empty
+      // A chart keeps its full size (owner, 2026-10-05: the CMA scatter is the most valuable figure; empty space beats
+      // a smaller chart): it never shrinks to finish a page. The notes after a group's figure (an excluded-homes note,
+      // a chart's read-out box) may follow it to the next page: when the heading, intro and figure fit here at full
+      // size, only the notes move; otherwise the whole group moves.
+      const svg = el.querySelector('svg.scatter');
       const kids = Array.from(el.children); let k = kids.length;
       while (k > 1 && kids[k - 1].matches('p.note, .chart-read')) k--;
       const tailUnits = kids.slice(k);
       const headOver = tailUnits.length ? pos + kids[k - 1].getBoundingClientRect().bottom - r.top + mt - pageH + SAFE : 0;
-      if (sr && pageH - pos >= 0.4 * pageH && over <= most * sr.height) {
-        shrink(over);
-      } else if (tailUnits.length && pageH - pos >= 0.4 * pageH && (headOver <= 0 || (sr && headOver <= most * sr.height))) {
-        if (headOver > 0) shrink(headOver);
+      if (tailUnits.length && pageH - pos >= 0.4 * pageH && headOver <= 0) {
         split(el, tailUnits);
       } else if (!svg && !el.querySelector('.tbl.whole') && pageH - pos >= FLOW_ROOM * pageH) {
         // A table or list block that would leave this much of the page empty runs on instead, whole rows or items

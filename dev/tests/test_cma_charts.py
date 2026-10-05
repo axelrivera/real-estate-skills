@@ -1,5 +1,5 @@
 """shared/cma.py charts: label placement on the scatter and the dot plot, label halos, axis ticks, and the chart that
-shrinks rather than leave a gap. The one place for chart label rules."""
+keeps its full size. The one place for chart label rules."""
 import os
 import re
 import sys
@@ -93,8 +93,8 @@ class DotPlot(unittest.TestCase):
 
 
 class ChartFit(unittest.TestCase):
-    def test_scatter_shrinks_rather_than_leave_a_gap(self):
-        """A chart group that almost fits the rest of a page shrinks its chart instead of moving."""
+    def test_scatter_keeps_its_full_size(self):
+        """A chart group that doesn't fit the rest of a page moves whole; the chart never shrinks to finish a page."""
         render = seller_render.render
         svg = '<svg viewBox="0 0 760 470" class="scatter"><rect width="760" height="470"/></svg>'
 
@@ -110,12 +110,10 @@ class ChartFit(unittest.TestCase):
                                    "return {pb: g.classList.contains('pb'), w: g.querySelector('svg').style.width}; }")
             with tempfile.TemporaryDirectory() as tmp:
                 return render.html_to_pdf(doc, os.path.join(tmp, "x.pdf"), margins=cma.PAGE_MARGINS, before_print=measure)
-        near = layout(300)
-        self.assertFalse(near["pb"])
-        self.assertTrue(near["w"].endswith("px"))
-        far = layout(640)  # a third of the page left: too little to shrink into, so it moves
-        self.assertTrue(far["pb"])
-        self.assertEqual(far["w"], "")
+        for filler in (300, 640):  # almost fits, and a third of the page left: either way it moves at full size
+            out = layout(filler)
+            self.assertTrue(out["pb"], filler)
+            self.assertEqual(out["w"], "", filler)
 
 
 if __name__ == "__main__":

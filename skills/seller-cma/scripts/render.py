@@ -24,7 +24,6 @@ esc = html.escape
 # Page 1 fits itself (PAGINATE_JS's .onepage steps); the later pages keep each heading with its figure and let long
 # tables run on. CMA margins (cma.PAGE_MARGINS).
 FIT = layout.Fit(end=None, paginate=True, margins=cma.PAGE_MARGINS, tail_hint=L["tail_hint"])
-SCATTER_SHRINK = 0.4  # the scatter may shrink by up to this share of its height to finish a page
 
 
 def raw(text):
@@ -163,7 +162,6 @@ def scatter(C, notes_out):
                                    "leader": info["labels_leader"], "dropped": info["labels_dropped"]}
     notes_out["callout_checks"] = cma.callout_checks(info)
     notes_out["legend"] = chart.drawn()
-    svg = svg.replace('class="scatter"', f'class="scatter" data-shrink="{SCATTER_SHRINK}"', 1)
     out = [f'<h3>{esc(sc["heading"])}</h3>', p(esc(sc["intro"])), layout.chart_frame(svg, chart.legend())]
     if sc["excluded"]:
         out.append(p(esc(sc["excluded"]), "note"))

@@ -109,7 +109,7 @@ Fixes for everything eval iteration 3 found; details in [the audit](audits/2026-
 - **contract-timeline:** the next deadline is the earliest critical contract deadline (never a lender target); deposits, loan and balance are checked against the price and the pre-approval; amendment changes read in plain labels; the header lists riders on AS IS contracts too; a quick date question with no day count gets both counts.
 - **buyer-cma:** price cuts, increases and days on market are counted from the history, not by hand; a gut check gives a rough range with an opening, target and walk-away; the payment is shown at the target price, with a warning when the buyer's cash falls short.
 - **seller-cma:** a reprice says "New List Price" and offers staying put or cutting, never raising; a November or December closing assumes the tax bill unpaid unless you say it's paid; the holding cost states its loan rate; outside Florida the HOA line reads "HOA Documents"; LibreOffice is found in the Applications folder.
-- **Both CMAs:** chart labels step off markers and each other, and a chart that nearly fits shrinks instead of leaving half a page empty.
+- **Both CMAs:** chart labels step off markers and each other, and the scatter always prints at full size.
 - **Dev only:** mock answer keys carry `balance_to_close` and the original offer before a buyer counter; tests assert keys, not prose; a slow test tier; coverage measured.
 
 ## This pass (2026-09-29): Pre-Release Audit Fixes, Still Version 0.12.0

@@ -871,7 +871,7 @@ class Pdf(unittest.TestCase):
             cs.pop("buydown", None)
         _, C, _ = run(wide)
         doc = html(C)
-        self.assertIn('data-shrink="', doc)  # the scatter may shrink to finish a page
+        self.assertNotIn('data-shrink', doc)  # the scatter keeps its full size
         p, b, pg = browser_page(doc)
         try:
             clipped = pg.evaluate("""() => [...document.querySelectorAll('.tbl')].filter(t => t.scrollWidth > t.clientWidth + 1)

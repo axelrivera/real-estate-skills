@@ -280,7 +280,10 @@ class Printed(unittest.TestCase):
                 self.assertEqual(placeholders.problems(err.getvalue().splitlines()), [])
                 pages = layout.page_fill(path, 0.45, 0.55)
                 self.assertTrue(pages)
-                middle = [i + 1 for i, (fill, _) in enumerate(pages) if 0 < i < len(pages) - 1 and fill < layout.HALF_EMPTY]
+                # the page before the scatter may end early: the chart keeps its full size and moves whole (owner rule)
+                chart = (C.get("scatter") or {}).get("heading")
+                middle = [i + 1 for i, (fill, _) in enumerate(pages) if 0 < i < len(pages) - 1 and fill < layout.HALF_EMPTY
+                          and not (chart and pages[i + 1][1] == chart)]
                 self.assertEqual(middle, [], err.getvalue())
                 text = squash(subprocess.run(["pdftotext", path, "-"], capture_output=True, text=True).stdout)
                 self.assertIn(C["offer_plan"]["opening_display"], text)
