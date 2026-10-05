@@ -28,6 +28,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import ROOT, load  # noqa: E402
+import placeholders  # noqa: E402
 
 sys.path.insert(0, os.path.join(ROOT, "dev"))
 from generators import seller_offer_review as gen  # noqa: E402
@@ -130,6 +131,14 @@ class Model(unittest.TestCase):
                         N.add(f"n{i}", text)
                     self.assertEqual(N.label_problems(review.labels_of(M)), [])
                     self.assertEqual(len(M["doc"]["confirm"]), len(M["assumptions"]))
+
+    def test_no_placeholder_left_empty(self):
+        """No sentence it writes (model, page, Check lines) shows a placeholder left empty (placeholders.py)."""
+        for seed, step, _, R, docs in cases():
+            for M in docs:
+                with self.subTest(seed=seed, step=step, report=M["doc"]["subtitle"]):
+                    texts = list(placeholders.strings(M)) + placeholders.page_text(render.build_html(M, gen.agent(seed)))
+                    self.assertEqual(placeholders.problems(texts), [])
 
     def test_compute_never_changes_the_input(self):
         for seed, step, data in inputs():

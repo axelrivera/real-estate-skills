@@ -198,5 +198,24 @@ class Ranges(unittest.TestCase):
         self.assertEqual(fmt.unspaced("April – June"), "April–June")
 
 
+class Templates(unittest.TestCase):
+    def test_optional_part_drops_with_its_placeholder(self):
+        rng = random.Random(17)
+        template = "Taxes[ in {county} County] are estimated[ ({basis})], at {rate}."
+        for _ in range(N):
+            kw = {"county": rng.choice(["Orange", "", None, " "]), "basis": rng.choice(["the average", "", None]),
+                  "rate": rng.choice(["1.8%", "", None])}
+            text = fmt.fill(template, **kw)
+            self.assertNotRegex(text, r" {2,}| [,.;:)]|\(\s*\)|\{|\[|\]|None")
+            self.assertEqual("County" in text, not fmt.blank(kw["county"]))
+            self.assertEqual("(" in text, not fmt.blank(kw["basis"]))
+
+    def test_plain_and_missing(self):
+        self.assertEqual(fmt.fill("No {fields} here"), "No {fields} here")  # no kw: as is, for a later step
+        self.assertEqual(fmt.fill("{n:,} homes", n=1200), "1,200 homes")
+        with self.assertRaises(KeyError):
+            fmt.fill("[ in {county}] x {y}", y=1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -49,7 +49,7 @@ CONVENTIONAL_AVERAGE = re.compile(r"freddie|pmms", re.I)  # the weekly survey is
 
 def t(_key, **kw):
     """A labels.json template, filled."""
-    return L_[_key].format(**kw)
+    return fmt.fill(L_[_key], **kw)
 
 
 def cap(text):
@@ -1952,13 +1952,14 @@ def pushback(r):
         key = PUSHBACK_KEYS.get(term)
         broken = limits_broken(B, costs, dict(t_, **{key: ct[key]}), walk=True) if key and key in ct else []
         if broken:
-            resp = t("pb_hold", yours=yours, ask=ask, limits=joined([wd for _, wd in broken]))
+            # a term the offer leaves out (no gap coverage) has nothing to hold at: the template drops "at …"
+            resp = t("pb_hold", yours=yours if t_.get(key) else None, ask=ask, limits=joined([wd for _, wd in broken]))
         elif term == "Price" and V.get("assumed"):
             resp = L_["pb_no_range"]
         elif term == "Price" and t_["price"] < V["cma_low"]:
             resp = t("pb_below", ask=ask)
         else:
-            resp = (L_["pb_resp"].get(term) or L_["pb_resp_default"]).format(**B["words"])
+            resp = fmt.fill(L_["pb_resp"].get(term) or L_["pb_resp_default"], **B["words"])
         label = term_label("inspection_days", B) if term == "Inspection Period" else \
             term_label("deposit", B) if term == "Escrow Deposit" else L_["pb_term"].get(term, term)
         rows.append({"term": label, "yours": yours, "ask": ask, "response": resp, "breaks": [k for k, _ in broken]})

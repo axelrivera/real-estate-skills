@@ -36,7 +36,7 @@ STATUS = {"g": "good", "a": "caution", "r": "risk"}
 
 def t(_key, **kw):
     """A labels.json template, filled."""
-    return L_[_key].format(**kw)
+    return fmt.fill(L_[_key], **kw)
 
 
 def signed(v):

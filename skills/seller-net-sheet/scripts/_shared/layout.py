@@ -326,6 +326,14 @@ PAGINATE_JS = """([pageH, starts]) => {
   // Results_v5: a table or list runs on once a fifth of the page is left (it was a third: whole pages went 35-60% empty)
   const SAFE = 16, FLOW_ROOM = 0.2;
   const squash = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+  // A kept group that runs on: each of `units` stays whole and starts the next page when it doesn't fit this one
+  const split = (el, units) => {
+    el.classList.add('split');
+    for (const u of units) {
+      const ur = u.getBoundingClientRect(), tt = ur.top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
+      if (pp > 5 && pp + ur.height > pageH - SAFE) shift += pageH - pp;
+    }
+  };
   for (const el of Array.from(wrap.children)) {
     const r = el.getBoundingClientRect();
     const mt = parseFloat(getComputedStyle(el).marginTop) || 0;
@@ -360,11 +368,7 @@ PAGINATE_JS = """([pageH, starts]) => {
     if (pos > 5 && isKeep && runon && pos + h > pageH - SAFE && pageH - pos >= (textOnly ? FLOW_ROOM : 0.25) * pageH) {
       const units = Array.from(el.children).slice(1);
       if (units.length && pos + units[0].getBoundingClientRect().bottom - r.top + mt <= pageH - SAFE) {
-        el.classList.add('split');
-        for (const u of units) {
-          const ur = u.getBoundingClientRect(), tt = ur.top - base + shift, pp = ((tt % pageH) + pageH) % pageH;
-          if (pp > 5 && pp + ur.height > pageH - SAFE) shift += pageH - pp;
-        }
+        split(el, units);
         continue;
       }
     }
@@ -378,9 +382,19 @@ PAGINATE_JS = """([pageH, starts]) => {
       const svg = el.querySelector('svg.scatter'), over = pos + h - pageH + SAFE;
       const sr = svg ? svg.getBoundingClientRect() : null;
       const most = svg ? (parseFloat(svg.dataset.shrink) || 0.2) : 0.2;
+      const shrink = by => { svg.style.width = (sr.width * (sr.height - by) / sr.height) + 'px'; el.classList.add('shrunk'); };
+      // The notes after a group's figure (an excluded-homes note, a chart's read-out box) may follow it to the next
+      // page: when the heading, intro and figure fit here (the scatter shrinking within its limit), only the notes
+      // move, rather than the whole group leaving half the page empty
+      const kids = Array.from(el.children); let k = kids.length;
+      while (k > 1 && kids[k - 1].matches('p.note, .chart-read')) k--;
+      const tailUnits = kids.slice(k);
+      const headOver = tailUnits.length ? pos + kids[k - 1].getBoundingClientRect().bottom - r.top + mt - pageH + SAFE : 0;
       if (sr && pageH - pos >= 0.4 * pageH && over <= most * sr.height) {
-        svg.style.width = (sr.width * (sr.height - over) / sr.height) + 'px';
-        el.classList.add('shrunk');
+        shrink(over);
+      } else if (tailUnits.length && pageH - pos >= 0.4 * pageH && (headOver <= 0 || (sr && headOver <= most * sr.height))) {
+        if (headOver > 0) shrink(headOver);
+        split(el, tailUnits);
       } else if (!svg && !el.querySelector('.tbl.whole') && pageH - pos >= FLOW_ROOM * pageH) {
         // A table or list block that would leave this much of the page empty runs on instead, whole rows or items
         // only, once its heading, intro and first few rows fit here (the table's header row repeats on the next page).

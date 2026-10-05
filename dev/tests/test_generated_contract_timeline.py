@@ -24,6 +24,7 @@ from datetime import date, datetime
 
 sys.path.insert(0, os.path.dirname(__file__))
 from skill_import import ROOT, load  # noqa: E402
+import placeholders  # noqa: E402
 
 sys.path.insert(0, os.path.join(ROOT, "dev", "generators"))
 import contract_timeline as gen  # noqa: E402
@@ -173,6 +174,16 @@ class Generated(unittest.TestCase):
                 filled = any('fill="#fff"' not in c for c in re.findall(r"<circle [^>]+>", svg))
                 hollow = any('fill="#fff"' in c for c in re.findall(r"<circle [^>]+>", svg))
                 self.assertEqual(("critical" in dict(legend), "other" in dict(legend)), (filled, hollow))
+
+    def test_no_placeholder_left_empty(self):
+        """No sentence it writes (model, page, Check lines) shows a placeholder left empty (placeholders.py)."""
+        for seed, deal, t in self.results():
+            with self.subTest(seed=seed):
+                texts = list(placeholders.strings(t)) + self.files[seed][2].splitlines()
+                if t["closing"] or t.get("short_sale"):  # a report prints (test_report_places_the_model)
+                    texts += placeholders.page_text(timeline_render.build_html(t, gen.agent(seed),
+                                                                               sample=bool(deal.get("sample"))))
+                self.assertEqual(placeholders.problems(texts), [])
 
     def test_files(self):
         """The PDF prints without overflow, clipping or a near-empty page; the calendar holds exactly the report's

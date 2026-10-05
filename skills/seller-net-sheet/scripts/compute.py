@@ -49,7 +49,7 @@ class NetSheetError(ValueError):
 
 def t(key, **kw):
     """A labels.json template, filled."""
-    return L[key].format(**kw)
+    return fmt.fill(L[key], **kw)
 
 
 def title_case(text):

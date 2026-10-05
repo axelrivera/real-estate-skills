@@ -44,7 +44,7 @@ class ReportError(ValueError):
 
 def t(key, **kw):
     """A labels.json template, filled."""
-    return L[key].format(**kw) if kw else L[key]
+    return fmt.fill(L[key], **kw)
 
 
 def labels(key, **kw):
@@ -1134,6 +1134,9 @@ def compute(R, market, homes):
     n_juris, ji = len(R["costs"]["taxes"].get("jurisdictions") or []), R["costs"]["payment"].get("tax_jurisdiction_index")
     if not n_juris:
         raise ReportError("costs.taxes.jurisdictions needs at least one entry.")
+    if n_juris > 1 and not all(str(j.get("short") or "").strip() for j in R["costs"]["taxes"]["jurisdictions"]):
+        raise ReportError("costs.taxes.jurisdictions: with two jurisdictions each needs a `short` name (\"City\", "
+                          "\"County\"): it tells the two bills apart in the payment table and the notes.")
     if ji is not None and (not isinstance(ji, int) or isinstance(ji, bool) or not 0 <= ji < n_juris):
         raise ReportError(f"costs.payment.tax_jurisdiction_index is {ji!r}: it must be 0 to {n_juris - 1}, the "
                           "position of the jurisdiction the payment uses in costs.taxes.jurisdictions.")
@@ -1176,11 +1179,12 @@ def compute(R, market, homes):
     for j in tax_rows:
         if j["problem"]:
             warn("tax_problem", j["problem"])
+        # a jurisdiction's label completes "if the home is …" (report-data.md), so every sentence naming one says that
         if j["annual"] is None:
-            warn("tax_no_rate", f"No millage or tax rate for {j['label']}: add school_mills and total_mills.")
+            warn("tax_no_rate", f"No millage or tax rate if the home is {j['label']}: add school_mills and total_mills.")
         elif j["estimated"]:
-            warn("tax_estimated", f"Tax for {j['label']} is estimated from the market's average rate; find the millage "
-                 "if you can.")
+            warn("tax_estimated", f"The tax if the home is {j['label']} is estimated from the market's average rate; "
+                 "find the millage if you can.")
     if any(j["annual"] is None for j in tax_rows):
         raise ReportError("Taxes couldn't be estimated for every jurisdiction: add school_mills and total_mills (or a "
                           "district the market knows) for each.")
