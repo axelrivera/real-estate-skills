@@ -111,7 +111,7 @@
       "manual_case": "08-contract-timeline-other-state",
       "prompt": "Today is September 26, 2026. Here's my buyer's signed purchase agreement for a home in Westerville, Ohio. Lay out every deadline for my buyer: I need the PDF timeline and a calendar file.",
       "expected_output": "Works from the contract's own dates and time rules (Para. 10: calendar days from the day after the Effective Date, ending 11:59 PM; a period ending on a Saturday, Sunday or federal holiday moves to the next business day), with no Florida rules, FAR/BAR paragraphs or Florida costs. Effective Date Thu Sep 24, 2026 (the seller's signature, 11:45 AM). Earnest money ($5,000 to Olentangy Crossing Title Agency) Mon Sep 28 (day 3 is Sun Sep 27, rolled); loan application Tue Sep 29; inspection period ends Mon Oct 5 (day 10 is Sun Oct 4, rolled); appraisal contingency Thu Oct 8; financing contingency Thu Oct 15; final walk-through Thu Oct 29; closing Fri Oct 30 at 1:00 PM. The best-effort disclaimer is in the chat reply only, never in the PDF or the calendar file. Delivers both files; same run: the calendar file's dates and times are the PDF's.",
-      "files": ["dev/evals/contract-timeline/files/4127-Larchmere-Trace-Purchase-Agreement.pdf"]
+      "files": ["out/manual-test/08-contract-timeline-other-state/4127-Larchmere-Trace-Purchase-Agreement.pdf"]
     }
   ]
 }
