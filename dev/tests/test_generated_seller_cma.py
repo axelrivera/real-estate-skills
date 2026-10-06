@@ -170,8 +170,7 @@ class Model(unittest.TestCase):
         if not R.get("price_override"):
             price = rec["list_price"]
             self.assertTrue(rec["low"] <= price <= rec["high"], (price, rec["low"], rec["high"]))
-            on_step = ((price + 100) % 5000 == 0 if price < 1_000_000 else (price + 1000) % 10000 == 0) \
-                or price == 999000  # the $10,000 steps' first one, just under $1M
+            on_step = price % (5000 if price < 1_000_000 else 10000) == 0  # a round search-bracket step
             caps = {rl["failed_price"]} if rl else {int(rp["current_price"] * 0.99) // 100 * 100} if rp else set()
             self.assertTrue(on_step or price in caps or C["recommendation"]["override"], price)
         else:
@@ -191,6 +190,8 @@ class Model(unittest.TestCase):
                 self.assertGreater(abs(a - b), 0.01 * min(a, b), prices)
         if rl and not rl.get("reason_above"):
             self.assertTrue(all(p <= rl["failed_price"] for p in prices), (prices, rl["failed_price"]))
+            if not R.get("price_override") and compute.cma.bracket_price(rl["failed_price"] - 1, "down") >= rec["low"]:
+                self.assertNotIn(rl["failed_price"], prices)  # never relisted at the price that failed
         for x in strats:
             if x["role"] == "top":
                 self.assertLessEqual(x["list_price"], rec["high"])

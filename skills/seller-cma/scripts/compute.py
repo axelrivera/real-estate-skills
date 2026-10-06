@@ -341,7 +341,7 @@ def price_override(R):
     price, why = over.get("list_price"), str(over.get("reason") or "").strip()
     errors = []
     if not isinstance(price, (int, float)) or isinstance(price, bool) or price <= 0:
-        errors.append(f"price_override.list_price: {price!r} isn't a price → a plain number (469900), in {fix}.")
+        errors.append(f"price_override.list_price: {price!r} isn't a price → a plain number (470000), in {fix}.")
     if not why:
         errors.append("price_override.reason: missing → say in words (no figures) why the agent chose this price; the "
                       "report shows it as the agent's choice.")
@@ -372,7 +372,7 @@ def stance_prices(low, high):
     the range; a range too narrow for that leaves them close, and standard_options merges them."""
     out = {s: stance_price(s, low, high) for s in STANDARD_ROLES}
     market = out["market"]
-    for role, move in (("premium", lambda p: cma.bracket_price(cma.bracket_price(p + 1, "up"), "up")),
+    for role, move in (("premium", lambda p: cma.bracket_price(p + 1, "up")),
                        ("draw_offers", lambda p: cma.bracket_price(p - 1, "down"))):
         p = out[role]
         while not distinct(p, market) and low <= move(p) <= high:
@@ -384,17 +384,19 @@ def stance_prices(low, high):
 def price_cap(rp, relist, low):
     """The highest list price the options may take: a reprice's cuts stay at least 1% under the current price (unless
     the agent asked to price it higher), a relist's options at or under the failed price (unless the agent gave a
-    reason to go higher). On the search-bracket step just under that limit, or at the limit when that step falls below
-    the range. Returns (cap, "reprice" | "relist") or (None, None)."""
+    reason to go higher). On the search-bracket step at or under a reprice's limit, or strictly under a relist's failed
+    price (a failed $475,000 relists at $470,000 at most), or at the limit when that step falls below the range. Returns
+    (cap, "reprice" | "relist") or (None, None)."""
     if rp and not rp.get("allow_increase"):
         limit, kind = rp["current_price"] * (1 - NEAR_RECOMMENDED), "reprice"
         exact = math.floor(limit / 100) * 100
+        cap = cma.bracket_price(limit, "down")
     elif relist and not relist["reason_above"]:
         limit = exact = relist["failed_price"]
         kind = "relist"
+        cap = cma.bracket_price(limit - 1, "down")
     else:
         return None, None
-    cap = cma.bracket_price(limit, "down")
     return (cap if cap >= low else exact), kind
 
 

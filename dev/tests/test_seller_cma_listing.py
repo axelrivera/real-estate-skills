@@ -215,7 +215,10 @@ class Relist(unittest.TestCase):
         R["relist"] = {"failed_price": 474900, "status": "expired", "days_on_market": 92}
         C, _ = run(R)
         listed = [x["list_price"] for x in C["strategies"]]
-        self.assertEqual(max(listed), 474900)
+        self.assertEqual(max(listed), 470000)
+        R["relist"]["failed_price"] = 475000  # a failed price on a step: the step under it, never the price itself
+        self.assertEqual(max(x["list_price"] for x in run(R)[0]["strategies"]), 470000)
+        R["relist"]["failed_price"] = 474900
         self.assertEqual((C["relist"]["source"], C["relist"]["failed_price_display"]), ("report", "$474,900"))
         self.assertIn("$474,900", C["price_history"])
         R["relist"]["reason_above"] = "The kitchen and baths were redone after that listing ended."
@@ -228,8 +231,8 @@ class Relist(unittest.TestCase):
         R["pricing"]["stance"] = "premium"  # the stance's price is capped too
         self.assertTrue(all(x["list_price"] <= 472900 for x in run(R)[0]["strategies"]))
         R = report()
-        R["relist"] = {"failed_price": 456000}  # no bracket step left inside the range: at the failed price
-        self.assertEqual(run(R)[0]["recommendation"]["list_price"], 456000)
+        R["relist"] = {"failed_price": 455000}  # no bracket step under it inside the range: at the failed price
+        self.assertEqual(run(R)[0]["recommendation"]["list_price"], 455000)
         R["relist"]["failed_price"] = 445000  # under the range: the agent decides
         with self.assertRaisesRegex(compute.ReportError, r"relist\.reason_above"):
             run(R)

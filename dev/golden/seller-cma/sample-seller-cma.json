@@ -379,7 +379,7 @@
    "state": "FL"
   },
   "offer_plan": null,
-  "recommended_list_price": 469900,
+  "recommended_list_price": 470000,
   "side": "seller",
   "source": "seller-cma",
   "subject": {
@@ -537,7 +537,7 @@
  },
  "net": {
   "after_holding": [
-   428442,
+   428912,
    424636,
    415497
   ],
@@ -562,7 +562,7 @@
   "rows": [
    {
     "amounts": [
-     471500,
+     472000,
      467000,
      457000
     ],
@@ -582,7 +582,7 @@
    },
    {
     "amounts": [
-     -11788,
+     -11800,
      -11675,
      -11425
     ],
@@ -594,7 +594,7 @@
    },
    {
     "amounts": [
-     -11788,
+     -11800,
      -11675,
      -11425
     ],
@@ -606,7 +606,7 @@
    },
    {
     "amounts": [
-     -3301,
+     -3304,
      -3269,
      -3199
     ],
@@ -618,7 +618,7 @@
    },
    {
     "amounts": [
-     -2432,
+     -2435,
      -2410,
      -2360
     ],
@@ -654,7 +654,7 @@
    },
    {
     "amounts": [
-     430046,
+     430516,
      425826,
      416446
     ],
@@ -678,7 +678,7 @@
    },
    {
     "amounts": [
-     428442,
+     428912,
      424636,
      415497
     ],
@@ -690,13 +690,13 @@
    }
   ],
   "totals": [
-   430046,
+   430516,
    425826,
    416446
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 12945,
+ "net_spread": 13415,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -733,18 +733,18 @@
   "insurance_annual": 3600,
   "insurance_estimated": false,
   "loan_type": "conventional",
-  "per_10k": 83,
-  "per_10k_display": "$83",
+  "per_10k": 82,
+  "per_10k_display": "$82",
   "program": "Conventional",
   "rate": 6.95,
   "rate_display": "6.95%",
   "rows": [
    {
-    "down": 23745,
+    "down": 23750,
     "lines": [
      [
       "pi",
-      2986
+      2987
      ],
      [
       "tax",
@@ -764,15 +764,15 @@
       0
      ]
     ],
-    "list_price": 474900,
-    "payment": 4127
+    "list_price": 475000,
+    "payment": 4128
    },
    {
-    "down": 23495,
+    "down": 23500,
     "lines": [
      [
       "pi",
-      2955
+      2956
      ],
      [
       "tax",
@@ -792,19 +792,19 @@
       0
      ]
     ],
-    "list_price": 469900,
-    "payment": 4087
+    "list_price": 470000,
+    "payment": 4088
    },
    {
-    "down": 22995,
+    "down": 23000,
     "lines": [
      [
       "pi",
-      2892
+      2893
      ],
      [
       "tax",
-      630
+      631
      ],
      [
       "ins",
@@ -820,8 +820,8 @@
       0
      ]
     ],
-    "list_price": 459900,
-    "payment": 4004
+    "list_price": 460000,
+    "payment": 4006
    }
   ],
   "school_mills": 5.25,
@@ -855,7 +855,7 @@
  "recommendation": {
   "expected_sale": 467000,
   "high": 480000,
-  "list_price": 469900,
+  "list_price": 470000,
   "low": 455000,
   "midpoint": 467500.0,
   "override": false,
@@ -884,7 +884,7 @@
  "stance": {
   "agent_price": false,
   "differs": true,
-  "rule_price": 469900,
+  "rule_price": 470000,
   "signals": [
    "price_cuts"
   ],
@@ -896,17 +896,17 @@
   {
    "agent": false,
    "closing": "2026-12-24",
-   "down": 23745,
-   "expected_sale": 471500,
+   "down": 23750,
+   "expected_sale": 472000,
    "expected_sale_source": "rule",
    "hold_months": 3.06,
-   "list_price": 474900,
+   "list_price": 475000,
    "months_to_contract": 1.61,
    "name": "Premium",
-   "net": 430046,
-   "net_after_holding": 428442,
-   "net_vs_recommended": 3806,
-   "payment": 4127,
+   "net": 430516,
+   "net_after_holding": 428912,
+   "net_vs_recommended": 4276,
+   "payment": 4128,
    "recommended": false,
    "role": "premium",
    "seller_credit": 11000,
@@ -916,16 +916,16 @@
   {
    "agent": false,
    "closing": "2026-11-30",
-   "down": 23495,
+   "down": 23500,
    "expected_sale": 467000,
    "expected_sale_source": "rule",
    "hold_months": 2.27,
-   "list_price": 469900,
+   "list_price": 470000,
    "months_to_contract": 0.8,
    "net": 425826,
    "net_after_holding": 424636,
    "net_vs_recommended": 0,
-   "payment": 4087,
+   "payment": 4088,
    "recommended": true,
    "role": "market",
    "seller_credit": 11000,
@@ -935,16 +935,16 @@
   {
    "agent": false,
    "closing": "2026-11-16",
-   "down": 22995,
+   "down": 23000,
    "expected_sale": 457000,
    "expected_sale_source": "rule",
    "hold_months": 1.81,
-   "list_price": 459900,
+   "list_price": 460000,
    "months_to_contract": 0.34,
    "net": 416446,
    "net_after_holding": 415497,
    "net_vs_recommended": -9139,
-   "payment": 4004,
+   "payment": 4006,
    "recommended": false,
    "role": "draw_offers",
    "seller_credit": 11000,

@@ -173,15 +173,15 @@ class Stance(unittest.TestCase):
 
     def test_list_price_at_snaps_to_a_bracket_inside_the_range(self):
         at, bracket = compute.cma.list_price_at, compute.cma.bracket_price
-        for point, low, high, want in ((467000, 455000, 480000, 464900), (467500, 455000, 480000, 469900),
-                                       (455500, 455000, 480000, 459900), (479600, 455000, 480000, 479900),
-                                       (1236000, 1200000, 1270000, 1239000), (1004000, 970000, 1030000, 999000),
-                                       (456000, 455000, 457000, 456000)):  # narrower than a step: the point itself
+        for point, low, high, want in ((467000, 455000, 480000, 465000), (467500, 455000, 480000, 470000),
+                                       (456500, 455500, 480000, 460000), (481000, 455000, 482000, 480000),
+                                       (1236000, 1200000, 1270000, 1240000), (1004000, 970000, 1030000, 1000000),
+                                       (456000, 455500, 457000, 456000)):  # no step inside: the point itself
             with self.subTest(point=point):
                 self.assertEqual(at(point, low, high), want)
-        self.assertEqual((bracket(474900, "down"), bracket(474000, "down"), bracket(465000, "up"), bracket(469900, "up")),
-                         (474900, 469900, 469900, 469900))
-        self.assertEqual(bracket(1255000, "down"), 1249000)
+        self.assertEqual((bracket(475000, "down"), bracket(474900, "down"), bracket(465000, "up"), bracket(465100, "up")),
+                         (475000, 470000, 465000, 470000))
+        self.assertEqual((bracket(1255000, "down"), bracket(997500), bracket(1004000)), (1250000, 1000000, 1000000))
 
     def test_each_stance_sets_the_price_and_the_options(self):
         R = report()
@@ -214,11 +214,11 @@ class Stance(unittest.TestCase):
         snapping leaves them within 1% of it ($5,000 brackets are under 1% over $500,000); a range too narrow for three
         merges them, said once in the notes."""
         self.assertEqual(compute.stance_prices(535000, 565000),
-                         {"draw_offers": 539900, "market": 549900, "premium": 559900})
+                         {"draw_offers": 540000, "market": 550000, "premium": 560000})
         self.assertEqual(compute.stance_prices(1050000, 1115000),
-                         {"draw_offers": 1059000, "market": 1079000, "premium": 1099000})
+                         {"draw_offers": 1060000, "market": 1080000, "premium": 1100000})
         self.assertEqual(compute.stance_prices(175000, 185000),
-                         {"draw_offers": 179900, "market": 179900, "premium": 184900})
+                         {"draw_offers": 175000, "market": 180000, "premium": 185000})
         R = report()
         R["range_override"] = {"low": 466000, "high": 474000, "reason": "The agent's own narrow range."}
         C, _ = run(R)
