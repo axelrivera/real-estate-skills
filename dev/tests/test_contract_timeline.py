@@ -175,7 +175,11 @@ class FarbarRows(unittest.TestCase):
         amendment's description) stops the run, and a stamp after the Effective Date can't be."""
         r = timeline.analyze(fha())
         self.assertEqual(r["effective"]["signed"], "2026-09-25 16:12")
-        self.assertIn(timeline.fmt.when("2026-09-25 16:12", "dot"), r["effective"]["source"])
+        # printed next to the Effective Date: a signature that day gives its time alone, never the date again
+        self.assertIn(timeline.fmt.clock(timeline.fmt.to_time("2026-09-25 16:12")), r["effective"]["source"])
+        self.assertNotIn(r["effective"]["display"], r["effective"]["source"])
+        earlier = timeline.analyze(fha(effective_date_signed="2026-09-24 16:12"))  # signed one day, delivered the next
+        self.assertIn(timeline.fmt.when("2026-09-24 16:12", "dot"), earlier["effective"]["source"])
         for text in ("Seller's signature, 9/22/26", "Buyer's initials at 4:12 PM", "Signed Sept 22", "Signed 2026-09-22"):
             with self.assertRaisesRegex(timeline.DealError, "effective_date_source"):
                 timeline.analyze(fha(effective_date_source=text))

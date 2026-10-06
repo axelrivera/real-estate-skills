@@ -47,7 +47,7 @@ Write `net-sheet.json` in a temporary folder, never the outputs folder (`referen
 python3 scripts/compute.py net-sheet.json [--cma FILE.seller.cma.json]
 ```
 
-It prints the columns, the itemized rows (already formatted), `notes` (the PDF's), `chat_notes` (the markdown sheet's: the notes without what the assumptions already say), `assumptions`, `warnings` and `preliminary`. Fix any `problems` it names and re-run. Outside Florida, look up the state's deed transfer tax as `references/local-costs.md` says (none in the states without one) and put it in `costs`. Also outside Florida (Florida's bills are due the next March), when the closing falls in the last months of the year and the agent didn't give the tax bill's due date, look it up on the county tax office's site and set `tax_bill_due_date` (a closing after it assumes the bill paid); name the source in the reply.
+It prints the columns, the itemized rows (already formatted), `comparisons` (each price after the first against the first), `notes` (the PDF's), `chat_notes` (the markdown sheet's: the notes without what the assumptions already say), `assumptions`, `warnings` and `preliminary`. Fix any `problems` it names and re-run. Outside Florida, look up the state's deed transfer tax as `references/local-costs.md` says (none in the states without one) and put it in `costs`. Also outside Florida (Florida's bills are due the next March), when the closing falls in the last months of the year and the agent didn't give the tax bill's due date, look it up on the county tax office's site and set `tax_bill_due_date` (a closing after it assumes the bill paid); name the source in the reply.
 
 ## 3. Deliver
 
@@ -60,7 +60,7 @@ It prints the columns, the itemized rows (already formatted), `notes` (the PDF's
 
 Either way, the reply holds, in this order, in short bullets under about 200 words (the table and the markdown sheet's notes don't count; each assumption is said once, in its line below, never again in a closing sentence):
 
-1. The nets at every price together in one line, not a bullet each (the tiles' numbers), and what separates them when there's more than one.
+1. The nets at every price together in one line, not a bullet each (the tiles' numbers), and what separates them when there's more than one: each `comparisons` line as written (never subtract one net from another yourself), plus at most a few words on why (commission, transfer tax and title move with the price; a credit costs its amount).
 2. Each item in `assumptions`, one short line each: what's assumed and what replaces it (the listing agreement, a payoff letter, the tax bill, a title quote).
 3. Each `warnings` item, plainly. A sale where the seller would bring money to closing is said first.
 4. "Preliminary" with `preliminary_reason`, when it's marked so.
@@ -71,6 +71,6 @@ Either way, the reply holds, in this order, in short bullets under about 200 wor
 
 When the agent sends better numbers (a payoff letter, the commission, the tax bill, a title quote), put them in the same `net-sheet.json` and render again; never edit a number in the reply by hand.
 
-**A "what if" price after the sheet has three:** answer it in chat from a one-price run in a separate scratch file (`what-if.json`, a copy with only that scenario), never by replacing the delivered sheet's `net-sheet.json`, so its three prices still match the PDF. Say in one line that the PDF keeps its three prices, and offer to swap one out for a new sheet.
+**A "what if" price after the sheet has three:** answer it in chat from a run in a separate scratch file (`what-if.json`, a copy with two scenarios: the delivered price it's compared with first, the agent's named one or else the nearest, then the what-if price), never by replacing the delivered sheet's `net-sheet.json`, so its three prices still match the PDF. Give the what-if net and its `comparisons` line. Say in one line that the PDF keeps its three prices, and offer to swap one out for a new sheet.
 
 **Follow-up replies** (a what-if, a changed number) give the new net and what changed, never the first reply's assumptions again (no HOA, the tax bill, the payoff): each was said once, and still applies unless the agent's answer changed it. Built-in costs are the state's typical charges, as the assumption line says: never call them a county's.

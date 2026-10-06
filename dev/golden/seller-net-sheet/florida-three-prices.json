@@ -75,6 +75,14 @@
   }
  ],
  "commission_assumed": false,
+ "comparisons": [
+  {
+   "difference": -9330
+  },
+  {
+   "difference": -9550
+  }
+ ],
  "facts": [
   "Single-Family"
  ],

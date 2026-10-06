@@ -75,6 +75,14 @@
   }
  ],
  "commission_assumed": false,
+ "comparisons": [
+  {
+   "difference": -18660
+  },
+  {
+   "difference": -12650
+  }
+ ],
  "facts": [
   "Condo"
  ],

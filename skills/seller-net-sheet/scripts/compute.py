@@ -41,6 +41,9 @@ COST_KEYS = {k for _, keys in GROUPS for k in keys}
 SMALL_WORDS = {"a", "an", "and", "of", "on", "or", "the", "to", "for", "in"}
 # The reply says these notes as its assumption lines; the markdown sheet's notes are the rest (said once)
 REPLY_KINDS = ("assumption", "estimate", "chat_only")
+# The one note the PDF leaves out: a default commission rate is a default, not an assumption (the reply asks for the
+# listing agreement). Every other note prints once in the notes block.
+CHAT_ONLY_KEYS = ("commission_default",)
 
 
 class NetSheetError(ValueError):
@@ -224,6 +227,22 @@ def summary_tiles(columns, payoff_known):
         return [{"label": L["tile_difference"], "display": fmt.money(diff),
                  "note": t("tile_less_sub" if a["short"] and b["short"] else "tile_more_sub", label=hi["label"])}]
     return []
+
+
+def comparisons(columns):
+    """Each price after the first against the first (the sheet's base price): the difference between their nets and
+    the sentence the reply quotes, so the reply never subtracts one net from another itself."""
+    if len(columns) < 2:
+        return []
+    base = columns[0]
+    out = []
+    for c in columns[1:]:
+        diff = c["net"] - base["net"]
+        key = "comparison_same" if diff == 0 else "comparison_more" if diff > 0 else "comparison_less"
+        out.append({"label": c["label"], "base": base["label"], "difference": diff,
+                    "difference_display": fmt.money(abs(diff)),
+                    "line": t(key, label=c["label"], base=base["label"], amount=fmt.money(abs(diff)))})
+    return out
 
 
 def compute(R, market):
@@ -424,7 +443,12 @@ def compute(R, market):
     if R.get("foreign_seller"):
         N.add("firpta", L["note_firpta"], "info")
     if not has_hoa and p.get("hoa") is None and hoa_monthly is None and kind != "condo":
-        N.add("no_hoa", L["note_no_hoa"], "chat_only")  # its estoppel fee and dues would come off the net
+        N.add("no_hoa", L["note_no_hoa"], "assumption")  # its estoppel fee and dues would come off the net
+    # iteration 14 eval 6: an assumption or estimate prints once in the report's notes; the only note kept off the
+    # page is a default (the commission rate), which is not an assumption and gets no label
+    odd = [k for k, _, kind in N.items("chat") if kind == "chat_only" and k not in CHAT_ONLY_KEYS]
+    if odd:
+        raise NetSheetError(f"Notes {', '.join(odd)} are kept off the PDF: only a default ({', '.join(CHAT_ONLY_KEYS)}) is.")
 
     warnings = list(dict.fromkeys(w for n in nets for w in n["warnings"]))
     for c in columns:  # the costs and payoffs exceed the price: said first in the reply; the tile shows it on the page
@@ -463,6 +487,8 @@ def compute(R, market):
         "facts": facts,
         "columns": columns,
         "summary_tiles": tiles,
+        # each price after the first against the first: the reply's "what separates them" line, quoted as written
+        "comparisons": comparisons(columns),
         "rows": rows,
         "final_label": final_label,
         "cash_at_closing": payoff_known,

@@ -1,8 +1,8 @@
 {
  "assumption_keys": [
   "tax",
-  "title_fees",
-  "no_hoa"
+  "no_hoa",
+  "title_fees"
  ],
  "assumptions": {
   "count": 3
@@ -75,6 +75,14 @@
   }
  ],
  "commission_assumed": false,
+ "comparisons": [
+  {
+   "difference": -14032
+  },
+  {
+   "difference": -6000
+  }
+ ],
  "facts": {
   "count": 5
  },
@@ -84,14 +92,14 @@
  },
  "note_keys": [
   "tax",
+  "no_hoa",
   "title_fees",
   "commission",
   "payoff",
-  "not_included",
-  "no_hoa"
+  "not_included"
  ],
  "notes": {
-  "count": 5
+  "count": 6
  },
  "ok": true,
  "preliminary": false,
