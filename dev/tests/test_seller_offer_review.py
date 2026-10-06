@@ -91,6 +91,18 @@ class Results(unittest.TestCase):
         with self.assertRaises(oe.OfferError):
             review.result(review.analyze(fixture("minimal-single.json")), mode="multi")
 
+    def test_render_lines_are_the_reviews_assumptions(self):
+        # iteration 14 eval 8: render.py's stderr and review.py's output list the same assumptions for the same file
+        for name in ("four-offers.json", "listing-pays-buyer-broker.json", "minimal-single.json"):
+            data = fixture(name)
+            C = review.compute(data, {})
+            first = C["reports"][0]
+            assumed = [x for x in C["agent_lines"] if "Assumed [" in x]
+            self.assertEqual(len(assumed), len(first["assumptions"]) + len(first["chat_assumptions"]), name)
+            for a in first["assumptions"] + first["chat_assumptions"]:
+                self.assertTrue(any(x.endswith(a["what"]) for x in assumed), (name, a["field"]))
+            self.assertFalse({a["field"] for a in first["assumptions"]} & {a["field"] for a in first["chat_assumptions"]})
+
     def test_offer_labels(self):
         self.assertEqual([oe.surname(n) for n in ("J. Morales", "Ana de la Cruz", "Tom Hill Jr.", "Cher")],
                          ["Morales", "de la Cruz", "Hill", "Cher"])

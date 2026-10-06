@@ -2,7 +2,7 @@
 
 ## FAR/BAR Contracts (Florida)
 
-For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts, fully supported. Paragraph numbers are from the verified revisions in `farbar-contract.md`; record the footer in `form_revision`. Read the whole document: riders, addenda and additional terms override the printed paragraphs (Standard R). What each rider does to the seller's net and certainty is in `farbar-riders.md`; addenda (counteroffer, escalation, appraisal gap, CDD, co-op, compensation) are in `farbar-addenda.md`.
+For the Florida Realtors/Florida Bar **AS IS** and **Standard** residential contracts, fully supported. Paragraph numbers are from the verified revisions in `farbar-contract.md`; record the footer in `form_revision`. Read the whole document: riders, addenda and additional terms override the printed paragraphs (Standard R). What each rider does to the seller's net and certainty is in `farbar-riders.md`; addenda (counteroffer, escalation, appraisal gap, CDD, co-op, compensation) are in `farbar-addenda.md`. Text extraction can print a checkbox mark between two options (an addendum's contract box, a rider's choice): when it isn't clearly on one line, read that page as an image.
 
 | Field | Where to Look |
 |---|---|

@@ -224,7 +224,12 @@ def order_flags(o):
 
 def expires_at(o):
     """An offer's time for acceptance as a datetime (a date alone is the end of that day), or None when it isn't a date."""
-    raw = str(o.get("expires_raw") or "").strip()
+    return time_of(o.get("expires_raw"))
+
+
+def time_of(raw):
+    """A deadline's 'YYYY-MM-DD HH:MM' (or date alone: the end of that day) as a datetime, or None."""
+    raw = str(raw or "").strip()
     for f, n in (("%Y-%m-%d %H:%M", 16), ("%Y-%m-%d", 10)):
         try:
             when = datetime.strptime(raw[:n], f)
@@ -846,7 +851,7 @@ def wait_respond_by(R, hb, o, also):
     out = []
     if expires_at(o) and not o.get("lapsed"):
         out.append({"when": short_when(o.get("expires_raw")) or o["expires"],
-                    "what": t("rb_offer_expires", name=short_name(o, R)), "key": "offer_expires"})
+                    "what": t("rb_offer_expires", name=short_name(o, R)), "key": "offer_expires", "at": expires_at(o)})
     out += [a for a in also if a["key"] != "highest_and_best"]
     return short_when(hb.get("raw")) or hb["due"], L_["rb_hb_due"], out
 
@@ -1062,6 +1067,11 @@ def single_view(R, o):
             x["recommended"] = False
         opts.insert(0, wait_option(hb))
         rb, rb_offer, also = wait_respond_by(R, hb, o, also)
+    own = expires_at(o) if not wait and o.get("expires") and not o.get("lapsed") else None
+    held_back = act == "BACKUP" and lapse
+    rb, rb_offer, also = time_ordered(rb, rb_offer, also, own, {
+        "when": rb, "what": rb_offer if held_back else t("rb_offer_expires", name=short_name(o, R)),
+        "key": "backup_lapses" if held_back else "offer_expires"})
     return {
         "mode": "single", "offer": o["id"], "offer_label": o["label"], "buyer": o["buyer"],
         "action": act, "headline": headline, "title": heading, "why": why, "wait": wait_note(hb, o) if wait else None,
@@ -1108,9 +1118,10 @@ def respond_also(R, held=(), shown=None):
     out = []
     hb = R.get("highest_and_best")
     if hb and hb["pending"]:
-        out.append({"when": short_when(hb.get("raw")) or hb["due"], "what": L_["rb_hb_due"], "key": "highest_and_best"})
-    out += [{"when": short_when(o.get("expires_raw")) or o["expires"], "what": L_["rb_backup"], "key": "backup_lapses"}
-            for o in held]
+        out.append({"when": short_when(hb.get("raw")) or hb["due"], "what": L_["rb_hb_due"], "key": "highest_and_best",
+                    "at": time_of(hb.get("raw"))})
+    out += [{"when": short_when(o.get("expires_raw")) or o["expires"], "what": L_["rb_backup"], "key": "backup_lapses",
+             "at": expires_at(o)} for o in held]
     # OFR-305, iteration 11 eval 2: only an offer the plan keeps (accepted, countered or held), never a declined one
     live = [o for o in R["active"] if expires_at(o) and not o.get("lapsed") and o.get("action") != "DECLINE"]
     first = min(live, key=expires_at, default=None)
@@ -1121,8 +1132,22 @@ def respond_also(R, held=(), shown=None):
             lapse = bool(first.get("lapses_before"))
             out.append({"when": short_when(first.get("expires_raw")) or first["expires"],
                         "what": L_["rb_backup"] if lapse else t("rb_offer_expires", name=short_name(first, R)),
-                        "key": "backup_lapses" if lapse else "offer_expires"})
+                        "key": "backup_lapses" if lapse else "offer_expires", "at": expires_at(first)})
     return out
+
+
+def time_ordered(rb, rb_offer, also, mine=None, mine_also=None):
+    """Iteration 14: the Respond By box reads in time order. The other deadlines (`also`) are sorted by time; when one
+    comes before this report's own deadline (`mine`, a datetime, with `mine_also` its entry once it moves), the
+    earliest leads the box and this report's own deadline joins the rest. The working "at" key is dropped."""
+    def key(a):
+        return (a.get("at") is None, a.get("at") or datetime.max)
+    also = sorted(also, key=key)
+    if mine and also and also[0].get("at") and also[0]["at"] < mine:
+        lead = also.pop(0)
+        rb, rb_offer = lead["when"], lead["what"]
+        also = sorted(also + [dict(mine_also, at=mine)], key=key)
+    return rb, rb_offer, [{k: v for k, v in a.items() if k != "at"} for a in also]
 
 
 def short_when(raw):
@@ -1159,7 +1184,9 @@ def multi_view(R):
     hb = R.get("highest_and_best")
     wait = waiting(R)  # round 3 case 05: wait for the final offers, then decide; the plan below is the fallback
     if wait:  # OFR-320: final offers are still coming in
-        lead = t("lead_wait", due=hb["due"], lead=lead[:1].lower() + lead[1:], fallback=fallback(top, L_["the_plan"], its=True))
+        # iteration 14: "its" only when the sentence before names the top offer alone (no backup or higher price after it)
+        its = backup is None and hi_price is top
+        lead = t("lead_wait", due=hb["due"], lead=lead[:1].lower() + lead[1:], fallback=fallback(top, L_["the_plan"], its=its))
     if R["incomplete"]:
         n = len(R["incomplete"])
         names = ", ".join(x["label"] for x in R["incomplete"])
@@ -1257,7 +1284,8 @@ def multi_view(R):
     if wait:
         when, what, also = wait_respond_by(R, hb, top, also)
         rb = (when, what, top)
-    keys = (["backup_lapses"] if lapse else []) + (
+    _, _, also = time_ordered(rb[0], rb[1], also)  # the comparison's box leads with the plan's deadline; the rest by time
+    keys =(["backup_lapses"] if lapse else []) + (
         [f"highest_and_best_{'pending' if hb['pending'] else 'done'}"] if hb else [])
     return {
         "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act,
@@ -1432,12 +1460,13 @@ def term_rows(o, R):
     for key in ("personal_property", "occupancy", "other_terms"):  # terms read from the contract, as written
         if o.get(key):
             rows.append((T[key], str(o[key]), fmt.EMPTY, "caution", ""))
-    if o.get("riders"):
+    if o.get("riders") or o.get("addenda"):
         # ENG-11: the form and rider label from contract_forms ("Standard + As Is Rider (K)"); riders are listed after it
         label = o["contract_label"] if o["contract_form"] in oe.cf.FARBAR else ""
         # iteration 9 eval 5: a rider the label already names ("Standard + As Is Rider (K)") isn't listed again
-        rest = [r for r in o["riders"] if not (label and (c := oe.cf.rider_codes([r])[0]) and f"({c[0]})" in label)]
-        text = " · ".join(x for x in (label, ", ".join(rest)) if x)
+        rest = [r for r in o.get("riders") or [] if not (label and (c := oe.cf.rider_codes([r])[0]) and f"({c[0]})" in label)]
+        # iteration 14: the attached addenda are part of the contract too, listed after the riders
+        text = " · ".join(x for x in (label, ", ".join(rest), ", ".join(map(str, o.get("addenda") or []))) if x)
         rows.append((T["contract"], text, fmt.EMPTY, "good", ""))
     return rows
 
@@ -1523,7 +1552,8 @@ def checklist(o, R):
              ("lender", lender, "Yes" if o.get("lender_called") or (not fin and o["approval"] == "pof_verified") else "No"),
              ("deposit", L_["ck_deposit"], "Pending"), ("riders", L_["ck_riders"], "Pending"),
              ("insurance", L_["ck_insurance"], "N/A" if not fin else ({True: "Yes", False: "No"}.get(o.get("insurance_quote"), "Unknown"))),
-             ("bb", L_["ck_bb"], "Pending"), ("net", L_["ck_net"], "Pending")]
+             # iteration 14: the listing broker pays the buyer's broker from its own fee: nothing for the seller to review
+             ("bb", L_["ck_bb"], "N/A" if oe.listing_pays_buyer_broker(o) else "Pending"), ("net", L_["ck_net"], "Pending")]
     L = R["listing"]
     if L.get("flood_disclosure_rule"):  # OFR-274: the listing side's reminder lives here, not among the offer's risks
         items.append(("flood", L_["ck_flood"], "Yes" if L.get("flood_disclosure") else "Pending"))
@@ -1865,6 +1895,10 @@ def result(R, mode="auto", offer_id=None):
         # OFR-352: the list the report shows, the one the data note counts
         "assumptions": [{"impact": a["impact"], "where": place(R, a, sid), "what": why_for(a, sid), "field": a["field"]}
                         for a in listed],
+        # iteration 14: the agent's own items (a default commission, their listing agreement), chat only; render.py's
+        # stderr reads these two lists, so both scripts print the same assumptions for the same file
+        "chat_assumptions": [{"impact": a["impact"], "what": why_for(a, sid), "field": a["field"]}
+                             for a in listed_assumptions(R, mode == "multi", sid, defaults=True) if a not in listed],
         "notes": N.texts("estimate") + N.texts("info"),  # the PDF's notes block (the assumptions are the table)
         "note_keys": [k for k, _, _ in N.items("chat", grouped=False)],
         "cost_notes": [str(n) for n in L["cost_notes"]],
@@ -1918,7 +1952,10 @@ def compute(data, ctx):
     lines for the agent (stderr)."""
     R = analyze(data, cma=load_cma(data, ctx.get("cma")), agent=ctx.get("agent"))
     docs = reports(R, ctx.get("mode") or "auto", ctx.get("offer"))
-    lines = [f"Assumed [{a['impact']}] {a['why']}" for a in R["missing"][:6]]
+    first = docs[0]  # the same lists review.py prints for this file: the report's, then the agent's own (chat only)
+    lines = [f"Assumed [{a['impact']}] {a['what']}" for a in first["assumptions"]]
+    lines += [f"For the agent (chat only, never on the report): Assumed [{a['impact']}] {a['what']}"
+              for a in first["chat_assumptions"]]
     lines += [f"For the agent (chat only, never on the report): {n}" for n in docs[0]["chat_notes"]]  # iteration 10 eval 3
     return {"reports": docs, "agent_lines": lines, "sample": bool(R["sample"])}
 
