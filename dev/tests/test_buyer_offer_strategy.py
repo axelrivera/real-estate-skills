@@ -164,6 +164,21 @@ class Limits(unittest.TestCase):
             with self.subTest(bad=bad.get("buyer")), self.assertRaises(strategy.oe.OfferError):
                 strategy.analyze(bad)
 
+    def test_broken_limits_list_as_whole_phrases(self):
+        # iteration 14 eval 5: each limit is one phrase the list separators can't split, for any number of limits
+        phrases = [strategy.t("lim_walk", walk="$443,000"), strategy.t("lim_max", max="$460,000"),
+                   strategy.t("lim_payment", limit="$4,000", pay="$4,065"),
+                   strategy.t("lim_cash", cash="$40,000", short="$1,200"),
+                   strategy.t("lim_reserve", floor="$5,000", left="$3,879")]
+        for p in phrases:
+            self.assertNotIn(", ", p)
+        for n in range(1, len(phrases) + 1):
+            text = strategy.joined(phrases[:n])
+            self.assertEqual(sum(text.count(p) for p in phrases[:n]), n)
+            self.assertEqual(text.count(", ") + text.count(" and "), n - 1)
+        with_commas = ["a, b", "c", "d"]  # an item with its own comma: the list separates with semicolons
+        self.assertEqual(strategy.joined(with_commas).count("; "), 2)
+
     def test_not_enough_cash_is_one_limit(self):
         r = analyze("fha-competitive.json")  # inside the floor: a thin-cushion caution, no limit
         self.assertTrue(r["reserve_tight"])

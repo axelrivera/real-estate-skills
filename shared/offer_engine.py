@@ -543,10 +543,13 @@ def apply_escalations(offers, L):
             o["repair_limits"] = cf.repair_limits(eff, o)
         if cap and o["appraisal_risk"] and cap > appraisal_line(L) + o["gap_cover"]:
             # iteration 12: with no CMA, list price stands in for the value; never call it a value range
-            ref = "the value range" if L["cma_provided"] else "list price"
-            support = f"{ref} and gap coverage support" if o["gap_cover"] else f"{ref} supports, with no gap coverage"
-            issues.append(("Med", f"The cap ({money(cap)}) is above what {support} "
-                                  f"({money(appraisal_line(L) + o['gap_cover'])}).",
+            # iteration 14: each figure sits next to what it measures (the value line, the gap coverage)
+            ref = (f"the value range's top ({money(appraisal_line(L))})" if L["cma_provided"]
+                   else f"the list price ({money(appraisal_line(L))})")
+            support = (f"{ref} and the gap coverage ({money(o['gap_cover'])}) support together "
+                       f"({money(appraisal_line(L) + o['gap_cover'])})" if o["gap_cover"]
+                       else f"{ref} supports, with no gap coverage")
+            issues.append(("Med", f"The cap ({money(cap)}) is above what {support}.",
                            "Ask for gap coverage that rises with the escalated price, or treat the appraisal as the ceiling."
                            if o["gap_cover"] else "Ask for appraisal gap coverage up to the cap, or treat the appraisal as the ceiling.",
                            "escalation_cap_over_value"))

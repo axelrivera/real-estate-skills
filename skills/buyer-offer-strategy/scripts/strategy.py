@@ -67,9 +67,14 @@ def low_first(text):
 
 
 def joined(items):
-    """'a', 'a and b', 'a, b and c'."""
+    """'a', 'a and b', 'a, b and c'. An item with its own comma can't share comma separators (iteration 14): the list
+    then separates with semicolons, 'a; b; and c'."""
     items = [x for x in items if x]
-    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + f" {L_['and']} " + items[-1] if items else ""
+    if len(items) <= 1:
+        return items[0] if items else ""
+    sep = "; " if any(", " in x for x in items) else ", "  # ", ": a figure's thousands comma ($4,000) is no separator
+    last = f"{sep.strip()} {L_['and']} " if sep == "; " and len(items) > 2 else f" {L_['and']} "
+    return sep.join(items[:-1]) + last + items[-1]
 
 
 def rnd(v, step=1000, how="round"):
@@ -1911,7 +1916,7 @@ def summary(r, package_ready=False):
     fr = r["framing"]
     band_vs = against(B, br[1])
     st_band = r["bands"]["stronger"][lvl][1] if "stronger" in O else ""
-    lead = t(f"fr_{fr}", against=band_vs, limits="; ".join(broken), band=st_band)
+    lead = t(f"fr_{fr}", against=band_vs, limits=joined(broken), band=st_band)
     hero = [lead]
     if r.get("promoted") == "stronger":  # CMA-103: only what the stronger terms actually raised
         what = raised(r["terms"]["recommended"], r.get("promoted_from"))

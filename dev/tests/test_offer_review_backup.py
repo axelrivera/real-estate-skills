@@ -36,6 +36,13 @@ NO_CALL = {"highest_and_best_due": None}
 PASSED = {"highest_and_best_due": "2026-09-21 12:00"}
 
 
+def box_order(v):
+    """The Respond By box's deadlines in printed order, as datetimes (the review's year is 2026)."""
+    from datetime import datetime
+    whens = [v["respond_by"]] + [x["when"] for x in v["respond_by_also"]]
+    return [datetime.strptime(f"{w} 2026", "%a %b %d, %I:%M %p %Y") for w in whens]
+
+
 def page(R, oid):
     """A single review's HTML, from the one document model (review.result)."""
     return render.build_html(review.result(R, "single", oid), {})
@@ -117,8 +124,13 @@ class WaitForFinalOffers(unittest.TestCase):
     def test_respond_by_is_the_call(self):
         m = self.m
         self.assertEqual((m["respond_by"], m["respond_by_offer"]), ("Wed Sep 23, 12:00 PM", "Highest & Best Due"))
-        self.assertEqual([(x["when"], x["what"]) for x in m["respond_by_also"]],
-                         [("Thu Sep 24, 5:00 PM", "Ostrander Offer Expires"), ("Wed Sep 23, 5:00 PM", BACKUP_LABEL)])
+        self.assertEqual({(x["when"], x["what"]) for x in m["respond_by_also"]},
+                         {("Thu Sep 24, 5:00 PM", "Ostrander Offer Expires"), ("Wed Sep 23, 5:00 PM", BACKUP_LABEL)})
+
+    def test_respond_by_box_reads_in_time_order(self):
+        # iteration 14 eval 8: every report's box, the comparison and each single review, earliest first
+        for v in (self.m, self.a, self.b):
+            self.assertEqual(box_order(v), sorted(box_order(v)), v["offer"])
 
     def test_single_review_of_the_lead_offer(self):
         b = self.b
@@ -131,8 +143,9 @@ class WaitForFinalOffers(unittest.TestCase):
         self.assertNotIn("OUR COUNTER", html)
 
     def test_backup_review_keeps_its_plan(self):
-        self.assertEqual((self.a["headline"], self.a["wait"], self.a["respond_by_offer"]),
-                         ("HOLD AS BACKUP", None, BACKUP_LABEL))
+        self.assertEqual((self.a["headline"], self.a["wait"]), ("HOLD AS BACKUP", None))
+        # its own deadline stays in the box under the comparison's label; the earlier call for final offers leads
+        self.assertIn(BACKUP_LABEL, [self.a["respond_by_offer"]] + [x["what"] for x in self.a["respond_by_also"]])
 
 
 if __name__ == "__main__":
