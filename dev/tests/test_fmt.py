@@ -217,5 +217,20 @@ class Templates(unittest.TestCase):
             fmt.fill("[ in {county}] x {y}", y=1)
 
 
+class Lists(unittest.TestCase):
+    def test_items_with_commas_never_share_comma_separators(self):
+        import random
+        rng = random.Random(7)
+        words = ["Conventional", "5% Down", "FHA", "$4,000 a month", "the roof", "Rider GG"]
+        for _ in range(200):
+            items = [", ".join(rng.sample(words, rng.choice((1, 2)))) for _ in range(rng.randint(1, 5))]
+            out = fmt.and_list(items)
+            for x in items:
+                self.assertIn(x, out)
+            if len(items) > 1 and any(", " in x for x in items):
+                self.assertEqual(out.count("; "), len(items) - 1)
+            self.assertNotIn(" , ", out)
+
+
 if __name__ == "__main__":
     unittest.main()

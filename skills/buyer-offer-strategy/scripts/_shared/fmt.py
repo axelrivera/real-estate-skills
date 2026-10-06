@@ -33,6 +33,17 @@ MONTHS = ("January", "February", "March", "April", "May", "June", "July", "Augus
 
 # --- rounding ---------------------------------------------------------------
 
+def and_list(items, word="and"):
+    """'a', 'a and b', 'a, b and c'. An item with its own comma ("Conventional, 5% Down") can't share comma
+    separators: the list then separates with semicolons, 'a; b; and c' (a figure's thousands comma is no separator)."""
+    items = [x for x in items if x]
+    if len(items) <= 1:
+        return items[0] if items else ""
+    sep = "; " if any(", " in x for x in items) else ", "
+    last = f"; {word} " if sep == "; " else f" {word} "
+    return sep.join(items[:-1]) + last + items[-1]
+
+
 def half_up(v, unit=1):
     """`v` rounded half away from zero to a multiple of `unit` (1, 1000, 0.1, 5000...). Returns an int when `unit` is
     whole, else a float. Uses the shortest decimal form of a float, so 2.675 rounds to 2.68 as it reads."""

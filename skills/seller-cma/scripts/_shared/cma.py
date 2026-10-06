@@ -815,8 +815,7 @@ ADJ_KIND_WORDS = {"size": "size", "pool": "pool", "garage": "garage", "condition
 
 
 def _and(items):
-    items = [i for i in items if i]
-    return ", ".join(items[:-1]) + " and " + items[-1] if len(items) > 1 else "".join(items)
+    return fmt.and_list(items)
 
 
 def adjustment_kinds_used(cards):
