@@ -1,7 +1,10 @@
 """Seller CMA files: the report PDF (page 1 summary, then the full analysis) and the listing presentation PPTX
 (with a PDF copy of the slides when LibreOffice is available).
 
-    python3 scripts/render.py report.json [--format pdf|pptx|all] [--profile profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py report.json [--format pdf|pptx|all|activity|price-chart] [--profile profile.md] [--sample] [--out DIR]
+
+`activity` and `price-chart` are the one-page landscape Pricing Activity sheets (the scatter alone), built only when
+named; `all` is the report and the deck.
 
 compute.py builds the document model once (render.main's compute step); this file only places it with the shared
 layout kit (the header, tiles, the comps dot plot and the scatter with its legend built from the series drawn, the
@@ -24,6 +27,7 @@ esc = html.escape
 # Page 1 fits itself (PAGINATE_JS's .onepage steps); the later pages keep each heading with its figure and let long
 # tables run on. CMA margins (cma.PAGE_MARGINS).
 FIT = layout.Fit(end=None, paginate=True, margins=cma.PAGE_MARGINS, tail_hint=L["tail_hint"])
+SIDE, BODY_CLASS = "seller", "scma"
 
 
 def raw(text):
@@ -147,20 +151,30 @@ def comps(C):
     return [x for x in out if x]
 
 
+def draw(C, chart, size=(760, 470), activity=False):
+    """The price vs. size chart, the same for the report and the chart sheets: (svg, info) from cma.scatter."""
+    sc, s, rec = C["scatter"], C["subject"], C["recommendation"]
+    return cma.scatter(C["_homes"], {**sc["ratios"], "callouts": sc["callouts"], "subject_label": sc["subject_label"],
+                                     "subject_label_pos": sc["subject_label_pos"]},
+                       s["sqft"], rec["list_price"], s["mls_address"], (rec["low"], rec["high"]),
+                       compute.labeler(C["reprice_words"]), [cd["address"] for cd in C["comps"]["cards"]],
+                       drop_crowded=True, points=C["_points"], chart=chart, band_label=sc["band_label"], kfmt=fmt.k,
+                       size=size, activity=activity)
+
+
+def chart_label_notes(info):
+    return {"scatter_labels": {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"] + info["crowded_labels"],
+                               "leader": info["labels_leader"], "dropped": info["labels_dropped"]},
+            "callout_checks": cma.callout_checks(info)}
+
+
 def scatter(C, notes_out):
     sc = C["scatter"]
     if not sc:
         return []
-    s, rec = C["subject"], C["recommendation"]
     chart = layout.Chart()
-    svg, info = cma.scatter(C["_homes"], {**sc["ratios"], "callouts": sc["callouts"], "subject_label": sc["subject_label"],
-                                          "subject_label_pos": sc["subject_label_pos"]},
-                            s["sqft"], rec["list_price"], s["mls_address"], (rec["low"], rec["high"]),
-                            compute.labeler(C["reprice_words"]), [cd["address"] for cd in C["comps"]["cards"]],
-                            drop_crowded=True, points=C["_points"], chart=chart, band_label=sc["band_label"], kfmt=fmt.k)
-    notes_out["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"] + info["crowded_labels"],
-                                   "leader": info["labels_leader"], "dropped": info["labels_dropped"]}
-    notes_out["callout_checks"] = cma.callout_checks(info)
+    svg, info = draw(C, chart)
+    notes_out.update(chart_label_notes(info))
     notes_out["legend"] = chart.drawn()
     out = [f'<h3>{esc(sc["heading"])}</h3>', p(esc(sc["intro"])), layout.chart_frame(svg, chart.legend())]
     if sc["excluded"]:
@@ -267,10 +281,10 @@ def build_html(C, agent, notes_out=None, intro=None):
             + [layout.notes_block(C["notes"], title=L["h_notes"], cls="cma-notes")] + prep(C))
     content = ('<div class="wrap">' + page_one(C, agent) + '<div class="pb"></div>' + layout.group_blocks(body)
                + closing(C, agent) + "</div>")
-    theme = design.theme(agent.get("brand"), "seller")  # the subject home is black (cma.css), never a second hue
+    theme = design.theme(agent.get("brand"), SIDE)  # the subject home is black (cma.css), never a second hue
     extra = ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}"
     doc = render.page(content, css=css, title=f'{L["doc_label"]}: {C["subject"]["address"]}',
-                      theme_css=design.css_vars(theme) + extra, body_class="font-bundled scma")
+                      theme_css=design.css_vars(theme) + extra, body_class="font-bundled " + BODY_CLASS)
     return doc.replace("<html>", '<html lang="en">', 1)
 
 
@@ -332,6 +346,11 @@ def compute_model(data, ctx):
 
 def build(C, fmt_, out_dir, ctx):
     agent, sample = ctx["agent"], bool(ctx.get("sample") or C.get("sample"))
+    if fmt_ in SHEETS:
+        chart_notes = {}
+        written = sheet(C, fmt_, out_dir, ctx, chart_notes)
+        print_chart_notes(chart_notes)
+        return written
     if fmt_ == "pdf":
         chart_notes = {}
         doc = build_html(C, agent, chart_notes)
@@ -360,6 +379,30 @@ def build(C, fmt_, out_dir, ctx):
     return written
 
 
+SHEETS = ("activity", "price-chart")  # the one-page chart sheets, built only when named (--format activity)
+
+
+def sheet(C, fmt_, out_dir, ctx, chart_notes):
+    """The one-page landscape Pricing Activity sheet: `activity` shows the area's sales and listings with a line at the
+    home's size and no price (for the value conversation before the CMA); `price-chart` is the report's chart (the
+    home at its price, the supported range, the comps). Title, chart and legend only, no footer."""
+    if not C["scatter"]:
+        raise compute.ReportError("There's no chart without an MLS export: the Pricing Activity sheet plots the export's "
+                                  "sales and listings.")
+    chart = layout.Chart()
+    svg, info = draw(C, chart, size=cma.SHEET_SIZE, activity=fmt_ == "activity")
+    chart_notes.update(chart_label_notes(info))
+    address = C["subject"]["address"]
+    sample = bool(ctx.get("sample") or C.get("sample"))
+    doc = cma.chart_sheet(svg, chart.legend(), t("sheet_title", address=address),
+                          design.css_vars(design.theme(ctx["agent"].get("brand"), SIDE)),
+                          tag=L["sheet_sample"] if sample else "", body_class=BODY_CLASS)
+    name = L["sheet_file"] if fmt_ == "activity" else L["sheet_file_priced"]
+    path = os.path.join(out_dir, render.filename(address, name, ext="pdf"))
+    for c in layout.print_pdf(doc, path, cma.SHEET_FIT)["checks"]:
+        print(f"Check: {c}", file=sys.stderr)
+    return [path]
+
 # Label fields the model types, put in Title Case before the build (shared/prose.py title_labels)
 LABEL_FIELDS = ("**.heading", "summary_page.label", "comps.cards[].adjustments[].label", "subject.facts[][0]")
 
@@ -374,7 +417,8 @@ def deck_file(data, args):
 
 
 def main(argv=None):
-    return render.main(build, formats=("pdf", "pptx"), argv=argv, default="pdf",  # the deck only when asked for
+    return render.main(build, formats=("pdf", "pptx", *SHEETS), argv=argv, default="pdf",  # the deck only when asked for
+                       on_request=SHEETS,
                        compute=compute_model, errors=(compute.ReportError, deck.DeckError, compute.mls.ExportError),
                        labels=LABEL_FIELDS, linked=deck_file)
 

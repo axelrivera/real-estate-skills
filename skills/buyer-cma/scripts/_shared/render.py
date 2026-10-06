@@ -234,7 +234,9 @@ def html_to_pdf(doc, path, fmt="Letter", margins=None, footer_html=None, before_
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
-            width = 998 if landscape else 758  # page width minus margins, at 96 dpi
+            # the page's width minus its side margins, at 96 dpi (998 landscape, 758 portrait at the default margins)
+            width = round(((11 if landscape else 8.5) - sum(float(str(margins[k]).removesuffix("in"))
+                                                            for k in ("left", "right"))) * 96)
             pg = browser.new_page(viewport={"width": width, "height": 1000})
             pg.set_content(doc, wait_until="load")
             pg.evaluate(LOAD_FONTS)  # the bundled font, before anything is measured
@@ -260,7 +262,7 @@ def write_text(text, path):
 
 
 def main(build, formats, argv=None, extra_args=None, errors=(), default="all", *, placeholders=False, labels=(),
-         agent_only=(), linked=None, compute=None):
+         agent_only=(), linked=None, compute=None, on_request=()):
     """Command line for scripts/render.py: DATA.json --format <fmt>|all --out DIR [--profile] [--mls] [--sample].
 
     `build(data, fmt, out_dir, ctx)` renders one format and returns the list of paths written.
@@ -272,6 +274,7 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all", *
     `ctx["data_file"]` is the data file's path (relative paths inside it can resolve beside it).
     `errors` are exception types that mean bad input: they end the run with their message, not a traceback.
     `default` is the --format used when none is given ("all", or one format a skill builds unless asked for more).
+    `on_request`: formats built only when named (--format activity); "all" leaves them out.
     Before anything is built, the data's text is checked (prose.issues: no em dashes, no fair-housing red flags, no
     tool words, data keys, ISO dates or jargon in client text), and so are the other files the run reads (`linked`)
     and the profile's voice and disclaimers; every problem stops the run at once, listed as `field: problem → fix`.
@@ -298,7 +301,7 @@ def main(build, formats, argv=None, extra_args=None, errors=(), default="all", *
     if extra_args:
         extra_args(ap)
     args = ap.parse_args(argv)
-    todo = list(formats) if args.format == "all" else [args.format]
+    todo = [f for f in formats if f not in on_request] if args.format == "all" else [args.format]
     errors = (profiles.ProfileError, prose.ProseError, *errors)
 
     try:
