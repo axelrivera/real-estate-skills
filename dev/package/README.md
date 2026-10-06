@@ -243,7 +243,7 @@ The strongest offer inside your buyer's limits, up to two alternatives, and how 
 
 A recommended list price, three pricing options with the seller's estimated net at each, a chart of every nearby sale and listing by size and price, and a launch plan.
 
-The three options are always **Draw Offers** (the lower part of the supported range, to bring in competing offers), **Market Price** (the middle) and **Premium** (the upper part), each on a price buyers' search filters catch ($469,900, not $470,000). Claude recommends one from the market (supply, price cuts, how close sales come to asking) and says why. Ask for another, or give your own price. For your own listing that hasn't sold, the options are staying at the current price or a price cut.
+The three options are always **Draw Offers** (the lower part of the supported range, to bring in competing offers), **Market Price** (the middle) and **Premium** (the upper part), each on a round price that shows up in buyers' searches on both sides of it ($470,000, not $469,900). Claude recommends one from the market (supply, price cuts, how close sales come to asking) and says why. Ask for another, or give your own price. For your own listing that hasn't sold, the options are staying at the current price or a price cut.
 
 - **Upload:** the 360 Property View PDF from the last sale and the comps CSV.
 - **Tell Claude:** what the seller has updated since they bought (with years, roof first), known issues, their timeline, and their mortgage payoff if you have it.
