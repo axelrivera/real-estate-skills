@@ -751,19 +751,20 @@ def suggest_stance(stats, failed=False):
 
 
 def _bracket(value):
-    """(step, offset) of the portal search brackets at a price: $5,000 steps less $100 under $1M, $10,000 steps less
-    $1,000 above."""
-    return (10000, 1000) if value >= 1_000_000 else (5000, 100)
+    """The portal search-bracket step at a price: $5,000 under $1M, $10,000 above."""
+    return 10000 if value >= 1_000_000 else 5000
 
 
 def bracket_price(value, way="nearest"):
-    """A list price on a search-bracket step, just under a round number ($469,900; $1,249,000 above $1M): the nearest
-    step to `value`, or the highest step at or under it (`down`), or the lowest at or over it (`up`)."""
-    step, off = _bracket(value)
+    """A list price on a search-bracket step, a round number ($470,000; $1,250,000 above $1M): the nearest step to
+    `value`, or the highest step at or under it (`down`), or the lowest at or over it (`up`). Portal price filters
+    include their bounds, so a price on the step shows up in the searches on both sides of it ("up to $470,000" and
+    "$470,000 and up"), where $469,900 shows up only in the lower one."""
+    step = _bracket(value)
     if way == "nearest":
-        return fmt.half_up(value / step) * step - off
-    k = (value + off) / step
-    return (math.floor(k) if way == "down" else math.ceil(k)) * step - off
+        return fmt.half_up(value / step) * step
+    k = value / step
+    return (math.floor(k) if way == "down" else math.ceil(k)) * step
 
 
 def list_price_at(point, low, high):
@@ -771,7 +772,7 @@ def list_price_at(point, low, high):
     search-bracket step to it (bracket_price), and when that falls outside the range, the next step inward. A range
     narrower than one step (an agent's own) takes the point itself, to the nearest $100."""
     price = bracket_price(point)
-    step, _ = _bracket(point)
+    step = _bracket(point)
     if price < low:
         price += step
     elif price > high:
