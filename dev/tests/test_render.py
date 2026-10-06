@@ -65,6 +65,10 @@ class Main(unittest.TestCase):
                 self.assertEqual(calls[-1], "md")
                 with self.assertRaises(SystemExit):
                     render.main(build, ("md",), [src, "--format", "pdf"])
+                render.main(build, ("md", "txt"), [src, "--out", out], on_request=("txt",))  # all skips on-request
+                self.assertEqual(calls[-1], "md")
+                render.main(build, ("md", "txt"), [src, "--format", "txt", "--out", out], on_request=("txt",))
+                self.assertEqual(calls[-1], "txt")
             self.assertIn("Test-Doc.md", quiet.getvalue())
 
     def test_extra_args_and_partial_success(self):

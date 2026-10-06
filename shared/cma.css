@@ -78,6 +78,7 @@ ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--brand);padding-
 .scatter .trend{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:6 5}
 .m-comp{fill:var(--brand);stroke:var(--brand);stroke-width:1.5}
 .m-sold{fill:var(--muted);fill-opacity:.3;stroke:none}
+.m-sales{fill:var(--muted);fill-opacity:.75;stroke:none} /* the activity sheet: the sales are what it shows */
 .m-active{fill:var(--bg);stroke:var(--muted);stroke-width:1.5}
 .scatter .hol,.legend .hol{fill:var(--bg)}
 .scatter .subj{fill:var(--subject);stroke:var(--bg);stroke-width:2}
@@ -86,6 +87,14 @@ ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--brand);padding-
 .scatter .leader{stroke:var(--muted);stroke-width:.75}
 .scatter .lbl,.scatter .lbl-subj,.scatter .lbl-band{stroke:none}
 .scatter .halo{fill:var(--bg);stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
+.scatter .size-line{stroke:var(--subject);stroke-width:1.25}
+/* The one-page chart sheet (cma.chart_sheet): landscape, the drawing at full width, its legend centered under it */
+.chart-sheet h1{font-size:20pt;line-height:1.2;margin:0 0 14px;color:var(--brand-strong)}
+.chart-sheet .scatter{width:100%}
+.chart-sheet .legend{justify-content:center;font-size:10pt;gap:4px 22px;margin:8px 0 0}
+.chart-sheet .legend svg{width:13px;height:13px}
+.sheet-tag{display:inline-block;vertical-align:middle;margin-left:12px;font-size:8pt;font-weight:700;color:var(--brand-ink);
+  border:1.5px solid var(--brand-ink);border-radius:4px;padding:0 6px;letter-spacing:.06em;text-transform:uppercase}
 footer{margin-top:22px;padding-top:10px;border-top:2px solid var(--brand);font-size:9pt;color:var(--muted)}
 footer b{color:var(--text)}
 

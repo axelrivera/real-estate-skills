@@ -1,6 +1,9 @@
 """Buyer CMA PDF: page 1 summary, then the full analysis in a fixed section order.
 
-    python3 scripts/render.py report.json [--profile profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py report.json [--format pdf|activity|price-chart] [--profile profile.md] [--sample] [--out DIR]
+
+`activity` and `price-chart` are the one-page landscape Pricing Activity sheets (the scatter alone), built only when
+named.
 
 compute.py builds the document model once (render.main's compute step); this file only places it with the shared
 layout kit: the header, tiles, the comps dot plot and the scatter (their legend built from the series drawn), the
@@ -22,6 +25,7 @@ esc = html.escape
 # Page 1 fits itself (PAGINATE_JS's .onepage steps); the later pages keep each heading with its figure and let long
 # tables run on. CMA margins (cma.PAGE_MARGINS).
 FIT = layout.Fit(end=None, paginate=True, margins=cma.PAGE_MARGINS, tail_hint=L["tail_hint"])
+SIDE, BODY_CLASS = "buyer", "bcma"
 
 
 def raw(text):
@@ -165,20 +169,29 @@ def comps(C):
     return [x for x in out if x]
 
 
+def draw(C, chart, size=(760, 470), activity=False):
+    """The price vs. size chart, the same for the report and the chart sheets: (svg, info) from cma.scatter."""
+    sc, s, rng = C["scatter"], C["subject"], C["range"]
+    return cma.scatter(C["_homes"], {**sc["ratios"], "callouts": sc["callouts"], "subject_label": sc["subject_label"],
+                                     "subject_label_pos": sc["subject_label_pos"]},
+                       s["sqft"], s["list_price"], s["mls_address"], (rng["low"], rng["high"]), compute.labels,
+                       [cd["address"] for cd in C["comps"]["cards"]], points=C["_points"], chart=chart,
+                       band_label=sc["band_label"], kfmt=fmt.k, size=size, activity=activity)
+
+
+def chart_label_notes(info):
+    return {"scatter_labels": {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"],
+                               "leader": info["labels_leader"], "dropped": info["labels_dropped"]},
+            "callout_checks": cma.callout_checks(info)}
+
+
 def scatter(C, notes_out):
     sc = C["scatter"]
     if not sc:
         return []
-    s, rng = C["subject"], C["range"]
     chart = layout.Chart()
-    svg, info = cma.scatter(C["_homes"], {**sc["ratios"], "callouts": sc["callouts"], "subject_label": sc["subject_label"],
-                                          "subject_label_pos": sc["subject_label_pos"]},
-                            s["sqft"], s["list_price"], s["mls_address"], (rng["low"], rng["high"]), compute.labels,
-                            [cd["address"] for cd in C["comps"]["cards"]], points=C["_points"], chart=chart,
-                            band_label=sc["band_label"], kfmt=fmt.k)
-    notes_out["scatter_labels"] = {"moved": info["labels_moved"], "overlapping": info["labels_overlapping"],
-                                   "leader": info["labels_leader"], "dropped": info["labels_dropped"]}
-    notes_out["callout_checks"] = cma.callout_checks(info)
+    svg, info = draw(C, chart)
+    notes_out.update(chart_label_notes(info))
     out = [f'<h3>{esc(sc["heading"])}</h3>', p(esc(sc["intro"])), layout.chart_frame(svg, chart.legend())]
     if sc["excluded"]:
         out.append(p(esc(sc["excluded"]), "note"))
@@ -284,9 +297,9 @@ def build_html(C, agent, sample=False, notes_out=None):
             + market(C) + costs(C) + watch(C))
     content = ('<div class="wrap">' + page_one(C, agent) + '<div class="pb"></div>' + layout.group_blocks(body)
                + closing(C, agent) + "</div>")
-    theme = design.theme(agent.get("brand"), "buyer")  # the subject home is black (cma.css), never a second hue
+    theme = design.theme(agent.get("brand"), SIDE)  # the subject home is black (cma.css), never a second hue
     doc = render.page(content, css=css, title=f'{L["doc_label"]}: {C["subject"]["address"]}',
-                      theme_css=design.css_vars(theme), body_class="font-bundled bcma")
+                      theme_css=design.css_vars(theme), body_class="font-bundled " + BODY_CLASS)
     return doc.replace("<html>", '<html lang="en">', 1)
 
 
@@ -315,12 +328,16 @@ def compute_model(data, ctx):
 
 def build(C, fmt_, out_dir, ctx):
     agent = ctx["agent"]
+    chart_notes = {}
+    if fmt_ in SHEETS:
+        written = sheet(C, fmt_, out_dir, ctx, chart_notes)
+        print_chart_notes(chart_notes)
+        return written
     sample = bool(ctx.get("sample") or C.get("sample"))
     label = " · ".join(x for x in (C["subject"]["address"], L["doc_label"],
                                    ", ".join(str(agent[f]) for f in ("name", "brokerage") if agent.get(f))) if x)
     if sample:
         label = "SAMPLE DATA · " + label
-    chart_notes = {}
     doc = build_html(C, agent, sample, chart_notes)
     path = os.path.join(out_dir, render.filename(C["subject"]["address"], "Buyer CMA", ext="pdf"))
     info = layout.print_pdf(doc, path, FIT, footer_html=render.footer(label))
@@ -331,6 +348,15 @@ def build(C, fmt_, out_dir, ctx):
         print(f"Page 1 ran long and was tightened (step {pg['fit_level']} of 3) to fit.", file=sys.stderr)
     for c in info["checks"]:
         print(f"Check: {c}", file=sys.stderr)
+    print_chart_notes(chart_notes)
+    for w in C["warnings"]:
+        print(f"Check: {w}", file=sys.stderr)
+    if profile_check(agent):
+        print(f"Check: {profile_check(agent)}", file=sys.stderr)
+    return [path]
+
+
+def print_chart_notes(chart_notes):
     labels = chart_notes.get("scatter_labels") or {}
     for text, asked, used in labels.get("moved", []):
         where = f"still {used}" if used.split(",")[0] == asked else f"placed {used}, not {asked},"
@@ -346,16 +372,35 @@ def build(C, fmt_, out_dir, ctx):
               file=sys.stderr)
     for c in chart_notes.get("callout_checks", []):
         print(f"Check: {c}", file=sys.stderr)
-    for w in C["warnings"]:
-        print(f"Check: {w}", file=sys.stderr)
-    if profile_check(agent):
-        print(f"Check: {profile_check(agent)}", file=sys.stderr)
+
+SHEETS = ("activity", "price-chart")  # the one-page chart sheets, built only when named (--format activity)
+
+
+def sheet(C, fmt_, out_dir, ctx, chart_notes):
+    """The one-page landscape Pricing Activity sheet: `activity` shows the area's sales and listings with a line at the
+    home's size and no price (for the value conversation before the CMA); `price-chart` is the report's chart (the
+    home at its price, the supported range, the comps). Title, chart and legend only, no footer."""
+    if not C["scatter"]:
+        raise compute.ReportError("There's no chart without an MLS export: the Pricing Activity sheet plots the export's "
+                                  "sales and listings.")
+    chart = layout.Chart()
+    svg, info = draw(C, chart, size=cma.SHEET_SIZE, activity=fmt_ == "activity")
+    chart_notes.update(chart_label_notes(info))
+    address = C["subject"]["address"]
+    sample = bool(ctx.get("sample") or C.get("sample"))
+    doc = cma.chart_sheet(svg, chart.legend(), t("sheet_title", address=address),
+                          design.css_vars(design.theme(ctx["agent"].get("brand"), SIDE)),
+                          tag=L["sheet_sample"] if sample else "", body_class=BODY_CLASS)
+    name = L["sheet_file"] if fmt_ == "activity" else L["sheet_file_priced"]
+    path = os.path.join(out_dir, render.filename(address, name, ext="pdf"))
+    for c in layout.print_pdf(doc, path, cma.SHEET_FIT)["checks"]:
+        print(f"Check: {c}", file=sys.stderr)
     return [path]
 
 
 def main(argv=None):
-    return render.main(build, formats=("pdf",), argv=argv, compute=compute_model,
-                       errors=(compute.ReportError, compute.mls.ExportError), labels=LABEL_FIELDS)
+    return render.main(build, formats=("pdf", *SHEETS), argv=argv, default="pdf", on_request=SHEETS,
+                       compute=compute_model, errors=(compute.ReportError, compute.mls.ExportError), labels=LABEL_FIELDS)
 
 
 if __name__ == "__main__":

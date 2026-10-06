@@ -1,7 +1,11 @@
 """shared/cma.py charts: label placement on the scatter and the dot plot, label halos, axis ticks, and the chart that
 keeps its full size. The one place for chart label rules."""
+import contextlib
+import io
 import os
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -114,6 +118,53 @@ class ChartFit(unittest.TestCase):
             out = layout(filler)
             self.assertTrue(out["pb"], filler)
             self.assertEqual(out["w"], "", filler)
+
+
+class ActivitySheet(unittest.TestCase):
+    """The Pricing Activity sheet, shown before the value conversation: the area's sales and listings only. Nothing on
+    it gives away the home's price, the range or which homes are the comps."""
+
+    def chart(self, price=None):
+        R = report()
+        _, homes = run(R)
+        sc = {**R["scatter"], "subject_label": "Your Home",
+              "callouts": [{**co, "label": f"Callout {i}"} for i, co in enumerate(R["scatter"]["callouts"])]}
+        args = list(scatter_args(R))
+        if price:
+            args[1], args[3] = price, (price - 10000, price + 10000)
+        chart = kit.Chart()
+        svg, info = cma.scatter(homes, sc, *args, chart=chart, size=cma.SHEET_SIZE, activity=True)
+        return R, args, svg, info, chart
+
+    def test_no_price_range_or_comps(self):
+        R, args, svg, info, chart = self.chart(price=471_234)  # a price no other home has
+        for cls in ('class="subj"', 'class="band"', "lbl-band", 'class="m-comp"', 'class="lbl"'):
+            self.assertNotIn(cls, svg)
+        self.assertNotIn("Callout", svg)
+        for v in (args[1], *args[3]):  # the home's price and the range's ends, not even in a tooltip
+            self.assertNotIn(f"{v:,}", svg)
+            self.assertNotIn(fmt.k(v), svg)
+        self.assertIn('class="size-line"', svg)
+        self.assertIn("Your Home: 1,849 Sq Ft", svg)
+        self.assertEqual(chart.drawn(), ["trend", "sales", "active", "size_line"])
+        self.assertEqual(info["counts"]["comp"], 0)
+
+    def test_price_axis_ignores_the_home(self):
+        """A home priced far above every other one leaves the price axis unchanged: the axis can't hint at it."""
+        ticks = [re.findall(r'class="tick">(\$[^<]+)</text>', self.chart(price)[2]) for price in (None, 2_000_000)]
+        self.assertEqual(ticks[0], ticks[1])
+
+    @unittest.skipUnless(shutil.which("pdftotext"), "needs Chromium and pdftotext")
+    def test_one_landscape_page_at_full_width(self):
+        src = os.path.join(ROOT, "dev", "samples", "seller-cma.json")
+        with tempfile.TemporaryDirectory() as tmp:
+            for fmt_ in ("activity", "price-chart"):
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    path, = seller_render.main([src, "--format", fmt_, "--out", tmp])
+                out = subprocess.run(["pdftotext", "-bbox", path, "-"], capture_output=True, text=True).stdout
+                self.assertEqual(re.findall(r'<page width="([\d.]+)" height="([\d.]+)"', out), [("792.000000", "612.000000")])
+                self.assertIn("Pricing Activity Near", out)
+        self.assertGreaterEqual(cma.SHEET_SIZE[0], 0.95 * cma.SHEET_FIT.content_px()[0])
 
 
 if __name__ == "__main__":

@@ -158,6 +158,11 @@ samples:
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
 			--profile dev/samples/profile.md || exit 1; \
 	done
+	@for skill in buyer-cma seller-cma; do for f in activity price-chart; do \
+		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/$$skill" \
+			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format $$f --out samples/$$skill \
+			--profile dev/samples/profile.md || exit 1; \
+	done; done
 	@echo "seller-offer-review (single offer)"; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/seller-offer-review" \
 		$(PY) skills/seller-offer-review/scripts/render.py dev/samples/seller-offer-review-single.json --format all \

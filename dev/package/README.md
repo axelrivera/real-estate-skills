@@ -228,6 +228,7 @@ The offer plan follows one of four approaches: **Leverage** (a home that has sat
 - **Tell Claude:** the buyer's timeline, how they're financing (loan type, down payment) and how much they want this house (that sets the approach).
 - **Example:** "Run a buyer CMA on 123 Oak St. My buyer is FHA with 3.5% down, their lease ends in March, and they love it."
 - **You get:** a PDF report to send, or a short summary in chat.
+- **Pricing Activity chart:** ask for "the pricing activity chart" to get a one-page, landscape chart of recent sales and homes for sale near this home by size and price, with a line at this home's size. It leaves out the asking price, the value range and the comps, so you and your buyer can read the market together before you show the CMA. Ask for "the pricing activity chart with the price" for the same page with the home, the asking price and the value range on it.
 
 ### Buyer Offer Strategy (/buyer-offer-strategy)
 
@@ -249,6 +250,7 @@ The three options are always **Draw Offers** (the lower part of the supported ra
 - **Tell Claude:** what the seller has updated since they bought (with years, roof first), known issues, their timeline, and their mortgage payoff if you have it.
 - **Example:** "Seller CMA for 456 Pine Ave. They replaced the roof in 2023 and redid the kitchen in 2021. Payoff is about $210,000. They'd like to be moved by June."
 - **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers, plus a PDF copy of the slides (a backup that opens anywhere). If you didn't ask, Claude offers it after the report.
+- **Pricing Activity chart:** ask for "the pricing activity chart" to get a one-page, landscape chart of recent sales and homes for sale near the seller's home by size and price, with a line at their home's size. It leaves out your recommended price, the value range and the comps, so the seller can see the market for themselves before you show the CMA. Ask for "the pricing activity chart with the price" for the same page with the recommended price and the value range on it.
 
 ### Seller Net Sheet (/seller-net-sheet)
 

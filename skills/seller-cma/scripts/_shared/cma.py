@@ -11,7 +11,7 @@ import re
 import statistics
 from datetime import date, timedelta
 
-from . import finance, fmt, layout, mls
+from . import finance, fmt, layout, mls, render
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
@@ -143,7 +143,7 @@ def scatter_points(homes, sc, subject_sqft, subject_address, comps=()):
 
 
 def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, comps=(), drop_crowded=False, points=None,
-            chart=None, band_label=None, kfmt=None):
+            chart=None, band_label=None, kfmt=None, size=(760, 470), activity=False):
     """Price vs. size for sold and active homes near the subject's size, with the supported range band.
 
     `comps`: the comp cards' addresses, drawn as comparable sales. `drop_crowded` (the seller CMA): labels stay
@@ -156,9 +156,15 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     `points`: scatter_points' result, computed once by the caller's document model (the trend it states is the one
     drawn). `chart`: a layout.Chart, marked with each series as it's drawn, so its legend names only what's on the chart.
     `band_label`: the range band's text as the caller formats it; `kfmt`: the tick formatter (cma.k by default).
+    `size`: the drawing's (width, height) in px; text and markers keep their size, only the plot area grows.
+    `activity` (the Pricing Activity sheet, shown before the value conversation): the area's sales and listings only.
+    No price for the home, no range band, no comp highlights and no callouts; the home appears only as a line at its
+    size (labeled L("lg_size_line")), and the price axis is scaled to the other homes alone.
     """
     kf = kfmt or fmt.k
     pts, excluded, fit = points or scatter_points(homes, sc, subject_sqft, subject_address, comps)
+    if activity:  # comps are drawn as ordinary sales: highlighting them would preview the CMA
+        pts = {"comp": [], "sold": pts["comp"] + pts["sold"], "active": pts["active"]}
     sold, act = pts["comp"] + pts["sold"], pts["active"]
     kind = {id(h): k for k, hs in pts.items() for h in hs}
 
@@ -166,11 +172,15 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
         return kind[id(h)]
 
     xs = [h["living_area"] for h in sold + act] + [subject_sqft]
-    ys = [h["close_price"] for h in sold] + [h["current_price"] for h in act] + [subject_price, band[0], band[1]]
+    ys = [h["close_price"] for h in sold] + [h["current_price"] for h in act]
+    if not activity:
+        ys += [subject_price, band[0], band[1]]
+    W, H = size
+    Lm, R, T, B = 72, 20, 20, 58
+    ticks = 8 if W <= 760 else 10  # a wider drawing keeps its grid as dense
     X0, X1 = math.floor((min(xs) - 50) / 100) * 100, math.ceil((max(xs) + 50) / 100) * 100
-    ystep = nice_step(max(ys) - min(ys) + 30000, 8)
+    ystep = nice_step(max(ys) - min(ys) + 30000, ticks)
     Y0, Y1 = math.floor((min(ys) - 15000) / ystep) * ystep, math.ceil((max(ys) + 15000) / ystep) * ystep
-    W, H, Lm, R, T, B = 760, 470, 72, 20, 20, 58
 
     def x(v):
         return Lm + (v - X0) / (X1 - X0) * (W - Lm - R)
@@ -180,16 +190,16 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
 
     def shape(kind, cx, cy, hollow, tip):
         # other sales are the background: small, see-through dots, so overlapping sales read as a denser patch
-        cls, r = f"m-{kind}" + (" hol" if hollow else ""), 4 if kind == "sold" else 6.5
+        cls, r = f"m-{kind}" + (" hol" if hollow else ""), {"sold": 4, "sales": 5}.get(kind, 6.5)
         return f'<g><title>{esc(tip)}</title><circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" class="{cls}"/></g>'
 
-    o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">',
-         f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>',
-         ]
+    o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">']
+    if not activity:
+        o.append(f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>')
     for v in _ticks(Y0, Y1, ystep):
         o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
                  f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{kf(v)}</text>')
-    step = nice_step(X1 - X0, 8)
+    step = nice_step(X1 - X0, ticks)
     for v in _ticks(math.ceil(X0 / step) * step, X1, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T}" y2="{H - B}" class="grid"/>'
                  f'<text x="{x(v):.1f}" y="{H - B + 18}" text-anchor="middle" class="tick">{v:,}</text>')
@@ -201,10 +211,12 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
                  f'x2="{x(xb):.1f}" y2="{y(fit["intercept"] + fit["slope"] * xb):.1f}" class="trend"/>')
         _mark(chart, "trend", L)
     def sale(h):
-        _mark(chart, cat(h), L)
-        o.append(shape(cat(h), x(h["living_area"]), y(h["close_price"]), False,
+        kind = "sales" if activity else cat(h)  # on the activity sheet the sales are the subject: darker, larger dots
+        _mark(chart, kind, L)
+        o.append(shape(kind, x(h["living_area"]), y(h["close_price"]), False,
                        f'{display_address(h["address"])}: {L("tip_sold")} ${int(h["close_price"]):,}, {int(h["living_area"]):,} sq ft'))
 
+    under = len(o)  # the activity sheet's size line goes here, under the markers
     for h in pts["sold"]:  # background first, comps and the subject on top
         sale(h)
     for h in act:
@@ -213,6 +225,26 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
                        f'{display_address(h["address"])}: {L("tip_active")} ${int(h["current_price"]):,}, {int(h["living_area"]):,} sq ft'))
     for h in pts["comp"]:
         sale(h)
+    if activity:
+        info = _size_line(o, under, chart, L, x(subject_sqft), subject_sqft, (Lm, T, W - R, H - B), sold, act, x, y)
+    else:
+        info = _priced(o, chart, L, homes, sc, subject_sqft, subject_price, subject_address, band, band_label, excluded,
+                       sold, act, cat, x, y, (Lm, T, W - R, H - B), drop_crowded)
+    o.append("</svg>")
+    placer, dropped_callouts = info
+    info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
+            "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
+            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
+            "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
+            "labels_leader": placer.leaders, "labels_dropped": placer.dropped,  # CMA-218
+            "crowded_labels": placer.clashing, "callouts_dropped": dropped_callouts}  # CMA-299
+    return "\n".join(o), info
+
+
+def _priced(o, chart, L, homes, sc, subject_sqft, subject_price, subject_address, band, band_label, excluded, sold, act,
+            cat, x, y, bounds, drop_crowded):
+    """The report's marks on top of the activity: the home at its price, the range band's label and the callouts.
+    Returns (label placer, callouts whose home isn't on the chart)."""
     sx, sy, d = x(subject_sqft), y(subject_price), 10
     o.append(f'<g><title>{esc(display_address(subject_address))}: {L("tip_asking")} ${int(subject_price):,}</title>'
              f'<path d="M{sx:.1f},{sy - d:.1f} L{sx + d:.1f},{sy:.1f} L{sx:.1f},{sy + d:.1f} L{sx - d:.1f},{sy:.1f} Z" class="subj"/></g>')
@@ -223,11 +255,11 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     # label goes in the first corner clear of markers
     marks = [(x(h["living_area"]), y(h["close_price"]), 4 if cat(h) == "sold" else 6.5) for h in sold]
     marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act] + [(sx, sy, d)]
-    placer = _LabelPlacer(marks, (Lm, T, W - R, H - B), gap=LABEL_GAP if drop_crowded else 0)
+    placer = _LabelPlacer(marks, bounds, gap=LABEL_GAP if drop_crowded else 0)
     band_text = band_label or f'{L("band")} {fmt.range(band[0], band[1], fmt.k)}'
     band_w = _text_w(band_text, 12, bold=True)
     spots = [(bx, by, anchor, (bx if anchor == "start" else bx - band_w, by - 10, (bx if anchor == "start" else bx - band_w) + band_w, by + 3))
-             for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((Lm + 8, "start"), (W - R - 8, "end"))]
+             for by in (y(band[1]) - 6, y(band[0]) + 15) for bx, anchor in ((bounds[0] + 8, "start"), (bounds[2] - 8, "end"))]
     bx, by, anchor, box = next((sp for sp in spots if not _hits(sp[3], marks, [])), spots[0])
     placer.boxes.append(box)
     o.append(_halo(f'<text x="{bx:.1f}" y="{by:.1f}" text-anchor="{anchor}" class="lbl-band">{esc(band_text)}</text>'))
@@ -252,14 +284,22 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
                                      off.get(key) or status.get(key) or "not_in_export"))
             continue
         o.append(placer.place(x(p[0]), y(p[1]), co.get("side", "right"), co["label"], "lbl", 10, 12, droppable=drop_crowded))
-    o.append("</svg>")
-    info = {"trend_at_subject": fit["at_subject"] if fit else None, "r2": fit["r2"] if fit else None,
-            "excluded": excluded, "n_sold": len(sold), "n_active": len(act),
-            "counts": {**{kind: len(hs) for kind, hs in pts.items()}, "trend": 1 if fit else 0},
-            "labels_moved": placer.moved, "labels_overlapping": placer.overlapping,
-            "labels_leader": placer.leaders, "labels_dropped": placer.dropped,  # CMA-218
-            "crowded_labels": placer.clashing, "callouts_dropped": dropped_callouts}  # CMA-299
-    return "\n".join(o), info
+    return placer, dropped_callouts
+
+
+def _size_line(o, under, chart, L, sx, sqft, bounds, sold, act, x, y):
+    """The Pricing Activity sheet's only mark for the home: a line at its size, no price. Its label sits at the top,
+    stepped aside from the markers. Returns (label placer, no dropped callouts)."""
+    marks = [(x(h["living_area"]), y(h["close_price"]), 5) for h in sold]
+    marks += [(x(h["living_area"]), y(h["current_price"]), 6.5) for h in act]
+    o.insert(under, f'<line x1="{sx:.1f}" x2="{sx:.1f}" y1="{bounds[1]}" y2="{bounds[3]}" class="size-line"/>')
+    text = L("lg_size_line", sqft=f"{int(sqft):,}")
+    if chart is not None:
+        chart.mark("size_line", text, LEGEND_SWATCHES["size_line"])
+    placer = _LabelPlacer(marks, bounds)
+    side = "right" if sx < (bounds[0] + bounds[2]) / 2 else "left"
+    o.append(placer.place(sx, bounds[1] + 12, side, text, "lbl-subj", 6, 13, bold=True, droppable=True))
+    return placer, []
 
 
 def _text_w(text, size, bold=False):
@@ -413,6 +453,8 @@ LEGEND_SWATCHES = {
     "active": '<circle cx="7" cy="7" r="5.5" class="m-active hol"/>',
     "trend": '<line x1="0" y1="7" x2="14" y2="7" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>',
     "subject": '<path d="M7,1 L13,7 L7,13 L1,7 Z" fill="var(--subject)"/>',
+    "sales": '<circle cx="7" cy="7" r="5" class="m-sales"/>',
+    "size_line": '<line x1="7" y1="0" x2="7" y2="14" stroke="var(--subject)" stroke-width="1.5"/>',
 }
 
 
@@ -495,6 +537,25 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None
 # Keep-together groups live in layout.py (the one page-fit pipeline); the name stays here for older callers
 group_blocks = layout.group_blocks
 PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": "0.45in"}  # every CMA's printed page
+
+# --- the one-page chart sheet (Pricing Activity) ------------------------------------
+# The scatter alone on a landscape Letter page: the title, the drawing as large as the page allows, the legend. No
+# footer, so the bottom margin matches the others.
+SHEET_FIT = layout.Fit(one_page=True, landscape=True, margins={k: "0.45in" for k in ("top", "right", "bottom", "left")})
+SHEET_TITLE_PX, SHEET_LEGEND_PX = 46, 32  # the title line and the legend under the drawing, with their spacing
+SHEET_SIZE = (SHEET_FIT.content_px()[0],
+              SHEET_FIT.content_px()[1] - SHEET_TITLE_PX - SHEET_LEGEND_PX)
+
+
+def chart_sheet(svg, legend, title, theme_css, tag="", body_class=""):
+    """The one-page landscape chart sheet: `title`, the drawing (cma.scatter at SHEET_SIZE) at full width, `legend`
+    (a layout.Chart legend). Nothing else: no intro, takeaway, notes or footer. `tag`: a small outlined tag after the
+    title (the sample label)."""
+    tag = f'<span class="sheet-tag">{esc(tag)}</span>' if tag else ""
+    body = f'<div class="chart-sheet"><h1>{esc(title)}{tag}</h1>{svg}{legend}</div>'
+    return render.page(body, css=css() + "@page{size:Letter landscape;margin:0.45in}", title=title,
+                       theme_css=theme_css, body_class=layout.classes("font-bundled", body_class)
+                       ).replace("<html>", '<html lang="en">', 1)
 
 
 def derive_comps(comps):

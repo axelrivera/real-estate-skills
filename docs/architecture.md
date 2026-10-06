@@ -82,6 +82,7 @@ analysis scripts → <skill>.json → assets/<name>-template.md, filled by Claud
 - Default: **file mode** when the user asks for something to print, send, present, or "the report/deck"; **markdown mode** for quick questions. The user can switch by asking, and the skill offers the other mode in one line.
 - Markdown mode mirrors the file's page-1 executive summary; detail tables on request.
 - Every skill with file outputs has one entry point, `scripts/render.py DATA.json --format pdf|pptx|all --out DIR`. See [development.md](development.md#skill-render-contract).
+- A skill can add formats built only when named (`render.main(..., on_request=...)`); `all` leaves them out. The CMAs' `activity` and `price-chart` are the Pricing Activity sheet (`cma.chart_sheet`): the scatter alone on one landscape page, title, chart and legend, no footer. `activity` is for the value conversation before the CMA: the area's sales and listings, the trend and a line at the home's size, never the home's price, the range or the comps, and its price axis is scaled without them. `price-chart` is the report's chart at that size.
 - If rendering a file fails, say so plainly and fall back to markdown mode.
 
 ### Output location
