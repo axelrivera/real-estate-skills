@@ -2,6 +2,8 @@
 
 Claude skills for real estate agents, in one plugin: a one-file agent profile, buyer and seller CMAs, offer strategy and review, and contract timelines. Skills run in the Claude desktop app and cloud (claude.ai and Cowork).
 
+More about these and other skills at [axelrivera.dev/claude-skills](https://axelrivera.dev/claude-skills/).
+
 ## Install
 
 ### Desktop App, From the Release Zip
