@@ -30,7 +30,7 @@ The deck is the conversation piece for the appointment; the PDF report is the le
 | `recommendation_why` | One sentence, about 25 words at most |
 | `value_drivers` | 2–4 `[heading, one line, icon]`, headings in Title Case: the features the adjustments credit for this home, in words (the amounts are on the report's comp cards) |
 | `document_items` | 0–2 `[heading, one line, icon]`, headings in Title Case: upgrades this home has that need paperwork to count. None is fine: the box is left out |
-| `comp_lines` | `{comp card address: "why it matters, under 45 characters"}`. The slide leads the strongest match's line with "Strongest match" itself |
+| `comp_lines` | `{comp card address (either letter case): "why it matters, under 45 characters"}`. The slide leads the strongest match's line with "Strongest match" itself |
 | `*_takeaway` | One or two short sentences: the single point of that slide |
 | `comps_basis` | Optional; what the comps were matched on, for step 2 ("size, pool, age and neighborhood"; "size, floor, view and building" for a condo) |
 | `scatter_title`, `market_title` | Optional slide titles in Title Case ("Where Your Unit Fits in the Building") |
