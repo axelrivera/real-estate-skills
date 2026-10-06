@@ -93,12 +93,27 @@ class Model(unittest.TestCase):
                 said = C["assumptions"] + C["chat_notes"]
                 self.assertEqual(len({squash(s).casefold() for s in said}), len(said))  # reply and markdown: once
                 self.assertTrue(set(C["notes"]) <= set(said))  # every PDF note reaches the chat once
+                # every note prints on the page but a default commission rate (a default, never an assumption)
+                self.assertEqual(len(C["note_keys"]) - len(C["notes"]), 1 if C["commission_assumed"] else 0)
                 N = notes.Notes()
                 for i, text in enumerate(said):
                     N.add(f"n{i}", text)
                 labels = ([r["label"] for r in C["rows"]] + [c["label"] for c in C["columns"]] + C["facts"]
                           + [c["tile_label"] for c in C["columns"]] + [s["label"] for s in C["summary_tiles"]])
                 self.assertEqual(N.label_problems(labels), [])
+
+    def test_comparisons_are_the_nets_difference(self):
+        """The reply's "what separates them" figures come from the model: each price after the first against the
+        first, its difference the two nets' and the only figure in its line."""
+        for seed, _, C in cases():
+            with self.subTest(seed=seed):
+                cols = C["columns"]
+                self.assertEqual(len(C["comparisons"]), max(len(cols) - 1, 0))
+                for c, x in zip(cols[1:], C["comparisons"]):
+                    self.assertEqual(x["difference"], c["net"] - cols[0]["net"])
+                    self.assertEqual(x["difference_display"], fmt.money(abs(x["difference"])))
+                    shown = FIGURE.findall(x["line"].replace(c["label"], "").replace(cols[0]["label"], ""))
+                    self.assertEqual(shown, [x["difference_display"]] if x["difference"] else [])
 
     def test_no_placeholder_left_empty(self):
         """No sentence it writes (model, page, Check lines) shows a placeholder left empty (placeholders.py)."""

@@ -71,7 +71,7 @@ Only when the agent chose the range themselves: `{low, high, reason}` (*numbers*
 | `mls` | The row's MLS number |
 | `change` | `listed`, `price`, `off_market`, `back_on`, `pending`, `sold`, `canceled`, `expired` or `withdrawn`, or the MLS's code (Stellar: NEW, DECR, INCR, TOM, BOM, PNC, SLD, CANC, EXP, WDN; the 360 grid's `->ACT` is `listed`, `ACT->PND` is `pending`, a price move is `price`). A row that moves both status and price ("INCR … (BOM)") is the status change with the new `price` |
 | `price` | *number*, the asking price after the row, when it shows one. Any price that differs from the one before it counts as a cut or an increase |
-| `dom` | Optional *number*: the grid's days on market at that row. A listing's latest `dom` replaces the calendar count of its active days |
+| `dom` | Optional *number*: the grid's days on market at that row. A listing's latest `dom` replaces the calendar count of its active days up to that row; on a listing still for sale, compute.py adds the days from that row to `as_of` (never put the header's ADOM on a row) |
 | `cdom` | Optional *number*: the grid's cumulative days on market, when that's all it shows. Counted as `dom` on the oldest listing only; on a later one compute.py warns and asks for that listing's own DOM |
 | `note` | Optional figure-free wording for the report's row (default: "Price cut", "Went under contract"…) |
 | `days_off`, `days_on` | Optional *numbers*: days off or back on the market in undated off/on pairs the row sums up (see below) |

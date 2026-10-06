@@ -27,7 +27,7 @@ Record the form's name and version exactly as printed (title, form number, revis
 
 Find where the contract defines time (a "Time", "Computation of Time", "Days" or "Definitions" paragraph):
 
-- Are days calendar days or business days? Do short periods (a few days or less) skip weekends?
+- Are days calendar days or business days? Do short periods (a few days or less) skip weekends? A definition of days as calendar days that makes no exception for short periods ("Days means calendar days") answers both: record `day_count: "calendar"` and `short_period_days: 0`. Only an exception the contract states ("periods of 5 days or less exclude weekends") sets a number; business days need no short-period rule.
 - When does a day end (5:00 PM, 11:59 PM, "local time" where the property is)?
 - What happens when a period ends on a weekend or holiday: extended to the next business day, or not? Does that apply to every deadline or only some?
 - When a deadline moves past a weekend or holiday, what time does it end on the new day? Usually the contract's own end of day (11:59 PM when its periods end at end of day); record a different time only when the contract states one. Never assume 5:00 PM.
@@ -69,5 +69,5 @@ Handwritten or initialed changes override typed text; flag anything illegible in
 ## 5. Confirm and Disclose
 
 - **Quick question** about one date: answer, and state in the same reply the rule you used and the reading to confirm ("7 days after Nov 20, ending 5:00 PM, not extended; confirm your form says the same").
-- **Full timeline or review:** before running, list the key readings back to the agent in plain words ("Due diligence: 7 days after the Effective Date, ends Nov 27 at 5 PM; buyer may cancel for any reason") and ask them to confirm. Anything you had to interpret goes in the notes.
+- **Full timeline or review:** don't stop to confirm before running: record what the contract states, run, and deliver. A reading the contract states plainly (its day count, end of day, rollover) needs no confirm line; the script asks for any time rule it doesn't state. A term you had to interpret (a clause that reads two ways, a deadline with no stated response period) goes in the notes as one question, which the reply's questions cover, within the skill's word target. Never add a separate list of readings to confirm.
 - **Chat disclaimer.** The scripts return `support: "best_effort"` and the line to use in `chat_notes` (only there: the timeline keeps it out of `agent_notes`, which can reach a markdown timeline). Say it once, in chat, in your own short words: only Florida FAR/BAR contracts are fully supported, this contract was read on a best-effort basis, and the agent should check every date and term against the signed contract (on the buyer side, an offer still being written: against the form before the offer goes out), with a real estate attorney licensed in the property's state for anything that matters. **Never put it in a PDF, calendar file, worksheet or markdown report:** those go to clients and into transaction files.

@@ -1,8 +1,8 @@
 {
  "assumption_keys": [
+  "no_hoa",
   "national",
-  "commission_default",
-  "no_hoa"
+  "commission_default"
  ],
  "assumptions": {
   "count": 3
@@ -35,6 +35,9 @@
   }
  ],
  "commission_assumed": true,
+ "comparisons": {
+  "count": 0
+ },
  "facts": {
   "count": 1
  },
@@ -43,15 +46,15 @@
   "count": 2
  },
  "note_keys": [
+  "no_hoa",
   "national",
   "commission",
   "transfer_tax",
   "not_included",
-  "commission_default",
-  "no_hoa"
+  "commission_default"
  ],
  "notes": {
-  "count": 4
+  "count": 5
  },
  "ok": true,
  "preliminary": true,

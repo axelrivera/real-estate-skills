@@ -156,11 +156,12 @@ class Assumptions(unittest.TestCase):
                 self.assertEqual(len(C["assumptions"]), len(before["assumptions"]) + 1)
 
     def test_no_hoa_assumed_only_when_nobody_said(self):
-        """No HOA mentioned (and not a condo): assumed none, said once in the reply, never on the page."""
+        """No HOA mentioned (and not a condo): assumed none, an assumption printed once in the page's notes."""
         d = fixture("texas-no-payoff.json")
         C = compute.run(d)
         self.assertIn("no_hoa", C["note_keys"])
-        self.assertEqual(len(C["assumptions"]) - len(set(C["assumptions"]) & set(C["notes"])), 2)  # with the commission
+        # only the commission default stays off the page
+        self.assertEqual(len(C["assumptions"]) - len(set(C["assumptions"]) & set(C["notes"])), 1)
         for prop in ({"hoa": False}, {"hoa": True}, {"hoa_monthly": 120}, {"property_type": "condo"}):
             with self.subTest(prop):
                 e = copy.deepcopy(d)

@@ -35,6 +35,9 @@
   }
  ],
  "commission_assumed": false,
+ "comparisons": {
+  "count": 0
+ },
  "facts": [
   "Single-Family"
  ],

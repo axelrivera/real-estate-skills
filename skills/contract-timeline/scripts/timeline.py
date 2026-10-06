@@ -811,7 +811,10 @@ def rider_rows(c, has, add):
         add(key="compensation_cancel", label="Compensation Contingency Ends", short="Compensation Contingency", basis="after",
             from_key="compensation_agreement", days=3, source="Rider GG", party="Buyer", critical=True, contingency=True,
             broker=True, void_if_done="compensation_agreement",  # signed and delivered: the cancel right never arises
-            void_note="The agreement was signed and delivered {done}, so this cancel right doesn't arise",
+            # iteration 14 eval 12: the note says only what was recorded: "signed" for the done date, "signed and
+            # delivered" once compensation_agreement_delivered says the package or the agent shows the delivery
+            void_note="The agreement was {how} {done}, so this cancel right doesn't arise",
+            void_how="signed and delivered" if c.get("compensation_agreement_delivered") else "signed",
             action="If the agreement wasn't signed and delivered, the buyer may deliver written notice to cancel",
             if_missed="The contingency ends; the buyer proceeds")
     if has("N") and c.get("cccl_requested"):
@@ -1405,13 +1408,19 @@ def check_written_dates(deal):
 
 def effective_source(c):
     """The Effective Date's evidence as the report prints it: the agent's words for whose signature or initials on
-    which document, with the time stamp from effective_date_signed ("Seller's initials on Counteroffer #1, Sep 25,
-    2026 · 4:12 PM"). Never the e-signature platform."""
+    which document, with the time stamp from effective_date_signed. Every place it prints sits next to the Effective
+    Date itself, so a signature on that day gives the time alone ("Seller's initials on Counteroffer #1, 4:12 PM");
+    one on an earlier day (delivered later) gives its own date ("..., Sep 24, 2026 · 4:12 PM"). Never the
+    e-signature platform."""
     text = no_platform(c.get("effective_date_source") or "")
     signed = c.get("effective_date_signed")
     if not signed:
         return text
-    stamp = fmt.when(signed, "dot")
+    same_day = c.get("effective_date") and fmt.to_date(signed) == fmt.to_date(c["effective_date"])
+    t = fmt.to_time(signed)
+    if same_day and not t:
+        return text
+    stamp = fmt.clock(t) if same_day else fmt.when(signed, "dot")
     return f"{text.rstrip('.')}, {stamp}" if text else f"Last signature or initials, {stamp}"
 
 
@@ -1662,7 +1671,7 @@ KNOWN_CONTRACT_KEYS = frozenset("""
     insurance_homeowners insurance_coverage mold_days drywall_days drywall_waived cccl_requested year_built lead_paint_days lbp_waived
     rezoning_date pre_closing_agreement_days post_closing_agreement_days_before seller_occupancy_days
     sale_contingency_date backup_notice_date kickout_notice_received seller_attorney_date buyer_attorney_date
-    management_agreements_received compensation_agreement_days
+    management_agreements_received compensation_agreement_days compensation_agreement_delivered
 """.split())
 
 
@@ -1763,7 +1772,7 @@ def analyze(deal, side=None):
             # iteration 12 evals 12, 13: a right that can no longer arise is closed, not open: it shows done (never the
             # next deadline, no calendar event, off page 1) and stays in the full table with the reason
             r = {**r, "critical": False, "note": "; ".join(n for n in (r.get("note"), fmt.fill(r["void_note"],
-                done=fmt.date_short(voided, year=False))) if n)}
+                done=fmt.date_short(voided, year=False), how=r.get("void_how", "done"))) if n)}
             done_on = done_on or voided
         # TL-104: a deadline before the report date that isn't recorded as done is shown to confirm, never as due
         past = bool(r["when"] and not done_on and r["when"].date() < today)

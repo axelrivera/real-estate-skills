@@ -55,6 +55,11 @@
   }
  ],
  "commission_assumed": false,
+ "comparisons": [
+  {
+   "difference": -14085
+  }
+ ],
  "facts": {
   "count": 6
  },
