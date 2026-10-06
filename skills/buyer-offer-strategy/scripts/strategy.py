@@ -1315,8 +1315,9 @@ def promote_why(w, lc_why, pick, t_, was=None, words=None):
         # OFR-326: worded for the competition the deal expects, never the softer level the option was built for
         if was.get("price", 0) > t_["price"]:
             w["price"] = why("why_promo_price", amount=money(was["price"] - t_["price"]))
-        if lc_why.get("seller_concessions"):
-            w["seller_concessions"] = why("why_promo_conc", ask=lc_why["seller_concessions"]["ask"])
+        ask = (lc_why.get("seller_concessions") or {}).get("ask")
+        if ask:  # a bigger ask the option made; otherwise the option's own concession reason stands (set above)
+            w["seller_concessions"] = why("why_promo_conc", ask=ask)
     if pick == "stronger":
         if t_.get("appraisal_gap", 0) > was.get("appraisal_gap", 0):
             w["appraisal_gap"] = why("why_promo_gap")
