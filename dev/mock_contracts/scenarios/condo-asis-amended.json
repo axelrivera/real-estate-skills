@@ -13,6 +13,6 @@
   "disclosures": {"RCD": {"received": "2026-10-02 11:30"}},
   "amendments": [
     {"form": "EA", "closing": "2026-11-06", "inspection_extra_days": 5},
-    {"form": "ACSP", "description": "Condo documents received Oct 2; $1,500 seller credit at Closing", "text": "Buyer acknowledges receipt of the condominium documents, the milestone inspection summary and the structural integrity reserve study on 10/02/2026. Seller shall credit Buyer $1,500.00 at Closing toward Buyer's closing costs."}
+    {"form": "ACSP", "description": "Condo documents received; seller credit at Closing", "text": "Buyer acknowledges receipt of the condominium documents, the milestone inspection summary and the structural integrity reserve study on 10/02/2026. Seller shall credit Buyer $1,500.00 at Closing toward Buyer's closing costs."}
   ]
 }

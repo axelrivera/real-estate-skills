@@ -190,7 +190,7 @@ class Market:
     """Merged market values with the source of each one.
 
     Sources: 'state' (built-in state layer, that state only), 'mls' (built-in MLS layer, that MLS only),
-    'county' (county override), 'estimate' (national estimates, labeled Estimate on reports), 'national' (a national
+    'county' (county override), 'estimate' (national estimates, named once in a report's notes), 'national' (a national
     rule that isn't an estimate: no transfer tax in a no_state_transfer_tax state), 'input' (given by the skill).
     A path with no value is missing: it comes from the deal (a contract's time rules), or the skill asks.
     """
@@ -266,6 +266,7 @@ DEAL_COSTS = {
     "buyer_closing_cost_pct": "closing_costs.buyer_closing_cost_pct",
     "tax_paid": "property_tax.paid",
     "tax_rate": "property_tax.fallback_rate",
+    "tax_bill_due_date": "property_tax.due_date",  # iteration 9: a closing after it assumes this year's bill paid
     "insurance_rate": "holding_costs.insurance_rate",
     "utilities_monthly": "holding_costs.utilities_monthly",
     "inspection_credit_reserve_pct": "contract.inspection_credit_reserve_pct",
@@ -385,7 +386,7 @@ def load_market(state=None, county=None, mls=None):
         if county and known and _county_key(county) not in {_county_key(c) for c in known}:
             note("unknown_county", f"{county} isn't a {STATES[want]} county: check the spelling. No county rules were applied.")
     else:
-        note("state_not_built_in", f"Nothing is built in for {STATES[want]}: costs are national estimates (labeled Estimate), and "
+        note("state_not_built_in", f"Nothing is built in for {STATES[want]}: costs are national estimates (named in each report's notes), and "
                      "contract time rules come from the contract.")
 
     mls_name = mls

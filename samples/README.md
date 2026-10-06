@@ -6,18 +6,22 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 ## Buyer CMA
 
-[517-Larkwood-Ave-Buyer-CMA.pdf](buyer-cma/517-Larkwood-Ave-Buyer-CMA.pdf) (10 pages). A buyer-side comparative market analysis for a renovated pool home listed at $474,900. It opens with a one-page summary and a suggested opening offer, target and walk-away price, then covers the full listing history, five adjusted comps, a price-vs-size scatterplot, the competition, market conditions, taxes at the buyer's price, payment scenarios, price vs. seller credit, watch items and questions for the listing agent.
+[517-Larkwood-Ave-Buyer-CMA.pdf](buyer-cma/517-Larkwood-Ave-Buyer-CMA.pdf) (11 pages). A buyer-side comparative market analysis for a renovated pool home listed at $474,900. It opens with a one-page summary and a suggested opening offer, target and walk-away price, then covers the full listing history, five adjusted comps, a price-vs-size scatterplot, the competition, market conditions, taxes at the buyer's price, payment scenarios, price vs. seller credit, watch items and questions for the listing agent.
 
 ## Seller CMA
 
-- [517-Larkwood-Ave-Seller-CMA.pdf](seller-cma/517-Larkwood-Ave-Seller-CMA.pdf) (8 pages). The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
+- [517-Larkwood-Ave-Seller-CMA.pdf](seller-cma/517-Larkwood-Ave-Seller-CMA.pdf) (9 pages). The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
 - [517-Larkwood-Ave-Listing-Presentation.pptx](seller-cma/517-Larkwood-Ave-Listing-Presentation.pptx) (15 slides). An editable listing presentation with the same numbers, for the listing appointment.
 - [517-Larkwood-Ave-Listing-Presentation.pdf](seller-cma/517-Larkwood-Ave-Listing-Presentation.pdf) (15 pages). The same presentation as a PDF, the backup copy delivered with the PPTX.
 
+## Seller Net Sheet
+
+[2250-Oak-Hollow-Ct-Seller-Net-Sheet.pdf](seller-net-sheet/2250-Oak-Hollow-Ct-Seller-Net-Sheet.pdf) (1 page). A one-page net sheet for the home the offer review samples use, before any offers: what the seller walks away with at the $515,000 list price, after a price cut and with a $10,000 seller credit, itemized from brokerage and Florida's documentary stamp tax through the title company fees, the property tax proration and the mortgage payoff.
+
 ## Buyer Offer Strategy
 
-- [1532-Cypress-Bend-Dr-Offer-Options.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Options.pdf) (3 pages). An FHA buyer competing with two other offers on a $365,000 listing. It shows the recommended offer inside the buyer's limits, the alternatives and what each changes and costs, and how the offer scores against the competition from the listing agent's side.
-- [1532-Cypress-Bend-Dr-Offer-Package.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Package.pdf) (2 pages). The worksheet for writing the recommended offer on the FR/BAR AS IS contract: contract entries by paragraph, riders, draft language for additional terms, the offer package checklist and what to request from the seller after acceptance.
+- [1532-Cypress-Bend-Dr-Offer-Options.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Options.pdf) (4 pages). An FHA buyer competing with two other offers on a $365,000 listing. It shows the recommended offer inside the buyer's limits, the alternatives and what each changes and costs, and how the offer scores against the competition from the listing agent's side.
+- [1532-Cypress-Bend-Dr-Offer-Package.pdf](buyer-offer-strategy/1532-Cypress-Bend-Dr-Offer-Package.pdf) (2 pages). The worksheet for writing the recommended offer on the FAR/BAR AS IS contract: contract entries by paragraph, riders, draft language for additional terms, the offer package checklist and what to request from the seller after acceptance.
 
 ## Contract Timeline
 

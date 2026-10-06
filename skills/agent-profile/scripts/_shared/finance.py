@@ -13,6 +13,8 @@ import math
 import re
 from datetime import date
 
+from . import fmt
+
 COMMISSION_NOTE = "Commissions are negotiable and not set by law."
 SINGLE_FAMILY = "single_family"
 
@@ -71,27 +73,56 @@ def property_type(value):
     return "other"
 
 
-def tax_proration(annual_tax, closing, market=None, bill_paid=None):
-    """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis'}, or None.
+def tax_due_date(closing, market=None, due_date=None):
+    """This year's tax bill due date in the closing's year, or None when neither the agent (`due_date`: "10-15" or
+    "2026-10-15"; only the month and day count) nor the market (`property_tax.due_date`) gives one."""
+    v = due_date if due_date not in (None, "") else (market.get("property_tax.due_date") if market is not None else None)
+    if v in (None, "") or not closing:
+        return None
+    if isinstance(v, date):
+        return date(closing.year, v.month, v.day)
+    m = re.match(r"^(?:\d{4}-)?(\d{1,2})-(\d{1,2})$", str(v).strip())
+    if not m:
+        raise ValueError(f"The tax bill's due date should look like 10-15 or 2026-10-15, not {v!r}.")
+    return date(closing.year, int(m.group(1)), int(m.group(2)))
 
-    FR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
+
+def tax_bill_assumed_paid(closing, market=None, bill_paid=None, due_date=None):
+    """True when the agent hasn't said whether this year's bill is paid and closing falls after its due date: the
+    seller is assumed to have paid it (iteration 9 eval 4: Cobb County, Georgia bills are due Oct 15). Without a due
+    date (Florida's bills run to March of the next year) the rule doesn't apply."""
+    due = tax_due_date(closing, market, due_date)
+    return bill_paid is None and due is not None and closing > due
+
+
+def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=None):
+    """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis', 'assumed_paid'},
+    or None.
+
+    FAR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
     (`property_tax.early_payment_discount`, Florida 4%). Taxes paid in arrears (`property_tax.paid`): while the current
     bill is unpaid, the seller credits the buyer from Jan 1 (a cost); once the seller has paid it (Florida bills go out
     in November), the buyer credits the seller from closing to Dec 31 (`amount` negative, a credit to the seller).
+    With no word from the agent, a closing after the bill's due date (`due_date`, else `property_tax.due_date`)
+    assumes it paid: the credit (`assumed_paid` true). The label never says Assumed: a report says so once, in its
+    notes (local-costs.md).
     """
     if not annual_tax or not closing:
         return None
     if market is not None and market.get("property_tax.paid") == "advance":
         return None
+    assumed_paid = tax_bill_assumed_paid(closing, market, bill_paid, due_date)
     discount = (market.get("property_tax.early_payment_discount") if market is not None else None) or 0
     year_days = (date(closing.year + 1, 1, 1) - date(closing.year, 1, 1)).days
     seller_days = (closing - date(closing.year, 1, 1)).days  # Jan 1 through the day before closing
     base = annual_tax * (1 - discount)
     basis = f"{money(annual_tax)} bill" + (f" less the {discount * 100:g}% early-payment discount" if discount else "")
-    if bill_paid:
+    if bill_paid or assumed_paid:
         return {"amount": -round(base * (year_days - seller_days) / year_days),
-                "label": "Property Tax Proration (Credit, Closing to Dec 31)", "basis": basis}
-    return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis}
+                "label": "Property Tax Proration (Credit, Closing to Dec 31)",
+                "basis": basis, "assumed_paid": assumed_paid}
+    return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis,
+            "assumed_paid": False}
 
 
 # CORE-19: states where one flat deed transfer rate can be wrong (graduated rates, mansion taxes, city or county
@@ -114,6 +145,23 @@ def transfer_tax_warning(market):
 
 
 PAYOFF_INTEREST = 0.045  # seller's mortgage interest for holding-cost estimates (national planning figure)
+
+
+def payoff_from_balance(balance, rate_pct=None):
+    """Results_v5 case 02: a loan BALANCE isn't a payoff. The estimate adds a month's interest, at the loan's own rate
+    (`rate_pct`, a percent) when known, else the same PAYOFF_INTEREST the holding costs use (the seller net sheet's
+    rule too); no fee cushion. A payoff the seller or agent states ("about $171,500 from the September statement") is
+    used as given and never goes through here."""
+    rate = rate_pct / 100 if rate_pct else PAYOFF_INTEREST
+    return fmt.half_up(balance * (1 + rate / 12))
+
+
+def tax_pair(annual):
+    """Results_v5 case 03: a yearly tax and its monthly share that reconcile: the yearly figure to $100 and the monthly
+    one from that same rounded figure ("$7,200 a year", "$600 a month"), never a floored year beside an exact month.
+    Returns (yearly, monthly) as numbers."""
+    yearly = round(annual / 100) * 100
+    return yearly, round(yearly / 12)
 
 
 def holding_monthly(price, market, payoff=0, hoa_monthly=0, rate=None):
@@ -151,7 +199,64 @@ def loan_taxes(loan, market):
     """Taxes on a buyer's loan from the market layer (`buyer_costs.loan_taxes`: [{label, rate}] on the loan amount;
     Florida: note stamps 0.35% and intangible tax 0.2%). [] for a cash purchase or a market without them."""
     rows = (market.get("buyer_costs.loan_taxes") if market is not None else None) or []
-    return [{"label": r["label"], "rate": r["rate"], "amount": round(loan * r["rate"])} for r in rows if loan and r.get("rate")]
+    return [{"label": r["label"], "rate": r["rate"], "amount": fmt.half_up(loan * r["rate"])} for r in rows if loan and r.get("rate")]
+
+
+# One buyer closing-cost rule for every skill (the buyer CMA's payment and credit tables, the offer strategy's cash),
+# so two reports at the same price give the same cash to close.
+PREPAIDS_PCT = 0.005  # prepaid interest, insurance and escrows on top of the market's closing costs (financed)
+NATIONAL_BUYER_CLOSING_PCT = 0.03  # national.md's buyer_closing_cost_pct, only when no market is loaded
+
+
+def buyer_closing_pct(market=None, cash=False):
+    """The buyer's closing costs as a share of price, before any loan taxes: the market's `buyer_closing_cost_pct`
+    plus PREPAIDS_PCT when financed, half the market's share for a cash purchase (no lender fees, prepaids or loan)."""
+    pct = market.get("closing_costs.buyer_closing_cost_pct") if market is not None else None
+    pct = NATIONAL_BUYER_CLOSING_PCT if pct is None else pct
+    return round(pct / 2 if cash else pct + PREPAIDS_PCT, 4)
+
+
+def buyer_closing_costs(price, loan, market=None, cash=False, pct=None, amount=None):
+    """The buyer's closing costs at `price`: {"amount", "pct", "loan_taxes", "source"}.
+
+    An agent's or lender's figure wins and is used as is, taxes included: `amount` (dollars) first, then `pct` (an
+    all-in share of price). Otherwise buyer_closing_pct(market, cash) of the price plus the market's loan taxes on
+    `loan` (Florida: note stamps and intangible tax), itemized; none for cash. `source` is "lender" (amount), "agent"
+    (pct) or "estimate"."""
+    if amount is not None:
+        return {"amount": round(amount), "pct": None, "loan_taxes": [], "source": "lender"}
+    if pct is not None:
+        return {"amount": round(price * pct), "pct": pct, "loan_taxes": [], "source": "agent"}
+    share = buyer_closing_pct(market, cash)
+    taxes = [] if cash else loan_taxes(loan, market)
+    return {"amount": fmt.half_up(price * share + sum(t["amount"] for t in taxes)), "pct": share, "loan_taxes": taxes,
+            "source": "estimate"}
+
+
+NATIONAL_INSURANCE_RATE = 0.006  # national.md's buyer_costs.insurance_rate, only when no market is loaded
+INSURANCE_MIN_ANNUAL = 2500  # floor for the estimate when the market has none
+
+
+def insurance_age_factor(year_built):
+    """CORE-29: older homes cost more to insure (wiring, plumbing, roof and code era)."""
+    return 1.5 if year_built and year_built < 1980 else 1.25 if year_built and year_built < 2002 else 1.0
+
+
+def insurance_estimate(price, market=None, year_built=None, rate=None):
+    """A buyer's homeowner's insurance per year, when there's no quote: {"annual", "rate", "age_factor", "source"}.
+
+    With the agent's `rate` (a share of price for this home) it's price × rate as is (source "agent"). Otherwise the
+    market's `buyer_costs.insurance_rate` (else NATIONAL_INSURANCE_RATE) × price × the age factor, never below the
+    market's `buyer_costs.insurance_min_annual` (else INSURANCE_MIN_ANNUAL), rounded to $100 (source "market" or
+    "national"). Always an estimate: the report labels it so until there's a quote."""
+    if rate is not None:
+        return {"annual": round(price * rate, -2), "rate": rate, "age_factor": 1.0, "source": "agent"}
+    mrate = market.get("buyer_costs.insurance_rate") if market is not None else None
+    age = insurance_age_factor(year_built)
+    floor = (market.get("buyer_costs.insurance_min_annual") if market is not None else None) or INSURANCE_MIN_ANNUAL
+    use = NATIONAL_INSURANCE_RATE if mrate is None else mrate
+    return {"annual": round(max(floor, use * price * age), -2), "rate": use, "age_factor": age,
+            "source": "national" if mrate is None else "market"}
 
 
 def loan_limit_note(loan, name, limits, state=None, county=None):
@@ -192,6 +297,93 @@ def money(v, round_to=1):
     """$474,900. Negative amounts as −$1,200."""
     v = round(v / round_to) * round_to
     return ("−" if v < 0 else "") + f"${abs(v):,.0f}"
+
+
+class Ledger:
+    """Money lines that always add up: each line is rounded once, half-up to the dollar, when it's added, and every
+    total is the sum of the rounded lines, so a column of printed lines adds to its printed total.
+
+        L = finance.Ledger()
+        L.add("price", "Sale Price", 465000)
+        L.cost("listing_fee", "Listing Brokerage", 465000 * 0.0275, rate=0.0275)   # stored as −12,788
+        L.credit("deposit", "Deposit Returned", 1000.5)                              # stored as +1,001
+        L.total()                     # the net: the sum of every rounded line
+        L.costs()                     # what the costs come to, as a positive number
+        L.total(keys=("listing_fee",)), L.amount("price"), L.rows()
+
+    Amounts are signed: money in is positive, a cost is negative (cost() takes the cost as a positive number).
+    Extra keyword fields (rate, note...) ride along on the line. `raw` keeps the unrounded amount for checks only:
+    nothing prints or sums it.
+    """
+
+    def __init__(self, lines=()):
+        self.lines = []
+        for ln in lines:
+            if isinstance(ln, dict):
+                self.add(ln["key"], ln["label"], ln["amount"], **{k: v for k, v in ln.items()
+                                                                  if k not in ("key", "label", "amount", "raw")})
+            else:
+                self.add(*ln)
+
+    def add(self, key, label, amount, **meta):
+        """A signed line; returns its rounded amount."""
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise TypeError(f"{label}: a ledger amount is a number, not {amount!r}")
+        line = {"key": key, "label": label, "amount": fmt.half_up(amount), "raw": amount, **meta}
+        self.lines.append(line)
+        return line["amount"]
+
+    def cost(self, key, label, amount, **meta):
+        """A cost, given as a positive number (a negative one is a credit back); stored negative."""
+        return self.add(key, label, -amount, **meta)
+
+    def credit(self, key, label, amount, **meta):
+        return self.add(key, label, amount, **meta)
+
+    def total(self, keys=None, where=None):
+        """The sum of the rounded lines: all of them, those whose key is in `keys`, or those `where(line)` keeps."""
+        return sum(ln["amount"] for ln in self.lines
+                   if (keys is None or ln["key"] in keys) and (where is None or where(ln)))
+
+    def costs(self, keys=None):
+        """The costs (negative lines) as a positive total."""
+        return -self.total(keys, where=lambda ln: ln["amount"] < 0)
+
+    def amount(self, key, default=0):
+        """The rounded sum of the lines with this key (default when there's none)."""
+        found = [ln["amount"] for ln in self.lines if ln["key"] == key]
+        return sum(found) if found else default
+
+    def has(self, key):
+        return any(ln["key"] == key for ln in self.lines)
+
+    def rows(self, f=None, sign=True):
+        """[(label, text)] in order. `f` formats an amount (fmt.money by default); with sign=False costs print as
+        positive numbers (a net sheet whose cost column is all costs)."""
+        f = f or fmt.money
+        return [(ln["label"], f(ln["amount"] if sign else abs(ln["amount"]))) for ln in self.lines]
+
+    def tuples(self):
+        """[(key, label, amount)], the shape offer_engine.net_sheet's lines take."""
+        return [(ln["key"], ln["label"], ln["amount"]) for ln in self.lines]
+
+    def __iter__(self):
+        return iter(self.lines)
+
+    def __len__(self):
+        return len(self.lines)
+
+
+def seller_net_ledger(price, net, payoff=None, price_label="Sale Price", payoff_label="Mortgage Payoff"):
+    """A Ledger from seller_net's result: the price, each cost line (negative), then the payoff when known. Its total()
+    is the net from rounded lines (seller_net's own `net` sums unrounded ones)."""
+    led = Ledger()
+    led.add("price", price_label, price)
+    for ln in net["lines"]:
+        led.cost(ln["key"], ln["label"], ln["amount"], rate=ln.get("rate"))
+    if payoff:
+        led.cost("payoff", payoff_label, payoff)
+    return led
 
 
 def fraction(value, name, default=None, whole=False):
@@ -412,7 +604,7 @@ def title_premium(price, tiers):
 
 def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,
                has_hoa=False, other_costs=0, title_fees=None, annual_tax=None, closing=None, bill_paid=None,
-               prop_type=None):
+               prop_type=None, tax_due_date=None):
     """Seller's estimated net at `price`, itemized, with the source of every assumption.
 
     Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
@@ -421,12 +613,15 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     `missing` lists market values that weren't available (rare: the national estimates fill most);
     `assumed` lists defaults the deal didn't give, as {'key', 'value', 'text', 'estimate'} (key: listing_fee,
     buyer_broker_fee, transfer_tax, owner_title, title_fees, estoppel); `estimate` is true for a national estimate
-    (labeled "Estimate" on the line) and false for a built-in local default. `warnings` are sentences to show the
+    and false for a built-in local default. Line labels never say Estimate or Assumed: a report names its estimates
+    once, in its notes, and default commission rates are defaults (local-costs.md). `warnings` are sentences to show the
     agent (a title quote below the published rate).
     A saved owner's title quote (`closing_costs.owner_title.quote`: {price, premium}) wins over the rate table.
+    `other_costs` is a total (one "Other Costs" line) or a list of {label, amount} (one "other" line each: a home
+    warranty, repairs, a survey).
     `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
     `annual_tax` with `closing` (a date) adds the tax proration (see tax_proration; `bill_paid` once the seller paid
-    this year's bill). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
+    this year's bill; `tax_due_date` the bill's due date when the agent gives it). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
     but single-family homes); without it, that surtax is missing.
     """
     items, lines, missing, assumed, warnings = [], [], [], [], []
@@ -463,11 +658,11 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         warnings.append(transfer_tax_warning(market))
     payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
     tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed Transfer Tax"
-    est = "Estimate, " if estimated("closing_costs.deed_transfer_tax_rate") else ""
+    est = estimated("closing_costs.deed_transfer_tax_rate")
     if rate and payer in (None, "seller"):
-        add("transfer_tax", f"{tax_label} ({est}{rate * 100:.2f}%)", price * rate, rate)
+        add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
     elif rate and payer == "split":
-        add("transfer_tax", f"{tax_label} ({est}Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+        add("transfer_tax", f"{tax_label} (Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
     if rate and payer in (None, "seller", "split") and est:
         assume("transfer_tax", rate, f"transfer tax {rate * 100:g}%", "closing_costs.deed_transfer_tax_rate")
     surtax = market.get("closing_costs.deed_transfer_surtax") if market is not None else None
@@ -494,7 +689,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         elif tiers:  # the published rate table
             add("owner_title", "Owner's Title Insurance", title_premium(price, tiers))
         elif pct:
-            add("owner_title", "Owner's Title Insurance (Estimate)", price * pct, pct)
+            add("owner_title", "Owner's Title Insurance", price * pct, pct)
             if market.source("closing_costs.owner_title.estimate_pct") != "deal":
                 assume("owner_title", pct, f"owner's title {pct * 100:g}% of price", "closing_costs.owner_title.estimate_pct")
         else:
@@ -505,8 +700,7 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
     else:
         fees = market.get("closing_costs.seller_title_fees") if market is not None else None
         if fees:
-            est = estimated("closing_costs.seller_title_fees")
-            add("title_fees", "Title Company Fees" + (" (Estimate)" if est else ""), sum(fees.values()))
+            add("title_fees", "Title Company Fees", sum(fees.values()))
             if market.source("closing_costs.seller_title_fees") != "deal":  # a built-in default
                 assume("title_fees", sum(fees.values()), "typical title company fees", "closing_costs.seller_title_fees")
         else:
@@ -515,12 +709,20 @@ def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer
         estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
         if estoppel:
             name = (market.get("closing_costs.hoa_estoppel_label") if market is not None else None) or "HOA Documents"
-            add("estoppel", name + (" (Estimate)" if estimated("closing_costs.hoa_estoppel_fee") else ""), estoppel)
+            add("estoppel", name, estoppel)
+            if market.source("closing_costs.hoa_estoppel_fee") != "deal":  # a built-in default or a national estimate
+                words = " ".join(w if w.isupper() else w.lower() for w in name.split())
+                assume("estoppel", estoppel, f"{words}{'' if 'fee' in words else ' fee'} {money(estoppel)}",
+                       "closing_costs.hoa_estoppel_fee")
     if credit:
         add("credit", "Seller Credit to Buyer", credit)
-    if other_costs:
+    if isinstance(other_costs, (list, tuple)):  # [{label, amount}]: one "other" line each, in order
+        for o in other_costs:
+            if o.get("amount"):
+                add("other", o.get("label") or "Other Costs", o["amount"])
+    elif other_costs:
         add("other", "Other Costs", other_costs)
-    pr = tax_proration(annual_tax, closing, market, bill_paid)
+    pr = tax_proration(annual_tax, closing, market, bill_paid, tax_due_date)
     if pr:
         add("tax_proration", pr["label"], pr["amount"])
 

@@ -1,0 +1,16 @@
+{
+  "prepared_date": "2026-11-20",
+  "prepared_for": "Sample Seller",
+  "closing_date": "2026-12-18",
+  "foreign_seller": true,
+  "property": {"address": "4120 Bayview Ter Unit 1204", "city": "Miami", "county": "Miami-Dade", "state": "FL",
+               "property_type": "condo", "hoa": true, "hoa_monthly": 740},
+  "scenarios": [{"price": 610000}, {"price": 595000, "home_warranty": 600, "repairs": 2500}],
+  "costs": {
+    "listing_fee_pct": 0.03, "buyer_broker_fee_pct": 0.02,
+    "mortgage_payoff": 0,
+    "annual_tax": 11800, "current_tax_bill_paid": true,
+    "title_fees": {"settlement_fee": 850, "title_search": 200, "municipal_lien_search": 125, "recording": 70},
+    "hoa_estoppel_fee": 399
+  }
+}

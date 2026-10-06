@@ -1,6 +1,6 @@
 # Checking the Contract Before Reviewing It
 
-Read this whenever a contract is uploaded. Before scoring an offer, check that the contract can be reviewed as written. Record what you find in the offer's `contract_issues` (see `listing-file.md`), except what the engine already raises from the fields (below). For an FR/BAR contract, also run the full list in `frbar-package-check.md`: required riders and disclosures by the property's facts, RESERVED riders, and which blanks have form defaults.
+Read this whenever a contract is uploaded. Before scoring an offer, check that the contract can be reviewed as written. Record what you find in the offer's `contract_issues` (see `listing-file.md`), except what the engine already raises from the fields (below). For a FAR/BAR contract, also run the full list in `farbar-package-check.md`: required riders and disclosures by the property's facts, RESERVED riders, and which blanks have form defaults.
 
 ## What the Engine Already Raises
 
@@ -13,8 +13,9 @@ Record the field and let the engine write these; don't add a `contract_issues` e
 | `approval_expires` | the pre-approval letter expires before closing | Med |
 | `proof_of_funds` | `proof_of_funds` is below the down payment plus the appraisal gap the buyer covers | High |
 | `counter_chain` | the live offer is weaker than the seller's last counter in `prior_counters` on inspection, loan approval, deposit, concessions or gap, or has another closing date | High |
-| `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (every offer whose rider list was read; on FR/BAR an unread list is an assumption instead, `listing-file.md`) | High (F: Med) |
-| `rider_GG` | Rider GG attached: the compensation agreement isn't seen yet | Med |
+| `rider_E`, `rider_V`, `rider_F`, `rider_A`, `rider_B` | FHA/VA without Rider E; a sale contingency without Rider V; an appraisal period without Rider F (not for FAR/BAR Para. 8(b)); a condo without Rider A; an HOA without Rider A or B (every offer whose rider list was read; on FAR/BAR an unread list is an assumption instead, `listing-file.md`) | High (F: Med) |
+| `escalation_form` | the Escalation Addendum's contract box (`escalation.contract_form`) names the other FAR/BAR form, or another contract, than the offer's | High |
+| `rider_K_terms` | Rider K on the Standard form: it deletes the Para. 9(a) limits and Paras. 11 and 12, but not the 125% escrow, and has no permit cooperation clause (listed with the risk flags, never a top risk) | Low |
 | `lead_paint` | built before 1978 (`year_built`, or `built_before_1978` from the seller disclosure) with no lead-based paint disclosure (Rider P) | High |
 | `loan_amount` | `loan_amount` doesn't match the down payment; or the deposit, `loan_amount` and `balance_to_close` don't add up to the price (a counter changed the price without restating the loan and balance) | Med |
 | `buyer_changes` | the buyer's counter changed a term from the buyer's original terms (the first `by: "buyer"` entry in `prior_counters`) that no seller counter stated: a later closing date, a longer period, a smaller deposit, more concessions | Med |
@@ -51,7 +52,7 @@ This is a completeness check, not a legal opinion. Never tell the agent a contra
 - A condo: the condo rider, and for an FHA or VA offer the project's approval. The buyer's rescission windows start when they receive the association documents, the milestone summary and the SIRS, so deliver them right away (`condo.md`).
 - The rider checklist and the attached riders disagree.
 - **Delivery date unknown:** a deadline counted from delivery (a counteroffer "2 days after delivery" with no acceptance date) is counted from the signature date. Set `expires` to that date, with no time when the form names none (the engine reads it as the end of the day and lists the assumption), and `expires_estimated: true`: if it has passed, it's a High issue and a question for the buyer's agent (when was it delivered?), not Blocking.
-- A counteroffer that doesn't restate a term from an earlier counter: under FR/BAR CO-3 only what the counter states carries, so the original offer's term governs. Record the governing terms in the offer and the seller's counters in `prior_counters`; the engine raises it (`counter_chain`).
+- A counteroffer that doesn't restate a term from an earlier counter: under FAR/BAR CO-3 only what the counter states carries, so the original offer's term governs. Record the governing terms in the offer and the seller's counters in `prior_counters`; the engine raises it (`counter_chain`).
 
 Some of these are the listing side's job (the seller's HOA and lead-paint disclosures): write the fix for the agent, and leave `request` out so it doesn't go to the buyer's agent.
 
@@ -61,7 +62,7 @@ Some of these are the listing side's job (the seller's HOA and lead-paint disclo
 
 ## Blanks That Fall Back to the Form
 
-A blank that the form fills in is not an issue: record the form's value and say so. FR/BAR defaults (both forms and every rider) are listed in `frbar-package-check.md`. Any other contract: only a default the contract itself prints counts; otherwise it's a question (`other-contracts.md`).
+A blank that the form fills in is not an issue: record the form's value and say so. FAR/BAR defaults (both forms and every rider) are listed in `farbar-package-check.md`. Any other contract: only a default the contract itself prints counts; otherwise it's a question (`other-contracts.md`).
 
 ## Consistency
 
@@ -72,4 +73,4 @@ A blank that the form fills in is not an issue: record the form's value and say 
 
 ## Writing an Issue
 
-One short sentence for `issue` naming the paragraph or rider; `fix` says what gets it resolved; `request` is the sentence for the buyer's agent ("Please have the second buyer sign and initial every page."). Describe the document, never the buyer (fair housing).
+One short sentence for `issue` naming the paragraph or rider; `fix` says what gets it resolved (the listing side by role, "the listing broker", never a brokerage name the profile doesn't confirm); name each form by its plain name ("the compensation agreement", "the Appraisal Gap Addendum"), never by its code alone (CASSB-1, AGA-1): the reader is the seller; `request` is the sentence for the buyer's agent ("Please have the second buyer sign and initial every page."). Describe the document, never the buyer (fair housing).

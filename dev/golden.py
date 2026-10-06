@@ -69,6 +69,12 @@ def offer_strategy(path):
     return st.analyze(data, cma=st.load_cma(data))
 
 
+def net_sheet(path):
+    (compute,) = load("seller-net-sheet", "compute")
+    freeze_clock()
+    return compute.run(_read(path))
+
+
 def cma(skill):
     def run(path):
         (compute,) = load(skill, "compute")
@@ -78,7 +84,8 @@ def cma(skill):
         os.chdir(ROOT)  # export paths in fixtures are relative to the repo root
         try:
             market, homes = compute.load_inputs(R, None, path)
-            return compute.compute(R, market, homes)
+            C = compute.compute(R, market, homes)
+            return compute.public(C) if hasattr(compute, "public") else C  # without the export's homes (render's own)
         finally:
             os.chdir(cwd)
     return run
@@ -91,6 +98,7 @@ CASES = {
     "buyer-offer-strategy": (offer_strategy, ["dev/fixtures/buyer-offer-strategy/*.json", "dev/samples/buyer-offer-strategy.json"]),
     "buyer-cma": (cma("buyer-cma"), ["dev/fixtures/buyer-cma/*.json", "dev/samples/buyer-cma.json"]),
     "seller-cma": (cma("seller-cma"), ["dev/fixtures/seller-cma/*.json", "dev/samples/seller-cma.json"]),
+    "seller-net-sheet": (net_sheet, ["dev/fixtures/seller-net-sheet/*.json", "dev/samples/seller-net-sheet.json"]),
 }
 
 _DROP = object()

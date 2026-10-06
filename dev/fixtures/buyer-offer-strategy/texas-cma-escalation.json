@@ -19,7 +19,7 @@
   "buyer": {
     "name": "Sample Buyer",
     "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true, "lender_min_close_days": 30,
-    "max_price": 640000, "cash_available": 170000, "reserve_floor": 15000, "insurance_quote": true, "agent_track": "strong"
+    "max_price": 640000, "cash_available": 170000, "reserve_floor": 15000, "insurance_quote": true
   },
-  "worksheet": {"buyer_names": "Sample Buyer", "contract_name": "Sample Residential Purchase Agreement"}
+  "worksheet": {"buyer_names": "Sample Buyer", "contract_name": "Sample Residential Purchase Agreement", "inspection_walkaway": true}
 }

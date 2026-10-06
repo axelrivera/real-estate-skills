@@ -1,0 +1,1272 @@
+{
+ "adjusted_max": 495300,
+ "adjusted_min": 435900,
+ "assumption_keys": [
+  "tax_basis",
+  "tax_assessed",
+  "insurance",
+  "mortgage_insurance"
+ ],
+ "assumptions": {
+  "count": 4
+ },
+ "cash_fit": null,
+ "chat_notes": {
+  "count": 7
+ },
+ "competition": {
+  "rows": [
+   [
+    "No",
+    "91"
+   ],
+   [
+    "Yes",
+    "57"
+   ],
+   [
+    "Yes",
+    "302"
+   ],
+   [
+    "Yes",
+    "51"
+   ],
+   [
+    "No",
+    "63"
+   ],
+   [
+    "Yes",
+    "9"
+   ],
+   [
+    "Yes",
+    "14"
+   ],
+   [
+    "Expired",
+    "No",
+    "114"
+   ]
+  ]
+ },
+ "competition_estimates": {
+  "count": 0
+ },
+ "comps": {
+  "cards": [
+   {
+    "adjusted": 493900,
+    "adjusted_k": "$494K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": "2026-04-24",
+    "lines": [
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 484000,
+    "adjusted_k": "$484K",
+    "bullets": {
+     "count": 2
+    },
+    "close_date": "2026-06-26",
+    "lines": [
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 469800,
+    "adjusted_k": "$470K",
+    "bullets": {
+     "count": 2
+    },
+    "close_date": "2026-08-20",
+    "lines": [
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ]
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 440200,
+    "adjusted_k": "$440K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": "2026-04-27",
+    "lines": [
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 435900,
+    "adjusted_k": "$436K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": "2026-06-18",
+    "lines": [
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     }
+    ],
+    "meta": [
+     "pool"
+    ]
+   },
+   {
+    "adjusted": 495300,
+    "adjusted_k": "$495K",
+    "bullets": {
+     "count": 3
+    },
+    "close_date": null,
+    "lines": [
+     {
+      "count": 2
+     },
+     [
+      "Size"
+     ],
+     {
+      "count": 2
+     }
+    ],
+    "meta": {
+     "count": 1
+    }
+   }
+  ],
+  "subject_row": {
+   "count": 4
+  },
+  "table": [
+   [
+    "$0"
+   ],
+   [
+    "$0"
+   ],
+   [
+    "$0"
+   ],
+   [
+    "$500"
+   ],
+   {
+    "count": 4
+   },
+   {
+    "count": 4
+   }
+  ]
+ },
+ "comps_table": [
+  {},
+  {},
+  {},
+  {},
+  {},
+  {}
+ ],
+ "condition": {
+  "subject": "full_renovation",
+  "values": {
+   "baths_only": 10000,
+   "cosmetic": 5000,
+   "full_renovation": 45000,
+   "kitchen_and_baths": 25000,
+   "kitchen_only": 15000,
+   "new": 50000,
+   "original": 0
+  }
+ },
+ "costs": {
+  "credit": {
+   "cash_flags": {
+    "count": 3
+   },
+   "cash_row": 7,
+   "credit_flags": {
+    "count": 3
+   },
+   "header": {
+    "count": 4
+   },
+   "rows": [
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    [
+     "+$41",
+     "+$82"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ]
+  },
+  "payment": {
+   "alt_row": 10,
+   "cash_flags": {
+    "count": 3
+   },
+   "cash_row": 2,
+   "header": {
+    "count": 4
+   },
+   "rows": [
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    },
+    [
+     "$632",
+     "$632",
+     "$632"
+    ],
+    [
+     "$533",
+     "$533",
+     "$533"
+    ],
+    {
+     "count": 4
+    },
+    [
+     "$188",
+     "$210",
+     "$0"
+    ],
+    [
+     "$0",
+     "$0",
+     "$0"
+    ],
+    {
+     "count": 4
+    },
+    {
+     "count": 4
+    }
+   ],
+   "total_row": 9
+  },
+  "taxes": {
+   "rows": [
+    [
+     "$228"
+    ],
+    {
+     "count": 3
+    },
+    {
+     "count": 3
+    }
+   ]
+  }
+ },
+ "credit": {
+  "buydown": {
+   "cost": 10200,
+   "covered": false,
+   "credit": 10000,
+   "full": 4234,
+   "price": 462000,
+   "year1": 3672,
+   "year2": 3946
+  },
+  "closing_costs_given": false,
+  "columns": [
+   {
+    "appraisal_room": 24900,
+    "bb_short": 0,
+    "cap": 13560,
+    "cash": 36160,
+    "cash_left": null,
+    "cash_lines": [
+     [
+      "down",
+      22600
+     ],
+     [
+      "closing",
+      13560
+     ]
+    ],
+    "cash_saved": 0,
+    "cash_short": null,
+    "closing_costs": 13560,
+    "credit": 0,
+    "credit_applied": 0,
+    "down": 22600,
+    "extra": 0,
+    "loan": 429400,
+    "loan_taxes": 0,
+    "net": 452000,
+    "over_cap": false,
+    "over_costs": false,
+    "payback_years": null,
+    "payment": 4152,
+    "pi": 2842,
+    "price": 452000
+   },
+   {
+    "appraisal_room": 19900,
+    "bb_short": 0,
+    "cap": 13710,
+    "cash": 31560,
+    "cash_left": null,
+    "cash_lines": [
+     [
+      "down",
+      22850
+     ],
+     [
+      "closing",
+      13710
+     ],
+     [
+      "credit",
+      -5000
+     ]
+    ],
+    "cash_saved": 4600,
+    "cash_short": null,
+    "closing_costs": 13710,
+    "credit": 5000,
+    "credit_applied": 5000,
+    "down": 22850,
+    "extra": 41,
+    "loan": 434150,
+    "loan_taxes": 0,
+    "net": 452000,
+    "over_cap": false,
+    "over_costs": false,
+    "payback_years": 9.35,
+    "payment": 4193,
+    "pi": 2874,
+    "price": 457000
+   },
+   {
+    "appraisal_room": 14900,
+    "bb_short": 0,
+    "cap": 13860,
+    "cash": 26960,
+    "cash_left": null,
+    "cash_lines": [
+     [
+      "down",
+      23100
+     ],
+     [
+      "closing",
+      13860
+     ],
+     [
+      "credit",
+      -10000
+     ]
+    ],
+    "cash_saved": 9200,
+    "cash_short": null,
+    "closing_costs": 13860,
+    "credit": 10000,
+    "credit_applied": 10000,
+    "down": 23100,
+    "extra": 82,
+    "loan": 438900,
+    "loan_taxes": 0,
+    "net": 452000,
+    "over_cap": false,
+    "over_costs": false,
+    "payback_years": 9.35,
+    "payment": 4234,
+    "pi": 2905,
+    "price": 462000
+   }
+  ],
+  "down_pct": 0.05,
+  "per_5k": {
+   "cash": 4600,
+   "monthly": 41
+  },
+  "program": "conventional",
+  "seller_cost_parts": {
+   "count": 1
+  },
+  "seller_cost_per_10k": 70
+ },
+ "credit_alt": {
+  "base_credit": 0,
+  "base_price": 452000,
+  "cash_saved": 9200,
+  "credit": 10000,
+  "price": 462000
+ },
+ "current_bill": 2731,
+ "data_source": {
+  "as_of": "2026-09-22",
+  "export": true,
+  "mls": "Stellar"
+ },
+ "handoff": {
+  "as_of": "2026-09-22",
+  "comps": [
+   {
+    "adjusted": 495300,
+    "seller_paid": 0,
+    "sold_price": 505500
+   },
+   {
+    "adjusted": 493900,
+    "seller_paid": 0,
+    "sold_price": 505500
+   },
+   {
+    "adjusted": 484000,
+    "seller_paid": 0,
+    "sold_price": 495000
+   },
+   {
+    "adjusted": 469800,
+    "seller_paid": 500,
+    "sold_price": 427000
+   },
+   {
+    "adjusted": 440200,
+    "seller_paid": 12000,
+    "sold_price": 429000
+   },
+   {
+    "adjusted": 435900,
+    "seller_paid": 13071,
+    "sold_price": 465000
+   }
+  ],
+  "handoff": "cma",
+  "market": {
+   "active_count": 14,
+   "median_days_recent": 22.0,
+   "median_seller_paid_recent": 12100.0,
+   "months_supply": 3.5,
+   "sale_to_original_list_recent": 0.9386,
+   "share_with_seller_paid_costs_recent": 0.889,
+   "split_date": "2026-07-01"
+  },
+  "market_profile": {
+   "mls": "Stellar",
+   "state": "FL"
+  },
+  "offer_plan": {
+   "opening": 452000,
+   "target_high": 460500,
+   "target_low": 458000,
+   "walk_away": 474900
+  },
+  "posture": "leverage",
+  "recommended_list_price": null,
+  "side": "buyer",
+  "source": "buyer-cma",
+  "subject": {
+   "annual_tax": 2731,
+   "baths": 2,
+   "beds": 4,
+   "county": "Seminole",
+   "dom": 119,
+   "flood_zone": "X",
+   "homestead": true,
+   "insurance_annual": 6400.0,
+   "insurance_estimated": true,
+   "insurance_price": 474900,
+   "list_price": 474900,
+   "pool": true,
+   "price_cuts": 4,
+   "rate": 6.95,
+   "rate_week": "2026-09-17",
+   "school_mills": 5.25,
+   "sqft": 1849,
+   "state": "FL",
+   "total_mills": 17.57,
+   "year_built": 1972
+  },
+  "value": {
+   "high": 490000,
+   "low": 465000,
+   "median_adjusted": 476900.0,
+   "midpoint": 477500
+  },
+  "version": 1
+ },
+ "history": {
+  "active_days": 119,
+  "counted_since_sale": null,
+  "current_price": 474900,
+  "display": {
+   "counted_since_sale": null,
+   "price_cut_pct": "4.0%"
+  },
+  "events": 12,
+  "failed_contracts": 1,
+  "first_list_price": 483900,
+  "first_listed": "2026-01-16",
+  "last_contract_date": "2026-04-11",
+  "last_contract_price": 474500,
+  "listings": 2,
+  "out_of_order": {
+   "count": 0
+  },
+  "price_cut_pct": 0.0401,
+  "price_cut_total": 19400,
+  "price_cuts": 4,
+  "price_increase_total": 10400,
+  "price_increases": 1,
+  "timeline": [
+   {
+    "date": "2026-01-16",
+    "delta": 0,
+    "kind": "listed",
+    "mls": "O6371102",
+    "note": null,
+    "price": 483900
+   },
+   {
+    "date": "2026-01-22",
+    "delta": -4000,
+    "kind": "price_cut",
+    "mls": "O6371102",
+    "note": null,
+    "price": 479900
+   },
+   {
+    "date": "2026-01-27",
+    "delta": 0,
+    "kind": "off_market",
+    "mls": "O6371102",
+    "price": null
+   },
+   {
+    "date": "2026-02-07",
+    "delta": -5400,
+    "kind": "price_cut",
+    "mls": "O6371102",
+    "note": null,
+    "price": 474500
+   },
+   {
+    "date": "2026-03-05",
+    "delta": 0,
+    "kind": "back_on",
+    "mls": "O6371102",
+    "note": null,
+    "price": null
+   },
+   {
+    "date": "2026-04-11",
+    "delta": 0,
+    "kind": "pending",
+    "mls": "O6371102",
+    "note": null,
+    "price": 474500
+   },
+   {
+    "date": "2026-05-17",
+    "delta": 0,
+    "kind": "off_market",
+    "mls": "O6371102",
+    "price": null
+   },
+   {
+    "date": "2026-05-21",
+    "delta": 10400,
+    "kind": "back_on",
+    "mls": "O6371102",
+    "note": null,
+    "price": 484900
+   },
+   {
+    "date": "2026-06-09",
+    "delta": 0,
+    "kind": "canceled",
+    "mls": "O6371102",
+    "note": null,
+    "price": null
+   },
+   {
+    "date": "2026-08-17",
+    "delta": 0,
+    "kind": "listed",
+    "mls": "O6448292",
+    "note": null,
+    "price": 484900
+   },
+   {
+    "date": "2026-08-31",
+    "delta": -6000,
+    "kind": "price_cut",
+    "mls": "O6448292",
+    "note": null,
+    "price": 478900
+   },
+   {
+    "date": "2026-09-16",
+    "delta": -4000,
+    "kind": "price_cut",
+    "mls": "O6448292",
+    "note": null,
+    "price": 474900
+   }
+  ],
+  "vs_last_contract": 400
+ },
+ "history_section": {
+  "lines": {
+   "count": 3
+  },
+  "rows": [
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   }
+  ]
+ },
+ "market": {
+  "bullets": {
+   "count": 4
+  },
+  "columns": {
+   "count": 3
+  },
+  "rows": [
+   [
+    "24",
+    "9"
+   ],
+   {
+    "count": 3
+   },
+   [
+    "98.7%",
+    "93.9%"
+   ],
+   {
+    "count": 3
+   },
+   [
+    "50%",
+    "89%"
+   ],
+   {
+    "count": 3
+   }
+  ]
+ },
+ "market_notes": {
+  "count": 1
+ },
+ "market_stats": {
+  "active_count": 14,
+  "median_days_recent": 22.0,
+  "median_seller_paid_recent": 12100.0,
+  "months_supply": 3.5,
+  "sale_to_original_list_recent": 0.9386,
+  "share_with_seller_paid_costs_recent": 0.889,
+  "split_date": "2026-07-01"
+ },
+ "median_adjusted": 476900.0,
+ "median_shown": 476900,
+ "method": {
+  "lines": {
+   "count": 3
+  }
+ },
+ "note_keys": [
+  "tax_basis",
+  "tax_assessed",
+  "insurance",
+  "mortgage_insurance",
+  "tax_millage",
+  "tax_file",
+  "tax_portability",
+  "closing_costs",
+  "flood",
+  "credit_limits",
+  "seller_cost"
+ ],
+ "notes": {
+  "count": 11
+ },
+ "notices": {
+  "count": 3
+ },
+ "offer": {
+  "bullets": {
+   "count": 3
+  }
+ },
+ "offer_plan": {
+  "basis": {
+   "opening": "override",
+   "target": "floor",
+   "walk_away": "asking"
+  },
+  "ladder": [
+   {
+    "count": 3
+   },
+   [
+    "Target"
+   ],
+   {
+    "count": 3
+   }
+  ],
+  "opening": 452000,
+  "override": [
+   "opening"
+  ],
+  "posture": "leverage",
+  "posture_name": "Leverage",
+  "posture_suggested": "leverage",
+  "target": 458000,
+  "target_high": 460500,
+  "target_low": 458000,
+  "walk_away": 474900
+ },
+ "ok": true,
+ "payments": {
+  "alt_jurisdiction": {
+   "short": "Unincorporated",
+   "totals": [
+    4201,
+    4324,
+    3542
+   ]
+  },
+  "buyer_cash": null,
+  "buyer_cash_display": null,
+  "flood": {
+   "annual": null,
+   "required": "citizens_value",
+   "sfha": false
+  },
+  "insurance": {
+   "age_factor": 1.5,
+   "annual": 6400.0,
+   "estimated": true,
+   "rate": 0.009,
+   "source": "market"
+  },
+  "insurance_annual": 6400.0,
+  "per_10k": 81,
+  "per_10k_display": "$81",
+  "price": 474900,
+  "price_basis": "asking",
+  "rate": 6.95,
+  "rate_display": "6.95%",
+  "rows": [
+   {
+    "assumed": false,
+    "bb_short": 0,
+    "cash_down": 23745,
+    "cash_left": null,
+    "cash_left_display": null,
+    "cash_lines": [
+     [
+      "down",
+      23745
+     ],
+     [
+      "closing",
+      14247
+     ]
+    ],
+    "cash_short": null,
+    "cash_short_display": null,
+    "cash_to_close": 37992,
+    "closing_costs": 14247,
+    "down_pct": 0.05,
+    "down_short": null,
+    "flood": null,
+    "hoa": 0,
+    "ins": 533,
+    "lender_closing_costs": false,
+    "loan": 451155.0,
+    "mi": 188,
+    "monthly": [
+     [
+      "pi",
+      2986
+     ],
+     [
+      "tax",
+      632
+     ],
+     [
+      "ins",
+      533
+     ],
+     [
+      "mi",
+      188
+     ],
+     [
+      "hoa",
+      0
+     ]
+    ],
+    "pi": 2986,
+    "program": "conventional",
+    "tax": 632,
+    "total": 4339
+   },
+   {
+    "assumed": false,
+    "bb_short": 0,
+    "cash_down": 16622,
+    "cash_left": null,
+    "cash_left_display": null,
+    "cash_lines": [
+     [
+      "down",
+      16622
+     ],
+     [
+      "closing",
+      14247
+     ]
+    ],
+    "cash_short": null,
+    "cash_short_display": null,
+    "cash_to_close": 30869,
+    "closing_costs": 14247,
+    "down_pct": 0.035,
+    "down_short": null,
+    "flood": null,
+    "hoa": 0,
+    "ins": 533,
+    "lender_closing_costs": false,
+    "loan": 466298.37,
+    "mi": 210,
+    "monthly": [
+     [
+      "pi",
+      3087
+     ],
+     [
+      "tax",
+      632
+     ],
+     [
+      "ins",
+      533
+     ],
+     [
+      "mi",
+      210
+     ],
+     [
+      "hoa",
+      0
+     ]
+    ],
+    "pi": 3087,
+    "program": "fha",
+    "tax": 632,
+    "total": 4462
+   },
+   {
+    "assumed": false,
+    "bb_short": 0,
+    "cash_down": 94980,
+    "cash_left": null,
+    "cash_left_display": null,
+    "cash_lines": [
+     [
+      "down",
+      94980
+     ],
+     [
+      "closing",
+      14247
+     ]
+    ],
+    "cash_short": null,
+    "cash_short_display": null,
+    "cash_to_close": 109227,
+    "closing_costs": 14247,
+    "down_pct": 0.2,
+    "down_short": null,
+    "flood": null,
+    "hoa": 0,
+    "ins": 533,
+    "lender_closing_costs": false,
+    "loan": 379920.0,
+    "mi": 0,
+    "monthly": [
+     [
+      "pi",
+      2515
+     ],
+     [
+      "tax",
+      632
+     ],
+     [
+      "ins",
+      533
+     ],
+     [
+      "mi",
+      0
+     ],
+     [
+      "hoa",
+      0
+     ]
+    ],
+    "pi": 2515,
+    "program": "conventional",
+    "tax": 632,
+    "total": 3680
+   }
+  ],
+  "tax_basis": {
+   "estimated": false,
+   "higher": true,
+   "homestead": true,
+   "label_estimate": true,
+   "short": "City",
+   "unconfirmed": true
+  },
+  "tax_index": 1
+ },
+ "range": {
+  "cap": 28614.0,
+  "high": 490000,
+  "low": 465000,
+  "midpoint": 477500,
+  "override": false,
+  "width": 25000
+ },
+ "sample": true,
+ "scatter": {
+  "callouts": [
+   {
+    "side": "left"
+   },
+   {
+    "side": "right"
+   }
+  ],
+  "subject_label_pos": "left",
+  "trend": {
+   "side": "above"
+  }
+ },
+ "stage": "full",
+ "subject": {
+  "facts": [
+   {
+    "count": 2
+   },
+   [
+    "$257"
+   ],
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   },
+   [
+    "Lot"
+   ],
+   [
+    "Built"
+   ],
+   [
+    "Pool"
+   ],
+   [
+    "Garage"
+   ],
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "list_price": 474900,
+  "sqft": 1849,
+  "summary_facts": [
+   "pool"
+  ]
+ },
+ "summary": {
+  "check_first": [
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "comps": [
+   {
+    "adjusted": 493900,
+    "adjusted_k": "$494K"
+   },
+   {
+    "adjusted": 484000,
+    "adjusted_k": "$484K"
+   },
+   {
+    "adjusted": 469800,
+    "adjusted_k": "$470K"
+   },
+   {
+    "adjusted": 440200,
+    "adjusted_k": "$440K"
+   },
+   {
+    "adjusted": 435900,
+    "adjusted_k": "$436K"
+   },
+   {
+    "adjusted": 495300,
+    "adjusted_k": "$495K"
+   }
+  ],
+  "cost_rows": [
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   },
+   {
+    "count": 3
+   }
+  ],
+  "tiles": [
+   {
+    "count": 2
+   },
+   [
+    "93.9%"
+   ],
+   {
+    "count": 2
+   },
+   {
+    "count": 2
+   }
+  ],
+  "why": {
+   "count": 3
+  }
+ },
+ "taxes": [
+  {
+   "annual": 5932,
+   "annual_exact": 5931.54,
+   "estimated": false,
+   "monthly": 494,
+   "monthly_display": "$494",
+   "problem": null,
+   "school_mills": 5.25,
+   "short": "Unincorporated",
+   "total_mills": 13.68,
+   "year": null
+  },
+  {
+   "annual": 7579,
+   "annual_exact": 7578.61,
+   "estimated": false,
+   "monthly": 632,
+   "monthly_display": "$632",
+   "problem": null,
+   "school_mills": 5.25,
+   "short": "City",
+   "total_mills": 17.57,
+   "year": null
+  }
+ ],
+ "time_adjustment": {
+  "cutoff": "2026-07-01",
+  "cutoff_display": "July",
+  "falling": true,
+  "rate": 0.01,
+  "rate_display": "1%",
+  "undated": {
+   "count": 1
+  }
+ },
+ "trend": {
+  "at_subject": 443061.34,
+  "r2": 0.8286,
+  "r2_key": "r2_most"
+ },
+ "warning_keys": [
+  "time_undated"
+ ],
+ "warnings": {
+  "count": 1
+ },
+ "watch": {
+  "items": {
+   "count": 7
+  },
+  "questions": {
+   "count": 6
+  }
+ }
+}

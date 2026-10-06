@@ -6,7 +6,7 @@
   "county": "Orange",
   "client": "Sample Seller",
   "contract": {
-    "form_family": "frbar",
+    "form_family": "farbar",
     "contract_form": "as_is",
     "property": "517 Hickorywood Dr, Winter Park, FL 32792",
     "buyer": "Sample Buyer",
@@ -14,7 +14,8 @@
     "price": 469000,
     "financing": "conventional",
     "effective_date": "2026-11-02",
-    "effective_date_source": "Buyer's initials on Counteroffer #2, 11/2/2026 9:40 AM",
+    "effective_date_source": "Buyer's initials on Counteroffer #2",
+    "effective_date_signed": "2026-11-02 09:40",
     "closing_date": "2026-12-11",
     "escrow_agent": "Sample Title Co.",
     "deposit_amount_str": "$10,000",
@@ -34,6 +35,5 @@
       "date_overrides": {"appraisal": "2026-11-25 17:00"}
     }
   ],
-  "flags": [],
-  "agent_notes": ["Loan application period blank on the contract: used the 5-day form default"]
+  "agent_notes": [{"key": "default:loan_app", "text": "Loan application period blank on the contract: used the 5-day form default"}]
 }

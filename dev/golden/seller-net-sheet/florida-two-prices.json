@@ -1,0 +1,313 @@
+{
+ "assumption_keys": [
+  "tax",
+  "title_fees",
+  "estoppel"
+ ],
+ "assumptions": {
+  "count": 3
+ },
+ "cash_at_closing": true,
+ "chat_notes": {
+  "count": 3
+ },
+ "closing_date_assumed": false,
+ "columns": [
+  {
+   "bar": {
+    "costs": 0.084,
+    "net": 0.4005,
+    "payoffs": 0.5156
+   },
+   "closing_date": "2026-12-15",
+   "costs_pct": 0.084,
+   "costs_pct_display": "8.4%",
+   "label_parts": {
+    "count": 1
+   },
+   "names_price": false,
+   "net": 180206,
+   "net_before_payoff": 412206,
+   "payoff_total": 232000,
+   "price": 450000,
+   "short": false,
+   "total_costs": 37794
+  },
+  {
+   "bar": {
+    "costs": 0.0844,
+    "net": 0.3884,
+    "payoffs": 0.5273
+   },
+   "closing_date": "2026-12-15",
+   "costs_pct": 0.0844,
+   "costs_pct_display": "8.4%",
+   "label_parts": {
+    "count": 1
+   },
+   "names_price": false,
+   "net": 170876,
+   "net_before_payoff": 402876,
+   "payoff_total": 232000,
+   "price": 440000,
+   "short": false,
+   "total_costs": 37124
+  }
+ ],
+ "commission_assumed": false,
+ "comparisons": [
+  {
+   "difference": -9330
+  }
+ ],
+ "facts": [
+  "Single-Family"
+ ],
+ "has_tax_proration": true,
+ "market_notes": {
+  "count": 0
+ },
+ "note_keys": [
+  "tax",
+  "title_fees",
+  "estoppel",
+  "commission",
+  "payoff",
+  "not_included"
+ ],
+ "notes": {
+  "count": 6
+ },
+ "ok": true,
+ "preliminary": false,
+ "rows": [
+  {
+   "amounts": [
+    450000,
+    440000
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "price",
+   "kind": "price"
+  },
+  {
+   "key": "brokerage",
+   "kind": "group",
+   "label": "Brokerage"
+  },
+  {
+   "amounts": [
+    -13500,
+    -13200
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "listing_fee",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -11250,
+    -11000
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "buyer_broker_fee",
+   "kind": "line"
+  },
+  {
+   "key": "taxes",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    -3150,
+    -3080
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "transfer_tax",
+   "kind": "line"
+  },
+  {
+   "key": "title",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    -2325,
+    -2275
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "owner_title",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -700,
+    -700
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -250,
+    -250
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -125,
+    -125
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -70,
+    -70
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "title_fees",
+   "kind": "line",
+   "label": "Recording"
+  },
+  {
+   "amounts": [
+    -299,
+    -299
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "estoppel",
+   "kind": "line"
+  },
+  {
+   "key": "prorations",
+   "kind": "group",
+   "label": "Prorations"
+  },
+  {
+   "amounts": [
+    -5675,
+    -5675
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "tax_proration",
+   "kind": "line"
+  },
+  {
+   "key": "concessions",
+   "kind": "group"
+  },
+  {
+   "amounts": [
+    -450,
+    -450
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "other",
+   "kind": "line",
+   "label": "Survey"
+  },
+  {
+   "amounts": [
+    -37794,
+    -37124
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "total_costs",
+   "kind": "subtotal"
+  },
+  {
+   "amounts": [
+    412206,
+    402876
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "net_before_payoff",
+   "kind": "subtotal"
+  },
+  {
+   "key": "payoffs",
+   "kind": "group",
+   "label": "Payoffs"
+  },
+  {
+   "amounts": [
+    -214000,
+    -214000
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "payoff",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    -18000,
+    -18000
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "payoff",
+   "kind": "line"
+  },
+  {
+   "amounts": [
+    180206,
+    170876
+   ],
+   "display": {
+    "count": 2
+   },
+   "key": "net",
+   "kind": "final"
+  }
+ ],
+ "sample": false,
+ "state": "FL",
+ "summary_tiles": [
+  {
+   "label": "Difference"
+  }
+ ],
+ "tax_assumed_paid": false,
+ "tax_assumed_unpaid": true,
+ "warnings": {
+  "count": 0
+ }
+}

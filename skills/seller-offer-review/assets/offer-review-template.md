@@ -15,6 +15,8 @@
 <!-- ===== multi block (mode "multi") ===== -->
 **{{summary.title}}.** {{summary.why}}
 
+{{when summary.wait:}} The plan is to wait for the final offers (due {{summary.wait.due}}), then decide. {{summary.wait.fallback}}, as below.
+
 **Respond By:** {{summary.respond_by}} ({{summary.respond_by_offer}}, when present)
 
 {{when summary.respond_by_also:}} **Also Due:** {{each summary.respond_by_also: when + ", " + what; joined with "; "}}
@@ -23,9 +25,13 @@
 
 | # | Offer | Action | Price | Net | Downside | Certainty | Buyer Can Walk | Close | Terms / Reason |
 |---|---|---|---|---|---|---|---|---|---|
-| {{r.rank}} | {{r.offer}} ({{r.financing}}){{" (form assumed)" when r.form_assumed}} | {{r.action}} | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days + " days" when it is a number, else r.risk_days as printed}} | {{r.close}} | {{r.terms}} |
+| {{r.rank}} | {{r.offer}} ({{r.financing}}) | {{r.action}} | {{r.price}} | {{r.net}} | {{r.downside}} | {{r.score}} | {{r.risk_days + " days" when it is a number, else r.risk_days as printed}} | {{r.close}} | {{r.terms}} |
+
+{{when any r.escalation:}} **Escalation:** {{each r with r.escalation: r.offer + ": " + r.escalation; joined with "; "}}
 
 {{summary.plan_note}} <!-- always there: one counter or acceptance goes out at a time -->
+
+{{when summary.counter_stance:}} **Counter Stance: {{summary.counter_stance.name}}.** {{summary.counter_stance.note}}
 
 **Biggest Risk:**
 - {{each offers[]: "**" + label + ":** " + (biggest_risk, or "None major" when null)}}
@@ -44,7 +50,7 @@
 
 {{summary.data_note}}
 
-**Assumptions & Data to Confirm:**
+**What to Confirm:**
 - {{each assumptions[]: impact (High, Med or Low) + " · " + where + " · " + what}}
 
 <!-- ===== single block (mode "single"; under "### {{offer label}}" after the multi block) =====
@@ -68,11 +74,13 @@
 | {{row.term}} | {{row.offered}} | {{row.counter}} | {{row.why}} |
 
 {{when summary.counter:}}
-**Our Counter** ({{summary.counter.summary}}):
+**{{"Fallback Counter" when summary.wait, else "Our Counter"}}** ({{summary.counter.summary}}):
 
 | Term | Buyer Offered | We Counter | Why |
 |---|---|---|---|
 | {{row.term}} | {{row.offered}} | **{{row.counter}}** | {{row.why}} |
+
+**Counter Stance: {{summary.counter.stance.name}}.** {{summary.counter.stance.note}}
 
 {{when summary.compare:}}
 **How It Compares** (vs. {{summary.compare.vs}}, the recommended offer):
@@ -85,7 +93,7 @@
 |---|---|
 | {{each summary.kpis: kpi.label}} | **{{kpi.value}}** ({{kpi.note}}, when there is one) |
 | Certainty | {{summary.certainty.score}}/100, {{summary.certainty.band}} |
-| Buyer Can Walk Away Until | {{summary.certainty.walk_away_until}} ({{summary.certainty.walk_away_note}}, when there is one) |
+| Buyer's Last Cancel Right | {{summary.certainty.walk_away_until}} ({{summary.certainty.walk_away_note}}, when there is one) |
 | Deposit at Risk After That | {{summary.certainty.deposit}} |
 | Closing | {{summary.certainty.closing}} |
 | Biggest Threat | {{summary.certainty.threat}} |
@@ -107,13 +115,15 @@
 
 {{summary.data_note}}
 
-**Assumptions & Data to Confirm:**
+**What to Confirm:**
 - {{each assumptions[]: impact (High, Med or Low) + " · " + where + " · " + what}}
 
 <!-- ===== closing block (once, at the end) ===== -->
 **Estimated:** {{estimated_costs, joined with commas; skip when empty}}
 
 **To Sharpen This:** {{to_confirm, as one short question; skip when empty}}
+
+**Notes:** {{notes, one line each; skip when empty}}
 
 <sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = {{offers[].downside_note for the offer shown; in multi mode "if the appraisal and inspection go badly"}}. Estimates only; the title company's settlement statement governs. Commissions are negotiable and not set by law. Not legal advice.</sub>
 

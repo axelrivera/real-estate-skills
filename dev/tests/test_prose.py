@@ -30,10 +30,10 @@ class Phrases(unittest.TestCase):
                      "no pets", "school millage 5.249", "cul-de-sac lot, fenced yard"):
             self.assertEqual(flagged(text), [], text)
 
-    def test_phrase_table(self):
-        """Audit 2026-09-23 FH-1, FH-2: (text, flagged?). Pointers to an official source pass; claims never do."""
+    def test_official_source_pointers_and_loan_types(self):
+        """(text, flagged?). Pointers to an official source pass; claims never do; a loan type stands for terms."""
         table = [
-            # FH-1: fair-housing.md's own redirect wording must render.
+            # fair-housing.md's own redirect wording must render.
             ("School ratings are available from the district.", False),
             ("For school ratings, check with the school board.", False),
             ("Check the crime rate at the sheriff's site.", False),
@@ -47,7 +47,7 @@ class Phrases(unittest.TestCase):
             ("The district says it's a safe neighborhood.", True),
             # A pointer in one sentence doesn't excuse a claim in the next.
             ("Crime data is on the sheriff's site. School ratings are excellent.", True),
-            # FH-2: loan type stands for terms, never for the buyer.
+            # loan type stands for terms, never for the buyer.
             ("VA: strong buyer profile", True),
             ("VA buyers need not apply", True),
             ("VA financing: Tidewater notice before a low appraisal is final", False),
@@ -56,8 +56,8 @@ class Phrases(unittest.TestCase):
         for text, bad in table:
             self.assertEqual(bool(flagged(text)), bad, text)
 
-    def test_phrase_table_fh5(self):
-        """FH-5: (text, flagged?). Plurals and new phrases are caught; things that aren't places or people aren't."""
+    def test_plurals_and_area_phrases(self):
+        """(text, flagged?). Plurals and new phrases are caught; things that aren't places or people aren't."""
         table = [
             ("best neighborhoods in town", True), ("a great neighborhood", True), ("desirable area", True),
             ("family neighborhood", True), ("a family-oriented community", True), ("adult community", True),
@@ -71,11 +71,10 @@ class Phrases(unittest.TestCase):
             self.assertEqual(bool(flagged(text)), bad, text)
         self.assertIn("judging an area", flagged("a good area")[0])  # not called a crime claim
 
-    def test_phrase_table_fh106(self):
-        """Audit 2026-09-29 FH-106: (text, flagged?). Familial status (pregnancy), marital status and religion;
+    def test_familial_marital_and_religion(self):
+        """(text, flagged?). Familial status (pregnancy), marital status and religion;
         a house of worship as a landmark and "Church" in a street or place name pass."""
         table = [
-            # the audit's phrases, each rendered into a PDF before the fix
             ("Buyers are expecting their first baby", True), ("They attend the church down the street", True),
             ("a married couple with a baby on the way", True), ("near the church community", True),
             # more of the same classes
@@ -97,7 +96,7 @@ class Phrases(unittest.TestCase):
             self.assertEqual(bool(flagged(text)), bad, text)
 
     def test_offer_reasons_describe_terms(self):
-        """FH-2: the engine's own score reasons pass the check for every loan type."""
+        """The engine's own score reasons pass the check for every loan type."""
         with open(os.path.join(FIXTURES, "seller-offer-review", "four-offers.json")) as f:
             base = json.load(f)
         for fin in ("cash", "conventional", "fha", "va", "usda"):
@@ -107,7 +106,7 @@ class Phrases(unittest.TestCase):
                 o.pop("down_pct", None)
             R = offer_engine.analyze(data)
             self.assertEqual(prose.issues(R), [], fin)
-            reasons = " ".join(o["score"]["why"]["financing"] for o in R["offers"])
+            reasons = " ".join(o["score"]["why"]["financing"] or "" for o in R["offers"])
             self.assertNotIn("profile", reasons)
             self.assertNotIn("cushion", reasons)
 
@@ -118,11 +117,48 @@ class Phrases(unittest.TestCase):
         self.assertEqual([p for p, _ in found], ["$.summary"])
         with self.assertRaises(prose.ProseError) as e:
             prose.check(data)
-        self.assertIn("$.summary", str(e.exception))
+        self.assertIn("- summary: em dash", str(e.exception))
+
+
+class FigureFree(unittest.TestCase):
+    def test_figures_in_model_text(self):
+        """Judgment fields and labels hold no figure the script didn't make: digits, $, %, month names."""
+        for text, found in (("After a Price Cut", []), ("At $425,000", ["$425,000"]), ("Cut 2.5%", ["2.5%"]),
+                            ("December Closing", ["December"]), ("May Close Sooner", []), ("Option 3", ["3"]),
+                            ("$450K List", ["$450K"]), ("See www.example2.com", []), ("", [])):
+            self.assertEqual(prose.figures(text), found, text)
+
+
+class DatesInWordsAndPeople(unittest.TestCase):
+    """Judgment fields carry no date in words (a month, a season, a weekday) and never describe the people who own or
+    live in the home; contract data keeps them (it isn't checked with people())."""
+
+    def test_dates_in_words(self):
+        for text in ("Sold in the spring.", "The Spring Sales Set the Range", "since early summer", "by May", "in mid-May",
+                     "an autumn listing", "closings this fall", "the fall market", "Open house Sunday",
+                     "Showings on Saturdays", "since last winter", "two winters ago"):
+            self.assertTrue(prose.figures(text), text)
+        for text in ("May Close Sooner", "It may need a roof.", "Prices could fall further.", "A fall in prices",
+                     "Winter Park sales", "near Spring Hill", "in Altamonte Springs", "Summer Lakes Dr",
+                     "The earlier sales sit higher.", "a recent sale"):
+            self.assertEqual(prose.figures(text), [], text)
+
+    def test_people(self):
+        for text in ("The seller lives in Ohio now.", "The house is vacant.", "Owner-occupied until closing.",
+                     "A tenant is in place through spring.", "Occupied by the owner's family.", "The sellers are moving.",
+                     "They are relocating for work.", "The owners are divorcing.", "Their family has outgrown it.",
+                     "The estate sale is handled by heirs.", "A job transfer means a quick sale.", "moving out by June",
+                     "The owner passed away last year.", "Financial hardship drives the price."):
+            self.assertTrue(prose.people(text), text)
+        for text in ("Move-in ready, with a new roof.", "Homes were moving faster in the spring market.",
+                     "A vacant lot sits behind it.", "Leased land: confirm the ground rent.", "The seller pays part of "
+                     "the buyer's costs.", "Built for a growing kitchen garden.", "Living area is the county's figure.",
+                     "Ask the listing agent about the roof permit."):
+            self.assertEqual(prose.people(text), [], text)
 
 
 class PlaceNamesAndAllowList(unittest.TestCase):
-    """FH-3: proper names don't block a render; the allow list needs a reason and is reported."""
+    """Proper names don't block a render; the allow list needs a reason and is reported."""
 
     def test_place_keys_skipped(self):
         data = {"subject": {"address": "12 Christian Way", "subdivision": "Great Schools Estates", "city": "Safe Harbor",
@@ -157,7 +193,7 @@ class RenderStops(unittest.TestCase):
                 json.dump({"findings": ["Great for young families"]}, f)
             with self.assertRaises(SystemExit) as e:
                 render.main(lambda *a: built.append(a) or [], ("pdf",), [src, "--out", tmp])
-        self.assertIn("$.findings[0]", str(e.exception.code))
+        self.assertIn("- findings[0]: ", str(e.exception.code))
         self.assertEqual(built, [])
 
     def test_allow_list_is_logged(self):

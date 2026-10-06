@@ -1,4 +1,4 @@
-# FR/BAR Residential Contract For Sale And Purchase (FloridaRealtors/FloridaBar – 7x Rev. 2/26), Executed (Text Extract)
+# FAR/BAR Residential Contract For Sale And Purchase (FloridaRealtors/FloridaBar – 7x Rev. 2/26), Executed (Text Extract)
 
 1. PARTIES: Sample Buyer ("Buyer") and Sample Seller ("Seller").
    PROPERTY: 480 Heron Lake Cir, Oviedo, FL 32765, Seminole County.

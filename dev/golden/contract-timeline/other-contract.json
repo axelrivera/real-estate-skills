@@ -1,6 +1,6 @@
 {
  "agent_notes": {
-  "count": 0
+  "count": 2
  },
  "chat_notes": {
   "count": 1
@@ -10,6 +10,7 @@
   "day": 32
  },
  "contingencies_end": {
+  "appointment": false,
   "broker": false,
   "by_closing": false,
   "contingency": true,
@@ -19,23 +20,31 @@
   "done_display": null,
   "key": "financing",
   "lender": false,
+  "moved_from": null,
   "no_time": false,
   "party": "Buyer",
   "past": false,
   "past_display": null,
   "short": "Financing",
+  "voided": false,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-12-11 23:59"
  },
+ "contingencies_end_period": "financing",
  "contingencies_waiting": {
   "count": 0
  },
+ "documents": [
+  "contract"
+ ],
  "effective": {
-  "date": "2026-11-20"
+  "date": "2026-11-20",
+  "signed": null
  },
  "financing": "Conventional",
  "first_deadline": {
+  "appointment": false,
   "broker": false,
   "by_closing": false,
   "contingency": false,
@@ -45,10 +54,12 @@
   "done_display": null,
   "key": "earnest_money",
   "lender": false,
+  "moved_from": null,
   "no_time": false,
   "party": "Buyer",
   "past": false,
   "past_display": null,
+  "voided": false,
   "waits_on_approval": false,
   "was": null,
   "when": "2026-11-23 23:59"
@@ -57,8 +68,9 @@
   "count": 0
  },
  "flags": {
-  "count": 2
+  "count": 0
  },
+ "form_family": "other",
  "history": {
   "count": 0
  },
@@ -85,6 +97,9 @@
  "open_rights": {
   "count": 0
  },
+ "open_rules": {
+  "count": 0
+ },
  "pending": {
   "count": 0
  },
@@ -94,6 +109,7 @@
  },
  "rows": [
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -103,15 +119,18 @@
    "done_display": null,
    "key": "earnest_money",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-23 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -121,15 +140,18 @@
    "done_display": null,
    "key": "walkaway_period",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-27 17:00"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -139,16 +161,19 @@
    "done_display": null,
    "key": "title_commitment",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Seller",
    "past": false,
    "past_display": null,
    "short": "Title",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-12-10 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -158,16 +183,19 @@
    "done_display": null,
    "key": "financing",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
    "short": "Financing",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-12-11 23:59"
   },
   {
+   "appointment": true,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -178,12 +206,14 @@
    "key": "closing",
    "label": "Closing",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Both",
    "past": false,
    "past_display": null,
    "short": "Closing",
    "source": "Contract",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-12-22 14:00"
@@ -204,7 +234,7 @@
  "short_sale": null,
  "side": "buyer",
  "support": "best_effort",
- "time_zone": null,
+ "time_zone": "ET",
  "warning_keys": {
   "count": 0
  },

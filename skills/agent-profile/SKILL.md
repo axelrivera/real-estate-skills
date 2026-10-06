@@ -7,7 +7,7 @@ description: Sets up the real estate agent in a short, friendly interview and sa
 
 Sets the agent up in about two minutes and saves `profile.md`: who they are and how their documents look and sound. Every other skill reads it when it's there and still works without it, so this is a convenience, never a gate. Alongside it goes `project-instructions.md`, a short prompt the agent pastes into a claude.ai or Cowork Project, so every chat there starts knowing who they are and which skills to use.
 
-It holds nothing about markets or costs. Each skill takes the location from the listing and uses built-in local values or labeled estimates, and the agent corrects them on the report if they want to.
+It holds nothing about markets or costs. Each skill takes the location from the listing and uses built-in local values or estimates (named once in each report's notes), and the agent corrects them on the report if they want to.
 
 **Costs and commission.** When the agent asks to save costs, fees or commission terms here, save none of them. Add one line at the end of the reply: the profile never holds costs, because they change with each deal and area; each report assumes 5% total commission and local estimates, labels them, and takes their own numbers when they give them on that report. When that's the whole request, that line is the answer, plus one line offering to set up the profile if none exists.
 

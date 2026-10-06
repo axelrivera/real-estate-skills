@@ -1,8 +1,8 @@
-"""Find every blank on an FR/BAR form and give it a stable id, so a field map only has to name ids.
+"""Find every blank on a FAR/BAR form and give it a stable id, so a field map only has to name ids.
 
-    python dev/mock_contracts/locate.py FRBAR-ASIS                 # list every blank: id, kind, label, context
+    python dev/mock_contracts/locate.py FARBAR-ASIS                 # list every blank: id, kind, label, context
     python dev/mock_contracts/locate.py CR-7_K --pages 1           # one page only
-    python dev/mock_contracts/locate.py FRBAR-ASIS --debug out.pdf # the form with every blank boxed and labeled
+    python dev/mock_contracts/locate.py FARBAR-ASIS --debug out.pdf # the form with every blank boxed and labeled
     python dev/mock_contracts/locate.py EA --draft                 # every blank with its context, to name in a map
 
 A blank is a drawn rule (the forms draw most blanks as lines), a run of underscores in the text, a small square
@@ -21,7 +21,7 @@ import pymupdf
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 FORMS_DIR = os.path.join(ROOT, "sources", "Contracts", "FARBAR")
-MANIFEST = os.path.join(ROOT, "dev", "forms", "frbar-forms.json")
+MANIFEST = os.path.join(ROOT, "dev", "forms", "farbar-forms.json")
 FIELDS_DIR = os.path.join(HERE, "fields")
 
 MARGIN_X = 50  # printed line numbers sit left of this
@@ -38,10 +38,10 @@ def manifest():
 def form_path(family):
     forms = manifest()
     if family not in forms:
-        raise SystemExit(f"{family}: not in dev/forms/frbar-forms.json. Known: {', '.join(sorted(forms))}")
+        raise SystemExit(f"{family}: not in dev/forms/farbar-forms.json. Known: {', '.join(sorted(forms))}")
     path = os.path.join(FORMS_DIR, forms[family]["file"])
     if not os.path.exists(path):
-        raise SystemExit(f"{path} is missing. The FR/BAR PDFs live in the git-ignored sources/Contracts/FARBAR/.")
+        raise SystemExit(f"{path} is missing. The FAR/BAR PDFs live in the git-ignored sources/Contracts/FARBAR/.")
     return path
 
 
@@ -253,7 +253,7 @@ def debug_pdf(path, dest, pages=None, fields=None):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("family", help="form family key from dev/forms/frbar-forms.json (FRBAR-ASIS, CR-7_K, CO, EA...)")
+    ap.add_argument("family", help="form family key from dev/forms/farbar-forms.json (FARBAR-ASIS, CR-7_K, CO, EA...)")
     ap.add_argument("--pages", help="comma-separated 1-based pages")
     ap.add_argument("--debug", metavar="PDF", help="write the form with every blank outlined and its id printed")
     ap.add_argument("--draft", action="store_true", help="write every blank with its label, following text and caption to "

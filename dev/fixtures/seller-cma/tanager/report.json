@@ -1,0 +1,456 @@
+{
+ "prepared_date": "September 26, 2026",
+ "as_of": "2026-09-26",
+ "export": "export.csv",
+ "split_date": "2026-07-01",
+ "mls": "Stellar",
+ "listing_history": [
+  {
+   "status": "Expired",
+   "price": 229900,
+   "original_price": 239900,
+   "ended": "2017-09-30",
+   "days_on_market": 184
+  }
+ ],
+ "subject": {
+  "address": "842 Tanager Ridge Dr",
+  "mls_address": "842 TANAGER RIDGE DR",
+  "property_type": "single_family",
+  "city": "Casselberry",
+  "state": "FL",
+  "county": "Seminole",
+  "locality": "Casselberry, FL 32707 · Tanager Ridge · Seminole County",
+  "sqft": 1640,
+  "beds": 3,
+  "baths": 2,
+  "year_built": 1986,
+  "pool": false,
+  "hoa": false,
+  "subdivision": "TANAGER RIDGE UNIT 2",
+  "roof_year": 2021,
+  "facts": [
+   [
+    "Beds / Baths",
+    "3 / 2"
+   ],
+   [
+    "Living Area",
+    "1,640 sq ft"
+   ],
+   [
+    "Lot",
+    "0.24 acre"
+   ],
+   [
+    "Built",
+    "1986, block"
+   ],
+   [
+    "Pool",
+    "None"
+   ],
+   [
+    "Garage",
+    "2-car attached"
+   ],
+   [
+    "HOA / CDD",
+    "None / None"
+   ],
+   [
+    "Flood Zone",
+    "X (lower risk)"
+   ],
+   [
+    "Current Taxes",
+    "$3,506 a year (2025, with homestead)"
+   ],
+   [
+    "Recent Updates",
+    "Kitchen, hall bath, floors, roof, AC"
+   ]
+  ],
+  "summary": "The primary bath and the single-pane windows are original. This analysis estimates what the home is worth today, recommends a list price, and shows what each pricing choice is likely to net you.",
+  "condition": "kitchen_only"
+ },
+ "summary_page": {
+  "label": "Seller Summary",
+  "headline": "Priced where recent sales support, for the strongest first weeks on the market.",
+  "why": [
+   "The closest sales nearby, adjusted to your home, center near the middle of the range.",
+   "The market has cooled: buyers negotiate, and many sellers help with buyer costs.",
+   "Well-priced homes nearby are selling; overpriced ones are sitting."
+  ],
+  "next_step": "Review this plan together, sign the listing agreement, and get the home ready to go live."
+ },
+ "recommendation": {
+  "why": "It leaves room for the negotiating that is normal now and presents the home as fairly priced in its first weeks, when buyer attention is highest."
+ },
+ "means": [
+  "<strong>Expect to negotiate.</strong> Recent buyers nearby paid less than the original asking price and most asked the seller to cover part of their closing costs. Plan for both from the start.",
+  "<strong>The first three weeks matter most.</strong> A new listing gets its biggest wave of showings right away. Priced where buyers expect, that wave turns into offers; priced high, the home sits and the price cut comes later, from a weaker position.",
+  "<strong>Watch the appraisal.</strong> A contract well above the supported range would risk a low appraisal, because the appraiser works from the same sales.",
+  "<strong>Documentation is worth money.</strong> The permitted roof and AC are among the most valuable facts in the listing, because roof age decides whether a buyer can insure the home. Have the permits and final inspections ready on day one."
+ ],
+ "comps": {
+  "intro": "Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
+  "method_note": "Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "cards": [
+   {
+    "address": "790 Tanager Ridge Dr",
+    "sold_price": 384000,
+    "seller_concessions": 6500,
+    "condition": "kitchen_only",
+    "adjustments": [
+     {
+      "label": "Older Roof",
+      "amount": 10000,
+      "kind": "age"
+     }
+    ],
+    "bullets": [
+     "Your floor plan on your street, and the most recent sale."
+    ]
+   },
+   {
+    "address": "818 Tanager Ridge Dr",
+    "sold_price": 398000,
+    "seller_concessions": 5000,
+    "condition": "kitchen_only",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 2100,
+      "kind": "size"
+     }
+    ],
+    "bullets": [
+     "A close match in size and condition."
+    ]
+   },
+   {
+    "address": "907 Tanager Ridge Dr",
+    "sold_price": 405000,
+    "seller_concessions": 0,
+    "condition": "kitchen_and_baths",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -1125,
+      "kind": "size"
+     }
+    ],
+    "bullets": [
+     "A close match in size and condition."
+    ]
+   },
+   {
+    "address": "655 Phoebe Ln",
+    "sold_price": 378000,
+    "seller_concessions": 6000,
+    "condition": "kitchen_only",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 7500,
+      "kind": "size"
+     },
+     {
+      "label": "Older Roof",
+      "amount": 10000,
+      "kind": "age"
+     }
+    ],
+    "bullets": [
+     "A close match in size and condition."
+    ]
+   },
+   {
+    "address": "1012 Grosbeak Ct",
+    "sold_price": 362000,
+    "seller_concessions": 7500,
+    "condition": "original",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 4500,
+      "kind": "size"
+     },
+     {
+      "label": "Older Roof",
+      "amount": 10000,
+      "kind": "age"
+     }
+    ],
+    "bullets": [
+     "A close match in size and condition."
+    ]
+   }
+  ],
+  "time_adjustment": {
+   "rate_per_quarter": 0.015
+  },
+  "lean": "The range leans on the closest matches in condition; the older, stronger-market sales sit higher."
+ },
+ "scatter": {
+  "heading": "Where Your Home Fits in the Neighborhood",
+  "subject_label_pos": "right",
+  "callouts": [
+   {
+    "address": "818 TANAGER RIDGE DR",
+    "side": "left"
+   },
+   {
+    "address": "882 SISKIN WAY",
+    "side": "below"
+   }
+  ],
+  "takeaway": "The renovated sales sit above the dashed line, and your home sits among them."
+ },
+ "competition": {
+  "intro": "These homes are for sale, under contract or recently failed to sell nearby. A buyer touring yours will likely see several of them.",
+  "rows": [
+   [
+    "882 Siskin Way",
+    "For sale",
+    399900,
+    1630,
+    "No",
+    9,
+    "The listing buyers will compare most closely with yours."
+   ],
+   [
+    "736 Tanager Ridge Dr",
+    "For sale",
+    414900,
+    1690,
+    "No",
+    48,
+    ""
+   ],
+   [
+    "1101 Vireo Dr",
+    "For sale",
+    429000,
+    1790,
+    "No",
+    12,
+    "Four bedrooms and remodeled baths, larger. Priced for a bigger home."
+   ],
+   [
+    "455 Linnet Cir",
+    "For sale",
+    369900,
+    1560,
+    "No",
+    76,
+    "The low-price option for buyers willing to update."
+   ],
+   [
+    "1025 Grosbeak Ct",
+    "Under contract",
+    389900,
+    1575,
+    "No",
+    11,
+    ""
+   ],
+   [
+    "679 Phoebe Ln",
+    "Under contract",
+    394500,
+    1650,
+    "No",
+    24,
+    "Newer roof and AC."
+   ],
+   [
+    "853 Tanager Ridge Dr",
+    "Expired",
+    419900,
+    1640,
+    "No",
+    121,
+    "Your floor plan with an updated kitchen."
+   ],
+   [
+    "1066 Vireo Dr",
+    "Canceled",
+    424900,
+    1745,
+    "No",
+    95,
+    "Updated kitchen, larger."
+   ]
+  ]
+ },
+ "market": {
+  "bullets": [
+   "<strong>Buyers are negotiating again.</strong> In recent months, homes nearby sold further under their original asking price and took longer to go under contract than earlier in the year.",
+   "<strong>Seller help is common.</strong> Most recent sales included a seller credit: budget for one now.",
+   "<strong>Pricing decides the pace.</strong> Well-priced homes still sell; overpriced ones sit.",
+   "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's."
+  ]
+ },
+ "pricing": {
+  "intro": "Three realistic options. Expected sale prices and timelines are our estimates from recent sales. The nets are close, so the real difference between them is time and risk.",
+  "note": "The competing-offer option assumes a smaller seller credit, because competing offers usually ask for less help; if they don't show up, its net falls."
+ },
+ "costs": {
+  "annual_tax": 3505.61,
+  "expected_closing_date": "2026-12-18",
+  "mortgage_payoff": 171500,
+  "hoa": false
+ },
+ "buyer_payment": {
+  "rate": 7.03,
+  "loan_type": "conventional",
+  "down_pct": 0.05,
+  "district": "C1",
+  "homestead": true,
+  "rate_week": "2026-09-24"
+ },
+ "prep": {
+  "intro": "These steps cost little and remove the questions that slow Florida buyers down or cost sellers money at the negotiating table.",
+  "items": [
+   {
+    "step": "Document the roof and AC",
+    "detail": "",
+    "short": "Permits and final inspections, ready to share",
+    "icon": "roof"
+   },
+   {
+    "step": "Get a four-point and wind-mitigation report",
+    "detail": "Buyers can get insurance quotes before they offer. With original single-pane windows, the wind-mitigation report shows exactly what credits the roof earns.",
+    "short": "Lets buyers price insurance before they offer",
+    "icon": "insurance"
+   },
+   {
+    "step": "Gather the kitchen records",
+    "detail": "The electrical permit plus invoices for the cabinets, counters and appliances.",
+    "short": "Electrical permit and invoices",
+    "icon": "permit"
+   },
+   {
+    "step": "Consider a pre-listing inspection",
+    "detail": "You learn about any issue before a buyer uses it to renegotiate.",
+    "short": "Learn about any issue before a buyer does",
+    "icon": "inspection"
+   },
+   {
+    "step": "Decide on a seller-credit budget now",
+    "detail": "Most recent sales included one. A credit toward a rate buydown lowers a buyer's payment more in the first years than the same amount off the price.",
+    "short": "Decide it now, before offers arrive",
+    "icon": "money"
+   },
+   {
+    "step": "Agree on a review point",
+    "detail": "If there are steady showings but no offer after about three weeks, we revisit the price with fresh data rather than waiting.",
+    "short": "Steady showings but no offer? Revisit the price",
+    "icon": "calendar"
+   }
+  ]
+ },
+ "needs": [
+  "The kitchen's electrical permit and invoices for the cabinets, counters and appliances.",
+  "Any storm shutters or other wind-protection features, since the windows are original.",
+  "Your answers for Florida's flood disclosure: any flood damage, flood insurance claims or flood assistance while you've owned the home.",
+  "Anything else you know that affects the home's value or condition. Florida law requires sellers to disclose known material defects."
+ ],
+ "deck": {
+  "recommendation_why": "It sits where recent sales support and gives you the strongest launch.",
+  "value_drivers": [
+   [
+    "Updated Kitchen",
+    "The largest adjustment, against the sale with an original kitchen and baths.",
+    "kitchen"
+   ],
+   [
+    "Hall Bath, Floors and a Newer Roof",
+    "Credited against the sales with original baths and older roofs.",
+    "bath"
+   ],
+   [
+    "Two-Car Garage, No HOA",
+    "No association costs in a buyer's payment.",
+    "garage"
+   ]
+  ],
+  "document_items": [
+   [
+    "Roof and AC Permits",
+    "Roof age decides whether a buyer can insure the home.",
+    "roof"
+   ],
+   [
+    "Kitchen Records",
+    "Electrical permit and invoices. Undocumented upgrades count for less.",
+    "permit"
+   ]
+  ],
+  "comp_lines": {
+   "790 Tanager Ridge Dr": "",
+   "818 Tanager Ridge Dr": "",
+   "907 Tanager Ridge Dr": "",
+   "655 Phoebe Ln": "",
+   "1012 Grosbeak Ct": "Dated; the low end"
+  },
+  "comps_basis": "size, age, condition and neighborhood",
+  "comps_takeaway": "Four of the five agree within a few thousand dollars. The best-matched sale sits at the top.",
+  "scatter_takeaway": "The renovated sales sit above the trend, and yours sits among them.",
+  "market_title": "The Market Has Shifted",
+  "market_takeaway": "Buyers are negotiating again.",
+  "competition": [
+   [
+    "882 Siskin Way",
+    "Renovated, new roof, your size. The listing buyers will compare most."
+   ],
+   [
+    "853 Tanager Ridge Dr",
+    "Your floor plan."
+   ],
+   [
+    "1025 Grosbeak Ct",
+    "Updated kitchen and baths. Priced right, it moved fast."
+   ]
+  ],
+  "competition_takeaway": "Well-priced homes are moving. Overpriced ones sit.",
+  "strategy_takeaway": "The middle option nets the most once time on the market is counted. The real choice is time and risk.",
+  "payment_takeaway": "Buyers shop by payment.",
+  "needs_short": [
+   "Roof and AC permits and final inspections",
+   "Kitchen electrical permit and invoices",
+   "The lender's payoff letter",
+   "Flood history answers for the disclosure"
+  ],
+  "timeline": [
+   [
+    "now",
+    "Sign the listing agreement; order the reports"
+   ],
+   [
+    "before",
+    "Photos, documents and a final price check"
+   ],
+   [
+    "after",
+    "Price review if steady showings bring no offer"
+   ]
+  ],
+  "notes": {
+   "recommendation": "Lead with the answer. The rest of the presentation shows how we got here.",
+   "method": "",
+   "drivers": "These are the features the adjustments credit your home for. The roof, AC and kitchen need paperwork before buyers and appraisers will pay for them.",
+   "comps": "Each bar is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
+   "scatter": "Every sale and listing within about a mile. The dashed line is size alone; updates push homes above it.",
+   "market": "Sale vs. original price is after seller-paid costs.",
+   "competition": "These are the homes a buyer will likely tour alongside yours.",
+   "strategies": "Expected sale prices and timelines are estimates from recent sales.",
+   "nets": "Commissions are negotiable and not set by law.",
+   "payments": "",
+   "launch": "Low-cost steps that remove the questions that cost sellers money at the negotiating table.",
+   "next": "Confirm the documents, the payoff letter and the launch date."
+  }
+ }
+}

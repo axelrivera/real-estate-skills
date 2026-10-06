@@ -16,12 +16,14 @@ DEFAULTS = {"buyer": "#1A74AD", "seller": "#C2410C"}
 # "Both" marker: navy by default; the others are fallbacks when navy is too close to a party color.
 BOTH_CANDIDATES = ["#1F3A5F", "#5A6672", "#6B4A3A", "#0F766E", "#6B21A8", "#9A6B00"]
 
+# True grays, with no hue: a slate gray reads as a second, blue hue beside the brand (the net sheet's payoff bar, the
+# deck's listings). The lightness of the earlier slate grays, so contrast is unchanged.
 NEUTRALS = {
     "text": "#1A1A1A",
-    "muted": "#5A6672",
+    "muted": "#5E5E5E",
     "bg": "#FFFFFF",
-    "grey": "#A3ADB6",
-    "grey_light": "#B8C2CC",
+    "grey": "#A6A6A6",
+    "grey_light": "#C2C2C2",
 }
 
 # Status colors never follow the brand. Each has a base, a darker text shade, a background and a border.

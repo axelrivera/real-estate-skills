@@ -1,10 +1,18 @@
 """Checks on the text Claude writes into a data file, run before any file is rendered.
 
-Two rules, both hard stops (the render ends and names each field to rewrite):
+Hard stops (the render ends and lists every field to rewrite at once, as `field: problem \u2192 fix`):
   - no em dashes in prose (one touching a word: "right \u2014 for now"); a lone em dash standing for an
     empty value ("\u2014", "\u2014 / \u2014") is fine;
   - no wording that the Fair Housing Act and HUD's advertising guidance treat as a preference or
-    limitation (42 U.S.C. 3604(c), 24 CFR 100.75), or that steers (24 CFR 100.70(c)).
+    limitation (42 U.S.C. 3604(c), 24 CFR 100.75), or that steers (24 CFR 100.70(c));
+  - client wording (references/client-wording.md): no tool words (placeholder, JSON, data file, re-run, script,
+    schema, null, undefined, NaN, TODO, TBD, a {placeholder} no script fills), no data keys (insurance_annual), no
+    ISO dates inside a sentence (2026-09-26: write Sep 26, 2026) and no jargon from JARGON (DOM: days on market).
+    Names, identifiers, form and rider names, file names, URLs and emails are exempt; a one-word value
+    ("as_is", "2026-09-26") is data, not prose. Jargon isn't checked in text only the agent sees (`agent_only`).
+
+Missing data never stops a render; only wrong wording does. Labels the model types (scenario, strategy and option
+names, headings) aren't checked: title_labels() puts them in Title Case before anything is built.
 
 The phrase list is a backstop for the rules in references/fair-housing.md, not the rules themselves:
 it only catches clear cases and never flags wording HUD allows ("family room", "walk-in closet",
@@ -109,6 +117,54 @@ _COMPILED = [(re.compile(p, re.I), why) for p, why in FAIR_HOUSING]
 _TOPICS = [(re.compile(p, re.I), why) for p, why in TOPICS]
 
 
+
+# --- client wording (references/client-wording.md) ------------------------------------------------------------------
+# Words from the tools, not the client's world: (pattern, flags, problem, fix). Case-sensitive where the word has a
+# plain-English use ("null and void" is contract wording; "None" is a fine table value, so it isn't listed).
+TOOL_WORDS = [
+    (r"\bplaceholders?\b", re.I, "a tool word", "write the number, or label it Estimate or Assumed"),
+    (r"\bJSON\b|\bdata[- ]files?\b|\bschemas?\b|\bscripts?\b", re.I, "a tool word",
+     "say what it is in the client's words (the report, the numbers, the listing)"),
+    (r"\bexports?\b|\bCSVs?\b", re.I, "a tool word", 'say where it came from in the client\'s words ("MLS records", "recent sales")'),
+    (r"\bre-?run(?:s|ning)?\b", re.I, "a tool word", 'say what happens in the client\'s words ("we\'ll update the report")'),
+    (r"\bnull\b(?!\s+and\s+void)|\bundefined\b", re.I, "an empty value printed as text",
+     "leave the field out (the report shows its default)"),
+    (r"\bNaN\b", 0, "an empty value printed as text", "leave the field out (the report shows its default)"),
+    (r"\bTODO\b|\bTBD\b", 0, "unfinished text", "write the value, or leave the field out (the report shows its default)"),
+]
+# Jargon a client may not know, each with the plain words to use. Kept short: only terms that showed up in reports.
+# HOA, MLS and CMA are allowed: clients use them too. LTV and DTI are fine in text only the agent sees (agent_only).
+JARGON = [
+    (r"\bCDOM\b", 0, "cumulative days on market"),
+    (r"\bDOM\b", 0, "days on market"),
+    (r"\bwind[- ]?mits?\b", re.I, "wind mitigation"),
+    (r"\bCASSB(?:-1)?\b", re.I, "the compensation agreement with the buyer's broker"),
+    (r"\bLTV\b", 0, "loan-to-value"),
+    (r"\bDTI\b", 0, "debt-to-income"),
+    (r"\bCOE\b", 0, "closing"),
+    (r"\bEMD\b", 0, "escrow deposit, or earnest money as the contract calls it"),
+]
+SNAKE_KEY = re.compile(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b")  # a data key: insurance_annual
+ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})(?:[T ]\d{1,2}:\d{2}(?::\d{2})?)?\b")
+PLACEHOLDER = re.compile(r"\{(\w+)\}")
+# Not prose: links, emails and file names keep their own spelling.
+EXEMPT_TEXT = re.compile(r"https?://\S+|\bwww\.\S+|[\w.+-]+@[\w-]+\.[\w.-]+"
+                         r"|[\w./\\-]+\.(?:json|csv|pdf|pptx|md|ics|txt|xlsx?|png|jpe?g)\b", re.I)
+# Keys whose text is a name or an identifier (a person, company, form, rider or key), not prose: the wording rules skip
+# them when they hold text (a key holding an object, like a buyer file's `buyer`, is still read).
+NAME_KEYS = {"id", "key", "name", "names", "email", "phone", "website", "license", "license_number", "mls", "mls_number",
+             "mls_id", "buyer", "seller", "buyers", "sellers", "client", "prepared_for", "lender", "buyer_agent",
+             "listing_agent", "escrow_agent", "closing_agent", "title_company", "brokerage", "buyer_names",
+             "seller_names", "contract_name", "form", "forms", "contract_form", "form_family", "rider", "riders",
+             "addenda", "handoff", "source_file"}
+WORDING_SKIP = {"export_columns"}  # an export's own column names
+RULES = frozenset({"dash", "fair", "tool", "keys", "dates", "jargon"})
+PROFILE_RULES = frozenset({"dash", "fair", "tool"})  # the profile's voice and disclaimers are the agent's own words
+_TOOL = [(re.compile(p, f), problem, fix) for p, f, problem, fix in TOOL_WORDS]
+_JARGON = [(re.compile(p, f), plain) for p, f, plain in JARGON]
+MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split()
+
+
 class ProseError(ValueError):
     """Text in the data file breaks a writing rule; the message names each field to rewrite."""
 
@@ -123,6 +179,62 @@ def _strings(value, path="$"):
     elif isinstance(value, list):
         for i, v in enumerate(value):
             yield from _strings(v, f"{path}[{i}]")
+
+
+def _text_only(v):
+    return isinstance(v, str) or isinstance(v, list) and all(isinstance(x, str) for x in v)
+
+
+def _wording_paths(value, path="$", top=None):
+    """Paths whose text the wording rules read, with the top-level key each sits under."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            key = str(k).lower()
+            if key in SKIP_KEYS or key in WORDING_SKIP or (key in NAME_KEYS and _text_only(v)):
+                continue
+            yield from _wording_paths(v, f"{path}.{k}", top if top is not None else key)
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from _wording_paths(v, f"{path}[{i}]", top)
+    elif isinstance(value, str):
+        yield path, top
+
+
+def _date_text(m):
+    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    return f"{MONTHS[mo - 1]} {d}, {y}" if 1 <= mo <= 12 and 1 <= d <= 31 else "the date in words"
+
+
+def wording_issues(text, placeholders=False, jargon=True, rules=RULES):
+    """[problem] for one string: tool words, unfilled {placeholders}, data keys, ISO dates in a sentence and jargon,
+    each as `"word": problem → fix`. `placeholders`: the skill fills {name} itself (and names any it can't)."""
+    out, seen = [], set()
+
+    def add(line):
+        if line not in seen:
+            seen.add(line)
+            out.append(line)
+
+    bare = EXEMPT_TEXT.sub(" ", text)
+    if "tool" in rules:
+        for rx, problem, fix in _TOOL:
+            for m in rx.finditer(bare):
+                add(f'"{m.group(0)}": {problem} → {fix}')
+        if not placeholders:
+            for m in PLACEHOLDER.finditer(bare):
+                add(f'"{m.group(0)}": a placeholder no script fills here → write the words or the number')
+    words = PLACEHOLDER.sub(" ", bare)
+    if "keys" in rules and len(words.split()) > 1:  # one word ("as_is") is a value, not prose
+        for m in SNAKE_KEY.finditer(words):
+            add(f'"{m.group(0)}": a data key in the text → say it in words ("{m.group(0).replace("_", " ")}")')
+    if "dates" in rules and re.search(r"[A-Za-z]{2,}", ISO_DATE.sub(" ", words)):  # a date with words around it
+        for m in ISO_DATE.finditer(words):
+            add(f'"{m.group(0)}": a date in data form → write "{_date_text(m)}"')
+    if "jargon" in rules and jargon:
+        for rx, plain in _JARGON:
+            for m in rx.finditer(words):
+                add(f'"{m.group(0)}": jargon a client may not know → write "{plain}"')
+    return out
 
 
 def allow_list(data):
@@ -149,15 +261,21 @@ def _allowed(text, m, allow):
     return None
 
 
-def issues(data, used=None):
-    """[(field path, problem)] for every em dash in prose and fair-housing phrase in the data's text.
+def issues(data, used=None, *, root="$", rules=RULES, placeholders=False, agent_only=(), allow=None):
+    """[(field path, problem)] for every em dash in prose, fair-housing phrase and client-wording problem in the data's
+    text. `root` names the file in the paths ("$" for the data file, "deck" for a deck file). `placeholders`: the skill
+    fills {name} placeholders itself. `agent_only`: top-level keys whose text only the agent sees (no jargon check).
 
     Allow-list entries that excused a match are added to `used` (a list) when given."""
-    allow = allow_list(data)
+    allow = allow_list(data) if allow is None else allow
     out = []
-    for path, text in _strings(data):
-        if PROSE_DASH.search(text):
-            out.append((path, "em dash in a sentence: use a comma, colon, parentheses or a new sentence"))
+    by_path = {}
+    for path, text in _strings(data, root):
+        found = by_path.setdefault(path, [])
+        if "dash" in rules and PROSE_DASH.search(text):
+            found.append("em dash in a sentence → use a comma, colon, parentheses or a new sentence")
+        if "fair" not in rules:
+            continue
         hits = [(m, why) for rx, why in _COMPILED for m in rx.finditer(text)]
         for sent in SENTENCE.finditer(text):
             if not OFFICIAL.search(sent.group(0)):
@@ -171,18 +289,145 @@ def issues(data, used=None):
                 continue
             if why not in seen:  # one line per rule and field
                 seen.add(why)
-                out.append((path, f'"{m.group(0)}": {why}'))
+                found.append(f'"{m.group(0)}": {why}')
+    if rules & {"tool", "keys", "dates", "jargon"}:
+        texts = dict(_strings(data, root))
+        for path, top in _wording_paths(data, root):
+            by_path.setdefault(path, []).extend(
+                wording_issues(texts[path], placeholders, jargon=top not in agent_only, rules=rules))
+    for path, found in by_path.items():
+        out += [(path, p) for p in found]
     return out
 
 
-def check(data, limit=12):
+def report(found):
+    """Raise ProseError listing every problem at once (`field: problem → fix`), so one rewrite fixes them all."""
+    if not found:
+        return
+    lines = [f"- {path.removeprefix('$.')}: {problem}" for path, problem in found]
+    raise ProseError(f"Nothing was rendered. Rewrite {'this field' if len(found) == 1 else f'these {len(found)} things'} "
+                     "and run again (the skill's Guardrails and references/client-wording.md say how to word it):\n"
+                     + "\n".join(lines))
+
+
+def check(data, **kw):
     """Raise ProseError listing what to rewrite; otherwise return the allow-list entries that were used."""
     used = []
-    found = issues(data, used)
-    if not found:
-        return used
-    lines = [f"- {path}: {problem}" for path, problem in found[:limit]]
-    if len(found) > limit:
-        lines.append(f"- and {len(found) - limit} more")
-    raise ProseError("Nothing was rendered. Rewrite these fields in the data file and run again "
-                     "(the skill's Guardrails say how to word it):\n" + "\n".join(lines))
+    report(issues(data, used, **kw))
+    return used
+
+
+# --- labels ---------------------------------------------------------------------------------------------------------
+MINOR_WORDS = {"a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet", "as", "at", "by", "in", "of", "off",
+               "on", "per", "to", "up", "via", "vs", "vs.", "from", "into", "with", "than", "if"}
+
+
+def _cap(part):
+    m = re.match(r"^([^A-Za-z]*)([a-z])(.*)$", part, re.S)
+    if m and not any(c.isupper() for c in m.group(3)):  # "iPhone", "eXp": a brand, kept as written
+        return m.group(1) + m.group(2).upper() + m.group(3)
+    return part
+
+
+def title_case(text):
+    """A label in Title Case (CLAUDE.md): each word capitalized, and each part of a hyphenated word, except short joining
+    words inside it; words that already carry a capital ("HOA", "iPhone"), {placeholders}, tags, links and file names
+    are kept as written."""
+    words = str(text).split(" ")
+    out = []
+    for i, w in enumerate(words):
+        inner = 0 < i < len(words) - 1 and w.lower().strip(",:;()") in MINOR_WORDS
+        if not inner and w and not w.startswith(("{", "<")) and not EXEMPT_TEXT.fullmatch(w):
+            w = "-".join(_cap(p) for p in w.split("-"))
+        out.append(w)
+    return " ".join(out)
+
+
+def _apply(node, toks, fn):
+    if not toks:
+        return fn(node) if isinstance(node, str) else node
+    t, rest = toks[0], toks[1:]
+    if t == "**":  # any depth, this level included
+        node = _apply(node, rest, fn)
+        if isinstance(node, dict):
+            return {k: _apply(v, toks, fn) for k, v in node.items()}
+        if isinstance(node, list):
+            return [_apply(v, toks, fn) for v in node]
+        return node
+    if t == "[]":
+        return [_apply(v, rest, fn) for v in node] if isinstance(node, list) else node
+    if t.startswith("["):
+        i = int(t[1:-1])
+        if isinstance(node, list) and i < len(node):
+            node = [*node[:i], _apply(node[i], rest, fn), *node[i + 1:]]
+        return node
+    if isinstance(node, dict) and t in node:
+        return {**node, t: _apply(node[t], rest, fn)}
+    return node
+
+
+def title_labels(data, patterns):
+    """The data with every label field the patterns name put in Title Case (a copy; the rest is unchanged).
+    Patterns are dotted paths: "pricing.strategies[].label" (each item), "summary_page.key_stats[][1]" (an index),
+    "**.heading" (a `heading` at any depth). Labels are fixed, never a reason to stop: convention over a retry."""
+    for p in patterns:
+        data = _apply(data, re.findall(r"\*\*|\[\d*\]|[^.\[\]]+", p), title_case)
+    return data
+
+
+# --- figure-free fields ---------------------------------------------------------------------------------------------
+# What the model writes is judgment and names only: every count, price, percent and date on a report comes from a
+# script. A digit, a dollar or percent sign, or a date in words (a month, a season, a weekday) in a model field is a
+# figure the script didn't make. "May" counts only after a word that makes it a month ("in May", "by May"), "fall" only
+# as a season ("this fall", "fall sales", never "prices could fall"), and a season that starts a place name ("Winter
+# Park", "Spring Hill") or reads as one ("Altamonte Springs": never a season in the plural) is the place.
+_PLACE_WORD = (r"Park|Gardens?|Springs?|Hill|Haven|Lakes?|Harbor|Ridge|Creek|Grove|Oaks?|Woods?|Village|Isles?|River|"
+               r"Bay|Beach|Key|Estates|Meadows?|Crossing|Landing|Cove|Square|Commons|Terrace|Trail|Run|Pointe?|Glen|"
+               r"Valley|Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Way|Lane|Ln|Court|Ct|Boulevard|Blvd|Place|Pl|Circle|Cir")
+FIGURE = re.compile(
+    r"\$\s*[\d.,]*\d[\d.,]*[KkMm]?|\d[\d.,]*\s*%|\d+(?:[.,:/-]\d+)*"
+    r"|\b(?:January|February|March|April|June|July|August|September|October|November|December)\b"
+    r"|\b(?:in|by|of|early|late|mid|until|since|through|during|last|next|this)[- ]May\b"
+    rf"|\b(?i:spring|(?:summer|winter|autumn)s?)\b(?!\s+(?:{_PLACE_WORD})\b)"
+    r"|\b(?i:(?:this|last|next|in|early|late|mid|by|until|since|through|during|over)\s+(?:the\s+)?fall)\b"
+    r"(?!\s+(?i:in|of|through|off|short|behind|apart|back|below|under|out)\b)"
+    r"|\b(?i:fall\s+(?:sales?|market|season|listings?|closings?|months?|buyers?))\b"
+    r"|\b(?i:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b")
+
+
+def figures(text):
+    """The figures in `text` ("$425,000", "3%", "12", "December", "spring", "Friday"), [] when it's figure-free.
+    Names, ids, links and emails keep their digits (EXEMPT_TEXT)."""
+    return [m.group(0).strip() for m in FIGURE.finditer(EXEMPT_TEXT.sub(" ", str(text or "")))]
+
+
+# --- people in judgment fields -----------------------------------------------------------------------------------
+# A judgment field describes the home, the numbers and the terms, never the people: who lives there, whether it's
+# vacant or rented, why the seller is selling. That's the agent's to know (Realtor Remarks, the seller's own story),
+# not a client file's, and describing occupants can steer (fair housing). Contract data (a lease the contract
+# assigns, a tenant's possession date) is quoted as data and isn't checked here.
+_OCCUPANT = (r"(?:sellers?|owners?|they|family|occupants?|tenants?|renters?|he|she|we|buyers?)")
+PEOPLE = re.compile(
+    r"\b(?:lives?|living|lived)\s+(?:in|there|here|at|on)\b"
+    r"|\b(?:owner|tenant|renter|seller)[- ]occupied\b|\boccupied\s+by\b|\boccupan(?:t|ts|cy)\b"
+    r"|\btenants?\b|\brenters?\b"
+    r"|\bvacant\b(?!\s+(?:lots?|land|parcels?|acreage)\b)"
+    rf"|\b{_OCCUPANT}(?:'s|'re|\s+(?:is|are|was|were|will\s+be|have\s+been|has\s+been))?\s+"
+    r"(?:moving|relocating|downsizing|divorcing|retiring|leaving|separating)\b"
+    r"|\b(?:moving|moved|move)\s+(?:out|away|abroad|closer)\b"
+    r"|\brelocat(?:e|es|ed|ing|ion)\b|\bdivorc(?:e|ed|es|ing)\b|\blegal(?:ly)?\s+separat\w*\b"
+    r"|\b(?:their|his|her|the\s+(?:sellers?|owners?)'s?|the\s+(?:sellers?|owners?)')\s+"
+    r"(?:famil(?:y|ies)|kids|children|spouse|wife|husband|parents?|mother|father|job|health|divorce|estate|situation)\b"
+    r"|\bpassed\s+away\b|\bdeceased\b|\bprobate\b|\bheirs?\b|\bestate\s+sale\b"
+    r"|\bjob\s+(?:transfer|loss|change)\b|\b(?:deployed|deployment)\b|\bPCS\s+orders?\b"
+    r"|\bfinancial\s+(?:hardship|trouble|distress)\b|\bhardship\b", re.I)
+
+
+def people(text):
+    """Phrases in `text` that describe the seller or the people living in the home ("lives in", "tenant", "vacant",
+    "relocating", "their family"), [] when there are none. For judgment fields only, never contract data."""
+    return [m.group(0).strip() for m in PEOPLE.finditer(EXEMPT_TEXT.sub(" ", str(text or "")))]
+
+
+PEOPLE_FIX = ("describe the home, the numbers and the terms, never the people: who lives there, whether it's vacant "
+              "or rented and why the seller is selling stay with the agent (fair housing, and the seller's privacy)")

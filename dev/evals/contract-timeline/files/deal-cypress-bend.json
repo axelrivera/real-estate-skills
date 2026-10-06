@@ -4,7 +4,7 @@
   "county": "Seminole",
   "client": "Sample Buyer",
   "contract": {
-    "form_family": "frbar",
+    "form_family": "farbar",
     "contract_form": "as_is",
     "property": "1532 Cypress Bend Dr, Casselberry, FL 32707",
     "buyer": "Sample Buyer",
@@ -12,7 +12,8 @@
     "price": 365000,
     "financing": "fha",
     "effective_date": "2026-09-25",
-    "effective_date_source": "Seller's initials on Counteroffer #1, 9/25/2026 4:12 PM",
+    "effective_date_source": "Seller's initials on Counteroffer #1",
+    "effective_date_signed": "2026-09-25 16:12",
     "closing_date": "2026-10-30",
     "closing_time": "10:00",
     "escrow_agent": "Sample Title Co.",
@@ -28,6 +29,5 @@
     "title_by": "seller",
     "title_evidence_days_before": 5
   },
-  "amendments": [],
-  "flags": []
+  "amendments": []
 }

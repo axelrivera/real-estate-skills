@@ -1,11 +1,9 @@
 {
- "title": "Pricing 1438 Buttonbush Dr",
- "subtitle": "Listing Presentation · Oviedo, Cattail Crossing",
  "recommendation_why": "It sits near the middle of what recent sales support and gives you the strongest launch, when buyer attention is highest.",
  "value_drivers": [
   [
    "Remodeled Kitchen and Baths",
-   "Worth $30,000 to $45,000 against the partly updated and dated sales.",
+   "The biggest adjustment against the partly updated and dated sales.",
    "kitchen"
   ],
   [
@@ -37,103 +35,34 @@
   ]
  ],
  "comp_lines": {
-  "1512 Buttonbush Dr": "Renovated, your street; sold in April",
+  "1512 Buttonbush Dr": "Renovated, your street; sold earlier in the year",
   "1377 Sedgefield Ct": "Renovated; larger pond lot",
   "1455 Arrowroot Way": "Most recent pool sale; not updated",
   "1621 Sedgefield Ct": "Same floor plan; partly updated",
-  "1340 Buttonbush Dr": "Renovated, a bit larger; July sale"
+  "1340 Buttonbush Dr": "Renovated, a bit larger; a recent sale"
  },
  "comps_basis": "size, pool, age and neighborhood",
- "comps_takeaway": "The two highest sold before July. The summer sales point to the middle of the range.",
- "scatter_takeaway": "The renovated comparable sales sit above the neighborhood trend. At {list_price}, yours sits among them without testing the ceiling.",
- "market_title": "The Market Shifted Since Spring",
- "market_periods": [
-  "April–June",
-  "July–mid-September"
- ],
- "market_period_labels": [
-  "Spring",
-  "Now"
- ],
- "market_stats": [
-  [
-   "Sale vs. Original Price",
-   "99.0%",
-   "96.2%",
-   "percent"
-  ],
-  [
-   "Days to Contract",
-   "10",
-   "21",
-   "time"
-  ],
-  [
-   "Sales with Seller Credits",
-   "54%",
-   "75%",
-   "money"
-  ],
-  [
-   "30-Year Mortgage Rate",
-   "About 6.3%",
-   "6.95%",
-   "trend"
-  ]
- ],
- "market_takeaway": "Buyers are negotiating again. Price for the market we have now, not the one from April.",
+ "comps_takeaway": "The two highest sold earlier in the year. The recent sales point to the middle of the range.",
+ "scatter_takeaway": "The renovated comparable sales sit above the neighborhood trend, and yours sits among them without testing the ceiling.",
+ "market_title": "The Market Has Shifted",
+ "market_takeaway": "Buyers are negotiating again. Price for the market we have now, not the one from earlier in the year.",
  "competition": [
   [
    "1471 Sedgefield Ct",
-   "For sale · 76 days",
    "Updated, same size, no pool. The value alternative buyers will tour."
   ],
   [
    "1365 Sedgefield Ct",
-   "Under contract in 11 days",
    "Renovated pool home. Priced right, it sold fast."
   ],
   [
    "1603 Arrowroot Way",
-   "For sale · 48 days",
    "Larger renovated pool home. Priced above the market, and sitting."
   ]
  ],
  "competition_takeaway": "Well-priced renovated pool homes are moving. Overpriced ones sit.",
- "strategy_takeaway": "All three net within a few thousand dollars. The real choice is time and risk.",
- "payment_takeaway": "Buyers shop by payment. Every $10,000 is about {per_10k} a month to them.",
- "launch_plan": [
-  [
-   "Document the Roof",
-   "Permit, final inspection, warranty",
-   "roof"
-  ],
-  [
-   "Pre-Listing Inspection",
-   "Plus 4-point and wind-mitigation reports",
-   "inspection"
-  ],
-  [
-   "Gather Permits",
-   "Kitchen, baths, electrical, plumbing",
-   "permit"
-  ],
-  [
-   "Easy Showings",
-   "Lockbox access with short notice",
-   "showings"
-  ],
-  [
-   "Seller-Credit Budget",
-   "Decide it now, before offers arrive",
-   "money"
-  ],
-  [
-   "3-Week Review",
-   "Steady showings but no offer? Revisit the price",
-   "calendar"
-  ]
- ],
+ "strategy_takeaway": "The nets are close. The real choice is time and risk.",
+ "payment_takeaway": "Buyers shop by payment, so a small change in price moves the number they see.",
  "needs_short": [
   "Roof permit, final inspection, and warranty",
   "Ages of AC, water heater, and pool equipment",
@@ -143,34 +72,29 @@
  ],
  "timeline": [
   [
-   "This Week",
-   "Sign listing agreement; order inspections"
+   "now",
+   "Sign the listing agreement; order the inspections"
   ],
   [
-   "Week 2",
-   "Photos, documents, and pricing review"
+   "before",
+   "Photos, documents and a final pricing review"
   ],
   [
-   "Week 3",
-   "Go live at {list_price}"
-  ],
-  [
-   "Week 6",
-   "Price review if no offer"
+   "after",
+   "Price review if steady showings bring no offer"
   ]
  ],
- "adjustments_summary": "Adjustments: about $75 per sq ft of size difference; $30,000–$45,000 for update level; $5,000 for documented recent systems; $10,000 for a pond lot; about 1.5% for market change on spring sales; seller-paid costs subtracted.",
  "notes": {
   "recommendation": "Lead with the answer. The rest of the presentation shows how we got here.",
-  "method": "38 sales within a mile since April; we kept the 5 closest in size, pool, age and neighborhood, adjusted each for differences from your home, and the median adjusted value is about $581,400.",
+  "method": "We started from every nearby sale, kept the closest matches in size, pool, age and neighborhood, and adjusted each for its differences from your home.",
   "drivers": "These are the features the adjustments credit your home for. The roof and permits need paperwork before buyers and appraisers will pay for them.",
-  "comps": "Each bar is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
-  "scatter": "Every sale and listing within a mile. The dotted line is size alone; updates and a pool push homes above it.",
-  "market": "Spring = April to June sales; summer = July to mid-September. Rates are the Freddie Mac 30-year average.",
+  "comps": "Each dot is what that home would have sold for if it were yours. Adjustment details are in the report and the appendix.",
+  "scatter": "Every sale and listing nearby. The dashed line is size alone; updates and a pool push homes above it.",
+  "market": "The earlier period holds the older sales; now holds the recent ones. The report's market table has every figure.",
   "competition": "These are the homes a buyer will likely tour alongside yours.",
-  "strategies": "Expected sale prices and timelines are estimates from recent sales. The $574,900 option assumes competing offers reduce the seller credit to $5,000.",
-  "nets": "Before mortgage payoff, with the brokerage terms in our listing agreement. Commissions are negotiable and not set by law.",
-  "payments": "Conventional loan, 5% down, 6.95%, City of Oviedo taxes with homestead, $4,200 insurance, 0.5% PMI.",
+  "strategies": "Expected sale prices and timelines are estimates from recent sales. The competing-offer option assumes a smaller seller credit.",
+  "nets": "The appendix has every line of the net sheet, and the notes say what each rests on.",
+  "payments": "Buyers shop by payment; the report's notes give the loan and tax basis.",
   "launch": "Low-cost steps that remove the questions that cost sellers money at the negotiating table.",
   "next": "Confirm the documents and the launch date."
  }

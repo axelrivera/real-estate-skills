@@ -8,7 +8,11 @@ is printed, then checks:
   - labels (headings, table headers, tiles, legends) that aren't Title Case: listed for review, since
     sentence-style finding headings and fragments are accepted exceptions;
   - markdown headings in SKILL.md, references and templates that aren't Title Case (file names, field keys and
-    `code` keep their own spelling).
+    `code` keep their own spelling);
+  - client wording (shared/prose.py wording_issues: tool words, unfilled {placeholders}, data keys, ISO dates in a
+    sentence, jargon) in report HTML, so text the scripts write gets the check the data file gets at run time: an error;
+  - the legacy form name (FR/BAR, frbar, FRBAR) in any tracked text file or report HTML: always an error. The forms are
+    FAR/BAR (farbar, FARBAR); a line that reads the old name as legacy input says "legacy" and is allowed.
 
 Usage: .venv/bin/python dev/style_check.py [skill ...]
 """
@@ -23,6 +27,7 @@ import tempfile
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from shared import prose  # noqa: E402
 from shared.prose import PROSE_DASH  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -32,7 +37,8 @@ MINOR = {"a", "an", "the", "and", "but", "or", "nor", "for", "so", "yet", "as", 
          "off", "on", "per", "to", "up", "via", "vs", "vs.", "from", "into", "with", "than", "if"}
 # Tags and classes whose text is a label. Sentences inside them are skipped by is_sentence().
 LABEL_TAGS = {"h1", "h2", "h3", "h4", "th", "caption", "dt", "legend"}
-LABEL_CLASSES = {"k", "lbl", "label", "tile-label", "side", "pill", "tag", "badge", "cap", "hd", "title", "key"}
+LABEL_CLASSES = {"k", "lbl", "label", "tile-label", "side", "pill", "tag", "badge", "cap", "hd", "title", "key",
+                 "group", "kit-k", "kit-ct", "kit-nh"}  # kit-*: the layout kit's tile, chart and notes titles; "group": a table's group row (the net sheet's BROKERAGE, uppercase only in CSS)
 # Captions set inside a heading (<h2>Title <span class="h2s">caption</span></h2>) are sentence case.
 CAPTION_CLASSES = {"h2s", "h3s"}
 
@@ -83,6 +89,35 @@ def label_texts(html):
             yield el.name + ("." + ".".join(sorted(classes)) if classes else ""), el.get_text(" ", strip=True)
 
 
+# Owner rule (CLAUDE.md, local-costs.md): which figures are estimates or assumed is said once, in the notes, never inside
+# a column header, a row label, a tile or a fact chip; a default commission gets no label at all. "Estimated Net" names
+# the figure and is fine; "(Estimate)", "Assumed" and "(assumed)" marks are not.
+ESTIMATE_MARK = re.compile(r"\bassumed\b|\(estimate\b|\bestimate\)|, estimate\b|\bestimate:|\(est\.|\best\.\)",
+                           re.I)
+MARK_PLACES = "th, tr > td:first-child, .k, .lbl, .label, .tile-label, .sp-stat span, .tile i, .factrow span, dt"
+
+
+def estimate_label_errors(html):
+    """[(where, text)] for Assumed or Estimate marks in labels (headers, row labels, tiles, fact chips), and for a
+    parenthetical "(assumed)" mark in any table cell that isn't a sentence. Notes, footnotes and the assumptions
+    table's sentences may say "assumed"."""
+    soup = BeautifulSoup(html, "html.parser")
+    for el in soup.find_all(["style", "script"]):
+        el.extract()
+    out, seen = [], set()
+    for el in soup.select(MARK_PLACES):
+        text = el.get_text(" ", strip=True)
+        if text and ESTIMATE_MARK.search(text) and not is_sentence(text) and text not in seen:
+            seen.add(text)
+            out.append((el.name + ("." + ".".join(sorted(el.get("class") or [])) if el.get("class") else ""), text))
+    for el in soup.find_all("td"):
+        text = el.get_text(" ", strip=True)
+        if re.search(r"\(assumed\)|form assumed|, assumed\)", text, re.I) and not is_sentence(text) and text not in seen:
+            seen.add(text)
+            out.append(("td", text))
+    return out
+
+
 def render_fixtures(skills, tmp):
     fixtures = [f for f in sorted(glob.glob(os.path.join(ROOT, "dev", "fixtures", "*", "*.json")))
                 if os.path.basename(os.path.dirname(f)) != "_profiles"
@@ -108,6 +143,22 @@ def render_fixtures(skills, tmp):
 
 WORD_DASH = re.compile(r"[A-Za-z,)] (?:--|\u2013) [A-Za-z(]")  # DOC-12: "--" or a spaced en dash between words
 HEADING = re.compile(r"^(#{1,4})\s+(.*)$")
+OLD_NAME = re.compile(r"\bfr ?/ ?bar\b|\bfrbar", re.I)  # the forms are FAR/BAR; "legacy" lines read the old name
+
+
+def old_name_errors():
+    """Tracked text files that still use the old form name outside a line marked legacy."""
+    out = []
+    files = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    for rel in filter(None, files.split("\0")):
+        try:
+            with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+                lines = f.readlines()
+        except (UnicodeDecodeError, FileNotFoundError, IsADirectoryError):
+            continue  # binaries (regenerated) and files deleted in the working tree
+        out += [f"old name {rel}:{i}: {line.strip()[:120]}" for i, line in enumerate(lines, 1)
+                if OLD_NAME.search(line) and "legacy" not in line.lower()]
+    return out
 
 
 def heading_errors(text):
@@ -117,8 +168,39 @@ def heading_errors(text):
     return title_case_errors(re.sub(r"`[^`]*`|\b[\w-]+\.(?:json|md|py|csv|js|ics)\b", "X", text))
 
 
+def html_wording(soup):
+    """Client-wording problems (shared/prose.py: tool words, unfilled {placeholders}, data keys, ISO dates, jargon) in a
+    rendered report's text, script-written text included: the data file is checked at run time, the scripts' own
+    wording only here. Each problem once per file, with the text around it. A draft for the agent (the offer package
+    worksheet, marked by its draft bar) may use jargon agents use (LTV), as `agent_only` data text may."""
+    out, seen = [], set()
+    jargon = soup.find(class_="draftbar") is None
+    for el in soup.find_all(["style", "script"]):
+        el.extract()
+    for node in soup.find_all(string=True):
+        text = " ".join(node.split())
+        for problem in prose.wording_issues(text, jargon=jargon) if text else ():
+            if problem not in seen:
+                seen.add(problem)
+                out.append(f"{problem} in {text[:90]!r}")
+    return out
+
+
+def ics_wording(text):
+    """Client-wording problems in a calendar file's event titles, descriptions and locations (unfolded, unescaped)."""
+    text = re.sub(r"\r?\n[ \t]", "", text)  # RFC 5545 line folding
+    out, seen = [], set()
+    for m in re.finditer(r"^(?:SUMMARY|DESCRIPTION|LOCATION)[^:]*:(.*)$", text, re.M):
+        value = re.sub(r"\\([,;\\])", r"\1", m.group(1)).replace("\\n", " ").replace("\\N", " ")
+        for problem in prose.wording_issues(value):
+            if problem not in seen:
+                seen.add(problem)
+                out.append(f"{problem} in {value[:90]!r}")
+    return out
+
+
 def main(argv):
-    findings = []
+    findings = old_name_errors()
     shipped = [p for p in glob.glob(os.path.join(ROOT, "skills", "**", "*"), recursive=True)
                if os.path.isfile(p) and "_shared" not in p and "__pycache__" not in p
                and p.endswith((".md", ".json", ".py", ".js", ".css"))]
@@ -150,14 +232,22 @@ def main(argv):
             if key not in prose and (key.startswith(("h_", "th_", "lg_", "sum_", "deck_", "net_", "pay_", "cr_")) and not is_sentence(text)
                     and title_case_errors(text)):
                 findings.append(f"label    {os.path.relpath(p, ROOT)} {key}: {text!r}")
+            if (key not in prose and isinstance(text, str) and not is_sentence(text) and ESTIMATE_MARK.search(text)
+                    and key.startswith(("h_", "th_", "lg_", "sum_", "deck_", "net_", "pay_", "cr_"))):
+                findings.append(f"estimate {os.path.relpath(p, ROOT)} {key}: {text!r}: say it once in the notes")
     with tempfile.TemporaryDirectory() as tmp:
         for name, cap, dest in render_fixtures(argv, tmp):
             seen = set()
             for h in sorted(glob.glob(os.path.join(cap, "*.html"))):
                 with open(h, encoding="utf-8") as f:
                     doc = f.read()
-                for node in BeautifulSoup(doc, "html.parser").find_all(string=PROSE_DASH):
+                if OLD_NAME.search(doc):
+                    findings.append(f"old name {name} {os.path.basename(h)}")
+                soup = BeautifulSoup(doc, "html.parser")
+                for node in soup.find_all(string=PROSE_DASH):
                     findings.append(f"em dash  {name} {os.path.basename(h)}: {node.strip()[:100]}")
+                findings += [f"wording  {name} {os.path.basename(h)}: {w}" for w in html_wording(soup)]
+                findings += [f"estimate {name} <{where}> {text!r}: say it once in the notes" for where, text in estimate_label_errors(doc)]
                 for where, text in label_texts(doc):
                     if text and text not in seen and not is_sentence(text) and title_case_errors(text):
                         seen.add(text)
@@ -167,11 +257,17 @@ def main(argv):
                     with open(p, encoding="utf-8") as f:
                         if PROSE_DASH.search(f.read()):
                             findings.append(f"em dash  {name} {os.path.relpath(p, dest)}")
+                elif p.endswith(".ics"):
+                    with open(p, encoding="utf-8") as f:
+                        findings += [f"wording  {name} {os.path.relpath(p, dest)}: {w}" for w in ics_wording(f.read())]
     for line in findings:
         print(line)
     dashes = sum(line.startswith("em dash") for line in findings)
-    print(f"{dashes} em dash(es) (errors), {len(findings) - dashes} label(s) to review")
-    return 1 if dashes else 0
+    names = sum(line.startswith("old name") for line in findings)
+    wording = sum(line.startswith(("wording", "estimate")) for line in findings)
+    print(f"{dashes} em dash(es), {names} old form name(s) and {wording} client-wording or estimate-label problem(s) (errors), "
+          f"{len(findings) - dashes - names - wording} label(s) to review")
+    return 1 if dashes or names or wording else 0
 
 
 if __name__ == "__main__":

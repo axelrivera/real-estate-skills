@@ -26,10 +26,18 @@ VALUE_KEYS = ("low", "high", "midpoint")
 # the offer file doesn't say: the tax the CMA computed (millage and homestead for the buyer's payment, the current bill
 # for the seller's proration), the flood zone (a FEMA code only), HOA dues and the roof year. CMA-328: the listing's
 # days on market (`dom`: active days since the last sale, counted on `as_of`, a number) and how many price cuts since then (`price_cuts`, an integer count), for
-# the buyer's offer outlook.
+# the buyer's offer outlook. `hoa_frequency` (monthly, quarterly, semiannual or annual): how the association bills the
+# dues, so the HOA rider shows the amount as billed. Iteration 12: the buyer CMA's homeowner's insurance
+# (`insurance_annual`, the figure its payment used; `insurance_price`, the price it was estimated at; `insurance_estimated`,
+# false when it was the agent's figure), so the offer's payment uses the same premium; the property report's
+# `legal_description` and `parcel_id` (the county's tax ID), for the offer worksheet's paragraph 1. The rate the buyer
+# CMA's payment used (`rate`, a percent; `rate_week`, the survey's week as YYYY-MM-DD), so the offer can say which rate
+# each report used when the lender's differs.
 NUMBER = (int, float)
 SUBJECT_OPTIONAL = {"annual_tax": NUMBER, "school_mills": NUMBER, "total_mills": NUMBER, "homestead": bool,
-                    "flood_zone": str, "hoa_monthly": NUMBER, "roof_year": int, "dom": NUMBER, "price_cuts": int}
+                    "flood_zone": str, "hoa_monthly": NUMBER, "hoa_frequency": str, "roof_year": int, "dom": NUMBER,
+                    "price_cuts": int, "insurance_annual": NUMBER, "insurance_price": NUMBER, "insurance_estimated": bool,
+                    "legal_description": str, "parcel_id": str, "rate": NUMBER, "rate_week": str}
 _FEMA = re.compile(r"^\s*(A99|AE|AH|AO|AR|A|VE|V|X500|X|B|C|D)\b", re.I)
 
 
@@ -50,19 +58,24 @@ def subject_facts(**facts):
     if "flood_zone" in facts:
         facts["flood_zone"] = flood_code(facts["flood_zone"])
     typ = SUBJECT_OPTIONAL
-    return {k: v for k, v in facts.items() if v is not None and k in typ and isinstance(v, typ[k])
+    facts = {k: v.strip() if isinstance(v, str) else v for k, v in facts.items()}
+    return {k: v for k, v in facts.items() if v not in (None, "") and k in typ and isinstance(v, typ[k])
             and (typ[k] is bool or not isinstance(v, bool))}
 
 
 def build(side, as_of, subject, value, comps, market=None, offer_plan=None, recommended_list_price=None,
-          market_profile=None, source=None):
-    """Assemble and validate a handoff dict. Money as plain numbers; dates as YYYY-MM-DD."""
+          market_profile=None, source=None, posture=None):
+    """Assemble and validate a handoff dict. Money as plain numbers; dates as YYYY-MM-DD. `posture` (the buyer CMA's
+    offer posture: leverage, standard, competitive or must_win) is optional and still v1: a reader that doesn't know it
+    ignores it, and `offer_plan` keeps its numbers' shape (opening, target_low, target_high, walk_away)."""
     h = {
         "handoff": KIND, "version": VERSION, "side": side, "as_of": as_of, "source": source or f"{side}-cma",
         "subject": subject, "value": value, "comps": comps, "market": market or {},
         "offer_plan": offer_plan, "recommended_list_price": recommended_list_price,
         "market_profile": market_profile or {},
     }
+    if posture is not None:
+        h["posture"] = posture
     validate(h)
     return h
 
@@ -80,6 +93,8 @@ def validate(h):
         raise HandoffError(f"The CMA handoff's value range is missing {', '.join(missing)}.")
     if h["value"]["low"] > h["value"]["high"]:
         raise HandoffError("The CMA handoff's value range is reversed (low above high).")
+    if "posture" in h and not isinstance(h["posture"], str):
+        raise HandoffError(f"The CMA handoff's posture isn't a name ({h['posture']!r}).")
     for key, typ in SUBJECT_OPTIONAL.items():
         v = h["subject"].get(key)
         if v is None:
@@ -107,6 +122,22 @@ def parse_text(text):
         return validate(json.loads(m.group(2)))
     except json.JSONDecodeError as e:
         raise HandoffError(f"The CMA handoff block isn't valid JSON: {e.msg}.") from None
+
+
+CLIENT_KEYS = ("subject", "comps", "market", "offer_plan")  # what the offer skills can show a client
+
+
+def linked(data, args):
+    """For render.main(linked=...): the handoff named by --cma, its client-facing parts only, so its text gets the same
+    wording check as the data file. A file that can't be read is left to the skill, which says why."""
+    path = args.get("cma")
+    if not path:
+        return []
+    try:
+        h = load(path)
+    except (OSError, ValueError):
+        return []
+    return [("cma", {k: h[k] for k in CLIENT_KEYS if k in h})]
 
 
 def load(path):

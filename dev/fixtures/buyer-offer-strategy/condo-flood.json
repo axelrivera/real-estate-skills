@@ -20,7 +20,7 @@
     "name": "Sample Buyer",
     "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
     "max_price": 490000, "cash_available": 120000, "reserve_floor": 10000,
-    "buyer_broker_agreement_pct": 0.025, "insurance_quote": true, "agent_track": "average"
+    "buyer_broker_agreement_pct": 0.025, "insurance_quote": true
   },
   "worksheet": {"buyer_names": "Sample Buyer", "contract_form": "as_is"},
   "chosen_option": "recommended",

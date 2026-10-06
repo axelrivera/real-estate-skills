@@ -1,0 +1,39 @@
+{
+  "sample": true,
+  "analysis_date": "2026-09-23",
+  "property": {
+    "address": "11820 Whispering Cypress Hammock Boulevard Building 4 Unit 1204, Palm Beach Gardens, FL 33418",
+    "state": "FL",
+    "county": "Palm Beach",
+    "type": "condo",
+    "list_price": 689000,
+    "dom": 12,
+    "price_cuts": 0,
+    "beds": 3, "baths": 2, "sqft": 1740, "year_built": 1974, "roof_year": 2012,
+    "hoa_monthly": 925, "hoa_frequency": "quarterly", "flood_zone": "AE", "cdd": true, "cdd_annual": 1450,
+    "annual_tax": 11200
+  },
+  "value": {"cma_low": 670000, "cma_high": 700000, "source": "buyer CMA"},
+  "market": {"sale_to_list": 0.981, "months_supply": 2.8, "median_dom": 24},
+  "competition": {"level": 3, "note": "Listing agent: four other offers in, highest and best due Friday", "deadline": "Fri Sep 25 · 5 PM"},
+  "listing_side": {"buyer_broker_offered_pct": 0.025},
+  "costs": {"rate": 6.5, "insurance_annual": 3900, "flood_insurance_annual": 2400, "total_mills": 19.2, "school_mills": 5.5, "homestead": true},
+  "buyer": {
+    "name": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot",
+    "financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "lender_called": true,
+    "max_price": 720000, "cash_available": 210000, "reserve_floor": 15000,
+    "buyer_broker_agreement_pct": 0.025, "insurance_quote": true
+  },
+  "worksheet": {
+    "buyer_names": "Sample Buyer-Montgomery and Sample Co-Buyer-Vandersloot, as Joint Tenants with Right of Survivorship",
+    "escrow_agent": "Coldwater Bay Title Insurance Agency of the Palm Beaches, LLC · 4500 PGA Boulevard Suite 300, Palm Beach Gardens, FL 33418 · (561) 555-0100",
+    "title_agent": "Coldwater Bay Title Insurance Agency of the Palm Beaches, LLC",
+    "legal_description": "Unit 1204, Building 4, Whispering Cypress Hammock, a Condominium, according to the Declaration of Condominium recorded in Official Records Book 12345, Page 678, Public Records of Palm Beach County, Florida, together with an undivided interest in the common elements",
+    "parcel_id": "52-42-41-07-04-000-1204",
+    "hoa_name": "Whispering Cypress Hammock Condominium Association of Palm Beach Gardens, Inc.",
+    "personal_property": "Range, refrigerator, dishwasher, microwave, washer, dryer, window treatments, ceiling fans, wall-mounted television brackets, patio furniture and the storage cabinets in storage locker 1204",
+    "contract_form": "as_is"
+  },
+  "chosen_option": "recommended",
+  "overrides": {}
+}

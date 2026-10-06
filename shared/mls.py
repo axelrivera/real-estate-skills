@@ -226,18 +226,31 @@ def _median(values):
     return statistics.median(vals) if vals else None
 
 
-def period_stats(sold):
+def carries_final_list(sold):
+    """Whether the export's current_price on sold rows is the final list price (RESO ListPrice) rather than the sale
+    price echoed back (a Matrix "Current Price" column shows a sold home's close price): true when any sold row's
+    current price differs from its close price."""
+    return any(h.get("current_price") and h.get("close_price") and h["current_price"] != h["close_price"] for h in sold)
+
+
+def period_stats(sold, final_list=False):
+    """`final_list`: the sold rows' current_price is their final list price (`carries_final_list`), so the
+    sale-to-final-list ratio can be measured."""
     if not sold:
         return {"n": 0}
     paid = [h["seller_paid"] or 0 for h in sold]
     # CMA-22: net of seller-paid buyer costs, so a $10k credit on a list-price sale reads as 98%, not 100%
     ratios = [(h["close_price"] - (h["seller_paid"] or 0)) / h["original_list_price"] for h in sold if h.get("original_list_price")]
+    finals = [(h["close_price"] - (h["seller_paid"] or 0)) / h["current_price"] for h in sold
+              if final_list and h.get("current_price")]
     ppsf = [h["close_price"] / h["living_area"] for h in sold if h.get("living_area")]
     return {
         "n": len(sold),
         "median_price": _median(h["close_price"] for h in sold),
         "median_ppsf": round(_median(ppsf), 1) if ppsf else None,
         "median_sale_to_original_list": round(_median(ratios), 4) if ratios else None,
+        # the seller CMA's expected sale: against the final list price, so earlier price cuts don't count twice
+        "median_sale_to_final_list": round(_median(finals), 4) if finals else None,
         "median_days_on_market": _median(h.get("days_on_market") for h in sold),
         "share_with_seller_paid_costs": round(sum(p > 0 for p in paid) / len(paid), 3),
         "median_seller_paid_when_paid": _median(p for p in paid if p > 0) or 0.0,
@@ -305,13 +318,15 @@ def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=No
     pendings = [h for h in homes if h["status"] == "PENDING"]
     actives = [h for h in homes if h["status"] == "ACTIVE" and not same_address(h["address"], subject.get("address", ""))]
     cuts = [h for h in actives if h.get("current_price") and h.get("original_list_price")]
+    final = carries_final_list(sold)
     counts = {}
     for h in homes:
         counts[h["status"]] = counts.get(h["status"], 0) + 1
 
     out = {
         "window": {"first_close": str(first), "last_close": str(last), "split_date": str(split), "as_of": str(end)},
-        "sold_all": period_stats(sold), "sold_early": period_stats(early), "sold_recent": period_stats(recent),
+        "sold_all": period_stats(sold, final), "sold_early": period_stats(early, final),
+        "sold_recent": period_stats(recent, final), "final_list_in_export": final,
         "active_count": len(actives),
         "active_share_with_price_cut": round(sum(h["current_price"] < h["original_list_price"] for h in cuts) / len(cuts), 3) if cuts else 0,
         # CMA-22: pendings count as sales in progress, and the pace runs to the as-of date, not the last close

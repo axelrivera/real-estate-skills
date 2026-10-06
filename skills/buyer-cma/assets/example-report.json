@@ -8,23 +8,9 @@
   "locality": "Oviedo, FL 32765 · Cattail Crossing · Seminole County · MLS O6519247",
   "list_price": 589900,
   "sqft": 2214,
+  "legal_description": "LOT 31 CATTAIL CROSSING PB 70 PGS 12-16",
+  "parcel_id": "15-21-31-5CC-0000-0310",
   "facts": [
-   [
-    "List Price",
-    "$589,900"
-   ],
-   [
-    "Price per Sq Ft",
-    "$266"
-   ],
-   [
-    "Beds / Baths",
-    "4 / 3"
-   ],
-   [
-    "Living Area",
-    "2,214 sq ft"
-   ],
    [
     "Lot",
     "0.26 acre"
@@ -50,37 +36,23 @@
     "X (lower risk)"
    ]
   ],
-  "summary": "This is an updated 1998 block pool home: remodeled kitchen with quartz counters, updated baths, new flooring, and a new roof the listing dates to this summer. It has been for sale since May, with four price cuts and three weeks off the market while the roof was replaced.",
-  "summary_facts": "4 bed · 3 bath · 2,214 sq ft · pool · built 1998",
+  "summary": "An updated block pool home: remodeled kitchen with quartz counters, updated baths, new flooring, and a new roof the listing dates to this year, put on while the home was off the market.",
   "state": "FL",
   "county": "Seminole",
   "city": "Oviedo",
   "beds": 4,
   "baths": 3,
   "year_built": 1998,
-  "pool": true
+  "pool": true,
+  "condition": "full_renovation"
  },
  "summary_page": {
   "label": "Buyer Summary",
-  "headline": "Open at the bottom of what recent sales support: with {price_cuts} since May, you have room to negotiate.",
-  "key_stats": [
-   [
-    "{median_adjusted}",
-    "Median of the Five Closest Sales, Adjusted to This Home"
-   ],
-   [
-    "96.2%",
-    "Sale Price vs. Original Asking for Nearby Homes Since July"
-   ],
-   [
-    "{active_days}",
-    "On the Market Since May, with {price_cut_count} Price Cuts"
-   ]
-  ],
+  "headline": "Open at the bottom of what recent sales support: after months on the market and repeated price cuts, you have room to negotiate.",
   "why": [
-   "The five closest Cattail Crossing pool sales, adjusted to this home, center on about {median_adjusted}.",
-   "The market cooled since spring: homes now sell about 4% under asking, and three in four sellers pay part of buyers' costs.",
-   "{active_days} on the market and {price_cut_total} in price cuts give you room to negotiate price or a seller credit."
+   "The closest Cattail Crossing pool sales, adjusted to this home, center near the middle of the range.",
+   "The market cooled since early in the year: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
+   "Months on the market and repeated price cuts give you room to negotiate price or a seller credit."
   ],
   "check_first": [
    [
@@ -88,7 +60,7 @@
     "Get the permit, final inspection and warranty"
    ],
    [
-    "1998 Systems",
+    "Original Systems",
     "AC, water heater and pool equipment ages"
    ],
    [
@@ -99,15 +71,9 @@
   "next_step": "Get the listing agent's answers on the roof permit and the system ages, then write the offer."
  },
  "bottom_line": {
-  "low": 570000,
-  "high": 590000,
-  "midpoint": 580000,
-  "paragraph": "The asking price of $589,900 sits in the upper part of what recent sales support. It's inside the range, but it isn't a bargain. The two sales that support this price closed before July, when mortgage rates were lower and homes were selling faster. The summer sales and this home's own price cuts point toward the middle of the range."
+  "why": "The two sales that support this price closed earlier in the year, when mortgage rates were lower and homes were selling faster. The recent sales and this home's own price cuts point toward the middle of the range."
  },
  "history": {
-  "heading": "{price_cut_count} Price Cuts Since May",
-  "intro": "The listing shows 112 days on the market. That number doesn't show the price cuts or the three weeks the home was off the market. The full history:",
-  "after": "That adds up to {active_days} of active marketing over four and a half months, with {price_cut_total} in price cuts and no contract. The market has had a long look at this home between $590,000 and $625,000, and no buyer has gone under contract. The new roof answers one question buyers had, but we need its permit and final inspection before writing an offer.",
   "events": [
    {
     "date": "2026-09-12",
@@ -157,39 +123,33 @@
     "price": 358000,
     "note": "Sold (previous sale, public record)"
    }
-  ]
+  ],
+  "takeaway": "The market has had a long look at this home at a higher price, and no buyer has gone under contract. The new roof answers one question buyers had, but we need its permit and final inspection before writing an offer."
  },
  "offer_plan": {
-  "intro": "Our recommendation for your offer, based on the comparable sales, the market, and this home's history. These three numbers are a negotiating plan, not a value opinion, so we'll adjust them together if anything changes.",
-  "opening": 570000,
-  "target_low": 574000,
-  "target_high": 578000,
-  "walk_away": 580000,
-  "why_opening": "The bottom of the supported range, backed by the comps. After {active_days} and {price_cuts}, the seller has reason to counter rather than ignore it.",
-  "why_target": "Where the summer sales and the typical 4% negotiation suggest this home settles.",
-  "why_walk_away": "Just under the median of the adjusted comps. Above it you'd be paying spring prices and risking a low appraisal you'd have to cover in cash.",
+  "posture": "leverage",
   "credit_alt": {
-   "price": 580000,
    "credit": 10000
   },
-  "conditions": "the new roof is permitted and passed its final inspection, the inspection finds nothing major in the 1998 systems, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
+  "conditions": "the new roof is permitted and passed its final inspection, the inspection finds nothing major in the original systems, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
  },
  "offer": {
   "heading": "Negotiating Points",
   "bullets": [
-   "<strong>There is room to negotiate.</strong> The price has come down four times since May, and no buyer has gone under contract at any of those prices. Mortgage rates are also higher now than when the spring sales happened.",
-   "<strong>Seller help with closing costs is normal right now.</strong> Three of every four sales nearby since July included seller-paid costs, typically around $9,500. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
-   "<strong>Watch the appraisal.</strong> Only two similar pool homes nearby have sold above $595,000, both before July. An offer near the top of the range raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
+   "<strong>There is room to negotiate.</strong> The price has come down four times for months, and no buyer has gone under contract at any of those prices. Mortgage rates are also higher now than when the earlier sales happened.",
+   "<strong>Seller help with closing costs is normal right now.</strong> Most nearby sales in recent months included seller-paid costs. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
+   "<strong>Watch the appraisal.</strong> Only a couple of similar pool homes nearby have sold above this asking price, both earlier in the year. An offer near the top of the range raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
   ]
  },
  "comps": {
-  "intro": "We looked at every sale within one mile since April 2026 and chose the five closest matches: Cattail Crossing pool homes of about 2,200–2,300 square feet, built in the late 1990s. We included the ones that argue against a lower price. For each sale, we adjust for differences so it reflects what that home would have sold for if it were this one.",
-  "method_note": "Adjustments used: about $75 per square foot of size difference; $30,000–$45,000 for a home that hadn't been updated to this level; $5,000 for documented recent systems this home can't yet match; $10,000 for a pond lot; about 1.5% off spring sales because prices have softened since. Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "intro": "We looked at every sale within a mile and chose the closest matches: Cattail Crossing pool homes of about this size, built in the same era. We included the ones that argue against a lower price, and adjusted each sale to what it would have brought as this home.",
+  "method_note": "Seller-paid costs come off the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
   "cards": [
    {
     "address": "1512 Buttonbush Dr",
     "sold_price": 612000,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -198,23 +158,19 @@
      {
       "label": "Documented Recent Systems",
       "amount": -5000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -9000
      }
     ],
-    "meta": "Sold $612,000 · April 30, 2026 · 2,248 sq ft · 4/3 · pool · 0.24 acre · 0.1 mi",
     "bullets": [
-     "The strongest sale for the seller's price. Renovated in 2023 on the same street, and sold above asking in five days with no seller help.",
-     "Slightly larger: minus about $2,500. It came with a permitted 2023 AC; this home's AC age isn't listed, so that home gets a small edge: minus $5,000.",
-     "It sold in April, when rates were lower and homes were moving faster: minus about $9,000."
+     "The strongest sale for the seller's price: renovated recently on the same street, and sold above asking within a week with no seller help.",
+     "Slightly larger, and it came with a permitted recent AC; this home's AC age isn't listed, so that home gets a small edge.",
+     "It sold earlier in the year, when rates were lower and homes were moving faster."
     ]
    },
    {
     "address": "1377 Sedgefield Ct",
     "sold_price": 598500,
     "seller_concessions": 0,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
@@ -223,98 +179,79 @@
      {
       "label": "Pond Lot",
       "amount": -10000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -4000
      }
     ],
-    "meta": "Sold $598,500 · June 19, 2026 · 2,190 sq ft · 4/3 · pool · 0.31-acre pond lot · 0.3 mi",
     "bullets": [
-     "A renovated pool home that went under contract in eight days at nearly full price.",
-     "A bit smaller: plus $1,800. It backs onto the pond on a larger lot, which buyers pay more for: minus $10,000.",
-     "Early summer sale: minus about $4,000 for the market since then."
+     "A renovated pool home that went under contract within days at nearly full price.",
+     "A bit smaller. It backs onto the pond on a larger lot, which buyers pay more for."
     ]
    },
    {
     "address": "1455 Arrowroot Way",
     "sold_price": 548000,
     "seller_concessions": 8000,
+    "condition": "original",
     "adjustments": [
-     {
-      "label": "Renovation",
-      "amount": 45000
-     },
      {
       "label": "Size",
       "amount": -3600
      }
     ],
-    "meta": "Sold $548,000 · August 27, 2026 · 2,262 sq ft · 4/3 · pool · 0.4 mi",
     "bullets": [
-     "The most recent pool-home sale in Cattail Crossing. It was listed at $569,900, took 41 days, and the seller paid $8,000 of the buyer's costs.",
-     "Original kitchen and baths. Adjusting up for the remodel this home has: plus $45,000. Slightly larger: minus $3,600."
+     "The most recent pool-home sale in Cattail Crossing. It sat for weeks, and the seller paid part of the buyer's costs.",
+     "Original kitchen and baths, so it's adjusted up for the remodel this home has."
     ]
    },
    {
     "address": "1621 Sedgefield Ct",
     "sold_price": 561000,
     "seller_concessions": 11000,
-    "adjustments": [
-     {
-      "label": "Partial Update vs. Full Renovation",
-      "amount": 30000
-     },
-     {
-      "label": "Market Since the Sale",
-      "amount": -8400
-     }
-    ],
-    "meta": "Sold $561,000 · May 15, 2026 · 2,214 sq ft · 4/3 · pool · 0.2 mi",
+    "condition": "kitchen_only",
+    "adjustments": [],
     "bullets": [
      "Same size and likely the same floor plan, one street over.",
-     "The seller paid $11,000 of the buyer's costs, so the seller actually received $550,000.",
-     "Updated kitchen but original baths, not a full remodel: plus $30,000. Spring sale: minus about $8,400."
+     "The seller paid part of the buyer's costs, which comes off the price.",
+     "Updated kitchen but original baths, not a full remodel."
     ]
    },
    {
     "address": "1340 Buttonbush Dr",
     "sold_price": 589000,
     "seller_concessions": 9500,
+    "condition": "full_renovation",
     "adjustments": [
      {
       "label": "Size",
       "amount": -6525
      }
     ],
-    "meta": "Sold $589,000 · July 24, 2026 · 2,301 sq ft · 4/3 · pool · 0.2 mi",
     "bullets": [
-     "Renovated in 2021 on the same street. It was listed at $599,900 and sold in 18 days.",
-     "The seller paid $9,500 of the buyer's costs, so the seller netted $579,500.",
-     "About 90 square feet larger: minus about $6,500. A summer sale, so no market adjustment."
+     "Renovated recently on the same street, and sold within a few weeks.",
+     "The seller paid part of the buyer's costs, which comes off the price.",
+     "A little larger. A recent sale, so no market adjustment."
     ]
    }
   ],
-  "summary_paragraph": "The adjusted values run from about $572,000 to $595,000, with a median of {median_adjusted}. We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales support the same picture: 1409 Arrowroot Way (updated, pool) sold for $566,000 in May, and 1586 Buttonbush Dr (renovated, no pool) sold for $552,000 in June."
+  "time_adjustment": {
+   "rate_per_quarter": 0.01,
+   "cutoff": "2026-07-01"
+  },
+  "lean": "We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales, updated and renovated, support the same picture."
  },
  "scatter": {
   "heading": "The Whole Neighborhood at a Glance",
-  "intro": "Every sale within one mile since April and every home for sale now, plotted by size and price.",
-  "subject_label": "1438 Buttonbush",
   "subject_label_pos": "below",
   "callouts": [
    {
     "address": "1512 BUTTONBUSH DR",
-    "label": "1512 Buttonbush Dr",
     "side": "left"
    },
    {
     "address": "1471 SEDGEFIELD CT",
-    "label": "1471 Sedgefield (For Sale)",
     "side": "right"
    }
   ],
-  "after_paragraph": "The trend line isn't a value estimate for this house. It lumps dated homes and homes without pools together with updated ones, and size explains {r2_share} of the difference in sale prices here. The renovated comparable sales sit above it, and only two sales of similar size closed higher than this asking price. Meanwhile, 1471 Sedgefield, an updated home of about the same size without a pool, is for sale well below."
+  "takeaway": "It lumps dated homes and homes without pools together with updated ones. The renovated comparable sales sit above it, and an updated listing of about the same size without a pool is for sale well below."
  },
  "competition": {
   "intro": "These are the homes this seller is competing with right now. Several have been sitting, and most have cut their price.",
@@ -326,7 +263,7 @@
     2236,
     "No",
     76,
-    "Updated kitchen, same size, no pool. Cut from $564,900. Even adding about $25,000 for a pool, it's priced well below this home."
+    "Updated kitchen, same size, no pool, and already cut once. Even after a pool, it's priced well below this home."
    ],
    [
     "1603 Arrowroot Way",
@@ -335,7 +272,7 @@
     2410,
     "Yes",
     48,
-    "Larger and renovated, 2024 roof and solar. Not selling at this level."
+    "Larger and renovated, with a newer roof and solar. Not selling at this level."
    ],
    [
     "1288 Bluestem Ln",
@@ -344,7 +281,7 @@
     2520,
     "Yes",
     187,
-    "Larger but dated. Cut from $615,000 and still sitting."
+    "Larger but dated. Cut once already and still sitting."
    ],
    [
     "1519 Arrowroot Way",
@@ -362,7 +299,7 @@
     2390,
     "No",
     55,
-    "Remodeled 2022, larger lot, no pool."
+    "Remodeled, larger lot, no pool."
    ],
    [
     "1365 Sedgefield Ct",
@@ -371,7 +308,7 @@
     2160,
     "Yes",
     11,
-    "Renovated and went under contract in 11 days. A renovated pool home priced in the $570s moves fast."
+    "Renovated and went under contract within days. A renovated pool home priced like this one moves fast."
    ],
    [
     "912 Canebrake Rd",
@@ -380,7 +317,7 @@
     2050,
     "Yes",
     16,
-    "Updated, older roof, 0.8 mi."
+    "Updated, older roof, a bit farther away."
    ],
    [
     "1426 Buttonbush Dr",
@@ -389,55 +326,20 @@
     2214,
     "No",
     128,
-    "Same floor plan two doors down, no pool. Started at $584,900 and never sold."
+    "Same floor plan two doors down, no pool. It started higher and never sold."
    ]
   ]
  },
  "market": {
-  "intro": "We looked at 38 sales within one mile of this home between April and mid-September 2026. The market has cooled noticeably since spring.",
-  "columns": [
-   "",
-   "April – June",
-   "July – Mid-Sept"
-  ],
-  "rows": [
-   [
-    "Homes Sold",
-    "26",
-    "12"
-   ],
-   [
-    "Typical Sale vs. Original Asking Price",
-    "99.0%",
-    "96.2%"
-   ],
-   [
-    "Typical Days to Go Under Contract",
-    "10",
-    "21"
-   ],
-   [
-    "Sales with Seller-Paid Buyer Costs",
-    "54%",
-    "75%"
-   ],
-   [
-    "Typical Seller-Paid Amount",
-    "$8,000",
-    "$9,500"
-   ]
-  ],
   "bullets": [
-   "<strong>Homes are selling for about 4% under their original asking price</strong>, after seller-paid costs, compared with about 1% in the spring. Sellers are now expecting to negotiate.",
-   "<strong>Inventory is balanced.</strong> There are 15 other homes for sale in this area, and at the summer pace of sales that's {months_supply} of supply. That's neither a buyer's market nor a seller's market, but it has shifted toward buyers. Two in three current listings have already cut their price.",
-   "<strong>Mortgage rates are up.</strong> The national average 30-year rate was 6.95% the week of September 17, versus roughly 6.2–6.4% during the spring sales. That's the main reason the spring prices are harder to repeat now.",
-   "<strong>Price per square foot.</strong> Cattail Crossing homes have sold for a median of about $243 per square foot since April. This home is asking $266. That's supportable for an updated pool home with a new roof, but only two similar sales have been higher."
+   "<strong>Homes are selling under their original asking price</strong>, after seller-paid costs, compared with about full price earlier in the year. Sellers now expect to negotiate.",
+   "<strong>Inventory is balanced.</strong> That's neither a buyer's market nor a seller's market, but it has shifted toward buyers, and most current listings have already cut their price.",
+   "<strong>Mortgage rates are up</strong> from the earlier sales. That's the main reason the earlier prices are harder to repeat now.",
+   "<strong>Price per square foot.</strong> This home asks more per square foot than most Cattail Crossing sales. That's supportable for an updated pool home with a new roof, but only a couple of similar sales have been higher."
   ]
  },
  "costs": {
   "taxes": {
-   "heading": "Property taxes will be much higher than the listing shows",
-   "intro": "The listing shows $5,212 in taxes. That's the 2025 bill, based on the current owner's capped assessment and homestead exemption. In Florida, a home's taxable value is reset when it sells, so your bill will be based on roughly what you pay. You also get to file for your own homestead exemption.",
    "current_bill": 5212,
    "current_year": 2025,
    "homestead": true,
@@ -456,67 +358,56 @@
      "total_mills": 16.7784,
      "district": "Oviedo"
     }
-   ],
-   "note": "Based on 2025 final millage rates (13.6790 unincorporated; 16.7784 City of Oviedo). We still need to confirm which applies; the property appraiser's record shows it. These estimates assume the county values the home at the purchase price, and it often values homes somewhat lower, so treat these as the high end. Garbage and other flat assessments aren't included. File for homestead by March 1 of the year after you close.",
-   "after_paragraph": "<strong>Your first year matters.</strong> Your lender will likely set up your escrow using the seller's lower bill. When your own higher bill arrives, your monthly payment can rise to cover the difference. Budget for the higher number from the start."
+   ]
   },
   "insurance": {
-   "paragraph": "The main things that drive the cost for this house are the new roof (insurers will want its permit date), the 1998 AC and water heater if they're original, wind-mitigation features, and the pool. The flood zone (X) is outside the high-risk area, but Citizens requires flood coverage on many policies (and on every Citizens policy from January 2027), so get a flood quote with the homeowners quote. Get a real quote during your inspection period, after the 4-point and wind-mitigation inspections. The payment estimates below use $4,200 a year as a placeholder, not a quote."
+   "drivers": "The main things that drive the cost for this house are the new roof (insurers will want its permit date), the AC and water heater if they're original, wind-mitigation features and the pool. Get a flood quote with the homeowners quote, and a real quote during your inspection period, after the four-point and wind-mitigation inspections."
   },
   "payment": {
-   "intro": "Three common ways to finance this home at the target price. Your lender will give you exact numbers.",
    "rate": 6.95,
-   "insurance_annual": 4200,
    "scenarios": [
     {
-     "label": "Conventional, 5% Down",
      "type": "conventional",
      "down_pct": 0.05
     },
     {
-     "label": "FHA, 3.5% Down",
      "type": "fha",
      "down_pct": 0.035
     },
     {
-     "label": "Conventional, 20% Down",
      "type": "conventional",
      "down_pct": 0.2
     }
-   ]
+   ],
+   "rate_week": "2026-09-17"
   },
   "credit_scenarios": {
-   "intro": "The seller cares about what they net; you may care more about the cash you need at closing. These three offers have about the same price minus credit but split it differently between price and a credit toward your closing costs.",
    "loan_type": "conventional",
    "down_pct": 0.05,
    "closing_cost_pct": 0.03,
    "scenarios": [
     {
-     "price": 570000,
      "credit": 0
     },
     {
-     "price": 575000,
      "credit": 5000
     },
     {
-     "price": 580000,
      "credit": 10000
     }
    ],
-   "after_paragraph": "Each $5,000 of credit saves you about {credit_cash_per_5k} at closing and costs about {credit_monthly_per_5k} a month. That's worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term. All three prices sit below the median adjusted comp, so the appraisal should support any of them.",
    "buydown": {
-    "price": 580000,
     "credit": 10000
-   }
+   },
+   "takeaway": "A credit is worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term."
   },
   "buyer_cash": 50000
  },
  "watch": {
   "items": [
-   "<strong>The new roof.</strong> The listing says the roof was replaced this summer, while the home was off the market. Roof age is the biggest factor in insuring a Florida home, so we want the permit, the final inspection and any warranty in writing.",
+   "<strong>The new roof.</strong> The listing says the roof was replaced this year, while the home was off the market. Roof age is the biggest factor in insuring a Florida home, so we want the permit, the final inspection and any warranty in writing.",
    "<strong>Why the price keeps coming down.</strong> Four cuts in four months can simply mean an ambitious first price, but ask whether any buyer's inspection or feedback raised a problem.",
-   "<strong>1998 systems.</strong> Neither the AC's nor the water heater's age is listed. If they're original, they're near the end of their life, and insurers ask about both.",
+   "<strong>Original systems.</strong> Neither the AC's nor the water heater's age is listed. If they're original, they're near the end of their life, and insurers ask about both.",
    "<strong>Permits for the remodel.</strong> Confirm the kitchen, bath, and any plumbing or electrical work was permitted. Unpermitted work can cause problems with insurance and future resale.",
    "<strong>The third bath.</strong> Check that the property appraiser's record shows three full baths, and if one was added, confirm it was permitted.",
    "<strong>Pool equipment and screen enclosure.</strong> Neither age is listed. Also confirm the pool has a compliant safety barrier.",
@@ -524,15 +415,16 @@
   ],
   "questions": [
    "Can you share the roof permit, the final inspection, and any roofer's warranty? Is there a new wind-mitigation report?",
-   "Has any buyer inspected the home since May, and did any report or feedback lead to the price cuts?",
+   "Has any buyer inspected the home for months, and did any report or feedback lead to the price cuts?",
    "How old are the AC, water heater, and pool equipment?",
    "Were the kitchen, bathroom, and any electrical or plumbing updates permitted?",
    "Is the third full bath original to the house?",
    "Is the seller open to contributing toward the buyer's closing costs?"
   ]
  },
- "method": [
-  "This analysis uses the Stellar MLS listing and full price history for 1438 Buttonbush Dr, a Stellar MLS search of single-family homes within one mile (sales from April 6 to September 15, 2026, plus current active, pending, and expired listings), Seminole County Property Appraiser 2025 final millage rates, and the Freddie Mac weekly mortgage rate survey for September 17, 2026.",
-  "This is a broker's opinion of value based on comparable sales. It is not an appraisal. A lender's appraiser works under different standards and may reach a different number. Tax, insurance, and payment figures are estimates for planning, not quotes, so confirm them with your lender and insurance agent. Market conditions change, so this analysis should be refreshed if you haven't made an offer within a few weeks."
+ "sources": [
+  "the Stellar MLS listing and its full price history",
+  "the Seminole County Property Appraiser's final millage rates",
+  "the Freddie Mac weekly mortgage rate survey"
  ]
 }

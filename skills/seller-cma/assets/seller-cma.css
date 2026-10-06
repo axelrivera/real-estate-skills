@@ -1,0 +1,45 @@
+/* Seller CMA: loaded after report.css and shared/cma.css. Styles the layout kit's pieces under this report's own
+   classes (never the kit itself). Theme variables only. */
+
+/* page 1: the key numbers as four outlined tiles, two rows of two (layout.tiles), value above its label */
+.scma .sp-stats{display:flex;flex-direction:column;gap:6px}
+.scma .sp-tiles{margin:0;gap:6px}
+.scma .sp-tiles .kit-tile{display:flex;flex-direction:column;border:1px solid var(--brand-rule);border-top:3px solid var(--brand);
+  border-radius:6px;padding:6px 10px}
+.scma .sp-tiles .kit-tile:first-child{padding-left:10px;border-left:1px solid var(--brand-rule)}
+.scma .sp-tiles .kit-v{order:-1;font-size:15pt;line-height:1.15;color:var(--brand-strong);font-variant-numeric:tabular-nums}
+.scma .sp-tiles .kit-k{font-size:8.5pt;text-transform:none;letter-spacing:0;line-height:1.25}
+.scma .sp-rec .headline{margin-top:6px}
+.scma .sp-rec .hist{font-size:9pt;color:var(--muted)}
+.scma .sp-sub{font-weight:400;color:var(--muted)}
+.scma .sp-table{margin:0 0 4px}
+.scma .sp-table table{font-size:9pt}
+.scma .sp-table th,.scma .sp-table td{padding:4px 6px}
+.scma .sp-table th{color:var(--brand-strong)}
+.scma .sp-table tr.rec td{font-weight:700;color:var(--brand-strong)}
+.scma .sp-table tr.rec td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+.scma .onepage .details{margin-top:6px}
+.scma .onepage.fit1 .sp-tiles .kit-tile{padding:5px 9px}
+.scma .onepage.fit2 .sp-tiles .kit-v{font-size:13.5pt} .scma .onepage.fit2 .sp-tiles .kit-k{font-size:8pt}
+.scma .onepage.fit3 .sp-tiles .kit-tile{padding:4px 8px} .scma .onepage.fit3 .sp-tiles .kit-v{font-size:12.5pt}
+.scma .onepage.fit3 .sp-tiles .kit-k{font-size:7.6pt} .scma .onepage.fit3 .sp-stats{gap:5px}
+.scma .onepage.fit2 .sp-table table{font-size:8.5pt} .scma .onepage.fit3 .sp-table table{font-size:8pt}
+
+/* the bottom line: the script's facts, then the model's why */
+.scma .verdict .why{margin-top:6px}
+
+/* the comp cards: each adjustment on its own short line, sale price to adjusted value; the strongest match tagged */
+.scma .adj-lines{display:flex;flex-wrap:wrap;gap:1px 12px;font-size:8.5pt;margin:0 0 4px;font-variant-numeric:tabular-nums}
+.scma .adj-lines i{font-style:normal;color:var(--muted)}
+.scma .best-tag{display:inline-block;font-size:7.5pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--brand-strong);border:1px solid var(--brand);border-radius:3px;padding:0 5px;margin:1px 0 2px}
+
+/* the scatter in the kit's chart box: the legend under the drawing */
+.scma .kit-chart .legend{margin:4px 4px 2px;font-size:8.5pt}
+
+/* the net sheet: the expected closing is information, not money */
+.scma tr.info td{color:var(--muted);font-size:8.5pt}
+
+/* the one notes block, after the payments */
+.scma .cma-notes{font-size:8.3pt;margin-top:12px}
+.scma .cma-notes li{margin:0 0 3px}

@@ -1,50 +1,52 @@
 # Manual Testing
 
-A short smoke test of the installed plugin before each release: one happy path per skill, run by hand in the desktop app (Cowork), then a shorter pass in claude.ai. The kit generator builds every file you upload, the prompts and the expected facts; you only upload files and paste prompts.
+A smoke test of the installed plugin, once per release: about ten yes/no checks in about twenty minutes, in the desktop app (Cowork) and then a shorter pass in claude.ai. It covers only what automation can't reach: the plugin installs, the profile is saved and found, uploads are read, a chat carries the buyer CMA into the offer, and the files are delivered and open (the PowerPoint in PowerPoint or Keynote, the calendar file in a calendar app).
+
+Content, numbers and layout are never reviewed by hand. The math is pinned by the golden snapshots, every page and slide is checked over generated inputs (`make fuzz`, fresh seeds every run), and what Claude reads, asks and writes is graded by the evals ([development.md](development.md#tests)). A wrong number seen during the smoke pass is still a bug: write it in the results and reproduce it with the case's mirroring eval.
 
 ## Setup (Once per Release)
 
-1. Build the plugin and the kit:
+1. Build the plugin, the skill zips and the kit (a few seconds; no tests run, develop has already passed them):
    ```bash
-   make package manual-kit
+   make smoke
    ```
-   The kit lands in `out/manual-test/` (git-ignored, rebuilt from scratch each run). It needs the local dev setup (`make setup`) and the FR/BAR PDFs in `sources/` for the contract packages ([mock-contracts.md](mock-contracts.md)).
-2. In the desktop app, uninstall the old `core` and `transactions` plugins if they're still there, install `dist/real-estate-<version>.plugin`, and confirm the six `real-estate:*` skills are listed and nothing else from this repo.
+   The kit lands in `out/manual-test/` (git-ignored, rebuilt from scratch each run). It needs the local dev setup (`make setup`) and the FAR/BAR PDFs in `sources/` for the contract packages ([mock-contracts.md](mock-contracts.md)).
+2. In the desktop app, uninstall any older copy of the plugin and install `dist/real-estate-<version>.plugin`.
 3. Create a fresh Cowork working folder for the run.
 
 ## The Kit
 
-`out/manual-test/` has one folder per case, and each case runs on its own:
+`out/manual-test/` has one folder per case:
 
-- `prompt.md`: what to upload and the exact prompt to paste (with the "Today is" date the expected dates assume).
-- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), a buyer CMA handoff, mock FR/BAR packages, and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
-- `expected.md`: the facts to check, computed by the skills' own scripts when the kit was built. Value ranges and prices are Claude's judgment, so those come with a sanity band instead of an exact number.
+- `prompt.md`: what to upload and the exact prompt to paste (with the "Today is" date).
+- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), mock FAR/BAR packages and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
+- `expected.md`: the case's yes/no checks and only the reference facts needed to answer them (the expired listing's MLS number, the closing date the calendar should show). Never upload it.
 
-Never upload `expected.md`. Case 1 builds your real profile; every later case uses it.
+Case 1 builds your real profile; every later case uses it. The test is black box: you upload files, paste prompts and look at what comes back. No step asks for a data file or anything the skill makes along the way.
 
-## Cases
+## Checks
 
-| # | Skill | Upload | Prompt to Paste | Pass Checks |
-|---|---|---|---|---|
-| 1 | agent-profile | Nothing | "Set up my profile.", then answer with your own details | At most two rounds of questions; saves `profile.md` in the working folder; no placeholders or made-up details |
-| 2 | seller-cma | 360 report, CMA export, seller notes (new session) | "What should we list at?", then "build the listing presentation", then "add that the home is perfect for young families" | Uses the saved profile without an upload; PDF in the profile's colors; flags the 2017 expired listing; net sheet marks the 5% brokerage "Assumed"; PPTX opens with the same numbers; the fair-housing request is declined in one sentence |
-| 3 | buyer-cma | Listing flyer, 360 report, CMA export | "Is it priced right and what should we offer?" | PDF with the range, the history with both price cuts and the scatterplot; facts and tax match expected.md |
-| 4 | buyer-offer-strategy | The `.cma.json` handoff; the buyer's limits are in the prompt | "Help me write the offer" with cash, max price, loan and payment cap | Offer Options and Offer Package Worksheet PDFs; stays inside every limit; riders named by letter; worksheet shows offer terms only |
-| 5 | seller-offer-review | Step 1: the first offer; step 2: a second offer on the same listing | "Should my seller accept?", then "compare both and give me a plan" | Single-offer net and counter; AGA-1 handled; ranking and plan; no past dates in next steps |
-| 6 | contract-timeline | Executed FHA package (`asis-fha-executed`) | "Give me every deadline as a PDF and a calendar file" | Deadlines match expected.md; the ICS imports into a calendar with the right dates |
-| 7 | contract-timeline | Executed short sale package (`asis-short-sale-rent-back`) | Same as 6 | Two-phase timeline ("N days after short sale approval" rows); the PDF builds with no closing date |
-| 8 | contract-timeline | Made-up Ohio purchase agreement | Same as 6 | Timeline from the contract's own dates and rules; the best-effort disclaimer in chat only, not in the PDF or ICS |
-
-The exact prompts are in each case's `prompt.md`; `expected.md` repeats the checks for that case.
+| # | Skill | Upload | Yes or No |
+|---|---|---|---|
+| 1 | agent-profile | Nothing | The plugin installs and every skill is listed; `profile.md` is saved in the working folder (claude.ai: it comes back as a file to keep) |
+| 2 | seller-cma | 360 report (PDF), CMA export (CSV), seller notes; new session | The saved profile is used without an upload (claude.ai: the uploaded one); the uploads are read (the expired listing and the export's sales appear); the listing presentation opens in PowerPoint or Keynote |
+| 3 | buyer-cma | Listing flyer, 360 report, CMA export | The buyer CMA PDF is delivered and opens |
+| 4 | buyer-offer-strategy | Nothing: same chat as case 3 | The offer uses the buyer CMA without asking for an upload, and both PDFs are delivered |
+| 5 | seller-offer-review | The step-1 offer package, then the step-2 offer in the same chat | Step 1: the package is read and the offer review PDF is delivered; step 2: the chat keeps the first offer, compares both and delivers the comparison PDF |
+| 6 | contract-timeline | Executed FHA package | The calendar file imports into a calendar app with closing on the right date |
+| 7 | contract-timeline | Made-up Ohio purchase agreement | The best-effort line is in the chat reply only, never in the PDF or the calendar file |
+| 8 | seller-net-sheet | Nothing (the facts are in the prompt) | The net sheet PDF is delivered on one page |
 
 ## claude.ai Pass
 
-Shorter, to confirm the uploaded skills work outside Cowork:
-
-1. Run `make package-skills` and upload each zip in `dist/skills/` in claude.ai's skill settings.
-2. Run case 1: with no working folder, the profile is handed over in chat or as a file to keep.
+1. Upload each zip in `dist/skills/` in claude.ai's skill settings.
+2. Run case 1: with no working folder, the profile comes back as a file to keep.
 3. Run case 2 (upload the case 1 profile with the inputs) and case 6.
 
 ## Results
 
-Fill in `out/manual-test/results.md` as you go (one row per check, a Cowork and a claude.ai column, a note for every failure) and share it back.
+Fill in `out/manual-test/results.md` as you go (one row per check, a Cowork and a claude.ai column, a note for every No) and share it back. A No is fixed and its case re-run before the release.
+
+## Evals That Mirror a Case
+
+Cases 2 to 8 each have an eval with the same inputs (`"manual_case"` in `dev/evals/<skill>/evals.json`): the kit's own files, read straight from `out/manual-test/<case>/` (so run `make manual-kit` before setting them up), or for case 6 the same mock package. The evals check what the smoke pass doesn't: the facts read from the files, the questions asked, the judgment and the chat reply ([development.md](development.md#evals)).

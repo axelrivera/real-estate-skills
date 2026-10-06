@@ -6,7 +6,7 @@
   "county": "Seminole",
   "client": "Sample Buyer",
   "contract": {
-    "form_family": "frbar",
+    "form_family": "farbar",
     "contract_form": "standard",
     "property": "100 Sample Way, Casselberry, FL 32707",
     "buyer": "Sample Buyer",
@@ -14,7 +14,8 @@
     "price": 365000,
     "financing": "conventional",
     "effective_date": "2026-09-25",
-    "effective_date_source": "Seller's initials on Counteroffer #1, 9/25/2026 4:12 PM",
+    "effective_date_source": "Seller's initials on Counteroffer #1",
+    "effective_date_signed": "2026-09-25 16:12",
     "closing_date": "2026-10-30",
     "closing_time": "10:00",
     "escrow_agent": "Sample Title Co.",
@@ -36,6 +37,5 @@
     "seller_occupancy_days": 14,
     "form_revision": "FloridaRealtors/FloridaBar \u2013 7x Rev. 2/26"
   },
-  "amendments": [],
-  "flags": []
+  "amendments": []
 }

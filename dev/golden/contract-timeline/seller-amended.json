@@ -10,6 +10,7 @@
   "day": 46
  },
  "contingencies_end": {
+  "appointment": false,
   "broker": false,
   "by_closing": false,
   "contingency": true,
@@ -19,36 +20,49 @@
   "done_display": null,
   "key": "loan_approval",
   "lender": false,
+  "moved_from": null,
   "no_time": false,
   "party": "Buyer",
   "past": false,
   "past_display": null,
+  "voided": false,
   "waits_on_approval": false,
   "when": "2026-12-10 23:59"
  },
  "contingencies_waiting": {
   "count": 0
  },
+ "documents": [
+  "contract",
+  "riders",
+  "counteroffers",
+  "amendments"
+ ],
  "effective": {
-  "date": "2026-11-02"
+  "date": "2026-11-02",
+  "signed": "2026-11-02 09:40"
  },
  "financing": "Conventional",
  "first_deadline": {
+  "appointment": false,
   "broker": false,
   "by_closing": false,
-  "contingency": true,
-  "critical": true,
-  "day": 23,
+  "contingency": false,
+  "critical": false,
+  "day": 21,
   "done": false,
   "done_display": null,
-  "key": "appraisal",
+  "key": "appraisal_due",
   "lender": false,
+  "moved_from": "2026-11-22",
   "no_time": false,
   "party": "Buyer",
   "past": false,
   "past_display": null,
+  "voided": false,
   "waits_on_approval": false,
-  "when": "2026-11-25 17:00"
+  "was": null,
+  "when": "2026-11-23 23:59"
  },
  "flag_keys": [
   "before_closing_rolled"
@@ -56,6 +70,7 @@
  "flags": {
   "count": 1
  },
+ "form_family": "farbar",
  "history": [
   {
    "before": {
@@ -86,9 +101,9 @@
   "count": 0
  },
  "length_days": 46,
- "merged_agent_notes": {
-  "count": 0
- },
+ "merged_agent_notes": [
+  "default:loan_app"
+ ],
  "moved": [
   {
    "label": "Closing"
@@ -120,8 +135,12 @@
  "open_rights": {
   "count": 3
  },
+ "open_rules": {
+  "count": 0
+ },
  "pending": [
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -133,15 +152,18 @@
    "done_display": null,
    "key": "hoa_docs",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -153,15 +175,18 @@
    "done_display": null,
    "key": "title_exam",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -173,10 +198,12 @@
    "done_display": null,
    "key": "survey_notice",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": null
@@ -188,6 +215,7 @@
  },
  "rows": [
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -197,15 +225,18 @@
    "done_display": null,
    "key": "deposit",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": true,
    "short": "Deposit",
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-05 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -215,14 +246,17 @@
    "done_display": null,
    "key": "loan_app",
    "lender": false,
+   "moved_from": "2026-11-07",
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-09 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -232,14 +266,17 @@
    "done_display": null,
    "key": "add_deposit",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -249,14 +286,17 @@
    "done_display": null,
    "key": "inspection",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -266,14 +306,17 @@
    "done_display": null,
    "key": "lead_paint",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": true,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-12 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -283,15 +326,18 @@
    "done_display": null,
    "key": "appraisal_due",
    "lender": false,
+   "moved_from": "2026-11-22",
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "was": null,
    "when": "2026-11-23 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -301,14 +347,17 @@
    "done_display": null,
    "key": "appraisal",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-11-25 17:00"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -318,14 +367,17 @@
    "done_display": null,
    "key": "title",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-03 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": true,
@@ -335,14 +387,17 @@
    "done_display": null,
    "key": "loan_approval",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-10 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -352,14 +407,17 @@
    "done_display": null,
    "key": "insurance_bound",
    "lender": true,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-11 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -369,14 +427,17 @@
    "done_display": null,
    "key": "seller_terminate",
    "lender": false,
+   "moved_from": "2026-12-13",
    "no_time": false,
    "party": "Seller",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-14 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -386,15 +447,18 @@
    "done_display": null,
    "key": "survey",
    "lender": false,
+   "moved_from": "2026-12-13",
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
    "short": "Survey",
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-14 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -404,14 +468,17 @@
    "done_display": null,
    "key": "clear_to_close",
    "lender": true,
+   "moved_from": null,
    "no_time": false,
    "party": "Buyer",
    "past": false,
    "past_display": null,
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-15 23:59"
   },
   {
+   "appointment": false,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -421,15 +488,18 @@
    "done_display": null,
    "key": "walkthrough",
    "lender": false,
+   "moved_from": null,
    "no_time": true,
    "party": "Buyer",
    "past": false,
    "past_display": null,
    "short": "Walk-Through",
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-17 23:59"
   },
   {
+   "appointment": true,
    "broker": false,
    "by_closing": false,
    "contingency": false,
@@ -440,11 +510,13 @@
    "key": "closing",
    "label": "Closing",
    "lender": false,
+   "moved_from": null,
    "no_time": false,
    "party": "Both",
    "past": false,
    "past_display": null,
    "short": "Closing",
+   "voided": false,
    "waits_on_approval": false,
    "when": "2026-12-18 10:00"
   }

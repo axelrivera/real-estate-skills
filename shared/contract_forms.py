@@ -8,8 +8,8 @@
     cf.rider_codes(["FHA/VA Financing", "K"])    # (['E', 'K'], []): CR-7 letters, and names that aren't riders
     cf.revision_note(form, "ASIS-8 Rev. 1/27")   # chat note when the contract isn't the verified revision
 
-Fully supported forms are the FR/BAR AS IS and Standard contracts and their CR-7 riders, verified against the PDFs
-listed in dev/forms/frbar-forms.json (make forms-check). Their rules differ in Para. 12 and 9(a), so the math never
+Fully supported forms are the FAR/BAR AS IS and Standard contracts and their CR-7 riders, verified against the PDFs
+listed in dev/forms/farbar-forms.json (make forms-check). Their rules differ in Para. 12 and 9(a), so the math never
 mixes, and three riders change them:
 
 - AS IS: the inspection period is a walk-away right; the seller has no repair obligation, so a seller's downside
@@ -21,28 +21,29 @@ mixes, and three riders change them:
   the rider's inspection period (15 days if blank) and the seller owes no repairs. AS IS math, Standard label.
 - Standard + Rider L (Right to Inspect and Cancel): the buyer may cancel for any reason in the Right To Inspect
   Period (15 days if blank), and repairs timely reported are still owed up to the limits. Both rules apply.
-- Any other contract ('other'): best effort. No FR/BAR default or figure applies; whether its inspection period is a
+- Any other contract ('other'): best effort. No FAR/BAR default or figure applies; whether its inspection period is a
   walk-away comes only from the file (`inspection_walkaway`), and callers ask or record an assumption when it's missing.
 """
 import re
 
 AS_IS, STANDARD, OTHER = "as_is", "standard", "other"
-FRBAR = (AS_IS, STANDARD)
+FARBAR = (AS_IS, STANDARD)
 REPAIR_LIMIT_DEFAULT = 0.015  # Para. 9(a): 1.5% of the price for each limit when blank
 REPAIR_LIMIT_KEYS = ("general", "wdo", "permit")
 INSPECTION_DAYS_DEFAULT = 15  # Para. 12(a) of both forms: 15 days after the Effective Date when blank
 STANDARD_REPAIR_WINDOW_DAYS = 15  # after the repair notice: the seller's estimates (10 days), then the election (5 days)
 RIDER_INSPECTION_DAYS_DEFAULT = 15  # Rider K 2(a) and Rider L 1: 15 days when blank
 
-# The revisions the built-in rules were checked against: must match dev/forms/frbar-forms.json (make forms-check).
-VERIFIED = {"FRBAR-ASIS": "FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
-            "FRBAR-STANDARD": "FloridaRealtors/FloridaBar – 7x Rev. 2/26"}
-_VERIFIED_FOR = {AS_IS: "FRBAR-ASIS", STANDARD: "FRBAR-STANDARD"}
+# The revisions the built-in rules were checked against: must match dev/forms/farbar-forms.json (make forms-check).
+VERIFIED = {"FARBAR-ASIS": "FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
+            "FARBAR-STANDARD": "FloridaRealtors/FloridaBar – 7x Rev. 2/26"}
+_VERIFIED_FOR = {AS_IS: "FARBAR-ASIS", STANDARD: "FARBAR-STANDARD"}
 
 _ALIASES = {  # compared lowercase, with "_" and "-" read as spaces. CRSP-17 is a different form: 'other'.
-    "as is": AS_IS, "asis": AS_IS, "asis 7": AS_IS, "asis 7x": AS_IS, "fr/bar as is": AS_IS, "frbar as is": AS_IS,
+    "as is": AS_IS, "asis": AS_IS, "asis 7": AS_IS, "asis 7x": AS_IS, "far/bar as is": AS_IS, "farbar as is": AS_IS,
     "as is residential contract for sale and purchase": AS_IS,
-    "standard": STANDARD, "fr/bar standard": STANDARD, "frbar standard": STANDARD,
+    "standard": STANDARD, "far/bar standard": STANDARD, "farbar standard": STANDARD,
+    "fr/bar as is": AS_IS, "frbar as is": AS_IS, "fr/bar standard": STANDARD, "frbar standard": STANDARD,  # legacy
     "residential contract for sale and purchase": STANDARD,
 }
 
@@ -87,24 +88,25 @@ class FormError(ValueError):
     """A contract form or rider value that can't be used; the message is written for the agent."""
 
 
-# Text that names an FR/BAR form: "FR/BAR", "FRBAR", the footer's "FloridaRealtors/FloridaBar", or a bare "ASIS-" number.
-_FRBAR_TEXT = re.compile(r"\bfr ?/? ?bar\b|florida ?realtors ?/ ?florida ?bar|^asis\b")
-FORM_TITLES = {AS_IS: "FR/BAR AS IS Residential Contract for Sale and Purchase",
-               STANDARD: "FR/BAR Residential Contract for Sale and Purchase (Standard)"}
+# Text that names a FAR/BAR form: "FAR/BAR", "FARBAR" (or the legacy name "FR/BAR"), the footer's
+# "FloridaRealtors/FloridaBar", or a bare "ASIS-" number.
+_FARBAR_TEXT = re.compile(r"\bfa?r ?/? ?bar\b|florida ?realtors ?/ ?florida ?bar|^asis\b")
+FORM_TITLES = {AS_IS: "FAR/BAR AS IS Residential Contract for Sale and Purchase",
+               STANDARD: "FAR/BAR Residential Contract for Sale and Purchase (Standard)"}
 
 
 def normalize(value):
     """'as_is', 'standard' or 'other' from a data file's contract_form; None when it isn't given.
 
     Reads the short names, the form titles and the printed footer ("FloridaRealtors/FloridaBar-ASIS-7x Rev. 2/26",
-    "FR/BAR Standard Contract"). Text that names an FR/BAR form without saying which one raises FormError instead of
+    "FAR/BAR Standard Contract"). Text that names a FAR/BAR form without saying which one raises FormError instead of
     becoming 'other', which would silently drop the form's rules (ENG-8)."""
     if value in (None, ""):
         return None
     s = " ".join(str(value).lower().replace("_", " ").replace("-", " ").replace("–", " ").split())
     if s in _ALIASES:
         return _ALIASES[s]
-    if not _FRBAR_TEXT.search(s):
+    if not _FARBAR_TEXT.search(s):
         return OTHER
     s = re.sub(r"\bas ?is (rider|addendum)\b", " ", s)  # "Standard with the As Is Rider (K)" is the Standard form
     if re.search(r"\bstandard\b", s):
@@ -113,20 +115,20 @@ def normalize(value):
         return AS_IS
     if re.search(r"residential contract|\b7x?\b", s):  # the Standard form's title and footer ("FloridaBar – 7x")
         return STANDARD
-    raise FormError(f"The contract form \"{value}\" names an FR/BAR form but not which one. Read the title: \"AS IS "
+    raise FormError(f"The contract form \"{value}\" names a FAR/BAR form but not which one. Read the title: \"AS IS "
                     "Residential Contract for Sale and Purchase\" is as_is, \"Residential Contract for Sale and Purchase\" "
                     "is standard.")
 
 
 def inspection_days_default(form):
-    """The inspection period when the blank is empty: 15 days on both FR/BAR forms (Para. 12(a), and Riders K and L),
+    """The inspection period when the blank is empty: 15 days on both FAR/BAR forms (Para. 12(a), and Riders K and L),
     None for another contract (the caller uses the market's norm and records an assumption)."""
-    return INSPECTION_DAYS_DEFAULT if form in FRBAR else None
+    return INSPECTION_DAYS_DEFAULT if form in FARBAR else None
 
 
-def frbar_market(forms):
-    """True when a market's built-in contract rules are the FR/BAR forms' (Florida)."""
-    return any(str(f).upper().startswith("FR/BAR") for f in forms or [])
+def farbar_market(forms):
+    """True when a market's built-in contract rules are the FAR/BAR forms' (Florida)."""
+    return any(str(f).upper().startswith(("FAR/BAR", "FR/BAR")) for f in forms or [])  # FR/BAR: legacy name
 
 
 def rider_code(name):
@@ -155,6 +157,17 @@ def rider_codes(names):
     return codes, others
 
 
+def rider_order(names):
+    """`names` (rider and addendum names as a package lists them) in the order the forms print them: CR-7 riders by
+    letter, the single letters first and then the double ones (B, F, H, GG), then the addenda that aren't CR-7 riders
+    (AGA-1, EAC-1) in the order given."""
+    def key(item):
+        i, name = item
+        c = rider_code(name)
+        return (0, len(c), c, i) if c else (1, 0, "", i)
+    return [n for _, n in sorted(enumerate(names), key=key)]
+
+
 def rider_name(code):
     return f"{RIDERS[code]} Rider ({code})"
 
@@ -163,7 +176,8 @@ def terms(form, item=None):
     """What the form and its riders mean for the inspection period and repairs.
 
     Returns {'walkaway': bool or None, 'repairs_owed': bool, 'riders': [codes], 'inspection_rider': 'K' | 'L' | None,
-    'label': "Standard + As Is Rider (K)", 'title': "Standard contract with the As Is Rider (K)"}. walkaway is None only
+    'label': "Standard + As Is Rider (K)", 'title': "Standard contract with the As Is Rider (K)", 'watch': (issue, fix)
+    or None}: `watch` is what the inspection rider leaves open (farbar-riders.md K), for the offer review's flags. walkaway is None only
     for another contract that doesn't say; its label and title are the contract's own name.
     Raises FormError for a rider the form doesn't allow (I, K, L on AS IS) or K and L together."""
     item = item or {}
@@ -171,10 +185,10 @@ def terms(form, item=None):
     if form == AS_IS:
         bad = [c for c in codes if c in RESERVED_ON_AS_IS]
         if bad:
-            raise FormError(f"{', '.join(rider_name(c) for c in bad)}: RESERVED on the FR/BAR AS IS form (Para. 19), which "
+            raise FormError(f"{', '.join(rider_name(c) for c in bad)}: RESERVED on the FAR/BAR AS IS form (Para. 19), which "
                             "already gives the buyer a walk-away inspection period. Check which form was signed and which "
                             "riders are attached.")
-        return {"walkaway": True, "repairs_owed": False, "riders": codes, "inspection_rider": None, "label": "AS IS",
+        return {"walkaway": True, "repairs_owed": False, "riders": codes, "inspection_rider": None, "watch": None, "label": "AS IS",
                 "title": "AS IS contract"}
     if form == STANDARD:
         if "K" in codes and "L" in codes:
@@ -182,12 +196,21 @@ def terms(form, item=None):
                             "and each replaces the Standard form's inspection terms differently. Ask which one governs.")
         rider = "K" if "K" in codes else "L" if "L" in codes else None
         return {"walkaway": rider is not None, "repairs_owed": rider != "K", "riders": codes, "inspection_rider": rider,
+                "watch": _K_WATCH if rider == "K" else None,
                 "label": f"Standard + {_SHORT[rider]} Rider ({rider})" if rider else "Standard",
                 "title": f"Standard contract with the {rider_name(rider)}" if rider else "Standard contract"}
     given = item.get("inspection_walkaway")
     name = item.get("contract_name") or item.get("form") or "Other contract"
     return {"walkaway": None if given is None else given is not False, "repairs_owed": False, "riders": codes,
-            "inspection_rider": None, "label": name, "title": name}
+            "inspection_rider": None, "watch": None, "label": name, "title": name}
+
+
+# iteration 10 eval 5: what the As Is Rider (K) leaves open on the Standard form (farbar-riders.md K)
+_K_WATCH = ("As Is Rider (K): deletes the Para. 9(a) repair, WDO and permit limits and all of Paras. 11 and 12, so the "
+            "seller owes no repairs. The Para. 9(a) 125% escrow isn't deleted, and there's no permit cooperation clause "
+            "like the AS IS form's Para. 12(c).",
+            "Agree in Additional Terms whether the 125% escrow applies to the as-is maintenance duty and whether the "
+            "seller helps close open permits.")
 
 
 def inspection_walkaway(form, item=None):
@@ -199,21 +222,22 @@ def inspection_walkaway(form, item=None):
 
 
 def term_words(form):
-    """OFR-234: what an offer's terms are called on this form, for labels and reasons. The FR/BAR forms' own words
+    """OFR-234: what an offer's terms are called on this form, for labels and reasons. The FAR/BAR forms' own words
     (Inspection Period, a deposit refundable in it); for any other contract, generic words that fit most forms (a Texas
     TREC contract's option period, an appraisal right in its financing addendum), never Florida's names.
 
-    {'inspection_label', 'inspection', 'deposit_refund', 'appraisal_addendum', 'deposit_risk_confirm'};
-    appraisal_addendum is None on FR/BAR (its riders are named by letter: appraisal_form()), and so is
+    {'inspection_label', 'inspection', 'deposit_label', 'deposit_refund', 'appraisal_addendum', 'deposit_risk_confirm'};
+    appraisal_addendum is None on FAR/BAR (its riders are named by letter: appraisal_form()), and so is
     deposit_risk_confirm (the engine's windows follow the form and riders)."""
-    if form in FRBAR:
-        return {"inspection_label": "Inspection Period", "inspection": "inspection period",
+    if form in FARBAR:
+        return {"inspection_label": "Inspection Period", "inspection": "inspection period", "deposit_label": "Escrow Deposit",
                 "deposit_refund": "refundable during inspection", "appraisal_addendum": None, "deposit_risk_confirm": None}
     return {"inspection_label": "Inspection or Option Period", "inspection": "inspection or option period",
+            "deposit_label": "Deposit",  # iteration 9 eval 3: "Escrow Deposit" is FAR/BAR's name
             # OFR-316: the engine counts the deposit's risk date from the offer's own periods; on another contract the
             # agent confirms when that form makes the deposit nonrefundable (no other state's rules are built in)
             "deposit_risk_confirm": "counted from this offer's periods: confirm when your contract releases the deposit",
-            "deposit_refund": "refundable during the inspection or option period (per your contract)",
+            "deposit_refund": "refundable if the buyer ends the contract within the inspection or option period (per your contract)",
             "appraisal_addendum": "Appraisal Protection (Per Your Contract's Addendum)"}
 
 
@@ -257,15 +281,19 @@ def revision_note(form, printed, from_footer=True):
     if (ver is None or ver == want_ver) and (date is None or date == want_date):
         return None
     said = f"This contract's footer reads \"{printed}\"" if from_footer else f"The revision given for this contract is \"{printed}\""
-    return (f"{said}; the built-in FR/BAR rules were checked against \"{VERIFIED[key]}\". Confirm the deposit, "
+    return (f"{said}; the built-in FAR/BAR rules were checked against \"{VERIFIED[key]}\". Confirm the deposit, "
             "inspection, financing and closing paragraphs against the signed form.")
 
 
-BEST_EFFORT_NOTE = ("Only Florida FR/BAR contracts are fully supported. This contract was read on a best-effort basis: check "
+BEST_EFFORT_NOTE = ("Only Florida FAR/BAR contracts are fully supported. This contract was read on a best-effort basis: check "
                     "every date and term against the signed contract, and have a real estate attorney licensed in the "
                     "property's state confirm anything that matters.")
+# iteration 9 eval 3: an offer described in chat (no form named) wasn't read from a contract, so its line says so
+DESCRIBED_NOTE = ("Only Florida FAR/BAR contracts are fully supported. This offer was reviewed on a best-effort basis from "
+                  "its description: check every date and term against the signed contract once you have it, and have a "
+                  "real estate attorney licensed in the property's state confirm anything that matters.")
 # OFR-314: the buyer side writes an offer that isn't signed yet, so its line points at the form being filled in
-BEST_EFFORT_OFFER_NOTE = ("Only Florida FR/BAR contracts are fully supported. This offer was built on a best-effort basis for "
+BEST_EFFORT_OFFER_NOTE = ("Only Florida FAR/BAR contracts are fully supported. This offer was built on a best-effort basis for "
                           "another contract form: check every term and date against that form before the offer goes out, "
                           "and have a real estate attorney licensed in the property's state confirm anything that matters.")
 
@@ -287,7 +315,7 @@ def support(forms, revisions=(), drafting=False):
     return {"support": "best_effort" if OTHER in forms else "full", "chat_notes": notes}
 
 
-# Appraisal protection on an FR/BAR offer (frbar-riders.md Rider F, frbar-addenda.md AGA-1). AGA-1 is for conventional
+# Appraisal protection on a FAR/BAR offer (farbar-riders.md Rider F, farbar-addenda.md AGA-1). AGA-1 is for conventional
 # or cash offers and isn't used with Rider F; FHA/VA offers use Rider E, whose protection runs to closing.
 AGA_VALUATION_DAYS, AGA_DELIVERY_DAYS, AGA_RENEGOTIATE_DAYS = 30, 3, 3  # AGA-1 blanks: 30 days, then 3 and 3 (3 preprinted)
 AGA_FINANCING = ("conventional", "cash")  # AGA-1's own instructions: conventional or cash offers only
@@ -311,10 +339,10 @@ def aga_fits(financing):
 
 
 def appraisal_form(form, item=None, financing=None):
-    """'aga' (Appraisal Gap Addendum), 'F' (Appraisal Contingency Rider), 'E' (FHA/VA Rider) or None, for an FR/BAR
+    """'aga' (Appraisal Gap Addendum), 'F' (Appraisal Contingency Rider), 'E' (FHA/VA Rider) or None, for a FAR/BAR
     offer. AGA-1 counts only where it fits the loan (`financing`, when given: conventional or cash); the riders by
     letter. With AGA-1 on a loan it doesn't fit, the answer is the rider attached, or None (Para. 8(b)(2))."""
-    if form not in FRBAR:
+    if form not in FARBAR:
         return None
     item = item or {}
     if aga_named(item) and (financing is None or aga_fits(financing)):
@@ -323,10 +351,58 @@ def appraisal_form(form, item=None, financing=None):
     return "E" if "E" in codes else "F" if "F" in codes else None
 
 
+# The Escalation Addendum (farbar-addenda.md EAC-1): how the added amount is paid, (a) cash at closing with proof of
+# funds attached or (b) financed, with (a) when neither box is checked; and the competing offer is proven by a copy
+# the seller delivers with the competing buyer's identity redacted.
+_EAC_NAME = re.compile(r"\bEAC(-1)?\b|escalation addendum", re.I)
+
+
+def eac_named(form, item=None):
+    """True when a FAR/BAR offer's escalation is on the Escalation Addendum (EAC-1): its name in `addenda` or `riders`."""
+    if form not in FARBAR:
+        return False
+    item = item or {}
+    return any(_EAC_NAME.search(str(n)) for n in list(item.get("riders") or []) + list(item.get("addenda") or []))
+
+
+def escalation_paid_in_cash(form, item=None):
+    """True when the escalated amount is paid in cash at closing, False when it's financed, None when not known.
+    `escalation.paid_in_cash` as read wins; on EAC-1 with neither box recorded, the form's default, cash."""
+    item = item or {}
+    e = item.get("escalation") if isinstance(item.get("escalation"), dict) else {}
+    if e.get("paid_in_cash") is not None:
+        return bool(e["paid_in_cash"])
+    return True if eac_named(form, item) else None
+
+
+def escalation_proof_stated(form, item=None):
+    """True when the escalation's own terms say how a competing offer is proven: `escalation.proof` as read, or EAC-1
+    (the seller delivers a redacted copy of the competing offer), so nobody needs to ask."""
+    item = item or {}
+    e = item.get("escalation") if isinstance(item.get("escalation"), dict) else {}
+    return bool(e.get("proof")) or eac_named(form, item)
+
+
+# Para. 3(a), both forms: unless signed by both parties and an executed copy delivered on or before the written time for
+# acceptance, the offer is withdrawn; a counter-offer's time is 2 days after the day it was delivered unless stated.
+# Neither rolls over a weekend or holiday (Standard F's exception).
+ACCEPTANCE_COUNTER_DAYS = 2
+
+
+def acceptance_deadline(form, item=None):
+    """The time for acceptance as recorded (`acceptance_deadline`, "YYYY-MM-DD HH:MM" or "YYYY-MM-DD"), with what sets
+    it: {"due": str, "cite": "Para. 3(a)"} on FAR/BAR, the contract's own on another form; None when not recorded."""
+    item = item or {}
+    due = str(item.get("acceptance_deadline") or "").strip()
+    if not due:
+        return None
+    return {"due": due, "cite": "Para. 3(a)" if form in FARBAR else "the contract's time for acceptance"}
+
+
 def appraisal_in_loan_approval(form, item=None, financing=None):
-    """True when an FR/BAR financed offer has no appraisal rider or addendum (no F, E or AGA-1): Para. 8(b)(2) makes
+    """True when a FAR/BAR financed offer has no appraisal rider or addendum (no F, E or AGA-1): Para. 8(b)(2) makes
     the lender's appraisal part of Loan Approval, so the appraisal window is the Loan Approval Period (both forms)."""
-    return form in FRBAR and appraisal_form(form, item, financing) is None
+    return form in FARBAR and appraisal_form(form, item, financing) is None
 
 
 # Para. 9(c), check one: who designates the Closing Agent and pays the "Owner's Policy and Charges" (the owner's premium
@@ -338,15 +414,15 @@ _TITLE_BOX = {"seller": "i", "i": "i", "buyer": "ii", "ii": "ii", "buyer_regiona
 
 
 def title_box(form, item=None):
-    """'i', 'ii' or 'iii' for the Para. 9(c) box an FR/BAR offer's `title_by` records, else None (not given, or
+    """'i', 'ii' or 'iii' for the Para. 9(c) box a FAR/BAR offer's `title_by` records, else None (not given, or
     another contract)."""
     who = str((item or {}).get("title_by") or "").lower().strip()
-    return _TITLE_BOX.get(who) if form in FRBAR else None
+    return _TITLE_BOX.get(who) if form in FARBAR else None
 
 
 def owner_title_payer(form, item=None):
     """Who pays the owner's title policy under the contract, from `title_by` (who designates the Closing Agent), or
-    None when the contract doesn't settle it. FR/BAR Para. 9(c): (i) Seller designates and pays the Owner's Policy;
+    None when the contract doesn't settle it. FAR/BAR Para. 9(c): (i) Seller designates and pays the Owner's Policy;
     (ii) and (iii) Buyer designates and pays it (under (iii) the Seller still pays the title search, up to $200 if
     blank). Another contract: None (local custom, or the listing's costs)."""
     box = title_box(form, item)
@@ -391,7 +467,7 @@ def aga_valuation_days(limit_days):
     return max(1, min(AGA_VALUATION_DAYS, limit_days - AGA_DELIVERY_DAYS - AGA_RENEGOTIATE_DAYS))
 
 
-# Rider periods, each the rider's own "if left blank" value (frbar-riders.md). The timeline dates them; the offer engine
+# Rider periods, each the rider's own "if left blank" value (farbar-riders.md). The timeline dates them; the offer engine
 # counts the ones that let a party cancel toward "days until firm" (rider_windows).
 RIDER_DAYS = {"mold_days": 20, "drywall_days": 15, "compensation_agreement_days": 3, "pre_closing_agreement_days": 10,
               "post_closing_agreement_days_before": 10, "short_sale_application_days": 10, "short_sale_approval_days": 90,
@@ -401,13 +477,13 @@ INSURANCE_DAYS_AFTER, INSURANCE_DAYS_BEFORE_CLOSING = 30, 10  # Rider H blank: t
 
 
 def rider_windows(form, item=None, close_days=None):
-    """Cancel windows the CR-7 riders add to an FR/BAR offer, counted from the Effective Date.
+    """Cancel windows the CR-7 riders add to a FAR/BAR offer, counted from the Effective Date.
 
     Returns (windows, missing): windows are (code, days, what) for each right to cancel a rider creates (for the buyer,
     or for either party while a required agreement isn't signed); missing are the codes whose window is a date the
     offer doesn't give (Z, R), so the caller records an assumption. Rider Y is the seller's own right, and V, the
     appraisal riders and K/L are counted by their own fields."""
-    if form not in FRBAR:
+    if form not in FARBAR:
         return [], []
     item = item or {}
     codes, _ = rider_codes(item.get("riders"))
@@ -429,7 +505,7 @@ def rider_windows(form, item=None, close_days=None):
         out.append(("U", max(close_days - D["post_closing_agreement_days_before"], 0), "rent-back agreement"))
     if "DD" in codes:
         out.append(("DD", D["rental_agreements_days"] + D["rental_review_days"], "rental management review"))
-    if "GG" in codes:
+    if "GG" in codes and compensation_agreement(item) != "received":  # signed by both: the contingency is met
         out.append(("GG", D["compensation_agreement_days"] + RIDER_NOTICE_DAYS, "compensation agreement"))
     for code, field, what in (("Z", "attorney_days", "buyer's attorney approval"), ("R", "rezoning_days", "rezoning")):
         if code in codes:
@@ -445,4 +521,101 @@ def buyer_broker_as_credit(form, item=None):
     count toward the loan program's cap on seller concessions. Rider GG (a separate compensation agreement paid as a
     commission) doesn't use that room."""
     item = item or {}
-    return form in FRBAR and ("FF" in rider_codes(item.get("riders"))[0] or str(item.get("buyer_broker_form") or "").upper() == "FF")
+    return form in FARBAR and ("FF" in rider_codes(item.get("riders"))[0] or str(item.get("buyer_broker_form") or "").upper() == "FF")
+
+
+# Rider GG: where the separate compensation agreement stands (an offer's `compensation_agreement`). Left out: it isn't
+# in the package. The seller's side signs as the rider's signer box says: the Seller's Broker (the listing broker) or
+# the Seller.
+COMPENSATION_AGREEMENT = ("received", "signed_by_buyer_broker", "signed_by_listing_broker", "signed_by_seller")
+_CA_ALIASES = {"signed_both": "received", "fully_signed": "received", "signed_by_both": "received"}
+
+
+def compensation_agreement(item=None):
+    """The offer's `compensation_agreement`, normalized, or None when it isn't given (or isn't a known status:
+    compensation_agreement_problems names that one)."""
+    v = (item or {}).get("compensation_agreement")
+    if v in (None, ""):
+        return None
+    s = str(v).strip().lower().replace(" ", "_").replace("-", "_")
+    s = _CA_ALIASES.get(s, s)
+    return s if s in COMPENSATION_AGREEMENT else None
+
+
+def compensation_agreement_problems(item=None, listing_pays=False, where="compensation_agreement"):
+    """`field: problem → fix` lines for a compensation agreement status that can't be right (the render stops)."""
+    item = item or {}
+    v = item.get("compensation_agreement")
+    if v in (None, ""):
+        return []
+    status = compensation_agreement(item)
+    if status is None:
+        return [f"{where}: {v!r} isn't a status → use one of {', '.join(COMPENSATION_AGREEMENT)}, or leave it out when "
+                "the agreement isn't in the package"]
+    out = []
+    if "GG" not in rider_codes(item.get("riders"))[0]:
+        out.append(f"{where}: set, but Rider GG isn't in riders → add GG to riders, or leave the status out")
+    if status == "signed_by_seller" and listing_pays:
+        out.append(f"{where}: 'signed_by_seller', but buyer_broker_paid_by says the listing broker pays → use "
+                   "'signed_by_listing_broker', or correct buyer_broker_paid_by")
+    if status == "signed_by_listing_broker" and not listing_pays:
+        out.append(f"{where}: 'signed_by_listing_broker', but the listing broker isn't the payer → set "
+                   "buyer_broker_paid_by: \"listing_broker\", or use 'signed_by_seller'")
+    if not listing_pays and item.get("buyer_broker_pct") is None and item.get("buyer_broker_amount") is None:
+        out.append(f"{where}: the agreement is in the package but its amount isn't recorded → record buyer_broker_pct "
+                   "or buyer_broker_amount from it")
+    return out
+
+
+def compensation_agreement_check(form, item=None, listing_pays=False, amount=None):
+    """Rider GG's flag for the offer review: (issue, fix, request or None), or None when there's nothing to do (the
+    agreement is in the package, signed by both). `amount` is the agreement's terms as text ("2.5%"), when known.
+
+    Rider GG (farbar-riders.md): the contract is contingent on the compensation agreement being signed and delivered
+    within the Time Period (3 days after the Effective Date if blank); if it isn't, the buyer may cancel within the next
+    3 days and get the deposit back."""
+    item = item or {}
+    if form not in FARBAR or "GG" not in rider_codes(item.get("riders"))[0]:
+        return None
+    status = compensation_agreement(item)
+    if status == "received":
+        return None
+    days = item.get("compensation_agreement_days") or RIDER_DAYS["compensation_agreement_days"]
+    ours = "the listing broker" if listing_pays else "the seller"
+    terms = (f" ({amount} to the buyer's broker" + (", paid by the listing broker)" if listing_pays else ")")) if amount else ""
+    net = "it comes out of the listing fee, so it isn't in the seller's net." if listing_pays else "its amount is in the net."
+    window = f"within {days} days after the Effective Date, or the buyer may cancel and get the deposit back"
+    if status == "signed_by_buyer_broker":
+        return (f"Rider GG: the compensation agreement{terms} is signed by the buyer's broker but not yet by {ours}.",
+                f"{ours[0].upper() + ours[1:]} signs and delivers it {window}; {net}", None)
+    if status in ("signed_by_listing_broker", "signed_by_seller"):
+        return (f"Rider GG: the compensation agreement{terms} is signed by {ours} but not yet by the buyer's broker.",
+                f"Ask the buyer's agent to have the buyer's broker sign and deliver it {window}; {net}",
+                "Please have your broker sign and deliver the compensation agreement.")
+    if listing_pays:  # not in the package: the listing side's own paperwork, nothing to ask the buyer's agent
+        return ("Rider GG: the buyer's broker compensation is in a separate compensation agreement that isn't in the "
+                "package.", f"The listing broker signs and delivers it {window}; {net}", None)
+    return ("Rider GG: the buyer's broker compensation amount is in a separate compensation agreement, not the rider.",
+            f"Get the signed agreement (due {days} days after the Effective Date if blank) and put its amount in the net.",
+            "Please send the compensation agreement for the seller's review.")
+
+
+# Addenda that print a box for the contract they go with (farbar-addenda.md: EAC-1 checks AS IS FAR/BAR, FAR/BAR,
+# CRSP, Commercial or Vacant Land), and the plain names the seller reads.
+_FORM_PLAIN = {AS_IS: "AS IS contract", STANDARD: "Standard contract"}
+
+
+def addendum_form_conflict(form, named, addendum="Escalation Addendum"):
+    """(issue, fix, request) when an addendum's contract box names another form than the offer's FAR/BAR contract, else
+    None. `named` is the box as read (anything normalize() reads; another form's name stays as written). Raises
+    FormError for text that names a FAR/BAR form without saying which."""
+    if form not in FARBAR or named in (None, ""):
+        return None
+    other = normalize(named)
+    if other == form:
+        return None
+    theirs = _FORM_PLAIN.get(other) or f"\"{named}\""
+    return (f"The {addendum} has the box checked for the {theirs}, but the offer is on the {_FORM_PLAIN[form]}.",
+            f"Have the buyer's agent correct the box to the {_FORM_PLAIN[form]} and have the buyer initial the change "
+            "before the seller signs.",
+            f"Please correct the {addendum} to check the {_FORM_PLAIN[form]} box, initialed by the buyer.")

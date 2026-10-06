@@ -38,6 +38,19 @@ Only add a folder when the skill needs it.
 
 Markdown mode takes its numbers from the same data JSON the scripts produce, so chat and files always agree. Only the layout comes from the template.
 
+## Data, Judgment and Script Wording
+
+Every data file has two kinds of fields, and the skill's data reference (`references/*-data.md`, `listing-file.md`, `deal-file.md`, `buyer-file.md`) says which is which:
+
+- **Data** the model copies from the sources: prices, dates, day counts, the history grid, comps and their adjustments, rider letters. Plain numbers and ISO dates.
+- **Judgment** the model writes: why this price, what to prepare, which way the range leans, a terms reason, a condition. **Words only:** no digits, `$`, `%`, months, seasons or weekdays, and nothing about who owns or lives in the home. `prose.figures` finds a figure (and `prose.people` an occupant phrase), and compute and render refuse the field with a message naming it and where the figure comes from instead. Write "the earlier sales", "repeated price cuts", never "April", "the spring sales" or "4 cuts". Labels the model types (a price column's name, an option's name) follow the same rule.
+
+Every sentence that states a fact (a count, a price, a percent, a date, a comparison against the data) is the script's, written from a template in the skill's `assets/labels.json` and filled with `fmt` values from the document model. A field the script now writes (a CMA's `paragraph` or `key_stats`, an offer review's `counter.rows`) is refused when the model types it, with a note saying where its judgment goes. So when a fact needs saying, add a labels.json key and a script sentence, never a model field; and never add a check that hunts for a wrong claim in model prose: remove the prose field instead.
+
+**Notes once.** Each script note goes in the document's one `notes.Notes` registry under a key (`N.add(key, text, kind)`): printed once in the notes block, never in a label, and passed to chat as the script's lines (`assumptions`, `chat_notes`, `agent_notes` with `note_keys`). The model never restates a note in its own words; a note it adds about a script note or a row takes that key, so the script keeps one. An estimate is said once there, never as an "Estimate" or "Assumed" tag on a line. The pieces are in [architecture.md](architecture.md#shared-report-kit).
+
+**Chat uses the script's lines.** The reply quotes the output's figures and sentences (already formatted) and adds the model's judgment around them; it never re-rounds a figure or recounts a list.
+
 ## PDF Layout
 
 - **Top fact row.** Context under the header (home facts, contract terms, the inputs a report rests on) goes in one divider row (`divrow factrow` in `shared/report.css`), not a grid of boxed cells. It wraps onto a second line as it grows and needs no layout change when an item is added.
@@ -53,4 +66,4 @@ Markdown mode takes its numbers from the same data JSON the scripts produce, so 
 
 ## Evals
 
-Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): at least 3 realistic prompts with the expected result, plus input files when needed: the happy path, a minimal-input run, and every behavior that's easy to get wrong (a fair-housing request, a best-effort contract, an edge case a fix covered). Contract skills carry more (contract-timeline has 10), many on mock contract packages. They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.
+Each skill has test prompts in `dev/evals/<skill>/evals.json` (never shipped): at least 3 realistic prompts with the expected result, plus input files when needed: the happy path, a minimal-input run, and every behavior that's easy to get wrong (a fair-housing request, a best-effort contract, an edge case a fix covered). Contract skills carry more (contract-timeline has 14), many on mock contract packages. An expected result names model behavior only: what was read and entered, the questions asked, what's declined, which files are made, the judgment's bounds and the chat lines the script provides; never a sentence, label or layout the script writes (the tests cover those). They're run with the skill by subagents that simulate the sandbox and report their friction ([development.md](development.md#evals)), following the skill-creator loop, before a skill is marked done. Baseline runs without the skill are optional.

@@ -54,9 +54,17 @@ class Handoff(unittest.TestCase):
         with self.assertRaises(h.HandoffError):
             h.parse_text("```cma-handoff v1\n{not json\n```")
 
+    def test_posture_is_optional(self):
+        """The buyer CMA's posture rides beside the plan's numbers; without it the record has no posture key."""
+        self.assertNotIn("posture", h.build(**SAMPLE))
+        record = h.build(**SAMPLE, posture="leverage")
+        self.assertEqual((record["posture"], record["offer_plan"]), ("leverage", SAMPLE["offer_plan"]))
+        with self.assertRaises(h.HandoffError):
+            h.build(**SAMPLE, posture=2)
+
     def test_filename(self):
         self.assertEqual(h.filename("517 Hickorywood Ave"), "517-Hickorywood-Ave.cma.json")
-        # CMA-17: a buyer and a seller CMA of the same address don't overwrite each other
+        # a buyer and a seller CMA of the same address don't overwrite each other
         self.assertEqual(h.filename("517 Hickorywood Ave", "buyer"), "517-Hickorywood-Ave.buyer.cma.json")
         self.assertEqual(h.filename("517 Hickorywood Ave", "seller"), "517-Hickorywood-Ave.seller.cma.json")
 

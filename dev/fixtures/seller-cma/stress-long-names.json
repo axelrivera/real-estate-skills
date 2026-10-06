@@ -1,0 +1,384 @@
+{
+ "prepared_date": "September 22, 2026",
+ "as_of": "2026-09-22",
+ "listing_history": [
+  {
+   "status": "expired",
+   "price": 419900,
+   "original_price": 434900,
+   "ended": "2017-06",
+   "days_on_market": 184
+  }
+ ],
+ "subject": {
+  "address": "12345 North Lake Buena Vista Boulevard Unit 1204",
+  "mls_address": "517 HICKORYWOOD AVE",
+  "city": "Altamonte Springs",
+  "state": "FL",
+  "county": "Seminole",
+  "locality": "Altamonte Springs, FL 32714 · Spring Oaks Unit Two Replat at Hickorywood Estates Phase Three Lakeside Village Section · Seminole County",
+  "sqft": 1849,
+  "beds": 4,
+  "baths": 2,
+  "year_built": 1972,
+  "pool": true,
+  "hoa": false,
+  "subdivision": "SPRING OAKS",
+  "facts": [
+   [
+    "Beds / Baths",
+    "4 / 2"
+   ],
+   [
+    "Living Area",
+    "1,849 sq ft"
+   ],
+   [
+    "Lot",
+    "0.22 acre"
+   ],
+   [
+    "Built",
+    "1972, block"
+   ],
+   [
+    "Pool",
+    "Private, in-ground"
+   ],
+   [
+    "Garage",
+    "2-car attached"
+   ],
+   [
+    "HOA / CDD",
+    "None / None"
+   ],
+   [
+    "Flood Zone",
+    "X (lower risk)"
+   ],
+   [
+    "Current Taxes",
+    "$2,731 a year"
+   ],
+   [
+    "Recent Updates",
+    "Kitchen, baths, floors, roof"
+   ]
+  ],
+  "summary": "A four-bedroom block pool home in Spring Oaks with a renovated kitchen (new cabinets, stone counters, stainless appliances), remodeled baths, new flooring, fresh paint, a new roof and water heater, and a resurfaced pool, as described by you. This analysis estimates what the home is worth in today's market, recommends a list price, and shows what each pricing choice is likely to net you.",
+  "condition": "full_renovation"
+ },
+ "summary_page": {
+  "label": "Seller Summary",
+  "headline": "Priced where recent sales support, for the strongest first weeks on the market.",
+  "why": [
+   "The closest sales nearby, adjusted to your home, center near the middle of the range.",
+   "The market has cooled: buyers negotiate, and many sellers help with buyer costs.",
+   "Well-priced homes nearby are selling; overpriced ones are sitting."
+  ],
+  "next_step": "Review this plan together, sign the listing agreement, and get the home ready to go live."
+ },
+ "recommendation": {
+  "why": "It leaves room for the negotiating that is normal right now, and it presents the home as fairly priced during its first few weeks on the market, when buyer attention is highest. The two sales that would support a higher price closed earlier in the year, when mortgage rates were lower and homes sold faster than they do now."
+ },
+ "means": [
+  "<strong>Expect to negotiate.</strong> Recent buyers nearby paid less than the original asking price and most asked the seller to cover part of their closing costs. Plan for both from the start rather than treating them as a setback.",
+  "<strong>The first three weeks matter most.</strong> A new listing gets its biggest wave of showings right away. If it is priced where buyers expect, that wave turns into offers; if not, the home starts to look stale and the price cut comes later, from a weaker position.",
+  "<strong>Watch the appraisal.</strong> A contract well above the supported range would risk a low appraisal and a renegotiation, because the appraiser works from the same sales.",
+  "<strong>Documentation is worth money.</strong> Your updates are the reason this home can sell near the top of the neighborhood. Permits and dates for the roof and the renovation turn them from claims into value a buyer and an appraiser can rely on."
+ ],
+ "comps": {
+  "intro": "Each is adjusted for its differences from your home, so it reflects what that home would have sold for if it were yours.",
+  "method_note": "Seller-paid costs are subtracted from the sale price, since they reduce what the seller actually received. Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "cards": [
+   {
+    "address": "622 Spring Oaks Blvd",
+    "sold_price": 505500,
+    "seller_concessions": 0,
+    "condition": "full_renovation",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": 1800
+     },
+     {
+      "label": "Larger Corner Lot",
+      "amount": -5000
+     }
+    ],
+    "bullets": [
+     "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
+     "About the same size, so almost no adjustment."
+    ]
+   },
+   {
+    "address": "516 Oakwood Ct",
+    "sold_price": 495000,
+    "seller_concessions": 0,
+    "condition": "full_renovation",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -1200
+     },
+     {
+      "label": "Documented Recent Systems",
+      "amount": -5000
+     }
+    ],
+    "bullets": [
+     "Same year and nearly the same size. Sold above asking in five days."
+    ]
+   },
+   {
+    "address": "745 Little Wekiva Cir",
+    "sold_price": 427000,
+    "seller_concessions": 500,
+    "condition": "original",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -1700
+     }
+    ],
+    "bullets": [
+     "The most recent pool-home sale in Spring Oaks.",
+     "Described as well maintained but not renovated."
+    ]
+   },
+   {
+    "address": "602 Mockingbird Ln",
+    "sold_price": 429000,
+    "seller_concessions": 12000,
+    "condition": "kitchen_only",
+    "adjustments": [],
+    "bullets": [
+     "Same size and likely the same floor plan, one street over."
+    ]
+   },
+   {
+    "address": "621 Little Wekiva Rd",
+    "sold_price": 465000,
+    "seller_concessions": 13071,
+    "condition": "full_renovation",
+    "adjustments": [
+     {
+      "label": "Larger Canal Lot",
+      "amount": -10000
+     },
+     {
+      "label": "Size",
+      "amount": -1229
+     }
+    ],
+    "bullets": [
+     "A renovated pool home with new windows."
+    ]
+   },
+   {
+    "address": "900 Extra Comp Ln",
+    "sold_price": 505500,
+    "seller_concessions": 0,
+    "condition": "full_renovation",
+    "adjustments": [
+     {
+      "label": "Size",
+      "amount": -5200
+     },
+     {
+      "label": "Larger Corner Lot",
+      "amount": -5000
+     }
+    ],
+    "bullets": [
+     "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
+     "About the same size, so almost no adjustment."
+    ],
+    "close_date": "2026-04-24"
+   }
+  ],
+  "time_adjustment": {
+   "rate_per_quarter": 0.01
+  },
+  "lean": "The two highest are the closest matches to your home's condition but sold in a stronger market earlier in the year; the two lowest needed the largest adjustments."
+ },
+ "scatter": {
+  "heading": "Where Your Home Fits in the Neighborhood",
+  "renovated": [
+   "621 LITTLE WEKIVA RD",
+   "516 OAKWOOD CT",
+   "622 SPRING OAKS BLVD",
+   "419 NAVARRE WAY"
+  ],
+  "subject_label_pos": "right",
+  "callouts": [
+   {
+    "address": "622 SPRING OAKS BLVD",
+    "side": "left"
+   },
+   {
+    "address": "644 PEACHWOOD DR",
+    "side": "right"
+   }
+  ],
+  "takeaway": "The renovated sales sit above the dashed line, and your home sits among them."
+ },
+ "competition": {
+  "intro": "These homes are for sale or just went under contract nearby. A buyer touring yours will likely see several of them.",
+  "rows": [
+   [
+    "644 Peachwood Dr",
+    "For sale",
+    400000,
+    1849,
+    "No",
+    91,
+    "A home buyers will tour alongside yours."
+   ],
+   [
+    "394 Barberry Ln",
+    "For sale",
+    565000,
+    1943,
+    "Yes",
+    57,
+    "Updated, new roof and windows, solar. Not selling at this level."
+   ],
+   [
+    "626 Orchid Ln",
+    "For sale",
+    470000,
+    2400,
+    "Yes",
+    302,
+    "Larger but dated."
+   ],
+   [
+    "656 Little Wekiva Rd",
+    "For sale",
+    449000,
+    2400,
+    "Yes",
+    51,
+    "A home buyers will tour alongside yours."
+   ],
+   [
+    "513 Oakcrest St",
+    "For sale",
+    490000,
+    2400,
+    "No",
+    63,
+    "A home buyers will tour alongside yours."
+   ],
+   [
+    "412 Majorca Ave",
+    "Under contract",
+    454900,
+    1458,
+    "Yes",
+    9,
+    "A home buyers will tour alongside yours."
+   ],
+   [
+    "400 W Orange St",
+    "Under contract",
+    449000,
+    1682,
+    "Yes",
+    14,
+    "A home buyers will tour alongside yours."
+   ],
+   [
+    "621 Ashberry Ln",
+    "Expired",
+    389999,
+    1849,
+    "No",
+    114,
+    "Same size in Spring Oaks."
+   ]
+  ]
+ },
+ "market": {
+  "bullets": [
+   "<strong>Buyers are negotiating again.</strong> In recent months, homes nearby sold further under their original asking price and took longer to go under contract than earlier in the year.",
+   "<strong>Inventory is balanced.</strong> More homes are for sale than earlier in the year, and many have already cut their price.",
+   "<strong>Mortgage rates are up</strong> from the earlier sales, so buyers' budgets stretch less than they did then.",
+   "<strong>Timing.</strong> Fewer buyers shop between Thanksgiving and New Year's. Launching in the next few weeks gives the home its best window before the holidays."
+  ]
+ },
+ "pricing": {
+  "stance": "market",
+  "stance_reason": "the home's documented updates match the strongest sales, which sit near the middle of the range, so it can hold a middle price even with the price cuts around it.",
+  "intro": "Three realistic options. Expected sale prices and timelines are our estimates from recent sales. The nets are close, so the real difference between them is time and risk.",
+  "note": "The competing-offer option assumes a smaller seller credit, because competing offers usually ask for less help; if they don't show up, its net falls."
+ },
+ "costs": {
+  "listing_fee_pct": 0.025,
+  "buyer_broker_fee_pct": 0.025
+ },
+ "buyer_payment": {
+  "rate": 6.95,
+  "loan_type": "conventional",
+  "down_pct": 0.05,
+  "insurance_annual": 3600,
+  "district": "Altamonte Springs",
+  "homestead": true,
+  "rate_week": "2026-09-17"
+ },
+ "prep": {
+  "intro": "These steps cost little and remove the questions that slow Florida buyers down or cost sellers money at the negotiating table.",
+  "items": [
+   {
+    "step": "Document the roof",
+    "detail": "Roof age decides whether a buyer can insure the home, so a permitted new roof is one of the listing's most valuable facts.",
+    "short": "Permit and date, ready for buyers and insurers",
+    "icon": "roof"
+   },
+   {
+    "step": "Get the inspections",
+    "detail": "A pre-listing inspection plus four-point and wind-mitigation reports. Buyers can get insurance quotes before they offer, and you learn about any issue before a buyer uses it to renegotiate.",
+    "short": "Pre-listing, four-point and wind-mitigation reports",
+    "icon": "inspection"
+   },
+   {
+    "step": "Gather the renovation permits",
+    "detail": "Kitchen, bath, electrical, and plumbing work. Unpermitted work can surface during the buyer's due diligence and delay or derail a sale.",
+    "short": "Kitchen, baths, electrical, plumbing",
+    "icon": "permit"
+   },
+   {
+    "step": "Make it easy to show",
+    "detail": "Lockbox access with short notice gets the most buyers through in the first weeks.",
+    "short": "Short-notice showings in the first weeks",
+    "icon": "showings"
+   },
+   {
+    "step": "Decide on a seller-credit budget",
+    "detail": "Most recent sales included one. A credit toward a temporary rate buydown lowers a buyer's payment far more in the first years than the same amount off the price.",
+    "short": "Decide it now, before offers arrive",
+    "icon": "money"
+   },
+   {
+    "step": "Agree on a review point",
+    "detail": "Steady showings but no offer after the first few weeks means we revisit the price with fresh data rather than waiting.",
+    "short": "Steady showings but no offer? Revisit the price",
+    "icon": "calendar"
+   }
+  ]
+ },
+ "needs": [
+  "The roof and renovation permits, plus any existing four-point or wind-mitigation report.",
+  "The age of the AC, water heater, and pool equipment, and the dates of the kitchen, bath, and flooring work.",
+  "The electrical panel brand, whether the home has aluminum branch wiring, and whether the plumbing has been updated: common questions for homes of this era.",
+  "Anything you know that affects the home's value or condition, such as past leaks, insurance claims, or repairs. Florida law requires sellers to disclose known material defects.",
+  "Your estimated mortgage payoff, so we can turn the net estimates into cash at closing.",
+  "When you would like to close, and how you would like showings to work."
+ ],
+ "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
+ "split_date": "2026-07-01",
+ "sample": true,
+ "deck": "dev/fixtures/seller-cma/deck/hickorywood-deck.json"
+}

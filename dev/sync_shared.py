@@ -8,7 +8,8 @@ The copies are committed so each skill works on its own in claude.ai and Cowork.
 Never edit scripts/_shared/ by hand; edit shared/ and sync.
 
 Each skill gets only the shared modules its scripts import (and what those import, plus the data they read:
-markets/ for profiles, the CSS for render and cma), so a markdown-only profile skill doesn't ship the offer engine.
+markets/ for profiles, the CSS for render and cma, the bundled font for render and layout), so a markdown-only profile
+skill doesn't ship the offer engine. Binary files (the font) are copied and compared byte for byte.
 
 shared/references/<name>.md is not code: it is copied to references/<name>.md of every skill whose SKILL.md
 mentions `references/<name>.md` (so a skill opts in by pointing to the file). Edit it in shared/references/ only.
@@ -26,7 +27,7 @@ REFERENCES = "references"  # shared/references/ goes to each skill's references/
 
 
 # Data files a shared module reads at run time, copied along with it.
-DATA_FOR = {"profiles": ("markets/",), "cma": ("cma.css",), "render": ("report.css",)}
+DATA_FOR = {"profiles": ("markets/",), "cma": ("cma.css",), "render": ("report.css", "fonts/"), "layout": ("fonts/",)}
 
 
 def _imports(path, package_level):

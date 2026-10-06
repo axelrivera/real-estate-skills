@@ -1,14 +1,20 @@
-"""Build the manual smoke-test kit in out/manual-test/ (dev only, never shipped).
+"""Build the release smoke-test kit in out/manual-test/ (dev only, never shipped).
 
     .venv/bin/python dev/manual_kit/build.py        # or: make manual-kit
 
-Makes every file a tester uploads (mock MLS 360 reports, a listing flyer, CMA exports, seller notes, a buyer CMA
-handoff, FR/BAR contract packages and an other-state agreement), one folder per case with the prompt to paste, and
-an expected.md per case whose numbers come from running the skills' own scripts at build time. The mock data is in
-data.json (a real city, Casselberry in Seminole County; every street, name, brokerage and MLS number is made up).
-See docs/manual-testing.md.
+One pass per release, about ten yes/no checks (CHECKS) in about twenty minutes: only what a person on the real
+platform can see. The plugin installs, the profile is saved and found, uploads are read, files are delivered and open
+(the PowerPoint, the calendar file), a buyer CMA carries into the offer in the same chat, and the best-effort line stays
+in chat. Content, numbers and layout are never checked here: golden snapshots, the generated tests and the evals cover
+them. See docs/manual-testing.md.
 
-The FR/BAR packages come from dev/mock_contracts/build.py (local only: it needs the FR/BAR PDFs in sources/).
+Makes every file a tester uploads (mock MLS 360 reports, a listing flyer, CMA exports, seller notes, FAR/BAR contract
+packages and an other-state agreement), one folder per case with the prompt to paste, and an expected.md per case with
+the checks and only the reference facts needed to answer them. The evals that mirror a case (`manual_case`) upload the
+same files. The mock data is in data.json (a real city, Casselberry in Seminole County; every street, name, brokerage
+and MLS number is made up).
+
+The FAR/BAR packages come from dev/mock_contracts/build.py (local only: it needs the FAR/BAR PDFs in sources/).
 Scratch work goes to out/manual-kit-work/; both folders are removed and rebuilt on every run.
 """
 import csv
@@ -19,7 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -29,7 +35,6 @@ PY = sys.executable
 CSV_HEADER = ["Distance", "ML Number", "Status", "Address", "Legal Subdivision Name", "Heated Area", "Current Price",
               "Close Price", "Close Date", "Original List Price", "Contract Date", "Beds", "Full Baths", "Year Built",
               "Pool", "CDOM", "Seller Paid Buyer Costs", "Lot Size Acres", "Sold Terms", "Public Remarks"]
-STARTERS = ["asis-offer-aga", "asis-fha-executed", "asis-short-sale-rent-back"]
 
 D = json.load(open(os.path.join(HERE, "data.json"), encoding="utf-8"))
 TODAY = D["today"]
@@ -41,6 +46,11 @@ class KitError(RuntimeError):
 
 
 # --- helpers -------------------------------------------------------------------
+
+
+def signed_stamp(text):
+    """'09/24/2026 11:45 AM' -> '2026-09-24 11:45' (a deal file's effective_date_signed)."""
+    return datetime.strptime(text, "%m/%d/%Y %I:%M %p").strftime("%Y-%m-%d %H:%M")
 
 def rel(path):
     return os.path.relpath(path, ROOT)
@@ -70,15 +80,6 @@ def money(v):
     return f"${v:,.0f}" if v is not None else "none"
 
 
-def pct(v, digits=1):
-    return f"{v * 100:.{digits}f}%" if v is not None else "none"
-
-
-def band(low, high, margin=0.03):
-    """The sanity band around a script's adjusted-comp span, rounded outward to $1,000."""
-    return f"{money(int(low * (1 - margin)) // 1000 * 1000)} to {money(-(-int(high * (1 + margin)) // 1000) * 1000)}"
-
-
 def long_date(iso):
     return datetime.strptime(iso[:10], "%Y-%m-%d").strftime("%B %-d, %Y")
 
@@ -99,10 +100,12 @@ def write_csv(path, rows):
             w.writerow(r)
 
 
-def prompt_md(case, uploads, steps, today=TODAY, note=None):
+def prompt_md(case, uploads, steps, today=TODAY, note=None, upload_note=None):
     """prompt.md: what to upload and the prompts to paste, in order."""
     lines = [f"# {case}", ""]
     lines += ["## Upload", ""] + ([f"- `{u}`" for u in uploads] if uploads else ["Nothing."]) + [""]
+    if upload_note:
+        lines += [upload_note, ""]
     lines += ["## Prompts", ""]
     for i, s in enumerate(steps, 1):
         lines += [f"**{s.get('title', f'Step {i}')}**", ""]
@@ -111,9 +114,7 @@ def prompt_md(case, uploads, steps, today=TODAY, note=None):
         lines += ["```text", s["text"], "```", ""]
     if note:
         lines += [note, ""]
-    lines += [f"Date assumed: {long_date(today)}. Keep the \"Today is\" sentence in the prompt so dates line up with "
-              "expected.md."]
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip() + "\n"
 
 
 # --- PDF rendering (Playwright, the dev Chromium from make setup) --------------------
@@ -271,7 +272,7 @@ def agreement_html(a):
 # --- mock contract packages ------------------------------------------------------------
 
 def build_package(spec_path, name):
-    """Build a mock FR/BAR package with its answer key into WORK/pkg/<name>/ (deterministic: seeded by the name)."""
+    """Build a mock FAR/BAR package with its answer key into WORK/pkg/<name>/ (deterministic: seeded by the name)."""
     out = os.path.join(WORK, "pkg", name)
     run(["dev/mock_contracts/build.py", spec_path, "--answer-key", "--out", out], parse=False)
     key = next(os.path.join(out, "key", f) for f in os.listdir(os.path.join(out, "key")) if f.endswith("-Answer-Key.json"))
@@ -290,12 +291,6 @@ def listing_side(key):
     payer = ((key.get("mock") or {}).get("compensation_agreement") or {}).get("payer") or ""
     m = re.fullmatch(r"(.+) \(signed by (.+)\)", payer)
     return (m.group(1), m.group(2)) if m else (None, None)
-
-
-def loan_officer(pdf_path):
-    """The loan officer who signs the package's pre-approval letter, or None."""
-    m = re.search(r"(\S+ \S+)\s*\n\s*Senior Loan Officer", pdf_text(pdf_path))
-    return m.group(1) if m else None
 
 
 def second_offer_spec(aga_dir, aga_pdf, aga_key):
@@ -354,356 +349,113 @@ def deal_from_key(key, today):
     return deal
 
 
-def timeline_md(t):
-    rows = [[r["label"], r["display"], r["party"], ("Done " + r["done_display"][5:]) if r["done"] else "",
-             r["rule"]] for r in t["rows"]]
-    out = [table(["Deadline", "When", "Who", "Status", "Rule"], rows)]
-    if t["pending"]:
-        out += ["", "Not dated yet (wait on an event):", "",
-                table(["Deadline", "Rule"], [[r["label"], r["rule"]] for r in t["pending"]])]
-    return "\n".join(out)
-
 
 # --- cases -----------------------------------------------------------------------------
+# Each case writes its uploads, prompt.md and an expected.md holding only the reference facts its checks need.
 
-def case_profile(checks):
-    d = os.path.join(OUT, "01-agent-profile")
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 1: Agent Profile", [], [
+def expected_md(case, title, facts, intro=None):
+    lines = [f"# {title}: Expected", ""]
+    if intro:
+        lines += [intro, ""]
+    if facts:
+        lines += ["## Reference Facts", ""] + [f"- {f}" for f in facts] + [""]
+    lines += ["## Checks (Yes or No)", ""] + [f"- {c}" for c in check_texts(case)]
+    write(os.path.join(OUT, case, "expected.md"), "\n".join(lines))
+
+
+def case_profile():
+    case = "01-agent-profile"
+    write(os.path.join(OUT, case, "prompt.md"), prompt_md("Case 1: Agent Profile", [], [
         {"title": "Prompt", "text": "Set up my profile."}],
-        note="Answer the questions with your own real details (name, brokerage, license, phone, email, brand colors "
-             "or a logo). Nothing in this kit is used here; later cases use the profile this case saves."))
-    write(os.path.join(d, "expected.md"), "\n".join([
-        "# Case 1: Expected", "",
-        "Nothing is computed for this case: the profile is your own.", "",
-        "- **Cowork:** the skill asks for what it needs in at most two rounds, then saves `profile.md` "
-        "in the working folder. Open it: your details, your colors, no placeholders like `[Your Name]` and nothing "
-        "made up (no invented license number or slogan).",
-        "- **claude.ai:** there is no working folder, so the profile is handed over in chat (or as a file to keep) and "
-        "the reply says to upload it next time.", "",
-        "## Checks", ""] + [f"- {c}" for c in checks]))
+        note="Answer the questions with your own details (name, brokerage, license, phone, email, brand colors or a "
+             "logo). Later cases use the profile this case saves."))
+    expected_md(case, "Case 1", [
+        f"The plugin lists {len(SKILLS)} skills: {', '.join(SKILLS)}.",
+        "Cowork: `profile.md` lands directly in the working folder (open it: your details, no placeholders).",
+        "claude.ai: there is no working folder, so the profile comes back as a file to keep."])
 
 
-def case_seller_cma(pdf, checks):
-    h = D["seller_home"]
-    d = os.path.join(OUT, "02-seller-cma")
+def case_seller_cma(pdf):
+    case, h = "02-seller-cma", D["seller_home"]
+    d = os.path.join(OUT, case)
     os.makedirs(d, exist_ok=True)
     export = os.path.join(d, h["export_file"])
     write_csv(export, h["rows"])
     pdf.render(report_360_html(h["report_360"]), os.path.join(d, h["report_file"]), "360 Property View")
     write(os.path.join(d, h["notes_file"]), "\n".join(h["notes"]))
-
-    cmd = ["skills/seller-cma/scripts/stats.py", rel(export), "--address", h["mls_address"], "--sqft", str(h["sqft"]),
-           "--subdivision", h["subdivision"], "--state", h["state"], "--county", h["county"],
-           "--split-date", h["split_date"], "--as-of", TODAY] + (["--pool"] if h["pool"] else [])  # CMA-330
-    stats = run(cmd)
+    stats = run(["skills/seller-cma/scripts/stats.py", rel(export), "--address", h["mls_address"], "--sqft",
+                 str(h["sqft"]), "--subdivision", h["subdivision"], "--state", h["state"], "--county", h["county"],
+                 "--split-date", h["split_date"], "--as-of", TODAY] + (["--pool"] if h["pool"] else []))
     if not stats.get("ok"):
         raise KitError(f"seller stats.py: {stats}")
-    if stats["subject_rows"]:
-        raise KitError("The seller's home has rows in the export: the skill would stop to ask whose listing it is.")
-
-    # A reference compute run with the kit's own comp picks: the net-sheet lines and rates are deterministic
-    ref = h["reference"]
-    base = json.load(open(os.path.join(ROOT, "dev", "samples", "seller-cma.json"), encoding="utf-8"))
-    for k in ("sample", "deck"):
-        base.pop(k, None)
-    base.update({
-        "prepared_date": long_date(TODAY), "as_of": TODAY, "export": os.path.abspath(export), "split_date": h["split_date"],
-        "subject": {**base["subject"], "address": h["address"], "mls_address": h["mls_address"], "city": h["city"],
-                    "state": h["state"], "county": h["county"], "sqft": h["sqft"], "beds": h["beds"], "baths": h["baths"],
-                    "year_built": h["year_built"], "pool": h["pool"], "hoa": h["hoa"], "subdivision": h["subdivision"],
-                    "locality": f"{h['city']}, {h['state']} {h['zip']} · Tanager Ridge · {h['county']} County"},
-        "recommendation": {**base["recommendation"], **ref["recommendation"]},
-        "costs": ref["costs"], "buyer_payment": ref["buyer_payment"],
-    })
-    base["comps"]["cards"] = [{**c, "meta": "", "bullets": ["Reference comp."]} for c in ref["comps"]]
-    base["pricing"]["strategies"] = ref["strategies"]
-    base["pricing"]["recommended_index"] = 1
-    base["scatter"]["callouts"] = []
-    work = os.path.join(WORK, "seller-cma")
-    dump(os.path.join(work, "report.json"), base)
-    comp = run(["skills/seller-cma/scripts/compute.py", rel(os.path.join(work, "report.json"))])
-    if not comp.get("ok"):
-        raise KitError(f"seller compute.py: {comp}")
-
-    r360 = h["report_360"]
-    expired = r360["history"][1]
-    net = comp["net"]
-    lines = [
-        "# Case 2: Expected", "",
-        f"Date assumed: {long_date(TODAY)} (say \"Today is {long_date(TODAY)}\" in the prompt).", "",
-        "## The Home Is Not Listed Now", "",
-        f"- The 360 report's status line is **{r360['header']['status']}** ({r360['header']['pairs'][0][1]}): the "
-        "2019 purchase. The home is off the market today.",
-        f"- stats.py `subject_rows` is **empty**: the export has no row for {h['mls_address']}. The skill must not stop "
-        "to ask whose listing it is.",
-        f"- **Old failed listing to flag:** MLS# {expired['mls']}, listed {expired['rows'][-1][0]} at "
-        f"{expired['rows'][-1][3]}, cut to {expired['rows'][1][3]} on {expired['rows'][1][0]}, **expired "
-        f"{expired['rows'][0][0]} after {expired['rows'][0][4]} days**.", "",
-        "## Facts the Report Should Use", "",
-        f"- County record (Tax tab): {h['beds']} beds, {h['baths']} baths, {h['sqft']:,} sq ft heated, built "
-        f"{h['year_built']}, lot 0.24 acre (the MLS says 0.23), block and stucco, no pool, 2-car garage, flood zone X, "
-        "no HOA.",
-        "- Current tax bill: $3,505.61 (2025, homestead). Tax Area C1: City of Casselberry millage.",
-        "- Updates come from the seller notes (roof 2021, AC 2023, floors 2022, kitchen 2024), not the 2019 remarks.",
-        "- Never in a client file: owner and buyer names, mortgage history, Realtor Remarks, the AVM.", "",
-        "## Market Numbers (stats.py)", "",
-        "Command, exactly as SKILL.md shows it:", "",
-        "```text", "python3 scripts/stats.py " + " ".join(
-            f'"{a}"' if " " in a else a for a in [h["export_file"]] + cmd[2:]), "```", "",
-        f"Split date {h['split_date']}. Claude may pick another split date; then only the whole-window numbers "
-        "below must match.", "",
-        table(["Measure", "Whole Window", "Before Split", "Since Split"], [
-            ["Homes Sold", stats["sold_all"]["n"], stats["sold_early"]["n"], stats["sold_recent"]["n"]],
-            ["Median Sale Price", money(stats["sold_all"]["median_price"]), money(stats["sold_early"]["median_price"]),
-             money(stats["sold_recent"]["median_price"])],
-            ["Median $ / Sq Ft", stats["sold_all"]["median_ppsf"], stats["sold_early"]["median_ppsf"],
-             stats["sold_recent"]["median_ppsf"]],
-            ["Sale vs. Original List", pct(stats["sold_all"]["median_sale_to_original_list"]),
-             pct(stats["sold_early"]["median_sale_to_original_list"]),
-             pct(stats["sold_recent"]["median_sale_to_original_list"])],
-            ["Median Days on Market", stats["sold_all"]["median_days_on_market"],
-             stats["sold_early"]["median_days_on_market"], stats["sold_recent"]["median_days_on_market"]],
-            ["Share with Seller-Paid Costs", pct(stats["sold_all"]["share_with_seller_paid_costs"], 0),
-             pct(stats["sold_early"]["share_with_seller_paid_costs"], 0),
-             pct(stats["sold_recent"]["share_with_seller_paid_costs"], 0)],
-        ]), "",
-        f"- Status counts: {', '.join(f'{k.title()} {v}' for k, v in stats['status_counts'].items())}.",
-        f"- Active listings: {stats['active_count']} ({pct(stats['active_share_with_price_cut'], 0)} with a price cut); "
-        f"months of supply at the recent pace: {stats['months_supply_at_recent_pace']}.",
-        f"- Top comp candidates: {', '.join(c['address'].title() for c in stats['sold_candidates'][:6])}.", "",
-        "## Value and Price (Judgment)", "",
-        "The range and list price are Claude's judgment: check they're sensible, not exact. As a sanity band, a "
-        "reference compute.py run with five comps picked from the list above adjusted to "
-        f"**{money(comp['adjusted_min'])} to {money(comp['adjusted_max'])}** (median {comp['median_adjusted_display']}). "
-        f"A recommended list price outside about {band(comp['adjusted_min'], comp['adjusted_max'])} (that span "
-        "plus or minus 3%) needs a stated reason.", "",
-        "## Net Sheet Lines (compute.py)", "",
-        "The labels and rates below are fixed; the dollar amounts depend on the prices Claude picks. Reference run at "
-        "the kit's three prices (payoff $171,500, closing December 18, 2026):", "",
-        table(["Line"] + [s["label"] for s in comp["strategies"]],
-              [[r["label"]] + r["display"] for r in net["rows"]]), "",
-        "- The brokerage lines must be marked as assumed (5% total: 2.5% listing, 2.5% buyer's agent), since the notes "
-        "say the terms aren't set. compute.py's assumptions:",
-    ]
-    lines += [f"  - {a}" for a in comp["assumptions"]] or ["  - none"]
-    pay = comp["payments"]
-    lines += ["", f"- Buyer payment basis: {pay['tax_basis']}; at the reference 6.5% rate, conventional 5% down: " +
-              "; ".join(f"{r['list_price_display']} → {r['payment_display']}/mo" for r in pay["rows"]) +
-              ". The rate Claude finds online will differ.", "",
-              "## Checks", ""] + [f"- {c}" for c in checks]
-    write(os.path.join(d, "expected.md"), "\n".join(lines))
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 2: Seller CMA", [h["report_file"], h["export_file"], h["notes_file"]], [
+    if stats["subject_rows"]:  # the skill would stop to ask whose listing it is
+        raise KitError("The seller's home has rows in the export: the case would stop on a question.")
+    expired = h["report_360"]["history"][1]
+    expected_md(case, "Case 2", [
+        f"From the 360 report (PDF): the expired listing MLS# {expired['mls']}, listed at {expired['rows'][-1][3]}, "
+        f"expired after {expired['rows'][0][4]} days.",
+        f"From the export (CSV): {stats['sold_all']['n']} homes sold in the window.",
+        "Files delivered: the report PDF, the PowerPoint and a PDF copy of the slides."])
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 2: Seller CMA", [h["report_file"], h["export_file"],
+                                                                          h["notes_file"]], [
         {"title": "Step 1 (new session)", "text":
             f"Today is {long_date(TODAY)}. I have a listing appointment for {h['address']} in {h['city']}. Attached are "
             "the MLS 360 property report, my CMA export and my notes from the call with the sellers. What should we list "
             "at? I need the seller CMA report."},
-        {"title": "Step 2", "text": "Now build the listing presentation for the appointment."},
-        {"title": "Step 3", "text": "On the first slide, add that the home is perfect for young families."},
-    ]))
-    return stats, comp
+        {"title": "Step 2 (same chat)", "text": "Now build the listing presentation for the appointment."}],
+        upload_note="claude.ai only: also upload the `profile.md` case 1 gave you (Cowork finds it in the working folder)."))
 
 
-def history_events(h):
-    """The 360 report's history grid as buyer-cma `events` (report-data.md), newest first, as the grid lists it."""
-    change = {"->ACT": "listed", "ACT->PND": "pending", "PND->SLD": "sold"}
-    out = []
-    for block in h["report_360"]["history"]:
-        for date_, kind, move, price, dom in block["rows"]:
-            m, d_, y = date_.split("/")
-            out.append({"date": f"{y}-{m}-{d_}", "mls": block["mls"],
-                        "change": "price" if kind == "Price Change" else change[move],
-                        "price": int(price.replace("$", "").replace(",", "")), "dom": int(dom)})
-    return out
-
-
-def case_buyer_cma(pdf, checks):
-    h = D["buyer_home"]
-    d = os.path.join(OUT, "03-buyer-cma")
+def case_buyer_cma(pdf):
+    case, h = "03-buyer-cma", D["buyer_home"]
+    d = os.path.join(OUT, case)
     os.makedirs(d, exist_ok=True)
     export = os.path.join(d, h["export_file"])
     write_csv(export, h["rows"])
     pdf.render(report_360_html(h["report_360"]), os.path.join(d, h["report_file"]), "360 Property View")
     pdf.render(flyer_html(h), os.path.join(d, h["flyer_file"]), "Listing Flyer")
-
-    cmd = ["skills/buyer-cma/scripts/stats.py", rel(export), "--address", h["mls_address"], "--state", h["state"],
-           "--county", h["county"], "--mls-number", h["mls"], "--split-date", h["split_date"],
-           "--as-of", TODAY]  # CMA-330: as the skill runs it (SKILL.md step 2), so months of supply runs to today
-    stats = run(cmd)
+    stats = run(["skills/buyer-cma/scripts/stats.py", rel(export), "--address", h["mls_address"], "--state", h["state"],
+                 "--county", h["county"], "--mls-number", h["mls"], "--split-date", h["split_date"], "--as-of", TODAY])
     if not stats.get("ok") or not stats.get("subject_row"):
         raise KitError(f"buyer stats.py didn't find the subject row: {stats.get('problems') or stats.get('market_notes')}")
-
-    ref = h["reference"]
-    base = json.load(open(os.path.join(ROOT, "dev", "samples", "buyer-cma.json"), encoding="utf-8"))
-    base.pop("sample", None)
-    base.update({"prepared_date": long_date(TODAY), "as_of": TODAY, "export": os.path.abspath(export),
-                 "split_date": h["split_date"]})
-    base["subject"].update({
-        "address": h["address"], "mls_address": h["mls_address"], "city": h["city"], "state": h["state"],
-        "county": h["county"], "list_price": h["list_price"], "sqft": h["sqft"], "beds": h["beds"], "baths": h["baths"],
-        "year_built": h["year_built"], "pool": h["pool"], "subdivision": h["subdivision"], "property_type": "single_family",
-        "locality": f"{h['city']}, {h['state']} {h['zip']} · Kestrel Point · {h['county']} County · MLS {h['mls']}"})
-    base["bottom_line"].update(ref["bottom_line"])
-    base["offer_plan"].update(ref["offer_plan"])
-    base["comps"]["cards"] = [{**c, "meta": "", "bullets": ["Reference comp."]} for c in ref["comps"]]
-    base["scatter"]["callouts"] = []
-    base["history"] = {"heading": "Price History", "intro": "The full history:", "after": "", "events": history_events(h)}
-    base["costs"]["taxes"].update(ref["taxes"])
-    base["costs"]["taxes"].pop("purchase_price", None)  # CMA-315: the skill's default, taxes at the payment's price
-    base["costs"]["payment"].update({**ref["payment"], "tax_jurisdiction_index": 0})
-    base["costs"]["payment"].pop("price", None)  # the payment at the plan's target, as the skill figures it
-    base["costs"]["credit_scenarios"].update(ref["credit_scenarios"])
-    base["costs"]["credit_scenarios"].pop("buydown", None)
-    work = os.path.join(WORK, "buyer-cma")
-    dump(os.path.join(work, "report.json"), base)
-    comp = run(["skills/buyer-cma/scripts/compute.py", rel(os.path.join(work, "report.json"))])
-    if not comp.get("ok"):
-        raise KitError(f"buyer compute.py: {comp}")
-    if comp.get("warnings"):
-        print("  buyer compute warnings:", comp["warnings"])
-
-    row = stats["subject_row"]
-    hist = h["report_360"]["history"][0]["rows"]
-    adj = [c["adjusted"] for c in comp["handoff"]["comps"]]
-    lines = [
-        "# Case 3: Expected", "",
-        f"Date assumed: {long_date(TODAY)} (say \"Today is {long_date(TODAY)}\" in the prompt).", "",
-        "## The Listing", "",
-        f"- Active at **{money(h['list_price'])}**, MLS# {h['mls']}, {row['days_on_market']:.0f} days on market "
-        f"(listed {hist[-1][0]} at {hist[-1][3]}).",
-        f"- **Two price cuts:** {hist[1][0]} to {hist[1][3]}, then {hist[0][0]} to {hist[0][3]}. Earlier sale: "
-        "$262,000 in May 2015.",
-        f"- **Counted by compute.py:** {comp['history']['price_cuts']} price cuts, {comp['history']['price_increases']} "
-        f"increases, {money(comp['history']['price_cut_total'])} cut in all, {comp['history']['active_days']} active "
-        "days (the 2015 listing that sold is in the history table but not in the counts). The report and reply must "
-        "use these counts, never a hand count.",
-        f"- Facts: {h['beds']} beds, {h['baths']} baths, {h['sqft']:,} sq ft, built {h['year_built']}, screened pool, "
-        "lot 0.27 acre, HOA $420 a year, flood zone X, roof 2010 (a watch item: insurers ask about roofs this age).",
-        "- Tax: 2025 bill $4,095.13 with the seller's homestead. Tax Area C1 (City of Casselberry). The buyer's bill "
-        "resets at the purchase price.", "",
-        "## Market Numbers (stats.py)", "",
-        "```text", "python3 scripts/stats.py " + " ".join(
-            f'"{a}"' if " " in a else a for a in [h["export_file"]] + cmd[2:]), "```", "",
-        table(["Measure", "Whole Window", "Before Split", "Since Split"], [
-            ["Homes Sold", stats["sold_all"]["n"], stats["sold_early"]["n"], stats["sold_recent"]["n"]],
-            ["Median Sale Price", money(stats["sold_all"]["median_price"]), money(stats["sold_early"]["median_price"]),
-             money(stats["sold_recent"]["median_price"])],
-            ["Sale vs. Original List", pct(stats["sold_all"]["median_sale_to_original_list"]),
-             pct(stats["sold_early"]["median_sale_to_original_list"]),
-             pct(stats["sold_recent"]["median_sale_to_original_list"])],
-            ["Median Days on Market", stats["sold_all"]["median_days_on_market"],
-             stats["sold_early"]["median_days_on_market"], stats["sold_recent"]["median_days_on_market"]],
-        ]), "",
-        f"- Status counts: {', '.join(f'{k.title()} {v}' for k, v in stats['status_counts'].items())} (the subject is "
-        "one of the actives).",
-        f"- Other actives: {stats['active_count']}; months of supply at the recent pace: "
-        f"{stats['months_supply_at_recent_pace']}.",
-        f"- Top comp candidates: {', '.join(c['address'].title() for c in stats['sold_candidates'][:6])}.", "",
-        "## Value and Offer (Judgment)", "",
-        f"Range and offer plan are Claude's judgment. Sanity band from a reference compute.py run with five comps "
-        f"from the list above: adjusted **{money(min(adj))} to {money(max(adj))}** (median "
-        f"{comp['median_adjusted_display']}). The asking price should read as at or above the top of the supported "
-        "range (the reference run puts it " + comp["range"]["asking_position"] + "), and the opening offer and "
-        f"walk-away should sit inside about {band(min(adj), max(adj))} (that span plus or minus 3%).",
-        "",
-        "## Taxes at the Target Price (compute.py)", "",
-        f"Fixed by the built-in 2025 Casselberry millage and the new owner's homestead, at the reference plan's target "
-        f"({comp['payments']['price_display']}). The skill figures taxes at the payment's price, the target, so with "
-        "Claude's own plan the dollars move with its target; the report's tax table names that price:", "",
-        table(["Jurisdiction", "Basis", "A Year", "A Month"],
-              [[t["label"], t["basis"], t["annual_display"], t["monthly_display"]] for t in comp["taxes"]]), "",
-        f"The listing shows the seller's {comp['current_bill_display']} bill; the report must say the buyer's bill "
-        "resets at the purchase price.", "",
-    ]
-    lines += ["Payments use the rate Claude finds online, so only the tax lines are fixed.", "",
-              "## Checks", ""] + [f"- {c}" for c in checks]
-    write(os.path.join(d, "expected.md"), "\n".join(lines))
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 3: Buyer CMA", [h["flyer_file"], h["report_file"], h["export_file"]], [
+    expected_md(case, "Case 3", [
+        "File delivered: the buyer CMA PDF."])
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 3: Buyer CMA", [h["flyer_file"], h["report_file"],
+                                                                         h["export_file"]], [
         {"title": "Prompt", "text":
             f"Today is {long_date(TODAY)}. My buyer is looking at {h['address']} in {h['city']}. Here are the listing "
             "flyer, the MLS 360 property report and my CMA export. Is it priced right and what should we offer? I need "
-            "the buyer CMA PDF."}]))
-    return stats, comp
+            "the buyer CMA PDF."}],
+        note="Keep this chat open: case 4 continues in it."))
 
 
-def case_offer_strategy(comp, checks):
-    h = D["buyer_home"]
-    lim = D["buyer_limits"]
-    d = os.path.join(OUT, "04-buyer-offer-strategy")
-    os.makedirs(d, exist_ok=True)
-    handoff_src = comp["handoff_file"]
-    handoff_name = os.path.basename(handoff_src)
-    shutil.copy(handoff_src, os.path.join(d, handoff_name))
-    run(["-c", "import sys, json; sys.path.insert(0, 'shared'); import handoff; "
-         f"handoff.load({json.dumps(os.path.join(d, handoff_name))}); print(json.dumps({{'ok': True}}))"])
-
-    buyer = {"analysis_date": TODAY,
-             "property": {"address": f"{h['address']}, {h['city']}, {h['state']} {h['zip']}", "state": h["state"],
-                          "county": h["county"], "list_price": h["list_price"]},
-             "competition": lim["competition"], "costs": lim["costs"], "buyer": lim["buyer"],
-             "worksheet": lim["worksheet"], "chosen_option": "recommended", "overrides": {}}
-    work = os.path.join(WORK, "offer-strategy")
-    dump(os.path.join(work, "buyer.json"), buyer)
-    out = run(["skills/buyer-offer-strategy/scripts/strategy.py", rel(os.path.join(work, "buyer.json")),
-               "--cma", rel(os.path.join(d, handoff_name))])
-    if not out.get("ok", True):
-        raise KitError(f"strategy.py: {out}")
-    dump(os.path.join(work, "strategy-output.json"), out)
-    lines = ["# Case 4: Expected", "",
-             f"Date assumed: {long_date(TODAY)}. The handoff `{handoff_name}` was written by buyer-cma's compute.py from "
-             "the case 3 home, and the numbers below come from strategy.py run on a buyer file matching the prompt.", ""]
-    lines += strategy_summary(out, lim)
-    lines += ["", "## Checks", ""] + [f"- {c}" for c in checks]
-    write(os.path.join(d, "expected.md"), "\n".join(lines))
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 4: Buyer Offer Strategy", [handoff_name], [
-        {"title": "Prompt", "text":
-            f"Today is {long_date(TODAY)}. Attached is the buyer CMA for {h['address']}, {h['city']} (listed at "
-            f"{money(h['list_price'])}). Help me write the offer. My buyer: {lim['prompt']} I need the offer options "
+def case_offer_strategy():
+    case, h, lim = "04-buyer-offer-strategy", D["buyer_home"], D["buyer_limits"]
+    expected_md(case, "Case 4", ["Files delivered: Offer Options and Offer Package Worksheet (two PDFs)."],
+                intro="Run in the case 3 chat: nothing is uploaded. Asking for a CMA file or an upload is a failure.")
+    write(os.path.join(OUT, case, "prompt.md"), prompt_md("Case 4: Buyer Offer Strategy", [], [
+        {"title": "Prompt (in the case 3 chat)", "text":
+            f"Now help me write the offer on {h['address']}. My buyer: {lim['prompt']} I need the offer options "
             "report and the offer package worksheet."}],
-        note="If the skill asks for anything else, answer from the prompt or say you don't know."))
-    return out
+        note="Run this in the same chat as case 3, right after the buyer CMA: don't start a new chat and don't upload "
+             "anything. If it asks for anything else, answer from the prompt or say you don't know."))
 
 
-def strategy_summary(out, lim):
-    """Page-1 facts from strategy.py's output: the recommended terms, the options, cash exposure and riders."""
-    s, ws = out["summary"], out["worksheet"]
-    lines = ["## Buyer Limits (from the prompt)", "",
-             table(["Limit", "Value"], [["Max Price", money(lim["buyer"]["max_price"])],
-                                        ["Cash Available", money(lim["buyer"]["cash_available"])],
-                                        ["Reserve Floor", money(lim["buyer"]["reserve_floor"])],
-                                        ["Max Payment", money(lim["buyer"]["max_payment"]) + " a month"],
-                                        ["Loan", "Conventional, 5% down, 6.5%, first-time buyer"]]), "",
-             f"## Recommended Offer (strategy.py): {s['outlook']}, Strength {s['strength']}/100", "",
-             f"Value range from the handoff: {out['value_range']}. Competition: {s['competition']}.", "",
-             table(["Term", "Offer", "Why"], [[t["term"], t["offer"].replace("**", ""), t["why"]] for t in s["terms"]]), "",
-             table(["Cash and Payment", "Amount"], [[a, b] for a, b in s["exposure"]]), ""]
-    notes = list(s.get("constraints") or []) + [x["text"] for x in out.get("reply_lines") or []
-                                               if x["text"] not in (s.get("constraints") or [])]
-    if notes:  # OFR-332 and the like: on page 1 and in the reply, word for word
-        lines += ["Page 1 and the reply must carry, word for word:", ""] + [f"- {n}" for n in notes] + [""]
-    lines += ["## Options", "",
-             table(["Option", "Price", "Outlook", "Seller Net", "Worst-Case Cash", "Reserve", "What Changes"],
-                   [[o["option"], o["price"], o["outlook"], o["seller_net"], o["worst_cash"], o["reserve"], o["what"]]
-                    for o in s["options"]]), "",
-             "## Outlook by Competition Level", "",
-             table(["Level"] + s["option_labels"], [[b["level"]] + [v["band"] for v in b["values"]] for b in s["bands"]]),
-             "", f"## Worksheet: {ws['form_name']}", "",
-             "Riders, by name and CR-7 letter:", ""]
-    lines += [f"- {r['rider']}: {r['inputs'].replace('**', '')}" for r in ws["riders"]]
-    lines += ["", "The worksheet must not show the buyer's max price, cash or reserve.", "",
-              "## Assumptions strategy.py lists", ""] + [f"- {a['what']}" for a in out["assumptions"]]
-    return lines
-
-
-def case_offer_review(checks):
-    o = D["offer_review"]
-    d = os.path.join(OUT, "05-seller-offer-review")
+def case_offer_review():
+    """Two offers on one listing: step 1 uploads the first, step 2 the second in the same chat (as the mirroring eval,
+    seller-offer-review eval 8, does)."""
+    case, o = "05-seller-offer-review", D["offer_review"]
+    d = os.path.join(OUT, case)
     aga_dir, aga_key, aga_pdfs = build_package(f"dev/mock_contracts/scenarios/{o['starter']}.json", o["starter"])
     offer_pdf = next(p for p in aga_pdfs if p.endswith("-Offer.pdf"))
-    spec, same = second_offer_spec(aga_dir, offer_pdf, aga_key)
+    spec, _ = second_offer_spec(aga_dir, offer_pdf, aga_key)
     b_dir, b_key, b_pdfs = build_package(rel(spec), "manual-kit-sable-palm-second-offer")
-    side = listing_side(aga_key)
-    if listing_side(b_key) != side:
+    if listing_side(b_key) != listing_side(aga_key):
         raise KitError("The two offer packages name different listing brokerages.")
+    if b_key["listing"]["address"] != aga_key["listing"]["address"]:
+        raise KitError("The second offer isn't on the same listing.")
+    if b_key["listing"].get("hoa_monthly") != aga_key["listing"].get("hoa_monthly"):
+        raise KitError("The two offer packages show different HOA fees.")
     a_agent, b_agent = aga_key["offers"][0]["buyer_agent"], b_key["offers"][0]["buyer_agent"]
     if a_agent.split()[-1][:5] == b_agent.split()[-1][:5]:
         raise KitError(f"The buyer's agents' surnames read alike ({a_agent}, {b_agent}): rename one in the scenario.")
@@ -713,233 +465,130 @@ def case_offer_review(checks):
         os.makedirs(os.path.join(d, step), exist_ok=True)
         for p in pdfs:
             shutil.copy(os.path.join(src_dir, p), os.path.join(d, step, p.replace(".pdf", f"-{buyer}.pdf")))
-    if b_key["listing"]["address"] != aga_key["listing"]["address"]:
-        raise KitError("The second offer isn't on the same listing.")
-    if b_key["listing"].get("hoa_monthly") != aga_key["listing"].get("hoa_monthly"):  # OFR-345
-        raise KitError("The two offer packages show different HOA fees.")
-
-    single = {k: v for k, v in aga_key.items() if k != "mock"}
-    single["analysis_date"] = o["today"]
-    single["listing"]["list_price"] = o["list_price"]
-    for offer, src_dir, pdfs in ((single["offers"][0], aga_dir, aga_pdfs), (b_key["offers"][0], b_dir, b_pdfs)):
-        officer = loan_officer(os.path.join(src_dir, next(p for p in pdfs if p.endswith("-Offer.pdf"))))
-        if officer:  # the pre-approval letter names the loan officer, so the review never asks who it is
-            offer["loan_officer"] = officer
-    multi = json.loads(json.dumps(single))
-    second = dict(b_key["offers"][0], id="B")
-    multi["offers"].append(second)
-    nmob = (json.load(open(spec, encoding="utf-8")).get("disclosures") or {}).get("NMOB") or {}
-    if nmob.get("deadline"):  # the second package's Notice of Multiple Offers: highest and best is already called
-        multi["listing"]["highest_and_best_due"] = nmob["deadline"]
-    work = os.path.join(WORK, "offer-review")
-    dump(os.path.join(work, "listing-single.json"), single)
-    dump(os.path.join(work, "listing-multi.json"), multi)
-    r1 = run(["skills/seller-offer-review/scripts/review.py", rel(os.path.join(work, "listing-single.json"))])
-    r2 = run(["skills/seller-offer-review/scripts/review.py", rel(os.path.join(work, "listing-multi.json"))])
-    for r in (r1, r2):
-        if not r.get("ok"):
-            raise KitError(f"review.py: {r}")
-
-    s1, s2 = r1["summary"], r2["summary"]
     a, b = aga_key["offers"][0], b_key["offers"][0]
-    lines = ["# Case 5: Expected", "",
-             f"Date assumed: {long_date(o['today'])} (say \"Today is {long_date(o['today'])}\"). The offers arrived "
-             f"{a['received']} and {b['received']}; the first expires {a['expires']}.", "",
-             "Numbers below come from review.py run on the mock packages' answer keys (the listing files the skill "
-             "should build from the PDFs), with no payoff, CMA or brokerage terms given.", "",
-             "## The Offers", "",
-             table(["", "Offer 1 (Step 1)", "Offer 2 (Step 2)"], [
-                 ["Buyer", a["buyer"], b["buyer"]],
-                 ["Buyer's Agent", f"{a['buyer_agent']}, {a['buyer_brokerage']}", f"{b['buyer_agent']}, {b['buyer_brokerage']}"],
-                 ["Price", money(a["price"]), money(b["price"])],
-                 ["Financing", f"Conventional, {a['down_pct']:.0%} down", f"Conventional, {b['down_pct']:.0%} down"],
-                 ["Deposit", money(a["deposit"]), money(b["deposit"])],
-                 ["Closing", a["closing_date"], b["closing_date"]],
-                 ["Special Terms", f"Appraisal Gap Addendum (AGA-1), {money(a['appraisal_gap'])} gap",
-                  f"Escalation Addendum (EAC-1): {money(b['escalation']['increment'])} over competing offers, cap "
-                  f"{money(b['escalation']['cap'])}"],
-                 ["Riders", ", ".join(a["riders"]), ", ".join(b["riders"])]]), "",
-             f"Both packages carry the same parcel ({same['tax_id']}), HOA rider contact ({same['hoa_contact']}) and HOA "
-             f"fee ({same['hoa']}).", "",
-             f"Both packages name {side[0]} ({side[1]}) as the listing side, not your brokerage: a flag asking you to "
-             "confirm the listing side is expected (the kit can't know your profile). It's a confirmation, not an error.", "",
-             "## Step 1: Single Offer (review.py)", "",
-             f"- Action: **{s1['action']}**. {s1['why']}",
-             f"- Respond by {s1['respond_by']}.",
-             ] + [f"- {k['label']}: {k['value']}" + (f" ({k['note']})" if k.get("note") else "") for k in s1["kpis"]] + [
-             f"- Counter: " + "; ".join(f"{c['term']} {c['offered']} → {c['counter']}" for c in s1["counter"]["rows"]),
-             f"- Certainty: {s1['certainty']['score']}/100 ({s1['certainty']['band']}); walk-away until "
-             f"{s1['certainty']['walk_away_until']}. {s1['certainty'].get('walk_away_note', '')}",
-             "", "## Step 2: Both Offers (review.py)", "",
-             f"- Action: **{s2['action']}**. {s2['why']}", f"- {s2.get('plan_summary', '')}",
-             f"- Respond by {s2['respond_by']} ({s2['respond_by_offer']})"
-             + "".join(f"; also {a['when']} ({a['what']})" for a in s2.get("respond_by_also") or ()) + ".",
-             f"- Next step: {s2['next_step']}", "",
-             table(["Rank", "Offer", "Price", "Net", "Downside", "Score", "Close", "Action", "Terms / Reason"],
-                   [[x["rank"], x["offer"], x["price"], x["net"], x["downside"], x["score"], x["close"], x["action"],
-                     x["terms"]] for x in s2["ranked"]]), "",
-             "- Flags on the escalation offer: " + "; ".join(next(x for x in r2["offers"] if x["id"] == "B")["flags"]), "",
-             "## Assumptions review.py lists (both steps)", ""] + [f"- {x['what']}" for x in r1["assumptions"]] + [
-             "", "## Checks", ""] + [f"- {c}" for c in checks]
-    write(os.path.join(d, "expected.md"), "\n".join(lines))
-    up1 = sorted(os.listdir(os.path.join(d, "step-1")))
-    up2 = sorted(os.listdir(os.path.join(d, "step-2")))
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 5: Seller Offer Review", [f"step-1/{p}" for p in up1] +
-                                                  [f"step-2/{p}" for p in up2], [
-        {"title": "Step 1", "upload": [f"step-1/{p}" for p in up1], "text":
+    who = lambda x: f"{money(x['price'])} from {x['buyer']} (buyer's agent {x['buyer_agent']}, {x['buyer_brokerage']})"
+    expected_md(case, "Case 5", [
+        f"Step 1, the first offer: {who(a)}. File delivered: the offer review PDF.",
+        f"Step 2, the second offer: {who(b)}. Files delivered: the comparison PDF and a review PDF for each offer."])
+    up1, up2 = ([f"{st}/{p}" for p in sorted(os.listdir(os.path.join(d, st)))] for st in ("step-1", "step-2"))
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 5: Seller Offer Review", up1 + up2, [
+        {"title": "Step 1 (new session)", "upload": up1, "text":
             f"Today is {long_date(o['today'])}. I'm the listing agent for {aga_key['listing']['address']}, listed at "
             f"{money(o['list_price'])}. We got this offer. Should my seller accept, and what should we counter?"},
-        {"title": "Step 2 (same conversation)", "upload": [f"step-2/{p}" for p in up2], "text":
-            "A second offer just came in on the same listing. Compare both offers, rank them and give me a plan. "
-            "I'd like the PDF for my seller."}], today=o["today"]))
-    return r1, r2
+        {"title": "Step 2 (same chat)", "upload": up2, "text":
+            "A second offer just came in on the same listing. Compare both offers, rank them and give me a plan. I'd "
+            "like the PDF for my seller."}],
+        today=o["today"]))
 
 
-def case_timeline(folder, starter, title, prompt, checks):
-    d = os.path.join(OUT, folder)
+def case_timeline():
+    case, starter = "06-contract-timeline-fha", "asis-fha-executed"
+    d = os.path.join(OUT, case)
     src, key, pdfs = build_package(f"dev/mock_contracts/scenarios/{starter}.json", starter)
     os.makedirs(d, exist_ok=True)
     for p in pdfs:
         shutil.copy(os.path.join(src, p), os.path.join(d, p))
-    deal = deal_from_key(key, TODAY)
-    work = os.path.join(WORK, folder)
-    dump(os.path.join(work, "deal.json"), deal)
+    work = os.path.join(WORK, case)
+    dump(os.path.join(work, "deal.json"), deal_from_key(key, TODAY))
     t = run(["skills/contract-timeline/scripts/timeline.py", rel(os.path.join(work, "deal.json"))])
-    if not t.get("ok"):
+    if not t.get("ok") or not t.get("closing"):
         raise KitError(f"timeline.py {starter}: {t}")
     c = key["contract"]
-    lines = [f"# {title}: Expected", "",
-             f"Date assumed: {long_date(TODAY)}. Side: {key['side']} ({key['client']}). Every date below comes from "
-             "contract-timeline's timeline.py run on the package's answer key.", "",
-             f"- Property: {c['property']}; price {money(c['price'])}; {c['financing'].upper()}; riders: "
-             f"{', '.join(c['riders'])}.",
-             f"- Effective Date: **{t['effective']['display']}** ({t['effective']['source']}).",
-             f"- Closing: **{t['closing']['display']}**" if t["closing"] else
-             "- Closing: **no date yet** (it runs from the short sale approval).",
-             f"- First deadline for the {t['side']}: {t['first_deadline']['label']}, {t['first_deadline']['display']}."
-             if t["first_deadline"] else "",
-             ]
-    if t.get("contingencies_end"):
-        lines += [f"- Contingencies end: {t['contingencies_end']['label']}, {t['contingencies_end']['display']}."]
-    if t.get("contingencies_waiting"):
-        lines += [f"- Waiting on the approval: {', '.join(t['contingencies_waiting'])}."]
-    if deal["completed"]:
-        lines += [f"- Done per the package (escrow receipt, signed compensation agreement): "
-                  f"{', '.join(k.replace('_', ' ') for k in deal['completed'])}. The skill may show these as done or "
-                  "as due; either is fine if the date is right."]
-    lines += ["", "## Deadlines", "", timeline_md(t), ""]
-    if t["flags"]:
-        lines += ["## Printed Checks", ""] + [f"- {f}" for f in t["flags"]] + [""]
-    if t["agent_notes"]:
-        lines += ["## Notes for the Agent (chat only)", ""] + [f"- {n}" for n in t["agent_notes"]] + [""]
-    lines += ["## Checks", ""] + [f"- {x}" for x in checks]
-    write(os.path.join(d, "expected.md"), "\n".join(l for l in lines if l is not None))
-    write(os.path.join(d, "prompt.md"), prompt_md(title, pdfs, [{"title": "Prompt", "text": prompt.format(
-        today=long_date(TODAY), address=c["property"].split(",")[0], city=c["property"].split(",")[1].strip())}]))
-    return t
+    expected_md(case, "Case 6", [
+        f"Closing: {t['closing']['display']}; the calendar shows it on that date.",
+        f"First deadline: {t['first_deadline']['label']}, {t['first_deadline']['display']}.",
+        "Files delivered: the timeline PDF and a calendar file (.ics)."])
+    address, city = c["property"].split(",")[0], c["property"].split(",")[1].strip()
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 6: Contract Timeline", pdfs, [{"title": "Prompt", "text":
+        f"Today is {long_date(TODAY)}. Here's my buyer's executed contract package for {address}, {city}. Give me every "
+        "deadline as a PDF timeline and a calendar file."}]))
 
 
-def case_other_state(pdf, checks):
-    a = D["other_state"]
-    d = os.path.join(OUT, "08-contract-timeline-other-state")
+def case_other_state(pdf):
+    case, a = "07-contract-timeline-other-state", D["other_state"]
+    d = os.path.join(OUT, case)
     os.makedirs(d, exist_ok=True)
     pdf.render(agreement_html(a), os.path.join(d, a["file"]), a["title"])
     deal = {"side": "buyer", "state": a["state"], "county": a["county"], "client": a["buyer"], "report_date": TODAY,
             "rules": a["rules"],
             "contract": {"form_family": "other", "form": a["title"], "property": a["property"], "buyer": a["buyer"],
                          "seller": a["seller"], "price": a["price"], "financing": "conventional",
-                         "effective_date": a["effective_date"], "effective_date_source": "Seller's signature, "
-                         + a["seller_signed"], "closing_date": a["closing_date"], "closing_time": a["closing_time"],
-                         "escrow_agent": a["escrow_agent"]},
+                         "effective_date": a["effective_date"], "effective_date_source": "Seller's signature",
+                         "effective_date_signed": signed_stamp(a["seller_signed"]), "closing_date": a["closing_date"],
+                         "closing_time": a["closing_time"], "escrow_agent": a["escrow_agent"]},
             "deadlines": a["deadlines"], "amendments": []}
-    work = os.path.join(WORK, "other-state")
+    work = os.path.join(WORK, case)
     dump(os.path.join(work, "deal.json"), deal)
     t = run(["skills/contract-timeline/scripts/timeline.py", rel(os.path.join(work, "deal.json"))])
-    if not t.get("ok"):
-        raise KitError(f"timeline.py other state: {t}")
-    eff = date.fromisoformat(a["effective_date"])
-    plain = [[x["label"], f"{x['days']} day{'s' if x['days'] != 1 else ''} "
-              f"{'after the Effective Date' if x['basis'] == 'after' else 'before Closing'}",
-              (eff + timedelta(days=x["days"])).strftime("%a %b %-d") if x["basis"] == "after" else
-              (date.fromisoformat(a["closing_date"]) - timedelta(days=x["days"])).strftime("%a %b %-d")]
-             for x in a["deadlines"]]
-    lines = ["# Case 8: Expected", "",
-             f"Date assumed: {long_date(TODAY)}. A made-up two-page {a['title']} for a home in Ohio: not any real "
-             "state's or association's form, so the skill works from the contract's own dates and time rules "
-             "(best effort).", "",
-             f"- Effective Date: **{t['effective']['display']}** (the seller's signature, {a['seller_signed']}).",
-             f"- Closing: **{t['closing']['display']}**.",
-             "- Time rules in Para. 10: calendar days from the day after the Effective Date, ending 11:59 PM; a period "
-             "that ends on a Saturday, Sunday or federal holiday moves to the next business day.", "",
-             "## Deadlines (timeline.py with the contract's rules)", "", timeline_md(t), "",
-             "Plain calendar count before the weekend rule, for reference (the rollover moves the earnest money and "
-             "the inspection period to Monday):", "", table(["Deadline", "Period", "Raw Day"], plain), "",
-             "## Must Not Happen", "",
-             "- No Florida rules, FR/BAR paragraphs or Florida costs.",
-             "- The best-effort disclaimer appears in chat only: not in the PDF, the calendar file or a markdown report.",
-             "", "## Checks", ""] + [f"- {c}" for c in checks]
-    write(os.path.join(d, "expected.md"), "\n".join(lines))
-    write(os.path.join(d, "prompt.md"), prompt_md("Case 8: Contract Timeline (Other State)", [a["file"]], [
+    if not t.get("ok") or t.get("support") != "best_effort" or not t.get("chat_notes"):
+        raise KitError(f"timeline.py other state: no best-effort chat line: {t}")
+    expected_md(case, "Case 7", [
+        f"A made-up {a['title']} for a home in Ohio: not a FAR/BAR contract, so the reply says once that it was "
+        "read on a best-effort basis (only Florida FAR/BAR contracts are fully supported).",
+        "The PDF and the calendar file say nothing about support: search them for \"best effort\" and \"supported\"."])
+    write(os.path.join(d, "prompt.md"), prompt_md("Case 7: Contract Timeline (Other State)", [a["file"]], [
         {"title": "Prompt", "text":
             f"Today is {long_date(TODAY)}. Here's my buyer's signed purchase agreement for a home in Westerville, Ohio. "
             "Lay out every deadline for my buyer: I need the PDF timeline and a calendar file."}]))
-    return t
+
+
+NET_SHEET = {"address": "3318 Wren Hollow Ln", "city": "Casselberry", "county": "Seminole", "prices": (425000, 410000),
+             "credit": 6000, "payoff": 188000, "annual_tax": 5400, "closing": "2026-12-04"}
+
+
+def case_net_sheet():
+    case, n = "08-seller-net-sheet", NET_SHEET
+    write(os.path.join(OUT, case, "prompt.md"), prompt_md("Case 8: Seller Net Sheet", [], [{"title": "Prompt", "text":
+        f"Today is {long_date(TODAY)}. Net sheet for my seller at {n['address']}, {n['city']} ({n['county']} County): "
+        f"{money(n['prices'][0])} and {money(n['prices'][1])}, and {money(n['prices'][0])} with a {money(n['credit'])} "
+        f"credit to the buyer. They owe about {money(n['payoff'])}. My listing agreement is 2.75% and 2.5% to the "
+        f"buyer's agent. Taxes are {money(n['annual_tax'])} a year. We'd close around {long_date(n['closing'])}. "
+        "I need a PDF to print."}]))
+    expected_md(case, "Case 8", ["File delivered: one PDF, one page, three price columns."])
 
 
 # --- checks, README, results ---------------------------------------------------------------
 
-# Each check: (text, where) with where "both" (Cowork and claude.ai), "cowork" or "ai". Cases outside the claude.ai
-# pass (1, 2 and 6) are Cowork only.
+SKILLS = sorted(s for s in os.listdir(os.path.join(ROOT, "skills"))
+                if os.path.isfile(os.path.join(ROOT, "skills", s, "SKILL.md")))
+
+# The smoke checks, yes or no: what only a person on the real platform can see. Content, numbers and layout are never
+# checked here (golden, the generated tests and the evals cover them). Each: (text, where), where "both" (Cowork and
+# claude.ai), "cowork" or "ai". The claude.ai pass runs cases 1, 2 and 6.
 CHECKS = {
-    "01-agent-profile": [("At most two rounds of questions", "both"),
-                         ("Saves profile.md in the working folder", "cowork"),
-                         ("Hands the profile over in chat or as a file to keep (no saved file)", "ai"),
-                         ("No placeholders or made-up details in the profile", "both")],
-    "02-seller-cma": [("Uses the saved profile without asking for an upload", "cowork"),
-                      ("Uses the case 1 profile when it's uploaded with the inputs", "ai"),
-                      ("Report PDF shows the profile's name, brokerage and colors", "both"),
-                      ("Treats the home as not listed now and flags the 2017 expired listing (price and days)", "both"),
-                      ("Net sheet marks the 5% brokerage as assumed", "both"),
-                      ("Facts and market numbers match expected.md", "both"),
-                      ("Listing presentation: the PPTX opens and its prices and nets match the PDF", "both"),
-                      ("\"Perfect for young families\" is declined in one sentence with compliant wording", "both")],
-    "03-buyer-cma": [("PDF has the value range, the full history (both price cuts and the 2015 listing and sale), and the scatterplot", "cowork"),
-                     ("Facts, tax at the target price (named in the tax table) and market numbers match expected.md", "cowork"),
-                     ("Opening offer and walk-away sit inside the sanity band", "cowork")],
-    "04-buyer-offer-strategy": [("Offer Options and Offer Package Worksheet PDFs are both delivered", "cowork"),
-                                ("Recommended offer stays inside every limit (price, cash, reserve, payment)", "cowork"),
-                                ("Riders are named by letter (CR-7), and the worksheet shows offer terms only", "cowork"),
-                                ("Numbers match expected.md", "cowork")],
-    "05-seller-offer-review": [("Step 1: net sheet and a counter for the single offer", "cowork"),
-                               ("Step 1: the appraisal gap (AGA-1) is read and handled", "cowork"),
-                               ("Step 2: both offers ranked with a plan (counter one, hold the other as backup)", "cowork"),
-                               ("Step 2: the backup's earlier time for acceptance is shown, with a step to ask for an "
-                                "extension", "cowork"),
-                               ("Step 2: the highest-and-best deadline (NMOB-1) is shown and not offered again", "cowork"),
-                               ("No question asks who the loan officer is or whether funds are verified when the "
-                                "package's letters show it", "cowork"),
-                               ("No past dates in next steps", "cowork"), ("Numbers match expected.md", "cowork")],
-    "06-contract-timeline-fha": [("Deadlines match expected.md", "both"),
-                                 ("ICS imports into a calendar with the correct dates", "both"),
-                                 ("The FHA appraisal note appears", "both")],
-    "07-contract-timeline-short-sale": [("Two-phase timeline: rows read \"N days after short sale approval\"", "cowork"),
-                                        ("PDF builds with no closing date", "cowork"),
-                                        ("Short sale dates match expected.md", "cowork")],
-    "08-contract-timeline-other-state": [("Timeline uses the contract's own dates and rules; matches expected.md", "cowork"),
-                                         ("Best-effort disclaimer in chat only, not in the PDF or ICS", "cowork"),
-                                         ("No Florida rules or forms mentioned", "cowork")],
+    "01-agent-profile": [("The plugin installs and every skill is listed", "both"),
+                         ("profile.md is saved in the working folder", "cowork"),
+                         ("The profile comes back as a file to keep", "ai")],
+    "02-seller-cma": [("A new session uses the saved profile without an upload (name and colors on the PDF)", "cowork"),
+                      ("The uploaded profile is used (name and colors on the PDF)", "ai"),
+                      ("The uploads are read: the 360 PDF's expired listing and the CSV export's sales count appear",
+                       "both"),
+                      ("The listing presentation is delivered and opens in PowerPoint or Keynote", "both")],
+    "03-buyer-cma": [("The buyer CMA PDF is delivered and opens", "cowork")],
+    "04-buyer-offer-strategy": [("In the same chat, the offer uses the buyer CMA without asking for an upload, and "
+                                 "both PDFs are delivered", "cowork")],
+    "05-seller-offer-review": [("Step 1: the offer package is read and the offer review PDF is delivered", "cowork"),
+                               ("Step 2: the same chat keeps the first offer, compares both and delivers the comparison "
+                                "PDF", "cowork")],
+    "06-contract-timeline-fha": [("The calendar file imports into a calendar app with closing on the right date",
+                                  "both")],
+    "07-contract-timeline-other-state": [("The best-effort line is in the chat reply only, never in the PDF or the "
+                                          "calendar file", "cowork")],
+    "08-seller-net-sheet": [("The net sheet PDF is delivered on one page", "cowork")],
 }
+WHERE = {"both": "Cowork and claude.ai", "cowork": "Cowork", "ai": "claude.ai"}
 
 
 def check_texts(case):
-    return [c for c, _ in CHECKS[case]]
+    """The checks as expected.md lists them, each with where it runs."""
+    return [f"{c} ({WHERE[where]})" for c, where in CHECKS[case]]
 
 
 def results_md():
     rows = [[case, c, "" if where != "ai" else "n/a", "" if where != "cowork" else "n/a", ""]
             for case, checks in CHECKS.items() for c, where in checks]
-    head = ["# Manual Test Results", "", "Version: ", "Tester: ", "Date: ", "",
-            "Mark each empty cell Pass or Fail. Add a note for every Fail (what happened, which file).", ""]
+    head = ["# Smoke Test Results", "", "Version: ", "Tester: ", "Date: ", "",
+            "Mark each empty cell Yes or No. Add a note for every No (what happened, which file).", ""]
     out = ["| Case | Check | Cowork | claude.ai | Notes |", "|---|---|---|---|---|"]
     out += ["| " + " | ".join(r) + " |" for r in rows]
     return "\n".join(head + out)
@@ -947,30 +596,23 @@ def results_md():
 
 def readme_md():
     return "\n".join([
-        "# Manual Smoke-Test Kit", "",
+        "# Smoke Test Kit", "",
         f"Built {datetime.now():%Y-%m-%d %H:%M} by `make manual-kit`. Every file here is mock data: Casselberry and the "
         "other cities are real, every street, name, brokerage, parcel and MLS number is made up. Nothing here is "
         "committed; rebuild it for each release.", "",
-        "The steps and the pass checks are in `docs/manual-testing.md`.", "",
-        "## How to Use It", "",
-        "1. Install the plugin in the desktop app and open a fresh Cowork working folder (see the doc).",
-        "2. Run the cases in order, one new session each unless a case says otherwise. Each folder has:",
-        "   - `prompt.md`: what to upload and the prompt to paste.",
-        "   - the files to upload (nothing else: never upload `expected.md`).",
-        "   - `expected.md`: the facts to check, computed by the skills' own scripts when the kit was built.",
-        "3. Case 1 builds your real profile. Every later case uses it, so don't skip it.",
-        "4. Fill in `results.md` as you go and share it back.", "",
-        "## Cases", "",
+        "The steps are in `docs/manual-testing.md`. Each folder has `prompt.md` (what to upload, the prompt to paste), "
+        "the files to upload and `expected.md` (the yes/no checks and the facts to answer them; never upload it). "
+        "Fill in `results.md` as you go.", "",
         table(["Folder", "Skill", "Upload"], [
             ["01-agent-profile", "agent-profile", "nothing"],
             ["02-seller-cma", "seller-cma", "360 report, CMA export, seller notes"],
             ["03-buyer-cma", "buyer-cma", "listing flyer, 360 report, CMA export"],
-            ["04-buyer-offer-strategy", "buyer-offer-strategy", "the buyer CMA handoff (.cma.json)"],
-            ["05-seller-offer-review", "seller-offer-review", "step-1 offer package, then step-2"],
+            ["04-buyer-offer-strategy", "buyer-offer-strategy", "nothing: continue the case 3 chat"],
+            ["05-seller-offer-review", "seller-offer-review", "the step-1 offer, then the step-2 offer in the same chat"],
             ["06-contract-timeline-fha", "contract-timeline", "executed FHA package"],
-            ["07-contract-timeline-short-sale", "contract-timeline", "executed short sale package"],
-            ["08-contract-timeline-other-state", "contract-timeline", "Ohio purchase agreement"]]), "",
-        "claude.ai pass (shorter): upload `dist/skills/*.zip`, then run cases 1, 2 and 6.",
+            ["07-contract-timeline-other-state", "contract-timeline", "Ohio purchase agreement"],
+            ["08-seller-net-sheet", "seller-net-sheet", "nothing"]]), "",
+        "claude.ai pass: upload `dist/skills/*.zip`, then run cases 1, 2 (with the case 1 `profile.md`) and 6.",
     ])
 
 
@@ -982,7 +624,7 @@ def verify():
         "02-seller-cma": {D["seller_home"]["report_file"]: ["842 TANAGER RIDGE DR", "ACT->EXP", "X4488112", "Tax Area"]},
         "03-buyer-cma": {D["buyer_home"]["report_file"]: ["2315 KESTREL POINT CT", "474900.00->464900", "Active"],
                          D["buyer_home"]["flyer_file"]: ["$464,900", "Lakeshore Crest Realty"]},
-        "08-contract-timeline-other-state": {D["other_state"]["file"]: ["Residential Purchase Agreement",
+        "07-contract-timeline-other-state": {D["other_state"]["file"]: ["Residential Purchase Agreement",
                                                                         "within 3 days", "September 24, 2026"]},
     }
     problems = []
@@ -991,7 +633,9 @@ def verify():
         for f in ("prompt.md", "expected.md"):
             if not os.path.exists(os.path.join(d, f)):
                 problems.append(f"{case}/{f} missing")
-        for root, _, files in os.walk(d):
+        for root, dirs, files in os.walk(d):
+            if "key" in dirs:
+                problems.append(f"{case}: an answer key folder was copied")
             for f in files:
                 if f.endswith(".pdf"):
                     text = pdf_text(os.path.join(root, f))
@@ -1000,12 +644,10 @@ def verify():
                     for needle in must.get(case, {}).get(f, []):
                         if needle not in text:
                             problems.append(f"{case}/{f}: missing {needle!r}")
-                if f == "expected.md" or f == "prompt.md":
+                if f in ("expected.md", "prompt.md"):
                     body = open(os.path.join(root, f), encoding="utf-8").read()
                     if "key/" in body and "Answer-Key" in body:
                         problems.append(f"{case}/{f} points at an answer key")
-        if case == "05-seller-offer-review" and any("key" in dirs for _, dirs, _ in os.walk(d)):
-            problems.append("an answer key folder was copied into case 5")
     for f in ("README.md", "results.md"):
         if not os.path.exists(os.path.join(OUT, f)):
             problems.append(f"{f} missing")
@@ -1019,27 +661,13 @@ def main():
         os.makedirs(p)
     pdf = Pdf()
     try:
-        print("01 agent-profile")
-        case_profile(check_texts("01-agent-profile"))
-        print("02 seller-cma")
-        case_seller_cma(pdf, check_texts("02-seller-cma"))
-        print("03 buyer-cma")
-        _, buyer_comp = case_buyer_cma(pdf, check_texts("03-buyer-cma"))
-        print("04 buyer-offer-strategy")
-        case_offer_strategy(buyer_comp, check_texts("04-buyer-offer-strategy"))
-        print("05 seller-offer-review")
-        case_offer_review(check_texts("05-seller-offer-review"))
-        print("06 contract-timeline (FHA)")
-        case_timeline("06-contract-timeline-fha", "asis-fha-executed", "Case 6: Contract Timeline (FHA)",
-                      "Today is {today}. Here's my buyer's executed contract package for {address}, {city}. Give me every "
-                      "deadline as a PDF timeline and a calendar file.", check_texts("06-contract-timeline-fha"))
-        print("07 contract-timeline (short sale)")
-        case_timeline("07-contract-timeline-short-sale", "asis-short-sale-rent-back",
-                      "Case 7: Contract Timeline (Short Sale)",
-                      "Today is {today}. Here's my buyer's executed short sale contract for {address}, {city}. Build the "
-                      "deadline timeline: PDF and calendar file.", check_texts("07-contract-timeline-short-sale"))
-        print("08 contract-timeline (other state)")
-        case_other_state(pdf, check_texts("08-contract-timeline-other-state"))
+        for name, build in (("01 agent-profile", case_profile), ("02 seller-cma", lambda: case_seller_cma(pdf)),
+                            ("03 buyer-cma", lambda: case_buyer_cma(pdf)), ("04 buyer-offer-strategy", case_offer_strategy),
+                            ("05 seller-offer-review", case_offer_review), ("06 contract-timeline", case_timeline),
+                            ("07 contract-timeline (other state)", lambda: case_other_state(pdf)),
+                            ("08 seller-net-sheet", case_net_sheet)):
+            print(name)
+            build()
     finally:
         pdf.close()
     write(os.path.join(OUT, "README.md"), readme_md())

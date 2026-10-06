@@ -9,7 +9,7 @@ header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:1
   border-bottom:2px solid var(--brand);padding-bottom:12px;margin-bottom:16px}
 .wm-name{font-size:17pt;font-weight:700;line-height:1.1}
 .wm-sub{font-size:8pt;letter-spacing:.22em;color:var(--muted);margin-top:4px;text-transform:uppercase}
-.prep{font-size:9.5pt;color:var(--muted);text-align:right}
+.prep{font-size:9.5pt;color:var(--muted);text-align:right;flex:0 0 auto} header.top>:first-child{min-width:0} /* a long agent name or brokerage wraps on the left; the tag and date keep their width */
 .prep .tag{display:inline-block;font-size:8pt;font-weight:700;color:var(--brand-ink);border:1.5px solid var(--brand-ink);
   border-radius:4px;padding:0 6px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
 h1{font-size:22pt;line-height:1.2;margin:0 0 2px}
@@ -35,6 +35,10 @@ thead{display:table-header-group}
 th{padding:5px 8px;white-space:nowrap;font-size:9.5pt}
 td{padding:5px 8px}
 td.n,th.n{text-align:right;white-space:nowrap}
+/* tables whose column headers carry long labels (the payment scenarios, the credit splits): headers wrap so the
+   table fits the page instead of being clipped; the numbers below stay on one line */
+.tbl.wrap-head th{white-space:normal;vertical-align:bottom}
+.tbl.whole{break-inside:avoid} /* the buyer CMA's credit table: kept on one page */
 tr.subj td{color:var(--subject);font-weight:700} tr.subj td:first-child{box-shadow:inset 3px 0 0 var(--subject)}
 tr.total td{font-weight:700;border-top:2px solid var(--brand)}
 tr.alt td{color:var(--muted);font-size:8.5pt}
@@ -80,7 +84,8 @@ ul.watch{padding-left:0} ul.watch li{border-left:3px solid var(--brand);padding-
 .scatter .lbl-subj{font-size:13px;font-weight:700;fill:var(--subject)}
 .scatter .lbl{font-size:12px;fill:var(--text)}
 .scatter .leader{stroke:var(--muted);stroke-width:.75}
-.scatter .lbl,.scatter .lbl-subj,.scatter .lbl-band{paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
+.scatter .lbl,.scatter .lbl-subj,.scatter .lbl-band{stroke:none}
+.scatter .halo{fill:var(--bg);stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
 footer{margin-top:22px;padding-top:10px;border-top:2px solid var(--brand);font-size:9pt;color:var(--muted)}
 footer b{color:var(--text)}
 
@@ -102,7 +107,8 @@ h2,h3{break-after:avoid}
 tr{break-inside:avoid}
 .kg{break-inside:avoid;margin-top:14px}
 .kg.sec{margin-top:22px}
-.kg.big{break-inside:auto}
+.kg.big,.kg.flow,.kg.split{break-inside:auto}
+.kg.split>*{break-inside:avoid}
 .kg>h2:first-child,.kg>h3:first-child{margin-top:0}
 .pb{break-before:page}
 

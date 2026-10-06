@@ -1,8 +1,8 @@
-"""Tests for shared/mls.py and shared/cma.py."""
+"""shared/mls.py (export loading, cleaning, market stats, ranking, trend) and shared/cma.py blocks, headings and
+derived comp values. Chart rules are in test_cma_charts.py."""
 import csv
 import json
 import os
-import re
 import sys
 import tempfile
 import unittest
@@ -35,7 +35,7 @@ class Load(unittest.TestCase):
         with self.assertRaises(mls.ExportError):
             mls.load(EXPORT, profiles.load_market(state="TX"))
 
-    def test_other_mls_column_names(self):
+    def test_mapped_and_display_column_names(self):
         tx_cols = {"address": "Street", "status": "St", "living_area": "SqFt", "close_price": "Sold $", "current_price": "List $",
                    "close_date": "Closed", "original_list_price": "Orig $"}
         with tempfile.TemporaryDirectory() as tmp:
@@ -46,8 +46,6 @@ class Load(unittest.TestCase):
                 w.writerow(["1 Elm", "Closed", "2,000", "$500,000", "$510,000", "2026-08-01", "$510,000"])
             homes = mls.load(path, profiles.load_market(state="TX", mls="ACTRIS"), mls.columns_arg(json.dumps(tx_cols)))
         self.assertEqual((homes[0]["status"], homes[0]["close_price"], homes[0]["living_area"]), ("SOLD", 500000.0, 2000.0))
-
-    def test_matrix_display_labels(self):
         # The labels Stellar's Matrix field picker shows, as in the agent guide's column table.
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "e.csv")
@@ -109,8 +107,6 @@ class StandardNames(unittest.TestCase):
         relist = next(c for c in s["competition"] if c["address"] == "531 FIRST AVE")
         self.assertEqual((relist["status"], relist["listings"], relist["earlier_prices"]), ("ACTIVE", 3, [417000.0, 407500.0]))
         self.assertEqual(len(s["competition"]), 2)  # 602 Quail's canceled listing is left out: it sold
-
-    def test_mismatch_penalties(self):
         base = {"property_type": "single_family", "waterfront": False, "senior_community": False, "stories": "One"}
         self.assertEqual(mls._mismatch(base, {"type_key": "single_family", "waterfront": False, "stories": "One"}), 0)
         self.assertEqual(mls._mismatch(base, {"type_key": "townhouse"}), 1.5)
@@ -132,23 +128,19 @@ class Stats(unittest.TestCase):
         top = [c["address"] for c in s["sold_candidates"][:5]]
         self.assertIn("602 MOCKINGBIRD LN", top)
         self.assertNotIn("517 HICKORYWOOD AVE", [c["address"] for c in s["competition"]])
-
-    def test_exclude_address_drops_subject_rows(self):
-        s = mls.market_stats(self.homes, SUBJECT, exclude_address="517 hickorywood ave")
+        s = mls.market_stats(self.homes, SUBJECT, exclude_address="517 hickorywood ave")  # any case
         self.assertEqual(s["status_counts"]["ACTIVE"], 14)
+        s = mls.market_stats(self.homes, SUBJECT, limit=5)
+        self.assertEqual(len(s["sold_candidates"]), 5)
+        self.assertEqual(s["more_candidates"], s["sold_all"]["n"] - 5)
 
-    def test_trend(self):
+    def test_trend_and_price_outliers(self):
         fit = mls.trend(self.homes, 1849, exclude_address="517 HICKORYWOOD AVE")
         self.assertGreater(fit["slope"], 0)
         self.assertTrue(0 <= fit["r2"] <= 1)
         self.assertEqual(mls.r2_key(0.1), "r2_small")
         self.assertEqual(mls.r2_key(0.83), "r2_most")
         self.assertIsNone(mls.trend(self.homes[:2], 1849))
-
-    def _sale(self, address, sqft, price, status="SOLD"):
-        return {"address": address, "status": status, "living_area": sqft, "close_price": price, "current_price": price}
-
-    def test_price_outliers_leave_the_trend_alone(self):
         base = mls.trend(self.homes, 1849, exclude_address="517 HICKORYWOOD AVE")
         self.assertEqual(base["outliers"], [])  # a normal market: nothing dropped
         for odd in (self._sale("1 LAKE DR", 1880, 1100000), self._sale("2 BANK ST", 1850, 210000)):
@@ -156,17 +148,15 @@ class Stats(unittest.TestCase):
             self.assertEqual(fit["outliers"], [odd["address"]])
             self.assertAlmostEqual(fit["at_subject"], base["at_subject"], places=0)
             self.assertAlmostEqual(fit["r2"], base["r2"], places=6)
-
-    def test_trend_fits_sizes_on_both_sides(self):
-        base = mls.trend(self.homes, 1849, exclude_address="517 HICKORYWOOD AVE")
         tiny = mls.trend(self.homes + [self._sale("3 TINY LN", 700, 140000)], 1849, exclude_address="517 HICKORYWOOD AVE")
         self.assertEqual(tiny["n"], base["n"])  # below subject / 1.6: not in the fit
-
-    def test_too_few_sales_to_judge_outliers(self):
         few = [self._sale(f"{i} A ST", 1800 + 20 * i, 400000 + 5000 * i) for i in range(4)] + [self._sale("9 B ST", 1850, 900000)]
         fit = mls.trend(few, 1849)
         self.assertEqual(fit["outliers"], [])
         self.assertEqual(fit["n"], 5)
+
+    def _sale(self, address, sqft, price, status="SOLD"):
+        return {"address": address, "status": status, "living_area": sqft, "close_price": price, "current_price": price}
 
     def test_chart_drops_price_outliers_but_keeps_comps(self):
         homes = self.homes + [self._sale("1 LAKE DR", 1880, 1100000), self._sale("4 GOLD ST", 1900, 1500000, "ACTIVE"),
@@ -176,9 +166,6 @@ class Stats(unittest.TestCase):
         self.assertIn(("4 GOLD ST", 1900, "listing", "price"), excluded)
         self.assertIn("5 COMP RD", [h["address"] for h in pts["comp"]])  # a comp card is always drawn
         self.assertIn("656 LITTLE WEKIVA RD", [h["address"] for h in pts["active"]])  # low asking price: competition, kept
-        L = lambda key, **kw: key + ":" + str(kw.get("n", ""))
-        note = cma.excluded_note(excluded, L)
-        self.assertIn("excluded_price_many:2", note)
 
 
 class Blocks(unittest.TestCase):
@@ -192,47 +179,35 @@ class Blocks(unittest.TestCase):
         self.assertTrue(out[:loose].endswith("</div>"))  # the first group closes before the loose paragraph
         self.assertLess(loose, second)  # which sits between the groups
         self.assertTrue(out.endswith("<footer>agent</footer></div>"))
-
-    def test_lone_h2_gets_section_class(self):
         self.assertEqual(cma.group_blocks(["<h2>Only</h2>"]), '<h2 class="sec">Only</h2>')
-
-    def test_dotplot_marks(self):
-        cards = [{"address": "1 A St", "adjusted": 450000}, {"address": "2 B St", "adjusted": 470000}]
-        svg = cma.dotplot(cards, 455000, 480000, 474900, "Asking $474,900", (455000, "Offer"))
-        self.assertIn("Asking $474,900", svg)
-        self.assertEqual(svg.count('class="dp-dot"'), 2)
 
 
 class SubjectHeading(unittest.TestCase):
-    def test_location_line_puts_mls_last(self):
+    def test_subject_heading(self):
         h = cma.subject_heading({"address": "517 Hickorywood Ave", "summary_facts": "4 bed · 2 bath",
                                  "locality": "Altamonte Springs, FL 32714 · MLS O6433709 · Spring Oaks · Seminole County"})
         self.assertIn('<h1>517 Hickorywood Ave</h1>', h)
         self.assertLess(h.index("Seminole County"), h.index("MLS O6433709"))  # the MLS number goes last
         self.assertLess(h.index("Spring Oaks"), h.index("MLS O6433709"))
         self.assertIn("<span>4 bed</span><span>2 bath</span>", h)
-
-    def test_escaping_and_empty_rows(self):
         h = cma.subject_heading({"address": "1 A & B St"})
         self.assertIn("1 A &amp; B St", h)
         self.assertNotIn("loc", h)
         self.assertNotIn("homefacts", h)
 
 
-class AuditStatsAndCharts(unittest.TestCase):
-    """CMA-8, CMA-9, CMA-12, CMA-22."""
+class SaleFlagsAndRanking(unittest.TestCase):
+    """Distressed and new-construction sales are flagged and rank lower; sale-to-list is net of seller costs."""
 
     def setUp(self):
         self.homes = mls.load(EXPORT, FL)
 
-    def test_distressed_and_new_construction_flags(self):
+    def test_flags_and_ranking(self):
         from datetime import date
         self.assertEqual(mls.sale_flags({"sale_terms": "REO/Bank Owned", "remarks": ""}), ["distressed"])
         self.assertEqual(mls.sale_flags({"remarks": "Short sale, subject to lender approval"}), ["distressed"])
         self.assertEqual(mls.sale_flags({"year_built": 2026, "close_date": date(2026, 5, 1), "remarks": ""}), ["new_construction"])
         self.assertEqual(mls.sale_flags({"year_built": 1972, "close_date": date(2026, 5, 1), "remarks": "Updated kitchen"}), [])
-
-    def test_distressed_sale_ranks_lower(self):
         base = mls.market_stats(self.homes, SUBJECT)["sold_candidates"]
         top = base[0]["address"]
         for h in self.homes:
@@ -242,12 +217,6 @@ class AuditStatsAndCharts(unittest.TestCase):
         self.assertNotEqual(ranked[0], top)
         self.assertIn("distressed", next(c for c in mls.market_stats(self.homes, SUBJECT)["sold_candidates"]
                                          if c["address"] == top)["flags"])
-
-    def test_limit_and_rest(self):
-        s = mls.market_stats(self.homes, SUBJECT, limit=5)
-        self.assertEqual(len(s["sold_candidates"]), 5)
-        n_sold = s["sold_all"]["n"]
-        self.assertEqual(s["more_candidates"], n_sold - 5)
 
     def test_sale_to_list_is_net_of_seller_costs(self):
         sold = [{"close_price": 500000, "original_list_price": 500000, "seller_paid": 10000, "living_area": 2000,
@@ -259,42 +228,28 @@ class AuditStatsAndCharts(unittest.TestCase):
         later = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01", as_of="2026-12-31")
         self.assertGreater(later["months_supply_at_recent_pace"], s["months_supply_at_recent_pace"])  # slower pace
         self.assertEqual(later["window"]["as_of"], "2026-12-31")
-
-    def test_bad_split_date_is_a_plain_error(self):
         with self.assertRaisesRegex(mls.ExportError, "--split-date"):
             mls.market_stats(self.homes, SUBJECT, split_date="07/01/2026")
 
-    def test_million_dollar_ticks(self):
-        self.assertEqual((cma.k(455000), cma.k(1250000), cma.k(2000000)), ("$455K", "$1.25M", "$2M"))
-        cards = [{"address": f"{i} Bay Dr", "adjusted": v} for i, v in enumerate((1210000, 1390000, 1480000, 1620000, 1790000))]
-        svg = cma.dotplot(cards, 1400000, 1600000, 1550000, "Asking")
-        ticks = [t for t in svg.split('class="dp-tick">')[1:]]
-        self.assertLessEqual(len(ticks), 8)  # was 29 overlapping labels at $20k steps
-        self.assertIn("$1.5M", svg)
-
-
-class DotPlotLabels(unittest.TestCase):
-    def test_close_markers_label_on_opposite_sides(self):
-        """CMA-23: two close markers don't stack their labels."""
-        cards = [{"address": f"{i} Oak St", "adjusted": v} for i, v in enumerate((455000, 462000, 470000))]
-        svg = cma.dotplot(cards, 455000, 480000, 474900, "Asking $474,900", (468000, "Offer $468,000"))
-        anchors = dict((cls, a) for a, cls in re.findall(r'text-anchor="(\w+)" class="dp-(mark|second)-lbl"', svg))
-        self.assertEqual(set(anchors), {"mark", "second"})
-        self.assertNotEqual(anchors["mark"], anchors["second"])
-
-
 class DeriveComps(unittest.TestCase):
-    """CMA-2: adjusted comp values come from their parts; hand-typed values must agree."""
+    """Adjusted comp values come from their parts; hand-typed values must agree."""
 
     def card(self, addr, sold, conc, *adj):
         return {"address": addr, "sold_price": sold, "seller_concessions": conc,
                 "adjustments": [{"label": "X", "amount": a} for a in adj]}
 
-    def test_itemized(self):
+    def test_itemized_and_hand_typed(self):
         comps = {"cards": [self.card("A", 429000, 12000, 30000, -8600), self.card("B", 505500, 0, 1800, -5000, -10000)]}
         self.assertEqual(cma.derive_comps(comps), [])
         self.assertEqual([c["adjusted"] for c in comps["cards"]], [438400, 492300])
         self.assertEqual(comps["summary_rows"], [["B", 505500, 0, 492300], ["A", 429000, 12000, 438400]])
+        ok = {"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": [["A", 429000, 12000, 438400]]}
+        self.assertEqual(cma.derive_comps(ok), [])
+        for bad in ({"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": [["A", 429000, 12000, 440000]]},
+                    {"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": []},
+                    {"cards": [self.card("A", 1, 0), {"address": "B", "adjusted": 2}]}):
+            with self.assertRaises(ValueError):
+                cma.derive_comps(bad)
 
     def test_limits_and_replaced_values(self):
         big = self.card("C", 400000, 0, 70000)          # 17.5% net
@@ -304,15 +259,6 @@ class DeriveComps(unittest.TestCase):
         self.assertTrue(any(x.startswith("C:") and "18% net" in x for x in w))
         self.assertTrue(any(x.startswith("D:") and "26% gross" in x for x in w))
         self.assertTrue(any(x.startswith("E:") and "replaced by the computed $405,000" in x for x in w))
-
-    def test_hand_typed_must_agree(self):
-        ok = {"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": [["A", 429000, 12000, 438400]]}
-        self.assertEqual(cma.derive_comps(ok), [])
-        for bad in ({"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": [["A", 429000, 12000, 440000]]},
-                    {"cards": [{"address": "A", "adjusted": 438400}], "summary_rows": []},
-                    {"cards": [self.card("A", 1, 0), {"address": "B", "adjusted": 2}]}):
-            with self.assertRaises(ValueError):
-                cma.derive_comps(bad)
 
 
 if __name__ == "__main__":

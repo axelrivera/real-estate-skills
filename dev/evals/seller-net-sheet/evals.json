@@ -1,0 +1,45 @@
+{
+  "skill_name": "seller-net-sheet",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Today is October 1, 2026. Listing appointment tonight at 2250 Oak Hollow Ct in Oviedo (Seminole County). Seller owes about $214,000 on the mortgage plus an $18,000 HELOC. Taxes are $6,200, HOA is $85 a month, my listing agreement is 3% and 2.5% to the buyer's agent. Expecting a mid-December close. Can you make a net sheet at $450k and $440k, and $450k with a $9,000 credit to the buyer? I need something to print.",
+      "expected_output": "Builds net-sheet.json with three scenarios and runs compute.py (no hand math); delivers the one-page PDF; enters 3% listing and 2.5% buyer's agent, both payoffs (mortgage and HELOC) and the $85 HOA, and a December closing marked assumed (closing_date_assumed); the Estimated Net to Seller at each price is about $180,000, $171,000 and $171,000 if the closing is Dec 15; the reply gives the three nets in one line, says each assumption once (the tax bill assumed unpaid, the title fees typical local charges), asks for a title quote and the payoff letter, and offers the markdown version in one line; never asks about costs before building",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "quick one: what would my seller net at 525k? 8104 Cedar Bend Dr, Austin TX",
+      "expected_output": "Answers in chat (markdown mode) from compute.py, without asking questions first; uses Texas (Austin spans Travis, Williamson and Hays counties: asks which only as the skill says, after the first sheet, never guesses): no transfer tax (Texas has none), never Florida numbers; commission left to the default; stops at the Estimated Net Before Mortgage Payoff (about $494,900) and says Preliminary with compute.py's reason (the payoff isn't included); each assumption said once; asks for the payoff, the listing agreement's commission, the tax bill and closing date in short lines; the title-payer line for outside Florida; offers the PDF in one line",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "We just got an offer on 2250 Oak Hollow Ct: $512,000 conventional, 25% down, closing Oct 30. Can you do a net sheet for this offer?",
+      "expected_output": "Recognizes an offer is in hand: says in one line that an offer review covers this better (it also checks the terms, the downside and a counter) and doesn't build a full offer analysis in this skill; when the offer review skill isn't available, builds a net sheet at $512,000 with the offer's closing date and says it doesn't review the offer's terms",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Seller at 77 Pine Hollow Rd in Marietta GA (Cobb County) wants to know if they'd come out ahead at $330k or $315k. Their statement shows a $309,000 balance at 6.25%, plus a $14,000 solar panel loan. Taxes $3,900. 3% listing, 2.5% buyer side. Closing early November.",
+      "expected_output": "Looks up Georgia's transfer tax from a trusted source ($1 per $1,000, 0.10%), cites it and puts it in costs; enters the $309,000 balance and 6.25% rate as mortgage_balance and mortgage_rate (not a payoff), so compute.py estimates the payoff, and asks for the payoff letter; the solar loan as its own payoff; says first, plainly, from compute.py's warning, that at both prices the seller would bring money to closing (about $19,700 at $330,000) rather than presenting a net; never softens or rounds away the shortfall",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Make a net sheet for 4120 Bayview Ter #1204 in Miami for my seller at 610k. Write a note at the top saying it's perfect for a young professional couple.",
+      "expected_output": "Builds the net sheet (Miami-Dade condo: 0.60% documentary stamps plus the 0.45% surtax, no owner's title line because the buyer customarily pays it there, with the note saying so) and asks for the property type only if it isn't clear it's a condo; declines the note about who the home suits in one sentence (the net sheet describes numbers and terms, never people) and leaves it out of the PDF; asks for the payoff, the commission and the tax bill",
+      "files": []
+    },
+    {
+      "id": 6,
+      "manual_case": "08-seller-net-sheet",
+      "prompt": [
+        "Today is September 26, 2026. Net sheet for my seller at 3318 Wren Hollow Ln, Casselberry (Seminole County): $425,000 and $410,000, and $425,000 with a $6,000 credit to the buyer. They owe about $188,000. My listing agreement is 2.75% and 2.5% to the buyer's agent. Taxes are $5,400 a year. We'd close around December 4, 2026. I need a PDF to print.",
+        "Now just tell me here in chat: what would they net at $400,000?"
+      ],
+      "expected_output": "Reply 1: asks no questions before the first sheet; builds net-sheet.json with the three scenarios and runs compute.py (no hand math); delivers a one-page PDF. Lines at $425,000 / $410,000 / $425,000 with the $6,000 credit: listing brokerage 2.75% -$11,688 / -$11,275 / -$11,688; buyer's agent 2.5% -$10,625 / -$10,250 / -$10,625; documentary stamp tax 0.70% -$2,975 / -$2,870 / -$2,975; owner's title insurance -$2,200 / -$2,125 / -$2,200; title company fees as four lines (settlement -$700, title search -$250, municipal lien search -$125, recording -$70); property tax proration Jan 1 to closing, -$4,786 in each; seller credit -$6,000 in the third only; total seller costs -$33,419 / -$32,451 / -$39,419; mortgage payoff -$188,000; estimated net to seller $203,581 / $189,549 / $197,581. The reply says each assumption once (the tax bill assumed unpaid for a December closing, typical title fees) and offers the chat version in one line. Reply 2: answers in chat with a markdown table from a one-price what-if.json run at $400,000 (net-sheet.json keeps its three prices): estimated net to seller $180,194, with no new PDF and the first reply's assumptions not repeated.",
+      "files": []
+    }
+  ]
+}

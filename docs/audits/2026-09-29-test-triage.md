@@ -64,28 +64,28 @@ I checked these gaps against the snapshot files. They are why several tests on u
 | `Holidays.test_observed_and_moving_holidays` | KEEP | Holiday calendar unit (observed/moving dates); no fixture. |  |
 | `Holidays.test_saturday_new_years_observed_friday` | KEEP | TL-5 crash/rule regression, synthetic dates. |  |
 | `Holidays.test_business_day_counting` | KEEP | Business-day arithmetic unit. |  |
-| `FrbarDates.test_blank_association_approval_box_assumes_required` | REWRITE | Modified fixture (rule is new); rows are keys but the flag/note checks match sentences. | Keep the two `assertIn(key, rows)`. Replace the two prose checks with count deltas against the unmodified fixture: `len(r['flags']) == len(base['flags']) + 1` and `len(r['agent_notes']) == len(base['agent_notes']) + 2`, or a flag key (`'assoc_box_blank'`) once timeline flags carry keys. |
-| `FrbarDates.test_first_deadline_includes_rows_both_sides_owe` | KEEP | Modified fixture (Rider GG + completed deposit); asserts keys only. |  |
-| `FrbarDates.test_every_date` | REWRITE | Unmodified buyer-fha.json: every date, `day`, first_deadline/contingencies_end keys and pending keys are pinned by golden; only the flag/note sentences and the `source` label aren't. | Delete EXPECTED, `day`, first_deadline, contingencies_end, pending and `source` asserts. Keep TL-3 as `assertNotIn('appraisal', rows)` plus the FHA/VA flag as a key (`'fha_va_appraisal' in flag_keys`) once flags carry keys; drop the 'within 5 days' and 'Title evidence deadline blank' sentence checks (golden pins the counts). |
-| `FrbarDates.test_rider_words_and_agent_notes` | REWRITE | Modified fixture; the whole-word rider parse is the rule, but 'Closing time isn't stated' matches a sentence. | Keep the appraisal-row asserts and the `not any(f.startswith('FHA/VA'))`. Replace the closing-time sentence with a note key (`'closing_time_assumed' in note_keys and not in flag_keys`), or `len(notes) == len(base_notes) + 1`. |
-| `FrbarDates.test_cash_title_default_is_5_days` | KEEP | TL-2 on a modified copy (cash). |  |
-| `FrbarDates.test_weekend_closing_extends` | REWRITE | TL-6/TL-8 on a modified copy; one assert matches the note sentence. | Drop `assertIn('closing extends to Mon Nov 2', note)`; the `when` asserts already pin the rule. |
-| `FrbarDates.test_date_only_override_rolls_forward` | KEEP | TL-7 on a modified copy. |  |
-| `FrbarDates.test_bad_inputs` | KEEP | TL-9 input errors. |  |
-| `FrbarDates.test_contingency_after_closing_is_flagged` | REWRITE | Modified copy; asserts full flag sentences ('Inspection Period Ends (Right to Cancel) ends after closing'). | Assert the row facts (`rows['inspection']['when'] > rows['closing']['when']`) and a flag count delta of 1, or a flag key `('after_closing', 'inspection')` once flags carry keys. |
-| `FrbarDates.test_association_rights_are_the_buyers` | KEEP | TL-11 on modified copies; party/contingency/when. |  |
-| `FrbarDates.test_new_frbar_rows` | KEEP | TL-12/13/23 on a modified copy. |  |
-| `FrbarDates.test_cash_drops_loan_deadlines` | KEEP | Modified copy (cash): row keys. |  |
-| `FrbarDates.test_standard_contract_has_repair_notices_not_a_cancel_right` | KEEP | Form routing (Standard: repair notices, no cancel right). |  |
+| `FarbarDates.test_blank_association_approval_box_assumes_required` | REWRITE | Modified fixture (rule is new); rows are keys but the flag/note checks match sentences. | Keep the two `assertIn(key, rows)`. Replace the two prose checks with count deltas against the unmodified fixture: `len(r['flags']) == len(base['flags']) + 1` and `len(r['agent_notes']) == len(base['agent_notes']) + 2`, or a flag key (`'assoc_box_blank'`) once timeline flags carry keys. |
+| `FarbarDates.test_first_deadline_includes_rows_both_sides_owe` | KEEP | Modified fixture (Rider GG + completed deposit); asserts keys only. |  |
+| `FarbarDates.test_every_date` | REWRITE | Unmodified buyer-fha.json: every date, `day`, first_deadline/contingencies_end keys and pending keys are pinned by golden; only the flag/note sentences and the `source` label aren't. | Delete EXPECTED, `day`, first_deadline, contingencies_end, pending and `source` asserts. Keep TL-3 as `assertNotIn('appraisal', rows)` plus the FHA/VA flag as a key (`'fha_va_appraisal' in flag_keys`) once flags carry keys; drop the 'within 5 days' and 'Title evidence deadline blank' sentence checks (golden pins the counts). |
+| `FarbarDates.test_rider_words_and_agent_notes` | REWRITE | Modified fixture; the whole-word rider parse is the rule, but 'Closing time isn't stated' matches a sentence. | Keep the appraisal-row asserts and the `not any(f.startswith('FHA/VA'))`. Replace the closing-time sentence with a note key (`'closing_time_assumed' in note_keys and not in flag_keys`), or `len(notes) == len(base_notes) + 1`. |
+| `FarbarDates.test_cash_title_default_is_5_days` | KEEP | TL-2 on a modified copy (cash). |  |
+| `FarbarDates.test_weekend_closing_extends` | REWRITE | TL-6/TL-8 on a modified copy; one assert matches the note sentence. | Drop `assertIn('closing extends to Mon Nov 2', note)`; the `when` asserts already pin the rule. |
+| `FarbarDates.test_date_only_override_rolls_forward` | KEEP | TL-7 on a modified copy. |  |
+| `FarbarDates.test_bad_inputs` | KEEP | TL-9 input errors. |  |
+| `FarbarDates.test_contingency_after_closing_is_flagged` | REWRITE | Modified copy; asserts full flag sentences ('Inspection Period Ends (Right to Cancel) ends after closing'). | Assert the row facts (`rows['inspection']['when'] > rows['closing']['when']`) and a flag count delta of 1, or a flag key `('after_closing', 'inspection')` once flags carry keys. |
+| `FarbarDates.test_association_rights_are_the_buyers` | KEEP | TL-11 on modified copies; party/contingency/when. |  |
+| `FarbarDates.test_new_farbar_rows` | KEEP | TL-12/13/23 on a modified copy. |  |
+| `FarbarDates.test_cash_drops_loan_deadlines` | KEEP | Modified copy (cash): row keys. |  |
+| `FarbarDates.test_standard_contract_has_repair_notices_not_a_cancel_right` | KEEP | Form routing (Standard: repair notices, no cancel right). |  |
 | `Amendments.test_moved_dates_show_was` | REWRITE | Unmodified seller-amended.json: `when`s and `was is None` are golden-pinned; the TL-21 summary text is the only guard for '30 (form default)'. | Delete the four `when`/`was`/`hoa_docs`/`lead_paint` asserts (golden). Keep the TL-21 checks, loosened to `'30 (form default)' in summary` and `'Dec 11, 2026' in summary`. |
 | `Amendments.test_hoa_received_starts_review_window` | KEEP | Modified copy (HOA docs received). |  |
 | `OtherContracts.test_other_contract_uses_its_own_rules_and_deadlines` | REWRITE | Unmodified other-contract.json: the TL-15 dates, contingencies_end key and the absent `deposit` row are golden-pinned; the rest is display text. | Delete the date/key asserts. Keep at most one structured check that the title commitment counts from the title company's receipt (a `basis`/`from` key on the row) instead of the `rule` sentence, and drop the `rules['family']` string. |
 | `OtherContracts.test_best_effort_note_is_chat_only` | KEEP | Compliance: best-effort disclaimer never in the PDF or ICS. |  |
-| `OtherContracts.test_frbar_revision_note_is_chat_only` | KEEP | Compliance: revision note stays in chat. |  |
+| `OtherContracts.test_farbar_revision_note_is_chat_only` | KEEP | Compliance: revision note stays in chat. |  |
 | `OtherContracts.test_other_state_without_rules_is_refused` | KEEP | No built-in rules for other states (CLAUDE.md contract support). |  |
 | `OtherContracts.test_other_contract_needs_deadlines` | KEEP | Input guard. |  |
 | `Required.test_state_required` | KEEP | TL-4: never Florida by default. |  |
-| `Required.test_florida_builder_contract_gets_no_frbar_rules` | KEEP | TL-4 form routing: non-FR/BAR Florida contract. |  |
+| `Required.test_florida_builder_contract_gets_no_farbar_rules` | KEEP | TL-4 form routing: non-FAR/BAR Florida contract. |  |
 | `Required.test_effective_date_required` | MERGE | Same input as the CLI test (effective date removed); the CLI test already exercises the DealError path. | Survivor: Required.test_cli_reports_problems_as_json (add one `assertRaises(timeline.DealError)` line). |
 | `Required.test_quick_question_without_closing_date` | KEEP | Modified copy (no closing date). |  |
 | `Required.test_per_deadline_time_and_no_rollover` | KEEP | Synthetic deadline (own time, no rollover). |  |
@@ -145,7 +145,7 @@ I checked these gaps against the snapshot files. They are why several tests on u
 | `Analysis.test_cma_handoff_in_markdown` | KEEP | Handoff interface (markdown block through the CLI). |  |
 | `Analysis.test_texas_uses_estimates_not_florida_values` | KEEP | Compliance: no Florida numbers outside Florida; disclaimer chat-only. |  |
 | `Analysis.test_best_effort_line_never_on_the_report` | KEEP | Compliance: best-effort line never in the PDF. |  |
-| `Analysis.test_frbar_offer_is_fully_supported` | KEEP | Support key for FR/BAR; cheap. |  |
+| `Analysis.test_farbar_offer_is_fully_supported` | KEEP | Support key for FAR/BAR; cheap. |  |
 | `Pdf.test_html_uses_seller_theme_and_profile` | REWRITE | Brand/profile/OFR-4/no hard-coded orange are guards; two asserts are exact HTML fragments. | Keep brand var, Seller Side, SAMPLE DATA, brokerage, no 'Lic.', no '#C2410C', no 'CMA midpoint'. Replace the `<div class="big">ACCEPT...` and `<span><b>B (#1)</b>...` fragments with `'ACCEPT' in doc` and `'B (#1)' in doc` (OFR-28). |
 | `Pdf.test_comparison_is_one_row_per_offer` | KEEP | Layout rule with user impact (rows not columns, no chart past six, landscape only for multi). |  |
 | `Pdf.test_packet` | KEEP | Packet file-name contract. |  |
@@ -197,7 +197,7 @@ I checked these gaps against the snapshot files. They are why several tests on u
 | `MockContractFixes.test_lapsed_offer_is_blocking` | KEEP | Second half is a modified copy (same-day expiry); first half is golden-pinned and could be trimmed. |  |
 | `MockContractFixes.test_estimated_deadline_is_high_not_blocking` | REMOVE | Unmodified counter-chain-standard.json: the expired flag (High, topic expired) and action COUNTER are golden-pinned; only `'delivered' in request` (wording) is not. |  |
 | `MockContractFixes.test_counter_respects_the_sellers_last_counter` | REWRITE | First part is golden-pinned (counter_terms, flag topics) except RESTATE and the issue sentence; last part is a modified copy. | Delete the counter_terms, chain-count and inspection_period-topic asserts (golden) and the issue sentence. Keep `rows['Inspection Period'][3] == oe.RESTATE` and the $600,000 case. |
-| `MockContractFixes.test_frbar_title_box_sets_who_pays` | KEEP | Para. 9(c)(i): net-sheet title line isn't in golden; modified copies. |  |
+| `MockContractFixes.test_farbar_title_box_sets_who_pays` | KEEP | Para. 9(c)(i): net-sheet title line isn't in golden; modified copies. |  |
 | `MockContractFixes.test_agent_issue_replaces_the_engine_flag` | REWRITE | Filters by 'GG' in the issue text and checks an issue prefix; the merged flag loses its topic (topic None), so golden can't key it either. | Keep the merged flag's topic (`rider_GG`) in the engine, then `[f['sev'] for f in flags if f['topic'] == 'rider_GG'] == ['Med']`; second half: `assertFalse(any(f['topic'] == 'inspection_period' for f in flags))`. |
 | `MockContractFixes.test_advice_to_restate_in_a_counter_isnt_a_counter_chain_issue` | KEEP | Modified copy; topic/sev based; prefix is the test's own input. |  |
 | `MockContractFixes.test_listing_broker_pays_is_not_an_assumption` | KEEP | Modified copy. |  |
@@ -228,7 +228,7 @@ I checked these gaps against the snapshot files. They are why several tests on u
 | `HandoffAndOtherStates.test_handoff_fills_value_market_and_subject` | REWRITE | Unmodified texas-cma-escalation.json: value, list price, state, heat, promoted, terms and bands are golden-pinned, but sale_to_list 0.992 rounds to 0.99. | Delete the golden-pinned asserts; keep `B['market']['sale_to_list'] == 0.992` (or drop once golden keeps 3+ decimals). |
 | `HandoffAndOtherStates.test_handoff_seller_paid_stats_fill_the_market_table` | KEEP | Modified copy; handoff-to-table interface. |  |
 | `HandoffAndOtherStates.test_handoff_file_via_cli` | KEEP | CLI and handoff file. |  |
-| `HandoffAndOtherStates.test_texas_worksheet_has_no_florida_forms` | KEEP | Compliance: no FR/BAR on another state's worksheet. |  |
+| `HandoffAndOtherStates.test_texas_worksheet_has_no_florida_forms` | KEEP | Compliance: no FAR/BAR on another state's worksheet. |  |
 | `HandoffAndOtherStates.test_florida_worksheet` | REWRITE | Worksheet isn't in golden; rider names are official titles (fine), but `rows[6]` pins row order and exact markdown. | `deposit = next(r for r in w['rows'] if r['field'] == 'Initial Deposit')`; `assertIn('$11,000', deposit['entry'])`. |
 | `Pdf.test_options_html_is_buyer_side` | KEEP | Render contract: default buyer blue, side, no license line. |  |
 | `Pdf.test_worksheet_never_shows_the_buyers_limits` | KEEP | Privacy guard (buyer's limits never on the worksheet). |  |
@@ -241,7 +241,7 @@ I checked these gaps against the snapshot files. They are why several tests on u
 | `AuditPricing.test_lower_cost_starts_from_the_agents_price` | KEEP | Modified copies (overrides). |  |
 | `AuditPricing.test_option_that_saves_nothing_is_dropped` | KEEP | Invariant across fixtures; golden would show a diff, not a violation. |  |
 | `AuditPricing.test_jumbo_and_fha_limits` | REWRITE | OFR-11 synthetic; matches assumption/limit sentences. | Assert the assumption by field (e.g. `a['field'] == 'loan_limit'`, adding a field if missing) and `r['limits']['recommended']` truthy; keep '$541,287' only as a number check if needed. |
-| `FrbarGap.test_conventional_gap_uses_aga_not_rider_f` | KEEP | Form routing (AGA-1 vs. Rider F). |  |
+| `FarbarGap.test_conventional_gap_uses_aga_not_rider_f` | KEEP | Form routing (AGA-1 vs. Rider F). |  |
 | `OtherContractWorksheet.test_other_contract_rows_and_riders_are_generic` | KEEP | Compliance/form routing: no other state's form rules. |  |
 | `OtherContractWorksheet.test_best_effort_line_is_chat_only` | KEEP | Compliance: disclaimer never in the worksheet. |  |
 | `OtherContractWorksheet.test_fha_on_other_contract` | KEEP | Generic FHA addendum on another contract. |  |
@@ -290,7 +290,7 @@ I checked these gaps against the snapshot files. They are why several tests on u
 | `BuyerStrategy.test_needs_sale_is_scored_with_a_kickout` | KEEP | Riders V/X (buyer side). |  |
 | `BuyerStrategy.test_ff_route_leaves_less_room_for_concessions` | KEEP | Rider FF (buyer side). |  |
 | `BuyerStrategy.test_default_is_as_is_and_says_so` | KEEP | Missing form recorded as an assumption; worksheet part not in golden. |  |
-| `Timeline.test_frbar_needs_its_form` | KEEP | Never default a missing form (timeline). |  |
+| `Timeline.test_farbar_needs_its_form` | KEEP | Never default a missing form (timeline). |  |
 | `Timeline.test_rows_follow_the_form` | KEEP | Form routing (timeline rows). |  |
 
 ### test_buyer_cma.py (29)

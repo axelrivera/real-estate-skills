@@ -1,0 +1,25 @@
+{
+  "prepared_date": "2026-10-01",
+  "prepared_for": "Dana Morgan",
+  "closing_date": "2026-12-15",
+  "property": {
+    "address": "2250 Oak Hollow Ct",
+    "city": "Oviedo",
+    "county": "Seminole",
+    "state": "FL",
+    "property_type": "single_family",
+    "hoa": true,
+    "hoa_monthly": 85
+  },
+  "scenarios": [
+    {"price": 450000, "label": "Current List Price"}
+  ],
+  "costs": {
+    "listing_fee_pct": 0.03,
+    "buyer_broker_fee_pct": 0.025,
+    "mortgage_payoff": 214000,
+    "other_payoffs": [{"label": "Home Equity Line", "amount": 18000}],
+    "annual_tax": 6200,
+    "other": [{"label": "Survey", "amount": 450}]
+  }
+}
