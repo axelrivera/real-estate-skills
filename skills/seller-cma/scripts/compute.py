@@ -610,20 +610,53 @@ def pick_stance(R, stats, failed, own):
     return stance, suggested, signals, reason, problems
 
 
-def stance_model(stance, suggested, signals, reason, stats, rule, own, own_reason):
-    """The stance as the report shows it: its name as a plain label, the script's sentence for it, the market numbers
-    behind the suggestion, the model's reason, and an agent's own price said beside the method's."""
-    name = L["stance_" + stance]
-    facts = []
+def stance_facts(stats):
+    """Each market number in words, by the signal it can show ({signal: words}): supply for supply_high and
+    supply_low, the price-cut share for price_cuts, and the sale-to-list ratio for sale_below_list and sale_at_list
+    (against the final asking price when the export carries it, else the original one, the only ratio then known)."""
+    words = {}
     if stats.get("months_supply") is not None:
-        facts.append(t("stance_fact_supply", months=fmt.months(stats["months_supply"])))
+        words["supply_high"] = words["supply_low"] = t("stance_fact_supply", months=fmt.months(stats["months_supply"]))
     if stats.get("active_share_with_price_cut") is not None:
-        facts.append(t("stance_fact_cuts", share=fmt.pct(stats["active_share_with_price_cut"], 0)))
+        words["price_cuts"] = t("stance_fact_cuts", share=fmt.pct(stats["active_share_with_price_cut"], 0))
     if stats.get("sale_to_final_list_recent") is not None:
-        facts.append(t("stance_fact_ratio", ratio=fmt.pct(stats["sale_to_final_list_recent"], 1, fixed=True)))
-    data = (t("line_stance_data", facts=cma._and(facts), suggested=L["stance_" + suggested]) if facts
-            else t("line_stance_no_data", suggested=L["stance_" + suggested]))
-    parts = [t("line_stance", name=name, what=L["stance_line_" + stance]), data]
+        words["sale_below_list"] = words["sale_at_list"] = t(
+            "stance_fact_ratio", ratio=fmt.pct(stats["sale_to_final_list_recent"], 1, fixed=True))
+    elif stats.get("sale_to_original_list_recent") is not None:
+        words["sale_at_list"] = t("stance_fact_ratio_original",
+                                  ratio=fmt.pct(stats["sale_to_original_list_recent"], 1, fixed=True))
+    return words
+
+
+def stance_data_line(suggested, signals, stats, failed):
+    """The sentence on the market numbers behind the suggestion, true for any data: a suggested Draw Offers or Premium
+    names only the signals that suggested it (and, for Draw Offers, any premium signal that also shows: low supply
+    beside widespread price cuts); a suggested Market Price lists the numbers known, which by the thresholds call for
+    neither, or says a reprice or relist set Premium aside."""
+    words, shown = stance_facts(stats), cma.stance_signals(stats)
+    to = L["stance_" + suggested]
+    if signals:
+        facts = cma._and(list(dict.fromkeys(words[k] for k in signals)))
+        against = [words[k] for k in cma.PREMIUM_SIGNALS if k in shown] if suggested == "draw_offers" else []
+        if against:
+            return t("line_stance_data_despite", facts=facts, suggested=to, against=cma._and(against))
+        return t("line_stance_data", facts=facts, suggested=to)
+    if failed and all(k in shown for k in cma.PREMIUM_SIGNALS):
+        return t("line_stance_failed", facts=cma._and([words[k] for k in cma.PREMIUM_SIGNALS]), suggested=to,
+                 premium=L["stance_premium"])
+    known = list(dict.fromkeys(words.values()))
+    if known:
+        return t("line_stance_neither", facts=cma._and(known), suggested=to, draw=L["stance_draw_offers"],
+                 premium=L["stance_premium"])
+    return t("line_stance_no_data", suggested=to)
+
+
+def stance_model(stance, suggested, signals, reason, stats, rule, own, own_reason, failed=False):
+    """The stance as the report shows it: its name as a plain label, the script's sentence for it, the market numbers
+    behind the suggestion (stance_data_line), the model's reason, and an agent's own price said beside the method's."""
+    name = L["stance_" + stance]
+    parts = [t("line_stance", name=name, what=L["stance_line_" + stance]),
+             stance_data_line(suggested, signals, stats, failed)]
     if reason:
         parts.append(end_sentence(reason[0].upper() + reason[1:]))
     if own is not None:
@@ -726,53 +759,68 @@ def stay_rule(R, homes, x, median_adjusted, split):
             "n": n}
 
 
-def fill_expected_sales(R, strategies, stats, stay, competing, ri):
-    """Each option's expected sale by one rule: its list price times the recent sale-to-FINAL-list ratio (net of
-    seller-paid costs: the export's when it carries final list prices, else `market.sale_to_list`, else 97% assumed),
-    plus its own seller credit, to the nearest $500. Kept inside the supported range, never above the list price
-    (except the competing-offer option, the last), an option above the recommended price expects the recommended one's
-    sale, and a higher list price never expects less than a lower one (nor a lower one more, in a market selling over
-    list). An expected_sale in pricing.options is the agent's figure and is kept. Fills the strategies in place;
-    returns the basis for the note."""
+def fill_expected_sales(R, strategies, stats, stay, competing):
+    """Each option's expected sale by one rule, so options that differ in price differ in expected sale: its list
+    price times ONE ratio, plus its own seller credit, to the nearest $500.
+
+    The ratio is the recent sale-to-FINAL-list (net of seller-paid costs): the export's when it carries final list
+    prices; else `market.sale_to_list`; else, with an export, its sale-to-original-list when that's at least the 97%
+    assumption (a final price is never above the original one, so the final ratio is at least that); else 97%
+    assumed. When that ratio would put an option listed inside the supported range under the range, the ratio is
+    raised for every option to the one that puts it at the range's low end: the comps (already net of seller credits)
+    say the home is worth at least that, and one ratio keeps every option's place, where clamping each option to the
+    floor would give two prices the same sale. Never above its list price (except the competing-offer option, the
+    last) or the top of the range. Then by list price a higher price expects at least $500 more than a lower one (for
+    an agent's own figure or credit in between), and a lower one at least $500 less than a higher one's rule figure (a
+    market selling over list). An expected_sale in pricing.options is the agent's figure and is kept. Fills the
+    strategies in place; returns the basis for the note."""
     m = R.get("market") or {}
+    original = stats.get("sale_to_original_list_recent")
     if stats.get("sale_to_final_list_recent"):
         ratio, source = stats["sale_to_final_list_recent"], "export"
     elif isinstance(m.get("sale_to_list"), (int, float)) and 0.5 < m["sale_to_list"] <= 1.2:
         ratio, source = m["sale_to_list"], "report"
+    elif original is not None and original >= ASSUMED_SALE_TO_LIST:
+        ratio, source = original, "export_original"
     else:
         ratio, source = ASSUMED_SALE_TO_LIST, "assumed"
     low, high, last = R["recommendation"]["low"], R["recommendation"]["high"], len(strategies) - 1
     filled = [i for i, x in enumerate(strategies) if i != stay and x.get("expected_sale") is None]
     agent = [i for i, x in enumerate(strategies) if i != stay and i not in filled]
-    capped = floored = False
+    cap = {i: high if competing and i == last else min(high, strategies[i]["list_price"]) for i in filled}
+    credit = {i: strategies[i].get("seller_credit") or 0 for i in filled}
+    # the ratio each option inside the range needs to sell at the range's low end; the highest need sets the one ratio
+    need = {i: (low - credit[i]) / strategies[i]["list_price"] for i in filled if cap[i] >= low}
+    neediest = max(need, key=need.get, default=None)
+    raised_by = neediest if neediest is not None and need[neediest] > ratio else None
+    used = need[raised_by] if raised_by is not None else ratio
+    capped = False
     for i in filled:
         x = strategies[i]
-        v = fmt.half_up(x["list_price"] * ratio + (x.get("seller_credit") or 0), EXPECTED_STEP)
-        cap = min(high, x["list_price"]) if not (competing and i == last) else high
-        floored |= v < low and cap > v
-        capped |= v > cap
-        x["expected_sale"], x["expected_sale_source"] = min(max(v, low), cap), "rule"
-    floor = 0  # by list price, low to high: a higher price expects at least what a lower one does
-    for i in sorted((i for i in range(len(strategies)) if i != stay), key=lambda i: strategies[i]["list_price"]):
+        v = fmt.half_up(x["list_price"] * used + credit[i], EXPECTED_STEP)
+        if i in need:
+            v = max(v, low)  # the $500 rounding never takes the raised option back under the range
+        capped |= v > cap[i]
+        x["expected_sale"], x["expected_sale_source"] = min(v, cap[i]), "rule"
+    order = sorted((i for i in range(len(strategies)) if i != stay), key=lambda i: strategies[i]["list_price"])
+    floor = -math.inf  # low to high: a higher price expects more than a lower one, by at least a rounding step
+    for i in order:
         x = strategies[i]
-        if i in filled and x["expected_sale"] < floor:
-            x["expected_sale"] = min(floor, x["list_price"])
+        if i in filled and x["expected_sale"] < floor + EXPECTED_STEP:
+            x["expected_sale"] = min(floor + EXPECTED_STEP, cap[i])
         floor = max(floor, x["expected_sale"])
-    # an option above the recommended price expects the recommended one's sale: a higher price costs time, not price
-    top = [i for i in filled if i != ri and strategies[i]["list_price"] > strategies[ri]["list_price"]]
-    for i in top:
-        strategies[i]["expected_sale"] = min(strategies[i]["expected_sale"], strategies[ri]["expected_sale"])
-    # and high to low: a lower price never expects more than a higher one's rule figure (a market selling over list);
-    # the agent's own figures are kept as given, and warned on when out of order
+    # and high to low: a lower price expects less than a higher one's rule figure (a market selling over list); the
+    # agent's own figures are kept as given, and warned on when out of order
     ceiling = math.inf
-    for i in sorted(filled, key=lambda i: -strategies[i]["list_price"]):
+    for i in reversed([i for i in order if i in filled]):
         x = strategies[i]
-        x["expected_sale"] = min(x["expected_sale"], ceiling)
+        x["expected_sale"] = min(x["expected_sale"], ceiling - EXPECTED_STEP)
         ceiling = x["expected_sale"]
     for i in agent:
         strategies[i]["expected_sale_source"] = "agent"
-    return {"ratio": ratio, "ratio_display": fmt.pct(ratio, 1, fixed=True), "source": source, "filled": filled,
-            "agent": agent, "capped": capped, "floored": floored, "top": top}
+    return {"ratio": used, "ratio_display": fmt.pct(used, 1, fixed=True), "market_ratio": ratio,
+            "market_ratio_display": fmt.pct(ratio, 1, fixed=True), "source": source, "filled": filled,
+            "agent": agent, "capped": capped, "raised_by": raised_by}
 
 
 # --- the launch and each option's closing ---------------------------------------------------------------------------------
@@ -804,6 +852,13 @@ def option_closings(R, strategies, as_of, launch):
         out.append({"date": closing, "months_to_contract": months,
                     "hold_months": round(max((closing - as_of).days, 0) / MONTH_DAYS, 2) if closing else None})
     return out
+
+
+def goal_misses(R, closings):
+    """The options (indexes) whose closing falls after the seller's goal, costs.expected_closing_date; none without
+    one."""
+    goal = _date((R.get("costs") or {}).get("expected_closing_date"), "expected_closing_date")
+    return [i for i, c in enumerate(closings) if goal and c["date"] and c["date"] > goal]
 
 
 # --- the net sheet: a Ledger per option -------------------------------------------------------------------------------
@@ -1191,12 +1246,14 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
               else L["note_option_credit_none"], "estimate")
     # what the expected sales rest on: once, here (never also under the pricing table or in the method)
     if basis["filled"]:
-        parts = [t("note_expected_" + basis["source"], ratio=basis["ratio_display"],
+        parts = [t("note_expected_" + basis["source"], ratio=basis["market_ratio_display"],
                    since=cma.day_words(fmt.to_date(basis["split"])) if basis.get("split") else "")]
-        if basis["capped"] or basis["floored"]:
-            parts.append(L["note_expected_limits"])
-        if basis["top"]:
-            parts.append(t("note_expected_top", prices=cma._and([money(strategies[i]["list_price"]) for i in basis["top"]])))
+        if basis["raised_by"] is not None:
+            parts.append(t("note_expected_raised", price=money(strategies[basis["raised_by"]]["list_price"]),
+                           ratio=basis["ratio_display"]))
+        if basis["capped"]:
+            parts.append(L["note_expected_limits_competing" if strategies[-1]["role"] == "competing"
+                           else "note_expected_limits"])
         N.add("expected_sale", " ".join(parts), "assumption" if basis["source"] == "assumed" else "estimate")
     if basis["agent"]:
         prices = cma._and([money(strategies[i]["list_price"]) for i in basis["agent"]])
@@ -1238,6 +1295,12 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
         if unpaid:
             parts.append(L["note_tax_unpaid"])
         N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] else "info")
+    late = goal_misses(R, closings)  # the seller's closing goal, said once for every option that closes after it
+    if late:
+        goal = fmt.date_short(_date(costs["expected_closing_date"], "expected_closing_date"))
+        N.add("closing_goal", t("note_goal_after" if len(late) == 1 else "note_goal_after_many",
+                                options=cma._and([money(strategies[i]["list_price"]) for i in late]),
+                                dates=cma._and([fmt.date_short(closings[i]["date"]) for i in late]), goal=goal), "info")
     if "title_fees" in assumed and not assumed["title_fees"].get("estimate"):
         fees = market.get("closing_costs.seller_title_fees") or {}
         N.add("title_fees", t("note_title_fees", items=", ".join(f"{k.replace('_', ' ')} {money(v)}" for k, v in fees.items())),
@@ -1448,7 +1511,7 @@ def compute(R, market, homes, data_file=None):
                               "apply the rule to, so apply it to the sales you were given (method.md, A Reprice).")
         strategies[stay]["expected_sale"], strategies[stay]["expected_sale_source"] = rule["gross"], "stay_rule"
     competing = roles[-1] == "competing"
-    basis = fill_expected_sales(R, strategies, stats, stay, competing, ri)
+    basis = fill_expected_sales(R, strategies, stats, stay, competing)
     basis["split"] = split_iso
     for x in strategies[:-1] if competing else strategies:  # CMA-20
         if x["expected_sale"] > x["list_price"]:
@@ -1482,6 +1545,11 @@ def compute(R, market, homes, data_file=None):
     # one closing per option, then the net sheet and the payments
     launch = launch_info(R, as_of)
     closings = option_closings(R, strategies, as_of, launch)
+    if ri in goal_misses(R, closings):
+        goal = fmt.date_short(_date(R["costs"]["expected_closing_date"], "expected_closing_date"))
+        warn("recommended_after_goal", f"The recommended {money(strategies[ri]['list_price'])} option would likely "
+             f"close {fmt.date_short(closings[ri]['date'])}, after the seller's {goal} goal (the notes say so): say in "
+             "pricing.note how the plan meets the goal or why it's still the better choice, and raise it in the reply.")
     net = net_sheet(R, market, strategies, closings, as_of, ri)
     warn("title_quote", *dict.fromkeys(w for n in net["raw"] for w in n["warnings"]))
     missing = list(dict.fromkeys(MISSING_WORDS.get(m, m) for m in net["raw"][0]["missing"]))
@@ -1552,10 +1620,13 @@ def compute(R, market, homes, data_file=None):
                      "cut after holding costs, with the agent's own values in pricing.options.stay. Check them; if it "
                      "still nets more, say in pricing.note that the cut buys time and certainty, not a higher net.")
         elif stay is None and x["list_price"] > strat[ri]["list_price"]:
-            warn("top_nets_more", f"The {x['list_price_display']} option nets {about(nets[i] - nets[ri])} more than the "
-                 "recommended one after holding costs. A higher price takes longer and usually sells near the "
-                 "recommended one anyway (method.md): lower its expected sale or lengthen its time, or explain in "
-                 "pricing.note.")
+            own = {k for k, v in (given.get(x["role"]) or {}).items() if v not in (None, "")} & {
+                "expected_sale", "seller_credit", "time", "months_to_contract", "closing_date"}
+            if own:  # by the rule a higher price nets more, slower (method.md); an agent's figure gets checked
+                warn("top_nets_more", f"The {x['list_price_display']} option nets {about(nets[i] - nets[ri])} more than "
+                     "the recommended one after holding costs, with the agent's own "
+                     f"{', '.join(sorted(own))} in pricing.options.{x['role']}. Check them; if it still nets more, "
+                     "say in pricing.note why the recommended price is the better choice.")
     # CMA-319: a competing-offer option that nets more says, once in the notes, that its net depends on those offers
     caveat = len(strat) - 1 if competing and nets[-1] > nets[ri] else None
     reprice_out = None
@@ -1617,7 +1688,8 @@ def compute(R, market, homes, data_file=None):
         "verdict": rw("verdict_price", price=money(rec["list_price"])),
         "caption": rw("verdict_caption", range=fmt.range(rec["low"], rec["high"])),
         "why": rec.get("why", ""), "override": range_info["override"], "price_override": agent_price is not None}
-    C["stance"] = stance_model(stance, suggested, signals, stance_reason, stats, rule_price, agent_price, agent_reason)
+    C["stance"] = stance_model(stance, suggested, signals, stance_reason, stats, rule_price, agent_price, agent_reason,
+                               failed=rp is not None or relist is not None)
     if range_info["override"]:  # the agent's own range, said once beside it, with the method's for comparison
         C["recommendation"]["line"] += " " + t("line_range_override", rule=fmt.range(range_info["rule_low"],
                                                range_info["rule_high"]), reason=end_sentence(range_info["reason"]))
@@ -1671,8 +1743,8 @@ def compute(R, market, homes, data_file=None):
     C["strategies"], C["recommended_index"] = strat, ri
     C["listing_kind"], C["options_merged"] = built["kind"], [list(m) for m in built["merged"]]
     C["launch"] = launch
-    C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "source", "filled", "agent", "capped",
-                                                       "floored", "top")}
+    C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "market_ratio", "source", "filled",
+                                                       "agent", "capped", "raised_by")}
     C["net"] = {"rows": rows, "totals": totals, "after_holding": after, "holding": [r["amounts"] for r in rows
                                                                                       if r["key"] == "holding"][0] if after else None,
                 "monthly": fmt.half_up(net["monthly"]) if net["holding"] else None,

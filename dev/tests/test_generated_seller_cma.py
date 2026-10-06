@@ -196,6 +196,14 @@ class Model(unittest.TestCase):
                 self.assertLessEqual(x["list_price"], rec["high"])
             if x["role"] == "competing":
                 self.assertGreaterEqual(x["list_price"], rec["low"])
+        # the script's expected sales: one ratio, so a higher price expects more and no two prices share a sale; none
+        # listed inside the range expects a sale under it
+        rule = sorted((x for x in strats if x["expected_sale_source"] == "rule"), key=lambda x: x["list_price"])
+        sales = [x["expected_sale"] for x in rule]
+        self.assertEqual(sales, sorted(set(sales)), [(x["list_price"], x["expected_sale"]) for x in rule])
+        for x in rule:
+            if x["list_price"] >= rec["low"]:
+                self.assertGreaterEqual(x["expected_sale"], rec["low"])
         if not rp and not rl:
             self.check_standard(R, C)
 
@@ -275,6 +283,10 @@ class Model(unittest.TestCase):
                         self.assertGreater(closing.year, as_of.year)
                 self.assertEqual(len({x["closing"] for x in C["strategies"] if x["closing"]}) > 0,
                                  "closing" in rows)
+                goal = (R.get("costs") or {}).get("expected_closing_date")  # an option past the goal: noted, once
+                late = [i for i, x in enumerate(C["strategies"]) if goal and x["closing"] and x["closing"] > goal]
+                self.assertEqual(C["note_keys"].count("closing_goal"), 1 if late else 0)
+                self.assertEqual("recommended_after_goal" in C["warning_keys"], C["recommended_index"] in late)
 
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, _, C in cases():

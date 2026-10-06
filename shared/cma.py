@@ -712,27 +712,41 @@ STANCES = ("draw_offers", "market", "premium")
 STANCE_SHARE = {"draw_offers": 0.25, "market": 0.5, "premium": 0.75}
 DRAW_SUPPLY, DRAW_CUT_SHARE, DRAW_SALE_TO_LIST = 6, 0.40, 0.97  # any one suggests drawing offers
 PREMIUM_SUPPLY, PREMIUM_SALE_TO_LIST = 3, 1.00  # both together suggest a premium
+DRAW_SIGNALS = ("supply_high", "price_cuts", "sale_below_list")
+PREMIUM_SIGNALS = ("supply_low", "sale_at_list")
+
+
+def stance_signals(stats):
+    """The market signals the numbers show, as a set. `stats` has the seller CMA's market numbers (`months_supply`,
+    `active_share_with_price_cut`, `sale_to_final_list_recent`, `sale_to_original_list_recent`; any may be missing, and
+    a missing number shows no signal). Draw-offers signals: supply_high (6 or more months of supply), price_cuts (40%
+    or more of the active listings cut their price), sale_below_list (recent sales under 97% of their FINAL asking
+    price). Premium signals: supply_low (under 3 months) and sale_at_list (recent sales at or above their asking
+    price). Without final list prices only the original-list ratio is known: a sale at or above its original price was
+    at or above its final one too (a final price is never above the original), so that shows sale_at_list, but a sale
+    under its original price may have closed at its final one, so it never shows sale_below_list."""
+    supply = stats.get("months_supply")
+    cuts = stats.get("active_share_with_price_cut")
+    final = stats.get("sale_to_final_list_recent")
+    at_least = final if final is not None else stats.get("sale_to_original_list_recent")
+    return {k for k, hit in (("supply_high", supply is not None and supply >= DRAW_SUPPLY),
+                             ("price_cuts", cuts is not None and cuts >= DRAW_CUT_SHARE),
+                             ("sale_below_list", final is not None and final < DRAW_SALE_TO_LIST),
+                             ("supply_low", supply is not None and supply < PREMIUM_SUPPLY),
+                             ("sale_at_list", at_least is not None and at_least >= PREMIUM_SALE_TO_LIST)) if hit}
 
 
 def suggest_stance(stats, failed=False):
-    """(stance, signals): the pricing stance the market data suggests, and the signals behind it. `stats` has the
-    seller CMA's market numbers (`months_supply`, `active_share_with_price_cut`, `sale_to_final_list_recent`; any may be
-    missing). draw_offers when months of supply is 6 or more, 40% or more of the active listings have cut their price,
-    or recent sales closed under 97% of their final asking price; premium when supply is under 3 months and recent
-    sales closed at or above their final asking price; else market. A reprice or relist (`failed`: the market already
-    turned a price down) never suggests premium. Signals: supply_high, price_cuts, sale_below_list, supply_low,
-    sale_at_list."""
-    supply = stats.get("months_supply")
-    cuts = stats.get("active_share_with_price_cut")
-    ratio = stats.get("sale_to_final_list_recent")
-    draw = [key for key, hit in (("supply_high", supply is not None and supply >= DRAW_SUPPLY),
-                                 ("price_cuts", cuts is not None and cuts >= DRAW_CUT_SHARE),
-                                 ("sale_below_list", ratio is not None and ratio < DRAW_SALE_TO_LIST)) if hit]
+    """(stance, signals): the pricing stance the market data suggests (`stats` as in stance_signals) and the signals
+    that suggested it, so a sentence built from them names only those: draw_offers when any draw-offers signal shows;
+    premium when both premium signals show; else market, with none. A reprice or relist (`failed`: the market already
+    turned a price down) never suggests premium."""
+    shown = stance_signals(stats)
+    draw = [k for k in DRAW_SIGNALS if k in shown]
     if draw:
         return "draw_offers", draw
-    if (not failed and supply is not None and supply < PREMIUM_SUPPLY and ratio is not None
-            and ratio >= PREMIUM_SALE_TO_LIST):
-        return "premium", ["supply_low", "sale_at_list"]
+    if not failed and all(k in shown for k in PREMIUM_SIGNALS):
+        return "premium", list(PREMIUM_SIGNALS)
     return "market", []
 
 

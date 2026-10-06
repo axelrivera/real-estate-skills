@@ -361,13 +361,11 @@
    1,
    2
   ],
-  "floored": false,
+  "market_ratio": 0.97,
+  "raised_by": null,
   "ratio": 0.97,
   "ratio_display": "97.0%",
-  "source": "assumed",
-  "top": [
-   0
-  ]
+  "source": "assumed"
  },
  "handoff": {
   "as_of": "2026-09-22",
@@ -581,7 +579,7 @@
  },
  "net": {
   "after_holding": [
-   433113,
+   437804,
    433532,
    424867
   ],
@@ -606,7 +604,7 @@
   "rows": [
    {
     "amounts": [
-     476500,
+     481500,
      476500,
      467000
     ],
@@ -626,7 +624,7 @@
    },
    {
     "amounts": [
-     -11913,
+     -12038,
      -11913,
      -11675
     ],
@@ -638,7 +636,7 @@
    },
    {
     "amounts": [
-     -11913,
+     -12038,
      -11913,
      -11675
     ],
@@ -650,7 +648,7 @@
    },
    {
     "amounts": [
-     -3336,
+     -3371,
      -3336,
      -3269
     ],
@@ -662,7 +660,7 @@
    },
    {
     "amounts": [
-     -2458,
+     -2482,
      -2458,
      -2410
     ],
@@ -698,7 +696,7 @@
    },
    {
     "amounts": [
-     434735,
+     439426,
      434735,
      425826
     ],
@@ -722,7 +720,7 @@
    },
    {
     "amounts": [
-     433113,
+     437804,
      433532,
      424867
     ],
@@ -734,13 +732,13 @@
    }
   ],
   "totals": [
-   434735,
+   439426,
    434735,
    425826
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 8665,
+ "net_spread": 12937,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -941,15 +939,15 @@
    "agent": false,
    "closing": "2026-12-24",
    "down": 24245,
-   "expected_sale": 476500,
+   "expected_sale": 481500,
    "expected_sale_source": "rule",
    "hold_months": 3.06,
    "list_price": 484900,
    "months_to_contract": 1.61,
    "name": "Premium",
-   "net": 434735,
-   "net_after_holding": 433113,
-   "net_vs_recommended": -419,
+   "net": 439426,
+   "net_after_holding": 437804,
+   "net_vs_recommended": 4272,
    "payment": 4187,
    "recommended": false,
    "role": "premium",
