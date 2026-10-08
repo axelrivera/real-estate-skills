@@ -97,7 +97,7 @@ Bump once per release (before the pull request into `main`, or before sharing a 
 
 While the version is below 1.0, a minor bump may also break things (a removed skill, a new profile schema); say so in the status notes. Go to 1.0.0 once every skill has passed its evals and been checked by hand in claude.ai and Cowork; after that, a breaking change is a major bump.
 
-Record each release in [status.md](status.md) (what changed for agents) under a heading that ends in the version, `## This pass (YYYY-MM-DD): What Changed and Version x.y.z`: `make release` publishes those sections as the release notes and stops when the version has none. Run `claude plugin validate .` after the bump.
+Record each release in [status.md](status.md) (what changed for agents) under a heading that ends in the version, `## This pass (YYYY-MM-DD): What Changed and Version x.y.z`: `make release` publishes those sections as the release notes and stops when the version has none. Run `make validate` after the bump.
 
 ## The Agent Guide and Manual
 
