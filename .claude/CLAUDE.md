@@ -12,7 +12,7 @@ shared/                             # shared code and references, copied into sk
 dev/                                # dev tooling and fixtures, never shipped (mock_contracts/: mock FAR/BAR packages, docs/mock-contracts.md; package/: the agent guide and PDF manual, make manual)
 .claude/CLAUDE.md                   # this file; here, not at the root, because the root is the plugin (claude plugin validate warns on a root CLAUDE.md)
 .claude/skills/                     # Claude Code skills for developing this repo (mock-contract), never shipped
-Makefile                            # make help | setup | hooks | check | release-check | smoke | test | fuzz | golden | layout-check | sync | check-sync | style-check | lint-skills | py311 | forms-check | outputs | samples | mock-contracts | manual-kit | manual | runtime-check | preview-design | package | package-skills | release | clean
+Makefile                            # make help | setup | hooks | check | release-check | smoke | test | fuzz | golden | layout-check | sync | check-sync | style-check | lint-skills | validate | py311 | forms-check | outputs | samples | mock-contracts | manual-kit | manual | runtime-check | preview-design | package | package-skills | release | clean
 docs/                               # all documentation
 samples/                            # committed preview files (PDF, PPTX, ICS), one happy path per skill (make samples), never shipped
 sources/                            # prototype skills, local only, git-ignored
@@ -49,4 +49,4 @@ sources/                            # prototype skills, local only, git-ignored
 - Update [docs/skills.md](../docs/skills.md) and the README skill table when a skill is added or renamed.
 - **Releases:** follow [docs/release-checklist.md](../docs/release-checklist.md) before the pull request into `main`.
 - **Version:** bump once per release in `plugin.json`, before the pull request into `main`: minor for anything that changes what agents do, upload or get; patch for fixes; none for docs, dev tooling, evals or tests. Rules in [docs/development.md](../docs/development.md#versioning).
-- Validate after changing any manifest: `claude plugin validate .claude-plugin/plugin.json` (the plugin) and `claude plugin validate .` (the marketplace only, since the root has a `marketplace.json`).
+- Validate after changing any manifest: `make validate` (runs `claude plugin validate` on the plugin and the marketplace; fails on any warning).

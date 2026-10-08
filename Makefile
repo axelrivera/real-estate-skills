@@ -12,7 +12,7 @@ DIST     := dist
 # The version lives only in plugin.json (a comment on the line below would add trailing spaces to the value)
 VERSION   = $(shell $(PY) -c 'import json; print(json.load(open(".claude-plugin/plugin.json"))["version"])')
 
-.PHONY: help setup hooks test check release-check smoke fuzz golden layout-check style-check lint-skills py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
+.PHONY: help setup hooks test check release-check smoke fuzz golden layout-check style-check lint-skills validate py311 sync check-sync forms-check mock-contracts manual-kit manual runtime-check preview-design outputs samples package package-skills release clean
 
 help:
 	@echo "make setup          Create .venv, install Chromium, Node modules (nvm) and Python 3.11 (uv, via Homebrew if missing)"
@@ -26,6 +26,7 @@ help:
 	@echo "make style-check    Render every fixture and flag em dashes and labels not in Title Case"
 	@echo "make layout-check   Render every PDF fixture into $(OUT)/layout/; fail on page-1 overflow, clipped text or a near-empty page"
 	@echo "make lint-skills    Check every SKILL.md: frontmatter, description length, Guardrails first, paths"
+	@echo "make validate       Validate the plugin and marketplace manifests with the claude CLI; fail on any error or warning"
 	@echo "make py311          Compile shipped Python with Python 3.11 (the Cowork runtime; uv's when not on PATH)"
 	@echo "make sync           Copy shared/ into every skill's scripts/_shared/"
 	@echo "make check-sync     Fail if any scripts/_shared/ copy differs from shared/"
@@ -101,6 +102,16 @@ golden:
 
 lint-skills:
 	@$(PY) dev/lint_skills.py
+
+# claude plugin validate exits 0 on warnings, so a warning fails here too. On "." it checks only marketplace.json
+# (the root has one), so the plugin manifest is validated by path.
+validate:
+	@command -v claude >/dev/null || { echo "The claude CLI isn't on PATH."; exit 1; }
+	@for m in .claude-plugin/plugin.json .; do \
+		out=$$(claude plugin validate $$m 2>&1); code=$$?; echo "$$out"; \
+		test $$code -eq 0 || exit 1; \
+		! echo "$$out" | grep -q '⚠' || { echo "Warnings in $$m: fix them."; exit 1; }; \
+	done
 
 py311:
 	@$(PY) dev/py311_check.py

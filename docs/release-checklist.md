@@ -10,7 +10,7 @@ The gate every release passes before the pull request from `develop` into `main`
 - [ ] `make mock-contracts ARGS="--answer-key --scanned"` builds every starter.
 - [ ] `make outputs` renders every fixture.
 - [ ] `make fuzz` (inside `make release-check`): the generated tests on 25 inputs per skill from fresh seeds, with no invariant failure (a failure is fixed in the construction, never with a check for that input; [Tests](development.md#tests)).
-- [ ] `claude plugin validate .` passes.
+- [ ] `make validate` passes (plugin and marketplace manifests, no warnings).
 
 ## 2. Golden Results
 
