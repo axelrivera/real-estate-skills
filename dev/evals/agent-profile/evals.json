@@ -44,7 +44,7 @@
     {
       "id": 7,
       "prompt": "ok I'm done with my profile. how do I make it so I don't have to upload it every time I start a chat?",
-      "expected_output": "No interview; the conversation doesn't show whether this is claude.ai or Cowork. Writes project-instructions.md from the template naming only the agent (Jane Doe), with no contact details, colors or costs copied in; presents it with the profile; recommends a Project in one sentence and gives the claude.ai steps as a short numbered list with bold button names (+ New Project, Set project instructions, + to upload profile.md), plus the one line offering the Cowork steps (required whenever the surface isn't shown); plain words, no em dashes",
+      "expected_output": "No interview; the conversation doesn't show whether this is claude.ai or Cowork. Writes project-instructions.md from the template naming only the agent (Jane Doe), with no contact details, colors or costs copied in; presents it (the unchanged profile isn't handed back); recommends a Project in one sentence and gives the claude.ai steps as a short numbered list with bold button names (+ New Project, Set project instructions, + to upload profile.md), plus the one line offering the Cowork steps (required whenever the surface isn't shown); plain words, no em dashes",
       "files": [
         "dev/evals/agent-profile/files/profile.md"
       ]
