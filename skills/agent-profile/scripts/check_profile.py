@@ -2,8 +2,9 @@
 
     python3 scripts/check_profile.py profile.md
 
-Prints JSON: ok, the fields that are set, the brand colors each side will use (by name),
-and problems (things to fix before handing the file over) and warnings (things to tell the agent).
+Prints JSON: ok, the fields that are set, the sections the file has (every "## " heading, in order: Brand Colors,
+Voice, Disclaimers...), the brand colors each side will use (by name), and problems (things to fix before handing the
+file over) and warnings (things to tell the agent).
 """
 import json
 import os
@@ -52,7 +53,9 @@ def check(path):
     return {
         "ok": not problems,
         "fields": [f for f, _ in profiles.agent_lines(agent)],
-        "sections": [s for s in ("voice", "disclaimers") if agent[s]],
+        # iteration 16: every section heading the file has (it read [] for a profile with only Brand Colors, which
+        # looked like a profile with no sections at all)
+        "sections": re.findall(r"^##[ \t]+(.+?)[ \t]*$", text, re.M),
         "colors": colors,
         "problems": problems,
         "warnings": list(dict.fromkeys(warnings)),

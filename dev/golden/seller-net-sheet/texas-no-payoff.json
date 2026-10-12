@@ -9,7 +9,7 @@
  },
  "cash_at_closing": false,
  "chat_notes": {
-  "count": 3
+  "count": 4
  },
  "closing_date_assumed": false,
  "columns": [
@@ -51,10 +51,11 @@
   "commission",
   "transfer_tax",
   "not_included",
+  "income_tax",
   "commission_default"
  ],
  "notes": {
-  "count": 5
+  "count": 6
  },
  "ok": true,
  "preliminary": true,

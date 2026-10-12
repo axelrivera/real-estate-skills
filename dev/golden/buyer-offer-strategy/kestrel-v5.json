@@ -120,6 +120,7 @@
    "walk_away": 441000
   },
   "competition": {
+   "area_only": false,
    "heat": "stale",
    "inferred": false,
    "level": 1
@@ -661,6 +662,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1118,6 +1120,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1578,6 +1581,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -2035,6 +2039,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -2505,6 +2510,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3137,6 +3143,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3594,6 +3601,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -4064,6 +4072,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -4523,6 +4532,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -4980,6 +4990,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -5450,6 +5461,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -5460,6 +5472,7 @@
   ],
   "sample": false,
   "seller": {
+   "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
    "holding_monthly": 550,
@@ -5563,6 +5576,12 @@
    "field": "flood_insurance_annual",
    "impact": "low",
    "scope": "costs"
+  },
+  {
+   "field": "deadline",
+   "impact": "med",
+   "scope": "competition",
+   "value": null
   },
   {
    "field": "expected_effective_date",
@@ -5708,6 +5727,12 @@
  },
  "missing": [
   {
+   "field": "deadline",
+   "impact": "med",
+   "scope": "competition",
+   "value": null
+  },
+  {
    "field": "closing_cost_pct",
    "impact": "low",
    "scope": "buyer",
@@ -5765,8 +5790,8 @@
    "inspection_days": 10,
    "insurance_quote": null,
    "loan_approval_days": 30,
-   "price": 442000,
-   "price_by": "rule",
+   "price": 441000,
+   "price_by": "walk_away",
    "seller_concessions": 8000
   },
   "roomy": {

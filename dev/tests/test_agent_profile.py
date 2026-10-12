@@ -168,6 +168,7 @@ class Template(unittest.TestCase):
             r = check_profile.check(path)
             agent = profiles.load_agent(path)
         self.assertTrue(r["ok"], r)
+        self.assertEqual(r["sections"], ["Brand Colors", "Voice", "Disclaimers"])  # every heading, in order
         self.assertEqual(r["colors"]["buyer"]["name"], "Navy")
         self.assertEqual(r["colors"]["seller"]["name"], "Gold")
         self.assertTrue(any("Gold" in w for w in r["warnings"]))  # the light seller color warns

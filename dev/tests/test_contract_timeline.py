@@ -350,6 +350,23 @@ class Riders(unittest.TestCase):
         self.assertNotIn("insurance_days_reading", r["note_keys"])
         self.assertEqual(r["warning_keys"], [])
 
+    def test_insurance_reading_after_the_safe_date(self):
+        """Iteration 16 eval 2: once the safe (earlier) reading of Rider H's days has passed and the other hasn't, the note
+        says so plainly, never a past date to deliver by."""
+        def text(r):
+            return next(n for n in r["agent_notes"] if n.startswith("Rider H: the insurance deadline"))
+        d = fixture("buyer-fha.json")  # Mon Oct 5 after the Effective Date, Tue Oct 20 counted back from closing
+        self.assertIn("deliver any cancellation by Mon Oct 5", text(timeline.analyze(d)))
+        d["report_date"] = "2026-10-10"
+        note = text(timeline.analyze(d))
+        self.assertNotIn("deliver any cancellation by", note)
+        self.assertIn("The earlier date has passed; under the other reading the window runs to Tue Oct 20", note)
+        self.assertIn("or an attorney", note)
+        d["side"] = "seller"
+        self.assertIn("the buyer's right may still be open", text(timeline.analyze(d)))
+        d["report_date"] = "2026-10-21"  # both readings past: no special wording
+        self.assertNotIn("has passed", text(timeline.analyze(d)))
+
     def test_occupancy_riders(self):
         """Riders T and U agreements are critical; Rider U alone asks about Para. 6(b) unless the occupancy answers it,
         and a tenancy dates 6(b)'s windows."""
@@ -437,6 +454,7 @@ class RiderGG(unittest.TestCase):
         the calendar, never the next deadline or the end of the contingencies. A done date before the window's own date
         is refused unless the buyer ended it in writing."""
         d = self.gg(deposit="2026-09-26", compensation_agreement="2026-09-26")
+        d["calendar_sent"] = True  # a calendar went out before this run
         r = timeline.analyze(d)
         row = by_key(r)["compensation_cancel"]
         self.assertTrue(by_key(r)["compensation_agreement"]["done"])
@@ -444,7 +462,10 @@ class RiderGG(unittest.TestCase):
         self.assertNotEqual(r["first_deadline"]["key"], "compensation_cancel")
         self.assertNotEqual(r["contingencies_end"]["key"], "compensation_cancel")
         self.assertNotIn("compensation_cancel", {x["key"] for x in timeline_render.page_one_rows(r)})
-        self.assertNotIn("UID:compensation_cancel-", timeline_render.ics(r))
+        cancelled = re.findall(r"UID:(\w+)-\w+@contract-timeline\r\nSEQUENCE:\d+\r\nDTSTAMP:\w+\r\nSTATUS:CANCELLED",
+                               timeline_render.ics(r))
+        self.assertIn("compensation_cancel", cancelled)  # a calendar that imported it earlier drops it
+        self.assertEqual(timeline_render.ics(r).count("UID:compensation_cancel-"), 1)
         open_r = timeline.analyze(self.gg())
         self.assertTrue(by_key(open_r)["compensation_cancel"]["critical"])
         self.assertIn("compensation_cancel", {x["key"] for x in timeline_render.page_one_rows(open_r)})
@@ -692,17 +713,23 @@ class AgentNotes(unittest.TestCase):
 
     def test_joined_once_and_repeats_dropped(self):
         d = fixture("buyer-fha.json")
-        d["contract"]["riders"] = list(d["contract"]["riders"]) + ["GG"]
-        d["agent_notes"] = [{"key": "compensation_agreement", "text": "Has it been signed?"},
-                            {"key": "compensation_agreement", "text": "Ask the listing agent."}]
+        d["agent_notes"] = [{"key": "deposit", "text": "Is the receipt in?"},
+                            {"key": "deposit", "text": "Ask the listing agent."}]
         r = timeline.analyze(d)
-        self.assertEqual(r["joined_agent_notes"], ["compensation_agreement"])
-        self.assertEqual(len([n for n in r["agent_notes"] if "Has it been signed?" in n and "Ask the listing agent." in n]), 1)
+        self.assertEqual(r["joined_agent_notes"], ["deposit"])
+        self.assertEqual(len([n for n in r["agent_notes"] if "Is the receipt in?" in n and "Ask the listing agent." in n]), 1)
         self.assertNotIn("Ask the listing agent.", r["agent_notes"])
         d["report_date"] = "2026-10-02"  # the Past, Confirm note only lists the row: the agent's note still reaches the agent
         r = timeline.analyze(d)
-        self.assertNotIn("compensation_agreement", r["merged_agent_notes"])
-        self.assertTrue(any("Has it been signed?" in n for n in r["agent_notes"]))
+        self.assertNotIn("deposit", r["merged_agent_notes"])
+        self.assertTrue(any("Is the receipt in?" in n for n in r["agent_notes"]))
+        # iteration 16 eval 9: Rider GG's agreement question is the script's own, so an agent note on that row merges
+        d = fixture("buyer-fha.json")
+        d["contract"]["riders"] = list(d["contract"]["riders"]) + ["GG"]
+        d["agent_notes"] = [{"key": "compensation_agreement", "text": "Has it been signed?"}]
+        r = timeline.analyze(d)
+        self.assertEqual(r["merged_agent_notes"], ["compensation_agreement"])
+        self.assertEqual(sum("compensation agreement" in n for n in r["agent_notes"]), 1)
         d = fixture("buyer-fha.json")
         d["agent_notes"] = ["Confirm the delivery date", "Confirm the delivery date"]
         self.assertEqual(timeline.analyze(d)["agent_notes"].count("Confirm the delivery date"), 1)
@@ -861,6 +888,11 @@ class Validation(unittest.TestCase):
             ("other-contract.json", drop("deadlines"), ""),
             ("other-contract.json", lambda d: d["rules"].update(holidays="state"), "us_federal"),
             ("other-contract.json", builder, "rules"),
+            # Para. 8 has no default when neither box is checked: financing is asked, never assumed conventional
+            ("buyer-fha.json", drop("contract", "financing"), "needs contract.financing"),
+            ("buyer-fha.json", contract(financing="seller"), "contract.financing is 'seller'"),
+            ("buyer-fha.json", lambda d: d.update(amendments=[{"date": "2026-09-26", "changes": {"financing": ""}}]),
+             "needs contract.financing"),
         ]
         for name, mutate, message in cases:
             with self.subTest(fixture=name, message=message):
@@ -882,6 +914,171 @@ class Validation(unittest.TestCase):
                 code = timeline.main([path])
         self.assertEqual(code, 1)
         self.assertFalse(json.loads(out.getvalue())["ok"])
+
+
+
+class AuditFixes(unittest.TestCase):
+    """The client-interest audit's timeline fixes: rolled starts, Rider H's rolled default, financing asked, critical
+    rows, lapsed extensions, the Appraisal Gap Addendum, possession time and notice timing."""
+
+    def notes(self, d, side="buyer", word=""):
+        return [n for n in timeline.analyze(d, side)["agent_notes"] if word in n]
+
+    def test_windows_counted_from_a_rolled_date(self):
+        """Riders F and V and Para. 8(b)(v) count 3 days from a date that rolled past a weekend or holiday: the reading
+        used is from the extended date; the agent's own client's right gets the earlier, safe date, and the other side's right
+        no note (the row already shows the later date it could claim)."""
+        d = fha(financing="conventional", riders=["H", "V"], sale_contingency_date="2026-10-17")  # a Saturday
+        self.assertEqual(by_key(timeline.analyze(d))["sale_contingency"]["when"][:10], "2026-10-22")  # from Mon Oct 19
+        buyer, seller = self.notes(d, "buyer", "Rider V"), self.notes(d, "seller", "Rider V")
+        self.assertIn("rolled_start:sale_contingency", timeline.analyze(d)["note_keys"])
+        self.assertIn("deliver any cancellation by Tue Oct 20", buyer[0])
+        self.assertEqual(seller, [])
+        d["contract"]["sale_contingency_date"] = "2026-10-16"  # a Friday: one reading, no note
+        self.assertNotIn("rolled_start:sale_contingency", timeline.analyze(d)["note_keys"])
+        d = fha(financing="conventional", riders=["F", "H"], appraisal_date="2026-10-10")  # Sat; Mon is Columbus Day
+        self.assertIn("deliver the low-appraisal notice by Tue Oct 13", self.notes(d, "buyer", "Rider F:")[0])
+        d = fha(financing="conventional", loan_approval_days=22)  # Sat Oct 17 rolls to Mon Oct 19
+        self.assertIn("seller should deliver any termination notice by Tue Oct 20", self.notes(d, "seller", "8(b)(v)")[0])
+        self.assertEqual(self.notes(d, "buyer", "8(b)(v)"), [])
+        d["completed"] = {"seller_terminate": "2026-10-20"}  # done: nothing to ask
+        self.assertFalse(self.notes(d, "seller", "8(b)(v)"))
+
+    def test_rider_h_default_rolled_from_closing(self):
+        """Rider H's default (the earlier of 30 days after or 10 days before Closing): when the before-closing date wins
+        and extended off a weekend, the Check line gives the business day before."""
+        d = fha(closing_date="2026-10-27")
+        d["contract"].pop("insurance_days")
+        r = timeline.analyze(d)
+        self.assertEqual(by_key(r)["insurance"]["when"][:10], "2026-10-19")  # Sat Oct 17 extends to Mon Oct 19
+        self.assertIn("before_closing_rolled", r["flag_keys"])
+        self.assertIn("by Fri Oct 16, not Mon Oct 19", " ".join(r["flags"]))
+
+    def test_critical_rows_and_deposit_default(self):
+        rows = by_key(timeline.analyze(fha(financing="conventional")))
+        self.assertTrue(rows["seller_terminate"]["critical"] and rows["loan_app"]["critical"])
+        self.assertIn("Para. 15(a)", rows["deposit"]["if_missed"])
+        self.assertIn("keep the deposit", rows["deposit"]["if_missed"])
+        self.assertTrue(timeline.analyze(other := fixture("other-contract.json"))["ok"])
+        other["contract"].pop("financing")  # another contract lists its own deadlines: no Para. 8 to read
+        self.assertTrue(timeline.analyze(other)["ok"])
+
+    def test_extension_signed_after_the_period_ended(self):
+        """An amendment that extends a period after it had ended: an agent note with both readings and a Check line."""
+        d = fha()  # inspection_days 10: ends Mon Oct 5
+        d["report_date"] = "2026-10-08"
+        d["completed"] = {"deposit": "2026-09-26", "loan_app": "2026-09-28"}
+        d["amendments"] = [{"date": "2026-10-07", "name": "Extension Addendum (EA-4)", "description": "Extend inspection",
+                            "changes": {"inspection_days": 15}}]
+        r = timeline.analyze(d)
+        self.assertIn("extension_lapsed:inspection", r["note_keys"])
+        self.assertIn("lapsed_extension:inspection", r["flag_keys"])
+        note = next(n for n in r["agent_notes"] if "lapsed right" in n)
+        self.assertIn("after the period had ended Mon Oct 5", note)
+        self.assertIn("deadline to Tue Oct 13", note)  # the new end (Sat Oct 10, Columbus Day), the date used
+        d["amendments"][0]["date"] = "2026-10-05"  # signed on the last day: on time
+        r = timeline.analyze(d)
+        self.assertFalse({"extension_lapsed:inspection", "lapsed_extension:inspection"} & set(r["note_keys"] + r["flag_keys"]))
+
+    def test_appraisal_gap_addendum_rows(self):
+        """AGA-1: the Valuation (30 days if blank), its copy to the seller 3 days after it's obtained, and 3 days after
+        that copy to sign revised terms, else the contract terminates."""
+        d = fha(financing="conventional", riders=["H", "AGA-1"])
+        r = timeline.analyze(d)
+        rows = by_key(r)
+        self.assertEqual(rows["aga_valuation"]["when"][:10], "2026-10-26")  # Sun Oct 25 extends
+        self.assertIsNone(rows["aga_delivery"]["when"])
+        self.assertIsNone(rows["aga_terms"]["when"])
+        self.assertTrue(rows["aga_terms"]["critical"] and rows["aga_terms"]["contingency"])
+        self.assertNotIn("aga_addendum", rows)
+        self.assertIn("default:aga_valuation", r["note_keys"])
+        self.assertNotIn("rider_not_read", r["note_keys"])
+        d["contract"].update(aga_valuation_received="2026-10-20", aga_valuation_delivered="2026-10-22",
+                             aga_renegotiate_days=5)
+        rows = by_key(timeline.analyze(d))
+        self.assertEqual(rows["aga_delivery"]["when"][:10], "2026-10-23")
+        self.assertEqual(rows["aga_addendum"]["when"][:10], "2026-10-26")  # Sun Oct 25 extends
+        self.assertEqual(rows["aga_terms"]["when"][:10], "2026-10-27")
+        r = timeline.analyze(fha(riders=["E", "H", "AGA-1"]))  # FHA: not modeled, asked
+        self.assertNotIn("aga_valuation", by_key(r))
+        self.assertIn("aga_loan_type", r["note_keys"])
+        r = timeline.analyze(fha(financing="conventional", riders=["F", "H", "AGA-1"]))
+        self.assertIn("aga_with_rider_f", r["note_keys"])
+        r = timeline.analyze(fha(financing="conventional", riders=["H", "AGA-1"], loan_approval_days=21))
+        self.assertIn("aga_after_loan_approval", r["note_keys"])
+
+    def test_possession_time_and_notice_timing(self):
+        r = timeline.analyze(fha(possession_date="2026-11-02"))
+        self.assertIn("possession_time_assumed", r["note_keys"])
+        self.assertNotIn("possession_time_assumed",
+                         timeline.analyze(fha(possession_date="2026-11-02", possession_time="12:00"))["note_keys"])
+        r = timeline.analyze(fha())
+        self.assertIn("business hours", r["notice_timing"])
+        self.assertEqual([x["label"] for x in r["rules"]["lines"]].count("Notice Timing"), 1)
+        self.assertNotIn("business hours", " ".join(x["note"] for x in r["rows"]))  # said once, never per row
+        self.assertIsNone(timeline.analyze(fixture("other-contract.json"))["notice_timing"])
+
+
+class Iteration16(unittest.TestCase):
+    """Iteration 16: Rider GG's party and question, Rider U's move-out note, figures stated in flags and notes."""
+
+    def gg(self, **contract):
+        d = fha(**contract)
+        d["contract"]["riders"] = list(d["contract"]["riders"]) + ["GG"]
+        return d
+
+    def test_gg_party_follows_the_signer_box(self):
+        for signer, party in ((None, "Brokers"), ("listing_broker", "Brokers"), ("seller", "Seller")):
+            d = self.gg(**({"compensation_signer": signer} if signer else {}))
+            for side in ("buyer", "seller"):
+                d["side"] = side
+                rows = by_key(timeline.analyze(d))
+                self.assertEqual(rows["compensation_agreement"]["party"], party)
+                self.assertEqual(rows["compensation_cancel"]["party"], "Buyer")
+        with self.assertRaisesRegex(timeline.DealError, "compensation_signer"):
+            timeline.analyze(self.gg(compensation_signer="both"))
+        self.assertIn(">Brokers</span>", timeline_render.build_html(timeline.analyze(self.gg()), {}, False))
+
+    def test_gg_agreement_question(self):
+        d = self.gg()
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("gg_agreement")]
+        self.assertIn("Has it been signed?", note)
+        self.assertIn("Seller's Broker or the Seller?", note)
+        self.assertNotIn("risk", note.lower())
+        self.assertNotIn("gg_agreement", r["flag_keys"])  # a question for the agent, never a Check line
+        d["report_date"] = "2026-10-02"  # the agreement's day has passed; the cancel window too
+        d["contract"]["compensation_signer"] = "listing_broker"
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("gg_agreement")]
+        self.assertIn("isn't recorded as signed. Was it signed and delivered on time?", note)
+        self.assertNotIn("Seller's Broker or the Seller?", note)
+        past = r["agent_notes"][r["note_keys"].index("past_not_done")] if "past_not_done" in r["note_keys"] else ""
+        self.assertNotIn("Compensation", past)  # one question, not a second Past, Confirm line
+        d = self.gg()
+        d["completed"] = {"compensation_agreement": "2026-09-26"}
+        self.assertNotIn("gg_agreement", timeline.analyze(d)["note_keys"])
+
+    def test_rider_u_walkthrough_note(self):
+        d = fha(riders=["FHA/VA Financing", "Homeowners'/Flood Insurance", "U"], occupancy="owner",
+                seller_occupancy_days=14)
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("rider_u_walkthrough")]
+        self.assertIn("doesn't cover the home's condition at move-out", note)
+        self.assertIn("holdback", note)
+        d["side"] = "seller"
+        r = timeline.analyze(d)
+        self.assertIn("confirm what it says", r["agent_notes"][r["note_keys"].index("rider_u_walkthrough")])
+        self.assertNotIn("rider_u_walkthrough", timeline.analyze(fha())["note_keys"])
+
+    def test_figures_in_flag_and_money_note(self):
+        r = timeline.analyze(fha())  # loan approval Mon Oct 26, closing Fri Oct 30
+        flag = r["flags"][r["flag_keys"].index("loan_approval_near_closing")]
+        self.assertIn("is 4 days before closing", flag)
+        d = fha(loan_amount=348000, balance_to_close=6000, price=372500)  # $365,000 in Para. 2
+        r = timeline.analyze(d)
+        note = r["agent_notes"][r["note_keys"].index("money_mismatch")]
+        self.assertIn("$7,500 less", note)
 
 
 if __name__ == "__main__":

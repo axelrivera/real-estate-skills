@@ -44,7 +44,7 @@
      "count": 4
     }
    ],
-   "counter_score": 70,
+   "counter_score": 65,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -304,7 +304,7 @@
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 336818.0,
+   "rank_value": 334873.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -327,28 +327,24 @@
     "scores": {
      "appraisal": 5,
      "approval": null,
-     "contingency": null,
+     "contingency": 2,
      "deposit": null,
      "financing": 2,
      "property": 3,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 70,
+    "total": 65,
     "unscored": {
      "approval": [
       "approval"
-     ],
-     "contingency": [
-      "contract_form"
      ],
      "deposit": [
       "deposit"
      ]
     },
-    "weight": 60,
+    "weight": 80,
     "why": {
      "approval": null,
-     "contingency": null,
      "deposit": null
     }
    },
@@ -425,11 +421,11 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": [
     "approval",
-    "contract_form",
     "deposit",
     "down_pct"
    ],
@@ -505,9 +501,6 @@
   {
    "field": "contract_form",
    "impact": "high",
-   "unscores": [
-    "contingency"
-   ],
    "value": "as_is"
   },
   {
@@ -612,9 +605,6 @@
   {
    "field": "contract_form",
    "impact": "high",
-   "unscores": [
-    "contingency"
-   ],
    "value": "as_is"
   },
   {
@@ -735,7 +725,7 @@
      "count": 4
     }
    ],
-   "counter_score": 70,
+   "counter_score": 65,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -995,7 +985,7 @@
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 336818.0,
+   "rank_value": 334873.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -1018,28 +1008,24 @@
     "scores": {
      "appraisal": 5,
      "approval": null,
-     "contingency": null,
+     "contingency": 2,
      "deposit": null,
      "financing": 2,
      "property": 3,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 70,
+    "total": 65,
     "unscored": {
      "approval": [
       "approval"
-     ],
-     "contingency": [
-      "contract_form"
      ],
      "deposit": [
       "deposit"
      ]
     },
-    "weight": 60,
+    "weight": 80,
     "why": {
      "approval": null,
-     "contingency": null,
      "deposit": null
     }
    },
@@ -1116,11 +1102,11 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": [
     "approval",
-    "contract_form",
     "deposit",
     "down_pct"
    ],
@@ -1172,7 +1158,7 @@
      "count": 4
     }
    ],
-   "counter_score": 70,
+   "counter_score": 65,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1432,7 +1418,7 @@
     "tax_bill_assumed": false
    },
    "price": 382000,
-   "rank_value": 336818.0,
+   "rank_value": 334873.0,
    "repair_reserve": 2500,
    "repairs_owed": false,
    "rider_codes": {
@@ -1455,28 +1441,24 @@
     "scores": {
      "appraisal": 5,
      "approval": null,
-     "contingency": null,
+     "contingency": 2,
      "deposit": null,
      "financing": 2,
      "property": 3,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 70,
+    "total": 65,
     "unscored": {
      "approval": [
       "approval"
-     ],
-     "contingency": [
-      "contract_form"
      ],
      "deposit": [
       "deposit"
      ]
     },
-    "weight": 60,
+    "weight": 80,
     "why": {
      "approval": null,
-     "contingency": null,
      "deposit": null
     }
    },
@@ -1553,11 +1535,11 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": [
     "approval",
-    "contract_form",
     "deposit",
     "down_pct"
    ],
@@ -1567,6 +1549,7 @@
  "ranking_reason": null,
  "sample": true,
  "seller": {
+  "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
   "holding_monthly": 500,

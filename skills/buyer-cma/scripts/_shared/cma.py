@@ -478,6 +478,11 @@ def trend_position(price, at_subject):
 DOT_ADDR_PX, DOT_ADDR_MIN, DOT_ADDR_MAX = 11.5, 190, 300  # the address column: its font size and width bounds
 
 
+DOT_MARK_PX = 11  # cma.css .dp-mark-lbl and .dp-second-lbl: 11px bold
+DOT_LABEL_GAP = 4  # the least room between the two price-line labels
+DOT_STAGGER = 14  # the second label's own row, when the two can't sit side by side
+
+
 def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None):
     """Adjusted comps against the supported range, with the asking (or list) price marked. The address column is as
     wide as its longest address, measured (DOT_ADDR_MIN to DOT_ADDR_MAX); an address wider still is fitted to it.
@@ -491,28 +496,58 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None
     W, R, T = 730, 20, 26
     Lm = min(max(DOT_ADDR_MIN, max(widths, default=0) + 14), DOT_ADDR_MAX)
     row = 21 if len(cs) <= 5 else 18  # six comps: tighter rows, same label size
-    H = T + row * len(cs) + 26
 
     def x(v):
         return Lm + (v - lo) / (hi - lo) * (W - Lm - R)
+
+    xm = x(marker_price)
+    xs = x(second[0]) if second is not None else None
+    # CMA-23, iteration 16: labels never sit on each other or run off the chart. Each label is measured; the pair takes
+    # the placement with both inside the chart and apart, preferring centered, then the outward side (the lower price's
+    # label to its left, the higher's to its right). When no placement keeps them apart, the second label drops to its
+    # own row and the chart moves down to make room.
+    shift = {"start": 5, "end": -5, "middle": 0}
+    wm = _text_w(marker_label, DOT_MARK_PX, True)
+    ws = _text_w(second[1], DOT_MARK_PX, True) if second is not None else 0
+
+    def box(xl, w, pos):
+        x0 = xl + shift[pos] - {"start": 0, "middle": w / 2, "end": w}[pos]
+        return x0, x0 + w
+
+    def cost(pos, outward):
+        return {"middle": 0, outward: 1}.get(pos, 2)
+
+    m_out = "start" if xs is None or xm >= xs else "end"
+    s_out = "end" if m_out == "start" else "start"
+    best, stagger = None, False
+    for mp in ("middle", "start", "end"):
+        bm = box(xm, wm, mp)
+        if bm[0] < 0 or bm[1] > W:
+            continue
+        for sp in (("middle", "start", "end") if xs is not None else ("middle",)):
+            bs = box(xs, ws, sp) if xs is not None else None
+            if bs and (bs[0] < 0 or bs[1] > W or not (bm[1] + DOT_LABEL_GAP <= bs[0] or bs[1] + DOT_LABEL_GAP <= bm[0])):
+                continue
+            c = cost(mp, m_out) + (cost(sp, s_out) if bs else 0)
+            if best is None or c < best[0]:
+                best = (c, mp, sp)
+    if best is None:  # no side-by-side placement: two rows, each label inside the chart
+        stagger = True
+        m_pos = next((p for p in ("middle", m_out, s_out) if 0 <= box(xm, wm, p)[0] and box(xm, wm, p)[1] <= W), m_out)
+        s_pos = next((p for p in ("middle", s_out, m_out) if 0 <= box(xs, ws, p)[0] and box(xs, ws, p)[1] <= W), s_out)
+        T += DOT_STAGGER
+    else:
+        _, m_pos, s_pos = best
+    H = T + row * len(cs) + 26
 
     o = [f'<svg viewBox="0 0 {W} {H}" role="img">',
          f'<rect x="{x(low):.1f}" y="{T - 8}" width="{x(high) - x(low):.1f}" height="{row * len(cs) + 8}" class="dp-band"/>']
     for v in _ticks(lo, hi, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T - 8}" y2="{T + row * len(cs)}" class="dp-grid"/>'
                  f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">{k_(v)}</text>')
-    xm = x(marker_price)
-    xs = x(second[0]) if second is not None else None
-    # CMA-23: labels never sit on each other or run off the chart. Two close markers put their labels on opposite
-    # sides; a label near an edge anchors inward.
-    if xs is not None and abs(xm - xs) < 140:
-        m_pos, s_pos = ("start", "end") if xm >= xs else ("end", "start")
-    else:
-        m_pos = "start" if xm < Lm + 70 else "end" if xm > W - R - 70 else "middle"
-        s_pos = "end" if xs is None or xs > Lm + 110 else "start"
-    shift = {"start": 5, "end": -5, "middle": 0}
+    m_y = T - 16 - (DOT_STAGGER if stagger else 0)
     o.append(f'<line x1="{xm:.1f}" x2="{xm:.1f}" y1="{T - 14}" y2="{T + row * len(cs) + 2}" class="dp-mark"/>'
-             f'<text x="{xm + shift[m_pos]:.1f}" y="{T - 16}" text-anchor="{m_pos}" class="dp-mark-lbl">{esc(marker_label)}</text>')
+             f'<text x="{xm + shift[m_pos]:.1f}" y="{m_y}" text-anchor="{m_pos}" class="dp-mark-lbl">{esc(marker_label)}</text>')
     if xs is not None:
         o.append(f'<line x1="{xs:.1f}" x2="{xs:.1f}" y1="{T - 8}" y2="{T + row * len(cs) + 2}" class="dp-second"/>'
                  f'<text x="{xs + shift[s_pos]:.1f}" y="{T - 16}" text-anchor="{s_pos}" class="dp-second-lbl">{esc(second[1])}</text>')
@@ -609,18 +644,32 @@ def derive_comps(comps):
 
 def outlier_warnings(cards, share=OUTLIER_SHARE):
     """CMA-110: comps whose adjusted value is more than `share` away from the median of the other comps, so the same
-    comp set is always judged the same way (method.md, Outliers). Needs at least three comps."""
+    comp set is always judged the same way (method.md, Outliers). Needs at least three comps. With several flagged at
+    once, the farthest (as a share of the others' median) comes first and is the one to replace first: replacing it
+    moves the others' median, so the rest are judged again on the next run, and the same comps always end the same."""
     values = [c.get("adjusted") for c in cards]
     if len(values) < 3 or not all(isinstance(v, (int, float)) for v in values):
         return []
-    out = []
+    hits = []
     for i, c in enumerate(cards):
         others = statistics.median(values[:i] + values[i + 1:])
-        if abs(values[i] - others) > share * others:
-            out.append(f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
-                       f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. Replace it with "
-                       "the next candidate, or keep it only if it's one of the closest matches and say why in method_note "
-                       "(method.md, Outliers).")
+        gap = abs(values[i] - others) / others if others else 0
+        if gap > share:
+            hits.append((-gap, i, c, others))
+    out = []
+    for n, (_, i, c, others) in enumerate(sorted(hits, key=lambda h: (h[0], h[1]))):
+        text = (f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
+                f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. ")
+        if len(hits) == 1:
+            text += ("Replace it with the next candidate, or keep it only if it's one of the closest matches and say why "
+                     "in method_note (method.md, Outliers).")
+        elif n == 0:
+            text += (f"{len(hits)} comps are flagged and this one is the farthest: replace it first (with the next "
+                     "candidate, or keep it only if it's one of the closest matches and say why in method_note), then "
+                     "run compute.py again; the others are judged again without it (method.md, Outliers).")
+        else:
+            text += "Judge it again after the farthest one is replaced (method.md, Outliers)."
+        out.append(text)
     return out
 
 

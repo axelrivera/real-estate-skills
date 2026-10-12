@@ -282,7 +282,8 @@ def terms_table(tm):
         classes[0] = "who"
     for r in tm["rows"]:
         classes[len(rows)] = f'st-{r["status"]}'
-        rows.append({**r, "rating": Raw(f'<span class="pill {PILL[r["status"]]}">{esc(r["rating"])}</span>')})
+        rows.append({**r, "rating": Raw(f'<span class="pill {PILL[r["status"]]}">{esc(r["rating"])}</span>')
+                     if r["status"] in PILL else Raw(esc(r["rating"]))})  # neutral and not-provided terms: plain words
     return (f'<h2>{esc(tm["h"])} <span class="h2s">{esc(tm["sub"])}</span></h2>'
             + layout.table(cols, rows, keep="brk", cls="terms", row_classes=classes))
 

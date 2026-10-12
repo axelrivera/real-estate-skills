@@ -16,6 +16,8 @@ from datetime import date
 from . import fmt
 
 COMMISSION_NOTE = "Commissions are negotiable and not set by law."
+# Every seller report (net sheet, seller CMA, offer review): the proceeds are before tax on the gain
+INCOME_TAX_NOTE = "These proceeds are before any income tax on the sale; a CPA can estimate it."
 SINGLE_FAMILY = "single_family"
 
 # Agency guidelines as planning estimates (confirm limits, fees and overlays with the lender).
@@ -535,7 +537,8 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
 
     With millage, exemptions come from the market: each is an `amount` or a `percent` of value
     (0.20 = 20%), optionally only on value `above` a threshold, and `levies` says what it lowers: `all`, `non_school` (all but school) or `school` (school
-    only, as in Texas). Without millage, the market's fallback rate is used and marked `estimated`.
+    only, as in Texas). Without millage, the market's fallback rate is used and marked `estimated`, with its
+    `rate_source` ('state_average': the state's average effective rate, which a report's notes name as such).
     With neither, `annual` is None.
     """
     if total_mills is not None:
@@ -557,8 +560,9 @@ def property_tax(value, market=None, school_mills=None, total_mills=None, homest
         basis = f"{total_mills:.4f} mills" + (", with homestead" if homestead and any(off.values()) else "")
         return {"annual": annual, "basis": basis, "estimated": False}
     rate = market.get("property_tax.fallback_rate") if market is not None else None
-    if rate:
-        return {"annual": value * rate, "basis": f"about {rate * 100:.1f}% of price", "estimated": True}
+    if rate:  # `rate_source`: 'state_average' (the state's average effective rate), 'estimate' (national), 'state'...
+        return {"annual": value * rate, "basis": f"about {rate * 100:.1f}% of price", "estimated": True,
+                "rate_source": market.source("property_tax.fallback_rate")}
     return {"annual": None, "basis": "no millage or tax rate for this market", "estimated": True}
 
 

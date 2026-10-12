@@ -7,7 +7,7 @@
  },
  "cash_at_closing": true,
  "chat_notes": {
-  "count": 5
+  "count": 6
  },
  "closing_date_assumed": false,
  "columns": [
@@ -70,10 +70,11 @@
   "tax",
   "owner_title",
   "not_included",
+  "income_tax",
   "firpta"
  ],
  "notes": {
-  "count": 5
+  "count": 6
  },
  "ok": true,
  "preliminary": false,

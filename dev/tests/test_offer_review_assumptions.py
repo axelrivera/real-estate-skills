@@ -147,7 +147,10 @@ class ToConfirm(unittest.TestCase):
         R = review.analyze(d)
         o = R["offers"][0]
         rows = {r[0]: r[1] for r in review.term_rows(o, R)}
-        self.assertEqual(rows["Inspection Period"], "7 days (AS IS)")  # the form shows plain
+        self.assertEqual(rows["Inspection Period"], "7 days")  # iteration 16: an assumed form isn't printed as a term
+        d["offers"][0]["contract_form"] = "as_is"
+        rows = {r[0]: r[1] for r in review.term_rows(review.analyze(d)["offers"][0], review.analyze(d))}
+        self.assertEqual(rows["Inspection Period"], "7 days (AS IS)")  # a form the offer names shows plain
         self.assertNotIn("assumed", json.dumps(list(rows.values())))
         for why in o["score"]["why"].values():  # the reasons of the criteria that were scored
             self.assertNotIn("assumed", why or "")
@@ -162,9 +165,13 @@ class ToConfirm(unittest.TestCase):
             o.pop("contract_form", None)
         R = review.analyze(data)
         s = review.result(R, "multi")["summary"]
-        self.assertIsNone(s["preliminary"])  # the form alone doesn't decide the ranking
+        # iteration 16 eval 2: an assumed form is high impact, so the comparison is Preliminary and names the offers
+        self.assertIn("contract form (", s["preliminary"])
         self.assertEqual({r["key"]: r["form_assumed"] for r in s["ranked"]}, {"A": False, "B": True, "C": True, "D": True})
-        self.assertNotIn('class="prelim"', page(R, {}, sample=False, mode="multi"))
+        self.assertIn('class="prelim"', page(R, {}, sample=False, mode="multi"))
+        for o in R["offers"]:  # every offer is scored on the same criteria: the assumed form is scored as AS IS
+            self.assertIsNotNone(o["score"]["scores"]["contingency"])
+            self.assertEqual(o["score"]["weight"], 100)
         self.assertTrue(review.result(R, "single", R["ranked"][0]["id"])["summary"]["preliminary"])
 
     def test_rider_bookkeeping_doesnt_move_the_review(self):

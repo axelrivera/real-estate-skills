@@ -1,7 +1,8 @@
 {
  "agent_notes": {
-  "count": 7
+  "count": 10
  },
+ "calendar_sent": false,
  "chat_notes": {
   "count": 0
  },
@@ -38,6 +39,9 @@
   "riders",
   "counteroffers"
  ],
+ "dropped": {
+  "count": 0
+ },
  "effective": {
   "date": "2026-09-25",
   "signed": "2026-09-25 16:12"
@@ -100,10 +104,13 @@
   "count": 0
  },
  "note_keys": [
+  "gg_agreement",
   "waiting_on_receipt",
   "repair_limits_blank",
   "flood_zone_unknown",
   "rider_u_6b",
+  "rider_u_walkthrough",
+  "rolled_start:seller_terminate",
   "default:compensation_agreement",
   "default:title",
   "default:post_closing_agreement"
@@ -281,7 +288,7 @@
    "lender": false,
    "moved_from": null,
    "no_time": false,
-   "party": "Both",
+   "party": "Brokers",
    "past": false,
    "past_display": null,
    "voided": false,
@@ -294,7 +301,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": false,
+   "critical": true,
    "day": 5,
    "done": false,
    "done_display": null,
@@ -526,7 +533,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": false,
+   "critical": true,
    "day": 34,
    "done": false,
    "done_display": null,
@@ -614,6 +621,7 @@
    {
     "label": "Counting"
    },
+   {},
    {},
    {},
    {},

@@ -1,5 +1,9 @@
 {
  "B": {
+  "_ins_est": {
+   "rate": null,
+   "year_built": null
+  },
   "analysis_date": "2026-09-23",
   "bb_request": [
    0.025,
@@ -17,11 +21,12 @@
    "financing_source": "assumed",
    "lender_min_close_days": 35,
    "max_price": 429000,
-   "reserve_floor": 2000
+   "reserve_floor": 7500
   },
   "buyer_broker_form": "GG",
   "buyer_priority": "balanced",
   "competition": {
+   "area_only": false,
    "heat": "normal",
    "heat_basis": null,
    "inferred": true,
@@ -504,6 +509,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -930,6 +936,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1353,6 +1360,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1782,6 +1790,7 @@
      "tax_bill_assumed": false
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -2205,6 +2214,7 @@
      "tax_bill_assumed": false
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -2638,6 +2648,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3243,6 +3254,7 @@
      "tax_bill_assumed": false
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3666,6 +3678,7 @@
      "tax_bill_assumed": false
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -4099,6 +4112,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -4524,6 +4538,7 @@
      "tax_bill_assumed": false
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -4950,6 +4965,7 @@
      "tax_bill_assumed": false
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -5383,6 +5399,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "seller",
+    "title_by_given": false,
     "title_payer": "seller",
     "title_payer_by_contract": false,
     "unknown": {
@@ -5393,6 +5410,7 @@
   ],
   "sample": false,
   "seller": {
+   "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
    "holding_monthly": 500,
@@ -5497,12 +5515,6 @@
    "value": 429000
   },
   {
-   "field": "reserve_floor",
-   "impact": "med",
-   "scope": "buyer",
-   "value": 2000
-  },
-  {
    "field": "closing_cost_pct",
    "impact": "low",
    "scope": "buyer",
@@ -5519,6 +5531,12 @@
    "impact": "low",
    "scope": "costs",
    "value": 3900.0
+  },
+  {
+   "field": "hoa_monthly",
+   "impact": "med",
+   "scope": "property",
+   "value": 0
   },
   {
    "field": "flood_insurance_annual",
@@ -5539,9 +5557,15 @@
   },
   {
    "field": "homestead",
-   "impact": "low",
+   "impact": "med",
    "scope": "costs",
    "value": true
+  },
+  {
+   "field": "reserve_floor",
+   "impact": "med",
+   "scope": "buyer",
+   "value": 7500
   },
   {
    "field": "level",
@@ -5719,10 +5743,10 @@
    "value": "as_is"
   },
   {
-   "field": "reserve_floor",
+   "field": "hoa_monthly",
    "impact": "med",
-   "scope": "buyer",
-   "value": 2000
+   "scope": "property",
+   "value": 0
   },
   {
    "field": "total_mills",
@@ -5735,6 +5759,18 @@
    "impact": "med",
    "scope": "property",
    "value": 7019
+  },
+  {
+   "field": "homestead",
+   "impact": "med",
+   "scope": "costs",
+   "value": true
+  },
+  {
+   "field": "reserve_floor",
+   "impact": "med",
+   "scope": "buyer",
+   "value": 7500
   },
   {
    "field": "level",
@@ -5769,12 +5805,6 @@
    "field": "flood_insurance_annual",
    "impact": "low",
    "scope": "costs"
-  },
-  {
-   "field": "homestead",
-   "impact": "low",
-   "scope": "costs",
-   "value": true
   },
   {
    "field": "expected_effective_date",

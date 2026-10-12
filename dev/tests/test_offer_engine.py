@@ -100,18 +100,23 @@ class MatchesPrototype(unittest.TestCase):
             # downside from the CMA high; FHA appraisal protection runs to closing, so no gap coverage is asked; the
             # proration allows Florida's 4% early-payment discount; the buyer designates the Closing Agent (9(c)(ii))
             "A": (145319, 138567, 148211, 54, 62, "DECLINE"),
-            "D": (154485, 140349, 146337, 44, 64, "DECLINE"),  # a kick-out clause (Rider X): contingency 2, not 1
+            # a kick-out clause (Rider X): contingency 2, not 1. No proof of funds says the buyer can't cover the gap, so
+            # the counter keeps the $440,000 price and asks for the gap (counter-rules.md rule 1), never netting under
+            # the downside
+            "D": (154485, 140349, 157533, 44, 64, "DECLINE"),
         })
-        self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "A", "D"])
+        # the ranking counts a low appraisal once (in the downside net, not again in the certainty penalty), so D's
+        # higher downside puts it ahead of A
+        self.assertEqual([o["id"] for o in R["ranked"]], ["B", "C", "D", "A"])
         self.assertEqual(R["mode"], "multi")
 
     def test_minimal_single(self):
         R = oe.analyze(prototype_costs(fixture("minimal-single.json")))
         o = R["offers"][0]
         self.assertEqual((o["ns"]["net_adj"], o["ns_down"]["net_adj"], o["ns_counter"]["net_adj"]), (349578, 347078, 353310))
-        # no deposit, approval or contract form given: scored over financing, appraisal, timeline and property
-        self.assertEqual((o["score"]["total"], o["action"]), (70, "COUNTER"))
-        self.assertEqual(set(o["score"]["unscored"]), {"approval", "contingency", "deposit"})
+        # no deposit or approval given: scored over the rest; the form nobody gave is scored as the AS IS the net uses
+        self.assertEqual((o["score"]["total"], o["action"]), (63, "COUNTER"))
+        self.assertEqual(set(o["score"]["unscored"]), {"approval", "deposit"})
         self.assertEqual([r[0] for r in o["counter_rows"]], ["Price", "Time for Acceptance"])
         self.assertEqual(R["seller"]["holding_monthly"], 500)  # HOA and loan interest; tax is in the proration
 

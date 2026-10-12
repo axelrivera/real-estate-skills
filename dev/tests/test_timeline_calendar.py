@@ -35,6 +35,11 @@ def event(text, uid):
     return text.split(f"UID:{uid}")[1].split("END:VEVENT")[0].replace("\r\n ", "")
 
 
+def cancelled(text):
+    """The row keys a calendar file cancels (STATUS:CANCELLED events)."""
+    return [e.split("UID:", 1)[1].split("-", 1)[0] for e in text.split("BEGIN:VEVENT")[1:] if "STATUS:CANCELLED" in e]
+
+
 class Calendar(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -59,18 +64,49 @@ class Calendar(unittest.TestCase):
         self.assertEqual(text.count("SUMMARY:What-If: "), text.count("BEGIN:VEVENT"))
 
     def test_done_past_and_undated_rows_stay_out(self):
+        """A done row comes back only as a cancelled event (so a calendar imported earlier drops it); a past row that
+        isn't done and an undated row get no event."""
         d = fixture("buyer-fha.json")
         d["completed"] = {"deposit": "2026-09-26"}
         r = timeline.analyze(d)
-        self.assertNotIn("UID:deposit-", timeline_render.ics(r))
-        self.assertEqual(timeline_render.ics(r).count("BEGIN:VEVENT"), len([x for x in r["rows"] if not x["lender"]]) - 1)
+        text = timeline_render.ics(r)
+        self.assertEqual(cancelled(text), [])  # iteration 16: a first calendar has no cancelled events
+        self.assertEqual(text.count("BEGIN:VEVENT"), len([x for x in r["rows"] if not x["lender"]]) - 1)
+        d["calendar_sent"] = True  # a calendar went out before: the done row comes back cancelled
+        r = timeline.analyze(d)
+        text = timeline_render.ics(r)
+        self.assertEqual(cancelled(text), ["deposit"])
+        self.assertEqual(text.count("BEGIN:VEVENT") - 1, len([x for x in r["rows"] if not x["lender"]]) - 1)
         d = fixture("buyer-fha.json")
         d["report_date"] = "2026-10-01"  # the deposit is past and not done
         self.assertNotIn("UID:deposit-", timeline_render.ics(timeline.analyze(d)))
         r = timeline.analyze(fixture("short-sale.json"))  # before the approval most rows have no date
         text = timeline_render.ics(r)
-        self.assertEqual(text.count("BEGIN:VEVENT"), len([x for x in r["rows"] if not x["done"] and not x["past"]]))
+        self.assertEqual(text.count("BEGIN:VEVENT") - len(cancelled(text)),
+                         len([x for x in r["rows"] if not x["done"] and not x["past"]]))
         self.assertNotIn("UID:loan_approval-", text)
+
+    def test_rerun_sequence_and_cancelled_rows(self):
+        """SEQUENCE counts the amendments plus the rows done, so a re-run with a row done since replaces the earlier
+        events; a row an amendment removed comes back cancelled with its UID."""
+        d = fixture("buyer-fha.json")
+        first = timeline_render.ics(timeline.analyze(d))
+        self.assertIn("SEQUENCE:0", first)
+        self.assertEqual(cancelled(first), [])
+        d["completed"] = {"deposit": "2026-09-26"}
+        self.assertIn("SEQUENCE:1", timeline_render.ics(timeline.analyze(d)))
+        self.assertEqual(cancelled(timeline_render.ics(timeline.analyze(d))), [])  # no calendar went out before
+        d["amendments"] = [{"date": "2026-09-27", "description": "Remove the insurance rider",
+                            "changes": {"riders": ["FHA/VA Financing"], "insurance_days": None}}]
+        r = timeline.analyze(d)
+        self.assertEqual([x["key"] for x in r["dropped"]], ["insurance"])
+        text = timeline_render.ics(r)
+        self.assertIn("SEQUENCE:2", text)
+        self.assertEqual(cancelled(text), ["insurance"])  # an amendment-dropped row: always cancelled
+        d["calendar_sent"] = True
+        text = timeline_render.ics(timeline.analyze(d))
+        self.assertEqual(sorted(cancelled(text)), ["deposit", "insurance"])
+        self.assertNotIn("SEQUENCE:0", text)
 
     def test_lender_targets_only_when_asked(self):
         t = self.fha

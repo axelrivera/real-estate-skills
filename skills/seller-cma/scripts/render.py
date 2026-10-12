@@ -119,7 +119,7 @@ def home(C):
 
 def bottom_line(C):
     rec = C["recommendation"]
-    hist = [x for x in (C["price_history"], C["history_line"] and t("line_history", text=C["history_line"])) if x]
+    hist = [x for x in (C["price_history"], C["history_more"] and t("line_history", text=C["history_more"])) if x]
     body = " ".join([esc(rec["line"]), esc(C["stance"]["line"])] + [esc(h) for h in hist])
     out = [f'<h2>{esc(L["h_bottom"])}</h2>',
            f'<div class="verdict"><div class="range">{esc(rec["verdict"])}</div>'

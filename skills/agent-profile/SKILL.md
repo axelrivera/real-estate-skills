@@ -87,7 +87,7 @@ Save it as `profile.md` where `references/saved-files.md` says. Then check it:
 python3 scripts/check_profile.py <path to profile.md>
 ```
 
-Fix anything under `problems` and check again. Pass on `warnings` in plain words.
+Fix anything under `problems` and check again. Pass on `warnings` in plain words. `sections` lists the file's section headings in order, to confirm none was dropped or renamed.
 
 **Project instructions.** When the interview is done (after the last round, or when they stop answering), fill in `assets/project-instructions-template.md` and save it as `project-instructions.md` next to the profile. It names only the agent; everything else comes from the profile, so the two never disagree. Keep it as written: it's what makes a Project use the skills and the profile. On an update, rewrite it only when the name changed, but write it when none exists yet (no `project-instructions.md` in the conversation and no Project instructions starting with "Real Estate Assistant for"), so the hand-over has something to paste. Don't write it after Round 1 alone: the agent is still mid-interview.
 

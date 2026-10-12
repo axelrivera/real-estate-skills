@@ -223,8 +223,13 @@ async function icon(name, color, size = 256) {
     tx(s, D.rec.list_display, { x: rx + 0.3, y: ry + 0.65, w: rw - 0.6, h: 0.8, size: 40, min: 28, bold: true, color: ON, valign: 'middle' });
     tx(s, T.deck_range_card, { x: rx + 0.3, y: ry + rh - 0.85, w: rw - 0.6, h: 0.25, size: 11, min: 9, color: ON_INK });
     tx(s, D.rec.range_display, { x: rx + 0.3, y: ry + rh - 0.6, w: rw - 0.6, h: 0.35, size: 18, min: 13, bold: true, color: ON });
-    const ny = top + pitch * Math.max(steps.length, 3) + 0.05;
-    tx(s, T.deck_method_note, { x: M, y: ny, w: W - 2 * M, h: BOTTOM - ny, size: 11, min: 9, lines: 4, color: MUTED, valign: 'top', what: 'the adjustments note' });
+    // the adjustments note under the steps: full width once it starts below the card; with fewer steps (no export) it
+    // stays in the left column beside the card when it fits there, else it starts below the card, so the two never meet
+    const below = top + pitch * Math.max(steps.length, 3) + 0.05, clear = ry + rh + 0.12, note = T.deck_method_note;
+    const lw = rx - 0.25 - M, fitsLeft = [11, 10.5, 10, 9.5, 9].some(sz => {
+      const k = lineCount(note, sz, lw, false); return k <= 4 && k * sz * LEAD / 72 <= BOTTOM - below + 0.02; });
+    const [ny, nw] = below >= clear ? [below, W - 2 * M] : fitsLeft ? [below, lw] : [clear, W - 2 * M];
+    tx(s, note, { x: M, y: ny, w: nw, h: BOTTOM - ny, size: 11, min: 9, lines: 4, color: MUTED, valign: 'top', what: 'the adjustments note' });
     footer(s); notes(s, D.notes.method);
   }
 

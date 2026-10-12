@@ -13,7 +13,7 @@
   "count": 6
  },
  "chat_notes": {
-  "count": 3
+  "count": 4
  },
  "competing_offer_caveat": null,
  "competition": {
@@ -361,8 +361,12 @@
    1,
    2
   ],
-  "market_ratio": 0.97,
-  "raised_by": null,
+  "floored": {
+   "count": 0
+  },
+  "premium": 0,
+  "premium_ratio": 0.9386,
+  "premium_source": "original",
   "ratio": 0.97,
   "ratio_display": "97.0%",
   "source": "assumed"
@@ -451,6 +455,7 @@
    "days": 184,
    "original_price": 434900,
    "price": 419900,
+   "relist": false,
    "status": "expired"
   }
  ],
@@ -579,7 +584,7 @@
  },
  "net": {
   "after_holding": [
-   437804,
+   433584,
    433532,
    424867
   ],
@@ -604,7 +609,7 @@
   "rows": [
    {
     "amounts": [
-     481500,
+     477000,
      476500,
      467000
     ],
@@ -624,7 +629,7 @@
    },
    {
     "amounts": [
-     -12038,
+     -11925,
      -11913,
      -11675
     ],
@@ -636,7 +641,7 @@
    },
    {
     "amounts": [
-     -12038,
+     -11925,
      -11913,
      -11675
     ],
@@ -648,7 +653,7 @@
    },
    {
     "amounts": [
-     -3371,
+     -3339,
      -3336,
      -3269
     ],
@@ -660,7 +665,7 @@
    },
    {
     "amounts": [
-     -2482,
+     -2460,
      -2458,
      -2410
     ],
@@ -696,7 +701,7 @@
    },
    {
     "amounts": [
-     439426,
+     435206,
      434735,
      425826
     ],
@@ -720,7 +725,7 @@
    },
    {
     "amounts": [
-     437804,
+     433584,
      433532,
      424867
     ],
@@ -732,13 +737,13 @@
    }
   ],
   "totals": [
-   439426,
+   435206,
    434735,
    425826
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 12937,
+ "net_spread": 8717,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -748,10 +753,11 @@
   "payment",
   "commission",
   "not_included",
+  "income_tax",
   "flood"
  ],
  "notes": {
-  "count": 9
+  "count": 10
  },
  "notices": {
   "count": 3
@@ -939,15 +945,15 @@
    "agent": false,
    "closing": "2026-12-24",
    "down": 24250,
-   "expected_sale": 481500,
+   "expected_sale": 477000,
    "expected_sale_source": "rule",
    "hold_months": 3.06,
    "list_price": 485000,
    "months_to_contract": 1.61,
    "name": "Premium",
-   "net": 439426,
-   "net_after_holding": 437804,
-   "net_vs_recommended": 4272,
+   "net": 435206,
+   "net_after_holding": 433584,
+   "net_vs_recommended": 52,
    "payment": 4188,
    "recommended": false,
    "role": "premium",

@@ -53,7 +53,7 @@
      "count": 4
     }
    ],
-   "counter_score": 74,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -332,7 +332,7 @@
    },
    "price": 489000,
    "proof_of_funds": 156000,
-   "rank_value": 432394.0,
+   "rank_value": 433402.0,
    "received": "2026-09-21 19:05",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -368,9 +368,9 @@
      "deposit": 4,
      "financing": 4,
      "property": 4,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 74,
+    "total": 76,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -451,6 +451,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -510,7 +511,7 @@
      "count": 4
     }
    ],
-   "counter_score": 74,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -806,7 +807,7 @@
    "price": 494000,
    "price_base": 494000,
    "proof_of_funds": 88000,
-   "rank_value": 437311.0,
+   "rank_value": 438319.0,
    "received": "2026-09-22 14:15",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -842,9 +843,9 @@
      "deposit": 4,
      "financing": 3,
      "property": 4,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 74,
+    "total": 76,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -925,6 +926,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -965,6 +967,7 @@
    "also": {
     "count": 1
    },
+   "ask": true,
    "field": "buyer_broker_paid_by",
    "impact": "med"
   },
@@ -1073,6 +1076,7 @@
    "also": {
     "count": 1
    },
+   "ask": true,
    "field": "buyer_broker_paid_by",
    "impact": "med"
   },
@@ -1146,7 +1150,7 @@
      "count": 4
     }
    ],
-   "counter_score": 74,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1425,7 +1429,7 @@
    },
    "price": 489000,
    "proof_of_funds": 156000,
-   "rank_value": 432394.0,
+   "rank_value": 433402.0,
    "received": "2026-09-21 19:05",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -1461,9 +1465,9 @@
      "deposit": 4,
      "financing": 4,
      "property": 4,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 74,
+    "total": 76,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -1544,6 +1548,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1603,7 +1608,7 @@
      "count": 4
     }
    ],
-   "counter_score": 74,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1899,7 +1904,7 @@
    "price": 494000,
    "price_base": 494000,
    "proof_of_funds": 88000,
-   "rank_value": 437311.0,
+   "rank_value": 438319.0,
    "received": "2026-09-22 14:15",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -1935,9 +1940,9 @@
      "deposit": 4,
      "financing": 3,
      "property": 4,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 74,
+    "total": 76,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -2018,6 +2023,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -2079,7 +2085,7 @@
      "count": 4
     }
    ],
-   "counter_score": 74,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -2375,7 +2381,7 @@
    "price": 494000,
    "price_base": 494000,
    "proof_of_funds": 88000,
-   "rank_value": 437311.0,
+   "rank_value": 438319.0,
    "received": "2026-09-22 14:15",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -2411,9 +2417,9 @@
      "deposit": 4,
      "financing": 3,
      "property": 4,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 74,
+    "total": 76,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -2494,6 +2500,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -2554,7 +2561,7 @@
      "count": 4
     }
    ],
-   "counter_score": 74,
+   "counter_score": 76,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -2833,7 +2840,7 @@
    },
    "price": 489000,
    "proof_of_funds": 156000,
-   "rank_value": 432394.0,
+   "rank_value": 433402.0,
    "received": "2026-09-21 19:05",
    "repair_reserve": 3500,
    "repairs_owed": false,
@@ -2869,9 +2876,9 @@
      "deposit": 4,
      "financing": 4,
      "property": 4,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 74,
+    "total": 76,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -2952,6 +2959,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -2963,6 +2971,7 @@
  "ranking_reason": null,
  "sample": true,
  "seller": {
+  "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
   "holding_monthly": 650,

@@ -300,5 +300,101 @@ class CounterStance(unittest.TestCase):
                     self.assertIn(a, msg)
 
 
+GAP_LISTING = {"list_price": 425000, "cma_low": 405000, "cma_high": 428000}
+
+
+def gap_review(*offers, seller=None):
+    """The seller's review (review.analyze) of offers on a $425,000 listing whose value range tops out at $428,000."""
+    d = copy.deepcopy(BASE)
+    d["listing"].update(GAP_LISTING)
+    d["seller"].update(seller or {})
+    d["offers"] = list(offers)
+    return review.analyze(d)
+
+
+def gap_offer(oid, price, **k):
+    return hand(**{"id": oid, "price": price, "down_pct": 0.1, "appraisal_gap": 8000, "proof_of_funds": 200000,
+                   "buyer": f"Buyer {oid}", **k})
+
+
+class CounterAboveValue(unittest.TestCase):
+    """counter-rules.md rule 1: an offer above the value range with a partial appraisal gap keeps its price and is asked
+    to cover the rest, unless the buyer's documented funds can't; the counter never nets under the downside case."""
+
+    def assert_keeps_price(self, o):
+        hi = GAP_LISTING["cma_high"]
+        self.assertEqual(o["counter_terms"]["price"], o["price"])
+        self.assertEqual(o["counter_terms"]["appraisal_gap"], o["price"] - hi)
+        self.assertNotIn("Price", rows(o))
+        self.assertGreaterEqual(o["ns_counter"]["net_adj"], o["ns_down"]["net_adj"])
+
+    def test_single_offer_keeps_its_price_and_asks_for_the_gap(self):
+        R = gap_review(gap_offer("A", 445000))
+        self.assert_keeps_price(R["offers"][0])
+
+    def test_two_offers_keep_their_prices(self):
+        R = gap_review(gap_offer("A", 440000), gap_offer("B", 436000))
+        for o in R["offers"]:
+            with self.subTest(offer=o["id"]):
+                self.assert_keeps_price(o)
+
+    def test_short_funds_never_counter_under_the_protected_price(self):
+        hi = GAP_LISTING["cma_high"]
+        for pof, want in ((50000, hi + 8000),  # $5,500 beyond the down payment: the offer's own $8,000 gap still holds
+                          (55000, 438000),  # $10,500 beyond it: the price the funds carry, to $1,000 down
+                          (300000, 445000)):  # enough: the price stands
+            with self.subTest(pof=pof):
+                o = gap_review(gap_offer("A", 445000, proof_of_funds=pof))["offers"][0]
+                ct = o["counter_terms"]
+                self.assertEqual(ct["price"], want)
+                self.assertGreaterEqual(ct["price"], hi + o["gap_cover"])
+                self.assertLessEqual(ct["price"], o["price"])
+                self.assertGreaterEqual(ct["price"] - hi, 0)
+                self.assertEqual(ct["appraisal_gap"], max(o["appraisal_gap"], ct["price"] - hi))
+                self.assertGreaterEqual(o["ns_counter"]["net_adj"], o["ns_down"]["net_adj"])
+
+    def test_gap_clauses_that_cant_bind_and_waivers(self):
+        hi = GAP_LISTING["cma_high"]
+        o = gap_review(gap_offer("A", 445000, financing="fha", down_pct=0.035))["offers"][0]
+        self.assertEqual(o["counter_terms"]["price"], hi)  # FHA: the gap clause is intent only
+        o = gap_review(hand(price=445000, down_pct=0.2, appraisal_contingency=False, gap_funds=5000))["offers"][0]
+        self.assertEqual(o["counter_terms"]["price"], hi + 5000)  # a waiver: credited up to the documented funds
+
+    def test_no_proof_of_funds_keeps_the_price_and_asks_for_it(self):
+        o = gap_review(hand(price=445000, down_pct=0.1, appraisal_gap=8000))["offers"][0]
+        self.assertEqual(o["counter_terms"]["price"], 445000)
+        self.assertIn("proof of funds", rows(o)["Appraisal Gap Coverage"][3])
+
+    def test_history_still_caps_at_the_sellers_last_counter(self):  # ENG-2
+        o = gap_review(gap_offer("A", 445000, prior_counters=[{"by": "seller", "price": 440000}]))["offers"][0]
+        self.assertEqual(o["counter_terms"]["price"], 440000)
+
+
+class Ranking(unittest.TestCase):
+    def test_a_low_appraisal_counts_once(self):
+        """The downside net already caps the price at the value range plus the gap cover, so the ranking's certainty
+        penalty leaves the appraisal criterion out; the displayed score keeps it."""
+        R = gap_review(gap_offer("A", 445000, appraisal_gap=0, proof_of_funds=None),
+                       gap_offer("B", 428000, appraisal_gap=0, proof_of_funds=None))
+        a, b = offer(R, "A"), offer(R, "B")
+        self.assertLess(a["score"]["scores"]["appraisal"], 5)
+        self.assertEqual(oe.rank_certainty(a["score"]), oe.rank_certainty(b["score"]))
+        self.assertGreater(oe.rank_certainty(a["score"]), a["score"]["total"])
+        pen = oe.RISK_PENALTY[R["seller"]["priority"]] * GAP_LISTING["list_price"]
+        for o in (a, b):
+            self.assertEqual(o["rank_value"], o["ns_down"]["net_adj"] - (100 - oe.rank_certainty(o["score"])) / 100 * pen)
+
+    def test_closing_speed_is_neutral_without_a_seller_deadline(self):
+        fast, slow = hand(id="A", closing_date="2026-10-20"), hand(id="B", closing_date="2026-12-15", buyer="Other")
+        R = gap_review(fast, slow)
+        self.assertEqual({o["score"]["scores"]["timeline"] for o in R["offers"]}, {5})
+        R = gap_review(fast, slow, seller={"priority": "speed"})  # a seller who needs speed scores it
+        self.assertGreater(offer(R, "A")["score"]["scores"]["timeline"], offer(R, "B")["score"]["scores"]["timeline"])
+        d = copy.deepcopy(BASE)  # buyer-offer-strategy's read of the listing agent (no seller_review) still scores it
+        d["offers"] = [fast, slow]
+        O = {o["id"]: o for o in oe.analyze(d)["offers"]}
+        self.assertGreater(O["A"]["score"]["scores"]["timeline"], O["B"]["score"]["scores"]["timeline"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1279,7 +1279,9 @@ def cost_notes(N, R, market, pay, credit, tax_rows, insurance):
     tb = pay["tax_basis"]
     tj = tax_rows[pay["tax_index"]]
     if tb["estimated"]:
-        N.add("tax_basis", t("note_tax_rate", pct=fmt.pct(market.get("property_tax.fallback_rate"), 1)), "estimate")
+        state_avg = market.source("property_tax.fallback_rate") == "state_average"
+        N.add("tax_basis", t("note_tax_rate_state" if state_avg else "note_tax_rate",
+                             pct=fmt.pct(market.get("property_tax.fallback_rate"), 1)), "estimate")
     elif tb["unconfirmed"]:
         N.add("tax_basis", t("note_tax_which_higher" if tb["higher"] else "note_tax_which", short=tb["short"]), "assumption")
     millage = [j for j in tax_rows if j["total_mills"] is not None]

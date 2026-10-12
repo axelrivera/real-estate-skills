@@ -38,7 +38,7 @@
      "count": 4
     }
    ],
-   "counter_score": 83,
+   "counter_score": 85,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -307,7 +307,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 317732.0,
+   "rank_value": 319562.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -336,9 +336,9 @@
      "deposit": 3,
      "financing": 4,
      "property": 5,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 85,
+    "total": 88,
     "unscored": {
      "contingency": [
       "inspection_walkaway"
@@ -427,6 +427,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": [
@@ -644,7 +645,7 @@
      "count": 4
     }
    ],
-   "counter_score": 83,
+   "counter_score": 85,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -913,7 +914,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 317732.0,
+   "rank_value": 319562.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -942,9 +943,9 @@
      "deposit": 3,
      "financing": 4,
      "property": 5,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 85,
+    "total": 88,
     "unscored": {
      "contingency": [
       "inspection_walkaway"
@@ -1033,6 +1034,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": [
@@ -1080,7 +1082,7 @@
      "count": 4
     }
    ],
-   "counter_score": 83,
+   "counter_score": 85,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1349,7 +1351,7 @@
     "tax_bill_assumed": false
    },
    "price": 598000,
-   "rank_value": 317732.0,
+   "rank_value": 319562.0,
    "received": "2026-09-22",
    "repair_label": null,
    "repair_reserve": 0,
@@ -1378,9 +1380,9 @@
      "deposit": 3,
      "financing": 4,
      "property": 5,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 85,
+    "total": 88,
     "unscored": {
      "contingency": [
       "inspection_walkaway"
@@ -1469,6 +1471,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": [
@@ -1480,6 +1483,7 @@
  "ranking_reason": null,
  "sample": true,
  "seller": {
+  "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
   "holding_monthly": 1300,

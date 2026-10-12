@@ -9,7 +9,7 @@
  },
  "cash_at_closing": true,
  "chat_notes": {
-  "count": 3
+  "count": 4
  },
  "closing_date_assumed": false,
  "columns": [
@@ -73,10 +73,11 @@
   "estoppel",
   "commission",
   "payoff",
-  "not_included"
+  "not_included",
+  "income_tax"
  ],
  "notes": {
-  "count": 6
+  "count": 7
  },
  "ok": true,
  "preliminary": false,

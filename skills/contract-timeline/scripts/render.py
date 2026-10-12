@@ -125,7 +125,7 @@ def _place(marks, W, levels, strict, budget=20000):
 
 MIXED = "var(--text)"  # a strip label for deadlines owed by different parties on one day
 DONE = "var(--muted)"  # every deadline on that day is done
-PARTIES = ("Buyer", "Seller", "Both")
+PARTIES = ("Buyer", "Seller", "Both", "Brokers")  # Brokers: Rider GG's agreement, in the neutral color
 
 
 def strip_mixed(t):
@@ -340,6 +340,7 @@ def build_html(t, agent, sample):
     p = theme["party"]
     colors = {"Buyer": p["buyer"], "Seller": p["seller"], "Both": p["both"]}
     ink = {k.title(): v for k, v in theme["party_ink"].items()}
+    colors["Brokers"], ink["Brokers"] = colors["Both"], ink.get("Both", colors["Both"])  # Rider GG: neither client
 
     # the dates live in the hero; the contract terms run in one fact row, and missing ones drop out
     n = len(t["history"])
@@ -496,6 +497,15 @@ def calendar_rows(t, lender_dates=False):
     return [r for r in t["rows"] if not r.get("done") and not r.get("past") and (lender_dates or not r.get("lender"))]
 
 
+def cancelled_rows(t, lender_dates=False):
+    """The rows a calendar imported on an earlier run may still hold: rows an amendment removed (`dropped`), and, only
+    when the deal says a calendar went out before (`calendar_sent`), dated rows done since (a cancel right that can't
+    arise any more included). A first calendar carries no cancelled events (iteration 16). Lender targets only with
+    `lender_dates`."""
+    done = [r for r in t["rows"] if r.get("done")] if t.get("calendar_sent") else []
+    return [r for r in done + list(t.get("dropped") or []) if r.get("when") and (lender_dates or not r.get("lender"))]
+
+
 def due_text(r):
     """What the report prints after a row's day, as the calendar title says it: "by 11:59 PM", "by 5:00 PM ET",
     "by Closing", "before Closing", or "" for a day alone. Taken from the row's display, so the two never differ."""
@@ -507,9 +517,15 @@ def ics(t, lender_dates=False):
     """TL-20: the closing calendar as an .ics file. A deadline is an all-day event on its due day, its title ending
     with the time it's due by as the report prints it ("by 11:59 PM", "by Closing"), so no calendar shows a deadline
     as an event that starts at that time. The closing and possession are appointments, timed in the property's time
-    zone (TZID) when it's known. Critical deadlines get a reminder the day before (9:00 AM for an all-day event). SEQUENCE counts the amendments, so a re-imported calendar replaces the older events. Deadlines
-    already done or past (TL-104) are left out, and so are the lender's targets (TL-252: insurance bound, the Closing
-    Disclosure), which are estimates, not contract dates; `lender_dates` adds them, titled "Lender Target"."""
+    zone (TZID) when it's known. Critical deadlines get a reminder the day before (9:00 AM for an all-day event).
+    Deadlines past and not done (TL-104) are left out, and so are the lender's targets (TL-252: insurance bound, the
+    Closing Disclosure), which are estimates, not contract dates; `lender_dates` adds them, titled "Lender Target".
+
+    Re-runs: every event keeps its UID (the row's key and the property), and SEQUENCE counts the amendments plus the
+    rows done, so it only grows from one run to the next and a re-imported calendar replaces the older events. A row an
+    amendment removed, and (when the deal's `calendar_sent` says a calendar went out before) a row done since or a
+    cancel right that can no longer arise, comes back as a STATUS:CANCELLED event with its UID, so a calendar that
+    imported it earlier drops it."""
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # when the file was made, in UTC (RFC 5545)
     what_if = lbl("ics_what_if") if t.get("what_if") else ""  # TL-119: a hypothetical timeline says so in the calendar too
     tzid = timeline.ZONES[t["time_zone"]][0] if t.get("time_zone") in timeline.ZONES else None
@@ -518,6 +534,8 @@ def ics(t, lender_dates=False):
     if tzid:
         lines += [f"X-WR-TIMEZONE:{tzid}", *_vtimezone(tzid)]
     at = f";TZID={tzid}" if tzid else ""
+    uid = lambda key: f"UID:{key}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline"  # noqa: E731
+    sequence = f"SEQUENCE:{len(t.get('history') or []) + sum(1 for r in t['rows'] + t.get('pending', []) if r.get('done'))}"
     for r in calendar_rows(t, lender_dates):
         lender = lbl("ics_lender") if r.get("lender") else ""
         when = _when(r)
@@ -532,14 +550,18 @@ def ics(t, lender_dates=False):
                                     r["if_missed"] and lbl("ics_if_missed", text=r["if_missed"]),
                                     r["rule"] and lbl("ics_rule", text=r["rule"]), r["source"] and lbl("ics_source", text=r["source"]))
                 if x)
-        lines += ["BEGIN:VEVENT", f"UID:{r['key']}-{hashlib.sha1(t['property'].encode()).hexdigest()[:10]}@contract-timeline",
-                  f"SEQUENCE:{len(t.get('history') or [])}", f"DTSTAMP:{now}", start, end,
+        lines += ["BEGIN:VEVENT", uid(r["key"]), sequence, f"DTSTAMP:{now}", start, end,
                   f"SUMMARY:{_ics_text(what_if + lender + r['label'] + (' ★' if r['critical'] and not lender else '') + (lbl('ics_due', due=due) if due else ''))}",
                   f"DESCRIPTION:{_ics_text(desc)}"]
         if r["critical"] and not lender:  # the day before: 9:00 AM for an all-day event (its start is midnight), else 24 hours ahead
             lines += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_ics_text(r['label'])}",
                       "TRIGGER:-PT15H" if all_day else "TRIGGER:-P1D", "END:VALARM"]
         lines.append("END:VEVENT")
+    for r in cancelled_rows(t, lender_dates):
+        when = _when(r)
+        lines += ["BEGIN:VEVENT", uid(r["key"]), sequence, f"DTSTAMP:{now}", "STATUS:CANCELLED",
+                  f"DTSTART;VALUE=DATE:{when:%Y%m%d}", f"DTEND;VALUE=DATE:{(when + timedelta(days=1)):%Y%m%d}",
+                  f"SUMMARY:{_ics_text(what_if + r['label'])}", "END:VEVENT"]
     lines.append("END:VCALENDAR")
     return "\r\n".join(_fold(x) for x in lines) + "\r\n"
 

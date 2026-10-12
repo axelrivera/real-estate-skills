@@ -61,8 +61,14 @@ class Taxes(unittest.TestCase):
 
     def test_fallback_rate_and_unknown(self):
         self.assertAlmostEqual(f.property_tax(400000, FL)["annual"], 400000 * 0.018)
-        tx = profiles.load_market(state="TX")
-        self.assertAlmostEqual(f.property_tax(400000, tx)["annual"], 400000 * 0.011)  # national estimate
+        tx = profiles.load_market(state="TX")  # iteration 16: Texas's average effective rate, before the national 1.1%
+        self.assertAlmostEqual(f.property_tax(400000, tx)["annual"], 400000 * 0.0136)
+        self.assertEqual(f.property_tax(400000, tx)["rate_source"], "state_average")
+        self.assertEqual(f.property_tax(400000, FL)["rate_source"], "state")  # Florida keeps its own built-in rate
+        for st in (None, "PR"):  # no state, or one the table doesn't have: the national estimate
+            m = profiles.load_market(state=st)
+            self.assertAlmostEqual(f.property_tax(400000, m)["annual"], 400000 * 0.011)
+            self.assertEqual(f.property_tax(400000, m)["rate_source"], "estimate")
 
     def test_texas_style_exemptions(self):
         class M:

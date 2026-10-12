@@ -9,7 +9,7 @@
  },
  "cash_at_closing": true,
  "chat_notes": {
-  "count": 2
+  "count": 3
  },
  "closing_date_assumed": false,
  "columns": [
@@ -72,10 +72,11 @@
   "payoff",
   "national",
   "commission",
-  "not_included"
+  "not_included",
+  "income_tax"
  ],
  "notes": {
-  "count": 5
+  "count": 6
  },
  "ok": true,
  "preliminary": false,

@@ -87,7 +87,7 @@
      "count": 4
     }
    ],
-   "counter_score": 60,
+   "counter_score": 62,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -423,9 +423,9 @@
      "deposit": 2,
      "financing": 2,
      "property": 3,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 60,
+    "total": 62,
     "weight": 100
    },
    "seller_concessions": 7000,
@@ -506,6 +506,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -665,7 +666,7 @@
      "count": 4
     }
    ],
-   "counter_score": 60,
+   "counter_score": 62,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1001,9 +1002,9 @@
      "deposit": 2,
      "financing": 2,
      "property": 3,
-     "timeline": 4
+     "timeline": 5
     },
-    "total": 60,
+    "total": 62,
     "weight": 100
    },
    "seller_concessions": 7000,
@@ -1084,6 +1085,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "seller",
+   "title_by_given": false,
    "title_payer": "seller",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1098,6 +1100,7 @@
  "ranking_reason": null,
  "sample": true,
  "seller": {
+  "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
   "holding_monthly": 950,
@@ -1121,9 +1124,9 @@
     "value": 299
    }
   ],
-  "close": "2026-10-23",
+  "close": "2026-10-28",
   "estoppel_estimate": false,
-  "holding": -950,
+  "holding": -1108,
   "lines": [
    [
     "price",
@@ -1167,7 +1170,7 @@
    ],
    [
     "tax",
-    -3181
+    -3235
    ],
    [
     "payoff",
@@ -1177,10 +1180,10 @@
   "missing": {
    "count": 0
   },
-  "net": 199917,
-  "net_adj": 198967,
+  "net": 199863,
+  "net_adj": 198755,
   "price": 349000,
   "tax_bill_assumed": false
  },
- "target_close": "2026-10-23"
+ "target_close": "2026-10-28"
 }

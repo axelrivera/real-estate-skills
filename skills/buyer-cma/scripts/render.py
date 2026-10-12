@@ -12,6 +12,7 @@ notes and the warnings to fix on stderr.
 """
 import html
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -66,7 +67,42 @@ def flagged(value, flag):
 
 # --- page 1 -----------------------------------------------------------------------------------------------------------
 
-def page_one(C, agent):
+def dot_strip(C, notes_out=None):
+    """Page 1's comparable-sales chart, with its price-line labels checked (iteration 16: "Opening Offer" and "Asking"
+    drew on each other when the two prices were close): `notes_out["dot_labels"]` receives what dot_label_checks finds."""
+    sm, s, op, rng = C["summary"], C["subject"], C["offer_plan"], C["range"]
+    svg = cma.dotplot(sm["comps"], rng["low"], rng["high"], s["list_price"], sm["dot_asking"],
+                      (op["opening"], sm["dot_offer"]), kfmt=fmt.k)
+    if notes_out is not None:
+        notes_out["dot_labels"] = dot_label_checks(svg)
+    return svg
+
+
+DOT_LABEL = re.compile(r'<text x="([-\d.]+)" y="([-\d.]+)" text-anchor="(start|middle|end)" '
+                       r'class="dp-(?:mark|second)-lbl">([^<]*)</text>')
+DOT_LABEL_PX = 11  # cma.css .dp-mark-lbl and .dp-second-lbl: 11px bold
+DOT_LABEL_GAP = 4  # the least room between two labels that reads as two
+
+
+def dot_label_checks(svg):
+    """The price-line labels above the comparable-sales chart that overlap each other or run off the chart, as check
+    lines for the chat. Each label's box is measured the way the charts measure every label (cma._text_w)."""
+    width = float(re.search(r'viewBox="0 0 ([\d.]+)', svg).group(1))
+    boxes = []
+    for x, y, anchor, text in DOT_LABEL.findall(svg):
+        text = html.unescape(text)
+        w = cma._text_w(text, DOT_LABEL_PX, True)
+        x0 = float(x) - {"start": 0, "middle": w / 2, "end": w}[anchor]
+        boxes.append((text, float(y), x0, x0 + w))
+    out = [f"page 1 chart label {b[0]!r} runs off the chart." for b in boxes if b[2] < 0 or b[3] > width]
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            if a[1] == b[1] and a[2] < b[3] + DOT_LABEL_GAP and b[2] < a[3] + DOT_LABEL_GAP:
+                out.append(f"page 1 chart labels {a[0]!r} and {b[0]!r} overlap.")
+    return out
+
+
+def page_one(C, agent, notes_out=None):
     sm, s, op, rng = C["summary"], C["subject"], C["offer_plan"], C["range"]
     o = ['<div class="onepage">',
          f'<header class="top"><div>{agent_block(agent)}</div><div class="prep">'
@@ -82,8 +118,7 @@ def page_one(C, agent):
          '<div class="sp-stats">' + "".join(layout.tiles([(lbl, v) for v, lbl in sm["tiles"][i:i + 2]], n=2, cls="sp-tiles")
                                             for i in (0, 2)) + "</div></div>",
          f'<div class="sp-h">{esc(L["sum_comps_h"])} <span class="sp-sub">· {esc(L["sum_shaded"])}</span></div>',
-         '<div class="sp-dot">' + cma.dotplot(sm["comps"], rng["low"], rng["high"], s["list_price"], sm["dot_asking"],
-                                             (op["opening"], sm["dot_offer"]), kfmt=fmt.k) + "</div>"]
+         '<div class="sp-dot">' + dot_strip(C, notes_out) + "</div>"]
     cost = layout.table([Col(0, L["sum_costs"]), Col(1, "", align="num")],
                         [[r[0], flagged(r[1], r[2])] for r in sm["cost_rows"]], keep="whole", cls="sp-table",
                         row_classes={1: "rec"})
@@ -295,7 +330,7 @@ def build_html(C, agent, sample=False, notes_out=None):
         css = cma.css() + f.read()
     body = (home(C) + bottom_line(C) + history(C) + offer_plan(C) + comps(C) + scatter(C, notes_out) + competition(C)
             + market(C) + costs(C) + watch(C))
-    content = ('<div class="wrap">' + page_one(C, agent) + '<div class="pb"></div>' + layout.group_blocks(body)
+    content = ('<div class="wrap">' + page_one(C, agent, notes_out) + '<div class="pb"></div>' + layout.group_blocks(body)
                + closing(C, agent) + "</div>")
     theme = design.theme(agent.get("brand"), SIDE)  # the subject home is black (cma.css), never a second hue
     doc = render.page(content, css=css, title=f'{L["doc_label"]}: {C["subject"]["address"]}',
@@ -334,7 +369,7 @@ def build(C, fmt_, out_dir, ctx):
         print_chart_notes(chart_notes)
         return written
     sample = bool(ctx.get("sample") or C.get("sample"))
-    label = " · ".join(x for x in (C["subject"]["address"], L["doc_label"],
+    label = " · ".join(x for x in (C["subject"]["address"], L["doc_label"], L["not_listing_side"],
                                    ", ".join(str(agent[f]) for f in ("name", "brokerage") if agent.get(f))) if x)
     if sample:
         label = "SAMPLE DATA · " + label
@@ -370,7 +405,7 @@ def print_chart_notes(chart_notes):
     for text in labels.get("overlapping", []):
         print(f"Check: chart label {text!r} still overlaps a marker or another label: shorten it or pick another side.",
               file=sys.stderr)
-    for c in chart_notes.get("callout_checks", []):
+    for c in chart_notes.get("callout_checks", []) + chart_notes.get("dot_labels", []):
         print(f"Check: {c}", file=sys.stderr)
 
 SHEETS = ("activity", "price-chart")  # the one-page chart sheets, built only when named (--format activity)

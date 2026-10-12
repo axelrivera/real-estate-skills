@@ -24,7 +24,7 @@ import sys
 from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import fmt, handoff, notes, offer_engine as oe, profiles, prose  # noqa: E402
+from _shared import finance, fmt, handoff, notes, offer_engine as oe, profiles, prose  # noqa: E402
 
 LABELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "labels.json")
 with open(LABELS_PATH, encoding="utf-8") as _f:
@@ -160,7 +160,7 @@ def analyze(data, market=None, cma=None, agent=None):
     data = copy.deepcopy(data)
     if (data.get("listing") or {}).get("hoa_conflict") is not None:
         data["listing"]["hoa_conflict"] = hoa_conflict(data["listing"])
-    R = oe.analyze(data, market=market, cma=cma)
+    R = oe.analyze(data, market=market, cma=cma, seller_review=True)
     one_target(R)
     R["highest_and_best"] = highest_and_best(data.get("listing") or {}, R["listing"])
     backup_lapses(R)
@@ -349,6 +349,16 @@ def ask_compensation_agreement(R):
             fee = next((a for a in R["missing"] if a["field"] == "listing_fee_pct"), None)
             if fee:
                 fee["ask"] = True
+            # iteration 16 eval 6: the listing agent's own paperwork, asked in chat with the listing-agreement check
+            # (never on the seller's report, never a risk): send the agreement, or sign the one the buyer's broker signed
+            status = str(o.get("compensation_agreement") or "")
+            extra = (L_["gg_agent_sign"] if status == "signed_by_buyer_broker" else
+                     L_["gg_agent_send"] if not status else "")
+            paid = next((a for a in R["missing"] if a["field"] == "buyer_broker_paid_by"
+                         and f"offer {o['id']}" in oe.scopes(a)), None)
+            if paid and extra and extra not in paid["why"]:
+                paid["why"] += extra
+                paid["ask"] = True
             continue
         sc = f"offer {o['id']}"
         old = next((a for a in R["missing"] if a["field"] == "buyer_broker_pct" and sc in oe.scopes(a)), None)
@@ -485,9 +495,13 @@ def estimated_costs(R, offers, skip=()):
     if rate and "transfer" in lines and costs.source("closing_costs.deed_transfer_tax_rate") != "deal":
         out.append(("transfer_tax_rate", t("est_transfer", name=words(lines["transfer"].split(" (")[0]),
                                            rate=fmt.pct(rate, 2, fixed=True), src=src("closing_costs.deed_transfer_tax_rate"))))
-    if "title" in lines and "(Quote)" not in lines["title"]:
-        out.append(("title_estimate_pct", t("est_title", how=L_["est_promulgated"] if "Promulgated" in lines["title"]
-                                            else L_["est_estimate"])))
+    if "title" in lines and "(Quote)" not in lines["title"]:  # iteration 16 eval 3: with its figure, as the others
+        amounts = sorted({-v for o in offers for k, _, v in o["ns"]["lines"] if k == "title" and v})
+        tp = costs.get("closing_costs.owner_title.estimate_pct")
+        how = (L_["est_promulgated"] if "Promulgated" in lines["title"] else
+               t("est_title_pct", pct=fmt.pct(tp, None), src=src("closing_costs.owner_title.estimate_pct")) if tp
+               else L_["est_estimate"])
+        out.append(("title_estimate_pct", t("est_title", amount=fmt.range(amounts[0], amounts[-1]), how=how)))
     if "settle" in lines and costs.source("closing_costs.seller_title_fees") != "deal":
         amounts = sorted({-v for o in offers for k, _, v in o["ns"]["lines"] if k == "settle"})
         out.append(("title_fees", t("est_title_fees", amount=fmt.range(amounts[0], amounts[-1]),
@@ -507,7 +521,8 @@ def estimated_costs(R, offers, skip=()):
     if not L.get("repair_reserve_deal") and any(not o["repairs_owed"] and any(k == "repair" and v for k, _, v in o["ns_down"]["lines"])
                                                 for o in offers):  # a Standard form's repair limits are contract terms
         out.append(("inspection_credit_reserve_pct", L_["est_repair"]))
-    return [text for key, text in out if key not in skip]
+    # iteration 16 eval 3: the tax estimate is always named when the net carries one, even when to_confirm asks for the bill
+    return [text for key, text in out if key not in skip or key == "annual_tax"]
 
 
 def pick(R, mode="auto", offer_id=None):
@@ -567,16 +582,7 @@ def listed_assumptions(R, multi=False, offer_id=None, defaults=False):
             and (defaults or not (a.get("default") or a.get("agent")))]
 
 
-# OFR-306: high-impact inputs that move every offer's net the same way, so they can't change the ranking (each is in
-# the assumptions), and the contract form, one offer's own input (listed in the assumptions, never marked in the
-# ranking: local-costs.md, estimates and assumptions are said once, in the notes)
-SAME_FOR_EVERY_OFFER = {"payoff", "listing_fee_pct", "listing_fee_includes_buyer_broker", "state", "title_payer",
-                        "deed transfer tax", "who pays owner's title", "owner's title rate", "title company fees"}
-MARKED_PER_OFFER = {"contract_form"}
-
-
-def ranking_deciding(a):
-    return a["field"] not in SAME_FOR_EVERY_OFFER | MARKED_PER_OFFER
+MARKED_PER_OFFER = {"contract_form"}  # OFR-306: an offer's own assumed form, marked on its ranking row
 
 
 def form_assumed(R, o):
@@ -585,17 +591,13 @@ def form_assumed(R, o):
 
 
 def preliminary(R, offer_id=None, multi=False):
-    """The Preliminary line, or None. OFR-306: the comparison carries it only when an input that could change the
-    ranking is assumed; a single review, whenever one of its high-impact inputs is. It names what to add; the count of
-    assumed inputs is the data note's (said once)."""
+    """The Preliminary line, or None: whenever a high-impact input the report covers is assumed (iteration 16: the
+    comparison too, whatever the input, so a review resting on an assumed form or commission says so). It names what
+    to add; the count of assumed inputs is the data note's (said once)."""
     name = lambda s: where(R, s)  # noqa: E731  OFR-266: an offer's missing input names the offers it's missing for
-    need = oe.preliminary_inputs({**R, "missing": [a for a in R["missing"] if ranking_deciding(a)]} if multi else R,
-                                 None if multi else offer_id, name_offer=name)
+    need = oe.preliminary_inputs(R, None if multi else offer_id, name_offer=name)
     if not need:
         return None
-    if multi:  # the hint names every input that would change the numbers (the payoff too), not only the ranking's
-        need = oe.preliminary_inputs({**R, "missing": [a for a in R["missing"] if a["field"] not in MARKED_PER_OFFER]},
-                                     None, name_offer=name)
     return t("preliminary", what=", ".join(need[:-1]) + " and " + need[-1] if len(need) > 1 else need[0])
 
 
@@ -691,14 +693,26 @@ def threat(o):
     return L_["threat"][k] if k else L_["threat_none"]
 
 
+ESCALATION_IF_TRIGGERED = {"escalation", "escalation_cap_over_value", "escalation_cap_over_approval",
+                           "escalation_cash_short"}
+
+
 def biggest_risk(o):
     """OFR-304: the one biggest risk, so it never disagrees with the certainty's threat: the top deal flag (listing-side
     reminders never count), unless the threat's criterion score is a higher severity (score 1 High, 2 Med, 3 Low); then
     the threat, with the scorecard's reason. {sev, issue, key} or None: `key` is the flag's topic, or `threat:<criterion>`."""
-    flag = next(iter(deal_flags(o)), None)
+    flags = deal_flags(o)
+    idle = o.get("escalation") and not o.get("escalated")
+    if idle:
+        # iteration 16 eval 8: what the clause risks only if it triggers isn't the biggest risk while it doesn't, unless
+        # nothing else is (a clause with no cap stays: it can't be relied on at all)
+        flags = sorted(flags, key=lambda f: f.get("topic") in ESCALATION_IF_TRIGGERED)  # stable: severity order kept
+    flag = next(iter(flags), None)
+    rank = (len(SEV_RANK) if idle and flag and flag.get("topic") in ESCALATION_IF_TRIGGERED
+            else SEV_RANK.get(flag["sev"], 2) if flag else None)
     k = threat_key(o)
     sev = THREAT_SEV.get(o["score"]["scores"][k]) if k else None
-    if sev and (flag is None or SEV_RANK[sev] < SEV_RANK.get(flag["sev"], 2)):
+    if sev and (flag is None or SEV_RANK[sev] < rank):
         return {"sev": sev, "issue": t("threat_issue", threat=L_["threat"][k], why=o["score"]["why"][k].rstrip(".")),
                 "key": f"threat:{k}"}
     return {"sev": flag["sev"], "issue": flag["issue"], "key": flag.get("topic")} if flag else None
@@ -947,6 +961,7 @@ def incomplete_view(R, o):
     }
 
 
+HB_MIN_OFFERS = 3  # offers at or above list (with no seller deadline) that make a call for highest and best the plan
 CERTAINTY_GAP = 5  # points: a smaller difference in certainty scores is "about the same", never more or most certain
 
 
@@ -1268,9 +1283,18 @@ def multi_view(R):
                                sure=L_["now_most" if certainty_side(most_certain["score"]["total"] - plan_score) > 0
                                        else "now_same"],
                                less=money(top_net - most_certain["ns"]["net_adj"]))})
+    # Three or more offers at or above list and no seller deadline to protect: calling for final offers is the plan,
+    # and the response to the top offer is its fallback (counter-rules.md, Highest and Best)
+    call_hb = not hb and not S["deadline"] and sum(o["price"] >= R["listing"]["list_price"] for o in R["active"]) >= HB_MIN_OFFERS
     if not hb:  # OFR-320: a call for highest and best already out isn't offered again
-        opts.append({"option": L_["opt_hb"], "net": L_["unknown"], "certainty": L_["varies"], "status": "caution",
-                     "recommended": False, "what": L_["opt_hb_what"]})
+        opt = {"option": L_["opt_hb"], "net": L_["unknown"], "certainty": L_["varies"],
+               "status": "caution", "recommended": False, "what": L_["opt_hb_what"]}
+        if call_hb:
+            opts[0].update(recommended=False, what=L_["opt_fallback_what"])
+            opt.update(status="good", recommended=True, what=L_["opt_hb_what_call"])
+            opts.insert(0, opt)
+        else:
+            opts.append(opt)
     if wait:  # the plan's response is the fallback once the final offers are in
         opts[0].update(recommended=False, what=L_["opt_fallback_what"])
         opts.insert(0, wait_option(hb))
@@ -1285,8 +1309,9 @@ def multi_view(R):
         when, what, also = wait_respond_by(R, hb, top, also)
         rb = (when, what, top)
     _, _, also = time_ordered(rb[0], rb[1], also)  # the comparison's box leads with the plan's deadline; the rest by time
-    keys =(["backup_lapses"] if lapse else []) + (
-        [f"highest_and_best_{'pending' if hb['pending'] else 'done'}"] if hb else [])
+    keys = (["backup_lapses"] if lapse else []) + (
+        [f"highest_and_best_{'pending' if hb['pending'] else 'done'}"] if hb else []) + (
+        ["highest_and_best_call"] if call_hb else [])
     return {
         "mode": "multi", "offer": top["id"], "offer_label": top["label"], "action": act,
         "headline": WAIT_HEADLINE if wait else act, "title": WAIT_TITLE if wait else title(act, top), "why": lead,
@@ -1325,9 +1350,15 @@ def net_sheet_rows(cols):
     return rows
 
 
+def counter_column(o):
+    """True when the net sheet carries the counter's column: only when the review counters (or a lapsed offer's
+    reference counter); iteration 16 eval 5: never beside Accept as Written, a backup or a decline."""
+    return bool(o["counter_rows"]) and o.get("action") in ("COUNTER", "INCOMPLETE")
+
+
 def sheet_columns(o, with_target=False):
     cols = [(L_["col_offered"], o["ns"]), (L_["col_downside"], o["ns_down"])]
-    if o["counter_rows"]:  # OFR-354, DS-106: a lapsed offer's counter is for reference, never a proposal
+    if counter_column(o):  # OFR-354, DS-106: a lapsed offer's counter is for reference, never a proposal
         cols.append((L_["col_counter_ref"] if o.get("action") == "INCOMPLETE" else L_["col_counter"], o["ns_counter"]))
     if with_target:
         cols.append((L_["col_target"], o["target"]))
@@ -1374,15 +1405,23 @@ def downside_caption(o, R):
 def target_basis(R, o):
     """The target's closing basis in words: one target per listing, on the recommended offer's closing date."""
     close = R.get("target_close") or o["close"]
-    return L_["tb_same"] if close == o["close"] else t("tb_other", close=day(close))
+    if close == o["close"]:
+        return L_["tb_same"]
+    # iteration 16 eval 6: with no recommended offer (every contract incomplete), the latest offer's closing
+    return t("tb_other" if R.get("ranked") else "tb_other_latest", close=day(close))
 
 
 def term_rows(o, R):
     """[(label, offered, benchmark, status, note)]: each term against the seller's preference or the local norm (one
-    set of norms for the review and the counter: L["norms"])."""
+    set of norms for the review and the counter: L["norms"]). Iteration 16: a term nobody gave (an assumption, said once
+    in What to Confirm) reads "Not provided" with no rating (status "none"), as the scorecard leaves it unscored, and
+    never prints the stand-in as the offered term; free-text terms read from the contract (personal property, occupancy,
+    other terms) cost the seller nothing the script can measure, so they're rated "neutral"."""
     L, S = R["listing"], R["seller"]
     rows = []
     T = L_["term"]
+    gone = set(o.get("assumed_terms") or ())  # the terms the review assumed (offer_engine.prepare_offer)
+    NP = L_["not_provided_cap"]
     ref = t("bench_cma", range=fmt.range(L["cma_low"], L["cma_high"])) if L["cma_provided"] else \
         t("bench_list", price=money(L["list_price"]))
     exposed = o["appraisal_risk"] and o["price"] - (oe.appraisal_line(L) + o["gap_cover"]) > 0  # same line as the engine
@@ -1396,7 +1435,12 @@ def term_rows(o, R):
     # iteration 10 eval 6: the loan amount and the lender from the package, when the listing file has them
     loan = " · " + t("loan", amount=money(o["loan_amount"])) if o["financed"] and o.get("loan_amount") else ""
     rows.append((T["financing"], fin_str(o) + loan, L_["bench_financing"], st, ""))
-    if o["financed"]:
+    if "approval" in gone:  # the scorecard leaves Approval / Funds Verified unscored: no rating here either
+        rows.append((T["approval"] if o["financed"] else T["pof"], NP,
+                     L_["bench_approval"] if o["financed"] else L_["bench_pof"], "none",
+                     (t("note_call_named", name=o["loan_officer"]) if o.get("loan_officer") else L_["note_call"])
+                     if o["financed"] else ""))
+    elif o["financed"]:
         ap = o["approval"]
         st = "good" if ap == "full_uw" else ("caution" if ap in ("du_approved", "preapproval") else "risk")
         lender = f" · {o['lender']}" if o.get("lender") else ""
@@ -1409,17 +1453,20 @@ def term_rows(o, R):
     N = L["norms"]  # OFR-15: same norms as the counter; national norms are said once, in the assumptions
     dep = oe.deposit_benchmark(o, L)  # iteration 10 eval 3: the scorecard rates against the same benchmark
     if o["deposit"] is None:
-        rows.append((T["deposit"], L_["not_provided_cap"], t("bench_deposit_pct", pct=fmt.pct(dep, 1, fixed=True)),
-                     "caution", L_["note_confirm_deposit"]))
+        rows.append((T["deposit"], NP, t("bench_deposit_pct", pct=fmt.pct(dep, 1, fixed=True)),
+                     "none", L_["note_confirm_deposit"]))
     else:
         p = o["deposit"] / o["price"]
         rows.append((T["deposit"], t("deposit_share", amount=money(o["deposit"]), pct=fmt.pct(p, 1, fixed=True)),
                      t("bench_deposit", pct=fmt.pct(dep, 1, fixed=True), amount=money(dep * o["price"])),
                      oe.deposit_status(o, L), ""))
     c, cn = o["seller_concessions"], N["concessions_pct"]
-    rows.append((T["concessions"], t("deposit_share", amount=money(c), pct=fmt.pct(c / o["price"], 1, fixed=True)) if c
-                 else money(0), t("bench_concessions", pct=fmt.pct(cn, 1, fixed=True)),
-                 "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
+    if "seller_concessions" in gone:
+        rows.append((T["concessions"], NP, t("bench_concessions", pct=fmt.pct(cn, 1, fixed=True)), "none", ""))
+    else:
+        rows.append((T["concessions"], t("deposit_share", amount=money(c), pct=fmt.pct(c / o["price"], 1, fixed=True)) if c
+                     else money(0), t("bench_concessions", pct=fmt.pct(cn, 1, fixed=True)),
+                     "good" if not c else ("caution" if c <= cn * o["price"] + 1 else "risk"), ""))
     ob = S["offered_buyer_broker_pct"]
     if not o.get("bb_from_listing"):  # OFR-259: paid by the listing broker from its fee, it isn't a seller cost to rate
         rows.append((T["bb"], t("pct_amount", pct=fmt.pct(o["buyer_broker_pct"], 2),
@@ -1428,16 +1475,24 @@ def term_rows(o, R):
                      "caution" if ob is None else ("good" if o["buyer_broker_pct"] <= ob + 1e-9 else "risk"), ""))
     if o["home_warranty"]:
         rows.append((T["warranty"], t("seller_pays", amount=money(o["home_warranty"])), L_["buyer_pays"], "caution", ""))
-    form = f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FARBAR else ""  # an assumed form is in the assumptions
-    note = (L_["note_walk_repairs"] if o["inspection_walkaway"] and o["repairs_owed"] else
+    # iteration 16 evals 2, 4: an assumed form is in the assumptions, never printed beside the period as a term
+    form = (f" ({o['contract_label']})" if o["contract_form"] in oe.cf.FARBAR and "contract_form" not in gone else "")
+    note = ("" if gone & {"contract_form", "inspection_walkaway"} else
+            L_["note_walk_repairs"] if o["inspection_walkaway"] and o["repairs_owed"] else
             L_["note_walk"] if o["inspection_walkaway"] else L_["note_repairs"] if o["repairs_owed"] else "")
-    rows.append((T["inspection"], t("days", n=o["inspection_days"]) + form, t("bench_days", n=N["inspection_days"]),
-                 "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
-                 note))
+    if "inspection_days" in gone:  # iteration 16 evals 1, 3: an assumed period is never rated (nor countered)
+        rows.append((T["inspection"], NP + form, t("bench_days", n=N["inspection_days"]), "none", note))
+    else:
+        rows.append((T["inspection"], t("days", n=o["inspection_days"]) + form, t("bench_days", n=N["inspection_days"]),
+                     "good" if o["inspection_days"] <= N["inspection_days"] else ("caution" if o["inspection_days"] <= 14 else "risk"),
+                     note))
     if o["financed"]:
         la = N["loan_approval_days"]
-        rows.append((T["loan_approval"], t("days", n=o["loan_approval_days"]), t("bench_days", n=la),
-                     "good" if o["loan_approval_days"] <= la else ("caution" if o["loan_approval_days"] <= max(30, la) else "risk"), ""))
+        if "loan_approval_days" in gone:
+            rows.append((T["loan_approval"], NP, t("bench_days", n=la), "none", ""))
+        else:
+            rows.append((T["loan_approval"], t("days", n=o["loan_approval_days"]), t("bench_days", n=la),
+                         "good" if o["loan_approval_days"] <= la else ("caution" if o["loan_approval_days"] <= max(30, la) else "risk"), ""))
         if o["appraisal_days"]:
             rows.append((T["gap"], money(o["appraisal_gap"]) if o["appraisal_gap"] else L_["none"],
                          L_["bench_gap"], "risk" if exposed else "good", ""))
@@ -1450,16 +1505,24 @@ def term_rows(o, R):
     st = "risk" if dl and o["close"] > dl else ("caution" if o["close"].weekday() >= 5 else "good")
     rb, rent = o.get("rent_back_days"), o.get("rent_back_monthly")  # OFR-281: a rent-back is a closing term
     rb = (t("rent_back", n=rb) + (L_["rent_free"] if rent == 0 else t("rent_monthly", amount=money(rent)) if rent else "")) if rb else ""
-    rows.append((T["closing"], t("close_days", close=wday(o["close"]), n=o["close_days"]) + rb,
-                 t("bench_closing", close=day(oe.prior_weekday(dl))) if dl else fmt.EMPTY, st,
-                 L_["note_weekend"] if o["close"].weekday() >= 5 else ""))
+    if "closing_days" in gone:
+        rows.append((T["closing"], NP + rb, t("bench_closing", close=day(oe.prior_weekday(dl))) if dl else fmt.EMPTY,
+                     "none", ""))
+    else:
+        rows.append((T["closing"], t("close_days", close=wday(o["close"]), n=o["close_days"]) + rb,
+                     t("bench_closing", close=day(oe.prior_weekday(dl))) if dl else fmt.EMPTY, st,
+                     L_["note_weekend"] if o["close"].weekday() >= 5 else ""))
     tb, cust = o["title_by"], L["title_customary_payer"]
     if tb or cust:
-        name = {"seller": L_["title_seller"], "buyer": L_["title_buyer"]}
-        rows.append((T["title"], name.get(tb, fmt.EMPTY), name.get(cust, fmt.EMPTY), "good" if tb == cust else "caution", ""))
+        name = {"seller": L_["title_seller"], "buyer": L_["title_buyer"], "buyer_regional": L_["title_buyer"]}
+        if not o.get("title_by_given"):  # iteration 16 evals 3, 5: the Para. 9(c) box or local custom, not the offer's term
+            rows.append((T["title"], NP, name.get(cust, fmt.EMPTY), "none", ""))
+        else:  # iteration 16 eval 7: the seller's own pick of the closing agent is never a caution; the buyer's is neutral
+            rows.append((T["title"], name.get(tb, fmt.EMPTY), name.get(cust, fmt.EMPTY),
+                         "good" if tb in (cust, "seller") else "neutral", ""))
     for key in ("personal_property", "occupancy", "other_terms"):  # terms read from the contract, as written
-        if o.get(key):
-            rows.append((T[key], str(o[key]), fmt.EMPTY, "caution", ""))
+        if o.get(key):  # iteration 16 eval 6: free text costs nothing the script can measure; a cost the agent reads is a flag
+            rows.append((T[key], str(o[key]), fmt.EMPTY, "neutral", ""))
     if o.get("riders") or o.get("addenda"):
         # ENG-11: the form and rider label from contract_forms ("Standard + As Is Rider (K)"); riders are listed after it
         label = o["contract_label"] if o["contract_form"] in oe.cf.FARBAR else ""
@@ -1596,7 +1659,8 @@ def timeline(o, R):
         rows.append(line(L_["tl_appraisal_loan"] if o.get("appraisal_in_loan") and not o["appraisal_protected"]
                          else L_["tl_appraisal"], o["appraisal_days"], "warm"))
         rows.append(line(L_["tl_loan"], o["loan_approval_days"], "warm"))
-    rows.append(line(L_["tl_sale"], o["sale_contingency_days"], "hot"))
+    if o["sale_contingency_days"]:  # iteration 16 evals 7, 8: no empty row for a contingency the offer doesn't have
+        rows.append(line(L_["tl_sale"], o["sale_contingency_days"], "hot"))
     # each rider's own window (Rider GG's compensation agreement, the insurance rider, attorney approval...): a
     # contingency, with its own cancel right, never a risk flag
     for code, d, what in o.get("rider_windows") or ():
@@ -1737,6 +1801,12 @@ def report_notes(R, mode, sid, offers, confirm):
         if any(o["repairs_owed"] and o["repair_reserve"] for o in R["offers"]):
             credit += L_["note_standard_instead"] if credit else L_["note_standard"]
         N.add("downside", t("note_downside", ref=ref, credit=credit), "info")
+    if any(o.get("bb_from_listing") for o in offers) and not S["listing_fee_assumed"]:
+        N.add("bb_from_listing", L_["note_bb_from_listing"], "info")  # the entered listing fee is the only commission line
+    N.add("commission", finance.COMMISSION_NOTE, "info")
+    N.add("income_tax", finance.INCOME_TAX_NOTE, "info")
+    if S.get("foreign_seller"):
+        N.add("firpta", L_["note_firpta"], "info")
     N.add("final", L_["note_final"], "info")
     N.add("certainty", L_["note_certainty"], "info")
     N.add("legal", t("note_legal", state=profiles.STATES.get(L.get("state") or "", L_["your_state"])), "info")
@@ -1801,7 +1871,7 @@ def single_doc(R, o, v, sid):
         "box": box,
         "follow": L_["follow_single"],
         "net_sheet": {**net_sheet(o, R), "head": L_["h_net"],
-                      "sub": L_["h_net_sub_counter"] if o["counter_rows"] else L_["h_net_sub"],
+                      "sub": L_["h_net_sub_counter"] if counter_column(o) else L_["h_net_sub"],
                       "captions": [{"term": L_["cap_downside"], "text": downside_caption(o, R)},
                                    {"term": L_["cap_target"], "text": t("cap_target_text", basis=target_basis(R, o))}]},
         "revive": ({"head": L_["box_revive"], "sub": L_["box_revive_sub"],
@@ -1810,7 +1880,8 @@ def single_doc(R, o, v, sid):
         "timeline": {**timeline(o, R), "h": L_["h_timeline"]},
         "terms": {"h": L_["h_terms"], "sub": L_["h_terms_sub"], "who_label": L_["th_buyer_agent"], "who": who,
                   "cols": [L_["th_term"], L_["th_offered_term"], L_["th_benchmark"], L_["th_rating"], L_["th_note"]],
-                  "rows": [{"term": a, "offered": b, "benchmark": c, "status": st, "rating": L_["rating"][st], "note": n}
+                  "rows": [{"term": a, "offered": b, "benchmark": c, "status": st,
+                            "rating": L_["rating"].get(st, fmt.EMPTY), "note": n}
                            for a, b, c, st, n in term_rows(o, R)]},
         "scorecard": {**scorecard(o), "h": L_["h_scorecard"], "sub": L_["h_scorecard_sub"],
                       "cols": [L_["th_criterion"], L_["th_weight"], L_["th_score"], L_["th_why"]]},

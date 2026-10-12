@@ -10,7 +10,8 @@ proposed counter; with 2+ active offers, a ranking and a response plan.
 Rule: the engine never stops on missing data. Every missing input gets a conservative default and is
 recorded as an assumption with an impact level (high / med / low), so the report can say what to confirm
 and mark itself Preliminary. The certainty score never reads such a stand-in: a criterion whose fact is missing isn't
-scored and the total is scaled over the rest (score_offer); only an offer with no fact any criterion reads stops.
+scored and the total is scaled over the rest (score_offer); only an offer with no fact any criterion reads stops. An
+assumed FAR/BAR form is the exception: it's scored as the AS IS form the net uses, so offers compare on the same criteria.
 Market costs (transfer tax, title, fees, commission, property tax, holding costs, inspection credit reserve) come
 from the built-in layers via shared.finance: local defaults where there are any (Florida), national estimates otherwise (named once in the notes), never another state's number. The listing file's
 `costs` block (a title quote, the transfer tax the skill looked up) wins over both.
@@ -208,6 +209,7 @@ class Costs:
         # OFR-253: a Florida value says Assumed wherever the notes describe it when the state came from the contract form
         default = f"Assumed {state} default" if self.state_assumed else f"{state} default"
         return {"deal": "this listing", "estimate": "national estimate", "state": default,
+                "state_average": f"{state} average effective rate",
                 "county": "county default", "mls": "MLS default",
                 "national": f"none in {state}; confirm local taxes with the title company"}.get(src, "market default")
 
@@ -744,7 +746,8 @@ def prepare_offer(o, L, S, A):
     if o["deposit"] is None:
         A.add(sc, "deposit", "unknown", "Escrow deposit not provided", "med")
         unknown.add("deposit")
-    o["seller_concessions"] = given(o, "seller_concessions", 0, A, sc, "Seller concessions not provided: assumed $0", "high")
+    o["seller_concessions"] = given(o, "seller_concessions", 0, A, sc, "Seller concessions not provided: assumed $0, so the net "
+                                  "leaves out any seller credit not yet stated", "high")
     # Rider GG signed broker to broker: the listing broker pays the buyer's broker from its own fee (listing agreement)
     o["bb_from_listing"] = listing_pays_buyer_broker(o)
     if o["bb_from_listing"]:  # OFR-259: read from Rider GG's signer box or the listing agreement; the agent confirms it
@@ -784,12 +787,13 @@ def prepare_offer(o, L, S, A):
     except cf.FormError as e:
         raise OfferError(f"Offer {k}: {e}") from e
     if form is None:
+        # iteration 16 (owner decision): an assumed form is scored as the form the net uses (AS IS), so every offer is
+        # scored on the same criteria; it stays a high-impact assumption, and the review is Preliminary until confirmed
         form = A.add(sc, "contract_form", cf.AS_IS,
-                     "Contract form not given: assumed FAR/BAR AS IS. The Standard form has no inspection walk-away and makes "
-                     "the seller pay repairs up to its repair limits, so confirm which form was used", "high") \
+                     "Contract form not given: assumed FAR/BAR AS IS, and the net and certainty score read it as AS IS. "
+                     "The Standard form has no inspection walk-away and makes the seller pay repairs up to its repair "
+                     "limits, so confirm which form was used", "high") \
             if L["farbar_market"] else cf.OTHER
-        if L["farbar_market"]:
-            unknown.add("contract_form")
     if form == cf.OTHER and raw_form and not o.get("contract_name"):  # OFR-113: keep the form's own name for the label
         o["contract_name"] = str(raw_form)
     o["contract_form"] = form
@@ -890,6 +894,7 @@ def prepare_offer(o, L, S, A):
         A.add(sc, "title_by", L["title_customary_payer"], f"Para. 9(c) box not given: the owner's title policy is "
               f"charged to the {L['title_customary_payer']} by local custom. Check which box is marked; the party who "
               "designates the Closing Agent pays it", "med")
+    o["title_by_given"] = bool(o.get("title_by"))  # iteration 16: the box as read, not local custom standing in for it
     o["title_by"] = o.get("title_by") or L["title_customary_payer"]
     o["title_payer"] = L["title_customary_payer"] if L["title_payer_deal"] or not by_contract else by_contract
     o["title_payer_by_contract"] = bool(by_contract) and o["title_payer"] != L["title_customary_payer"]
@@ -1174,7 +1179,11 @@ def auto_scores(o, L, S):
         else:
             gap = (f"{money(o['appraisal_gap'])} gap coverage" + (" (Appraisal Gap Addendum)" if o.get("appraisal_form") == "aga" else "")
                    if o["appraisal_gap"] else "no appraisal gap coverage")
-        why["appraisal"] = f"{money(over_hi)} over {ref}, {gap}" if over_hi > 0 else f"At or under {ref}, {gap}"
+        # iteration 16 (buyer-offer-strategy eval 1): where the price sits, said as it is: below or inside the range
+        where = (f"{money(over_hi)} over {ref}" if over_hi > 0 else
+                 ("Below the value range" if o["price"] < L["cma_low"] else "Inside the value range") if L["cma_provided"]
+                 else "Below list price" if o["price"] < L["list_price"] else "At list price")
+        why["appraisal"] = f"{where}, {gap}"
 
     rd = o["risk_days"]
     if o["sale_contingency_days"] and o["kickout"]:  # the seller keeps marketing; a back-up forces a waive-or-walk in 3 days
@@ -1212,7 +1221,10 @@ def auto_scores(o, L, S):
                            if margin >= 0 else
                            f"{fmt.date_short(o['close'], year=False)} close is {-margin} days after "
                            f"{fmt.date_short(dl, year=False)} deadline")
-    else:
+    elif S.get("close_speed_neutral") and S["priority"] != "speed":
+        # the seller's review: with no deadline and no need for speed, every closing date fits the seller's timeline
+        s["timeline"], why["timeline"] = 5, f"Closes in {o['close_days']} days; no seller deadline given, so any date fits"
+    else:  # the seller wants speed, or buyer-offer-strategy's read of how a listing agent weighs a faster close
         cd = o["close_days"]
         s["timeline"] = 5 if cd <= 30 else 4 if cd <= 45 else 3 if cd <= 60 else 2
         why["timeline"] = f"Closes in {cd} days (no seller deadline given)"
@@ -1257,7 +1269,7 @@ def score_inputs(o):
     return {"financing": ["financing"] + (["down_pct"] if o["financing"] == "conventional" else []),
             "approval": ["approval"],
             "appraisal": ["financing", "appraisal_contingency"],
-            "contingency": ["contract_form", "inspection_walkaway", "inspection_days", "loan_approval_days",
+            "contingency": ["inspection_walkaway", "inspection_days", "loan_approval_days",
                             "appraisal_contingency", "rider_dates"]
             + (["closing_days"] if o["risk_days"] >= o["close_days"] else []),  # the closing caps the windows
             "deposit": ["deposit"],
@@ -1300,6 +1312,17 @@ def score_offer(o, L, S):
                          "Give at least the financing type and the escrow deposit")
     total = fmt.half_up(100 * sum(w * s[k] / 5 for k, _, w in CRITERIA if s[k] is not None) / weight)
     return {"scores": s, "why": why, "unscored": unscored, "weight": weight, "total": total, "band": band(total)}
+
+
+def rank_certainty(score):
+    """The certainty total the ranking uses: the score with Appraisal Risk at full marks, since the downside net it's
+    paired with already caps the price at the top of the value range plus the gap cover (downside_price), and counting
+    the same risk twice would rank a high offer with an appraisal gap below a lower one. The displayed score is unchanged."""
+    s, weight = score["scores"], score["weight"]
+    if s.get("appraisal") is None:
+        return score["total"]
+    return fmt.half_up(100 * sum(w * (5 if k == "appraisal" else s[k]) / 5 for k, _, w in CRITERIA if s[k] is not None)
+                       / weight)
 
 
 # --- flags -------------------------------------------------------------------
@@ -1963,6 +1986,22 @@ def _counter_fmt(o, key, v, offered=False):
     return str(v)
 
 
+def gap_funds(o):
+    """The cash the package documents for an appraisal gap, on top of the down payment and deposits at the offered
+    price: a financed waiver's `gap_funds`, else the proof of funds less that cash; None when nothing documents it. 0
+    when a gap clause can't bind the buyer (FHA and VA protection, AGA-1 on a loan it doesn't fit). Closing costs aren't
+    taken out, as the proof_of_funds check counts them."""
+    if o["appraisal_protected"] or o.get("gap_intent_only"):
+        return 0
+    if o["appraisal_waived"]:
+        return o["gap_cover"]
+    pof = o.get("proof_of_funds")
+    if not pof:
+        return None
+    loan = o.get("loan_amount") or (o["price"] * (1 - o["down_pct"]) if o["financed"] else 0)
+    return max(0, pof - (o["price"] - loan))
+
+
 def propose_counter(o, L, S):
     """(terms, rows of (term, offered, counter, why)). The engine drafts every row from the rules in counter-rules.md.
     The agent's `counter.changes` (term -> value, checked by counter_changes) pin terms, and the engine still writes
@@ -1999,11 +2038,21 @@ def propose_counter(o, L, S):
     if stance == "terms_only":  # the offered price stands; the term rules below still apply
         pass
     # OFR-110: without a CMA the price is never countered down (list only stands in for the value)
-    elif uncovered and L["cma_provided"] and (not last.get("price") or o["price"] > ceiling):
+    elif uncovered and L["cma_provided"] and last.get("price") and o["price"] > ceiling:
         # ENG-2: with history the seller has named a price, so an offer above it is countered back to it, never below it
-        price = last["price"] if last.get("price") else rnd(hi, 1000, "down")
-        why = ("Top of the value range, so the appraisal can support it" if not last.get("price") else
-               RESTATE + ("; the gap coverage below covers the part above the value range" if price > hi else ""))
+        price = last["price"]
+        why = RESTATE + ("; the gap coverage below covers the part above the value range" if price > hi else "")
+    elif uncovered and L["cma_provided"] and not last.get("price"):
+        # counter-rules.md rule 1: the offered price stands and the gap row asks the buyer to cover the rest, unless the
+        # buyer's documented funds can't cover it; then the price comes down to what the appraisal and those funds carry,
+        # never below the price the offer's own gap coverage already protects (top of the range + gap cover)
+        funds = gap_funds(o)
+        if funds is not None and funds < o["price"] - hi:
+            cover = max(o["gap_cover"], funds)
+            price = min(o["price"], max(hi + o["gap_cover"], rnd(hi + cover, 1000, "down")))
+            why = ("Top of the value range, so the appraisal can support it" if price <= hi else
+                   f"Top of the value range plus the {money(price - hi)} gap the buyer can cover, so the appraisal "
+                   "can support it")
     elif o["price"] < ceiling:
         low_ball = L["cma_provided"] and o["price"] < L["cma_low"] and not last.get("price")
         firm = stance == "firm" and not low_ball
@@ -2030,6 +2079,8 @@ def propose_counter(o, L, S):
             why = (f"Deal holds if the appraisal lands at {money(rnd(hi, 1000))}" if L["cma_provided"] else
                    # OFR-110: without a CMA the price stands; list is only a stand-in for the value
                    "Covers the price above list; no CMA yet, so list stands in for the value (a CMA would firm it up)")
+            if gap_funds(o) is None:  # nothing in the package shows the cash for it yet
+                why += "; ask for proof of funds to cover it"
     if last.get("appraisal_gap") and o["appraisal_gap"] < last["appraisal_gap"] \
             and (gap or o["appraisal_gap"]) < last["appraisal_gap"] and not o["appraisal_protected"]:
         gap, why = last["appraisal_gap"], RESTATE
@@ -2333,8 +2384,10 @@ def check_fractions(node, where="file"):
         raise OfferError(str(e)) from e
 
 
-def analyze(data, market=None, cma=None):
-    """Full analysis of a listing file (see the skills' listing-file / buyer-file references)."""
+def analyze(data, market=None, cma=None, seller_review=False):
+    """Full analysis of a listing file (see the skills' listing-file / buyer-file references). `seller_review`: the
+    seller's own review (seller-offer-review), where closing speed isn't scored without a deadline or a speed priority;
+    buyer-offer-strategy leaves it off, so a faster close still reads stronger to the listing agent it models."""
     check_fractions(data)
     if cma:
         data = apply_cma(data, cma)
@@ -2359,6 +2412,7 @@ def analyze(data, market=None, cma=None):
         A.add("listing", "state", None, "Property's state not given: national cost estimates are used (no state's local "
               "costs, and no Florida rules without a FAR/BAR contract). Give the state for local costs", "high")
     L, S = prepare_listing(data, A, costs)
+    S["close_speed_neutral"] = seller_review
     # the agent's counter terms are checked before anything runs: every problem at once (`field: problem → fix`)
     probs = choices.pick((data.get("seller") or {}).get("priority"), PRIORITIES, "seller.priority", default="balanced")[1]
     probs += [p for o in data.get("offers") or [] for p in counter_changes(o, L)[1] + offer_field_problems(o)]
@@ -2408,13 +2462,14 @@ def analyze(data, market=None, cma=None):
     for o in offers:  # each offer's own target, on its own closing date (the recommendation compares with it)
         o["target"] = target_net(L, S, costs, o["close"], o)
     pen = RISK_PENALTY[S["priority"]]
-    for o in active:
-        o["rank_value"] = o["ns_down"]["net_adj"] - (100 - o["score"]["total"]) / 100 * pen * L["list_price"]
+    for o in active:  # the downside net already prices a low appraisal, so the ranking leaves that criterion out
+        o["rank_value"] = o["ns_down"]["net_adj"] - (100 - rank_certainty(o["score"])) / 100 * pen * L["list_price"]
     ranked = sorted(active, key=lambda o: o["rank_value"], reverse=True)
     res["ranked"] = ranked
     # The report's one target closing (report_target_close); OFR-339: when the listing broker pays the buyer's broker
     # on every active offer, so does the report's target
-    res["target_close"] = report_target_close(ranked, active, L, S)
+    # iteration 16 eval 6: with no offer that can be reviewed, the offers the review covers set it (never "30 days out")
+    res["target_close"] = report_target_close(ranked, active or live_offers, L, S)
     res["target"] = target_net(L, S, costs, res["target_close"],
                                bb_from_listing=bool(active) and all(o.get("bb_from_listing") for o in active))
     res["mode"] = "multi" if len(active) >= 2 else "single"

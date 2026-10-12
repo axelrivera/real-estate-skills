@@ -16,4 +16,6 @@
 
 {{one line per rules.lines item whose text starts "Not stated in the contract": "**{{label}}:** {{text}}"}}
 
+{{when notice_timing is set: "**Notice Timing:** {{notice_timing}}"}}
+
 {{the closing notices, one paragraph each, when there are any: the agent's disclaimers from their profile, verbatim (a blank line in them starts a new paragraph); then, when the profile has the brokerage and its license, office address or phone, "{{brokerage}}, Lic. {{brokerage_license}}, {{brokerage_address}}, {{brokerage_phone}}." with the missing ones left out}}

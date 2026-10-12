@@ -66,10 +66,13 @@ def text_of(doc):
     return html.unescape(re.sub(r"<[^>]+>", " ", doc))
 
 
-def ics_events(text):
-    """{row key: (date, time or None, title)} from the calendar."""
+def ics_events(text, cancelled=False):
+    """{row key: (date, time or None, title)} from the calendar: the live events, or with `cancelled` the
+    STATUS:CANCELLED ones (rows done or removed since an earlier import)."""
     out = {}
     for ev in re.sub(r"\r?\n ", "", text).split("BEGIN:VEVENT")[1:]:  # unfolded (a text-mode read drops the \r)
+        if ("STATUS:CANCELLED" in ev) != cancelled:
+            continue
         key = re.search(r"UID:([^\r\n]+?)-[0-9a-f]{10}@", ev).group(1)
         m = re.search(r"DTSTART(?:;VALUE=DATE|;TZID=[^:]+)?:(\d{8})(?:T(\d{4}))?", ev)
         title = re.search(r"SUMMARY:([^\r\n]*)", ev).group(1).replace("\\,", ",").replace("\\;", ";")
@@ -213,6 +216,8 @@ class Generated(unittest.TestCase):
                 # which the deal sets, so the two agree
                 want = timeline_render.calendar_rows(t)
                 self.assertEqual(set(events), {r["key"] for r in want})
+                self.assertEqual(set(ics_events(cal, cancelled=True)),
+                                 {r["key"] for r in timeline_render.cancelled_rows(t)})
                 for r in want:
                     # the calendar and the PDF agree: the same day; only an appointment (closing, possession) is timed,
                     # at its time; a deadline is all-day and its title carries the time the PDF prints after the day

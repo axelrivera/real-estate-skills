@@ -255,7 +255,12 @@ class PropertyTax(unittest.TestCase):
     def test_annual_tax_from_rate_or_millage(self):
         data = fixture("texas-single.json")
         data["listing"].pop("annual_tax")
-        self.assertEqual(review.analyze(data)["listing"]["annual_tax"], round(610000 * 0.011))  # national estimate
+        R = review.analyze(data)  # iteration 16: Texas's average effective rate, before the national 1.1%
+        self.assertEqual(R["listing"]["annual_tax"], round(610000 * 0.0136))
+        tax = next(a for a in R["missing"] if a["field"] == "annual_tax")
+        self.assertIn("Texas average effective rate", tax["why"])
+        out = review.result(R)
+        self.assertIn("tax proration at 1.4% of list price (Texas average effective rate)", out["estimated_costs"])
         data["listing"]["tax_rate"] = 0.02
         self.assertEqual(review.analyze(data)["listing"]["annual_tax"], 12200)
         data["listing"].pop("tax_rate")

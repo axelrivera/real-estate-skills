@@ -2,6 +2,7 @@
  "agent_notes": {
   "count": 2
  },
+ "calendar_sent": false,
  "chat_notes": {
   "count": 1
  },
@@ -38,6 +39,9 @@
  "documents": [
   "contract"
  ],
+ "dropped": {
+  "count": 0
+ },
  "effective": {
   "date": "2026-11-20",
   "signed": null
@@ -93,6 +97,7 @@
  "note_keys": {
   "count": 0
  },
+ "notice_timing": null,
  "ok": true,
  "open_rights": {
   "count": 0
