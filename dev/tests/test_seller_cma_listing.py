@@ -257,6 +257,49 @@ class Relist(unittest.TestCase):
         self.assertEqual((r["relist"]["failed_price"], r["relist"]["status"], r["mls"]), (474900, "expired", "Stellar"))
         self.assertNotIn("relist", stats([subject_row("ACT")], "--own-listing"))
 
+    def test_top_option_keeps_its_own_ratio(self):
+        """The relist's top option takes the sale-to-original-list ratio, held at the range's low end and above the
+        lower prices; the floor note names only the options held there at the market's ratio."""
+        R = report()
+        R["export"] = EVAL_EXPORT
+        R["pricing"]["stance"] = "draw_offers"  # the recommended price a step under the cap leaves room for the top
+        C, _ = run(R)
+        b = C["expected_sale_basis"]
+        top = C["strategies"][b["premium"]]
+        self.assertIn(b["premium"], b["floored"])
+        self.assertEqual((top["role"], b["premium_source"]), ("top", "original"))
+        notes = " ".join(C["notes"])
+        self.assertIn(compute.t("note_expected_premium", price=compute.money(top["list_price"]),
+                                ratio=compute.fmt.pct(b["premium_ratio"], 1, fixed=True)), notes)
+        lower = [x["expected_sale"] for x in C["strategies"] if x["list_price"] < top["list_price"]]
+        self.assertEqual(top["expected_sale"], max(max(lower) + 500, C["recommendation"]["low"],
+                         compute.fmt.half_up(top["list_price"] * b["premium_ratio"] + top["seller_credit"], 500)))
+        self.assertIn(compute.t("note_expected_premium_floor", sale=compute.money(top["expected_sale"])), notes)
+        self.assertNotIn(f"the {compute.money(top['list_price'])} and", notes)
+
+    def test_history_is_told_once(self):
+        """Eval 16: the Bottom Line printed the relist's history twice (price_history, then history_line); a pending
+        listing treated as failed had an empty history_line."""
+        R = report()
+        R["export"] = EVAL_EXPORT
+        C, _ = run(R)
+        self.assertTrue(C["price_history"] and C["history_line"])
+        self.assertEqual(C["history_more"], "")  # the failed listing is price_history's alone
+        html = seller_render.build_html(C, AGENT).replace("&#x27;", "'")
+        self.assertEqual(html.count("$474,900, first listed at"), 0)
+        R["listing_history"] = [{"status": "expired", "price": 229900, "ended": "2017-09-30", "days_on_market": 184}]
+        C, _ = run(R)
+        self.assertIn("$229,900", C["history_more"])
+        self.assertNotIn("$474,900", C["history_more"])
+        R = report()  # a pending listing the agent treats as failed (--listed-as failed)
+        R["relist"] = {"failed_price": 474900, "status": "pending", "days_on_market": 36, "original_price": 484900}
+        C, _ = run(R)
+        self.assertIn("$474,900", C["history_line"])
+        self.assertTrue(C["history_line"].startswith(compute.L["hist_pending"]))
+        self.assertEqual(C["history_more"], "")
+        R["relist"]["status"] = "active"
+        self.assertTrue(run(R)[0]["history_line"].startswith(compute.L["hist_active"]))
+
 
 if __name__ == "__main__":
     unittest.main()

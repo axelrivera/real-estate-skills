@@ -13,7 +13,7 @@
   "count": 6
  },
  "chat_notes": {
-  "count": 3
+  "count": 4
  },
  "competing_offer_caveat": null,
  "competition": {
@@ -328,8 +328,12 @@
    1,
    2
   ],
-  "market_ratio": 0.97,
-  "raised_by": null,
+  "floored": {
+   "count": 0
+  },
+  "premium": 0,
+  "premium_ratio": 0.9386,
+  "premium_source": "original",
   "ratio": 0.97,
   "ratio_display": "97.0%",
   "source": "assumed"
@@ -537,7 +541,7 @@
  },
  "net": {
   "after_holding": [
-   428912,
+   424690,
    424636,
    415497
   ],
@@ -562,7 +566,7 @@
   "rows": [
    {
     "amounts": [
-     472000,
+     467500,
      467000,
      457000
     ],
@@ -582,7 +586,7 @@
    },
    {
     "amounts": [
-     -11800,
+     -11688,
      -11675,
      -11425
     ],
@@ -594,7 +598,7 @@
    },
    {
     "amounts": [
-     -11800,
+     -11688,
      -11675,
      -11425
     ],
@@ -606,7 +610,7 @@
    },
    {
     "amounts": [
-     -3304,
+     -3273,
      -3269,
      -3199
     ],
@@ -618,7 +622,7 @@
    },
    {
     "amounts": [
-     -2435,
+     -2412,
      -2410,
      -2360
     ],
@@ -654,7 +658,7 @@
    },
    {
     "amounts": [
-     430516,
+     426294,
      425826,
      416446
     ],
@@ -678,7 +682,7 @@
    },
    {
     "amounts": [
-     428912,
+     424690,
      424636,
      415497
     ],
@@ -690,13 +694,13 @@
    }
   ],
   "totals": [
-   430516,
+   426294,
    425826,
    416446
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 13415,
+ "net_spread": 9193,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -706,10 +710,11 @@
   "payment",
   "commission",
   "not_included",
+  "income_tax",
   "flood"
  ],
  "notes": {
-  "count": 9
+  "count": 10
  },
  "notices": {
   "count": 3
@@ -897,15 +902,15 @@
    "agent": false,
    "closing": "2026-12-24",
    "down": 23750,
-   "expected_sale": 472000,
+   "expected_sale": 467500,
    "expected_sale_source": "rule",
    "hold_months": 3.06,
    "list_price": 475000,
    "months_to_contract": 1.61,
    "name": "Premium",
-   "net": 430516,
-   "net_after_holding": 428912,
-   "net_vs_recommended": 4276,
+   "net": 426294,
+   "net_after_holding": 424690,
+   "net_vs_recommended": 54,
    "payment": 4128,
    "recommended": false,
    "role": "premium",

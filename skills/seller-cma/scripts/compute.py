@@ -37,10 +37,12 @@ CONTRACT_TO_CLOSE_MONTHS = 1  # a typical financed contract-to-close period, aft
 MONTH_DAYS = 30.44
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 NEAR_RECOMMENDED = 0.01  # CMA-288: options within 1% of each other aren't distinct strategies: the script drops one
+ADJUSTED_STEP = 100  # adjusted comp values and their median print to the nearest $100 (method.md)
 OPTION_STEP_MIN, OPTION_STEP_SHARE = 5000, 0.02  # one step between options: $5,000 or 2% of the price, the larger
 # The options the script builds, by role: a new listing's are the three stances (method.md, The Pricing Options); a
 # reprice keeps Stay at Current Price and its cuts; a relist a step above and below the recommended price
 STANDARD_ROLES = cma.STANCES
+ABOVE_MARKET_ROLES = ("premium", "top")  # the option priced above the market: its expected sale uses its own ratio
 LISTING_ROLES = {"standard": STANDARD_ROLES, "reprice": ("stay", "recommended", "competing"),
                  "relist": ("top", "recommended", "competing")}
 ROLES = STANDARD_ROLES + ("stay", "top", "recommended", "competing")
@@ -684,6 +686,8 @@ def price_history(reprice=None, relist=None):
 
 
 HISTORY_STATUSES = {"expired": "expired", "withdrawn": "withdrawn", "canceled": "canceled", "cancelled": "canceled"}
+# A live listing the agent chose to treat as failed (`--listed-as failed`): the relist's own status words
+RELIST_STATUSES = {**HISTORY_STATUSES, "pending": "pending", "active": "active"}
 
 
 def _when(value):
@@ -718,11 +722,13 @@ def listing_history(R, homes, relist):
                 events.append({"status": h["status"].lower(), "price": h["current_price"],
                                "original_price": h.get("original_list_price"), "when": _when(d.isoformat() if d else None),
                                "days": h.get("days_on_market")})
-    if relist and str(relist.get("status") or "expired").lower() in HISTORY_STATUSES \
+    if relist and str(relist.get("status") or "expired").lower() in RELIST_STATUSES \
             and not any(e["price"] == relist["failed_price"] for e in events):
-        events.append({"status": HISTORY_STATUSES[str(relist.get("status") or "expired").lower()],
+        events.append({"status": RELIST_STATUSES[str(relist.get("status") or "expired").lower()],
                        "price": relist["failed_price"], "original_price": relist.get("original_price"), "when": None,
                        "days": relist.get("days_on_market")})
+    for e in events:  # the relist's failed listing, which price_history already names
+        e["relist"] = bool(relist) and e["price"] == relist["failed_price"]
     for e in events:
         first = e["original_price"] if isinstance(e["original_price"], (int, float)) and e["original_price"] > e["price"] else None
         e["text"] = (L["hist_" + e["status"]] + (t("hist_in", when=e["when"]) if e["when"] else "")
@@ -763,19 +769,20 @@ def stay_rule(R, homes, x, median_adjusted, split):
 
 def fill_expected_sales(R, strategies, stats, stay, competing):
     """Each option's expected sale by one rule, so options that differ in price differ in expected sale: its list
-    price times ONE ratio, plus its own seller credit, to the nearest $500.
+    price times the market's ratio, plus its own seller credit, to the nearest $500.
 
     The ratio is the recent sale-to-FINAL-list (net of seller-paid costs): the export's when it carries final list
     prices; else `market.sale_to_list`; else, with an export, its sale-to-original-list when that's at least the 97%
     assumption (a final price is never above the original one, so the final ratio is at least that); else 97%
-    assumed. When that ratio would put an option listed inside the supported range under the range, the ratio is
-    raised for every option to the one that puts it at the range's low end: the comps (already net of seller credits)
-    say the home is worth at least that, and one ratio keeps every option's place, where clamping each option to the
-    floor would give two prices the same sale. Never above its list price (except the competing-offer option, the
-    last) or the top of the range. Then by list price a higher price expects at least $500 more than a lower one (for
-    an agent's own figure or credit in between), and a lower one at least $500 less than a higher one's rule figure (a
-    market selling over list). An expected_sale in pricing.options is the agent's figure and is kept. Fills the
-    strategies in place; returns the basis for the note."""
+    assumed. Every option uses that one ratio but the option priced above the market (Premium, or a relist's top of the
+    range): it takes the recent sale-to-ORIGINAL-list when the export has original list prices, since a price above
+    the market tends to sell only after the cuts the final-list ratio leaves out, else the market ratio. An option
+    listed inside the supported range whose sale would land under the range is held at the range's low end (the comps,
+    already net of seller credits, say the home is worth at least that); no other option moves. Never above its list price (except the competing-offer option, the last) or the top
+    of the range. Then by list price a higher price expects at least $500 more than a lower one (two options held at
+    the floor, or an agent's own figure or credit in between), and a lower one at least $500 less than a higher one's
+    rule figure (a market selling over list). An expected_sale in pricing.options is the agent's figure and is kept.
+    Fills the strategies in place; returns the basis for the note."""
     m = R.get("market") or {}
     original = stats.get("sale_to_original_list_recent")
     if stats.get("sale_to_final_list_recent"):
@@ -790,18 +797,16 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     filled = [i for i, x in enumerate(strategies) if i != stay and x.get("expected_sale") is None]
     agent = [i for i, x in enumerate(strategies) if i != stay and i not in filled]
     cap = {i: high if competing and i == last else min(high, strategies[i]["list_price"]) for i in filled}
-    credit = {i: strategies[i].get("seller_credit") or 0 for i in filled}
-    # the ratio each option inside the range needs to sell at the range's low end; the highest need sets the one ratio
-    need = {i: (low - credit[i]) / strategies[i]["list_price"] for i in filled if cap[i] >= low}
-    neediest = max(need, key=need.get, default=None)
-    raised_by = neediest if neediest is not None and need[neediest] > ratio else None
-    used = need[raised_by] if raised_by is not None else ratio
-    capped = False
+    premium = next((i for i in filled if strategies[i].get("role") in ABOVE_MARKET_ROLES), None)
+    premium_ratio, premium_source = (original, "original") if original else (ratio, "market")
+    capped, floored = False, []
     for i in filled:
         x = strategies[i]
-        v = fmt.half_up(x["list_price"] * used + credit[i], EXPECTED_STEP)
-        if i in need:
-            v = max(v, low)  # the $500 rounding never takes the raised option back under the range
+        v = fmt.half_up(x["list_price"] * (premium_ratio if i == premium else ratio) + (x.get("seller_credit") or 0),
+                        EXPECTED_STEP)
+        if cap[i] >= low and v < low:  # listed inside the range: never expects less than the value the comps support
+            v = low
+            floored.append(i)
         capped |= v > cap[i]
         x["expected_sale"], x["expected_sale_source"] = min(v, cap[i]), "rule"
     order = sorted((i for i in range(len(strategies)) if i != stay), key=lambda i: strategies[i]["list_price"])
@@ -820,9 +825,22 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
         ceiling = x["expected_sale"]
     for i in agent:
         strategies[i]["expected_sale_source"] = "agent"
-    return {"ratio": used, "ratio_display": fmt.pct(used, 1, fixed=True), "market_ratio": ratio,
-            "market_ratio_display": fmt.pct(ratio, 1, fixed=True), "source": source, "filled": filled,
-            "agent": agent, "capped": capped, "raised_by": raised_by}
+    return {"ratio": ratio, "ratio_display": fmt.pct(ratio, 1, fixed=True), "source": source, "filled": filled,
+            "agent": agent, "capped": capped, "floored": floored, "premium": premium,
+            "premium_ratio": premium_ratio if premium is not None else None,
+            "premium_ratio_display": fmt.pct(premium_ratio, 1, fixed=True) if premium is not None else None,
+            "premium_source": premium_source if premium is not None else None}
+
+
+def expected_sub(x, floored):
+    """The line under the recommended option's expected sale, true to what that figure rests on: competing offers
+    only for the option whose own basis is competing offers (and never as a promise), the comps' floor when the range
+    held it there, else the market's sale-to-list."""
+    if x.get("role") == "competing":
+        return L["deck_expected_sub_competing"]
+    if floored:
+        return L["deck_expected_sub_floor"]
+    return L["deck_expected_sub" if x["expected_sale"] < x["list_price"] else "deck_expected_sub_at"]
 
 
 # --- the launch and each option's closing ---------------------------------------------------------------------------------
@@ -841,8 +859,9 @@ def months_to_contract(x):
 
 def option_closings(R, strategies, as_of, launch):
     """One closing date per option, for its tax proration and its holding costs alike: its own `closing_date`; else the
-    later of costs.expected_closing_date (the seller's goal) and the launch date plus its time to contract plus a month
-    to close (a slower price can't close by the goal); None with neither. Holding runs from the report date to it."""
+    launch date plus its time to contract plus a month to close; else (no time) costs.expected_closing_date; None with
+    neither. The seller's goal is a deadline, never a floor: an option that would close sooner keeps its own date, and
+    one that would close later is named by goal_misses. Holding runs from the report date to it."""
     target = _date((R.get("costs") or {}).get("expected_closing_date"), "expected_closing_date")
     go = date.fromisoformat(launch["date"])
     out = []
@@ -850,7 +869,7 @@ def option_closings(R, strategies, as_of, launch):
         own = _date(x.get("closing_date"), f"pricing.strategies[{i}].closing_date")
         months = months_to_contract(x)
         est = go + timedelta(days=fmt.half_up((months + CONTRACT_TO_CLOSE_MONTHS) * MONTH_DAYS)) if months is not None else None
-        closing = own or (max(d for d in (target, est) if d) if target or est else None)
+        closing = own or est or target
         out.append({"date": closing, "months_to_contract": months,
                     "hold_months": round(max((closing - as_of).days, 0) / MONTH_DAYS, 2) if closing else None})
     return out
@@ -1080,10 +1099,16 @@ def insurance_line(R, market):
 
 # --- comps, strongest match, market -------------------------------------------------------------------------------------
 
-def median_rounded(median_adjusted, count):
-    """CMA-265: an even number of comps has a midpoint median: shown to the nearest $100; an odd count's median is a
-    comp's own adjusted value, kept to the dollar. Every figure quoted from the median uses this value."""
-    return fmt.half_up(median_adjusted, 1 if count % 2 else 100)
+def median_rounded(median_adjusted, count=None):
+    """CMA-265: the median as shown, to the nearest $100 like every adjusted value (method.md: an odd seller credit
+    gives $433,729, shown $433,700), so an odd count's median prints as its comp does. Every figure quoted from the
+    median uses this value; the math keeps the exact one."""
+    return fmt.half_up(median_adjusted, ADJUSTED_STEP)
+
+
+def adjusted_money(value):
+    """An adjusted comp value as printed: to the nearest $100 (method.md, Adjustments)."""
+    return money(value, ADJUSTED_STEP)
 
 
 def strongest_comp(cards, low, high):
@@ -1130,7 +1155,7 @@ def comp_cards(cards, homes, best):
         if row.get("distance") is not None:
             meta.append(t("meta_dist", n=fmt.num(row["distance"], 1)))
         out.append({"address": cma.display_address(c["address"]), "adjusted": led.total(),
-                    "adjusted_display": money(led.total()), "adjusted_k": fmt.k(led.total()),
+                    "adjusted_display": adjusted_money(led.total()), "adjusted_k": fmt.k(led.total()),
                     "sold_price": c["sold_price"], "close_date": closed.isoformat() if closed else None, "meta": meta,
                     "lines": [[ln["label"], money(ln["amount"], style="signed") if ln["key"] != "sold" else money(ln["amount"])]
                               for ln in led],
@@ -1248,11 +1273,20 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
               else L["note_option_credit_none"], "estimate")
     # what the expected sales rest on: once, here (never also under the pricing table or in the method)
     if basis["filled"]:
-        parts = [t("note_expected_" + basis["source"], ratio=basis["market_ratio_display"],
+        parts = [t("note_expected_" + basis["source"], ratio=basis["ratio_display"],
                    since=cma.day_words(fmt.to_date(basis["split"])) if basis.get("split") else "")]
-        if basis["raised_by"] is not None:
-            parts.append(t("note_expected_raised", price=money(strategies[basis["raised_by"]]["list_price"]),
-                           ratio=basis["ratio_display"]))
+        pi = basis["premium"]
+        own = pi is not None and basis["premium_source"] == "original" and basis["premium_ratio"] != basis["ratio"]
+        held = [i for i in basis["floored"] if not (own and i == pi)]  # at the market's ratio; Premium's own is below
+        if held:
+            parts.append(t("note_expected_floor" if len(held) == 1 else "note_expected_floor_many",
+                           prices=cma._and([money(strategies[i]["list_price"]) for i in held]),
+                           low=money(R["recommendation"]["low"])))
+        if own:
+            parts.append(t("note_expected_premium", price=money(strategies[pi]["list_price"]),
+                           ratio=basis["premium_ratio_display"]))
+            if pi in basis["floored"]:
+                parts.append(t("note_expected_premium_floor", sale=money(strategies[pi]["expected_sale"])))
         if basis["capped"]:
             parts.append(L["note_expected_limits_competing" if strategies[-1]["role"] == "competing"
                            else "note_expected_limits"])
@@ -1267,6 +1301,7 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
         N.add("competing", t("note_competing", price=money(strategies[competing_caveat]["list_price"])), "info")
     if stay_caveat:
         N.add("stay_caveat", t("note_stay_caveat", price=money(strategies[stay]["list_price"])), "info")
+    has_tax = any(led.has("tax_proration") or led.has("tax_prior_year") for led in leds)
     if net["holding"]:
         parts = []
         if net["payoff"]:
@@ -1279,10 +1314,11 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
         loan = cma._and(parts) + ("" if net["payoff"] else "; " + L["note_holding_no_loan" if net["no_mortgage"]
                                                                    else "note_holding_loan_unknown"])
         text = t("note_holding", monthly=money(net["monthly"], 10), loan=loan)
+        if has_tax:  # without a tax bill the tax is in neither: the not-included note says so, once
+            text += " " + L["note_holding_tax"]
         if net["left_out"]:
             text += " " + t("note_holding_left_out", items=" and ".join(net["left_out"]))
         N.add("holding", text, "assumption" if net["payoff"] and not costs.get("mortgage_rate") else "estimate")
-    has_tax = any(led.has("tax_proration") or led.has("tax_prior_year") for led in leds)
     if has_tax:
         bill_paid = costs.get("current_tax_bill_paid")
         bill_month = market.get("property_tax.bill_month") or TAX_BILL_MONTH
@@ -1324,6 +1360,7 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
         left.append(L["not_included_tax"])
     left.append(L["not_included_repairs"])
     N.add("not_included", t("note_not_included", items=cma._and(left)), "info")
+    N.add("income_tax", finance.INCOME_TAX_NOTE, "info")
     if pay:
         N.add("payment", payment_note(R, pay), "estimate")
         N.add("flood", pay["flood"]["note"], "info")
@@ -1430,7 +1467,7 @@ def comps_first(R, market, homes=()):
         "adjusted_min": min(values), "adjusted_max": max(values),
         "range": {"low": rng["low"], "high": rng["high"], "display": fmt.range(rng["low"], rng["high"]),
                   "override": rng["override"]},
-        "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
+        "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": adjusted_money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
         "warnings": warnings, "warning_keys": warning_keys, "market_notes": market.notes,
     }
@@ -1683,7 +1720,7 @@ def compute(R, market, homes, data_file=None):
         "range_k": fmt.range(rec["low"], rec["high"], fmt.k),
         "midpoint": (rec["low"] + rec["high"]) / 2,
         "expected_sale": expected_rec, "expected_sale_display": t("sum_expected_value", amount=money(expected_rec)),
-        "expected_sub": L["deck_expected_sub" if expected_rec < rec["list_price"] else "deck_expected_sub_at"],
+        "expected_sub": expected_sub(strategies[ri], ri in basis["floored"]),
         "position": L[pos_key],
         "line": t("line_recommendation", low=money(rec["low"]), high=money(rec["high"]), median=money(shown),
                   price=money(rec["list_price"]), position=L[pos_key], vs=vs_median(rec["list_price"], shown)),
@@ -1698,6 +1735,9 @@ def compute(R, market, homes, data_file=None):
     C["reprice"], C["relist"], C["listing_history"] = reprice_out, relist_out, history
     C["history_line"] = " ".join(e["text"] for e in history)
     C["price_history"] = (reprice_out or relist_out or {}).get("price_history")
+    # beside price_history, only the listings it doesn't already name, so no listing is told twice
+    C["history_more"] = (" ".join(e["text"] for e in history if not e["relist"]) if C["price_history"]
+                         else C["history_line"])
     C["means"] = list(R.get("means") or [])
     card_models = comp_cards(cards, homes, best)
     highest = max(range(len(cards)), key=lambda i: (cards[i]["sold_price"], i))
@@ -1707,15 +1747,16 @@ def compute(R, market, homes, data_file=None):
         "intro": comps.get("intro", ""), "count_line": comps_count_line(cards, homes, split),
         "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": card_models, "lean": comps.get("lean", ""),
-        "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), money(r[3])] for r in comps["summary_rows"]],
+        "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), adjusted_money(r[3])] for r in comps["summary_rows"]],
         "subject_row": [rw("subject_row"), money(rec["list_price"]), fmt.EMPTY, t("range_cell", range=C["recommendation"]["range_k"])],
-        "summary_line": t("line_comps_summary", lo=money(min(values)), hi=money(max(values)), median=money(shown)),
+        "summary_line": t("line_comps_summary", lo=adjusted_money(min(values)), hi=adjusted_money(max(values)),
+                          median=money(shown)),
         "strongest": {"index": best, "address": card_models[best]["address"],
                       "line": t("line_strongest", address=card_models[best]["address"])},
         "highest_line": t("line_highest", price=money(hi_card["sold_price"]), address=hi_card["address"],
                           when=t("line_highest_when", date=fmt.date_long(hi_card["close_date"])) if hi_card["close_date"] else "")}
     C["comps_table"] = [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "seller_paid_display": money(r[2]),
-                         "adjusted_display": money(r[3])} for r in comps["summary_rows"]]
+                         "adjusted_display": adjusted_money(r[3])} for r in comps["summary_rows"]]
     C["time_adjustment"] = time_info
     C["condition"] = cond_info
     C["scatter"] = scatter_model(R, s, pts, fit, rec, rw) if pts else None
@@ -1745,8 +1786,8 @@ def compute(R, market, homes, data_file=None):
     C["strategies"], C["recommended_index"] = strat, ri
     C["listing_kind"], C["options_merged"] = built["kind"], [list(m) for m in built["merged"]]
     C["launch"] = launch
-    C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "market_ratio", "source", "filled",
-                                                       "agent", "capped", "raised_by")}
+    C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "source", "filled", "agent", "capped",
+                                                       "floored", "premium", "premium_ratio", "premium_source")}
     C["net"] = {"rows": rows, "totals": totals, "after_holding": after, "holding": [r["amounts"] for r in rows
                                                                                       if r["key"] == "holding"][0] if after else None,
                 "monthly": fmt.half_up(net["monthly"]) if net["holding"] else None,

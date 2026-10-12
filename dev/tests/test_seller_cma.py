@@ -226,6 +226,7 @@ class Stance(unittest.TestCase):
         self.assertEqual(C["strategies"][0]["role"], "market")
         self.assertEqual(sorted(C["options_merged"]), [["draw_offers", "market"], ["premium", "market"]])
         self.assertEqual(C["note_keys"].count("options_merged"), 1)
+        self.assertEqual(C["note_keys"].count("income_tax"), 1)  # proceeds are before income tax on the sale
         self.assertNotIn("options_merged", run(report())[0]["note_keys"])
 
     def test_the_suggestion_when_left_out_and_a_reason_when_it_differs(self):
@@ -352,17 +353,40 @@ class OneClosing(unittest.TestCase):
         C, _ = run(R)
         as_of = date.fromisoformat(R["as_of"])
         closings = [date.fromisoformat(x["closing"]) for x in C["strategies"]]
-        self.assertEqual(closings[1:], [date(2026, 12, 18)] * 2)  # the seller's goal when the time allows it
-        self.assertGreater(closings[0], date(2026, 12, 18))  # a slower option can't close by it
+        goal = date.fromisoformat(R["costs"]["expected_closing_date"])
+        # the seller's goal is a deadline, never a floor: each option keeps its own closing, the faster ones before it
+        self.assertTrue(all(d < goal for d in closings[1:]))
+        self.assertEqual(len(set(closings)), len(closings))
+        self.assertGreater(closings[0], goal)  # a slower option can't close by it: named once in the notes
+        self.assertEqual(compute.goal_misses(R, [{"date": d} for d in closings]), [0])
+        self.assertIn("closing_goal", C["note_keys"])
         self.assertEqual(row(C, "closing")["display"], [compute.fmt.date_short(d) for d in closings])
         monthly = C["net"]["monthly"]
         for x, d, hold in zip(C["strategies"], closings, row(C, "holding")["amounts"]):
             self.assertEqual(x["hold_months"], round((d - as_of).days / compute.MONTH_DAYS, 2))
             self.assertAlmostEqual(-hold, monthly * x["hold_months"], delta=monthly * 0.01 + 1)
         tax = row(C, "tax_proration")["amounts"]
-        self.assertEqual(tax[1], -compute.fmt.half_up(3505.61 * 0.96 * (date(2026, 12, 18) - date(2026, 1, 1)).days / 365))
+        self.assertEqual(tax[1], -compute.fmt.half_up(3505.61 * 0.96 * (closings[1] - date(2026, 1, 1)).days / 365))
         self.assertEqual(row(C, "tax_prior_year")["display"][1:], [compute.fmt.EMPTY] * 2)  # only the 2027 closing
         self.assertIn("tax", C["assumption_keys"])
+
+    def test_the_goal_is_a_deadline_not_a_floor(self):
+        """Eval 16: a "close by year end" goal used to push every option to the goal, flattening holding costs."""
+        R = tanager()
+        R["costs"]["expected_closing_date"] = "2027-03-31"  # later than every option: no option moves to it
+        C, warnings = run(R)
+        late = [date.fromisoformat(x["closing"]) for x in C["strategies"]]
+        R["costs"].pop("expected_closing_date")
+        own = [date.fromisoformat(x["closing"]) for x in run(R)[0]["strategies"]]
+        self.assertEqual(late, own)
+        self.assertEqual(len({x["hold_months"] for x in C["strategies"]}), len(C["strategies"]))
+        self.assertNotIn("closing_goal", C["note_keys"])
+        R = tanager()
+        R["costs"]["expected_closing_date"] = "2026-10-15"  # sooner than every option: each named, the recommended warned
+        C, warnings = run(R)
+        self.assertEqual([date.fromisoformat(x["closing"]) for x in C["strategies"]], own)
+        self.assertIn("closing_goal", C["note_keys"])
+        self.assertIn("recommended_after_goal", C["warning_keys"])
 
     def test_launch_date_moves_every_closing_it_sets(self):
         R = report()
@@ -587,22 +611,31 @@ class Warnings(unittest.TestCase):
 
 
 class ExpectedSale(unittest.TestCase):
-    """List x one ratio (the recent sale-to-final-list, raised only to keep every option inside the range) plus the
-    option's credit, to $500: options that differ in price differ in expected sale."""
+    """List x the market's ratio (the recent sale-to-final-list) plus the option's credit, to $500, for every option;
+    only an option that would land under the range is held at its low end: options that differ in price differ in
+    expected sale."""
 
     def assert_one_ratio(self, C):
-        """Every rule figure is its list price times the one ratio plus its credit (none listed inside the range under
-        it), capped at its list price and the top of the range; a higher price expects more."""
+        """Every rule figure is its list price times the one ratio plus its credit, held at the range's low end only
+        when it's listed inside the range and would sell under it, capped at its list price and the top of the range;
+        a higher price expects more."""
         b, rec = C["expected_sale_basis"], C["recommendation"]
-        self.assertGreaterEqual(b["ratio"], b["market_ratio"])
-        self.assertEqual(b["raised_by"] is not None, b["ratio"] > b["market_ratio"])
-        rule = [x for x in C["strategies"] if x["expected_sale_source"] == "rule"]
+        rule = sorted((x for x in C["strategies"] if x["expected_sale_source"] == "rule"), key=lambda x: x["list_price"])
+        premium = C["strategies"][b["premium"]] if b["premium"] is not None else None
+        ratio = lambda x: b["premium_ratio"] if x is premium else b["ratio"]  # noqa: E731
+        floor = 0
         for x in rule:
-            want = compute.fmt.half_up(x["list_price"] * b["ratio"] + x["seller_credit"], 500)
+            want = compute.fmt.half_up(x["list_price"] * ratio(x) + x["seller_credit"], 500)
             if x["list_price"] >= rec["low"]:
                 want = max(want, rec["low"])
-            self.assertEqual(x["expected_sale"], min(want, x["list_price"], rec["high"]))
-        sales = [x["expected_sale"] for x in sorted(rule, key=lambda x: x["list_price"])]
+            want = max(min(want, x["list_price"], rec["high"]), floor + 500) if floor else min(want, x["list_price"], rec["high"])
+            self.assertEqual(x["expected_sale"], want)
+            floor = x["expected_sale"]
+        floored = {C["strategies"][i]["list_price"] for i in b["floored"]}
+        for x in rule:  # held at the floor: only an option the ratio put under the range
+            raw = compute.fmt.half_up(x["list_price"] * ratio(x) + x["seller_credit"], 500)
+            self.assertEqual(x["list_price"] in floored, x["list_price"] >= rec["low"] and raw < rec["low"])
+        sales = [x["expected_sale"] for x in rule]
         self.assertEqual(sales, sorted(set(sales)))  # strictly increasing: no two prices share a sale
 
     def test_rule(self):
@@ -629,12 +662,25 @@ class ExpectedSale(unittest.TestCase):
         C, _ = run(texas(report()))
         self.assertEqual(C["expected_sale_basis"]["source"], "assumed")
         self.assertIn("expected_sale", C["assumption_keys"])
-        R = tanager()  # the ratio would put the lowest price under the range: raised for every option, not clamped
+        R = tanager()  # the ratio would put the lowest price under the range: that option alone is held at the floor
         C, _ = run(R)
         self.assert_one_ratio(C)
         b = C["expected_sale_basis"]
-        self.assertIsNotNone(b["raised_by"])
-        self.assertEqual(C["strategies"][b["raised_by"]]["expected_sale"], C["recommendation"]["low"])
+        self.assertTrue(b["floored"])
+        self.assertEqual(C["strategies"][b["floored"][0]]["expected_sale"], C["recommendation"]["low"])
+        # Premium, priced above the market, keeps the sale-to-original-list ratio, said once in the notes
+        premium = C["strategies"][b["premium"]]
+        self.assertEqual((b["premium_source"], premium["role"]), ("original", "premium"))
+        self.assertLess(b["premium_ratio"], b["ratio"])
+        self.assertIn(compute.t("note_expected_premium", price=compute.money(premium["list_price"]),
+                                ratio=compute.fmt.pct(b["premium_ratio"], 1, fixed=True)), " ".join(C["notes"]))
+        others = [x for i, x in enumerate(C["strategies"]) if i not in b["floored"] and i != b["premium"]
+                  and x["expected_sale_source"] == "rule"]
+        for x in others:  # no global raise: every other option keeps the market's ratio
+            self.assertEqual(x["expected_sale"], min(compute.fmt.half_up(x["list_price"] * b["ratio"] + x["seller_credit"], 500),
+                                                     x["list_price"], C["recommendation"]["high"]))
+        self.assertIn(compute.t("note_expected_floor", prices=compute.money(C["strategies"][b["floored"][0]]["list_price"]),
+                                low=compute.money(C["recommendation"]["low"])), " ".join(C["notes"]))
         nets = [x["net_after_holding"] for x in C["strategies"]]
         self.assertEqual(len(set(nets)), len(nets))
         R["range_override"] = {"low": 385000, "high": 390000, "reason": "The agent's own range."}
@@ -651,7 +697,7 @@ class ExpectedSale(unittest.TestCase):
                 h["close_price"] = h["original_list_price"] + (h["seller_paid"] or 0)
                 h["current_price"] = h["close_price"]
         C = compute.compute(tanager(), market, homes)
-        self.assertEqual((C["expected_sale_basis"]["source"], C["expected_sale_basis"]["market_ratio"]),
+        self.assertEqual((C["expected_sale_basis"]["source"], C["expected_sale_basis"]["ratio"]),
                          ("export_original", 1.0))
         self.assert_one_ratio(C)
 
@@ -664,9 +710,43 @@ class ExpectedSale(unittest.TestCase):
         recent = [h for h in homes if h["status"] == "SOLD" and str(h["close_date"]) >= "2026-07-01"]
         want = round(statistics.median((h["close_price"] - (h["seller_paid"] or 0)) / h["current_price"] for h in recent), 4)
         C = compute.compute(tanager(), market, homes)
-        self.assertEqual((C["expected_sale_basis"]["source"], C["expected_sale_basis"]["market_ratio"]),
+        self.assertEqual((C["expected_sale_basis"]["source"], C["expected_sale_basis"]["ratio"]),
                          ("export", want))
         self.assert_one_ratio(C)
+
+
+    def test_expected_sub_says_what_the_figure_rests_on(self):
+        """Eval 16: "competing offers likely" printed on a relist and beside a separate competing-offer option."""
+        sub = compute.expected_sub
+        x = {"role": "recommended", "list_price": 460000, "expected_sale": 460000}
+        self.assertEqual(sub(x, False), compute.L["deck_expected_sub_at"])
+        self.assertEqual(sub(x, True), compute.L["deck_expected_sub_floor"])
+        self.assertEqual(sub(dict(x, expected_sale=455000), False), compute.L["deck_expected_sub"])
+        self.assertEqual(sub(dict(x, role="competing"), False), compute.L["deck_expected_sub_competing"])
+        for key in ("deck_expected_sub_at", "deck_expected_sub_floor", "deck_expected_sub"):
+            self.assertNotIn("likely", compute.L[key])
+        C, _ = run(tanager())
+        rec = C["strategies"][C["recommended_index"]]
+        self.assertEqual(C["recommendation"]["expected_sub"],
+                         sub(rec, C["recommended_index"] in C["expected_sale_basis"]["floored"]))
+
+
+class AdjustedValues(unittest.TestCase):
+    def test_adjusted_values_print_to_the_nearest_100(self):
+        """method.md: an odd seller credit gives $433,729, shown $433,700; the math keeps the exact figure."""
+        R = report()
+        R["comps"]["cards"][0]["seller_concessions"] = (R["comps"]["cards"][0].get("seller_concessions") or 0) + 271
+        C, _ = run(R)
+        exact = [c["adjusted"] for c in C["comps"]["cards"]]
+        self.assertTrue(any(v % 100 for v in exact))
+        for c in C["comps"]["cards"]:
+            self.assertEqual(c["adjusted_display"], compute.fmt.money(c["adjusted"], 100))
+        for r in C["comps_table"]:
+            self.assertTrue(r["adjusted_display"].endswith("00"))
+        for r in C["comps"]["table"]:
+            self.assertTrue(r[3].endswith("00"))
+        self.assertTrue(C["median_adjusted_display"].endswith("00"))
+        self.assertEqual(C["median_shown"] % 100, 0)
 
 
 class JudgmentOnly(unittest.TestCase):
@@ -732,6 +812,24 @@ def resolve(C, path):
     return v
 
 
+class TaxNotes(unittest.TestCase):
+    def test_holding_and_not_included_agree_on_the_tax(self):
+        """Eval 16: with no tax bill, the holding note said the tax was in the proration while the not-included note
+        said the proration was left out."""
+        R = tanager()
+        C, _ = run(R)
+        notes = " ".join(C["notes"])
+        self.assertIn(compute.L["note_holding_tax"], notes)
+        self.assertNotIn(compute.L["not_included_tax"], notes)
+        R["costs"].pop("annual_tax")
+        C, _ = run(R)
+        notes = " ".join(C["notes"])
+        self.assertFalse(any(r["key"] in ("tax_proration", "tax_prior_year") for r in C["net"]["rows"]))
+        self.assertIn("holding", C["note_keys"])
+        self.assertNotIn(compute.L["note_holding_tax"], notes)
+        self.assertIn(compute.L["not_included_tax"], notes)
+
+
 class ChatTemplate(unittest.TestCase):
     """The chat template reads compute.py's output alone, on the same basis as page 1."""
 
@@ -744,7 +842,7 @@ class ChatTemplate(unittest.TestCase):
         for p in sorted(paths):
             with self.subTest(p):
                 resolve(C, p)
-        for field in ("net_after_holding_display", "seller_paid_display", "price_history", "history_line"):
+        for field in ("net_after_holding_display", "seller_paid_display", "price_history", "history_more"):
             self.assertIn(field, text)
 
 

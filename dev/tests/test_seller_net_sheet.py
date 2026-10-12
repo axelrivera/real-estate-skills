@@ -107,6 +107,7 @@ class TaxProration(unittest.TestCase):
         for name in ("florida-three-prices.json", "miami-condo-bill-paid.json"):
             keys = compute.run(fixture(name))["note_keys"]
             self.assertEqual([k for k in keys if k.startswith("tax")], ["tax"])
+            self.assertEqual(keys.count("income_tax"), 1)  # proceeds are before income tax on the sale, said once
 
 
 class Payoff(unittest.TestCase):
@@ -167,6 +168,30 @@ class Assumptions(unittest.TestCase):
                 e = copy.deepcopy(d)
                 e["property"].update(prop)
                 self.assertNotIn("no_hoa", compute.run(e)["note_keys"])
+
+    def test_wording_outside_florida_and_without_a_state(self):
+        """Iteration 16: "estoppel" is Florida's word; the tax note says "bill" once; with no state, no state's tax
+        rule is asserted."""
+        C = compute.run(fixture("texas-no-payoff.json"))
+        note = next(n for n in C["notes"] if n.startswith("No HOA assumed"))
+        self.assertIn("resale certificate", note)
+        fl = fixture("florida-one-price.json")
+        for key in ("hoa", "hoa_monthly", "property_type"):
+            fl["property"].pop(key, None)
+        fl_notes = [n for n in compute.run(fl)["notes"] if n.startswith("No HOA assumed")]
+        self.assertEqual(len(fl_notes), 1)
+        for n in fl_notes:
+            self.assertIn("estoppel fee", n)
+            self.assertNotIn("resale certificate", n)
+        d = fixture("georgia-short.json")
+        d["costs"]["tax_bill_due_date"] = "10-15"
+        self.assertTrue(any("tax bill ($3,900)" in n for n in compute.run(d)["notes"]))
+        self.assertFalse(any("bill)" in n and "$3,900 bill" in n for n in compute.run(d)["notes"]))
+        nostate = {"prepared_date": "2026-09-26", "property": {"address": "2250 Oak Hollow Ct"},
+                   "scenarios": [{"price": 400000}], "costs": {}}
+        C = compute.run(nostate)
+        self.assertIn("property tax proration isn't included", C["preliminary_reason"])
+        self.assertNotIn("taxes here", C["preliminary_reason"])
 
     def test_texas_never_gets_florida_numbers(self):
         C = compute.run(fixture("texas-no-payoff.json"))

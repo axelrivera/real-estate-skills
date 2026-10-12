@@ -85,10 +85,11 @@
  "flag_fha_va_appraisal": "FHA/VA rider{loan}: the buyer isn't obligated to close if {value} comes in below the price, and that protection runs to closing. The buyer's choice to go ahead anyway is due within 3 days after receiving the appraisal.",
  "flag_assoc_box_blank": "The rider's association approval box is blank: these dates assume approval is required. Confirm with the association.",
  "flag_loan_approval_after_closing": "Loan approval period ends after closing: extend closing or shorten the loan approval period in writing.",
- "flag_loan_approval_near_closing": "Loan approval deadline is within 5 days of closing: little room if financing slips.",
+ "flag_loan_approval_near_closing": "Loan approval deadline is {gap}: little room if financing slips.",
  "flag_after_closing": "{labels} ends after closing: amend the dates in writing.",
  "flag_before_closing_rolled": "Counted back from closing, a date on a weekend or holiday moves to the next business day, closer to closing. To be safe: {parts}.",
  "flag_extension_reading_open": "{label}: ended {safe} on the reading used. If {amendment} adds the {days} to the original end as extended, it runs through {later}. Confirm in writing which reading the parties intend.",
+ "flag_lapsed_extension": "{label}: {amendment} extending it was signed {signed}, after the period had ended {ended}. A right that lapsed may not revive: confirm in writing that the extension is effective.",
  "flag_short_sale_after_expiration": "The short sale approval was received {approval}, after the Contract Expiration Date ({expires}): under Rider G, Para. 4 the contract ended automatically unless the deadline was extended in writing. Confirm the contract is still in effect.",
  "flag_short_sale_after_deadline": "The short sale approval was received {approval}, after the Short Sale Approval Deadline ({deadline}): until then either party could cancel. Confirm neither party canceled, or that the deadline was extended in writing."
 }

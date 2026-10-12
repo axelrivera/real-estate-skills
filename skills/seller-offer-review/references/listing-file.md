@@ -91,8 +91,9 @@ Use when the agent has a title company quote, you looked up the state's transfer
 | `listing_fee_pct` | 2.5% assumed for the listing side (default commission, 5% total); when the listing broker pays the buyer's broker, 5% in total on one line. Set it only when the agent or the listing agreement gives the fee; never fill in a default yourself, or the report shows it as a fact and drops the assumption | med |
 | `offered_buyer_broker_pct` | none: no flag for high buyer-broker asks; offers that don't say assume 2.5% | med |
 | `listing_fee_includes_buyer_broker` | `false` once the agent confirms the listing fee and the buyer-broker offer are separate fees; when they say the listing fee includes the buyer's agent, set `listing_fee_pct` to that total and `buyer_broker_paid_by: "listing_broker"` on each offer instead. Left out with both `listing_fee_pct` and `offered_buyer_broker_pct` given, the two are read as separate fees ("Listing agreement 3%; we offered buyer agents 2.5%" is 3% + 2.5%) and recorded as a high-impact assumption the missing-inputs question asks about | **high** |
-| `holding_monthly` | tax/12 + insurance + HOA + utilities + 4.5% interest on payoff (market rates) | low |
-| `deadline` | none; timeline scored on speed | med |
+| `holding_monthly` | insurance + HOA + utilities + 4.5% interest on payoff (market rates); property tax is left out because the tax proration already counts it | low |
+| `deadline` | none; with no deadline every closing date fits the seller's timeline (closing speed is scored only when `priority` is `speed`) | med |
+| `foreign_seller` | `true` when the agent says the seller is a foreign person: adds the FIRPTA note | — |
 | `priority` | `balanced`; or `price`, `certainty`, `speed` (changes the ranking penalty; with `certainty` or `speed` the engine never suggests a firm counter). Any other value stops the render, naming the four | med |
 | `priority_note` | shown instead of the priority word: words only, no dates or amounts ("close before the deadline; certainty over top dollar"); the deadline goes in `deadline` | — |
 

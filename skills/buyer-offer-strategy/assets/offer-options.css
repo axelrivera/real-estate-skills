@@ -76,7 +76,7 @@ tr.alt td{color:var(--muted);font-size:7.8pt}
 
 /* denser detail pages when that keeps a short tail off a page of its own */
 .tail .det td{padding-top:1.4px;padding-bottom:1.4px} .tail .det th{padding-top:2px;padding-bottom:2px}
-.tail .det h2{margin:7px 0 3px} .tail .kit-notes{break-inside:auto} .tail .det td{font-size:8.2pt}
+.tail .det h2{margin:7px 0 3px} .tail .kit-notes{break-inside:auto} .tail .det tr:not(.alt) td:not(.sm){font-size:8.2pt}
 /* a section's heading stays with what follows it; a short section stays on one page */
 .sec h2{break-after:avoid} .sec.whole{break-inside:avoid}
 .det2{break-inside:avoid}

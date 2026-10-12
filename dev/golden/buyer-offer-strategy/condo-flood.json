@@ -25,6 +25,7 @@
   "buyer_priority": "balanced",
   "chosen_option": "recommended",
   "competition": {
+   "area_only": false,
    "heat": "normal",
    "inferred": false,
    "level": 0
@@ -559,6 +560,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1019,6 +1021,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1489,6 +1492,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "buyer",
+    "title_by_given": false,
     "title_payer": "buyer",
     "title_payer_by_contract": false,
     "unknown": {
@@ -1949,6 +1953,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "buyer",
+    "title_by_given": false,
     "title_payer": "buyer",
     "title_payer_by_contract": false,
     "unknown": {
@@ -2589,6 +2594,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "buyer",
+    "title_by_given": false,
     "title_payer": "buyer",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3049,6 +3055,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "buyer",
+    "title_by_given": false,
     "title_payer": "buyer",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3511,6 +3518,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "buyer",
+    "title_by_given": false,
     "title_payer": "buyer",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3978,6 +3986,7 @@
      "tax_bill_assumed": true
     },
     "title_by": "buyer",
+    "title_by_given": false,
     "title_payer": "buyer",
     "title_payer_by_contract": false,
     "unknown": {
@@ -3988,6 +3997,7 @@
   ],
   "sample": false,
   "seller": {
+   "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
    "holding_monthly": 1450,

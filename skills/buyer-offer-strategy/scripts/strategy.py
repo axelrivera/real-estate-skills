@@ -41,7 +41,8 @@ COMPETITION_LEVELS = tuple(BANDS)  # competition.level: 0 only offer, 1 one comp
 BUYER_PRIORITIES = ("win", "balanced", "protect_cash")
 OPTIONS = ("recommended", "stronger", "lower_cost")
 DEFAULT_RATE = 6.5  # national planning estimate, used only when neither the buyer file nor a lookup has a rate
-DEFAULT_RESERVE = 2000
+RESERVE_MIN = 5000  # the default reserve floor: at least this, or two months of the payment at list when that's more
+RESERVE_MONTHS = 2
 OFFER_QUESTIONS = ("contract_name", "inspection_walkaway", "escalation_accepted")  # OFR-222: shape the offer itself, so asked first in to_confirm
 HIGHEST_AND_BEST = re.compile(r"highest\s*(?:and|&)\s*best", re.I)  # OFR-239: as the agent words it in competition.note
 TIGHT_SUPPLY_MONTHS = 3  # OFR-331: under this a price cut alone doesn't read soft
@@ -322,12 +323,10 @@ def prepare(B, A, market=None):
                   t("as_down_program", down=fmt.pct(dflt_down, 1), prog=oe.FIN_LABEL[fin]), "med")
     if fin == "conventional" and BU["down_pct"] < 0.05 and not BU.get("first_time_buyer"):
         A.add("buyer", "down_pct", BU["down_pct"], L_["as_low_down"], "med")
-    BU["max_price"] = oe.given(BU, "max_price", max(lp, V["cma_high"]), A, "buyer", L_["as_max_price"], "high")
+    BU["max_price"] = oe.given(BU, "max_price", lp, A, "buyer", L_["as_max_price"], "high")  # list: never above it unasked
     if BU.get("cash_available") is None:
         est = fmt.half_up(lp * (BU["down_pct"] + 0.04))
         BU["cash_available"] = A.add("buyer", "cash_available", est, t("as_cash", amount=money(est)), "high")
-    BU["reserve_floor"] = oe.given(BU, "reserve_floor", DEFAULT_RESERVE, A, "buyer",
-                                   t("as_reserve", amount=money(DEFAULT_RESERVE)), "med")
     if BU.get("closing_cost_pct") is None:
         # One rule with the buyer CMA (finance.buyer_closing_costs): the market's share plus prepaids, plus its loan
         # taxes on the loan (CORE-16); half the market's share for cash
@@ -372,14 +371,20 @@ def prepare(B, A, market=None):
         src = (L_["ins_src_agent"] if est["source"] == "agent" else
                costs.described("buyer_costs.insurance_rate") if est["source"] == "market" else L_["ins_src_national"])
         K["insurance_annual"] = est["annual"]
-        B["payment_assumed"].append(t("pa_insurance", amount=money(K["insurance_annual"])))
+        age = t("ins_age", factor=fmt.num(est["age_factor"], 2), year=yb) if est["age_factor"] > 1 else ""
+        if basis == lp:  # B6: no buyer CMA premium to match, so each option's payment prices the estimate at that
+            # option's price (insurance_at); the assumption names the recommended offer's figure once known (ins_at_offer)
+            B["_ins_est"] = {"year_built": yb, "rate": K.get("insurance_rate"), "src": src, "age": age}
+        B["payment_assumed"].append(L_["pa_insurance_scaled"] if B.get("_ins_est") else
+                                    t("pa_insurance", amount=money(K["insurance_annual"])))
         A.add("costs", "insurance_annual", K["insurance_annual"], t(
-            "as_ins_est", amount=money(K["insurance_annual"]), src=src,
-            age=t("ins_age", factor=fmt.num(est["age_factor"], 2), year=yb) if est["age_factor"] > 1 else "",
+            "as_ins_est", amount=money(K["insurance_annual"]), src=src, age=age,
             basis=t("ins_basis", price=money(basis)) if basis != lp else ""), "low")
     elif not quote_in_hand(BU):  # OFR-328: a premium typed in with no quote in hand (false or planned) is an estimate
         B["payment_assumed"].append(t("pa_insurance", amount=money(K["insurance_annual"])))
         A.add("costs", "insurance_annual", K["insurance_annual"], t("as_ins_typed", amount=money(K["insurance_annual"])), "low")
+    if P.get("hoa_monthly") in (None, ""):  # B6: 0 means the listing says no HOA; missing is a question, never a silent $0
+        A.add("property", "hoa_monthly", 0, L_["as_hoa"], "med")
     P["hoa_monthly"] = P.get("hoa_monthly") or 0
     # OFR-26, CMA-6: flood insurance and CDD assessments are payment lines; a missing amount is left out and flagged, never 0
     B["flood"] = finance.flood_insurance(P.get("flood_zone"), K.get("flood_insurance_annual"), costs, today,
@@ -404,19 +409,26 @@ def prepare(B, A, market=None):
         A.add("property", "annual_tax", B["seller_annual_tax"],
               t("as_seller_tax", basis=tax["basis"], amount=money(B["seller_annual_tax"])), "med")
     if K.get("tax_rate") is None and tax["annual"] is not None and K.get("homestead") is None:  # OFR-124
-        A.add("costs", "homestead", True, L_["as_homestead"], "low")
+        A.add("costs", "homestead", True, L_["as_homestead"], "med")
     elif K.get("tax_rate") is not None:  # OFR-237: a given rate is used as is; no exemption is taken off it
         A.add("costs", "homestead", "as given", t("as_tax_rate_given", rate=fmt.pct(K["tax_rate"], None)), "low")
+    if BU.get("reserve_floor") in (None, ""):  # B4: the larger of $5,000 or two months of the payment at list
+        floor = max(RESERVE_MIN, rnd(RESERVE_MONTHS * monthly_payment(B, costs, lp), 500, "up"))
+        BU["reserve_floor"] = A.add("buyer", "reserve_floor", floor, t("as_reserve", amount=money(floor)), "med")
 
     lvl = choices.pick(C.get("level"), COMPETITION_LEVELS, "competition.level")[0]  # analyze() stops on a bad one
     B["buyer_priority"] = choices.pick(B.get("buyer_priority"), BUYER_PRIORITIES, "buyer_priority", default="balanced")[0]
     heat, basis = market_heat(P, M)
     C["inferred"] = lvl is None
+    C["area_only"] = False
     if lvl is None:
         lvl = {"hot": 2, "normal": 1, "soft": 0, "stale": 0}[heat]
+        if heat == "hot" and not home_hot(P, M):  # B4: two or more competing needs this home's own days on market
+            lvl, C["area_only"] = 1, True
         signals = P.get("dom") is not None or M.get("sale_to_list") or P.get("price_cuts")
         A.add("competition", "level", comp_label(lvl),
-              t("as_competition", level=comp_words(lvl), read=heat_words(heat), basis=basis) if signals else
+              t("as_competition", level=comp_words(lvl), read=heat_words(heat), basis=basis,
+                area=L_["heat_area_only"] if C["area_only"] else None) if signals else
               t("as_competition_none", level=comp_words(lvl)), "med")
     C["level"], C["heat"], C["heat_basis"] = lvl, heat, basis
     LS["buyer_broker_offered_pct"] = LS.get("buyer_broker_offered_pct")
@@ -492,6 +504,13 @@ def market_heat(P, M):
     if not reads:
         return heat, None
     return heat, joined([sig for sig, rd in reads if rd == heat])
+
+
+def home_hot(P, M):
+    """This home's own days on market read hot (under half the area's median): the signal that lets an inferred
+    competition go past one competing offer. The area's sale-price ratio alone never does."""
+    dom, med = P.get("dom"), M.get("median_dom")
+    return dom is not None and bool(med) and dom < 0.5 * med
 
 
 def heat_words(heat):
@@ -643,6 +662,9 @@ def effective_date(B, today, A):
         return _d(given_)
     due = deadline_date((B.get("worksheet") or {}).get("acceptance_deadline") or (B.get("competition") or {}).get("deadline"), today)
     eff = (due or today) + timedelta(days=1)
+    C = B.get("competition") or {}
+    if not due and not C.get("inferred") and C.get("level", 0) >= 1:  # iteration 16: a competing offer: ask the deadline
+        A.add("competition", "deadline", None, L_["as_deadline_unknown"], "med")
     # the worksheet's Time for Acceptance is a business day at 5:00 PM, so the dates count from that same day
     moved = not dates.is_business_day(eff)
     if moved:
@@ -753,10 +775,34 @@ def property_tax(B, costs, price):
 def monthly_payment(B, costs, price):
     BU, K, P = B["buyer"], B["costs"], B["property"]
     tax = property_tax(B, costs, price)["annual"] or 0
-    p = finance.monthly_payment(price, BU["financing"], BU["down_pct"], K["rate"], tax, K["insurance_annual"],
+    p = finance.monthly_payment(price, BU["financing"], BU["down_pct"], K["rate"], tax, insurance_at(B, costs, price),
                                 P["hoa_monthly"] + (P.get("cdd_annual") or 0) / 12, flood_annual=B["flood"]["annual"],
                                 va_later_use=bool(BU.get("va_later_use")), va_exempt=bool(BU.get("va_exempt")))
     return fmt.half_up(p["total"])
+
+
+def insurance_at(B, costs, price):
+    """The yearly premium the payment uses at `price`: an estimate (no quote, no buyer CMA premium) is priced at that
+    price; a quote, a typed figure or the buyer CMA's premium is used as is."""
+    est = B.get("_ins_est")
+    if not est:
+        return B["costs"]["insurance_annual"]
+    return finance.insurance_estimate(price, costs, est["year_built"], est["rate"])["annual"]
+
+
+def ins_at_offer(B, costs, A, price):
+    """B6: an estimated premium, restated at the recommended offer's price, in the costs block and its assumption, so
+    the assumption names the premium the recommended payment uses."""
+    est = B.get("_ins_est")
+    if not est:
+        return
+    K = B["costs"]
+    K["insurance_annual"] = insurance_at(B, costs, price)
+    for a in A.items:
+        if a["field"] == "insurance_annual":
+            a["value"] = K["insurance_annual"]
+            a["why"] = t("as_ins_est", amount=money(K["insurance_annual"]), src=est["src"], age=est["age"],
+                         basis=t("ins_offer", price=money(price)))
 
 
 def bb_as_credit(B):
@@ -918,7 +964,7 @@ def price_ceiling(B):
 
 def build_offer(B, costs):
     """Rule-based best offer inside the buyer's limits (references/offer-rules.md). Returns (terms, reasons): each reason
-    a why() dict; `price_by` names what set the price ("payment", "max_price", or the rule)."""
+    a why() dict; `price_by` names what set the price ("payment", "max_price", "walk_away", or the rule)."""
     P, V, BU, C = B["property"], B["value"], B["buyer"], B["competition"]
     lp, lvl, fin = P["list_price"], C["level"], BU["financing"]
     w = {}
@@ -933,10 +979,17 @@ def build_offer(B, costs):
     if low_down and lvl >= 2 and price > V["mid"]:  # OFR-10: low down payment competes on terms, not price
         price = rnd(V["mid"], 1000, "down")
         w["price"] = why("why_price_low_down", down=fmt.pct(BU["down_pct"], 1))
+    walk = walk_away(B)
     if price > BU["max_price"]:
         price, w["price"], by = BU["max_price"], why("why_price_max"), "max_price"
+    if walk and price > walk:  # B1: the buyer CMA's walk-away caps the price like the max does
+        price, w["price"], by = walk, why("why_price_walk", walk=money(walk)), "walk_away"
     price = lp if abs(price - lp) < 1000 and not (low_down and lvl >= 2 and lp > V["mid"]) \
         else rnd(price, 1000, "down" if price > lp else "round")
+    by_walk = bool(walk) and walk < BU["max_price"]
+    if price > (walk if by_walk else BU["max_price"]):  # rounding to list or to the thousand never passes either cap
+        price, w["price"], by = (walk, why("why_price_walk", walk=money(walk)), "walk_away") if by_walk else \
+            (BU["max_price"], why("why_price_max"), "max_price")
     if V.get("assumed") and price == lp:  # OFR-212: with no CMA the price stays at list, never called "at value"
         w["price"] = why("why_price_no_range")
     if BU.get("max_payment") and monthly_payment(B, costs, price) > BU["max_payment"]:
@@ -991,7 +1044,7 @@ def build_offer(B, costs):
         w["inspection_days"] = why("why_insp_full", reports=L_["insp_four_point"] if costs.state == "FL" else "",
                                    age=L_["insp_older"] if yb and old else L_["insp_unknown_age"] if not yb else "")
     else:
-        w["inspection_days"] = why("why_insp_short")
+        w["inspection_days"] = why("why_insp_short", reports=L_["insp_short_fl"] if costs.state == "FL" else "")
     if B["contract_form"] not in cf.FARBAR:  # OFR-315: no other state's periods are built in, so the length is assumed
         w["inspection_days"] = add_to(w["inspection_days"], why("add_insp_generic"))
     if fin != "cash":
@@ -1305,6 +1358,28 @@ def better_option(B, costs, terms, O, lvl, promote_stronger=True):
     return None
 
 
+def hb_stronger(B, costs, rec, fuller=None):
+    """Iteration 16 (owner decision): in a highest-and-best round with heavy competition (2 to 3 competing offers or
+    more), a Stronger option at the CMA's walk-away (or the buyer's max when lower) is always shown, even when the engine
+    scores it the same outlook: the buyer gets one sealed bid, so the most they'd pay stays in view. The fuller offer a
+    lower-cost recommendation replaced when it's already there, else the recommended terms at that price with the
+    Stronger step (3% deposit, gap coverage) when that keeps every limit. None when the offer already reaches that price,
+    escalates, has the agent's terms or has no value range."""
+    C, BU = B["competition"], B["buyer"]
+    if not highest_and_best(C) or C["level"] < 2 or B.get("overrides") or rec.get("escalation") \
+            or B["value"].get("assumed"):
+        return None
+    walk = walk_away(B)
+    top = rnd(min(walk, BU["max_price"]) if walk else BU["max_price"], 1000, "down")
+    if top <= rec["price"]:
+        return None
+    if fuller and fuller["price"] == top:
+        return fuller
+    s = dict(rec, price=top, price_by="walk_away" if walk and walk < BU["max_price"] else "max_price")
+    up = stronger(B, s)
+    return up if up and within_limits(B, costs, up) else s
+
+
 def promote_why(w, lc_why, pick, t_, was=None, words=None):
     """The reasons for a promoted option. CMA-103: the Stronger option names only what it actually raised."""
     w = dict(w)
@@ -1312,6 +1387,9 @@ def promote_why(w, lc_why, pick, t_, was=None, words=None):
     if pick == "lower_cost":
         w.update(lc_why)
         w.pop("escalation", None)
+        if (w.get("appraisal_gap") or {}).get("key") == "why_gap_at_cap" and t_.get("appraisal_gap"):
+            # iteration 16: the lower-cost terms drop the escalation, so the gap no longer follows a cap
+            w["appraisal_gap"] = why("why_gap_kept", amount=money(t_["appraisal_gap"]))
         # OFR-326: worded for the competition the deal expects, never the softer level the option was built for
         if was.get("price", 0) > t_["price"]:
             w["price"] = why("why_promo_price", amount=money(was["price"] - t_["price"]))
@@ -1409,6 +1487,7 @@ def analyze(B_in, market=None, cma=None):
     # OFR-240: the escalation question only when the offer escalates; with one flat number it would contradict the advice
     if B["contract_form"] not in cf.FARBAR and rec.get("escalation"):
         A.add("competition", "escalation_accepted", None, L_["as_escalation_accepted"], "med")
+    ins_at_offer(B, costs, A, rec["price"])  # B6: the assumption names the premium at the recommended price
     lp = B["property"]["list_price"]
     tgt = O["recommended"]["target"]["net_adj"]
     limits = profiles.loan_limits()  # OFR-11: jumbo and FHA limits
@@ -1451,6 +1530,34 @@ def analyze(B_in, market=None, cma=None):
             d.pop("stronger", None)
         res["stronger_dropped"] = True
     res["dropped_stronger"] = dropped
+    hb = None if "stronger" in res["terms"] else hb_stronger(B, costs, rec, fuller)
+    if hb:  # iteration 16: one sealed round, so the walk-away stays in view even at the same outlook
+        variants = [("recommended", rec), ("stronger", hb)] + \
+            ([("lower_cost", res["terms"]["lower_cost"])] if "lower_cost" in res["terms"] else [])
+        _, O = run_engine(B, costs, variants)
+        res["O"], res["terms"], res["by_net"] = O, dict(variants), False
+        res["cash"] = {k: buyer_cash(B, t2) for k, t2 in variants}
+        res["payment"] = {k: monthly_payment(B, costs, t2["price"]) for k, t2 in variants}
+        res["ci"] = {k: ci(O[k], tgt, lp) for k, _ in variants}
+        res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
+        res["stronger_dropped"], res["dropped_stronger"], res["stronger_hb"] = False, None, True
+        by_net, dropped = False, None
+    if promoted == "lower_cost" and (w.get("price") or {}).get("key") == "why_promo_price":
+        st_ = res["terms"].get("stronger")
+        w["price"] = why("why_promo_price", amount=money(fuller["price"] - rec["price"])) \
+            if st_ and st_["price"] == fuller["price"] else \
+            why("why_promo_price_was", amount=money(fuller["price"] - rec["price"]), was=money(fuller["price"]))
+    if (B["competition"]["level"] >= 2 or highest_and_best(B["competition"])) and not rec.get("escalation") \
+            and (promoted == "lower_cost" or not w.get("escalation")):
+        # the escalation question can arise: the row always answers it (iteration 16)
+        hb_ = L_["esc_hb"] if highest_and_best(B["competition"]) and promoted == "lower_cost" else ""
+        st_ = res["terms"].get("stronger")
+        if promoted == "lower_cost" and st_ and BAND_RANK[res["bands"]["stronger"][lvl][0]] > \
+                BAND_RANK[res["bands"]["recommended"][lvl][0]]:  # a higher price would lift it: say where it's shown
+            w["escalation"] = why("why_esc_stronger", price=money(st_["price"]), band=res["bands"]["stronger"][lvl][1],
+                                  hb=hb_)
+        else:
+            w["escalation"] = why("why_esc_same" if promoted == "lower_cost" else "why_esc_flat", hb=hb_)
     for k in O:  # OFR-216: the scorecard says what's known about the quote, never that one is planned when it isn't
         if res["terms"][k].get("insurance_quote") is None and O[k]["score"]["why"]["property"] is not None:
             sw = O[k]["score"]["why"]
@@ -1480,6 +1587,8 @@ def absent_reasons(res, B, costs, rec, saves_nothing, unlikely, already_unlikely
             out["stronger"] = L_["absent_promoted_stronger"]
         elif dropped and dropped["by_net"]:
             out["stronger"] = net_no_gain(B, rec, dropped)
+        elif dropped and dropped["terms"]["price"] > rec["price"]:  # the fuller offer a lower-cost one replaced
+            out["stronger"] = t("absent_higher", price=money(dropped["terms"]["price"]))
         elif dropped:
             out["stronger"] = (t("absent_more", what=raised_words(dropped["raised"])) if dropped["raised"] else
                                L_["absent_fuller"])
@@ -1899,7 +2008,7 @@ def preliminary(r, listed):
         else:
             names.append(L_["pn"].get(f) or f.replace("_", " "))
     n = len(listed)
-    return t("prelim", need=", ".join(dict.fromkeys(names)), n=n, inputs=L_["input_one" if n == 1 else "input_many"])
+    return t("prelim", need=joined(list(dict.fromkeys(names))), n=n, inputs=L_["input_one" if n == 1 else "input_many"])
 
 
 def summary(r, package_ready=False):
@@ -2014,7 +2123,8 @@ def signal(B):
     C, P, M = B["competition"], B["property"], B["market"]
     lvl = C["level"]
     if C.get("inferred"):
-        s = (t("sig_inferred", level=comp_words(lvl), read=heat_words(C["heat"]), basis=C["heat_basis"])
+        s = (t("sig_inferred", level=comp_words(lvl), read=heat_words(C["heat"]), basis=C["heat_basis"],
+               area=L_["heat_area_only"] if C.get("area_only") else None)
              if C["heat_basis"] else t("sig_inferred_none", level=comp_words(lvl)))
     else:
         s = t("sig_agent", level=comp_words(lvl))
@@ -2078,7 +2188,8 @@ def pushback(r):
         elif term == "Price" and t_["price"] < V["cma_low"]:
             resp = t("pb_below", ask=ask)
         else:
-            resp = fmt.fill(L_["pb_resp"].get(term) or L_["pb_resp_default"], **B["words"])
+            resp = fmt.fill(L_["pb_resp"].get(term) or L_["pb_resp_default"], **B["words"],
+                            risk_date=wday(risk_after(o, costs)[0]))
         label = term_label("inspection_days", B) if term == "Inspection Period" else \
             term_label("deposit", B) if term == "Escrow Deposit" else L_["pb_term"].get(term, term)
         rows.append({"term": label, "yours": yours, "ask": ask, "response": resp, "breaks": [k for k, _ in broken]})
@@ -2491,6 +2602,8 @@ def report_notes(r, listed):
               "estimate")
     N.add("closing_cost_pct", t("note_closing_costs", basis=closing_cost_basis(B)), "info")
     N.add("rate", t("note_rate", rate=fmt.pct(B["costs"]["rate"] / 100, None)), "info")
+    if property_tax(B, r["costs"], B["property"]["list_price"])["annual"] is not None:  # B6: the first-year escrow jump
+        N.add("first_year_escrow", L_["note_escrow"], "info")
     N.add("loan_estimate", L_["note_loan_estimate"], "info")
     N.add("worst_case", L_["note_worst_case"], "info")
     N.add("scoring", L_["note_scoring"], "info")

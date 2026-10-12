@@ -846,5 +846,169 @@ class ReplyLines(unittest.TestCase):
         self.assertNotIn(strategy.cf.BEST_EFFORT_OFFER_NOTE, json.dumps(out["worksheet"]))
 
 
+class ClientInterestAudit(unittest.TestCase):
+    """The buyer-side audit fixes: the walk-away caps the price, the Rider GG exposure row, concession reasons with
+    their cost, and the conservative defaults (reserve floor, inferred competition, max price, HOA, homestead)."""
+
+    @staticmethod
+    def walk(level, walk=395000):
+        d = copy.deepcopy(GAP)
+        d["competition"]["level"] = level
+        d["cma_offer_plan"] = {"walk_away": walk}
+        return d
+
+    def test_walk_away_caps_heavy_competition_price(self):
+        """Levels 2 and 3 price at list or the top of the range (398,000 here): the CMA's walk-away below list caps
+        every option, with the walk-away named in the price reason."""
+        for level in (2, 3):
+            with self.subTest(level=level):
+                A = strategy.oe.Assume()
+                B, costs = strategy.prepare(self.walk(level), A)
+                t_, w = strategy.build_offer(B, costs)
+                self.assertEqual((t_["price"], t_["price_by"]), (395000, "walk_away"))
+                self.assertEqual(w["price"]["key"], "why_price_walk")
+                r = run(self.walk(level))
+                for k, terms in r["terms"].items():
+                    self.assertLessEqual(terms["price"], 395000, k)
+                price_row = next(x for x in strategy.result(r)["summary"]["terms"] if x["term"] == "Price")
+                self.assertIn("$395,000", json.dumps(price_row))
+
+    def test_walk_away_just_under_list_is_not_rounded_to_list(self):
+        d = self.walk(2, walk=399500)
+        d["value"]["cma_high"] = 410000  # the rule prices at list, 500 above the walk-away
+        B, costs = strategy.prepare(d, strategy.oe.Assume())
+        self.assertEqual(strategy.build_offer(B, costs)[0]["price"], 399500)
+
+    def test_rider_gg_adds_nothing_to_exposure(self):
+        """The agent settles the broker's fee with the buyer before the offer, so Rider GG's window is a formality: the
+        Your Exposure table never mentions the broker's pay, with or without the agreement rate."""
+        r = run(copy.deepcopy(GAP))
+        self.assertEqual(r["B"]["buyer_broker_form"], "GG")
+        text = " ".join(f'{e["label"]} {e["value"]}' for e in strategy.result(r)["summary"]["exposure"]).lower()
+        self.assertNotIn("broker", text)
+        self.assertNotIn("buyer_broker_agreement_pct", fields(r))
+
+    def test_concession_reasons_name_their_cost(self):
+        d = copy.deepcopy(GAP)
+        d["competition"]["level"] = 2
+        r = run(d)
+        w = r["why"]
+        text = json.dumps(strategy.result(r))
+        self.assertEqual(r["terms"]["recommended"]["inspection_days"], 7)
+        self.assertIn("less time for the inspection, 4-point, wind mitigation and an insurance quote", text)
+        self.assertEqual(w["loan_approval_days"]["key"], "why_loan_21")
+        self.assertIn("at risk sooner if the loan stalls", text)
+        dep = [p for p in strategy.pushback(r) if p["term"] == "Escrow Deposit" and not p["breaks"]]
+        for p in dep:
+            self.assertIn("at risk after", p["response"])
+
+    def test_default_reserve_floor(self):
+        """No reserve floor: the larger of $5,000 or two months of the payment at list, logged medium."""
+        r = run(gatlin())
+        B = r["B"]
+        two_months = 2 * strategy.monthly_payment(B, r["costs"], 429000)
+        self.assertGreaterEqual(B["buyer"]["reserve_floor"], max(5000, two_months))
+        self.assertLess(B["buyer"]["reserve_floor"], max(5000, two_months) + 500)
+        self.assertIn("reserve_floor", fields(r, "med"))
+
+    def test_area_ratio_alone_infers_one_competing_offer(self):
+        d = gatlin()
+        d["market"] = {"sale_to_list": 0.995, "median_dom": 30}
+        self.assertEqual(run(d)["B"]["competition"]["level"], 1)
+        d["property"]["dom"] = 9  # under half the median: this home's own signal
+        self.assertEqual(run(d)["B"]["competition"]["level"], 2)
+
+    def test_max_price_defaults_to_list(self):
+        d = gatlin()
+        d["value"] = {"cma_low": 420000, "cma_high": 450000}
+        r = run(d)
+        self.assertEqual(r["B"]["buyer"]["max_price"], 429000)
+        self.assertIn("max_price", fields(r, "high"))
+
+    def test_missing_hoa_and_homestead_are_medium(self):
+        r = run(gatlin())
+        self.assertIn("hoa_monthly", fields(r, "med"))
+        self.assertIn("homestead", fields(r, "med"))
+        d = gatlin()
+        d["property"]["hoa_monthly"] = 0  # the listing says no HOA
+        self.assertNotIn("hoa_monthly", fields(run(d)))
+
+    def test_estimated_insurance_priced_at_each_option(self):
+        r = run(gatlin())
+        B, costs = r["B"], r["costs"]
+        rec = r["terms"]["recommended"]["price"]
+        self.assertEqual(B["costs"]["insurance_annual"],
+                         strategy.finance.insurance_estimate(rec, costs, B["property"].get("year_built"))["annual"])
+        self.assertEqual(strategy.insurance_at(B, costs, 500000),
+                         strategy.finance.insurance_estimate(500000, costs, None)["annual"])
+
+    def test_first_year_escrow_note_once(self):
+        notes = strategy.result(run(gatlin()))["notes"]
+        self.assertEqual(sum(strategy.L_["note_escrow"] in n for n in notes), 1)
+
+
+def shoal(**competition):
+    """Iteration 16, eval 3: a highest-and-best round with six offers in, a $632,000 walk-away and a $640,000 max."""
+    with open(os.path.join(EVALS, "8104-Shoal-Creek-Blvd.cma.json")) as f:
+        cma = json.load(f)
+    d = {"analysis_date": "2026-09-26",
+         "property": {"address": "8104 Shoal Creek Blvd, Austin, TX 78757", "state": "TX", "county": "Travis",
+                      "list_price": 610000},
+         "competition": {"level": 3, "note": "Listing agent called for highest and best; 6 offers in",
+                         "deadline": "Friday 6 PM", "highest_and_best": True, **competition},
+         "buyer": {"financing": "conventional", "down_pct": 0.20, "approval": "full_uw", "max_price": 640000,
+                   "cash_available": 170000, "reserve_floor": 15000},
+         "costs": {"rate": 6.4, "insurance_annual": 3900, "tax_rate": 0.0198}, "cma": cma}
+    return d
+
+
+class Iteration16(unittest.TestCase):
+    def test_highest_and_best_always_shows_the_walk_away(self):
+        r = run(shoal())
+        s = strategy.result(r)["summary"]
+        self.assertEqual(r["terms"]["recommended"]["price"], 615000)  # the cheaper recommendation stays
+        self.assertEqual(r["terms"]["stronger"]["price"], 632000)  # the walk-away, shown even at the same outlook
+        self.assertEqual([o["key"] for o in s["options"]][:2], ["recommended", "stronger"])
+        self.assertNotIn("stronger", [a["key"] for a in s["absent"]])
+        price = next(x for x in s["terms"] if x["key"] == "price")
+        self.assertIn("Stronger option", price["why"])
+        self.assertIn(strategy.money(17000), price["why"])
+
+    def test_no_forced_stronger_without_highest_and_best(self):
+        r = run(shoal(highest_and_best=False, note="6 offers in"))
+        self.assertNotIn("stronger", r["terms"])
+        absent = strategy.result(r)["summary"]["absent"]
+        why = next(a["why"] for a in absent if a["key"] == "stronger")
+        self.assertIn(strategy.money(632000), why)  # names the higher price it left out, never "more deposit"
+        price = next(x for x in strategy.result(r)["summary"]["terms"] if x["key"] == "price")["why"]
+        self.assertIn(strategy.money(632000), price)  # the reason never points at an option that isn't shown
+
+    def test_escalation_row_answers_in_heavy_competition(self):
+        for d in (shoal(), shoal(highest_and_best=False, note="6 offers in")):
+            s = strategy.result(run(d))["summary"]
+            row = next((x for x in s["terms"] if x["key"] == "escalation"), None)
+            self.assertIsNotNone(row)
+            self.assertEqual(row["offer"], strategy.L_["tv_none"])
+            self.assertTrue(row["why"].startswith("Not used"))
+
+    def test_preliminary_plain_words_with_and(self):
+        r = run(shoal())
+        line = strategy.result(r)["summary"]["preliminary"]
+        self.assertNotIn("walkaway", line)
+        self.assertNotIn("_", line)
+        d = gatlin()  # several high-impact inputs: the list ends with "and"
+        line = strategy.result(run(d))["summary"]["preliminary"]
+        self.assertIn(" and ", line.split("to sharpen")[0])
+
+    def test_missing_deadline_asked_with_competition(self):
+        d = gatlin(financing="conventional", down_pct=0.2, max_price=429000)
+        d["competition"] = {"level": 1}
+        self.assertEqual(to_confirm_fields(run(d))[0], "deadline")
+        d["competition"]["deadline"] = "2026-09-29 17:00"
+        self.assertNotIn("deadline", fields(run(d)))
+        d["competition"] = {"level": 0}
+        self.assertNotIn("deadline", fields(run(d)))
+
+
 if __name__ == "__main__":
     unittest.main()

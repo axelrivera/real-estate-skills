@@ -544,7 +544,7 @@ class Taxes(unittest.TestCase):
             for j in R["costs"]["taxes"]["jurisdictions"]:
                 j.pop("school_mills", None), j.pop("total_mills", None), j.pop("district", None)
         _, C, _ = run(texas)
-        annual = fmt.half_up(474900 * 0.011)  # the national estimate, to the dollar
+        annual = fmt.half_up(474900 * 0.0136)  # iteration 16: Texas's average effective rate, to the dollar
         self.assertEqual(C["taxes"][0]["annual"], annual)
         self.assertEqual(C["payments"]["rows"][0]["tax"], fmt.half_up(annual / 12))  # the table's figure, monthly
         self.assertIn("tax_estimated", C["warning_keys"])
@@ -934,6 +934,36 @@ class ChatTemplate(unittest.TestCase):
         self.assertFalse(C["payments"]["tax_basis"]["homestead"])
         self.assertIsNone(C["history"]["display"]["counted_since_sale"])
         self.assertIsNone(C["payments"]["rows"][0]["cash_short_display"])
+
+
+class DotLabels(unittest.TestCase):
+    """Iteration 16: page 1's "Opening Offer" and "Asking" labels drew on each other when the prices were close; render
+    checks every price-line label for an overlap or a run-off, and says so in the chat."""
+
+    @staticmethod
+    def svg(*labels):
+        return '<svg viewBox="0 0 730 160" role="img">' + "".join(
+            f'<text x="{x}" y="10" text-anchor="{a}" class="dp-{c}-lbl">{t}</text>' for x, a, c, t in labels) + "</svg>"
+
+    def test_overlap_found(self):
+        out = buyer_render.dot_label_checks(self.svg((416.9, "middle", "mark", "Asking $474,900"),
+                                                     (253.5, "start", "second", "Opening Offer $449,000")))
+        self.assertEqual(len(out), 1)
+        self.assertIn("overlap", out[0])
+
+    def test_apart_and_inside_is_clean(self):
+        self.assertEqual(buyer_render.dot_label_checks(self.svg((600, "middle", "mark", "Asking $474,900"),
+                                                                (300, "end", "second", "Opening Offer $449,000"))), [])
+
+    def test_run_off_found(self):
+        out = buyer_render.dot_label_checks(self.svg((720, "start", "mark", "Asking $474,900")))
+        self.assertIn("runs off", out[0])
+
+    def test_page_one_records_the_checks(self):
+        C = compute.run(report())
+        notes = {}
+        buyer_render.dot_strip(C, notes)
+        self.assertIn("dot_labels", notes)
 
 
 if __name__ == "__main__":

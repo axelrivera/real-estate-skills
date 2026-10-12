@@ -1,5 +1,6 @@
 {
  "doc_label": "Buyer Market Analysis",
+ "not_listing_side": "Not for the Listing Side",
  "prepared": "Prepared",
  "lic": "Lic.",
  "wordmark_sub": "Real Estate Agent",
@@ -326,6 +327,7 @@
  "note_tax_millage": "Tax estimates use {parts}.",
  "note_tax_millage_part": "{mills} mills {label}",
  "note_tax_rate": "No millage for this area yet: the tax is estimated at about {pct} of the price. Confirm it with the property appraiser.",
+ "note_tax_rate_state": "No millage for this area yet: the tax is estimated at about {pct} of the price, the state's average effective rate. Confirm it with the property appraiser.",
  "note_tax_assessed": "Tax estimates assume the county values the home at the purchase price; it often values homes somewhat lower, so treat them as the high end. Flat assessments (garbage and other non-ad valorem charges) aren't included.",
  "note_tax_file": "File for homestead by {deadline}.",
  "note_tax_portability": "Portability isn't included: a buyer leaving a homestead in this state may carry part of its capped difference, which can lower the first bills (ask the property appraiser).",

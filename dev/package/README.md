@@ -303,7 +303,7 @@ Every deadline in an executed contract: who owes what, by when, and what happens
 - When an amendment or extension is signed, upload it and ask to re-run the dates. Moved dates show what they were before.
 - **The Effective Date** is when the last party signed and delivered the final acceptance or counter. If the package shows signatures but not delivery, Claude uses the last signature and asks you to confirm it: every deadline counts from it.
 - **Not signed by everyone yet?** Claude says what's missing and lists the terms, and builds the timeline once it's signed. For a what-if, tell Claude the expected Effective Date.
-- **Already done:** upload the escrow deposit receipt, or tell Claude what's been completed. Done items show as done and drop out of the calendar reminders.
+- **Already done:** upload the escrow deposit receipt, or tell Claude what's been completed. Done items show as done and drop out of the calendar reminders. If you already added an earlier calendar file, say so: the new file removes the done items from it.
 - **Short sales:** most dates count from the lender's approval. Until you tell Claude the approval date they show as "days after short sale approval"; the report and calendar still work, and you re-run it once the approval comes in.
 
 ### Contracts and Forms

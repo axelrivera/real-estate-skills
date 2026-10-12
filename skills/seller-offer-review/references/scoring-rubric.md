@@ -9,7 +9,7 @@ The score estimates how likely an offer is to close on its terms. Seven criteria
 | Appraisal Risk | 20 | cash without Rider F or AGA-1 (both apply to cash too), or no appraisal contingency on a conventional loan with documented funds, 5. Otherwise exposure = price − (CMA high + gap cover): price ≤ mid 5 · exposure ≤ 0 4 · ≤1% of price 3 · ≤2.5% 2 · more 1. Gap cover is the gap clause, except: FHA and VA 0 (the rider lets the buyer walk if the appraisal is low, so a waiver is ignored and a gap clause is intent only, and the protection runs to closing); a financed waiver, the buyer's documented cash beyond the down payment and closing costs (`gap_funds`) |
 | Contingency Exposure | 20 | sale-of-home contingency 1, or 2 with a kick-out clause (Rider X: the seller keeps marketing). Otherwise the lower of: days until firm (the longest of the inspection, loan approval, appraisal and each rider's cancel window: Rider H insurance, I mold, M drywall, S, T and U agreements, DD rental review, GG compensation agreement, Z attorney approval) ≤7 5 · ≤14 4 · ≤30 3 · ≤45 2 · more 1; inspection period (the walk-away-for-any-reason window: AS IS, Standard with Rider K or L, or another contract's walk-away period) ≤7 5 · ≤10 4 · ≤14 3 · more 2. Days until firm count the inspection period only when it's a walk-away; the appraisal window is each form's own (Rider F: 10 days before closing plus 3; AGA-1: 30 + 3 + 3 days if blank, never past closing; FHA/VA: to closing; FAR/BAR with no appraisal rider: the loan approval period, Para. 8(b)), so on a long closing an AGA-1 offer is firm sooner than the same offer on Rider F; on the FAR/BAR Standard (alone or with Rider L) they run through the repair election (inspection + 10 + 5 days), since either party may terminate when repairs exceed a limit |
 | Deposit Strength | 10 | ≥10% 5 · ≥3% 4 · ≥2% 3 · ≥1% 2 · less 1 |
-| Fit with Seller's Timeline | 10 | with a deadline: ≥7 days early 5 · on time 4 · ≤7 days late 2 · later 1. Without: ≤30 days 5 · ≤45 4 · ≤60 3 · more 2 |
+| Fit with Seller's Timeline | 10 | with a deadline: ≥7 days early 5 · on time 4 · ≤7 days late 2 · later 1. Without a deadline: 5 for any closing date (closing speed isn't scored), unless the seller's priority is speed: ≤30 days 5 · ≤45 4 · ≤60 3 · more 2 |
 | Property-Condition / Insurance Risk | 10 | cash 5. Financed: start at 4; roof ≥14 yrs −1 (≥20 yrs −2); FHA/VA/USDA −1; flood zone A/V −1; buyer has an insurance quote in hand +1 (a planned quote isn't scored) (range 1–5) |
 
 ## Missing Facts
@@ -23,10 +23,10 @@ A criterion never scores a stand-in. When the offer leaves out a fact a criterio
 | Approval level | Approval / Funds Verified |
 | Escrow deposit | Deposit Strength |
 | Closing date | Fit with Seller's Timeline (and Contingency Exposure when the closing caps the windows) |
-| Contract form (FAR/BAR market), or whether another contract's inspection period is a walk-away | Contingency Exposure |
+| Whether another contract's inspection period is a walk-away | Contingency Exposure |
 | Another contract's inspection or loan approval period, the appraisal terms of a financed offer, a rider's date | Contingency Exposure (the appraisal terms also leave out Appraisal Risk) |
 
-A FAR/BAR form's own blank (15-day inspection period, 30-day loan approval period, Rider F's dates) is a contract term, not a missing fact. A roof year or flood zone the listing doesn't give is no deduction: the property criterion counts the risks that are known.
+A FAR/BAR form's own blank (15-day inspection period, 30-day loan approval period, Rider F's dates) is a contract term, not a missing fact. An offer in a FAR/BAR market that doesn't name its form is scored as AS IS, the form its net assumes, so every offer is scored on the same criteria; the form stays a high-impact assumption and the review is Preliminary until it's confirmed. A roof year or flood zone the listing doesn't give is no deduction: the property criterion counts the risks that are known.
 
 ## Downside Case
 
@@ -34,7 +34,7 @@ The price if the appraisal lands at the CMA high, the top of the supported range
 
 ## Ranking (Multiple Offers)
 
-Risk-adjusted value = downside net − (100 − score)/100 × penalty × list price. Penalty by the seller's priority: price 5%, balanced 10%, speed 12%, certainty 15%.
+Risk-adjusted value = downside net − (100 − score)/100 × penalty × list price. Penalty by the seller's priority: price 5%, balanced 10%, speed 12%, certainty 15%. The score here counts Appraisal Risk at full marks, because the downside net already prices a low appraisal (the price capped at the top of the value range plus the gap cover); the displayed score is unchanged.
 
 - The top offer gets Accept or Counter. **Accept** when the score is 80+ and either the net is within 1% of the seller's target (a clean offer at list) or the counter would gain less than a small share of price: a strong offer isn't worth risking over a small gain. The share follows the seller's priority: certainty 1%, balanced and speed 0.5%, price 0.25%. An offer below 80 is also accepted when no counter rule applies; the report then says so without calling it strong. Same test in single mode.
 - The second becomes **Backup** if its score is 60+.

@@ -403,10 +403,11 @@ def compute(R, market):
         due = finance.tax_due_date(closing, market, due_date)
         due = fmt.date_short(due, year=False) if due else ""
         # one proration note (key "tax"), whichever way the bill falls; a mixed sheet adds the unpaid assumption once
+        bill = basis.replace(" bill", "", 1)  # iteration 16 eval 4: "this year's tax bill ($3,900)", never "($3,900 bill)"
         if bill_paid:
-            N.add("tax", t("note_tax_paid", basis=basis), "info")
+            N.add("tax", t("note_tax_paid", basis=bill), "info")
         elif all(paid_assumed):
-            N.add("tax", t("note_tax_bill_paid", basis=basis, due=due), "assumption")
+            N.add("tax", t("note_tax_bill_paid", basis=bill, due=due), "assumption")
         elif any(paid_assumed):
             N.add("tax", t("note_tax_mixed", basis=basis, due=due), "assumption")
             if tax_assumed:
@@ -440,10 +441,12 @@ def compute(R, market):
     if payoff_known and payoff_total:
         N.add("payoff", L["note_payoff_balance"] if payoff_est else L["note_payoff"], "assumption" if payoff_est else "info")
     N.add("not_included", L["note_not_included"], "info")
+    N.add("income_tax", finance.INCOME_TAX_NOTE, "info")
     if R.get("foreign_seller"):
         N.add("firpta", L["note_firpta"], "info")
     if not has_hoa and p.get("hoa") is None and hoa_monthly is None and kind != "condo":
-        N.add("no_hoa", L["note_no_hoa"], "assumption")  # its estoppel fee and dues would come off the net
+        # its documents fee and dues would come off the net; iteration 16: "estoppel" is Florida's word only
+        N.add("no_hoa", t("note_no_hoa", fee=L["hoa_fee_fl"] if st == "FL" else L["hoa_fee_other"]), "assumption")
     # iteration 14 eval 6: an assumption or estimate prints once in the report's notes; the only note kept off the
     # page is a default (the commission rate), which is not an assumption and gets no label
     odd = [k for k, _, kind in N.items("chat") if kind == "chat_only" and k not in CHAT_ONLY_KEYS]
@@ -461,8 +464,8 @@ def compute(R, market):
         reasons.append(L["reason_payoff"])
     if missing:
         reasons.append(t("reason_missing", items=", ".join(missing)))
-    if tax_missing:
-        reasons.append(t("reason_tax", items=tax_missing))
+    if tax_missing:  # iteration 16 eval 3: with no state, no state's tax rule is asserted
+        reasons.append(t("reason_tax" if st else "reason_tax_no_state", items=tax_missing))
 
     tiles = summary_tiles(columns, payoff_known)
     labels = ([r["label"] for r in rows] + [c["label"] for c in columns] + facts + [c["tile_label"] for c in columns]

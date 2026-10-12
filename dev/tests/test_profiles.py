@@ -126,6 +126,22 @@ class Market(unittest.TestCase):
         self.assertIsNone(m.get("cma.adjustments.pool"))
         self.assertIn("state_not_built_in", m.note_codes)
 
+    def test_state_average_property_tax_rate(self):
+        """Iteration 16: each state's average effective rate (national.md) before the national 1.1%; Florida keeps its
+        own; the deal's rate still wins."""
+        table = p._national()["state_property_tax_rates"]
+        self.assertEqual(set(table), set(p.STATES) - {"FL", "PR"})  # all 50 states but Florida, plus DC
+        self.assertTrue(all(0.002 < r < 0.025 for r in table.values()))
+        tx = p.load_market(state="TX")
+        self.assertEqual((tx.get("property_tax.fallback_rate"), tx.source("property_tax.fallback_rate")),
+                         (0.0136, "state_average"))
+        fl = p.load_market(state="FL")
+        self.assertEqual((fl.get("property_tax.fallback_rate"), fl.source("property_tax.fallback_rate")), (0.018, "state"))
+        for st in (None, "PR"):
+            m = p.load_market(state=st)
+            self.assertEqual((m.get("property_tax.fallback_rate"), m.source("property_tax.fallback_rate")), (0.011, "estimate"))
+        self.assertEqual(tx.with_deal({"tax_rate": 0.021}).get("property_tax.fallback_rate"), 0.021)
+
     def test_no_state_transfer_tax_states(self):
         for st in ("TX", "AZ", "OR", "AK"):
             m = p.load_market(state=st)

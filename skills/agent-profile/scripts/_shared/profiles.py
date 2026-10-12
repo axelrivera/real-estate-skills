@@ -8,7 +8,7 @@ built-in layers, never from the profile:
     agent = profiles.load_agent(path)                     # path may be None
     market = profiles.load_market(state="FL", county="Seminole", mls=None)
     rate = market.get("closing_costs.deed_transfer_tax_rate")
-    market.source("closing_costs.deed_transfer_tax_rate")  # 'state' | 'mls' | 'county' | 'estimate'
+    market.source("closing_costs.deed_transfer_tax_rate")  # 'state' | 'mls' | 'county' | 'estimate' | ...
     market.missing(["closing_costs.settlement_fee", ...])  # paths the skill still has to ask for
 
 A deal's own numbers (a title quote, the transfer tax the skill looked up) go in the skill's data file on top.
@@ -191,7 +191,8 @@ class Market:
 
     Sources: 'state' (built-in state layer, that state only), 'mls' (built-in MLS layer, that MLS only),
     'county' (county override), 'estimate' (national estimates, named once in a report's notes), 'national' (a national
-    rule that isn't an estimate: no transfer tax in a no_state_transfer_tax state), 'input' (given by the skill).
+    rule that isn't an estimate: no transfer tax in a no_state_transfer_tax state), 'state_average' (the state's average
+    effective property tax rate from national.md, an estimate like 'estimate'), 'input' (given by the skill).
     A path with no value is missing: it comes from the deal (a contract's time rules), or the skill asks.
     """
 
@@ -413,6 +414,12 @@ def load_market(state=None, county=None, mls=None):
         _merge(data, built_in, sources, "county")
     national = _strip_layer_keys(_national())
     no_tax = set(national.pop("no_state_transfer_tax", None) or [])
+    state_rates = national.pop("state_property_tax_rates", None) or {}
+    if want in state_rates and data.get("property_tax", {}).get("fallback_rate") is None:
+        # iteration 16: the state's average effective rate (Tax Foundation, national.md) before the national 1.1%;
+        # an estimate all the same, named once in a report's notes as the state's average effective rate
+        data.setdefault("property_tax", {})["fallback_rate"] = state_rates[want]
+        sources["property_tax.fallback_rate"] = "state_average"
     if want in no_tax and data.get("closing_costs", {}).get("deed_transfer_tax_rate") is None:
         data.setdefault("closing_costs", {})["deed_transfer_tax_rate"] = 0
         sources["closing_costs.deed_transfer_tax_rate"] = "national"

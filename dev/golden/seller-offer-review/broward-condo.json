@@ -333,7 +333,7 @@
     "tax_bill_assumed": true
    },
    "price": 485000,
-   "rank_value": 219304.0,
+   "rank_value": 222238.0,
    "repair_reserve": 3500,
    "repairs_owed": false,
    "rider_codes": [
@@ -446,6 +446,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -885,6 +886,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1365,7 +1367,7 @@
     "tax_bill_assumed": true
    },
    "price": 485000,
-   "rank_value": 219304.0,
+   "rank_value": 222238.0,
    "repair_reserve": 3500,
    "repairs_owed": false,
    "rider_codes": [
@@ -1478,6 +1480,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -1917,6 +1920,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -2358,6 +2362,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -2698,7 +2703,7 @@
     "tax_bill_assumed": true
    },
    "price": 485000,
-   "rank_value": 219304.0,
+   "rank_value": 222238.0,
    "repair_reserve": 3500,
    "repairs_owed": false,
    "rider_codes": [
@@ -2811,6 +2816,7 @@
     "tax_bill_assumed": false
    },
    "title_by": "buyer",
+   "title_by_given": false,
    "title_payer": "buyer",
    "title_payer_by_contract": false,
    "unknown": {
@@ -2822,6 +2828,7 @@
  "ranking_reason": null,
  "sample": true,
  "seller": {
+  "close_speed_neutral": true,
   "deadline": "2026-11-30",
   "default_buyer_broker_pct": 0.025,
   "holding_monthly": 2150,

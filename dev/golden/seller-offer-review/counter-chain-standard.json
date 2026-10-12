@@ -46,7 +46,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -337,7 +337,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544572.0,
+   "rank_value": 547128.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -366,8 +366,8 @@
    "sale_contingency_days": 0,
    "score": {
     "band": [
-     "mid",
-     "Workable"
+     "hi",
+     "Strong"
     ],
     "scores": {
      "appraisal": 5,
@@ -376,9 +376,9 @@
      "deposit": 4,
      "financing": 4,
      "property": 4,
-     "timeline": 3
+     "timeline": 5
     },
-    "total": 76,
+    "total": 80,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -454,6 +454,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": true,
    "unknown": {
@@ -684,7 +685,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -975,7 +976,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544572.0,
+   "rank_value": 547128.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -1004,8 +1005,8 @@
    "sale_contingency_days": 0,
    "score": {
     "band": [
-     "mid",
-     "Workable"
+     "hi",
+     "Strong"
     ],
     "scores": {
      "appraisal": 5,
@@ -1014,9 +1015,9 @@
      "deposit": 4,
      "financing": 4,
      "property": 4,
-     "timeline": 3
+     "timeline": 5
     },
-    "total": 76,
+    "total": 80,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -1092,6 +1093,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": true,
    "unknown": {
@@ -1147,7 +1149,7 @@
      "count": 4
     }
    ],
-   "counter_score": 76,
+   "counter_score": 80,
    "counter_stance": {
     "given": false,
     "reason": null,
@@ -1438,7 +1440,7 @@
      "price": 619500
     }
    ],
-   "rank_value": 544572.0,
+   "rank_value": 547128.0,
    "received": "2026-09-23 14:27",
    "repair_limits": {
     "general": 9292,
@@ -1467,8 +1469,8 @@
    "sale_contingency_days": 0,
    "score": {
     "band": [
-     "mid",
-     "Workable"
+     "hi",
+     "Strong"
     ],
     "scores": {
      "appraisal": 5,
@@ -1477,9 +1479,9 @@
      "deposit": 4,
      "financing": 4,
      "property": 4,
-     "timeline": 3
+     "timeline": 5
     },
-    "total": 76,
+    "total": 80,
     "weight": 100
    },
    "seller_concessions": 0,
@@ -1555,6 +1557,7 @@
     "tax_bill_assumed": true
    },
    "title_by": "seller",
+   "title_by_given": true,
    "title_payer": "seller",
    "title_payer_by_contract": true,
    "unknown": {
@@ -1566,6 +1569,7 @@
  "ranking_reason": null,
  "sample": false,
  "seller": {
+  "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
   "holding_monthly": 600,

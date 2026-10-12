@@ -42,6 +42,60 @@ def run(argv):
     return code, json.loads(out.getvalue())
 
 
+class SellerNotes(unittest.TestCase):
+    """The review's notes say each of these once: commissions are negotiable, proceeds are before income tax, FIRPTA for
+    a foreign seller, a listing fee that covers the buyer's broker, and a seller credit nobody stated yet."""
+
+    def test_fixed_and_conditional_notes(self):
+        d = fixture("minimal-single.json")
+        out = review.result(review.analyze(d))
+        self.assertIn(review.finance.COMMISSION_NOTE, out["notes"])
+        self.assertIn(review.finance.INCOME_TAX_NOTE, out["notes"])
+        self.assertNotIn("firpta", out["note_keys"])
+        d.setdefault("seller", {})["foreign_seller"] = True
+        out = review.result(review.analyze(d))
+        self.assertEqual(out["note_keys"].count("firpta"), 1)
+
+    def test_listing_fee_covering_the_buyer_broker(self):
+        d = fixture("listing-pays-buyer-broker.json")  # the listing fee is entered and the listing broker pays
+        out = review.result(review.analyze(d))
+        self.assertEqual(out["note_keys"].count("bb_from_listing"), 1)
+        d["seller"].pop("listing_fee_pct")  # an assumed fee already covers both sides, said in the assumptions
+        self.assertNotIn("bb_from_listing", review.result(review.analyze(d))["note_keys"])
+
+    def test_unstated_concessions_are_a_high_impact_assumption(self):
+        d = fixture("minimal-single.json")
+        d["offers"][0].pop("seller_concessions", None)
+        R = review.analyze(d)
+        a = next(a for a in R["assumptions"] if a["field"] == "seller_concessions")
+        self.assertEqual(a["impact"], "high")
+        self.assertIn("not yet stated", a["why"])
+
+
+class HighestAndBest(unittest.TestCase):
+    def data(self, prices, deadline=None):
+        d = fixture("minimal-single.json")
+        base = d["offers"][0]
+        d["offers"] = [{**base, "id": chr(65 + i), "price": p, "buyer": f"Buyer {i}"} for i, p in enumerate(prices)]
+        if deadline:
+            d.setdefault("seller", {})["deadline"] = deadline
+        return d
+
+    def test_three_offers_at_list_with_no_deadline_call_for_final_offers(self):
+        d = self.data([])
+        lp = d["listing"]["list_price"]
+        m = review.multi_view(review.analyze(self.data([lp, lp + 5000, lp + 10000])))
+        self.assertEqual((m["options"][0]["option"], m["options"][0]["recommended"]), ("Call for Highest & Best", True))
+        self.assertEqual([o["recommended"] for o in m["options"][1:]], [False] * (len(m["options"]) - 1))
+        self.assertIn("highest_and_best_call", m["plan_keys"])
+        for prices, deadline in (([lp, lp + 5000, lp - 10000], None), ([lp, lp + 5000, lp + 10000], "2026-12-31")):
+            with self.subTest(prices=prices, deadline=deadline):
+                m = review.multi_view(review.analyze(self.data(prices, deadline)))
+                hb = next(o for o in m["options"] if o["option"] == "Call for Highest & Best")
+                self.assertFalse(hb["recommended"])
+                self.assertNotIn("highest_and_best_call", m["plan_keys"])
+
+
 class Results(unittest.TestCase):
     def test_single_summary(self):
         R = review.analyze(fixture("minimal-single.json"))
@@ -72,12 +126,13 @@ class Results(unittest.TestCase):
         s = out["summary"]
         self.assertEqual(s["headline"], "ACCEPT")  # certainty: B (86) isn't risked for a 0.7% gain
         self.assertEqual([(p["key"], p["action"]) for p in s["ranked"]],
-                         [("B", "Accept"), ("C", "Hold as Backup"), ("A", "Decline"), ("D", "Decline")])
+                         [("B", "Accept"), ("C", "Hold as Backup"), ("D", "Decline"), ("A", "Decline")])
         self.assertEqual(s["offer_label"], s["ranked"][0]["offer"])
         data["seller"]["priority"] = "balanced"
         s = review.result(review.analyze(data))["summary"]
         self.assertEqual(s["headline"], "COUNTER")
-        self.assertIsNone(s["preliminary"])
+        # iteration 16: any high-impact assumption makes the comparison Preliminary too
+        self.assertIn("whether the listing fee includes the buyer's agent", s["preliminary"])
 
     def test_single_review_in_a_multi_listing(self):
         R = review.analyze(fixture("four-offers.json"))
@@ -341,7 +396,8 @@ class Risks(unittest.TestCase):
         out = review.result(review.analyze(fixture("minimal-single.json")))
         o = out["offers"][0]
         self.assertEqual(o["flag_keys"][-1], "flood_disclosure")  # a reminder, last
-        self.assertEqual(o["biggest_risk_key"], "threat:financing")  # only Low flags: the threat (FHA) is the risk
+        # only Low flags: the threat is the risk (35 days until firm, FHA protected to closing, on the AS IS assumed)
+        self.assertEqual(o["biggest_risk_key"], "threat:contingency")
         R = review.analyze(fixture("four-offers.json"))
         lee = offer(R, "D")  # a High sale contingency outranks the threat
         self.assertEqual(review.biggest_risk(lee)["key"], "sale_contingency")

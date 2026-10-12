@@ -2,6 +2,7 @@
  "agent_notes": {
   "count": 5
  },
+ "calendar_sent": false,
  "chat_notes": {
   "count": 0
  },
@@ -38,6 +39,9 @@
   "riders",
   "counteroffers"
  ],
+ "dropped": {
+  "count": 0
+ },
  "effective": {
   "date": "2026-09-25",
   "signed": "2026-09-25 16:12"
@@ -293,7 +297,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": false,
+   "critical": true,
    "day": 5,
    "done": false,
    "done_display": null,
@@ -568,7 +572,7 @@
    "broker": false,
    "by_closing": false,
    "contingency": false,
-   "critical": false,
+   "critical": true,
    "day": 34,
    "done": false,
    "done_display": null,
@@ -763,6 +767,7 @@
    {
     "label": "Counting"
    },
+   {},
    {},
    {},
    {},

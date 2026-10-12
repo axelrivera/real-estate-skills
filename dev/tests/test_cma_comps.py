@@ -213,3 +213,20 @@ class Formats(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Outliers(unittest.TestCase):
+    def test_several_flagged_name_the_farthest_first(self):
+        """Eval 16: two outliers flagged at once were replaced in different orders, giving different medians. The
+        farthest comes first and is the one to replace first; the rest are judged again on the next run."""
+        cards = [{"address": a, "adjusted": v} for a, v in
+                 (("1 A St", 470000), ("2 B St", 521300), ("3 C St", 425000), ("4 D St", 484500), ("5 E St", 461600))]
+        out = compute.cma.outlier_warnings(cards)
+        self.assertEqual([w.split(":")[0] for w in out], ["2 B St", "3 C St"])
+        self.assertIn("replace it first", out[0])
+        self.assertIn("Judge it again", out[1])
+        self.assertEqual(compute.cma.outlier_warnings(list(reversed(cards))), out)  # the order of the cards doesn't matter
+        self.assertEqual(compute.cma.outlier_warnings([c for c in cards if c["address"] != "2 B St"]), [])  # judged again
+        one = compute.cma.outlier_warnings([c for c in cards if c["address"] != "3 C St"])
+        self.assertEqual(len(one), 1)
+        self.assertIn("Replace it with the next candidate", one[0])

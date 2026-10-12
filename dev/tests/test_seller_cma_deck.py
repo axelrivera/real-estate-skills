@@ -223,6 +223,18 @@ class Build(unittest.TestCase):
             self.assertTrue(cells)
             self.assertLessEqual({f for c in cells for f in re.findall(r'<a:srgbClr val="(\w+)"', c)}, {"FFFFFF"})
 
+    def test_method_note_clears_the_card_without_an_export(self):
+        """Eval 16: with three steps (no export) the adjustments note ran under the recommendation card on slide 3."""
+        R = texas(report_with_deck())
+        R["deck"].pop("scatter_takeaway", None)
+        D, _ = data(R)
+        self.assertEqual(len(D["method"]["steps"]), 3)
+        for note in (D["labels"]["deck_method_note"], D["labels"]["deck_method_note"] * 3):
+            D["labels"]["deck_method_note"] = note  # a short note beside the card, a long one below it
+            with tempfile.TemporaryDirectory() as tmp:
+                checks = deck.build_pptx(D, os.path.join(tmp, "deck.pptx"))
+            self.assertFalse([c for c in checks if c.startswith("slide 3") and "overlap" in c], checks)
+
     def test_text_fit_checks_say_how_much_fits(self):
         R = tanager()
         R["deck"]["tagline"] = ("Three bedrooms, an updated kitchen, a two-car garage, a newer roof and a quiet street "
