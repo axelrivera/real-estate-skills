@@ -144,6 +144,10 @@ class Reprice(unittest.TestCase):
         self.assertEqual(C["strategies"][0]["expected_sale_source"], "rule")
         self.assertEqual(C["recommendation"]["verdict"], compute.t("verdict_price_stay", price="$456,000"))
         self.assertIn(compute.L["stance_line_below_range"], C["stance"]["line"])
+        self.assertEqual(C["reprice_words"], "stay")  # iteration 22: already live, so nothing is new or going live
+        self.assertEqual(C["recommendation"]["caption"].split(" · ")[0], "Current List Price")
+        self.assertTrue(C["launch"]["line"].startswith("Refreshed listing"))
+        self.assertNotIn("stay_expected_high", C["warning_keys"])
 
     def test_output(self):
         R = reprice(current=489900)

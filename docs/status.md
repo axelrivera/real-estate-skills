@@ -18,7 +18,7 @@ Where the work stands and what's left. Last updated 2026-10-12 (version 0.17.0: 
 The buyer CMA leaned on offer strategy (a suggested opening offer, a target and a walk-away from one of four postures, negotiating points, a price-vs-credit table), work the buyer offer strategy already does. The CMA is now an objective report of value, and the offer is the strategy skill's alone. What agents will notice:
 
 - **Buyer CMA:**
-  - **Page 1 leads with value:** the supported range, the median adjusted value beside asking, and where asking sits ("Asking is inside the range, $5,100 above the median"). The comps chart marks asking and the median. "Why This Range" and "Check Before Deciding" replace "Why This Offer" and "Check Before You Offer".
+  - **Page 1 leads with value:** the supported range, the median adjusted value beside asking, and where asking sits ("Asking is inside the range, $5,050 above the median"). The comps chart marks asking and the median. "Why This Range" and "Check Before Deciding" replace "Why This Offer" and "Check Before You Offer".
   - **No offer anywhere:** no opening, target, walk-away, posture, Negotiating Points or Price vs. Seller Credit, in the PDF, the chat summary, the gut check or the handoff (`offer_plan` is null). The value narrative is refused when it gives offer advice ("open at", "room to negotiate", "leverage"); the next step may point to the offer.
   - **Costs at asking and at the median:** the payment is figured at asking, with each column's total at the median adjusted value beside it when that's lower (and on page 1). When asking is above the range, the bottom line says what an appraisal at the range's top would leave between the two, as a fact.
   - **Inputs:** `costs.closing_costs`, `closing_cost_pct` and the buyer-broker rates move up from the retired `costs.credit_scenarios`; `offer_plan`, `offer` and `costs.credit_scenarios` stop the run with where to go instead. The loan programs' seller-credit limits stay as a note. The step-1 questions ask only about financing and cash.
@@ -49,7 +49,7 @@ The buyer CMA leaned on offer strategy (a suggested opening offer, a target and 
 **Iteration 19 follow-up (still 0.17.0).** Every buyer CMA and offer strategy expectation passed, and the three Hickorywood runs gave one range ($475K–$500K). Then:
 
 - **Recent systems are the script's, in both CMAs:** a `recent_systems` flag on the home and each comp (a system other than the roof named new or dated within five years); the script applies the market's $5,000 by the difference. A typed systems amount stops the run. That was the last hand-typed comp amount that differed between runs.
-- **Offer outlook value floor:** with two or more competing offers, an offer under the median adjusted value reads one band lower. The Austin six-offer case now recommends the walk-away ($632,000, Strong), with $615,000 as the Lower-Cost option saying why it reads Competitive.
+- **Offer outlook value floor:** with two or more competing offers, an offer under the median adjusted value (rounded down to the $1,000 price step, so an FHA $363,000 against a $363,500 median isn't lowered) reads one band lower. The Austin six-offer case now recommends the walk-away ($632,000, Strong), with $615,000 as the Lower-Cost option saying why it reads Competitive.
 - **Flexible seller:** `property.seller_flexible_close` scores every closing date 5 of 5 on the seller's timeline (eval 5 now recommends $453,000, Competitive).
 - **Buyer CMA:** the payment takes `subject.hoa_monthly` when the payment block has no HOA; asking within 0.5% of an end reads "just under the bottom of the range, by $100"; the scatter caption no longer says "so"; the financing note reads cleanly with several assumed columns; the gut check asks the history-order and MLS questions in one line; the for-you-only bullet takes who owns or lives in the home; a roof claim that left the listing is never a roof year; no counts in words.
 - **Rate week:** every skill takes Freddie Mac's newest week on or before the report date, never a later one.
@@ -418,6 +418,17 @@ User testing found the onboarding too technical: two profile skills with no dire
 5. **Docs and version:** migration-plan status, development.md (evals), skill-guidelines, manifests at 0.2.0 (validated).
 
 6. **Style and compliance pass:** Spanish support removed (English only); no em dashes in prose (lone em dashes for empty values are fine) and Title Case labels across every output (`make style-check`); a Guardrails section at the top of every SKILL.md; fair housing rules in `shared/references/fair-housing.md`, synced into the five skills that write client prose; `shared/prose.py` stops a render on an em dash in a sentence or a clear fair-housing phrase; `fair_housing.extra_protected_classes` in market profiles; one fair-housing eval each for buyer-cma, seller-cma, seller-offer-review, buyer-offer-strategy and agent-profile (not run yet).
+
+**Iteration 21: the full release pass (still 0.17.0).** Every skill, 53 runs: 997 of 1012 expectations (98.5%; iteration 16, the last full pass, 984 of 1010). Then:
+
+- **Seller CMA under the range:** the range's floor holds only an option listed inside the range (the competing option at $465,000 had expected $474,400, above its list, with a note saying $475,000); under the range Stay takes the market's ratio like the cuts, never the stale-listing one, so the recommended Stay expects and nets the most. "Stay at $474,900" (not "Reprice to"), a stance line that says the price sits just under the range, relist wording for a sale that fell through (not "buyers passed"), a reprice's shelf-life line for a listed home, and a listed-now question that says the failed price caps the options.
+- **Rider GG (owner decision):** a window, never the headline or a question. The contract timeline keeps its rows in the table and calendar but never names one as page 1's Next deadline, and drops the "to be safe" second-reading note; the seller offer review keeps the window row and never asks for the compensation agreement.
+- **Subject card:** a systems year the script didn't count reads "Updated 2020, not recent".
+- **Buyer CMA:** a count of events in words ("two price cuts", "twice") stops the run, as writing.md already said; a home's features, the sales a sentence points to and a ratio still pass.
+- **False stops removed:** a document's own number in the timeline's Effective Date source ("Counter Offer 3"), and the English word "undefined" in a note.
+- **Offer strategy:** a payment-capped price reason reads as two sentences ("…a month, below the value range. That payment uses a 7.03% rate … and estimated insurance").
+- **Skill text:** the net sheet's what-if is a small table; the profile names default commission and estimates "once in its notes", never "labels them".
+- **Known, by design:** outside Florida (no built-in roof bands) an unknown comp roof gets no warning; the chat's next step offers the package while the rendered page says to submit it.
 
 ## Open items (judgment calls and smaller gaps from the evals)
 

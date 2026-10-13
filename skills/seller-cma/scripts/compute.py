@@ -70,7 +70,11 @@ def t(key, **kw):
 
 
 def word(key, reprice=False, **kw):
-    """A label, in its reprice wording ("<key>_reprice": "New List Price", "Before We Reprice") on a reprice."""
+    """A label, in its reprice wording ("<key>_reprice": "New List Price", "Before We Reprice") on a reprice, and in its
+    stay wording ("<key>_stay": "Current List Price") when a reprice recommends staying at the current price
+    (iteration 22: the home is already listed, so nothing is new, relaunched or going live)."""
+    if reprice == "stay" and key + "_stay" in L:
+        return t(key + "_stay", **kw)
     return t(key + "_reprice" if reprice and key + "_reprice" in L else key, **kw)
 
 
@@ -1707,7 +1711,8 @@ def compute(R, market, homes, data_file=None):
         if rule:
             reprice_out.update(stay_expected_sale=rule["gross"], stay_expected_sale_display=money(rule["gross"]),
                                stay_ratio=rule["ratio"], stay_ratio_sales=rule["n"], stay_expected_filled=stay_filled)
-            if strategies[stay]["expected_sale"] > rule["gross"]:
+            if strategies[stay]["expected_sale"] > rule["gross"] and not built.get("below_range"):  # under the range
+                # Stay takes the one rule on purpose (iteration 21), so its stale-listing figure is no check on it
                 warn("stay_expected_high", f"Stay at Current Price expects {money(strategies[stay]['expected_sale'])}, "
                      f"above {money(rule['gross'])} from the rule (method.md, A Reprice): use {money(rule['gross'])}, "
                      "or say in pricing.note why this listing would do better.")
@@ -1731,8 +1736,9 @@ def compute(R, market, homes, data_file=None):
     best = strongest_comp(cards, rec["low"], rec["high"])
     shown = median_rounded(median_adjusted, len(values))
     pos_key = range_position(rec["list_price"], rec["low"], rec["high"])
-    rw = labeler(bool(reprice_out))
-    C = {"ok": True, "stage": "full", "sample": bool(R.get("sample")), "reprice_words": bool(reprice_out),
+    words = "stay" if reprice_out and strategies[ri]["role"] == "stay" else bool(reprice_out)
+    rw = labeler(words)
+    C = {"ok": True, "stage": "full", "sample": bool(R.get("sample")), "reprice_words": words,
          "data_source": {"mls": market.mls, "as_of": as_of.isoformat(), "as_of_display": fmt.date_long(as_of),
                          "export": bool(homes)},
          "prepared_date": prepared_date(R.get("prepared_date"), as_of),
@@ -1751,10 +1757,8 @@ def compute(R, market, homes, data_file=None):
         "position": L[pos_key],
         "line": t("line_recommendation", low=money(rec["low"]), high=money(rec["high"]), median=money(shown),
                   price=money(rec["list_price"]), position=L[pos_key], vs=vs_median(rec["list_price"], shown)),
-        "verdict": t("verdict_price_stay", price=money(rec["list_price"])) if strategies[ri]["role"] == "stay"
-        else rw("verdict_price", price=money(rec["list_price"])),
-        "caption": t("verdict_caption_stay", range=fmt.range(rec["low"], rec["high"])) if strategies[ri]["role"] == "stay"
-        else rw("verdict_caption", range=fmt.range(rec["low"], rec["high"])),
+        "verdict": rw("verdict_price", price=money(rec["list_price"])),
+        "caption": rw("verdict_caption", range=fmt.range(rec["low"], rec["high"])),
         "why": rec.get("why", ""), "override": range_info["override"], "price_override": agent_price is not None}
     C["stance"] = stance_model(stance, suggested, signals, stance_reason, stats, rule_price, agent_price, agent_reason,
                                failed=rp is not None or relist is not None, below=bool(built.get("below_range")))
@@ -1827,6 +1831,8 @@ def compute(R, market, homes, data_file=None):
     C["listing_kind"], C["options_merged"] = built["kind"], [list(m) for m in built["merged"]]
     C["below_range"] = bool(built.get("below_range"))
     C["launch"] = launch
+    if words == "stay":  # already live: the date is the refresh, never a go-live
+        launch["line"] = t("line_launch_stay", date=launch["display"])
     C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "source", "filled", "agent", "capped",
                                                        "floored", "premium", "premium_ratio", "premium_source")}
     C["net"] = {"rows": rows, "totals": totals, "after_holding": after, "holding": [r["amounts"] for r in rows
