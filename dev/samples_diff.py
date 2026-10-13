@@ -2,7 +2,7 @@
 
 Every render stamps its build time (the PDF creation date, the calendar's DTSTAMP, the deck's core properties and
 embedded chart workbooks), so `make samples` shows every file as modified even when nothing a reader sees moved.
-This compares each modified file in samples/ with the committed copy by content: PDF page text, ICS lines without
+This compares each modified file in samples/ with the committed copy by content: PDF page text and drawing, ICS lines without
 DTSTAMP, and PPTX slide XML. With --revert, files whose content is unchanged are restored from git, so only real
 changes are left to review and commit.
 
@@ -28,7 +28,8 @@ def content(path, data):
     """What a reader sees in a sample file, without build times."""
     if path.endswith(".pdf"):
         import pymupdf  # dev-only tool (dev/requirements-tools.txt)
-        return [page.get_text() for page in pymupdf.open(stream=data, filetype="pdf")]
+        # text and the drawing stream, so a color- or layout-only change counts too
+        return [(page.get_text(), page.read_contents()) for page in pymupdf.open(stream=data, filetype="pdf")]
     if path.endswith(".ics"):
         return [line for line in data.decode().splitlines() if not line.startswith("DTSTAMP:")]
     if path.endswith(".pptx"):
