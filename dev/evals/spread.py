@@ -40,7 +40,7 @@ MD_LIMIT = 40  # rows per table in spread.md; spread.json has every row
 # The data file each skill's render.py reads (SKILL.md), and how to tell one from its content when it's named otherwise
 DATA_FILES = {"contract-timeline": "deal.json", "seller-offer-review": "listing.json",
               "buyer-offer-strategy": "buyer.json", "buyer-cma": "report.json", "seller-cma": "report.json",
-              "seller-net-sheet": "net-sheet.json"}
+              "seller-net-sheet": "net-sheet.json", "seller-market-timing": "market-timing.json"}
 
 
 def detect(data):
@@ -50,6 +50,8 @@ def detect(data):
     keys = set(data)
     if data.get("handoff"):
         return None
+    if "lookback_months" in keys or "season_override" in keys or ("export" in keys and "area" in keys):
+        return "seller-market-timing"
     if "scenarios" in keys:
         return "seller-net-sheet"
     if "offers" in keys and "listing" in keys:
@@ -113,6 +115,7 @@ SPEC = {
         "text": []},
     "contract-timeline": {"script": [], "roots": [], "derived": [], "text": []},
     "seller-net-sheet": {"script": [], "roots": [], "derived": [], "text": []},
+    "seller-market-timing": {"script": [], "roots": [], "derived": [], "text": []},
 }
 
 

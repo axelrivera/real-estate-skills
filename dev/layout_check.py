@@ -26,6 +26,7 @@ from shared import cma  # noqa: E402
 PROFILES = os.path.join(ROOT, "dev", "fixtures", "_profiles")
 MIDDLE, TAIL = cma.HALF_EMPTY, cma.LONE_TAIL
 CMA_MARGINS, DEFAULT_MARGINS = (0.45, 0.55), (0.3, 0.4)  # top and bottom, inches: cma.PAGE_MARGINS, render.html_to_pdf
+SHEET_MARGINS = (0.45, 0.45)  # cma.SHEET_FIT, the one-page landscape chart sheet
 # skill -> (--format, page margins). The seller CMA's deck is slides, not a report page: only its report is checked.
 SKILLS = {
     "buyer-cma": ("pdf", CMA_MARGINS),
@@ -34,6 +35,7 @@ SKILLS = {
     "seller-offer-review": ("pdf", DEFAULT_MARGINS),
     "seller-net-sheet": ("pdf", DEFAULT_MARGINS),
     "contract-timeline": ("pdf", DEFAULT_MARGINS),
+    "seller-market-timing": ("pdf", SHEET_MARGINS),
 }
 # (skill/fixture, PDF file name, page) -> why that page may be near-empty. Only for fixtures that are extreme on purpose.
 ALLOW = {}

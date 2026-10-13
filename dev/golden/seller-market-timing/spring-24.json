@@ -1,0 +1,162 @@
+{
+ "as_of": "2026-09-26",
+ "average_per_month": 2.5,
+ "basis": "contract",
+ "list_by": "mid-February",
+ "median_days_on_market": 18.0,
+ "months": [
+  {
+   "median_price": 457100,
+   "month": 1,
+   "name": "January",
+   "per_year": 0.5,
+   "sales": 1,
+   "season": null,
+   "short": "Jan"
+  },
+  {
+   "median_price": 361400,
+   "month": 2,
+   "name": "February",
+   "per_year": 0.5,
+   "sales": 1,
+   "season": null,
+   "short": "Feb"
+  },
+  {
+   "median_price": 431900,
+   "month": 3,
+   "name": "March",
+   "per_year": 5.0,
+   "sales": 10,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "Mar"
+  },
+  {
+   "median_price": 300800,
+   "month": 4,
+   "name": "April",
+   "per_year": 3.5,
+   "sales": 7,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "Apr"
+  },
+  {
+   "median_price": 423700,
+   "month": 5,
+   "name": "May",
+   "per_year": 3.0,
+   "sales": 6,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "May"
+  },
+  {
+   "median_price": 384950,
+   "month": 6,
+   "name": "June",
+   "per_year": 5.0,
+   "sales": 10,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "Jun"
+  },
+  {
+   "median_price": 357150,
+   "month": 7,
+   "name": "July",
+   "per_year": 5.0,
+   "sales": 10,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "Jul"
+  },
+  {
+   "median_price": 352800,
+   "month": 8,
+   "name": "August",
+   "per_year": 2.5,
+   "sales": 5,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "Aug"
+  },
+  {
+   "median_price": 465500,
+   "month": 9,
+   "name": "September",
+   "per_year": 2.5,
+   "sales": 5,
+   "season": "busy",
+   "season_label": "Busy",
+   "short": "Sep"
+  },
+  {
+   "median_price": null,
+   "month": 10,
+   "name": "October",
+   "per_year": 0.0,
+   "sales": 0,
+   "season": null,
+   "short": "Oct"
+  },
+  {
+   "median_price": 354950,
+   "month": 11,
+   "name": "November",
+   "per_year": 2.0,
+   "sales": 4,
+   "season": null,
+   "short": "Nov"
+  },
+  {
+   "median_price": 295300,
+   "month": 12,
+   "name": "December",
+   "per_year": 0.5,
+   "sales": 1,
+   "season": null,
+   "short": "Dec"
+  }
+ ],
+ "ok": true,
+ "peak_month": null,
+ "sales": 60,
+ "sample": false,
+ "season_source": "sales",
+ "seasons": [
+  {
+   "months": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "sales": 53
+  }
+ ],
+ "warnings": {
+  "count": 1
+ },
+ "window": {
+  "end": "2026-08-01",
+  "lookback": 24,
+  "months": 24,
+  "start": "2024-08-01"
+ },
+ "years": [
+  {
+   "end": "2026-08-01",
+   "start": "2025-08-01"
+  },
+  {
+   "end": "2025-08-01",
+   "start": "2024-08-01"
+  }
+ ]
+}

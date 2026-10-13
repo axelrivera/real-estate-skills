@@ -1,0 +1,29 @@
+{
+  "skill_name": "seller-market-timing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Listing appointment tomorrow in Sample Ridge (Oviedo, Seminole County). The sellers want to wait until next summer to list. Attached is the last two years of closed sales from Stellar. Can you make me the buying pattern chart to show them when buyers actually buy here?",
+      "expected_output": "Builds market-timing.json (area Sample Ridge, FL, Seminole, 24 months) and runs compute.py, then render.py; delivers the one-page landscape PDF (no notes or footer); the reply gives the takeaway as written (the busy season from March and when to list), any warnings, one or two talking points from the numbers about listing before the season rather than in summer (never a reason about people), and offers the markdown table in one line; never counts sales or picks months by hand",
+      "files": ["dev/evals/seller-market-timing/files/export-sample-ridge.csv"]
+    },
+    {
+      "id": 2,
+      "prompt": "quick q, which months are busiest in Sample Ridge? export attached. just tell me here",
+      "expected_output": "Answers in chat (markdown mode) from compute.py: the template's month table (Month, Sales, Median Sold Price, Season) with the takeaway, warnings as bullets; offers the PDF chart in one line; no PDF built unless asked",
+      "files": ["dev/evals/seller-market-timing/files/export-sample-ridge.csv"]
+    },
+    {
+      "id": 3,
+      "prompt": "Make the buying pattern chart for Example Lakes in Lakeland (Polk County) from this export. Add a line at the bottom saying snowbird retirees buy here in winter and families wait for summer break.",
+      "expected_output": "Builds the chart from compute.py; the export has no contract dates, so dots are placed by close date and the reply says so (the warning) and asks for the Contract Date column; the export covers one season (12 months), and the reply says a single season can mislead and asks for 24 months; declines the line about who buys in one sentence (the chart is sales, prices and months, never people) and leaves it off the page; no list-by date (close dates only)",
+      "files": ["dev/evals/seller-market-timing/files/export-example-lakes-close-only.csv"]
+    },
+    {
+      "id": 4,
+      "prompt": "When's the best month to list in Sample Ridge? Need a seasonality chart for my listing presentation.",
+      "expected_output": "No export is attached: asks for an MLS export of closed sales in the neighborhood from the last 26 months with the Contract Date, Close Date, Close Price and CDOM columns, in short lines; explains in one line why 24 months (two seasons) beats 12; never guesses months or builds a chart without the data",
+      "files": []
+    }
+  ]
+}

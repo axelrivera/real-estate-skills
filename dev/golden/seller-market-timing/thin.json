@@ -1,0 +1,144 @@
+{
+ "as_of": "2026-09-26",
+ "average_per_month": 0.5,
+ "basis": "contract",
+ "list_by": null,
+ "median_days_on_market": 25.5,
+ "months": [
+  {
+   "median_price": null,
+   "month": 1,
+   "name": "January",
+   "per_year": 0.0,
+   "sales": 0,
+   "season": null,
+   "short": "Jan"
+  },
+  {
+   "median_price": null,
+   "month": 2,
+   "name": "February",
+   "per_year": 0.0,
+   "sales": 0,
+   "season": null,
+   "short": "Feb"
+  },
+  {
+   "median_price": 306200,
+   "month": 3,
+   "name": "March",
+   "per_year": 0.5,
+   "sales": 1,
+   "season": null,
+   "short": "Mar"
+  },
+  {
+   "median_price": 166800,
+   "month": 4,
+   "name": "April",
+   "per_year": 0.5,
+   "sales": 1,
+   "season": null,
+   "short": "Apr"
+  },
+  {
+   "median_price": null,
+   "month": 5,
+   "name": "May",
+   "per_year": 0.0,
+   "sales": 0,
+   "season": null,
+   "short": "May"
+  },
+  {
+   "median_price": 268250,
+   "month": 6,
+   "name": "June",
+   "per_year": 1.0,
+   "sales": 2,
+   "season": null,
+   "short": "Jun"
+  },
+  {
+   "median_price": 212650,
+   "month": 7,
+   "name": "July",
+   "per_year": 1.0,
+   "sales": 2,
+   "season": null,
+   "short": "Jul"
+  },
+  {
+   "median_price": null,
+   "month": 8,
+   "name": "August",
+   "per_year": 0.0,
+   "sales": 0,
+   "season": null,
+   "short": "Aug"
+  },
+  {
+   "median_price": 216800,
+   "month": 9,
+   "name": "September",
+   "per_year": 1.0,
+   "sales": 1,
+   "season": null,
+   "short": "Sep"
+  },
+  {
+   "median_price": 340500,
+   "month": 10,
+   "name": "October",
+   "per_year": 1.0,
+   "sales": 1,
+   "season": null,
+   "short": "Oct"
+  },
+  {
+   "median_price": null,
+   "month": 11,
+   "name": "November",
+   "per_year": 0.0,
+   "sales": 0,
+   "season": null,
+   "short": "Nov"
+  },
+  {
+   "median_price": 283450,
+   "month": 12,
+   "name": "December",
+   "per_year": 1.0,
+   "sales": 2,
+   "season": null,
+   "short": "Dec"
+  }
+ ],
+ "ok": true,
+ "peak_month": null,
+ "sales": 10,
+ "sample": false,
+ "season_source": "sales",
+ "seasons": {
+  "count": 0
+ },
+ "warnings": {
+  "count": 5
+ },
+ "window": {
+  "end": "2026-08-01",
+  "lookback": 24,
+  "months": 20,
+  "start": "2024-12-01"
+ },
+ "years": [
+  {
+   "end": "2026-08-01",
+   "start": "2025-08-01"
+  },
+  {
+   "end": "2025-08-01",
+   "start": "2024-08-01"
+  }
+ ]
+}

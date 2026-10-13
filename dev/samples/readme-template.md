@@ -14,10 +14,15 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 - {{seller-cma/*-Seller-CMA.pdf}}. The listing-side analysis for the same home: a recommended list price and supported range, adjusted comps, the scatterplot, competition, market conditions, three pricing strategies with estimated net proceeds, what buyers would pay per month at each price, a launch plan and the documents needed from the seller.
 - {{seller-cma/*-Listing-Presentation.pptx}}. An editable listing presentation with the same numbers, for the listing appointment.
 - {{seller-cma/*-Listing-Presentation.pdf}}. The same presentation as a PDF, the backup copy delivered with the PPTX.
+- {{seller-cma/*-Competitive-Position.pdf}}. The Competitive Position sheet for the agent: the homes for sale and under contract near the home's size, with crosshairs through the home at the recommended price and a count of the larger homes listed for less.
 
 ## Seller Net Sheet
 
 {{seller-net-sheet/*-Seller-Net-Sheet.pdf}}. A one-page net sheet for the home the offer review samples use, before any offers: what the seller walks away with at the $515,000 list price, after a price cut and with a $10,000 seller credit, itemized from brokerage and Florida's documentary stamp tax through the title company fees, the property tax proration and the mortgage payoff.
+
+## Seller Market Timing
+
+{{seller-market-timing/*-Buying-Pattern.pdf}}. The Buying Pattern chart for a mock neighborhood: two years of closed sales by the month they went under contract and their sold price, with the spring season boxed and when to list to be on the market as it opens.
 
 ## Buyer Offer Strategy
 

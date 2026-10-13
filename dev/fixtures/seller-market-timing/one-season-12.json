@@ -1,0 +1,8 @@
+{
+  "export": "exports/one-season-12.csv",
+  "state": "FL",
+  "county": "Seminole",
+  "as_of": "2026-09-26",
+  "lookback_months": 12,
+  "area": "Oak Hollow Estates"
+}

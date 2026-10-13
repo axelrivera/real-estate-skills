@@ -1,0 +1,737 @@
+"""Money math shared by the CMAs and offer skills: payments, loan programs, property tax, title, seller net.
+
+    from _shared import finance
+    p = finance.monthly_payment(474900, "conventional", 0.05, 6.95, tax_annual=7596, insurance_annual=3600)
+    tax = finance.property_tax(474900, market, school_mills=5.249, total_mills=17.5683)
+    net = finance.seller_net(465000, market, credit=10000, payoff=210000)
+
+Market-specific values (transfer tax, title, fees, commissions, exemptions, millage) come from the
+built-in market layers (shared/profiles.load_market). Lending rules are national estimates: the lender's
+numbers always win.
+"""
+import math
+import re
+from datetime import date
+
+from . import fmt
+
+COMMISSION_NOTE = "Commissions are negotiable and not set by law."
+# Every seller report (net sheet, seller CMA, offer review): the proceeds are before tax on the gain
+INCOME_TAX_NOTE = "These proceeds are before any income tax on the sale; a CPA can estimate it."
+SINGLE_FAMILY = "single_family"
+
+# Agency guidelines as planning estimates (confirm limits, fees and overlays with the lender).
+LOAN_PROGRAMS = {
+    "conventional": {"label": "Conventional", "min_down": 0.03, "upfront_fee": 0.0, "annual_mi": 0.005},
+    "fha": {"label": "FHA", "min_down": 0.035, "upfront_fee": 0.0175, "annual_mi": 0.0055},
+    "va": {"label": "VA", "min_down": 0.0, "upfront_fee": 0.0215, "annual_mi": 0.0},
+    "usda": {"label": "USDA", "min_down": 0.0, "upfront_fee": 0.01, "annual_mi": 0.0035},
+    "cash": {"label": "Cash", "min_down": 1.0, "upfront_fee": 0.0, "annual_mi": 0.0},
+}
+ALIASES = {"conv": "conventional"}
+
+# OFR-25: private mortgage insurance by loan-to-value, as a planning estimate (good credit; the lender's quote wins)
+PMI_BY_LTV = ((0.95, 0.0075), (0.90, 0.005), (0.85, 0.0035), (0.80, 0.002))  # (LTV above, annual rate)
+# VA funding fee (38 U.S.C. 3729): by down payment, first use and later use; waived for exempt veterans
+VA_FEE = ((0.10, 0.0125, 0.0125), (0.05, 0.015, 0.015), (0.0, 0.0215, 0.033))  # (down at least, first, later)
+
+
+def annual_mi_rate(name, down):
+    """Annual mortgage insurance as a share of the base loan: PMI by loan-to-value for conventional loans."""
+    key = program(name)
+    if key != "conventional":
+        return LOAN_PROGRAMS[key]["annual_mi"]
+    ltv = 1 - down
+    return next((rate for above, rate in PMI_BY_LTV if ltv > above + 1e-9), 0.0)
+
+
+def upfront_fee(name, down, va_later_use=False, va_exempt=False):
+    """The financed upfront fee: FHA's premium, USDA's guarantee fee, or the VA funding fee from its table."""
+    key = program(name)
+    if key != "va":
+        return LOAN_PROGRAMS[key]["upfront_fee"]
+    if va_exempt:
+        return 0.0
+    return next(later if va_later_use else first for at_least, first, later in VA_FEE if down >= at_least - 1e-9)
+
+
+def program(name):
+    key = ALIASES.get(str(name).lower(), str(name).lower())
+    if key not in LOAN_PROGRAMS:
+        raise ValueError(f"Unknown loan program {name!r} (use conventional, fha, va, usda or cash).")
+    return key
+
+
+def property_type(value):
+    """'single_family', 'condo', 'townhouse', 'multifamily', 'land' or 'other' from a data file; None when not given."""
+    if value in (None, ""):
+        return None
+    v = " ".join(str(value).lower().replace("_", " ").replace("-", " ").split())
+    for key, words in (("condo", ("condo", "condominium")), ("townhouse", ("townhouse", "townhome", "villa")),
+                       ("multifamily", ("duplex", "triplex", "fourplex", "multi", "multifamily")),
+                       ("land", ("land", "lot", "vacant")), (SINGLE_FAMILY, ("single family", "sfr", "house", "detached"))):
+        if any(w in v for w in words):
+            return key
+    return "other"
+
+
+def tax_due_date(closing, market=None, due_date=None):
+    """This year's tax bill due date in the closing's year, or None when neither the agent (`due_date`: "10-15" or
+    "2026-10-15"; only the month and day count) nor the market (`property_tax.due_date`) gives one."""
+    v = due_date if due_date not in (None, "") else (market.get("property_tax.due_date") if market is not None else None)
+    if v in (None, "") or not closing:
+        return None
+    if isinstance(v, date):
+        return date(closing.year, v.month, v.day)
+    m = re.match(r"^(?:\d{4}-)?(\d{1,2})-(\d{1,2})$", str(v).strip())
+    if not m:
+        raise ValueError(f"The tax bill's due date should look like 10-15 or 2026-10-15, not {v!r}.")
+    return date(closing.year, int(m.group(1)), int(m.group(2)))
+
+
+def tax_bill_assumed_paid(closing, market=None, bill_paid=None, due_date=None):
+    """True when the agent hasn't said whether this year's bill is paid and closing falls after its due date: the
+    seller is assumed to have paid it (iteration 9 eval 4: Cobb County, Georgia bills are due Oct 15). Without a due
+    date (Florida's bills run to March of the next year) the rule doesn't apply."""
+    due = tax_due_date(closing, market, due_date)
+    return bill_paid is None and due is not None and closing > due
+
+
+def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=None):
+    """The seller's side of the property tax proration at closing, as {'amount', 'label', 'basis', 'assumed_paid'},
+    or None.
+
+    FAR/BAR Standard K: prorated through the day before closing, allowing the maximum early-payment discount
+    (`property_tax.early_payment_discount`, Florida 4%). Taxes paid in arrears (`property_tax.paid`): while the current
+    bill is unpaid, the seller credits the buyer from Jan 1 (a cost); once the seller has paid it (Florida bills go out
+    in November), the buyer credits the seller from closing to Dec 31 (`amount` negative, a credit to the seller).
+    With no word from the agent, a closing after the bill's due date (`due_date`, else `property_tax.due_date`)
+    assumes it paid: the credit (`assumed_paid` true). The label never says Assumed: a report says so once, in its
+    notes (local-costs.md).
+    """
+    if not annual_tax or not closing:
+        return None
+    if market is not None and market.get("property_tax.paid") == "advance":
+        return None
+    assumed_paid = tax_bill_assumed_paid(closing, market, bill_paid, due_date)
+    discount = (market.get("property_tax.early_payment_discount") if market is not None else None) or 0
+    year_days = (date(closing.year + 1, 1, 1) - date(closing.year, 1, 1)).days
+    seller_days = (closing - date(closing.year, 1, 1)).days  # Jan 1 through the day before closing
+    base = annual_tax * (1 - discount)
+    basis = f"{money(annual_tax)} bill" + (f" less the {discount * 100:g}% early-payment discount" if discount else "")
+    if bill_paid or assumed_paid:
+        return {"amount": -round(base * (year_days - seller_days) / year_days),
+                "label": "Property Tax Proration (Credit, Closing to Dec 31)",
+                "basis": basis, "assumed_paid": assumed_paid}
+    return {"amount": round(base * seller_days / year_days), "label": "Property Tax Proration (Jan 1 to Closing)", "basis": basis,
+            "assumed_paid": False}
+
+
+# CORE-19: states where one flat deed transfer rate can be wrong (graduated rates, mansion taxes, city or county
+# layers on top of the state's). A full tiered model is on the roadmap; until then the net warns.
+LAYERED_TRANSFER_TAX = {"CA": "city transfer taxes (Los Angeles Measure ULA, San Francisco tiers)",
+                        "CT": "a tiered state conveyance tax", "DC": "graduated rates",
+                        "HI": "a graduated conveyance tax", "IL": "state, county and city layers (Chicago)",
+                        "MD": "state and county layers", "NJ": "a graduated realty transfer fee and mansion tax",
+                        "NY": "the mansion tax and New York City's rates", "PA": "state and local layers (Philadelphia)",
+                        "VT": "graduated rates for a primary residence", "WA": "graduated REET tiers"}
+
+
+def transfer_tax_warning(market):
+    """A sentence when the market's state has tiered or layered transfer taxes, else None."""
+    st = getattr(market, "state", None)
+    if st in LAYERED_TRANSFER_TAX:
+        return (f"Transfer taxes here can be tiered or layered ({LAYERED_TRANSFER_TAX[st]}), and the net uses one flat "
+                "rate: confirm the amount with the title or escrow company for this price.")
+    return None
+
+
+PAYOFF_INTEREST = 0.045  # seller's mortgage interest for holding-cost estimates (national planning figure)
+
+
+def payoff_from_balance(balance, rate_pct=None):
+    """Results_v5 case 02: a loan BALANCE isn't a payoff. The estimate adds a month's interest, at the loan's own rate
+    (`rate_pct`, a percent) when known, else the same PAYOFF_INTEREST the holding costs use (the seller net sheet's
+    rule too); no fee cushion. A payoff the seller or agent states ("about $171,500 from the September statement") is
+    used as given and never goes through here."""
+    rate = rate_pct / 100 if rate_pct else PAYOFF_INTEREST
+    return fmt.half_up(balance * (1 + rate / 12))
+
+
+def tax_pair(annual):
+    """Results_v5 case 03: a yearly tax and its monthly share that reconcile: the yearly figure to $100 and the monthly
+    one from that same rounded figure ("$7,200 a year", "$600 a month"), never a floored year beside an exact month.
+    Returns (yearly, monthly) as numbers."""
+    yearly = round(annual / 100) * 100
+    return yearly, round(yearly / 12)
+
+
+def holding_monthly(price, market, payoff=0, hoa_monthly=0, rate=None):
+    """A seller's monthly cost of owning the home while it's for sale: loan interest, HOA, insurance and utilities
+    from the market's `holding_costs`. Property tax is left out: it's in the tax proration already (OFR-13).
+    Loan interest is on `payoff` at `rate` (a fraction; default PAYOFF_INTEREST).
+    Returns (monthly, [names of parts the market doesn't have])."""
+    ins_rate = market.get("holding_costs.insurance_rate") if market is not None else None
+    utilities = market.get("holding_costs.utilities_monthly") if market is not None else None
+    rate = PAYOFF_INTEREST if rate is None else rate
+    parts, left_out = [hoa_monthly or 0, (payoff or 0) * rate / 12], []
+    if ins_rate is None:
+        left_out.append("insurance")
+    else:
+        parts.append(price * ins_rate / 12)
+    if utilities is None:
+        left_out.append("utilities")
+    else:
+        parts.append(utilities)
+    return sum(parts), left_out
+
+
+def months_in(text):
+    """'45–90 days' -> 2.2, '3–6 weeks' -> 1.0, '2 months' -> 2.0: the midpoint of a time range, in months (None if
+    there's no number)."""
+    nums = [float(n) for n in re.findall(r"\d+(?:\.\d+)?", str(text or ""))]
+    if not nums:
+        return None
+    t = str(text).lower()
+    per = 1 / 30.44 if "day" in t else 7 / 30.44 if "week" in t else 1.0
+    return round(sum(nums[:2]) / len(nums[:2]) * per, 2)
+
+
+def loan_taxes(loan, market):
+    """Taxes on a buyer's loan from the market layer (`buyer_costs.loan_taxes`: [{label, rate}] on the loan amount;
+    Florida: note stamps 0.35% and intangible tax 0.2%). [] for a cash purchase or a market without them."""
+    rows = (market.get("buyer_costs.loan_taxes") if market is not None else None) or []
+    return [{"label": r["label"], "rate": r["rate"], "amount": fmt.half_up(loan * r["rate"])} for r in rows if loan and r.get("rate")]
+
+
+# One buyer closing-cost rule for every skill (the buyer CMA's payment and credit tables, the offer strategy's cash),
+# so two reports at the same price give the same cash to close.
+PREPAIDS_PCT = 0.005  # prepaid interest, insurance and escrows on top of the market's closing costs (financed)
+NATIONAL_BUYER_CLOSING_PCT = 0.03  # national.md's buyer_closing_cost_pct, only when no market is loaded
+
+
+def buyer_closing_pct(market=None, cash=False):
+    """The buyer's closing costs as a share of price, before any loan taxes: the market's `buyer_closing_cost_pct`
+    plus PREPAIDS_PCT when financed, half the market's share for a cash purchase (no lender fees, prepaids or loan)."""
+    pct = market.get("closing_costs.buyer_closing_cost_pct") if market is not None else None
+    pct = NATIONAL_BUYER_CLOSING_PCT if pct is None else pct
+    return round(pct / 2 if cash else pct + PREPAIDS_PCT, 4)
+
+
+def buyer_closing_costs(price, loan, market=None, cash=False, pct=None, amount=None):
+    """The buyer's closing costs at `price`: {"amount", "pct", "loan_taxes", "source"}.
+
+    An agent's or lender's figure wins and is used as is, taxes included: `amount` (dollars) first, then `pct` (an
+    all-in share of price). Otherwise buyer_closing_pct(market, cash) of the price plus the market's loan taxes on
+    `loan` (Florida: note stamps and intangible tax), itemized; none for cash. `source` is "lender" (amount), "agent"
+    (pct) or "estimate"."""
+    if amount is not None:
+        return {"amount": round(amount), "pct": None, "loan_taxes": [], "source": "lender"}
+    if pct is not None:
+        return {"amount": round(price * pct), "pct": pct, "loan_taxes": [], "source": "agent"}
+    share = buyer_closing_pct(market, cash)
+    taxes = [] if cash else loan_taxes(loan, market)
+    return {"amount": fmt.half_up(price * share + sum(t["amount"] for t in taxes)), "pct": share, "loan_taxes": taxes,
+            "source": "estimate"}
+
+
+NATIONAL_INSURANCE_RATE = 0.006  # national.md's buyer_costs.insurance_rate, only when no market is loaded
+INSURANCE_MIN_ANNUAL = 2500  # floor for the estimate when the market has none
+
+
+def insurance_age_factor(year_built):
+    """CORE-29: older homes cost more to insure (wiring, plumbing, roof and code era)."""
+    return 1.5 if year_built and year_built < 1980 else 1.25 if year_built and year_built < 2002 else 1.0
+
+
+def insurance_estimate(price, market=None, year_built=None, rate=None):
+    """A buyer's homeowner's insurance per year, when there's no quote: {"annual", "rate", "age_factor", "source"}.
+
+    With the agent's `rate` (a share of price for this home) it's price × rate as is (source "agent"). Otherwise the
+    market's `buyer_costs.insurance_rate` (else NATIONAL_INSURANCE_RATE) × price × the age factor, never below the
+    market's `buyer_costs.insurance_min_annual` (else INSURANCE_MIN_ANNUAL), rounded to $100 (source "market" or
+    "national"). Always an estimate: the report labels it so until there's a quote."""
+    if rate is not None:
+        return {"annual": round(price * rate, -2), "rate": rate, "age_factor": 1.0, "source": "agent"}
+    mrate = market.get("buyer_costs.insurance_rate") if market is not None else None
+    age = insurance_age_factor(year_built)
+    floor = (market.get("buyer_costs.insurance_min_annual") if market is not None else None) or INSURANCE_MIN_ANNUAL
+    use = NATIONAL_INSURANCE_RATE if mrate is None else mrate
+    return {"annual": round(max(floor, use * price * age), -2), "rate": use, "age_factor": age,
+            "source": "national" if mrate is None else "market"}
+
+
+def loan_limit_note(loan, name, limits, state=None, county=None):
+    """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `limits` is
+    profiles.loan_limits(); county limits above the baseline come from its `counties` table."""
+    key = program(name)
+    if not loan or key not in ("conventional", "fha") or not limits:
+        return None
+    year = limits.get("year", "")
+    own = ((limits.get("counties") or {}).get(state or "") or {}).get(str(county or "").removesuffix(" County"), {})
+    if key == "conventional":
+        cap = own.get("conforming") or limits["conforming"]["baseline"]
+        if loan <= cap:
+            return None
+        if loan > limits["conforming"]["ceiling"] or own.get("conforming") or state == "FL":
+            return (f"The {money(loan)} loan is above the {year} conforming limit here ({money(cap)}): a jumbo loan, with "
+                    "its own rates, down payment and reserves. Confirm with the lender.")
+        return (f"The {money(loan)} loan is above the {year} baseline conforming limit ({money(cap)}): jumbo unless the "
+                "county is high-cost. Confirm the county limit with the lender.")
+    cap = own.get("fha")
+    if cap and loan > cap or loan > limits["fha"]["ceiling"]:
+        return f"The {money(loan)} FHA loan is above the {year} FHA limit here ({money(cap or limits['fha']['ceiling'])}): it can't be FHA."
+    if not cap and loan > limits["fha"]["floor"]:
+        return (f"The {money(loan)} FHA loan is above the {year} FHA floor ({money(limits['fha']['floor'])}): confirm the "
+                "county's FHA limit with the lender.")
+    return None
+
+
+def buyer_broker_shortfall(price, agreement_pct, seller_pays_pct):
+    """What the buyer owes their own broker when the seller pays less than the buyer-broker agreement (after the 2024
+    NAR settlement): (agreement − seller-paid) × price, never below 0. None when the agreement isn't known."""
+    if agreement_pct is None:
+        return None
+    return max(0, round((agreement_pct - (seller_pays_pct or 0)) * price))
+
+
+def money(v, round_to=1):
+    """$474,900. Negative amounts as −$1,200."""
+    v = round(v / round_to) * round_to
+    return ("−" if v < 0 else "") + f"${abs(v):,.0f}"
+
+
+class Ledger:
+    """Money lines that always add up: each line is rounded once, half-up to the dollar, when it's added, and every
+    total is the sum of the rounded lines, so a column of printed lines adds to its printed total.
+
+        L = finance.Ledger()
+        L.add("price", "Sale Price", 465000)
+        L.cost("listing_fee", "Listing Brokerage", 465000 * 0.0275, rate=0.0275)   # stored as −12,788
+        L.credit("deposit", "Deposit Returned", 1000.5)                              # stored as +1,001
+        L.total()                     # the net: the sum of every rounded line
+        L.costs()                     # what the costs come to, as a positive number
+        L.total(keys=("listing_fee",)), L.amount("price"), L.rows()
+
+    Amounts are signed: money in is positive, a cost is negative (cost() takes the cost as a positive number).
+    Extra keyword fields (rate, note...) ride along on the line. `raw` keeps the unrounded amount for checks only:
+    nothing prints or sums it.
+    """
+
+    def __init__(self, lines=()):
+        self.lines = []
+        for ln in lines:
+            if isinstance(ln, dict):
+                self.add(ln["key"], ln["label"], ln["amount"], **{k: v for k, v in ln.items()
+                                                                  if k not in ("key", "label", "amount", "raw")})
+            else:
+                self.add(*ln)
+
+    def add(self, key, label, amount, **meta):
+        """A signed line; returns its rounded amount."""
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise TypeError(f"{label}: a ledger amount is a number, not {amount!r}")
+        line = {"key": key, "label": label, "amount": fmt.half_up(amount), "raw": amount, **meta}
+        self.lines.append(line)
+        return line["amount"]
+
+    def cost(self, key, label, amount, **meta):
+        """A cost, given as a positive number (a negative one is a credit back); stored negative."""
+        return self.add(key, label, -amount, **meta)
+
+    def credit(self, key, label, amount, **meta):
+        return self.add(key, label, amount, **meta)
+
+    def total(self, keys=None, where=None):
+        """The sum of the rounded lines: all of them, those whose key is in `keys`, or those `where(line)` keeps."""
+        return sum(ln["amount"] for ln in self.lines
+                   if (keys is None or ln["key"] in keys) and (where is None or where(ln)))
+
+    def costs(self, keys=None):
+        """The costs (negative lines) as a positive total."""
+        return -self.total(keys, where=lambda ln: ln["amount"] < 0)
+
+    def amount(self, key, default=0):
+        """The rounded sum of the lines with this key (default when there's none)."""
+        found = [ln["amount"] for ln in self.lines if ln["key"] == key]
+        return sum(found) if found else default
+
+    def has(self, key):
+        return any(ln["key"] == key for ln in self.lines)
+
+    def rows(self, f=None, sign=True):
+        """[(label, text)] in order. `f` formats an amount (fmt.money by default); with sign=False costs print as
+        positive numbers (a net sheet whose cost column is all costs)."""
+        f = f or fmt.money
+        return [(ln["label"], f(ln["amount"] if sign else abs(ln["amount"]))) for ln in self.lines]
+
+    def tuples(self):
+        """[(key, label, amount)], the shape offer_engine.net_sheet's lines take."""
+        return [(ln["key"], ln["label"], ln["amount"]) for ln in self.lines]
+
+    def __iter__(self):
+        return iter(self.lines)
+
+    def __len__(self):
+        return len(self.lines)
+
+
+def seller_net_ledger(price, net, payoff=None, price_label="Sale Price", payoff_label="Mortgage Payoff"):
+    """A Ledger from seller_net's result: the price, each cost line (negative), then the payoff when known. Its total()
+    is the net from rounded lines (seller_net's own `net` sums unrounded ones)."""
+    led = Ledger()
+    led.add("price", price_label, price)
+    for ln in net["lines"]:
+        led.cost(ln["key"], ln["label"], ln["amount"], rate=ln.get("rate"))
+    if payoff:
+        led.cost("payoff", payoff_label, payoff)
+    return led
+
+
+def fraction(value, name, default=None, whole=False):
+    """A share of price from a data file, as a fraction: 0.025 means 2.5%.
+
+    Every `*_pct` field in the skills' data files is a fraction (like the market layers). A value of 1 or more
+    is almost always a percent written the other way (2.5 for 2.5%), so it's refused with a plain message
+    instead of silently becoming 250%. `whole=True` also accepts exactly 1 (a cash buyer's 100% down).
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        raise ValueError(f"{name} should be a share of price like 0.025 (for 2.5%).")
+    if whole and value == 1:
+        return value
+    if value >= 1:
+        raise ValueError(f"{name} is {value:g}: write it as a fraction, {value / 100:g} for {value:g}%.")
+    return value
+
+
+FRACTION_RATES = ("transfer_tax_rate", "tax_rate", "insurance_rate")  # shares of price, like *_pct, and small
+PERCENT_RATES = ("rate", "mortgage_rate")  # interest rates are written as percents: 6.5 means 6.5%
+
+
+def check_units(node, where="report"):
+    """Every unit in a data file, before any math: `*_pct` and the FRACTION_RATES are fractions (0.025 = 2.5%), and
+    an interest rate is a percent (6.5). A value in the other unit raises ValueError naming the field and the fix,
+    instead of silently becoming a wrong number."""
+    items = node.items() if isinstance(node, dict) else enumerate(node) if isinstance(node, list) else ()
+    for key, value in items:
+        here = f"{where}.{key}" if isinstance(key, str) else f"{where}[{key}]"
+        if not isinstance(key, str) or value is None or isinstance(value, (dict, list)):
+            check_units(value, here)
+        elif key.endswith("_pct"):
+            fraction(value, here, whole=key == "down_pct")
+        elif key in FRACTION_RATES:
+            fraction(value, here)
+            if value >= 0.1:
+                raise ValueError(f"{here} is {value:g}, {value * 100:g}% of price: write it as a fraction "
+                                 f"({value / 100:g} for {value:g}%).")
+        elif key in PERCENT_RATES:
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 1 <= value <= 25:
+                hint = f" (that looks like a fraction: write {value * 100:g} for {value * 100:g}%)" \
+                    if isinstance(value, (int, float)) and 0 < value < 1 else ""
+                raise ValueError(f"{here} is {value!r}: write the interest rate as a percent, like 6.5{hint}.")
+
+
+def concession_cap(name, down):
+    """Most a seller may contribute, as a share of price. `down` is a fraction (0.05 = 5%)."""
+    key = program(name)
+    if key in ("fha", "usda"):
+        return 0.06
+    if key == "va":
+        return 0.04  # concessions; normal closing costs are allowed on top
+    if key == "cash":
+        return None
+    # Conventional limits go by LTV: over 90% → 3%, 75.01–90% → 6%, 75% or less → 9% (so exactly 25% down is 9%).
+    return 0.03 if down < 0.10 else 0.06 if down < 0.25 else 0.09
+
+
+def pi_payment(loan, annual_rate_pct, years=30):
+    """Monthly principal and interest. `annual_rate_pct` in percent (6.95)."""
+    m = annual_rate_pct / 100 / 12
+    n = years * 12
+    return loan / n if m == 0 else loan * m / (1 - (1 + m) ** -n)
+
+
+def loan_amount(price, name, down, va_later_use=False, va_exempt=False):
+    key = program(name)
+    if key == "cash":
+        return 0.0
+    return price * (1 - down) * (1 + upfront_fee(key, down, va_later_use, va_exempt))
+
+
+def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, hoa_monthly=0.0, mi_rate=None,
+                    flood_annual=None, va_later_use=False, va_exempt=False):
+    """Monthly payment breakdown. Conventional mortgage insurance only below 20% down.
+
+    `flood_annual` is a flood insurance quote; without one `flood` is None and the total leaves it out (the report
+    says "get a quote", never $0: see flood_insurance)."""
+    key = program(name)
+    base = price * (1 - down)
+    loan = loan_amount(price, key, down, va_later_use, va_exempt)
+    rate_mi = annual_mi_rate(key, down) if mi_rate is None else mi_rate
+    mi = 0.0 if key == "cash" or (key == "conventional" and down >= 0.20) else base * rate_mi / 12
+    pi = 0.0 if key == "cash" else pi_payment(loan, rate_pct)
+    tax, ins = tax_annual / 12, insurance_annual / 12
+    flood = flood_annual / 12 if flood_annual is not None else None
+    return {"cash_down": price * down if key != "cash" else price, "loan": loan, "pi": pi, "tax": tax,
+            "ins": ins, "mi": mi, "hoa": hoa_monthly, "flood": flood, "total": pi + tax + ins + mi + hoa_monthly + (flood or 0)}
+
+
+SFHA = ("A", "V")  # FEMA Special Flood Hazard Areas: A, AE, AH, AO, AR, A99, V, VE
+FEMA_ZONE = re.compile(r"A|AE|AH|AO|AR|A99|A\d{1,2}|V|VE|V\d{1,2}|X|X500|B|C|D")  # FIRM zone codes
+
+
+def flood_insurance(zone, quote=None, market=None, as_of=None, condo_unit=False):
+    """The flood insurance line of a buyer's payment: {"annual", "sfha", "required", "note"}.
+
+    `annual` is the quote or None (never 0: a missing quote reads "get a quote"). `required` is "lender" in a
+    Special Flood Hazard Area, "citizens" when the market's Citizens rule reaches every policy on `as_of`, "citizens_value"
+    when it applies above a replacement cost, else None. The note is one or two sentences for the report."""
+    # CMA-106: only a FEMA zone code counts ("X (lower risk)" -> X); anything else ("To confirm", "TBD") is unknown
+    m = re.match(r"(?:FLOOD\s+)?(?:ZONE\s+)?(?:SHADED\s+)?([A-Z]{1,2}\d{0,3})\b", str(zone or "").strip().upper())
+    z = m.group(1) if m else ""
+    known = bool(FEMA_ZONE.fullmatch(z)) and z != "D"  # D: undetermined risk
+    sfha = known and z[:1] in SFHA
+    annual = quote if quote not in (None, "", 0) else None
+    tail = "" if annual is not None else " Get a quote; the total leaves it out until then."
+    if sfha:
+        return {"annual": annual, "sfha": True, "required": "lender",
+                "note": f"Flood zone {z} is a Special Flood Hazard Area: the lender will require flood insurance.{tail}"}
+    rule = (market.get("flood.citizens_requirement") if market is not None else None) or {}
+    day = (as_of or date.today()).isoformat()
+    tiers = [t for t in rule.get("schedule") or [] if str(t.get("from")) <= day]
+    tier = max(tiers, key=lambda t: str(t["from"])) if tiers else None
+    where = f"Flood zone {z}" if known else "The flood zone isn't confirmed (check the FEMA flood map)"
+    if tier is None or condo_unit:
+        extra = " A condo unit (HO-6) policy is exempt from the Citizens flood requirement." if tier and condo_unit else ""
+        return {"annual": annual, "sfha": False, "required": None,
+                "note": f"{where}: a lender doesn't require flood insurance{' here' if known else ' outside a high-risk zone'}.{extra}{tail}"}
+    cite = rule.get("statute", "state law")
+    if not tier.get("min_replacement_cost"):
+        need, required = "every Citizens policy must carry flood insurance", "citizens"
+    else:
+        later = [t for t in rule["schedule"] if str(t.get("from")) > day and not t.get("min_replacement_cost")]
+        need = (f"a Citizens policy on a home with a dwelling replacement cost of {money(tier['min_replacement_cost'])} or "
+                f"more must carry flood insurance" + (f", and from {_long_date(later[0]['from'])} every Citizens policy must" if later else ""))  # CMA-322
+        required = "citizens_value"
+    return {"annual": annual, "sfha": False, "required": required,
+            "note": f"{where}: a lender may not require flood insurance, but {need} ({cite}).{tail}"}
+
+
+def _long_date(iso):
+    d = date.fromisoformat(str(iso))
+    return f"{d:%B} {d.day}, {d.year}"
+
+
+def buydown_2_1(loan, rate_pct):
+    """Cost and payments of a temporary 2-1 buydown."""
+    full, y1, y2 = pi_payment(loan, rate_pct), pi_payment(loan, rate_pct - 2), pi_payment(loan, rate_pct - 1)
+    return {"cost": 12 * (full - y1) + 12 * (full - y2), "year1": y1, "year2": y2, "full": full}
+
+
+# --- property tax -------------------------------------------------------------
+
+def property_tax(value, market=None, school_mills=None, total_mills=None, homestead=True):
+    """Annual tax for a buyer at `value`: {'annual', 'basis', 'estimated'}.
+
+    With millage, exemptions come from the market: each is an `amount` or a `percent` of value
+    (0.20 = 20%), optionally only on value `above` a threshold, and `levies` says what it lowers: `all`, `non_school` (all but school) or `school` (school
+    only, as in Texas). Without millage, the market's fallback rate is used and marked `estimated`, with its
+    `rate_source` ('state_average': the state's average effective rate, which a report's notes name as such).
+    With neither, `annual` is None.
+    """
+    if total_mills is not None:
+        school = school_mills or 0.0
+        off = {"school": 0.0, "other": 0.0}
+        if homestead and market is not None:
+            for ex in market.get("property_tax.primary_residence_exemptions") or []:
+                amount = ex["amount"] if ex.get("amount") is not None else value * (ex.get("percent") or 0)
+                if ex.get("above"):  # applies only to value above a threshold (Florida's second $25,000, indexed)
+                    amount = min(amount, max(0, value - ex["above"]))
+                levies = ex.get("levies", "all")
+                if levies in ("all", "school"):
+                    off["school"] += amount
+                if levies in ("all", "non_school"):
+                    off["other"] += amount
+        school_taxable = max(value - off["school"], 0)
+        other_taxable = max(value - off["other"], 0)
+        annual = (school_taxable * school + other_taxable * (total_mills - school)) / 1000
+        basis = f"{total_mills:.4f} mills" + (", with homestead" if homestead and any(off.values()) else "")
+        return {"annual": annual, "basis": basis, "estimated": False}
+    rate = market.get("property_tax.fallback_rate") if market is not None else None
+    if rate:  # `rate_source`: 'state_average' (the state's average effective rate), 'estimate' (national), 'state'...
+        return {"annual": value * rate, "basis": f"about {rate * 100:.1f}% of price", "estimated": True,
+                "rate_source": market.source("property_tax.fallback_rate")}
+    return {"annual": None, "basis": "no millage or tax rate for this market", "estimated": True}
+
+
+def millage(market, county=None, district=None):
+    """Millage entries from the market, filtered by county and/or a district: a name fragment ("Altamonte") or the
+    appraiser's tax-area code exactly as a property report prints it ("01"; each row lists its codes, separated by
+    "," or "/"). A code can belong to several districts (Orange County reuses them), so check how many came back."""
+    rows = market.get("property_tax.millage") or []
+    if county:
+        c = county.strip().lower().removesuffix(" county")
+        rows = [r for r in rows if str(r.get("county", "")).lower() == c]
+    if district:
+        d = str(district).strip().lower()
+        by_code = [r for r in rows if d in {c.strip().lower() for c in re.split(r"[,/]", str(r.get("code", "")))}]
+        rows = by_code or [r for r in rows if d in str(r.get("district", "")).lower()]
+    return rows
+
+
+def millage_row(market, county, district):
+    """The one millage entry for a district, or (None, why) when there's none or it's ambiguous: never a guess."""
+    rows = millage(market, county=county, district=district)
+    if len(rows) == 1:
+        return rows[0], None
+    if not rows:
+        return None, None
+    names = "; ".join(str(r.get("district")) for r in rows)
+    return None, (f'District "{district}" matches {len(rows)} taxing districts ({names}): name the one the parcel is '
+                  f"in, or give school_mills and total_mills from the property appraiser.")
+
+
+# --- seller side --------------------------------------------------------------
+
+def title_premium(price, tiers):
+    """Promulgated-style tiered premium: [{up_to, per_1000}], last up_to None."""
+    premium, lower = 0.0, 0
+    for tier in tiers:
+        upper = tier.get("up_to") or math.inf
+        if price > lower:
+            premium += (min(price, upper) - lower) * tier["per_1000"] / 1000
+        lower = upper
+    return round(premium)
+
+
+def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,
+               has_hoa=False, other_costs=0, title_fees=None, annual_tax=None, closing=None, bill_paid=None,
+               prop_type=None, tax_due_date=None):
+    """Seller's estimated net at `price`, itemized, with the source of every assumption.
+
+    Returns {'items': [(label, amount)], 'lines': [{'key', 'label', 'amount', 'rate'}], 'total_costs',
+    'net_before_payoff', 'net', 'missing', 'assumed'}. `lines` carries stable keys (listing_fee, buyer_broker_fee,
+    transfer_tax, owner_title, title_fees, estoppel, credit, other) so reports can use their own wording.
+    `missing` lists market values that weren't available (rare: the national estimates fill most);
+    `assumed` lists defaults the deal didn't give, as {'key', 'value', 'text', 'estimate'} (key: listing_fee,
+    buyer_broker_fee, transfer_tax, owner_title, title_fees, estoppel); `estimate` is true for a national estimate
+    and false for a built-in local default. Line labels never say Estimate or Assumed: a report names its estimates
+    once, in its notes, and default commission rates are defaults (local-costs.md). `warnings` are sentences to show the
+    agent (a title quote below the published rate).
+    A saved owner's title quote (`closing_costs.owner_title.quote`: {price, premium}) wins over the rate table.
+    `other_costs` is a total (one "Other Costs" line) or a list of {label, amount} (one "other" line each: a home
+    warranty, repairs, a survey).
+    `title_fees` (a total, or {name: amount} from a title company quote) replaces the market's seller_title_fees.
+    `annual_tax` with `closing` (a date) adds the tax proration (see tax_proration; `bill_paid` once the seller paid
+    this year's bill; `tax_due_date` the bill's due date when the agent gives it). `prop_type` decides a transfer surtax that skips some property types (Miami-Dade: every type
+    but single-family homes); without it, that surtax is missing.
+    """
+    items, lines, missing, assumed, warnings = [], [], [], [], []
+
+    def add(key, label, amount, rate=None):
+        items.append((label, amount))
+        lines.append({"key": key, "label": label, "amount": amount, "rate": rate})
+
+    def market_value(path, label):
+        v = market.get(path) if market is not None else None
+        if v is None:
+            missing.append(label)
+        return v
+
+    def estimated(path):
+        return market is not None and market.source(path) == "estimate"
+
+    def assume(key, value, text, path):
+        assumed.append({"key": key, "value": value, "text": text, "estimate": estimated(path)})
+
+    lf = listing_fee_pct if listing_fee_pct is not None else market_value("brokerage.listing_fee_pct", "listing fee")
+    bf = buyer_broker_fee_pct if buyer_broker_fee_pct is not None else market_value("brokerage.buyer_broker_fee_pct", "buyer's agent fee")
+    if listing_fee_pct is None and lf is not None:
+        assume("listing_fee", lf, f"listing fee {lf * 100:g}%", "brokerage.listing_fee_pct")
+    if buyer_broker_fee_pct is None and bf is not None:
+        assume("buyer_broker_fee", bf, f"buyer's agent fee {bf * 100:g}%", "brokerage.buyer_broker_fee_pct")
+    if lf:
+        add("listing_fee", f"Listing Brokerage ({lf * 100:g}%)", price * lf, lf)
+    if bf:
+        add("buyer_broker_fee", f"Buyer's Agent ({bf * 100:g}%)", price * bf, bf)
+
+    rate = market_value("closing_costs.deed_transfer_tax_rate", "deed transfer tax")
+    if transfer_tax_warning(market):
+        warnings.append(transfer_tax_warning(market))
+    payer = market.get("closing_costs.deed_transfer_tax_payer") if market is not None else None
+    tax_label = (market.get("closing_costs.deed_transfer_tax_label") if market is not None else None) or "Deed Transfer Tax"
+    est = estimated("closing_costs.deed_transfer_tax_rate")
+    if rate and payer in (None, "seller"):
+        add("transfer_tax", f"{tax_label} ({rate * 100:.2f}%)", price * rate, rate)
+    elif rate and payer == "split":
+        add("transfer_tax", f"{tax_label} (Half of {rate * 100:.2f}%)", price * rate / 2, rate / 2)
+    if rate and payer in (None, "seller", "split") and est:
+        assume("transfer_tax", rate, f"transfer tax {rate * 100:g}%", "closing_costs.deed_transfer_tax_rate")
+    surtax = market.get("closing_costs.deed_transfer_surtax") if market is not None else None
+    if surtax and surtax.get("rate") and payer in (None, "seller"):
+        kind = property_type(prop_type)
+        if kind is None:
+            missing.append("property type (for the " + (surtax.get("label") or "deed surtax") + ")")
+        elif kind != surtax.get("applies_unless"):
+            add("transfer_surtax", f"{surtax.get('label') or 'Deed Surtax'} ({surtax['rate'] * 100:.2f}%)",
+                price * surtax["rate"], surtax["rate"])
+
+    title_payer = market_value("closing_costs.owner_title.payer", "who pays owner's title")
+    if title_payer == "seller":
+        tiers = market.get("closing_costs.owner_title.rate_tiers")
+        pct = market.get("closing_costs.owner_title.estimate_pct")
+        quote = market.get("closing_costs.owner_title.quote")  # {price, premium} from a title company
+        if quote and quote.get("price") and quote.get("premium"):  # CORE-9: a quote wins over the table
+            amount = round(quote["premium"] * price / quote["price"]) if quote["price"] != price else quote["premium"]
+            add("owner_title", "Owner's Title Insurance (Quote)", amount)
+            floor = title_premium(price, tiers) if tiers else None
+            if floor and amount < floor - 1:  # a promulgated rate is the legal premium: a lower quote is a misread
+                warnings.append(f"The owner's title quote ({money(amount)} at this price) is below the published rate "
+                                f"({money(floor)}): check the quote with the title company.")
+        elif tiers:  # the published rate table
+            add("owner_title", "Owner's Title Insurance", title_premium(price, tiers))
+        elif pct:
+            add("owner_title", "Owner's Title Insurance", price * pct, pct)
+            if market.source("closing_costs.owner_title.estimate_pct") != "deal":
+                assume("owner_title", pct, f"owner's title {pct * 100:g}% of price", "closing_costs.owner_title.estimate_pct")
+        else:
+            missing.append("owner's title rate")
+
+    if title_fees is not None:
+        add("title_fees", "Title Company Fees", sum(title_fees.values()) if isinstance(title_fees, dict) else title_fees)
+    else:
+        fees = market.get("closing_costs.seller_title_fees") if market is not None else None
+        if fees:
+            add("title_fees", "Title Company Fees", sum(fees.values()))
+            if market.source("closing_costs.seller_title_fees") != "deal":  # a built-in default
+                assume("title_fees", sum(fees.values()), "typical title company fees", "closing_costs.seller_title_fees")
+        else:
+            missing.append("title company fees")
+    if has_hoa:
+        estoppel = market_value("closing_costs.hoa_estoppel_fee", "HOA estoppel fee")
+        if estoppel:
+            name = (market.get("closing_costs.hoa_estoppel_label") if market is not None else None) or "HOA Documents"
+            add("estoppel", name, estoppel)
+            if market.source("closing_costs.hoa_estoppel_fee") != "deal":  # a built-in default or a national estimate
+                words = " ".join(w if w.isupper() else w.lower() for w in name.split())
+                assume("estoppel", estoppel, f"{words}{'' if 'fee' in words else ' fee'} {money(estoppel)}",
+                       "closing_costs.hoa_estoppel_fee")
+    if credit:
+        add("credit", "Seller Credit to Buyer", credit)
+    if isinstance(other_costs, (list, tuple)):  # [{label, amount}]: one "other" line each, in order
+        for o in other_costs:
+            if o.get("amount"):
+                add("other", o.get("label") or "Other Costs", o["amount"])
+    elif other_costs:
+        add("other", "Other Costs", other_costs)
+    pr = tax_proration(annual_tax, closing, market, bill_paid, tax_due_date)
+    if pr:
+        add("tax_proration", pr["label"], pr["amount"])
+
+    total = sum(a for _, a in items)
+    net_before = price - total
+    return {"items": items, "lines": lines, "total_costs": total, "net_before_payoff": net_before,
+            "net": None if payoff is None else net_before - payoff,
+            "missing": missing, "assumed": assumed, "warnings": warnings}

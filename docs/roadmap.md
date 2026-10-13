@@ -4,6 +4,8 @@ New skills and scope decisions that aren't defects. Defects go in an audit and a
 
 ## New Skills
 
+Built from this list or by request: `seller-net-sheet` (GAP-4's seller half, 2026-10-01) and `seller-market-timing` (the Buying Pattern chart, an agent's request, 2026-10-13).
+
 | ID | Priority | Skill | Builds On |
 |---|---|---|---|
 | GAP-1 | High | `listing-copy`: MLS remarks, social posts, flyer copy | profile `voice`, `shared/prose.py`, `fair-housing.md`, MLS layer character limits |
