@@ -159,18 +159,17 @@ class QuickAnswer(unittest.TestCase):
         self.assertIn("owner's title policy $2,990 (0.5% of price, national estimate)", est)
         self.assertTrue(any(e.startswith("tax proration at 1.4% of list price (Texas average effective rate)") for e in est))
 
-    def test_rider_gg_paid_by_the_listing_broker_asks_for_the_agreement(self):
-        """Eval 6: with no compensation agreement in the package, the chat asks for it with the listing-agreement
-        check; never on the seller's report."""
-        R = review.analyze(fixture("listing-pays-buyer-broker.json"))
-        out = review.result(R)
-        self.assertTrue(any("separate compensation agreement" in q for q in out["to_confirm"]))
-        self.assertFalse(any("separate compensation agreement" in a["what"] for a in out["assumptions"]))
-        data = fixture("listing-pays-buyer-broker.json")
-        for o in data["offers"]:
-            o["compensation_agreement"] = "signed_by_buyer_broker"
-        out = review.result(review.analyze(data))
-        self.assertTrue(any("Your brokerage still signs" in q for q in out["to_confirm"]))
+    def test_rider_gg_is_never_asked_about(self):
+        """Owner decision (iteration 21): Rider GG's agreement is a formality, a window in the contingency timeline;
+        neither the chat nor the report asks for it, whoever pays and wherever it stands."""
+        for status in (None, "signed_by_buyer_broker"):
+            data = fixture("listing-pays-buyer-broker.json")
+            for o in data["offers"]:
+                if status:
+                    o["compensation_agreement"] = status
+            out = review.result(review.analyze(data))
+            for q in out["to_confirm"] + [a["what"] for a in out["assumptions"]]:
+                self.assertNotIn("compensation agreement", q.lower())
 
 
 if __name__ == "__main__":

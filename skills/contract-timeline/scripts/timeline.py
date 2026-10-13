@@ -1701,23 +1701,8 @@ def consistency_notes(c, current, rules, eff, note, side="buyer", alt=None, toda
             note("aga_after_loan_approval", f"The appraisal gap valuation is due {day(valuation['when'])}, after the Loan "
                  f"Approval Period ends {day(approval['when'])}: a low valuation after that can't be answered under "
                  "Para. 8(b). Confirm the dates the parties intend", ("aga_valuation", "loan_approval"))
-    # TL-210: Rider GG's cancel window runs from the end of the Time Period as extended past a weekend or holiday; the
-    # rider could be read to count from the unextended day
-    rows = {r["key"]: r for r in current}
-    agreement, cancel = rows.get("compensation_agreement"), rows.get("compensation_cancel")
-    if agreement and cancel and agreement["when"] and cancel["when"] and not agreement.get("from_approval"):
-        day = eff + timedelta(days=int(agreement["days"]))
-        if agreement["when"].date() != day:
-            other = forward(day, int(cancel["days"]), rules)[0]
-            if other.date() != cancel["when"].date():
-                # TL-235: one reading used plus the date that is safe for the agent's side, never two dates side by side
-                safe = (f"To be safe, the buyer should deliver any cancellation by {fmt.date_short(other, year=False, weekday=True)}, the earlier "
-                        f"reading (counted from {fmt.date_short(day, year=False, weekday=True)})" if side == "buyer" else
-                        f"The buyer could argue for the later date, so treat the buyer's right as open through "
-                        f"{fmt.date_short(cancel['when'], year=False, weekday=True)}")
-                note("gg_rolled_start", f"Rider GG: the buyer's cancel window ends {fmt.date_short(cancel['when'], year=False, weekday=True)}, counted from "
-                     f"the agreement deadline as extended ({fmt.date_short(day, year=False, weekday=True)} to {fmt.date_short(agreement['when'], year=False, weekday=True)}); the timeline "
-                     f"uses this reading. {safe}", GG_KEYS)
+    # TL-210's second reading of Rider GG's cancel window (counted from the unextended day) is no longer noted: GG is a
+    # formality, a window in the table and calendar, never a "to be safe" line (owner decision, iteration 21)
 
 
 # farbar-addenda.md (EA-4, Red Flags): an extension signed after the period it extends had ended. The fields that date a
@@ -2012,10 +1997,10 @@ def analyze(deal, side=None):
         open_rights.append(f"the {_loan_type(current_contract)} appraisal clause (to closing)")
     # TL-104: the next deadline from the report date. Iteration 9 evals 5, 9 (owner decision): the earliest OPEN dated row,
     # whoever owes it (Buyer, Seller or Both), critical or not, so the header never names a later date than a row above
-    # it in the table. Rider GG's rows count only while open: a done row (or a cancel window closed because the agreement
-    # was signed) never is. A lender's target (insurance bound, the Closing Disclosure) is an estimate, not a contract
-    # deadline, so it never is
-    upcoming = [r for r in dated if not r["done"] and not r["past"] and not r["lender"]]
+    # it in the table. Rider GG's rows never are (owner decision, iteration 21: GG is a window in the table and the
+    # calendar, never the headline: the agents aren't parties to the contract). A lender's target (insurance bound, the
+    # Closing Disclosure) is an estimate, not a contract deadline, so it never is
+    upcoming = [r for r in dated if not r["done"] and not r["past"] and not r["lender"] and r["key"] not in GG_KEYS]
     first = next(iter(upcoming), None)
 
     # The document's notes, by key, before they go into its one registry (a key said twice joins into one line):
