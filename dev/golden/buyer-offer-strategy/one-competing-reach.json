@@ -5677,7 +5677,8 @@
   "above_range": true,
   "band_key": "risk",
   "lifts": false,
-  "price": 451000
+  "price": 454000,
+  "seller_concessions": 2000
  },
  "lc_why": {
   "closing_days": {
@@ -5857,6 +5858,12 @@
    "key": "why_loan_30"
   },
   "price": {
+   "adds": [
+    {
+     "band": "Unlikely",
+     "key": "add_reach_below"
+    }
+   ],
    "key": "why_reach_price"
   },
   "seller_concessions": {

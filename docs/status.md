@@ -27,6 +27,15 @@ The buyer CMA leaned on offer strategy (a suggested opening offer, a target and 
   - **Visible change:** where the old CMA posture capped the price at the median (a stale listing), the strategy's own rules now decide inside the range. Kestrel (one competing offer, 78 days, two cuts) now recommends $455,000 (the range's top) instead of $440,000; the lower-cost option shows the cheaper offer. And escalation above the range now needs the buyer's agreement: the long-names condo (four offers, range to $700,000, max $720,000) no longer escalates to $710,000, and its Stronger option sits at $700,000, not $720,000.
 - **Shared:** `cma.suggest_posture` and `POSTURES` removed; `handoff.build` takes no posture (older records with one still validate).
 
+**Same files, same range (eval iteration 17 follow-up, still 0.17.0).** Three runs of one home gave three ranges ($445K–$470K, $470K–$495K, $475K–$500K) from the model's own calls. Now the script makes them, in both CMAs (`cma.settle_comps`):
+
+- **Market split and shift rate:** the split is the first of the month two months before the report date, and the rate comes from the export by method.md's rule (the fixtures had typed 1% where the rule gives 2%). Typed `split_date` and `comps.time_adjustment` stop the run; the agent's own go in `split_override` and `comps.time_override` with a reason the report shows.
+- **Outliers:** the model lists the ranked comps plus two or three backups; the script uses the first five and sets each outlier aside for the next backup, naming it in the report. A flagged sale stays only on the agent's `keep_reason`.
+- **Roof:** roof years on the home and each comp, priced by the market's bands; a typed roof amount stops the run; an unknown roof on the home means no roof adjustment, said in the report.
+- **Listing presentation:** `deck.comp_lines` may name backups; lines for sales the script didn't use are left out.
+- **Buyer CMA reply:** each item said once, the gut check at most two facts with the history's counts as printed, and the fair-housing decline points to the school district's and police department's public data.
+- **Buyer offer strategy:** the price reason with two or three competing offers says "above list, at the middle of the range" when it is; the Escalation row on a lower-cost offer still names the buyer's max (and the flat-number reason is said once); an offer under the first draft says what that draft read; the higher-price line tests each price with the concessions it needs ($454,000, not $451,000, in the reach fixture); the homestead note is never cut from the reply.
+
 ## This pass (2026-10-12): Client-Interest Audit, Version 0.16.0
 
 An audit of every skill against one question: does it act in the client's best interest, the buyer's or the seller's? It found no bias toward the agent (no in-house preference, no pricing to win a listing, no waived contingencies, nothing confidential in material for the other side), and a set of rules and defaults that could cost a client money or a contract right. All of them are fixed. What agents will notice:

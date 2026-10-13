@@ -1,6 +1,6 @@
 {
- "adjusted_max": 493900,
- "adjusted_min": 435900,
+ "adjusted_max": 485600,
+ "adjusted_min": 431200,
  "assumption_keys": [
   "expected_sale",
   "option_time",
@@ -56,8 +56,8 @@
  "comps": {
   "cards": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K",
+    "adjusted": 485600,
+    "adjusted_k": "$486K",
     "bullets": {
      "count": 2
     },
@@ -83,8 +83,8 @@
     "strongest": false
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K",
+    "adjusted": 479300,
+    "adjusted_k": "$479K",
     "bullets": {
      "count": 1
     },
@@ -137,8 +137,8 @@
     "strongest": false
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K",
+    "adjusted": 433500,
+    "adjusted_k": "$434K",
     "bullets": {
      "count": 1
     },
@@ -164,8 +164,8 @@
     "strongest": false
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K",
+    "adjusted": 431200,
+    "adjusted_k": "$431K",
     "bullets": {
      "count": 1
     },
@@ -194,8 +194,8 @@
     "strongest": false
    },
    {
-    "adjusted": 486900,
-    "adjusted_k": "$487K",
+    "adjusted": 478600,
+    "adjusted_k": "$479K",
     "bullets": {
      "count": 2
     },
@@ -246,7 +246,10 @@
    {
     "count": 4
    }
-  ]
+  ],
+  "unused": {
+   "count": 0
+  }
  },
  "comps_table": [
   {
@@ -375,19 +378,19 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 493900,
+    "adjusted": 485600,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 486900,
-    "seller_paid": 0,
-    "sold_price": 505500
-   },
-   {
-    "adjusted": 484000,
+    "adjusted": 479300,
     "seller_paid": 0,
     "sold_price": 495000
+   },
+   {
+    "adjusted": 478600,
+    "seller_paid": 0,
+    "sold_price": 505500
    },
    {
     "adjusted": 469800,
@@ -395,12 +398,12 @@
     "sold_price": 427000
    },
    {
-    "adjusted": 440200,
+    "adjusted": 433500,
     "seller_paid": 12000,
     "sold_price": 429000
    },
    {
-    "adjusted": 435900,
+    "adjusted": 431200,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -421,7 +424,7 @@
    "state": "FL"
   },
   "offer_plan": null,
-  "recommended_list_price": 480000,
+  "recommended_list_price": 475000,
   "side": "seller",
   "source": "seller-cma",
   "subject": {
@@ -439,10 +442,10 @@
    "year_built": 1972
   },
   "value": {
-   "high": 490000,
-   "low": 465000,
-   "median_adjusted": 476900.0,
-   "midpoint": 477500.0
+   "high": 485000,
+   "low": 460000,
+   "median_adjusted": 474200.0,
+   "midpoint": 472500.0
   },
   "version": 1
  },
@@ -570,8 +573,8 @@
  "means": {
   "count": 4
  },
- "median_adjusted": 476900.0,
- "median_shown": 476900,
+ "median_adjusted": 474200.0,
+ "median_shown": 474200,
  "method": {
   "lines": {
    "count": 3
@@ -584,9 +587,9 @@
  },
  "net": {
   "after_holding": [
-   433584,
-   433532,
-   424867
+   429370,
+   429320,
+   420182
   ],
   "basis": "after_holding",
   "cash_at_closing": false,
@@ -594,24 +597,24 @@
    "count": 3
   },
   "holding": [
-   -1622,
-   -1203,
-   -959
+   -1613,
+   -1196,
+   -954
   ],
   "incomplete": false,
   "missing": {
    "count": 0
   },
-  "monthly": 530,
+  "monthly": 527,
   "no_mortgage": false,
   "payoff": null,
   "payoff_estimated": false,
   "rows": [
    {
     "amounts": [
-     477000,
-     476500,
-     467000
+     472500,
+     472000,
+     462000
     ],
     "display": {
      "count": 3
@@ -629,9 +632,9 @@
    },
    {
     "amounts": [
-     -11925,
-     -11913,
-     -11675
+     -11813,
+     -11800,
+     -11550
     ],
     "display": {
      "count": 3
@@ -641,9 +644,9 @@
    },
    {
     "amounts": [
-     -11925,
-     -11913,
-     -11675
+     -11813,
+     -11800,
+     -11550
     ],
     "display": {
      "count": 3
@@ -653,9 +656,9 @@
    },
    {
     "amounts": [
-     -3339,
-     -3336,
-     -3269
+     -3308,
+     -3304,
+     -3234
     ],
     "display": {
      "count": 3
@@ -665,9 +668,9 @@
    },
    {
     "amounts": [
-     -2460,
-     -2458,
-     -2410
+     -2438,
+     -2435,
+     -2385
     ],
     "display": {
      "count": 3
@@ -701,9 +704,9 @@
    },
    {
     "amounts": [
-     435206,
-     434735,
-     425826
+     430983,
+     430516,
+     421136
     ],
     "display": {
      "count": 3
@@ -713,9 +716,9 @@
    },
    {
     "amounts": [
-     -1622,
-     -1203,
-     -959
+     -1613,
+     -1196,
+     -954
     ],
     "display": {
      "count": 3
@@ -725,9 +728,9 @@
    },
    {
     "amounts": [
-     433584,
-     433532,
-     424867
+     429370,
+     429320,
+     420182
     ],
     "display": {
      "count": 3
@@ -737,13 +740,13 @@
    }
   ],
   "totals": [
-   435206,
-   434735,
-   425826
+   430983,
+   430516,
+   421136
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 8717,
+ "net_spread": 9188,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -781,40 +784,12 @@
   "insurance_annual": 3600,
   "insurance_estimated": false,
   "loan_type": "conventional",
-  "per_10k": 81,
-  "per_10k_display": "$81",
+  "per_10k": 82,
+  "per_10k_display": "$82",
   "program": "Conventional",
   "rate": 6.95,
   "rate_display": "6.95%",
   "rows": [
-   {
-    "down": 24250,
-    "lines": [
-     [
-      "pi",
-      3050
-     ],
-     [
-      "tax",
-      646
-     ],
-     [
-      "ins",
-      300
-     ],
-     [
-      "mi",
-      192
-     ],
-     [
-      "hoa",
-      "HOA",
-      0
-     ]
-    ],
-    "list_price": 485000,
-    "payment": 4188
-   },
    {
     "down": 24000,
     "lines": [
@@ -844,15 +819,15 @@
     "payment": 4147
    },
    {
-    "down": 23500,
+    "down": 23750,
     "lines": [
      [
       "pi",
-      2956
+      2987
      ],
      [
       "tax",
-      624
+      632
      ],
      [
       "ins",
@@ -860,7 +835,7 @@
      ],
      [
       "mi",
-      186
+      188
      ],
      [
       "hoa",
@@ -868,8 +843,36 @@
       0
      ]
     ],
-    "list_price": 470000,
-    "payment": 4066
+    "list_price": 475000,
+    "payment": 4107
+   },
+   {
+    "down": 23250,
+    "lines": [
+     [
+      "pi",
+      2924
+     ],
+     [
+      "tax",
+      617
+     ],
+     [
+      "ins",
+      300
+     ],
+     [
+      "mi",
+      184
+     ],
+     [
+      "hoa",
+      "HOA",
+      0
+     ]
+    ],
+    "list_price": 465000,
+    "payment": 4025
    }
   ],
   "school_mills": 5.25,
@@ -901,11 +904,11 @@
  },
  "price_history": null,
  "recommendation": {
-  "expected_sale": 476500,
-  "high": 490000,
-  "list_price": 480000,
-  "low": 465000,
-  "midpoint": 477500.0,
+  "expected_sale": 472000,
+  "high": 485000,
+  "list_price": 475000,
+  "low": 460000,
+  "midpoint": 472500.0,
   "override": false,
   "price_override": false
  },
@@ -932,7 +935,7 @@
  "stance": {
   "agent_price": false,
   "differs": true,
-  "rule_price": 480000,
+  "rule_price": 475000,
   "signals": [
    "price_cuts"
   ],
@@ -944,17 +947,17 @@
   {
    "agent": false,
    "closing": "2026-12-24",
-   "down": 24250,
-   "expected_sale": 477000,
+   "down": 24000,
+   "expected_sale": 472500,
    "expected_sale_source": "rule",
    "hold_months": 3.06,
-   "list_price": 485000,
+   "list_price": 480000,
    "months_to_contract": 1.61,
    "name": "Premium",
-   "net": 435206,
-   "net_after_holding": 433584,
-   "net_vs_recommended": 52,
-   "payment": 4188,
+   "net": 430983,
+   "net_after_holding": 429370,
+   "net_vs_recommended": 50,
+   "payment": 4147,
    "recommended": false,
    "role": "premium",
    "seller_credit": 11000,
@@ -964,16 +967,16 @@
   {
    "agent": false,
    "closing": "2026-11-30",
-   "down": 24000,
-   "expected_sale": 476500,
+   "down": 23750,
+   "expected_sale": 472000,
    "expected_sale_source": "rule",
    "hold_months": 2.27,
-   "list_price": 480000,
+   "list_price": 475000,
    "months_to_contract": 0.8,
-   "net": 434735,
-   "net_after_holding": 433532,
+   "net": 430516,
+   "net_after_holding": 429320,
    "net_vs_recommended": 0,
-   "payment": 4147,
+   "payment": 4107,
    "recommended": true,
    "role": "market",
    "seller_credit": 11000,
@@ -983,16 +986,16 @@
   {
    "agent": false,
    "closing": "2026-11-16",
-   "down": 23500,
-   "expected_sale": 467000,
+   "down": 23250,
+   "expected_sale": 462000,
    "expected_sale_source": "rule",
    "hold_months": 1.81,
-   "list_price": 470000,
+   "list_price": 465000,
    "months_to_contract": 0.34,
-   "net": 425826,
-   "net_after_holding": 424867,
-   "net_vs_recommended": -8665,
-   "payment": 4066,
+   "net": 421136,
+   "net_after_holding": 420182,
+   "net_vs_recommended": -9138,
+   "payment": 4025,
    "recommended": false,
    "role": "draw_offers",
    "seller_credit": 11000,
@@ -1041,28 +1044,28 @@
  "summary": {
   "comps": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K"
+    "adjusted": 485600,
+    "adjusted_k": "$486K"
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K"
+    "adjusted": 479300,
+    "adjusted_k": "$479K"
    },
    {
     "adjusted": 469800,
     "adjusted_k": "$470K"
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K"
+    "adjusted": 433500,
+    "adjusted_k": "$434K"
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K"
+    "adjusted": 431200,
+    "adjusted_k": "$431K"
    },
    {
-    "adjusted": 486900,
-    "adjusted_k": "$487K"
+    "adjusted": 478600,
+    "adjusted_k": "$479K"
    }
   ],
   "first_steps": [
@@ -1098,8 +1101,8 @@
   "cutoff": "2026-07-01",
   "cutoff_display": "July",
   "falling": true,
-  "rate": 0.01,
-  "rate_display": "1%",
+  "rate": 0.02,
+  "rate_display": "2%",
   "undated": {
    "count": 0
   }

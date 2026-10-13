@@ -217,10 +217,6 @@
     ]
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01,
-   "cutoff": "2026-07-01"
-  },
   "lean": "We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales, updated and renovated, support the same picture."
  },
  "scatter": {

@@ -9,9 +9,9 @@ six months with a market split, active, pending and expired listings, the subjec
 sale years ago, prices from about $150,000 to $2,000,000, condos and single-family homes, HOA or none, flood zones from
 X to VE, long street and subdivision names. From that export it picks 3 to 8 comps and adjusts them as an agent would
 (size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then and
-always outside Florida), sets the time adjustment by the method's rule from the export's split (none, 1% or 2% a
-quarter), runs the comps-only stage for the adjusted values and the script's range (now and then the agent's own
-range_override instead), a listing history across years (relists, cuts, increases, failed contracts, off-market
+always outside Florida; roof years when the listings give them; backups behind the first five), leaves the market
+split and the time rate to the script (now and then the agent's own, with a reason), runs the comps-only stage for the
+adjusted values and the script's range (now and then the agent's own range_override instead), a listing history across years (relists, cuts, increases, failed contracts, off-market
 stretches), taxes and the payment (at asking, or a price the agent gives). Every judgment field is figure-free and the
 value narrative carries no offer advice, as the skill requires. Mock data only; nothing here asserts anything: the
 test does.
@@ -190,18 +190,6 @@ def history(rng, as_of, subject):
     return list(reversed(ev))
 
 
-def time_rate(stats):
-    """The method's rule (method.md, Time): the change in median sale-to-original-list across the split."""
-    early = stats["sold_early"].get("median_sale_to_original_list")
-    recent = stats["sold_recent"].get("median_sale_to_original_list")
-    if early is None or recent is None or stats["sold_early"]["n"] < 5 or stats["sold_recent"]["n"] < 5:
-        return None, None
-    pts = abs(recent - early) * 100
-    if pts < 1:
-        return None, None
-    return (0.01 if pts <= 3 else 0.02), ("rising" if recent > early else "falling")
-
-
 def generate(seed, out_dir):
     compute = _compute()
     cma, finance, mls, profiles = compute.cma, compute.finance, compute.mls, compute.profiles
@@ -233,13 +221,9 @@ def generate(seed, out_dir):
     market = profiles.load_market(state=state, county=county, mls="Stellar")
     homes = mls.load(path, market)
     mls.fill_distances(homes, subject["mls_address"])
-    st = mls.market_stats(homes, {"address": subject["mls_address"], "living_area": sqft, "private_pool": subject["pool"],
-                                  "subdivision": sub}, split_date=split.isoformat(), as_of=as_of.isoformat(),
-                          exclude_address=subject["mls_address"])
-    rate, direction = time_rate(st)
     sold = [h for h in homes if h["status"] == "SOLD" and not mls.same_address(h["address"], subject["mls_address"])]
     sold.sort(key=lambda h: abs(h["living_area"] - sqft))
-    picks = sold[:rng.randint(3, min(8, len(sold)))]
+    picks = sold[:rng.randint(3, min(9, len(sold)))]  # the closest five, then backups (the script picks the used ones)
     scale = price / 450_000
     cards = []
     for h in picks:
@@ -253,11 +237,18 @@ def generate(seed, out_dir):
         if rng.random() < 0.2:
             adj.append({"label": rng.choice(("Larger Corner Lot", "Pond Lot", "Documented Recent Systems")),
                         "amount": round(-rng.choice((5000, 10000)) * scale, -2)})
-        cards.append({"address": cma.display_address(h["address"]) if rng.random() < 0.7 else h["address"],
-                      "sold_price": h["close_price"], "seller_concessions": h.get("seller_paid") or 0,
-                      "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
-                      "adjustments": adj, "bullets": rng.sample(BULLETS, rng.randint(1, 3))})
-    R = {"prepared_date": as_of.isoformat(), "as_of": as_of.isoformat(), "export": path, "split_date": split.isoformat(),
+        card = {"address": cma.display_address(h["address"]) if rng.random() < 0.7 else h["address"],
+                "sold_price": h["close_price"], "seller_concessions": h.get("seller_paid") or 0,
+                "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
+                "adjustments": adj, "bullets": rng.sample(BULLETS, rng.randint(1, 3))}
+        if rng.random() < 0.6:  # the roof year when the comp's listing gives it
+            card["roof_year"] = as_of.year - rng.randint(0, 26)
+            if rng.random() < 0.15:
+                card["roof_type"] = rng.choice(("tile", "metal"))
+        cards.append(card)
+    if len(cards) >= 4 and rng.random() < 0.1:  # now and then the agent keeps a sale the script would set aside
+        rng.choice(cards[:4])["keep_reason"] = "The same floor plan on the same street, so the agent keeps it."
+    R = {"prepared_date": as_of.isoformat(), "as_of": as_of.isoformat(), "export": path,
          "subject": {"address": f"{number} {street}{unit}", "mls_address": subject["mls_address"],
                      "locality": f"{city}, {state} {rng.randint(32000, 34999)} · {sub} · {county} County · MLS "
                                  f"{subject['mls_number']}",
@@ -277,8 +268,17 @@ def generate(seed, out_dir):
                                             "against a lower price.",
                    "method_note": "Condition adjustments are based on listing descriptions, so they are judgment calls.",
                    "lean": "We lean toward the most recent sales and the best condition matches."}}
-    if rate:
-        R["comps"]["time_adjustment"] = {"rate_per_quarter": rate, "prices": direction}
+    if len(cards) >= 6 and rng.random() < 0.2:
+        R["comps"]["count"] = 6
+    if rng.random() < 0.7:  # the home's roof year, when the property report gives it
+        R["subject"]["roof_year"] = as_of.year - rng.randint(0, 26)
+        if rng.random() < 0.15:
+            R["subject"]["roof_type"] = rng.choice(("tile", "metal"))
+    if rng.random() < 0.08:  # now and then the agent's own market shift or split, with a reason
+        R["comps"]["time_override"] = {"rate_per_quarter": rng.choice((0, 0.01, 0.015)), "prices": "falling",
+                                       "reason": "The agent reads the recent sales as a gentler change."}
+    if rng.random() < 0.05:
+        R["split_override"] = {"date": split.isoformat(), "reason": "The agent counts recent sales from the rate change."}
     # the condition ladder's dollars: the market's (Florida), else the agent's or paired sales', scaled to the price
     if not florida or rng.random() < 0.3:
         R["comps"]["condition_values"] = {lv: round(v * scale, -2) for lv, v in

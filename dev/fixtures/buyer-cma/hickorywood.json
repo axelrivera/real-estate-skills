@@ -241,9 +241,6 @@
     ]
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01
-  },
   "lean": "We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks sales support the same picture."
  },
  "scatter": {
@@ -423,7 +420,6 @@
   ]
  },
  "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
- "split_date": "2026-07-01",
  "sample": true,
  "sources": [
   "the Stellar MLS listing and its full price history",

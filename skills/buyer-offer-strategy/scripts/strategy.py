@@ -964,6 +964,8 @@ def build_offer(B, costs):
     price = {0: min(lp, max(V["cma_low"], anchor * 0.98)), 1: anchor, 2: min(max(lp, V["mid"]), V["cma_high"]),
              3: V["cma_high"]}[lvl]
     w["price"], by = why(f"why_price_{lvl}"), "rule"
+    if lvl == 2 and price > lp:  # eval 17: above list at the range's middle (it can't pass the top), never "at list"
+        w["price"] = why("why_price_2_mid")
     if lvl == 0 and V["cma_low"] > lp:
         w["price"] = why("why_price_0_list")
     low_down = fin in ("fha", "va", "usda") or (fin == "conventional" and BU["down_pct"] < 0.05)
@@ -1206,10 +1208,11 @@ def reach_band(B, costs, rec):
     tries a price anywhere in the value range up to price_ceiling() (never past the walk-away, the buyer's max or,
     with little competition, list), smaller concessions down to what the buyer's cash can't cover with the reserve kept,
     a 3% deposit and the lender's fastest close. Lowest cost: the price net of concessions, then the smaller deposit,
-    then the longer close. An escalating offer is left as built."""
+    then the longer close. An escalating offer is left as built. Returns (terms, band, the roomy offer, the rule-built
+    offer's band) or four Nones."""
     P, V, BU, lvl = B["property"], B["value"], B["buyer"], B["competition"]["level"]
     if rec.get("escalation") or V.get("assumed"):
-        return None, None, None
+        return None, None, None, None
     top = price_ceiling(B)[0]
     low = min(rnd(V["cma_low"], 1000, "up"), top)
     fast = BU["lender_min_close_days"]
@@ -1235,18 +1238,18 @@ def reach_band(B, costs, rec):
                     if conc >= need and strip(t_) != strip(rec) and within_limits(B, costs, t_):
                         tries.append((f"try{len(tries)}", t_))
     if not tries:
-        return None, None, None
+        return None, None, None, None
     _, O = run_engine(B, costs, [("recommended", rec)] + tries)
     # each offer against its own clean offer at list (the same closing date), as it's scored once recommended
     bands = {k: band_of(ci(O[k], O[k]["target"]["net_adj"], P["list_price"]), lvl) for k in O}
     best = max(BAND_RANK[b[0]] for b in bands.values())
     if bands["recommended"][0] not in ("risk", "unl") or best <= BAND_RANK[bands["recommended"][0]]:
-        return None, None, None
+        return None, None, None, None
     same = [(k, t2) for k, t2 in tries if BAND_RANK[bands[k][0]] == best]
     k, t_ = min(same, key=lambda kt: (kt[1]["price"] - kt[1]["seller_concessions"], kt[1]["deposit"], -kt[1]["closing_days"]))
     # OFR-332: the same-band offer that keeps the most cash, for when the cheapest one leaves a thin cushion
     roomy = max((t2 for _, t2 in same), key=lambda t2: buyer_cash(B, t2)["reserve"])
-    return t_, bands[k], roomy
+    return t_, bands[k], roomy, bands["recommended"]
 
 
 def against(B, band):
@@ -1264,7 +1267,7 @@ def smaller_than(B, t_, was):
     return money(was.get("seller_concessions", 0))
 
 
-def reach_why(B, w, t_, was, band):
+def reach_why(B, w, t_, was, band, was_band=None):
     """OFR-325: the reasons for the terms reach_band changed, against the competition the deal expects."""
     w = dict(w)
     BU, V = B["buyer"], B["value"]
@@ -1273,6 +1276,10 @@ def reach_why(B, w, t_, was, band):
         where = (L_["where_top"] if t_["price"] >= V["cma_high"] else L_["where_walk"] if walk and t_["price"] >= walk else
                  L_["where_inside"])
         w["price"] = why("why_reach_price", against=against(B, band[1]), where=where)
+        if t_["price"] < was["price"] and was_band:  # eval 17: say why the offer sits under the rule's price
+            more = t_["price"] - t_["seller_concessions"] > was["price"] - was.get("seller_concessions", 0)
+            w["price"] = add_to(w["price"], why("add_reach_below_more" if more else "add_reach_below",
+                                                was=money(was["price"]), band=was_band[1]))
     if t_["seller_concessions"] < was.get("seller_concessions", 0):
         keep = money(BU["reserve_floor"])
         w["seller_concessions"] = (why("why_reach_conc_none", reserve=keep) if not t_["seller_concessions"] else
@@ -1454,9 +1461,9 @@ def analyze(B_in, market=None, cma=None):
                 a["impact"] = "high"
     reached = None
     if not ov:  # OFR-325: the rule-built offer is a first draft; the strongest outlook inside the limits wins
-        t_, band, roomy = reach_band(B, costs, rec)
+        t_, band, roomy, rule_band = reach_band(B, costs, rec)
         if t_:
-            w, reached = reach_why(B, w, t_, rec, band), {"from": rec, "band": band[1], "band_key": band[0], "roomy": roomy}
+            w, reached = reach_why(B, w, t_, rec, band, rule_band), {"from": rec, "band": band[1], "band_key": band[0], "roomy": roomy}
             rec = t_
     promoted = fuller = None
     promoted_lifts = False
@@ -1549,6 +1556,13 @@ def analyze(B_in, market=None, cma=None):
                                   hb=hb_)
         else:
             w["escalation"] = why("why_esc_same" if promoted == "lower_cost" else "why_esc_flat", hb=hb_)
+            walk, top = walk_away(B), B["buyer"]["max_price"]
+            if promoted == "lower_cost" and walk and walk < top:  # eval 17: still name the max and what it would cost
+                above = top - B["value"]["cma_high"]
+                w["escalation"] = add_to(w["escalation"], why(
+                    "add_esc_max", walk=money(walk), max=money(top),
+                    rest=t("esc_walk_above", above=money(above), top=money(B["value"]["cma_high"]))
+                    if above > 0 and B["buyer"]["financing"] != "cash" else L_["esc_walk_ceiling"]))
     for k in O:  # OFR-216: the scorecard says what's known about the quote, never that one is planned when it isn't
         if res["terms"][k].get("insurance_quote") is None and O[k]["score"]["why"]["property"] is not None:
             sw = O[k]["score"]["why"]
@@ -1562,7 +1576,7 @@ def analyze(B_in, market=None, cma=None):
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
     res["higher_price"] = higher_price(B, costs, res)
-    res["reply_lines"] = reply_lines(B, rec) + ([{"key": "tight_reserve", "text": res["reserve_tight"]}]
+    res["reply_lines"] = reply_lines(B, rec, (res.get("why") or {}).get("escalation")) + ([{"key": "tight_reserve", "text": res["reserve_tight"]}]
                                                  if res["reserve_tight"] else []) \
         + ([{"key": "higher_price", "text": res["higher_price"]["text"]}] if res["higher_price"] else [])
     res["framing"] = framing(res)
@@ -1797,20 +1811,24 @@ def higher_price(B, costs, res):
     now = res["bands"]["recommended"][lvl]
     if res["overrides"] or rec.get("escalation") or B["value"].get("assumed") or now[0] == "strong":
         return None
+    def at(p):  # eval 17: the concessions the buyer's cash needs at that price, inside the program cap and the costs
+        need = int(rnd(conc_need(B, p), 500, "up")) if conc_need(B, p) else 0
+        conc = min(max(rec.get("seller_concessions", 0), need), int(concession_cap(B, p) // 100 * 100),
+                   int(closing_costs(B, p) // 100 * 100))
+        return dict(rec, price=p, seller_concessions=conc, price_by="higher")
     lo, hi = int(rec["price"]) // 1000 + 1, int(B["buyer"]["max_price"]) // 1000  # in thousands
-    if lo > hi or not within_limits(B, costs, dict(rec, price=lo * 1000)):
+    fits = next((k for k in range(hi, lo - 1, -1) if within_limits(B, costs, at(k * 1000))), None)
+    if fits is None:
         return None
-    while lo < hi:  # the highest price inside every limit (each limit tightens as the price rises)
-        mid = (lo + hi + 1) // 2
-        lo, hi = (mid, hi) if within_limits(B, costs, dict(rec, price=mid * 1000)) else (lo, mid - 1)
-    price = lo * 1000
-    _, O = run_engine(B, costs, [("recommended", rec), ("higher", dict(rec, price=price, price_by="higher"))])
+    price = fits * 1000  # the highest price inside every limit, with the concessions it needs
+    _, O = run_engine(B, costs, [("recommended", rec), ("higher", at(price))])
     band = band_of(ci(O["higher"], O["higher"]["target"]["net_adj"], B["property"]["list_price"]), lvl)
     lifts = BAND_RANK[band[0]] > BAND_RANK[now[0]]
     above = price > B["value"]["cma_high"]
     text = t("hp_lifts" if lifts else "hp_same", price=money(price), band=against(B, band[1]), now=now[1],
              risk=L_["hp_appraisal"] if above else "")
-    return {"price": price, "band": band[1], "band_key": band[0], "lifts": lifts, "above_range": above, "text": text}
+    return {"price": price, "seller_concessions": at(price)["seller_concessions"], "band": band[1], "band_key": band[0],
+            "lifts": lifts, "above_range": above, "text": text}
 
 
 def rate_line(B):
@@ -1827,19 +1845,20 @@ def rate_line(B):
              whose=whose)
 
 
-def reply_lines(B, rec):
+def reply_lines(B, rec, esc_why=None):
     """OFR-239: lines the chat reply must carry outside its length cap, as [{key, text}]: `seller_timeline` (the seller is
     flexible on the closing date: ask whether another date helps), `flat_number` (a highest-and-best round with no
     escalation: why one flat number), `contract_terms` (a contract that isn't FAR/BAR: the form-specific terms come from
     the agent's contract), `inspection_period` (that contract with the period's length not set by the agent) and
-    `rate_differs` (the buyer CMA's payment used another rate: which rate each report used)."""
+    `rate_differs` (the buyer CMA's payment used another rate: which rate each report used). `flat_number` is left out
+    when the Escalation row (`esc_why`), which the reply quotes, already says why one flat number (eval 17)."""
     out = []
     P = B["property"]
     if rate_line(B):
         out.append({"key": "rate_differs", "text": rate_line(B)})
     if P.get("seller_flexible_close") and not P.get("seller_deadline"):
         out.append({"key": "seller_timeline", "text": L_["rl_seller_timeline"]})  # chat only, never in the report
-    if highest_and_best(B["competition"]) and not rec.get("escalation"):
+    if highest_and_best(B["competition"]) and not rec.get("escalation") and L_["esc_hb"] not in why_text(esc_why):
         out.append({"key": "flat_number", "text": t("rl_flat_number", price=money(rec["price"]))})
     if B["contract_form"] not in cf.FARBAR:
         out.append({"key": "contract_terms", "text": L_["rl_contract_terms"]})

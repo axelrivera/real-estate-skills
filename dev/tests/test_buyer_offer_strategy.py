@@ -762,20 +762,48 @@ class Assumptions(unittest.TestCase):
         self.assertIsNone(strategy.assumed_line(r))
 
 
+class PriceReasons(unittest.TestCase):
+    """Eval 17: the price reason says what set the price."""
+
+    def test_two_or_three_competing_above_list(self):
+        for low, high, key in ((400000, 440000, "why_price_2_mid"), (380000, 405000, "why_price_2")):
+            with self.subTest(high=high):
+                d = copy.deepcopy(GAP)
+                d["competition"]["level"] = 2
+                d["value"] = {"cma_low": low, "cma_high": high}
+                B, costs = strategy.prepare(d, strategy.oe.Assume())
+                t_, w = strategy.build_offer(B, costs)
+                self.assertEqual(w["price"]["key"], key)
+                if key != "why_price_2":
+                    self.assertGreater(t_["price"], 400000)
+
+    def test_under_the_first_draft_says_why(self):
+        r = analyze("one-competing-reach.json")
+        rec, rule = r["terms"]["recommended"], r["reached"]["from"]
+        self.assertLess(rec["price"], rule["price"])
+        adds = [a["key"] for a in r["why"]["price"].get("adds") or []]
+        self.assertTrue({"add_reach_below", "add_reach_below_more"} & set(adds))
+        text = strategy.why_text(r["why"]["price"])
+        self.assertIn(strategy.money(rule["price"]), text)
+
+
 class ReplyLines(unittest.TestCase):
     def test_reply_lines_outside_the_cap(self):
         tx = fixture("texas-cma-escalation.json")
-        r = run(copy.deepcopy(tx))  # highest and best, one flat number
+        r = run(copy.deepcopy(tx))  # highest and best, one flat number: said once, in the Escalation row the reply quotes
         res = strategy.result(r)
-        self.assertEqual([x["key"] for x in res["reply_lines"]],
-                         ["flat_number", "contract_terms", "inspection_period", "assumptions"])
-        self.assertIn(strategy.money(r["terms"]["recommended"]["price"]), res["reply_lines"][0]["text"])
+        esc = next(x for x in res["summary"]["terms"] if x["key"] == "escalation")["why"]
+        self.assertIn(strategy.L_["esc_hb"].lstrip("; "), esc)
+        self.assertEqual([x["key"] for x in res["reply_lines"]], ["contract_terms", "inspection_period", "assumptions"])
+        self.assertIn("$640,000", esc)  # eval 17: the lower-cost offer's row still names the buyer's max
         d = copy.deepcopy(tx)
         d["competition"]["note"] = "Listing agent: 6 offers in"
         self.assertEqual([x["key"] for x in strategy.result(run(d))["reply_lines"]],
                          ["contract_terms", "inspection_period", "assumptions"])
         d["competition"]["highest_and_best"] = True  # the field wins over the note
-        self.assertIn("flat_number", [x["key"] for x in run(d)["reply_lines"]])
+        r = run(d)
+        said = strategy.L_["esc_hb"] in strategy.why_text(r["why"].get("escalation"))
+        self.assertNotEqual("flat_number" in [x["key"] for x in r["reply_lines"]], said)  # once, in one place
         d = copy.deepcopy(tx)
         d["buyer"]["cover_appraisal_gap"], d["overrides"] = True, {"inspection_days": 10}  # escalating: no flat number
         r = run(d)
@@ -800,9 +828,9 @@ class ReplyLines(unittest.TestCase):
             seen += 1
             B, costs = r["B"], r["costs"]
             self.assertGreater(hp["price"], rec["price"], name)
-            self.assertTrue(strategy.within_limits(B, costs, dict(rec, price=hp["price"])), name)
-            self.assertTrue(hp["price"] + 1000 > B["buyer"]["max_price"]
-                            or not strategy.within_limits(B, costs, dict(rec, price=hp["price"] + 1000)), name)
+            self.assertTrue(strategy.within_limits(
+                B, costs, dict(rec, price=hp["price"], seller_concessions=hp["seller_concessions"])), name)
+            self.assertGreaterEqual(hp["seller_concessions"], rec.get("seller_concessions", 0), name)
             self.assertEqual(hp["lifts"], strategy.BAND_RANK[hp["band_key"]]
                              > strategy.BAND_RANK[r["bands"]["recommended"][lvl][0]], name)
             self.assertEqual([x["key"] for x in r["reply_lines"]].count("higher_price"), 1)

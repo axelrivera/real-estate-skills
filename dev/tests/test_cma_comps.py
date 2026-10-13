@@ -159,35 +159,48 @@ class ConditionLadder(unittest.TestCase):
 
 
 class TimeAdjustments(unittest.TestCase):
-    """Time adjustments are the script's, from the stated rate and cutoff (the market split by default)."""
+    """Time adjustments are the script's: the rate by method.md's rule from the export (or the agent's override), the
+    cutoff the market split."""
 
     def time_line(self, C, address):
         return [v for a, v in card(C, address)["lines"] if a == cma.TIME_LABEL]
 
     def test_rule_per_comp(self):
-        C, _ = run(tanager())
-        self.assertEqual(self.time_line(C, "907 Tanager Ridge Dr"), ["−$7,100"])  # June 12 to Sep 26 at 1.5% a quarter
+        C, _ = run(tanager())  # sale-to-original-list fell more than 3 points across the July 1 split: 2% a quarter
+        self.assertEqual((C["time_adjustment"]["rate_display"], C["time_adjustment"]["cutoff_display"]), ("2%", "July"))
+        self.assertEqual(self.time_line(C, "907 Tanager Ridge Dr"), ["−$9,400"])  # June 12 to Sep 26 at 2% a quarter
         self.assertEqual(self.time_line(C, "655 Phoebe Ln"), [])  # July 18: after the July 1 split, none
-        self.assertEqual((C["time_adjustment"]["rate_display"], C["time_adjustment"]["cutoff_display"]), ("1.5%", "July"))
         R = tanager()
         c = next(x for x in R["comps"]["cards"] if x["address"] == "907 Tanager Ridge Dr")
         c["address"] = "1 Nowhere Ln"
         self.assertIn("time_undated", run(R)[0]["warning_keys"])
 
+    def test_agents_rate_is_shown_as_theirs(self):
+        R = tanager()
+        R["comps"]["time_override"] = {"rate_per_quarter": 0.015, "reason": "The agent reads a gentler softening."}
+        C, _ = run(R)
+        self.assertEqual(self.time_line(C, "907 Tanager Ridge Dr"), ["−$7,100"])  # June 12 to Sep 26 at 1.5% a quarter
+        self.assertIn("gentler softening", C["comps"]["settled"])
+        R["comps"]["time_override"] = {"rate_per_quarter": 0.015}  # no reason
+        stops(self, R, r"comps\.time_override")
+
     def test_typed_amounts(self):
         R = tanager()  # a typed amount that agrees is kept as the script's
         cards = {c["address"]: c for c in R["comps"]["cards"]}
-        cards["907 Tanager Ridge Dr"]["adjustments"].append({"label": "Earlier Sale", "amount": -7000})
-        self.assertEqual([v for a, v in card(run(R)[0], "907 Tanager Ridge Dr")["lines"] if a == "Earlier Sale"], ["−$7,100"])
+        cards["907 Tanager Ridge Dr"]["adjustments"].append({"label": "Earlier Sale", "amount": -9300})
+        self.assertEqual([v for a, v in card(run(R)[0], "907 Tanager Ridge Dr")["lines"] if a == "Earlier Sale"], ["−$9,400"])
         R = tanager()  # a sale after the cutoff gets none
         next(c for c in R["comps"]["cards"] if c["address"] == "655 Phoebe Ln")["adjustments"].append(
             {"label": "Older Sale", "amount": -4300})
-        stops(self, R, r"comps\.cards\[3\]\.adjustments\[2\]: .*−\$4,300")
-        R = tanager()  # typed without a stated rule
-        R["comps"].pop("time_adjustment")
+        stops(self, R, r"comps\.cards\[3\]\.adjustments\[\d\]: .*−\$4,300")
+        R = tanager()  # typed when the agent set no shift
+        R["comps"]["time_override"] = {"rate_per_quarter": 0, "reason": "The agent reads the market as flat."}
         next(c for c in R["comps"]["cards"] if c["address"] == "907 Tanager Ridge Dr")["adjustments"].append(
             {"label": "Market Since the Sale", "amount": -7100})
-        stops(self, R, r"−\$7,100.*comps\.time_adjustment")
+        stops(self, R, r"−\$7,100.*comps\.time_override")
+        R = tanager()  # the old typed method is retired
+        R["comps"]["time_adjustment"] = {"rate_per_quarter": 0.015}
+        stops(self, R, r"comps\.time_adjustment: no longer written by you")
 
     def test_hand_typed_amount_is_checked(self):
         cards = [{"address": "1 A St", "sold_price": 490000, "seller_concessions": 0, "close_date": "2026-08-19",
@@ -211,22 +224,141 @@ class Formats(unittest.TestCase):
         self.assertEqual(finance.tax_pair(7152), (7200, 600))  # "$7,200/yr" beside "$600/mo"
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class Outliers(unittest.TestCase):
-    def test_several_flagged_name_the_farthest_first(self):
-        """Eval 16: two outliers flagged at once were replaced in different orders, giving different medians. The
-        farthest comes first and is the one to replace first; the rest are judged again on the next run."""
+    def test_warning_only_when_no_backup_is_left(self):
+        """Eval 16: outliers replaced in different orders gave different medians; the script now sets them aside
+        itself (select_comps). What's still flagged after it, with no backup left, is warned; a kept card isn't."""
         cards = [{"address": a, "adjusted": v} for a, v in
                  (("1 A St", 470000), ("2 B St", 521300), ("3 C St", 425000), ("4 D St", 484500), ("5 E St", 461600))]
         out = compute.cma.outlier_warnings(cards)
         self.assertEqual([w.split(":")[0] for w in out], ["2 B St", "3 C St"])
-        self.assertIn("replace it first", out[0])
-        self.assertIn("Judge it again", out[1])
-        self.assertEqual(compute.cma.outlier_warnings(list(reversed(cards))), out)  # the order of the cards doesn't matter
-        self.assertEqual(compute.cma.outlier_warnings([c for c in cards if c["address"] != "2 B St"]), [])  # judged again
-        one = compute.cma.outlier_warnings([c for c in cards if c["address"] != "3 C St"])
-        self.assertEqual(len(one), 1)
-        self.assertIn("Replace it with the next candidate", one[0])
+        self.assertTrue(all("backup" in w and "keep_reason" in w for w in out))
+        cards[1]["keep_reason"] = "The agent's call."
+        self.assertEqual([w.split(":")[0] for w in compute.cma.outlier_warnings(cards)], ["3 C St"])
+
+
+class SplitAndRate(unittest.TestCase):
+    """The market split and the shift rate are the script's, by one rule: the same export always splits the same way."""
+
+    def test_split_is_the_first_of_the_month_two_months_back(self):
+        d = compute.mls.rule_split
+        for end, want in (("2026-09-26", "2026-07-01"), ("2026-09-01", "2026-07-01"), ("2026-01-15", "2025-11-01"),
+                          ("2026-02-28", "2025-12-01"), ("2026-12-31", "2026-10-01")):
+            with self.subTest(end=end):
+                self.assertEqual(d(cma._iso(end)).isoformat(), want)
+        self.assertEqual(cma.default_split({"as_of": "2026-09-26"}).isoformat(), "2026-07-01")
+        self.assertEqual(cma.default_split({"as_of": "2026-09-26", "split_override": {"date": "2026-06-15", "reason": "x"}})
+                         .isoformat(), "2026-06-15")
+        self.assertTrue(cma.split_errors({"split_override": {"date": "2026-06-15"}}))  # no reason
+        self.assertEqual(cma.split_errors({}), [])
+
+    def test_rate_by_the_ratio_change(self):
+        def st(a, b, n=6):
+            return {"sold_early": {"n": n, "median_sale_to_original_list": a},
+                    "sold_recent": {"n": n, "median_sale_to_original_list": b}}
+        for a, b, want in ((0.98, 0.975, None), (0.98, 0.965, (0.01, "falling")), (0.98, 0.95, (0.01, "falling")),
+                           (0.98, 0.9499, (0.02, "falling")), (0.95, 0.97, (0.01, "rising")), (0.95, 0.99, (0.02, "rising"))):
+            with self.subTest(a=a, b=b):
+                spec, info = cma.time_rule(st(a, b))
+                self.assertEqual((spec["rate_per_quarter"], spec["prices"]) if spec else None, want)
+                self.assertEqual(info["basis"], "rule")
+        spec, info = cma.time_rule(st(0.98, 0.90, n=4))  # too few sales on a side
+        self.assertEqual((spec, info["basis"]), (None, "thin"))
+        spec, info = cma.time_rule(st(0.98, 0.90), {"rate_per_quarter": 0.005, "reason": "Our read."})
+        self.assertEqual((spec["rate_per_quarter"], info["basis"]), (0.005, "agent"))
+
+
+class SelectComps(unittest.TestCase):
+    """The used comps by one rule: the first five in the ranking, an outlier set aside for the next backup."""
+
+    @staticmethod
+    def cards(*values):
+        return [{"address": f"{i} A St", "adjusted": v} for i, v in enumerate(values, 1)]
+
+    def test_outlier_replaced_by_the_next_backup(self):
+        comps = {"cards": self.cards(470000, 521300, 465000, 484500, 461600, 472000, 468000)}
+        info = cma.select_comps(comps)
+        self.assertEqual([c["address"] for c in comps["cards"]], ["1 A St", "3 A St", "4 A St", "5 A St", "6 A St"])
+        self.assertEqual([(x["address"], x["above"], x["replaced"]) for x in info["set_aside"]], [("2 A St", True, True)])
+        self.assertEqual(info["backups_used"], 1)
+
+    def test_same_cards_same_comps_whatever_the_judging_order(self):
+        """The cascade from eval 17: each outlier is judged against the others again after one is set aside."""
+        values = (470000, 521300, 425000, 484500, 461600, 468000, 474000, 466000)
+        comps = {"cards": self.cards(*values)}
+        cma.select_comps(comps)
+        first = [c["address"] for c in comps["cards"]]
+        for _ in range(3):
+            again = {"cards": self.cards(*values)}
+            cma.select_comps(again)
+            self.assertEqual([c["address"] for c in again["cards"]], first)
+        vals = [c["adjusted"] for c in comps["cards"]]
+        self.assertEqual(cma.outlier_warnings(comps["cards"]), [])  # none left flagged
+        self.assertEqual(len(vals), 5)
+
+    def test_no_backup_and_kept_cards(self):
+        comps = {"cards": self.cards(470000, 521300, 465000, 484500, 461600)}
+        info = cma.select_comps(comps)  # no backup: set aside while three remain
+        self.assertEqual(len(comps["cards"]), 4)
+        self.assertFalse(info["set_aside"][0]["replaced"])
+        comps = {"cards": self.cards(470000, 521300, 465000)}
+        cma.select_comps(comps)  # three only: nothing set aside
+        self.assertEqual(len(comps["cards"]), 3)
+        cards = self.cards(470000, 521300, 465000, 484500, 461600, 472000)
+        cards[1]["keep_reason"] = "The agent's call: the same floor plan next door."
+        comps = {"cards": cards}
+        info = cma.select_comps(comps)
+        self.assertIn("2 A St", [c["address"] for c in comps["cards"]])
+        self.assertEqual([x["address"] for x in info["kept"]], ["2 A St"])
+        comps = {"cards": self.cards(470000, 471000, 465000, 484500, 461600, 472000), "count": 6}
+        cma.select_comps(comps)
+        self.assertEqual(len(comps["cards"]), 6)
+
+
+class Roof(unittest.TestCase):
+    """Roof adjustments are the script's, from roof years and the market's bands; an unknown roof on the home: none."""
+    market = profiles_market = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.market = compute.profiles.load_market(state="FL", county="Seminole")
+
+    def apply(self, subject, *roofs, typed=None):
+        cards = [{"address": f"{i} A St", "adjustments": list(typed or []), **r} for i, r in enumerate(roofs, 1)]
+        comps = {"cards": cards}
+        errors, info = cma.apply_roof_adjustments(comps, subject, self.market, "2026-09-26")
+        return errors, info, [[a["amount"] for a in c["adjustments"] if a.get("kind") == "age"] for c in cards]
+
+    def test_bands_by_difference(self):
+        # the subject's 16-year roof (-$10,000) against a 7-year one ($0): -$10,000; same band: none; older: plus
+        _, info, amounts = self.apply({"roof_year": 2010}, {"roof_year": 2019}, {"roof_year": 2011}, {"roof_year": 2004})
+        self.assertEqual(amounts, [[-10000], [], [5000]])
+        self.assertEqual((info["subject_known"], info["subject_age"]), (True, 16))
+        _, _, amounts = self.apply({"roof_year": 2010, "roof_type": "tile"}, {"roof_year": 2019})  # tile: 16 years is $0
+        self.assertEqual(amounts, [[]])
+
+    def test_unknown_home_roof_and_unknown_comp(self):
+        _, info, amounts = self.apply({}, {"roof_year": 2019}, {"roof_year": 2004})
+        self.assertEqual((amounts, info["subject_known"]), ([[], []], False))
+        _, info, amounts = self.apply({"roof_year": 2010}, {}, {"roof_year": 2019})
+        self.assertEqual(info["unknown"], ["1 A St"])
+        self.assertEqual(len(cma.roof_warnings(info)), 1)
+
+    def test_typed_roof_and_bad_inputs_stop(self):
+        errors, _, _ = self.apply({"roof_year": 2010}, {"roof_year": 2019}, typed=[{"label": "Older Roof", "amount": 10000}])
+        self.assertIn("roof adjustment", errors[0])
+        errors, _, _ = self.apply({"roof_year": "2010"}, {"roof_year": 2019, "roof_type": "slate"})
+        self.assertEqual(len(errors), 2)
+        bare = cma.apply_roof_adjustments({"cards": [{"address": "x", "adjustments": [{"label": "Roof", "amount": 1}]}]},
+                                          {}, compute.profiles.load_market(state="TX", county="Travis"), "2026-09-26")
+        self.assertEqual(bare, ([], None))  # no bands outside the built-in market: the agent's typed rates stand
+
+    def test_tanager_roofs(self):
+        C, _ = run(tanager())  # the home's 2021 roof against three comps' 2010 roofs: each +$10,000
+        older = [c for c in C["comps"]["cards"] if any(a.startswith("Roof:") for a, _ in c["lines"])]
+        self.assertEqual(len(older), 3)
+        self.assertTrue(all(v == "+$10,000" for c in older for a, v in c["lines"] if a.startswith("Roof:")))
+
+
+if __name__ == "__main__":
+    unittest.main()

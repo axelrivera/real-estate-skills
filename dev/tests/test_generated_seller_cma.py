@@ -108,6 +108,12 @@ def tearDownModule():
     shutil.rmtree(TMP, ignore_errors=True)
 
 
+
+def given_card(R, card):
+    """The input card a model card came from (the model keeps the used comps only, by address)."""
+    return next(c for c in R["comps"]["cards"] if compute.cma.display_address(c["address"]) == card["address"])
+
+
 class Model(unittest.TestCase):
     def test_columns_add_up(self):
         for seed, _, C in cases():
@@ -148,10 +154,25 @@ class Model(unittest.TestCase):
                     self.assertFalse({"range_wide", "range_one_comp", "range_narrow"} & set(C["warning_keys"]))
                 levels = compute.cma.condition_values(market, R["comps"].get("condition_values"))
                 mine = levels.get(R["subject"]["condition"], 0)
-                for card, given in zip(C["comps"]["cards"], R["comps"]["cards"]):
+                for card in C["comps"]["cards"]:
+                    given = given_card(R, card)
                     lines = [fmt.money(mine - levels[given["condition"]], style="signed")] \
                         if levels.get(given["condition"], mine) != mine else []
                     self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
+
+    def test_comps_by_the_rule(self):
+        """The used comps are the script's: the same input gives the same comps, every used comp is an input card in
+        the ranking's order, and a used comp still more than 10% from the others is either the agent's (keep_reason)
+        or warned (no backup left)."""
+        for seed, R, C in cases():
+            with self.subTest(seed=seed):
+                used = [c["address"] for c in C["comps"]["cards"]]
+                self.assertEqual([c["address"] for c in compute.run(R)["comps"]["cards"]], used)
+                order = [compute.cma.display_address(c["address"]) for c in R["comps"]["cards"]]
+                self.assertEqual(used, sorted(used, key=order.index))
+                cards = [dict(given_card(R, c), adjusted=c["adjusted"]) for c in C["comps"]["cards"]]
+                left = compute.cma.outlier_warnings(cards)
+                self.assertEqual(bool(left), "outlier" in C["warning_keys"])
 
     def check_options(self, R, C):
         """The options the stance sets, by rule: the recommended price inside the range on a search-bracket step (or at

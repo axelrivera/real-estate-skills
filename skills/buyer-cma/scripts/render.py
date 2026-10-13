@@ -183,6 +183,8 @@ def comps(C):
            *[f'<div class="comps2">{"".join(cards[i:i + 2])}</div>' for i in range(0, len(cards), 2)],
            layout.table([Col(0, L["th_sale"]), Col(1, L["th_sold_for"], align="num"), Col(2, L["th_seller_paid"], align="num"),
                          Col(3, L["th_adjusted"], align="num")], rows, row_classes={len(rows) - 1: "subj"})]
+    if c["settled"]:  # after the table, so the heading's block stays short (sales set aside, an unknown roof)
+        out.append(p(esc(c["settled"]), "note"))
     if c["lean"]:
         out.append(p(c["lean"]))
     return [x for x in out if x]

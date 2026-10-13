@@ -149,6 +149,7 @@
  "comps": {
   "intro": "We looked at every sale within a mile and chose the closest matches: Spring Oaks Unit Two Replat at Hickorywood Estates pool homes of about this size, built in the same era. We included the ones that argue against a lower price, and adjusted each sale to what it would have brought as this home.",
   "method_note": "Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "count": 6,
   "cards": [
    {
     "address": "622 Spring Oaks Blvd",
@@ -217,7 +218,8 @@
      "Same size and likely the same floor plan, one street over.",
      "The seller paid part of the buyer's costs, which comes off the price.",
      "Partly updated (new appliances, stone counters) but not a full renovation."
-    ]
+    ],
+    "keep_reason": "It matches this home's floor plan on a street like this one, so we keep it."
    },
    {
     "address": "621 Little Wekiva Rd",
@@ -238,7 +240,8 @@
      "A renovated pool home with new windows, listed at almost exactly this home's original price.",
      "The seller paid part of the buyer's costs, which comes off the price.",
      "It sits on nearly twice the land, backing onto a canal, which buyers pay more for."
-    ]
+    ],
+    "keep_reason": "It matches this home's floor plan on a street like this one, so we keep it."
    },
    {
     "address": "900 Extra Comp Ln",
@@ -262,9 +265,6 @@
     ]
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01
-  },
   "lean": "We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks Unit Two Replat at Hickorywood Estates sales support the same picture."
  },
  "scatter": {
@@ -443,7 +443,6 @@
   ]
  },
  "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
- "split_date": "2026-07-01",
  "sample": true,
  "sources": [
   "the Stellar MLS listing and its full price history",

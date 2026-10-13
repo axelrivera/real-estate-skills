@@ -156,6 +156,11 @@ RETIRED = {
                           "price_override {list_price, reason}",
     "pricing.recommended_index": "the script marks the recommended option (pricing.stance, or price_override)",
     "pricing.competing_offer_upside": "the notes add the competing-offer caveat on their own when that option nets more",
+    "split_date": "the script sets the market split by its rule (the first of the month two months before as_of), so "
+                  "the same export always splits the same way: leave it out, or put the agent's own date in "
+                  "split_override {date, reason}",
+    "comps.time_adjustment": "the script sets the market shift from the export by its rule (method.md, Time): leave it "
+                             "out, or put the agent's own rate in comps.time_override {rate_per_quarter, prices, reason}",
     "comps.summary_paragraph": "the script states the adjusted span, the median, the strongest match and the highest "
                                "sale: write which way the range leans and why (no figures) in comps.lean",
     "scatter.intro": "the script describes what the chart plots",
@@ -188,6 +193,7 @@ RETIRED_EACH = {
 JUDGMENT = (
     "subject.summary", "subject.facts[][0]", "summary_page.label", "summary_page.headline", "summary_page.why[]",
     "summary_page.next_step", "recommendation.why", "range_override.reason", "means[]", "comps.intro", "comps.method_note", "comps.lean",
+    "comps.cards[].keep_reason", "comps.time_override.reason", "split_override.reason",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
     "competition.intro", "competition.rows[][6]", "market.bullets[]", "pricing.intro", "pricing.note",
     "pricing.stance_reason", "pricing.options.*.note", "price_override.reason", "prep.intro", "prep.items[].step",
@@ -585,7 +591,7 @@ def market_numbers(R, homes):
     st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
                                   "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
                                   **({"property_type": s["property_type"]} if s.get("property_type") else {})},
-                          split_date=R.get("split_date"), exclude_address=address, as_of=R.get("as_of"))
+                          split_date=cma.default_split(R, homes).isoformat(), exclude_address=address, as_of=R.get("as_of"))
     recent = st["sold_recent"]
     return {k: v for k, v in {
         "split_date": st["window"]["split_date"],
@@ -1385,25 +1391,25 @@ def payment_note(R, pay):
 # --- the document model ------------------------------------------------------------------------------------------------
 
 def prepare_comps(R, homes, warn, market):
-    """Condition adjustments (the condition ladder) and time adjustments by the shared rules, then each adjusted value
-    from its parts (cma.derive_comps). Returns (the market split, time info, condition info)."""
+    """The comps by the shared pipeline (cma.settle_comps): the split and the market-shift rate by rule, the condition,
+    roof and time adjustments, each adjusted value, and the used comps (outliers set aside for the next backup).
+    Returns (the market split, time info, condition info, the pipeline's info)."""
     for i, c in enumerate(R["comps"]["cards"]):
         if not isinstance(c, dict) or not c.get("address") or not isinstance(c.get("adjustments"), list):
             raise ReportError(f"comps.cards[{i}] needs address, sold_price, seller_concessions, condition and adjustments "
                               "([{label, amount}], empty when there are none): the script adds them up.")
     if not R["comps"]["cards"]:
         raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
-    split = cma.default_split(R, homes)
-    cond_errors, cond_info = cma.apply_condition_adjustments(R["comps"], R["subject"], market)
-    time_errors, time_info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
-    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + cond_errors + time_errors
-    if errors:
-        raise ReportError(stop_message(errors))
+    _, st = market_numbers(R, homes)
     try:
-        warn("derive_comps", *cma.derive_comps(R["comps"]))
+        errors, warns, info = cma.settle_comps(R, homes, market, st)
     except ValueError as e:
         raise ReportError(str(e)) from e
-    return split, time_info, cond_info
+    if errors:
+        raise ReportError(stop_message(errors))
+    for key, text in warns:
+        warn(key, text)
+    return info["split"], info["time"], info["condition"], info
 
 
 def supported_range(R, values, market):
@@ -1433,7 +1439,6 @@ def comps_first(R, market, homes=()):
         raise ReportError(stop_message(errors))
     warnings, warning_keys, warn = _warner()
     prepare_comps(R, homes, warn, market)
-    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
     values = [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
     rng = supported_range(R, values, market)
@@ -1504,12 +1509,10 @@ def compute(R, market, homes, data_file=None):
     warnings, warning_keys, warn = _warner()
 
     # comps: the script's condition and time adjustments, then each adjusted value from its parts, then the range
-    split, time_info, cond_info = prepare_comps(R, homes, warn, market)
+    split, time_info, cond_info, comp_info = prepare_comps(R, homes, warn, market)
     history, history_errors = listing_history(R, homes, relist)
     if history_errors:
         raise ReportError(stop_message(history_errors))
-    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))  # CMA-110
-    warn("time_undated", *cma.time_warnings(time_info))
     cards = R["comps"]["cards"]
     values = [c["adjusted"] for c in cards]
     median_adjusted = statistics.median(values)
@@ -1744,7 +1747,10 @@ def compute(R, market, homes, data_file=None):
     hi_card = card_models[highest]
     comps = R["comps"]
     C["comps"] = {
-        "intro": comps.get("intro", ""), "count_line": comps_count_line(cards, homes, split),
+        "intro": comps.get("intro", ""),
+        "count_line": comps_count_line(cards, homes, split),
+        "settled": " ".join(cma.selection_lines(comp_info, t, money)),
+        "unused": [cma.display_address(a) for a in comp_info["selection"]["unused"]],
         "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": card_models, "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), adjusted_money(r[3])] for r in comps["summary_rows"]],

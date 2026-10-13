@@ -1,6 +1,6 @@
 {
- "adjusted_max": 493900,
- "adjusted_min": 435900,
+ "adjusted_max": 485600,
+ "adjusted_min": 431200,
  "asking_position": {
   "amount": 5100,
   "key": "sum_pos_over_median"
@@ -59,8 +59,8 @@
  "comps": {
   "cards": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K",
+    "adjusted": 485600,
+    "adjusted_k": "$486K",
     "bullets": {
      "count": 3
     },
@@ -84,8 +84,8 @@
     ]
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K",
+    "adjusted": 479300,
+    "adjusted_k": "$479K",
     "bullets": {
      "count": 2
     },
@@ -134,8 +134,8 @@
     ]
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K",
+    "adjusted": 433500,
+    "adjusted_k": "$434K",
     "bullets": {
      "count": 3
     },
@@ -159,8 +159,8 @@
     ]
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K",
+    "adjusted": 431200,
+    "adjusted_k": "$431K",
     "bullets": {
      "count": 3
     },
@@ -312,12 +312,12 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 493900,
+    "adjusted": 485600,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 484000,
+    "adjusted": 479300,
     "seller_paid": 0,
     "sold_price": 495000
    },
@@ -327,12 +327,12 @@
     "sold_price": 427000
    },
    {
-    "adjusted": 440200,
+    "adjusted": 433500,
     "seller_paid": 12000,
     "sold_price": 429000
    },
    {
-    "adjusted": 435900,
+    "adjusted": 431200,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -908,24 +908,24 @@
   ],
   "comps": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K"
+    "adjusted": 485600,
+    "adjusted_k": "$486K"
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K"
+    "adjusted": 479300,
+    "adjusted_k": "$479K"
    },
    {
     "adjusted": 469800,
     "adjusted_k": "$470K"
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K"
+    "adjusted": 433500,
+    "adjusted_k": "$434K"
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K"
+    "adjusted": 431200,
+    "adjusted_k": "$431K"
    }
   ],
   "cost_rows": [
@@ -993,8 +993,8 @@
   "cutoff": "2026-07-01",
   "cutoff_display": "July",
   "falling": true,
-  "rate": 0.01,
-  "rate_display": "1%",
+  "rate": 0.02,
+  "rate_display": "2%",
   "undated": {
    "count": 0
   }

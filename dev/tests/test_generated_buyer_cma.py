@@ -95,6 +95,12 @@ def tearDownModule():
     shutil.rmtree(TMP, ignore_errors=True)
 
 
+
+def given_card(R, card):
+    """The input card a model card came from (the model keeps the used comps only, by address)."""
+    return next(c for c in R["comps"]["cards"] if cma.display_address(c["address"]) == card["address"])
+
+
 class Model(unittest.TestCase):
     def test_tables_add_up(self):
         for seed, _, C in cases():
@@ -113,9 +119,16 @@ class Model(unittest.TestCase):
         for seed, R, C in cases():
             info = C["time_adjustment"]
             with self.subTest(seed=seed):
-                stated = (R["comps"].get("time_adjustment") or {}).get("rate_per_quarter")
+                ov = R["comps"].get("time_override")
+                st, _ = compute.export_stats(R, compute.load_inputs(R)[1])
+                spec, _ = cma.time_rule(st, ov)
+                stated = (spec or {}).get("rate_per_quarter")
                 self.assertEqual(bool(info), bool(stated))
-                for raw, card in zip(R["comps"]["cards"], C["comps"]["cards"]):
+                if info:
+                    self.assertEqual(info["rate"], stated)
+                    self.assertEqual(info["cutoff"], cma.default_split(R).isoformat())
+                for card in C["comps"]["cards"]:
+                    raw = given_card(R, card)
                     lines = [dollars(v) for a, v in card["lines"] if a == cma.TIME_LABEL]
                     closed = fmt.to_date(card["close_date"]) if card["close_date"] else None
                     want = 0
@@ -145,10 +158,25 @@ class Model(unittest.TestCase):
                     self.assertLessEqual(C["range"]["width"], C["range"]["cap"] + 1)
                 levels = cma.condition_values(market, R["comps"].get("condition_values"))
                 mine = levels.get(R["subject"]["condition"], 0)
-                for card, given in zip(C["comps"]["cards"], R["comps"]["cards"]):
+                for card in C["comps"]["cards"]:
+                    given = given_card(R, card)
                     lines = [fmt.money(mine - levels[given["condition"]], style="signed")] \
                         if levels.get(given["condition"], mine) != mine else []
                     self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
+
+    def test_comps_by_the_rule(self):
+        """The used comps are the script's: the same input gives the same comps, every used comp is an input card in
+        the ranking's order, and a used comp still more than 10% from the others is either the agent's (keep_reason)
+        or warned (no backup left)."""
+        for seed, R, C in cases():
+            with self.subTest(seed=seed):
+                used = [c["address"] for c in C["comps"]["cards"]]
+                self.assertEqual([c["address"] for c in compute.run(R)["comps"]["cards"]], used)
+                order = [cma.display_address(c["address"]) for c in R["comps"]["cards"]]
+                self.assertEqual(used, sorted(used, key=order.index))
+                cards = [dict(given_card(R, c), adjusted=c["adjusted"]) for c in C["comps"]["cards"]]
+                left = cma.outlier_warnings(cards)
+                self.assertEqual(bool(left), "outlier" in C["warning_keys"])
 
     def test_value_only(self):
         """Where asking sits is the range's and the median's; the payment at the median shows only when that's lower
@@ -172,10 +200,10 @@ class Model(unittest.TestCase):
         """The gut check's rough range is the adjusted comps' span, and it says the same about asking as the report."""
         for seed, R, C in cases():
             with self.subTest(seed=seed):
-                G = {k: copy.deepcopy(R[k]) for k in ("subject", "split_date", "as_of", "export", "mls", "history",
+                G = {k: copy.deepcopy(R[k]) for k in ("subject", "split_override", "as_of", "export", "mls", "history",
                                                       "range_override") if k in R}
                 G["comps"] = {k: copy.deepcopy(v) for k, v in R["comps"].items()
-                              if k in ("cards", "time_adjustment", "condition_values")}
+                              if k in ("cards", "count", "time_override", "condition_values")}
                 out = compute.run(G)
                 self.assertEqual(out["asking_position"], C["asking_position"])
                 self.assertLessEqual(out["rough"]["range"]["low"], C["adjusted_min"])

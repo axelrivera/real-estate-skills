@@ -4202,7 +4202,8 @@
   "band": "Competitive",
   "band_key": "comp",
   "lifts": false,
-  "price": 720000
+  "price": 720000,
+  "seller_concessions": 0
  },
  "limits": {
   "recommended": {
@@ -4263,9 +4264,6 @@
  "reached": null,
  "reply_lines": [
   {
-   "key": "flat_number"
-  },
-  {
    "key": "higher_price"
   }
  ],
@@ -4322,6 +4320,11 @@
    "pct": "3%"
   },
   "escalation": {
+   "adds": [
+    {
+     "key": "add_esc_max"
+    }
+   ],
    "key": "why_esc_same"
   },
   "home_warranty": {

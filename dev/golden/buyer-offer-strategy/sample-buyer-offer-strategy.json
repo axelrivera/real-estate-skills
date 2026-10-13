@@ -3943,7 +3943,8 @@
   "above_range": false,
   "band_key": "risk",
   "lifts": false,
-  "price": 365000
+  "price": 365000,
+  "seller_concessions": 2000
  },
  "lc_why": {
   "deposit": {

@@ -4188,7 +4188,8 @@
   "band": "Competitive",
   "band_key": "comp",
   "lifts": false,
-  "price": 490000
+  "price": 490000,
+  "seller_concessions": 16200
  },
  "limits": {
   "recommended": {

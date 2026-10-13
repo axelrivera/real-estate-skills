@@ -168,10 +168,6 @@
     ]
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01,
-   "cutoff": "2026-07-01"
-  },
   "lean": "The two highest are strong matches to your home's condition but sold earlier in the year, in a stronger market; the recent sales sit lower, so the range leans on the middle."
  },
  "scatter": {

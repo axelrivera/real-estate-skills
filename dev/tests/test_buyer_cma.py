@@ -88,6 +88,7 @@ def six_comps(R):
     extra = {"address": "100 Test Ln", "sold_price": 1, "seller_concessions": 0, "bullets": [], "condition": mine,
              "adjustments": [{"label": "Test", "amount": 0}]}
     R["comps"]["cards"].append(extra)
+    R["comps"]["count"] = 6  # all six used, so the median is a midpoint
     mid = sorted(c["sold_price"] - (c.get("seller_concessions") or 0) + sum(a["amount"] for a in c["adjustments"])
                  + levels[mine] - levels[c["condition"]] for c in R["comps"]["cards"][:-1])[2]
     extra["sold_price"] = mid + 123
@@ -270,9 +271,19 @@ class Warnings(unittest.TestCase):
     def test_thin_comps_and_an_outlier(self):
         self.assertIn("thin_comps", warnings(lambda R: R["comps"].__setitem__("cards", R["comps"]["cards"][:2])))
         R, C, _ = run(lambda R: R["comps"]["cards"][0]["adjustments"].append({"label": "Test", "amount": 80000}))
+        # no backup: set aside while three remain, and the report names it
+        self.assertNotIn(R["comps"]["cards"][0]["address"], [c["address"] for c in C["comps_table"]])
+        self.assertIn("set aside", C["comps"]["settled"])
+        self.assertNotIn("outlier", C["warning_keys"])
+
+        def three(R):  # only three comps: an outlier stays, and the warning asks for backups
+            R["comps"]["cards"] = R["comps"]["cards"][:3]
+            R["comps"]["cards"][0]["adjustments"].append({"label": "Test", "amount": 80000})
+        R, C, _ = run(three)
         hits = [w for w, k in zip(C["warnings"], C["warning_keys"]) if k == "outlier"]
-        self.assertEqual(len(hits), 1)
-        self.assertTrue(hits[0].startswith(R["comps"]["cards"][0]["address"]))  # names the comp
+        self.assertTrue(any(h.startswith(R["comps"]["cards"][0]["address"]) for h in hits))  # names the comp
+        self.assertTrue(all("backup" in h for h in hits))
+        self.assertEqual(len(C["comps_table"]), 3)
 
     def test_adjustment_rates_outside_their_area(self):
         _, C, _ = run(lambda R: R["subject"].__setitem__("county", "Hillsborough"))
@@ -340,7 +351,7 @@ class CompsFirst(unittest.TestCase):
     def test_median_from_comps_alone(self):
         full = report()
         _, C, _ = run()
-        code, out, written, _ = cli({k: full[k] for k in ("subject", "comps", "export", "as_of", "split_date")})
+        code, out, written, _ = cli({k: full[k] for k in ("subject", "comps", "export", "as_of")})
         self.assertEqual(code, 0, out)
         self.assertEqual(out["stage"], "comps")
         self.assertEqual(out["median_adjusted"], C["median_adjusted"])
@@ -351,7 +362,7 @@ class CompsFirst(unittest.TestCase):
     def test_rough_range(self):
         def comps_only(**subject):
             full = report()
-            R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of", "split_date")}
+            R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of")}
             R["subject"].update(subject)
             market, homes = compute.load_inputs(R)
             return compute.comps_first(R, market, homes)

@@ -4045,9 +4045,6 @@
  "reached": null,
  "reply_lines": [
   {
-   "key": "flat_number"
-  },
-  {
    "key": "contract_terms"
   },
   {
@@ -4107,6 +4104,11 @@
    "pct": "3%"
   },
   "escalation": {
+   "adds": [
+    {
+     "key": "add_esc_max"
+    }
+   ],
    "key": "why_esc_same"
   },
   "home_warranty": {

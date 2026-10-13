@@ -643,33 +643,22 @@ def derive_comps(comps):
 
 
 def outlier_warnings(cards, share=OUTLIER_SHARE):
-    """CMA-110: comps whose adjusted value is more than `share` away from the median of the other comps, so the same
-    comp set is always judged the same way (method.md, Outliers). Needs at least three comps. With several flagged at
-    once, the farthest (as a share of the others' median) comes first and is the one to replace first: replacing it
-    moves the others' median, so the rest are judged again on the next run, and the same comps always end the same."""
+    """CMA-110: used comps whose adjusted value is still more than `share` from the median of the others after
+    select_comps (it sets outliers aside while backups last), so the agent knows the range rests on one: a card the
+    agent kept (`keep_reason`) isn't warned. Needs at least three comps."""
     values = [c.get("adjusted") for c in cards]
     if len(values) < 3 or not all(isinstance(v, (int, float)) for v in values):
         return []
-    hits = []
+    out = []
     for i, c in enumerate(cards):
         others = statistics.median(values[:i] + values[i + 1:])
         gap = abs(values[i] - others) / others if others else 0
-        if gap > share:
-            hits.append((-gap, i, c, others))
-    out = []
-    for n, (_, i, c, others) in enumerate(sorted(hits, key=lambda h: (h[0], h[1]))):
-        text = (f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
-                f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. ")
-        if len(hits) == 1:
-            text += ("Replace it with the next candidate, or keep it only if it's one of the closest matches and say why "
-                     "in method_note (method.md, Outliers).")
-        elif n == 0:
-            text += (f"{len(hits)} comps are flagged and this one is the farthest: replace it first (with the next "
-                     "candidate, or keep it only if it's one of the closest matches and say why in method_note), then "
-                     "run compute.py again; the others are judged again without it (method.md, Outliers).")
-        else:
-            text += "Judge it again after the farthest one is replaced (method.md, Outliers)."
-        out.append(text)
+        if gap > share and not str(c.get("keep_reason") or "").strip():
+            out.append(f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
+                       f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}, and no backup "
+                       "card is left to take its place. Add the next candidates from stats.py's ranking as backup cards "
+                       "(the script sets an outlier aside and uses the next one), or keep it only on the agent's call with "
+                       "`keep_reason` (method.md, Outliers).")
     return out
 
 
@@ -1081,12 +1070,196 @@ def comp_close_date(card, homes=()):
 
 
 def default_split(R, homes=()):
-    """The market split date: report.json's `split_date`, else stats.py's default (90 days before the last sale)."""
-    d = _iso(R.get("split_date"))
+    """The market split date, by one rule (mls.rule_split from the as-of date, else the last sale, else today), or the
+    agent's own in `split_override` {date, reason} (split_errors checks it)."""
+    d = _iso((R.get("split_override") or {}).get("date")) if isinstance(R.get("split_override"), dict) else None
     if d:
         return d
-    sold = [h["close_date"] for h in homes or () if h.get("status") == "SOLD" and isinstance(h.get("close_date"), date)]
-    return max(sold) - timedelta(days=90) if sold else None
+    end = _iso(R.get("as_of"))
+    if end is None:
+        sold = [h["close_date"] for h in homes or () if h.get("status") == "SOLD" and isinstance(h.get("close_date"), date)]
+        end = max(sold) if sold else date.today()
+    return mls.rule_split(end)
+
+
+def split_errors(R):
+    """`split_override` must be {date: YYYY-MM-DD, reason: words}: the agent's own split, said beside the rule's."""
+    ov = R.get("split_override")
+    if ov in (None, {}):
+        return []
+    if not isinstance(ov, dict) or not _iso(ov.get("date")) or not str(ov.get("reason") or "").strip():
+        return ["split_override: should be {\"date\": \"2026-07-01\", \"reason\": \"why, in words\"} → the script sets "
+                "the split by its rule (the first of the month two months before the as-of date); give one only when "
+                "the agent chose another, with their reason."]
+    return []
+
+
+# --- the market-shift rate: script-owned, from the export's split ------------------------------
+
+TIME_MIN_SALES = 5  # fewer sales on either side of the split are too thin to read a shift from
+
+
+def time_rule(stats, override=None):
+    """The time adjustment by method.md's rule, from the export's market stats (mls.market_stats): the change in the
+    median sale-to-original-list from the earlier sales to the recent ones. Under 1 point: none; 1 to 3 points: 1% a
+    quarter; over 3: 2%; `prices` rising when the ratio rose. None with fewer than TIME_MIN_SALES on either side or no
+    export. The agent's own rate goes in `override` {rate_per_quarter, prices, reason} and wins.
+    Returns ({rate_per_quarter, prices} or None, info {basis: "rule" | "agent" | "thin" | "none", change_points, reason})."""
+    if isinstance(override, dict) and override.get("rate_per_quarter") is not None:
+        spec = {"rate_per_quarter": override["rate_per_quarter"], "prices": override.get("prices", "falling")}
+        return spec, {"basis": "agent", "reason": str(override.get("reason") or "").strip(), "change_points": None}
+    early, recent = (stats or {}).get("sold_early") or {}, (stats or {}).get("sold_recent") or {}
+    a, b = early.get("median_sale_to_original_list"), recent.get("median_sale_to_original_list")
+    if a is None or b is None or (early.get("n") or 0) < TIME_MIN_SALES or (recent.get("n") or 0) < TIME_MIN_SALES:
+        return None, {"basis": "thin" if stats else "none", "change_points": None, "reason": ""}
+    points = round((b - a) * 100, 2)
+    if abs(points) < 1:
+        return None, {"basis": "rule", "change_points": points, "reason": ""}
+    rate = 0.01 if abs(points) <= 3 else 0.02
+    return ({"rate_per_quarter": rate, "prices": "rising" if points > 0 else "falling"},
+            {"basis": "rule", "change_points": points, "reason": ""})
+
+
+def time_override_errors(ov):
+    """`comps.time_override` must be {rate_per_quarter (0 to 0.05), prices, reason}: the agent's own rate."""
+    if ov in (None, {}):
+        return []
+    rate = ov.get("rate_per_quarter") if isinstance(ov, dict) else None
+    if not isinstance(ov, dict) or isinstance(rate, bool) or not isinstance(rate, (int, float)) or not 0 <= rate <= 0.05 \
+            or ov.get("prices", "falling") not in ("falling", "rising") or not str(ov.get("reason") or "").strip():
+        return ["comps.time_override: should be {\"rate_per_quarter\": 0.015, \"prices\": \"falling\", \"reason\": \"why, "
+                "in words\"} → the script sets the market shift from the export by its rule; give one only when the agent "
+                "chose another rate (0 for none), with their reason."]
+    return []
+
+
+# --- which comps: script-owned, from the ranked cards ---------------------------------------------
+
+COMP_COUNT = 5  # method.md: the closest five, with backups behind them
+
+
+def select_comps(comps, count=None):
+    """The comps the report uses, by one rule, so the same cards always give the same comps: the cards are in the
+    ranking's order (the closest first, then backups); the first `count` (comps.count, default COMP_COUNT) are used. A
+    used comp whose adjusted value is more than OUTLIER_SHARE from the other used comps' median is set aside, the
+    farthest first, and the next backup takes its place; repeat until none is flagged. With no backup left, an outlier
+    is set aside only while at least three comps remain. A card with `keep_reason` (the agent's call, in words) is
+    never set aside. Needs each card's `adjusted`. Rewrites comps["cards"] to the used comps, in ranking order.
+    Returns {set_aside: [{address, adjusted, others, above, replaced}], kept: [{address, adjusted, others, above, reason}],
+    backups_used, count, unused: [the input cards not used, set aside or backups left over]}."""
+    cards = list(comps.get("cards") or [])
+    n = count or comps.get("count") or COMP_COUNT
+    used, backups = cards[:n], cards[n:]
+    set_aside, backups_used = [], 0
+
+    def flagged(group):
+        values = [c["adjusted"] for c in group]
+        out = []
+        for i, c in enumerate(group):
+            others = statistics.median(values[:i] + values[i + 1:])
+            gap = abs(values[i] - others) / others if others else 0
+            if gap > OUTLIER_SHARE:
+                out.append((gap, i, c, others))
+        return out
+
+    while len(used) >= 3:
+        hits = [h for h in flagged(used) if not str(h[2].get("keep_reason") or "").strip()]
+        if not hits:
+            break
+        gap, i, c, others = max(hits, key=lambda h: (h[0], -h[1]))
+        if not backups and len(used) <= 3:
+            break
+        used.pop(i)
+        set_aside.append({"address": c.get("address", "?"), "adjusted": c["adjusted"], "others": others,
+                          "above": c["adjusted"] > others, "replaced": bool(backups)})
+        if backups:
+            used.append(backups.pop(0))
+            backups_used += 1
+    kept = [{"address": c.get("address", "?"), "adjusted": c["adjusted"], "others": others,
+             "above": c["adjusted"] > others, "reason": str(c.get("keep_reason") or "").strip()}
+            for _, _, c, others in (flagged(used) if len(used) >= 3 else []) if str(c.get("keep_reason") or "").strip()]
+    order = {id(c): k for k, c in enumerate(cards)}
+    comps["cards"] = sorted(used, key=lambda c: order[id(c)])
+    return {"set_aside": set_aside, "kept": kept, "backups_used": backups_used, "count": n,
+            "unused": [c.get("address", "?") for c in cards if id(c) not in {id(u) for u in used}]}
+
+
+# --- roof adjustments: script-owned, from roof years -------------------------------------------
+
+ROOF_LABEL = "Roof: {age} Years Old"  # the card label of a roof adjustment the script adds
+ROOF_TYPES = ("shingle", "tile", "metal")
+_ROOF_TYPED = re.compile(r"\broof", re.I)
+
+
+def _roof_band_value(age, kind, bands, factor):
+    scale = factor if kind in ("tile", "metal") else 1
+    for b in bands:
+        lo, hi = b["years"]
+        if lo * scale <= age <= (hi + 1) * scale - 1:
+            return b["value"]
+    return bands[-1]["value"]
+
+
+def apply_roof_adjustments(comps, subject, market, as_of):
+    """Roof adjustments are the script's, by the market's roof-age bands (`cma.adjustments.roof_age`, years doubled for
+    tile or metal by `roof_age_tile_metal_factor`): each comp's `roof_year` (and `roof_type`) against the subject's,
+    the subject's band value minus the comp's, added as kind "age". With the subject's roof year unknown, no comp is
+    adjusted for its roof. A roof amount typed on a card is an error where the market has bands (elsewhere the agent's
+    typed rates stand, method.md). Returns (errors, info {subject_known, subject_age, unknown: [addresses]} or None
+    when the market has no bands)."""
+    bands = market.get("cma.adjustments.roof_age") if market is not None else None
+    cards = comps.get("cards") or []
+    if not bands:
+        return [], None
+    factor = market.get("cma.adjustments.roof_age_tile_metal_factor") or 2
+    errors = []
+    year_now = (_iso(as_of) or date.today()).year
+
+    def check(where, block):
+        out = []
+        y, kind = block.get("roof_year"), block.get("roof_type", "shingle") or "shingle"
+        if y not in (None, "") and (isinstance(y, bool) or not isinstance(y, int) or not 1900 <= y <= year_now):
+            out.append(f"{where}.roof_year: {y!r} → the year the roof was put on, like 2014 (leave it out when unknown).")
+        if kind not in ROOF_TYPES:
+            out.append(f"{where}.roof_type: {kind!r} → one of {', '.join(ROOF_TYPES)} (shingle when left out).")
+        return out
+
+    errors += check("subject", subject)
+    for i, c in enumerate(cards):
+        errors += check(f"comps.cards[{i}]", c)
+        for j, a in enumerate(c.get("adjustments") or []):
+            if isinstance(a, dict) and a.get("source") != "script" and _ROOF_TYPED.search(str(a.get("label") or "")):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a roof adjustment ({a.get('label')!r}) typed by hand → "
+                              "delete it and set the card's `roof_year` (and `roof_type` for tile or metal), and "
+                              "subject.roof_year: the script adjusts each comp by the roof-age bands.")
+    if errors:
+        return errors, None
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "age")]
+    sy = subject.get("roof_year")
+    if sy in (None, ""):
+        return [], {"subject_known": False, "subject_age": None, "unknown": []}
+    s_age = max(year_now - sy, 0)
+    mine = _roof_band_value(s_age, subject.get("roof_type") or "shingle", bands, factor)
+    unknown = []
+    for c in cards:
+        cy = c.get("roof_year")
+        if cy in (None, ""):
+            unknown.append(c.get("address", "?"))
+            continue
+        age = max(year_now - cy, 0)
+        amount = fmt.half_up(mine - _roof_band_value(age, c.get("roof_type") or "shingle", bands, factor))
+        if amount:
+            c["adjustments"].append({"label": ROOF_LABEL.format(age=age), "amount": amount, "kind": "age",
+                                     "source": "script"})
+    return [], {"subject_known": True, "subject_age": s_age, "unknown": unknown}
+
+
+def roof_warnings(info):
+    """A comp with no roof year, when the subject's is known, gets no roof adjustment: say which."""
+    return [f"{a}: no roof_year, so it has no roof adjustment. Add the year from its listing or remarks when they give "
+            "it, and re-run." for a in (info or {}).get("unknown") or []]
 
 
 def day_words(d):
@@ -1112,9 +1285,9 @@ def apply_time_adjustments(comps, homes, as_of, split):
              if isinstance(a, dict) and adjustment_kind(a) == "time"]
     if spec in (None, {}, False):
         return [f"comps.cards[{i}].adjustments[{j}]: a time adjustment ({money(a['amount']) if isinstance(a.get('amount'), (int, float)) else a.get('amount')}) "
-                "typed by hand → state the method once in comps.time_adjustment ({\"rate_per_quarter\": 0.015} for 1.5% a "
-                "quarter, plus \"cutoff\" when it isn't the market split) and leave the amount out: the script figures each "
-                "sale's from its close date." for i, j, a in typed if a.get("source") != "script"], None
+                "typed by hand → delete it: the script sets the market shift by its rule (method.md, Time) and figures "
+                "each sale's from its close date; the agent's own rate goes in comps.time_override {rate_per_quarter, "
+                "prices, reason}." for i, j, a in typed if a.get("source") != "script"], None
     errors = []
     if not isinstance(spec, dict):
         return ["comps.time_adjustment: should be {rate_per_quarter, prices, cutoff} → for example "
@@ -1237,3 +1410,75 @@ def callout_checks(info):
     return out
 
 
+
+
+# --- the comps, start to finish: one pipeline for both CMAs ---------------------------------------
+
+def settle_comps(R, homes, market, stats):
+    """Every comp card adjusted and the used comps chosen, by the shared rules in one order, so both CMAs and their
+    gut checks agree: the split (default_split), the market-shift rate (time_rule from `stats`, the export's
+    mls.market_stats at that split, or the agent's comps.time_override), then on every card the condition, roof and time
+    adjustments and its adjusted value (derive_comps), then the used comps (select_comps) with the adjusted values and
+    summary rows rebuilt from them. Writes comps.time_adjustment into the working copy.
+    Returns (errors as `field: problem → fix`, warnings as (key, text), info {split, time, time_rule, condition, roof,
+    selection}). Raises ValueError from derive_comps."""
+    comps = R["comps"]
+    errors = split_errors(R) + time_override_errors(comps.get("time_override"))
+    count = comps.get("count")
+    if count is not None and (isinstance(count, bool) or not isinstance(count, int) or not 3 <= count <= 8):
+        errors.append(f"comps.count: {count!r} → how many comps the report uses, 3 to 8 (5 when left out).")
+    if errors:
+        return errors, [], None
+    split = default_split(R, homes)
+    spec, rule_info = time_rule(stats, comps.get("time_override"))
+    comps.pop("time_adjustment", None)
+    if spec and spec["rate_per_quarter"]:
+        comps["time_adjustment"] = spec
+    cond_errors, cond_info = apply_condition_adjustments(comps, R["subject"], market)
+    roof_errors, roof_info = apply_roof_adjustments(comps, R["subject"], market, R.get("as_of"))
+    time_errors, time_info = apply_time_adjustments(comps, homes, R.get("as_of"), split)
+    errors = adjustment_kind_errors(comps.get("cards")) + cond_errors + roof_errors + time_errors
+    if errors:
+        return errors, [], None
+    derive_comps(comps)  # every card's adjusted value, backups included, for the selection
+    selection = select_comps(comps)
+    warnings = [("derive_comps", w) for w in derive_comps(comps)]  # the used comps' rows and adjustment warnings
+    used = {c.get("address") for c in comps["cards"]}  # a backup or a sale set aside isn't the agent's to fix
+    if time_info:
+        time_info["undated"] = [a for a in time_info["undated"] if a in used]
+    if roof_info:
+        roof_info["unknown"] = [a for a in roof_info["unknown"] if a in used]
+    warnings += [("time_undated", w) for w in time_warnings(time_info)]
+    warnings += [("roof_unknown", w) for w in roof_warnings(roof_info)]
+    warnings += [("outlier", w) for w in outlier_warnings(comps["cards"])]
+    ov = R.get("split_override") if isinstance(R.get("split_override"), dict) else {}
+    info = {"split": split, "split_reason": str(ov.get("reason") or "").strip(), "time": time_info,
+            "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "selection": selection}
+    return [], warnings, info
+
+
+def selection_lines(info, t, money_f=None):
+    """The report's sentences on how the comps were settled, from settle_comps' info, worded by the skill's labels.json
+    (`t(key, **values)`): each sale set aside and each kept on the agent's call, an unknown roof on this home, and an
+    agent's own split or market rate with their reason. Keys: line_set_aside, line_kept, dir_above, dir_below,
+    line_roof_unknown, line_time_agent, line_split_override."""
+    f = money_f or money
+    out = []
+    sel = (info or {}).get("selection") or {}
+    for x in sel.get("set_aside") or []:
+        out.append(t("line_set_aside" if x.get("replaced") else "line_set_aside_alone",
+                     address=display_address(x["address"]), value=f(x["adjusted"]),
+                     direction=t("dir_above" if x["above"] else "dir_below")))
+    for x in sel.get("kept") or []:
+        out.append(t("line_kept", address=display_address(x["address"]),
+                     direction=t("dir_above" if x["above"] else "dir_below"), reason=x["reason"].rstrip(".") + "."))
+    roof = (info or {}).get("roof")
+    if roof and not roof["subject_known"]:
+        out.append(t("line_roof_unknown"))
+    if (info or {}).get("split_reason"):
+        out.append(t("line_split_override", date=fmt.date_long(info["split"].isoformat()),
+                     reason=info["split_reason"].rstrip(".") + "."))
+    rule = (info or {}).get("time_rule") or {}
+    if rule.get("basis") == "agent":
+        out.append(t("line_time_agent", reason=rule["reason"].rstrip(".") + "."))
+    return out

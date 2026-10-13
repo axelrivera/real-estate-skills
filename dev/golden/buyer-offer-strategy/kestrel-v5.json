@@ -5688,7 +5688,8 @@
   "above_range": true,
   "band_key": "risk",
   "lifts": false,
-  "price": 457000
+  "price": 457000,
+  "seller_concessions": 2500
  },
  "lc_why": {
   "closing_days": {

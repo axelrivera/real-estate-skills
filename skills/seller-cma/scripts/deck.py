@@ -102,8 +102,9 @@ def check_content(c, C):
         if _key(item[0]) not in rows:
             problems.append(f"deck.competition lists {item[0]}, which isn't in the report's competition table")
     cards = {_key(cd["address"]) for cd in C["comps"]["cards"]}
+    unused = {_key(a) for a in C["comps"].get("unused") or []}  # backups and sales set aside: their lines go unused
     for address in (c.get("comp_lines") or {}):
-        if _key(address) not in cards:
+        if _key(address) not in cards | unused:
             problems.append(f"deck.comp_lines names {address}, which isn't one of the comp cards")
     if problems:
         raise DeckError("The deck content isn't complete: " + "; ".join(dict.fromkeys(problems)) + ".")
@@ -264,7 +265,7 @@ def deck_data(C, agent, footer):
         "comps_head": head,
         "comps_rows": C["comps"]["table"] + [C["comps"]["subject_row"]],
         "comps_note": " ".join(render.notice_lines(agent, C["notices"], marketing=True)),
-        "comps_speaker": " ".join(x for x in (C["comps"]["method"], C["comps"]["count_line"]) if x),
+        "comps_speaker": " ".join(x for x in (C["comps"]["method"], C["comps"]["count_line"], C["comps"]["settled"]) if x),
         "notes": {key: str(notes.get(key) or "") for key in NOTE_KEYS},
     }
 

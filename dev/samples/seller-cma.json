@@ -171,9 +171,6 @@
     ]
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01
-  },
   "lean": "The two highest are the closest matches to your home's condition but sold in a stronger market earlier in the year; the two lowest needed the largest adjustments, so the range leans on the middle."
  },
  "scatter": {
@@ -345,7 +342,6 @@
   "When you would like to close, and how you would like showings to work."
  ],
  "export": "dev/samples/mls-export.csv",
- "split_date": "2026-07-01",
  "sample": true,
  "deck": "dev/samples/seller-cma-deck.json",
  "sources": [
