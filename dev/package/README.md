@@ -227,7 +227,7 @@ A quick "is it priced right?" answer and the full report use the same rule, so t
 - **Upload:** the 360 Property View PDF for the listing and the comps CSV.
 - **Tell Claude:** how your buyer is financing (loan type, down payment) and the cash they have, so the costs are theirs.
 - **Example:** "Run a buyer CMA on 123 Oak St. My buyer is FHA with 3.5% down and has about $30,000 cash."
-- **You get:** a PDF report to send, or a short summary in chat.
+- **You get:** a PDF report to send, or a short summary in chat. Its comparable sales open with this home's own card (size, condition, lot, roof and systems), so your buyer sees what every sale was adjusted to.
 - **Pricing Activity chart:** ask for "the pricing activity chart" to get a one-page, landscape chart of recent sales and homes for sale near this home by size and price, with a line at this home's size. It leaves out the asking price, the value range and the comps, so you and your buyer can read the market together before you show the CMA. Ask for "the pricing activity chart with the price" for the same page with the home, the asking price and the value range on it.
 
 ### Buyer Offer Strategy (/buyer-offer-strategy)
@@ -245,10 +245,10 @@ The strongest offer inside your buyer's limits, up to two alternatives, and how 
 
 A recommended list price, three pricing options with the seller's estimated net at each, a chart of every nearby sale and listing by size and price, and a launch plan.
 
-The three options are always **Draw Offers** (the lower part of the supported range, to bring in competing offers), **Market Price** (the middle) and **Premium** (the upper part), each on a round price that shows up in buyers' searches on both sides of it ($470,000, not $469,900). Claude recommends one from the market (supply, price cuts, how close sales come to asking) and says why. Ask for another, or give your own price. For your own listing that hasn't sold, the options are staying at the current price or a price cut.
+The three options are always **Draw Offers** (the lower part of the supported range, to bring in competing offers), **Market Price** (the middle) and **Premium** (the upper part), each on a round price that shows up in buyers' searches on both sides of it ($470,000, not $469,900). Claude recommends one from the market (supply, price cuts, how close sales come to asking) and says why. Ask for another, or give your own price. For your own listing that hasn't sold, the options are staying at the current price or a price cut. When the current price already sits under the value range, Claude recommends staying there, with the cuts as options, and says why; a relist starts at the price it didn't sell at.
 
 - **Upload:** the 360 Property View PDF from the last sale and the comps CSV.
-- **Tell Claude:** what the seller has updated since they bought (with years, roof first: without the roof's year, no comparable sale is adjusted for its roof), known issues, their timeline, and their mortgage payoff if you have it.
+- **Tell Claude:** what the seller has updated since they bought (with years, roof first: without the roof's year, no comparable sale is adjusted for its roof; then the AC, water heater and other systems), known issues, their timeline, and their mortgage payoff if you have it.
 - **Example:** "Seller CMA for 456 Pine Ave. They replaced the roof in 2023 and redid the kitchen in 2021. Payoff is about $210,000. They'd like to be moved by June."
 - **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers, plus a PDF copy of the slides (a backup that opens anywhere). If you didn't ask, Claude offers it after the report.
 - **Pricing Activity chart:** ask for "the pricing activity chart" to get a one-page, landscape chart of recent sales and homes for sale near the seller's home by size and price, with a line at their home's size. It leaves out your recommended price, the value range and the comps, so the seller can see the market for themselves before you show the CMA. Ask for "the pricing activity chart with the price" for the same page with the recommended price and the value range on it.
@@ -351,7 +351,7 @@ Start with the address, then what it is and the date: "123 Oak St, Buyer CMA, 20
 
 - **Comps go stale.** Pull a fresh export when the last one is more than two or three weeks old, and always before an offer or a price change.
 - **Download a fresh property report** when the listing's price or status has changed.
-- **Give your own costs** when you have them. Closing costs and taxes are estimated from the property's location, and each report names its estimates once, in its notes. Commission uses the default 2.5% listing and 2.5% buyer side until you give your terms; your own agreements are confirmed with you in chat, never questioned in a client's report. Say your numbers in the request: "Title quote is $2,150", "Listing side is 3%, buyer side 2.5%." Florida's costs are built in; other states use national estimates until you give local numbers.
+- **Give your own costs** when you have them. Closing costs and taxes are estimated from the property's location, and each report names its estimates once, in its notes. Commission uses the default 2.5% listing and 2.5% buyer side until you give your terms; your own agreements are confirmed with you in chat, never questioned in a client's report. Say your numbers in the request: "Title quote is $2,150", "Listing side is 3%, buyer side 2.5%." Florida's costs are built in; other states use national estimates until you give local numbers. The same goes for how the CMAs adjust each comparable sale (size, condition, lot, roof and recent systems): Florida's rates are built in, and elsewhere national rates scaled to the local sale prices are used, named once in the notes, until you give your own ("here, each square foot is worth about $150").
 - **Keep your profile current.** Say "My new number is..." and replace profile.md in your Projects.
 
 ### Review Before You Send
