@@ -20,8 +20,9 @@ const K = D.colors;
 // brand_ink (4.5:1 on white) carries large brand text and fills behind white text; brand_strong (7:1) small brand text;
 // mark (3:1) chart marks and accent bars; brand_deep (10:1) the dark slides, with on_dark text; on_ink secondary text on
 // brand_ink fills (deck.py contrast_roles). The tints are brand_callout (cards, the scatter's range band) and brand_rule
-// (lines, table rules); tables have no fills. The subject home and the reference lines are black (text).
-const BRAND = K.brand_ink, MARK = K.mark, COMP = K.comp, ON = K.on_brand, DEEP = K.brand_deep, STRONG = K.brand_strong, INK = K.text,
+// (lines, table rules); tables have no fills. The subject home (its marker, its
+// recommended price line and its table row) is brand_deep; other reference lines are black (text).
+const BRAND = K.brand_ink, MARK = K.mark, COMP = K.comp, ON = K.on_brand, DEEP = K.brand_deep, STRONG = K.brand_strong, INK = K.text, SUBJ = K.brand_deep,
   MUTED = K.muted, TINT = K.brand_callout, LINE = K.brand_rule, WHITE = K.bg,
   ON_DARK = K.on_dark, ON_INK = K.on_ink;
 const FONT = 'Arial';
@@ -269,8 +270,8 @@ async function icon(name, color, size = 256) {
       s.addShape(pres.shapes.LINE, { x: X(v), y: top - 0.1, w: 0, h: plotH + 0.2, line: { color: LINE, width: 0.75 } });
       s.addText(label, { x: X(v) - 0.45, y: top + plotH + 0.15, w: 0.9, h: 0.25, fontFace: FONT, fontSize: 10, color: MUTED, align: 'center', margin: 0, isTextBox: true });
     });
-    s.addShape(pres.shapes.LINE, { x: X(A.price), y: top - 0.25, w: 0, h: plotH + 0.35, line: { color: INK, width: 2, dashType: 'dash' } });
-    s.addText(T.deck_dot_rec, { x: X(A.price) - 1.1, y: top - 0.5, w: 2.2, h: 0.25, fontFace: FONT, fontSize: 10, bold: true, color: INK, align: 'center', margin: 0, isTextBox: true });
+    s.addShape(pres.shapes.LINE, { x: X(A.price), y: top - 0.25, w: 0, h: plotH + 0.35, line: { color: SUBJ, width: 2, dashType: 'dash' } });
+    s.addText(T.deck_dot_rec, { x: X(A.price) - 1.1, y: top - 0.5, w: 2.2, h: 0.25, fontFace: FONT, fontSize: 10, bold: true, color: SUBJ, align: 'center', margin: 0, isTextBox: true });
     comps.forEach((c, i) => {
       const y = top + i * rowH;
       tx(s, c.address, { x: M, y, w: 3.6, h: 0.24, size: 12, min: 10, bold: true, color: INK });
@@ -510,7 +511,7 @@ async function icon(name, color, size = 256) {
   const NONE = { type: 'none' }, rule = (color, pt) => ({ type: 'solid', pt, color });
   const cell = (text, j, o = {}) => ({ text, options: { align: j === 0 ? 'left' : 'right', fill: { color: WHITE }, ...o } });
   const head = cells => cells.map((h, j) => cell(h, j, { bold: true, color: STRONG, border: [NONE, NONE, rule(MARK, 1.5), NONE] }));
-  const body = (cells, total, info) => cells.map((v, j) => cell(v, j, { bold: total, color: info ? MUTED : INK,
+  const body = (cells, total, info, color) => cells.map((v, j) => cell(v, j, { bold: total, color: color || (info ? MUTED : INK),
     border: [total ? rule(MARK, 1.25) : NONE, NONE, rule(LINE, 0.5), NONE] }));
   const rest = (W - 2 * M - 3.6);
   const appendix = (s, table, cols, note, speaker) => {
@@ -559,7 +560,7 @@ async function icon(name, color, size = 256) {
   // Appendix B: comparable sales + the notices; the home's own row bold over a rule, as on the PDF
   {
     const s = content('appendix: comparable sales'); title(s, T.deck_app_comps_title);
-    const rows = D.comps_rows.map((r, i) => body(r, i === D.comps_rows.length - 1, false));
+    const rows = D.comps_rows.map((r, i) => { const subj = i === D.comps_rows.length - 1; return body(r, subj, false, subj ? SUBJ : null); });
     appendix(s, [head(D.comps_head)].concat(rows), [3.6, rest / 3, rest / 3, rest / 3], D.comps_note, D.comps_speaker);
     footer(s);
   }

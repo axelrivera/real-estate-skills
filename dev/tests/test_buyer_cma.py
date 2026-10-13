@@ -828,7 +828,7 @@ class Pdf(unittest.TestCase):
         self.assertNotIn('class="tag', doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("Lic.", doc)
-        self.assertIn("--subject:var(--text)", doc)  # the subject is black, never a status color or a second hue
+        self.assertIn("--subject:var(--brand-deep)", doc)  # the subject is the darkest brand shade, never a status color or a second hue
         self.assertNotIn("var(--party", doc)
         self.assertIn("font-bundled", doc)
         self.assertIn("no profile", buyer_render.profile_check(profiles.load_agent(None)))  # chat only

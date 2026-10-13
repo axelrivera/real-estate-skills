@@ -26,7 +26,7 @@ class Brand(unittest.TestCase):
         self.assertIn("--brand:#0B6E4F", doc)
         self.assertIn("Sunshine Realty", doc)
         self.assertNotIn("License", doc)
-        self.assertIn("--subject:var(--text)", doc)  # the subject home is black: one brand hue, no second color
+        self.assertIn("--subject:var(--brand-deep)", doc)  # the subject home is the darkest brand shade: one brand hue, no second color
         self.assertIn("font-bundled", doc)
         self.assertNotIn("tag prelim", doc)
         bare = html(report(), profiles.load_agent(None))[0]

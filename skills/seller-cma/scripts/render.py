@@ -140,7 +140,7 @@ def comps(C):
         + f'<div class="meta">{esc(" · ".join(cd["meta"]))}</div>'
         '<div class="adj-lines">' + "".join(f'<span><i>{esc(a)}</i> {esc(v)}</span>' for a, v in cd["lines"][1:]) + "</div>"
         + ul(cd["bullets"], "") + "</div>" for cd in c["cards"]]
-    sc = c["subject_card"]  # this home first: black, outlined and tagged, what every card after it is adjusted to
+    sc = c["subject_card"]  # this home first: the subject color, outlined and tagged, what every card after it is adjusted to
     cards.insert(0, f'<div class="comp subject"><div class="subject-tag">{esc(sc["tag"])}</div>'
                     f'<div class="comp-h"><b>{esc(sc["address"])}</b><span class="adj">{esc(sc["price"])}</span></div>'
                     f'<div class="meta">{esc(" · ".join(sc["meta"]))}</div>'
@@ -288,7 +288,7 @@ def build_html(C, agent, notes_out=None, intro=None):
             + [layout.notes_block(C["notes"], title=L["h_notes"], cls="cma-notes")] + prep(C))
     content = ('<div class="wrap">' + page_one(C, agent) + '<div class="pb"></div>' + layout.group_blocks(body)
                + closing(C, agent) + "</div>")
-    theme = design.theme(agent.get("brand"), SIDE)  # the subject home is black (cma.css), never a second hue
+    theme = design.theme(agent.get("brand"), SIDE)  # the subject home is the darkest brand shade (cma.css), never a second hue
     extra = ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}"
     doc = render.page(content, css=css, title=f'{L["doc_label"]}: {C["subject"]["address"]}',
                       theme_css=design.css_vars(theme) + extra, body_class="font-bundled " + BODY_CLASS)

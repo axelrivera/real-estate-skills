@@ -56,7 +56,7 @@ MARKERS = {"sold": ("circle", 5, "grey_pale", None, "oval"),
            "active": ("square", 6, "muted", None, "rect"),
            "trend": (None, 0, "muted", "muted", "dash"),
            "comp": ("circle", 8, "comp", "comp", "oval"),
-           "subject": ("diamond", 11, "text", "bg", "diamond")}
+           "subject": ("diamond", 11, "brand_deep", "bg", "diamond")}
 
 
 class DeckError(ValueError):
@@ -164,14 +164,14 @@ def scatter_data(C, colors):
 
 def contrast_roles(colors):
     """The deck's contrast-checked roles, so a light, a mid and a near-black brand all work: `mark` for chart marks and
-    accent bars (3:1 on white, apart from the black subject marker and the gray other sales), `comp` for the comps
+    accent bars (3:1 on white, apart from the subject marker in the darkest brand shade and the gray other sales), `comp` for the comps
     (the brand itself, darkened to 3:1 only when it's too light), `on_dark` and `on_ink` for secondary text on the dark
     fills, and `grey_pale` for the other sales."""
     hx = lambda key: "#" + colors[key]  # noqa: E731
-    white, text = hx("bg"), hx("text")
+    white, subject = hx("bg"), hx("brand_deep")
     options = [design.darken_to(c, 3.0) for c in (hx("brand"), hx("brand_ink"), hx("brand_strong"), hx("brand_accent"),
                                                    design.mix_white(hx("brand"), 0.25))]
-    gap = lambda c: min(design.distance(c, text), design.distance(c, hx("grey")))  # noqa: E731
+    gap = lambda c: min(design.distance(c, subject), design.distance(c, hx("grey")))  # noqa: E731
     mark = next((c for c in options if gap(c) >= 0.12), max(options, key=gap))
 
     def first(options, against, target):

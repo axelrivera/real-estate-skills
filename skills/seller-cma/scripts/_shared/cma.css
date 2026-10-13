@@ -1,7 +1,8 @@
-/* CMA reports (buyer and seller): loaded after report.css. Theme variables only. The subject home is black (--subject),
-   apart from the brand-colored comps without a second hue: only status and party coding may leave the brand's shades
+/* CMA reports (buyer and seller): loaded after report.css. Theme variables only. The subject home is the darkest brand shade
+   (--subject: the card, its table row, its chart marker and price line), apart from the brand-colored comps without
+   a second hue: only status and party coding may leave the brand's shades
    and tints. US Letter, 0.45in margins. */
-:root{--subject:var(--text)}
+:root{--subject:var(--brand-deep)}
 @page{size:Letter;margin:0.45in 0.45in 0.55in}
 body{font-size:10.5pt;line-height:1.45}
 .wrap{padding:0}
@@ -53,13 +54,13 @@ tr.alt td{color:var(--muted);font-size:8.5pt}
 .comp ul{margin:0;padding-left:16px}
 .comp li{font-size:9.5pt;margin:2px 0}
 
-/* the home's own card, first in the comps grid (owner decision 2026-10-13): the darkest brand shade (--brand-deep),
+/* the home's own card, first in the comps grid (owner decision 2026-10-13): the subject color (--subject),
    so it follows the agent's color, against the comps' light outline and mid-brand bar; a full outline, a heavier bar
    and a small inverse tag (white on the deep shade), no fill, so it reads as the home every card below is adjusted to */
-.comp.subject{border:1.5px solid var(--brand-deep);border-left:5px solid var(--brand-deep)}
-.comp.subject .comp-h .adj{color:var(--brand-deep)}
+.comp.subject{border:1.5px solid var(--subject);border-left:5px solid var(--subject)}
+.comp.subject .comp-h .adj{color:var(--subject)}
 .subject-tag{display:inline-block;font-size:7.5pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--on-brand);background:var(--brand-deep);border-radius:3px;padding:0 5px;margin:1px 0 2px}
+  color:var(--on-brand);background:var(--subject);border-radius:3px;padding:0 5px;margin:1px 0 2px}
 .comp.subject .sc-note{font-size:9pt;color:var(--muted);margin:2px 0 0}
 ul.plain{padding-left:20px;margin:0 0 10px} ul.plain li{margin:5px 0}
 ol.qs{padding-left:22px;margin:0 0 10px} ol.qs li{margin:5px 0}

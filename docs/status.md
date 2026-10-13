@@ -334,7 +334,7 @@ The full audit before shipping ([audits/2026-09-29.md](audits/2026-09-29.md)) fo
 - The seller-cma deck ships with a PDF copy of the slides (LibreOffice), as a backup and a way to check the layout.
 - Every slide text is measured and fitted; text that can't fit prints a `Check:` line naming the `deck` field to shorten. How We Priced It is four numbered steps plus the answer card; the scatter is bigger; appendix notes carry only the required notices, the rest in speaker notes.
 - Deck copy follows the listing (tax proration and payoff exclusions, strategy count, expected sale vs. list, comps basis, no mortgage, loan program); item counts are ranges, and items name their icon.
-- One hue: outputs use only the brand's shades and tints plus black and grays; other hues only for status and party coding. The subject home is black. Deck color roles are contrast-checked for light and near-black brands.
+- One hue: outputs use only the brand's shades and tints plus black and grays; other hues only for status and party coding. The subject home is the darkest brand shade. Deck color roles are contrast-checked for light and near-black brands.
 - Report fixes: no double border at the top of the multiple-offer review and Offer Options.
 - Not breaking: deck content written before this still builds (neutral icons, wider counts).
 
@@ -481,7 +481,7 @@ Won't fix: (none yet).
 - Skills must be self-contained; `shared/` is copied into each skill's `scripts/_shared/` by `make sync` and committed.
 - Markdown output comes from `assets/` templates filled by Claude; scripts only do math, parsing, validation and PDF/PPTX rendering.
 - Every skill has markdown and file modes from the same data JSON; core profile skills are markdown only.
-- Brand colors from the profile (one primary or buyer/seller split); status colors fixed; the subject home is black, never a second hue.
+- Brand colors from the profile (one primary or buyer/seller split); status colors fixed; the subject home is the darkest brand shade, never a second hue.
 - One profile file (`profile.md`): who the agent is; only name and brokerage required; never print placeholders. No logos on reports.
 - Market data in layers: state (FL) and MLS (Stellar, FL + PR) are separate; never fill Florida values for other states; each value carries its source. Per-deal costs go in the deal's data file.
 - Every `*_pct` is a fraction (0.025 = 2.5%); interest `rate` is a percent.
