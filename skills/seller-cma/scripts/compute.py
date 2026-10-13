@@ -1778,6 +1778,10 @@ def compute(R, market, homes, data_file=None):
         "cards": card_models, "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), adjusted_money(r[3])] for r in comps["summary_rows"]],
         "subject_row": [rw("subject_row"), money(rec["list_price"]), fmt.EMPTY, t("range_cell", range=C["recommendation"]["range_k"])],
+        # owner decision (2026-10-13): the seller's own card first in the grid, what every comp is adjusted to
+        "subject_card": {**cma.subject_card(R["subject"], comp_info, t, as_of), "tag": L["sc_tag"],
+                         "address": cma.display_address(R["subject"]["address"]),
+                         "price": t("sc_price", price=money(rec["list_price"])), "note": L["sc_note"]},
         "summary_line": t("line_comps_summary", lo=adjusted_money(min(values)), hi=adjusted_money(max(values)),
                           median=money(shown)),
         "strongest": {"index": best, "address": card_models[best]["address"],

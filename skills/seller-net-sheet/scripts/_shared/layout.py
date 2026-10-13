@@ -681,8 +681,11 @@ def _js(step):
 
 _MEASURE = """([end, one]) => { if (one) return document.body.getBoundingClientRect().height;
   const e = end ? document.querySelector(end) : null; return e ? e.getBoundingClientRect().top : 0; }"""
-_FIRST_LINE = """(end) => { const e = end ? document.querySelector(end) : null;
-  return e ? (e.innerText || '').trim().split('\\n')[0] : ''; }"""
+# The first line of text at page 1's end: the boundary's own, else (an empty .pb marker, fuzz seed 2648604) the first
+# text after it, so a page 1 that spilled is caught by what page 2 starts with
+_FIRST_LINE = """(end) => { let e = end ? document.querySelector(end) : null;
+  while (e) { const t = (e.innerText || '').trim(); if (t) return t.split('\\n')[0]; e = e.nextElementSibling; }
+  return ''; }"""
 _PAGES = re.compile(rb"/Type\s*/Page(?![a-zA-Z])")
 # The tail step every Fit tries last, after its own: when the last page would still hold only a few closing lines,
 # the document's last block (the closing notices) keeps with the block before it, so that block moves on with it and

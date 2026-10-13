@@ -492,6 +492,18 @@ class SizeAndLot(unittest.TestCase):
         C, _ = run(T_texas_without_rates())
         self.assertIn("national_rates", C["note_keys"])
 
+    def test_subject_card(self):
+        """Owner decision (2026-10-13): the home's own card first, from the facts every comp is adjusted to."""
+        t = compute.t
+        card = cma.subject_card({"sqft": 1849, "beds": 4, "baths": 2, "pool": True, "year_built": 1972,
+                                 "condition": "full_renovation", "lot": "canal", "systems_year": 2022}, {}, t, "2026-09-26")
+        self.assertEqual(card["meta"], ["1,849 sq ft", "4/2", "pool", "built 1972"])
+        self.assertEqual(dict(card["lines"]), {"Condition": "Full Renovation", "Lot": "Canal", "Roof": "Year not known",
+                                               "Recent Systems": "2022"})
+        C, _ = run(tanager())
+        self.assertEqual(C["comps"]["subject_card"]["tag"], "Your Home")
+        self.assertIn("Recommended", C["comps"]["subject_card"]["price"])
+
     def test_seller_report_prices_size_and_lot(self):
         C, _ = run(tanager())
         lines = [a for c in C["comps"]["cards"] for a, _ in c["lines"]]

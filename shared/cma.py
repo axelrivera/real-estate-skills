@@ -1746,6 +1746,38 @@ def settle_comps(R, homes, market, stats):
     return [], warnings, info
 
 
+def subject_card(subject, info, t, as_of=None):
+    """The subject's own card, first in the comps grid (owner decision 2026-10-13): what every comp is adjusted to, in
+    the comp cards' own format. {meta: [the facts line's parts], lines: [[label, value]]}: size, beds and baths, pool
+    and year built; then the condition level, lot type, roof year and recent systems the script priced each comp
+    against (a fact it doesn't know reads as not known). Words from the skill's labels.json through `t`:
+    meta_sqft, meta_beds, meta_pool, meta_built, sc_condition, sc_lot, sc_roof, sc_roof_unknown, sc_systems,
+    sc_systems_new, sc_systems_none."""
+    meta = []
+    if _num(subject.get("sqft")):
+        meta.append(t("meta_sqft", n=fmt.num(subject["sqft"])))
+    if _num(subject.get("beds")) and _num(subject.get("baths")):
+        meta.append(t("meta_beds", beds=fmt.num(subject["beds"]), baths=fmt.num(subject["baths"])))
+    if subject.get("pool"):
+        meta.append(t("meta_pool"))
+    if _num(subject.get("year_built")):
+        meta.append(t("meta_built", year=subject["year_built"]))
+    lines = []
+    level = subject.get("condition")
+    if level in CONDITION_WORDS:
+        lines.append([t("sc_condition"), CONDITION_WORDS[level][0]])
+    lot = subject.get("lot") or "standard"
+    lines.append([t("sc_lot"), str(subject.get("lot_reason") or "").strip().rstrip(".").capitalize()
+                  if lot == "other" else LOT_WORDS[lot][0]])
+    roof = subject.get("roof_year")
+    lines.append([t("sc_roof"), (str(roof) + (f" ({subject['roof_type']})" if subject.get("roof_type") in ("tile", "metal")
+                                              else "")) if roof else t("sc_roof_unknown")])
+    y = subject.get("systems_year")
+    lines.append([t("sc_systems"), str(y) if isinstance(y, int) and not isinstance(y, bool) else
+                  t("sc_systems_new") if has_recent_systems(subject, as_of) else t("sc_systems_none")])
+    return {"meta": meta, "lines": lines}
+
+
 def selection_lines(info, t, money_f=None):
     """The report's sentences on how the comps were settled, from settle_comps' info, worded by the skill's labels.json
     (`t(key, **values)`): each sale set aside and each kept on the agent's call, an unknown roof on this home, and an

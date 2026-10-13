@@ -176,6 +176,12 @@ def comps(C):
         f'<div class="meta">{esc(" · ".join(cd["meta"]))}</div>'
         '<div class="adj-lines">' + "".join(f'<span><i>{esc(a)}</i> {esc(v)}</span>' for a, v in cd["lines"][1:]) + "</div>"
         + ul(cd["bullets"], "") + "</div>" for cd in c["cards"]]
+    sc = c["subject_card"]  # this home first: black, outlined and tagged, what every card after it is adjusted to
+    cards.insert(0, f'<div class="comp subject"><div class="subject-tag">{esc(sc["tag"])}</div>'
+                    f'<div class="comp-h"><b>{esc(sc["address"])}</b><span class="adj">{esc(sc["price"])}</span></div>'
+                    f'<div class="meta">{esc(" · ".join(sc["meta"]))}</div>'
+                    '<div class="adj-lines">' + "".join(f'<span><i>{esc(a)}</i> {esc(v)}</span>' for a, v in sc["lines"])
+                    + f'</div><p class="sc-note">{esc(sc["note"])}</p></div>')
     rows = c["table"] + [c["subject_row"]]
     method = " ".join(x for x in (esc(c["method"]), c["method_note"]) if x)
     out = [f'<h2>{esc(L["h_compared"])}</h2>', p(intro), p(method, "note") if method else "",

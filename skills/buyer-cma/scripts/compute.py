@@ -1290,7 +1290,11 @@ def compute(R, market, homes):
         "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": comp_cards(cards, homes), "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), money(r[3])] for r in comps["summary_rows"]],
-        "subject_row": [L["subject_row"], money(s["list_price"]), fmt.EMPTY, f'{L["range_word"]} {rng["display_k"]}']}
+        "subject_row": [L["subject_row"], money(s["list_price"]), fmt.EMPTY, f'{L["range_word"]} {rng["display_k"]}'],
+        # owner decision (2026-10-13): this home's own card first in the grid, what every comp is adjusted to
+        "subject_card": {**cma.subject_card(R["subject"], comp_info, t, as_of), "tag": L["sc_tag"],
+                         "address": cma.display_address(s["address"]), "price": t("sc_price", price=money(s["list_price"])),
+                         "note": L["sc_note"]}}
     C["comps_table"] = [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in comps["summary_rows"]]
     C["time_adjustment"] = time_info

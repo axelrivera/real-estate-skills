@@ -81,6 +81,20 @@ def ics_events(text, cancelled=False):
     return out
 
 
+class SpillAfterAnEmptyMarker(unittest.TestCase):
+    @mock.patch.dict(os.environ, {"LAYOUT_PROBE": "1"})
+    def test_a_spilled_page_one_is_caught(self):
+        """Fuzz seed 2648604: page 1 measured exactly at its limit but printed over, leaving page 2 nine percent full
+        before the details; the empty .pb marker hid the spill. Read past it, the retry fits the page."""
+        seed = 2648604
+        with tempfile.TemporaryDirectory() as out:
+            code, paths, err = render_files(seed, gen.generate(seed), out)
+            self.assertEqual(code, 0, err[-600:])
+            pages = layout.page_fill(next(p for p in paths if p.endswith(".pdf")), 0.3, 0.4)
+        if pages is not None:
+            self.assertTrue(all(f >= layout.HALF_EMPTY for f, _ in pages[1:-1]), pages)
+
+
 class Generated(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

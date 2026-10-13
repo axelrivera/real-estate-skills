@@ -198,6 +198,26 @@
   "strongest": {
    "index": 1
   },
+  "subject_card": {
+   "lines": [
+    [
+     "Condition"
+    ],
+    [
+     "Lot",
+     "Standard"
+    ],
+    [
+     "Roof"
+    ],
+    {
+     "count": 2
+    }
+   ],
+   "meta": [
+    "pool"
+   ]
+  },
   "subject_row": {
    "count": 4
   },
