@@ -15,6 +15,8 @@ Where the work stands and what's left. Last updated 2026-10-12 (version 0.17.0: 
 
 ## This pass (2026-10-12): Buyer CMA Reports Value Only, Version 0.17.0
 
+**Release checks deferred (owner decision, 2026-10-13):** the manual smoke test and the broker review of `shared/references/fair-housing.md` were deferred for this release. Every automated check, the golden review and the full eval pass (iteration 21, with the iteration 22 reruns) were done.
+
 The buyer CMA leaned on offer strategy (a suggested opening offer, a target and a walk-away from one of four postures, negotiating points, a price-vs-credit table), work the buyer offer strategy already does. The CMA is now an objective report of value, and the offer is the strategy skill's alone. What agents will notice:
 
 - **Buyer CMA:**
