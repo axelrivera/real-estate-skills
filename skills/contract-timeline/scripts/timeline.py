@@ -1535,10 +1535,11 @@ def money_check(c, price):
     if price and loan is not None and balance is not None:  # every part of Para. 2 is known: it must equal the price
         total = deposits + loan + balance
         if abs(total - price) >= 1:
-            # TL-234: worded to the agent, who can answer it (a counter often changes the price but not Para. 2)
+            # TL-234: worded to the agent, who can answer it (a counter often changes the price but not Para. 2);
+            # iteration 22: the total is more or less than the price, never "the price is ..., $4,500 more"
             out.append(("money_mismatch", f"Para. 2 doesn't add up: the deposits, loan and balance to close total "
-                        f"{fmt.money(total)}, but the price is {fmt.money(price)}, {fmt.money(abs(total - price))} "
-                        f"{'more' if total > price else 'less'}. A counteroffer or amendment may have changed the "
+                        f"{fmt.money(total)}, {fmt.money(abs(total - price))} {'more' if total > price else 'less'} than the "
+                        f"{fmt.money(price)} price. A counteroffer or amendment may have changed the "
                         "price without updating Para. 2. Which figures are current?"))
     elif price and loan and deposits + loan > price:  # no balance given: the parts known can't pass the price
         out.append(("money_mismatch", f"Para. 2 doesn't add up: the deposits and the {fmt.money(loan)} loan total "

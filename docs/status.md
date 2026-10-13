@@ -430,6 +430,16 @@ User testing found the onboarding too technical: two profile skills with no dire
 - **Skill text:** the net sheet's what-if is a small table; the profile names default commission and estimates "once in its notes", never "labels them".
 - **Known, by design:** outside Florida (no built-in roof bands) an unknown comp roof gets no warning; the chat's next step offers the package while the rendered page says to submit it.
 
+**Iteration 22: the regression reruns (still 0.17.0).** Each expectation that passed in iteration 16 and failed in 21 ran three times, and each fix once. Profile eval 5's "tone" was an eval defect (the prompt gives none) and now passes 3 of 3; the timeline's hand-rolled date (eval 3) and inferred pronouns (eval 13) pass 3 of 3; the seller CMA's listed-now question names the cap (eval 7). The offer strategy's rate week passed in 2 of 3 runs (one fell back to the week before when Freddie Mac's page showed only a later one). Then:
+
+- **Rate lookup:** the CMAs and the offer strategy name FRED's MORTGAGE30US, which dates every week, when Freddie Mac's page shows only a later one.
+- **Seller CMA Stay wording:** a reprice that recommends staying reads that way throughout (Current List Price, Next Steps at This Price, a refresh date instead of a go-live, the deck's Stay title), and no longer warns that Stay beats the stale-listing rule it doesn't use under the range.
+- **Seller's own systems:** the seller's word alone isn't a systems year until they document it (a receipt, invoice or permit); runs had split on it, moving the range $5,000.
+- **Lists of two** read "a and b" in every skill ("Conventional, 5% Down and FHA, 3.5% Down columns", never "…; and …").
+- **Timeline:** the Para. 2 mismatch says the total is more or less than the price, the right way round.
+- **Profile:** the one-sentence fair-housing reason for a rewritten voice names that the voice carries into every report.
+- **Evals:** timeline eval 6 follows the skill's Rider P rule (built before 1978, no year-built question); offer review eval 6 expects a reference counter on a lapsed offer.
+
 ## Open items (judgment calls and smaller gaps from the evals)
 
 - **Broker review of `shared/references/fair-housing.md`** before release: it applies HUD's rules as the skills understand them and is not legal advice.

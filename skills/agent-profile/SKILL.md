@@ -68,7 +68,7 @@ Read `references/brand-colors.md` before this step. In short: take an image, a w
 
 Write the Voice section from their Round 2 pick, how they actually typed their answers, and the email they pasted, in their words over marketing words: two to four lines covering the tone, a phrase or two they really use, and anything to avoid. Skipped means no Voice section; the skills then write plainly.
 
-When their wording breaks fair housing (see Guardrails), keep what's legitimate: the niche as a kind of client or deal ("first-time and move-up buyers"), the area ("the Sanford area") and the tone ("plain-spoken"). Propose the compliant version in the reply, say why in one sentence, and ask them to confirm it (a confirmation, counted in the cap). Never save a rewritten Voice before they confirm it: save the rest of the profile without the Voice section until then.
+When their wording breaks fair housing (see Guardrails), keep what's legitimate: the niche as a kind of client or deal ("first-time and move-up buyers"), the area ("the Sanford area") and the tone ("plain-spoken"). Propose the compliant version in the reply, say why in one sentence (the voice carries into every report, and the phrases you dropped can read as a preference for or against a protected class, or as steering), and ask them to confirm it (a confirmation, counted in the cap). Never save a rewritten Voice before they confirm it: save the rest of the profile without the Voice section until then.
 
 ## 5. Write the File
 

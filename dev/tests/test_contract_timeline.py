@@ -615,6 +615,8 @@ class Notes(unittest.TestCase):
         self.assertFalse({"money_mismatch", "preapproval_below_loan"} & set(r["note_keys"]))
         d["contract"].update(price=372000, preapproval_amount=340000)  # a counter moved the price, not the loan
         self.assertTrue({"money_mismatch", "preapproval_below_loan"} <= set(timeline.analyze(d)["note_keys"]))
+        text = dict(timeline.money_check(d["contract"], 372000))["money_mismatch"]  # iteration 22: the total is less
+        self.assertIn("$365,000, $7,000 less than the $372,000 price", text)  # than the price, said the right way round
         d["contract"].pop("balance_to_close")
         d["contract"]["loan_amount"] = 362000  # no balance given: $11,000 + $362,000 passes the $372,000 price
         self.assertIn("money_mismatch", timeline.analyze(d)["note_keys"])

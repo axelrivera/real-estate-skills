@@ -41,7 +41,7 @@ The agent's name, team, brokerage, license and contact come from the agent's pro
 | `city`, `state`, `county` | `state` and `county` pick the market's closing costs, tax rules, millage and MLS format. The deck's cover names the city and subdivision |
 | `locality` | "City, ST ZIP · Subdivision · County". No MLS number: this isn't a listing yet. Keep the parts in this order, separated by " · " |
 | `sqft` | *number*, heated area from the seller or public record: each comp's size adjustment is priced against it (`method.md`, Size) |
-| `systems_year`, `recent_systems` | The newest dated system other than the roof (`systems_year`), or `recent_systems: true` for one documented as new without a year; the script judges recency (`method.md`, Systems) |
+| `systems_year`, `recent_systems` | The newest dated system other than the roof (`systems_year`), or `recent_systems: true` for one documented as new without a year; on the seller's home, only a system the seller documents (a receipt, invoice or permit), never their word alone; the script judges recency (`method.md`, Systems) |
 | `lot`, `lot_value`, `lot_reason` | The seller's lot type (`method.md`, Lot): `standard` (when left out), `corner_or_oversized`, `view`, `canal`, `lake_or_open_water`, or `other` with `lot_value` *number* (dollars over a standard lot, negative when worth less) and `lot_reason` (judgment, in words) |
 | `latitude`, `longitude` | Optional *numbers*: the home's location, for distances when the export has no Distance column and no row for the home |
 | `beds`, `baths`, `year_built`, `pool`, `hoa`, `subdivision` | Page 1's facts line, the Beds / Baths and Living Area facts, the comp ranking and the estoppel line (`pool`, `hoa` true/false) |
