@@ -69,5 +69,6 @@
   "drop_date": "no date ({n})",
   "drop_window": "outside the window ({n})",
   "warn_no_dom": "The export has no days on market (CDOM), so the takeaway can't say when to list.",
+  "warn_area": "The export's sales are in {subdivisions}, not {area}: check the export or the area name.",
   "warn_override": "The busy season is the agent's ({span}), not the one the sales show."
 }

@@ -24,7 +24,9 @@ The chart needs an MLS export (CSV) of **closed sales** in the neighborhood: the
 - Search sold listings in the neighborhood with a close date in the **last 26 months** (38 for a three-year chart): the extra two months catch sales that went under contract at the start of the window.
 - Export with the **Contract Date** (Purchase Contract Date), **Close Date**, **Close Price** and **CDOM** columns. Stellar's CMA export has them; another MLS needs its headers mapped (`references/market-timing-data.md`).
 
-Also take the area's name for the chart (the subdivision or neighborhood) and its county and state, which pick the MLS's column names. No profile is needed; with one, the chart uses the agent's brand color (`references/saved-files.md`).
+Also take the area's name for the chart (the subdivision or neighborhood), and its county and state when the agent gives them; the script reads a built-in MLS's export without them. No profile is needed; with one, the chart uses the agent's brand color (`references/saved-files.md`).
+
+**No export yet:** the reply is only the ask, in short lines: the search and the columns above (the date range counted back from today), and one line on why 24 months. Build nothing and ask nothing else.
 
 **How much data:** 24 months by default, so every month has two seasons behind it and a pattern can repeat. 12 months is one season, where one unusual month looks like a trend; 36 is the strongest read. Use what the agent asks for (12, 24 or 36).
 
@@ -49,9 +51,9 @@ When the agent knows the season differs from what the sales show ("our season re
   One landscape page. Look at the page before presenting it.
 - **Markdown** (a quick question in chat): fill `assets/market-timing-template.md` from compute.py's output only. Never paste JSON.
 
-Either way, the reply holds, in short lines under about 120 words:
+Either way, the reply holds, in short lines under about 120 words (the markdown table and the warnings don't count):
 
 1. The `takeaway`, as written.
-2. Each `warnings` item, plainly, with what fixes it (a longer export, the Contract Date column).
-3. One or two talking points from the numbers, in the agent's voice: how many sales fell in the season, and how the `list_by` date relates to the seller's timeline. Never a reason about people.
+2. Every `warnings` item, each in its own line, none dropped or merged (a one-season warning matters most: say that one unusual month can look like a pattern), with what fixes it when something does (a longer export, the Contract Date column).
+3. One or two talking points from the numbers, in the agent's voice: how many sales fell in the season (the takeaway's count, as written, never rounded into a share), and, when there's a `list_by`, how it relates to the seller's timeline (as written, with no year added). With no `list_by` (close dates only, or no days on market), give no listing date or timing of your own: say the Contract Date and CDOM columns would add one. Never a reason about people. A line the agent asked for that breaks the Guardrails is declined in chat in one sentence, never added to the chart (it has no free-text line).
 4. The other format, offered in one line.

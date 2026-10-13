@@ -323,6 +323,19 @@ def county_for_city(state, city):
     return counties.pop() if len(counties) == 1 else None
 
 
+def mls_for_headers(headers, required):
+    """The built-in MLS whose export columns `headers` (a CSV's header row) has, every `required` field among them,
+    or None when no built-in MLS or more than one fits. For a skill that needs only the export's column names, when the
+    listing's location doesn't settle the MLS: the headers are the export's own, so nothing about the place is guessed."""
+    fits = set()
+    for layer in _layers("mls").values():
+        columns = (layer.get("mls_format") or {}).get("cma_export_columns") or {}
+        names = {k: [v] if isinstance(v, str) else list(v or []) for k, v in columns.items()}
+        if all(any(h in headers for h in names.get(k, [])) for k in required):
+            fits.add(layer["mls"])
+    return fits.pop() if len(fits) == 1 else None
+
+
 def _strip_layer_keys(layer):
     return {k: v for k, v in layer.items()
             if k not in ("layer", "name", "aliases", "as_of", "schema", "profile", "counties")}

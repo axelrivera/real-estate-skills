@@ -15,6 +15,7 @@ are at or above the average month's; two or more busy months in a row (December 
 Every sentence and label is a template in assets/labels.json. The input is never changed.
 """
 import argparse
+import csv
 import json
 import os
 import statistics
@@ -37,6 +38,7 @@ MAX_SEASON = 7  # a "season" longer than seven months is most of the year: no se
 MAX_SEASONS = 2
 GAP_SHARE = 0.75  # a month this close to the average between two busy months stays in the season
 LIFT = 1.25  # a season holds at least 1.25 times its share of the year's sales (four months: 42% or more)
+INSET = 0.17  # a month's dots keep this share of its column clear on each side, inside its boxes
 CONTRACT_SHARE = 0.5  # place by contract date when at least half the sales have one
 REQUIRED = ("address", "status", "close_price", "close_date")
 
@@ -105,8 +107,19 @@ def load_inputs(R, mls_name=None, data_file=None):
     if not R.get("export"):
         raise TimingError("The chart needs an MLS export of closed sales (a CSV): set `export` to its path.")
     market = profiles.load_market(state=R.get("state"), county=R.get("county"), mls=mls_name or R.get("mls"))
+    path = mls.resolve_export(R["export"], data_file)
+    if not R.get("export_columns") and not market.get("mls_format.cma_export_columns"):
+        # the place doesn't settle the MLS: the export's own headers may (only its column names are used here)
+        try:
+            with open(path, newline="", encoding="utf-8-sig") as f:
+                headers = set(next(csv.reader(f), []))
+        except OSError:
+            headers = set()
+        name = profiles.mls_for_headers(headers, REQUIRED)
+        if name:
+            market = profiles.load_market(state=R.get("state"), county=R.get("county"), mls=name)
     try:
-        homes = mls.load(mls.resolve_export(R["export"], data_file), market, R.get("export_columns"), required=REQUIRED)
+        homes = mls.load(path, market, R.get("export_columns"), required=REQUIRED)
     except mls.ExportError as e:
         raise TimingError(str(e)) from None
     return market, homes
@@ -229,6 +242,12 @@ def compute(R, homes):
         reasons = [t(k, n=n) for k, n in sorted(dropped.items())]
         warnings.append(t("warn_dropped", n=sum(dropped.values()), reasons=fmt.and_list(reasons)))
 
+    subs = {str(h.get("subdivision") or "").strip() for _, h in sales} - {""}
+    area = " ".join(str(R.get("area") or "").lower().split())
+    if area and subs and not any(area in " ".join(s.lower().split()) or " ".join(s.lower().split()) in area for s in subs):
+        named = sorted(subs, key=lambda s: -sum(1 for _, h in sales if str(h.get("subdivision") or "").strip() == s))
+        warnings.append(t("warn_area", area=R["area"], subdivisions=fmt.and_list(named[:3])))
+
     doms = [h["days_on_market"] for _, h in sales if h.get("days_on_market") is not None]
     dom = statistics.median(doms) if doms else None
     season_rows = [{"months": [m + 1 for m in s], "span": span(s), "sales": sum(counts[m] for m in s)} for s in found]
@@ -268,7 +287,7 @@ def compute(R, homes):
     points = []
     for d, h in sales:
         days = (date(d.year + d.month // 12, d.month % 12 + 1, 1) - date(d.year, d.month, 1)).days
-        points.append({"x": d.month - 1 + (d.day - 1) / days, "price": h["close_price"],
+        points.append({"x": d.month - 1 + INSET + (1 - 2 * INSET) * (d.day - 1) / (days - 1), "price": h["close_price"],
                        "year": (months_between(d, end) - 1) // 12,
                        "address": h["address"], "date": d})
 

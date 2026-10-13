@@ -418,9 +418,23 @@ def positioning_sheet(C, out_dir, ctx):
     doc = cma.chart_sheet(svg, chart.legend(), t("pos_title", address=address),
                           design.css_vars(design.theme(ctx["agent"].get("brand"), SIDE)),
                           tag=L["sheet_sample"] if sample else "", body_class=BODY_CLASS, subtitle=subtitle, takeaway=take)
-    path = os.path.join(out_dir, render.filename(address, L["pos_file"], ext="pdf"))
+    # a price the agent is testing gets its own file, so the sheet at the recommended price is never overwritten
+    path = os.path.join(out_dir, render.filename(address, L["pos_file"], str(round(price)) if ctx.get("price") else "",
+                                                 ext="pdf"))
     for c in layout.print_pdf(doc, path, cma.SHEET_FIT)["checks"]:
         print(f"Check: {c}", file=sys.stderr)
+    print(f"Chart line: {take}", file=sys.stderr)  # the line under the chart, for the reply as written
+    if P["beaten_by"]:  # which homes, so the reply never reads them off the export
+        homes = fmt.and_list([t("pos_beaten_home", address=cma.display_address(h["address"]), sqft=f'{int(h["living_area"]):,}',
+                                price=fmt.money(h["current_price"]),
+                                status=L["lg_pending"] if h["status"] == "PENDING" else L["lg_listing"])
+                              for h in P["beaten_by"]])
+        print(f"Chart homes: {t('pos_beaten', homes=homes)}", file=sys.stderr)
+    if ctx.get("price") and not rec["low"] <= price <= rec["high"]:
+        below = price < rec["low"]
+        print("Chart range: " + t("pos_range_below" if below else "pos_range_above", price=fmt.money(price),
+                                    gap=fmt.money(rec["low"] - price if below else price - rec["high"]),
+                                    low=fmt.money(rec["low"]), high=fmt.money(rec["high"])), file=sys.stderr)
     if P["excluded"]:
         homes = fmt.and_list([f'{cma.display_address(a)} ({sq:,} sq ft, {"size" if why == "size" else "price"})'
                               for a, sq, why in P["excluded"]])

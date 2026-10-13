@@ -186,6 +186,7 @@ class PositioningSheet(unittest.TestCase):
         self.assertEqual((len(P["active"]), len(P["pending"])), (3, 1))
         self.assertEqual(P["larger_for_less"], 2)  # 2,000 at $440,000 and 2,100 at $455,000
         self.assertEqual(P["clear_at"], 440000)  # the cheapest larger home: at $440,000 or less, none is for less
+        self.assertEqual([x["address"] for x in P["beaten_by"]], ["1 A ST", "2 B ST"])  # cheapest first
         self.assertEqual(cma.positioning_points(homes, {}, 1850, "9 SUBJECT LN", 440000)["larger_for_less"], 0)
         self.assertEqual([e[2] for e in P["excluded"]], ["size"])
 
@@ -206,9 +207,13 @@ class PositioningSheet(unittest.TestCase):
     def test_one_landscape_page_at_the_price_asked(self):
         src = os.path.join(ROOT, "dev", "samples", "seller-cma.json")
         with tempfile.TemporaryDirectory() as tmp:
+            paths = []
             for extra, price in (([], None), (["--price", "455000"], "$455,000")):
-                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                err = io.StringIO()
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
                     path, = seller_render.main([src, "--format", "positioning", "--out", tmp, *extra])
+                paths.append(path)
+                self.assertIn("Chart line: At ", err.getvalue())  # the line under the chart, for the reply
                 out = subprocess.run(["pdftotext", "-bbox", path, "-"], capture_output=True, text=True).stdout
                 self.assertEqual(re.findall(r'<page width="([\d.]+)" height="([\d.]+)"', out), [("792.000000", "612.000000")])
                 text = " ".join(subprocess.run(["pdftotext", path, "-"], capture_output=True, text=True).stdout.split())
@@ -216,6 +221,8 @@ class PositioningSheet(unittest.TestCase):
                 if price:
                     self.assertIn(f"Price Under Consideration: {price}", text)
                     self.assertIn(f"At {price},", text)
+            self.assertNotEqual(*paths)  # a tested price never overwrites the sheet at the recommended price
+            self.assertTrue(all(os.path.exists(p) for p in paths))
 
 
 if __name__ == "__main__":

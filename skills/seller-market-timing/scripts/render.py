@@ -25,6 +25,7 @@ SIDE = "seller"
 # oldest a gray triangle
 YEAR_FILL = ("var(--brand)", "var(--brand-accent)", "var(--grey)")
 DOT_R = 6.5
+HALF_WIDTH = DOT_R * 2.6935 / 2  # the widest mark, the triangle: half its base
 
 
 def year_mark(year, cx, cy, r=DOT_R, cls=""):
@@ -47,7 +48,6 @@ SEASON_STYLE = "fill:none;stroke:var(--brand);stroke-width:1.5;stroke-dasharray:
 PEAK_STYLE = "fill:none;stroke:var(--brand-strong);stroke-width:2"
 SWATCH_SEASON = f'<rect x="1.5" y="1.5" width="11" height="11" style="{SEASON_STYLE.replace("2 4", "2 2")}"/>'
 SWATCH_PEAK = f'<rect x="1.5" y="1.5" width="11" height="11" style="{PEAK_STYLE}"/>'
-DOT_R = 6.5
 
 
 def _runs(months):
@@ -102,7 +102,7 @@ def draw(C, chart, size):
     for i, yr in enumerate(C["years"]):
         if years.get(i):
             chart.mark(f"y{i}", yr["label"], year_mark(i, 7, 7.5 if i > 1 else 7, r=5), count=years[i])
-    pad = 4
+    pad = 1.5
     for s in C["seasons"]:
         chart.mark("season", L["lg_season"], SWATCH_SEASON)
         for run in _runs([m - 1 for m in s["months"]]):
@@ -110,7 +110,7 @@ def draw(C, chart, size):
                      f'height="{H - T - B - 2 * pad}" style="{SEASON_STYLE}" class="season"/>')
     if C["peak_month"]:
         chart.mark("peak", L["lg_peak"], SWATCH_PEAK)
-        m, inset = C["peak_month"] - 1, 2 * pad + 3
+        m, inset = C["peak_month"] - 1, pad + 1.5
         o.append(f'<rect x="{x(m) + inset:.1f}" y="{T + inset}" width="{band - 2 * inset:.1f}" '
                  f'height="{H - T - B - 2 * inset}" style="{PEAK_STYLE}" class="peak"/>')
     for p in sorted(pts, key=lambda p: -p["year"]):  # oldest first, so the latest year sits on top

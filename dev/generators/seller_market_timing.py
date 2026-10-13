@@ -40,7 +40,8 @@ def _money(v):
     return f"${v:,.0f}"
 
 
-def export(rng, as_of, months=24, shape="spring", per_month=3.0, contract=True, extra_rows=True, base_price=None):
+def export(rng, as_of, months=24, shape="spring", per_month=3.0, contract=True, extra_rows=True, base_price=None,
+           subdivision="SAMPLE RIDGE"):
     """CSV text: about `per_month` sales a month (shaped by SHAPES[shape]) under contract in the `months` before
     `as_of`'s previous month, each closing 20 to 55 days later; without `contract`, no Contract Date column."""
     weights = SHAPES[shape]
@@ -63,7 +64,7 @@ def export(rng, as_of, months=24, shape="spring", per_month=3.0, contract=True, 
             listed = round(price * rng.uniform(0.98, 1.08), -2)
             rows.append({"ML Number": f"X{9100000 + n}", "Status": "SLD",
                          "Address": f"{rng.randint(100, 9899)} {rng.choice(STREETS).upper()}",
-                         "Legal Subdivision Name": "SAMPLE RIDGE", "Heated Area": sqft, "Current Price": _money(price),
+                         "Legal Subdivision Name": subdivision, "Heated Area": sqft, "Current Price": _money(price),
                          "Close Price": _money(price), "Close Date": closed.strftime("%m/%d/%Y"),
                          "Original List Price": _money(listed), "Contract Date": signed.strftime("%m/%d/%Y"),
                          "CDOM": rng.choice((2, 4, 6, 9, 12, 18, 25, 33, 47, 61, 88))})
@@ -72,7 +73,7 @@ def export(rng, as_of, months=24, shape="spring", per_month=3.0, contract=True, 
             n += 1
             rows.append({"ML Number": f"X{9100000 + n}", "Status": status,
                          "Address": f"{rng.randint(100, 9899)} {rng.choice(STREETS).upper()}",
-                         "Legal Subdivision Name": "SAMPLE RIDGE", "Heated Area": 1800,
+                         "Legal Subdivision Name": subdivision, "Heated Area": 1800,
                          "Current Price": _money(base_price), "Close Price": "", "Close Date": "",
                          "Original List Price": _money(base_price), "Contract Date": "", "CDOM": 12})
     rng.shuffle(rows)

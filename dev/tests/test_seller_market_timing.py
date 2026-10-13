@@ -165,7 +165,35 @@ class Export(unittest.TestCase):
                 mls.load(path, market)
 
 
+class FromTheExport(unittest.TestCase):
+    def test_the_mls_comes_from_the_headers_without_a_place(self):
+        csv = ("ML Number,Status,Address,Legal Subdivision Name,Close Price,Close Date,Contract Date,CDOM\n"
+               'X1,SLD,1 SAMPLE OAK CT,SAMPLE RIDGE,"$400,000",05/20/2026,04/20/2026,9\n')
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(tmp, "export.csv"), "w") as f:
+                f.write(csv)
+            _, homes = compute.load_inputs({"export": "export.csv"}, data_file=os.path.join(tmp, "m.json"))
+        self.assertEqual(homes[0]["contract_date"], date(2026, 4, 20))
+        self.assertIsNone(compute.profiles.mls_for_headers({"Addr", "Price"}, compute.REQUIRED))
+
+    def test_an_area_the_export_does_not_name_is_flagged(self):
+        homes = spread([3] * 12)
+        for h in homes:
+            h["subdivision"] = "SAMPLE RIDGE UNIT 2"
+        self.assertFalse(any("not Example Lakes" in w for w in run(homes, area="Sample Ridge")["warnings"]))
+        self.assertTrue(any("not Example Lakes" in w for w in run(homes, area="Example Lakes")["warnings"]))
+
+
 class Chart(unittest.TestCase):
+    def test_dots_stay_inside_their_month_and_its_boxes(self):
+        C = run(spread([1, 1, 4, 5, 9, 5, 4, 2, 1, 1, 1, 1]) + [sale("2026-05-01"), sale("2026-05-31")])
+        for p in C["_points"]:
+            frac = p["x"] - (p["date"].month - 1)
+            self.assertTrue(compute.INSET - 1e-9 <= frac <= 1 - compute.INSET + 1e-9, p)
+        band = (render.cma.SHEET_SIZE[0] - 78 - 16) / 12  # the sheet's month column
+        self.assertGreater(compute.INSET * band - render.HALF_WIDTH, 1.5 + 1.5)  # clear of the busiest month's box
+
+
     def test_wrapping_season_draws_two_boxes(self):
         self.assertEqual(render._runs([10, 11, 0, 1]), [[10, 11], [0, 1]])
         self.assertEqual(render._runs([2, 3, 4]), [[2, 3, 4]])

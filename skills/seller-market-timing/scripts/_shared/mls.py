@@ -131,7 +131,7 @@ def load(path, market, columns=None, required=REQUIRED):
     columns = columns or market.get("mls_format.cma_export_columns")
     if not columns:
         raise ExportError("This MLS isn't built in: map the export's column headers to the field names "
-                          f"({', '.join(required)}, ...) and pass them as columns.")
+                          f"({', '.join(required)}, ...) in export_columns, or give the property's state and county.")
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         headers = set(reader.fieldnames or [])

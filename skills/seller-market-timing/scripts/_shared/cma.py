@@ -471,7 +471,8 @@ def positioning_points(homes, sc, subject_sqft, subject_address, price, fit=None
     (the scatter's size ratios), at their list price. Listings priced wildly off the trend (`fit`, mls.price_outlier)
     are left off. `larger_for_less`: the competitors with more living area at a lower price than `price` (the lower
     right of the crosshair); `clear_at`: the highest price at which none would be (the cheapest larger competitor's),
-    or None when no competitor is larger. Returns {pending, active, total, larger_for_less, clear_at, excluded}."""
+    or None when no competitor is larger. Returns {pending, active, total, larger_for_less, beaten_by (those homes,
+    cheapest first), clear_at, excluded}."""
     lo, hi = subject_sqft * sc.get("min_size_ratio", 0.6), subject_sqft * sc.get("max_size_ratio", 1.4)
     out, excluded = {"pending": [], "active": []}, []
     for h in homes:
@@ -487,8 +488,9 @@ def positioning_points(homes, sc, subject_sqft, subject_address, price, fit=None
             out[kind].append(h)
     every = out["pending"] + out["active"]
     larger = [h["current_price"] for h in every if h["living_area"] > subject_sqft]
-    return {**out, "total": len(every), "excluded": excluded,
-            "larger_for_less": sum(1 for h in every if h["living_area"] > subject_sqft and h["current_price"] < price),
+    beat = sorted((h for h in every if h["living_area"] > subject_sqft and h["current_price"] < price),
+                  key=lambda h: h["current_price"])
+    return {**out, "total": len(every), "excluded": excluded, "larger_for_less": len(beat), "beaten_by": beat,
             "clear_at": min(larger) if larger else None}
 
 
