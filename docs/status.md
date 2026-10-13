@@ -61,6 +61,7 @@ The buyer CMA leaned on offer strategy (a suggested opening offer, a target and 
 - **Systems by year:** `systems_year` (the newest dated system other than the roof); the script counts it recent within five years of the as-of year, so "2020" and "2021" read the same in every run. Systems and roof lines have their own kinds, so the method line never says "roof and systems" for a systems-only adjustment.
 - **Fair housing:** compute.py runs the same phrase check render.py does (a "young families" tagline stops the first run); "go live on schedule" no longer reads as who lives there; "cushion" counts as offer advice in the buyer CMA's value narrative.
 - **Buyer CMA history table:** keeps the MLS grid's order, the out-of-order rows marked "(date to confirm)", never re-sorted while the agent checks them.
+- **National CMA rates (owner decision):** outside a built-in market, size, condition, lot and systems rates are national shares scaled to the comps' median net price (`cma.adjustments_national` in `shared/markets/national.md`), named once in the notes; paired sales or the agent's rates replace them. Two runs on the same sales now agree in any state.
 - **Offer strategy:** the flexible-close reason no longer names its source (the listing agent's word stays in chat); a payment within 2% of the buyer's limit makes the rate and insurance estimates high impact; "an 11-day median"; no "(estimate, national estimate)"; the FHA loan-limit note only for FHA, VA and USDA.
 
 ## This pass (2026-10-12): Client-Interest Audit, Version 0.16.0

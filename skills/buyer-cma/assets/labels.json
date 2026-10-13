@@ -251,6 +251,7 @@
  "cash_short": "{amt} over your {cash}",
 
  "h_notes": "Notes and Assumptions",
+ "note_national_rates": "The {kinds} adjustments use national estimates scaled to these sales' prices, since no local rates are built in for this area; paired sales or your own rates replace them.",
  "note_financing_assumed": "The {labels} financing is assumed until the buyer's lender confirms it.",
  "note_financing_assumed_some": "The financing in the {labels} columns is assumed until the buyer's lender confirms it.",
  "note_financing_assumed_all": "The financing in every payment column is assumed until the buyer's lender confirms it.",

@@ -1844,6 +1844,8 @@ def compute(R, market, homes, data_file=None):
     N = notes.Notes()
     add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, caveat, bool(reprice_out), defaults,
               stay_caveat=stay is not None and stay != ri and nets[stay] > nets[ri])
+    if comp_info.get("national_rates"):  # owner decision 2026-10-13: national rates where none are built in, said once
+        N.add("national_rates", t("note_national_rates", kinds=cma._and(comp_info["national_rates"])), "estimate")
     merged = {}  # a narrow range: the stance options that came within 1% of a kept one, said once, by the kept one
     for role, into in built["merged"]:
         merged.setdefault(into, []).append(role)

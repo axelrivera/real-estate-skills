@@ -13,6 +13,15 @@ from test_seller_cma import card, compute, run, stops, tanager  # noqa: E402
 cma, finance = compute.cma, compute.finance
 
 
+def T_texas_without_rates():
+    """A Texas report with none of the agent's rates: the national ones fill them."""
+    from test_seller_cma import report, texas
+    R = texas(report())
+    for k in ("condition_values", "lot_values", "systems_value"):
+        R["comps"].pop(k, None)
+    return R
+
+
 
 
 class RangeWidth(unittest.TestCase):
@@ -465,6 +474,23 @@ class SizeAndLot(unittest.TestCase):
         errors, _ = cma.apply_systems_adjustments({"cards": [{"address": "1 A St", "systems_year": "2021"}]}, {},
                                                   self.market, "2026-09-26")
         self.assertIn("systems_year", errors[0])
+
+    def test_national_rates_where_none_are_built_in(self):
+        """Owner decision (2026-10-13): outside a built-in market the size, condition, lot and systems rates are the
+        national shares scaled to the comps' median net price, so runs agree; a given rate or a market's own wins."""
+        texas = compute.profiles.load_market(state="TX", county="Travis")
+        comps = {"cards": [{"address": "1 A St", "sold_price": 400000, "sqft": 2000},
+                           {"address": "2 A St", "sold_price": 420000, "seller_concessions": 20000, "sqft": 2000}],
+                 "lot_values": {"canal": 7000}}
+        filled = cma.national_rates(comps, texas)
+        self.assertEqual(filled, ["size", "condition", "systems"])  # the agent's lot values stand
+        self.assertEqual(comps["size_per_sqft"], 66)  # a third of the median $200/sq ft, net of seller-paid costs
+        self.assertEqual(comps["condition_values"]["full_renovation"], 40000)  # 10% of $400,000
+        self.assertEqual(comps["systems_value"], 4000)
+        self.assertEqual(comps["lot_values"], {"canal": 7000})
+        self.assertEqual(cma.national_rates({"cards": comps["cards"]}, self.market), [])  # Florida has its own
+        C, _ = run(T_texas_without_rates())
+        self.assertIn("national_rates", C["note_keys"])
 
     def test_seller_report_prices_size_and_lot(self):
         C, _ = run(tanager())

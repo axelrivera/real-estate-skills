@@ -1314,6 +1314,8 @@ def compute(R, market, homes):
     C["costs"] = costs_model(R, market, pay, tax_rows, C)
     N = notes.Notes()
     cost_notes(N, R, market, pay, tax_rows, insurance)
+    if comp_info.get("national_rates"):  # owner decision 2026-10-13: national rates where none are built in, said once
+        N.add("national_rates", t("note_national_rates", kinds=cma._and(comp_info["national_rates"])), "estimate")
     reply = [it for it in N.items("chat") if it[2] in REPLY_KINDS]
     C["notes"] = N.pdf()
     C["note_keys"] = [k for k, _, _ in N.items("chat")]

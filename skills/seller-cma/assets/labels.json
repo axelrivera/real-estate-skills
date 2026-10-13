@@ -232,6 +232,7 @@
  "opt_note_market": "Priced where recent adjusted sales support; room to negotiate",
  "opt_note_premium": "Tests the upper part of the range; takes longer and may need a price cut before an offer",
  "opt_note_agent": "Our own price for this home, chosen for the reasons in the pricing stance",
+ "note_national_rates": "The {kinds} adjustments use national estimates scaled to these sales' prices, since no local rates are built in for this area; paired sales or your own rates replace them.",
  "note_options_merged": "The supported range is narrow, so {merged} {verb} within 1% of {kept}: shown as one option.",
  "note_option_time": "Times to contract are estimates from the recent median of {days} days on market: longer for a higher price, shorter for a price that draws competing offers.",
  "note_option_time_assumed": "Times to contract assume about a month on market, a typical pace, since there is no MLS export to measure it.",

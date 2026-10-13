@@ -1648,6 +1648,47 @@ def callout_checks(info):
 
 # --- the comps, start to finish: one pipeline for both CMAs ---------------------------------------
 
+NATIONAL_RATES = "cma.adjustments_national"
+# report.json's override each national rate fills, the market key that makes it unneeded, and the adjustment kind it prices
+NATIONAL_FILLS = (("size_per_sqft", "cma.adjustments.living_area_per_sqft", "size"),
+                  ("condition_values", "cma.adjustments.condition_levels", "condition"),
+                  ("lot_values", "cma.adjustments.lot_types", "lot"),
+                  ("systems_value", "cma.adjustments.documented_recent_systems", "systems"))
+NATIONAL_WORDS = {"size": "size", "condition": "condition", "lot": "lot", "systems": "recent systems"}
+
+
+def national_rates(comps, market, homes=()):
+    """Owner decision (2026-10-13): where the market has no rate of its own and report.json gives none (paired sales or
+    the agent's), the national shares (`cma.adjustments_national`) scaled to the comps' median sale price net of
+    seller-paid costs fill it, so two runs on the same sales set the same rates. Writes them into `comps` (the working
+    copy) and returns the kinds filled."""
+    nat = market.get(NATIONAL_RATES) if market is not None else None
+    cards = comps.get("cards") or []
+    prices = [c["sold_price"] - (c.get("seller_concessions") or 0) for c in cards
+              if _num(c.get("sold_price")) and _num(c.get("seller_concessions") or 0)]
+    if not nat or not prices:
+        return []
+    basis = statistics.median(prices)
+    filled = []
+    for key, market_key, kind in NATIONAL_FILLS:
+        if comps.get(key) is not None or market.get(market_key) is not None:
+            continue
+        if key == "size_per_sqft" and nat.get("living_area_ppsf_share"):
+            ppsf = [(c["sold_price"] - (c.get("seller_concessions") or 0)) / comp_sqft(c, homes) for c in cards
+                    if _num(c.get("sold_price")) and comp_sqft(c, homes)]  # net of seller-paid costs, like the basis
+            if ppsf:
+                comps[key] = fmt.half_up(nat["living_area_ppsf_share"] * statistics.median(ppsf))
+        elif key == "condition_values" and nat.get("condition_level_shares"):
+            comps[key] = {k: fmt.half_up(v * basis, 500) for k, v in nat["condition_level_shares"].items()}
+        elif key == "lot_values" and nat.get("lot_type_shares"):
+            comps[key] = {k: fmt.half_up(v * basis, 500) for k, v in nat["lot_type_shares"].items()}
+        elif key == "systems_value" and nat.get("recent_systems_share"):
+            comps[key] = fmt.half_up(nat["recent_systems_share"] * basis, 500)
+        if comps.get(key) is not None:
+            filled.append(kind)
+    return filled
+
+
 def settle_comps(R, homes, market, stats):
     """Every comp card adjusted and the used comps chosen, by the shared rules in one order, so both CMAs and their
     gut checks agree: the split (default_split), the market-shift rate (time_rule from `stats`, the export's
@@ -1665,6 +1706,7 @@ def settle_comps(R, homes, market, stats):
     if errors:
         return errors, [], None
     split = default_split(R, homes)
+    national = national_rates(comps, market, homes)
     spec, rule_info = time_rule(stats, comps.get("time_override"))
     comps.pop("time_adjustment", None)
     if spec and spec["rate_per_quarter"]:
@@ -1696,6 +1738,10 @@ def settle_comps(R, homes, market, stats):
     ov = R.get("split_override") if isinstance(R.get("split_override"), dict) else {}
     info = {"split": split, "split_reason": str(ov.get("reason") or "").strip(), "time": time_info,
             "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "size": size_info, "lot": lot_info, "systems": sys_info,
+            # the national rates a used comp's adjustment actually took (named once in the notes)
+            "national_rates": [NATIONAL_WORDS[k] for k in national if any(
+                isinstance(a, dict) and a.get("source") == "script" and a.get("kind") == k
+                for c in comps["cards"] for a in c.get("adjustments") or [])],
             "selection": selection}
     return [], warnings, info
 
