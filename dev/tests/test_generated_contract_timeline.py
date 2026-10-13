@@ -127,7 +127,8 @@ class Generated(unittest.TestCase):
                 self.assertEqual(whens, sorted(whens))
                 for r in t["rows"]:
                     self.assertEqual(r["day"], (date.fromisoformat(r["when"][:10]) - eff).days)
-                open_rows = [r for r in t["rows"] if not r["done"] and not r["past"] and not r["lender"]]
+                open_rows = [r for r in t["rows"] if not r["done"] and not r["past"] and not r["lender"]
+                             and r["key"] not in timeline.GG_KEYS]  # owner decision: GG is never the headline
                 self.assertEqual(t["first_deadline"], open_rows[0] if open_rows else None)
                 self.assertTrue(set(k.split(":")[0] for k in t["flag_keys"]) <= timeline.FLAG_KEYS)
                 self.assertEqual(len(t["flags"]), len(set(t["flags"])))
