@@ -198,8 +198,6 @@ def apply_cma(B, h):
             K["insurance_annual"] = s["insurance_annual"]
             B["_cma_insurance"] = {"annual": s["insurance_annual"], "price": s.get("insurance_price"),
                                    "estimated": s.get("insurance_estimated", True)}
-        elif (h.get("offer_plan") or {}).get("opening") is not None:
-            B["_insurance_price"] = target_price(h["offer_plan"])
     if isinstance(s.get("rate"), (int, float)):  # the rate the CMA's payment used: compared with this offer's own rate
         B["_cma_rate"] = {"rate": s["rate"], "week": s.get("rate_week")}
     W = B.setdefault("worksheet", {})  # the property report's legal description and tax ID, for paragraph 1
@@ -232,18 +230,7 @@ def apply_cma(B, h):
             if ours == "typical_seller_paid" and not val:
                 continue
             M[ours] = val
-    if h.get("offer_plan") and not B.get("cma_offer_plan"):
-        B["cma_offer_plan"] = h["offer_plan"]
     return B
-
-
-def target_price(op):
-    """The CMA offer plan's target, as the buyer CMA figures its payment: the middle of target_low to target_high, else
-    the one given, else the opening."""
-    lo, hi = op.get("target_low"), op.get("target_high")
-    if lo is not None and hi is not None:
-        return (lo + hi) / 2
-    return lo if lo is not None else hi if hi is not None else op.get("opening")
 
 
 def age_dom(P, dom, as_of, today):
@@ -260,7 +247,14 @@ def age_dom(P, dom, as_of, today):
 
 
 def walk_away(B):
-    return (B.get("cma_offer_plan") or {}).get("walk_away")
+    """The offer's walk-away: the top of the value range, the most the comparable sales support (above it a low
+    appraisal is cash the buyer covers). None without a value range (list stands in for value) or when the buyer agrees
+    to pay above the range and cover an appraisal gap (`buyer.cover_appraisal_gap`): then the buyer's own limits and the
+    gap their cash can fund decide. A CMA handoff's own offer plan (older buyer CMAs) is never read: one rule."""
+    V, BU = B.get("value") or {}, B.get("buyer") or {}
+    if V.get("assumed") or not V.get("cma_high") or BU.get("cover_appraisal_gap"):
+        return None
+    return V["cma_high"]
 
 
 def prepare(B, A, market=None):
@@ -366,20 +360,17 @@ def prepare(B, A, market=None):
         A.add("costs", "insurance_annual", K["insurance_annual"], t("as_ins_cma", amount=money(K["insurance_annual"]), at=at), "low")
     elif K.get("insurance_annual") is None:
         yb = P.get("year_built")
-        basis = B.get("_insurance_price") or lp  # an older CMA handoff's target price, as its payment used
-        est = finance.insurance_estimate(basis, costs, yb, K.get("insurance_rate"))
+        est = finance.insurance_estimate(lp, costs, yb, K.get("insurance_rate"))
         src = (L_["ins_src_agent"] if est["source"] == "agent" else
                costs.described("buyer_costs.insurance_rate") if est["source"] == "market" else L_["ins_src_national"])
         K["insurance_annual"] = est["annual"]
         age = t("ins_age", factor=fmt.num(est["age_factor"], 2), year=yb) if est["age_factor"] > 1 else ""
-        if basis == lp:  # B6: no buyer CMA premium to match, so each option's payment prices the estimate at that
-            # option's price (insurance_at); the assumption names the recommended offer's figure once known (ins_at_offer)
-            B["_ins_est"] = {"year_built": yb, "rate": K.get("insurance_rate"), "src": src, "age": age}
-        B["payment_assumed"].append(L_["pa_insurance_scaled"] if B.get("_ins_est") else
-                                    t("pa_insurance", amount=money(K["insurance_annual"])))
+        # B6: no buyer CMA premium to match, so each option's payment prices the estimate at that option's price
+        # (insurance_at); the assumption names the recommended offer's figure once known (ins_at_offer)
+        B["_ins_est"] = {"year_built": yb, "rate": K.get("insurance_rate"), "src": src, "age": age}
+        B["payment_assumed"].append(L_["pa_insurance_scaled"])
         A.add("costs", "insurance_annual", K["insurance_annual"], t(
-            "as_ins_est", amount=money(K["insurance_annual"]), src=src, age=age,
-            basis=t("ins_basis", price=money(basis)) if basis != lp else ""), "low")
+            "as_ins_est", amount=money(K["insurance_annual"]), src=src, age=age, basis=""), "low")
     elif not quote_in_hand(BU):  # OFR-328: a premium typed in with no quote in hand (false or planned) is an estimate
         B["payment_assumed"].append(t("pa_insurance", amount=money(K["insurance_annual"])))
         A.add("costs", "insurance_annual", K["insurance_annual"], t("as_ins_typed", amount=money(K["insurance_annual"])), "low")
@@ -919,7 +910,7 @@ def band_of(v, level):
 
 def limits_broken(B, costs, t_, walk=False):
     """OFR-214: the buyer's limits the terms `t_` would break, as [(key, words)]: max price, max payment, cash, reserve
-    floor; with `walk`, the CMA's walk-away too (a price past it is held: the buyer CMA's ceiling for this home)."""
+    floor; with `walk`, the walk-away too (a price past it is held: the top of the value range, walk_away)."""
     BU, c = B["buyer"], buyer_cash(B, t_)
     out = []
     w = walk_away(B)
@@ -948,7 +939,7 @@ def within_limits(B, costs, t_):
 
 def price_ceiling(B):
     """The highest price a Stronger option or the band search may go to, with what sets it: the lowest of the top of the
-    value range (above it the appraisal needs gap coverage), the CMA's walk-away, the buyer's max and, with one competing
+    value range (above it the appraisal needs gap coverage), the walk-away, the buyer's max and, with one competing
     offer or fewer, list. Returns (price, the binding cap in words)."""
     P, V, BU, lvl = B["property"], B["value"], B["buyer"], B["competition"]["level"]
     w = walk_away(B)
@@ -982,7 +973,7 @@ def build_offer(B, costs):
     walk = walk_away(B)
     if price > BU["max_price"]:
         price, w["price"], by = BU["max_price"], why("why_price_max"), "max_price"
-    if walk and price > walk:  # B1: the buyer CMA's walk-away caps the price like the max does
+    if walk and price > walk:  # B1: the walk-away (the top of the value range) caps the price like the max does
         price, w["price"], by = walk, why("why_price_walk", walk=money(walk)), "walk_away"
     price = lp if abs(price - lp) < 1000 and not (low_down and lvl >= 2 and lp > V["mid"]) \
         else rnd(price, 1000, "down" if price > lp else "round")
@@ -1068,7 +1059,7 @@ def build_offer(B, costs):
     t_["insurance_quote"] = True if quote_in_hand(BU) else "planned" if BU.get("insurance_quote") == "planned" else None
     w["insurance_quote"] = why("why_ins_quote" if quote_in_hand(BU) else "why_ins_get")
     if lvl >= 2 and fin in ("cash", "conventional") and BU["down_pct"] >= 0.10:
-        # Cap = the lowest of the buyer's max, the CMA's walk-away, and the price whose appraisal gap (above the same
+        # Cap = the lowest of the buyer's max, the walk-away, and the price whose appraisal gap (above the same
         # risk line the listing side uses) the buyer can still fund with the reserve intact (OFR-5).
         walk = walk_away(B)
         capv = rnd(min(BU["max_price"], walk or BU["max_price"]), 1000, "down")
@@ -1212,7 +1203,7 @@ def conc_need(B, price):
 def reach_band(B, costs, rec):
     """OFR-325: when the rule-built offer reads At Risk or Unlikely, the lowest-cost offer inside every limit that reaches
     a better band, with that band and the same-band offer that keeps the most cash (OFR-332); else (None, None, None). It
-    tries a price anywhere in the value range up to price_ceiling() (never past the CMA's walk-away, the buyer's max or,
+    tries a price anywhere in the value range up to price_ceiling() (never past the walk-away, the buyer's max or,
     with little competition, list), smaller concessions down to what the buyer's cash can't cover with the reserve kept,
     a 3% deposit and the lender's fastest close. Lowest cost: the price net of concessions, then the smaller deposit,
     then the longer close. An escalating offer is left as built."""
@@ -1360,7 +1351,7 @@ def better_option(B, costs, terms, O, lvl, promote_stronger=True):
 
 def hb_stronger(B, costs, rec, fuller=None):
     """Iteration 16 (owner decision): in a highest-and-best round with heavy competition (2 to 3 competing offers or
-    more), a Stronger option at the CMA's walk-away (or the buyer's max when lower) is always shown, even when the engine
+    more), a Stronger option at the walk-away (or the buyer's max when lower) is always shown, even when the engine
     scores it the same outlook: the buyer gets one sealed bid, so the most they'd pay stays in view. The fuller offer a
     lower-cost recommendation replaced when it's already there, else the recommended terms at that price with the
     Stronger step (3% deposit, gap coverage) when that keeps every limit. None when the offer already reaches that price,
@@ -1800,7 +1791,7 @@ def higher_price(B, costs, res):
     """Whether a price above the recommended one, still inside the buyer's own limits (max price, payment, cash with the
     reserve kept), would lift the outlook, from the engine: {price, band, lifts, text}, or None when nothing higher fits
     those limits, the outlook is already Strong, the offer escalates, the agent set the terms or there's no value range.
-    The band search stops at price_ceiling() (the CMA's walk-away, the value range's top, list with little competition);
+    The band search stops at price_ceiling() (the walk-away, the value range's top, list with little competition);
     this answers what the buyer's own limits allow past it, with the appraisal risk that comes with it."""
     rec, lvl = res["terms"]["recommended"], B["competition"]["level"]
     now = res["bands"]["recommended"][lvl]
@@ -2164,7 +2155,7 @@ PUSHBACK_KEYS = {"Price": "price", "Seller Concessions": "seller_concessions", "
 
 def pushback(r):
     """OFR-214: the Likely Pushback rows on the recommended offer: [{term, yours, ask, response, breaks}]. An ask that
-    would break one of the buyer's limits (price, payment, cash, reserve) or go past the CMA's walk-away is answered
+    would break one of the buyer's limits (price, payment, cash, reserve) or go past the walk-away is answered
     "hold" with that limit, by key."""
     B, costs, V = r["B"], r["costs"], r["B"]["value"]
     o, t_ = r["O"]["recommended"], r["terms"]["recommended"]
@@ -2294,10 +2285,6 @@ def market_check(B):
             (L_["mc_read"], *market_read(B))]
     if V.get("median_adjusted"):
         rows.insert(1, (L_["mc_median_adjusted"], money(V["median_adjusted"]), None))
-    plan = B.get("cma_offer_plan") or {}
-    if plan.get("target_low") and plan.get("target_high"):
-        rows.append((L_["mc_plan"], t("mc_plan_value", target=fmt.range(plan["target_low"], plan["target_high"]))
-                     + (t("mc_plan_walk", walk=money(plan["walk_away"])) if plan.get("walk_away") else ""), None))
     return [{"label": a, "value": str(b), "note": c} for a, b, c in rows]
 
 

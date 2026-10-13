@@ -419,7 +419,9 @@ def case_buyer_cma(pdf):
     if not stats.get("ok") or not stats.get("subject_row"):
         raise KitError(f"buyer stats.py didn't find the subject row: {stats.get('problems') or stats.get('market_notes')}")
     expected_md(case, "Case 3", [
-        "File delivered: the buyer CMA PDF."])
+        "File delivered: the buyer CMA PDF.",
+        "No offer numbers in the PDF or the reply (no opening offer, target or walk-away): the reply says the offer "
+        "options come next, from the Buyer Offer Strategy."])
     write(os.path.join(d, "prompt.md"), prompt_md("Case 3: Buyer CMA", [h["flyer_file"], h["report_file"],
                                                                          h["export_file"]], [
         {"title": "Prompt", "text":

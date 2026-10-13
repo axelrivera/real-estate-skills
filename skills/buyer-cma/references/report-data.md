@@ -3,13 +3,15 @@
 `assets/example-report.json` is a complete, approved report: copy it and replace every value. report.json holds two kinds of fields:
 
 - **Data** copied from the sources: prices, dates, the history grid, each comp's sale and adjustments, the payment inputs. Money fields marked *number* are plain numbers (no `$` or commas).
-- **Judgment** in your words: why the range sits where it does, the offer posture (a named category the script prices) and why, what the plan assumes, the watch items and questions. Judgment fields carry **no figures**: no digits, `$`, `%`, months, seasons or weekdays (`{placeholders}` neither), and never describe the people who own or live in the home (vacant, a tenant, relocating, their family): compute.py stops on either. The script writes every count, price, percent, date and comparison itself, from the numbers, in its own sentences next to yours; a figure typed into a judgment field stops compute.py and render.py, naming each field. Write "the earlier sales", "repeated price cuts", "the four-point inspection", never "April", "the spring sales" or "4 cuts". Body text may contain `<strong>` and `<em>`, nothing else.
+- **Judgment** in your words: why the range sits where it does, what the history adds up to, the watch items and questions. Judgment fields carry **no figures**: no digits, `$`, `%`, months, seasons or weekdays (`{placeholders}` neither), and never describe the people who own or live in the home (vacant, a tenant, relocating, their family): compute.py stops on either. The script writes every count, price, percent, date and comparison itself, from the numbers, in its own sentences next to yours; a figure typed into a judgment field stops compute.py and render.py, naming each field. Write "the earlier sales", "repeated price cuts", "the four-point inspection", never "April", "the spring sales" or "4 cuts". Body text may contain `<strong>` and `<em>`, nothing else.
 
-Fields the script now writes itself (a `paragraph`, an `intro`, `key_stats`, the market table, a card's `meta`, a scenario's `label`, the offer plan's prices and their `why_*`, a credit offer's `price`) stop the run with a note saying where your judgment goes instead.
+**The report is an objective analysis of value.** The value narrative (`summary_page.headline` and `why`, `bottom_line.why`, `range_override.reason`, `history.takeaway`, `comps.lean`, `scatter.takeaway`, `market.bullets`, `subject.summary`) says what the comps, the history and the market show, never what to offer or how to negotiate: "offer", "open at", "negotiate", "leverage", "walk-away", "counteroffer", "lowball" stop compute.py, naming each field. Write "the market hasn't met asking so far", never "you have room to negotiate". The offer (its price, terms, a seller credit) is the buyer offer strategy's; `next_step` may point to it, and watch items and questions may name the offer.
+
+Fields the script now writes itself (a `paragraph`, an `intro`, `key_stats`, the market table, a card's `meta`, a scenario's `label`) stop the run with a note saying where your judgment goes instead, and so do the retired offer fields (`offer_plan`, `offer`, `costs.credit_scenarios`).
 
 ## Contents
 
-- Top level · subject · summary_page · bottom_line · range_override · history · offer_plan · offer · comps · scatter · competition · market · costs · watch
+- Top level · subject · summary_page · bottom_line · range_override · history · comps · scatter · competition · market · costs · watch
 
 ## Top Level
 
@@ -49,11 +51,11 @@ The agent's name, brokerage, license and contact come from the agent's profile (
 
 ## summary_page
 
-All judgment, figure-free: `label` (default "Buyer Summary"), `headline` (under about 25 words), `why` (exactly 3 reasons, under about 25 words each), `check_first` (exactly 3 `[heading, one line]`, heading in Title Case), `next_step`. Page 1's key numbers, the dot plot, the cost table and the payment tile are the script's.
+All judgment, figure-free: `label` (default "Buyer Summary"), `headline` (under about 25 words: where asking sits against what the sales support, and the one fact that explains it), `why` (exactly 3 reasons for the range, under about 25 words each), `check_first` (exactly 3 `[heading, one line]`, heading in Title Case: what to verify before deciding), `next_step` (usually the answers to get, then building the offer options from this analysis). Page 1's range, the median and asking line, where asking sits, the key numbers, the dot plot (the comps, the range, lines at asking and the median), the cost table and the payment tile are the script's.
 
 ## bottom_line
 
-`why`: judgment, 2–3 sentences on why the range sits where it does (which sales it leans on). The range is the script's, by the rule in `method.md`: never type `low` or `high` (compute.py stops on them). The script says where asking sits in the range and quotes the median adjusted comp.
+`why`: judgment, 2–3 sentences on why the range sits where it does (which sales it leans on). The range is the script's, by the rule in `method.md`: never type `low` or `high` (compute.py stops on them). The script says where asking sits in the range and quotes the median adjusted comp; when asking is above the range, it adds what an appraisal at the range's top would leave between the two (a fact about financing, never advice).
 
 ## range_override
 
@@ -80,14 +82,6 @@ Only when the agent chose the range themselves: `{low, high, reason}` (*numbers*
 
 A past sale from the public records is a `sold` event with no `mls`. compute.py prints `history` (`price_cuts`, `price_increases`, `price_cut_total`, `price_cut_pct`, `failed_contracts`, `last_contract_price`, `vs_last_contract`, `out_of_order`, `active_days`, `counted_since_sale`, and `display`, each formatted) and `history_section` (the report's heading, sentences and table). Every count starts after the last sale: an earlier owner's listing shows in the table but adds no days, cuts or contracts.
 
-## offer_plan
-
-`posture`: `leverage`, `standard`, `competitive` or `must_win` (left out: the suggested one, `offer-plan.md`); judgment: `posture_reason` (required when the posture isn't the suggested one), `conditions` (lowercase clause completing "This assumes: …"); optional `credit_alt` `{credit}` (the opening plus that credit; it must match a credit offer; the script says what it saves at closing); optional `plan_override` `{opening, target_low, target_high, walk_away, reason}` with only the steps the agent chose (plain numbers, low to high) and a judgment `reason`, shown as the agent's. The script sets the opening, target and walk-away from the posture and writes each step's reason; typed `opening`, `target_low`, `target_high`, `walk_away` or `why_*` fields stop compute.py, naming where they go. compute.py prints `offer_plan` with `posture`, `posture_suggested`, the four numbers, `target`, `basis` (what set each step) and `override` (the agent's steps).
-
-## offer
-
-Optional `heading` (default "Negotiating Points") and 2–4 `bullets`, each starting with a `<strong>` lead-in: judgment, figure-free.
-
 ## comps
 
 - `cards` (3–6): `address` (as the export spells the street), `sold_price` *number*, `seller_concessions` *number* (0 if none), `condition` (its level on the condition ladder, `condition-ladder.md`: `original`, `cosmetic`, `baths_only`, `kitchen_only`, `kitchen_and_baths`, `full_renovation` or `new`), `adjustments` (`[{label, amount}]`, Title Case labels, signed dollars: `{"label": "Pool", "amount": 25000}`; never a condition amount: the script adds the condition line from the levels, and stops on a typed one), optional `close_date` (`YYYY-MM-DD`, when the export doesn't have the sale), and 1–3 `bullets`: judgment, why the sale is a comp and what its adjustments are about, in words. The card's sale line (price, date, size, beds and baths, pool, lot, distance) comes from the export, and each adjustment prints with its amount, adding up to the adjusted value. compute.py computes each adjusted value (sale price − concessions + adjustments) and the summary table; never type `adjusted` or `summary_rows`. It warns when a comp's adjustments pass 15% net or 25% gross of its sale price.
@@ -108,7 +102,7 @@ Judgment `intro`; `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), day
 
 ## market
 
-`bullets` (3–5, each a `<strong>` finding plus what it means for the offer): judgment, figure-free. The script builds the market table (homes sold, median price, sale to original asking, days on market, seller-paid costs, before and since the split) and its counts (sales, listings, months of supply) from the export, leaving out the home's own rows.
+`bullets` (3–5, each a `<strong>` finding plus what it means for this home's value): judgment, figure-free, no offer advice. The script builds the market table (homes sold, median price, sale to original asking, days on market, seller-paid costs, before and since the split) and its counts (sales, listings, months of supply) from the export, leaving out the home's own rows.
 
 ## costs
 
@@ -116,8 +110,9 @@ Judgment `intro`; `rows`: `[address, status, price, sqft, pool ("Yes"/"No"), day
 - `buyer_cash`: optional *number*, what the buyer has for the down payment and closing. compute.py warns, and the report flags the figure, wherever cash to close is more than that.
 - `taxes`: `current_bill` and `current_year` (optional: leave out when there's no bill for the home), `purchase_price` (optional: the payment's price by default), `homestead`, `jurisdictions` (1–2 of `{label, short, district}` or `{label, short, school_mills, total_mills}`; `label` completes "Your Bill if the Home Is …" and `short` fills "If … Instead", both Title Case names; `short` is required with two). The script writes the heading, the current bill and the reassessment rule, the table, the escrow warning, and the notes (millage, assessed at the price, homestead filing, portability, an unconfirmed district).
 - `insurance`: `drivers`: judgment, the drivers for this house (roof age, wiring and plumbing era, wind mitigation, pool, flood zone), figure-free. The premium the payment uses is the script's note.
-- `payment`: `price` (optional: the offer plan's target by default), `rate` (percent), `rate_week` (optional `YYYY-MM-DD`: the Freddie Mac survey's week, named with the rate), `insurance_annual` (optional: a quote or the agent's figure; left out, compute.py estimates it, `costs.md`), `tax_jurisdiction_index` (optional), `scenarios` (`{type, down_pct, assumed}`: the script names each one, "Conventional, 5% Down"; `down_pct` a fraction; `assumed: true` when the buyer hasn't confirmed the financing, said once in the notes; the buyer's own program first), optional `hoa_cdd_monthly`, `flood_zone`, `flood_insurance_annual` (a quote; without one the Flood Insurance row reads "Get a Quote" and the total leaves it out), optional `note` (judgment, figure-free, added to the notes).
-- `credit_scenarios`: `loan_type`, `down_pct` (fraction), `closing_costs` or `closing_cost_pct` (fraction; the lender's figure, taxes included; without either, the shared estimate), `scenarios` (2–4 `{credit}`, each priced by the script at the opening plus its credit; left out, credits of 0, 5,000 and 10,000), judgment `takeaway` (the trade-off for this buyer), optional `buydown` `{credit}` (the offer with that credit; left out, the last one), optional `buyer_broker_agreement_pct` and `seller_pays_buyer_broker_pct` (fractions). See `offer-plan.md`.
+- `closing_costs` (the lender's estimate for the buyer's own financing, the first payment scenario, taxes included) or `closing_cost_pct` (a fraction of the price); without either, the shared estimate (`costs.md`). Optional `buyer_broker_agreement_pct` and `seller_pays_buyer_broker_pct` (fractions): a shortfall adds to cash to close.
+- `payment`: `price` (optional: the asking price by default; a price the agent asks for, like one they're weighing, is fine), `rate` (percent), `rate_week` (optional `YYYY-MM-DD`: the Freddie Mac survey's week, named with the rate), `insurance_annual` (optional: a quote or the agent's figure; left out, compute.py estimates it, `costs.md`), `tax_jurisdiction_index` (optional), `scenarios` (`{type, down_pct, assumed}`: the script names each one, "Conventional, 5% Down"; `down_pct` a fraction; `assumed: true` when the buyer hasn't confirmed the financing, said once in the notes; the buyer's own program first), optional `hoa_cdd_monthly`, `flood_zone`, `flood_insurance_annual` (a quote; without one the Flood Insurance row reads "Get a Quote" and the total leaves it out), optional `note` (judgment, figure-free, added to the notes).
+The payment table adds each column's total at the median adjusted value when that's lower than the payment's price, and page 1 shows the first column's. Price vs. seller credit is part of the offer, not the CMA: the notes state the loan program's limits on seller credits, a fact of the loan.
 
 Every cost table is a ledger: each line rounded once to the dollar, each total the sum of the printed lines. Every assumption and estimate behind them is said once, in the notes block at the end of the cost section.
 

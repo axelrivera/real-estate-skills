@@ -68,11 +68,12 @@ def flagged(value, flag):
 # --- page 1 -----------------------------------------------------------------------------------------------------------
 
 def dot_strip(C, notes_out=None):
-    """Page 1's comparable-sales chart, with its price-line labels checked (iteration 16: "Opening Offer" and "Asking"
-    drew on each other when the two prices were close): `notes_out["dot_labels"]` receives what dot_label_checks finds."""
-    sm, s, op, rng = C["summary"], C["subject"], C["offer_plan"], C["range"]
+    """Page 1's comparable-sales chart with lines at asking and at the median adjusted value, their labels checked
+    (iteration 16: two labels drew on each other when the two prices were close): `notes_out["dot_labels"]` receives
+    what dot_label_checks finds."""
+    sm, s, rng = C["summary"], C["subject"], C["range"]
     svg = cma.dotplot(sm["comps"], rng["low"], rng["high"], s["list_price"], sm["dot_asking"],
-                      (op["opening"], sm["dot_offer"]), kfmt=fmt.k)
+                      (C["median_shown"], sm["dot_median"]), kfmt=fmt.k)
     if notes_out is not None:
         notes_out["dot_labels"] = dot_label_checks(svg)
     return svg
@@ -103,17 +104,16 @@ def dot_label_checks(svg):
 
 
 def page_one(C, agent, notes_out=None):
-    sm, s, op, rng = C["summary"], C["subject"], C["offer_plan"], C["range"]
+    sm, s, rng = C["summary"], C["subject"], C["range"]
     o = ['<div class="onepage">',
          f'<header class="top"><div>{agent_block(agent)}</div><div class="prep">'
          f'{esc(sm["label"])}<br>{esc(L["prepared"])} {esc(C["prepared_date"])}</div></header>',
          cma.subject_heading({"address": s["address"], "locality": s["locality"],
                               "summary_facts": " · ".join(s["summary_facts"])}),
          '<div class="sp-hero"><div class="sp-rec">'
-         f'<div class="lbl">{esc(L["sum_opening"])}</div><div class="price">{esc(op["opening_display"])}</div>'
-         f'<div class="line">{esc(sm["ladder_line"])}</div>'
-         f'<div class="line">{esc(L["sum_range_line"])} <b>{esc(rng["display_k"])}</b> · {esc(L["sum_asking"])} '
-         f'<b>{esc(s["list_price_display"])}</b></div>'
+         f'<div class="lbl">{esc(L["sum_value"])}</div><div class="price">{esc(rng["display_k"])}</div>'
+         f'<div class="line">{esc(sm["value_line"])}</div>'
+         f'<div class="line">{esc(sm["position_line"])}</div>'
          f'<div class="line headline">{sm["headline"]}</div></div>'
          '<div class="sp-stats">' + "".join(layout.tiles([(lbl, v) for v, lbl in sm["tiles"][i:i + 2]], n=2, cls="sp-tiles")
                                             for i in (0, 2)) + "</div></div>",
@@ -122,9 +122,8 @@ def page_one(C, agent, notes_out=None):
     cost = layout.table([Col(0, L["sum_costs"]), Col(1, "", align="num")],
                         [[r[0], flagged(r[1], r[2])] for r in sm["cost_rows"]], keep="whole", cls="sp-table",
                         row_classes={1: "rec"})
-    fit = f'<div class="note fitline">{esc(sm["cash_fit_line"])}</div>' if sm["cash_fit_line"] else ""
     o.append(f'<div class="sp-cols"><div><div class="sp-h">{esc(L["sum_why"])}</div>{ul(sm["why"], "")}</div>'
-             f'<div>{cost}{fit}<div class="note">{esc(sm["cost_note"])}</div></div></div>')
+             f'<div>{cost}<div class="note">{esc(sm["cost_note"])}</div></div></div>')
     o.append(f'<div class="sp-h">{esc(L["sum_check"])}</div><div class="sp-steps">' +
              "".join(f'<div class="sp-step"><b>{h}</b>{d}</div>' for h, d in sm["check_first"]) + "</div>")
     o.append(f'<div class="sp-next"><span><b>{esc(L["sum_next"])}</b> {sm["next_step"]}</span></div>')
@@ -165,21 +164,6 @@ def history(C):
                         [[r[0], raw(r[1]), r[2]] for r in h["rows"]])]
     if h["takeaway"]:
         out.append(p(h["takeaway"]))
-    return out
-
-
-def offer_plan(C):
-    op, off = C["offer_plan"], C["offer"]
-    out = [f'<h3>{esc(L["h_offer_plan"])}</h3>', p(esc(op["intro"])),
-           p(f'<strong>{esc(op["posture_label"])}</strong> {op["posture_line"]}'),
-           layout.table([Col(0, L["th_step"], wrap="nowrap"), Col(1, L["th_amount"], align="num"), Col(2, L["th_why"])],
-                        [[r[0], r[1], raw(r[2])] for r in op["ladder"]], row_classes={0: "total"})]
-    if op["credit_alt"]:
-        out.append(p(esc(op["credit_alt"])))
-    if op["conditions"]:
-        out.append(p(f'<strong>{esc(L["line_conditions"])}</strong> {op["conditions"]}', "note"))
-    if off["bullets"]:
-        out += [f'<h3>{esc(off["heading"])}</h3>', ul(off["bullets"])]
     return out
 
 
@@ -273,7 +257,7 @@ def market(C):
 
 def costs(C):
     k = C["costs"]
-    tx, pm, cr = k["taxes"], k["payment"], k["credit"]
+    tx, pm = k["taxes"], k["payment"]
     out = [f'<h2>{esc(L["h_costs"])}</h2>', f'<h3>{esc(tx["heading"])}</h3>', p(esc(tx["intro"])),
            layout.table([Col(0, tx["header"]), Col(1, L["th_yearly"], align="num"), Col(2, L["th_monthly"], align="num")],
                         tx["rows"], row_classes={i: "tax-jump" for i in range(1, len(tx["rows"]))}),
@@ -283,25 +267,10 @@ def costs(C):
     n = len(pm["header"]) - 1
     rows = [list(r) for r in pm["rows"]]
     rows[pm["cash_row"]] = [rows[pm["cash_row"]][0]] + [flagged(v, f) for v, f in zip(rows[pm["cash_row"]][1:], pm["cash_flags"])]
-    classes = {pm["total_row"]: "total"}
-    if pm["alt_row"] is not None:
-        classes[pm["alt_row"]] = "alt"
+    classes = {pm["total_row"]: "total", **{i: "alt" for i in pm["alt_rows"]}}
     cols = [Col(0, pm["header"][0])] + [Col(i, pm["header"][i], align="num") for i in range(1, n + 1)]
     out += [f'<h3>{esc(L["h_payment"])}</h3>', p(esc(pm["intro"])),
             layout.table(cols, rows, row_classes=classes, caption=pm["per_10k"])]
-    if cr:
-        rows = [list(r) for r in cr["rows"]]
-        rows[1] = [rows[1][0]] + [Raw(esc(v) + (f' <span class="flag">({esc(f)})</span>' if f else "")) if f else v
-                                  for v, f in zip(rows[1][1:], cr["credit_flags"])]
-        rows[cr["cash_row"]] = [rows[cr["cash_row"]][0]] + [flagged(v, f) for v, f in zip(rows[cr["cash_row"]][1:], cr["cash_flags"])]
-        cols = [Col(0, cr["header"][0])] + [Col(i, cr["header"][i], align="num") for i in range(1, len(cr["header"]))]
-        out += [f'<h3>{esc(L["h_credit"])}</h3>', p(esc(cr["intro"])),
-                layout.table(cols, rows, row_classes={cr["cash_row"]: "total"})]  # runs on with its header repeated
-        after = " ".join(x for x in (esc(cr["per_5k"]), cr["takeaway"]) if x)
-        if after:
-            out.append(p(after))
-        if cr["buydown"]:
-            out.append(p(esc(cr["buydown"])))
     out.append(layout.notes_block(C["notes"], title=L["h_notes"], cls="cost-notes"))
     return out
 
@@ -328,7 +297,7 @@ def build_html(C, agent, sample=False, notes_out=None):
     notes_out = {} if notes_out is None else notes_out
     with open(os.path.join(ASSETS, "buyer-cma.css"), encoding="utf-8") as f:
         css = cma.css() + f.read()
-    body = (home(C) + bottom_line(C) + history(C) + offer_plan(C) + comps(C) + scatter(C, notes_out) + competition(C)
+    body = (home(C) + bottom_line(C) + history(C) + comps(C) + scatter(C, notes_out) + competition(C)
             + market(C) + costs(C) + watch(C))
     content = ('<div class="wrap">' + page_one(C, agent, notes_out) + '<div class="pb"></div>' + layout.group_blocks(body)
                + closing(C, agent) + "</div>")
@@ -357,7 +326,7 @@ def compute_model(data, ctx):
     """render.main's compute step: the document model, once per run."""
     C = compute.run(data, ctx.get("mls"), ctx.get("data_file"))
     if C.get("stage") != "full":
-        raise compute.ReportError("report.json has only the comps: add bottom_line, offer_plan and costs for the report.")
+        raise compute.ReportError("report.json has only the comps: add bottom_line and costs for the report.")
     return C
 
 

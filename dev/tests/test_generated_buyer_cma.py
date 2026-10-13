@@ -1,8 +1,11 @@
 """Buyer CMA on generated inputs (dev/generators/buyer_cma.py): universal properties of the document model and the
 printed report, for any valid input. Never a sentence, never a past case.
 
-  - money: every payment column's lines add up to its total and its cash to close, every credit column's cash lines
-    to its cash to close, every comp card's lines (sale price, seller-paid costs, adjustments) to its adjusted value;
+  - money: every payment column's lines add up to its total and its cash to close, every comp card's lines (sale
+    price, seller-paid costs, adjustments) to its adjusted value;
+  - value only: where asking sits matches the range and the median, the payment at the median shows only when it's
+    lower than the payment's price, and no offer (opening, walk-away, posture, credit table) is in the model, the page
+    or the handoff; the gut check says the same about asking as the report;
   - rules: time adjustments follow the method's rule (rate x quarters since the sale, to $100, none after the cutoff);
     a range set by the shared rule passes the shared range checks and stays within the cap;
   - notes: each note is said once (by key and by text) and printed once; no label carries a note;
@@ -102,8 +105,6 @@ class Model(unittest.TestCase):
                 pm = C["costs"]["payment"]
                 total = pm["rows"][pm["total_row"]]
                 self.assertEqual(total[1:], [fmt.money(r["total"]) for r in C["payments"]["rows"]])
-                for c in (C["credit"] or {}).get("columns", []):
-                    self.assertEqual(sum(a for _, _, a in c["cash_lines"]), c["cash"])
                 for card in C["comps"]["cards"]:
                     self.assertEqual(sum(dollars(v) for _, v in card["lines"]), card["adjusted"])
                     self.assertEqual(card["adjusted_display"], fmt.money(card["adjusted"]))
@@ -149,74 +150,36 @@ class Model(unittest.TestCase):
                         if levels.get(given["condition"], mine) != mine else []
                     self.assertEqual([v for a, v in card["lines"] if a.startswith("Condition: ")], lines)
 
-    def check_target(self, op):
-        """The target leaves room above the opening: at least a quarter of the way to the walk-away (the target range
-        too), so it's above the opening whenever the walk-away is $4,000 or more above it. An agent's own target range
-        is theirs."""
-        if op["override"] and {"target_low", "target_high"} & set(op["override"]):
-            return
-        floor = compute.target_floor(op["opening"], op["walk_away"])
-        self.assertGreaterEqual(op["target_low"], min(floor, op["target"]))
-        self.assertEqual(op["target"], min(max(op["target"], floor), op["walk_away"]))
-        if op["walk_away"] - op["opening"] >= 4000:
-            self.assertGreater(op["target"], op["opening"])
-
-    def test_offer_plan_by_rule(self):
-        """The posture's plan runs opening <= target_low <= target <= target_high <= walk-away, with the walk-away at or
-        under asking and the range's high (only the agent's override leaves them); the same input gives the same plan;
-        every credit offer is the opening plus its credit; a posture left out is the suggested one; the handoff carries
-        the posture and the plan's numbers."""
+    def test_value_only(self):
+        """Where asking sits is the range's and the median's; the payment at the median shows only when that's lower
+        than the payment's price; nothing in the model, the page or the handoff is an offer."""
         for seed, R, C in cases():
-            op = C["offer_plan"]
             with self.subTest(seed=seed):
-                steps = [op[k] for k in ("opening", "target_low", "target", "target_high", "walk_away")]
-                self.assertEqual(steps, sorted(steps))
-                self.check_target(op)
-                if not op["override"]:
-                    self.assertLessEqual(op["walk_away"], min(R["subject"]["list_price"], C["range"]["high"]))
-                self.assertEqual(set(op["override"]), set((R["offer_plan"].get("plan_override") or {})) - {"reason"})
-                if not R["offer_plan"].get("posture"):
-                    self.assertEqual(op["posture"], op["posture_suggested"])
-                again = compute.run(R)["offer_plan"]
-                self.assertEqual([again[k] for k in compute.PLAN_KEYS + ("target", "posture")],
-                                 [op[k] for k in compute.PLAN_KEYS + ("target", "posture")])
-                for col in (C["credit"] or {}).get("columns", []):
-                    self.assertEqual(col["price"] - col["credit"], op["opening"])
-                self.assertEqual(C["handoff"]["posture"], op["posture"])
-                self.assertEqual(C["handoff"]["offer_plan"], {k: op[k] for k in compute.PLAN_KEYS})
-
-    def test_every_posture_renders(self):
-        """Each of the four postures computes and renders for every input, its ladder in order, with each step's reason
-        from labels.json."""
-        for seed, R, _ in cases():
-            for posture in cma.POSTURES:
-                with self.subTest(seed=seed, posture=posture):
-                    R2 = copy.deepcopy(R)
-                    R2["offer_plan"].update(posture=posture, posture_reason="The buyer's own situation sets the plan.")
-                    C = compute.run(R2)
-                    op = C["offer_plan"]
-                    self.assertEqual(op["posture"], posture)
-                    steps = [op[k] for k in ("opening", "target_low", "target", "target_high", "walk_away")]
-                    self.assertEqual(steps, sorted(steps))
-                    self.check_target(op)
-                    self.assertTrue(all(row[2] for row in op["ladder"]))
-                    self.assertIn(op["opening_display"], render.build_html(C, {}))
+                ask, rng, med = R["subject"]["list_price"], C["range"], C["median_shown"]
+                self.assertEqual(C["asking_position"], compute.asking_position(ask, rng["low"], rng["high"], med))
+                self.assertEqual(bool(compute.appraisal_line(ask, rng["high"])), ask > rng["high"])
+                pay = C["payments"]
+                self.assertEqual(pay["at_median"] is not None, med < pay["price"])
+                if pay["at_median"]:
+                    self.assertTrue(all(m <= r["total"] for m, r in zip(pay["at_median"]["totals"], pay["rows"])))
+                self.assertFalse({"offer_plan", "offer", "credit", "credit_alt", "cash_fit"} & set(C))
+                self.assertIsNone(C["handoff"]["offer_plan"])
+                doc = render.build_html(C, {})
+                for gone in ("Opening Offer", "Walk Away", "Negotiating Points", "Price vs. Seller Credit"):
+                    self.assertNotIn(gone, doc)
 
     def test_gut_check_agrees_with_the_report(self):
-        """The gut check's rough plan is the full report's plan with the suggested posture, on the same comps."""
-        for seed, R, _ in cases():
+        """The gut check's rough range is the adjusted comps' span, and it says the same about asking as the report."""
+        for seed, R, C in cases():
             with self.subTest(seed=seed):
                 G = {k: copy.deepcopy(R[k]) for k in ("subject", "split_date", "as_of", "export", "mls", "history",
                                                       "range_override") if k in R}
                 G["comps"] = {k: copy.deepcopy(v) for k, v in R["comps"].items()
                               if k in ("cards", "time_adjustment", "condition_values")}
-                rough = compute.run(G)["rough"]
-                R2 = copy.deepcopy(R)
-                for k in ("posture", "posture_reason", "plan_override"):
-                    R2["offer_plan"].pop(k, None)
-                op = compute.run(R2)["offer_plan"]
-                self.assertEqual([rough[k] for k in ("posture", "opening", "target", "walk_away")],
-                                 [op[k] for k in ("posture", "opening", "target", "walk_away")])
+                out = compute.run(G)
+                self.assertEqual(out["asking_position"], C["asking_position"])
+                self.assertLessEqual(out["rough"]["range"]["low"], C["adjusted_min"])
+                self.assertGreaterEqual(out["rough"]["range"]["high"], C["adjusted_max"])
 
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, _, C in cases():
@@ -286,7 +249,7 @@ class Printed(unittest.TestCase):
                           and not (chart and pages[i + 1][1] == chart)]
                 self.assertEqual(middle, [], err.getvalue())
                 text = squash(subprocess.run(["pdftotext", path, "-"], capture_output=True, text=True).stdout)
-                self.assertIn(C["offer_plan"]["opening_display"], text)
+                self.assertIn(C["range"]["display_k"], text)
 
 
 if __name__ == "__main__":

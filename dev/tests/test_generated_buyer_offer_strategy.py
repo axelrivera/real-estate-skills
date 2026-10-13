@@ -5,7 +5,8 @@ document model and the printed pages, for any valid input. Never a sentence, nev
     every cash column's lines add up to cash to close, plus the gap to the worst case, and the reserve is the buyer's
     cash less the worst case;
   - limits: the recommended offer is inside every buyer limit (max price, payment, reserve floor, the program's
-    concession cap) unless the model says it breaks one, and then it names one;
+    concession cap) unless the model says it breaks one, and then it names one; no option (nor an escalation cap)
+    goes past the walk-away, the top of the value range, unless the buyer agrees to cover an appraisal gap;
   - scores read facts only: each option's strength total is the scaled sum of its scored rows, and every option is
     scored over the same criteria (the scorecard's one total weight);
   - the worksheet is offer terms only: changing the buyer's max, cash, reserve and payment limit leaves it unchanged;
@@ -139,6 +140,12 @@ class Model(unittest.TestCase):
                 for k, t2 in r["terms"].items():  # never an alternative past the max price or the payment limit
                     if k != "recommended" and not r["overrides"]:
                         self.assertLessEqual(t2["price"], max(BU["max_price"], t["price"]), k)
+                walk = strategy.walk_away(B)
+                self.assertEqual(walk is None, bool(B["value"].get("assumed") or BU.get("cover_appraisal_gap")))
+                if walk and not r["overrides"]:  # the walk-away holds every option and escalation cap
+                    for k, t2 in r["terms"].items():
+                        self.assertLessEqual(t2["price"], walk, k)
+                        self.assertLessEqual((t2.get("escalation") or {}).get("cap", 0), walk, k)
 
     def test_every_priority_picks_by_its_rule(self):
         """Every buyer_priority on every input, rendered: the same inputs give the same offer; win never recommends
@@ -224,7 +231,8 @@ class Model(unittest.TestCase):
             self.assertEqual(data, before, seed)
 
     def test_reads_the_buyer_cmas_own_handoff(self):
-        """The handoff buyer-cma writes is the offer's value range, plan and market (two generated CMAs)."""
+        """The handoff buyer-cma writes is the offer's value range and market, never an offer plan (two generated
+        CMAs); the walk-away is the range's top."""
         from generators import buyer_cma as cma_gen
         (cma_compute,) = load("buyer-cma", "compute")
         for seed in range(SEED, SEED + 2):
@@ -239,8 +247,9 @@ class Model(unittest.TestCase):
                 self.assertFalse(V.get("assumed"))
                 M = strategy.result(r)
                 self.assertEqual(M["value_range"], fmt.range(h["value"]["low"], h["value"]["high"]))
-                if (h.get("offer_plan") or {}).get("walk_away"):
-                    self.assertEqual(r["B"]["cma_offer_plan"]["walk_away"], h["offer_plan"]["walk_away"])
+                self.assertIsNone(h["offer_plan"])
+                if not r["B"]["buyer"].get("cover_appraisal_gap"):
+                    self.assertEqual(strategy.walk_away(r["B"]), h["value"]["high"])
 
 
 @unittest.skipUnless(PRINTS, "needs Chromium and pdftotext")

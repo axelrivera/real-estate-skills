@@ -68,22 +68,13 @@ def with_events(events, locality_mls="O6433709"):
     return change
 
 
-def fha_buyer(cash, credit_alt=False):
-    """FHA 3.5% as the buyer's own program, the agent's $464,000 opening (plan_override) and the payment at it, no lender
-    closing figure; credit offers at the opening and $5,000 over; with `credit_alt`, a $10,000 credit ($474,000) in the
-    table and the plan."""
+def fha_buyer(cash):
+    """FHA 3.5% as the buyer's own program and the payment at $464,000, no lender closing figure."""
     def change(R):
         R["costs"]["buyer_cash"] = cash
-        R["offer_plan"]["plan_override"] = {"opening": 464000, "reason": "The agent opens closer to asking."}
         R["costs"]["payment"]["price"] = 464000
         R["costs"]["payment"]["scenarios"] = [{"type": "fha", "down_pct": 0.035}, {"type": "conventional", "down_pct": 0.03}]
-        cs = R["costs"]["credit_scenarios"]
-        cs.update(loan_type="fha", down_pct=0.035, scenarios=[{"credit": 0}, {"credit": 5000}])
-        cs.pop("closing_cost_pct")
-        cs.pop("buydown")
-        if credit_alt:
-            cs["scenarios"].append({"credit": 10000})
-            R["offer_plan"]["credit_alt"] = {"credit": 10000}
+        R["costs"].pop("closing_cost_pct")
     return change
 
 
@@ -151,8 +142,8 @@ def cli(R, *args, export_beside=False):
 class Inputs(unittest.TestCase):
     def test_input_errors(self):
         """Formatted numbers, no comps, a scenario without down_pct, rates as the wrong unit, a bad tax index, a
-        missing field, an unknown posture, a posture other than the suggested one without a reason, an override without
-        a reason or above the walk-away, typed plan prices and an unknown history change are plain errors."""
+        missing field, an offer plan, negotiating points or price-vs-credit offers (the offer strategy's, not the CMA's)
+        and an unknown history change are plain errors."""
         changes = (lambda R: R["competition"]["rows"][0].__setitem__(2, "$474,500"),
                    lambda R: R["comps"].__setitem__("cards", []),
                    lambda R: R["costs"]["payment"]["scenarios"][0].pop("down_pct"),
@@ -165,15 +156,9 @@ class Inputs(unittest.TestCase):
                    lambda R: R["comps"]["cards"][0].pop("condition"),
                    lambda R: R["comps"]["cards"][0]["adjustments"].append({"label": "Updated Kitchen", "amount": 15000}),
                    lambda R: R["subject"].__setitem__("condition", "renovated"),
-                   lambda R: R["offer_plan"].__setitem__("posture", "aggressive"),
-                   lambda R: R["offer_plan"].__setitem__("posture", "must_win"),  # never suggested: needs a reason
-                   lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": 450000}),
-                   lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": 600000, "reason": "Our call."}),
-                   lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": "$450,000", "reason": "Our call."}),
-                   lambda R: R["offer_plan"].__setitem__("opening", 450000),  # the script sets the plan
-                   lambda R: R["offer_plan"].__setitem__("why_target", "Where homes settle."),
-                   lambda R: R["costs"]["credit_scenarios"]["scenarios"][0].__setitem__("price", 449000),
-                   lambda R: R["costs"]["credit_scenarios"]["scenarios"][0].__setitem__("credit", "none"),
+                   lambda R: R.__setitem__("offer_plan", {"posture": "leverage"}),
+                   lambda R: R.__setitem__("offer", {"bullets": ["Room to move on price."]}),
+                   lambda R: R["costs"].__setitem__("credit_scenarios", {"scenarios": [{"credit": 5000}]}),
                    with_events([{"date": "2026-01-16", "change": "relisted?"}]))
         for i, change in enumerate(changes):
             with self.subTest(i), self.assertRaises(compute.ReportError):
@@ -183,15 +168,38 @@ class Inputs(unittest.TestCase):
         """A figure typed into a judgment field, or a field the script now writes, stops the run naming each one."""
         def typed(R):
             R["summary_page"]["why"][0] = "The comps center on about $469,800."
-            R["offer"]["bullets"][0] += " Cut four times since January."
+            R["history"]["takeaway"] += " Cut four times since January."
             R["bottom_line"]["paragraph"] = "Asking sits inside the range."
             R["comps"]["cards"][0]["meta"] = "Sold $505,500"
         with self.assertRaises(compute.ReportError) as e:
             run(typed)
         msg = str(e.exception)
-        for path in ("summary_page.why[0]", "offer.bullets[0]", "bottom_line.paragraph", "comps.cards[0].meta"):
+        for path in ("summary_page.why[0]", "history.takeaway", "bottom_line.paragraph", "comps.cards[0].meta"):
             self.assertIn(path, msg)
         self.assertEqual(compute.schema_errors(report()), [])
+
+    def test_value_narrative_carries_no_offer_advice(self):
+        """The report is an objective analysis of value: offer advice in the value narrative (the headline, the reasons,
+        the range, the history, the market) stops the run naming each field; watch items and questions may name the
+        offer, and the next step may point to it."""
+        def advice(R):
+            R["summary_page"]["headline"] = "Open at the bottom of the range: you have leverage."
+            R["summary_page"]["why"][2] = "Repeated cuts give you room to negotiate."
+            R["market"]["bullets"][0] = "Sellers expect a counteroffer."
+            R["bottom_line"]["why"] = "A lowball offer could work here."
+        with self.assertRaises(compute.ReportError) as e:
+            run(advice)
+        msg = str(e.exception)
+        for path in ("summary_page.headline", "summary_page.why[2]", "market.bullets[0]", "bottom_line.why"):
+            self.assertIn(path, msg)
+        for word in ("Open at", "leverage", "negotiate", "counteroffer", "lowball"):
+            self.assertIn(repr(word), msg)
+
+        def elsewhere(R):
+            R["summary_page"]["next_step"] = "Then build the offer options from this analysis."
+            R["watch"]["items"].append("<strong>As-Is.</strong> If the offer is written on the As-Is contract, ask why.")
+            R["subject"]["summary"] = "The home offers a pool and a new roof; the countertops are stone."
+        run(elsewhere)  # no error
 
     def test_compute_never_changes_its_input(self):
         R = report()
@@ -220,94 +228,45 @@ class Inputs(unittest.TestCase):
         self.assertFalse([k for k in out if k.startswith("_")])
 
 
-class OfferPlan(unittest.TestCase):
-    """The model picks a posture; the script suggests one from the data and sets the numbers by rule."""
+class AskingPosition(unittest.TestCase):
+    """Where asking sits against the range and the median, and the appraisal fact when it's above the range: facts,
+    never a suggested price."""
 
-    def test_suggested_posture(self):
-        """leverage: a failed contract, 2+ cuts, or days on market at least twice the market's median; competitive: 14
-        days or fewer in under 3 months of supply; else standard. A missing signal never fires; must_win never."""
-        cases = [({"failed_contracts": 1}, {}, "leverage"),
-                 ({"price_cuts": 2}, {}, "leverage"),
-                 ({"price_cuts": 1, "active_days": 40}, {"median_days_recent": 20}, "leverage"),
-                 ({"price_cuts": 1, "active_days": 39}, {"median_days_recent": 20}, "standard"),
-                 ({"active_days": 14}, {"months_supply": 2.9}, "competitive"),
-                 ({"active_days": 15}, {"months_supply": 2.9}, "standard"),
-                 ({"active_days": 14}, {"months_supply": 3.0}, "standard"),
-                 ({"active_days": 10}, {}, "standard"),
-                 ({"active_days": 10, "failed_contracts": 1}, {"months_supply": 1.5}, "leverage"),
-                 (None, {"months_supply": 1.5, "median_days_recent": 5}, "standard"),
-                 (None, None, "standard")]
-        for hist, stats, want in cases:
-            with self.subTest(hist=hist, stats=stats):
-                self.assertEqual(cma.suggest_posture(hist, stats), want)
+    def test_position_lines(self):
+        cases = [(490000, "sum_pos_above", 10000), (450000, "sum_pos_below", 5000), (474900, "sum_pos_over_median", 5100),
+                 (465000, "sum_pos_under_median", 4800), (469800, "sum_pos_at_median", 0)]
+        for ask, key, amt in cases:
+            with self.subTest(ask=ask):
+                p = compute.asking_position(ask, 455000, 480000, 469800)
+                self.assertEqual((p["key"], p["amount"]), (key, amt))
+                self.assertEqual(p["line"], compute.t(key, amt=fmt.money(amt)))
 
-    def test_plan_for_each_posture(self):
-        """Range $455,000 to $480,000, median $469,800, width $25,000, asking $474,900, sale-to-list 97%."""
-        args = (455000, 480000, 469800, 474900, 25000)
-        # (opening, target_low, target, target_high, walk-away, the target's basis): the ratio's $461,000, never under a
-        # quarter of the way from the opening to the walk-away (competitive: $470,000), never above the walk-away
-        want = {"leverage": (449000, 458500, 461000, 463500, 470000, "ratio"),
-                "standard": (455000, 459000, 461000, 463500, 470000, "ratio"),
-                "competitive": (468000, 470000, 470000, 472500, 474900, "floor"),
-                "must_win": (474900, 474900, 474900, 474900, 474900, "floor")}
-        for posture, steps in want.items():
-            with self.subTest(posture):
-                p = compute.offer_plan_for(posture, *args, 0.97)
-                self.assertEqual(tuple(p[k] for k in ("opening", "target_low", "target", "target_high", "walk_away"))
-                                 + (p["basis"]["target"],), steps)
-        p = compute.offer_plan_for("standard", *args)  # no ratio: the midpoint
-        self.assertEqual((p["target"], p["basis"]["target"]), (fmt.half_up((455000 + 470000) / 2, 1000), "midpoint"))
-        p = compute.offer_plan_for("must_win", 455000, 470000, 462000, 474900, 25000)  # asking above the range
-        self.assertEqual((p["opening"], p["walk_away"], p["basis"]["opening"]), (470000, 470000, "high"))
-        p = compute.offer_plan_for("standard", 455000, 480000, 469800, 450000, 25000)  # asking under the range
-        self.assertEqual((p["opening"], p["walk_away"]), (450000, 450000))
-        self.assertEqual(p["basis"]["walk_away"], "asking")
+    def test_appraisal_fact_only_above_the_range(self):
+        self.assertEqual(compute.appraisal_line(474900, 480000), "")
+        line = compute.appraisal_line(495000, 480000)
+        self.assertIn("$15,000", line)
+        self.assertIn("$480,000", line)
+        _, C, _ = run(lambda R: R.__setitem__("range_override", {"low": 445000, "high": 465000, "reason": "The agent's call."}))
+        self.assertIn(compute.appraisal_line(474900, 465000), C["bottom_line"]["line"])
+        self.assertEqual(C["asking_position"]["key"], "sum_pos_above")
+        self.assertEqual(C["summary"]["position_line"], C["asking_position"]["line"])
+        _, C, _ = run()
+        self.assertNotIn(compute.appraisal_line(474900, 465000), C["bottom_line"]["line"])
 
-    def test_target_floor(self):
-        """The target is never under the opening plus a quarter of the gap to the walk-away ($1,000, half up), never
-        above the walk-away; it follows the ratio when that's higher."""
-        for opening, walk, ratio_target, want in ((450000, 470000, 440000, 455000), (450000, 470000, 462000, 462000),
-                                                  (452600, 456600, 400000, 454000), (452400, 452500, 400000, 452400),
-                                                  (469900, 469900, 500000, 469900)):
-            with self.subTest(opening=opening, walk=walk):
-                target, lo, hi, _ = compute.plan_target(opening, walk, 500000, ratio_target / 500000)
-                self.assertEqual(target, want)
-                self.assertTrue(opening <= lo <= target <= hi <= walk)
-                self.assertGreaterEqual(lo, min(compute.target_floor(opening, walk), target))
-                if walk - opening >= 4000:
-                    self.assertGreater(target, opening)
-
-    def test_posture_and_override_in_the_report(self):
-        """The posture left out is the suggested one; another needs a reason and is kept; the agent's steps replace the
-        posture's, the target is re-set between the agent's ends and the override shows as theirs."""
-        _, C, _ = run(lambda R: R["offer_plan"].pop("posture"))
-        self.assertEqual(C["offer_plan"]["posture"], C["offer_plan"]["posture_suggested"])
-        _, C, _ = run(lambda R: R["offer_plan"].update(posture="competitive", posture_reason="The buyer can't lose it."))
-        op = C["offer_plan"]
-        self.assertEqual((op["posture"], op["posture_suggested"]), ("competitive", "leverage"))
-        self.assertEqual(op["opening"], fmt.half_up((C["range"]["low"] + C["range"]["high"]) / 2, 1000))
-        _, C, _ = run(lambda R: R["offer_plan"].__setitem__("plan_override", {"opening": 460000, "reason": "Our call."}))
-        op = C["offer_plan"]
-        self.assertEqual((op["opening"], op["override"], op["basis"]["opening"]), (460000, ["opening"], "override"))
-        self.assertTrue(op["opening"] <= op["target_low"] <= op["target"] <= op["target_high"] <= op["walk_away"])
-        self.assertEqual(C["credit"]["columns"][0]["price"], 460000)  # the credit offers follow the plan's opening
+    def test_no_offer_in_the_model_or_the_handoff(self):
+        """No opening, target, walk-away, posture or credit table anywhere: page 1 leads with the range."""
+        _, C, _ = run()
+        for key in ("offer_plan", "offer", "credit", "credit_alt", "cash_fit"):
+            self.assertNotIn(key, C)
+        self.assertIsNone(C["handoff"]["offer_plan"])
+        self.assertNotIn("posture", C["handoff"])
+        doc = html(C)
+        self.assertIn(compute.L["sum_value"], doc)
+        for gone in ("Opening Offer", "Walk Away", "Negotiating Points", "Price vs. Seller Credit", "Offer Posture"):
+            self.assertNotIn(gone, doc)
 
 
 class Warnings(unittest.TestCase):
-    def test_credit_warnings(self):
-        self.assertEqual(warnings(lambda R: R["costs"]["credit_scenarios"]["scenarios"].append(
-            {"credit": 25000})), ["credit_over_cap"])
-
-        def plan(R):  # above the range only by the agent's override
-            R["offer_plan"]["plan_override"] = {"walk_away": 490000, "reason": "The buyer accepts appraisal-gap risk."}
-            R["offer_plan"]["credit_alt"] = {"credit": 7000}
-        _, C, _ = run(plan)
-        self.assertIn("walk_away_above_range", C["warning_keys"])
-        self.assertIn("credit_alt_mismatch", C["warning_keys"])
-        self.assertIsNone(C["credit_alt"])
-        self.assertIsNone(C["offer_plan"]["credit_alt"])
-        self.assertEqual(len(C["warnings"]), len(C["warning_keys"]))
-
     def test_thin_comps_and_an_outlier(self):
         self.assertIn("thin_comps", warnings(lambda R: R["comps"].__setitem__("cards", R["comps"]["cards"][:2])))
         R, C, _ = run(lambda R: R["comps"]["cards"][0]["adjustments"].append({"label": "Test", "amount": 80000}))
@@ -367,8 +326,7 @@ class Handoff(unittest.TestCase):
                          (C["history"]["active_days"], C["history"]["price_cuts"]))
         self.assertEqual(h["value"]["midpoint"], C["range"]["midpoint"])
         self.assertEqual(h["subject"]["insurance_annual"], C["payments"]["insurance_annual"])
-        self.assertEqual(h["offer_plan"], {k: C["offer_plan"][k] for k in compute.PLAN_KEYS})  # the numbers' shape
-        self.assertEqual(h["posture"], C["offer_plan"]["posture"])
+        self.assertIsNone(h["offer_plan"])  # value only: the offer is the buyer offer strategy's
         self.assertEqual(h["market"]["months_supply"], C["market_stats"]["months_supply"])
         bad = copy.deepcopy(h)
         bad["subject"]["price_cuts"] = "two"
@@ -377,7 +335,7 @@ class Handoff(unittest.TestCase):
 
 
 class CompsFirst(unittest.TestCase):
-    """Before the range exists: the median from the comps alone, and a rough plan from it."""
+    """Before the range exists: the median from the comps alone, and a rough range from it."""
 
     def test_median_from_comps_alone(self):
         full = report()
@@ -390,7 +348,7 @@ class CompsFirst(unittest.TestCase):
         self.assertEqual(out["asking_vs_median"], full["subject"]["list_price"] - C["median_adjusted"])
         self.assertEqual(written, ["report.json"])  # no handoff without a range
 
-    def test_rough_plan(self):
+    def test_rough_range(self):
         def comps_only(**subject):
             full = report()
             R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of", "split_date")}
@@ -401,19 +359,12 @@ class CompsFirst(unittest.TestCase):
         rough = out["rough"]
         self.assertEqual((rough["range"]["low"], rough["range"]["high"]),
                          (out["adjusted_min"] // 1000 * 1000, -(-out["adjusted_max"] // 1000) * 1000))
+        self.assertEqual(set(rough), {"range", "typical_width"})  # no opening, target or walk-away
         self.assertEqual(out["history"]["price_cuts"], 4)  # the gut check counts the history too
         self.assertEqual(out["warning_keys"], [])
-        # the quick answer and the full report agree: the full report with the suggested posture has the same plan
-        def suggested(R):
-            R["offer_plan"].pop("posture")
-        _, C, _ = run(suggested)
-        self.assertEqual(rough["posture"], C["offer_plan"]["posture_suggested"])
-        self.assertEqual([rough[k] for k in ("opening", "target", "walk_away")],
-                         [C["offer_plan"][k] for k in ("opening", "target", "walk_away")])
-        rough = comps_only(list_price=440000)["rough"]  # never above asking
-        self.assertEqual(rough["walk_away"], 440000)
-        self.assertTrue(rough["capped_at_asking"])
-        self.assertLessEqual(rough["opening"], rough["target"])
+        _, C, _ = run()  # the quick answer and the full report say the same about asking
+        self.assertEqual(out["asking_position"], C["asking_position"])
+        self.assertEqual(comps_only(list_price=440000)["asking_position"]["key"], "sum_pos_below")
 
 
 class Stats(unittest.TestCase):
@@ -467,7 +418,7 @@ class History(unittest.TestCase):
         fixed[4] = {**fixed[4], "date": "2026-01-20"}  # a row whose removal alone restores the order is named alone
         _, C, _ = run(with_events(fixed))
         self.assertEqual(C["history"]["out_of_order"], [[4]])
-        _, C, _ = run(lambda R: (R.pop("history"), R["offer_plan"].pop("posture")))
+        _, C, _ = run(lambda R: R.pop("history"))
         self.assertIsNone(C["history"])
         self.assertIsNone(C["history_section"])
 
@@ -584,40 +535,50 @@ class Taxes(unittest.TestCase):
 
 
 class Payments(unittest.TestCase):
-    def test_target_by_default(self):
+    def test_asking_by_default_and_the_median_row(self):
+        """Without a price the payment and the tax are figured at asking; each column also shows its total at the
+        median adjusted value when that's lower, a fact beside asking (page 1 has the first column's)."""
         def change(R):
             R["costs"]["payment"].pop("price")
             R["costs"]["taxes"].pop("purchase_price")
         R, C, _ = run(change)
-        self.assertEqual(C["payments"]["price"], C["offer_plan"]["target"])
-        self.assertEqual(C["payments"]["price_basis"], "target")
-        self.assertIn(C["payments"]["price_display"], C["costs"]["taxes"]["header"])  # page 1's tax and payment agree
+        pay = C["payments"]
+        self.assertEqual((pay["price"], pay["price_basis"]), (R["subject"]["list_price"], "asking"))
+        self.assertIn(pay["price_display"], C["costs"]["taxes"]["header"])  # page 1's tax and payment agree
+        self.assertEqual(pay["at_median"]["price"], C["median_shown"])
+        self.assertTrue(all(m < r["total"] for m, r in zip(pay["at_median"]["totals"], pay["rows"])))
+        median_row = C["costs"]["payment"]["rows"][C["costs"]["payment"]["total_row"] + 1]
+        self.assertEqual(median_row[1:], [fmt.money(v) for v in pay["at_median"]["totals"]])
+        self.assertIn(fmt.money(pay["at_median"]["totals"][0]) + compute.L["per_month"],
+                      [r[1] for r in C["summary"]["cost_rows"]])
+        def under(R):  # asking under the median: no row
+            change(R)
+            R["subject"]["list_price"] = 460000
+        _, C, _ = run(under)
+        self.assertIsNone(C["payments"]["at_median"])
 
     def test_cash_checks(self):
-        """Over the buyer's cash: cash_short per credit column and own program; within 5%: cash_tight; a comparison
-        scenario over the cash: scenario_over_cash (flagged, not warned as short)."""
+        """Over the buyer's cash: cash_short for the buyer's own program; within 5%: cash_tight; a comparison scenario
+        over the cash: scenario_over_cash (flagged, not warned as short)."""
         _, C, _ = run(lambda R: R["costs"].__setitem__("buyer_cash", 30000))
-        short = [c for c in C["credit"]["columns"] if c["cash"] > 30000]
-        self.assertTrue(short)
-        self.assertTrue(all(c["cash_short"] == c["cash"] - 30000 for c in short))
         rows = C["payments"]["rows"]
-        self.assertTrue(rows[2]["cash_short"])
-        self.assertEqual(C["warning_keys"].count("cash_short"), len(short) + bool(rows[0]["cash_short"]))
-        need = run()[1]["credit"]["columns"][0]["cash"]
+        self.assertEqual(rows[0]["cash_short"], rows[0]["cash_to_close"] - 30000)
+        self.assertEqual(C["warning_keys"].count("cash_short"), 1)
+        self.assertEqual(C["warning_keys"].count("scenario_over_cash"), sum(bool(r["cash_short"]) for r in rows[1:]))
+        need = run()[1]["payments"]["rows"][0]["cash_to_close"]
         _, C, _ = run(lambda R: R["costs"].__setitem__("buyer_cash", need + 500))
-        self.assertEqual(C["credit"]["columns"][0]["cash_left"], 500)
+        self.assertEqual(C["payments"]["rows"][0]["cash_left"], 500)
         self.assertIn("cash_tight", C["warning_keys"])
         self.assertEqual(C["warning_keys"].count("scenario_over_cash"), 1)  # Conventional, 20% Down
         self.assertFalse({"cash_short", "cash_tight", "scenario_over_cash"}
                          & set(warnings(lambda R: R["costs"].__setitem__("buyer_cash", 200000))))
 
     def test_fha_cash_to_close(self):
-        """The payment table's cash to close (down payment plus closing costs, the credit table's basis) is checked
-        against the buyer's cash, not just the down payment, for the buyer's program and the comparisons."""
+        """The payment table's cash to close (down payment plus closing costs) is checked against the buyer's cash, not
+        just the down payment, for the buyer's program and the comparisons."""
         _, C, _ = run(fha_buyer(30000))
-        first, col = C["payments"]["rows"][0], C["credit"]["columns"][0]
+        first = C["payments"]["rows"][0]
         self.assertEqual(first["cash_to_close"], first["cash_down"] + first["closing_costs"])
-        self.assertEqual(first["cash_to_close"], col["cash"])  # same price, no credit: the same ledger
         self.assertIsNone(first["down_short"])  # the down payment alone fits
         self.assertEqual(first["cash_short"], first["cash_to_close"] - 30000)
         need = first["cash_to_close"]
@@ -635,16 +596,13 @@ class Payments(unittest.TestCase):
         self.assertEqual(C["warning_keys"].count("scenario_over_cash"), 1)
         self.assertNotIn("scenario_over_cash", warnings(fha_buyer(34000)))  # Conventional 3% fits
 
-    def test_cash_short_names_the_fitting_credit_option(self):
-        _, C, _ = run(fha_buyer(30000, credit_alt=True))
-        self.assertIn("cash_short", C["warning_keys"])
-        self.assertEqual((C["cash_fit"]["price"], C["cash_fit"]["credit"]), (474000, 10000))
-        self.assertLessEqual(C["cash_fit"]["cash"], 30000)
-        self.assertTrue(C["summary"]["cash_fit_line"])
-        _, C, _ = run(fha_buyer(5000, credit_alt=True))  # nothing fits
-        self.assertIsNone(C["cash_fit"])
-        self.assertEqual(C["summary"]["cash_fit_line"], "")
-        self.assertIn("cash_short", C["warning_keys"])
+    def test_cash_short_leaves_the_fix_to_the_offer(self):
+        """Short of cash, the report says so and leaves a price or seller concessions that fit to the offer: no credit
+        option, no fitting price."""
+        _, C, _ = run(fha_buyer(30000))
+        text = C["warnings"][C["warning_keys"].index("cash_short")]
+        self.assertIn("offer", text)
+        self.assertNotIn("cash_fit_line", C["summary"])
 
     def test_scenario_labels_and_assumed_financing(self):
         """Each scenario is named from its type and down payment; assumed financing is a note, said once, never a label."""
@@ -674,35 +632,30 @@ class Payments(unittest.TestCase):
 
     def test_loan_taxes_without_a_lender_figure(self):
         """Florida's 2.5% plus 0.5% prepaids, plus note stamps and intangible tax on the loan."""
-        _, C, _ = run(lambda R: R["costs"]["credit_scenarios"].pop("closing_cost_pct"))
-        col = C["credit"]["columns"][0]
-        loan = compute.finance.loan_amount(col["price"], "conventional", C["credit"]["down_pct"])
-        self.assertEqual(col["loan_taxes"], compute.fmt.half_up(loan * 0.0035) + compute.fmt.half_up(loan * 0.002))
-        self.assertEqual(col["closing_costs"], compute.fmt.half_up(col["price"] * 0.03 + col["loan_taxes"]))
+        _, C, _ = run(lambda R: R["costs"].pop("closing_cost_pct"))
+        row, price = C["payments"]["rows"][0], C["payments"]["price"]
+        loan = compute.finance.loan_amount(price, "conventional", row["down_pct"])
+        loan_taxes = compute.fmt.half_up(loan * 0.0035) + compute.fmt.half_up(loan * 0.002)
+        self.assertEqual(row["closing_costs"], compute.fmt.half_up(price * 0.03 + loan_taxes))
         self.assertIn("closing_costs", C["assumption_keys"])  # an estimate, said once
 
+    def test_lender_figure_for_the_buyers_own_program(self):
+        """The lender's closing costs (costs.closing_costs) are the first scenario's; the others stay estimates."""
+        _, C, _ = run(lambda R: R["costs"].__setitem__("closing_costs", 12000))
+        rows = C["payments"]["rows"]
+        self.assertEqual((rows[0]["closing_costs"], rows[0]["lender_closing_costs"]), (12000, True))
+        self.assertFalse(any(r["lender_closing_costs"] for r in rows[1:]))
 
-class Credit(unittest.TestCase):
-    def test_seller_cost_and_trade_off_per_credit(self):
-        _, C, _ = run(lambda R: R["costs"]["credit_scenarios"].__setitem__("seller_pays_buyer_broker_pct", 0.025))
-        self.assertEqual(C["credit"]["seller_cost_per_10k"], 320)  # 0.7% doc stamps + 2.5% buyer-broker pay
-        self.assertTrue(any("$320" in n for n in C["notes"]))
-        _, C, _ = run()
-        cols, per = C["credit"]["columns"], C["credit"]["per_5k"]
-        scale = 5000 / (cols[1]["credit"] - cols[0]["credit"])
-        self.assertEqual(per["monthly"], fmt.half_up((cols[1]["payment"] - cols[0]["payment"]) * scale))
-        self.assertEqual(per["cash"], fmt.half_up((cols[0]["cash"] - cols[1]["cash"]) * scale, 100))
-        self.assertIn(fmt.money(per["cash"]), C["costs"]["credit"]["per_5k"])
 
+class Median(unittest.TestCase):
     def test_median_quoted_rounded(self):
-        """An even number of comps has a midpoint median, quoted to the nearest $100; the credit table's room below
-        it uses the median as quoted. Five comps: one comp's own value, to the dollar."""
+        """An even number of comps has a midpoint median, quoted to the nearest $100; the payment at the median uses
+        the median as quoted. Five comps: one comp's own value, to the dollar."""
         _, C, _ = run(six_comps)
         self.assertNotEqual(C["median_adjusted"] % 100, 0)
         self.assertEqual(C["median_adjusted_display"], fmt.money(C["median_adjusted"], 100))
         shown = compute.median_rounded(C["median_adjusted"], 6)
-        for col in C["credit"]["columns"]:
-            self.assertEqual(col["appraisal_room"], shown - col["price"])
+        self.assertEqual(C["payments"]["at_median"]["price"], shown)
         self.assertIn(C["median_adjusted_display"], C["bottom_line"]["line"])
         _, C, _ = run()
         self.assertEqual(C["median_adjusted_display"], fmt.money(C["median_adjusted"]))
@@ -711,7 +664,6 @@ class Credit(unittest.TestCase):
         """A competing listing's adjusted price and its place in the range come from the script, in its note."""
         def pool(R):
             R["range_override"] = {"low": 435000, "high": 450000, "reason": "The agent leans on the pool sales."}
-            R["offer_plan"].pop("credit_alt", None)
             R["competition"]["rows"][0][2] = 424500
             R["competition"]["rows"][0][6] = "No pool."
             R["competition"]["adjustments"] = {"644 PEACHWOOD DR": [{"label": "Pool", "amount": 25000}]}
@@ -859,16 +811,12 @@ class Pdf(unittest.TestCase):
 
     @NEEDS_CHROMIUM
     def test_widest_tables_wrap(self):
-        """Seven-figure prices, three scenarios and four credit splits: the table headers wrap instead of clipping."""
+        """Seven-figure prices and three scenarios: the table headers wrap instead of clipping."""
         def wide(R):
             R["costs"]["payment"]["price"] = 1442000
             R["costs"]["payment"]["scenarios"] = [{"type": "conventional", "down_pct": 0.05, "assumed": True},
                                                   {"type": "fha", "down_pct": 0.035, "assumed": True},
                                                   {"type": "conventional", "down_pct": 0.2, "assumed": True}]
-            cs = R["costs"]["credit_scenarios"]
-            R["offer_plan"]["plan_override"] = {"opening": 1435000, "walk_away": 1465000, "reason": "Stress sizes."}
-            cs["scenarios"] = [{"credit": 0}, {"credit": 10000}, {"credit": 20000}, {"credit": 30000}]
-            cs.pop("buydown", None)
         _, C, _ = run(wide)
         doc = html(C)
         self.assertNotIn('data-shrink', doc)  # the scatter keeps its full size
@@ -889,7 +837,7 @@ class ChatTemplate(unittest.TestCase):
 
     @staticmethod
     def short(R):
-        """Short of cash, with a past sale: every nullable object (cash_fit, the sale) is set."""
+        """Short of cash, with a past sale: every nullable object (the cash flag, the sale) is set."""
         R["costs"]["buyer_cash"] = 30000
         sold_history(R)
 
@@ -937,8 +885,8 @@ class ChatTemplate(unittest.TestCase):
 
 
 class DotLabels(unittest.TestCase):
-    """Iteration 16: page 1's "Opening Offer" and "Asking" labels drew on each other when the prices were close; render
-    checks every price-line label for an overlap or a run-off, and says so in the chat."""
+    """Iteration 16: page 1's two price-line labels drew on each other when the prices were close; render checks every
+    price-line label for an overlap or a run-off, and says so in the chat."""
 
     @staticmethod
     def svg(*labels):
@@ -947,13 +895,13 @@ class DotLabels(unittest.TestCase):
 
     def test_overlap_found(self):
         out = buyer_render.dot_label_checks(self.svg((416.9, "middle", "mark", "Asking $474,900"),
-                                                     (253.5, "start", "second", "Opening Offer $449,000")))
+                                                     (253.5, "start", "second", "Median $469,800")))
         self.assertEqual(len(out), 1)
         self.assertIn("overlap", out[0])
 
     def test_apart_and_inside_is_clean(self):
         self.assertEqual(buyer_render.dot_label_checks(self.svg((600, "middle", "mark", "Asking $474,900"),
-                                                                (300, "end", "second", "Opening Offer $449,000"))), [])
+                                                                (300, "end", "second", "Median $469,800"))), [])
 
     def test_run_off_found(self):
         out = buyer_render.dot_label_checks(self.svg((720, "start", "mark", "Asking $474,900")))

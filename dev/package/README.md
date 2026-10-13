@@ -220,13 +220,13 @@ Type **/** and the skill's name (shown next to each heading below), select it, t
 
 ### Buyer CMA (/buyer-cma)
 
-What a home is worth, how the asking price compares, your buyer's real monthly cost, and a suggested opening offer with a target and a walk-away.
+What a home is worth, where the asking price sits against that, the listing's history and the market, and your buyer's real monthly cost. It's an objective report of value you can send your buyer: it doesn't suggest an offer. For the offer, use the Buyer Offer Strategy next, in the same chat; it reads the CMA's numbers.
 
-The offer plan follows one of four approaches: **Leverage** (a home that has sat, had price cuts or a failed contract), **Standard**, **Competitive** (a new listing in a tight market) or **Must Win** (your buyer can't lose this house; only when you say so). Claude suggests one from the home's history and the market. A quick "is it priced right?" answer and the full report use the same rule, so with the same approach they give the same opening, target and walk-away.
+A quick "is it priced right?" answer and the full report use the same rule, so they give the same range.
 
 - **Upload:** the 360 Property View PDF for the listing and the comps CSV.
-- **Tell Claude:** the buyer's timeline, how they're financing (loan type, down payment) and how much they want this house (that sets the approach).
-- **Example:** "Run a buyer CMA on 123 Oak St. My buyer is FHA with 3.5% down, their lease ends in March, and they love it."
+- **Tell Claude:** how your buyer is financing (loan type, down payment) and the cash they have, so the costs are theirs.
+- **Example:** "Run a buyer CMA on 123 Oak St. My buyer is FHA with 3.5% down and has about $30,000 cash."
 - **You get:** a PDF report to send, or a short summary in chat.
 - **Pricing Activity chart:** ask for "the pricing activity chart" to get a one-page, landscape chart of recent sales and homes for sale near this home by size and price, with a line at this home's size. It leaves out the asking price, the value range and the comps, so you and your buyer can read the market together before you show the CMA. Ask for "the pricing activity chart with the price" for the same page with the home, the asking price and the value range on it.
 
@@ -235,6 +235,7 @@ The offer plan follows one of four approaches: **Leverage** (a home that has sat
 The strongest offer inside your buyer's limits, up to two alternatives, and how it stacks up against other offers.
 
 - **Best inputs:** a buyer CMA from the same chat; the buyer's max price, cash available, reserves they want to keep and max monthly payment; and what the listing agent told you (other offers, deadline, what the seller cares about).
+- **The walk-away:** the offer never goes above the top of the CMA's value range, where a low appraisal would be cash out of your buyer's pocket. If your buyer will pay more and cover that gap, say so ("my buyer will cover an appraisal gap") and Claude prices options above it.
 - **Minimum:** the list price and the buyer's cash.
 - **What matters most to your buyer:** winning the house, a balance, or keeping cash. Claude recommends the option that fits (balance unless you say otherwise).
 - **Example:** "What should we offer? My buyer can go to $450,000, has $40,000 cash and wants to keep $10,000. The listing agent says there are two other offers and they want to close in 30 days."

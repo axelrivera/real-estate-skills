@@ -44,7 +44,7 @@ Ask in one message, and list what's missing under the report's requests:
 ## Lending
 
 - An **FHA or VA** loan closes only in an approved project (or with a single-unit approval where the program allows it). Confirm it before an FHA or VA offer is written or accepted: an unapproved project can end the deal after the appraisal.
-- A **non-warrantable** project needs a portfolio or non-QM loan: more down and a higher rate. Say so in the payment and the offer plan.
+- A **non-warrantable** project needs a portfolio or non-QM loan: more down and a higher rate. Say so in the payment and the offer.
 - The HO-6 policy covers the unit's interior; the master policy covers the building. Deductible assessments after a storm are a real cost: ask about the master policy's deductible.
 
 ## Payment

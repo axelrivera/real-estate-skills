@@ -23,7 +23,6 @@
     "market": {"split_date": "2026-07-01", "sale_to_original_list_recent": 0.9642, "median_days_recent": 23.0,
                "share_with_seller_paid_costs_recent": 1.0, "median_seller_paid_recent": 6000.0, "months_supply": 1.4,
                "active_count": 5},
-    "offer_plan": {"opening": 435000, "target_low": 440000, "target_high": 444000, "walk_away": 446000},
     "recommended_list_price": null,
     "market_profile": {"state": "FL", "mls": "Stellar"}
   }

@@ -18,7 +18,6 @@
 .bcma .sp-table tr.rec td{font-weight:700;color:var(--brand-strong)}
 .bcma .sp-table tr.rec td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .bcma .sp-table .flag{font-size:8.5pt}
-.bcma .fitline{margin:2px 0 4px}
 .bcma .onepage .details{margin-top:6px}
 .bcma .onepage.fit1 .sp-tiles .kit-tile{padding:5px 9px}
 .bcma .onepage.fit2 .sp-tiles .kit-v{font-size:13.5pt} .bcma .onepage.fit2 .sp-tiles .kit-k{font-size:8pt}
@@ -37,5 +36,5 @@
 .bcma .cost-notes{font-size:8.3pt;margin-top:12px}
 .bcma .cost-notes li{margin:0 0 3px}
 
-/* a cash or credit flag under a figure wraps inside its column, so a long flag never widens a number column */
+/* a cash flag under a figure wraps inside its column, so a long flag never widens a number column */
 .bcma .kit-tbl td .flag{white-space:normal;display:block;font-size:8pt;line-height:1.25}

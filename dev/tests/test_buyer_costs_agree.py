@@ -22,7 +22,7 @@ def cma_report(estimate_insurance=False):
     with open(os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "hickorywood.json")) as f:
         R = json.load(f)
     R["export"] = os.path.join(ROOT, R["export"])
-    R["costs"]["credit_scenarios"].pop("closing_cost_pct")  # the market's estimate, not the agent's share
+    R["costs"].pop("closing_cost_pct")  # the market's estimate, not the agent's share
     if estimate_insurance:
         R["costs"]["payment"].pop("insurance_annual")
     return R
@@ -61,13 +61,10 @@ class SameCashToClose(unittest.TestCase):
                 row = next(x for x in pay["rows"] if x["label"].startswith(label))
                 r = offer(self.R, self.C["handoff"], financing, down)
                 self.assertEqual(strategy.closing_costs(r["B"], pay["price"]), row["closing_costs"])
-        r = offer(self.R, self.C["handoff"])
-        for col in self.C["credit"]["columns"]:  # the credit table's columns are on the same rule
-            self.assertEqual(col["closing_costs"], strategy.closing_costs(r["B"], col["price"]))
 
     def test_agent_share_wins(self):
         R = cma_report()
-        R["costs"]["credit_scenarios"]["closing_cost_pct"] = 0.04
+        R["costs"]["closing_cost_pct"] = 0.04
         C = run_cma(R)
         self.assertEqual(C["payments"]["rows"][0]["closing_costs"], round(C["payments"]["price"] * 0.04))
         self.assertIn("closing_costs", C["note_keys"])  # the agent's share: a note, not an estimate to confirm
@@ -98,18 +95,21 @@ class SameInsurance(unittest.TestCase):
         self.assertIsNone(B["buyer"].get("insurance_quote"))  # an estimate carried over is never a quote in hand
         self.assertEqual(offer(self.R, self.C["handoff"], insurance_annual=4100)["B"]["costs"]["insurance_annual"], 4100)
 
-    def test_older_handoff_estimates_at_the_cma_target(self):
+    def test_handoff_without_a_premium_estimates_at_each_price(self):
+        """A handoff without the CMA's premium (an older one, its offer plan ignored): the offer estimates insurance
+        at list and prices each option's own, never at a CMA target."""
         R = cma_report(estimate_insurance=True)
-        R["costs"]["payment"].pop("price", None)  # figured at the offer plan's target, as the CMA does by default
+        R["costs"]["payment"].pop("price", None)  # figured at asking, as the CMA does by default
         C = run_cma(R)
         h = copy.deepcopy(C["handoff"])
         for k in ("insurance_annual", "insurance_price", "insurance_estimated"):
             h["subject"].pop(k)
+        h["offer_plan"] = {"opening": 449000, "target_low": 454000, "target_high": 459000, "walk_away": 470000}
         r = offer(R, h)
-        est = strategy.finance.insurance_estimate(strategy.target_price(h["offer_plan"]), r["costs"],
-                                                  h["subject"].get("year_built"))["annual"]
-        self.assertEqual(r["B"]["costs"]["insurance_annual"], est)
-        self.assertEqual(est, C["payments"]["insurance_annual"])
+        self.assertTrue(r["B"].get("_ins_est"))  # each option's own price
+        price = r["terms"]["recommended"]["price"]
+        est = strategy.finance.insurance_estimate(price, r["costs"], h["subject"].get("year_built"))["annual"]
+        self.assertEqual(r["B"]["costs"]["insurance_annual"], est)  # the assumption names the recommended offer's
 
     def test_cma_estimate_and_the_agents_rate(self):
         R = cma_report(estimate_insurance=True)
@@ -144,13 +144,14 @@ class SameInsurance(unittest.TestCase):
 class BuyerBrokerShortfall(unittest.TestCase):
     """An agreement above what the seller pays adds the difference to the buyer's cash to close, in both skills."""
 
-    def test_cma_credit_table_and_offer_cash_to_close(self):
+    def test_cma_payment_table_and_offer_cash_to_close(self):
         R = cma_report()
-        base = run_cma(copy.deepcopy(R))["credit"]["columns"]
-        R["costs"]["credit_scenarios"].update(buyer_broker_agreement_pct=0.025, seller_pays_buyer_broker_pct=0)
-        for b, c in zip(base, run_cma(R)["credit"]["columns"]):
-            self.assertEqual(c["bb_short"], round(0.025 * c["price"]))
-            self.assertEqual(round(c["cash"] - b["cash"]), c["bb_short"])
+        base = run_cma(copy.deepcopy(R))["payments"]
+        R["costs"].update(buyer_broker_agreement_pct=0.025, seller_pays_buyer_broker_pct=0)
+        pay = run_cma(R)["payments"]
+        for b, c in zip(base["rows"], pay["rows"]):
+            self.assertEqual(c["bb_short"], round(0.025 * pay["price"]))
+            self.assertEqual(round(c["cash_to_close"] - b["cash_to_close"]), c["bb_short"])
         d = offer_fixture("fha-competitive.json")
         d["buyer"]["buyer_broker_agreement_pct"] = 0.03  # the seller pays 2.5%
         r = strategy.analyze(d)

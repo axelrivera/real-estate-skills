@@ -278,20 +278,20 @@ class Options(unittest.TestCase):
         self.assertEqual(s["options_title"], "Your Offer")
 
     def test_stronger_net_option_is_inside_the_limits_and_shown_not_promoted(self):
-        """A smaller concession ask that nets the seller more stays inside every limit and the CMA's walk-away; when
+        """A smaller concession ask that nets the seller more stays inside every limit and the walk-away; when
         it ranks higher it's an option the buyer can pick, never promoted over the recommended offer."""
         r = analyze("kestrel-v5.json")
         B, costs, rec = r["B"], r["costs"], r["terms"]["recommended"]
         st = strategy.stronger_net(B, costs, rec)
         self.assertTrue(strategy.within_limits(B, costs, st))
-        self.assertLessEqual(st["price"], B["cma_offer_plan"]["walk_away"])
+        self.assertLessEqual(st["price"], strategy.walk_away(B))
         self.assertGreater(st["price"] - st["seller_concessions"], rec["price"] - rec["seller_concessions"])
         d = fixture("kestrel-v5.json")
         d["overrides"] = {"price": 436000, "seller_concessions": 5000, "deposit": 13500}
         r = run(d)
         lvl = r["B"]["competition"]["level"]
         st = r["terms"]["stronger"]
-        self.assertEqual((st["price"], st["seller_concessions"]), (440000, 1000))
+        self.assertEqual((st["price"], st["seller_concessions"]), (455000, 2000))  # up to the range's top, the walk-away
         self.assertTrue(strategy.within_limits(r["B"], r["costs"], st))
         self.assertEqual((r["bands"]["stronger"][lvl][1], r["bands"]["recommended"][lvl][1]), ("At Risk", "Unlikely"))
         B = r["B"]
@@ -304,7 +304,7 @@ class Options(unittest.TestCase):
 
     def test_reaches_the_next_band_unless_overridden(self):
         """The rule's draft reads Unlikely against one competing offer; the search reaches At Risk inside every limit,
-        at or below the range's top and the CMA's walk-away."""
+        at or below the range's top (the walk-away)."""
         r = analyze("one-competing-reach.json")
         B = r["B"]
         rule, _ = strategy.build_offer(B, r["costs"])
@@ -312,7 +312,8 @@ class Options(unittest.TestCase):
         self.assertEqual(strategy.band_of(strategy.ci(O["recommended"], O["recommended"]["target"]["net_adj"],
                                                       B["property"]["list_price"]), 1)[0], "unl")
         t = r["terms"]["recommended"]
-        self.assertLessEqual(t["price"], min(B["value"]["cma_high"], B["cma_offer_plan"]["walk_away"]))
+        self.assertEqual(strategy.walk_away(B), B["value"]["cma_high"])
+        self.assertLessEqual(t["price"], B["value"]["cma_high"])
         self.assertGreaterEqual(r["cash"]["recommended"]["reserve"], B["buyer"]["reserve_floor"])
         d = fixture("one-competing-reach.json")  # no search with overrides or an offer already Competitive
         d["overrides"] = {"price": 438000}
@@ -397,24 +398,28 @@ class BuyerPriority(unittest.TestCase):
 class Escalation(unittest.TestCase):
     def setUp(self):
         d = fixture("texas-cma-escalation.json")
-        d["cma"]["offer_plan"]["walk_away"] = 650000
+        d["buyer"]["cover_appraisal_gap"] = True  # the buyer agrees to pay above the range: no walk-away at its top
         d["overrides"] = {"price": 632000}
         self.r = run(d)
 
     def test_cap_is_funded_and_written_in_the_letters(self):
-        """The cap stays at or below the walk-away, its gap is measured from the range's top, the cash at the cap keeps
-        the reserve, and the worksheet's letters cover the cap."""
+        """Above the range only when the buyer agrees to cover the gap: the cap stays at or below the buyer's max, its
+        gap is measured from the range's top, the cash at the cap keeps the reserve, and the worksheet's letters cover
+        the cap."""
         e = self.r["terms"]["recommended"]["escalation"]
-        self.assertLessEqual(e["cap"], 650000)
+        self.assertGreater(e["cap"], 632000)
+        self.assertLessEqual(e["cap"], 640000)
         self.assertEqual(e["gap_at_cap"], e["cap"] - 632000)
         self.assertEqual(self.r["cash_at_cap"]["gap"], e["gap_at_cap"])
         self.assertGreaterEqual(self.r["cash_at_cap"]["reserve"], 15000)
         self.assertIn(strategy.money(e["cap"]), json.dumps(strategy.worksheet(self.r)))
 
     def test_gap_written_at_the_cap_and_variants_are_one_buyer(self):
-        """An escalating offer above the range writes its gap at the cap on AGA-1. Scoring two variants together
-        doesn't change either one's score or escalate one against the other."""
-        r = run(copy.deepcopy(GAP))
+        """An escalating offer above the range (the buyer agrees to cover the gap) writes its gap at the cap on AGA-1.
+        Scoring two variants together doesn't change either one's score or escalate one against the other."""
+        d = copy.deepcopy(GAP)
+        d["buyer"]["cover_appraisal_gap"] = True
+        r = run(d)
         rec = r["terms"]["recommended"]
         self.assertEqual(rec["appraisal_gap"], rec["escalation"]["gap_at_cap"])
         self.assertEqual(r["O"]["recommended"]["appraisal_form"], "aga")
@@ -427,7 +432,7 @@ class Escalation(unittest.TestCase):
         d = fixture("texas-cma-escalation.json")
         B, costs = strategy.prepare(strategy.apply_cma(d, strategy.load_cma(d)), strategy.oe.Assume())
         t, why = strategy.build_offer(B, costs)
-        self.assertNotIn("escalation", t)  # the value-range top is the CMA's walk-away
+        self.assertNotIn("escalation", t)  # the value-range top is the walk-away
         self.assertEqual((why["escalation"]["key"], why["escalation"]["max"]), ("why_esc_walk", "$640,000"))  # the buyer's max
         self.assertIn("$8,000", strategy.why_text(why["escalation"]))  # what a price at the max would put above the range
 
@@ -723,7 +728,7 @@ class Assumptions(unittest.TestCase):
         d = fixture("texas-cma-escalation.json")
         del d["worksheet"]["contract_name"]
         self.assertEqual(to_confirm_fields(run(d))[0], "contract_name")
-        d["cma"]["offer_plan"]["walk_away"] = 640000  # the escalation question comes with an escalation
+        d["buyer"]["cover_appraisal_gap"] = True  # the escalation question comes with an escalation
         d["overrides"] = {"inspection_days": 10}  # keeps the rule-built (escalating) offer from being softened
         r = run(d)
         self.assertTrue(r["terms"]["recommended"].get("escalation"))
@@ -772,7 +777,7 @@ class ReplyLines(unittest.TestCase):
         d["competition"]["highest_and_best"] = True  # the field wins over the note
         self.assertIn("flat_number", [x["key"] for x in run(d)["reply_lines"]])
         d = copy.deepcopy(tx)
-        d["cma"]["offer_plan"]["walk_away"], d["overrides"] = 640000, {"inspection_days": 10}  # escalating: no flat number
+        d["buyer"]["cover_appraisal_gap"], d["overrides"] = True, {"inspection_days": 10}  # escalating: no flat number
         r = run(d)
         self.assertTrue(r["terms"]["recommended"].get("escalation"))
         self.assertEqual([x["key"] for x in r["reply_lines"] if x["key"] != "tight_reserve"], ["contract_terms"])
@@ -852,30 +857,52 @@ class ClientInterestAudit(unittest.TestCase):
 
     @staticmethod
     def walk(level, walk=395000):
+        """GAP with the top of the value range, the walk-away, at `walk`, below the $400,000 list price."""
         d = copy.deepcopy(GAP)
         d["competition"]["level"] = level
-        d["cma_offer_plan"] = {"walk_away": walk}
+        d["value"]["cma_high"] = walk
         return d
 
+    def test_walk_away_is_the_top_of_the_range(self):
+        """The offer skill owns the walk-away: the top of the value range (never a CMA's offer plan); none without a
+        value range or when the buyer agrees to cover an appraisal gap."""
+        B, _ = strategy.prepare(self.walk(2), strategy.oe.Assume())
+        self.assertEqual(strategy.walk_away(B), 395000)
+        d = self.walk(2)
+        d["cma_offer_plan"] = {"walk_away": 380000}  # an older CMA's plan is never read
+        self.assertEqual(strategy.walk_away(strategy.prepare(d, strategy.oe.Assume())[0]), 395000)
+        d = self.walk(2)
+        d["buyer"]["cover_appraisal_gap"] = True
+        self.assertIsNone(strategy.walk_away(strategy.prepare(d, strategy.oe.Assume())[0]))
+        d = self.walk(2)
+        d.pop("value")
+        self.assertIsNone(strategy.walk_away(strategy.prepare(d, strategy.oe.Assume())[0]))
+
     def test_walk_away_caps_heavy_competition_price(self):
-        """Levels 2 and 3 price at list or the top of the range (398,000 here): the CMA's walk-away below list caps
-        every option, with the walk-away named in the price reason."""
+        """Levels 2 and 3 price at list or the top of the range: with the range's top below list, every option stays
+        at or under it and the escalation is held there, its reason naming the walk-away; with the buyer covering the
+        gap, the escalation goes past it."""
         for level in (2, 3):
             with self.subTest(level=level):
                 A = strategy.oe.Assume()
                 B, costs = strategy.prepare(self.walk(level), A)
                 t_, w = strategy.build_offer(B, costs)
-                self.assertEqual((t_["price"], t_["price_by"]), (395000, "walk_away"))
-                self.assertEqual(w["price"]["key"], "why_price_walk")
+                self.assertEqual(t_["price"], 395000)
+                self.assertNotIn("escalation", t_)
+                self.assertEqual(w["escalation"]["key"], "why_esc_walk")
                 r = run(self.walk(level))
                 for k, terms in r["terms"].items():
                     self.assertLessEqual(terms["price"], 395000, k)
                 price_row = next(x for x in strategy.result(r)["summary"]["terms"] if x["term"] == "Price")
                 self.assertIn("$395,000", json.dumps(price_row))
+                d = self.walk(level)
+                d["buyer"]["cover_appraisal_gap"] = True
+                B, costs = strategy.prepare(d, strategy.oe.Assume())
+                t_, _ = strategy.build_offer(B, costs)
+                self.assertGreater(t_["escalation"]["cap"], 395000)
 
     def test_walk_away_just_under_list_is_not_rounded_to_list(self):
-        d = self.walk(2, walk=399500)
-        d["value"]["cma_high"] = 410000  # the rule prices at list, 500 above the walk-away
+        d = self.walk(2, walk=399500)  # the rule prices at the range's top, 500 under list: never rounded up to list
         B, costs = strategy.prepare(d, strategy.oe.Assume())
         self.assertEqual(strategy.build_offer(B, costs)[0]["price"], 399500)
 

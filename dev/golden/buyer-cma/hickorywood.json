@@ -1,6 +1,10 @@
 {
  "adjusted_max": 493900,
  "adjusted_min": 435900,
+ "asking_position": {
+  "amount": 5100,
+  "key": "sum_pos_over_median"
+ },
  "assumption_keys": [
   "tax_basis",
   "tax_assessed",
@@ -9,9 +13,8 @@
  "assumptions": {
   "count": 3
  },
- "cash_fit": null,
  "chat_notes": {
-  "count": 8
+  "count": 7
  },
  "competition": {
   "rows": [
@@ -225,62 +228,11 @@
   }
  },
  "costs": {
-  "credit": {
-   "cash_flags": {
-    "count": 3
-   },
-   "cash_row": 7,
-   "credit_flags": {
-    "count": 3
-   },
-   "header": {
-    "count": 4
-   },
-   "rows": [
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    [
-     "+$40",
-     "+$80"
-    ],
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    }
-   ]
-  },
   "payment": {
-   "alt_row": 10,
+   "alt_rows": [
+    10,
+    11
+   ],
    "cash_flags": {
     "count": 3
    },
@@ -329,6 +281,9 @@
     },
     {
      "count": 4
+    },
+    {
+     "count": 4
     }
    ],
    "total_row": 9
@@ -346,144 +301,6 @@
     }
    ]
   }
- },
- "credit": {
-  "buydown": {
-   "cost": 10100,
-   "covered": false,
-   "credit": 10000,
-   "full": 3976,
-   "price": 459000,
-   "year1": 3418,
-   "year2": 3690
-  },
-  "closing_costs_given": false,
-  "columns": [
-   {
-    "appraisal_room": 20800,
-    "bb_short": 0,
-    "cap": 13470,
-    "cash": 35920,
-    "cash_left": null,
-    "cash_lines": [
-     [
-      "down",
-      22450
-     ],
-     [
-      "closing",
-      13470
-     ]
-    ],
-    "cash_saved": 0,
-    "cash_short": null,
-    "closing_costs": 13470,
-    "credit": 0,
-    "credit_applied": 0,
-    "down": 22450,
-    "extra": 0,
-    "loan": 426550,
-    "loan_taxes": 0,
-    "net": 449000,
-    "over_cap": false,
-    "over_costs": false,
-    "payback_years": null,
-    "payment": 3896,
-    "pi": 2824,
-    "price": 449000
-   },
-   {
-    "appraisal_room": 15800,
-    "bb_short": 0,
-    "cap": 13620,
-    "cash": 31320,
-    "cash_left": null,
-    "cash_lines": [
-     [
-      "down",
-      22700
-     ],
-     [
-      "closing",
-      13620
-     ],
-     [
-      "credit",
-      -5000
-     ]
-    ],
-    "cash_saved": 4600,
-    "cash_short": null,
-    "closing_costs": 13620,
-    "credit": 5000,
-    "credit_applied": 5000,
-    "down": 22700,
-    "extra": 40,
-    "loan": 431300,
-    "loan_taxes": 0,
-    "net": 449000,
-    "over_cap": false,
-    "over_costs": false,
-    "payback_years": 9.58,
-    "payment": 3936,
-    "pi": 2855,
-    "price": 454000
-   },
-   {
-    "appraisal_room": 10800,
-    "bb_short": 0,
-    "cap": 13770,
-    "cash": 26720,
-    "cash_left": null,
-    "cash_lines": [
-     [
-      "down",
-      22950
-     ],
-     [
-      "closing",
-      13770
-     ],
-     [
-      "credit",
-      -10000
-     ]
-    ],
-    "cash_saved": 9200,
-    "cash_short": null,
-    "closing_costs": 13770,
-    "credit": 10000,
-    "credit_applied": 10000,
-    "down": 22950,
-    "extra": 80,
-    "loan": 436050,
-    "loan_taxes": 0,
-    "net": 449000,
-    "over_cap": false,
-    "over_costs": false,
-    "payback_years": 9.58,
-    "payment": 3976,
-    "pi": 2886,
-    "price": 459000
-   }
-  ],
-  "down_pct": 0.05,
-  "per_5k": {
-   "cash": 4600,
-   "monthly": 40
-  },
-  "program": "conventional",
-  "seller_cost_parts": {
-   "count": 1
-  },
-  "seller_cost_per_10k": 70
- },
- "credit_alt": {
-  "base_credit": 0,
-  "base_price": 449000,
-  "cash_saved": 9200,
-  "credit": 10000,
-  "price": 459000
  },
  "current_bill": 2731,
  "data_source": {
@@ -534,13 +351,7 @@
    "mls": "Stellar",
    "state": "FL"
   },
-  "offer_plan": {
-   "opening": 449000,
-   "target_high": 456500,
-   "target_low": 454000,
-   "walk_away": 470000
-  },
-  "posture": "leverage",
+  "offer_plan": null,
   "recommended_list_price": null,
   "side": "buyer",
   "source": "buyer-cma",
@@ -798,48 +609,13 @@
   "insurance",
   "closing_costs",
   "flood",
-  "credit_limits",
-  "seller_cost"
+  "credit_limits"
  ],
  "notes": {
-  "count": 11
+  "count": 10
  },
  "notices": {
   "count": 3
- },
- "offer": {
-  "bullets": {
-   "count": 3
-  }
- },
- "offer_plan": {
-  "basis": {
-   "opening": "below_range",
-   "target": "floor",
-   "walk_away": "median"
-  },
-  "ladder": [
-   {
-    "count": 3
-   },
-   [
-    "Target"
-   ],
-   {
-    "count": 3
-   }
-  ],
-  "opening": 449000,
-  "override": {
-   "count": 0
-  },
-  "posture": "leverage",
-  "posture_name": "Leverage",
-  "posture_suggested": "leverage",
-  "target": 454000,
-  "target_high": 456500,
-  "target_low": 454000,
-  "walk_away": 470000
  },
  "ok": true,
  "payments": {
@@ -849,6 +625,14 @@
     3968,
     4091,
     3309
+   ]
+  },
+  "at_median": {
+   "price": 469800,
+   "totals": [
+    4064,
+    4186,
+    3412
    ]
   },
   "buyer_cash": null,
@@ -1156,15 +940,18 @@
    },
    {
     "count": 3
+   },
+   {
+    "count": 3
    }
   ],
   "tiles": [
-   {
-    "count": 2
-   },
    [
     "93.9%"
    ],
+   {
+    "count": 2
+   },
    {
     "count": 2
    },

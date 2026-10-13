@@ -1,5 +1,5 @@
-"""Named categories the model picks and the script turns into numbers (a pricing stance, an offer posture, a counter
-stance, a priority). One check for all of them, so an unknown value always stops the run the same way.
+"""Named categories the model picks and the script turns into numbers (a pricing stance, a counter stance, a
+priority). One check for all of them, so an unknown value always stops the run the same way.
 
     from _shared import choices
     stance, problems = choices.pick(data.get("stance"), ("draw_offers", "market", "premium"), "pricing.stance",

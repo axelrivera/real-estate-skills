@@ -44,12 +44,6 @@
    "market_profile": {
     "state": "TX"
    },
-   "offer_plan": {
-    "opening": 610000,
-    "target_high": 625000,
-    "target_low": 615000,
-    "walk_away": 632000
-   },
    "recommended_list_price": null,
    "side": "buyer",
    "source": "buyer-cma",
@@ -70,12 +64,6 @@
     "midpoint": 615000
    },
    "version": 1
-  },
-  "cma_offer_plan": {
-   "opening": 610000,
-   "target_high": 625000,
-   "target_low": 615000,
-   "walk_away": 632000
   },
   "competition": {
    "area_only": false,
