@@ -281,7 +281,7 @@ def apply_cma(data, h):
 
 # --- listing / seller ----------------------------------------------------------
 
-TAX_BILL_MONTH = 11  # when a market doesn't say (`property_tax.bill_month`): a closing from November assumes the bill unpaid
+TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out (Florida sets 11)
 NATIONAL_NORMS = {"deposit_pct": 0.01, "concessions_pct": 0.03, "inspection_days": 10, "loan_approval_days": 30}
 
 
@@ -811,7 +811,7 @@ def prepare_offer(o, L, S, A):
     if o["inspection_walkaway"] is None:  # another contract that doesn't say: the cautious reading for the seller
         o["inspection_walkaway"] = A.add(sc, "inspection_walkaway", True,
                                          "Whether this contract's inspection period lets the buyer cancel for any reason "
-                                         "wasn't given: assumed it does. Confirm it in the contract", "high")
+                                         "wasn't given: the deadlines assume it does. Confirm it in the contract", "high")
         unknown.add("inspection_walkaway")
     o["inspection_assumed"] = o.get("inspection_days") in (None, "")
     blank = cf.inspection_days_default(form)  # ENG-7: the form's own blank (15 on FAR/BAR), else the national 10 days
@@ -909,7 +909,7 @@ def prepare_offer(o, L, S, A):
     for a in A.items:  # each stand-in's assumption says, once, which criteria it leaves out of the score
         off = unscored_by(o, _fact_of(a["field"])) if a["scope"] == sc else []
         if off:
-            a["why"] += f". {_names(off)} {'is' if len(off) == 1 else 'are'} not scored without it"
+            a["why"] += f". {_names(off)} {'is' if len(off) == 1 else 'are'} left out of the score until it's confirmed"
             a["unscores"] = off
     # iteration 9 evals 1, 3, 5: the terms the review assumed, so every place that prints one as a term marks it
     o["assumed_terms"] = sorted({a["field"] for a in A.items if a["scope"] == sc})
@@ -1181,7 +1181,8 @@ def auto_scores(o, L, S):
                    if o["appraisal_gap"] else "no appraisal gap coverage")
         # iteration 16 (buyer-offer-strategy eval 1): where the price sits, said as it is: below or inside the range
         where = (f"{money(over_hi)} over {ref}" if over_hi > 0 else
-                 ("Below the value range" if o["price"] < L["cma_low"] else "Inside the value range") if L["cma_provided"]
+                 ("Below the value range" if o["price"] < L["cma_low"] else "In the lower half of the value range"
+                  if o["price"] <= L["cma_mid"] else "In the upper half of the value range") if L["cma_provided"]
                  else "Below list price" if o["price"] < L["list_price"] else "At list price")
         why["appraisal"] = f"{where}, {gap}"
 
@@ -2438,8 +2439,9 @@ def analyze(data, market=None, cma=None, seller_review=False):
     late = [o["id"] for o in offers if o["status"] in ACTIVE and o["close"].month >= L["tax_bill_month"]]
     if L["bill_paid"] is None and L["annual_tax"] and L["tax_in_arrears"] and late:
         A.add("listing", "current_tax_bill_paid", False,
-              "Closing in November or December: whether the seller has paid this year's tax bill wasn't given. Assumed not "
-              "paid (the seller credits the buyer from Jan 1); if it's paid, the buyer credits the seller instead", "med")
+              f"Closing after this year's tax bills go out ({fmt.MONTHS[L['tax_bill_month'] - 1]} 1): whether "
+              "the seller has paid this year's bill wasn't given. Assumed not paid (the seller credits the buyer from Jan 1); "
+              "if it's paid, the buyer credits the seller instead", "med")
         A.items[-1]["offers"] = late  # OFR-344: a single review lists it only for an offer closing then
     _missing_market(costs, offers[0]["ns"], A)
     estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)

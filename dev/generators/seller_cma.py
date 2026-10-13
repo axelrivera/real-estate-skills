@@ -195,19 +195,18 @@ def generate(seed, out_dir):
     cards = []
     for h in picks:
         adj = []
-        diff = sqft - h["living_area"]
-        if diff:
-            adj.append({"label": "Size", "amount": round(max(-0.05 * h["close_price"], min(0.05 * h["close_price"],
-                                                                                          diff * 75 * scale)), -2)})
         if h["private_pool"] != pool:
             adj.append({"label": "Pool", "amount": round((25000 if pool else -25000) * scale, -2)})
-        if rng.random() < 0.2:
-            adj.append({"label": rng.choice(("Larger Corner Lot", "Pond Lot", "Documented Recent Systems")),
-                        "amount": round(-rng.choice((5000, 10000)) * scale, -2)})
+        if rng.random() < 0.07:
+            adj.append({"label": "Documented Recent Systems", "amount": round(-5000 * scale, -2)})
         card = {"address": cma.display_address(h["address"]), "sold_price": h["close_price"],
                 "seller_concessions": h.get("seller_paid") or 0,
                 "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
                 "adjustments": adj, "bullets": rng.sample(BULLETS, rng.randint(1, 3))}
+        if rng.random() < 0.2:  # a lot the script prices by its type (the size comes from the export)
+            card["lot"] = rng.choice(("corner_or_oversized", "view", "canal", "lake_or_open_water"))
+        elif rng.random() < 0.03:
+            card.update(lot="other", lot_value=round(-5000 * scale, -2), lot_reason="Backs onto a busy road")
         if rng.random() < 0.6:  # the roof year when the comp's listing gives it
             card["roof_year"] = as_of.year - rng.randint(0, 26)
             if rng.random() < 0.15:
@@ -233,9 +232,15 @@ def generate(seed, out_dir):
     if not florida or rng.random() < 0.3:
         fl = profiles.load_market(state="FL", county="Seminole").get("cma.adjustments.condition_levels")
         comps["condition_values"] = {lv: round(v * scale, -2) for lv, v in fl.items()}
+    if not florida or rng.random() < 0.3:  # the size and lot rates: the market's, else paired sales', scaled
+        fl_market = profiles.load_market(state="FL", county="Seminole")
+        comps["size_per_sqft"] = round(fl_market.get("cma.adjustments.living_area_per_sqft") * scale)
+        comps["lot_values"] = {k: round(v * scale, -2) for k, v in fl_market.get("cma.adjustments.lot_types").items()}
+    lot = {"lot": rng.choice(("corner_or_oversized", "view", "canal"))} if rng.random() < 0.15 else {}
     subject_level = rng.choice(cma.CONDITION_LEVELS[:-1])
     # the adjusted values and the range, as the skill's comps stage prints them before any pricing
-    tmp = {"as_of": as_of.isoformat(), "subject": {"condition": subject_level, **roof}, "comps": copy.deepcopy(comps)}
+    tmp = {"as_of": as_of.isoformat(), "subject": {"condition": subject_level, "sqft": sqft, **roof, **lot},
+           "comps": copy.deepcopy(comps)}
     cma.settle_comps(tmp, homes, market, st)
     values = [c["adjusted"] for c in tmp["comps"]["cards"]]
     low, high = cma.choose_range(values, market)
@@ -279,7 +284,7 @@ def generate(seed, out_dir):
                                ["Garage", "Two-car attached"], ["Flood Zone", rng.choice(ZONES)],
                                ["Recent Updates", "Kitchen, baths, floors"]],
                      "summary": "An updated home with a remodeled kitchen and new flooring, as described by you.",
-                     "condition": subject_level, **roof},
+                     "condition": subject_level, **roof, **lot},
          "summary_page": {"headline": "Priced where recent sales support, for the strongest first weeks on the market.",
                           "why": rng.sample(WHY, 3), "next_step": "Review this plan together, sign the listing "
                                                                   "agreement, and get the home ready to go live."},

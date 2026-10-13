@@ -22,7 +22,7 @@ Read this when the property is a condo (`property_type: condo`). A condo is valu
 
 List each adjustment in the data file like any other, with a sentence and a dollar amount. Typical condo adjustments (use the agent's local numbers when they have them, and say when you're estimating):
 
-- **Floor and view:** higher floors and water or skyline views sell for more; the step per floor is local, so read it from same-building sales.
+- **Floor and view:** higher floors and water or skyline views sell for more; the step per floor is local, so read it from same-building sales. A floor difference is a typed adjustment; a view is the unit's `lot` (`view`, or `lake_or_open_water` on the water), priced by the script, with `comps.lot_values` from same-building sales when the building's step differs from the built-in (`method.md`, Lot).
 - **Parking:** a deeded or assigned space, a garage space or a second space.
 - **Special assessments:** a sale where the seller paid off an assessment vs. one where the buyer takes it on. Adjust by the unpaid amount the buyer assumes.
 - **Association fee:** a much higher monthly fee lowers what buyers pay for the unit. Note the gap; adjust only when the comps show it.

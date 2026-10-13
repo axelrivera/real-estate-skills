@@ -1065,5 +1065,33 @@ class Iteration16(unittest.TestCase):
         self.assertNotIn("deadline", fields(run(d)))
 
 
+
+class Iteration18(unittest.TestCase):
+    def test_a_lower_score_says_why_for_each_option(self):
+        """Eval 3: the Stronger option at the top of the range scored lower than the recommended one with no reason
+        beside it. A criterion the options score differently gives each option's reason."""
+        sc = strategy.scorecard(analyze("texas-cma-escalation.json"))
+        row = next(x for x in sc["rows"] if x["key"] == "appraisal")
+        self.assertEqual(row["scores"], [5, 4])
+        self.assertTrue(row["why"].startswith("Recommended: In the lower half of the value range"))
+        self.assertIn("Stronger: In the upper half of the value range", row["why"])
+        same = next(x for x in sc["rows"] if x["key"] == "financing")
+        self.assertNotIn(":", same["why"].split(",")[0])  # scored alike: one reason
+
+    def test_walkaway_assumption_reads_one_way(self):
+        """Eval 3: "assumed it does" beside "not scored without it" read as a contradiction."""
+        d = fixture("texas-cma-escalation.json")
+        del d["worksheet"]["inspection_walkaway"]  # another contract that doesn't say
+        a = next(x for x in run(d)["missing"] if x["field"] == "inspection_walkaway")
+        self.assertIn("the deadlines assume it does", a["why"])
+        self.assertIn("left out of the score until it's confirmed", a["why"])
+        self.assertNotIn("assumed it does", a["why"])
+
+    def test_tax_bills_outside_florida_go_out_in_october(self):
+        """Eval 3: a Texas deal used Florida's November 1 bill date. Only Florida's market sets November."""
+        self.assertEqual(strategy.oe.TAX_BILL_MONTH, 10)
+        self.assertEqual(run(fixture("texas-cma-escalation.json"))["costs"].get("property_tax.bill_month"), None)
+
+
 if __name__ == "__main__":
     unittest.main()

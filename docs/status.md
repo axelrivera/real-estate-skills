@@ -36,6 +36,16 @@ The buyer CMA leaned on offer strategy (a suggested opening offer, a target and 
 - **Buyer CMA reply:** each item said once, the gut check at most two facts with the history's counts as printed, and the fair-housing decline points to the school district's and police department's public data.
 - **Buyer offer strategy:** the price reason with two or three competing offers says "above list, at the middle of the range" when it is; the Escalation row on a lower-cost offer still names the buyer's max (and the flat-number reason is said once); an offer under the first draft says what that draft read; the higher-price line tests each price with the concessions it needs ($454,000, not $451,000, in the reach fixture); the homestead note is never cut from the reply.
 
+**Iteration 18 follow-up (still 0.17.0).** The script-owned split, rate, outliers and roof held across three Hickorywood runs; the only drift left was a corner lot typed at –$5,000 in two runs and –$10,000 in the third. Now:
+
+- **Size and lot are the script's, in both CMAs:** size from the export's square footage at the market's rate (`comps.size_per_sqft` outside Florida), the lot by the type the model picks for the home and each comp (`standard`, `corner_or_oversized`, `view`, `canal`, `lake_or_open_water`, or `other` with its value and reason; Florida values in `cma.adjustments.lot_types`). A typed size, lot or water amount stops the run; a bedroom, bath or story difference stays typed. A condo's view is its lot type.
+- **Buyer CMA headline:** never says where asking sits (compute.py stops on "asking", "above", "below", "top", "bottom", "median" and the like); the script's position sentence sits above it, and the Bottom Line repeats that same sentence instead of its own "near the bottom of" wording.
+- **Gut check:** quotes the supported range the full report uses; the separate rough range is gone.
+- **Errors name the agent's own line:** the script's size, condition and lot lines no longer shift the position a typed-line error names.
+- **Taxes outside Florida:** the offer engine's tax-bill month defaults to October (the seller skills' default); Florida's market keeps November 1, and the assumption names the month.
+- **Offer strategy:** a criterion the options score differently gives each option's reason (the Stronger option at the top of the range: "In the upper half of the value range"); the walk-away assumption reads "the deadlines assume it does" and "left out of the score until it's confirmed".
+- **Buyer CMA reply rules:** a comp with no roof year in its listing keeps its `roof_unknown` warning; the mortgage rate is the newest week on Freddie Mac's own page, else the newest two sources agree on; closing costs named in the cash bullet aren't named again; a compliant replacement goes in one place.
+
 ## This pass (2026-10-12): Client-Interest Audit, Version 0.16.0
 
 An audit of every skill against one question: does it act in the client's best interest, the buyer's or the seller's? It found no bias toward the agent (no in-house preference, no pricing to win a listing, no waived contingencies, nothing confidential in material for the other side), and a set of rules and defaults that could cost a client money or a contract right. All of them are fixed. What agents will notice:

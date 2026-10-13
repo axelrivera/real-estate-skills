@@ -1,6 +1,6 @@
 {
- "adjusted_max": 485600,
- "adjusted_min": 431200,
+ "adjusted_max": 485675,
+ "adjusted_min": 431229,
  "assumption_keys": [
   "expected_sale",
   "option_time",
@@ -56,7 +56,7 @@
  "comps": {
   "cards": [
    {
-    "adjusted": 485600,
+    "adjusted": 485675,
     "adjusted_k": "$486K",
     "bullets": {
      "count": 2
@@ -66,9 +66,9 @@
      [
       "Sold"
      ],
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -93,9 +93,9 @@
      [
       "Sold"
      ],
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -110,7 +110,7 @@
     "strongest": true
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K",
     "bullets": {
      "count": 2
@@ -126,9 +126,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ]
+     {
+      "count": 2
+     }
     ],
     "meta": [
      "pool"
@@ -164,7 +164,7 @@
     "strongest": false
    },
    {
-    "adjusted": 431200,
+    "adjusted": 431229,
     "adjusted_k": "$431K",
     "bullets": {
      "count": 1
@@ -180,9 +180,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      }
@@ -345,7 +345,7 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 485600,
+    "adjusted": 485675,
     "seller_paid": 0,
     "sold_price": 505500
    },
@@ -355,7 +355,7 @@
     "sold_price": 495000
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "seller_paid": 500,
     "sold_price": 427000
    },
@@ -365,7 +365,7 @@
     "sold_price": 429000
    },
    {
-    "adjusted": 431200,
+    "adjusted": 431229,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -406,7 +406,7 @@
   "value": {
    "high": 480000,
    "low": 455000,
-   "median_adjusted": 469800,
+   "median_adjusted": 469850,
    "midpoint": 467500.0
   },
   "version": 1
@@ -529,8 +529,8 @@
  "means": {
   "count": 4
  },
- "median_adjusted": 469800,
- "median_shown": 469800,
+ "median_adjusted": 469850,
+ "median_shown": 469900,
  "method": {
   "lines": {
    "count": 3
@@ -1000,7 +1000,7 @@
  "summary": {
   "comps": [
    {
-    "adjusted": 485600,
+    "adjusted": 485675,
     "adjusted_k": "$486K"
    },
    {
@@ -1008,7 +1008,7 @@
     "adjusted_k": "$479K"
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K"
    },
    {
@@ -1016,7 +1016,7 @@
     "adjusted_k": "$434K"
    },
    {
-    "adjusted": 431200,
+    "adjusted": 431229,
     "adjusted_k": "$431K"
    }
   ],

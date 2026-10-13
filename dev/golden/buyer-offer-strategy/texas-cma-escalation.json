@@ -286,7 +286,7 @@
     "net": 566973,
     "net_adj": 566473,
     "price": 615000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -360,7 +360,7 @@
     "net": 566973,
     "net_adj": 566473,
     "price": 615000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -434,7 +434,7 @@
     "net": 566973,
     "net_adj": 566473,
     "price": 615000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "price": 615000,
    "rank_value": 557933.0,
@@ -546,7 +546,7 @@
     "net": 562273,
     "net_adj": 561773,
     "price": 610000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_by_given": false,
@@ -712,7 +712,7 @@
     "net": 582953,
     "net_adj": 582453,
     "price": 632000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -786,7 +786,7 @@
     "net": 582953,
     "net_adj": 582453,
     "price": 632000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -860,7 +860,7 @@
     "net": 582953,
     "net_adj": 582453,
     "price": 632000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "price": 632000,
    "rank_value": 573913.0,
@@ -972,7 +972,7 @@
     "net": 562273,
     "net_adj": 561773,
     "price": 610000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_by_given": false,
@@ -1141,7 +1141,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_counter": {
      "assumed": [
@@ -1215,7 +1215,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_down": {
      "assumed": [
@@ -1289,7 +1289,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "price": 615000,
     "rank_value": 557933.0,
@@ -1401,7 +1401,7 @@
      "net": 562273,
      "net_adj": 561773,
      "price": 610000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "title_by": "seller",
     "title_by_given": false,
@@ -1567,7 +1567,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_counter": {
      "assumed": [
@@ -1641,7 +1641,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_down": {
      "assumed": [
@@ -1715,7 +1715,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "price": 632000,
     "rank_value": 573913.0,
@@ -1827,7 +1827,7 @@
      "net": 562273,
      "net_adj": 561773,
      "price": 610000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "title_by": "seller",
     "title_by_given": false,
@@ -1866,6 +1866,16 @@
     "impact": "med",
     "scope": "listing",
     "value": 0
+   },
+   {
+    "field": "current_tax_bill_paid",
+    "impact": "med",
+    "offers": [
+     "recommended",
+     "stronger"
+    ],
+    "scope": "listing",
+    "value": false
    },
    {
     "field": "title_estimate_pct",
@@ -1948,7 +1958,7 @@
    "roof_year": 2018,
    "sqft": 1780,
    "state": "TX",
-   "tax_bill_month": 11,
+   "tax_bill_month": 10,
    "tax_in_arrears": true,
    "title_customary_payer": "seller",
    "title_payer_deal": false,
@@ -1985,6 +1995,16 @@
     "impact": "med",
     "scope": "listing",
     "value": 0
+   },
+   {
+    "field": "current_tax_bill_paid",
+    "impact": "med",
+    "offers": [
+     "recommended",
+     "stronger"
+    ],
+    "scope": "listing",
+    "value": false
    },
    {
     "field": "title_estimate_pct",
@@ -2161,7 +2181,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_counter": {
      "assumed": [
@@ -2235,7 +2255,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_down": {
      "assumed": [
@@ -2309,7 +2329,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "price": 615000,
     "rank_value": 557933.0,
@@ -2421,7 +2441,7 @@
      "net": 562273,
      "net_adj": 561773,
      "price": 610000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "title_by": "seller",
     "title_by_given": false,
@@ -2587,7 +2607,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_counter": {
      "assumed": [
@@ -2661,7 +2681,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_down": {
      "assumed": [
@@ -2735,7 +2755,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "price": 632000,
     "rank_value": 573913.0,
@@ -2847,7 +2867,7 @@
      "net": 562273,
      "net_adj": 561773,
      "price": 610000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "title_by": "seller",
     "title_by_given": false,
@@ -3015,7 +3035,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_counter": {
      "assumed": [
@@ -3089,7 +3109,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_down": {
      "assumed": [
@@ -3163,7 +3183,7 @@
      "net": 582953,
      "net_adj": 582453,
      "price": 632000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "price": 632000,
     "rank_value": 573913.0,
@@ -3275,7 +3295,7 @@
      "net": 562273,
      "net_adj": 561773,
      "price": 610000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "title_by": "seller",
     "title_by_given": false,
@@ -3441,7 +3461,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_counter": {
      "assumed": [
@@ -3515,7 +3535,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "ns_down": {
      "assumed": [
@@ -3589,7 +3609,7 @@
      "net": 566973,
      "net_adj": 566473,
      "price": 615000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "price": 615000,
     "rank_value": 557933.0,
@@ -3701,7 +3721,7 @@
      "net": 562273,
      "net_adj": 561773,
      "price": 610000,
-     "tax_bill_assumed": false
+     "tax_bill_assumed": true
     },
     "title_by": "seller",
     "title_by_given": false,
@@ -3798,7 +3818,7 @@
    "net": 562273,
    "net_adj": 561773,
    "price": 610000,
-   "tax_bill_assumed": false
+   "tax_bill_assumed": true
   },
   "target_close": "2026-10-28"
  },
@@ -3854,6 +3874,16 @@
    "impact": "med",
    "scope": "listing",
    "value": 0
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "low",
+   "offers": [
+    "recommended",
+    "stronger"
+   ],
+   "scope": "listing",
+   "value": false
   },
   {
    "field": "title_estimate_pct",
@@ -4016,6 +4046,16 @@
    "impact": "low",
    "scope": "worksheet",
    "value": null
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "low",
+   "offers": [
+    "recommended",
+    "stronger"
+   ],
+   "scope": "listing",
+   "value": false
   }
  ],
  "overrides": {

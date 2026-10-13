@@ -112,13 +112,7 @@
     "sold_price": 398000,
     "seller_concessions": 5000,
     "condition": "kitchen_only",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 2100,
-      "kind": "size"
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A close match in size and condition."
     ],
@@ -129,13 +123,7 @@
     "sold_price": 405000,
     "seller_concessions": 0,
     "condition": "kitchen_and_baths",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1125,
-      "kind": "size"
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A close match in size and condition."
     ],
@@ -146,13 +134,7 @@
     "sold_price": 378000,
     "seller_concessions": 6000,
     "condition": "kitchen_only",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 7500,
-      "kind": "size"
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A close match in size and condition."
     ],
@@ -163,13 +145,7 @@
     "sold_price": 362000,
     "seller_concessions": 7500,
     "condition": "original",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 4500,
-      "kind": "size"
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A close match in size and condition."
     ],

@@ -1,8 +1,8 @@
 {
- "adjusted_max": 485600,
- "adjusted_min": 431200,
+ "adjusted_max": 485675,
+ "adjusted_min": 431229,
  "asking_position": {
-  "amount": 5100,
+  "amount": 5050,
   "key": "sum_pos_over_median"
  },
  "assumption_keys": [
@@ -59,7 +59,7 @@
  "comps": {
   "cards": [
    {
-    "adjusted": 485600,
+    "adjusted": 485675,
     "adjusted_k": "$486K",
     "bullets": {
      "count": 3
@@ -69,9 +69,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -94,9 +94,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -109,7 +109,7 @@
     ]
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K",
     "bullets": {
      "count": 2
@@ -125,9 +125,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ]
+     {
+      "count": 2
+     }
     ],
     "meta": [
      "pool"
@@ -159,7 +159,7 @@
     ]
    },
    {
-    "adjusted": 431200,
+    "adjusted": 431229,
     "adjusted_k": "$431K",
     "bullets": {
      "count": 3
@@ -175,9 +175,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      }
@@ -312,7 +312,7 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 485600,
+    "adjusted": 485675,
     "seller_paid": 0,
     "sold_price": 505500
    },
@@ -322,7 +322,7 @@
     "sold_price": 495000
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "seller_paid": 500,
     "sold_price": 427000
    },
@@ -332,7 +332,7 @@
     "sold_price": 429000
    },
    {
-    "adjusted": 431200,
+    "adjusted": 431229,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -380,7 +380,7 @@
   "value": {
    "high": 480000,
    "low": 455000,
-   "median_adjusted": 469800,
+   "median_adjusted": 469850,
    "midpoint": 467500
   },
   "version": 1
@@ -592,8 +592,8 @@
   "share_with_seller_paid_costs_recent": 0.889,
   "split_date": "2026-07-01"
  },
- "median_adjusted": 469800,
- "median_shown": 469800,
+ "median_adjusted": 469850,
+ "median_shown": 469850,
  "method": {
   "lines": {
    "count": 3
@@ -628,9 +628,9 @@
    ]
   },
   "at_median": {
-   "price": 469800,
+   "price": 469850,
    "totals": [
-    4064,
+    4065,
     4186,
     3412
    ]
@@ -832,7 +832,7 @@
   "tax_index": 1
  },
  "range": {
-  "cap": 28188.0,
+  "cap": 28191.0,
   "high": 480000,
   "low": 455000,
   "midpoint": 467500,
@@ -908,7 +908,7 @@
   ],
   "comps": [
    {
-    "adjusted": 485600,
+    "adjusted": 485675,
     "adjusted_k": "$486K"
    },
    {
@@ -916,7 +916,7 @@
     "adjusted_k": "$479K"
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K"
    },
    {
@@ -924,7 +924,7 @@
     "adjusted_k": "$434K"
    },
    {
-    "adjusted": 431200,
+    "adjusted": 431229,
     "adjusted_k": "$431K"
    }
   ],

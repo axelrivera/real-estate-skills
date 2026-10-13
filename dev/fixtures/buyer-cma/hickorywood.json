@@ -45,7 +45,7 @@
  },
  "summary_page": {
   "label": "Buyer Summary",
-  "headline": "Asking sits near the top of what recent sales support: the home has sat for months and the price keeps coming down.",
+  "headline": "Renovated Spring Oaks pool homes of the same size set the value: this one has sat for months and the price keeps coming down.",
   "why": [
    "The closest Spring Oaks pool sales, adjusted to this home, center near the middle of the range.",
    "The market cooled since early in the year: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
@@ -155,21 +155,13 @@
     "sold_price": 505500,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 1800
-     },
-     {
-      "label": "Larger Corner Lot",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
      "About the same size. Its larger fenced corner lot, with room for a boat or trailer, is worth a bit more.",
      "It sold earlier in the year, when rates were lower and homes were moving faster."
-    ]
+    ],
+    "lot": "corner_or_oversized"
    },
    {
     "address": "516 Oakwood Ct",
@@ -177,10 +169,6 @@
     "seller_concessions": 0,
     "condition": "full_renovation",
     "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1200
-     },
      {
       "label": "Documented Recent Systems",
       "amount": -5000
@@ -196,12 +184,7 @@
     "sold_price": 427000,
     "seller_concessions": 500,
     "condition": "original",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1700
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The most recent pool-home sale in Spring Oaks, and it sat for a while before it sold.",
      "Described as well maintained but not renovated, so it's adjusted up for the renovation this home has."
@@ -224,21 +207,13 @@
     "sold_price": 465000,
     "seller_concessions": 13071,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Larger Canal Lot",
-      "amount": -10000
-     },
-     {
-      "label": "Size",
-      "amount": -1229
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A renovated pool home with new windows, listed at almost exactly this home's original price.",
      "The seller paid part of the buyer's costs, which comes off the price.",
      "It sits on nearly twice the land, backing onto a canal, which buyers pay more for."
-    ]
+    ],
+    "lot": "canal"
    }
   ],
   "lean": "We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks sales support the same picture."

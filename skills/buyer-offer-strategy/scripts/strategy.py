@@ -2251,9 +2251,15 @@ def net_sheet(r):
 
 def scorecard(r):
     O, rec = r["O"], r["O"]["recommended"]
+    def reason(key):  # a criterion the options score differently says why for each, so a lower score is explained
+        if rec["score"]["why"][key] is None:
+            return L_["sc_not_scored"]
+        whys = {k: cap(str(O[k]["score"]["why"][key])) for k in O}
+        if len({O[k]["score"]["scores"][key] for k in O}) > 1 and len(set(whys.values())) > 1:
+            return "; ".join(f"{opt_name(k)}: {w}" for k, w in whys.items())
+        return whys["recommended"]
     rows = [{"key": key, "label": label, "weight": t("weight", n=wt),
-             "scores": [O[k]["score"]["scores"][key] for k in O],
-             "why": L_["sc_not_scored"] if rec["score"]["why"][key] is None else cap(str(rec["score"]["why"][key]))}
+             "scores": [O[k]["score"]["scores"][key] for k in O], "why": reason(key)}
             for key, label, wt in oe.CRITERIA]
     # every option reads the same buyer facts, so the same criteria are scored: the total's weight is the scored weight
     total = {"label": L_["sc_total"], "weight": t("weight", n=rec["score"]["weight"]),

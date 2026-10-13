@@ -48,7 +48,7 @@
  },
  "summary_page": {
   "label": "Buyer Summary",
-  "headline": "Asking sits above what recent sales support: the comparable sales center near the middle of the range, after months on the market and repeated price cuts.",
+  "headline": "Cattail Crossing pool homes of this size and era set the value, and this one has sat for months through repeated price cuts.",
   "why": [
    "The closest Cattail Crossing pool sales, adjusted to this home, center near the middle of the range.",
    "The market cooled since early in the year: homes now sell under their original asking price, and most sellers pay part of buyers' costs.",
@@ -137,10 +137,6 @@
     "condition": "full_renovation",
     "adjustments": [
      {
-      "label": "Size",
-      "amount": -2550
-     },
-     {
       "label": "Documented Recent Systems",
       "amount": -5000
      }
@@ -149,43 +145,33 @@
      "The strongest sale for the seller's price: renovated recently on the same street, and sold above asking within a week with no seller help.",
      "Slightly larger, and it came with a permitted recent AC; this home's AC age isn't listed, so that home gets a small edge.",
      "It sold earlier in the year, when rates were lower and homes were moving faster."
-    ]
+    ],
+    "sqft": 2248
    },
    {
     "address": "1377 Sedgefield Ct",
     "sold_price": 598500,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 1800
-     },
-     {
-      "label": "Pond Lot",
-      "amount": -10000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A renovated pool home that went under contract within days at nearly full price.",
      "A bit smaller. It backs onto the pond on a larger lot, which buyers pay more for."
-    ]
+    ],
+    "lot": "view",
+    "sqft": 2190
    },
    {
     "address": "1455 Arrowroot Way",
     "sold_price": 548000,
     "seller_concessions": 8000,
     "condition": "original",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -3600
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The most recent pool-home sale in Cattail Crossing. It sat for weeks, and the seller paid part of the buyer's costs.",
      "Original kitchen and baths, so it's adjusted up for the remodel this home has."
-    ]
+    ],
+    "sqft": 2262
    },
    {
     "address": "1621 Sedgefield Ct",
@@ -204,17 +190,13 @@
     "sold_price": 589000,
     "seller_concessions": 9500,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -6525
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "Renovated recently on the same street, and sold within a few weeks.",
      "The seller paid part of the buyer's costs, which comes off the price.",
      "A little larger. A recent sale, so no market adjustment."
-    ]
+    ],
+    "sqft": 2301
    }
   ],
   "lean": "We lean toward the middle because the two highest sales are strong condition matches but come from a stronger market, while the most recent sales needed the smallest market adjustments and sit lower. Other Cattail Crossing sales, updated and renovated, support the same picture."

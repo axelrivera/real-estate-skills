@@ -193,7 +193,7 @@ RETIRED_EACH = {
 JUDGMENT = (
     "subject.summary", "subject.facts[][0]", "summary_page.label", "summary_page.headline", "summary_page.why[]",
     "summary_page.next_step", "recommendation.why", "range_override.reason", "means[]", "comps.intro", "comps.method_note", "comps.lean",
-    "comps.cards[].keep_reason", "comps.time_override.reason", "split_override.reason",
+    "comps.cards[].keep_reason", "comps.cards[].lot_reason", "subject.lot_reason", "comps.time_override.reason", "split_override.reason",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
     "competition.intro", "competition.rows[][6]", "market.bullets[]", "pricing.intro", "pricing.note",
     "pricing.stance_reason", "pricing.options.*.note", "price_override.reason", "prep.intro", "prep.items[].step",

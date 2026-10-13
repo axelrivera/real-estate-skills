@@ -360,5 +360,82 @@ class Roof(unittest.TestCase):
         self.assertTrue(all(v == "+$10,000" for c in older for a, v in c["lines"] if a.startswith("Roof:")))
 
 
+class SizeAndLot(unittest.TestCase):
+    """Size and lot adjustments are the script's: sq ft from the export (or the card) at the market's rate, and the lot
+    by its type; a typed size, lot or water amount stops the run (iteration 18: two runs typed a corner lot apart)."""
+    market = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.market = compute.profiles.load_market(state="FL", county="Seminole")
+
+    def lines(self, subject, *cards, given=None, homes=()):
+        comps = {"cards": [{"address": f"{i} A St", "adjustments": [], **c} for i, c in enumerate(cards, 1)],
+                 **(given or {})}
+        size = cma.apply_size_adjustments(comps, {"sqft": 1800, **subject}, self.market, homes)
+        lot = cma.apply_lot_adjustments(comps, subject, self.market)
+        return size, lot, [[(a["label"], a["amount"]) for a in c["adjustments"]] for c in comps["cards"]]
+
+    def test_size_from_the_card_or_the_export(self):
+        homes = [{"status": "SOLD", "address": "2 A ST", "living_area": 1700.0}]
+        (_, info), _, lines = self.lines({}, {"sqft": 1830}, {}, {}, homes=homes)
+        self.assertEqual(lines, [[("Size: 30 Sq Ft Larger", -2250)], [("Size: 100 Sq Ft Smaller", 7500)], []])
+        self.assertEqual(info["unknown"], ["3 A St"])
+        (_, info), _, _ = self.lines({}, {"sqft": 2200})
+        self.assertEqual(info["wide"], [("1 A St", 400)])
+        self.assertEqual([k for k, _ in cma.size_warnings(info)], ["size_wide"])
+        (_, _), _, lines = self.lines({}, {"sqft": 1700}, given={"size_per_sqft": 50})  # the agent's rate
+        self.assertEqual(lines, [[("Size: 100 Sq Ft Smaller", 5000)]])
+
+    def test_lot_by_type(self):
+        _, (errors, _), lines = self.lines({}, {"lot": "canal"}, {"lot": "corner_or_oversized"}, {})
+        self.assertEqual(errors, [])
+        self.assertEqual([[x for x in c if x[0].startswith("Lot")] for c in lines],
+                         [[("Lot: Canal", -10000)], [("Lot: Corner or Oversized", -5000)], []])
+        _, _, lines = self.lines({"lot": "view"}, {"lot": "view"}, {})  # the same lot: none; the home's view: plus
+        self.assertEqual([[x for x in c if x[0].startswith("Lot")] for c in lines], [[], [("Lot: Standard", 5000)]])
+        _, _, lines = self.lines({}, {"lot": "other", "lot_value": -5000, "lot_reason": "backs onto a busy road"})
+        self.assertEqual(lines[0][-1], ("Lot: Backs Onto a Busy Road", 5000))
+
+    def test_typed_amounts_and_bad_inputs_stop(self):
+        comps = {"cards": [{"address": "1 A St", "adjustments": [{"label": "Size", "amount": 1500},
+                                                                   {"label": "Oversized Corner Lot", "amount": -5000},
+                                                                   {"label": "Newer Water Heater", "amount": -2000},
+                                                                   {"label": "Extra Bedroom", "amount": -8000,
+                                                                    "kind": "size"}]}]}
+        errors, _ = cma.apply_size_adjustments(comps, {"sqft": 1800}, self.market)
+        self.assertEqual(len(errors), 1)  # the size line; a bedroom count stays the agent's
+        errors, _ = cma.apply_lot_adjustments(comps, {}, self.market)
+        self.assertEqual(len(errors), 1)  # the corner lot; a water heater is a system, not water
+        errors, _ = cma.apply_lot_adjustments({"cards": [{"address": "1 A St", "lot": "other"}]}, {"lot": "pond"},
+                                              self.market)
+        self.assertEqual(len(errors), 3)  # an unknown type, and an "other" lot without its value and reason
+        texas = compute.profiles.load_market(state="TX", county="Travis")
+        errors, _ = cma.apply_lot_adjustments({"cards": [{"address": "1 A St", "lot": "canal"}]}, {}, texas)
+        self.assertIn("comps.lot_values", errors[0])  # no built-in lot values outside Florida
+        errors, _ = cma.apply_size_adjustments({"cards": [{"address": "1 A St", "sqft": 1700}]}, {"sqft": 1800}, texas)
+        self.assertIn("comps.size_per_sqft", errors[0])
+        errors, _ = cma.apply_size_adjustments({"cards": []}, {}, self.market)
+        self.assertIn("subject.sqft", errors[0])
+
+    def test_errors_name_the_agents_own_position(self):
+        """The script's lines go in first (size, condition, lot); an error on a typed line still names where the agent
+        typed it, and a typed time line is removed itself, never a script line that moved into its place."""
+        cards = [{"address": "1 A St", "sold_price": 400000, "condition": "original", "sqft": 1700,
+                  "adjustments": [{"label": "Pool", "amount": 25000}, {"label": "Older Roof", "amount": 5000}]}]
+        R = {"as_of": "2026-09-26", "subject": {"sqft": 1800, "condition": "full_renovation", "roof_year": 2015},
+             "comps": {"cards": cards}}
+        errors, _, _ = cma.settle_comps(R, [], self.market, None)
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith("comps.cards[0].adjustments[1]:"), errors[0])
+        self.assertEqual(cma.typed_adjustments({"adjustments": [{"label": "Size", "source": "script"}, {"label": "Pool"}]}),
+                         [(0, {"label": "Pool"})])
+
+    def test_seller_report_prices_size_and_lot(self):
+        C, _ = run(tanager())
+        lines = [a for c in C["comps"]["cards"] for a, _ in c["lines"]]
+        self.assertTrue(any(a.startswith("Size: ") for a in lines))
+
+
 if __name__ == "__main__":
     unittest.main()

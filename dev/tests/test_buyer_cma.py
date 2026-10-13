@@ -202,6 +202,20 @@ class Inputs(unittest.TestCase):
             R["subject"]["summary"] = "The home offers a pool and a new roof; the countertops are stone."
         run(elsewhere)  # no error
 
+    def test_headline_leaves_where_asking_sits_to_the_script(self):
+        """Iteration 18: a headline written before the range said asking "sits above" when it was inside. Where asking
+        sits is the script's line above the headline, and the Bottom Line repeats that same line, never a second wording."""
+        def position(R):
+            R["summary_page"]["headline"] = "Asking sits near the bottom of what recent sales support."
+        with self.assertRaises(compute.ReportError) as e:
+            run(position)
+        self.assertIn("summary_page.headline", str(e.exception))
+        for word in ("Asking", "bottom"):
+            self.assertIn(repr(word), str(e.exception))
+        _, C, _ = run()
+        self.assertTrue(C["bottom_line"]["line"].startswith(C["asking_position"]["line"]))
+        self.assertEqual(C["summary"]["position_line"], C["asking_position"]["line"])
+
     def test_compute_never_changes_its_input(self):
         R = report()
         before = copy.deepcopy(R)
@@ -359,7 +373,7 @@ class CompsFirst(unittest.TestCase):
         self.assertEqual(out["asking_vs_median"], full["subject"]["list_price"] - C["median_adjusted"])
         self.assertEqual(written, ["report.json"])  # no handoff without a range
 
-    def test_rough_range(self):
+    def test_gut_check_range(self):
         def comps_only(**subject):
             full = report()
             R = {k: copy.deepcopy(full[k]) for k in ("subject", "comps", "history", "export", "as_of")}
@@ -367,14 +381,13 @@ class CompsFirst(unittest.TestCase):
             market, homes = compute.load_inputs(R)
             return compute.comps_first(R, market, homes)
         out = comps_only()
-        rough = out["rough"]
-        self.assertEqual((rough["range"]["low"], rough["range"]["high"]),
-                         (out["adjusted_min"] // 1000 * 1000, -(-out["adjusted_max"] // 1000) * 1000))
-        self.assertEqual(set(rough), {"range", "typical_width"})  # no opening, target or walk-away
+        self.assertNotIn("rough", out)  # one range: the report's own
+        self.assertEqual(set(out["range"]), {"low", "high", "display", "override"})  # no opening, target or walk-away
         self.assertEqual(out["history"]["price_cuts"], 4)  # the gut check counts the history too
         self.assertEqual(out["warning_keys"], [])
         _, C, _ = run()  # the quick answer and the full report say the same about asking
         self.assertEqual(out["asking_position"], C["asking_position"])
+        self.assertEqual((out["range"]["low"], out["range"]["high"]), (C["range"]["low"], C["range"]["high"]))
         self.assertEqual(comps_only(list_price=440000)["asking_position"]["key"], "sum_pos_below")
 
 
@@ -502,6 +515,7 @@ class Taxes(unittest.TestCase):
         def texas(R):
             R["subject"].update(state="TX", county="Travis")
             R["comps"]["condition_values"] = TEXAS_CONDITION  # no built-in condition values outside Florida
+            R["comps"]["lot_values"] = {"corner_or_oversized": 5000, "canal": 10000}  # nor lot values
             R.pop("export")
             for j in R["costs"]["taxes"]["jurisdictions"]:
                 j.pop("school_mills", None), j.pop("total_mills", None), j.pop("district", None)

@@ -260,7 +260,8 @@ class PropertyTax(unittest.TestCase):
         tax = next(a for a in R["missing"] if a["field"] == "annual_tax")
         self.assertIn("Texas average effective rate", tax["why"])
         out = review.result(R)
-        self.assertIn("tax proration at 1.4% of list price (Texas average effective rate)", out["estimated_costs"])
+        self.assertIn("tax proration at 1.4% of list price (Texas average effective rate), this year's bill assumed unpaid",
+                      out["estimated_costs"])  # an October closing, after the bills go out (Florida's November never used)
         data["listing"]["tax_rate"] = 0.02
         self.assertEqual(review.analyze(data)["listing"]["annual_tax"], 12200)
         data["listing"].pop("tax_rate")

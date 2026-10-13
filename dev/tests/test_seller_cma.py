@@ -67,10 +67,14 @@ def row(C, key):
     return next(r for r in C["net"]["rows"] if r["key"] == key)
 
 
+AGENT_LOTS = {"corner_or_oversized": 5000, "canal": 10000}  # the agent's, outside the built-in market
+
+
 def texas(R):
     R["costs"] = {}  # no terms given: national estimates, never Florida's numbers
     R["subject"].update(state="TX", county="Travis", city="Austin")
     R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}  # the agent's
+    R["comps"]["lot_values"] = AGENT_LOTS  # no built-in lot values outside Florida either
     R.pop("export")
     R["buyer_payment"].pop("district")
     R["buyer_payment"].update(school_mills=9.5, total_mills=19.0)
@@ -509,6 +513,8 @@ class OtherMarkets(unittest.TestCase):
             R["subject"].pop(k)
         R["mls"] = "Stellar"
         R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}
+        R["comps"]["lot_values"] = AGENT_LOTS
+        R["comps"]["size_per_sqft"] = 75  # with no state, no market rates: the agent's
         C, _ = run(R)
         self.assertTrue(C["preliminary"])
         self.assertEqual(C["state_hint"]["state"], "FL")
@@ -773,8 +779,8 @@ class JudgmentOnly(unittest.TestCase):
         R["prep"]["items"][0] = "<strong>Document the roof.</strong> Permits."
         stops(self, R, r"prep\.items")
         R = report()
-        R["comps"]["cards"][0]["adjustments"][0]["kind"] = "vibes"
-        stops(self, R, r"comps\.cards\[0\]\.adjustments\[0\]\.kind")
+        R["comps"]["cards"][1]["adjustments"][0]["kind"] = "vibes"  # its Documented Recent Systems line
+        stops(self, R, r"comps\.cards\[1\]\.adjustments\[0\]\.kind")
 
     def test_the_script_states_the_facts(self):
         C, _ = run(tanager())

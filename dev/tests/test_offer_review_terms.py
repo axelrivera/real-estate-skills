@@ -140,7 +140,8 @@ class AppraisalWording(unittest.TestCase):
                                                 "deposit": 8000, "closing_days": 30, "appraisal_contingency": 21}))
             return R["offers"][0]["score"]["why"]["appraisal"]
         self.assertTrue(why(380000).startswith("Below the value range, "))
-        self.assertTrue(why(395000).startswith("Inside the value range, "))
+        self.assertTrue(why(395000).startswith("In the lower half of the value range, "))
+        self.assertTrue(why(405000).startswith("In the upper half of the value range, "))  # scores lower: said why
         self.assertTrue(why(415000).startswith("$5,000 over the top of the value range, "))
         self.assertTrue(why(380000, cma=False).startswith("Below list price, "))
         self.assertTrue(why(400000, cma=False).startswith("At list price, "))

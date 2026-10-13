@@ -62,7 +62,7 @@
 
  "h_bottom": "The Bottom Line",
  "range_caption": "Supported value range · midpoint about {mid}",
- "line_bottom": "Asking {ask} sits {position} this range. The median of the comparable sales, adjusted to this home, is {median}.",
+ "line_bottom": "The median of the comparable sales, adjusted to this home, is {median}.",
  "line_appraisal_gap": "An appraisal at the top of the range, {top}, would come in {gap} below asking. A lender lends on the lower of the price and the appraisal, so a financed buyer pays a gap like that in cash or settles it with the seller.",
  "line_range_override": "This range is our judgment rather than the standard method's {rule}: {reason}",
  "pos_above": "above",

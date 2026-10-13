@@ -26,7 +26,7 @@ Page 1 summary → the home → bottom line (+ history) → comps → scatterplo
 
 The flyer for buyers who won't read the report. Someone who reads only page 1 knows the supported range, where asking sits against it and the median, the key numbers, the comps at a glance, what the home really costs them, the three things to check, and the next step.
 
-Three `why` bullets (the reasons for the range, under about 25 words each), three `check_first` items and a headline under about 25 words, all without figures and without offer advice. The headline says where asking sits against what the sales support and the one fact that explains it: "Asking sits above what recent sales support: the closest sales center near the middle of the range", never "Open at the bottom of the range". The `next_step` may point to building the offer options. The range, the key numbers, the dot plot, the tax and payment figures and the payment tile are the script's.
+Three `why` bullets (the reasons for the range, under about 25 words each), three `check_first` items and a headline under about 25 words, all without figures and without offer advice. The headline gives the one fact that explains the value: "Renovated Spring Oaks pool homes of the same size set the value; this one's roof age is unknown", never "Open at the bottom of the range". Where asking sits is the script's sentence right above it, so the headline never says it (no "asking", "above", "below", "inside", "top", "bottom", "middle" or "median": compute.py stops on them), and write it after compute.py has printed the range. The `next_step` may point to building the offer options. The range, the key numbers, the dot plot, the tax and payment figures and the payment tile are the script's.
 
 ## After Rendering
 

@@ -91,10 +91,6 @@
     "condition": "full_renovation",
     "adjustments": [
      {
-      "label": "Size",
-      "amount": -2550
-     },
-     {
       "label": "Documented Recent Systems",
       "amount": -5000
      }
@@ -102,43 +98,33 @@
     "bullets": [
      "The highest recent sale for a home like yours: renovated on your street, sold above asking within a week with no seller help.",
      "Slightly larger, and it came with a permitted newer AC; until we have your AC's date and records, it keeps a small edge."
-    ]
+    ],
+    "sqft": 2248
    },
    {
     "address": "1377 Sedgefield Ct",
     "sold_price": 598500,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 1800
-     },
-     {
-      "label": "Pond Lot",
-      "amount": -10000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A renovated pool home that went under contract within days at nearly full price.",
      "It backs onto the pond on a larger lot, which buyers pay more for."
-    ]
+    ],
+    "lot": "view",
+    "sqft": 2190
    },
    {
     "address": "1455 Arrowroot Way",
     "sold_price": 548000,
     "seller_concessions": 8000,
     "condition": "original",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -3600
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The most recent pool-home sale in Cattail Crossing, after a long stretch on the market and with the seller helping on the buyer's costs.",
      "Original kitchen and baths, so it's adjusted up for the remodel your home has."
-    ]
+    ],
+    "sqft": 2262
    },
    {
     "address": "1621 Sedgefield Ct",
@@ -156,16 +142,12 @@
     "sold_price": 589000,
     "seller_concessions": 9500,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -6525
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "Renovated on your street, a bit larger than yours.",
      "The seller paid part of the buyer's costs; a recent sale, so no market adjustment."
-    ]
+    ],
+    "sqft": 2301
    }
   ],
   "lean": "The two highest are strong matches to your home's condition but sold earlier in the year, in a stronger market; the recent sales sit lower, so the range leans on the middle."

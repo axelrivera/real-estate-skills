@@ -197,17 +197,16 @@ class Model(unittest.TestCase):
                     self.assertNotIn(gone, doc)
 
     def test_gut_check_agrees_with_the_report(self):
-        """The gut check's rough range is the adjusted comps' span, and it says the same about asking as the report."""
+        """The gut check quotes the report's own range and says the same about asking as the report."""
         for seed, R, C in cases():
             with self.subTest(seed=seed):
                 G = {k: copy.deepcopy(R[k]) for k in ("subject", "split_override", "as_of", "export", "mls", "history",
                                                       "range_override") if k in R}
                 G["comps"] = {k: copy.deepcopy(v) for k, v in R["comps"].items()
-                              if k in ("cards", "count", "time_override", "condition_values")}
+                              if k in ("cards", "count", "time_override", "condition_values", "size_per_sqft", "lot_values")}
                 out = compute.run(G)
                 self.assertEqual(out["asking_position"], C["asking_position"])
-                self.assertLessEqual(out["rough"]["range"]["low"], C["adjusted_min"])
-                self.assertGreaterEqual(out["rough"]["range"]["high"], C["adjusted_max"])
+                self.assertEqual((out["range"]["low"], out["range"]["high"]), (C["range"]["low"], C["range"]["high"]))
 
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, _, C in cases():

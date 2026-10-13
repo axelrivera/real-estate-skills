@@ -21,7 +21,7 @@ Lowest first. The dollar value of each is over an original home, from the market
 - **Partly done counts as the level below.** One of two baths updated is not "baths"; a kitchen with new counters but original cabinets and appliances is `cosmetic`, not `kitchen_only`. So an updated kitchen with one refreshed bath and an original primary bath is `kitchen_only`.
 - **"Updated" without saying what** ("updated pool home", "refreshed", "move-in ready") is `cosmetic`.
 - **"Renovated" or "remodeled" with no rooms named** ("renovated pool home") is `kitchen_and_baths`: the word means rooms were rebuilt, not repainted, and a renovation that stops short of the kitchen and baths names what it did; without "throughout" or flooring and finishes named it's not the whole house, so it takes the lower of the two levels it could be. "Fully renovated", "renovated throughout" or "completely remodeled" is `full_renovation`.
-- **"Updated kitchen and baths"** is `kitchen_and_baths`, not `full_renovation`, unless the remarks also name new flooring or finishes throughout.
+- **"Updated kitchen and baths"** is `kitchen_and_baths`, not `full_renovation`, unless the remarks also name new flooring (flooring runs through the house, so "new flooring" counts without the word "throughout") or new finishes throughout.
 - **Systems aren't condition.** The roof goes by its age band and newer AC, water heater or windows by the documented-systems rate (`method.md`); neither moves a home up the ladder.
 - **The seller's home** takes its level from what the seller describes today, never from an old listing of it. An update the seller can't document still counts for the level (it's what buyers will see), but say in `method_note` that it's from the seller.
 

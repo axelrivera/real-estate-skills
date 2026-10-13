@@ -11,7 +11,7 @@ import re
 import statistics
 from datetime import date, timedelta
 
-from . import finance, fmt, layout, mls, render
+from . import finance, fmt, layout, mls, prose, render
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
@@ -875,6 +875,12 @@ _KIND_WORDS = (
 )
 
 
+def typed_adjustments(card):
+    """(index, adjustment) for each adjustment the agent typed on a card, numbered as the agent wrote them: the lines the
+    script adds (`source: "script"`) are skipped and never counted, so an error names the agent's own position."""
+    return list(enumerate(a for a in card.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script")))
+
+
 def adjustment_kind(adj):
     """The adjustment's `kind` when given, else the one its label points to ('other' when none does)."""
     if isinstance(adj, dict) and adj.get("kind") in ADJUSTMENT_KINDS:
@@ -887,7 +893,7 @@ def adjustment_kind_errors(cards):
     """`kind` values that aren't one of ADJUSTMENT_KINDS, as `field: problem → fix` lines."""
     out = []
     for i, c in enumerate(cards or []):
-        for j, a in enumerate(c.get("adjustments") or []):
+        for j, a in typed_adjustments(c):
             if isinstance(a, dict) and a.get("kind") not in (None, "") and a["kind"] not in ADJUSTMENT_KINDS:
                 out.append(f"comps.cards[{i}].adjustments[{j}].kind: {a['kind']!r} isn't a kind → use one of "
                            f"{', '.join(ADJUSTMENT_KINDS)}, or leave it out to take it from the label.")
@@ -994,7 +1000,7 @@ def apply_condition_adjustments(comps, subject, market):
     errors = _level_errors("subject.condition", subject.get("condition"))
     for i, c in enumerate(cards):
         errors += _level_errors(f"comps.cards[{i}].condition", c.get("condition"))
-        for j, a in enumerate(c.get("adjustments") or []):
+        for j, a in typed_adjustments(c):
             if not isinstance(a, dict) or a.get("source") == "script":
                 continue
             if adjustment_kind(a) == "condition" or _CONDITION_TYPED.search(str(a.get("label") or "")):
@@ -1227,7 +1233,7 @@ def apply_roof_adjustments(comps, subject, market, as_of):
     errors += check("subject", subject)
     for i, c in enumerate(cards):
         errors += check(f"comps.cards[{i}]", c)
-        for j, a in enumerate(c.get("adjustments") or []):
+        for j, a in typed_adjustments(c):
             if isinstance(a, dict) and a.get("source") != "script" and _ROOF_TYPED.search(str(a.get("label") or "")):
                 errors.append(f"comps.cards[{i}].adjustments[{j}]: a roof adjustment ({a.get('label')!r}) typed by hand → "
                               "delete it and set the card's `roof_year` (and `roof_type` for tile or metal), and "
@@ -1259,7 +1265,170 @@ def apply_roof_adjustments(comps, subject, market, as_of):
 def roof_warnings(info):
     """A comp with no roof year, when the subject's is known, gets no roof adjustment: say which."""
     return [f"{a}: no roof_year, so it has no roof adjustment. Add the year from its listing or remarks when they give "
-            "it, and re-run." for a in (info or {}).get("unknown") or []]
+            "it, and re-run; when they don't, leave it: this warning stands." for a in (info or {}).get("unknown") or []]
+
+
+# --- size and lot adjustments: script-owned ---------------------------------------------------------------------------
+
+SIZE_LABEL = "Size: {diff} Sq Ft {way}"  # the card label of a size adjustment the script adds
+SIZE_LIMIT = 300  # method.md: the per-square-foot rate is for differences under about 300 sq ft
+_SIZE_TYPED = re.compile(r"\bsize\b|sq\.? ?ft|square f|living area", re.I)
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def comp_sqft(card, homes=()):
+    """A comp's living area: the card's `sqft`, else the export's sold row for its address. None when neither has it."""
+    if _num(card.get("sqft")) and card["sqft"] > 0:
+        return card["sqft"]
+    row = next((h for h in homes or () if h.get("status") == "SOLD" and h.get("living_area")
+                and mls.same_address(_street(h["address"]), _street(card.get("address", "")))), None)
+    return row["living_area"] if row else None
+
+
+def apply_size_adjustments(comps, subject, market, homes=()):
+    """Size adjustments are the script's: (subject sq ft − comp sq ft) × the rate, the agent's `comps.size_per_sqft`
+    (from paired sales) over the market's `cma.adjustments.living_area_per_sqft`, added as kind "size". A comp's sq ft
+    is its card's `sqft`, else the export's. A size amount typed on a card is an error. Returns (errors, info
+    {rate, unknown: [addresses], wide: [(address, diff)]} or None)."""
+    cards = comps.get("cards") or []
+    errors = []
+    given = comps.get("size_per_sqft")
+    if given is not None and (not _num(given) or given < 0):
+        errors.append(f"comps.size_per_sqft: {given!r} → dollars per square foot from paired sales, a plain number.")
+    for i, c in enumerate(cards):
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and a.get("source") != "script" and (
+                    a.get("kind") == "size" and not re.search(r"bed|bath|room|stor", str(a.get("label") or ""), re.I)
+                    or _SIZE_TYPED.search(str(a.get("label") or ""))):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a size adjustment ({a.get('label')!r}) typed by hand "
+                              "→ delete it: the script adjusts each comp by its square footage against subject.sqft.")
+    sq = subject.get("sqft")
+    if not _num(sq) or sq <= 0:
+        errors.append("subject.sqft: missing → the home's living area in square feet, from the property report.")
+    if errors:
+        return errors, None
+    rate = given if given is not None else (market.get("cma.adjustments.living_area_per_sqft") if market is not None else None)
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "size")]
+    unknown, wide, diffs = [], [], []
+    for c in cards:
+        cs = comp_sqft(c, homes)
+        if cs is None:
+            unknown.append(c.get("address", "?"))
+            continue
+        diff = sq - cs
+        diffs.append(diff)
+        if abs(diff) > SIZE_LIMIT:
+            wide.append((c.get("address", "?"), abs(diff)))
+        amount = fmt.half_up(diff * rate) if rate else 0
+        if amount:
+            c["adjustments"].insert(0, {"label": SIZE_LABEL.format(diff=fmt.num(abs(diff)),
+                                                                   way="Smaller" if diff > 0 else "Larger"),
+                                        "amount": amount, "kind": "size", "source": "script"})
+    if rate is None and any(diffs):
+        return ["comps.size_per_sqft: no size rate in this market → give the dollars per square foot from paired sales "
+                "in the export, or the agent's rate, scaled to the price (method.md)."], None
+    return [], {"rate": rate, "unknown": unknown, "wide": wide}
+
+
+def size_warnings(info):
+    """(key, text): a used comp with no square footage (size_unknown), or one past the rate's limit (size_wide)."""
+    out = [("size_unknown", f"{a}: no square footage on its card or in the export, so it has no size adjustment. Add the card's `sqft` "
+           "from its listing and re-run.") for a in (info or {}).get("unknown") or []]
+    out += [("size_wide", f"{a}: {fmt.num(d)} sq ft from this home, past the about {SIZE_LIMIT} sq ft the per-square-foot rate is for. "
+            "Replace it with the next qualifying sale, or keep it and say why in comps.method_note.")
+            for a, d in (info or {}).get("wide") or []]
+    return out
+
+
+LOT_TYPES = ("standard", "corner_or_oversized", "view", "canal", "lake_or_open_water", "other")
+LOT_WORDS = {  # (card label, phrase in a sentence)
+    "standard": ("Standard", "a standard lot"),
+    "corner_or_oversized": ("Corner or Oversized", "a corner or oversized lot"),
+    "view": ("Water or Preserve View", "a water or preserve view"),
+    "canal": ("Canal", "a canal lot"),
+    "lake_or_open_water": ("Lake or Open Water", "lake or open water frontage"),
+    "other": ("Other", "its lot"),
+}
+LOT_LABEL = "Lot: {words}"  # the card label of a lot adjustment the script adds (the comp's own lot)
+_LOT_TYPED = re.compile(r"\blot\b|corner|canal|lake|water(?! heater)|view|preserve|golf|conservation|acre|cul-de-sac|"
+                        r"frontage|pond|river|ocean|\bbay\b", re.I)
+
+
+def lot_values(market, given=None):
+    """{lot type: dollars over a standard lot}: report.json's `comps.lot_values` over the market's
+    `cma.adjustments.lot_types`."""
+    base = (market.get("cma.adjustments.lot_types") if market is not None else None) or {}
+    return {**{k: v for k, v in base.items() if k in LOT_TYPES}, **(given if isinstance(given, dict) else {})}
+
+
+def _lot_errors(where, block):
+    lot = block.get("lot") or "standard"
+    if lot not in LOT_TYPES:
+        return [f"{where}.lot: {lot!r} isn't a lot type → one of {', '.join(LOT_TYPES)} (standard when left out)."]
+    out = []
+    if lot == "other":
+        if not _num(block.get("lot_value")):
+            out.append(f"{where}.lot_value: missing → for lot \"other\", what this lot is worth over a standard lot in "
+                       "dollars (negative when it's worth less), from paired sales or the agent.")
+        if not str(block.get("lot_reason") or "").strip():
+            out.append(f"{where}.lot_reason: missing → for lot \"other\", what sets the lot apart, in words.")
+    return out
+
+
+def apply_lot_adjustments(comps, subject, market):
+    """Lot and water adjustments are the script's: `subject.lot` and each card's `lot` name a type (LOT_TYPES, standard
+    when left out); each comp gets the subject's lot value minus its own (lot_values; an "other" lot carries its own
+    `lot_value` and `lot_reason`), added as kind "lot". A lot or water amount typed on a card is an error. Returns
+    (errors, info {subject, values} or None)."""
+    cards = comps.get("cards") or []
+    errors = _lot_errors("subject", subject)
+    for i, c in enumerate(cards):
+        errors += _lot_errors(f"comps.cards[{i}]", c)
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and a.get("source") != "script" and (
+                    a.get("kind") in ("lot", "view") or _LOT_TYPED.search(str(a.get("label") or ""))):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a lot or water adjustment ({a.get('label')!r}) typed "
+                              "by hand → delete it and set the card's `lot` type (and subject.lot): the script adjusts "
+                              "each comp by the difference between the lots.")
+    given = comps.get("lot_values")
+    if given is not None and (not isinstance(given, dict) or any(
+            k not in LOT_TYPES or k == "other" or not _num(v) for k, v in given.items())):
+        errors.append("comps.lot_values: should be {lot type: dollars over a standard lot} with types from "
+                      f"{', '.join(t for t in LOT_TYPES if t != 'other')} and plain numbers.")
+        given = None
+    if errors:
+        return errors, None
+    values = {"standard": 0, **lot_values(market, given)}
+
+    def value(block):
+        lot = block.get("lot") or "standard"
+        return block["lot_value"] if lot == "other" else values.get(lot)
+
+    used = [subject.get("lot") or "standard"] + [c.get("lot") or "standard" for c in cards]
+    missing = [lt for lt in dict.fromkeys(used) if lt != "other" and lt not in values]
+    if missing and len(set(used)) > 1:
+        return [f"comps.lot_values: no dollar value for {', '.join(missing)} in this market → give comps.lot_values "
+                "{lot type: dollars over a standard lot} for every type used, from paired sales in the export or the "
+                "agent's rates (method.md)."], None
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "lot")]
+    if len(set(used)) == 1 and used[0] != "other":
+        return [], {"subject": used[0], "values": values}
+    mine = value(subject)
+    for c in cards:
+        amount = fmt.half_up(mine - value(c))
+        if amount:
+            lot = c.get("lot") or "standard"
+            c["adjustments"].append({"label": LOT_LABEL.format(words=LOT_WORDS[lot][0]) if lot != "other"
+                                     else LOT_LABEL.format(words=prose.title_case(str(c["lot_reason"]).strip().rstrip("."))),
+                                     "amount": amount, "kind": "lot", "source": "script"})
+    return [], {"subject": used[0], "values": values}
 
 
 def day_words(d):
@@ -1281,7 +1450,7 @@ def apply_time_adjustments(comps, homes, as_of, split):
     `{time_amount}`. Returns (errors as `field: problem → fix`, info for the method line and placeholders or None)."""
     cards = comps.get("cards") or []
     spec = comps.get("time_adjustment")
-    typed = [(i, j, a) for i, c in enumerate(cards) for j, a in enumerate(c.get("adjustments") or [])
+    typed = [(i, j, a) for i, c in enumerate(cards) for j, a in typed_adjustments(c)
              if isinstance(a, dict) and adjustment_kind(a) == "time"]
     if spec in (None, {}, False):
         return [f"comps.cards[{i}].adjustments[{j}]: a time adjustment ({money(a['amount']) if isinstance(a.get('amount'), (int, float)) else a.get('amount')}) "
@@ -1344,8 +1513,8 @@ def apply_time_adjustments(comps, homes, as_of, split):
                 continue
             if amount:
                 a.update(amount=amount, kind="time", source="script")
-            else:
-                c["adjustments"].pop(j)
+            else:  # the agent's own line, by identity: script lines before it shift its position in the list
+                c["adjustments"] = [x for x in c["adjustments"] if x is not a]
         elif amount:
             c.setdefault("adjustments", []).append({"label": TIME_LABEL, "amount": amount, "kind": "time", "source": "script"})
         c["time_amount"] = amount
@@ -1423,7 +1592,8 @@ def settle_comps(R, homes, market, stats):
     Returns (errors as `field: problem → fix`, warnings as (key, text), info {split, time, time_rule, condition, roof,
     selection}). Raises ValueError from derive_comps."""
     comps = R["comps"]
-    errors = split_errors(R) + time_override_errors(comps.get("time_override"))
+    # checked before the script adds its own lines, so each error names the position the agent typed
+    errors = split_errors(R) + time_override_errors(comps.get("time_override")) + adjustment_kind_errors(comps.get("cards"))
     count = comps.get("count")
     if count is not None and (isinstance(count, bool) or not isinstance(count, int) or not 3 <= count <= 8):
         errors.append(f"comps.count: {count!r} → how many comps the report uses, 3 to 8 (5 when left out).")
@@ -1434,10 +1604,12 @@ def settle_comps(R, homes, market, stats):
     comps.pop("time_adjustment", None)
     if spec and spec["rate_per_quarter"]:
         comps["time_adjustment"] = spec
+    size_errors, size_info = apply_size_adjustments(comps, R["subject"], market, homes)
     cond_errors, cond_info = apply_condition_adjustments(comps, R["subject"], market)
+    lot_errors, lot_info = apply_lot_adjustments(comps, R["subject"], market)
     roof_errors, roof_info = apply_roof_adjustments(comps, R["subject"], market, R.get("as_of"))
     time_errors, time_info = apply_time_adjustments(comps, homes, R.get("as_of"), split)
-    errors = adjustment_kind_errors(comps.get("cards")) + cond_errors + roof_errors + time_errors
+    errors = size_errors + cond_errors + lot_errors + roof_errors + time_errors
     if errors:
         return errors, [], None
     derive_comps(comps)  # every card's adjusted value, backups included, for the selection
@@ -1448,12 +1620,17 @@ def settle_comps(R, homes, market, stats):
         time_info["undated"] = [a for a in time_info["undated"] if a in used]
     if roof_info:
         roof_info["unknown"] = [a for a in roof_info["unknown"] if a in used]
+    if size_info:
+        size_info["unknown"] = [a for a in size_info["unknown"] if a in used]
+        size_info["wide"] = [(a, d) for a, d in size_info["wide"] if a in used]
+    warnings += size_warnings(size_info)
     warnings += [("time_undated", w) for w in time_warnings(time_info)]
     warnings += [("roof_unknown", w) for w in roof_warnings(roof_info)]
     warnings += [("outlier", w) for w in outlier_warnings(comps["cards"])]
     ov = R.get("split_override") if isinstance(R.get("split_override"), dict) else {}
     info = {"split": split, "split_reason": str(ov.get("reason") or "").strip(), "time": time_info,
-            "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "selection": selection}
+            "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "size": size_info, "lot": lot_info,
+            "selection": selection}
     return [], warnings, info
 
 

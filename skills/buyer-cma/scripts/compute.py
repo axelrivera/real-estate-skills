@@ -13,7 +13,7 @@ in the value narrative, offer advice (VALUE_ONLY): the report is an objective an
 buyer offer strategy's.
 
 With only `subject`, `comps` (and `history`) in report.json (no bottom_line or costs yet), it prints the adjusted comps
-alone: the median, the spread, the outlier warnings and a rough range, to set the range from or answer a gut check. Also writes <address>.buyer.cma.json (the CMA handoff the offer skills read) next to report.json, in the
+alone: the median, the spread, the outlier warnings and the supported range, to answer a gut check from. Also writes <address>.buyer.cma.json (the CMA handoff the offer skills read) next to report.json, in the
 working folder, never the outputs. render.py places this same model; it never recomputes. The input is never changed.
 """
 import argparse
@@ -147,7 +147,7 @@ RETIRED_EACH = {
 JUDGMENT = (
     "subject.summary", "summary_page.label", "summary_page.headline", "summary_page.why[]",
     "summary_page.check_first[][]", "summary_page.next_step", "bottom_line.why", "range_override.reason", "history.takeaway",
-    "history.events[].note", "comps.intro", "comps.method_note", "comps.lean", "comps.cards[].keep_reason",
+    "history.events[].note", "comps.intro", "comps.method_note", "comps.lean", "comps.cards[].keep_reason", "comps.cards[].lot_reason", "subject.lot_reason",
     "comps.time_override.reason", "split_override.reason",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
     "competition.intro", "competition.rows[][6]", "market.bullets[]", "costs.insurance.drivers", "costs.payment.note",
@@ -163,6 +163,10 @@ VALUE_ONLY = ("summary_page.headline", "summary_page.why[]", "bottom_line.why", 
               "history.takeaway", "comps.lean", "scatter.takeaway", "market.bullets[]", "subject.summary")
 OFFER_ADVICE = re.compile(r"\b(offer|offering at|open(?:ing)? (?:at|low|high|below|near)|negotiat\w*|leverage|walk[- ]?away"
                           r"|counter[- ]?offers?|lowball\w*|bargain\w*|room to (?:move|come down))\b", re.I)
+# Where asking sits is the script's (asking_position, printed right above the headline), so the headline never says it:
+# it gives the one fact that explains the value, and can't contradict the script's line.
+HEADLINE_POSITION = re.compile(r"\b(asking|list(?:ing)? price|priced|above|below|inside|within|bottom|top|middle|median)\b",
+                               re.I)
 
 
 def _walk(node, parts, path):
@@ -214,6 +218,12 @@ def schema_errors(R):
                 out.append(f"{path}: has {', '.join(repr(x) for x in dict.fromkeys(found))} → this report is an "
                            "objective analysis of value: say what the comps, the history and the market show, never "
                            "what to offer or how to negotiate (that is the buyer offer strategy's).")
+    head = (R.get("summary_page") or {}).get("headline")
+    found = HEADLINE_POSITION.findall(head) if isinstance(head, str) else []
+    if found:
+        out.append(f"summary_page.headline: has {', '.join(repr(x) for x in dict.fromkeys(found))} → where asking sits is "
+                   "the script's line right above the headline; the headline gives the one fact that explains the value "
+                   "(\"Renovated Spring Oaks pool homes of the same size set the value; this one's roof age is unknown\").")
     return out
 
 
@@ -860,13 +870,6 @@ def appraisal_line(ask, high):
     return t("line_appraisal_gap", top=money(high), gap=money(ask - high)) if ask > high else ""
 
 
-def rough_range(values, median, market):
-    """CMA-202: the gut check's rough range before the report: the adjusted comps' span, rounded outward to $1,000."""
-    lo, hi = math.floor(min(values) / 1000) * 1000, math.ceil(max(values) / 1000) * 1000
-    return {"range": {"low": lo, "high": hi, "display": fmt.range(lo, hi)},
-            "typical_width": cma.range_width(median, market)["target"]}
-
-
 def _warner():
     """(warnings, keys, warn): warn(key, *texts) adds each text with a stable key, so a test can tell which warning
     fired without matching its sentence (TEST-2); `warning_keys` runs parallel to `warnings`."""
@@ -944,7 +947,8 @@ def export_stats(R, homes):
 def comps_first(R, market, homes=()):
     """CMA-110: the adjusted comps alone, before the report, for a gut check or to set the range from: the median
     adjusted value, the spread, where asking sits and the outlier and adjustment warnings. Writes no handoff. With
-    `history.events` it also counts the history (CMA-201), and `rough` holds the gut check's rough range (CMA-202)."""
+    `history.events` it also counts the history (CMA-201). The gut check quotes this same supported range: one range,
+    the full report's, never a second wording of it."""
     R = copy.deepcopy(R)
     _require(R, "subject.address", "subject.list_price", "comps.cards")
     errors = schema_errors(R)
@@ -974,7 +978,6 @@ def comps_first(R, market, homes=()):
         "asking_vs_median": s["list_price"] - median_adjusted,
         "asking_vs_median_display": money(abs(s["list_price"] - shown)),
         "asking_position": asking_position(s["list_price"], rng["low"], rng["high"], shown),
-        "rough": rough_range(values, median_adjusted, market),
         "history": hist,
         "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
@@ -1243,8 +1246,8 @@ def compute(R, market, homes):
          "median_adjusted_display": money(median_shown), "adjusted_min": min(values), "adjusted_max": max(values)}
     C["subject"] = subject_model(s)
     C["asking_position"] = asking_position(s["list_price"], bl["low"], bl["high"], median_shown)
-    C["bottom_line"] = {"line": " ".join(x for x in (t("line_bottom", ask=money(s["list_price"]), position=L[pos_key],
-                                                       median=C["median_adjusted_display"]),
+    C["bottom_line"] = {"line": " ".join(x for x in (C["asking_position"]["line"],  # page 1's own words, never a second
+                                                     t("line_bottom", median=C["median_adjusted_display"]),  # wording
                                                      appraisal_line(s["list_price"], bl["high"])) if x),
                         "why": bl.get("why", "")}
     rng["override"] = range_info["override"]
