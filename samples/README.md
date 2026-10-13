@@ -21,7 +21,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 ## Seller Market Timing
 
-[Sample-Ridge-Buying-Pattern.pdf](seller-market-timing/Sample-Ridge-Buying-Pattern.pdf) (1 page). The Buying Pattern chart for a mock neighborhood: two years of closed sales by the month they went under contract and their sold price, with the spring season boxed and when to list to be on the market as it opens.
+[Sample-Ridge-Buying-Pattern.pdf](seller-market-timing/Sample-Ridge-Buying-Pattern.pdf) (1 page). The Buying Pattern chart for a mock neighborhood: two years of closed sales by the month they went under contract and their sold price, with the spring season boxed, the busiest month marked and when to list to be on the market as it opens.
 
 ## Buyer Offer Strategy
 
