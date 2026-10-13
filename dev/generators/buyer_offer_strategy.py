@@ -6,7 +6,7 @@
     data = gen.with_cma(data, h)      # the same buyer file with a buyer CMA's handoff in place of its value range
 
 Every input is valid and realistic: cash, conventional (3% to 25% down), FHA, VA or USDA; a value range, a CMA handoff
-(with an offer plan and its walk-away, market stats, insurance, millage, legal description) or neither; competition
+(value only: market stats, insurance, millage, legal description) or neither; competition
 from the only offer to cash or four or more, given or left to infer, with highest and best called or not; buyer limits
 tight or loose (max price, payment, cash, reserve floor); HOA dues billed by the quarter or month, condos, CDDs, flood
 zones, old roofs and pre-1978 homes (the riders contract_forms adds); the FAR/BAR AS IS or Standard form (with repair
@@ -118,7 +118,7 @@ def generate(seed):
     for k, v in (("approval", rng.choice(("preapproval", "du_approved", "full_uw"))), ("lender_called", True),
                  ("lender_confirmed_timeline", True), ("insurance_quote", rng.choice((True, False, "planned"))),
                  ("buyer_broker_agreement_pct", rng.choice((0.025, 0.03))),
-                 ("needs_sale", True)):
+                 ("cover_appraisal_gap", True), ("needs_sale", True)):
         if _maybe(rng, 0.3 if k != "needs_sale" else 0.1):
             BU[k] = v
     if fin == "va" and _maybe(rng, 0.3):

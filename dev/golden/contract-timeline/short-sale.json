@@ -26,24 +26,24 @@
  "financing": "FHA",
  "first_deadline": {
   "appointment": false,
-  "broker": true,
+  "broker": false,
   "by_closing": false,
-  "contingency": true,
-  "critical": true,
-  "day": 6,
+  "contingency": false,
+  "critical": false,
+  "day": 7,
   "done": false,
   "done_display": null,
-  "key": "compensation_cancel",
+  "key": "short_sale_application",
   "lender": false,
   "moved_from": null,
   "no_time": false,
-  "party": "Buyer",
+  "party": "Seller",
   "past": false,
   "past_display": null,
   "voided": false,
   "waits_on_approval": false,
   "was": null,
-  "when": "2026-09-28 23:59"
+  "when": "2026-09-29 23:59"
  },
  "flag_keys": [
   "fha_va_appraisal"

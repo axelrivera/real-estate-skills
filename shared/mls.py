@@ -294,6 +294,15 @@ def ended_within(h, as_of, days=365):
     return ended is None or as_of is None or (as_of - ended).days <= days
 
 
+def rule_split(end):
+    """The market split by one rule, so the same export always splits the same way: the first of the month two months
+    before `end`'s month (a report as of September 26 counts sales from July 1 as recent). Never on a day picked by
+    hand, so a sale can't land on the split by accident."""
+    month = end.month - 2
+    year = end.year + (month - 1) // 12
+    return date(year, (month - 1) % 12 + 1, 1)
+
+
 def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=None, limit=15):
     """Sold stats (all, earlier, recent), inventory, months of supply, subdivision stats, comp candidates, competition.
 
@@ -301,7 +310,8 @@ def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=No
     waterfront, senior_community, land_lease (see `subject_facts`). The export holds the property types the agent chose;
     other types still rank, just lower (single-family, townhouse and villa sit close). `exclude_address` drops every row for
     that address first (the seller CMA ignores the subject's own listings). `as_of` (default: the last sale) is where
-    the recent period and months of supply are measured to. `limit` caps the ranked comp candidates; the count of the
+    the recent period and months of supply are measured to; the split is rule_split's from it unless an agent's
+    `split_date` is given. `limit` caps the ranked comp candidates; the count of the
     rest is `more_candidates`.
     """
     if exclude_address:
@@ -311,7 +321,7 @@ def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=No
         raise ExportError("The export has no sold homes with a close price and date.")
     last, first = max(h["close_date"] for h in sold), min(h["close_date"] for h in sold)
     end = max(_as_date(as_of, "as_of") or last, last)
-    split = _as_date(split_date, "--split-date") or last - timedelta(days=90)
+    split = _as_date(split_date, "--split-date") or rule_split(end)
     early = [h for h in sold if h["close_date"] < split]
     recent = [h for h in sold if h["close_date"] >= split]
     months_recent = max((end - split).days / 30.44, 0.5)

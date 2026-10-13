@@ -60,7 +60,7 @@ def detect(data):
         return "contract-timeline"
     if "subject" in keys and ({"pricing", "recommendation"} & keys):
         return "seller-cma"
-    if "subject" in keys and ({"offer_plan", "bottom_line", "history"} & keys or "comps" in keys):
+    if "subject" in keys and ({"bottom_line", "history"} & keys or "comps" in keys):
         return "buyer-cma"
     return None
 
@@ -72,15 +72,11 @@ def detect(data):
 #   text:    counts of sentences the model wrote (why, first steps): judgment
 SPEC = {
     "buyer-cma": {
-        "script": [r"^payments\.(rate|insurance_annual|flood)$",
-                   r"^credit\.(closing_costs_given|program|down_pct)"],
-        # the plan's prices follow the posture (the category the model picks) and the range: judgment only when a root
-        # moved; an agent's plan_override shows as offer_plan.override
+        "script": [r"^payments\.(rate|insurance_annual|flood)$"],
+        # value only: the comps and the range are judgment; where asking sits and the payments follow from them
         "roots": [r"^comps_table\[", r"^adjusted_(min|max)$", r"^median_(adjusted|shown)$", r"^range\.",
-                  r"^handoff\.(comps|value)", r"^handoff\.posture$", r"^payments\.price$", r"^comps\.",
-                  r"^offer_plan\.(posture|override)\b"],
-        "derived": [r"^offer_plan\.", r"^handoff\.offer_plan", r"^payments\.", r"^taxes\[", r"^credit\.", r"^credit_alt\.",
-                    r"^cash_fit", r"^competition_estimates",
+                  r"^handoff\.(comps|value)", r"^payments\.price$", r"^comps\."],
+        "derived": [r"^asking_position\.", r"^payments\.", r"^taxes\[", r"^competition_estimates",
                     r"^warnings", r"^warning_keys", r"^handoff\.recommended_list_price", r"^costs\.", r"^summary\.",
                     r"^competition\.", r"^notes", r"^note_keys", r"^assumption", r"^chat_notes"],
         "text": [r"^summary\.(why|check_first)"],

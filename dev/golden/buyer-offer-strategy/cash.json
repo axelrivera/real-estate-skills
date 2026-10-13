@@ -3600,6 +3600,7 @@
    "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
+   "flexible_close": false,
    "holding_monthly": 500,
    "listing_fee_assumed": true,
    "listing_fee_pct": 0.025,
@@ -3727,11 +3728,11 @@
     "Strong"
    ],
    "2": [
-    "comp",
-    "Competitive"
+    "risk"
    ],
    "3": [
-    "risk"
+    "unl",
+    "Unlikely"
    ]
   },
   "stronger": {

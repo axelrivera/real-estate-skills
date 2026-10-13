@@ -170,7 +170,7 @@ def analyze(data, market=None, cma=None, agent=None):
         order_flags(o)
     ask_year_built(R)
     ask_hoa_rider(R)
-    ask_compensation_agreement(R)
+    ask_listing_fee_when_listing_pays(R)
     confirm_listing_side(R, (agent or {}).get("brokerage"))
     R["ranking_reason"] = str(data.get("ranking_reason") or "").strip() or None  # OFR-279
     return R
@@ -338,49 +338,15 @@ def ask_year_built(R):
     R["missing"].insert(meds[0] if meds else len(R["missing"]), a)
 
 
-def ask_compensation_agreement(R):
-    """OFR-299: Rider GG puts the buyer's broker compensation in a separate compensation agreement. When the package
-    doesn't give the amount, the review asks for the signed agreement (it's in ALWAYS_ASK), folding in the offer's
-    assumed buyer-broker share so the question is asked once."""
-    for o in R["active"] + R["incomplete"]:
-        if o.get("bb_tag") == "Requested" or not o.get("gg_open"):
-            continue
-        if o.get("bb_from_listing"):  # iteration 10 eval 6: the amount doesn't move the seller's net; the listing fee does
-            fee = next((a for a in R["missing"] if a["field"] == "listing_fee_pct"), None)
-            if fee:
-                fee["ask"] = True
-            # iteration 16 eval 6: the listing agent's own paperwork, asked in chat with the listing-agreement check
-            # (never on the seller's report, never a risk): send the agreement, or sign the one the buyer's broker signed
-            status = str(o.get("compensation_agreement") or "")
-            extra = (L_["gg_agent_sign"] if status == "signed_by_buyer_broker" else
-                     L_["gg_agent_send"] if not status else "")
-            paid = next((a for a in R["missing"] if a["field"] == "buyer_broker_paid_by"
-                         and f"offer {o['id']}" in oe.scopes(a)), None)
-            if paid and extra and extra not in paid["why"]:
-                paid["why"] += extra
-                paid["ask"] = True
-            continue
-        sc = f"offer {o['id']}"
-        old = next((a for a in R["missing"] if a["field"] == "buyer_broker_pct" and sc in oe.scopes(a)), None)
-        if old:
-            left = [s for s in oe.scopes(old) if s != sc]
-            if left:  # still assumed for other offers: keep it for them
-                old["scope"], old["also"] = left[0], left[1:]
-            else:
-                R["missing"].remove(old)
-                if old in R["assumptions"]:
-                    R["assumptions"].remove(old)
-        net = (t("gg_net_assumes", pct=oe.pct(o["buyer_broker_pct"])) if old and old["value"] else L_["gg_net_not_in"])
-        a = {"scope": sc, "field": "compensation_agreement", "value": None,
-             "impact": old["impact"] if old else "med", "why": t("ask_compensation_agreement", net=net)}
-        # OFR-353: the same ask on several offers is one item naming each (offer_engine.merge_assumptions), asked once
-        same = next((x for x in R["missing"] if (x["field"], x["why"], x["impact"]) == (a["field"], a["why"], a["impact"])), None)
-        if same:
-            same.setdefault("also", []).append(sc)
-            continue
-        R["assumptions"].append(a)
-        R["missing"].append(a)
-    R["missing"].sort(key=lambda a: oe.IMPACT_ORDER[a["impact"]])
+def ask_listing_fee_when_listing_pays(R):
+    """Iteration 10 eval 6: when the listing broker pays the buyer's broker (Rider GG's broker-to-broker agreement), the
+    buyer-broker amount doesn't move the seller's net; the listing fee does, so an assumed one is asked. The
+    compensation agreement itself is never asked about (owner decision, iteration 21: a formality, a window in the
+    contingency timeline only)."""
+    if any(o.get("bb_from_listing") for o in R["active"] + R["incomplete"]):
+        fee = next((a for a in R["missing"] if a["field"] == "listing_fee_pct"), None)
+        if fee:
+            fee["ask"] = True
 
 
 _FIRM_WORDS = {"llc", "inc", "corp", "co", "ltd", "pa", "pllc", "lp", "llp", "the", "and", "of"}
@@ -641,7 +607,7 @@ def review_scope(R, mode, o):
 # OFR-287: offer terms the review assumed and the counter won't touch (an assumed inspection period, a missing deposit),
 # the lead-paint check and Rider GG's compensation agreement (OFR-299) are always asked after the high-impact gaps,
 # even past the limit
-ALWAYS_ASK = ("inspection_days", "deposit", "year_built", "compensation_agreement", "listing_brokerage")
+ALWAYS_ASK = ("inspection_days", "deposit", "year_built", "listing_brokerage")
 
 
 def confirm_items(R, limit=4, offer_id=None):

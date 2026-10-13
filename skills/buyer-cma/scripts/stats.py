@@ -1,7 +1,7 @@
 """Market numbers from an MLS CMA export, for choosing comps and writing the market section.
 
     python3 scripts/stats.py export.csv --address "517 HICKORYWOOD AVE" [--state FL --county Seminole]
-        [--columns columns.json] [--split-date 2026-07-01]
+        [--columns columns.json]
         [--sqft 1849 --pool --subdivision "SPRING OAKS" --type single_family --lat 28.67 --lon -81.41]
         [--mls-number O6433709]
 
@@ -36,7 +36,7 @@ def main(argv=None):
     ap.add_argument("--county")
     ap.add_argument("--columns", help="JSON file (or inline JSON) mapping field names to the export's headers, for an MLS that isn't built in")
     ap.add_argument("--mls", help="MLS name (Stellar is built in; assumed from the county when it's the only one)")
-    ap.add_argument("--split-date", help="YYYY-MM-DD: sales on or after it are 'recent' (default: 90 days before the last sale)")
+    ap.add_argument("--split-date", help="YYYY-MM-DD: only the agent's own split (report.json's split_override); by default the rule's: the first of the month two months before --as-of")
     ap.add_argument("--as-of", help="YYYY-MM-DD the export was pulled (default: the last sale); months of supply runs to it")
     ap.add_argument("--limit", type=int, default=15, help="how many ranked comp candidates to list (default 15)")
     ap.add_argument("--mls-number", help="the listing's MLS number: warns when the export's current row for the home has another")

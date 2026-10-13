@@ -184,7 +184,8 @@ class FarbarRows(unittest.TestCase):
             with self.assertRaisesRegex(timeline.DealError, "effective_date_source"):
                 timeline.analyze(fha(effective_date_source=text))
         for text in ("Seller's initials on Counteroffer #2", "Buyer's initials on the changes (Para. 3(b))",
-                     "Second seller's signature on Addendum No. 1 (CR-7)"):
+                     "Second seller's signature on Addendum No. 1 (CR-7)",
+                     "Buyer's signature on Counter Offer 3 (Para. 3(b))"):  # iteration 21: a document's own number
             timeline.analyze(fha(effective_date_source=text))
         with self.assertRaisesRegex(timeline.DealError, "effective_date_signed"):
             timeline.analyze(fha(effective_date_signed="2026-09-26 09:00"))
@@ -196,19 +197,20 @@ class FarbarRows(unittest.TestCase):
 
 class FirstDeadline(unittest.TestCase):
     def test_first_deadline_is_the_earliest_open_contract_deadline(self):
-        """The earliest dated row not done or past, whoever owes it, critical or not, Rider GG's rows included while
-        open; never a lender target; never a cancel window the signed agreement closed."""
+        """The earliest dated row not done or past, whoever owes it, critical or not; never a lender target; never
+        Rider GG's rows (owner decision, iteration 21: a window in the table, never the headline)."""
         d = fixture("buyer-fha.json")
         d["contract"]["riders"] = list(d["contract"]["riders"]) + ["GG"]
         d["completed"] = {"deposit": "2026-09-26"}
         r = timeline.analyze(d)
-        self.assertEqual(r["first_deadline"]["key"], "compensation_agreement")  # Mon Sep 28, before the inspection
+        self.assertNotIn(r["first_deadline"]["key"], timeline.GG_KEYS)  # GG's Mon Sep 28 comes first, but isn't it
+        self.assertIn("compensation_agreement", by_key(r))  # still a row
         self.assertTrue(by_key(r)["compensation_cancel"]["broker"])
         d["completed"].update(compensation_agreement="2026-09-27", loan_app="2026-09-27")
         self.assertEqual(timeline.analyze(d)["first_deadline"]["key"], "inspection")  # not the closed window (Oct 1)
         d["completed"] = {"deposit": "2026-09-26", "loan_app": "2026-09-27"}
         d["report_date"] = "2026-09-29"  # the agreement deadline passed unrecorded: the open window still counts
-        self.assertEqual(timeline.analyze(d)["first_deadline"]["key"], "compensation_cancel")
+        self.assertNotIn(timeline.analyze(d)["first_deadline"]["key"], timeline.GG_KEYS)
         o = fixture("other-contract.json")
         o["side"] = "seller"
         o["deadlines"][0]["party"] = "both"
@@ -483,15 +485,12 @@ class RiderGG(unittest.TestCase):
         self.assertNotIn("short_sale_gg", timeline.analyze(s)["note_keys"])
 
     def test_rolled_agreement_day(self):
-        """Day 3 on a Sunday rolls to Monday; the cancel window counts from Monday and the other reading is noted."""
+        """Day 3 on a Sunday rolls to Monday; the cancel window counts from Monday, with no second-reading note."""
         d = fha(effective_date="2026-09-24", riders=["E", "GG"])
         r = timeline.analyze(d)
         self.assertEqual(by_key(r)["compensation_agreement"]["when"][:10], "2026-09-28")
         self.assertEqual(by_key(r)["compensation_cancel"]["when"][:10], "2026-10-01")
-        self.assertIn("gg_rolled_start", r["note_keys"])
-        self.assertIn("gg_rolled_start", timeline.analyze(d, "seller")["note_keys"])
-        d["contract"]["effective_date"] = "2026-09-25"  # day 3 is a Monday: one reading
-        self.assertNotIn("gg_rolled_start", timeline.analyze(d)["note_keys"])
+        self.assertNotIn("gg_rolled_start", r["note_keys"])  # iteration 21: a formality, never a "to be safe" line
 
 
 class ShortSale(unittest.TestCase):
@@ -616,6 +615,8 @@ class Notes(unittest.TestCase):
         self.assertFalse({"money_mismatch", "preapproval_below_loan"} & set(r["note_keys"]))
         d["contract"].update(price=372000, preapproval_amount=340000)  # a counter moved the price, not the loan
         self.assertTrue({"money_mismatch", "preapproval_below_loan"} <= set(timeline.analyze(d)["note_keys"]))
+        text = dict(timeline.money_check(d["contract"], 372000))["money_mismatch"]  # iteration 22: the total is less
+        self.assertIn("$365,000, $7,000 less than the $372,000 price", text)  # than the price, said the right way round
         d["contract"].pop("balance_to_close")
         d["contract"]["loan_amount"] = 362000  # no balance given: $11,000 + $362,000 passes the $372,000 price
         self.assertIn("money_mismatch", timeline.analyze(d)["note_keys"])

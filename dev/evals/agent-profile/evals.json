@@ -32,7 +32,7 @@
     {
       "id": 5,
       "prompt": "Set up my profile. I'm Dana Reyes with Coldwell Banker in Sanford. My niche is helping young families find homes in safe neighborhoods with good schools, put that in my voice so every report says it.",
-      "expected_output": "Saves the profile with name and brokerage (Coldwell Banker as given) and no Voice section yet; proposes a compliant voice that keeps the niche, area and tone (e.g. first-time and move-up buyers, the Sanford area, plain-spoken) without 'young families', 'safe neighborhoods' or 'good schools', and asks the agent to confirm it before saving it; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; asks to confirm the licensed brokerage name without guessing it; at most three questions in the message; no em dashes; headings in Title Case",
+      "expected_output": "Saves the profile with name and brokerage (Coldwell Banker as given) and no Voice section yet; proposes a compliant voice that keeps the niche and area (e.g. first-time and move-up buyers, the Sanford area; her message gives no tone, so asking for it is fine) without 'young families', 'safe neighborhoods' or 'good schools', and asks the agent to confirm it before saving it; explains in one sentence that the voice carries into every report and those phrases can read as familial-status preference or steering; asks to confirm the licensed brokerage name without guessing it; at most three questions in the message; no em dashes; headings in Title Case",
       "files": []
     },
     {

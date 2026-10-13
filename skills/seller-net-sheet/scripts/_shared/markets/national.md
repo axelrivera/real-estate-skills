@@ -99,6 +99,26 @@ property_tax:
                                       # due_date: MM-DD (none nationally): when a market's bill is due that year; a
                                       # closing after it assumes the bill paid (finance.tax_proration)
 
+cma:
+  adjustments_national:               # owner decision 2026-10-13: where no market rates are built in and no paired
+                                      # sales or agent's rates are given, the CMAs scale these to the comps' median
+                                      # sale price, so two runs on the same sales agree; named once in the notes
+    living_area_ppsf_share: 0.33      # size: a third of the comps' median price per square foot
+    condition_level_shares:           # each condition level over an original home, as a share of price (Florida's
+      original: 0                     # dollar levels at about $440,000, as shares)
+      cosmetic: 0.01
+      baths_only: 0.02
+      kitchen_only: 0.035
+      kitchen_and_baths: 0.055
+      full_renovation: 0.10
+      new: 0.11
+    lot_type_shares:                  # each lot type over a standard lot
+      corner_or_oversized: 0.01
+      view: 0.01
+      canal: 0.02
+      lake_or_open_water: 0.02
+    recent_systems_share: 0.01        # documented recent systems other than the roof
+
 holding_costs:
   insurance_rate: 0.005
   utilities_monthly: 250

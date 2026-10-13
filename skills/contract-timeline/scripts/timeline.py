@@ -1450,7 +1450,9 @@ def _check_dates(value, path):
 # the script, so a sentence can never state a different one ("9/25/2026", "4:12 PM", "Nov 6"). A document's own
 # number is part of its name and stays: "Counteroffer #1", "Addendum No. 1", "Para. 3(b)", "CR-7", "EA-4"
 DOC_NUMBER = re.compile(r"#\s*\d+|\bNo\.\s*\d+|\bParas?\.\s*\d+(?:\([a-z0-9]+\))*(?:\s*(?:,|and|or|-|to)\s*\d+(?:\([a-z0-9]+\))*)*"
-                        r"|\b[A-Z]{1,4}-\d+[a-z]?\b")
+                        r"|\b[A-Z]{1,4}-\d+[a-z]?\b"
+                        # a document named by its number (iteration 21: "Counter Offer 3" stopped where "#3" passed)
+                        r"|\b(?i:counter[- ]?offer|addendum|amendment|rider|exhibit|page)\s+\d+\b")
 
 
 def written_figures(text):
@@ -1533,10 +1535,11 @@ def money_check(c, price):
     if price and loan is not None and balance is not None:  # every part of Para. 2 is known: it must equal the price
         total = deposits + loan + balance
         if abs(total - price) >= 1:
-            # TL-234: worded to the agent, who can answer it (a counter often changes the price but not Para. 2)
+            # TL-234: worded to the agent, who can answer it (a counter often changes the price but not Para. 2);
+            # iteration 22: the total is more or less than the price, never "the price is ..., $4,500 more"
             out.append(("money_mismatch", f"Para. 2 doesn't add up: the deposits, loan and balance to close total "
-                        f"{fmt.money(total)}, but the price is {fmt.money(price)}, {fmt.money(abs(total - price))} "
-                        f"{'more' if total > price else 'less'}. A counteroffer or amendment may have changed the "
+                        f"{fmt.money(total)}, {fmt.money(abs(total - price))} {'more' if total > price else 'less'} than the "
+                        f"{fmt.money(price)} price. A counteroffer or amendment may have changed the "
                         "price without updating Para. 2. Which figures are current?"))
     elif price and loan and deposits + loan > price:  # no balance given: the parts known can't pass the price
         out.append(("money_mismatch", f"Para. 2 doesn't add up: the deposits and the {fmt.money(loan)} loan total "
@@ -1699,23 +1702,8 @@ def consistency_notes(c, current, rules, eff, note, side="buyer", alt=None, toda
             note("aga_after_loan_approval", f"The appraisal gap valuation is due {day(valuation['when'])}, after the Loan "
                  f"Approval Period ends {day(approval['when'])}: a low valuation after that can't be answered under "
                  "Para. 8(b). Confirm the dates the parties intend", ("aga_valuation", "loan_approval"))
-    # TL-210: Rider GG's cancel window runs from the end of the Time Period as extended past a weekend or holiday; the
-    # rider could be read to count from the unextended day
-    rows = {r["key"]: r for r in current}
-    agreement, cancel = rows.get("compensation_agreement"), rows.get("compensation_cancel")
-    if agreement and cancel and agreement["when"] and cancel["when"] and not agreement.get("from_approval"):
-        day = eff + timedelta(days=int(agreement["days"]))
-        if agreement["when"].date() != day:
-            other = forward(day, int(cancel["days"]), rules)[0]
-            if other.date() != cancel["when"].date():
-                # TL-235: one reading used plus the date that is safe for the agent's side, never two dates side by side
-                safe = (f"To be safe, the buyer should deliver any cancellation by {fmt.date_short(other, year=False, weekday=True)}, the earlier "
-                        f"reading (counted from {fmt.date_short(day, year=False, weekday=True)})" if side == "buyer" else
-                        f"The buyer could argue for the later date, so treat the buyer's right as open through "
-                        f"{fmt.date_short(cancel['when'], year=False, weekday=True)}")
-                note("gg_rolled_start", f"Rider GG: the buyer's cancel window ends {fmt.date_short(cancel['when'], year=False, weekday=True)}, counted from "
-                     f"the agreement deadline as extended ({fmt.date_short(day, year=False, weekday=True)} to {fmt.date_short(agreement['when'], year=False, weekday=True)}); the timeline "
-                     f"uses this reading. {safe}", GG_KEYS)
+    # TL-210's second reading of Rider GG's cancel window (counted from the unextended day) is no longer noted: GG is a
+    # formality, a window in the table and calendar, never a "to be safe" line (owner decision, iteration 21)
 
 
 # farbar-addenda.md (EA-4, Red Flags): an extension signed after the period it extends had ended. The fields that date a
@@ -2010,10 +1998,10 @@ def analyze(deal, side=None):
         open_rights.append(f"the {_loan_type(current_contract)} appraisal clause (to closing)")
     # TL-104: the next deadline from the report date. Iteration 9 evals 5, 9 (owner decision): the earliest OPEN dated row,
     # whoever owes it (Buyer, Seller or Both), critical or not, so the header never names a later date than a row above
-    # it in the table. Rider GG's rows count only while open: a done row (or a cancel window closed because the agreement
-    # was signed) never is. A lender's target (insurance bound, the Closing Disclosure) is an estimate, not a contract
-    # deadline, so it never is
-    upcoming = [r for r in dated if not r["done"] and not r["past"] and not r["lender"]]
+    # it in the table. Rider GG's rows never are (owner decision, iteration 21: GG is a window in the table and the
+    # calendar, never the headline: the agents aren't parties to the contract). A lender's target (insurance bound, the
+    # Closing Disclosure) is an estimate, not a contract deadline, so it never is
+    upcoming = [r for r in dated if not r["done"] and not r["past"] and not r["lender"] and r["key"] not in GG_KEYS]
     first = next(iter(upcoming), None)
 
     # The document's notes, by key, before they go into its one registry (a key said twice joins into one line):

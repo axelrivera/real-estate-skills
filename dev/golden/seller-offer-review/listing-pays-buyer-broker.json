@@ -967,7 +967,6 @@
    "also": {
     "count": 1
    },
-   "ask": true,
    "field": "buyer_broker_paid_by",
    "impact": "med"
   },
@@ -1076,7 +1075,6 @@
    "also": {
     "count": 1
    },
-   "ask": true,
    "field": "buyer_broker_paid_by",
    "impact": "med"
   },
@@ -2974,6 +2972,7 @@
   "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
+  "flexible_close": false,
   "holding_monthly": 650,
   "listing_fee_assumed": false,
   "listing_fee_pct": 0.05,

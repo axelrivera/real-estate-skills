@@ -1,6 +1,6 @@
 {
- "adjusted_max": 493900,
- "adjusted_min": 435900,
+ "adjusted_max": 485675,
+ "adjusted_min": 431229,
  "assumption_keys": [
   "expected_sale",
   "option_time",
@@ -12,6 +12,7 @@
  "assumptions": {
   "count": 6
  },
+ "below_range": false,
  "chat_notes": {
   "count": 4
  },
@@ -56,8 +57,8 @@
  "comps": {
   "cards": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K",
+    "adjusted": 485675,
+    "adjusted_k": "$486K",
     "bullets": {
      "count": 2
     },
@@ -66,9 +67,9 @@
      [
       "Sold"
      ],
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -83,8 +84,8 @@
     "strongest": false
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K",
+    "adjusted": 479300,
+    "adjusted_k": "$479K",
     "bullets": {
      "count": 2
     },
@@ -93,9 +94,9 @@
      [
       "Sold"
      ],
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -107,10 +108,10 @@
      "pool"
     ],
     "sold_price": 495000,
-    "strongest": false
+    "strongest": true
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K",
     "bullets": {
      "count": 2
@@ -126,19 +127,19 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ]
+     {
+      "count": 2
+     }
     ],
     "meta": [
      "pool"
     ],
     "sold_price": 427000,
-    "strongest": true
+    "strongest": false
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K",
+    "adjusted": 433500,
+    "adjusted_k": "$434K",
     "bullets": {
      "count": 2
     },
@@ -164,8 +165,8 @@
     "strongest": false
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K",
+    "adjusted": 431229,
+    "adjusted_k": "$431K",
     "bullets": {
      "count": 2
     },
@@ -180,9 +181,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      }
@@ -195,7 +196,27 @@
    }
   ],
   "strongest": {
-   "index": 2
+   "index": 1
+  },
+  "subject_card": {
+   "lines": [
+    [
+     "Condition"
+    ],
+    [
+     "Lot",
+     "Standard"
+    ],
+    [
+     "Roof"
+    ],
+    [
+     "Systems"
+    ]
+   ],
+   "meta": [
+    "pool"
+   ]
   },
   "subject_row": {
    "count": 4
@@ -216,7 +237,10 @@
    {
     "count": 4
    }
-  ]
+  ],
+  "unused": {
+   "count": 0
+  }
  },
  "comps_table": [
   {
@@ -342,27 +366,27 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 493900,
+    "adjusted": 485675,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 484000,
+    "adjusted": 479300,
     "seller_paid": 0,
     "sold_price": 495000
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "seller_paid": 500,
     "sold_price": 427000
    },
    {
-    "adjusted": 440200,
+    "adjusted": 433500,
     "seller_paid": 12000,
     "sold_price": 429000
    },
    {
-    "adjusted": 435900,
+    "adjusted": 431229,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -404,7 +428,7 @@
   "value": {
    "high": 480000,
    "low": 455000,
-   "median_adjusted": 469800,
+   "median_adjusted": 469850,
    "midpoint": 467500.0
   },
   "version": 1
@@ -527,8 +551,8 @@
  "means": {
   "count": 4
  },
- "median_adjusted": 469800,
- "median_shown": 469800,
+ "median_adjusted": 469850,
+ "median_shown": 469900,
  "method": {
   "lines": {
    "count": 4
@@ -999,24 +1023,24 @@
  "summary": {
   "comps": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K"
+    "adjusted": 485675,
+    "adjusted_k": "$486K"
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K"
+    "adjusted": 479300,
+    "adjusted_k": "$479K"
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K"
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K"
+    "adjusted": 433500,
+    "adjusted_k": "$434K"
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K"
+    "adjusted": 431229,
+    "adjusted_k": "$431K"
    }
   ],
   "first_steps": [
@@ -1052,8 +1076,8 @@
   "cutoff": "2026-07-01",
   "cutoff_display": "July",
   "falling": true,
-  "rate": 0.01,
-  "rate_display": "1%",
+  "rate": 0.02,
+  "rate_display": "2%",
   "undated": {
    "count": 0
   }

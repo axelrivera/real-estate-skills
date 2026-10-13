@@ -45,7 +45,7 @@
  },
  "summary_page": {
   "label": "Buyer Summary",
-  "headline": "Open at the bottom of what recent sales support, because the home has sat for months and the seller has already cut the price again and again.",
+  "headline": "Renovated Spring Oaks pool homes of the same size set the value, and this one has sat for months while the seller cut the price again and again.",
   "why": [
    "The closest Spring Oaks pool sales, adjusted to your home, center near the middle of the range, with the two most recent sales landing right in the middle of it.",
    "The newest Spring Oaks pool sales, adjusted to your home, center near the middle of the range, with the two most recent sales landing right in the middle of it.",
@@ -65,7 +65,7 @@
     "Get the permit, the final inspection date and any warranty paperwork from the roofer before listing day."
    ]
   ],
-  "next_step": "Get the listing agent's answers on the roof and the failed contract, then write the offer."
+  "next_step": "Get the listing agent's answers on the roof and the failed contract, then build the offer options from this analysis."
  },
  "bottom_line": {
   "why": "The two sales that support the asking price closed earlier in the year, when mortgage rates were lower and homes were selling faster. The recent sales and this home's own history point lower, so the range leans toward them."
@@ -129,7 +129,7 @@
     "date": "2026-01-27",
     "mls": "O6371102",
     "change": "off_market",
-    "note": "Taken off the market (off and on twice)"
+    "note": "Taken off the market (off and on again, more than once)"
    },
    {
     "date": "2026-01-22",
@@ -144,80 +144,44 @@
     "price": 483900
    }
   ],
-  "takeaway": "The market has had a long look at this home at about today's price, and no buyer has closed. That doesn't mean something is wrong with the house, but we need to know why the last contract fell apart before writing an offer."
- },
- "offer_plan": {
-  "posture": "competitive",
-  "posture_reason": "Your lease ends soon and this is the floor plan you want, so the plan gives up some negotiating room to keep this home from going to another buyer.",
-  "credit_alt": {
-   "credit": 10000
-  },
-  "conditions": "the roof is documented as new, the failed contract fell through for reasons unrelated to the house, and no other offers are competing. If any of those changes, we'll revisit the numbers before you sign."
- },
- "offer": {
-  "heading": "Negotiating Points",
-  "bullets": [
-   "<strong>There is room to negotiate.</strong> The seller has cut the price four times, and has already lost one buyer. Mortgage rates are also higher now than when the earlier sales happened.",
-   "<strong>Seller help with closing costs is normal right now.</strong> Most recent sales in this area included seller-paid costs. Asking for a credit instead of a lower price can reduce the cash you need at closing.",
-   "<strong>Watch the appraisal.</strong> Only a few homes in Spring Oaks have sold above this home's price per square foot, all renovated pool homes. An offer near the top of the range raises the chance the appraisal comes in low, which you would have to cover in cash or renegotiate."
-  ]
+  "takeaway": "The market has had a long look at this home at about today's price, and no buyer has closed. That doesn't mean something is wrong with the house, but why the last contract fell apart is the first thing to find out."
  },
  "comps": {
   "intro": "We looked at every sale within a mile and chose the closest matches: Spring Oaks pool homes of about this size, built in the same era. We included the ones that argue against a lower price, and adjusted each sale to what it would have brought as this home.",
   "method_note": "Condition adjustments are based on listing descriptions, not visits, so they are judgment calls.",
+  "count": 6,
   "cards": [
    {
     "address": "622 Spring Oaks Blvd",
     "sold_price": 505500,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 1800
-     },
-     {
-      "label": "Larger Corner Lot",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
      "About the same size. Its larger fenced corner lot, with room for a boat or trailer, is worth a bit more.",
      "It sold earlier in the year, when rates were lower and homes were moving faster."
-    ]
+    ],
+    "lot": "corner_or_oversized"
    },
    {
     "address": "516 Oakwood Ct",
     "sold_price": 495000,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1200
-     },
-     {
-      "label": "Documented Recent Systems",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "Same era and nearly the same size. Sold above asking within a week.",
      "It came with a documented recent roof, AC, electrical and windows. We don't yet know the age of this home's AC, electrical or windows, so that home gets a small edge."
-    ]
+    ],
+    "recent_systems": true
    },
    {
     "address": "745 Little Wekiva Cir",
     "sold_price": 427000,
     "seller_concessions": 500,
     "condition": "original",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1700
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The most recent pool-home sale in Spring Oaks, and it sat for a while before it sold.",
      "Described as well maintained but not renovated, so it's adjusted up for the renovation this home has."
@@ -233,54 +197,38 @@
      "Same size and likely the same floor plan, one street over.",
      "The seller paid part of the buyer's costs, which comes off the price.",
      "Partly updated (new appliances, stone counters) but not a full renovation."
-    ]
+    ],
+    "keep_reason": "It matches this home's floor plan on a street like this one, so we keep it."
    },
    {
     "address": "621 Little Wekiva Rd",
     "sold_price": 465000,
     "seller_concessions": 13071,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Larger Canal Lot",
-      "amount": -10000
-     },
-     {
-      "label": "Size",
-      "amount": -1229
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A renovated pool home with new windows, listed at almost exactly this home's original price.",
      "The seller paid part of the buyer's costs, which comes off the price.",
      "It sits on nearly twice the land, backing onto a canal, which buyers pay more for."
-    ]
+    ],
+    "keep_reason": "It matches this home's floor plan on a street like this one, so we keep it.",
+    "lot": "canal"
    },
    {
     "address": "900 Extra Comp Ln",
     "sold_price": 505500,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -5200
-     },
-     {
-      "label": "Larger Corner Lot",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The strongest sale for the seller's price. Fully renovated pool home, very similar to this one, paid in cash with no seller help.",
      "About the same size. Its larger fenced corner lot, with room for a boat or trailer, is worth a bit more.",
      "It sold earlier in the year, when rates were lower and homes were moving faster."
-    ]
+    ],
+    "lot": "corner_or_oversized",
+    "sqft": 1918
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01
-  },
   "lean": "We lean toward the middle because the two highest sales are the best condition matches but come from a stronger market, while the lowest two needed the biggest adjustments. Other Spring Oaks sales support the same picture."
  },
  "scatter": {
@@ -334,7 +282,7 @@
     2400,
     "Yes",
     302,
-    "Larger but dated, and cut once already; a motivated seller."
+    "Larger but dated, and cut once already."
    ],
    [
     "656 Little Wekiva Rd",
@@ -385,7 +333,7 @@
  },
  "market": {
   "bullets": [
-   "<strong>Homes are selling under their original asking price</strong>, compared with full price earlier in the year. Sellers are now expecting to negotiate.",
+   "<strong>Homes are selling under their original asking price</strong>, compared with full price earlier in the year.",
    "<strong>Inventory is balanced.</strong> That's neither a buyer's market nor a seller's market, but it has shifted toward buyers, and most current listings have already cut their price.",
    "<strong>Mortgage rates are up</strong> from the earlier sales. That's the main reason the earlier prices are harder to repeat now.",
    "<strong>Price per square foot.</strong> This home asks more per square foot than most Spring Oaks sales. That's supportable for a renovated pool home, but only a couple of sales have been higher."
@@ -437,26 +385,7 @@
    ],
    "rate_week": "2026-09-17"
   },
-  "credit_scenarios": {
-   "loan_type": "conventional",
-   "down_pct": 0.05,
-   "closing_cost_pct": 0.03,
-   "scenarios": [
-    {
-     "credit": 0
-    },
-    {
-     "credit": 5000
-    },
-    {
-     "credit": 10000
-    }
-   ],
-   "buydown": {
-    "credit": 10000
-   },
-   "takeaway": "A credit is worth it if cash is tight or you might sell within a decade, and less so if you have savings to spare and plan to stay long term."
-  }
+  "closing_cost_pct": 0.03
  },
  "watch": {
   "items": [
@@ -478,7 +407,6 @@
   ]
  },
  "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
- "split_date": "2026-07-01",
  "sample": true,
  "sources": [
   "the Stellar MLS listing and its full price history",

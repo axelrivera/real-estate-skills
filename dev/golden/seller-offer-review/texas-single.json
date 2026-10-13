@@ -156,7 +156,7 @@
     "net": 328399,
     "net_adj": 326882,
     "price": 598000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -230,7 +230,7 @@
     "net": 334039,
     "net_adj": 332522,
     "price": 604000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -304,7 +304,7 @@
     "net": 328399,
     "net_adj": 326882,
     "price": 598000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "price": 598000,
    "rank_value": 319562.0,
@@ -424,7 +424,7 @@
     "net": 347679,
     "net_adj": 346162,
     "price": 610000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_by_given": false,
@@ -466,6 +466,15 @@
     "contingency"
    ],
    "value": true
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "med",
+   "offers": [
+    "A"
+   ],
+   "scope": "listing",
+   "value": false
   },
   {
    "field": "title_estimate_pct",
@@ -546,7 +555,7 @@
   "repair_reserve_pct": 0,
   "sqft": 1780,
   "state": "TX",
-  "tax_bill_month": 11,
+  "tax_bill_month": 10,
   "tax_in_arrears": true,
   "title_customary_payer": "seller",
   "title_payer_deal": false,
@@ -586,6 +595,15 @@
    "impact": "med",
    "scope": "listing",
    "value": 0
+  },
+  {
+   "field": "current_tax_bill_paid",
+   "impact": "med",
+   "offers": [
+    "A"
+   ],
+   "scope": "listing",
+   "value": false
   },
   {
    "field": "title_estimate_pct",
@@ -763,7 +781,7 @@
     "net": 328399,
     "net_adj": 326882,
     "price": 598000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -837,7 +855,7 @@
     "net": 334039,
     "net_adj": 332522,
     "price": 604000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -911,7 +929,7 @@
     "net": 328399,
     "net_adj": 326882,
     "price": 598000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "price": 598000,
    "rank_value": 319562.0,
@@ -1031,7 +1049,7 @@
     "net": 347679,
     "net_adj": 346162,
     "price": 610000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_by_given": false,
@@ -1200,7 +1218,7 @@
     "net": 328399,
     "net_adj": 326882,
     "price": 598000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_counter": {
     "assumed": [
@@ -1274,7 +1292,7 @@
     "net": 334039,
     "net_adj": 332522,
     "price": 604000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "ns_down": {
     "assumed": [
@@ -1348,7 +1366,7 @@
     "net": 328399,
     "net_adj": 326882,
     "price": 598000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "price": 598000,
    "rank_value": 319562.0,
@@ -1468,7 +1486,7 @@
     "net": 347679,
     "net_adj": 346162,
     "price": 610000,
-    "tax_bill_assumed": false
+    "tax_bill_assumed": true
    },
    "title_by": "seller",
    "title_by_given": false,
@@ -1486,6 +1504,7 @@
   "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
+  "flexible_close": false,
   "holding_monthly": 1300,
   "listing_fee_assumed": false,
   "listing_fee_pct": 0.03,
@@ -1566,7 +1585,7 @@
   "net": 347679,
   "net_adj": 346162,
   "price": 610000,
-  "tax_bill_assumed": false
+  "tax_bill_assumed": true
  },
  "target_close": "2026-10-28"
 }

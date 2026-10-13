@@ -88,51 +88,30 @@
     "sold_price": 505500,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": 1800
-     },
-     {
-      "label": "Larger Corner Lot",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The highest recent sale for a home like yours: a fully renovated pool home paid in cash, with no seller help.",
      "About the same size, so almost no adjustment."
-    ]
+    ],
+    "lot": "corner_or_oversized"
    },
    {
     "address": "516 Oakwood Ct",
     "sold_price": 495000,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1200
-     },
-     {
-      "label": "Documented Recent Systems",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "Same year and nearly the same size. Sold above asking in five days."
-    ]
+    ],
+    "recent_systems": true
    },
    {
     "address": "745 Little Wekiva Cir",
     "sold_price": 427000,
     "seller_concessions": 500,
     "condition": "original",
-    "adjustments": [
-     {
-      "label": "Size",
-      "amount": -1700
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The most recent pool-home sale in Spring Oaks.",
      "Described as well maintained but not renovated."
@@ -153,24 +132,13 @@
     "sold_price": 465000,
     "seller_concessions": 13071,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Larger Canal Lot",
-      "amount": -10000
-     },
-     {
-      "label": "Size",
-      "amount": -1229
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "A renovated pool home with new windows."
-    ]
+    ],
+    "lot": "canal"
    }
   ],
-  "time_adjustment": {
-   "rate_per_quarter": 0.01
-  },
   "lean": "The two highest are the closest matches to your home's condition but sold in a stronger market earlier in the year; the two lowest needed the largest adjustments."
  },
  "scatter": {
@@ -348,7 +316,6 @@
   "When you would like to close, and how you would like showings to work."
  ],
  "export": "dev/fixtures/buyer-cma/export-spring-oaks.csv",
- "split_date": "2026-07-01",
  "sample": true,
  "deck": "dev/fixtures/seller-cma/deck/hickorywood-deck.json"
 }

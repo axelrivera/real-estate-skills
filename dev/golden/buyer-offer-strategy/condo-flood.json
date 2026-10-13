@@ -4000,6 +4000,7 @@
    "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
+   "flexible_close": false,
    "holding_monthly": 1450,
    "listing_fee_assumed": true,
    "listing_fee_pct": 0.025,
@@ -4188,7 +4189,8 @@
   "band": "Competitive",
   "band_key": "comp",
   "lifts": false,
-  "price": 490000
+  "price": 490000,
+  "seller_concessions": 16200
  },
  "limits": {
   "recommended": {

@@ -112,7 +112,10 @@ class Model(unittest.TestCase):
                 for c, x in zip(cols[1:], C["comparisons"]):
                     self.assertEqual(x["difference"], c["net"] - cols[0]["net"])
                     self.assertEqual(x["difference_display"], fmt.money(abs(x["difference"])))
-                    shown = FIGURE.findall(x["line"].replace(c["label"], "").replace(cols[0]["label"], ""))
+                    line = x["line"]
+                    for lab in sorted((c["label"], cols[0]["label"]), key=len, reverse=True):  # "$154,000" sits inside
+                        line = line.replace(lab, "")  # "$154,000 with $4,000 Credit": the longer label goes first
+                    shown = FIGURE.findall(line)
                     self.assertEqual(shown, [x["difference_display"]] if x["difference"] else [])
 
     def test_no_placeholder_left_empty(self):

@@ -197,7 +197,11 @@ cma:                                  # calibrated on Central Florida (Seminole 
     roof_age_tile_metal_factor: 2     # a tile or metal roof lasts about twice as long: double each band's years
     documented_recent_systems: -5000  # newer AC, water heater or other system the subject can't match; the roof
                                       # uses roof_age instead, never both
-    lot_or_water_premium: [-10000, -5000]
+    lot_types:                        # each lot type's value over a standard lot; the script adjusts a comp by the
+      corner_or_oversized: 5000       # subject's value minus its own ("other": the lot's own lot_value and reason)
+      view: 5000                      # a pond, preserve, conservation or golf view
+      canal: 10000                    # on a canal
+      lake_or_open_water: 10000       # on a lake or open water
     market_shift_per_quarter: [0.01, 0.02]  # when the data shows softening; 0 for sales in the last 6 weeks or so
 
 county_overrides:

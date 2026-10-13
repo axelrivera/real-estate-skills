@@ -2831,6 +2831,7 @@
   "close_speed_neutral": true,
   "deadline": "2026-11-30",
   "default_buyer_broker_pct": 0.025,
+  "flexible_close": false,
   "holding_monthly": 2150,
   "listing_fee_assumed": false,
   "listing_fee_pct": 0.025,

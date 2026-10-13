@@ -43,6 +43,12 @@
    "value": "none"
   },
   {
+   "default": true,
+   "field": "buyer_broker_pct",
+   "impact": "med",
+   "value": 0.025
+  },
+  {
    "field": "current_tax_bill_paid",
    "impact": "med",
    "offers": [
@@ -50,11 +56,6 @@
    ],
    "scope": "listing",
    "value": false
-  },
-  {
-   "field": "compensation_agreement",
-   "impact": "med",
-   "value": null
   }
  ],
  "highest_and_best": null,
@@ -636,6 +637,12 @@
    "value": "none"
   },
   {
+   "default": true,
+   "field": "buyer_broker_pct",
+   "impact": "med",
+   "value": 0.025
+  },
+  {
    "field": "current_tax_bill_paid",
    "impact": "med",
    "offers": [
@@ -643,11 +650,6 @@
    ],
    "scope": "listing",
    "value": false
-  },
-  {
-   "field": "compensation_agreement",
-   "impact": "med",
-   "value": null
   },
   {
    "field": "holding_monthly",
@@ -1148,6 +1150,7 @@
   "close_speed_neutral": true,
   "deadline": null,
   "default_buyer_broker_pct": 0.025,
+  "flexible_close": false,
   "holding_monthly": 750,
   "listing_fee_assumed": true,
   "listing_fee_pct": 0.025,

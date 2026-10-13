@@ -3747,6 +3747,7 @@
    "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
+   "flexible_close": false,
    "holding_monthly": 450,
    "listing_fee_assumed": true,
    "listing_fee_pct": 0.025,
@@ -3834,8 +3835,9 @@
    "value": 0.03
   },
   {
+   "caps_price": true,
    "field": "insurance_annual",
-   "impact": "low",
+   "impact": "high",
    "scope": "costs",
    "value": 3400
   },
@@ -3943,7 +3945,8 @@
   "above_range": false,
   "band_key": "risk",
   "lifts": false,
-  "price": 365000
+  "price": 365000,
+  "seller_concessions": 2000
  },
  "lc_why": {
   "deposit": {
@@ -3964,6 +3967,13 @@
  },
  "missing": [
   {
+   "caps_price": true,
+   "field": "insurance_annual",
+   "impact": "high",
+   "scope": "costs",
+   "value": 3400
+  },
+  {
    "field": "contract_form",
    "impact": "high",
    "scope": "buyer",
@@ -3974,12 +3984,6 @@
    "impact": "low",
    "scope": "buyer",
    "value": 0.03
-  },
-  {
-   "field": "insurance_annual",
-   "impact": "low",
-   "scope": "costs",
-   "value": 3400
   },
   {
    "field": "flood_insurance_annual",

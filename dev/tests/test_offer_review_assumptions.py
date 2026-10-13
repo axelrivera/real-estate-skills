@@ -281,7 +281,7 @@ class RiderGG(unittest.TestCase):
 
     def test_what_is_asked(self):
         R = review.analyze(fixture("expired-aga.json"))  # Rider GG, no amount in the package, the seller pays
-        self.assertIn("compensation_agreement", [a["field"] for a in review.confirm_items(R)])
+        self.assertNotIn("compensation_agreement", [a["field"] for a in review.confirm_items(R)])  # iteration 21: never
         data = fixture("expired-aga.json")
         data["offers"][0]["buyer_broker_pct"] = 0.025  # the amount was given
         self.assertNotIn("compensation_agreement", [a["field"] for a in review.analyze(data)["missing"]])

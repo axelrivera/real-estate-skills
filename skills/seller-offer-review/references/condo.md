@@ -22,7 +22,7 @@ Read this when the property is a condo (`property_type: condo`). A condo is valu
 
 List each adjustment in the data file like any other, with a sentence and a dollar amount. Typical condo adjustments (use the agent's local numbers when they have them, and say when you're estimating):
 
-- **Floor and view:** higher floors and water or skyline views sell for more; the step per floor is local, so read it from same-building sales.
+- **Floor and view:** higher floors and water or skyline views sell for more; the step per floor is local, so read it from same-building sales. A floor difference is a typed adjustment; a view is the unit's `lot` (`view`, or `lake_or_open_water` on the water), priced by the script, with `comps.lot_values` from same-building sales when the building's step differs from the built-in (`method.md`, Lot).
 - **Parking:** a deeded or assigned space, a garage space or a second space.
 - **Special assessments:** a sale where the seller paid off an assessment vs. one where the buyer takes it on. Adjust by the unpaid amount the buyer assumes.
 - **Association fee:** a much higher monthly fee lowers what buyers pay for the unit. Note the gap; adjust only when the comps show it.
@@ -44,7 +44,7 @@ Ask in one message, and list what's missing under the report's requests:
 ## Lending
 
 - An **FHA or VA** loan closes only in an approved project (or with a single-unit approval where the program allows it). Confirm it before an FHA or VA offer is written or accepted: an unapproved project can end the deal after the appraisal.
-- A **non-warrantable** project needs a portfolio or non-QM loan: more down and a higher rate. Say so in the payment and the offer plan.
+- A **non-warrantable** project needs a portfolio or non-QM loan: more down and a higher rate. Say so in the payment and the offer.
 - The HO-6 policy covers the unit's interior; the master policy covers the building. Deductible assessments after a storm are a real cost: ask about the master policy's deductible.
 
 ## Payment

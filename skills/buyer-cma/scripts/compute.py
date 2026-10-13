@@ -3,17 +3,17 @@ and the chat summary show.
 
     python3 scripts/compute.py report.json [--out DIR] [--mls NAME]
 
-Prints JSON: the range and the offer plan, the listing history counted from its events, the comps (each card's
-adjustments itemized and summed), the market table from the export, taxes, payment and price-vs-credit tables (each a
-finance.Ledger, so every column adds up), page 1's tiles and cost rows, the notes (one notes.Notes registry, each said
-once), the handoff and `warnings` to fix. Every figure is formatted once with fmt; every sentence that states a count,
-price, date or comparison is a template in assets/labels.json. What report.json writes is judgment (why this range,
-the offer posture and why, conditions, watch items, questions) and is refused when it carries a figure (prose.figures);
-the script prices the plan from the posture (offer_plan_for).
+Prints JSON: the supported range and where asking sits against it, the listing history counted from its events, the
+comps (each card's adjustments itemized and summed), the market table from the export, the taxes and payment tables
+(each a finance.Ledger, so every column adds up), page 1's tiles and cost rows, the notes (one notes.Notes registry,
+each said once), the handoff and `warnings` to fix. Every figure is formatted once with fmt; every sentence that states
+a count, price, date or comparison is a template in assets/labels.json. What report.json writes is judgment (why this
+range, what the history adds up to, watch items, questions) and is refused when it carries a figure (prose.figures) or,
+in the value narrative, offer advice (VALUE_ONLY): the report is an objective analysis of value, and the offer is the
+buyer offer strategy's.
 
-With only `subject`, `comps` (and `history`) in report.json (no bottom_line, offer_plan or costs yet), it prints the
-adjusted comps alone: the median, the spread, the outlier warnings and a rough plan, to set the range from or answer a
-gut check. Also writes <address>.buyer.cma.json (the CMA handoff the offer skills read) next to report.json, in the
+With only `subject`, `comps` (and `history`) in report.json (no bottom_line or costs yet), it prints the adjusted comps
+alone: the median, the spread, the outlier warnings and the supported range, to answer a gut check from. Also writes <address>.buyer.cma.json (the CMA handoff the offer skills read) next to report.json, in the
 working folder, never the outputs. render.py places this same model; it never recomputes. The input is never changed.
 """
 import argparse
@@ -27,7 +27,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import choices, cma, finance, fmt, handoff, mls, notes, profiles, prose  # noqa: E402
+from _shared import cma, finance, fmt, handoff, mls, notes, profiles, prose  # noqa: E402
 
 LABELS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "labels.json")
 with open(LABELS_PATH, encoding="utf-8") as _f:
@@ -111,17 +111,19 @@ RETIRED = {
     "history.intro": "the script writes the history's counts: write what they add up to in history.takeaway",
     "history.after": "write what the history adds up to (no figures) in history.takeaway",
     "history.rows": "the table is built from history.events",
-    "offer_plan.intro": "the script writes the offer plan's introduction",
-    **{f"offer_plan.{k}": "the script sets the plan from offer_plan.posture (offer-plan.md): leave it out, or put the "
-                          "agent's own numbers in offer_plan.plan_override {opening, target_low, target_high, walk_away, "
-                          "reason}" for k in ("opening", "target_low", "target_high", "walk_away")},
-    **{f"offer_plan.why_{k}": "the script writes each step's reason from the posture: say what is particular to this "
-                              "home in offer_plan.posture_reason or offer_plan.conditions"
-       for k in ("opening", "target", "walk_away")},
-    "offer_plan.credit_alt.price": "the script prices the credit alternative at the opening offer plus its credit: give "
-                                   "only credit_alt.credit",
-    "costs.credit_scenarios.buydown.price": "the script prices the buydown at the opening offer plus its credit: give "
-                                            "only buydown.credit",
+    "offer_plan": "the buyer CMA reports value only: the offer (its posture, opening, target, walk-away and any credit "
+                  "alternative) is the buyer offer strategy's job. Leave offer_plan out; the facts behind an offer (the "
+                  "history, the market) already have their own sections",
+    "offer": "the buyer CMA reports value only: negotiating points belong to the buyer offer strategy. Leave offer out",
+    "split_date": "the script sets the market split by its rule (the first of the month two months before as_of), so "
+                  "the same export always splits the same way: leave it out, or put the agent's own date in "
+                  "split_override {date, reason}",
+    "comps.time_adjustment": "the script sets the market shift from the export by its rule (method.md, Time): leave it "
+                             "out, or put the agent's own rate in comps.time_override {rate_per_quarter, prices, reason}",
+    "costs.credit_scenarios": "price vs. seller credit is part of the offer, not the CMA: leave it out. The lender's "
+                              "closing costs go in costs.closing_costs (or a share in costs.closing_cost_pct), and the "
+                              "buyer's broker agreement in costs.buyer_broker_agreement_pct and "
+                              "costs.seller_pays_buyer_broker_pct",
     "comps.summary_paragraph": "write which way the range leans and why (no figures) in comps.lean",
     "scatter.intro": "the script describes what the chart plots",
     "scatter.after_paragraph": "write what the chart shows (no figures) in scatter.takeaway",
@@ -134,14 +136,10 @@ RETIRED = {
     "costs.taxes.after_paragraph": "the script writes the escrow warning",
     "costs.insurance.paragraph": "write the insurance drivers for this house (no figures) in costs.insurance.drivers",
     "costs.payment.intro": "the script writes the payment's introduction from the rate (add rate_week for the survey date)",
-    "costs.credit_scenarios.intro": "the script writes the price-vs-credit introduction",
-    "costs.credit_scenarios.after_paragraph": "write the trade-off for this buyer (no figures) in costs.credit_scenarios.takeaway",
 }
 RETIRED_EACH = {
     "comps.cards[].meta": "the script writes each card's sale line from the card and the export",
     "costs.payment.scenarios[].label": "the script names each scenario from its type and down_pct",
-    "costs.credit_scenarios.scenarios[].price": "the script prices each scenario at the opening offer plus its credit: "
-                                                "give only credit (0, 5000, 10000), or leave scenarios out for those three",
 }
 
 # Judgment fields: what the model writes in words. Each is checked figure-free (prose.figures): the script prints every
@@ -149,12 +147,26 @@ RETIRED_EACH = {
 JUDGMENT = (
     "subject.summary", "summary_page.label", "summary_page.headline", "summary_page.why[]",
     "summary_page.check_first[][]", "summary_page.next_step", "bottom_line.why", "range_override.reason", "history.takeaway",
-    "history.events[].note", "offer_plan.posture_reason", "offer_plan.plan_override.reason", "offer_plan.conditions", "offer.heading", "offer.bullets[]", "comps.intro", "comps.method_note", "comps.lean",
+    "history.events[].note", "comps.intro", "comps.method_note", "comps.lean", "comps.cards[].keep_reason", "comps.cards[].lot_reason", "subject.lot_reason",
+    "comps.time_override.reason", "split_override.reason",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
     "competition.intro", "competition.rows[][6]", "market.bullets[]", "costs.insurance.drivers", "costs.payment.note",
-    "costs.credit_scenarios.takeaway", "costs.taxes.jurisdictions[].label", "costs.taxes.jurisdictions[].short",
+    "costs.taxes.jurisdictions[].label", "costs.taxes.jurisdictions[].short",
     "watch.items[]", "watch.questions[]", "sources[]", "subject.facts[][0]",
 )
+
+
+# The value narrative: what the report says about value, the history and the market. The report is an objective analysis
+# of value, so none of these gives offer advice (an opening price, room to negotiate, leverage, a walk-away): that is the
+# buyer offer strategy's. Checked on each field (schema_errors), with the fix.
+VALUE_ONLY = ("summary_page.headline", "summary_page.why[]", "bottom_line.why", "range_override.reason",
+              "history.takeaway", "comps.lean", "scatter.takeaway", "market.bullets[]", "subject.summary")
+OFFER_ADVICE = re.compile(r"\b(offer|offering at|open(?:ing)? (?:at|low|high|below|near)|negotiat\w*|leverage|walk[- ]?away"
+                          r"|counter[- ]?offers?|lowball\w*|bargain\w*|room to (?:move|come down)|cushion\w*)\b", re.I)
+# Where asking sits is the script's (asking_position, printed right above the headline), so the headline never says it:
+# it gives the one fact that explains the value, and can't contradict the script's line.
+HEADLINE_POSITION = re.compile(r"\b(asking|list(?:ing)? price|priced|above|below|inside|within|bottom|top|middle|median)\b",
+                               re.I)
 
 
 def _walk(node, parts, path):
@@ -192,13 +204,29 @@ def schema_errors(R):
         for path, v in _walk(R, _parts(pattern), ""):
             if isinstance(v, str):
                 text = re.sub(r"<[^>]+>", " ", v)
-                found = prose.figures(text) + re.findall(r"\{\w*\}", v)
+                found = prose.figures(text) + prose.counts(text) + re.findall(r"\{\w*\}", v)
                 if found:
                     out.append(f"{path}: has {', '.join(repr(x) for x in found)} → the report prints every count, price, "
                                "percent and date itself; write this in words, without the figure.")
                 who = prose.people(text)
                 if who:
                     out.append(f"{path}: has {', '.join(repr(x) for x in who)} → {prose.PEOPLE_FIX}.")
+    # the fair-housing phrases render.py stops on, here too, so the first run names them (iteration 20: "young
+    # families" in deck.tagline passed compute.py and stopped only at render)
+    out += [f"{path.removeprefix('$.')}: {problem}" for path, problem in prose.issues(R, rules=frozenset({"fair"}))]
+    for pattern in VALUE_ONLY:
+        for path, v in _walk(R, _parts(pattern), ""):
+            found = OFFER_ADVICE.findall(re.sub(r"<[^>]+>", " ", v)) if isinstance(v, str) else []
+            if found:
+                out.append(f"{path}: has {', '.join(repr(x) for x in dict.fromkeys(found))} → this report is an "
+                           "objective analysis of value: say what the comps, the history and the market show, never "
+                           "what to offer or how to negotiate (that is the buyer offer strategy's).")
+    head = (R.get("summary_page") or {}).get("headline")
+    found = HEADLINE_POSITION.findall(head) if isinstance(head, str) else []
+    if found:
+        out.append(f"summary_page.headline: has {', '.join(repr(x) for x in dict.fromkeys(found))} → where asking sits is "
+                   "the script's line right above the headline; the headline gives the one fact that explains the value "
+                   "(\"Renovated Spring Oaks pool homes of the same size set the value; this one's roof age is unknown\").")
     return out
 
 
@@ -228,31 +256,31 @@ def taxes(R, market):
 
 
 def tax_annual_at(price, market, j, homestead):
-    """A jurisdiction's yearly bill at another price, to the dollar (the payment and credit tables at their prices)."""
+    """A jurisdiction's yearly bill at another price, to the dollar (the payment at the median adjusted value)."""
     est = finance.property_tax(price, market, j["school_mills"], j["total_mills"], homestead)
     return fmt.half_up(est["annual"] or 0)
 
 
 def buyer_closing_costs(R, market, price, program, down, loan):
-    """CMA-223: the buyer's closing costs at `price`, on one basis for the payment table and the credit table, and the
-    offer strategy's (finance.buyer_closing_costs): the lender's figure (`credit_scenarios.closing_costs`) for the
-    credit table's own program and down payment, else `closing_cost_pct` of the price as given, else the market's share
-    plus prepaids and its loan taxes on `loan` (CORE-16; half the share for cash).
-    Returns (amount, the itemized loan taxes, whether it's the lender's figure)."""
-    cs = R["costs"].get("credit_scenarios") or {}
-    own = (finance.program(cs.get("loan_type", "conventional")) == program
-           and abs(_frac(cs, "down_pct", "costs.credit_scenarios", 0.05) - down) < 1e-9)
+    """CMA-223: the buyer's closing costs at `price`, on the offer strategy's basis (finance.buyer_closing_costs): the
+    lender's figure (`costs.closing_costs`) for the first payment scenario (the buyer's own financing), else
+    `costs.closing_cost_pct` of the price as given, else the market's share plus prepaids and its loan taxes on `loan`
+    (CORE-16; half the share for cash). Returns (amount, the itemized loan taxes, whether it's the lender's figure)."""
+    c = R["costs"]
+    first = (c.get("payment") or {}).get("scenarios") or [{}]
+    own = (first[0].get("type") is not None and finance.program(first[0]["type"]) == program
+           and abs(_frac(first[0], "down_pct", "costs.payment.scenarios[0]", 0.05) - down) < 1e-9)
     cc = finance.buyer_closing_costs(price, loan, market, cash=program == "cash",
-                                     pct=_frac(cs, "closing_cost_pct", "costs.credit_scenarios"),
-                                     amount=cs.get("closing_costs") if own and cs.get("closing_costs") else None)
+                                     pct=_frac(c, "closing_cost_pct", "costs"),
+                                     amount=c.get("closing_costs") if own and c.get("closing_costs") else None)
     return cc["amount"], cc["loan_taxes"], cc["source"] == "lender"
 
 
 def broker_fee_short(R, price):
     """CMA-4: what the buyer pays their own broker at `price` when the seller pays less than the agreement."""
-    cs = R["costs"].get("credit_scenarios") or {}
-    agreement = _frac(cs, "buyer_broker_agreement_pct", "costs.credit_scenarios")
-    seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
+    c = R["costs"]
+    agreement = _frac(c, "buyer_broker_agreement_pct", "costs")
+    seller_pays = _frac(c, "seller_pays_buyer_broker_pct", "costs", 0)
     return finance.buyer_broker_shortfall(price, agreement, seller_pays) or 0
 
 
@@ -299,16 +327,14 @@ def monthly_ledger(price, program, down, rate, tax_annual, ins_annual, hoa, floo
     return led, r
 
 
-def cash_ledger(down_amount, closing, bb_short=0, credit_applied=0):
-    """Cash to close as a finance.Ledger: the down payment, closing costs, any seller credit applied to them and any
-    buyer's broker fee the seller doesn't pay; its total is the cash to close."""
+def cash_ledger(down_amount, closing, bb_short=0):
+    """Cash to close as a finance.Ledger: the down payment, closing costs and any buyer's broker fee the seller doesn't
+    pay; its total is the cash to close."""
     led = finance.Ledger()
-    led.add("down", L["cr_down"], down_amount)
-    led.add("closing", L["cr_cc"], closing)
-    if credit_applied:
-        led.cost("credit", L["cr_applied"], credit_applied)
+    led.add("down", L["pay_cash"], down_amount)
+    led.add("closing", L["pay_closing"], closing)
     if bb_short:
-        led.add("bb", L["cr_bb_short"], bb_short)
+        led.add("bb", L["pay_bb"], bb_short)
     return led
 
 
@@ -322,7 +348,20 @@ def scenario_label(sc):
     return t("scen_label", program=L["prog_" + key], down=fmt.pct(sc["down_pct"], 2))
 
 
-def payments(R, market, tax_rows, ji, insurance):
+def hoa_cdd(R):
+    """The monthly HOA and CDD in the payment: `costs.payment.hoa_cdd_monthly`, else the home's own `hoa_monthly`
+    (iteration 19: dues on the subject never reached the payment)."""
+    pay = R["costs"]["payment"]
+    v = pay.get("hoa_cdd_monthly")
+    if v is None:
+        v = (R.get("subject") or {}).get("hoa_monthly")
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+
+
+def payments(R, market, tax_rows, ji, insurance, median_shown=None):
+    """The payment table at `costs.payment.price` (asking by default), one column per financing scenario, and each
+    column's total at the median adjusted value when that is lower (`at_median`): the same home at what the comps
+    support, a fact beside the asking price, never a suggested price."""
     pay = R["costs"]["payment"]
     price, cash, homestead = pay["price"], R["costs"].get("buyer_cash"), R["costs"]["taxes"].get("homestead", True)
     flood = flood_line(R, market)
@@ -340,7 +379,7 @@ def payments(R, market, tax_rows, ji, insurance):
             raise ReportError(f"costs.payment.scenarios[{i}].type: {e}") from None
         sc["label"] = scenario_label(sc)
         mled, r = monthly_ledger(price, prog, sc["down_pct"], pay["rate"], tj["annual"], insurance["annual"],
-                                 pay.get("hoa_cdd_monthly", 0), flood["annual"], tax_label)
+                                 hoa_cdd(R), flood["annual"], tax_label)
         cc, _, lender = buyer_closing_costs(R, market, price, prog, sc["down_pct"], r["loan"])
         cled = cash_ledger(r["cash_down"], cc, broker_fee_short(R, price))
         total, to_close = mled.total(), cled.total()
@@ -360,7 +399,7 @@ def payments(R, market, tax_rows, ji, insurance):
     first = rows[0]
     lower, _ = monthly_ledger(price - 10000, first["program"], first["down_pct"], pay["rate"],
                               tax_annual_at(price - 10000, market, tj, homestead), insurance["annual"],
-                              pay.get("hoa_cdd_monthly", 0), flood["annual"], tax_label)
+                              hoa_cdd(R), flood["annual"], tax_label)
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
         other = tax_rows[1 - ji]
@@ -373,102 +412,18 @@ def payments(R, market, tax_rows, ji, insurance):
                  "homestead": bool(homestead)}
     tax_basis["label_estimate"] = tax_basis["unconfirmed"] or tax_basis["estimated"]
     per_10k = first["total"] - lower.total()
-    return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R), "rate": pay["rate"],
+    at_median = None
+    if median_shown is not None and median_shown < price:
+        at_median = {"price": median_shown, "price_display": money(median_shown), "totals": [
+            monthly_ledger(median_shown, r["program"], r["down_pct"], pay["rate"],
+                           tax_annual_at(median_shown, market, tj, homestead), insurance["annual"],
+                           hoa_cdd(R), flood["annual"], tax_label)[0].total() for r in rows]}
+    return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R, median_shown),
+            "at_median": at_median, "rate": pay["rate"],
             "rate_display": fmt.pct(pay["rate"] / 100, 3), "insurance_annual": insurance["annual"],
             "insurance": insurance, "rows": rows, "flood": flood, "per_10k": per_10k,
             "per_10k_display": money(per_10k), "alt_jurisdiction": alt, "tax_index": ji, "tax_basis": tax_basis,
             "tax_label": tax_label, "buyer_cash": cash, "buyer_cash_display": money(cash) if cash else None}
-
-
-def credit_scenarios(R, market, tax_rows, ji, median_shown, insurance):
-    cs = R["costs"].get("credit_scenarios")
-    if not cs:
-        return None
-    pay = R["costs"]["payment"]
-    homestead = R["costs"]["taxes"].get("homestead", True)
-    try:
-        program = finance.program(cs.get("loan_type", "conventional"))
-    except ValueError as e:
-        raise ReportError(f"costs.credit_scenarios.loan_type: {e}") from None
-    down = _frac(cs, "down_pct", "costs.credit_scenarios", 0.05)
-    cap = finance.concession_cap(program, down)
-    seller_pays = _frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0)
-    flood = flood_line(R, market)
-    cols, base = [], None
-    for i, x in enumerate(cs.get("scenarios") or []):
-        price, credit = x.get("price"), x.get("credit") or 0
-        if not isinstance(price, (int, float)) or isinstance(price, bool) or price <= 0:
-            raise ReportError(f"costs.credit_scenarios.scenarios[{i}].price should be a plain number (475000).")
-        mled, p = monthly_ledger(price, program, down, pay["rate"], tax_annual_at(price, market, tax_rows[ji], homestead),
-                                 insurance["annual"], pay.get("hoa_cdd_monthly", 0), flood["annual"], "")
-        cc, loan_tax, _ = buyer_closing_costs(R, market, price, program, down, p["loan"])
-        bb = broker_fee_short(R, price)
-        cled = cash_ledger(p["cash_down"], cc, bb, min(credit, cc))
-        col = {"price": price, "credit": credit, "net": price - credit, "loan": fmt.half_up(p["loan"]),
-               "cash_lines": cled.tuples(), "down": cled.amount("down"), "closing_costs": cled.amount("closing"),
-               "credit_applied": -cled.amount("credit"), "bb_short": cled.amount("bb"), "cash": cled.total(),
-               "payment": mled.total(), "pi": mled.amount("pi"),
-               "cap": fmt.half_up(price * cap) if cap is not None else None,
-               "over_cap": cap is not None and credit > price * cap + 1, "over_costs": credit > cc + 1,
-               "appraisal_room": median_shown - price, "loan_taxes": sum(tx["amount"] for tx in loan_tax)}
-        col["cash_short"] = _short(col["cash"], R["costs"].get("buyer_cash"))  # CMA-204
-        col["cash_left"] = _tight(col["cash"], R["costs"].get("buyer_cash"))  # CMA-217
-        base = base or col
-        col["extra"] = col["payment"] - base["payment"]
-        saved = col["cash_saved"] = base["cash"] - col["cash"]  # CMA-308: against the first scenario, never the credit
-        col["payback_years"] = saved / (col["extra"] * 12) if col["extra"] > 0 and saved > 0 else None
-        cols.append(col)
-    if not cols:
-        raise ReportError("costs.credit_scenarios.scenarios needs 2 to 4 {price, credit} offers.")
-    # CMA-11: a higher price raises the seller's percentage costs, so "price minus credit" isn't quite their net
-    transfer = market.get("closing_costs.deed_transfer_tax_rate") if market.get("closing_costs.deed_transfer_tax_payer") \
-        in (None, "seller") else 0
-    seller_cost_pct = (transfer or 0) + (seller_pays or 0)
-    out = {"program": program, "down_pct": down, "columns": cols, "seller_cost_per_10k": fmt.half_up(10000 * seller_cost_pct),
-           "seller_cost_parts": [x for x, v in (("transfer tax", transfer), ("buyer-broker pay", seller_pays)) if v],
-           "closing_costs_given": bool(cs.get("closing_costs"))}
-    step = next((c for c in cols[1:] if c["credit"] != cols[0]["credit"]), None)
-    if step:
-        scale = 5000 / (step["credit"] - cols[0]["credit"])
-        out["per_5k"] = {"cash": fmt.half_up((cols[0]["cash"] - step["cash"]) * scale, 100),
-                         "monthly": fmt.half_up((step["payment"] - cols[0]["payment"]) * scale)}
-    bd = cs.get("buydown")
-    if bd:
-        col = next((c for c in cols if c["price"] == bd.get("price")), cols[-1])
-        loan = finance.loan_amount(col["price"], program, down)
-        b = finance.buydown_2_1(loan, pay["rate"])
-        other = col["payment"] - col["pi"]
-        credit = bd.get("credit", col["credit"])
-        out["buydown"] = {"price": col["price"], "credit": credit, "cost": fmt.half_up(b["cost"], 100),
-                          "covered": credit >= b["cost"], "year1": fmt.half_up(b["year1"]) + other,
-                          "year2": fmt.half_up(b["year2"]) + other, "full": fmt.half_up(b["full"]) + other}
-    return out
-
-
-def fitting_credit(credit, cash, credit_alt=None):
-    """CMA-235: the price-vs-credit column whose cash to close fits the buyer's cash (`buyer_cash`), for the cash_short
-    warning to name: offer_plan.credit_alt when it fits, else the fitting column with the lowest net price. None
-    without buyer_cash or when no column fits."""
-    if not cash:
-        return None
-    fits = [c for c in (credit or {}).get("columns", []) if not c.get("cash_short") and c["cash"] <= cash]
-    alt = next((c for c in fits if credit_alt and c["price"] == credit_alt.get("price")
-                and c["credit"] == credit_alt.get("credit")), None)
-    return alt or min(fits, key=lambda c: (c["net"], c["price"]), default=None)
-
-
-def credit_alt_saving(credit, ca):
-    """CMA-308: what offer_plan.credit_alt really saves at closing: its cash to close against the scenario at the same
-    price minus credit with no credit (else the first scenario). The higher price raises the down payment and closing
-    costs, so the saving is less than the credit. None when credit_alt matches no scenario."""
-    cols = (credit or {}).get("columns") or []
-    col = next((c for c in cols if ca and c["price"] == ca.get("price") and c["credit"] == ca.get("credit")), None)
-    if not col:
-        return None
-    base = next((c for c in cols if c["price"] == col["net"] and not c["credit"]), cols[0])
-    saved = base["cash"] - col["cash"]
-    return {"price": col["price"], "credit": col["credit"], "base_price": base["price"], "base_credit": base["credit"],
-            "cash_saved": saved, "cash_saved_display": money(saved)}
 
 
 def insurance_line(R, market):
@@ -486,26 +441,11 @@ def homestead_label(homestead):
     return L["with_homestead"] if homestead else L["no_homestead"]
 
 
-def target_price(op):
-    """The offer plan's target: the plan's own (`target`, offer_plan_for's), else the middle of target_low to
-    target_high, else the one given, else the opening."""
-    if op.get("target") is not None:
-        return op["target"]
-    lo, hi = op.get("target_low"), op.get("target_high")
-    if lo is not None and hi is not None:
-        return fmt.half_up((lo + hi) / 2)
-    return lo if lo is not None else hi if hi is not None else op.get("opening")
-
-
-def price_basis(price, R):
-    """CMA-204: which of the plan's prices the payment is figured at, so page 1 can say so."""
-    op, ask = R.get("offer_plan") or {}, R["subject"]["list_price"]
-    lo, hi = op.get("target_low"), op.get("target_high")
-    if price == ask:
+def price_basis(price, R, median_shown=None):
+    """CMA-204: what the payment's price is, so page 1 can say so: the asking price or the median adjusted value."""
+    if price == R["subject"]["list_price"]:
         return "asking"
-    if lo is not None and (hi or lo) >= price >= lo or price == target_price(op):
-        return "target"
-    return {op.get("opening"): "opening", op.get("walk_away"): "walk_away"}.get(price)
+    return "median" if median_shown is not None and price == median_shown else None
 
 
 def basis_words(basis):
@@ -513,12 +453,13 @@ def basis_words(basis):
 
 
 def default_prices(R):
-    """CMA-204: without `costs.payment.price` the payment is figured at the offer plan's target, not the asking price;
-    without `costs.taxes.purchase_price` the tax estimate uses the payment's price, so page 1's numbers agree."""
+    """CMA-204: without `costs.payment.price` the payment is figured at the asking price, the one price the buyer sees
+    on the listing; without `costs.taxes.purchase_price` the tax estimate uses the payment's price, so page 1's numbers
+    agree."""
     costs = R.get("costs") or {}
     pay, t_ = costs.get("payment"), costs.get("taxes")
-    if isinstance(pay, dict) and pay.get("price") in (None, "") and R.get("offer_plan", {}).get("opening") is not None:
-        pay["price"] = target_price(R["offer_plan"])
+    if isinstance(pay, dict) and pay.get("price") in (None, ""):
+        pay["price"] = R["subject"]["list_price"]
     if isinstance(t_, dict) and t_.get("purchase_price") in (None, "") and isinstance(pay, dict) and pay.get("price"):
         t_["purchase_price"] = pay["price"]
 
@@ -673,12 +614,15 @@ def history_stats(R, as_of):
     active_days = fmt.half_up(active_days)
     total_cut, first_listed = sum(cuts), first_listed or counted[0]["date"]
     timeline = []
-    for r in rows:  # oldest first, for the report's table (words for each kind from labels.json)
+    flagged = {rows_by_i for g in out_of_order for rows_by_i in g}  # event indices (order_breaks ran before the sort)
+    # oldest first, for the report's table, in the grid's own order: a row out of date order stays where the grid has
+    # it, marked for the agent to check, never moved to where its date would put it (iteration 20)
+    for r in sorted(rows, key=lambda r: r["i"], reverse=newest_first):
         kind = HISTORY_KIND.get(r["change"], r["change"])
         if kind == "price":
             kind = "price_cut" if r["delta"] < 0 else "price_increase" if r["delta"] > 0 else "price"
         timeline.append({"date": r["date"].isoformat(), "kind": kind, "price": r["price"], "delta": r["delta"],
-                         "mls": r["mls"], "note": events[r["i"]].get("note")})
+                         "mls": r["mls"], "note": events[r["i"]].get("note"), "to_confirm": r["i"] in flagged})
     stats = {
         "events": len(rows), "first_listed": first_listed.isoformat(),
         "listings": sum(1 for lst in listings if any(HISTORY_CHANGES[r["change"]] == "active" for r in lst["rows"])),
@@ -773,7 +717,8 @@ def history_section(hist, as_of):
             kind = "back_on_higher" if e["delta"] > 0 else "back_on_lower"
         elif kind == "sold":  # CMA-307: a listing after a sale is the next owner's, not a relisting
             n_listed = 0
-        rows.append([when, e.get("note") or L["hist_" + kind], money(e["price"]) if e["price"] is not None else fmt.EMPTY])
+        rows.append([t("hist_date_check", when=when) if e.get("to_confirm") else when, e.get("note") or L["hist_" + kind],
+                     money(e["price"]) if e["price"] is not None else fmt.EMPTY])
     return {"heading": heading, "lines": lines, "rows": rows}
 
 
@@ -803,7 +748,7 @@ def export_mls_warning(R, homes):
 def median_rounded(median_adjusted, count):
     """CMA-234: an even number of comps has a midpoint median ($472,612.50): rounded to the nearest $100, as seller-cma
     does (CMA-265); an odd count's median is a comp's own adjusted value, kept to the dollar. Every figure quoted from
-    the median (the credit table's room below it) uses this value, so the report shows one median."""
+    the median (page 1, the payment at the median) uses this value, so the report shows one median."""
     return fmt.half_up(median_adjusted, 1 if count % 2 else 100)
 
 
@@ -816,26 +761,23 @@ def comp_count_warnings(cards):
 
 
 def prepare_comps(R, homes, warn, market):
-    """Condition and time adjustments by the shared rules (the condition ladder, the market's time rate), then each
-    adjusted value from its parts (cma.derive_comps), the outlier and adjustment warnings. Returns (time info, the
-    market split, condition info)."""
+    """The comps by the shared pipeline (cma.settle_comps): the split and the market-shift rate by rule, the condition,
+    roof and time adjustments, each adjusted value, and the used comps (outliers set aside for the next backup). Writes
+    the used comps into the working copy. Returns (time info, the split, condition info, the pipeline's info)."""
     for i, c in enumerate(R["comps"]["cards"]):
         if not isinstance(c, dict) or not c.get("address") or not isinstance(c.get("adjustments"), list):
             raise ReportError(f"comps.cards[{i}] needs address, sold_price, seller_concessions and adjustments "
                               "([{label, amount}], empty when there are none): the script adds them up.")
-    split = cma.default_split(R, homes)
-    cond_errors, cond_info = cma.apply_condition_adjustments(R["comps"], R["subject"], market)
-    errors, info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
-    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + cond_errors + errors
-    if errors:
-        raise ReportError(stop_message(errors))
+    st, _ = export_stats(R, homes)
     try:
-        warn("derive_comps", *cma.derive_comps(R["comps"]))
+        errors, warns, info = cma.settle_comps(R, homes, market, st)
     except ValueError as e:
         raise ReportError(str(e)) from e
-    warn("time_undated", *cma.time_warnings(info))
-    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
-    return info, split, cond_info
+    if errors:
+        raise ReportError(stop_message(errors))
+    for key, text in warns:
+        warn(key, text)
+    return info["time"], info["split"], info["condition"], info
 
 
 def supported_range(R, values, market):
@@ -921,186 +863,32 @@ def range_position(value, low, high):
     return "pos_bottom" if value <= low + third else "pos_top" if value >= high - third else "pos_middle"
 
 
-# --- the offer plan: the model picks a posture, the script sets the numbers ----------------------------------------------
+# --- where asking sits: facts, never a suggested price ----------------------------------------------------------------
 
-PLAN_KEYS = ("opening", "target_low", "target_high", "walk_away")
-TARGET_SPREAD = 2500  # the target is a range: the target price give or take this much, inside the plan
-TARGET_FLOOR_SHARE = 4  # the target is at least a quarter of the way from the opening to the walk-away
-DEFAULT_CREDITS = (0, 5000, 10000)  # price-vs-credit offers when report.json gives none: the opening plus each credit
+JUST_OUTSIDE = 0.005  # asking within 0.5% of an end of the range (about $2,400 at $475,000) is "just" outside it
 
 
-def offer_plan_for(posture, low, high, median, ask, width, sale_to_list=None):
-    """The offer plan by rule for a posture (offer-plan.md), every step rounded to $1,000 (half up), none above asking:
-
-        posture      opening                      walk-away
-        leverage     range low minus width / 4    median adjusted value
-        standard     range low                    median adjusted value
-        competitive  range middle                 range high
-        must_win     asking, capped at range high range high
-
-    The walk-away never goes above the range's high (only an agent's override does). Target: asking times the recent
-    sale-to-original-list ratio (the midpoint of the opening and the walk-away without the ratio), never under a
-    quarter of the way from the opening to the walk-away nor above the walk-away (plan_target); target_low and
-    target_high are the target give or take $2,500, clamped the same way. `width` is the range's
-    normal width (cma.range_width's target). Returns the four numbers, the target and `basis` {step: labels.json key}
-    naming what set each step, so its reason in the report is always the true one."""
-    k = lambda x: fmt.half_up(x, 1000)  # noqa: E731
-    walk_raw, walk_basis = (k(median), "median") if posture in ("leverage", "standard") else (high, "high")
-    walk = min(walk_raw, high, ask)
-    if walk == ask and ask < min(walk_raw, high):
-        walk_basis = "asking"
-    elif walk < walk_raw:  # the median above an agent's range: the walk-away stops at its high
-        walk_basis = "high"
-    open_raw, open_basis = {"leverage": (k(low - width / 4), "below_range"), "standard": (k(low), "low"),
-                            "competitive": (k((low + high) / 2), "middle"),
-                            "must_win": ((ask, "asking") if ask <= high else (high, "high"))}[posture]
-    opening = min(open_raw, walk)
-    if opening < open_raw:
-        open_basis = "asking" if opening == ask else "walk_away"
-    target, lo, hi, target_basis = plan_target(opening, walk, ask, sale_to_list)
-    return {"opening": opening, "target_low": lo, "target_high": hi, "walk_away": walk, "target": target,
-            "basis": {"opening": open_basis, "target": target_basis, "walk_away": walk_basis}}
-
-
-def target_floor(opening, walk):
-    """The least a target moves up from the opening: a quarter of the way to the walk-away, to $1,000 (half up), never
-    under the opening. Above the walk-away only when the two are within a rounding step; plan_target caps it there."""
-    return max(opening, fmt.half_up(opening + (walk - opening) / TARGET_FLOOR_SHARE, 1000))
-
-
-def plan_target(opening, walk, ask, sale_to_list=None):
-    """(target, target_low, target_high, basis) between an opening and a walk-away: asking times the recent
-    sale-to-original-list ratio, else their midpoint, to $1,000 (half up), never under the target floor (a quarter of
-    the way from the opening to the walk-away, target_floor) nor above the walk-away (so never above asking); the
-    target range is the target give or take $2,500, clamped the same way (its low end never under the floor)."""
-    if sale_to_list:
-        raw, basis = fmt.half_up(ask * sale_to_list, 1000), "ratio"
+def asking_position(ask, low, high, median_shown):
+    """Where the asking price sits against the supported range and the median adjusted value: above or below the range
+    by how much, else above, below or at the median. {key, amount, line}: the line is page 1's sentence."""
+    near = JUST_OUTSIDE * low  # a gap this small reads as at the edge, said with its amount, never as a real gap
+    if ask > high:
+        key, amt = ("sum_pos_just_above" if ask - high <= near else "sum_pos_above"), ask - high
+    elif ask < low:
+        key, amt = ("sum_pos_just_below" if low - ask <= near else "sum_pos_below"), low - ask
+    elif ask > median_shown:
+        key, amt = "sum_pos_over_median", ask - median_shown
+    elif ask < median_shown:
+        key, amt = "sum_pos_under_median", median_shown - ask
     else:
-        raw, basis = fmt.half_up((opening + walk) / 2, 1000), "midpoint"
-    floor = target_floor(opening, walk)
-    target = min(max(raw, floor), walk)
-    if target != raw:
-        basis = "floor" if target > raw else "ratio_down"
-    return target, max(min(floor, target), target - TARGET_SPREAD), min(walk, target + TARGET_SPREAD), basis
+        key, amt = "sum_pos_at_median", 0
+    return {"key": key, "amount": amt, "amount_display": money(amt), "line": t(key, amt=money(amt))}
 
 
-def _plain_number(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0
-
-
-def resolve_plan(R, market, hist, stats, median, low, high):
-    """The offer plan the report uses: the posture the model picked (offer_plan.posture, checked by choices.pick; left
-    out, the suggested one), priced by offer_plan_for, then any step the agent set in `plan_override` {opening?,
-    target_low?, target_high?, walk_away?, reason}. A posture other than the suggested one needs `posture_reason`.
-    Returns (plan, problems as `field: problem → fix`)."""
-    op = R.get("offer_plan") or {}
-    suggested = cma.suggest_posture(hist, stats)
-    posture, problems = choices.pick(op.get("posture"), cma.POSTURES, "offer_plan.posture", default=suggested)
-    reason = str(op.get("posture_reason") or "").strip()
-    if posture != suggested and not reason and not problems:
-        problems.append(f"offer_plan.posture_reason: missing → the data suggests {suggested}, so say in words (no "
-                        f"figures) why this buyer's plan is {posture}; the report shows it beside the posture.")
-    ask = R["subject"]["list_price"]
-    width = cma.range_width(median, market)["target"]
-    plan = offer_plan_for(posture, low, high, median, ask, width, (stats or {}).get("sale_to_original_list_recent"))
-    plan.update(posture=posture, posture_suggested=suggested, posture_reason=reason, override=[], override_reason="")
-    ov = op.get("plan_override")
-    if ov in (None, {}, False):
-        return plan, problems
-    fix = ('{"opening": ..., "walk_away": ..., "reason": "why, in words"} with only the steps the agent chose, as plain '
-           "numbers; the script sets the rest from the posture")
-    if not isinstance(ov, dict):
-        return plan, problems + [f"offer_plan.plan_override: should be {fix}."]
-    given = {key: ov[key] for key in PLAN_KEYS if ov.get(key) not in (None, "")}
-    bad = [key for key, v in given.items() if not _plain_number(v)]
-    unknown = [key for key in ov if key not in PLAN_KEYS + ("reason",)]
-    if bad or unknown or not given:
-        problems.append(f"offer_plan.plan_override: {', '.join(bad + unknown) or 'no step'} → {fix}.")
-    why = str(ov.get("reason") or "").strip()
-    if not why:
-        problems.append("offer_plan.plan_override.reason: missing → say in words (no figures) why the agent set these "
-                        "numbers instead of the posture's; the report shows them as the agent's.")
-    if problems:
-        return plan, problems
-    merged = {**{key: plan[key] for key in PLAN_KEYS}, **given}
-    target = plan["target"]
-    if not given.keys() & {"target_low", "target_high"}:  # the target by its rule between the plan's final ends
-        target, merged["target_low"], merged["target_high"], plan["basis"]["target"] = plan_target(
-            merged["opening"], merged["walk_away"], ask, (stats or {}).get("sale_to_original_list_recent"))
-    steps = [merged[key] for key in PLAN_KEYS]
-    if steps != sorted(steps):  # CMA-20
-        ladder = ", ".join(f"{key} {money(merged[key])}" for key in PLAN_KEYS)
-        return plan, [f"offer_plan.plan_override: the plan would run {ladder} → it runs opening, then target, then "
-                      "walk-away, from low to high: give the steps that keep that order."]
-    if given.keys() & {"target_low", "target_high"}:
-        target = target_price({"target_low": merged["target_low"], "target_high": merged["target_high"]})
-        plan["basis"]["target"] = "override"
-    plan["basis"].update({key: "override" for key in ("opening", "walk_away") if key in given})
-    plan.update(merged, target=target, override=[key for key in PLAN_KEYS if key in given], override_reason=why)
-    return plan, problems
-
-
-def price_credit_offers(R, opening):
-    """CMA-308: the price-vs-credit offers, the credit alternative and the buydown, priced from the plan's opening
-    (each at the opening plus its credit, so price minus credit stays the opening), written into the working copy.
-    Without `scenarios`, the opening with no credit, then $5,000 and $10,000."""
-    cs = (R.get("costs") or {}).get("credit_scenarios")
-    if isinstance(cs, dict):
-        scen = cs.get("scenarios") or [{"credit": c} for c in DEFAULT_CREDITS]
-        for i, x in enumerate(scen):
-            credit = x.get("credit") if isinstance(x, dict) else None
-            if credit is None or not isinstance(credit, (int, float)) or isinstance(credit, bool) or credit < 0:
-                raise ReportError(f"costs.credit_scenarios.scenarios[{i}].credit should be a plain number (5000, or 0 "
-                                  "for none): the script prices each offer at the opening plus its credit.")
-        cs["scenarios"] = [{**x, "price": opening + x["credit"]} for x in scen]
-        if isinstance(cs.get("buydown"), dict) and cs["buydown"].get("credit") is not None:
-            cs["buydown"]["price"] = opening + cs["buydown"]["credit"]
-    ca = (R.get("offer_plan") or {}).get("credit_alt")
-    if isinstance(ca, dict) and isinstance(ca.get("credit"), (int, float)):
-        ca["price"] = opening + ca["credit"]
-
-
-def plan_model(plan, credit_alt_line, conditions):
-    """The offer plan as the report shows it: the posture's name and sentence (and the model's reason), the ladder
-    with each step's reason from what set it (labels.json), the agent's override said once."""
-    lo, hi, basis = plan["target_low"], plan["target_high"], plan["basis"]
-    why = {key: L["why_override"] if b == "override" else L[f"why_{key}_{b}"] for key, b in basis.items()}
-    posture, suggested = plan["posture"], plan["posture_suggested"]
-    line = [L[f"line_posture_{posture}"]]
-    if posture != suggested:
-        line.append(t("line_posture_chosen", suggested=L[f"posture_word_{suggested}"], reason=end_sentence(plan["posture_reason"])))
-    elif plan["posture_reason"]:
-        line.append(end_sentence(plan["posture_reason"]))
-    if plan["override"]:
-        line.append(t("line_plan_override", reason=end_sentence(plan["override_reason"])))
-    return {
-        "opening": plan["opening"], "target_low": lo, "target_high": hi, "walk_away": plan["walk_away"],
-        "target": plan["target"], "intro": L["line_offer_intro"],
-        "posture": posture, "posture_suggested": suggested, "posture_reason": plan["posture_reason"],
-        "posture_name": L[f"posture_{posture}"], "posture_label": t("label_posture", name=L[f"posture_{posture}"]),
-        "posture_line": " ".join(line), "basis": dict(basis), "override": list(plan["override"]),
-        "opening_display": money(plan["opening"]), "walk_away_display": money(plan["walk_away"]),
-        "target_display": fmt.range(lo, hi), "target_k": fmt.range(lo, hi, fmt.k),
-        "ladder": [[L["ladder_opening"], money(plan["opening"]), why["opening"]],
-                   [L["ladder_target"], fmt.range(lo, hi), why["target"]],
-                   [L["ladder_walk"], money(plan["walk_away"]), why["walk_away"]]],
-        "conditions": end_sentence(conditions or ""), "credit_alt": credit_alt_line}
-
-
-def rough_plan(R, market, hist, stats, median, values, rng):
-    """CMA-202: the gut check's numbers, before the report: the rough range (the adjusted comps' span, rounded outward
-    to $1,000) and the plan offer_plan_for gives the suggested posture on the supported range, so the quick answer and
-    the full report agree."""
-    ask = R["subject"]["list_price"]
-    posture = cma.suggest_posture(hist, stats)
-    width = cma.range_width(median, market)["target"]
-    p = offer_plan_for(posture, rng["low"], rng["high"], median, ask, width, (stats or {}).get("sale_to_original_list_recent"))
-    lo, hi = math.floor(min(values) / 1000) * 1000, math.ceil(max(values) / 1000) * 1000
-    return {"range": {"low": lo, "high": hi, "display": fmt.range(lo, hi)}, "posture": posture,
-            "posture_name": L[f"posture_{posture}"],
-            "opening": p["opening"], "target": p["target"], "target_low": p["target_low"], "target_high": p["target_high"],
-            "walk_away": p["walk_away"], "typical_width": width, "capped_at_asking": p["basis"]["walk_away"] == "asking",
-            "display": {"opening": money(p["opening"]), "target": money(p["target"]), "walk_away": money(p["walk_away"])}}
+def appraisal_line(ask, high):
+    """When asking is above the supported range: the gap between asking and an appraisal at the range's top, which a
+    financed buyer covers in cash or settles with the seller. A fact about the price, not advice. Empty otherwise."""
+    return t("line_appraisal_gap", top=money(high), gap=money(ask - high)) if ask > high else ""
 
 
 def _warner():
@@ -1154,7 +942,7 @@ def end_sentence(text):
 def export_stats(R, homes):
     """(mls.market_stats or None, the market numbers the report and handoff quote) from the export: the recent sales'
     sale-to-original-list, days on market and seller-paid costs, months of supply and the active count. Both stages use
-    it, so the gut check's posture and the report's see the same market."""
+    it, so the gut check and the report see the same market."""
     if not homes:
         return None, {}
     s = R["subject"]
@@ -1162,7 +950,8 @@ def export_stats(R, homes):
     st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s.get("sqft"),
                                   "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
                                   **({"property_type": s["property_type"]} if s.get("property_type") else {})},
-                          split_date=R.get("split_date"), as_of=R.get("as_of"), exclude_address=address)
+                          split_date=cma.default_split(R, homes).isoformat(), as_of=R.get("as_of"),
+                          exclude_address=address)
     recent = st["sold_recent"]
     return st, {k: v for k, v in {
         "split_date": st["window"]["split_date"],
@@ -1177,18 +966,18 @@ def export_stats(R, homes):
 # --- the gut check ----------------------------------------------------------------------------------------------------
 
 def comps_first(R, market, homes=()):
-    """CMA-110: the adjusted comps alone, before the range and offer plan exist, for a gut check or to set the range
-    from: the median adjusted value, the spread and the outlier and adjustment warnings. Writes no handoff. With
-    `history.events` it also counts the history (CMA-201), and `rough` holds the gut check's rough range, opening,
-    target and walk-away (CMA-202)."""
+    """CMA-110: the adjusted comps alone, before the report, for a gut check or to set the range from: the median
+    adjusted value, the spread, where asking sits and the outlier and adjustment warnings. Writes no handoff. With
+    `history.events` it also counts the history (CMA-201). The gut check quotes this same supported range: one range,
+    the full report's, never a second wording of it."""
     R = copy.deepcopy(R)
     _require(R, "subject.address", "subject.list_price", "comps.cards")
     errors = schema_errors(R)
     if errors:
         raise ReportError(stop_message(errors))
     warnings, warning_keys, warn = _warner()
+    comp_info = prepare_comps(R, homes, warn, market)[3]
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
-    prepare_comps(R, homes, warn, market)
     s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
     rng = supported_range(R, values, market)
@@ -1199,11 +988,9 @@ def comps_first(R, market, homes=()):
     for key, text in hwarn:
         warn(key, text)
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
-    _, stats = export_stats(R, homes)
     return {
         "ok": True, "stage": "comps",
-        "next": "Write bottom_line.why, pick offer_plan.posture (rough.posture is the suggested one) and add costs, then "
-                "run compute.py again for the plan, the payments, the credit scenarios and the handoff.",
+        "next": "Write bottom_line.why and add costs, then run compute.py again for the payments and the handoff.",
         "range": {"low": rng["low"], "high": rng["high"], "display": fmt.range(rng["low"], rng["high"]),
                   "override": rng["override"]},
         "subject": {"address": s["address"], "list_price": s["list_price"], "list_price_display": money(s["list_price"])},
@@ -1211,10 +998,11 @@ def comps_first(R, market, homes=()):
         "adjusted_min": min(values), "adjusted_max": max(values),
         "asking_vs_median": s["list_price"] - median_adjusted,
         "asking_vs_median_display": money(abs(s["list_price"] - shown)),
-        "rough": rough_plan(R, market, hist, stats, median_adjusted, values, rng),
+        "asking_position": asking_position(s["list_price"], rng["low"], rng["high"], shown),
         "history": hist,
         "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
+        "settled": cma.selection_lines(comp_info, t, money),  # each sale set aside or kept, as the report will say it
         "warnings": warnings,
         "warning_keys": warning_keys,
         "market_notes": market.notes,
@@ -1252,9 +1040,9 @@ def market_section(st):
 
 
 def key_stats(C, hist, stats, as_of):
-    """Page 1's three key numbers, from what the report has, in this order: the median adjusted comp, the recent
-    sale-to-original-list, the history's active days, months of supply, the adjusted span."""
-    out = [(C["median_adjusted_display"], L["sum_tile_median"])]
+    """Page 1's three key numbers, from what the report has, in this order: the recent sale-to-original-list, the
+    history's active days, months of supply, the adjusted span (the median adjusted value is in page 1's hero)."""
+    out = []
     if stats.get("sale_to_original_list_recent") is not None:
         out.append((fmt.pct(stats["sale_to_original_list_recent"], 1, fixed=True),
                     t("sum_tile_ratio", since=cma.day_words(fmt.to_date(stats["split_date"])))))
@@ -1270,12 +1058,14 @@ def key_stats(C, hist, stats, as_of):
 
 # --- notes ----------------------------------------------------------------------------------------------------------
 
-def cost_notes(N, R, market, pay, credit, tax_rows, insurance):
+def cost_notes(N, R, market, pay, tax_rows, insurance):
     """Every assumption and estimate behind the cost tables, each once, in the notes block (notes.Notes)."""
     rows = pay["rows"]
     assumed = [r["label"] for r in rows if r["assumed"]]
     if assumed:  # CMA-227: said once, here, never on a column header
-        N.add("financing_assumed", t("note_financing_assumed", labels=cma._and(assumed)), "assumption")
+        key = ("note_financing_assumed" if len(assumed) == 1 else
+               "note_financing_assumed_all" if len(assumed) == len(rows) else "note_financing_assumed_some")
+        N.add("financing_assumed", t(key, labels=cma._and(assumed)), "assumption")
     tb = pay["tax_basis"]
     tj = tax_rows[pay["tax_index"]]
     if tb["estimated"]:
@@ -1299,7 +1089,7 @@ def cost_notes(N, R, market, pay, credit, tax_rows, insurance):
     else:
         N.add("insurance", t("note_insurance_given", amt=money(insurance["annual"])), "info")
     mi = []
-    progs = {(r["program"], r["down_pct"]) for r in rows} | ({(credit["program"], credit["down_pct"])} if credit else set())
+    progs = {(r["program"], r["down_pct"]) for r in rows}
     conv = sorted(d for p, d in progs if p == "conventional" and d < 0.2)
     if conv:
         mi.append(t("note_mi_pmi", rate=fmt.pct(finance.annual_mi_rate("conventional", conv[0]), 2),
@@ -1311,8 +1101,8 @@ def cost_notes(N, R, market, pay, credit, tax_rows, insurance):
                 key, min(d for p, d in progs if p == key)), 2)))
     if mi:
         N.add("mortgage_insurance", t("note_mi", parts=cma._and(mi)), "estimate")
-    cs = R["costs"].get("credit_scenarios") or {}
-    given = _frac(cs, "closing_cost_pct", "costs.credit_scenarios")
+    cs = R["costs"]
+    given = _frac(cs, "closing_cost_pct", "costs")
     cash = finance.program(rows[0]["program"]) == "cash"
     prepaids = "" if given is not None or cash else L["note_prepaids"]
     tax_names = [x["label"].lower() for x in finance.loan_taxes(1, market)] if given is None and not cash else []
@@ -1320,7 +1110,7 @@ def cost_notes(N, R, market, pay, credit, tax_rows, insurance):
     pct = fmt.pct(given if given is not None else finance.buyer_closing_pct(market, cash), 2)
     lender = [r["label"] for r in rows if r["lender_closing_costs"]]
     if lender:
-        others = len(lender) < len(rows) or credit
+        others = len(lender) < len(rows)
         N.add("closing_costs", t("note_closing_lender", label=lender[0], amt=money(cs.get("closing_costs")),
                                  others=t("note_closing_lender_others", pct=pct, prepaids=prepaids, taxes=taxes_part)
                                  if others else ""), "estimate" if others else "info")
@@ -1331,16 +1121,12 @@ def cost_notes(N, R, market, pay, credit, tax_rows, insurance):
     if R["costs"]["payment"].get("note"):  # CMA-226: the agent's note adds to the assumptions, never replaces them
         N.add("payment_note", R["costs"]["payment"]["note"], "info")
     N.add("flood", pay["flood"]["note"], "info")
-    if credit:
+    if not cash:  # a fact of the loan, not an offer term: what a seller credit may pay for and how much
         N.add("credit_limits", L["note_credit_limits"], "info")
-        N.add("seller_cost", t("note_seller_cost", amt=money(credit["seller_cost_per_10k"]),
-                               what=cma._and(credit["seller_cost_parts"])) if credit["seller_cost_per_10k"]
-              else L["note_seller_cost_fee"], "info")
-    agreement = _frac(cs, "buyer_broker_agreement_pct", "costs.credit_scenarios")
-    if any(r["bb_short"] for r in rows) or any(c["bb_short"] for c in (credit or {}).get("columns", [])):
+    agreement = _frac(cs, "buyer_broker_agreement_pct", "costs")
+    if any(r["bb_short"] for r in rows):
         N.add("buyer_broker", t("note_bb", agreement=fmt.pct(agreement, 2),
-                                seller=fmt.pct(_frac(cs, "seller_pays_buyer_broker_pct", "costs.credit_scenarios", 0), 2)),
-              "info")
+                                seller=fmt.pct(_frac(cs, "seller_pays_buyer_broker_pct", "costs", 0), 2)), "info")
     if pay["buyer_cash"]:
         N.add("buyer_cash", t("note_cash", cash=pay["buyer_cash_display"]), "info")
 
@@ -1374,8 +1160,8 @@ def compute(R, market, homes):
     s, bl = R["subject"], R.setdefault("bottom_line", {})
     as_of = R.get("as_of") or date.today().isoformat()
     warnings, warning_keys, warn = _warner()
+    time_info, split, cond_info, comp_info = prepare_comps(R, homes, warn, market)
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
-    time_info, split, cond_info = prepare_comps(R, homes, warn, market)
     cards = R["comps"]["cards"]
     range_info = supported_range(R, [c["adjusted"] for c in cards], market)
     comp_rows = (R.get("competition") or {}).get("rows") or []
@@ -1398,19 +1184,11 @@ def compute(R, market, homes):
     warn("export_mls_mismatch", *export_mls_warning(R, homes))
     st, stats = export_stats(R, homes)
 
-    # the offer plan: the posture's numbers (or the agent's), written into the working copy so every price after it
-    # (the credit offers, the payment's default price, the handoff) uses the one plan
-    plan, problems = resolve_plan(R, market, hist, stats, median_adjusted, bl["low"], bl["high"])
-    if problems:
-        raise ReportError(stop_message(problems))
-    op = R.setdefault("offer_plan", {})
-    op.update({k: plan[k] for k in PLAN_KEYS + ("target",)})
-    price_credit_offers(R, plan["opening"])
     default_prices(R)
     _require(R, "costs.taxes.purchase_price", "costs.payment.price")
     insurance = insurance_line(R, market)
 
-    # taxes, payments, credit
+    # taxes, payments
     tax_rows = taxes(R, market)
     if ji is None:  # CMA-204: with the district unconfirmed, the payment uses the higher bill (the conservative one)
         ji = max(range(n_juris), key=lambda i: (tax_rows[i]["annual"] or 0, -i))
@@ -1426,46 +1204,16 @@ def compute(R, market, homes):
     if any(j["annual"] is None for j in tax_rows):
         raise ReportError("Taxes couldn't be estimated for every jurisdiction: add school_mills and total_mills (or a "
                           "district the market knows) for each.")
-    pay = payments(R, market, tax_rows, ji, insurance)
-    credit = credit_scenarios(R, market, tax_rows, ji, median_shown, insurance)
-    for c in (credit or {}).get("columns", []):
-        if c["over_cap"]:
-            warn("credit_over_cap", f"The {money(c['credit'])} credit at {money(c['price'])} is over the loan program's "
-                 "limit: fix the scenario.")
-        elif c["over_costs"]:
-            warn("credit_over_costs", f"The {money(c['credit'])} credit at {money(c['price'])} exceeds the closing "
-                 "costs: fix the scenario.")
-    ca = op.get("credit_alt")
-    alt = credit_alt_saving(credit, ca)
-    if ca and not alt:  # CMA-308: without its scenario the report can't say what it saves, so it's left out
-        warn("credit_alt_mismatch", "offer_plan.credit_alt doesn't match any price-vs-credit scenario: the report "
-             "leaves it out until it does.")
+    pay = payments(R, market, tax_rows, ji, insurance, median_shown)
     for key, text in cma.range_warnings(bl, values, market):  # CMA-296
         warn(key, text)
-    if op["walk_away"] > bl["high"]:
-        warn("walk_away_above_range", "The walk-away price is above the supported range: only if the buyer accepts "
-             "appraisal-gap risk, and say so.")
     cash = R["costs"].get("buyer_cash")
-    cash_fit = fitting_credit(credit, cash, ca)
-    fits = (f"The price-vs-credit table already shows one that fits: {money(cash_fit['price'])} with a "
-            f"{money(cash_fit['credit'])} credit, about {money(cash_fit['cash'])} to close. Say so, and name that option "
-            "in the reply.") if cash_fit else None
-    for c in (credit or {}).get("columns", []):
-        if c.get("cash_short"):
-            warn("cash_short", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
-                 f"{money(c['cash'])}, {money(c['cash_short'])} more than the buyer's {money(cash)}. " + (fits or
-                 "Say so, and show a scenario that fits (a larger credit, a lower price or another loan program)."))
-    for c in (credit or {}).get("columns", []):
-        if c.get("cash_left") is not None:
-            warn("cash_tight", f"Cash to close at {money(c['price'])} with a {money(c['credit'])} credit is about "
-                 f"{money(c['cash'])}, leaving only {money(c['cash_left'])} of the buyer's {money(cash)}: say so, and "
-                 "have the lender confirm the closing costs before the offer.")
     first = pay["rows"][0]
     if first["cash_short"]:
         warn("cash_short", f"At {money(pay['price'])}, cash to close in the {first['label']} column (down payment plus "
              f"closing costs) is about {money(first['cash_to_close'])}, {money(first['cash_short'])} more than the "
-             f"buyer's {money(cash)}. " + (fits or "Say so, and show a scenario that fits (a seller credit, a lower "
-                                            "price or another loan program)."))
+             f"buyer's {money(cash)}. Say so in the reply (another loan program may fit); a price and seller "
+             "concessions that fit are the offer's to work out, not this report's.")
     elif first["cash_left"] is not None:
         warn("cash_tight", f"At {money(pay['price'])}, cash to close in the {first['label']} column is about "
              f"{money(first['cash_to_close'])}, leaving only {money(first['cash_left'])} of the buyer's {money(cash)}: "
@@ -1521,8 +1269,11 @@ def compute(R, market, homes):
          "range": rng, "median_adjusted": median_adjusted, "median_shown": median_shown,
          "median_adjusted_display": money(median_shown), "adjusted_min": min(values), "adjusted_max": max(values)}
     C["subject"] = subject_model(s)
-    C["bottom_line"] = {"line": t("line_bottom", ask=money(s["list_price"]), position=L[pos_key],
-                                  median=C["median_adjusted_display"]), "why": bl.get("why", "")}
+    C["asking_position"] = asking_position(s["list_price"], bl["low"], bl["high"], median_shown)
+    C["bottom_line"] = {"line": " ".join(x for x in (C["asking_position"]["line"],  # page 1's own words, never a second
+                                                     t("line_bottom", median=C["median_adjusted_display"]),  # wording
+                                                     appraisal_line(s["list_price"], bl["high"])) if x),
+                        "why": bl.get("why", "")}
     rng["override"] = range_info["override"]
     if range_info["override"]:  # the agent's own range, said once beside it, with the rule's for comparison
         C["bottom_line"]["line"] += " " + t("line_range_override", rule=fmt.range(range_info["rule_low"],
@@ -1531,19 +1282,19 @@ def compute(R, market, homes):
     C["history_section"] = history_section(hist, as_of)
     if C["history_section"]:
         C["history_section"]["takeaway"] = (R.get("history") or {}).get("takeaway", "")
-    C["offer_plan"] = plan_model(plan, (t("line_credit_alt" if alt["cash_saved"] > 0 else "line_credit_alt_no_saving",
-                                          price=money(alt["price"]), credit=money(alt["credit"]),
-                                          equiv=money(alt["price"] - alt["credit"]), saved=alt["cash_saved_display"],
-                                          base=money(alt["base_price"])) if alt else None), op.get("conditions"))
-    C["offer"] = {"heading": (R.get("offer") or {}).get("heading") or L["h_offer"],
-                  "bullets": list((R.get("offer") or {}).get("bullets") or [])}
     comps = R["comps"]
     C["comps"] = {
-        "intro": comps.get("intro", ""), "count_line": comps_count_line(cards, homes, split),
+        "intro": comps.get("intro", ""),
+        "count_line": comps_count_line(cards, homes, split),
+        "settled": " ".join(cma.selection_lines(comp_info, t, money)),
         "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": comp_cards(cards, homes), "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), money(r[3])] for r in comps["summary_rows"]],
-        "subject_row": [L["subject_row"], money(s["list_price"]), fmt.EMPTY, f'{L["range_word"]} {rng["display_k"]}']}
+        "subject_row": [L["subject_row"], money(s["list_price"]), fmt.EMPTY, f'{L["range_word"]} {rng["display_k"]}'],
+        # owner decision (2026-10-13): this home's own card first in the grid, what every comp is adjusted to
+        "subject_card": {**cma.subject_card(R["subject"], comp_info, t, as_of), "tag": L["sc_tag"],
+                         "address": cma.display_address(s["address"]), "price": t("sc_price", price=money(s["list_price"])),
+                         "note": L["sc_note"]}}
     C["comps_table"] = [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in comps["summary_rows"]]
     C["time_adjustment"] = time_info
@@ -1564,13 +1315,11 @@ def compute(R, market, homes):
     C["current_bill"] = R["costs"]["taxes"].get("current_bill")
     C["current_bill_display"] = money(C["current_bill"]) if C["current_bill"] else None
     C["payments"] = pay
-    C["credit"] = credit
-    C["credit_alt"] = alt
-    C["cash_fit"] = ({**{k: cash_fit[k] for k in ("price", "credit", "cash")},
-                      **{k + "_display": money(cash_fit[k]) for k in ("price", "credit", "cash")}} if cash_fit else None)
-    C["costs"] = costs_model(R, market, pay, credit, tax_rows, alt, C)
+    C["costs"] = costs_model(R, market, pay, tax_rows, C)
     N = notes.Notes()
-    cost_notes(N, R, market, pay, credit, tax_rows, insurance)
+    cost_notes(N, R, market, pay, tax_rows, insurance)
+    if comp_info.get("national_rates"):  # owner decision 2026-10-13: national rates where none are built in, said once
+        N.add("national_rates", t("note_national_rates", kinds=cma._and(comp_info["national_rates"])), "estimate")
     reply = [it for it in N.items("chat") if it[2] in REPLY_KINDS]
     C["notes"] = N.pdf()
     C["note_keys"] = [k for k, _, _ in N.items("chat")]
@@ -1607,7 +1356,6 @@ def compute(R, market, homes):
         value={"low": bl["low"], "high": bl["high"], "midpoint": rng["midpoint"], "median_adjusted": median_adjusted},
         comps=[{"address": r[0], "sold_price": r[1], "seller_paid": r[2], "adjusted": r[3]} for r in comps["summary_rows"]],
         market=stats,
-        offer_plan={k: plan[k] for k in PLAN_KEYS}, posture=plan["posture"],
         market_profile={"state": market.state, "mls": market.mls},
     )
     problems = N.label_problems(all_labels(C))
@@ -1682,8 +1430,8 @@ def scatter_model(R, s, pts, fit, bl):
     return out
 
 
-def costs_model(R, market, pay, credit, tax_rows, alt, C):
-    """The cost section's script wording and rows: taxes, the payment table, the credit table."""
+def costs_model(R, market, pay, tax_rows, C):
+    """The cost section's script wording and rows: taxes and the payment table."""
     tx = R["costs"]["taxes"]
     homestead = tx.get("homestead", True)
     bill, year = tx.get("current_bill"), tx.get("current_year")
@@ -1699,7 +1447,7 @@ def costs_model(R, market, pay, credit, tax_rows, alt, C):
     seller_row = t("seller_bill", year=year) if year else L["seller_bill_no_year"]
     trows = [[seller_row, money(bill), money(bill / 12)] if bill else [seller_row, L["not_available"], fmt.EMPTY]]
     trows += [[t("your_bill", label=j["label"]), "≈ " + j["annual_display"], "≈ " + j["monthly_display"]] for j in tax_rows]
-    basis = price_basis(tx["purchase_price"], R)
+    basis = price_basis(tx["purchase_price"], R, C["median_shown"])
     taxes_m = {"heading": L["h_taxes_higher"] if higher else L["h_taxes"], "intro": " ".join(intro),
                "header": t("tax_header", price=money(tx["purchase_price"]), homestead=homestead_label(homestead),
                            basis=basis_words(basis)),
@@ -1724,59 +1472,23 @@ def costs_model(R, market, pay, credit, tax_rows, alt, C):
               [L["pay_mi"]] + [money(r["mi"]) for r in rows],
               [L["pay_hoa"]] + [money(r["hoa"]) for r in rows],
               [L["pay_total"]] + [money(r["total"]) for r in rows]]
+    total_row = len(table) - 1
+    if pay["at_median"]:
+        table.append([t("pay_at_median", price=pay["at_median"]["price_display"])]
+                     + [money(v) for v in pay["at_median"]["totals"]])
     if pay["alt_jurisdiction"]:
         table.append([t("pay_if", short=pay["alt_jurisdiction"]["short"])] + [money(v) for v in pay["alt_jurisdiction"]["totals"]])
     payment_m = {"intro": intro,
                  "header": [t("pay_header", price=pay["price_display"], basis=basis_words(pay["price_basis"]))]
                  + [r["label"] for r in rows],
-                 "rows": table, "cash_row": cash_row, "total_row": len(table) - (2 if pay["alt_jurisdiction"] else 1),
-                 "alt_row": len(table) - 1 if pay["alt_jurisdiction"] else None,
+                 "rows": table, "cash_row": cash_row, "total_row": total_row,
+                 "alt_rows": list(range(total_row + 1, len(table))),
                  "cash_flags": [t("cash_short", amt=r["cash_short_display"], cash=pay["buyer_cash_display"])
                                 if r["cash_short"] else "" for r in rows],
                  "per_10k": t("line_per10k", amt=money(pay["per_10k"], 5)),
                  "note": R["costs"]["payment"].get("note", "")}
-    credit_m = None
-    if credit:
-        cols = credit["columns"]
-        prog = L["prog_" + credit["program"]]
-        head = [L["cr_head"]] + [money(c["price"]) + (" + " + money(c["credit"]) if c["credit"] else "") for c in cols]
-        rows_c = [[L["cr_price"]] + [money(c["price"]) for c in cols],
-                  [L["cr_credit"]] + [money(c["credit"]) if c["credit"] else L["cr_none"] for c in cols],
-                  [L["cr_net"]] + [money(c["net"]) for c in cols],
-                  [L["cr_loan"]] + [money(c["loan"]) for c in cols],
-                  [L["cr_down"]] + [money(c["down"]) for c in cols],
-                  [L["cr_cc"]] + [money(c["closing_costs"]) for c in cols],
-                  [L["cr_applied"]] + [money(-c["credit_applied"]) if c["credit_applied"] else L["cr_none"] for c in cols]]
-        if any(c["bb_short"] for c in cols):
-            rows_c.append([L["cr_bb_short"]] + [money(c["bb_short"]) for c in cols])
-        rows_c.append([L["cr_cash"]] + [money(c["cash"]) for c in cols])
-        cash_row = len(rows_c) - 1
-        rows_c += [[L["cr_pmt"]] + [money(c["payment"]) for c in cols],
-                   [L["cr_extra"]] + [money(c["extra"], style="signed") if c["extra"] > 0 else L["cr_none"] for c in cols],
-                   [L["cr_payback"]] + [t("cr_years", n=fmt.num(c["payback_years"])) if c["payback_years"] else L["cr_none"]
-                                        for c in cols],
-                   [t("cr_cap", program=prog, down=fmt.pct(credit["down_pct"], 2))]
-                   + [money(c["cap"]) if c["cap"] is not None else L["cr_none"] for c in cols],
-                   [t("cr_appr", median=C["median_adjusted_display"])] + [money(c["appraisal_room"]) for c in cols]]
-        flags = []
-        for c in cols:
-            key = "cr_over_cap" if c["over_cap"] else "cr_over_costs" if c["over_costs"] else None
-            flags.append(L[key] if key else "")
-        b = credit.get("buydown")
-        bd = None
-        if b:
-            bd = t("line_buydown" if b["covered"] else "line_buydown_short", credit=money(b["credit"]),
-                   price=money(b["price"]), cost=money(b["cost"]), y1=money(b["year1"]), y2=money(b["year2"]),
-                   full=money(b["full"]))
-        per5 = credit.get("per_5k")
-        credit_m = {"intro": L["line_credit_intro"], "header": head, "rows": rows_c, "cash_row": cash_row,
-                    "credit_flags": flags,
-                    "cash_flags": [t("cash_short", amt=money(c["cash_short"]), cash=pay["buyer_cash_display"])
-                                   if c["cash_short"] else "" for c in cols],
-                    "per_5k": t("line_credit_per5k", cash=money(per5["cash"]), monthly=money(per5["monthly"])) if per5 else "",
-                    "takeaway": (R["costs"].get("credit_scenarios") or {}).get("takeaway", ""), "buydown": bd}
     return {"taxes": taxes_m, "insurance": (R["costs"].get("insurance") or {}).get("drivers", ""),
-            "payment": payment_m, "credit": credit_m}
+            "payment": payment_m}
 
 
 def method_model(R, st, homes):
@@ -1797,7 +1509,7 @@ def method_model(R, st, homes):
 def summary_model(R, C, hist, stats, as_of):
     """Page 1: the model's headline, reasons, checks and next step, with the script's key numbers and cost rows."""
     sp = R.get("summary_page") or {}
-    pay, op = C["payments"], C["offer_plan"]
+    pay = C["payments"]
     first = pay["rows"][0]
     tiles = key_stats(C, hist, stats, as_of)
     basis = basis_words(pay["price_basis"])
@@ -1816,17 +1528,18 @@ def summary_model(R, C, hist, stats, as_of):
             [t("sum_pay_row", label=first["label"]), first["total_display"] + L["per_month"], ""],
             [t("sum_cash_row", label=first["label"]), first["cash_to_close_display"],
              t("cash_short", amt=first["cash_short_display"], cash=pay["buyer_cash_display"]) if first["cash_short"] else ""]]
-    fit, fit_line = C.get("cash_fit"), ""
-    if first["cash_short"] and fit:
-        fit_line = t("line_cash_fit" if fit["credit"] else "line_cash_fit_price", cash=pay["buyer_cash_display"],
-                     price=fit["price_display"], credit=fit["credit_display"], amt=fit["cash_display"])
+    if pay["at_median"]:  # the same payment at what the comps support, a fact beside asking
+        rows.insert(3, [t("sum_pay_median_row", price=pay["at_median"]["price_display"]),
+                        money(pay["at_median"]["totals"][0]) + L["per_month"], ""])
     return {"label": sp.get("label") or L["sum_label"], "headline": sp.get("headline", ""),
             "tiles": tiles, "why": list(sp.get("why") or []), "check_first": [list(x) for x in sp.get("check_first") or []],
-            "next_step": sp.get("next_step", ""), "cost_rows": rows, "cash_fit_line": fit_line,
+            "next_step": sp.get("next_step", ""), "cost_rows": rows,
             "cost_note": t("line_costs_note", price=pay["price_display"], basis=basis),
-            "ladder_line": t("sum_ladder_line", target=op["target_k"], walk=op["walk_away_display"]),
+            "value_line": t("sum_value_line", median=C["median_adjusted_display"],
+                            ask=C["subject"]["list_price_display"]),
+            "position_line": C["asking_position"]["line"],
             "dot_asking": t("dot_asking", price=C["subject"]["list_price_display"]),
-            "dot_offer": t("dot_offer", price=op["opening_display"]),
+            "dot_median": t("dot_median", price=C["median_adjusted_display"]),
             "comps": [{"address": c["address"], "adjusted": c["adjusted"], "adjusted_k": c["adjusted_k"]}
                       for c in C["comps"]["cards"]]}
 
@@ -1836,8 +1549,6 @@ def all_labels(C):
     out = [r[0] for r in C["subject"]["facts"]] + [x[1] for x in C["summary"]["tiles"]]
     out += [r[0] for r in C["summary"]["cost_rows"]]
     out += C["costs"]["payment"]["header"] + [r[0] for r in C["costs"]["payment"]["rows"]]
-    if C["costs"]["credit"]:
-        out += C["costs"]["credit"]["header"] + [r[0] for r in C["costs"]["credit"]["rows"]]
     out += [C["costs"]["taxes"]["header"], C["costs"]["taxes"]["heading"]] + [r[0] for r in C["costs"]["taxes"]["rows"]]
     if C["market"]:
         out += C["market"]["columns"] + [r[0] for r in C["market"]["rows"]]
@@ -1861,7 +1572,7 @@ def load_inputs(R, mls_name=None, data_file=None):
 
 
 def comps_only(R):
-    return not any(R.get(k) for k in ("bottom_line", "offer_plan", "costs"))
+    return not any(R.get(k) for k in ("bottom_line", "costs"))
 
 
 def run(R, mls_name=None, data_file=None):

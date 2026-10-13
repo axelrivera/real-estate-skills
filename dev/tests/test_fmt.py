@@ -227,8 +227,10 @@ class Lists(unittest.TestCase):
             out = fmt.and_list(items)
             for x in items:
                 self.assertIn(x, out)
-            if len(items) > 1 and any(", " in x for x in items):
+            if len(items) > 2 and any(", " in x for x in items):
                 self.assertEqual(out.count("; "), len(items) - 1)
+            if len(items) == 2:  # iteration 22: two items are always "a and b"
+                self.assertEqual(out, f"{items[0]} and {items[1]}")
             self.assertNotIn(" , ", out)
 
 

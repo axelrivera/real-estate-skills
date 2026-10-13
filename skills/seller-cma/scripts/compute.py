@@ -70,7 +70,11 @@ def t(key, **kw):
 
 
 def word(key, reprice=False, **kw):
-    """A label, in its reprice wording ("<key>_reprice": "New List Price", "Before We Reprice") on a reprice."""
+    """A label, in its reprice wording ("<key>_reprice": "New List Price", "Before We Reprice") on a reprice, and in its
+    stay wording ("<key>_stay": "Current List Price") when a reprice recommends staying at the current price
+    (iteration 22: the home is already listed, so nothing is new, relaunched or going live)."""
+    if reprice == "stay" and key + "_stay" in L:
+        return t(key + "_stay", **kw)
     return t(key + "_reprice" if reprice and key + "_reprice" in L else key, **kw)
 
 
@@ -156,6 +160,11 @@ RETIRED = {
                           "price_override {list_price, reason}",
     "pricing.recommended_index": "the script marks the recommended option (pricing.stance, or price_override)",
     "pricing.competing_offer_upside": "the notes add the competing-offer caveat on their own when that option nets more",
+    "split_date": "the script sets the market split by its rule (the first of the month two months before as_of), so "
+                  "the same export always splits the same way: leave it out, or put the agent's own date in "
+                  "split_override {date, reason}",
+    "comps.time_adjustment": "the script sets the market shift from the export by its rule (method.md, Time): leave it "
+                             "out, or put the agent's own rate in comps.time_override {rate_per_quarter, prices, reason}",
     "comps.summary_paragraph": "the script states the adjusted span, the median, the strongest match and the highest "
                                "sale: write which way the range leans and why (no figures) in comps.lean",
     "scatter.intro": "the script describes what the chart plots",
@@ -188,6 +197,7 @@ RETIRED_EACH = {
 JUDGMENT = (
     "subject.summary", "subject.facts[][0]", "summary_page.label", "summary_page.headline", "summary_page.why[]",
     "summary_page.next_step", "recommendation.why", "range_override.reason", "means[]", "comps.intro", "comps.method_note", "comps.lean",
+    "comps.cards[].keep_reason", "comps.cards[].lot_reason", "subject.lot_reason", "comps.time_override.reason", "split_override.reason",
     "comps.cards[].bullets[]", "comps.cards[].adjustments[].label", "scatter.heading", "scatter.takeaway",
     "competition.intro", "competition.rows[][6]", "market.bullets[]", "pricing.intro", "pricing.note",
     "pricing.stance_reason", "pricing.options.*.note", "price_override.reason", "prep.intro", "prep.items[].step",
@@ -251,6 +261,9 @@ def schema_errors(R):
                 who = prose.people(text)
                 if who:
                     out.append(f"{path}: has {', '.join(repr(x) for x in who)} → {prose.PEOPLE_FIX}.")
+    # the fair-housing phrases render.py stops on, here too, so the first run names them (iteration 20: "young
+    # families" in deck.tagline passed compute.py and stopped only at render)
+    out += [f"{path.removeprefix('$.')}: {problem}" for path, problem in prose.issues(R, rules=frozenset({"fair"}))]
     return out
 
 
@@ -466,15 +479,8 @@ def build_options(R, stance, low, high, rp, relist):
                 f"price_override.list_price: {money(own)} is above {money(relist['failed_price'])}, where this home's "
                 "earlier listing ended unsold → no option lists above a price the market already turned down: give a "
                 "price at or under it, or the agent's reason to go higher in relist.reason_above (method.md, A Relist)."]))
-    elif rule < low:
-        rng = fmt.range(low, high)
-        raise ReportError(stop_message([
-            f"reprice: the current {money(rp['current_price'])} leaves no cut inside the supported range {rng} → give the "
-            "agent's own price in price_override {list_price, reason}, or set reprice.allow_increase if the agent asked "
-            "to price it higher." if kind == "reprice" else
-            f"relist: this home's earlier listing ended unsold at {money(relist['failed_price'])}, under the supported "
-            f"range {rng} → if the market or the home changed since, give the agent's reason in relist.reason_above "
-            "(method.md, A Relist), or the agent's own price in price_override {list_price, reason}."]))
+    elif rule < low:  # owner decision (iteration 20): under the range, build at the cap, never stop
+        return below_range_options(rp, relist, listing)
     rec = own if own is not None else rule
     step = option_step(rec)
     top = min(cma.bracket_price(rec + step), cma.bracket_price(high, "down"), cap if kind == "relist" else math.inf)
@@ -489,6 +495,25 @@ def build_options(R, stance, low, high, rp, relist):
     roles = [r for r, _ in options]
     return {"options": options, "index": roles.index("recommended" if "recommended" in roles else "stay"),
             "rule": rule, "kind": listing, "agent_role": "recommended" if own is not None else None, "merged": []}
+
+
+def below_range_options(rp, relist, listing):
+    """When the price the market already saw sits under the supported range (iteration 20: Hickorywood's $474,900
+    against $475,000-$500,000), the report is still built, at that price. A reprice: Stay at Current Price is the
+    recommendation (the sales support it; the market is what's slow), with two cuts as the agent's options. A relist:
+    the failed price itself, the market's verdict, with one step under it; the report says the sales support more. The
+    agent's own price (price_override) or a reason to go higher (relist.reason_above) still replaces this."""
+    if rp:
+        cut = cma.bracket_price(rp["current_price"] * (1 - NEAR_RECOMMENDED), "down")
+        options = [("stay", rp["current_price"]), ("recommended", cut),
+                   ("competing", cma.bracket_price(cut - option_step(cut), "down"))]
+        index, rule = 0, rp["current_price"]
+    else:
+        rule = relist["failed_price"]
+        options = [("recommended", rule), ("competing", cma.bracket_price(rule - option_step(rule), "down"))]
+        index = 0
+    return {"options": options, "index": index, "rule": rule, "kind": listing, "agent_role": None, "merged": [],
+            "below_range": True, "fell_through": str((relist or {}).get("status") or "").lower() == "pending"}
 
 
 def role_problems(given, kind):
@@ -563,8 +588,13 @@ def option_values(built, given, defaults):
         g = given.get(role) or {}
         agent = role == built["agent_role"]
         name = (L["option_agent"] if agent else L["stance_" + role]) if built["kind"] == "standard" else ""
+        note = "opt_note_agent" if agent and name else "opt_note_" + role
+        if built.get("below_range"):  # priced under the range: say what each one is, never "where sales support"
+            cap_note = "opt_note_at_cap_pending" if built.get("fell_through") else "opt_note_at_cap"
+            note = {"stay": "opt_note_stay_supported", "recommended": cap_note if built["kind"] == "relist"
+                    else "opt_note_cut_below"}.get(role, "opt_note_cut_below")
         x = {"role": role, "name": name, "agent": agent, "list_price": price, "time": defaults["time"][role],
-             "seller_credit": defaults["credit"], "note": L["opt_note_agent" if agent and name else "opt_note_" + role],
+             "seller_credit": defaults["credit"], "note": L[note],
              "time_source": "rule"}
         for k in OPTION_KEYS:
             if g.get(k) not in (None, ""):
@@ -585,7 +615,7 @@ def market_numbers(R, homes):
     st = mls.market_stats(homes, {**mls.subject_facts(homes, address), "address": address, "living_area": s["sqft"],
                                   "private_pool": bool(s.get("pool")), "subdivision": s.get("subdivision"),
                                   **({"property_type": s["property_type"]} if s.get("property_type") else {})},
-                          split_date=R.get("split_date"), exclude_address=address, as_of=R.get("as_of"))
+                          split_date=cma.default_split(R, homes).isoformat(), exclude_address=address, as_of=R.get("as_of"))
     recent = st["sold_recent"]
     return {k: v for k, v in {
         "split_date": st["window"]["split_date"],
@@ -655,17 +685,17 @@ def stance_data_line(suggested, signals, stats, failed):
     return t("line_stance_no_data", suggested=to)
 
 
-def stance_model(stance, suggested, signals, reason, stats, rule, own, own_reason, failed=False):
+def stance_model(stance, suggested, signals, reason, stats, rule, own, own_reason, failed=False, below=False):
     """The stance as the report shows it: its name as a plain label, the script's sentence for it, the market numbers
     behind the suggestion (stance_data_line), the model's reason, and an agent's own price said beside the method's."""
     name = L["stance_" + stance]
-    parts = [t("line_stance", name=name, what=L["stance_line_" + stance]),
+    parts = [t("line_stance", name=name, what=L["stance_line_below_range" if below else "stance_line_" + stance]),
              stance_data_line(suggested, signals, stats, failed)]
     if reason:
         parts.append(end_sentence(reason[0].upper() + reason[1:]))
     if own is not None:
-        parts.append(t("line_price_override", rule=money(rule), name=name,
-                       reason=end_sentence(own_reason)))
+        parts.append(t("line_price_override" if own != rule else "line_price_override_same", rule=money(rule),
+                       name=name, reason=end_sentence(own_reason)))  # eval 4: "rather than ... $474,900" at $474,900
     return {"value": stance, "suggested": suggested, "signals": signals, "reason": reason, "name": name,
             "differs": stance != suggested, "rule_price": rule, "rule_price_display": money(rule),
             "agent_price": own is not None, "line": " ".join(parts)}
@@ -778,7 +808,8 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     range): it takes the recent sale-to-ORIGINAL-list when the export has original list prices, since a price above
     the market tends to sell only after the cuts the final-list ratio leaves out, else the market ratio. An option
     listed inside the supported range whose sale would land under the range is held at the range's low end (the comps,
-    already net of seller credits, say the home is worth at least that); no other option moves. Never above its list price (except the competing-offer option, the last) or the top
+    already net of seller credits, say the home is worth at least that); an option listed under the range (even the
+    competing-offer one, whose cap is the range's top) is not, and no other option moves. Never above its list price (except the competing-offer option, the last) or the top
     of the range. Then by list price a higher price expects at least $500 more than a lower one (two options held at
     the floor, or an agent's own figure or credit in between), and a lower one at least $500 less than a higher one's
     rule figure (a market selling over list). An expected_sale in pricing.options is the agent's figure and is kept.
@@ -804,7 +835,7 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
         x = strategies[i]
         v = fmt.half_up(x["list_price"] * (premium_ratio if i == premium else ratio) + (x.get("seller_credit") or 0),
                         EXPECTED_STEP)
-        if cap[i] >= low and v < low:  # listed inside the range: never expects less than the value the comps support
+        if x["list_price"] >= low and v < low:  # listed inside the range: never less than the value the comps support
             v = low
             floored.append(i)
         capped |= v > cap[i]
@@ -1385,25 +1416,25 @@ def payment_note(R, pay):
 # --- the document model ------------------------------------------------------------------------------------------------
 
 def prepare_comps(R, homes, warn, market):
-    """Condition adjustments (the condition ladder) and time adjustments by the shared rules, then each adjusted value
-    from its parts (cma.derive_comps). Returns (the market split, time info, condition info)."""
+    """The comps by the shared pipeline (cma.settle_comps): the split and the market-shift rate by rule, the condition,
+    roof and time adjustments, each adjusted value, and the used comps (outliers set aside for the next backup).
+    Returns (the market split, time info, condition info, the pipeline's info)."""
     for i, c in enumerate(R["comps"]["cards"]):
         if not isinstance(c, dict) or not c.get("address") or not isinstance(c.get("adjustments"), list):
             raise ReportError(f"comps.cards[{i}] needs address, sold_price, seller_concessions, condition and adjustments "
                               "([{label, amount}], empty when there are none): the script adds them up.")
     if not R["comps"]["cards"]:
         raise ReportError("comps.cards is empty: a CMA needs at least 3 closed comps (add them, or widen the search).")
-    split = cma.default_split(R, homes)
-    cond_errors, cond_info = cma.apply_condition_adjustments(R["comps"], R["subject"], market)
-    time_errors, time_info = cma.apply_time_adjustments(R["comps"], homes, R.get("as_of"), split)
-    errors = cma.adjustment_kind_errors(R["comps"]["cards"]) + cond_errors + time_errors
-    if errors:
-        raise ReportError(stop_message(errors))
+    _, st = market_numbers(R, homes)
     try:
-        warn("derive_comps", *cma.derive_comps(R["comps"]))
+        errors, warns, info = cma.settle_comps(R, homes, market, st)
     except ValueError as e:
         raise ReportError(str(e)) from e
-    return split, time_info, cond_info
+    if errors:
+        raise ReportError(stop_message(errors))
+    for key, text in warns:
+        warn(key, text)
+    return info["split"], info["time"], info["condition"], info
 
 
 def supported_range(R, values, market):
@@ -1432,8 +1463,7 @@ def comps_first(R, market, homes=()):
     if errors:
         raise ReportError(stop_message(errors))
     warnings, warning_keys, warn = _warner()
-    prepare_comps(R, homes, warn, market)
-    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))
+    comp_info = prepare_comps(R, homes, warn, market)[3]
     values = [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
     rng = supported_range(R, values, market)
@@ -1469,6 +1499,7 @@ def comps_first(R, market, homes=()):
                   "override": rng["override"]},
         "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": adjusted_money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
+        "settled": cma.selection_lines(comp_info, t, money),  # each sale set aside or kept, as the report will say it
         "warnings": warnings, "warning_keys": warning_keys, "market_notes": market.notes,
     }
 
@@ -1504,12 +1535,10 @@ def compute(R, market, homes, data_file=None):
     warnings, warning_keys, warn = _warner()
 
     # comps: the script's condition and time adjustments, then each adjusted value from its parts, then the range
-    split, time_info, cond_info = prepare_comps(R, homes, warn, market)
+    split, time_info, cond_info, comp_info = prepare_comps(R, homes, warn, market)
     history, history_errors = listing_history(R, homes, relist)
     if history_errors:
         raise ReportError(stop_message(history_errors))
-    warn("outlier", *cma.outlier_warnings(R["comps"]["cards"]))  # CMA-110
-    warn("time_undated", *cma.time_warnings(time_info))
     cards = R["comps"]["cards"]
     values = [c["adjusted"] for c in cards]
     median_adjusted = statistics.median(values)
@@ -1543,14 +1572,16 @@ def compute(R, market, homes, data_file=None):
     # expected sales: Stay's by its rule, the others by the one rule
     split_iso = (st or {}).get("window", {}).get("split_date")
     rule = stay_rule(R, homes, strategies[stay], median_adjusted, _date(split_iso, "split_date")) if stay is not None else None
-    stay_filled = stay is not None and strategies[stay].get("expected_sale") is None
+    # under the range (iteration 21) Stay takes the one rule like the cuts: the stale-listing ratio measures homes that sat
+    # because they were overpriced, never one already priced under what its sales support
+    stay_filled = stay is not None and strategies[stay].get("expected_sale") is None and not built.get("below_range")
     if stay_filled:
         if not rule:
             raise ReportError("pricing.options.stay.expected_sale: missing → without an MLS export there are no sales to "
                               "apply the rule to, so apply it to the sales you were given (method.md, A Reprice).")
         strategies[stay]["expected_sale"], strategies[stay]["expected_sale_source"] = rule["gross"], "stay_rule"
     competing = roles[-1] == "competing"
-    basis = fill_expected_sales(R, strategies, stats, stay, competing)
+    basis = fill_expected_sales(R, strategies, stats, None if built.get("below_range") else stay, competing)
     basis["split"] = split_iso
     for x in strategies[:-1] if competing else strategies:  # CMA-20
         if x["expected_sale"] > x["list_price"]:
@@ -1564,7 +1595,7 @@ def compute(R, market, homes, data_file=None):
     if len(cards) < 3:
         warn("thin_comps", f"Only {len(cards)} comp{'s' if len(cards) > 1 else ''}: the range rests on thin support. Widen "
                            "the search if you can, and say so in the report.")
-    if not rec["low"] <= rec["list_price"] <= rec["high"]:  # only the agent's own price can sit outside it
+    if not rec["low"] <= rec["list_price"] <= rec["high"] and not built.get("below_range"):  # the agent's own price
         warn("list_outside_range", f"The agent's list price {money(rec['list_price'])} is outside the supported range "
                                    f"{fmt.range(rec['low'], rec['high'])}: confirm it with the agent, and say why in "
                                    "price_override.reason.")
@@ -1680,7 +1711,8 @@ def compute(R, market, homes, data_file=None):
         if rule:
             reprice_out.update(stay_expected_sale=rule["gross"], stay_expected_sale_display=money(rule["gross"]),
                                stay_ratio=rule["ratio"], stay_ratio_sales=rule["n"], stay_expected_filled=stay_filled)
-            if strategies[stay]["expected_sale"] > rule["gross"]:
+            if strategies[stay]["expected_sale"] > rule["gross"] and not built.get("below_range"):  # under the range
+                # Stay takes the one rule on purpose (iteration 21), so its stale-listing figure is no check on it
                 warn("stay_expected_high", f"Stay at Current Price expects {money(strategies[stay]['expected_sale'])}, "
                      f"above {money(rule['gross'])} from the rule (method.md, A Reprice): use {money(rule['gross'])}, "
                      "or say in pricing.note why this listing would do better.")
@@ -1704,8 +1736,9 @@ def compute(R, market, homes, data_file=None):
     best = strongest_comp(cards, rec["low"], rec["high"])
     shown = median_rounded(median_adjusted, len(values))
     pos_key = range_position(rec["list_price"], rec["low"], rec["high"])
-    rw = labeler(bool(reprice_out))
-    C = {"ok": True, "stage": "full", "sample": bool(R.get("sample")), "reprice_words": bool(reprice_out),
+    words = "stay" if reprice_out and strategies[ri]["role"] == "stay" else bool(reprice_out)
+    rw = labeler(words)
+    C = {"ok": True, "stage": "full", "sample": bool(R.get("sample")), "reprice_words": words,
          "data_source": {"mls": market.mls, "as_of": as_of.isoformat(), "as_of_display": fmt.date_long(as_of),
                          "export": bool(homes)},
          "prepared_date": prepared_date(R.get("prepared_date"), as_of),
@@ -1728,7 +1761,11 @@ def compute(R, market, homes, data_file=None):
         "caption": rw("verdict_caption", range=fmt.range(rec["low"], rec["high"])),
         "why": rec.get("why", ""), "override": range_info["override"], "price_override": agent_price is not None}
     C["stance"] = stance_model(stance, suggested, signals, stance_reason, stats, rule_price, agent_price, agent_reason,
-                               failed=rp is not None or relist is not None)
+                               failed=rp is not None or relist is not None, below=bool(built.get("below_range")))
+    if built.get("below_range"):  # iteration 20: the price the market saw sits under the range: why it stays there
+        C["recommendation"]["line"] += " " + t("line_below_range_reprice" if rp else "line_below_range_relist_pending"
+                                               if built.get("fell_through") else "line_below_range_relist",
+                                               price=money(rec["list_price"]))
     if range_info["override"]:  # the agent's own range, said once beside it, with the method's for comparison
         C["recommendation"]["line"] += " " + t("line_range_override", rule=fmt.range(range_info["rule_low"],
                                                range_info["rule_high"]), reason=end_sentence(range_info["reason"]))
@@ -1744,11 +1781,18 @@ def compute(R, market, homes, data_file=None):
     hi_card = card_models[highest]
     comps = R["comps"]
     C["comps"] = {
-        "intro": comps.get("intro", ""), "count_line": comps_count_line(cards, homes, split),
+        "intro": comps.get("intro", ""),
+        "count_line": comps_count_line(cards, homes, split),
+        "settled": " ".join(cma.selection_lines(comp_info, t, money)),
+        "unused": [cma.display_address(a) for a in comp_info["selection"]["unused"]],
         "method": cma.adjustment_summary(cards, time_info, money, cond_info), "method_note": comps.get("method_note", ""),
         "cards": card_models, "lean": comps.get("lean", ""),
         "table": [[cma.display_address(r[0]), money(r[1]), money(r[2]), adjusted_money(r[3])] for r in comps["summary_rows"]],
         "subject_row": [rw("subject_row"), money(rec["list_price"]), fmt.EMPTY, t("range_cell", range=C["recommendation"]["range_k"])],
+        # owner decision (2026-10-13): the seller's own card first in the grid, what every comp is adjusted to
+        "subject_card": {**cma.subject_card(R["subject"], comp_info, t, as_of), "tag": L["sc_tag"],
+                         "address": cma.display_address(R["subject"]["address"]),
+                         "price": t("sc_price", price=money(rec["list_price"])), "note": L["sc_note"]},
         "summary_line": t("line_comps_summary", lo=adjusted_money(min(values)), hi=adjusted_money(max(values)),
                           median=money(shown)),
         "strongest": {"index": best, "address": card_models[best]["address"],
@@ -1785,7 +1829,10 @@ def compute(R, market, homes, data_file=None):
                             default=None)
     C["strategies"], C["recommended_index"] = strat, ri
     C["listing_kind"], C["options_merged"] = built["kind"], [list(m) for m in built["merged"]]
+    C["below_range"] = bool(built.get("below_range"))
     C["launch"] = launch
+    if words == "stay":  # already live: the date is the refresh, never a go-live
+        launch["line"] = t("line_launch_stay", date=launch["display"])
     C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "source", "filled", "agent", "capped",
                                                        "floored", "premium", "premium_ratio", "premium_source")}
     C["net"] = {"rows": rows, "totals": totals, "after_holding": after, "holding": [r["amounts"] for r in rows
@@ -1814,6 +1861,8 @@ def compute(R, market, homes, data_file=None):
     N = notes.Notes()
     add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, caveat, bool(reprice_out), defaults,
               stay_caveat=stay is not None and stay != ri and nets[stay] > nets[ri])
+    if comp_info.get("national_rates"):  # owner decision 2026-10-13: national rates where none are built in, said once
+        N.add("national_rates", t("note_national_rates", kinds=cma._and(comp_info["national_rates"])), "estimate")
     merged = {}  # a narrow range: the stance options that came within 1% of a kept one, said once, by the kept one
     for role, into in built["merged"]:
         merged.setdefault(into, []).append(role)
@@ -1951,7 +2000,7 @@ def method_model(R, st, pay):
         lines.append(t("line_sources_rate", rate=pay["rate_display"], date=fmt.date_long(R["buyer_payment"]["rate_week"])))
     if R.get("sources"):
         lines.append(t("line_sources_other", list=cma._and([str(x) for x in R["sources"]])))
-    lines.append(L["line_shelf_life"])
+    lines.append(L["line_shelf_life_reprice" if R.get("reprice") else "line_shelf_life"])  # a listed home is listed
     return {"lines": lines}
 
 

@@ -67,10 +67,15 @@ def row(C, key):
     return next(r for r in C["net"]["rows"] if r["key"] == key)
 
 
+AGENT_LOTS = {"corner_or_oversized": 5000, "canal": 10000}  # the agent's, outside the built-in market
+
+
 def texas(R):
     R["costs"] = {}  # no terms given: national estimates, never Florida's numbers
     R["subject"].update(state="TX", county="Travis", city="Austin")
     R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}  # the agent's
+    R["comps"]["lot_values"] = AGENT_LOTS  # no built-in lot values outside Florida either
+    R["comps"]["systems_value"] = 5000  # nor a systems value
     R.pop("export")
     R["buyer_payment"].pop("district")
     R["buyer_payment"].update(school_mills=9.5, total_mills=19.0)
@@ -270,6 +275,8 @@ class Stance(unittest.TestCase):
         for stance in compute.cma.STANCES:
             R2["pricing"]["stance"] = stance
             self.assertEqual(C["stance"]["prices"][stance]["list_price"], run(R2)[0]["recommendation"]["list_price"])
+        # iteration 20: the comps stage names each sale it set aside, as the report will
+        self.assertEqual(" ".join(C["settled"]), run(report())[0]["comps"]["settled"])
 
 
 class Costs(unittest.TestCase):
@@ -509,6 +516,9 @@ class OtherMarkets(unittest.TestCase):
             R["subject"].pop(k)
         R["mls"] = "Stellar"
         R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}
+        R["comps"]["lot_values"] = AGENT_LOTS
+        R["comps"]["systems_value"] = 5000
+        R["comps"]["size_per_sqft"] = 75  # with no state, no market rates: the agent's
         C, _ = run(R)
         self.assertTrue(C["preliminary"])
         self.assertEqual(C["state_hint"]["state"], "FL")
@@ -752,6 +762,15 @@ class AdjustedValues(unittest.TestCase):
 class JudgmentOnly(unittest.TestCase):
     """report.json writes judgment; a figure in it, or a field the script now writes, stops with its path."""
 
+    def test_go_live_is_a_launch_not_people(self):
+        """Eval 9 (iteration 20): "go live on schedule" tripped the who-lives-there check."""
+        R = report()
+        R["summary_page"]["next_step"] = "Sign the listing agreement this week so we go live on schedule."
+        run(R)  # no error
+        R = report_with_deck()
+        R["deck"]["tagline"] = "Perfect for young families"
+        stops(self, R, r"deck\.tagline")
+
     def test_figures_and_retired_fields_stop_with_every_problem(self):
         R = report_with_deck()
         R["summary_page"]["why"][1] = "Homes now sell about 4% under asking."
@@ -773,8 +792,8 @@ class JudgmentOnly(unittest.TestCase):
         R["prep"]["items"][0] = "<strong>Document the roof.</strong> Permits."
         stops(self, R, r"prep\.items")
         R = report()
-        R["comps"]["cards"][0]["adjustments"][0]["kind"] = "vibes"
-        stops(self, R, r"comps\.cards\[0\]\.adjustments\[0\]\.kind")
+        R["comps"]["cards"][1]["adjustments"].append({"label": "Pool", "amount": 25000, "kind": "vibes"})
+        stops(self, R, r"comps\.cards\[1\]\.adjustments\[0\]\.kind")
 
     def test_the_script_states_the_facts(self):
         C, _ = run(tanager())

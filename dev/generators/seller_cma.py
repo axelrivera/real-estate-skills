@@ -6,9 +6,10 @@
 
 Each seed builds a synthetic MLS export in the Stellar CMA columns: sales over about six months with a market split
 (the recent ones a little lower or higher), active, pending and expired listings, prices from about $180,000 to
-$1,800,000, long street and subdivision names. From that export it picks 3 to 6 comps and adjusts them as an agent
-would (size, pool, lot; a condition level for the home and each comp, with the agent's condition values now and then
-and always outside Florida), sets the time adjustment by the method's rule from the export's split, and takes the
+$1,800,000, long street and subdivision names. From that export it picks 3 to 8 cards (backups behind the first five)
+and adjusts them as an agent would (size, pool, lot; a condition level and, now and then, a roof year for the home and
+each comp, with the agent's condition values now and then and always outside Florida), leaves the market split and
+the time rate to the script (now and then the agent's own, with a reason), and takes the
 script's range (now and then the agent's own range_override instead: a step lower, or narrow enough that the stance
 options merge). It types no price: it picks a pricing stance
 (left out for the market data's suggestion, or draw_offers, market or premium with a reason), now and then the agent's
@@ -158,17 +159,6 @@ def export(rng, as_of, split, subject):
     return rows
 
 
-def time_rate(st):
-    early = st["sold_early"].get("median_sale_to_original_list")
-    recent = st["sold_recent"].get("median_sale_to_original_list")
-    if early is None or recent is None or st["sold_early"]["n"] < 5 or st["sold_recent"]["n"] < 5:
-        return None, None
-    pts = abs(recent - early) * 100
-    if pts < 1:
-        return None, None
-    return (0.01 if pts <= 3 else 0.02), ("rising" if recent > early else "falling")
-
-
 def generate(seed, out_dir):
     compute = _compute()
     cma, mls, profiles = compute.cma, compute.mls, compute.profiles
@@ -198,46 +188,62 @@ def generate(seed, out_dir):
     homes = mls.load(path, market)
     mls.fill_distances(homes, subject["mls_address"])
     st = mls.market_stats(homes, {"address": subject["mls_address"], "living_area": sqft, "private_pool": pool,
-                                  "subdivision": sub}, split_date=split.isoformat(), as_of=as_of.isoformat(),
-                          exclude_address=subject["mls_address"])
-    rate, direction = time_rate(st)
+                                  "subdivision": sub}, as_of=as_of.isoformat(), exclude_address=subject["mls_address"])
     sold = sorted((h for h in homes if h["status"] == "SOLD"), key=lambda h: abs(h["living_area"] - sqft))
-    picks = sold[:rng.randint(3, min(6, len(sold)))]
+    picks = sold[:rng.randint(3, min(9, len(sold)))]  # the closest five, then backups (the script picks the used ones)
     scale = price / 450_000
     cards = []
     for h in picks:
         adj = []
-        diff = sqft - h["living_area"]
-        if diff:
-            adj.append({"label": "Size", "amount": round(max(-0.05 * h["close_price"], min(0.05 * h["close_price"],
-                                                                                          diff * 75 * scale)), -2)})
         if h["private_pool"] != pool:
             adj.append({"label": "Pool", "amount": round((25000 if pool else -25000) * scale, -2)})
-        if rng.random() < 0.2:
-            adj.append({"label": rng.choice(("Larger Corner Lot", "Pond Lot", "Documented Recent Systems")),
-                        "amount": round(-rng.choice((5000, 10000)) * scale, -2)})
-        cards.append({"address": cma.display_address(h["address"]), "sold_price": h["close_price"],
-                      "seller_concessions": h.get("seller_paid") or 0,
-                      "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
-                      "adjustments": adj,
-                      "bullets": rng.sample(BULLETS, rng.randint(1, 3))})
+        card = {"address": cma.display_address(h["address"]), "sold_price": h["close_price"],
+                "seller_concessions": h.get("seller_paid") or 0,
+                "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
+                "adjustments": adj, "bullets": rng.sample(BULLETS, rng.randint(1, 3))}
+        if rng.random() < 0.1:  # a newer AC or water heater its listing names: the script prices the difference
+            card["recent_systems"] = True
+        if rng.random() < 0.2:  # a lot the script prices by its type (the size comes from the export)
+            card["lot"] = rng.choice(("corner_or_oversized", "view", "canal", "lake_or_open_water"))
+        elif rng.random() < 0.03:
+            card.update(lot="other", lot_value=round(-5000 * scale, -2), lot_reason="Backs onto a busy road")
+        if rng.random() < 0.6:  # the roof year when the comp's listing gives it
+            card["roof_year"] = as_of.year - rng.randint(0, 26)
+            if rng.random() < 0.15:
+                card["roof_type"] = rng.choice(("tile", "metal"))
+        cards.append(card)
+    if len(cards) >= 4 and rng.random() < 0.1:  # now and then the agent keeps a sale the script would set aside
+        rng.choice(cards[:4])["keep_reason"] = "The same floor plan on the same street, so we keep it."
     comps = {"cards": cards, "intro": "The closest matches in size and condition, including the ones that argue for a "
                                       "lower price.",
              "method_note": "Condition adjustments are based on listing descriptions, so they are judgment calls.",
              "lean": "The range leans on the most recent sales and the best condition matches."}
-    if rate:
-        comps["time_adjustment"] = {"rate_per_quarter": rate, "prices": direction}
+    if len(cards) >= 6 and rng.random() < 0.2:
+        comps["count"] = 6
+    if rng.random() < 0.08:  # now and then the agent's own market shift, with a reason
+        comps["time_override"] = {"rate_per_quarter": rng.choice((0, 0.01, 0.015)), "prices": "falling",
+                                  "reason": "We read the recent sales as a gentler change."}
+    roof = {}
+    if rng.random() < 0.7:  # the seller's roof year
+        roof["roof_year"] = as_of.year - rng.randint(0, 26)
+        if rng.random() < 0.15:
+            roof["roof_type"] = rng.choice(("tile", "metal"))
     # the condition ladder's dollars: the market's (Florida), else the agent's or paired sales', scaled to the price
     if not florida or rng.random() < 0.3:
         fl = profiles.load_market(state="FL", county="Seminole").get("cma.adjustments.condition_levels")
         comps["condition_values"] = {lv: round(v * scale, -2) for lv, v in fl.items()}
+    if not florida or rng.random() < 0.3:  # the size and lot rates: the market's, else paired sales', scaled
+        fl_market = profiles.load_market(state="FL", county="Seminole")
+        comps["size_per_sqft"] = round(fl_market.get("cma.adjustments.living_area_per_sqft") * scale)
+        comps["lot_values"] = {k: round(v * scale, -2) for k, v in fl_market.get("cma.adjustments.lot_types").items()}
+        comps["systems_value"] = round(5000 * scale, -2)
+    lot = {"lot": rng.choice(("corner_or_oversized", "view", "canal"))} if rng.random() < 0.15 else {}
     subject_level = rng.choice(cma.CONDITION_LEVELS[:-1])
     # the adjusted values and the range, as the skill's comps stage prints them before any pricing
-    tmp = copy.deepcopy(comps)
-    cma.apply_condition_adjustments(tmp, {"condition": subject_level}, market)
-    cma.apply_time_adjustments(tmp, homes, as_of.isoformat(), split)
-    cma.derive_comps(tmp)
-    values = [c["adjusted"] for c in tmp["cards"]]
+    tmp = {"as_of": as_of.isoformat(), "subject": {"condition": subject_level, "sqft": sqft, **roof, **lot},
+           "comps": copy.deepcopy(comps)}
+    cma.settle_comps(tmp, homes, market, st)
+    values = [c["adjusted"] for c in tmp["comps"]["cards"]]
     low, high = cma.choose_range(values, market)
     override = None
     if rng.random() < 0.15:  # now and then the agent sets the range, shown as their choice: a step lower, or narrow
@@ -269,7 +275,7 @@ def generate(seed, out_dir):
             options.setdefault(role, {})["note"] = "Our read of how buyers will respond at this price"
     if options:
         pricing["options"] = options
-    R = {"prepared_date": as_of.isoformat(), "as_of": as_of.isoformat(), "export": path, "split_date": split.isoformat(),
+    R = {"prepared_date": as_of.isoformat(), "as_of": as_of.isoformat(), "export": path,
          "subject": {"address": f"{number} {street}", "mls_address": subject["mls_address"], "city": city, "state": state,
                      "county": county, "locality": f"{city}, {state} {rng.randint(32000, 34999)} · {sub} · {county} County",
                      "sqft": sqft, "beds": max(2, round(sqft / 550)), "baths": rng.choice((2, 2.5, 3)),
@@ -279,11 +285,11 @@ def generate(seed, out_dir):
                                ["Garage", "Two-car attached"], ["Flood Zone", rng.choice(ZONES)],
                                ["Recent Updates", "Kitchen, baths, floors"]],
                      "summary": "An updated home with a remodeled kitchen and new flooring, as described by you.",
-                     "condition": subject_level},
+                     "condition": subject_level, **roof, **lot},
          "summary_page": {"headline": "Priced where recent sales support, for the strongest first weeks on the market.",
                           "why": rng.sample(WHY, 3), "next_step": "Review this plan together, sign the listing "
                                                                   "agreement, and get the home ready to go live."},
-         "recommendation": {"why": "It leaves room for the negotiating that is normal now and looks fairly priced in its "
+         "recommendation": {"why": "It leaves room for the usual negotiation in today's market and looks fairly priced in its "
                                    "first weeks on the market."},
          "means": rng.sample(MEANS, rng.randint(2, 4)), "comps": comps,
          "competition": {"intro": "The homes buyers will tour alongside yours.", "rows": []},

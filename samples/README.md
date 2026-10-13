@@ -6,7 +6,7 @@ Each skill can also answer in chat as a markdown summary; only the file outputs 
 
 ## Buyer CMA
 
-[517-Larkwood-Ave-Buyer-CMA.pdf](buyer-cma/517-Larkwood-Ave-Buyer-CMA.pdf) (11 pages). A buyer-side comparative market analysis for a renovated pool home listed at $474,900. It opens with a one-page summary and a suggested opening offer, target and walk-away price, then covers the full listing history, five adjusted comps, a price-vs-size scatterplot, the competition, market conditions, taxes at the buyer's price, payment scenarios, price vs. seller credit, watch items and questions for the listing agent.
+[517-Larkwood-Ave-Buyer-CMA.pdf](buyer-cma/517-Larkwood-Ave-Buyer-CMA.pdf) (9 pages). A buyer-side comparative market analysis for a renovated pool home listed at $474,900. An objective report of value: it opens with a one-page summary of the supported range and where asking sits against it, then covers the full listing history, five adjusted comps, a price-vs-size scatterplot, the competition, market conditions, taxes, payments at asking and at the median adjusted value, watch items and questions for the listing agent.
 
 ## Seller CMA
 

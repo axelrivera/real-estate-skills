@@ -1,6 +1,10 @@
 {
- "adjusted_max": 493900,
- "adjusted_min": 435900,
+ "adjusted_max": 485675,
+ "adjusted_min": 431229,
+ "asking_position": {
+  "amount": 5050,
+  "key": "sum_pos_over_median"
+ },
  "assumption_keys": [
   "tax_basis",
   "tax_assessed",
@@ -9,9 +13,8 @@
  "assumptions": {
   "count": 3
  },
- "cash_fit": null,
  "chat_notes": {
-  "count": 8
+  "count": 7
  },
  "competition": {
   "rows": [
@@ -56,8 +59,8 @@
  "comps": {
   "cards": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K",
+    "adjusted": 485675,
+    "adjusted_k": "$486K",
     "bullets": {
      "count": 3
     },
@@ -66,9 +69,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -81,8 +84,8 @@
     ]
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K",
+    "adjusted": 479300,
+    "adjusted_k": "$479K",
     "bullets": {
      "count": 2
     },
@@ -91,9 +94,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      },
@@ -106,7 +109,7 @@
     ]
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K",
     "bullets": {
      "count": 2
@@ -122,17 +125,17 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ]
+     {
+      "count": 2
+     }
     ],
     "meta": [
      "pool"
     ]
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K",
+    "adjusted": 433500,
+    "adjusted_k": "$434K",
     "bullets": {
      "count": 3
     },
@@ -156,8 +159,8 @@
     ]
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K",
+    "adjusted": 431229,
+    "adjusted_k": "$431K",
     "bullets": {
      "count": 3
     },
@@ -172,9 +175,9 @@
      {
       "count": 2
      },
-     [
-      "Size"
-     ],
+     {
+      "count": 2
+     },
      {
       "count": 2
      }
@@ -184,6 +187,26 @@
     ]
    }
   ],
+  "subject_card": {
+   "lines": [
+    [
+     "Condition"
+    ],
+    [
+     "Lot",
+     "Standard"
+    ],
+    [
+     "Roof"
+    ],
+    [
+     "Systems"
+    ]
+   ],
+   "meta": [
+    "pool"
+   ]
+  },
   "subject_row": {
    "count": 4
   },
@@ -225,62 +248,11 @@
   }
  },
  "costs": {
-  "credit": {
-   "cash_flags": {
-    "count": 3
-   },
-   "cash_row": 7,
-   "credit_flags": {
-    "count": 3
-   },
-   "header": {
-    "count": 4
-   },
-   "rows": [
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    [
-     "+$40",
-     "+$80"
-    ],
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    },
-    {
-     "count": 4
-    }
-   ]
-  },
   "payment": {
-   "alt_row": 10,
+   "alt_rows": [
+    10,
+    11
+   ],
    "cash_flags": {
     "count": 3
    },
@@ -329,6 +301,9 @@
     },
     {
      "count": 4
+    },
+    {
+     "count": 4
     }
    ],
    "total_row": 9
@@ -347,144 +322,6 @@
    ]
   }
  },
- "credit": {
-  "buydown": {
-   "cost": 10100,
-   "covered": false,
-   "credit": 10000,
-   "full": 3976,
-   "price": 459000,
-   "year1": 3418,
-   "year2": 3690
-  },
-  "closing_costs_given": false,
-  "columns": [
-   {
-    "appraisal_room": 20800,
-    "bb_short": 0,
-    "cap": 13470,
-    "cash": 35920,
-    "cash_left": null,
-    "cash_lines": [
-     [
-      "down",
-      22450
-     ],
-     [
-      "closing",
-      13470
-     ]
-    ],
-    "cash_saved": 0,
-    "cash_short": null,
-    "closing_costs": 13470,
-    "credit": 0,
-    "credit_applied": 0,
-    "down": 22450,
-    "extra": 0,
-    "loan": 426550,
-    "loan_taxes": 0,
-    "net": 449000,
-    "over_cap": false,
-    "over_costs": false,
-    "payback_years": null,
-    "payment": 3896,
-    "pi": 2824,
-    "price": 449000
-   },
-   {
-    "appraisal_room": 15800,
-    "bb_short": 0,
-    "cap": 13620,
-    "cash": 31320,
-    "cash_left": null,
-    "cash_lines": [
-     [
-      "down",
-      22700
-     ],
-     [
-      "closing",
-      13620
-     ],
-     [
-      "credit",
-      -5000
-     ]
-    ],
-    "cash_saved": 4600,
-    "cash_short": null,
-    "closing_costs": 13620,
-    "credit": 5000,
-    "credit_applied": 5000,
-    "down": 22700,
-    "extra": 40,
-    "loan": 431300,
-    "loan_taxes": 0,
-    "net": 449000,
-    "over_cap": false,
-    "over_costs": false,
-    "payback_years": 9.58,
-    "payment": 3936,
-    "pi": 2855,
-    "price": 454000
-   },
-   {
-    "appraisal_room": 10800,
-    "bb_short": 0,
-    "cap": 13770,
-    "cash": 26720,
-    "cash_left": null,
-    "cash_lines": [
-     [
-      "down",
-      22950
-     ],
-     [
-      "closing",
-      13770
-     ],
-     [
-      "credit",
-      -10000
-     ]
-    ],
-    "cash_saved": 9200,
-    "cash_short": null,
-    "closing_costs": 13770,
-    "credit": 10000,
-    "credit_applied": 10000,
-    "down": 22950,
-    "extra": 80,
-    "loan": 436050,
-    "loan_taxes": 0,
-    "net": 449000,
-    "over_cap": false,
-    "over_costs": false,
-    "payback_years": 9.58,
-    "payment": 3976,
-    "pi": 2886,
-    "price": 459000
-   }
-  ],
-  "down_pct": 0.05,
-  "per_5k": {
-   "cash": 4600,
-   "monthly": 40
-  },
-  "program": "conventional",
-  "seller_cost_parts": {
-   "count": 1
-  },
-  "seller_cost_per_10k": 70
- },
- "credit_alt": {
-  "base_credit": 0,
-  "base_price": 449000,
-  "cash_saved": 9200,
-  "credit": 10000,
-  "price": 459000
- },
  "current_bill": 2731,
  "data_source": {
   "as_of": "2026-09-22",
@@ -495,27 +332,27 @@
   "as_of": "2026-09-22",
   "comps": [
    {
-    "adjusted": 493900,
+    "adjusted": 485675,
     "seller_paid": 0,
     "sold_price": 505500
    },
    {
-    "adjusted": 484000,
+    "adjusted": 479300,
     "seller_paid": 0,
     "sold_price": 495000
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "seller_paid": 500,
     "sold_price": 427000
    },
    {
-    "adjusted": 440200,
+    "adjusted": 433500,
     "seller_paid": 12000,
     "sold_price": 429000
    },
    {
-    "adjusted": 435900,
+    "adjusted": 431229,
     "seller_paid": 13071,
     "sold_price": 465000
    }
@@ -534,13 +371,7 @@
    "mls": "Stellar",
    "state": "FL"
   },
-  "offer_plan": {
-   "opening": 449000,
-   "target_high": 456500,
-   "target_low": 454000,
-   "walk_away": 470000
-  },
-  "posture": "leverage",
+  "offer_plan": null,
   "recommended_list_price": null,
   "side": "buyer",
   "source": "buyer-cma",
@@ -569,7 +400,7 @@
   "value": {
    "high": 480000,
    "low": 455000,
-   "median_adjusted": 469800,
+   "median_adjusted": 469850,
    "midpoint": 467500
   },
   "version": 1
@@ -604,7 +435,8 @@
     "kind": "listed",
     "mls": "O6371102",
     "note": null,
-    "price": 483900
+    "price": 483900,
+    "to_confirm": false
    },
    {
     "date": "2026-01-22",
@@ -612,14 +444,16 @@
     "kind": "price_cut",
     "mls": "O6371102",
     "note": null,
-    "price": 479900
+    "price": 479900,
+    "to_confirm": false
    },
    {
     "date": "2026-01-27",
     "delta": 0,
     "kind": "off_market",
     "mls": "O6371102",
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-02-07",
@@ -627,7 +461,8 @@
     "kind": "price_cut",
     "mls": "O6371102",
     "note": null,
-    "price": 474500
+    "price": 474500,
+    "to_confirm": false
    },
    {
     "date": "2026-03-05",
@@ -635,7 +470,8 @@
     "kind": "back_on",
     "mls": "O6371102",
     "note": null,
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-04-11",
@@ -643,14 +479,16 @@
     "kind": "pending",
     "mls": "O6371102",
     "note": null,
-    "price": 474500
+    "price": 474500,
+    "to_confirm": false
    },
    {
     "date": "2026-05-17",
     "delta": 0,
     "kind": "off_market",
     "mls": "O6371102",
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-05-21",
@@ -658,7 +496,8 @@
     "kind": "back_on",
     "mls": "O6371102",
     "note": null,
-    "price": 484900
+    "price": 484900,
+    "to_confirm": false
    },
    {
     "date": "2026-06-09",
@@ -666,7 +505,8 @@
     "kind": "canceled",
     "mls": "O6371102",
     "note": null,
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-08-17",
@@ -674,7 +514,8 @@
     "kind": "listed",
     "mls": "O6448292",
     "note": null,
-    "price": 484900
+    "price": 484900,
+    "to_confirm": false
    },
    {
     "date": "2026-08-31",
@@ -682,7 +523,8 @@
     "kind": "price_cut",
     "mls": "O6448292",
     "note": null,
-    "price": 478900
+    "price": 478900,
+    "to_confirm": false
    },
    {
     "date": "2026-09-16",
@@ -690,7 +532,8 @@
     "kind": "price_cut",
     "mls": "O6448292",
     "note": null,
-    "price": 474900
+    "price": 474900,
+    "to_confirm": false
    }
   ],
   "vs_last_contract": 400
@@ -781,8 +624,8 @@
   "share_with_seller_paid_costs_recent": 0.889,
   "split_date": "2026-07-01"
  },
- "median_adjusted": 469800,
- "median_shown": 469800,
+ "median_adjusted": 469850,
+ "median_shown": 469850,
  "method": {
   "lines": {
    "count": 3
@@ -798,48 +641,13 @@
   "insurance",
   "closing_costs",
   "flood",
-  "credit_limits",
-  "seller_cost"
+  "credit_limits"
  ],
  "notes": {
-  "count": 11
+  "count": 10
  },
  "notices": {
   "count": 3
- },
- "offer": {
-  "bullets": {
-   "count": 3
-  }
- },
- "offer_plan": {
-  "basis": {
-   "opening": "below_range",
-   "target": "floor",
-   "walk_away": "median"
-  },
-  "ladder": [
-   {
-    "count": 3
-   },
-   [
-    "Target"
-   ],
-   {
-    "count": 3
-   }
-  ],
-  "opening": 449000,
-  "override": {
-   "count": 0
-  },
-  "posture": "leverage",
-  "posture_name": "Leverage",
-  "posture_suggested": "leverage",
-  "target": 454000,
-  "target_high": 456500,
-  "target_low": 454000,
-  "walk_away": 470000
  },
  "ok": true,
  "payments": {
@@ -849,6 +657,14 @@
     3968,
     4091,
     3309
+   ]
+  },
+  "at_median": {
+   "price": 469850,
+   "totals": [
+    4065,
+    4186,
+    3412
    ]
   },
   "buyer_cash": null,
@@ -1048,7 +864,7 @@
   "tax_index": 1
  },
  "range": {
-  "cap": 28188.0,
+  "cap": 28191.0,
   "high": 480000,
   "low": 455000,
   "midpoint": 467500,
@@ -1124,24 +940,24 @@
   ],
   "comps": [
    {
-    "adjusted": 493900,
-    "adjusted_k": "$494K"
+    "adjusted": 485675,
+    "adjusted_k": "$486K"
    },
    {
-    "adjusted": 484000,
-    "adjusted_k": "$484K"
+    "adjusted": 479300,
+    "adjusted_k": "$479K"
    },
    {
-    "adjusted": 469800,
+    "adjusted": 469850,
     "adjusted_k": "$470K"
    },
    {
-    "adjusted": 440200,
-    "adjusted_k": "$440K"
+    "adjusted": 433500,
+    "adjusted_k": "$434K"
    },
    {
-    "adjusted": 435900,
-    "adjusted_k": "$436K"
+    "adjusted": 431229,
+    "adjusted_k": "$431K"
    }
   ],
   "cost_rows": [
@@ -1156,15 +972,18 @@
    },
    {
     "count": 3
+   },
+   {
+    "count": 3
    }
   ],
   "tiles": [
-   {
-    "count": 2
-   },
    [
     "93.9%"
    ],
+   {
+    "count": 2
+   },
    {
     "count": 2
    },
@@ -1206,8 +1025,8 @@
   "cutoff": "2026-07-01",
   "cutoff_display": "July",
   "falling": true,
-  "rate": 0.01,
-  "rate_display": "1%",
+  "rate": 0.02,
+  "rate_display": "2%",
   "undated": {
    "count": 0
   }

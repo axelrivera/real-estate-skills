@@ -191,7 +191,7 @@ class MarkdownTemplate(unittest.TestCase):
         self.assertEqual(res["market_check"][0], {"label": "Value Range", "value": "Not provided", "note": None})
         labels = [m["label"] for m in strategy.result(analyze("texas-cma-escalation.json"))["market_check"]]
         self.assertIn("Median Adjusted Comp", labels)
-        self.assertEqual(labels[-2:], ["Market Read", "CMA Offer Plan"])
+        self.assertEqual(labels[-1], "Market Read")  # the CMA's value only: no offer plan of its own
         r = analyze("condo-flood.json")  # the side-by-side ends with the payment
         rows = strategy.result(r)["side_by_side"]
         self.assertEqual(rows[-1]["key"], "payment")

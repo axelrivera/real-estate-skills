@@ -127,7 +127,7 @@ TOOL_WORDS = [
      "say what it is in the client's words (the report, the numbers, the listing)"),
     (r"\bexports?\b|\bCSVs?\b", re.I, "a tool word", 'say where it came from in the client\'s words ("MLS records", "recent sales")'),
     (r"\bre-?run(?:s|ning)?\b", re.I, "a tool word", 'say what happens in the client\'s words ("we\'ll update the report")'),
-    (r"\bnull\b(?!\s+and\s+void)|\bundefined\b", re.I, "an empty value printed as text",
+    (r"\bnull\b(?!\s+and\s+void)|(?<!left )(?<!is )(?<!are )(?<!remains )(?<!was )\bundefined\b", re.I, "an empty value printed as text",
      "leave the field out (the report shows its default)"),
     (r"\bNaN\b", 0, "an empty value printed as text", "leave the field out (the report shows its default)"),
     (r"\bTODO\b|\bTBD\b", 0, "unfinished text", "write the value, or leave the field out (the report shows its default)"),
@@ -395,6 +395,20 @@ FIGURE = re.compile(
     r"|\b(?i:monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?\b")
 
 
+# A count of events in words is a figure too ("two price cuts", "came down three times", "twice"): the history's counts
+# are the script's. A home's features ("three bedrooms", "a two-car garage"), the sales a sentence points to ("the two
+# sales that support asking") and a ratio ("twice the land") aren't events, so they pass (iteration 21).
+_NUM_WORD = r"(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a dozen)"
+COUNT_WORDS = re.compile(
+    rf"\b(?i:(?:twice|thrice)(?!\s+(?:the|as)\b)|{_NUM_WORD}\s+times|{_NUM_WORD}\s+(?:(?:more|separate|price|failed)\s+)"
+    r"{0,2}(?:cuts?|reductions?|drops?|contracts?|relists?|increases?))\b")
+
+
+def counts(text):
+    """The counts of events written in words in `text` ("two price cuts", "twice"), [] when there are none."""
+    return [m.group(0) for m in COUNT_WORDS.finditer(str(text or ""))]
+
+
 def figures(text):
     """The figures in `text` ("$425,000", "3%", "12", "December", "spring", "Friday"), [] when it's figure-free.
     Names, ids, links and emails keep their digits (EXEMPT_TEXT)."""
@@ -408,6 +422,7 @@ def figures(text):
 # assigns, a tenant's possession date) is quoted as data and isn't checked here.
 _OCCUPANT = (r"(?:sellers?|owners?|they|family|occupants?|tenants?|renters?|he|she|we|buyers?)")
 PEOPLE = re.compile(
+    r"(?<!\bgo\s)(?<!\bgoes\s)(?<!\bwent\s)(?<!\bgoing\s)(?<!\bgone\s)"  # "go live on schedule": a launch, not people
     r"\b(?:lives?|living|lived)\s+(?:in|there|here|at|on)\b"
     r"|\b(?:owner|tenant|renter|seller)[- ]occupied\b|\boccupied\s+by\b|\boccupan(?:t|ts|cy)\b"
     r"|\btenants?\b|\brenters?\b"

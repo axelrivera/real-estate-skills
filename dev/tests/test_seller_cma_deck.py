@@ -187,7 +187,7 @@ class Build(unittest.TestCase):
         deck.PDF_TIMEOUT = 60
 
     def test_full_pptx(self):
-        """The branded deck: one brand hue, the subject black, filled markers, no value axis on the nets, print-light
+        """The branded deck: one brand hue, the subject in the darkest brand shade, filled markers, no value axis on the nets, print-light
         tables, a PDF copy with every slide."""
         C, _ = run(report())
         with tempfile.TemporaryDirectory() as tmp:
@@ -212,7 +212,8 @@ class Build(unittest.TestCase):
         scatter = next(c for c in charts if "<c:scatterChart>" in c)
         self.assertIn('<c:symbol val="diamond"/>', scatter)
         self.assertIn('<c:symbol val="square"/>', scatter)  # for-sale homes: a filled square, drawn in every viewer
-        self.assertIn('val="1A1A1A"', scatter)  # the subject home is black, not a second hue
+        deep = deck.design.theme(AGENT.get("brand"), "seller")["brand_deep"].lstrip("#")
+        self.assertIn(f'val="{deep}"', scatter)  # the subject home is the darkest brand shade, not a second hue
         self.assertNotIn("<c:legend>", scatter)
         bars = next(c for c in charts if "<c:barChart>" in c)
         self.assertRegex(bars, r'<c:valAx>.*<c:delete val="1"/>')  # no "$0K" axis: the bars carry their values

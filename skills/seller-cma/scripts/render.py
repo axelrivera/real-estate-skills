@@ -140,6 +140,12 @@ def comps(C):
         + f'<div class="meta">{esc(" · ".join(cd["meta"]))}</div>'
         '<div class="adj-lines">' + "".join(f'<span><i>{esc(a)}</i> {esc(v)}</span>' for a, v in cd["lines"][1:]) + "</div>"
         + ul(cd["bullets"], "") + "</div>" for cd in c["cards"]]
+    sc = c["subject_card"]  # this home first: the subject color, outlined and tagged, what every card after it is adjusted to
+    cards.insert(0, f'<div class="comp subject"><div class="subject-tag">{esc(sc["tag"])}</div>'
+                    f'<div class="comp-h"><b>{esc(sc["address"])}</b><span class="adj">{esc(sc["price"])}</span></div>'
+                    f'<div class="meta">{esc(" · ".join(sc["meta"]))}</div>'
+                    '<div class="adj-lines">' + "".join(f'<span><i>{esc(a)}</i> {esc(v)}</span>' for a, v in sc["lines"])
+                    + f'</div><p class="sc-note">{esc(sc["note"])}</p></div>')
     rows = c["table"] + [c["subject_row"]]
     method = " ".join(x for x in (esc(c["method"]), c["method_note"]) if x)
     summary = " ".join(esc(x) for x in (c["summary_line"], c["strongest"]["line"], c["highest_line"]))
@@ -147,6 +153,7 @@ def comps(C):
            *[f'<div class="comps2">{"".join(cards[i:i + 2])}</div>' for i in range(0, len(cards), 2)],
            layout.table([Col(0, L["th_sale"]), Col(1, L["th_sold_for"], align="num"), Col(2, L["th_seller_paid"], align="num"),
                          Col(3, L["th_adjusted"], align="num")], rows, row_classes={len(rows) - 1: "subj"}, keep="whole"),
+           p(esc(c["settled"]), "note") if c["settled"] else "",
            p(summary + (" " + c["lean"] if c["lean"] else ""))]
     return [x for x in out if x]
 
@@ -281,7 +288,7 @@ def build_html(C, agent, notes_out=None, intro=None):
             + [layout.notes_block(C["notes"], title=L["h_notes"], cls="cma-notes")] + prep(C))
     content = ('<div class="wrap">' + page_one(C, agent) + '<div class="pb"></div>' + layout.group_blocks(body)
                + closing(C, agent) + "</div>")
-    theme = design.theme(agent.get("brand"), SIDE)  # the subject home is black (cma.css), never a second hue
+    theme = design.theme(agent.get("brand"), SIDE)  # the subject home is the darkest brand shade (cma.css), never a second hue
     extra = ".prep .tag.prelim{color:var(--caution-strong);border-color:var(--caution-strong)}"
     doc = render.page(content, css=css, title=f'{L["doc_label"]}: {C["subject"]["address"]}',
                       theme_css=design.css_vars(theme) + extra, body_class="font-bundled " + BODY_CLASS)

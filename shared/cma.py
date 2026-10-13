@@ -11,7 +11,7 @@ import re
 import statistics
 from datetime import date, timedelta
 
-from . import finance, fmt, layout, mls, render
+from . import finance, fmt, layout, mls, prose, render
 
 CMA_CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cma.css")
 money = finance.money
@@ -643,33 +643,22 @@ def derive_comps(comps):
 
 
 def outlier_warnings(cards, share=OUTLIER_SHARE):
-    """CMA-110: comps whose adjusted value is more than `share` away from the median of the other comps, so the same
-    comp set is always judged the same way (method.md, Outliers). Needs at least three comps. With several flagged at
-    once, the farthest (as a share of the others' median) comes first and is the one to replace first: replacing it
-    moves the others' median, so the rest are judged again on the next run, and the same comps always end the same."""
+    """CMA-110: used comps whose adjusted value is still more than `share` from the median of the others after
+    select_comps (it sets outliers aside while backups last), so the agent knows the range rests on one: a card the
+    agent kept (`keep_reason`) isn't warned. Needs at least three comps."""
     values = [c.get("adjusted") for c in cards]
     if len(values) < 3 or not all(isinstance(v, (int, float)) for v in values):
         return []
-    hits = []
+    out = []
     for i, c in enumerate(cards):
         others = statistics.median(values[:i] + values[i + 1:])
         gap = abs(values[i] - others) / others if others else 0
-        if gap > share:
-            hits.append((-gap, i, c, others))
-    out = []
-    for n, (_, i, c, others) in enumerate(sorted(hits, key=lambda h: (h[0], h[1]))):
-        text = (f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
-                f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}. ")
-        if len(hits) == 1:
-            text += ("Replace it with the next candidate, or keep it only if it's one of the closest matches and say why "
-                     "in method_note (method.md, Outliers).")
-        elif n == 0:
-            text += (f"{len(hits)} comps are flagged and this one is the farthest: replace it first (with the next "
-                     "candidate, or keep it only if it's one of the closest matches and say why in method_note), then "
-                     "run compute.py again; the others are judged again without it (method.md, Outliers).")
-        else:
-            text += "Judge it again after the farthest one is replaced (method.md, Outliers)."
-        out.append(text)
+        if gap > share and not str(c.get("keep_reason") or "").strip():
+            out.append(f"{c.get('address', '?')}: adjusted to {money(values[i])}, more than {share:.0%} "
+                       f"{'above' if values[i] > others else 'below'} the other comps' median {money(others)}, and no backup "
+                       "card is left to take its place. Add the next candidates from stats.py's ranking as backup cards "
+                       "(the script sets an outlier aside and uses the next one), or keep it only on the agent's call with "
+                       "`keep_reason` (method.md, Outliers).")
     return out
 
 
@@ -786,34 +775,6 @@ def range_warnings(bl, values, market):
     return out
 
 
-# --- the buyer's offer posture -------------------------------------------------------
-
-# Strategy categories (plan: model picks, script prices): the buyer CMA's offer plan is set by a posture. The script
-# suggests one from the listing's history and the market; the model keeps it or picks another with a reason. must_win
-# is the buyer's situation (the agent's call), never suggested from data.
-POSTURES = ("leverage", "standard", "competitive", "must_win")
-LEVERAGE_CUTS = 2  # price cuts since the last sale that give the buyer leverage
-LEVERAGE_DOM_TIMES = 2  # days on market at least this many times the market's recent median
-COMPETITIVE_DOM = 14  # a listing this new...
-COMPETITIVE_SUPPLY = 3  # ...in a market under this many months of supply draws competing offers
-
-
-def suggest_posture(history, stats):
-    """The offer posture the data suggests: `leverage` when the history since the last sale has a failed contract, 2
-    or more price cuts, or days on market at least twice the market's recent median; `competitive` when the listing
-    has been on the market 14 days or fewer and the market has under 3 months of supply; else `standard`.
-    `history` is the buyer CMA's history counts (failed_contracts, price_cuts, active_days) or None; `stats` the
-    market numbers (median_days_recent, months_supply), any of them missing. A signal that's missing never fires."""
-    h, s = history or {}, stats or {}
-    dom, median_days, supply = h.get("active_days"), s.get("median_days_recent"), s.get("months_supply")
-    if (h.get("failed_contracts") or 0) >= 1 or (h.get("price_cuts") or 0) >= LEVERAGE_CUTS \
-            or (dom is not None and median_days and dom >= LEVERAGE_DOM_TIMES * median_days):
-        return "leverage"
-    if dom is not None and dom <= COMPETITIVE_DOM and supply is not None and supply < COMPETITIVE_SUPPLY:
-        return "competitive"
-    return "standard"
-
-
 # --- the seller's pricing stance and the list price it sets ----------------------
 
 # A seller CMA's pricing stance (method.md, Pricing Stance): the model picks one, the script turns it into the price.
@@ -896,7 +857,8 @@ def list_price_at(point, low, high):
 
 # A comp adjustment's category (`kind`), so text that lists what was adjusted uses fixed plain words, never the
 # model's label wording ("hall bath (not in its listing)"). The card keeps its own label.
-ADJUSTMENT_KINDS = ("size", "pool", "garage", "condition", "age", "lot", "view", "location", "time", "credits", "other")
+ADJUSTMENT_KINDS = ("size", "pool", "garage", "condition", "roof", "age", "systems", "lot", "view", "location", "time",
+                    "credits", "other")
 # Kind inferred from a label when none is given: the first kind with a matching word, in this order
 _KIND_WORDS = (
     ("time", r"market|since the sale|time|months?|quarter|rates?|sold in|appreciation|softening|slowdown|sale date|"
@@ -905,13 +867,20 @@ _KIND_WORDS = (
     ("credits", r"credit|concession|seller[- ]paid|seller help"),
     ("pool", r"pool|spa"),
     ("garage", r"garage|carport|parking"),
-    ("age", r"roof|\bac\b|a/c|hvac|systems?|water heater|windows?|\bage\b|year built|older|newer|effective age"),
+    ("roof", r"roof"),
+    ("age", r"\bac\b|a/c|hvac|systems?|water heater|windows?|\bage\b|year built|older|newer|effective age"),
     ("view", r"view|water|pond|lake|golf|conservation|preserve|canal|river|ocean|bay"),
     ("lot", r"\blot\b|acre|yard|corner|cul-de-sac|frontage"),
     ("location", r"location|street|road|traffic|neighborhood|subdivision|busy|commercial"),
     ("size", r"size|sq\.? ?ft|square|living area|larger|smaller|bedroom|room count|stories"),
     ("condition", r"kitchen|bath|renovat|remodel|update|condition|floor|dated|finish|paint|repair|cabinet|counter"),
 )
+
+
+def typed_adjustments(card):
+    """(index, adjustment) for each adjustment the agent typed on a card, numbered as the agent wrote them: the lines the
+    script adds (`source: "script"`) are skipped and never counted, so an error names the agent's own position."""
+    return list(enumerate(a for a in card.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script")))
 
 
 def adjustment_kind(adj):
@@ -926,7 +895,7 @@ def adjustment_kind_errors(cards):
     """`kind` values that aren't one of ADJUSTMENT_KINDS, as `field: problem → fix` lines."""
     out = []
     for i, c in enumerate(cards or []):
-        for j, a in enumerate(c.get("adjustments") or []):
+        for j, a in typed_adjustments(c):
             if isinstance(a, dict) and a.get("kind") not in (None, "") and a["kind"] not in ADJUSTMENT_KINDS:
                 out.append(f"comps.cards[{i}].adjustments[{j}].kind: {a['kind']!r} isn't a kind → use one of "
                            f"{', '.join(ADJUSTMENT_KINDS)}, or leave it out to take it from the label.")
@@ -935,8 +904,9 @@ def adjustment_kind_errors(cards):
 
 # The plain words for each adjustment kind, the same in every report and deck
 ADJ_KIND_WORDS = {"size": "size", "pool": "pool", "garage": "garage", "condition": "condition and updates",
-                  "age": "roof and systems", "lot": "lot", "view": "view or water", "location": "location",
-                  "time": "market changes since each sale", "credits": "seller credits", "other": "other differences"}
+                  "roof": "roof", "age": "age", "systems": "recent systems", "lot": "lot", "view": "view or water",
+                  "location": "location", "time": "market changes since each sale", "credits": "seller credits",
+                  "other": "other differences"}
 
 
 def _and(items):
@@ -1033,7 +1003,7 @@ def apply_condition_adjustments(comps, subject, market):
     errors = _level_errors("subject.condition", subject.get("condition"))
     for i, c in enumerate(cards):
         errors += _level_errors(f"comps.cards[{i}].condition", c.get("condition"))
-        for j, a in enumerate(c.get("adjustments") or []):
+        for j, a in typed_adjustments(c):
             if not isinstance(a, dict) or a.get("source") == "script":
                 continue
             if adjustment_kind(a) == "condition" or _CONDITION_TYPED.search(str(a.get("label") or "")):
@@ -1075,6 +1045,68 @@ def apply_condition_adjustments(comps, subject, market):
     return [], info
 
 
+SYSTEMS_LABELS = {True: "Documented Recent Systems", False: "No Documented Recent Systems"}  # by the comp's own flag
+_SYSTEMS_TYPED = re.compile(r"system|\bac\b|a/c|hvac|air condition|water heater|windows?\b|electrical|plumbing|panel",
+                            re.I)
+
+
+SYSTEMS_YEARS = 5  # a system put in this many years before the as-of year or later is recent (method.md, Systems)
+
+
+def has_recent_systems(block, as_of=None):
+    """True when a home's documented systems are recent: `systems_year` (the newest system other than the roof the
+    listing dates) within SYSTEMS_YEARS of the as-of year, else `recent_systems` (an undated "new" one)."""
+    y = block.get("systems_year")
+    if isinstance(y, int) and not isinstance(y, bool):
+        return (_iso(as_of) or date.today()).year - y <= SYSTEMS_YEARS
+    return bool(block.get("recent_systems"))
+
+
+def apply_systems_adjustments(comps, subject, market, as_of=None):
+    """Documented recent systems are the script's: the home's and each card's (has_recent_systems: a dated system other
+    than the roof, `systems_year`, within five years of the as-of year, or `recent_systems: true` for an undated "new"
+    one) differ, and the comp is adjusted by the market's `cma.adjustments.documented_recent_systems` (the agent's
+    `comps.systems_value` outside it): minus when only the comp has them, plus when only the home does. A systems
+    amount typed on a card is an error. Returns (errors, info {value} or None)."""
+    cards = comps.get("cards") or []
+    errors = []
+    year_now = (_iso(as_of) or date.today()).year
+    for where, block in [("subject", subject)] + [(f"comps.cards[{i}]", c) for i, c in enumerate(cards)]:
+        if block.get("recent_systems") not in (None, True, False):
+            errors.append(f"{where}.recent_systems: {block['recent_systems']!r} → true or false (false when left out).")
+        y = block.get("systems_year")
+        if y not in (None, "") and (isinstance(y, bool) or not isinstance(y, int) or not 1900 <= y <= year_now):
+            errors.append(f"{where}.systems_year: {y!r} → the year of the newest dated system other than the roof, "
+                          "like 2021 (leave it out when the listing gives none).")
+    for i, c in enumerate(cards):
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and not _ROOF_TYPED.search(str(a.get("label") or "")) and \
+                    _SYSTEMS_TYPED.search(str(a.get("label") or "")):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a systems adjustment ({a.get('label')!r}) typed by "
+                              "hand → delete it and set the card's `recent_systems` (and subject.recent_systems): the "
+                              "script adjusts each comp by the difference.")
+    given = comps.get("systems_value")
+    if given is not None and (not _num(given) or given < 0):
+        errors.append(f"comps.systems_value: {given!r} → dollars documented recent systems add, a plain positive number.")
+    if errors:
+        return errors, None
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("systems"))]
+    mine = has_recent_systems(subject, as_of)
+    differ = [c for c in cards if has_recent_systems(c, as_of) != mine]
+    base = market.get("cma.adjustments.documented_recent_systems") if market is not None else None
+    value = given if given is not None else (abs(base) if _num(base) else None)
+    if differ and value is None:
+        return ["comps.systems_value: no value for documented recent systems in this market → give the dollars they add, "
+                "from paired sales or the agent's rate (method.md)."], None
+    for c in differ:
+        theirs = has_recent_systems(c, as_of)
+        c["adjustments"].append({"label": SYSTEMS_LABELS[theirs], "amount": -value if theirs else value,
+                                 "kind": "systems", "source": "script", "systems": True})
+    return [], {"value": value, "subject": mine}
+
+
 # --- time adjustments: script-owned (Results_v5) ------------------------------------
 
 QUARTER_DAYS = 365.25 / 4
@@ -1109,12 +1141,359 @@ def comp_close_date(card, homes=()):
 
 
 def default_split(R, homes=()):
-    """The market split date: report.json's `split_date`, else stats.py's default (90 days before the last sale)."""
-    d = _iso(R.get("split_date"))
+    """The market split date, by one rule (mls.rule_split from the as-of date, else the last sale, else today), or the
+    agent's own in `split_override` {date, reason} (split_errors checks it)."""
+    d = _iso((R.get("split_override") or {}).get("date")) if isinstance(R.get("split_override"), dict) else None
     if d:
         return d
-    sold = [h["close_date"] for h in homes or () if h.get("status") == "SOLD" and isinstance(h.get("close_date"), date)]
-    return max(sold) - timedelta(days=90) if sold else None
+    end = _iso(R.get("as_of"))
+    if end is None:
+        sold = [h["close_date"] for h in homes or () if h.get("status") == "SOLD" and isinstance(h.get("close_date"), date)]
+        end = max(sold) if sold else date.today()
+    return mls.rule_split(end)
+
+
+def split_errors(R):
+    """`split_override` must be {date: YYYY-MM-DD, reason: words}: the agent's own split, said beside the rule's."""
+    ov = R.get("split_override")
+    if ov in (None, {}):
+        return []
+    if not isinstance(ov, dict) or not _iso(ov.get("date")) or not str(ov.get("reason") or "").strip():
+        return ["split_override: should be {\"date\": \"2026-07-01\", \"reason\": \"why, in words\"} → the script sets "
+                "the split by its rule (the first of the month two months before the as-of date); give one only when "
+                "the agent chose another, with their reason."]
+    return []
+
+
+# --- the market-shift rate: script-owned, from the export's split ------------------------------
+
+TIME_MIN_SALES = 5  # fewer sales on either side of the split are too thin to read a shift from
+
+
+def time_rule(stats, override=None):
+    """The time adjustment by method.md's rule, from the export's market stats (mls.market_stats): the change in the
+    median sale-to-original-list from the earlier sales to the recent ones. Under 1 point: none; 1 to 3 points: 1% a
+    quarter; over 3: 2%; `prices` rising when the ratio rose. None with fewer than TIME_MIN_SALES on either side or no
+    export. The agent's own rate goes in `override` {rate_per_quarter, prices, reason} and wins.
+    Returns ({rate_per_quarter, prices} or None, info {basis: "rule" | "agent" | "thin" | "none", change_points, reason})."""
+    if isinstance(override, dict) and override.get("rate_per_quarter") is not None:
+        spec = {"rate_per_quarter": override["rate_per_quarter"], "prices": override.get("prices", "falling")}
+        return spec, {"basis": "agent", "reason": str(override.get("reason") or "").strip(), "change_points": None}
+    early, recent = (stats or {}).get("sold_early") or {}, (stats or {}).get("sold_recent") or {}
+    a, b = early.get("median_sale_to_original_list"), recent.get("median_sale_to_original_list")
+    if a is None or b is None or (early.get("n") or 0) < TIME_MIN_SALES or (recent.get("n") or 0) < TIME_MIN_SALES:
+        return None, {"basis": "thin" if stats else "none", "change_points": None, "reason": ""}
+    points = round((b - a) * 100, 2)
+    if abs(points) < 1:
+        return None, {"basis": "rule", "change_points": points, "reason": ""}
+    rate = 0.01 if abs(points) <= 3 else 0.02
+    return ({"rate_per_quarter": rate, "prices": "rising" if points > 0 else "falling"},
+            {"basis": "rule", "change_points": points, "reason": ""})
+
+
+def time_override_errors(ov):
+    """`comps.time_override` must be {rate_per_quarter (0 to 0.05), prices, reason}: the agent's own rate."""
+    if ov in (None, {}):
+        return []
+    rate = ov.get("rate_per_quarter") if isinstance(ov, dict) else None
+    if not isinstance(ov, dict) or isinstance(rate, bool) or not isinstance(rate, (int, float)) or not 0 <= rate <= 0.05 \
+            or ov.get("prices", "falling") not in ("falling", "rising") or not str(ov.get("reason") or "").strip():
+        return ["comps.time_override: should be {\"rate_per_quarter\": 0.015, \"prices\": \"falling\", \"reason\": \"why, "
+                "in words\"} → the script sets the market shift from the export by its rule; give one only when the agent "
+                "chose another rate (0 for none), with their reason."]
+    return []
+
+
+# --- which comps: script-owned, from the ranked cards ---------------------------------------------
+
+COMP_COUNT = 5  # method.md: the closest five, with backups behind them
+
+
+def select_comps(comps, count=None):
+    """The comps the report uses, by one rule, so the same cards always give the same comps: the cards are in the
+    ranking's order (the closest first, then backups); the first `count` (comps.count, default COMP_COUNT) are used. A
+    used comp whose adjusted value is more than OUTLIER_SHARE from the other used comps' median is set aside, the
+    farthest first, and the next backup takes its place; repeat until none is flagged. With no backup left, an outlier
+    is set aside only while at least three comps remain. A card with `keep_reason` (the agent's call, in words) is
+    never set aside. Needs each card's `adjusted`. Rewrites comps["cards"] to the used comps, in ranking order.
+    Returns {set_aside: [{address, adjusted, others, above, replaced}], kept: [{address, adjusted, others, above, reason}],
+    backups_used, count, unused: [the input cards not used, set aside or backups left over]}."""
+    cards = list(comps.get("cards") or [])
+    n = count or comps.get("count") or COMP_COUNT
+    used, backups = cards[:n], cards[n:]
+    set_aside, backups_used = [], 0
+
+    def flagged(group):
+        values = [c["adjusted"] for c in group]
+        out = []
+        for i, c in enumerate(group):
+            others = statistics.median(values[:i] + values[i + 1:])
+            gap = abs(values[i] - others) / others if others else 0
+            if gap > OUTLIER_SHARE:
+                out.append((gap, i, c, others))
+        return out
+
+    while len(used) >= 3:
+        hits = [h for h in flagged(used) if not str(h[2].get("keep_reason") or "").strip()]
+        if not hits:
+            break
+        gap, i, c, others = max(hits, key=lambda h: (h[0], -h[1]))
+        if not backups and len(used) <= 3:
+            break
+        used.pop(i)
+        set_aside.append({"address": c.get("address", "?"), "adjusted": c["adjusted"], "others": others,
+                          "above": c["adjusted"] > others, "replaced": bool(backups)})
+        if backups:
+            used.append(backups.pop(0))
+            backups_used += 1
+    kept = [{"address": c.get("address", "?"), "adjusted": c["adjusted"], "others": others,
+             "above": c["adjusted"] > others, "reason": str(c.get("keep_reason") or "").strip()}
+            for _, _, c, others in (flagged(used) if len(used) >= 3 else []) if str(c.get("keep_reason") or "").strip()]
+    order = {id(c): k for k, c in enumerate(cards)}
+    comps["cards"] = sorted(used, key=lambda c: order[id(c)])
+    return {"set_aside": set_aside, "kept": kept, "backups_used": backups_used, "count": n,
+            "unused": [c.get("address", "?") for c in cards if id(c) not in {id(u) for u in used}]}
+
+
+# --- roof adjustments: script-owned, from roof years -------------------------------------------
+
+ROOF_LABEL = "Roof: {age} Years Old"  # the card label of a roof adjustment the script adds
+ROOF_TYPES = ("shingle", "tile", "metal")
+_ROOF_TYPED = re.compile(r"\broof", re.I)
+
+
+def _roof_band_value(age, kind, bands, factor):
+    scale = factor if kind in ("tile", "metal") else 1
+    for b in bands:
+        lo, hi = b["years"]
+        if lo * scale <= age <= (hi + 1) * scale - 1:
+            return b["value"]
+    return bands[-1]["value"]
+
+
+def apply_roof_adjustments(comps, subject, market, as_of):
+    """Roof adjustments are the script's, by the market's roof-age bands (`cma.adjustments.roof_age`, years doubled for
+    tile or metal by `roof_age_tile_metal_factor`): each comp's `roof_year` (and `roof_type`) against the subject's,
+    the subject's band value minus the comp's, added as kind "roof". With the subject's roof year unknown, no comp is
+    adjusted for its roof. A roof amount typed on a card is an error where the market has bands (elsewhere the agent's
+    typed rates stand, method.md). Returns (errors, info {subject_known, subject_age, unknown: [addresses]} or None
+    when the market has no bands)."""
+    bands = market.get("cma.adjustments.roof_age") if market is not None else None
+    cards = comps.get("cards") or []
+    if not bands:
+        return [], None
+    factor = market.get("cma.adjustments.roof_age_tile_metal_factor") or 2
+    errors = []
+    year_now = (_iso(as_of) or date.today()).year
+
+    def check(where, block):
+        out = []
+        y, kind = block.get("roof_year"), block.get("roof_type", "shingle") or "shingle"
+        if y not in (None, "") and (isinstance(y, bool) or not isinstance(y, int) or not 1900 <= y <= year_now):
+            out.append(f"{where}.roof_year: {y!r} → the year the roof was put on, like 2014 (leave it out when unknown).")
+        if kind not in ROOF_TYPES:
+            out.append(f"{where}.roof_type: {kind!r} → one of {', '.join(ROOF_TYPES)} (shingle when left out).")
+        return out
+
+    errors += check("subject", subject)
+    for i, c in enumerate(cards):
+        errors += check(f"comps.cards[{i}]", c)
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and a.get("source") != "script" and _ROOF_TYPED.search(str(a.get("label") or "")):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a roof adjustment ({a.get('label')!r}) typed by hand → "
+                              "delete it and set the card's `roof_year` (and `roof_type` for tile or metal), and "
+                              "subject.roof_year: the script adjusts each comp by the roof-age bands.")
+    if errors:
+        return errors, None
+    for c in cards:  # the script's roof lines (its systems lines share the kind and stay)
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "roof")]
+    sy = subject.get("roof_year")
+    if sy in (None, ""):
+        return [], {"subject_known": False, "subject_age": None, "unknown": []}
+    s_age = max(year_now - sy, 0)
+    mine = _roof_band_value(s_age, subject.get("roof_type") or "shingle", bands, factor)
+    unknown = []
+    for c in cards:
+        cy = c.get("roof_year")
+        if cy in (None, ""):
+            unknown.append(c.get("address", "?"))
+            continue
+        age = max(year_now - cy, 0)
+        amount = fmt.half_up(mine - _roof_band_value(age, c.get("roof_type") or "shingle", bands, factor))
+        if amount:
+            c["adjustments"].append({"label": ROOF_LABEL.format(age=age), "amount": amount, "kind": "roof",
+                                     "source": "script"})
+    return [], {"subject_known": True, "subject_age": s_age, "unknown": unknown}
+
+
+def roof_warnings(info):
+    """A comp with no roof year, when the subject's is known, gets no roof adjustment: say which."""
+    return [f"{a}: no roof_year, so it has no roof adjustment. Add the year from its listing or remarks when they give "
+            "it, and re-run; when they don't, leave it: this warning stands." for a in (info or {}).get("unknown") or []]
+
+
+# --- size and lot adjustments: script-owned ---------------------------------------------------------------------------
+
+SIZE_LABEL = "Size: {diff} Sq Ft {way}"  # the card label of a size adjustment the script adds
+SIZE_LIMIT = 300  # method.md: the per-square-foot rate is for differences under about 300 sq ft
+_SIZE_TYPED = re.compile(r"\bsize\b|sq\.? ?ft|square f|living area", re.I)
+
+
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def comp_sqft(card, homes=()):
+    """A comp's living area: the card's `sqft`, else the export's sold row for its address. None when neither has it."""
+    if _num(card.get("sqft")) and card["sqft"] > 0:
+        return card["sqft"]
+    row = next((h for h in homes or () if h.get("status") == "SOLD" and h.get("living_area")
+                and mls.same_address(_street(h["address"]), _street(card.get("address", "")))), None)
+    return row["living_area"] if row else None
+
+
+def apply_size_adjustments(comps, subject, market, homes=()):
+    """Size adjustments are the script's: (subject sq ft − comp sq ft) × the rate, the agent's `comps.size_per_sqft`
+    (from paired sales) over the market's `cma.adjustments.living_area_per_sqft`, added as kind "size". A comp's sq ft
+    is its card's `sqft`, else the export's. A size amount typed on a card is an error. Returns (errors, info
+    {rate, unknown: [addresses], wide: [(address, diff)]} or None)."""
+    cards = comps.get("cards") or []
+    errors = []
+    given = comps.get("size_per_sqft")
+    if given is not None and (not _num(given) or given < 0):
+        errors.append(f"comps.size_per_sqft: {given!r} → dollars per square foot from paired sales, a plain number.")
+    for i, c in enumerate(cards):
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and a.get("source") != "script" and (
+                    a.get("kind") == "size" and not re.search(r"bed|bath|room|stor", str(a.get("label") or ""), re.I)
+                    or _SIZE_TYPED.search(str(a.get("label") or ""))):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a size adjustment ({a.get('label')!r}) typed by hand "
+                              "→ delete it: the script adjusts each comp by its square footage against subject.sqft.")
+    sq = subject.get("sqft")
+    if not _num(sq) or sq <= 0:
+        errors.append("subject.sqft: missing → the home's living area in square feet, from the property report.")
+    if errors:
+        return errors, None
+    rate = given if given is not None else (market.get("cma.adjustments.living_area_per_sqft") if market is not None else None)
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "size")]
+    unknown, wide, diffs = [], [], []
+    for c in cards:
+        cs = comp_sqft(c, homes)
+        if cs is None:
+            unknown.append(c.get("address", "?"))
+            continue
+        diff = sq - cs
+        diffs.append(diff)
+        if abs(diff) > SIZE_LIMIT:
+            wide.append((c.get("address", "?"), abs(diff)))
+        amount = fmt.half_up(diff * rate) if rate else 0
+        if amount:
+            c["adjustments"].insert(0, {"label": SIZE_LABEL.format(diff=fmt.num(abs(diff)),
+                                                                   way="Smaller" if diff > 0 else "Larger"),
+                                        "amount": amount, "kind": "size", "source": "script"})
+    if rate is None and any(diffs):
+        return ["comps.size_per_sqft: no size rate in this market → give the dollars per square foot from paired sales "
+                "in the export, or the agent's rate, scaled to the price (method.md)."], None
+    return [], {"rate": rate, "unknown": unknown, "wide": wide}
+
+
+def size_warnings(info):
+    """(key, text): a used comp with no square footage (size_unknown), or one past the rate's limit (size_wide)."""
+    out = [("size_unknown", f"{a}: no square footage on its card or in the export, so it has no size adjustment. Add the card's `sqft` "
+           "from its listing and re-run.") for a in (info or {}).get("unknown") or []]
+    out += [("size_wide", f"{a}: {fmt.num(d)} sq ft from this home, past the about {SIZE_LIMIT} sq ft the per-square-foot rate is for. "
+            "Replace it with the next qualifying sale, or keep it and say why in comps.method_note.")
+            for a, d in (info or {}).get("wide") or []]
+    return out
+
+
+LOT_TYPES = ("standard", "corner_or_oversized", "view", "canal", "lake_or_open_water", "other")
+LOT_WORDS = {  # (card label, phrase in a sentence)
+    "standard": ("Standard", "a standard lot"),
+    "corner_or_oversized": ("Corner or Oversized", "a corner or oversized lot"),
+    "view": ("Water or Preserve View", "a water or preserve view"),
+    "canal": ("Canal", "a canal lot"),
+    "lake_or_open_water": ("Lake or Open Water", "lake or open water frontage"),
+    "other": ("Other", "its lot"),
+}
+LOT_LABEL = "Lot: {words}"  # the card label of a lot adjustment the script adds (the comp's own lot)
+_LOT_TYPED = re.compile(r"\blot\b|corner|canal|lake|water(?! heater)|view|preserve|golf|conservation|acre|cul-de-sac|"
+                        r"frontage|pond|river|ocean|\bbay\b", re.I)
+
+
+def lot_values(market, given=None):
+    """{lot type: dollars over a standard lot}: report.json's `comps.lot_values` over the market's
+    `cma.adjustments.lot_types`."""
+    base = (market.get("cma.adjustments.lot_types") if market is not None else None) or {}
+    return {**{k: v for k, v in base.items() if k in LOT_TYPES}, **(given if isinstance(given, dict) else {})}
+
+
+def _lot_errors(where, block):
+    lot = block.get("lot") or "standard"
+    if lot not in LOT_TYPES:
+        return [f"{where}.lot: {lot!r} isn't a lot type → one of {', '.join(LOT_TYPES)} (standard when left out)."]
+    out = []
+    if lot == "other":
+        if not _num(block.get("lot_value")):
+            out.append(f"{where}.lot_value: missing → for lot \"other\", what this lot is worth over a standard lot in "
+                       "dollars (negative when it's worth less), from paired sales or the agent.")
+        if not str(block.get("lot_reason") or "").strip():
+            out.append(f"{where}.lot_reason: missing → for lot \"other\", what sets the lot apart, in words.")
+    return out
+
+
+def apply_lot_adjustments(comps, subject, market):
+    """Lot and water adjustments are the script's: `subject.lot` and each card's `lot` name a type (LOT_TYPES, standard
+    when left out); each comp gets the subject's lot value minus its own (lot_values; an "other" lot carries its own
+    `lot_value` and `lot_reason`), added as kind "lot". A lot or water amount typed on a card is an error. Returns
+    (errors, info {subject, values} or None)."""
+    cards = comps.get("cards") or []
+    errors = _lot_errors("subject", subject)
+    for i, c in enumerate(cards):
+        errors += _lot_errors(f"comps.cards[{i}]", c)
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and a.get("source") != "script" and (
+                    a.get("kind") in ("lot", "view") or _LOT_TYPED.search(str(a.get("label") or ""))):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a lot or water adjustment ({a.get('label')!r}) typed "
+                              "by hand → delete it and set the card's `lot` type (and subject.lot): the script adjusts "
+                              "each comp by the difference between the lots.")
+    given = comps.get("lot_values")
+    if given is not None and (not isinstance(given, dict) or any(
+            k not in LOT_TYPES or k == "other" or not _num(v) for k, v in given.items())):
+        errors.append("comps.lot_values: should be {lot type: dollars over a standard lot} with types from "
+                      f"{', '.join(t for t in LOT_TYPES if t != 'other')} and plain numbers.")
+        given = None
+    if errors:
+        return errors, None
+    values = {"standard": 0, **lot_values(market, given)}
+
+    def value(block):
+        lot = block.get("lot") or "standard"
+        return block["lot_value"] if lot == "other" else values.get(lot)
+
+    used = [subject.get("lot") or "standard"] + [c.get("lot") or "standard" for c in cards]
+    missing = [lt for lt in dict.fromkeys(used) if lt != "other" and lt not in values]
+    if missing and len(set(used)) > 1:
+        return [f"comps.lot_values: no dollar value for {', '.join(missing)} in this market → give comps.lot_values "
+                "{lot type: dollars over a standard lot} for every type used, from paired sales in the export or the "
+                "agent's rates (method.md)."], None
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("kind") == "lot")]
+    if len(set(used)) == 1 and used[0] != "other":
+        return [], {"subject": used[0], "values": values}
+    mine = value(subject)
+    for c in cards:
+        amount = fmt.half_up(mine - value(c))
+        if amount:
+            lot = c.get("lot") or "standard"
+            c["adjustments"].append({"label": LOT_LABEL.format(words=LOT_WORDS[lot][0]) if lot != "other"
+                                     else LOT_LABEL.format(words=prose.title_case(str(c["lot_reason"]).strip().rstrip("."))),
+                                     "amount": amount, "kind": "lot", "source": "script"})
+    return [], {"subject": used[0], "values": values}
 
 
 def day_words(d):
@@ -1136,13 +1515,13 @@ def apply_time_adjustments(comps, homes, as_of, split):
     `{time_amount}`. Returns (errors as `field: problem → fix`, info for the method line and placeholders or None)."""
     cards = comps.get("cards") or []
     spec = comps.get("time_adjustment")
-    typed = [(i, j, a) for i, c in enumerate(cards) for j, a in enumerate(c.get("adjustments") or [])
+    typed = [(i, j, a) for i, c in enumerate(cards) for j, a in typed_adjustments(c)
              if isinstance(a, dict) and adjustment_kind(a) == "time"]
     if spec in (None, {}, False):
         return [f"comps.cards[{i}].adjustments[{j}]: a time adjustment ({money(a['amount']) if isinstance(a.get('amount'), (int, float)) else a.get('amount')}) "
-                "typed by hand → state the method once in comps.time_adjustment ({\"rate_per_quarter\": 0.015} for 1.5% a "
-                "quarter, plus \"cutoff\" when it isn't the market split) and leave the amount out: the script figures each "
-                "sale's from its close date." for i, j, a in typed if a.get("source") != "script"], None
+                "typed by hand → delete it: the script sets the market shift by its rule (method.md, Time) and figures "
+                "each sale's from its close date; the agent's own rate goes in comps.time_override {rate_per_quarter, "
+                "prices, reason}." for i, j, a in typed if a.get("source") != "script"], None
     errors = []
     if not isinstance(spec, dict):
         return ["comps.time_adjustment: should be {rate_per_quarter, prices, cutoff} → for example "
@@ -1199,8 +1578,8 @@ def apply_time_adjustments(comps, homes, as_of, split):
                 continue
             if amount:
                 a.update(amount=amount, kind="time", source="script")
-            else:
-                c["adjustments"].pop(j)
+            else:  # the agent's own line, by identity: script lines before it shift its position in the list
+                c["adjustments"] = [x for x in c["adjustments"] if x is not a]
         elif amount:
             c.setdefault("adjustments", []).append({"label": TIME_LABEL, "amount": amount, "kind": "time", "source": "script"})
         c["time_amount"] = amount
@@ -1265,3 +1644,164 @@ def callout_checks(info):
     return out
 
 
+
+
+# --- the comps, start to finish: one pipeline for both CMAs ---------------------------------------
+
+NATIONAL_RATES = "cma.adjustments_national"
+# report.json's override each national rate fills, the market key that makes it unneeded, and the adjustment kind it prices
+NATIONAL_FILLS = (("size_per_sqft", "cma.adjustments.living_area_per_sqft", "size"),
+                  ("condition_values", "cma.adjustments.condition_levels", "condition"),
+                  ("lot_values", "cma.adjustments.lot_types", "lot"),
+                  ("systems_value", "cma.adjustments.documented_recent_systems", "systems"))
+NATIONAL_WORDS = {"size": "size", "condition": "condition", "lot": "lot", "systems": "recent systems"}
+
+
+def national_rates(comps, market, homes=()):
+    """Owner decision (2026-10-13): where the market has no rate of its own and report.json gives none (paired sales or
+    the agent's), the national shares (`cma.adjustments_national`) scaled to the comps' median sale price net of
+    seller-paid costs fill it, so two runs on the same sales set the same rates. Writes them into `comps` (the working
+    copy) and returns the kinds filled."""
+    nat = market.get(NATIONAL_RATES) if market is not None else None
+    cards = comps.get("cards") or []
+    prices = [c["sold_price"] - (c.get("seller_concessions") or 0) for c in cards
+              if _num(c.get("sold_price")) and _num(c.get("seller_concessions") or 0)]
+    if not nat or not prices:
+        return []
+    basis = statistics.median(prices)
+    filled = []
+    for key, market_key, kind in NATIONAL_FILLS:
+        if comps.get(key) is not None or market.get(market_key) is not None:
+            continue
+        if key == "size_per_sqft" and nat.get("living_area_ppsf_share"):
+            ppsf = [(c["sold_price"] - (c.get("seller_concessions") or 0)) / comp_sqft(c, homes) for c in cards
+                    if _num(c.get("sold_price")) and comp_sqft(c, homes)]  # net of seller-paid costs, like the basis
+            if ppsf:
+                comps[key] = fmt.half_up(nat["living_area_ppsf_share"] * statistics.median(ppsf))
+        elif key == "condition_values" and nat.get("condition_level_shares"):
+            comps[key] = {k: fmt.half_up(v * basis, 500) for k, v in nat["condition_level_shares"].items()}
+        elif key == "lot_values" and nat.get("lot_type_shares"):
+            comps[key] = {k: fmt.half_up(v * basis, 500) for k, v in nat["lot_type_shares"].items()}
+        elif key == "systems_value" and nat.get("recent_systems_share"):
+            comps[key] = fmt.half_up(nat["recent_systems_share"] * basis, 500)
+        if comps.get(key) is not None:
+            filled.append(kind)
+    return filled
+
+
+def settle_comps(R, homes, market, stats):
+    """Every comp card adjusted and the used comps chosen, by the shared rules in one order, so both CMAs and their
+    gut checks agree: the split (default_split), the market-shift rate (time_rule from `stats`, the export's
+    mls.market_stats at that split, or the agent's comps.time_override), then on every card the condition, roof and time
+    adjustments and its adjusted value (derive_comps), then the used comps (select_comps) with the adjusted values and
+    summary rows rebuilt from them. Writes comps.time_adjustment into the working copy.
+    Returns (errors as `field: problem → fix`, warnings as (key, text), info {split, time, time_rule, condition, roof,
+    selection}). Raises ValueError from derive_comps."""
+    comps = R["comps"]
+    # checked before the script adds its own lines, so each error names the position the agent typed
+    errors = split_errors(R) + time_override_errors(comps.get("time_override")) + adjustment_kind_errors(comps.get("cards"))
+    count = comps.get("count")
+    if count is not None and (isinstance(count, bool) or not isinstance(count, int) or not 3 <= count <= 8):
+        errors.append(f"comps.count: {count!r} → how many comps the report uses, 3 to 8 (5 when left out).")
+    if errors:
+        return errors, [], None
+    split = default_split(R, homes)
+    national = national_rates(comps, market, homes)
+    spec, rule_info = time_rule(stats, comps.get("time_override"))
+    comps.pop("time_adjustment", None)
+    if spec and spec["rate_per_quarter"]:
+        comps["time_adjustment"] = spec
+    size_errors, size_info = apply_size_adjustments(comps, R["subject"], market, homes)
+    cond_errors, cond_info = apply_condition_adjustments(comps, R["subject"], market)
+    lot_errors, lot_info = apply_lot_adjustments(comps, R["subject"], market)
+    sys_errors, sys_info = apply_systems_adjustments(comps, R["subject"], market, R.get("as_of"))
+    roof_errors, roof_info = apply_roof_adjustments(comps, R["subject"], market, R.get("as_of"))
+    time_errors, time_info = apply_time_adjustments(comps, homes, R.get("as_of"), split)
+    errors = size_errors + cond_errors + lot_errors + sys_errors + roof_errors + time_errors
+    if errors:
+        return errors, [], None
+    derive_comps(comps)  # every card's adjusted value, backups included, for the selection
+    selection = select_comps(comps)
+    warnings = [("derive_comps", w) for w in derive_comps(comps)]  # the used comps' rows and adjustment warnings
+    used = {c.get("address") for c in comps["cards"]}  # a backup or a sale set aside isn't the agent's to fix
+    if time_info:
+        time_info["undated"] = [a for a in time_info["undated"] if a in used]
+    if roof_info:
+        roof_info["unknown"] = [a for a in roof_info["unknown"] if a in used]
+    if size_info:
+        size_info["unknown"] = [a for a in size_info["unknown"] if a in used]
+        size_info["wide"] = [(a, d) for a, d in size_info["wide"] if a in used]
+    warnings += size_warnings(size_info)
+    warnings += [("time_undated", w) for w in time_warnings(time_info)]
+    warnings += [("roof_unknown", w) for w in roof_warnings(roof_info)]
+    warnings += [("outlier", w) for w in outlier_warnings(comps["cards"])]
+    ov = R.get("split_override") if isinstance(R.get("split_override"), dict) else {}
+    info = {"split": split, "split_reason": str(ov.get("reason") or "").strip(), "time": time_info,
+            "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "size": size_info, "lot": lot_info, "systems": sys_info,
+            # the national rates a used comp's adjustment actually took (named once in the notes)
+            "national_rates": [NATIONAL_WORDS[k] for k in national if any(
+                isinstance(a, dict) and a.get("source") == "script" and a.get("kind") == k
+                for c in comps["cards"] for a in c.get("adjustments") or [])],
+            "selection": selection}
+    return [], warnings, info
+
+
+def subject_card(subject, info, t, as_of=None):
+    """The subject's own card, first in the comps grid (owner decision 2026-10-13): what every comp is adjusted to, in
+    the comp cards' own format. {meta: [the facts line's parts], lines: [[label, value]]}: size, beds and baths, pool
+    and year built; then the condition level, lot type, roof year and recent systems the script priced each comp
+    against (a fact it doesn't know reads as not known). Words from the skill's labels.json through `t`:
+    meta_sqft, meta_beds, meta_pool, meta_built, sc_condition, sc_lot, sc_roof, sc_roof_unknown, sc_systems,
+    sc_systems_year, sc_systems_old, sc_systems_new, sc_systems_none."""
+    meta = []
+    if _num(subject.get("sqft")):
+        meta.append(t("meta_sqft", n=fmt.num(subject["sqft"])))
+    if _num(subject.get("beds")) and _num(subject.get("baths")):
+        meta.append(t("meta_beds", beds=fmt.num(subject["beds"]), baths=fmt.num(subject["baths"])))
+    if subject.get("pool"):
+        meta.append(t("meta_pool"))
+    if _num(subject.get("year_built")):
+        meta.append(t("meta_built", year=subject["year_built"]))
+    lines = []
+    level = subject.get("condition")
+    if level in CONDITION_WORDS:
+        lines.append([t("sc_condition"), CONDITION_WORDS[level][0]])
+    lot = subject.get("lot") or "standard"
+    lines.append([t("sc_lot"), str(subject.get("lot_reason") or "").strip().rstrip(".").capitalize()
+                  if lot == "other" else LOT_WORDS[lot][0]])
+    roof = subject.get("roof_year")
+    lines.append([t("sc_roof"), (str(roof) + (f" ({subject['roof_type']})" if subject.get("roof_type") in ("tile", "metal")
+                                              else "")) if roof else t("sc_roof_unknown")])
+    y = subject.get("systems_year")  # the year as priced: one over five years old isn't recent (iteration 21: "2020")
+    dated = isinstance(y, int) and not isinstance(y, bool)
+    lines.append([t("sc_systems"), t("sc_systems_year" if has_recent_systems(subject, as_of) else "sc_systems_old",
+                                     year=y) if dated else
+                  t("sc_systems_new") if has_recent_systems(subject, as_of) else t("sc_systems_none")])
+    return {"meta": meta, "lines": lines}
+
+
+def selection_lines(info, t, money_f=None):
+    """The report's sentences on how the comps were settled, from settle_comps' info, worded by the skill's labels.json
+    (`t(key, **values)`): each sale set aside and each kept on the agent's call, an unknown roof on this home, and an
+    agent's own split or market rate with their reason. Keys: line_set_aside, line_kept, dir_above, dir_below,
+    line_roof_unknown, line_time_agent, line_split_override."""
+    f = money_f or money
+    out = []
+    sel = (info or {}).get("selection") or {}
+    for x in sel.get("set_aside") or []:
+        out.append(t("line_set_aside" if x.get("replaced") else "line_set_aside_alone",
+                     address=display_address(x["address"]), value=f(x["adjusted"]),
+                     direction=t("dir_above" if x["above"] else "dir_below")))
+    for x in sel.get("kept") or []:
+        out.append(t("line_kept", address=display_address(x["address"]),
+                     direction=t("dir_above" if x["above"] else "dir_below"), reason=x["reason"].rstrip(".") + "."))
+    roof = (info or {}).get("roof")
+    if roof and not roof["subject_known"]:
+        out.append(t("line_roof_unknown"))
+    if (info or {}).get("split_reason"):
+        out.append(t("line_split_override", date=fmt.date_long(info["split"].isoformat()),
+                     reason=info["split_reason"].rstrip(".") + "."))
+    rule = (info or {}).get("time_rule") or {}
+    if rule.get("basis") == "agent":
+        out.append(t("line_time_agent", reason=rule["reason"].rstrip(".") + "."))
+    return out
