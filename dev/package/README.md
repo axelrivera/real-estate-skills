@@ -252,6 +252,7 @@ The three options are always **Draw Offers** (the lower part of the supported ra
 - **Example:** "Seller CMA for 456 Pine Ave. They replaced the roof in 2023 and redid the kitchen in 2021. Payoff is about $210,000. They'd like to be moved by June."
 - **You get:** a PDF report. Ask for a **listing presentation** too and you also get an editable PowerPoint with the same numbers, plus a PDF copy of the slides (a backup that opens anywhere). If you didn't ask, Claude offers it after the report.
 - **Pricing Activity chart:** ask for "the pricing activity chart" to get a one-page, landscape chart of recent sales and homes for sale near the seller's home by size and price, with a line at their home's size. It leaves out your recommended price, the value range and the comps, so the seller can see the market for themselves before you show the CMA. Ask for "the pricing activity chart with the price" for the same page with the recommended price and the value range on it.
+- **Competitive Position chart:** ask for "the positioning chart" to see only today's competition (homes for sale and under contract near the seller's home in size) with crosshairs through the seller's home at the recommended price. Homes in the lower right are larger and listed for less; one line counts them and says the price at which there would be none. Ask "what if we list at $475,000?" to move the crosshairs. It's for you, not the seller's leave-behind.
 
 ### Seller Net Sheet (/seller-net-sheet)
 
@@ -262,6 +263,15 @@ What the seller walks away with at one price, or up to three side by side, witho
 - **Example:** "What would my seller net at $450,000 and at $440,000 on 2250 Oak Hollow Ct in Oviedo? They owe about $214,000, my listing agreement is 3% plus 2.5% to the buyer's agent, and we expect to close in mid-December."
 - **You get:** a one-page PDF with every cost itemized and the estimates named once in its notes, or a short table in chat. The default commission (2.5% listing, 2.5% buyer side) is used until you give yours. Send a payoff letter, a title quote or the tax bill and Claude redoes it.
 - **Already have an offer?** Use Seller Offer Review: it nets the offer and also checks its terms.
+
+### Seller Market Timing (/seller-market-timing)
+
+The Buying Pattern chart for the "when should we list?" conversation: every closed sale in the neighborhood by the month it went under contract and its sold price, on one landscape page. The busy season has a dotted box, the busiest month a solid one, and one line under the chart says how many sales fell in the season and when to list to be on the market as it opens.
+
+- **Upload:** an MLS export (CSV) of closed sales in the neighborhood with a close date in the last 26 months, with the Contract Date, Close Date, Close Price and CDOM columns. Stellar's CMA export has them.
+- **Tell Claude:** the neighborhood's name and its county. Ask for 12 or 36 months instead of the 24 the chart uses by default.
+- **Example:** "Listing appointment tomorrow in Sample Ridge, Oviedo. The sellers want to wait until summer. Here are the closed sales from the last two years: make me the buying pattern chart."
+- **You get:** a one-page PDF to talk through with the seller, or a month-by-month table in chat. Claude says in chat when the export is short, covers one season or has no contract dates.
 
 ### Seller Offer Review (/seller-offer-review)
 
@@ -317,7 +327,7 @@ Every deadline in an executed contract: who owes what, by when, and what happens
 ### How They Fit Together
 
 - **Buyer side:** Buyer CMA, then Buyer Offer Strategy, then Contract Timeline once the contract is executed.
-- **Seller side:** Seller CMA (or a quick Seller Net Sheet before the appointment), then Seller Offer Review when offers arrive, then Contract Timeline.
+- **Seller side:** Seller CMA (or a quick Seller Net Sheet before the appointment, and Seller Market Timing for when to list), then Seller Offer Review when offers arrive, then Contract Timeline.
 
 ## 7. Best Practices
 

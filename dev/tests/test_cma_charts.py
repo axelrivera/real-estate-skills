@@ -167,5 +167,56 @@ class ActivitySheet(unittest.TestCase):
         self.assertGreaterEqual(cma.SHEET_SIZE[0], 0.95 * cma.SHEET_FIT.content_px()[0])
 
 
+class PositioningSheet(unittest.TestCase):
+    """The Competitive Position sheet: today's competition (for sale and under contract) against the home at a price,
+    with crosshairs; the larger-for-less count and the price at which none are, by script."""
+
+    @staticmethod
+    def home(status, sqft, price, street="1 SAMPLE OAK CT"):
+        return {"address": street, "status": status, "living_area": sqft, "current_price": price}
+
+    def test_counts_the_larger_homes_listed_for_less(self):
+        h = self.home
+        homes = [h("ACTIVE", 2000, 440000, "1 A ST"), h("PENDING", 2100, 455000, "2 B ST"),
+                 h("ACTIVE", 2200, 480000, "3 C ST"), h("ACTIVE", 1700, 400000, "4 D ST"),
+                 h("SOLD", 2300, 300000, "5 E ST"), h("ACTIVE", 1900, 300000, "9 SUBJECT LN"),
+                 h("ACTIVE", 3500, 200000, "6 F ST")]  # sold, the home itself, and far too large: left off
+        P = cma.positioning_points(homes, {}, 1850, "9 SUBJECT LN", 460000)
+        self.assertEqual(P["total"], 4)
+        self.assertEqual((len(P["active"]), len(P["pending"])), (3, 1))
+        self.assertEqual(P["larger_for_less"], 2)  # 2,000 at $440,000 and 2,100 at $455,000
+        self.assertEqual(P["clear_at"], 440000)  # the cheapest larger home: at $440,000 or less, none is for less
+        self.assertEqual(cma.positioning_points(homes, {}, 1850, "9 SUBJECT LN", 440000)["larger_for_less"], 0)
+        self.assertEqual([e[2] for e in P["excluded"]], ["size"])
+
+    def test_crosshairs_marks_and_legend(self):
+        h = self.home
+        P = cma.positioning_points([h("ACTIVE", 2000, 440000, "1 A ST"), h("PENDING", 1700, 455000, "2 B ST")],
+                                   {}, 1850, "9 SUBJECT LN", 460000)
+        chart = kit.Chart()
+        svg = cma.positioning(P, 1850, 460000, compute.labeler(), chart, size=cma.SHEET_SIZE)
+        self.assertEqual(svg.count('class="crosshair"'), 2)
+        self.assertEqual(svg.count('class="m-pending"'), 1)
+        self.assertEqual(svg.count('class="m-listing"'), 1)
+        self.assertIn(compute.L["quadrant"], svg)
+        self.assertEqual(chart.drawn(), ["pending", "active", "subject"])
+        self.assertIn("Your Home at $460,000", chart.legend())
+
+    @unittest.skipUnless(shutil.which("pdftotext"), "needs Chromium and pdftotext")
+    def test_one_landscape_page_at_the_price_asked(self):
+        src = os.path.join(ROOT, "dev", "samples", "seller-cma.json")
+        with tempfile.TemporaryDirectory() as tmp:
+            for extra, price in (([], None), (["--price", "455000"], "$455,000")):
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    path, = seller_render.main([src, "--format", "positioning", "--out", tmp, *extra])
+                out = subprocess.run(["pdftotext", "-bbox", path, "-"], capture_output=True, text=True).stdout
+                self.assertEqual(re.findall(r'<page width="([\d.]+)" height="([\d.]+)"', out), [("792.000000", "612.000000")])
+                text = " ".join(subprocess.run(["pdftotext", path, "-"], capture_output=True, text=True).stdout.split())
+                self.assertIn("Competitive Position Near", text)
+                if price:
+                    self.assertIn(f"Price Under Consideration: {price}", text)
+                    self.assertIn(f"At {price},", text)
+
+
 if __name__ == "__main__":
     unittest.main()

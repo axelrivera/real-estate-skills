@@ -1,0 +1,8 @@
+{
+  "export": "exports/winter-36.csv",
+  "state": "FL",
+  "county": "Polk",
+  "as_of": "2026-09-26",
+  "lookback_months": 36,
+  "area": "Example Lakes"
+}

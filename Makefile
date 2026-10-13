@@ -72,7 +72,8 @@ test:
 # SKILL=seller-cma for one skill. make test runs the same tests on 8 inputs.
 # 25 inputs per skill on fresh seeds each run (the seed is printed, FUZZ_SEED=… repeats a run); N=200 after a change
 # to the page-fitting code
-FUZZ_SKILLS := buyer_cma buyer_offer_strategy contract_timeline seller_cma seller_net_sheet seller_offer_review
+FUZZ_SKILLS := buyer_cma buyer_offer_strategy contract_timeline seller_cma seller_net_sheet seller_offer_review \
+	seller_market_timing
 export FUZZ_SEED ?= $(shell echo $$((RANDOM * 100)))
 fuzz:
 	@echo "fuzz: $(or $(N),25) inputs per skill from seed $(FUZZ_SEED) (repeat with FUZZ_SEED=$(FUZZ_SEED))"
@@ -163,7 +164,8 @@ outputs:
 
 # One happy-path sample per skill for previews, committed. Inputs in dev/samples/ are fully mocked.
 samples:
-	@for skill in buyer-cma seller-cma seller-net-sheet buyer-offer-strategy contract-timeline seller-offer-review; do \
+	@for skill in buyer-cma seller-cma seller-net-sheet buyer-offer-strategy contract-timeline seller-offer-review \
+		seller-market-timing; do \
 		echo "$$skill"; rm -rf samples/$$skill; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/$$skill" \
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format all --out samples/$$skill \
@@ -174,6 +176,8 @@ samples:
 			$(PY) skills/$$skill/scripts/render.py dev/samples/$$skill.json --format $$f --out samples/$$skill \
 			--profile dev/samples/profile.md || exit 1; \
 	done; done
+	@$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/seller-cma" $(PY) skills/seller-cma/scripts/render.py dev/samples/seller-cma.json \
+		--format positioning --out samples/seller-cma --profile dev/samples/profile.md
 	@echo "seller-offer-review (single offer)"; \
 		$(NVM) $(DEV_ENV) OUTPUT_DIR="samples/seller-offer-review" \
 		$(PY) skills/seller-offer-review/scripts/render.py dev/samples/seller-offer-review-single.json --format all \

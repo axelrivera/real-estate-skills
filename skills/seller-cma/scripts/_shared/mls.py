@@ -118,22 +118,25 @@ def _headers(columns):
     return {k: [v] if isinstance(v, str) else list(v or []) for k, v in columns.items()}
 
 
-def load(path, market, columns=None):
+REQUIRED = ("address", "status", "living_area", "close_price", "current_price")  # what a CMA needs from an export
+
+
+def load(path, market, columns=None, required=REQUIRED):
     """Records from a CSV export. `columns` maps the skills' field names to the export's headers (a header or a list of
     accepted headers); without it, the built-in MLS layer's `mls_format.cma_export_columns` (Stellar) is used.
+    `required`: the fields the export must have (a CMA's by default).
 
     Sold duplicates (one closing entered twice, e.g. a 'Sold Data Entry Only' copy) are dropped and counted in `notes`.
     """
     columns = columns or market.get("mls_format.cma_export_columns")
     if not columns:
         raise ExportError("This MLS isn't built in: map the export's column headers to the field names "
-                          "(address, status, living_area, close_price, current_price, ...) and pass them as columns.")
+                          f"({', '.join(required)}, ...) and pass them as columns.")
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         headers = set(reader.fieldnames or [])
         cols = {k: next((h for h in names if h in headers), None) for k, names in _headers(columns).items()}
-        needed = ("address", "status", "living_area", "close_price", "current_price")
-        missing = [_headers(columns)[k][0] for k in needed if not cols.get(k)]
+        missing = [_headers(columns)[k][0] for k in required if not cols.get(k)]
         if missing:
             raise ExportError(f"The export is missing these columns: {', '.join(missing)}.")
         homes = Homes()

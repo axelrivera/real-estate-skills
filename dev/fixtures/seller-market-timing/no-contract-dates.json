@@ -1,0 +1,8 @@
+{
+  "export": "exports/no-contract-dates.csv",
+  "state": "FL",
+  "county": "Seminole",
+  "as_of": "2026-09-26",
+  "lookback_months": 24,
+  "area": "Sample Ridge"
+}

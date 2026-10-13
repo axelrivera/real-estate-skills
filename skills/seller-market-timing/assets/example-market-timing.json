@@ -1,0 +1,8 @@
+{
+  "export": "sample-ridge-closed-sales.csv",
+  "area": "Sample Ridge",
+  "state": "FL",
+  "county": "Seminole",
+  "as_of": "2026-03-02",
+  "lookback_months": 24
+}

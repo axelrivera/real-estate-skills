@@ -75,6 +75,12 @@ def net_sheet(path):
     return compute.run(_read(path))
 
 
+def market_timing(path):
+    (compute,) = load("seller-market-timing", "compute")
+    freeze_clock()
+    return compute.public(compute.run(_read(path), data_file=path))  # the export sits beside the data file
+
+
 def cma(skill):
     def run(path):
         (compute,) = load(skill, "compute")
@@ -99,6 +105,8 @@ CASES = {
     "buyer-cma": (cma("buyer-cma"), ["dev/fixtures/buyer-cma/*.json", "dev/samples/buyer-cma.json"]),
     "seller-cma": (cma("seller-cma"), ["dev/fixtures/seller-cma/*.json", "dev/samples/seller-cma.json"]),
     "seller-net-sheet": (net_sheet, ["dev/fixtures/seller-net-sheet/*.json", "dev/samples/seller-net-sheet.json"]),
+    "seller-market-timing": (market_timing, ["dev/fixtures/seller-market-timing/*.json",
+                                             "dev/samples/seller-market-timing.json"]),
 }
 
 _DROP = object()

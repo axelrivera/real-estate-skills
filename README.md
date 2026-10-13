@@ -33,6 +33,7 @@ Start with `agent-profile` ("set me up"): a two-minute interview that saves `pro
 | `buyer-cma` | Buyer-side CMA for a listing: the value range and where asking sits |
 | `seller-cma` | Listing CMA with pricing strategies and nets, plus a listing presentation on request |
 | `seller-net-sheet` | A one-page seller net sheet at one to three prices, no CMA or offer needed |
+| `seller-market-timing` | A one-page Buying Pattern chart: a neighborhood's closed sales by month, the busy season and when to list |
 | `buyer-offer-strategy` | The strongest offer inside the buyer's limits, plus an offer package |
 | `seller-offer-review` | Nets, certainty and counters for offers on a listing |
 | `contract-timeline` | Every deadline in an executed contract, plus a closing calendar |

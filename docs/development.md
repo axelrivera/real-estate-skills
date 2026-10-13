@@ -63,6 +63,7 @@ The reports are correct by construction (one document model per run, `fmt` for e
 - **seller-offer-review:** each input renders twice (as given and a step later: a counter back, a new offer, a lapse), with one target closing per report and every Respond By time the model's.
 - **buyer-offer-strategy:** the recommended offer is inside every buyer limit unless the model says which one it breaks, no option or escalation cap goes past the walk-away (the range's top) unless the buyer covers an appraisal gap, each cash column adds to cash to close and the worst case, the worksheet doesn't change with the buyer's max, cash, reserve and payment limit, and a generated buyer CMA's own handoff is read as the offer's range.
 - **seller-net-sheet:** one page, columns add up, each note once.
+- **seller-market-timing:** a mock export per input (12 to 36 months shaped as a spring, winter, two-season or flat market, with or without contract dates, cut short or thin); every sale in the window and in its month, the months add up, seasons are months in a row with their months' sales, the takeaway's counts are the model's, one dot per sale and a legend that names what's drawn, one landscape page.
 
 Every skill's printed check also runs with the layout probe (`LAYOUT_PROBE=1`) and fails on a `split table` line: no generated input may print a table against the split rule.
 

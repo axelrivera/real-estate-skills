@@ -1,10 +1,12 @@
 """Seller CMA files: the report PDF (page 1 summary, then the full analysis) and the listing presentation PPTX
 (with a PDF copy of the slides when LibreOffice is available).
 
-    python3 scripts/render.py report.json [--format pdf|pptx|all|activity|price-chart] [--profile profile.md] [--sample] [--out DIR]
+    python3 scripts/render.py report.json [--format pdf|pptx|all|activity|price-chart|positioning] [--price N]
+        [--profile profile.md] [--sample] [--out DIR]
 
-`activity` and `price-chart` are the one-page landscape Pricing Activity sheets (the scatter alone), built only when
-named; `all` is the report and the deck.
+`activity` and `price-chart` are the one-page landscape Pricing Activity sheets (the scatter alone), and `positioning`
+the Competitive Position sheet (today's competition against the home at the recommended price, or at `--price`), each
+built only when named; `all` is the report and the deck.
 
 compute.py builds the document model once (render.main's compute step); this file only places it with the shared
 layout kit (the header, tiles, the comps dot plot and the scatter with its legend built from the series drawn, the
@@ -386,7 +388,44 @@ def build(C, fmt_, out_dir, ctx):
     return written
 
 
-SHEETS = ("activity", "price-chart")  # the one-page chart sheets, built only when named (--format activity)
+SHEETS = ("activity", "price-chart", "positioning")  # the one-page chart sheets, built only when named (--format activity)
+
+
+def positioning_sheet(C, out_dir, ctx):
+    """The Competitive Position sheet: the homes for sale and under contract near the home's size, with crosshairs
+    through the home at the recommended list price (or the agent's `--price`), the lower right (larger for less)
+    named, and one line counting the competitors there and the price at which none would be. Agent-facing: no notes."""
+    s, rec = C["subject"], C["recommendation"]
+    price = ctx.get("price") or rec["list_price"]
+    sc = C["scatter"]
+    P = cma.positioning_points(C["_homes"], sc["ratios"] if sc else {}, s["sqft"], s["mls_address"], price,
+                               C["_points"][2] if C.get("_points") else None)
+    if not P["total"]:
+        raise compute.ReportError(L["pos_none"])
+    rw = compute.labeler(C["reprice_words"])
+    basis = L["pos_basis_agent"] if ctx.get("price") else rw("pos_basis")
+    count = L["pos_count_one"] if P["total"] == 1 else t("pos_count", n=P["total"])
+    n = P["larger_for_less"]
+    take = (t("pos_take_none", price=fmt.money(price), total=P["total"]) if not n else
+            t("pos_take_one" if n == 1 else "pos_take", price=fmt.money(price), n=n, total=P["total"]))
+    if n and P["clear_at"] is not None:
+        take += " " + t("pos_take_clear", clear=fmt.money(P["clear_at"]))
+    subtitle = t("pos_subtitle", basis=basis, price=fmt.money(price), count=count)
+    chart = layout.Chart()
+    svg = cma.positioning(P, s["sqft"], price, rw, chart, size=cma.sheet_size(subtitle=True, takeaway=take), kfmt=fmt.k)
+    address = C["subject"]["address"]
+    sample = bool(ctx.get("sample") or C.get("sample"))
+    doc = cma.chart_sheet(svg, chart.legend(), t("pos_title", address=address),
+                          design.css_vars(design.theme(ctx["agent"].get("brand"), SIDE)),
+                          tag=L["sheet_sample"] if sample else "", body_class=BODY_CLASS, subtitle=subtitle, takeaway=take)
+    path = os.path.join(out_dir, render.filename(address, L["pos_file"], ext="pdf"))
+    for c in layout.print_pdf(doc, path, cma.SHEET_FIT)["checks"]:
+        print(f"Check: {c}", file=sys.stderr)
+    if P["excluded"]:
+        homes = fmt.and_list([f'{cma.display_address(a)} ({sq:,} sq ft, {"size" if why == "size" else "price"})'
+                              for a, sq, why in P["excluded"]])
+        print(f"Check: {t('pos_excluded', homes=homes)}", file=sys.stderr)
+    return [path]
 
 
 def sheet(C, fmt_, out_dir, ctx, chart_notes):
@@ -394,8 +433,10 @@ def sheet(C, fmt_, out_dir, ctx, chart_notes):
     home's size and no price (for the value conversation before the CMA); `price-chart` is the report's chart (the
     home at its price, the supported range, the comps). Title, chart and legend only, no footer."""
     if not C["scatter"]:
-        raise compute.ReportError("There's no chart without an MLS export: the Pricing Activity sheet plots the export's "
-                                  "sales and listings.")
+        raise compute.ReportError("There's no chart without an MLS export: the chart sheets plot the export's sales and "
+                                  "listings.")
+    if fmt_ == "positioning":
+        return positioning_sheet(C, out_dir, ctx)
     chart = layout.Chart()
     svg, info = draw(C, chart, size=cma.SHEET_SIZE, activity=fmt_ == "activity")
     chart_notes.update(chart_label_notes(info))
@@ -423,9 +464,14 @@ def deck_file(data, args):
     return [("deck", content)] if content is not None else []
 
 
+def options(ap):
+    ap.add_argument("--price", type=float, help="the Competitive Position sheet at this price instead of the recommended "
+                                                "list price (the agent's \"what if we list at $475,000?\")")
+
+
 def main(argv=None):
     return render.main(build, formats=("pdf", "pptx", *SHEETS), argv=argv, default="pdf",  # the deck only when asked for
-                       on_request=SHEETS,
+                       on_request=SHEETS, extra_args=options,
                        compute=compute_model, errors=(compute.ReportError, deck.DeckError, compute.mls.ExportError),
                        labels=LABEL_FIELDS, linked=deck_file)
 

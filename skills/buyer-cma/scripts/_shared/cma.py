@@ -70,7 +70,7 @@ def nice_step(span, target=6):
     return next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
 
 
-def _ticks(lo, hi, step):
+def tick_values(lo, hi, step):
     v, out = lo, []
     while v <= hi + step / 1000:
         out.append(round(v))
@@ -196,11 +196,11 @@ def scatter(homes, sc, subject_sqft, subject_price, subject_address, band, L, co
     o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">']
     if not activity:
         o.append(f'<rect x="{Lm}" y="{y(band[1]):.1f}" width="{W - Lm - R}" height="{y(band[0]) - y(band[1]):.1f}" class="band"/>')
-    for v in _ticks(Y0, Y1, ystep):
+    for v in tick_values(Y0, Y1, ystep):
         o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
                  f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{kf(v)}</text>')
     step = nice_step(X1 - X0, ticks)
-    for v in _ticks(math.ceil(X0 / step) * step, X1, step):
+    for v in tick_values(math.ceil(X0 / step) * step, X1, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T}" y2="{H - B}" class="grid"/>'
                  f'<text x="{x(v):.1f}" y="{H - B + 18}" text-anchor="middle" class="tick">{v:,}</text>')
     o.append(f'<text x="{(Lm + W - R) / 2}" y="{H - 12}" text-anchor="middle" class="axis">{esc(L("axis_x"))}</text>')
@@ -464,6 +464,99 @@ def _mark(chart, kind, L):
         chart.mark(kind, L("lg_" + kind), LEGEND_SWATCHES[kind])
 
 
+# --- the positioning chart (the seller CMA's Competitive Position sheet) ------------------------------------------
+
+def positioning_points(homes, sc, subject_sqft, subject_address, price, fit=None):
+    """Today's competition at a price: homes for sale (`active`) and under contract (`pending`) near the subject's size
+    (the scatter's size ratios), at their list price. Listings priced wildly off the trend (`fit`, mls.price_outlier)
+    are left off. `larger_for_less`: the competitors with more living area at a lower price than `price` (the lower
+    right of the crosshair); `clear_at`: the highest price at which none would be (the cheapest larger competitor's),
+    or None when no competitor is larger. Returns {pending, active, total, larger_for_less, clear_at, excluded}."""
+    lo, hi = subject_sqft * sc.get("min_size_ratio", 0.6), subject_sqft * sc.get("max_size_ratio", 1.4)
+    out, excluded = {"pending": [], "active": []}, []
+    for h in homes:
+        kind = {"ACTIVE": "active", "PENDING": "pending"}.get(h["status"])
+        if not kind or not h.get("current_price") or not h.get("living_area") or mls.same_address(h["address"],
+                                                                                                    subject_address):
+            continue
+        if not lo <= h["living_area"] <= hi:
+            excluded.append((h["address"], int(h["living_area"]), "size"))
+        elif fit and mls.price_outlier(fit, h["living_area"], h["current_price"], listing=True):
+            excluded.append((h["address"], int(h["living_area"]), "price"))
+        else:
+            out[kind].append(h)
+    every = out["pending"] + out["active"]
+    larger = [h["current_price"] for h in every if h["living_area"] > subject_sqft]
+    return {**out, "total": len(every), "excluded": excluded,
+            "larger_for_less": sum(1 for h in every if h["living_area"] > subject_sqft and h["current_price"] < price),
+            "clear_at": min(larger) if larger else None}
+
+
+POSITION_SWATCHES = {
+    "pending": '<path d="M7,1 L13,7 L7,13 L1,7 Z" class="m-pending"/>',
+    "active": '<path d="M7,2 L12.5,12 L1.5,12 Z" class="m-listing"/>',
+    "subject": '<circle cx="7" cy="7" r="4.5" class="m-position"/>',
+}
+
+
+def positioning(P, subject_sqft, price, L, chart=None, size=(760, 470), kfmt=None):
+    """Price vs. size for today's competition (positioning_points' result `P`), with crosshairs through the subject at
+    `price` and its size, and the lower right (larger for less) named. Under contract: filled diamonds; for sale:
+    hollow triangles; the subject: a ring in --subject where the lines cross. Labels from L: lg_pending, lg_listing,
+    lg_position (with price=), quadrant, axis_x, axis_y, tip_pending, tip_active. Returns the svg."""
+    kf = kfmt or fmt.k
+    every = P["pending"] + P["active"]
+    xs = [h["living_area"] for h in every] + [subject_sqft]
+    ys = [h["current_price"] for h in every] + [price]
+    W, H = size
+    Lm, R, T, B = 72, 20, 20, 58
+    n = 8 if W <= 760 else 10
+    X0, X1 = math.floor((min(xs) - 50) / 100) * 100, math.ceil((max(xs) + 50) / 100) * 100
+    ystep = nice_step(max(ys) - min(ys) + 30000, n)
+    Y0, Y1 = math.floor((min(ys) - 15000) / ystep) * ystep, math.ceil((max(ys) + 15000) / ystep) * ystep
+
+    def x(v):
+        return Lm + (v - X0) / (X1 - X0) * (W - Lm - R)
+
+    def y(v):
+        return T + (Y1 - v) / (Y1 - Y0) * (H - T - B)
+
+    o = [f'<svg viewBox="0 0 {W} {H}" role="img" class="scatter" aria-label="{esc(L("axis_y"))} / {esc(L("axis_x"))}">']
+    for v in tick_values(Y0, Y1, ystep):
+        o.append(f'<line x1="{Lm}" x2="{W - R}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
+                 f'<text x="{Lm - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="tick">{kf(v)}</text>')
+    step = nice_step(X1 - X0, n)
+    for v in tick_values(math.ceil(X0 / step) * step, X1, step):
+        o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T}" y2="{H - B}" class="grid"/>'
+                 f'<text x="{x(v):.1f}" y="{H - B + 18}" text-anchor="middle" class="tick">{v:,}</text>')
+    o.append(f'<text x="{(Lm + W - R) / 2}" y="{H - 12}" text-anchor="middle" class="axis">{esc(L("axis_x"))}</text>')
+    o.append(f'<text transform="translate(16,{(T + H - B) / 2}) rotate(-90)" text-anchor="middle" class="axis">'
+             f'{esc(L("axis_y"))}</text>')
+    sx, sy = x(subject_sqft), y(price)
+    o.append(f'<line x1="{sx:.1f}" x2="{sx:.1f}" y1="{T}" y2="{H - B}" class="crosshair"/>'
+             f'<line x1="{Lm}" x2="{W - R}" y1="{sy:.1f}" y2="{sy:.1f}" class="crosshair"/>')
+    quad = L("quadrant")
+    o.append(_halo(f'<text x="{W - R - 8}" y="{H - B - 10}" text-anchor="end" class="lbl-quad">{esc(quad)}</text>'))
+    # (path, its half-width, top, bottom): a diamond for under contract, a triangle for for sale
+    marks = {"pending": ("M{x},{t} L{r},{y} L{x},{b} L{l},{y} Z", 7.5, 8.5, 8.5, "m-pending", "lg_pending"),
+             "active": ("M{x},{t} L{r},{b} L{l},{b} Z", 7, 7, 5.5, "m-listing", "lg_listing")}
+    for kind, (shape, half, up, down, cls, legend) in marks.items():
+        for h in P[kind]:
+            px, py = x(h["living_area"]), y(h["current_price"])
+            d = shape.format(x=f"{px:.1f}", y=f"{py:.1f}", t=f"{py - up:.1f}", b=f"{py + down:.1f}",
+                             l=f"{px - half:.1f}", r=f"{px + half:.1f}")
+            tip = (f'{display_address(h["address"])}: {L("tip_" + kind)} ${int(h["current_price"]):,}, '
+                   f'{int(h["living_area"]):,} sq ft')
+            o.append(f'<g><title>{esc(tip)}</title><path d="{d}" class="{cls}"/></g>')
+            if chart is not None:
+                chart.mark(kind, L(legend), POSITION_SWATCHES[kind])
+    o.append(f'<circle cx="{sx:.1f}" cy="{sy:.1f}" r="8" class="m-position"/>')
+    if chart is not None:
+        chart.mark("subject", L("lg_position", price=fmt.money(price)), POSITION_SWATCHES["subject"])
+    o.append("</svg>")
+    return "\n".join(o)
+
+
 def trend_position(price, at_subject):
     """Where the subject's price sits against the size-only line: ('above' | 'below' | 'at', gap in dollars).
     Within 1% of the price (at least $5,000) counts as at the line."""
@@ -542,7 +635,7 @@ def dotplot(cards, low, high, marker_price, marker_label, second=None, kfmt=None
 
     o = [f'<svg viewBox="0 0 {W} {H}" role="img">',
          f'<rect x="{x(low):.1f}" y="{T - 8}" width="{x(high) - x(low):.1f}" height="{row * len(cs) + 8}" class="dp-band"/>']
-    for v in _ticks(lo, hi, step):
+    for v in tick_values(lo, hi, step):
         o.append(f'<line x1="{x(v):.1f}" x2="{x(v):.1f}" y1="{T - 8}" y2="{T + row * len(cs)}" class="dp-grid"/>'
                  f'<text x="{x(v):.1f}" y="{H - 6}" text-anchor="middle" class="dp-tick">{k_(v)}</text>')
     m_y = T - 16 - (DOT_STAGGER if stagger else 0)
@@ -578,16 +671,29 @@ PAGE_MARGINS = {"top": "0.45in", "right": "0.45in", "bottom": "0.55in", "left": 
 # footer, so the bottom margin matches the others.
 SHEET_FIT = layout.Fit(one_page=True, landscape=True, margins={k: "0.45in" for k in ("top", "right", "bottom", "left")})
 SHEET_TITLE_PX, SHEET_LEGEND_PX = 46, 32  # the title line and the legend under the drawing, with their spacing
+SHEET_SUBTITLE_PX = 26  # the optional line under the title
+SHEET_TAKE_PX, SHEET_TAKE_LINE_PX, SHEET_TAKE_PT = 22, 18, 11.5  # the takeaway box's spacing, each line, its type
 SHEET_SIZE = (SHEET_FIT.content_px()[0],
               SHEET_FIT.content_px()[1] - SHEET_TITLE_PX - SHEET_LEGEND_PX)
 
 
-def chart_sheet(svg, legend, title, theme_css, tag="", body_class=""):
+def sheet_size(subtitle=False, takeaway=""):
+    """The drawing's (width, height) on a chart sheet with the optional subtitle and takeaway (its text, measured for
+    the lines it wraps to)."""
+    lines = len(layout.wrap_lines(takeaway, SHEET_SIZE[0] - 24, SHEET_TAKE_PT * 4 / 3, bold=True)) if takeaway else 0
+    return SHEET_SIZE[0], (SHEET_SIZE[1] - (SHEET_SUBTITLE_PX if subtitle else 0)
+                           - (SHEET_TAKE_PX + SHEET_TAKE_LINE_PX * lines if lines else 0))
+
+
+def chart_sheet(svg, legend, title, theme_css, tag="", body_class="", subtitle="", takeaway=""):
     """The one-page landscape chart sheet: `title`, the drawing (cma.scatter at SHEET_SIZE) at full width, `legend`
-    (a layout.Chart legend). Nothing else: no intro, takeaway, notes or footer. `tag`: a small outlined tag after the
-    title (the sample label)."""
+    (a layout.Chart legend). Nothing else: no intro, notes or footer. `tag`: a small outlined tag after the title (the
+    sample label). `subtitle`: one muted line under the title; `takeaway`: the one line a reader must see, under the
+    legend (draw the chart at sheet_size(bool(subtitle), takeaway) when either is given)."""
     tag = f'<span class="sheet-tag">{esc(tag)}</span>' if tag else ""
-    body = f'<div class="chart-sheet"><h1>{esc(title)}{tag}</h1>{svg}{legend}</div>'
+    sub = f'<p class="sheet-sub">{esc(subtitle)}</p>' if subtitle else ""
+    take = f'<p class="sheet-take">{esc(takeaway)}</p>' if takeaway else ""
+    body = f'<div class="chart-sheet"><h1{" class=with-sub" if sub else ""}>{esc(title)}{tag}</h1>{sub}{svg}{legend}{take}</div>'
     return render.page(body, css=css() + "@page{size:Letter landscape;margin:0.45in}", title=title,
                        theme_css=theme_css, body_class=layout.classes("font-bundled", body_class)
                        ).replace("<html>", '<html lang="en">', 1)

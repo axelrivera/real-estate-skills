@@ -1,0 +1,9 @@
+{
+  "export": "market-timing-export.csv",
+  "area": "Sample Ridge",
+  "state": "FL",
+  "county": "Seminole",
+  "as_of": "2026-09-26",
+  "lookback_months": 24,
+  "sample": true
+}

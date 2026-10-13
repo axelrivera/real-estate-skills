@@ -19,7 +19,7 @@ Content, numbers and layout are never reviewed by hand. The math is pinned by th
 `out/manual-test/` has one folder per case:
 
 - `prompt.md`: what to upload and the exact prompt to paste (with the "Today is" date).
-- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports and seller notes (Casselberry, Seminole County), mock FAR/BAR packages and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
+- The files to upload: mock MLS 360 reports, a listing flyer, CMA exports, a closed-sales export and seller notes (Casselberry, Seminole County), mock FAR/BAR packages and a made-up Ohio purchase agreement. Streets, names, brokerages and MLS numbers are fictional.
 - `expected.md`: the case's yes/no checks and only the reference facts needed to answer them (the expired listing's MLS number, the closing date the calendar should show). Never upload it.
 
 Case 1 builds your real profile; every later case uses it. The test is black box: you upload files, paste prompts and look at what comes back. No step asks for a data file or anything the skill makes along the way.
@@ -36,6 +36,7 @@ Case 1 builds your real profile; every later case uses it. The test is black box
 | 6 | contract-timeline | Executed FHA package | The calendar file imports into a calendar app with closing on the right date |
 | 7 | contract-timeline | Made-up Ohio purchase agreement | The best-effort line is in the chat reply only, never in the PDF or the calendar file |
 | 8 | seller-net-sheet | Nothing (the facts are in the prompt) | The net sheet PDF is delivered on one page |
+| 9 | seller-market-timing | Closed-sales export (CSV) | The uploaded export is read and the Buying Pattern PDF is delivered on one landscape page |
 
 ## claude.ai Pass
 

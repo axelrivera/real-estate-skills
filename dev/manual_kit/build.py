@@ -549,6 +549,23 @@ def case_net_sheet():
     expected_md(case, "Case 8", ["File delivered: one PDF, one page, three price columns."])
 
 
+def case_market_timing():
+    """A mock closed-sales export (Stellar columns, 26 months of contract dates) from the generator, seed fixed."""
+    import random
+    from datetime import date
+    sys.path.insert(0, os.path.join(ROOT, "dev"))
+    from generators import seller_market_timing as gen
+    case, name = "09-seller-market-timing", "sample-ridge-closed-sales.csv"
+    text = gen.export(random.Random(9), date.fromisoformat(TODAY), months=26, shape="spring", per_month=3.0,
+                      base_price=410000)
+    write(os.path.join(OUT, case, name), text)
+    write(os.path.join(OUT, case, "prompt.md"), prompt_md("Case 9: Seller Market Timing", [name], [{"title": "Prompt",
+        "text": f"Today is {long_date(TODAY)}. Listing appointment tomorrow in Sample Ridge, Oviedo (Seminole County). "
+                "The sellers want to wait until summer. Here are the neighborhood's closed sales from the last two "
+                "years: make me the buying pattern chart so I can show them when buyers buy here."}]))
+    expected_md(case, "Case 9", ["File delivered: one PDF, one landscape page, the busy season boxed."])
+
+
 # --- checks, README, results ---------------------------------------------------------------
 
 SKILLS = sorted(s for s in os.listdir(os.path.join(ROOT, "skills"))
@@ -577,6 +594,8 @@ CHECKS = {
     "07-contract-timeline-other-state": [("The best-effort line is in the chat reply only, never in the PDF or the "
                                           "calendar file", "cowork")],
     "08-seller-net-sheet": [("The net sheet PDF is delivered on one page", "cowork")],
+    "09-seller-market-timing": [("The uploaded export is read and the Buying Pattern PDF is delivered on one landscape "
+                                 "page", "cowork")],
 }
 WHERE = {"both": "Cowork and claude.ai", "cowork": "Cowork", "ai": "claude.ai"}
 
@@ -613,7 +632,8 @@ def readme_md():
             ["05-seller-offer-review", "seller-offer-review", "the step-1 offer, then the step-2 offer in the same chat"],
             ["06-contract-timeline-fha", "contract-timeline", "executed FHA package"],
             ["07-contract-timeline-other-state", "contract-timeline", "Ohio purchase agreement"],
-            ["08-seller-net-sheet", "seller-net-sheet", "nothing"]]), "",
+            ["08-seller-net-sheet", "seller-net-sheet", "nothing"],
+            ["09-seller-market-timing", "seller-market-timing", "closed-sales export (CSV)"]]), "",
         "claude.ai pass: upload `dist/skills/*.zip`, then run cases 1, 2 (with the case 1 `profile.md`) and 6.",
     ])
 
@@ -667,7 +687,8 @@ def main():
                             ("03 buyer-cma", lambda: case_buyer_cma(pdf)), ("04 buyer-offer-strategy", case_offer_strategy),
                             ("05 seller-offer-review", case_offer_review), ("06 contract-timeline", case_timeline),
                             ("07 contract-timeline (other state)", lambda: case_other_state(pdf)),
-                            ("08 seller-net-sheet", case_net_sheet)):
+                            ("08 seller-net-sheet", case_net_sheet),
+                            ("09 seller-market-timing", case_market_timing)):
             print(name)
             build()
     finally:

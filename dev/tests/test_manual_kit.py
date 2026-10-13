@@ -19,7 +19,7 @@ class Checks(unittest.TestCase):
     def test_a_short_pass(self):
         """About ten yes/no checks: one pass per release in about twenty minutes."""
         texts = {text for checks in kit.CHECKS.values() for text, _ in checks}
-        self.assertLessEqual(len(texts), 14)
+        self.assertLessEqual(len(texts), 15)
 
     def test_black_box(self):
         """No check asks the tester for a data file or anything the skill makes along the way."""
