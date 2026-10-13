@@ -99,6 +99,7 @@
  "th_date": "Date",
  "th_event": "What Happened",
  "th_price": "Price",
+ "hist_date_check": "{when} (date to confirm)",
  "hist_listed": "Listed for sale",
  "hist_relisted": "Relisted as a new listing, which reset the day count",
  "hist_price_cut": "Price cut",

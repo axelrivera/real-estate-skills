@@ -415,7 +415,8 @@
     "kind": "listed",
     "mls": "O6371102",
     "note": null,
-    "price": 483900
+    "price": 483900,
+    "to_confirm": false
    },
    {
     "date": "2026-01-22",
@@ -423,14 +424,16 @@
     "kind": "price_cut",
     "mls": "O6371102",
     "note": null,
-    "price": 479900
+    "price": 479900,
+    "to_confirm": false
    },
    {
     "date": "2026-01-27",
     "delta": 0,
     "kind": "off_market",
     "mls": "O6371102",
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-02-07",
@@ -438,7 +441,8 @@
     "kind": "price_cut",
     "mls": "O6371102",
     "note": null,
-    "price": 474500
+    "price": 474500,
+    "to_confirm": false
    },
    {
     "date": "2026-03-05",
@@ -446,7 +450,8 @@
     "kind": "back_on",
     "mls": "O6371102",
     "note": null,
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-04-11",
@@ -454,14 +459,16 @@
     "kind": "pending",
     "mls": "O6371102",
     "note": null,
-    "price": 474500
+    "price": 474500,
+    "to_confirm": false
    },
    {
     "date": "2026-05-17",
     "delta": 0,
     "kind": "off_market",
     "mls": "O6371102",
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-05-21",
@@ -469,7 +476,8 @@
     "kind": "back_on",
     "mls": "O6371102",
     "note": null,
-    "price": 484900
+    "price": 484900,
+    "to_confirm": false
    },
    {
     "date": "2026-06-09",
@@ -477,7 +485,8 @@
     "kind": "canceled",
     "mls": "O6371102",
     "note": null,
-    "price": null
+    "price": null,
+    "to_confirm": false
    },
    {
     "date": "2026-08-17",
@@ -485,7 +494,8 @@
     "kind": "listed",
     "mls": "O6448292",
     "note": null,
-    "price": 484900
+    "price": 484900,
+    "to_confirm": false
    },
    {
     "date": "2026-08-31",
@@ -493,7 +503,8 @@
     "kind": "price_cut",
     "mls": "O6448292",
     "note": null,
-    "price": 478900
+    "price": 478900,
+    "to_confirm": false
    },
    {
     "date": "2026-09-16",
@@ -501,7 +512,8 @@
     "kind": "price_cut",
     "mls": "O6448292",
     "note": null,
-    "price": 474900
+    "price": 474900,
+    "to_confirm": false
    }
   ],
   "vs_last_contract": 400

@@ -257,6 +257,9 @@ def schema_errors(R):
                 who = prose.people(text)
                 if who:
                     out.append(f"{path}: has {', '.join(repr(x) for x in who)} → {prose.PEOPLE_FIX}.")
+    # the fair-housing phrases render.py stops on, here too, so the first run names them (iteration 20: "young
+    # families" in deck.tagline passed compute.py and stopped only at render)
+    out += [f"{path.removeprefix('$.')}: {problem}" for path, problem in prose.issues(R, rules=frozenset({"fair"}))]
     return out
 
 
@@ -472,15 +475,8 @@ def build_options(R, stance, low, high, rp, relist):
                 f"price_override.list_price: {money(own)} is above {money(relist['failed_price'])}, where this home's "
                 "earlier listing ended unsold → no option lists above a price the market already turned down: give a "
                 "price at or under it, or the agent's reason to go higher in relist.reason_above (method.md, A Relist)."]))
-    elif rule < low:
-        rng = fmt.range(low, high)
-        raise ReportError(stop_message([
-            f"reprice: the current {money(rp['current_price'])} leaves no cut inside the supported range {rng} → give the "
-            "agent's own price in price_override {list_price, reason}, or set reprice.allow_increase if the agent asked "
-            "to price it higher." if kind == "reprice" else
-            f"relist: this home's earlier listing ended unsold at {money(relist['failed_price'])}, under the supported "
-            f"range {rng} → if the market or the home changed since, give the agent's reason in relist.reason_above "
-            "(method.md, A Relist), or the agent's own price in price_override {list_price, reason}."]))
+    elif rule < low:  # owner decision (iteration 20): under the range, build at the cap, never stop
+        return below_range_options(rp, relist, listing)
     rec = own if own is not None else rule
     step = option_step(rec)
     top = min(cma.bracket_price(rec + step), cma.bracket_price(high, "down"), cap if kind == "relist" else math.inf)
@@ -495,6 +491,25 @@ def build_options(R, stance, low, high, rp, relist):
     roles = [r for r, _ in options]
     return {"options": options, "index": roles.index("recommended" if "recommended" in roles else "stay"),
             "rule": rule, "kind": listing, "agent_role": "recommended" if own is not None else None, "merged": []}
+
+
+def below_range_options(rp, relist, listing):
+    """When the price the market already saw sits under the supported range (iteration 20: Hickorywood's $474,900
+    against $475,000-$500,000), the report is still built, at that price. A reprice: Stay at Current Price is the
+    recommendation (the sales support it; the market is what's slow), with two cuts as the agent's options. A relist:
+    the failed price itself, the market's verdict, with one step under it; the report says the sales support more. The
+    agent's own price (price_override) or a reason to go higher (relist.reason_above) still replaces this."""
+    if rp:
+        cut = cma.bracket_price(rp["current_price"] * (1 - NEAR_RECOMMENDED), "down")
+        options = [("stay", rp["current_price"]), ("recommended", cut),
+                   ("competing", cma.bracket_price(cut - option_step(cut), "down"))]
+        index, rule = 0, rp["current_price"]
+    else:
+        rule = relist["failed_price"]
+        options = [("recommended", rule), ("competing", cma.bracket_price(rule - option_step(rule), "down"))]
+        index = 0
+    return {"options": options, "index": index, "rule": rule, "kind": listing, "agent_role": None, "merged": [],
+            "below_range": True}
 
 
 def role_problems(given, kind):
@@ -569,8 +584,12 @@ def option_values(built, given, defaults):
         g = given.get(role) or {}
         agent = role == built["agent_role"]
         name = (L["option_agent"] if agent else L["stance_" + role]) if built["kind"] == "standard" else ""
+        note = "opt_note_agent" if agent and name else "opt_note_" + role
+        if built.get("below_range"):  # priced under the range: say what each one is, never "where sales support"
+            note = {"stay": "opt_note_stay_supported", "recommended": "opt_note_at_cap" if built["kind"] == "relist"
+                    else "opt_note_cut_below"}.get(role, "opt_note_cut_below")
         x = {"role": role, "name": name, "agent": agent, "list_price": price, "time": defaults["time"][role],
-             "seller_credit": defaults["credit"], "note": L["opt_note_agent" if agent and name else "opt_note_" + role],
+             "seller_credit": defaults["credit"], "note": L[note],
              "time_source": "rule"}
         for k in OPTION_KEYS:
             if g.get(k) not in (None, ""):
@@ -670,8 +689,8 @@ def stance_model(stance, suggested, signals, reason, stats, rule, own, own_reaso
     if reason:
         parts.append(end_sentence(reason[0].upper() + reason[1:]))
     if own is not None:
-        parts.append(t("line_price_override", rule=money(rule), name=name,
-                       reason=end_sentence(own_reason)))
+        parts.append(t("line_price_override" if own != rule else "line_price_override_same", rule=money(rule),
+                       name=name, reason=end_sentence(own_reason)))  # eval 4: "rather than ... $474,900" at $474,900
     return {"value": stance, "suggested": suggested, "signals": signals, "reason": reason, "name": name,
             "differs": stance != suggested, "rule_price": rule, "rule_price_display": money(rule),
             "agent_price": own is not None, "line": " ".join(parts)}
@@ -1438,7 +1457,7 @@ def comps_first(R, market, homes=()):
     if errors:
         raise ReportError(stop_message(errors))
     warnings, warning_keys, warn = _warner()
-    prepare_comps(R, homes, warn, market)
+    comp_info = prepare_comps(R, homes, warn, market)[3]
     values = [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
     rng = supported_range(R, values, market)
@@ -1474,6 +1493,7 @@ def comps_first(R, market, homes=()):
                   "override": rng["override"]},
         "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": adjusted_money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
+        "settled": cma.selection_lines(comp_info, t, money),  # each sale set aside or kept, as the report will say it
         "warnings": warnings, "warning_keys": warning_keys, "market_notes": market.notes,
     }
 
@@ -1567,7 +1587,7 @@ def compute(R, market, homes, data_file=None):
     if len(cards) < 3:
         warn("thin_comps", f"Only {len(cards)} comp{'s' if len(cards) > 1 else ''}: the range rests on thin support. Widen "
                            "the search if you can, and say so in the report.")
-    if not rec["low"] <= rec["list_price"] <= rec["high"]:  # only the agent's own price can sit outside it
+    if not rec["low"] <= rec["list_price"] <= rec["high"] and not built.get("below_range"):  # the agent's own price
         warn("list_outside_range", f"The agent's list price {money(rec['list_price'])} is outside the supported range "
                                    f"{fmt.range(rec['low'], rec['high'])}: confirm it with the agent, and say why in "
                                    "price_override.reason.")
@@ -1732,6 +1752,9 @@ def compute(R, market, homes, data_file=None):
         "why": rec.get("why", ""), "override": range_info["override"], "price_override": agent_price is not None}
     C["stance"] = stance_model(stance, suggested, signals, stance_reason, stats, rule_price, agent_price, agent_reason,
                                failed=rp is not None or relist is not None)
+    if built.get("below_range"):  # iteration 20: the price the market saw sits under the range: why it stays there
+        C["recommendation"]["line"] += " " + t("line_below_range_reprice" if rp else "line_below_range_relist",
+                                               price=money(rec["list_price"]))
     if range_info["override"]:  # the agent's own range, said once beside it, with the method's for comparison
         C["recommendation"]["line"] += " " + t("line_range_override", rule=fmt.range(range_info["rule_low"],
                                                range_info["rule_high"]), reason=end_sentence(range_info["reason"]))
@@ -1791,6 +1814,7 @@ def compute(R, market, homes, data_file=None):
                             default=None)
     C["strategies"], C["recommended_index"] = strat, ri
     C["listing_kind"], C["options_merged"] = built["kind"], [list(m) for m in built["merged"]]
+    C["below_range"] = bool(built.get("below_range"))
     C["launch"] = launch
     C["expected_sale_basis"] = {k: basis[k] for k in ("ratio", "ratio_display", "source", "filled", "agent", "capped",
                                                        "floored", "premium", "premium_ratio", "premium_source")}

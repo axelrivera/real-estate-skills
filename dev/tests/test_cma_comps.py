@@ -327,7 +327,7 @@ class Roof(unittest.TestCase):
         cards = [{"address": f"{i} A St", "adjustments": list(typed or []), **r} for i, r in enumerate(roofs, 1)]
         comps = {"cards": cards}
         errors, info = cma.apply_roof_adjustments(comps, subject, self.market, "2026-09-26")
-        return errors, info, [[a["amount"] for a in c["adjustments"] if a.get("kind") == "age"] for c in cards]
+        return errors, info, [[a["amount"] for a in c["adjustments"] if a.get("kind") == "roof"] for c in cards]
 
     def test_bands_by_difference(self):
         # the subject's 16-year roof (-$10,000) against a 7-year one ($0): -$10,000; same band: none; older: plus
@@ -452,6 +452,19 @@ class SizeAndLot(unittest.TestCase):
         kinds = [a["label"] for a in R["comps"]["cards"][0]["adjustments"]]
         self.assertIn("Documented Recent Systems", kinds)  # kept through the roof step, which shares its kind
         self.assertTrue(any(k.startswith("Roof:") for k in kinds))
+
+    def test_systems_year_judged_by_the_script(self):
+        """Iteration 20: three runs read "2020" and "2021" systems differently against "within five years"."""
+        self.assertTrue(cma.has_recent_systems({"systems_year": 2021}, "2026-09-26"))
+        self.assertFalse(cma.has_recent_systems({"systems_year": 2020}, "2026-09-26"))
+        self.assertTrue(cma.has_recent_systems({"recent_systems": True}, "2026-09-26"))  # undated "new"
+        self.assertFalse(cma.has_recent_systems({"systems_year": 2019, "recent_systems": True}, "2026-09-26"))
+        comps = {"cards": [{"address": "1 A St", "systems_year": 2021, "adjustments": []}]}
+        errors, _ = cma.apply_systems_adjustments(comps, {}, self.market, "2026-09-26")
+        self.assertEqual((errors, [a["kind"] for a in comps["cards"][0]["adjustments"]]), ([], ["systems"]))
+        errors, _ = cma.apply_systems_adjustments({"cards": [{"address": "1 A St", "systems_year": "2021"}]}, {},
+                                                  self.market, "2026-09-26")
+        self.assertIn("systems_year", errors[0])
 
     def test_seller_report_prices_size_and_lot(self):
         C, _ = run(tanager())

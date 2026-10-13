@@ -408,6 +408,7 @@ def figures(text):
 # assigns, a tenant's possession date) is quoted as data and isn't checked here.
 _OCCUPANT = (r"(?:sellers?|owners?|they|family|occupants?|tenants?|renters?|he|she|we|buyers?)")
 PEOPLE = re.compile(
+    r"(?<!\bgo\s)(?<!\bgoes\s)(?<!\bwent\s)(?<!\bgoing\s)(?<!\bgone\s)"  # "go live on schedule": a launch, not people
     r"\b(?:lives?|living|lived)\s+(?:in|there|here|at|on)\b"
     r"|\b(?:owner|tenant|renter|seller)[- ]occupied\b|\boccupied\s+by\b|\boccupan(?:t|ts|cy)\b"
     r"|\btenants?\b|\brenters?\b"

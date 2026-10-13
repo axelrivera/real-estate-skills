@@ -211,6 +211,14 @@ class Inputs(unittest.TestCase):
         _, C0, _ = run(lambda R: R["costs"]["payment"].pop("hoa_cdd_monthly", None))
         self.assertEqual(C["payments"]["rows"][0]["total"] - C0["payments"]["rows"][0]["total"], 105)
 
+    def test_fair_housing_phrases_stop_compute_too(self):
+        """Iteration 20: a phrase render.py stops on stops compute.py's first run as well, naming the field."""
+        def steer(R):
+            R["subject"]["summary"] = "A pool home perfect for young families."
+        with self.assertRaises(compute.ReportError) as e:
+            run(steer)
+        self.assertIn("subject.summary", str(e.exception))
+
     def test_headline_leaves_where_asking_sits_to_the_script(self):
         """Iteration 18: a headline written before the range said asking "sits above" when it was inside. Where asking
         sits is the script's line above the headline, and the Bottom Line repeats that same line, never a second wording."""
@@ -443,6 +451,11 @@ class History(unittest.TestCase):
         text = C["warnings"][C["warning_keys"].index("history_order")]
         self.assertIn("history.events[7]", text)
         self.assertIn("history.events[8]", text)
+        # iteration 20: the table keeps the grid's order (oldest first), the rows to check marked, never re-sorted
+        tl = C["history"]["timeline"]
+        self.assertEqual([e["date"] for e in tl], [e["date"] for e in reversed(EVAL_GRID)])
+        self.assertEqual(sum(e["to_confirm"] for e in tl), 2)
+        self.assertEqual(sum("(date to confirm)" in r[0] for r in C["history_section"]["rows"]), 2)
         self.assertIn("export_mls_mismatch", C["warning_keys"])  # the export's active row is O6448292
         self.assertNotIn("history_mls_mismatch", C["warning_keys"])
         fixed = sorted(EVAL_GRID, key=lambda e: e["date"], reverse=True)

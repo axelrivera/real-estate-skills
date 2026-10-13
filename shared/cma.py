@@ -857,7 +857,8 @@ def list_price_at(point, low, high):
 
 # A comp adjustment's category (`kind`), so text that lists what was adjusted uses fixed plain words, never the
 # model's label wording ("hall bath (not in its listing)"). The card keeps its own label.
-ADJUSTMENT_KINDS = ("size", "pool", "garage", "condition", "age", "lot", "view", "location", "time", "credits", "other")
+ADJUSTMENT_KINDS = ("size", "pool", "garage", "condition", "roof", "age", "systems", "lot", "view", "location", "time",
+                    "credits", "other")
 # Kind inferred from a label when none is given: the first kind with a matching word, in this order
 _KIND_WORDS = (
     ("time", r"market|since the sale|time|months?|quarter|rates?|sold in|appreciation|softening|slowdown|sale date|"
@@ -866,7 +867,8 @@ _KIND_WORDS = (
     ("credits", r"credit|concession|seller[- ]paid|seller help"),
     ("pool", r"pool|spa"),
     ("garage", r"garage|carport|parking"),
-    ("age", r"roof|\bac\b|a/c|hvac|systems?|water heater|windows?|\bage\b|year built|older|newer|effective age"),
+    ("roof", r"roof"),
+    ("age", r"\bac\b|a/c|hvac|systems?|water heater|windows?|\bage\b|year built|older|newer|effective age"),
     ("view", r"view|water|pond|lake|golf|conservation|preserve|canal|river|ocean|bay"),
     ("lot", r"\blot\b|acre|yard|corner|cul-de-sac|frontage"),
     ("location", r"location|street|road|traffic|neighborhood|subdivision|busy|commercial"),
@@ -902,8 +904,9 @@ def adjustment_kind_errors(cards):
 
 # The plain words for each adjustment kind, the same in every report and deck
 ADJ_KIND_WORDS = {"size": "size", "pool": "pool", "garage": "garage", "condition": "condition and updates",
-                  "age": "roof and systems", "lot": "lot", "view": "view or water", "location": "location",
-                  "time": "market changes since each sale", "credits": "seller credits", "other": "other differences"}
+                  "roof": "roof", "age": "age", "systems": "recent systems", "lot": "lot", "view": "view or water",
+                  "location": "location", "time": "market changes since each sale", "credits": "seller credits",
+                  "other": "other differences"}
 
 
 def _and(items):
@@ -1047,17 +1050,34 @@ _SYSTEMS_TYPED = re.compile(r"system|\bac\b|a/c|hvac|air condition|water heater|
                             re.I)
 
 
-def apply_systems_adjustments(comps, subject, market):
-    """Documented recent systems are the script's: `subject.recent_systems` and each card's (true when the listing names
-    a system other than the roof as new, or dates it within the last five years) differ, and the comp is adjusted by the
-    market's `cma.adjustments.documented_recent_systems` (the agent's `comps.systems_value` outside it): minus when only
-    the comp has them, plus when only the home does. A systems amount typed on a card is an error. Returns (errors,
-    info {value} or None)."""
+SYSTEMS_YEARS = 5  # a system put in this many years before the as-of year or later is recent (method.md, Systems)
+
+
+def has_recent_systems(block, as_of=None):
+    """True when a home's documented systems are recent: `systems_year` (the newest system other than the roof the
+    listing dates) within SYSTEMS_YEARS of the as-of year, else `recent_systems` (an undated "new" one)."""
+    y = block.get("systems_year")
+    if isinstance(y, int) and not isinstance(y, bool):
+        return (_iso(as_of) or date.today()).year - y <= SYSTEMS_YEARS
+    return bool(block.get("recent_systems"))
+
+
+def apply_systems_adjustments(comps, subject, market, as_of=None):
+    """Documented recent systems are the script's: the home's and each card's (has_recent_systems: a dated system other
+    than the roof, `systems_year`, within five years of the as-of year, or `recent_systems: true` for an undated "new"
+    one) differ, and the comp is adjusted by the market's `cma.adjustments.documented_recent_systems` (the agent's
+    `comps.systems_value` outside it): minus when only the comp has them, plus when only the home does. A systems
+    amount typed on a card is an error. Returns (errors, info {value} or None)."""
     cards = comps.get("cards") or []
     errors = []
+    year_now = (_iso(as_of) or date.today()).year
     for where, block in [("subject", subject)] + [(f"comps.cards[{i}]", c) for i, c in enumerate(cards)]:
         if block.get("recent_systems") not in (None, True, False):
             errors.append(f"{where}.recent_systems: {block['recent_systems']!r} → true or false (false when left out).")
+        y = block.get("systems_year")
+        if y not in (None, "") and (isinstance(y, bool) or not isinstance(y, int) or not 1900 <= y <= year_now):
+            errors.append(f"{where}.systems_year: {y!r} → the year of the newest dated system other than the roof, "
+                          "like 2021 (leave it out when the listing gives none).")
     for i, c in enumerate(cards):
         for j, a in typed_adjustments(c):
             if isinstance(a, dict) and not _ROOF_TYPED.search(str(a.get("label") or "")) and \
@@ -1073,17 +1093,17 @@ def apply_systems_adjustments(comps, subject, market):
     for c in cards:
         c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
                                                                           and a.get("systems"))]
-    mine = bool(subject.get("recent_systems"))
-    differ = [c for c in cards if bool(c.get("recent_systems")) != mine]
+    mine = has_recent_systems(subject, as_of)
+    differ = [c for c in cards if has_recent_systems(c, as_of) != mine]
     base = market.get("cma.adjustments.documented_recent_systems") if market is not None else None
     value = given if given is not None else (abs(base) if _num(base) else None)
     if differ and value is None:
         return ["comps.systems_value: no value for documented recent systems in this market → give the dollars they add, "
                 "from paired sales or the agent's rate (method.md)."], None
     for c in differ:
-        theirs = bool(c.get("recent_systems"))
-        c["adjustments"].append({"label": SYSTEMS_LABELS[theirs], "amount": -value if theirs else value, "kind": "age",
-                                 "source": "script", "systems": True})
+        theirs = has_recent_systems(c, as_of)
+        c["adjustments"].append({"label": SYSTEMS_LABELS[theirs], "amount": -value if theirs else value,
+                                 "kind": "systems", "source": "script", "systems": True})
     return [], {"value": value, "subject": mine}
 
 
@@ -1254,7 +1274,7 @@ def _roof_band_value(age, kind, bands, factor):
 def apply_roof_adjustments(comps, subject, market, as_of):
     """Roof adjustments are the script's, by the market's roof-age bands (`cma.adjustments.roof_age`, years doubled for
     tile or metal by `roof_age_tile_metal_factor`): each comp's `roof_year` (and `roof_type`) against the subject's,
-    the subject's band value minus the comp's, added as kind "age". With the subject's roof year unknown, no comp is
+    the subject's band value minus the comp's, added as kind "roof". With the subject's roof year unknown, no comp is
     adjusted for its roof. A roof amount typed on a card is an error where the market has bands (elsewhere the agent's
     typed rates stand, method.md). Returns (errors, info {subject_known, subject_age, unknown: [addresses]} or None
     when the market has no bands)."""
@@ -1287,8 +1307,7 @@ def apply_roof_adjustments(comps, subject, market, as_of):
         return errors, None
     for c in cards:  # the script's roof lines (its systems lines share the kind and stay)
         c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
-                                                                          and a.get("kind") == "age"
-                                                                          and not a.get("systems"))]
+                                                                          and a.get("kind") == "roof")]
     sy = subject.get("roof_year")
     if sy in (None, ""):
         return [], {"subject_known": False, "subject_age": None, "unknown": []}
@@ -1303,7 +1322,7 @@ def apply_roof_adjustments(comps, subject, market, as_of):
         age = max(year_now - cy, 0)
         amount = fmt.half_up(mine - _roof_band_value(age, c.get("roof_type") or "shingle", bands, factor))
         if amount:
-            c["adjustments"].append({"label": ROOF_LABEL.format(age=age), "amount": amount, "kind": "age",
+            c["adjustments"].append({"label": ROOF_LABEL.format(age=age), "amount": amount, "kind": "roof",
                                      "source": "script"})
     return [], {"subject_known": True, "subject_age": s_age, "unknown": unknown}
 
@@ -1653,7 +1672,7 @@ def settle_comps(R, homes, market, stats):
     size_errors, size_info = apply_size_adjustments(comps, R["subject"], market, homes)
     cond_errors, cond_info = apply_condition_adjustments(comps, R["subject"], market)
     lot_errors, lot_info = apply_lot_adjustments(comps, R["subject"], market)
-    sys_errors, sys_info = apply_systems_adjustments(comps, R["subject"], market)
+    sys_errors, sys_info = apply_systems_adjustments(comps, R["subject"], market, R.get("as_of"))
     roof_errors, roof_info = apply_roof_adjustments(comps, R["subject"], market, R.get("as_of"))
     time_errors, time_info = apply_time_adjustments(comps, homes, R.get("as_of"), split)
     errors = size_errors + cond_errors + lot_errors + sys_errors + roof_errors + time_errors

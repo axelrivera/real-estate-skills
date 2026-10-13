@@ -1078,7 +1078,19 @@ class Iteration18(unittest.TestCase):
         d["property"]["seller_flexible_close"] = True
         row = next(x for x in strategy.scorecard(run(d))["rows"] if x["key"] == "timeline")
         self.assertEqual(set(row["scores"]), {5})
-        self.assertIn("the seller is flexible on the date", row["why"])
+        self.assertIn("fits the seller's timeline", row["why"])
+        self.assertNotIn("flexible", row["why"])  # the listing agent's word stays in chat, never in the PDF
+
+    def test_iteration_20_wording(self):
+        self.assertEqual([strategy.a_or_an(n) for n in (11, 8, 80, 18, 12, 110, 1, 18000)],
+                         ["an", "an", "an", "an", "a", "a", "a", "an"])
+        r = analyze("texas-cma-escalation.json")
+        res = strategy.result(r)
+        self.assertNotIn("a 11-day", res["summary"]["signal"])
+        notes = " ".join(str(n) for n in res["notes"])
+        self.assertNotIn("estimate, national estimate", notes)
+        self.assertNotIn("FHA and conforming loan limits", notes)  # conventional, 20% down
+        self.assertNotIn("(Estimate;", " ".join(a["why"] for a in r["missing"]))
 
     def test_value_floor_needs_two_competing_offers_and_a_real_value(self):
         """Iteration 19: under the median adjusted value (to the $1,000 step), two or more competing offers read a

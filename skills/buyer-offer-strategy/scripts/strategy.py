@@ -31,6 +31,7 @@ with open(LABELS_PATH, encoding="utf-8") as _f:
 
 money = fmt.money
 # Competitiveness thresholds (strong / competitive / at risk) per competition level. Starting judgments.
+PAYMENT_TIGHT = 0.02  # a payment within 2% of the buyer's limit: its estimated inputs could break it
 BANDS = {0: (55, 40, 30), 1: (65, 55, 45), 2: (75, 60, 50), 3: (85, 72, 60)}
 BAND_RANK = {"strong": 3, "comp": 2, "risk": 1, "unl": 0}
 COMPETITION_LEVELS = tuple(BANDS)  # competition.level: 0 only offer, 1 one competing, 2 two or three, 3 cash or four+
@@ -104,6 +105,12 @@ def comp_label(lvl):
 
 def comp_words(lvl):
     return L_["comp_words"][lvl]
+
+
+def a_or_an(n):
+    """The article a number takes when it's read aloud: "an 11-day median", "an 8-day", "an 80-day", "a 12-day"."""
+    digits = str(int(n))
+    return "an" if digits.startswith("8") or (len(digits) in (2, 5) and digits[:2] in ("11", "18")) else "a"
 
 
 def opt_name(k):
@@ -467,7 +474,7 @@ def tight_supply(M):
 
 
 def dom_words(dom, med):
-    return t("sig_dom", dom=fmt.num(dom), med=fmt.num(med))
+    return t("sig_dom", dom=fmt.num(dom), med=fmt.num(med), a=a_or_an(med))
 
 
 def stl_words(M):
@@ -1596,6 +1603,13 @@ def analyze(B_in, market=None, cma=None):
                      for k, t2 in res["terms"].items()}
     res["constraints"] = constraints(B, costs, rec, res["cash"]["recommended"])
     res["reserve_tight"], res["reserve_alt"] = tight_reserve(B, costs, res, res["cash"]["recommended"])
+    limit = B["buyer"].get("max_payment")
+    if limit and res["payment"]["recommended"] >= (1 - PAYMENT_TIGHT) * limit:
+        # eval 5 (iteration 20): $3,988 against a $4,000 limit; a slightly higher premium or rate breaks it, so those
+        # estimates are asked, high impact, as when the payment limit sets the price
+        for a in res["assumptions"]:
+            if a["field"] in ("rate", "rate_source", "insurance_annual"):
+                a["caps_price"], a["impact"] = True, "high"
     res["missing"] = sorted(res["assumptions"], key=lambda a: oe.IMPACT_ORDER[a["impact"]])
     res["chosen"] = B.get("chosen_option") if B.get("chosen_option") in res["terms"] else "recommended"
     res["higher_price"] = higher_price(B, costs, res)
@@ -2644,7 +2658,8 @@ def report_notes(r, listed):
     N.add("loan_estimate", L_["note_loan_estimate"], "info")
     N.add("worst_case", L_["note_worst_case"], "info")
     N.add("scoring", L_["note_scoring"], "info")
-    N.add("loan_limits", L_["note_loan_limits"], "info")
+    if B["buyer"]["financing"] in ("fha", "va", "usda"):  # a program with its own county limits (eval 3: never on
+        N.add("loan_limits", L_["note_loan_limits"], "info")  # a conventional loan)
     N.add("legal", t("note_legal", state=profiles.STATES.get(R["listing"].get("state") or "", L_["your_state"])), "info")
     return N
 

@@ -115,6 +115,17 @@ def main(argv=None):
                    "Another brokerage's listing that's still live is never priced."))
             out["listed_now_action"] = ("reprice" if a.own_listing else {"failed": "relist", "history": "history"}.get(
                 a.listed_as, "ask"))  # CMA-251, CMA-303
+            if out["listed_now_action"] == "ask":  # the reply's one question, written here so its figures are the export's
+                facts = ", ".join(x for x in (
+                    f"at {money(h['current_price'])}" if h.get("current_price") else "",
+                    f"{h['days_on_market']:g} days on market" if h.get("days_on_market") is not None else "",
+                    f"first listed at {money(h['original_list_price'])}"
+                    if (h.get("original_list_price") or 0) > (h.get("current_price") or 0) else "") if x)
+                out["listed_now_question"] = (
+                    f"This home shows as {h['status'].lower()} in the MLS right now ({facts}). Which applies: it's your "
+                    "own listing (I'll build a reprice), the sale fell through or the listing is ending (I'll treat that "
+                    "price as one the market turned down, or as history only), or it's another brokerage's live listing "
+                    "(I'll wait until it ends)?")
             if a.own_listing and h.get("current_price"):
                 # CMA-287: copy to report.json's `reprice`; the original price shows the listing's price history (a cut)
                 out["reprice"] = {k: v for k, v in {"current_price": h["current_price"], "days_on_market": h.get("days_on_market"),

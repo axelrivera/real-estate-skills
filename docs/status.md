@@ -55,6 +55,14 @@ The buyer CMA leaned on offer strategy (a suggested opening offer, a target and 
 - **Rate week:** every skill takes Freddie Mac's newest week on or before the report date, never a later one.
 - **Fuzz finds, both fixed:** the buyer's protect-cash priority could promote an Unlikely lower-cost offer beside an At Risk Stronger one (it now keeps the fuller terms); a net sheet test stripped overlapping column labels in the wrong order.
 
+**Iteration 20 follow-up (still 0.17.0).** Buyer CMA: 41–42 of 42 across three Hickorywood runs (one range, $475K–$500K) and every other eval passing; offer strategy 20/21 and 25/26 (one eval defect, one $0.13 tax entry). Seller CMA: evals 2, 3, 7 and 9 passed in full, but four Hickorywood evals stopped because the failed price ($474,900) now sat $100 under the script's range. Then:
+
+- **Seller CMA under the range builds at the cap (owner decision):** a relist lists at the failed price with one step under it, a reprice recommends Stay at Current Price with two cuts as options, each saying why; no stop. The comps stage names each sale it set aside; stats.py writes the listed-now question with its figures; "our judgment rather than the method's price" no longer prints when the two match.
+- **Systems by year:** `systems_year` (the newest dated system other than the roof); the script counts it recent within five years of the as-of year, so "2020" and "2021" read the same in every run. Systems and roof lines have their own kinds, so the method line never says "roof and systems" for a systems-only adjustment.
+- **Fair housing:** compute.py runs the same phrase check render.py does (a "young families" tagline stops the first run); "go live on schedule" no longer reads as who lives there; "cushion" counts as offer advice in the buyer CMA's value narrative.
+- **Buyer CMA history table:** keeps the MLS grid's order, the out-of-order rows marked "(date to confirm)", never re-sorted while the agent checks them.
+- **Offer strategy:** the flexible-close reason no longer names its source (the listing agent's word stays in chat); a payment within 2% of the buyer's limit makes the rate and insurance estimates high impact; "an 11-day median"; no "(estimate, national estimate)"; the FHA loan-limit note only for FHA, VA and USDA.
+
 ## This pass (2026-10-12): Client-Interest Audit, Version 0.16.0
 
 An audit of every skill against one question: does it act in the client's best interest, the buyer's or the seller's? It found no bias toward the agent (no in-house preference, no pricing to win a listing, no waived contingencies, nothing confidential in material for the other side), and a set of rules and defaults that could cost a client money or a contract right. All of them are fixed. What agents will notice:

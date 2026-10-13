@@ -5556,8 +5556,9 @@
    "value": 0.03
   },
   {
+   "caps_price": true,
    "field": "insurance_annual",
-   "impact": "low",
+   "impact": "high",
    "scope": "costs",
    "value": 4900
   },
@@ -5717,6 +5718,13 @@
  },
  "missing": [
   {
+   "caps_price": true,
+   "field": "insurance_annual",
+   "impact": "high",
+   "scope": "costs",
+   "value": 4900
+  },
+  {
    "field": "deadline",
    "impact": "med",
    "scope": "competition",
@@ -5727,12 +5735,6 @@
    "impact": "low",
    "scope": "buyer",
    "value": 0.03
-  },
-  {
-   "field": "insurance_annual",
-   "impact": "low",
-   "scope": "costs",
-   "value": 4900
   },
   {
    "field": "flood_insurance_annual",

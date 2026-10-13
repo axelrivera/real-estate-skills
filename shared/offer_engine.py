@@ -444,8 +444,10 @@ def cost_notes(costs, L):
     payer = L["title_customary_payer"]
     if payer == "seller":
         how = "promulgated rate" if costs.get("closing_costs.owner_title.rate_tiers") else "estimate"
-        notes.append(Note(f"Owner's title policy paid by the seller ({how}, "
-                          f"{costs.described('closing_costs.owner_title.payer')})", "title_payer"))
+        source = costs.described('closing_costs.owner_title.payer')
+        # "(estimate, national estimate)" said it twice: the source already says it's an estimate
+        notes.append(Note(f"Owner's title policy paid by the seller ({source if 'estimate' in source and how == 'estimate' else f'{how}, {source}'})",
+                          "title_payer"))
     elif payer:
         notes.append(Note(f"Owner's title policy customarily paid by the {payer} "
                           f"({costs.described('closing_costs.owner_title.payer')}; an offer's contract terms govern it, as "
@@ -1224,7 +1226,8 @@ def auto_scores(o, L, S):
                            f"{fmt.date_short(dl, year=False)} deadline")
     elif S.get("close_speed_neutral") and S["priority"] != "speed":
         # the seller's review: with no deadline and no need for speed, every closing date fits the seller's timeline
-        s["timeline"], why["timeline"] = 5, (f"Closes in {o['close_days']} days; the seller is flexible on the date"
+        s["timeline"], why["timeline"] = 5, (f"Closes in {o['close_days']} days; fits the seller's timeline"  # never where that came from: the
+                                             # listing agent's word is chat only
                                              if S.get("flexible_close") else
                                              f"Closes in {o['close_days']} days; no seller deadline given, so any date fits")
     else:  # the seller wants speed, or buyer-offer-strategy's read of how a listing agent weighs a faster close
@@ -2374,7 +2377,7 @@ def _missing_market(costs, sheet, A):
         if a.get("estimate") and a["key"] in what:
             field, name, fix = what[a["key"]]
             shown = f"{fmt.pct(a['value'], None)} of price" if a["key"] not in ("title_fees", "estoppel") else money(a["value"])
-            A.add("listing", field, a["value"], f"{name}: national estimate of {shown} (Estimate; {fix} replaces it)", "med")
+            A.add("listing", field, a["value"], f"{name}: national estimate of {shown} ({fix} replaces it)", "med")
 
 
 def check_fractions(node, where="file"):

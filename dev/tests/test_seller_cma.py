@@ -275,6 +275,8 @@ class Stance(unittest.TestCase):
         for stance in compute.cma.STANCES:
             R2["pricing"]["stance"] = stance
             self.assertEqual(C["stance"]["prices"][stance]["list_price"], run(R2)[0]["recommendation"]["list_price"])
+        # iteration 20: the comps stage names each sale it set aside, as the report will
+        self.assertEqual(" ".join(C["settled"]), run(report())[0]["comps"]["settled"])
 
 
 class Costs(unittest.TestCase):
@@ -759,6 +761,15 @@ class AdjustedValues(unittest.TestCase):
 
 class JudgmentOnly(unittest.TestCase):
     """report.json writes judgment; a figure in it, or a field the script now writes, stops with its path."""
+
+    def test_go_live_is_a_launch_not_people(self):
+        """Eval 9 (iteration 20): "go live on schedule" tripped the who-lives-there check."""
+        R = report()
+        R["summary_page"]["next_step"] = "Sign the listing agreement this week so we go live on schedule."
+        run(R)  # no error
+        R = report_with_deck()
+        R["deck"]["tagline"] = "Perfect for young families"
+        stops(self, R, r"deck\.tagline")
 
     def test_figures_and_retired_fields_stop_with_every_problem(self):
         R = report_with_deck()

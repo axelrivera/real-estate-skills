@@ -12,6 +12,7 @@
  "assumptions": {
   "count": 6
  },
+ "below_range": false,
  "chat_notes": {
   "count": 4
  },

@@ -162,7 +162,7 @@ JUDGMENT = (
 VALUE_ONLY = ("summary_page.headline", "summary_page.why[]", "bottom_line.why", "range_override.reason",
               "history.takeaway", "comps.lean", "scatter.takeaway", "market.bullets[]", "subject.summary")
 OFFER_ADVICE = re.compile(r"\b(offer|offering at|open(?:ing)? (?:at|low|high|below|near)|negotiat\w*|leverage|walk[- ]?away"
-                          r"|counter[- ]?offers?|lowball\w*|bargain\w*|room to (?:move|come down))\b", re.I)
+                          r"|counter[- ]?offers?|lowball\w*|bargain\w*|room to (?:move|come down)|cushion\w*)\b", re.I)
 # Where asking sits is the script's (asking_position, printed right above the headline), so the headline never says it:
 # it gives the one fact that explains the value, and can't contradict the script's line.
 HEADLINE_POSITION = re.compile(r"\b(asking|list(?:ing)? price|priced|above|below|inside|within|bottom|top|middle|median)\b",
@@ -211,6 +211,9 @@ def schema_errors(R):
                 who = prose.people(text)
                 if who:
                     out.append(f"{path}: has {', '.join(repr(x) for x in who)} → {prose.PEOPLE_FIX}.")
+    # the fair-housing phrases render.py stops on, here too, so the first run names them (iteration 20: "young
+    # families" in deck.tagline passed compute.py and stopped only at render)
+    out += [f"{path.removeprefix('$.')}: {problem}" for path, problem in prose.issues(R, rules=frozenset({"fair"}))]
     for pattern in VALUE_ONLY:
         for path, v in _walk(R, _parts(pattern), ""):
             found = OFFER_ADVICE.findall(re.sub(r"<[^>]+>", " ", v)) if isinstance(v, str) else []
@@ -611,12 +614,15 @@ def history_stats(R, as_of):
     active_days = fmt.half_up(active_days)
     total_cut, first_listed = sum(cuts), first_listed or counted[0]["date"]
     timeline = []
-    for r in rows:  # oldest first, for the report's table (words for each kind from labels.json)
+    flagged = {rows_by_i for g in out_of_order for rows_by_i in g}  # event indices (order_breaks ran before the sort)
+    # oldest first, for the report's table, in the grid's own order: a row out of date order stays where the grid has
+    # it, marked for the agent to check, never moved to where its date would put it (iteration 20)
+    for r in sorted(rows, key=lambda r: r["i"], reverse=newest_first):
         kind = HISTORY_KIND.get(r["change"], r["change"])
         if kind == "price":
             kind = "price_cut" if r["delta"] < 0 else "price_increase" if r["delta"] > 0 else "price"
         timeline.append({"date": r["date"].isoformat(), "kind": kind, "price": r["price"], "delta": r["delta"],
-                         "mls": r["mls"], "note": events[r["i"]].get("note")})
+                         "mls": r["mls"], "note": events[r["i"]].get("note"), "to_confirm": r["i"] in flagged})
     stats = {
         "events": len(rows), "first_listed": first_listed.isoformat(),
         "listings": sum(1 for lst in listings if any(HISTORY_CHANGES[r["change"]] == "active" for r in lst["rows"])),
@@ -711,7 +717,8 @@ def history_section(hist, as_of):
             kind = "back_on_higher" if e["delta"] > 0 else "back_on_lower"
         elif kind == "sold":  # CMA-307: a listing after a sale is the next owner's, not a relisting
             n_listed = 0
-        rows.append([when, e.get("note") or L["hist_" + kind], money(e["price"]) if e["price"] is not None else fmt.EMPTY])
+        rows.append([t("hist_date_check", when=when) if e.get("to_confirm") else when, e.get("note") or L["hist_" + kind],
+                     money(e["price"]) if e["price"] is not None else fmt.EMPTY])
     return {"heading": heading, "lines": lines, "rows": rows}
 
 

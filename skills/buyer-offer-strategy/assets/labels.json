@@ -128,7 +128,7 @@
 
  "stl": "Sale to List",
  "stl_original": "Sale to Original List",
- "sig_dom": "{dom} days on market vs. a {med}-day median",
+ "sig_dom": "{dom} days on market vs. {a} {med}-day median",
  "sig_stl": "sales at {pct} of list price",
  "sig_stl_original": "sales at {pct} of original list price",
  "sig_cuts": "{n} price cuts",
@@ -346,7 +346,7 @@
  "opt_same_deposit": ". Same outlook, score {score} vs. {rec}, with more of your cash at risk as deposit",
  "opt_saves": ". Saves {amount} in worst-case cash",
  "opt_outlook": "; outlook {band}",
- "opt_under_value": "; under the {value} median adjusted value, which reads a band lower against two or more competing offers",
+ "opt_under_value": "; under the {value} median adjusted value, which reads a band lower against this much competition",
  "diff": "{term} {value}",
  "diff_none": "no {term}",
  "same_terms": "Same terms",
