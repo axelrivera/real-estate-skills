@@ -1450,7 +1450,9 @@ def _check_dates(value, path):
 # the script, so a sentence can never state a different one ("9/25/2026", "4:12 PM", "Nov 6"). A document's own
 # number is part of its name and stays: "Counteroffer #1", "Addendum No. 1", "Para. 3(b)", "CR-7", "EA-4"
 DOC_NUMBER = re.compile(r"#\s*\d+|\bNo\.\s*\d+|\bParas?\.\s*\d+(?:\([a-z0-9]+\))*(?:\s*(?:,|and|or|-|to)\s*\d+(?:\([a-z0-9]+\))*)*"
-                        r"|\b[A-Z]{1,4}-\d+[a-z]?\b")
+                        r"|\b[A-Z]{1,4}-\d+[a-z]?\b"
+                        # a document named by its number (iteration 21: "Counter Offer 3" stopped where "#3" passed)
+                        r"|\b(?i:counter[- ]?offer|addendum|amendment|rider|exhibit|page)\s+\d+\b")
 
 
 def written_figures(text):

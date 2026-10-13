@@ -184,7 +184,8 @@ class FarbarRows(unittest.TestCase):
             with self.assertRaisesRegex(timeline.DealError, "effective_date_source"):
                 timeline.analyze(fha(effective_date_source=text))
         for text in ("Seller's initials on Counteroffer #2", "Buyer's initials on the changes (Para. 3(b))",
-                     "Second seller's signature on Addendum No. 1 (CR-7)"):
+                     "Second seller's signature on Addendum No. 1 (CR-7)",
+                     "Buyer's signature on Counter Offer 3 (Para. 3(b))"):  # iteration 21: a document's own number
             timeline.analyze(fha(effective_date_source=text))
         with self.assertRaisesRegex(timeline.DealError, "effective_date_signed"):
             timeline.analyze(fha(effective_date_signed="2026-09-26 09:00"))

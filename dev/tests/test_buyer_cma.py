@@ -482,7 +482,7 @@ class History(unittest.TestCase):
         later_cdom = copy.deepcopy(EVAL_GRID)
         later_cdom[0]["cdom"] = 119
         repeat = copy.deepcopy(no_dom)
-        repeat[9]["note"] = "Taken off the market (off and on twice)"
+        repeat[9]["note"] = "Taken off the market (off and on again, more than once)"
         repeat_days = copy.deepcopy(repeat)
         repeat_days[9]["days_on"] = 10
         repeat_dom = copy.deepcopy(repeat)

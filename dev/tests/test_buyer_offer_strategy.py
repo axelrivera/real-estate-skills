@@ -233,6 +233,8 @@ class Limits(unittest.TestCase):
         self.assertEqual(r["terms"]["recommended"]["price_by"], "payment")
         for words in r["B"]["payment_assumed"]:
             self.assertIn(words, strategy.why_text(r["why"]["price"]))  # the payment limit sets the price, with what it assumed
+        self.assertIn(" and ".join(r["B"]["payment_assumed"]), strategy.why_text(r["why"]["price"]))  # iteration 21:
+        self.assertNotIn("; and", strategy.why_text(r["why"]["price"]))  # two estimates never read as a broken list
         d = fixture("fha-competitive.json")
         self.assertEqual(len(run(d)["B"]["payment_assumed"]), 1)  # the insurance estimate
         d["buyer"]["insurance_quote"] = True  # a quote in hand and a given rate: nothing assumed

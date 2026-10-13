@@ -1752,7 +1752,7 @@ def subject_card(subject, info, t, as_of=None):
     and year built; then the condition level, lot type, roof year and recent systems the script priced each comp
     against (a fact it doesn't know reads as not known). Words from the skill's labels.json through `t`:
     meta_sqft, meta_beds, meta_pool, meta_built, sc_condition, sc_lot, sc_roof, sc_roof_unknown, sc_systems,
-    sc_systems_new, sc_systems_none."""
+    sc_systems_year, sc_systems_old, sc_systems_new, sc_systems_none."""
     meta = []
     if _num(subject.get("sqft")):
         meta.append(t("meta_sqft", n=fmt.num(subject["sqft"])))
@@ -1772,8 +1772,10 @@ def subject_card(subject, info, t, as_of=None):
     roof = subject.get("roof_year")
     lines.append([t("sc_roof"), (str(roof) + (f" ({subject['roof_type']})" if subject.get("roof_type") in ("tile", "metal")
                                               else "")) if roof else t("sc_roof_unknown")])
-    y = subject.get("systems_year")
-    lines.append([t("sc_systems"), str(y) if isinstance(y, int) and not isinstance(y, bool) else
+    y = subject.get("systems_year")  # the year as priced: one over five years old isn't recent (iteration 21: "2020")
+    dated = isinstance(y, int) and not isinstance(y, bool)
+    lines.append([t("sc_systems"), t("sc_systems_year" if has_recent_systems(subject, as_of) else "sc_systems_old",
+                                     year=y) if dated else
                   t("sc_systems_new") if has_recent_systems(subject, as_of) else t("sc_systems_none")])
     return {"meta": meta, "lines": lines}
 

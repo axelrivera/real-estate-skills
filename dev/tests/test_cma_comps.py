@@ -499,7 +499,10 @@ class SizeAndLot(unittest.TestCase):
                                  "condition": "full_renovation", "lot": "canal", "systems_year": 2022}, {}, t, "2026-09-26")
         self.assertEqual(card["meta"], ["1,849 sq ft", "4/2", "pool", "built 1972"])
         self.assertEqual(dict(card["lines"]), {"Condition": "Full Renovation", "Lot": "Canal", "Roof": "Year not known",
-                                               "Recent Systems": "2022"})
+                                               "Systems": "Updated 2022"})
+        old = cma.subject_card({"sqft": 1849, "condition": "full_renovation", "lot": "standard", "systems_year": 2020},
+                               {}, t, "2026-09-26")  # iteration 21: a year the script didn't count says so
+        self.assertEqual(dict(old["lines"])["Systems"], "Updated 2020, not recent")
         C, _ = run(tanager())
         self.assertEqual(C["comps"]["subject_card"]["tag"], "Your Home")
         self.assertIn("Recommended", C["comps"]["subject_card"]["price"])

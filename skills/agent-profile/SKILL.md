@@ -9,7 +9,7 @@ Sets the agent up in about two minutes and saves `profile.md`: who they are and 
 
 It holds nothing about markets or costs. Each skill takes the location from the listing and uses built-in local values or estimates (named once in each report's notes), and the agent corrects them on the report if they want to.
 
-**Costs and commission.** When the agent asks to save costs, fees or commission terms here, save none of them. Add one line at the end of the reply: the profile never holds costs, because they change with each deal and area; each report assumes 5% total commission and local estimates, labels them, and takes their own numbers when they give them on that report. When that's the whole request, that line is the answer, plus one line offering to set up the profile if none exists.
+**Costs and commission.** When the agent asks to save costs, fees or commission terms here, save none of them. Add one line at the end of the reply: the profile never holds costs, because they change with each deal and area; each report uses a 5% total commission by default and local cost estimates (naming the estimates once in its notes), and takes their own numbers when they give them on that report. When that's the whole request, that line is the answer, plus one line offering to set up the profile if none exists.
 
 The agent is usually not technical and often a little nervous about setup. Keep YAML, JSON, field names and color codes out of replies unless they ask; talk about colors by name ("Navy").
 

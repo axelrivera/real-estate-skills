@@ -86,8 +86,17 @@ class Rules(unittest.TestCase):
         """Plain words, a one-word value, a date with no words around it, and terms clients use pass."""
         for text in ("Escrow deposit due in 3 days", "as_is", "2026-09-26", "2026-09-25 17:00", "null and void",
                      "None / None", "HOA dues $120 a month", "MLS #O6123456", "Your CMA shows", "4-point and wind-mitigation report",
-                     "wind mitigation", "Re-roofed in 2019", "a scripted walk-through", "Sep 26, 2026", "Dom Rivera"):
+                     "wind mitigation", "Re-roofed in 2019", "a scripted walk-through", "Sep 26, 2026", "Dom Rivera",
+                     "The Rider H cap is left undefined in the rider."):  # iteration 21: the English word
             self.assertEqual(problems({"note": text}), [], text)
+
+    def test_counts_in_words(self):
+        """Iteration 21: a count of events in words is a figure; a home's features, the sales a sentence points to and a
+        ratio aren't."""
+        for text, want in (("two price cuts so far", ["two price cuts"]), ("came down three times", ["three times"]),
+                           ("off and on twice", ["twice"]), ("a two-car garage and three bedrooms", []),
+                           ("The two sales that support asking", []), ("nearly twice the land", [])):
+            self.assertEqual(prose.counts(text), want, text)
 
     def test_every_problem_listed_at_once(self):
         data = {"summary": "Median DOM is 30, see the data file.", "rows": [["Close", "Set closing_date"]],

@@ -204,7 +204,7 @@ def schema_errors(R):
         for path, v in _walk(R, _parts(pattern), ""):
             if isinstance(v, str):
                 text = re.sub(r"<[^>]+>", " ", v)
-                found = prose.figures(text) + re.findall(r"\{\w*\}", v)
+                found = prose.figures(text) + prose.counts(text) + re.findall(r"\{\w*\}", v)
                 if found:
                     out.append(f"{path}: has {', '.join(repr(x) for x in found)} → the report prints every count, price, "
                                "percent and date itself; write this in words, without the figure.")

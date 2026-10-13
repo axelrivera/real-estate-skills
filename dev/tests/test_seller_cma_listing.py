@@ -136,6 +136,14 @@ class Reprice(unittest.TestCase):
         self.assertEqual(C["recommended_index"], 0)
         self.assertTrue(all(x["list_price"] <= 456000 * 0.99 for x in C["strategies"][1:]))
         self.assertIn(compute.t("line_below_range_reprice", price="$456,000"), C["recommendation"]["line"])
+        # iteration 21: under the range every option takes the one rule, never the stale-listing ratio or the range's
+        # floor, so the recommended Stay expects (and nets) the most, each at or under its own list price
+        ex = [x["expected_sale"] for x in C["strategies"]]
+        self.assertEqual(ex, sorted(ex, reverse=True))
+        self.assertTrue(all(x["expected_sale"] <= x["list_price"] for x in C["strategies"]))
+        self.assertEqual(C["strategies"][0]["expected_sale_source"], "rule")
+        self.assertEqual(C["recommendation"]["verdict"], compute.t("verdict_price_stay", price="$456,000"))
+        self.assertIn(compute.L["stance_line_below_range"], C["stance"]["line"])
 
     def test_output(self):
         R = reprice(current=489900)
@@ -245,6 +253,13 @@ class Relist(unittest.TestCase):
         self.assertTrue(C["below_range"])
         self.assertIn(compute.t("line_below_range_relist", price="$445,000"), C["recommendation"]["line"])
         self.assertEqual(C["strategies"][0]["note"], compute.L["opt_note_at_cap"])
+        self.assertTrue(all(x["expected_sale"] <= x["list_price"] for x in C["strategies"]))  # iteration 21: the
+        self.assertGreater(C["strategies"][0]["expected_sale"], C["strategies"][1]["expected_sale"])  # cut isn't floored
+        R["relist"]["status"] = "pending"  # the sale fell through: buyers didn't pass on it
+        C, _ = run(R)
+        self.assertIn(compute.t("line_below_range_relist_pending", price="$445,000"), C["recommendation"]["line"])
+        self.assertEqual(C["strategies"][0]["note"], compute.L["opt_note_at_cap_pending"])
+        del R["relist"]["status"]
         self.assertNotIn("list_outside_range", C["warning_keys"])  # the rule's price, not the agent's
         R["price_override"] = {"list_price": 444900, "reason": "The agent's own price."}
         self.assertEqual(run(R)[0]["recommendation"]["list_price"], 444900)

@@ -1014,7 +1014,10 @@ def build_offer(B, costs):
         while price > 1000 and monthly_payment(B, costs, price) > BU["max_payment"]:
             price -= 1000
         est = B.get("payment_assumed") or []  # OFR-228: a cap that rests on an assumed rate or insurance says so
-        w["price"], by = why("why_price_payment", pay=money(BU["max_payment"]), at=t("at_assumed", what=joined(est)) if est else "",
+        # iteration 21: two estimates read "a and b" even with commas inside ("…, a conventional-loan average; and
+        # estimated insurance; below the value range" read as a broken list), and the range comes before them
+        what = " and ".join(est) if len(est) == 2 else joined(est)
+        w["price"], by = why("why_price_payment", pay=money(BU["max_payment"]), at=t("at_assumed", what=what) if est else "",
                              below=L_["below_range"] if price < V["cma_low"] else ""), "payment"
     t_ = {"price": price, "price_by": by}
     cc = closing_costs(B, price)

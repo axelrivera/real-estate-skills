@@ -123,8 +123,9 @@ def main(argv=None):
                     if (h.get("original_list_price") or 0) > (h.get("current_price") or 0) else "") if x)
                 out["listed_now_question"] = (
                     f"This home shows as {h['status'].lower()} in the MLS right now ({facts}). Which applies: it's your "
-                    "own listing (I'll build a reprice), the sale fell through or the listing is ending (I'll treat that "
-                    "price as one the market turned down, or as history only), or it's another brokerage's live listing "
+                    "own listing (I'll build a reprice), the sale fell through or the listing is ending (should that price cap "
+                    "the new options as a price the market turned down, or count as history only?), or it's another "
+                    "brokerage's live listing "
                     "(I'll wait until it ends)?")
             if a.own_listing and h.get("current_price"):
                 # CMA-287: copy to report.json's `reprice`; the original price shows the listing's price history (a cut)
