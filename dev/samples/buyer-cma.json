@@ -168,16 +168,12 @@
     "sold_price": 495000,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Documented Recent Systems",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "Same era and nearly the same size. Sold above asking within a week.",
      "It came with a documented recent roof, AC, electrical and windows. We don't yet know the age of this home's AC, electrical or windows, so that home gets a small edge."
-    ]
+    ],
+    "recent_systems": true
    },
    {
     "address": "745 Little Heron Cir",

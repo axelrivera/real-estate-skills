@@ -837,6 +837,8 @@ def engine_data(B, variants):
     seller = {"listing_fee_pct": LS["listing_fee_pct"], "offered_buyer_broker_pct": LS["buyer_broker_offered_pct"]}
     if P.get("seller_deadline"):
         seller["deadline"] = P["seller_deadline"]
+    elif P.get("seller_flexible_close"):  # the listing agent said any date works: every closing date fits the seller
+        seller["flexible_close"] = True
     offers = []
     for vid, t_ in variants:
         o = {"id": vid, "price": t_["price"], "financing": BU["financing"], "down_pct": BU["down_pct"], "approval": BU["approval"],
@@ -900,9 +902,25 @@ def ci(o, target_net, lp):
     return o["score"]["total"] + 5 * (o["ns"]["net_adj"] - target_net) / (0.01 * lp)
 
 
-def band_of(v, level):
+BAND_DOWN = {"strong": "comp", "comp": "risk", "risk": "unl", "unl": "unl"}
+VALUE_FLOOR_LEVEL = 2  # two or more competing offers: an offer under the value reads a band lower
+
+
+def under_value(B, price, level):
+    """With two or more competing offers, a price under the CMA's median adjusted value (the range's midpoint without
+    one) loses ground to the offers at or above it, whatever its terms: the outlook reads one band lower. Never with an
+    assumed value. Offer prices move in $1,000 steps, so the value is taken to the step at or under it."""
+    V = B["value"]
+    return level >= VALUE_FLOOR_LEVEL and not V.get("assumed") and price < V["point"] // 1000 * 1000
+
+
+def band_of(v, level, B=None, price=None):
+    """The outlook band of competitiveness index `v` against `level` (BANDS), one band lower under the value
+    (under_value) when the offer's `price` and the buyer file `B` are given."""
     s, c, r = BANDS[level]
     k = "strong" if v >= s else "comp" if v >= c else "risk" if v >= r else "unl"
+    if B is not None and price is not None and under_value(B, price, level):
+        k = BAND_DOWN[k]
     return k, L_["band_name"][k]
 
 
@@ -1241,7 +1259,7 @@ def reach_band(B, costs, rec):
         return None, None, None, None
     _, O = run_engine(B, costs, [("recommended", rec)] + tries)
     # each offer against its own clean offer at list (the same closing date), as it's scored once recommended
-    bands = {k: band_of(ci(O[k], O[k]["target"]["net_adj"], P["list_price"]), lvl) for k in O}
+    bands = {k: band_of(ci(O[k], O[k]["target"]["net_adj"], P["list_price"]), lvl, B, O[k]["price"]) for k in O}
     best = max(BAND_RANK[b[0]] for b in bands.values())
     if bands["recommended"][0] not in ("risk", "unl") or best <= BAND_RANK[bands["recommended"][0]]:
         return None, None, None, None
@@ -1310,10 +1328,10 @@ def option_set(B, costs, rec):
     return variants, lc_why, by_net
 
 
-def option_ranks(O, lvl, lp):
-    """{option: its outlook band's rank} against the expected competition."""
+def option_ranks(O, lvl, lp, B=None):
+    """{option: its outlook band's rank} against the expected competition (under the value, a band lower: band_of)."""
     tgt = O["recommended"]["target"]["net_adj"]
-    return {k: BAND_RANK[band_of(ci(O[k], tgt, lp), lvl)[0]] for k in O}
+    return {k: BAND_RANK[band_of(ci(O[k], tgt, lp), lvl, B, O[k]["price"])[0]] for k in O}
 
 
 def better_option(B, costs, terms, O, lvl, promote_stronger=True):
@@ -1324,7 +1342,7 @@ def better_option(B, costs, terms, O, lvl, promote_stronger=True):
     if B.get("overrides"):
         return None  # the agent decided the terms
     priority = B.get("buyer_priority") or "balanced"
-    rank = option_ranks({k: O[k] for k in terms}, lvl, B["property"]["list_price"])
+    rank = option_ranks({k: O[k] for k in terms}, lvl, B["property"]["list_price"], B)
     score = {k: O[k]["score"]["total"] for k in terms}
 
     def fits(k):
@@ -1351,6 +1369,11 @@ def better_option(B, costs, terms, O, lvl, promote_stronger=True):
         return None
     keeps = rank["lower_cost"] >= rank["recommended"] or (priority == "protect_cash"
                                                           and rank["lower_cost"] >= BAND_RANK["comp"])
+    # protecting cash never settles for At Risk or Unlikely when the fuller terms on the page read better (fuzz seed
+    # 1209104: an Unlikely lower-cost offer promoted beside an At Risk Stronger one)
+    better_shown = "stronger" in terms and fits("stronger") and rank["stronger"] > rank["lower_cost"]
+    if priority == "protect_cash" and rank["lower_cost"] < BAND_RANK["comp"] and better_shown:
+        keeps = False
     if keeps and fits("lower_cost") and lower_cost_ok("lower_cost"):
         return "lower_cost"
     return None
@@ -1473,7 +1496,7 @@ def analyze(B_in, market=None, cma=None):
         pick = better_option(B, costs, dict(variants), O, lvl, promote_stronger=not by_net)
         if not pick or promoted:
             break
-        ranks = option_ranks(O, lvl, B["property"]["list_price"])
+        ranks = option_ranks(O, lvl, B["property"]["list_price"], B)
         promoted_lifts = ranks[pick] > ranks["recommended"]  # the outlook moved (not only the score or the cash)
         promoted, fuller = pick, rec
         rec = dict(variants)[pick]
@@ -1508,7 +1531,7 @@ def analyze(B_in, market=None, cma=None):
     res["cash_at_cap"] = buyer_cash(B, dict(rec, price=esc_["cap"], appraisal_gap=esc_.get("gap_at_cap", rec.get("appraisal_gap", 0)))) \
         if esc_ else None
     res["ci"] = {k: ci(O[k], tgt, lp) for k, _ in variants}
-    res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
+    res["bands"] = {k: {lv: band_of(res["ci"][k], lv, B, t2["price"]) for lv in range(4)} for k, t2 in variants}
     saves_nothing = "lower_cost" in res["terms"] and res["cash"]["lower_cost"]["worst"] >= res["cash"]["recommended"]["worst"]
     unlikely = "lower_cost" in res["terms"] and lvl >= 2 and res["bands"]["lower_cost"][lvl][0] == "unl"
     already_unlikely = res["bands"]["recommended"][lvl][0] == "unl"  # nothing lower to drop to
@@ -1537,7 +1560,7 @@ def analyze(B_in, market=None, cma=None):
         res["cash"] = {k: buyer_cash(B, t2) for k, t2 in variants}
         res["payment"] = {k: monthly_payment(B, costs, t2["price"]) for k, t2 in variants}
         res["ci"] = {k: ci(O[k], tgt, lp) for k, _ in variants}
-        res["bands"] = {k: {lv: band_of(res["ci"][k], lv) for lv in range(4)} for k, _ in variants}
+        res["bands"] = {k: {lv: band_of(res["ci"][k], lv, B, t2["price"]) for lv in range(4)} for k, t2 in variants}
         res["stronger_dropped"], res["dropped_stronger"], res["stronger_hb"] = False, None, True
         by_net, dropped = False, None
     if promoted == "lower_cost" and (w.get("price") or {}).get("key") == "why_promo_price":
@@ -1822,7 +1845,7 @@ def higher_price(B, costs, res):
         return None
     price = fits * 1000  # the highest price inside every limit, with the concessions it needs
     _, O = run_engine(B, costs, [("recommended", rec), ("higher", at(price))])
-    band = band_of(ci(O["higher"], O["higher"]["target"]["net_adj"], B["property"]["list_price"]), lvl)
+    band = band_of(ci(O["higher"], O["higher"]["target"]["net_adj"], B["property"]["list_price"]), lvl, B, price)
     lifts = BAND_RANK[band[0]] > BAND_RANK[now[0]]
     above = price > B["value"]["cma_high"]
     text = t("hp_lifts" if lifts else "hp_same", price=money(price), band=against(B, band[1]), now=now[1],
@@ -2066,6 +2089,8 @@ def summary(r, package_ready=False):
             what = diff_text(r, k) + t("opt_saves", amount=money(rc["worst"] - c["worst"])) + (
                 "" if r["bands"][k][lvl] == br else t("opt_outlook", band=r["bands"][k][lvl][1]))
             status = "caution"
+        if under_value(B, o["price"], lvl):  # why its outlook reads a band lower than its score alone
+            what += t("opt_under_value", value=money(B["value"]["point"]))
         options.append({"key": k, "option": opt_name(k), "price": money(o["price"]), "outlook": r["bands"][k][lvl][1],
                         "outlook_class": r["bands"][k][lvl][0], "seller_net": money(o["ns"]["net_adj"]),
                         "worst_cash": money(c["worst"]), "reserve": money(c["reserve"]), "what": what, "status": status})

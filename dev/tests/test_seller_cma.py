@@ -75,6 +75,7 @@ def texas(R):
     R["subject"].update(state="TX", county="Travis", city="Austin")
     R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}  # the agent's
     R["comps"]["lot_values"] = AGENT_LOTS  # no built-in lot values outside Florida either
+    R["comps"]["systems_value"] = 5000  # nor a systems value
     R.pop("export")
     R["buyer_payment"].pop("district")
     R["buyer_payment"].update(school_mills=9.5, total_mills=19.0)
@@ -514,6 +515,7 @@ class OtherMarkets(unittest.TestCase):
         R["mls"] = "Stellar"
         R["comps"]["condition_values"] = {"original": 0, "kitchen_only": 15000, "full_renovation": 45000}
         R["comps"]["lot_values"] = AGENT_LOTS
+        R["comps"]["systems_value"] = 5000
         R["comps"]["size_per_sqft"] = 75  # with no state, no market rates: the agent's
         C, _ = run(R)
         self.assertTrue(C["preliminary"])
@@ -779,7 +781,7 @@ class JudgmentOnly(unittest.TestCase):
         R["prep"]["items"][0] = "<strong>Document the roof.</strong> Permits."
         stops(self, R, r"prep\.items")
         R = report()
-        R["comps"]["cards"][1]["adjustments"][0]["kind"] = "vibes"  # its Documented Recent Systems line
+        R["comps"]["cards"][1]["adjustments"].append({"label": "Pool", "amount": 25000, "kind": "vibes"})
         stops(self, R, r"comps\.cards\[1\]\.adjustments\[0\]\.kind")
 
     def test_the_script_states_the_facts(self):

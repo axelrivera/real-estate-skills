@@ -197,12 +197,12 @@ def generate(seed, out_dir):
         adj = []
         if h["private_pool"] != pool:
             adj.append({"label": "Pool", "amount": round((25000 if pool else -25000) * scale, -2)})
-        if rng.random() < 0.07:
-            adj.append({"label": "Documented Recent Systems", "amount": round(-5000 * scale, -2)})
         card = {"address": cma.display_address(h["address"]), "sold_price": h["close_price"],
                 "seller_concessions": h.get("seller_paid") or 0,
                 "condition": rng.choice(cma.CONDITION_LEVELS[:-1] if rng.random() < 0.9 else cma.CONDITION_LEVELS),
                 "adjustments": adj, "bullets": rng.sample(BULLETS, rng.randint(1, 3))}
+        if rng.random() < 0.1:  # a newer AC or water heater its listing names: the script prices the difference
+            card["recent_systems"] = True
         if rng.random() < 0.2:  # a lot the script prices by its type (the size comes from the export)
             card["lot"] = rng.choice(("corner_or_oversized", "view", "canal", "lake_or_open_water"))
         elif rng.random() < 0.03:
@@ -236,6 +236,7 @@ def generate(seed, out_dir):
         fl_market = profiles.load_market(state="FL", county="Seminole")
         comps["size_per_sqft"] = round(fl_market.get("cma.adjustments.living_area_per_sqft") * scale)
         comps["lot_values"] = {k: round(v * scale, -2) for k, v in fl_market.get("cma.adjustments.lot_types").items()}
+        comps["systems_value"] = round(5000 * scale, -2)
     lot = {"lot": rng.choice(("corner_or_oversized", "view", "canal"))} if rng.random() < 0.15 else {}
     subject_level = rng.choice(cma.CONDITION_LEVELS[:-1])
     # the adjusted values and the range, as the skill's comps stage prints them before any pricing

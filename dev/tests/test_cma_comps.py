@@ -431,6 +431,28 @@ class SizeAndLot(unittest.TestCase):
         self.assertEqual(cma.typed_adjustments({"adjustments": [{"label": "Size", "source": "script"}, {"label": "Pool"}]}),
                          [(0, {"label": "Pool"})])
 
+    def test_recent_systems_by_difference(self):
+        comps = {"cards": [{"address": "1 A St", "recent_systems": True, "adjustments": []},
+                           {"address": "2 A St", "adjustments": []}]}
+        errors, _ = cma.apply_systems_adjustments(comps, {}, self.market)
+        self.assertEqual(errors, [])
+        self.assertEqual([[(a["label"], a["amount"]) for a in c["adjustments"]] for c in comps["cards"]],
+                         [[("Documented Recent Systems", -5000)], []])
+        errors, _ = cma.apply_systems_adjustments(comps, {"recent_systems": True}, self.market)  # the home has them
+        self.assertEqual([[(a["label"], a["amount"]) for a in c["adjustments"]] for c in comps["cards"]],
+                         [[], [("No Documented Recent Systems", 5000)]])
+        typed = {"cards": [{"address": "1 A St", "adjustments": [{"label": "Newer AC", "amount": -5000},
+                                                                 {"label": "Older Roof", "amount": 5000}]}]}
+        errors, _ = cma.apply_systems_adjustments(typed, {}, self.market)
+        self.assertEqual(len(errors), 1)  # the AC; the roof is the roof step's
+        R = {"as_of": "2026-09-26", "subject": {"sqft": 1800, "condition": "original", "roof_year": 2015},
+             "comps": {"cards": [{"address": "1 A St", "sold_price": 400000, "condition": "original", "sqft": 1800,
+                                  "roof_year": 2024, "recent_systems": True, "adjustments": []}]}}
+        self.assertEqual(cma.settle_comps(R, [], self.market, None)[0], [])
+        kinds = [a["label"] for a in R["comps"]["cards"][0]["adjustments"]]
+        self.assertIn("Documented Recent Systems", kinds)  # kept through the roof step, which shares its kind
+        self.assertTrue(any(k.startswith("Roof:") for k in kinds))
+
     def test_seller_report_prices_size_and_lot(self):
         C, _ = run(tanager())
         lines = [a for c in C["comps"]["cards"] for a, _ in c["lines"]]

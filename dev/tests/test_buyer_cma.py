@@ -202,6 +202,15 @@ class Inputs(unittest.TestCase):
             R["subject"]["summary"] = "The home offers a pool and a new roof; the countertops are stone."
         run(elsewhere)  # no error
 
+    def test_the_homes_hoa_reaches_the_payment(self):
+        """Eval 5 (iteration 19): subject.hoa_monthly alone left the payment at $0 HOA in every column."""
+        def dues(R):
+            R["subject"]["hoa_monthly"] = 105
+            R["costs"]["payment"].pop("hoa_cdd_monthly", None)
+        _, C, _ = run(dues)
+        _, C0, _ = run(lambda R: R["costs"]["payment"].pop("hoa_cdd_monthly", None))
+        self.assertEqual(C["payments"]["rows"][0]["total"] - C0["payments"]["rows"][0]["total"], 105)
+
     def test_headline_leaves_where_asking_sits_to_the_script(self):
         """Iteration 18: a headline written before the range said asking "sits above" when it was inside. Where asking
         sits is the script's line above the headline, and the Bottom Line repeats that same line, never a second wording."""
@@ -249,7 +258,8 @@ class AskingPosition(unittest.TestCase):
 
     def test_position_lines(self):
         cases = [(490000, "sum_pos_above", 10000), (450000, "sum_pos_below", 5000), (474900, "sum_pos_over_median", 5100),
-                 (465000, "sum_pos_under_median", 4800), (469800, "sum_pos_at_median", 0)]
+                 (465000, "sum_pos_under_median", 4800), (469800, "sum_pos_at_median", 0),
+                 (454900, "sum_pos_just_below", 100), (482000, "sum_pos_just_above", 2000)]  # iteration 19: "$100 below"
         for ask, key, amt in cases:
             with self.subTest(ask=ask):
                 p = compute.asking_position(ask, 455000, 480000, 469800)
@@ -382,6 +392,7 @@ class CompsFirst(unittest.TestCase):
             return compute.comps_first(R, market, homes)
         out = comps_only()
         self.assertNotIn("rough", out)  # one range: the report's own
+        self.assertIsInstance(out["settled"], list)  # iteration 18: a sale set aside is said at this stage too
         self.assertEqual(set(out["range"]), {"low", "high", "display", "override"})  # no opening, target or walk-away
         self.assertEqual(out["history"]["price_cuts"], 4)  # the gut check counts the history too
         self.assertEqual(out["warning_keys"], [])
@@ -516,6 +527,7 @@ class Taxes(unittest.TestCase):
             R["subject"].update(state="TX", county="Travis")
             R["comps"]["condition_values"] = TEXAS_CONDITION  # no built-in condition values outside Florida
             R["comps"]["lot_values"] = {"corner_or_oversized": 5000, "canal": 10000}  # nor lot values
+            R["comps"]["systems_value"] = 5000  # nor a systems value
             R.pop("export")
             for j in R["costs"]["taxes"]["jurisdictions"]:
                 j.pop("school_mills", None), j.pop("total_mills", None), j.pop("district", None)

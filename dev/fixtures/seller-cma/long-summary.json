@@ -110,15 +110,11 @@
     "sold_price": 495000,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Documented Recent Systems",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "Same year and nearly the same size. Sold above asking in five days."
-    ]
+    ],
+    "recent_systems": true
    },
    {
     "address": "745 Little Wekiva Cir",

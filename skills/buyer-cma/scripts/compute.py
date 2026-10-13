@@ -345,6 +345,16 @@ def scenario_label(sc):
     return t("scen_label", program=L["prog_" + key], down=fmt.pct(sc["down_pct"], 2))
 
 
+def hoa_cdd(R):
+    """The monthly HOA and CDD in the payment: `costs.payment.hoa_cdd_monthly`, else the home's own `hoa_monthly`
+    (iteration 19: dues on the subject never reached the payment)."""
+    pay = R["costs"]["payment"]
+    v = pay.get("hoa_cdd_monthly")
+    if v is None:
+        v = (R.get("subject") or {}).get("hoa_monthly")
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+
+
 def payments(R, market, tax_rows, ji, insurance, median_shown=None):
     """The payment table at `costs.payment.price` (asking by default), one column per financing scenario, and each
     column's total at the median adjusted value when that is lower (`at_median`): the same home at what the comps
@@ -366,7 +376,7 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
             raise ReportError(f"costs.payment.scenarios[{i}].type: {e}") from None
         sc["label"] = scenario_label(sc)
         mled, r = monthly_ledger(price, prog, sc["down_pct"], pay["rate"], tj["annual"], insurance["annual"],
-                                 pay.get("hoa_cdd_monthly", 0), flood["annual"], tax_label)
+                                 hoa_cdd(R), flood["annual"], tax_label)
         cc, _, lender = buyer_closing_costs(R, market, price, prog, sc["down_pct"], r["loan"])
         cled = cash_ledger(r["cash_down"], cc, broker_fee_short(R, price))
         total, to_close = mled.total(), cled.total()
@@ -386,7 +396,7 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
     first = rows[0]
     lower, _ = monthly_ledger(price - 10000, first["program"], first["down_pct"], pay["rate"],
                               tax_annual_at(price - 10000, market, tj, homestead), insurance["annual"],
-                              pay.get("hoa_cdd_monthly", 0), flood["annual"], tax_label)
+                              hoa_cdd(R), flood["annual"], tax_label)
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
         other = tax_rows[1 - ji]
@@ -404,7 +414,7 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
         at_median = {"price": median_shown, "price_display": money(median_shown), "totals": [
             monthly_ledger(median_shown, r["program"], r["down_pct"], pay["rate"],
                            tax_annual_at(median_shown, market, tj, homestead), insurance["annual"],
-                           pay.get("hoa_cdd_monthly", 0), flood["annual"], tax_label)[0].total() for r in rows]}
+                           hoa_cdd(R), flood["annual"], tax_label)[0].total() for r in rows]}
     return {"price": price, "price_display": money(price), "price_basis": price_basis(price, R, median_shown),
             "at_median": at_median, "rate": pay["rate"],
             "rate_display": fmt.pct(pay["rate"] / 100, 3), "insurance_annual": insurance["annual"],
@@ -848,13 +858,17 @@ def range_position(value, low, high):
 
 # --- where asking sits: facts, never a suggested price ----------------------------------------------------------------
 
+JUST_OUTSIDE = 0.005  # asking within 0.5% of an end of the range (about $2,400 at $475,000) is "just" outside it
+
+
 def asking_position(ask, low, high, median_shown):
     """Where the asking price sits against the supported range and the median adjusted value: above or below the range
     by how much, else above, below or at the median. {key, amount, line}: the line is page 1's sentence."""
+    near = JUST_OUTSIDE * low  # a gap this small reads as at the edge, said with its amount, never as a real gap
     if ask > high:
-        key, amt = "sum_pos_above", ask - high
+        key, amt = ("sum_pos_just_above" if ask - high <= near else "sum_pos_above"), ask - high
     elif ask < low:
-        key, amt = "sum_pos_below", low - ask
+        key, amt = ("sum_pos_just_below" if low - ask <= near else "sum_pos_below"), low - ask
     elif ask > median_shown:
         key, amt = "sum_pos_over_median", ask - median_shown
     elif ask < median_shown:
@@ -955,7 +969,7 @@ def comps_first(R, market, homes=()):
     if errors:
         raise ReportError(stop_message(errors))
     warnings, warning_keys, warn = _warner()
-    prepare_comps(R, homes, warn, market)
+    comp_info = prepare_comps(R, homes, warn, market)[3]
     warn("thin_comps", *comp_count_warnings(R["comps"]["cards"]))
     s, values = R["subject"], [c["adjusted"] for c in R["comps"]["cards"]]
     median_adjusted = statistics.median(values)
@@ -981,6 +995,7 @@ def comps_first(R, market, homes=()):
         "history": hist,
         "comps_table": [{"address": cma.display_address(r[0]), "sold_display": money(r[1]), "adjusted_display": money(r[3])}
                         for r in R["comps"].get("summary_rows", [])],
+        "settled": cma.selection_lines(comp_info, t, money),  # each sale set aside or kept, as the report will say it
         "warnings": warnings,
         "warning_keys": warning_keys,
         "market_notes": market.notes,
@@ -1041,7 +1056,9 @@ def cost_notes(N, R, market, pay, tax_rows, insurance):
     rows = pay["rows"]
     assumed = [r["label"] for r in rows if r["assumed"]]
     if assumed:  # CMA-227: said once, here, never on a column header
-        N.add("financing_assumed", t("note_financing_assumed", labels=cma._and(assumed)), "assumption")
+        key = ("note_financing_assumed" if len(assumed) == 1 else
+               "note_financing_assumed_all" if len(assumed) == len(rows) else "note_financing_assumed_some")
+        N.add("financing_assumed", t(key, labels=cma._and(assumed)), "assumption")
     tb = pay["tax_basis"]
     tj = tax_rows[pay["tax_index"]]
     if tb["estimated"]:

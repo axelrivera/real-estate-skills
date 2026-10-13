@@ -1042,6 +1042,51 @@ def apply_condition_adjustments(comps, subject, market):
     return [], info
 
 
+SYSTEMS_LABELS = {True: "Documented Recent Systems", False: "No Documented Recent Systems"}  # by the comp's own flag
+_SYSTEMS_TYPED = re.compile(r"system|\bac\b|a/c|hvac|air condition|water heater|windows?\b|electrical|plumbing|panel",
+                            re.I)
+
+
+def apply_systems_adjustments(comps, subject, market):
+    """Documented recent systems are the script's: `subject.recent_systems` and each card's (true when the listing names
+    a system other than the roof as new, or dates it within the last five years) differ, and the comp is adjusted by the
+    market's `cma.adjustments.documented_recent_systems` (the agent's `comps.systems_value` outside it): minus when only
+    the comp has them, plus when only the home does. A systems amount typed on a card is an error. Returns (errors,
+    info {value} or None)."""
+    cards = comps.get("cards") or []
+    errors = []
+    for where, block in [("subject", subject)] + [(f"comps.cards[{i}]", c) for i, c in enumerate(cards)]:
+        if block.get("recent_systems") not in (None, True, False):
+            errors.append(f"{where}.recent_systems: {block['recent_systems']!r} → true or false (false when left out).")
+    for i, c in enumerate(cards):
+        for j, a in typed_adjustments(c):
+            if isinstance(a, dict) and not _ROOF_TYPED.search(str(a.get("label") or "")) and \
+                    _SYSTEMS_TYPED.search(str(a.get("label") or "")):
+                errors.append(f"comps.cards[{i}].adjustments[{j}]: a systems adjustment ({a.get('label')!r}) typed by "
+                              "hand → delete it and set the card's `recent_systems` (and subject.recent_systems): the "
+                              "script adjusts each comp by the difference.")
+    given = comps.get("systems_value")
+    if given is not None and (not _num(given) or given < 0):
+        errors.append(f"comps.systems_value: {given!r} → dollars documented recent systems add, a plain positive number.")
+    if errors:
+        return errors, None
+    for c in cards:
+        c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
+                                                                          and a.get("systems"))]
+    mine = bool(subject.get("recent_systems"))
+    differ = [c for c in cards if bool(c.get("recent_systems")) != mine]
+    base = market.get("cma.adjustments.documented_recent_systems") if market is not None else None
+    value = given if given is not None else (abs(base) if _num(base) else None)
+    if differ and value is None:
+        return ["comps.systems_value: no value for documented recent systems in this market → give the dollars they add, "
+                "from paired sales or the agent's rate (method.md)."], None
+    for c in differ:
+        theirs = bool(c.get("recent_systems"))
+        c["adjustments"].append({"label": SYSTEMS_LABELS[theirs], "amount": -value if theirs else value, "kind": "age",
+                                 "source": "script", "systems": True})
+    return [], {"value": value, "subject": mine}
+
+
 # --- time adjustments: script-owned (Results_v5) ------------------------------------
 
 QUARTER_DAYS = 365.25 / 4
@@ -1240,9 +1285,10 @@ def apply_roof_adjustments(comps, subject, market, as_of):
                               "subject.roof_year: the script adjusts each comp by the roof-age bands.")
     if errors:
         return errors, None
-    for c in cards:
+    for c in cards:  # the script's roof lines (its systems lines share the kind and stay)
         c["adjustments"] = [a for a in c.get("adjustments") or [] if not (isinstance(a, dict) and a.get("source") == "script"
-                                                                          and a.get("kind") == "age")]
+                                                                          and a.get("kind") == "age"
+                                                                          and not a.get("systems"))]
     sy = subject.get("roof_year")
     if sy in (None, ""):
         return [], {"subject_known": False, "subject_age": None, "unknown": []}
@@ -1607,9 +1653,10 @@ def settle_comps(R, homes, market, stats):
     size_errors, size_info = apply_size_adjustments(comps, R["subject"], market, homes)
     cond_errors, cond_info = apply_condition_adjustments(comps, R["subject"], market)
     lot_errors, lot_info = apply_lot_adjustments(comps, R["subject"], market)
+    sys_errors, sys_info = apply_systems_adjustments(comps, R["subject"], market)
     roof_errors, roof_info = apply_roof_adjustments(comps, R["subject"], market, R.get("as_of"))
     time_errors, time_info = apply_time_adjustments(comps, homes, R.get("as_of"), split)
-    errors = size_errors + cond_errors + lot_errors + roof_errors + time_errors
+    errors = size_errors + cond_errors + lot_errors + sys_errors + roof_errors + time_errors
     if errors:
         return errors, [], None
     derive_comps(comps)  # every card's adjusted value, backups included, for the selection
@@ -1629,7 +1676,7 @@ def settle_comps(R, homes, market, stats):
     warnings += [("outlier", w) for w in outlier_warnings(comps["cards"])]
     ov = R.get("split_override") if isinstance(R.get("split_override"), dict) else {}
     info = {"split": split, "split_reason": str(ov.get("reason") or "").strip(), "time": time_info,
-            "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "size": size_info, "lot": lot_info,
+            "time_rule": rule_info, "condition": cond_info, "roof": roof_info, "size": size_info, "lot": lot_info, "systems": sys_info,
             "selection": selection}
     return [], warnings, info
 

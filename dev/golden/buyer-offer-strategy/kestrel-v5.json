@@ -5463,6 +5463,7 @@
    "close_speed_neutral": false,
    "deadline": null,
    "default_buyer_broker_pct": 0.025,
+   "flexible_close": false,
    "holding_monthly": 550,
    "listing_fee_assumed": true,
    "listing_fee_pct": 0.025,

@@ -46,6 +46,15 @@ The buyer CMA leaned on offer strategy (a suggested opening offer, a target and 
 - **Offer strategy:** a criterion the options score differently gives each option's reason (the Stronger option at the top of the range: "In the upper half of the value range"); the walk-away assumption reads "the deadlines assume it does" and "left out of the score until it's confirmed".
 - **Buyer CMA reply rules:** a comp with no roof year in its listing keeps its `roof_unknown` warning; the mortgage rate is the newest week on Freddie Mac's own page, else the newest two sources agree on; closing costs named in the cash bullet aren't named again; a compliant replacement goes in one place.
 
+**Iteration 19 follow-up (still 0.17.0).** Every buyer CMA and offer strategy expectation passed, and the three Hickorywood runs gave one range ($475K–$500K). Then:
+
+- **Recent systems are the script's, in both CMAs:** a `recent_systems` flag on the home and each comp (a system other than the roof named new or dated within five years); the script applies the market's $5,000 by the difference. A typed systems amount stops the run. That was the last hand-typed comp amount that differed between runs.
+- **Offer outlook value floor:** with two or more competing offers, an offer under the median adjusted value reads one band lower. The Austin six-offer case now recommends the walk-away ($632,000, Strong), with $615,000 as the Lower-Cost option saying why it reads Competitive.
+- **Flexible seller:** `property.seller_flexible_close` scores every closing date 5 of 5 on the seller's timeline (eval 5 now recommends $453,000, Competitive).
+- **Buyer CMA:** the payment takes `subject.hoa_monthly` when the payment block has no HOA; asking within 0.5% of an end reads "just under the bottom of the range, by $100"; the scatter caption no longer says "so"; the financing note reads cleanly with several assumed columns; the gut check asks the history-order and MLS questions in one line; the for-you-only bullet takes who owns or lives in the home; a roof claim that left the listing is never a roof year; no counts in words.
+- **Rate week:** every skill takes Freddie Mac's newest week on or before the report date, never a later one.
+- **Fuzz finds, both fixed:** the buyer's protect-cash priority could promote an Unlikely lower-cost offer beside an At Risk Stronger one (it now keeps the fuller terms); a net sheet test stripped overlapping column labels in the wrong order.
+
 ## This pass (2026-10-12): Client-Interest Audit, Version 0.16.0
 
 An audit of every skill against one question: does it act in the client's best interest, the buyer's or the seller's? It found no bias toward the agent (no in-house preference, no pricing to win a listing, no waived contingencies, nothing confidential in material for the other side), and a set of rules and defaults that could cost a client money or a contract right. All of them are fixed. What agents will notice:

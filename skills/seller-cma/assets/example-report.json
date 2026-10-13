@@ -89,17 +89,13 @@
     "sold_price": 612000,
     "seller_concessions": 0,
     "condition": "full_renovation",
-    "adjustments": [
-     {
-      "label": "Documented Recent Systems",
-      "amount": -5000
-     }
-    ],
+    "adjustments": [],
     "bullets": [
      "The highest recent sale for a home like yours: renovated on your street, sold above asking within a week with no seller help.",
      "Slightly larger, and it came with a permitted newer AC; until we have your AC's date and records, it keeps a small edge."
     ],
-    "sqft": 2248
+    "sqft": 2248,
+    "recent_systems": true
    },
    {
     "address": "1377 Sedgefield Ct",

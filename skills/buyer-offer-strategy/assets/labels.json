@@ -346,6 +346,7 @@
  "opt_same_deposit": ". Same outlook, score {score} vs. {rec}, with more of your cash at risk as deposit",
  "opt_saves": ". Saves {amount} in worst-case cash",
  "opt_outlook": "; outlook {band}",
+ "opt_under_value": "; under the {value} median adjusted value, which reads a band lower against two or more competing offers",
  "diff": "{term} {value}",
  "diff_none": "no {term}",
  "same_terms": "Same terms",

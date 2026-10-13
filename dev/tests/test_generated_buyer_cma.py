@@ -203,10 +203,12 @@ class Model(unittest.TestCase):
                 G = {k: copy.deepcopy(R[k]) for k in ("subject", "split_override", "as_of", "export", "mls", "history",
                                                       "range_override") if k in R}
                 G["comps"] = {k: copy.deepcopy(v) for k, v in R["comps"].items()
-                              if k in ("cards", "count", "time_override", "condition_values", "size_per_sqft", "lot_values")}
+                              if k in ("cards", "count", "time_override", "condition_values", "size_per_sqft", "lot_values",
+                                       "systems_value")}
                 out = compute.run(G)
                 self.assertEqual(out["asking_position"], C["asking_position"])
                 self.assertEqual((out["range"]["low"], out["range"]["high"]), (C["range"]["low"], C["range"]["high"]))
+                self.assertEqual(" ".join(out["settled"]), C["comps"]["settled"])  # the same sales set aside
 
     def test_each_note_once_and_no_label_carries_one(self):
         for seed, _, C in cases():

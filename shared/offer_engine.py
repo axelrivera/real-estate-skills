@@ -1224,7 +1224,9 @@ def auto_scores(o, L, S):
                            f"{fmt.date_short(dl, year=False)} deadline")
     elif S.get("close_speed_neutral") and S["priority"] != "speed":
         # the seller's review: with no deadline and no need for speed, every closing date fits the seller's timeline
-        s["timeline"], why["timeline"] = 5, f"Closes in {o['close_days']} days; no seller deadline given, so any date fits"
+        s["timeline"], why["timeline"] = 5, (f"Closes in {o['close_days']} days; the seller is flexible on the date"
+                                             if S.get("flexible_close") else
+                                             f"Closes in {o['close_days']} days; no seller deadline given, so any date fits")
     else:  # the seller wants speed, or buyer-offer-strategy's read of how a listing agent weighs a faster close
         cd = o["close_days"]
         s["timeline"] = 5 if cd <= 30 else 4 if cd <= 45 else 3 if cd <= 60 else 2
@@ -2413,7 +2415,10 @@ def analyze(data, market=None, cma=None, seller_review=False):
         A.add("listing", "state", None, "Property's state not given: national cost estimates are used (no state's local "
               "costs, and no Florida rules without a FAR/BAR contract). Give the state for local costs", "high")
     L, S = prepare_listing(data, A, costs)
-    S["close_speed_neutral"] = seller_review
+    # the seller's own review, or a buyer's offer to a seller the listing agent called flexible on the date: with no
+    # deadline, every closing date fits the seller's timeline
+    S["flexible_close"] = bool((data.get("seller") or {}).get("flexible_close"))
+    S["close_speed_neutral"] = seller_review or S["flexible_close"]
     # the agent's counter terms are checked before anything runs: every problem at once (`field: problem → fix`)
     probs = choices.pick((data.get("seller") or {}).get("priority"), PRIORITIES, "seller.priority", default="balanced")[1]
     probs += [p for o in data.get("offers") or [] for p in counter_changes(o, L)[1] + offer_field_problems(o)]

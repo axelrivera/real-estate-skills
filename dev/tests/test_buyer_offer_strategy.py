@@ -793,9 +793,10 @@ class ReplyLines(unittest.TestCase):
         r = run(copy.deepcopy(tx))  # highest and best, one flat number: said once, in the Escalation row the reply quotes
         res = strategy.result(r)
         esc = next(x for x in res["summary"]["terms"] if x["key"] == "escalation")["why"]
-        self.assertIn(strategy.L_["esc_hb"].lstrip("; "), esc)
-        self.assertEqual([x["key"] for x in res["reply_lines"]], ["contract_terms", "inspection_period", "assumptions"])
-        self.assertIn("$640,000", esc)  # eval 17: the lower-cost offer's row still names the buyer's max
+        self.assertNotIn(strategy.L_["esc_hb"].lstrip("; "), esc)  # at the walk-away: the flat number is a reply line
+        self.assertEqual([x["key"] for x in res["reply_lines"]],
+                         ["flat_number", "contract_terms", "inspection_period", "assumptions"])
+        self.assertIn("$640,000", esc)  # eval 17: the row still names the buyer's max
         d = copy.deepcopy(tx)
         d["competition"]["note"] = "Listing agent: 6 offers in"
         self.assertEqual([x["key"] for x in strategy.result(run(d))["reply_lines"]],
@@ -1019,24 +1020,27 @@ def shoal(**competition):
 
 class Iteration16(unittest.TestCase):
     def test_highest_and_best_always_shows_the_walk_away(self):
+        """Iteration 19: under the $618,500 median adjusted value, six offers read a band lower, so the recommendation
+        is the walk-away ($632,000, Strong) and the cheaper $615,000 is the Lower-Cost option, saying why it reads
+        Competitive."""
         r = run(shoal())
         s = strategy.result(r)["summary"]
-        self.assertEqual(r["terms"]["recommended"]["price"], 615000)  # the cheaper recommendation stays
-        self.assertEqual(r["terms"]["stronger"]["price"], 632000)  # the walk-away, shown even at the same outlook
-        self.assertEqual([o["key"] for o in s["options"]][:2], ["recommended", "stronger"])
-        self.assertNotIn("stronger", [a["key"] for a in s["absent"]])
-        price = next(x for x in s["terms"] if x["key"] == "price")
-        self.assertIn("Stronger option", price["why"])
-        self.assertIn(strategy.money(17000), price["why"])
+        self.assertEqual(r["terms"]["recommended"]["price"], 632000)  # the walk-away, the top of the range
+        self.assertEqual(r["terms"]["lower_cost"]["price"], 615000)
+        lc = next(o for o in s["options"] if o["key"] == "lower_cost")
+        self.assertEqual(lc["outlook"], "Competitive")
+        self.assertIn("under the $618,500 median adjusted value", lc["what"])
+        self.assertIn(strategy.money(632000), next(a["why"] for a in s["absent"] if a["key"] == "stronger"))
 
     def test_no_forced_stronger_without_highest_and_best(self):
         r = run(shoal(highest_and_best=False, note="6 offers in"))
         self.assertNotIn("stronger", r["terms"])
+        self.assertEqual(r["terms"]["recommended"]["price"], 632000)  # six offers: at the value or above it
         absent = strategy.result(r)["summary"]["absent"]
         why = next(a["why"] for a in absent if a["key"] == "stronger")
-        self.assertIn(strategy.money(632000), why)  # names the higher price it left out, never "more deposit"
+        self.assertIn(strategy.money(632000), why)  # names the top of the range, never "more deposit"
         price = next(x for x in strategy.result(r)["summary"]["terms"] if x["key"] == "price")["why"]
-        self.assertIn(strategy.money(632000), price)  # the reason never points at an option that isn't shown
+        self.assertNotIn("Stronger option", price)  # the reason never points at an option that isn't shown
 
     def test_escalation_row_answers_in_heavy_competition(self):
         for d in (shoal(), shoal(highest_and_best=False, note="6 offers in")):
@@ -1067,14 +1071,36 @@ class Iteration16(unittest.TestCase):
 
 
 class Iteration18(unittest.TestCase):
+    def test_a_flexible_seller_takes_any_closing_date(self):
+        """Eval 5: the listing agent said the seller is flexible on the date, yet a 35-day close scored 4 of 5."""
+        d = fixture("kestrel-v5.json")
+        d["property"].pop("seller_deadline", None)
+        d["property"]["seller_flexible_close"] = True
+        row = next(x for x in strategy.scorecard(run(d))["rows"] if x["key"] == "timeline")
+        self.assertEqual(set(row["scores"]), {5})
+        self.assertIn("the seller is flexible on the date", row["why"])
+
+    def test_value_floor_needs_two_competing_offers_and_a_real_value(self):
+        """Iteration 19: under the median adjusted value (to the $1,000 step), two or more competing offers read a
+        band lower; one competing offer, or a value assumed from list, never."""
+        B = analyze("texas-cma-escalation.json")["B"]
+        self.assertTrue(strategy.under_value(B, 615000, 3))
+        self.assertFalse(strategy.under_value(B, 618000, 3))  # $618,500 to the step: $618,000
+        self.assertFalse(strategy.under_value(B, 615000, 1))
+        self.assertEqual(strategy.band_of(90, 3, B, 615000)[0], "comp")
+        self.assertEqual(strategy.band_of(90, 3, B, 632000)[0], "strong")
+        B = dict(B, value=dict(B["value"], assumed=True))
+        self.assertFalse(strategy.under_value(B, 615000, 3))
+
+
     def test_a_lower_score_says_why_for_each_option(self):
         """Eval 3: the Stronger option at the top of the range scored lower than the recommended one with no reason
         beside it. A criterion the options score differently gives each option's reason."""
-        sc = strategy.scorecard(analyze("texas-cma-escalation.json"))
+        sc = strategy.scorecard(analyze("texas-cma-escalation.json"))  # iteration 19: $632,000 vs. $615,000
         row = next(x for x in sc["rows"] if x["key"] == "appraisal")
-        self.assertEqual(row["scores"], [5, 4])
-        self.assertTrue(row["why"].startswith("Recommended: In the lower half of the value range"))
-        self.assertIn("Stronger: In the upper half of the value range", row["why"])
+        self.assertEqual(row["scores"], [4, 5])
+        self.assertTrue(row["why"].startswith("Recommended: In the upper half of the value range"))
+        self.assertIn("Lower-Cost: In the lower half of the value range", row["why"])
         same = next(x for x in sc["rows"] if x["key"] == "financing")
         self.assertNotIn(":", same["why"].split(",")[0])  # scored alike: one reason
 

@@ -11,6 +11,8 @@
  "sum_value_line": "Median Adjusted Value {median} · Asking {ask}",
  "sum_pos_above": "Asking is {amt} above the top of the range.",
  "sum_pos_below": "Asking is {amt} below the bottom of the range.",
+ "sum_pos_just_below": "Asking is just under the bottom of the range, by {amt}.",
+ "sum_pos_just_above": "Asking is just over the top of the range, by {amt}.",
  "sum_pos_over_median": "Asking is inside the range, {amt} above the median.",
  "sum_pos_under_median": "Asking is inside the range, {amt} below the median.",
  "sum_pos_at_median": "Asking is at the median of the adjusted comparable sales.",
@@ -143,7 +145,7 @@
 
  "h_scatter": "The Whole Neighborhood at a Glance",
  "line_scatter_intro": "Every recent sale and listing in the MLS records from {lo} to {hi} sq ft, plotted by size and price.",
- "line_r2": "Size alone explains {share} of the differences in sale prices here, so the dashed line isn't a value estimate for this home.",
+ "line_r2": "Size alone explains {share} of the differences in sale prices here; the dashed line shows that size trend, not a value estimate for this home.",
  "band": "Supported Range",
  "lg_comp": "Comparable Sales",
  "lg_sold": "Other Sales",
@@ -249,6 +251,8 @@
 
  "h_notes": "Notes and Assumptions",
  "note_financing_assumed": "The {labels} financing is assumed until the buyer's lender confirms it.",
+ "note_financing_assumed_some": "The financing in the {labels} columns is assumed until the buyer's lender confirms it.",
+ "note_financing_assumed_all": "The financing in every payment column is assumed until the buyer's lender confirms it.",
  "note_insurance_est": "Homeowners insurance is estimated at {amt} a year for this home's price and age; it isn't a quote. Get a real quote during the inspection period.",
  "note_insurance_given": "Homeowners insurance uses {amt} a year, the figure given for this home.",
  "note_mi_pmi": "private mortgage insurance of about {rate} a year at {down} down (less with more down, none from 20%)",
