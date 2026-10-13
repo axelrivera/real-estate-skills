@@ -289,7 +289,7 @@ def generate(seed, out_dir):
          "summary_page": {"headline": "Priced where recent sales support, for the strongest first weeks on the market.",
                           "why": rng.sample(WHY, 3), "next_step": "Review this plan together, sign the listing "
                                                                   "agreement, and get the home ready to go live."},
-         "recommendation": {"why": "It leaves room for the negotiating that is normal now and looks fairly priced in its "
+         "recommendation": {"why": "It leaves room for the usual negotiation in today's market and looks fairly priced in its "
                                    "first weeks on the market."},
          "means": rng.sample(MEANS, rng.randint(2, 4)), "comps": comps,
          "competition": {"intro": "The homes buyers will tour alongside yours.", "rows": []},
