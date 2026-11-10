@@ -261,7 +261,8 @@ What the seller walks away with at one price, or up to three side by side, witho
 - **Tell Claude:** the address with its city and county, the price or prices, and the mortgage payoff. The listing agreement's commission, the expected closing date and this year's tax bill sharpen it.
 - **Minimum:** the address and one price. Without the payoff, the sheet stops at the net before the payoff and is marked Preliminary.
 - **Example:** "What would my seller net at $450,000 and at $440,000 on 2250 Oak Hollow Ct in Oviedo? They owe about $214,000, my listing agreement is 3% plus 2.5% to the buyer's agent, and we expect to close in mid-December."
-- **You get:** a one-page PDF with every cost itemized and the estimates named once in its notes, or a short table in chat. The default commission (2.5% listing, 2.5% buyer side) is used until you give yours. Send a payoff letter, a title quote or the tax bill and Claude redoes it.
+- **You get:** a one-page PDF with every cost itemized and the estimates named once in its notes, or a short table in chat. The default commission (2.5% listing, 2.5% buyer side) is used until you give yours. A flat commission ("buyer side is a flat $10,000") stays the same dollars at every price, and a brokerage transaction fee ("plus a $395 brokerage fee") gets its own line. Send a payoff letter, a title quote or the tax bill and Claude redoes it.
+- **Closing between January and March?** Say whether the seller has paid last year's tax bill (Florida bills are due March 31). Until you do, the sheet assumes it's paid and says once that an unpaid bill comes out of the proceeds.
 - **Already have an offer?** Use Seller Offer Review: it nets the offer and also checks its terms.
 
 ### Seller Market Timing (/seller-market-timing)
