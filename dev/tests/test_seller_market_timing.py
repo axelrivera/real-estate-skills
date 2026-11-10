@@ -75,6 +75,20 @@ class Window(unittest.TestCase):
         self.assertTrue(any("19 months, not the 24" in w for w in C["warnings"]))
         self.assertTrue(any("one season" in w for w in C["warnings"]))
 
+    def test_a_slow_start_is_not_a_short_export(self):
+        """Round 2 bug 10: a window whose first months happen to have no sales isn't a short export when rows outside
+        the window show it reaches back: the full lookback stands, and a flat market finds no season."""
+        homes = []
+        for y, m in [(2024 + (8 + i - 1) // 12, (8 + i - 1) % 12 + 1) for i in range(24)]:  # Aug 2024 to Jul 2026
+            n = 0 if (y, m) in ((2024, 8), (2024, 9), (2024, 10)) else 2 if (y, m) in ((2025, 8), (2025, 9), (2025, 10)) else 1
+            homes += [sale(f"{y}-{m:02d}-{5 + 7 * i:02d}", 300000 + 1000 * i) for i in range(n)]
+        homes.append(sale("2024-06-12"))  # outside the window: the export reaches back before it
+        C = run(homes)
+        self.assertEqual(C["window"]["months"], 24)
+        self.assertFalse(any("not the 24" in w for w in C["warnings"]))
+        self.assertEqual(C["seasons"], [])
+        self.assertIn("no clear busy season", C["takeaway"])
+
     def test_no_sales_in_the_window(self):
         with self.assertRaises(compute.TimingError):
             run([sale("2020-05-05")])
