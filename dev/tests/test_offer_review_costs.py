@@ -299,6 +299,16 @@ class PropertyTax(unittest.TestCase):
         tx = {"address": "1 Test St, Austin, TX 78701", "state": "TX", "county": "Travis", "annual_tax": 7000}
         self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-01-15"), listing=tx)))
 
+    def test_current_bill_paid_before_bills_go_out(self):
+        """Marked paid on a February closing: this year's bill isn't out, so the seller is charged Jan 1 to closing,
+        "paid" is read as last year's bill (no prior-year assumption) and one low-impact assumption says so."""
+        R = run(hand(closing_date="2026-02-15"), listing={"annual_tax": 6000, "current_tax_bill_paid": True})
+        self.assertEqual(line(R["offers"][0]["ns"], "tax"), -710)
+        f = fields(R)
+        self.assertNotIn("prior_tax_bill_paid", f)
+        self.assertEqual(f["tax_bill_paid_as_prior"]["impact"], "low")
+        self.assertIn("last year's", f["tax_bill_paid_as_prior"]["why"])
+
     def test_tax_bill_assumption_is_per_offer(self):
         R = review.analyze(case05(listing={"highest_and_best_due": None}))  # A closes Nov 2, B Oct 28
         self.assertEqual(next(x for x in R["missing"] if x["field"] == "current_tax_bill_paid")["offers"], ["A"])

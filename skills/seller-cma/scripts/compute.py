@@ -978,7 +978,8 @@ def net_sheet(R, market, strategies, closings, as_of, ri):
             led.cost("tax_prior_year", t("net_tax_prior_year", year=str(as_of.year)), extra)
             next_year.append(i)
         elif closing and not later:  # a report early in the year: last year's bill, when the agent says it's unpaid
-            owed = finance.prior_year_bill_owed(annual_tax, closing, market, costs.get("prior_tax_bill_paid"))
+            owed = finance.prior_year_bill_owed(annual_tax, closing, market, finance.prior_paid_from(
+                costs.get("prior_tax_bill_paid"), bill_paid, closing, market))
             if owed:
                 led.cost("tax_prior_year", t("net_tax_prior_year", year=str(closing.year - 1)), owed)
         if payoff:
@@ -1369,11 +1370,16 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
         if unpaid:
             parts.append(L["note_tax_unpaid"])
         prior_open = [c["date"] for c in closings if c["date"] and c["date"].year == as_of.year
-                      and finance.prior_year_bill_open(c["date"], market, costs.get("prior_tax_bill_paid"))]
+                      and finance.prior_year_bill_open(c["date"], market, finance.prior_paid_from(
+                          costs.get("prior_tax_bill_paid"), bill_paid, c["date"], market))]
+        as_prior = any(c["date"] and c["date"].year == as_of.year and finance.bill_paid_means_prior(c["date"], market, bill_paid)
+                       for c in closings)
+        if as_prior:  # this year's bill isn't out yet: "paid" is about last year's
+            parts.append(t("note_tax_paid_as_prior", month=fmt.MONTHS[market.get("property_tax.bill_month") - 1]))
         if prior_open:  # Florida: last year's bill is due March 31
             due = finance.tax_due_date(prior_open[0], None, market.get("property_tax.prior_year_due"))
             parts.append(t("note_tax_prior_open", due=fmt.date_short(due, year=False), year=str(as_of.year - 1)))
-        N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] or prior_open else "info")
+        N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] or prior_open or as_prior else "info")
     late = goal_misses(R, closings)  # the seller's closing goal, said once for every option that closes after it
     if late:
         goal = fmt.date_short(_date(costs["expected_closing_date"], "expected_closing_date"))

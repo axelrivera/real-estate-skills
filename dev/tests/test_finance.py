@@ -324,6 +324,22 @@ class LoanPrograms(unittest.TestCase):
         self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 1, 15), fl), 0)
         self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 4, 15), fl, prior_paid=False), 0)
 
+    def test_current_bill_paid_before_bills_go_out(self):
+        """Florida's bills go out Nov 1: a February closing can't have paid this year's bill, so "paid" is read as
+        last year's and the proration charges Jan 1 to closing. Without a market bill month it passes through."""
+        fl, ga = profiles.load_market(state="FL"), profiles.load_market(state="GA")
+        p = f.tax_proration(6000, date(2026, 2, 15), fl, bill_paid=True)
+        self.assertEqual(p["amount"], 710)
+        self.assertEqual(p["label"], "Property Tax Proration (Jan 1 to Closing)")
+        self.assertLess(f.tax_proration(6000, date(2026, 11, 15), fl, bill_paid=True)["amount"], 0)  # a credit
+        self.assertIsNone(f.current_bill_paid(date(2026, 2, 15), fl, True))
+        self.assertTrue(f.current_bill_paid(date(2026, 11, 15), fl, True))
+        self.assertTrue(f.current_bill_paid(date(2026, 2, 15), ga, True))
+        self.assertTrue(f.prior_paid_from(None, True, date(2026, 2, 15), fl))
+        self.assertIsNone(f.prior_paid_from(None, False, date(2026, 2, 15), fl))  # never read as last year unpaid
+        self.assertFalse(f.prior_paid_from(False, True, date(2026, 2, 15), fl))  # the agent's own answer wins
+        self.assertIsNone(f.prior_paid_from(None, True, date(2026, 11, 15), fl))
+
     def test_loan_limits(self):
         lim = profiles.loan_limits()
         self.assertEqual((lim["year"], lim["conforming"]["baseline"], lim["fha"]["floor"]), (2026, 832750, 541287))

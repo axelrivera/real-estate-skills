@@ -108,6 +108,37 @@ def _prior_year_window(closing, market):
     return due not in (None, "") and closing <= _month_day(due, closing.year)
 
 
+def bill_out(closing, market=None):
+    """False when this year's tax bill can't exist yet at `closing`: taxes paid in arrears and a closing before the
+    month the market's bills go out (`property_tax.bill_month`; Florida Nov 1). True otherwise, and always in a market
+    that doesn't say when its bills go out."""
+    month = market.get("property_tax.bill_month") if market is not None else None
+    if not closing or not month or market.get("property_tax.paid") == "advance":
+        return True
+    return closing.month >= month
+
+
+def current_bill_paid(closing, market=None, bill_paid=None):
+    """The agent's `current_tax_bill_paid` as the proration reads it: None before this year's bill is out (bill_out),
+    since nobody can have paid it; as given otherwise."""
+    return bill_paid if bill_out(closing, market) else None
+
+
+def bill_paid_means_prior(closing, market=None, bill_paid=None):
+    """True when the agent marked this year's bill paid but it isn't out yet at `closing`: the answer is about last
+    year's bill (the report says so once)."""
+    return bool(bill_paid) and not bill_out(closing, market)
+
+
+def prior_paid_from(prior_paid, bill_paid, closing, market=None):
+    """Whether last year's bill is paid: the agent's `prior_tax_bill_paid`; else true when they marked this year's
+    bill paid before it's out (bill_paid_means_prior). A "not paid" answer about this year is never read as last
+    year's bill unpaid (that would charge a whole year's taxes on a guess). None when unknown."""
+    if prior_paid is not None:
+        return prior_paid
+    return True if bill_paid_means_prior(closing, market, bill_paid) else None
+
+
 def prior_year_bill_open(closing, market=None, prior_paid=None):
     """True when a closing early in the year may still owe last year's whole bill and the agent hasn't said whether
     it's paid (`prior_tax_bill_paid`): the net assumes it paid, and the report says once that if it isn't, the title
@@ -148,6 +179,7 @@ def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=Non
         return None
     if market is not None and market.get("property_tax.paid") == "advance":
         return None
+    bill_paid = current_bill_paid(closing, market, bill_paid)  # before this year's bill is out, nobody has paid it
     assumed_paid = tax_bill_assumed_paid(closing, market, bill_paid, due_date)
     discount = (market.get("property_tax.early_payment_discount") if market is not None else None) or 0
     year_days = (date(closing.year + 1, 1, 1) - date(closing.year, 1, 1)).days

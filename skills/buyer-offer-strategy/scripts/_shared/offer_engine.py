@@ -1097,7 +1097,8 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         led.cost(key, labels.get(key) or found[key][0], found.get(key, ("", 0))[1])
     led.cost("warranty", "Home Warranty", warranty)
     led.cost("tax", tax_label, tax)
-    prior = finance.prior_year_bill_owed(L["annual_tax"], close, costs, L["prior_bill_paid"]) if L["tax_in_arrears"] else 0
+    prior_paid = finance.prior_paid_from(L["prior_bill_paid"], L["bill_paid"], close, costs)
+    prior = finance.prior_year_bill_owed(L["annual_tax"], close, costs, prior_paid) if L["tax_in_arrears"] else 0
     if prior:  # stated unpaid: the title company collects last year's bill from the proceeds
         led.cost("tax_prior", "Prior-Year Property Taxes", prior)
     for key, label, amount in extra:
@@ -2464,8 +2465,8 @@ def analyze(data, market=None, cma=None, seller_review=False):
               "the seller has paid this year's bill wasn't given. Assumed not paid (the seller credits the buyer from Jan 1); "
               "if it's paid, the buyer credits the seller instead", "med")
         A.items[-1]["offers"] = late  # OFR-344: a single review lists it only for an offer closing then
-    early = [o["id"] for o in offers if o["status"] in ACTIVE
-             and finance.prior_year_bill_open(o["close"], costs, L["prior_bill_paid"])]
+    early = [o["id"] for o in offers if o["status"] in ACTIVE and finance.prior_year_bill_open(
+        o["close"], costs, finance.prior_paid_from(L["prior_bill_paid"], L["bill_paid"], o["close"], costs))]
     if L["annual_tax"] and L["tax_in_arrears"] and early:  # Florida: last year's bill is due March 31
         due = finance.tax_due_date(min(o["close"] for o in offers if o["id"] in early), None,
                                    costs.get("property_tax.prior_year_due"))
@@ -2474,6 +2475,14 @@ def analyze(data, market=None, cma=None, seller_review=False):
               f"has paid it wasn't given. The net assumes it's paid; if it isn't, the title company collects it from the "
               f"proceeds (about {money(L['annual_tax'])})", "med")
         A.items[-1]["offers"] = early
+    before = [o["id"] for o in offers if o["status"] in ACTIVE
+              and finance.bill_paid_means_prior(o["close"], costs, L["bill_paid"])]
+    if L["annual_tax"] and L["tax_in_arrears"] and before:  # this year's bill isn't out yet: "paid" means last year's
+        month = fmt.MONTHS[costs.get("property_tax.bill_month") - 1]
+        A.add("listing", "tax_bill_paid_as_prior", True,
+              f"This year's tax bill was marked paid, but bills don't go out until {month} 1, so it's taken as last "
+              "year's bill: the seller is charged this year's taxes from Jan 1 to closing", "low")
+        A.items[-1]["offers"] = before
     _missing_market(costs, offers[0]["ns"], A)
     estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)
     if L["hoa_monthly"] is None and estoppel:  # a condo with its dues unknown: the fee is charged, so say so (once)

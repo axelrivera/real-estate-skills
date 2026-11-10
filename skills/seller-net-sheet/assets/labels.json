@@ -60,6 +60,7 @@
  "note_closing_date": "Closing on {dates} is an expected date; the actual date moves the tax proration.",
  "note_commission_default": "Commission at the default {pct} in total (listing and buyer's agent); the listing agreement's terms replace it.",
  "note_tax": "Property tax prorated from Jan 1 to the day before closing ({basis}).",
+ "note_tax_paid_as_prior": "This year's tax bill was marked paid, but bills don't go out until {month} 1, so it's taken as last year's bill: the seller is charged this year's taxes from Jan 1 to closing.",
  "note_tax_prior_open": "Last year's tax bill is due {due}: whether the seller has paid it wasn't given, so the net assumes it's paid; if it isn't, the title company collects it from the proceeds.",
  "note_tax_unpaid": "Property tax prorated from Jan 1 to the day before closing ({basis}), assuming this year's bill is still unpaid at closing; if the seller pays it first, the buyer credits back the rest of the year instead.",
  "note_tax_paid": "Property tax: the seller paid this year's bill ({basis}), so the buyer credits back closing to Dec 31.",

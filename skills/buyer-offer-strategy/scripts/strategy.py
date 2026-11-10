@@ -1527,7 +1527,7 @@ def analyze(B_in, market=None, cma=None):
     if loan_notes.get("recommended"):
         A.add("buyer", "loan_limit", "check", loan_notes["recommended"], "high")
     engine_assumed = [tax_bill(B, costs, O, a) for a in R["assumptions"] if not a["scope"].startswith("offer")
-                      and a["scope"] != "seller" and a["field"] not in ("cma_low / cma_high", "state", "prior_tax_bill_paid")]
+                      and a["scope"] != "seller" and a["field"] not in SELLER_ONLY_FIELDS]
     # a buyer fact the scorecard can't score without (the approval level), as the engine words it: said once
     engine_assumed += [{**a, "scope": "buyer"} for a in R["assumptions"] if a["scope"] == "offer recommended" and a.get("unscores")]
     res = {"B": B, "R": R, "O": O, "why": w, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
@@ -1783,6 +1783,11 @@ def cash_first(res):
 def stronger_fits(r):
     """The Stronger option is inside every limit (reserve floor kept) and the listing agent would score it higher."""
     return r["framing"] in ("least_cash", "stronger_better")
+
+
+# engine assumptions about the listing side's own facts, never the buyer's report: the value range and state are asked
+# for in this skill's words, and last year's tax bill only moves the seller's proceeds
+SELLER_ONLY_FIELDS = ("cma_low / cma_high", "state", "prior_tax_bill_paid", "tax_bill_paid_as_prior")
 
 
 def tax_bill(B, costs, O, a):

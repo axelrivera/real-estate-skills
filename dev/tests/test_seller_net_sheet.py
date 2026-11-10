@@ -101,6 +101,26 @@ class TaxProration(unittest.TestCase):
         d["closing_date"], d["costs"]["prior_tax_bill_paid"] = "2027-04-15", None
         self.assertFalse(any("title company collects it" in n for n in compute.run(d)["notes"]))
 
+    def test_current_bill_paid_before_bills_go_out(self):
+        """$6,000 bill, closing Feb 15, marked paid: a $710 charge from Jan 1 (never a credit for a bill that isn't
+        out), a note that "paid" is taken as last year's bill, and no prior-year note."""
+        d = fixture("florida-one-price.json")
+        d["closing_date"], d["prepared_date"] = "2026-02-15", "2026-01-10"
+        d["costs"].update(annual_tax=6000, current_tax_bill_paid=True)
+        C = compute.run(d)
+        self.assertEqual(tax_row(C)["amounts"][0], -710)
+        self.assertTrue(any("taken as last year's" in n for n in C["notes"]))
+        self.assertFalse(any("title company collects it" in n for n in C["notes"]))
+
+    def test_reviewers_february_repro_names_last_years_bill(self):
+        """Round 2 bug 7: a February closing with no word on last year's bill says what an unpaid one costs."""
+        d = fixture("florida-one-price.json")
+        d["closing_date"], d["prepared_date"] = "2026-02-15", "2026-01-10"
+        d["costs"]["annual_tax"] = 6000
+        C = compute.run(d)
+        self.assertEqual(tax_row(C)["amounts"][0], -710)
+        self.assertTrue(any("title company collects it" in n for n in C["notes"]))
+
     def test_no_tax_bill_leaves_proration_out(self):
         d = fixture("florida-three-prices.json")
         del d["costs"]["annual_tax"]

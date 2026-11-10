@@ -305,8 +305,13 @@ def compute(R, market):
             return L["row_tax_mixed"]
         return line["label"]
 
-    priors = [finance.prior_year_bill_owed(annual_tax, x["closing"], market, prior_paid) for x in xs]
-    prior_open = bool(annual_tax) and any(finance.prior_year_bill_open(x["closing"], market, prior_paid) for x in xs)
+    # "paid" before this year's bill is out (Florida: a Jan-Oct closing) is about last year's bill (finance.bill_out)
+    as_prior = bool(annual_tax) and any(finance.bill_paid_means_prior(x["closing"], market, bill_paid) for x in xs)
+    paid_now = bool(bill_paid) and not as_prior  # this year's bill really is paid
+    priors_paid = [finance.prior_paid_from(prior_paid, bill_paid, x["closing"], market) for x in xs]
+    priors = [finance.prior_year_bill_owed(annual_tax, x["closing"], market, pp) for x, pp in zip(xs, priors_paid)]
+    prior_open = bool(annual_tax) and any(finance.prior_year_bill_open(x["closing"], market, pp)
+                                          for x, pp in zip(xs, priors_paid))
     ledgers = [column_ledger(x, n, market, pay_rows, label, pr) for x, n, pr in zip(xs, nets, priors)]
 
     # Rows: one per line (key and label) across every column (a seller credit may exist in only one), as on the page
@@ -382,7 +387,7 @@ def compute(R, market):
     elif payoff_known:
         facts.append(L["fact_no_mortgage"])
     if annual_tax:
-        facts.append(t("fact_taxes_paid" if bill_paid else "fact_taxes", amount=fmt.money(annual_tax)))
+        facts.append(t("fact_taxes_paid" if paid_now else "fact_taxes", amount=fmt.money(annual_tax)))
     if lf is not None and bf is not None:
         facts.append(t("fact_commission", pct=fmt.pct(lf + bf, 2)))
 
@@ -410,7 +415,7 @@ def compute(R, market):
         due = fmt.date_short(due, year=False) if due else ""
         # one proration note (key "tax"), whichever way the bill falls; a mixed sheet adds the unpaid assumption once
         bill = basis.replace(" bill", "", 1)  # iteration 16 eval 4: "this year's tax bill ($3,900)", never "($3,900 bill)"
-        if bill_paid:
+        if paid_now:
             N.add("tax", t("note_tax_paid", basis=bill), "info")
         elif all(paid_assumed):
             N.add("tax", t("note_tax_bill_paid", basis=bill, due=due), "assumption")
@@ -422,6 +427,9 @@ def compute(R, market):
             N.add("tax", t("note_tax_unpaid", basis=basis), "assumption")
         else:
             N.add("tax", t("note_tax", basis=basis), "info")
+        if as_prior:
+            month = fmt.MONTHS[market.get("property_tax.bill_month") - 1]
+            N.add("tax_paid_as_prior", t("note_tax_paid_as_prior", month=month), "assumption")
         if prior_open:
             due = finance.tax_due_date(closing, None, market.get("property_tax.prior_year_due"))
             N.add("tax_prior", t("note_tax_prior_open", due=fmt.date_short(due, year=False)), "assumption")
