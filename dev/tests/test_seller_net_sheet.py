@@ -86,6 +86,21 @@ class TaxProration(unittest.TestCase):
         with self.assertRaisesRegex(compute.NetSheetError, "tax_bill_due_date"):
             compute.run(d)
 
+    def test_prior_year_bill_on_jan_to_mar_closings(self):
+        """A closing by March 31 with no word on last year's Florida bill: an assumption in the notes; stated unpaid,
+        a line for it."""
+        d = fixture("florida-one-price.json")
+        d["closing_date"] = "2027-01-15"
+        C = compute.run(d)
+        self.assertTrue(any("title company collects it" in n for n in C["notes"]))
+        self.assertNotIn("tax_prior_year", [r["key"] for r in C["rows"]])
+        d["costs"]["prior_tax_bill_paid"] = False
+        C = compute.run(d)
+        self.assertFalse(any("title company collects it" in n for n in C["notes"]))
+        self.assertEqual(next(r for r in C["rows"] if r["key"] == "tax_prior_year")["amounts"][0], -6200)
+        d["closing_date"], d["costs"]["prior_tax_bill_paid"] = "2027-04-15", None
+        self.assertFalse(any("title company collects it" in n for n in compute.run(d)["notes"]))
+
     def test_no_tax_bill_leaves_proration_out(self):
         d = fixture("florida-three-prices.json")
         del d["costs"]["annual_tax"]

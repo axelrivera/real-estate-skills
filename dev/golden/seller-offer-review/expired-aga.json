@@ -590,6 +590,7 @@
    "loan_approval_days": 21
   },
   "norms_source": "market",
+  "prior_bill_paid": null,
   "property_type": "single_family",
   "repair_reserve_deal": false,
   "repair_reserve_pct": 0.007,

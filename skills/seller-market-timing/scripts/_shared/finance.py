@@ -86,12 +86,42 @@ def tax_due_date(closing, market=None, due_date=None):
     v = due_date if due_date not in (None, "") else (market.get("property_tax.due_date") if market is not None else None)
     if v in (None, "") or not closing:
         return None
+    return _month_day(v, closing.year)
+
+
+def _month_day(v, year):
+    """A month and day ("10-15", "2026-10-15" or a date) in `year`."""
     if isinstance(v, date):
-        return date(closing.year, v.month, v.day)
+        return date(year, v.month, v.day)
     m = re.match(r"^(?:\d{4}-)?(\d{1,2})-(\d{1,2})$", str(v).strip())
     if not m:
         raise ValueError(f"The tax bill's due date should look like 10-15 or 2026-10-15, not {v!r}.")
-    return date(closing.year, int(m.group(1)), int(m.group(2)))
+    return date(year, int(m.group(1)), int(m.group(2)))
+
+
+def _prior_year_window(closing, market):
+    """True when `closing` falls on or before the day last year's bill is due (`property_tax.prior_year_due`: Florida's
+    run from November to March 31), in a market that pays taxes in arrears."""
+    if not closing or market is None or market.get("property_tax.paid") == "advance":
+        return False
+    due = market.get("property_tax.prior_year_due")
+    return due not in (None, "") and closing <= _month_day(due, closing.year)
+
+
+def prior_year_bill_open(closing, market=None, prior_paid=None):
+    """True when a closing early in the year may still owe last year's whole bill and the agent hasn't said whether
+    it's paid (`prior_tax_bill_paid`): the net assumes it paid, and the report says once that if it isn't, the title
+    company collects it from the proceeds (an assumption, never a line)."""
+    return prior_paid is None and _prior_year_window(closing, market)
+
+
+def prior_year_bill_owed(annual_tax, closing, market=None, prior_paid=None):
+    """Last year's whole bill when the agent says it's unpaid (`prior_tax_bill_paid` false) and the closing falls on
+    or before its due date: the title company collects it from the seller's proceeds. 0 otherwise. The whole bill,
+    with no early-payment discount (none is left by then worth counting on)."""
+    if prior_paid is not False or not annual_tax or not _prior_year_window(closing, market):
+        return 0
+    return annual_tax
 
 
 def tax_bill_assumed_paid(closing, market=None, bill_paid=None, due_date=None):

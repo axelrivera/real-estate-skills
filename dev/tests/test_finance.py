@@ -310,6 +310,20 @@ class LoanPrograms(unittest.TestCase):
         self.assertAlmostEqual(f.monthly_payment(400000, "fha", 0.05, 6.5, 0, 0)["mi"], 380000 * 0.005 / 12)
         self.assertAlmostEqual(f.monthly_payment(400000, "fha", 0.035, 6.5, 0, 0)["mi"], 386000 * 0.0055 / 12)
 
+    def test_prior_year_bill_window(self):
+        """Florida's bill for last year is due March 31: a closing on or before it, with no word on the bill, may owe it
+        (an assumption); stated unpaid, it's owed; outside Florida (no prior_year_due) never."""
+        fl, ga = profiles.load_market(state="FL"), profiles.load_market(state="GA")
+        self.assertTrue(f.prior_year_bill_open(date(2027, 1, 15), fl))
+        self.assertTrue(f.prior_year_bill_open(date(2027, 3, 31), fl))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 4, 1), fl))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 1, 15), fl, prior_paid=True))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 1, 15), fl, prior_paid=False))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 1, 15), ga))
+        self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 1, 15), fl, prior_paid=False), 7000)
+        self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 1, 15), fl), 0)
+        self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 4, 15), fl, prior_paid=False), 0)
+
     def test_loan_limits(self):
         lim = profiles.loan_limits()
         self.assertEqual((lim["year"], lim["conforming"]["baseline"], lim["fha"]["floor"]), (2026, 832750, 541287))

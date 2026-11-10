@@ -977,6 +977,10 @@ def net_sheet(R, market, strategies, closings, as_of, ri):
         if extra:  # a closing next year: this year's whole bill (assumed unpaid), plus next year's share to closing
             led.cost("tax_prior_year", t("net_tax_prior_year", year=str(as_of.year)), extra)
             next_year.append(i)
+        elif closing and not later:  # a report early in the year: last year's bill, when the agent says it's unpaid
+            owed = finance.prior_year_bill_owed(annual_tax, closing, market, costs.get("prior_tax_bill_paid"))
+            if owed:
+                led.cost("tax_prior_year", t("net_tax_prior_year", year=str(closing.year - 1)), owed)
         if payoff:
             led.cost("payoff", L["net_payoff"], payoff)
         if holding:
@@ -1363,7 +1367,12 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
                            year=str(as_of.year), next=str(as_of.year + 1)))
         if unpaid:
             parts.append(L["note_tax_unpaid"])
-        N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] else "info")
+        prior_open = [c["date"] for c in closings if c["date"] and c["date"].year == as_of.year
+                      and finance.prior_year_bill_open(c["date"], market, costs.get("prior_tax_bill_paid"))]
+        if prior_open:  # Florida: last year's bill is due March 31
+            due = finance.tax_due_date(prior_open[0], None, market.get("property_tax.prior_year_due"))
+            parts.append(t("note_tax_prior_open", due=fmt.date_short(due, year=False), year=str(as_of.year - 1)))
+        N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] or prior_open else "info")
     late = goal_misses(R, closings)  # the seller's closing goal, said once for every option that closes after it
     if late:
         goal = fmt.date_short(_date(costs["expected_closing_date"], "expected_closing_date"))

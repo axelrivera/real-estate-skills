@@ -377,6 +377,21 @@ class OneClosing(unittest.TestCase):
         self.assertEqual(row(C, "tax_prior_year")["display"][1:], [compute.fmt.EMPTY] * 2)  # only the 2027 closing
         self.assertIn("tax", C["assumption_keys"])
 
+    def test_prior_year_bill_on_a_report_early_in_the_year(self):
+        """A January report whose options close by March 31: last year's Florida bill may still be open, said in the
+        tax note; stated unpaid, its line is charged."""
+        R = tanager()
+        R["as_of"] = "2027-01-04"
+        R["costs"].pop("expected_closing_date")
+        C, _ = run(R)
+        self.assertIn("tax", C["assumption_keys"])
+        self.assertTrue(any("title company collects it" in n for n in C["notes"]))
+        R["costs"]["prior_tax_bill_paid"] = False
+        C, _ = run(R)
+        prior = row(C, "tax_prior_year")["amounts"]
+        self.assertEqual(prior[0], 0)  # closes Apr 25: past the due date
+        self.assertTrue(all(v == -compute.fmt.half_up(3505.61) for v in prior[1:]))  # the whole bill
+
     def test_the_goal_is_a_deadline_not_a_floor(self):
         """Eval 16: a "close by year end" goal used to push every option to the goal, flattening holding costs."""
         R = tanager()

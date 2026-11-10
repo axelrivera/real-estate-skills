@@ -551,6 +551,7 @@
    "loan_approval_days": 30
   },
   "norms_source": "national",
+  "prior_bill_paid": null,
   "property_type": null,
   "repair_reserve_deal": false,
   "repair_reserve_pct": 0,

@@ -281,6 +281,24 @@ class PropertyTax(unittest.TestCase):
         data["offers"][0]["closing_date"] = "2026-10-30"  # before this year's bills go out
         self.assertFalse(review.analyze(data)["offers"][0]["ns"]["tax_bill_assumed"])
 
+    def test_prior_year_bill_on_jan_to_mar_closings(self):
+        """Florida bills are due March 31 of the next year: a January closing with no word on last year's bill gets a
+        med-impact assumption (the net assumes it paid); stated unpaid, the net charges it; April on, nothing."""
+        R = run(hand(closing_date="2027-01-15"), listing={"annual_tax": 7000})
+        a = fields(R)["prior_tax_bill_paid"]
+        self.assertEqual(a["impact"], "med")
+        self.assertIn("title company collects it", a["why"])
+        self.assertNotIn("\u2014", a["why"])
+        self.assertEqual(line(R["offers"][0]["ns"], "tax_prior"), 0)
+        self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-01-15"),
+                                                           listing={"annual_tax": 7000, "prior_tax_bill_paid": True})))
+        R = run(hand(closing_date="2027-01-15"), listing={"annual_tax": 7000, "prior_tax_bill_paid": False})
+        self.assertNotIn("prior_tax_bill_paid", fields(R))
+        self.assertEqual(line(R["offers"][0]["ns"], "tax_prior"), -7000)
+        self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-04-02"), listing={"annual_tax": 7000})))
+        tx = {"address": "1 Test St, Austin, TX 78701", "state": "TX", "county": "Travis", "annual_tax": 7000}
+        self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-01-15"), listing=tx)))
+
     def test_tax_bill_assumption_is_per_offer(self):
         R = review.analyze(case05(listing={"highest_and_best_due": None}))  # A closes Nov 2, B Oct 28
         self.assertEqual(next(x for x in R["missing"] if x["field"] == "current_tax_bill_paid")["offers"], ["A"])

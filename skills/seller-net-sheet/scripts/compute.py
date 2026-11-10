@@ -35,7 +35,7 @@ TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): fr
 GROUPS = (("brokerage", ("listing_fee", "buyer_broker_fee")),
           ("taxes", ("transfer_tax", "transfer_surtax")),
           ("title", ("owner_title", "title_fees", "estoppel")),
-          ("prorations", ("tax_proration",)),
+          ("prorations", ("tax_proration", "tax_prior_year")),
           ("concessions", ("credit", "other")))
 COST_KEYS = {k for _, keys in GROUPS for k in keys}
 SMALL_WORDS = {"a", "an", "and", "of", "on", "or", "the", "to", "for", "in"}
@@ -191,9 +191,10 @@ def title_fee_items(market, line):
     return [(title_case(k), v) for k, v in items]
 
 
-def column_ledger(x, net, market, pay_rows, label):
-    """One price's money as a finance.Ledger: the price, each cost (title fees itemized), then the payoffs. Every
-    line is rounded once; every total the page prints is a sum of these lines."""
+def column_ledger(x, net, market, pay_rows, label, prior=0):
+    """One price's money as a finance.Ledger: the price, each cost (title fees itemized), last year's tax bill when
+    it's stated unpaid (`prior`), then the payoffs. Every line is rounded once; every total the page prints is a sum
+    of these lines."""
     led = finance.Ledger()
     led.add("price", L["row_price"], x["price"])
     for ln in net["lines"]:
@@ -202,6 +203,8 @@ def column_ledger(x, net, market, pay_rows, label):
                 led.cost("title_fees", name, amount)
         else:
             led.cost(ln["key"], label(ln), ln["amount"], rate=ln.get("rate"))
+    if prior:
+        led.cost("tax_prior_year", L["row_tax_prior_year"], prior)
     for r in pay_rows:
         led.cost("payoff", r["label"], r["amount"])
     return led
@@ -262,6 +265,7 @@ def compute(R, market):
     payoff_total = sum(fmt.half_up(r["amount"]) for r in pay_rows)
     annual_tax = _amount(costs.get("annual_tax"), "costs.annual_tax")
     bill_paid = costs.get("current_tax_bill_paid")
+    prior_paid = costs.get("prior_tax_bill_paid")  # last year's bill, for a closing by its due date (Florida: Mar 31)
     due_date = costs.get("tax_bill_due_date")
     try:  # checked before the math: "10-15" or "2026-10-15"
         finance.tax_due_date(date.today(), None, due_date)
@@ -301,7 +305,9 @@ def compute(R, market):
             return L["row_tax_mixed"]
         return line["label"]
 
-    ledgers = [column_ledger(x, n, market, pay_rows, label) for x, n in zip(xs, nets)]
+    priors = [finance.prior_year_bill_owed(annual_tax, x["closing"], market, prior_paid) for x in xs]
+    prior_open = bool(annual_tax) and any(finance.prior_year_bill_open(x["closing"], market, prior_paid) for x in xs)
+    ledgers = [column_ledger(x, n, market, pay_rows, label, pr) for x, n, pr in zip(xs, nets, priors)]
 
     # Rows: one per line (key and label) across every column (a seller credit may exist in only one), as on the page
     rows = [{"kind": "price", "key": "price", "label": L["row_price"], "amounts": [led.amount("price") for led in ledgers]}]
@@ -416,6 +422,9 @@ def compute(R, market):
             N.add("tax", t("note_tax_unpaid", basis=basis), "assumption")
         else:
             N.add("tax", t("note_tax", basis=basis), "info")
+        if prior_open:
+            due = finance.tax_due_date(closing, None, market.get("property_tax.prior_year_due"))
+            N.add("tax_prior", t("note_tax_prior_open", due=fmt.date_short(due, year=False)), "assumption")
     elif market.get("property_tax.paid") == "arrears":
         missing_bits = [w for w, gone in (("the tax bill", not annual_tax), ("the closing date", not any(x["closing"] for x in xs)))
                         if gone]

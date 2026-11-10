@@ -339,6 +339,7 @@ def prepare_listing(data, A, costs):
     if paid is None and L["annual_tax"]:
         A.add("listing", "tax_paid", "arrears", "How property tax is paid here wasn't given: assumed in arrears (seller credits the buyer from Jan 1)", "low")
     L["bill_paid"] = L.get("current_tax_bill_paid")  # this year's bill already paid by the seller (Florida: from November)
+    L["prior_bill_paid"] = L.get("prior_tax_bill_paid")  # last year's bill, for a closing by its due date (Florida: Mar 31)
     L["tax_bill_month"] = costs.get("property_tax.bill_month") or TAX_BILL_MONTH  # this year's bills go out (Florida: Nov 1)
     L["property_type"] = L.get("property_type")
     L["condo"] = finance.property_type(L["property_type"]) == "condo"  # CMA-5: condo rider, project approval, rescission
@@ -1096,6 +1097,9 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         led.cost(key, labels.get(key) or found[key][0], found.get(key, ("", 0))[1])
     led.cost("warranty", "Home Warranty", warranty)
     led.cost("tax", tax_label, tax)
+    prior = finance.prior_year_bill_owed(L["annual_tax"], close, costs, L["prior_bill_paid"]) if L["tax_in_arrears"] else 0
+    if prior:  # stated unpaid: the title company collects last year's bill from the proceeds
+        led.cost("tax_prior", "Prior-Year Property Taxes", prior)
     for key, label, amount in extra:
         led.add(key, label, amount)
     led.cost("payoff", "Mortgage Payoff", S["payoff"])
@@ -2460,6 +2464,16 @@ def analyze(data, market=None, cma=None, seller_review=False):
               "the seller has paid this year's bill wasn't given. Assumed not paid (the seller credits the buyer from Jan 1); "
               "if it's paid, the buyer credits the seller instead", "med")
         A.items[-1]["offers"] = late  # OFR-344: a single review lists it only for an offer closing then
+    early = [o["id"] for o in offers if o["status"] in ACTIVE
+             and finance.prior_year_bill_open(o["close"], costs, L["prior_bill_paid"])]
+    if L["annual_tax"] and L["tax_in_arrears"] and early:  # Florida: last year's bill is due March 31
+        due = finance.tax_due_date(min(o["close"] for o in offers if o["id"] in early), None,
+                                   costs.get("property_tax.prior_year_due"))
+        A.add("listing", "prior_tax_bill_paid", True,
+              f"Closing by the day last year's tax bill is due ({fmt.MONTHS[due.month - 1]} {due.day}): whether the seller "
+              f"has paid it wasn't given. The net assumes it's paid; if it isn't, the title company collects it from the "
+              f"proceeds (about {money(L['annual_tax'])})", "med")
+        A.items[-1]["offers"] = early
     _missing_market(costs, offers[0]["ns"], A)
     estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)
     if L["hoa_monthly"] is None and estoppel:  # a condo with its dues unknown: the fee is charged, so say so (once)

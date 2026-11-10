@@ -364,6 +364,7 @@
  "note_holding_loan_unknown": "no loan interest, since no mortgage payoff was given",
  "note_holding_left_out": "Not included for this market: {items}.",
  "note_tax_closing": "Each option's property tax proration runs from Jan 1 to its own expected closing.",
+ "note_tax_prior_open": "The {year} tax bill is due {due}: whether the seller has paid it wasn't given, so the net assumes it's paid; if it isn't, the title company collects it from the proceeds.",
  "note_tax_next_year": "The {options} option closes in {next}, so it also pays this year's whole bill (assumed unpaid) plus {next}'s share to closing.",
  "note_tax_next_year_many": "The {options} options close in {next}, so they also pay this year's whole bill (assumed unpaid) plus {next}'s share to closing.",
  "note_goal_after": "The {options} option would likely close {dates}, after the seller's {goal} closing goal.",
