@@ -32,7 +32,7 @@ MAX_SCENARIOS = 3  # three columns still fit on one page
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 
 # Row groups in page order: (group key, line keys from finance.seller_net)
-GROUPS = (("brokerage", ("listing_fee", "buyer_broker_fee")),
+GROUPS = (("brokerage", ("listing_fee", "buyer_broker_fee", "brokerage_fee")),
           ("taxes", ("transfer_tax", "transfer_surtax")),
           ("title", ("owner_title", "title_fees", "estoppel")),
           ("prorations", ("tax_proration", "tax_prior_year")),
@@ -191,9 +191,9 @@ def title_fee_items(market, line):
     return [(title_case(k), v) for k, v in items]
 
 
-def column_ledger(x, net, market, pay_rows, label, prior=0):
+def column_ledger(x, net, market, pay_rows, label, prior=0, brokerage_fee=None):
     """One price's money as a finance.Ledger: the price, each cost (title fees itemized), last year's tax bill when
-    it's stated unpaid (`prior`), then the payoffs. Every line is rounded once; every total the page prints is a sum
+    it's stated unpaid (`prior`), a flat brokerage fee, then the payoffs. Every line is rounded once; every total the page prints is a sum
     of these lines."""
     led = finance.Ledger()
     led.add("price", L["row_price"], x["price"])
@@ -203,6 +203,8 @@ def column_ledger(x, net, market, pay_rows, label, prior=0):
                 led.cost("title_fees", name, amount)
         else:
             led.cost(ln["key"], label(ln), ln["amount"], rate=ln.get("rate"))
+    if brokerage_fee:
+        led.cost("brokerage_fee", L["row_brokerage_fee"], brokerage_fee)
     if prior:
         led.cost("tax_prior_year", L["row_tax_prior_year"], prior)
     for r in pay_rows:
@@ -260,6 +262,14 @@ def compute(R, market):
     xs = scenarios(R)
     lf = finance.fraction(costs.get("listing_fee_pct"), "costs.listing_fee_pct")
     bf = finance.fraction(costs.get("buyer_broker_fee_pct"), "costs.buyer_broker_fee_pct")
+    # a commission in dollars stays those dollars at every price (never a share of one price applied to another)
+    flat = {"listing_fee": _amount(costs.get("listing_fee_amount"), "costs.listing_fee_amount"),
+            "buyer_broker_fee": _amount(costs.get("buyer_broker_fee_amount"), "costs.buyer_broker_fee_amount")}
+    for side, pct_given in (("listing_fee", lf), ("buyer_broker_fee", bf)):
+        if flat[side] is not None and pct_given is not None:
+            raise NetSheetError(f"costs.{side}_pct and costs.{side}_amount are both given: keep the one the listing "
+                                "agreement states (a percent, or a flat dollar amount).")
+    brokerage_fee = _amount(costs.get("brokerage_fee"), "costs.brokerage_fee")
     others = _items(costs.get("other"), "costs.other")
     pay_rows, payoff_known, payoff_est = payoffs(costs)
     payoff_total = sum(fmt.half_up(r["amount"]) for r in pay_rows)
@@ -285,7 +295,10 @@ def compute(R, market):
         if x["repairs"]:
             extra.append({"label": L["row_repairs"], "amount": x["repairs"]})
         nets.append(finance.seller_net(x["price"], market, credit=x["credit"], payoff=None,
-                                       listing_fee_pct=lf, buyer_broker_fee_pct=bf, has_hoa=has_hoa, other_costs=extra,
+                                       listing_fee_pct=lf if flat["listing_fee"] is None else flat["listing_fee"] / x["price"],
+                                       buyer_broker_fee_pct=bf if flat["buyer_broker_fee"] is None
+                                       else flat["buyer_broker_fee"] / x["price"],
+                                       has_hoa=has_hoa, other_costs=extra,
                                        annual_tax=annual_tax, closing=x["closing"], bill_paid=bill_paid,
                                        prop_type=p.get("property_type"), tax_due_date=due_date))
     first = nets[0]
@@ -301,6 +314,8 @@ def compute(R, market):
     def label(line):
         key, rate = line["key"], line.get("rate")
         if key in ("listing_fee", "buyer_broker_fee"):  # a default commission is a default: no label, no note
+            if flat[key] is not None:
+                return t("row_" + key + "_flat", amount=fmt.money(flat[key]))
             return t("row_" + key, pct=fmt.pct(rate, 2))
         if key == "tax_proration" and tax_mixed:  # one row, though one closing is charged and another credited
             return L["row_tax_mixed"]
@@ -313,7 +328,7 @@ def compute(R, market):
     priors = [finance.prior_year_bill_owed(annual_tax, x["closing"], market, pp) for x, pp in zip(xs, priors_paid)]
     prior_open = bool(annual_tax) and any(finance.prior_year_bill_open(x["closing"], market, pp)
                                           for x, pp in zip(xs, priors_paid))
-    ledgers = [column_ledger(x, n, market, pay_rows, label, pr) for x, n, pr in zip(xs, nets, priors)]
+    ledgers = [column_ledger(x, n, market, pay_rows, label, pr, brokerage_fee) for x, n, pr in zip(xs, nets, priors)]
 
     # Rows: one per line (key and label) across every column (a seller credit may exist in only one), as on the page
     rows = [{"kind": "price", "key": "price", "label": L["row_price"], "amounts": [led.amount("price") for led in ledgers]}]
@@ -389,7 +404,7 @@ def compute(R, market):
         facts.append(L["fact_no_mortgage"])
     if annual_tax:
         facts.append(t("fact_taxes_paid" if paid_now else "fact_taxes", amount=fmt.money(annual_tax)))
-    if lf is not None and bf is not None:
+    if lf is not None and bf is not None:  # a flat commission is on its own rows, in dollars
         facts.append(t("fact_commission", pct=fmt.pct(lf + bf, 2)))
 
     # Notes: one registry, each said once. Labels and facts never say Assumed or Estimate: it's said here.

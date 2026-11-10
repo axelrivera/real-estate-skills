@@ -348,5 +348,40 @@ class CondoAssociation(unittest.TestCase):
         d["property"]["hoa"] = False
         self.assertNotIn("estoppel", [r["key"] for r in compute.run(d)["rows"]])
 
+
+class FlatCommission(unittest.TestCase):
+    """Round 2 bug 15: a commission stated in dollars stays those dollars in every price column; a brokerage fee is
+    its own line in the brokerage group."""
+
+    def sheet(self, **costs):
+        d = fixture("florida-three-prices.json")
+        for k in ("listing_fee_pct", "buyer_broker_fee_pct"):
+            d["costs"].pop(k, None)
+        d["costs"].update(costs)
+        return d
+
+    def amounts(self, C, key):
+        return next(r for r in C["rows"] if r["key"] == key)["amounts"]
+
+    def test_flat_amounts_hold_in_every_column(self):
+        C = compute.run(self.sheet(listing_fee_amount=12000, buyer_broker_fee_amount=10000, brokerage_fee=395))
+        self.assertEqual(set(self.amounts(C, "listing_fee")), {-12000})
+        self.assertEqual(set(self.amounts(C, "buyer_broker_fee")), {-10000})
+        self.assertEqual(set(self.amounts(C, "brokerage_fee")), {-395})
+        labels = {r["key"]: r["label"] for r in C["rows"] if r["kind"] == "line"}
+        self.assertIn("$12,000", labels["listing_fee"])
+        self.assertIn("$10,000", labels["buyer_broker_fee"])
+        self.assertNotIn("commission_default", C.get("note_keys", []))
+
+    def test_mixed_percent_and_flat(self):
+        C = compute.run(self.sheet(listing_fee_pct=0.03, buyer_broker_fee_amount=10000))
+        prices = [c["price"] for c in C["columns"]]
+        self.assertEqual(self.amounts(C, "listing_fee"), [-round(p * 0.03) for p in prices])
+        self.assertEqual(set(self.amounts(C, "buyer_broker_fee")), {-10000})
+
+    def test_one_side_given_twice_stops(self):
+        with self.assertRaisesRegex(compute.NetSheetError, "listing_fee"):
+            compute.run(self.sheet(listing_fee_pct=0.03, listing_fee_amount=12000))
+
 if __name__ == "__main__":
     unittest.main()

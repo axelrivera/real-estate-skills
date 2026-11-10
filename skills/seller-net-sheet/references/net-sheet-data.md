@@ -48,6 +48,8 @@ This sale's own numbers. Each one replaces a built-in value or an estimate (`ref
 | Field | What it is |
 |---|---|
 | `listing_fee_pct`, `buyer_broker_fee_pct` | The listing agreement's terms (`0` when the seller won't pay the buyer's agent). Without them, the 2.5% default each, with no label (a default, not an assumption; the reply asks for the terms) |
+| `listing_fee_amount`, `buyer_broker_fee_amount` | A commission the agreement states in dollars (`10000`), the same in every price column; use it instead of that side's percent, never both |
+| `brokerage_fee` | A flat brokerage transaction fee charged to the seller (`395`), its own line in the brokerage group |
 | `mortgage_payoff` | The first mortgage payoff from a payoff letter or the seller's figure. `0` when the home is owned free and clear |
 | `mortgage_balance`, `mortgage_rate` | A monthly statement's balance and rate, when there's no payoff figure: compute.py adds a month's interest at `mortgage_rate` (4.5% when not given), and the notes say it's an estimate from the balance. A payoff figure the agent states ("they owe about $188,000") is `mortgage_payoff`, used as given |
 | `other_payoffs` | `[{label, amount}]`: a second mortgage, a HELOC, a solar loan or lease buyout. Each is its own row; the label is a name in words ("Second Mortgage") |
