@@ -292,6 +292,31 @@ class PropertyTax(unittest.TestCase):
         self.assertIn("current_tax_bill_paid", [x["field"] for x in review.listed_assumptions(R, True)])
 
 
+class FlatBuyerBrokerFee(unittest.TestCase):
+    """A buyer-broker fee stated in dollars stays that many dollars in every column (As Offered, Downside, Counter),
+    whatever price the column uses; a counter that sets a percent replaces it."""
+
+    def setUp(self):
+        self.listing = {"list_price": 520000, "cma_low": 470000, "cma_high": 490000}
+
+    def bb(self, sheet):
+        return next((lab, v) for k, lab, v in sheet["lines"] if k == "bb")
+
+    def test_flat_fee_holds_in_every_column(self):
+        o = first(hand(price=520000, buyer_broker_amount=10000), listing=self.listing, seller={"offered_buyer_broker_pct": None})
+        self.assertEqual(o["downside_price"], 490000)
+        for col in ("ns", "ns_down", "ns_counter"):
+            label, amount = self.bb(o[col])
+            self.assertEqual(amount, -10000, col)
+            self.assertIn("$10,000", label, col)
+
+    def test_countered_percent_replaces_the_flat_fee(self):
+        o = first(hand(price=520000, buyer_broker_amount=10000), listing=self.listing, seller={"offered_buyer_broker_pct": 0.015})
+        self.assertEqual(o["counter_terms"]["buyer_broker_pct"], 0.015)
+        self.assertEqual(self.bb(o["ns_counter"])[1], -round(0.015 * o["counter_terms"]["price"]))
+        self.assertEqual(self.bb(o["ns"])[1], -10000)
+
+
 class RentBack(unittest.TestCase):
     def test_free_rent_back_is_a_line_not_an_assumption(self):
         R = run(hand(riders=["U"], rent_back_days=14, rent_back_monthly=0))

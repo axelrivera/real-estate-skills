@@ -134,6 +134,7 @@
    "counter_terms": {
     "aga_valuation_days": 24,
     "appraisal_gap": 15000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
     "deposit": 20000,
@@ -733,6 +734,7 @@
    "counter_terms": {
     "aga_valuation_days": 24,
     "appraisal_gap": 15000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-02",
     "deposit": 20000,

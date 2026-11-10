@@ -1039,16 +1039,20 @@ _LINE_KEYS = {"listing_fee": "listing", "buyer_broker_fee": "bb", "transfer_tax"
 
 
 def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repair_label=None, bb_tag=None, extra=(),
-              bb_from_listing=False):
+              bb_from_listing=False, bb_amount=None):
     """Seller net at `price`, itemized with stable keys on a finance.Ledger (`ledger`; `lines` are its rounded lines and
     `net` their sum; `holding` is rounded the same way and `net_adj` = net + holding). Market costs and the tax
     proration come from finance.
     `extra` are the offer's rider money lines, (key, label, amount), placed before the payoff (rider_money).
     `bb_from_listing`: the listing broker pays the buyer's broker from its fee, so the seller pays only the listing fee
-    (an assumed listing fee then covers both sides, the market's total)."""
+    (an assumed listing fee then covers both sides, the market's total).
+    `bb_amount`: a buyer-broker fee stated in dollars, the same dollars at any `price` (never a share of the offer's
+    price applied to another column's)."""
     # iteration 9 eval 1: the HOA fee only with a known HOA or a condo (as the seller net sheet does), never "in case"
     has_hoa = bool(L["hoa_monthly"]) or L["condo"]
     listing_pct = S["listing_fee_pct"]
+    if bb_amount and not bb_from_listing:
+        bb_pct = bb_amount / price
     if bb_from_listing:  # OFR-116: an assumed fee becomes the agreed (or market) total, never the listing fee + this ask
         listing_pct += (S.get("default_buyer_broker_pct") or 0) if S.get("listing_fee_assumed") else 0
         bb_pct = 0
@@ -1064,7 +1068,8 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     labels = {
         "listing": (f"Listing Brokerage ({pct(listing_pct)}" + (", Pays the Buyer's Broker)" if bb_from_listing else ")"))
                    if listing_pct else "Listing Brokerage (Not Provided)",
-        "bb": (f"Buyer-Broker Compensation ({pct(bb_pct, 2)}" + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
+        "bb": (f"Buyer-Broker Compensation ({money(bb_amount) if bb_amount else pct(bb_pct, 2)}"
+               + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
               else "Buyer-Broker Compensation (Paid by the Listing Broker)" if bb_from_listing else "Buyer-Broker Compensation",
         "transfer": transfer,
         # Labels never say Estimate or Assumed (local-costs.md): the report's assumptions and notes say so, once
@@ -1685,7 +1690,7 @@ def flags_for(o, L, S):
                    "if the appraisal is low (amendatory clause), so it shows intent only.",
             "Ask for proof of funds for the gap; don't count it in the net.", "fha_gap_intent")
     cap = finance.concession_cap(o["financing"], o["down_pct"])  # OFR-12
-    credit = round(o["buyer_broker_pct"] * o["price"]) if o.get("bb_credit") else 0  # Rider FF: a seller credit to the buyer
+    credit = (o.get("buyer_broker_amount") or round(o["buyer_broker_pct"] * o["price"])) if o.get("bb_credit") else 0  # Rider FF: a seller credit to the buyer
     if cap is not None and o["seller_concessions"] + credit > cap * o["price"] + 1:
         over = o["seller_concessions"] + credit - cap * o["price"]
         what = (f"Concessions ({money(o['seller_concessions'])}) plus the Rider FF broker credit ({money(credit)})" if credit
@@ -2020,7 +2025,7 @@ def propose_counter(o, L, S):
     t = {"price": o["price"], "seller_concessions": o["seller_concessions"], "appraisal_gap": o["appraisal_gap"],
          "deposit": o["deposit"], "inspection_days": o["inspection_days"], "home_warranty": o["home_warranty"],
          "close": o["close"], "buyer_broker_pct": o["buyer_broker_pct"], "sale_contingency_days": o["sale_contingency_days"],
-         "loan_approval_days": o["loan_approval_days"]}
+         "loan_approval_days": o["loan_approval_days"], "buyer_broker_amount": o.get("buyer_broker_amount")}
     rows = []
 
     def put(key, term, value=None, why=None):
@@ -2107,6 +2112,8 @@ def propose_counter(o, L, S):
     ob = S["offered_buyer_broker_pct"]
     bb = ob if ob is not None and o["buyer_broker_pct"] > ob + 1e-9 and not o.get("bb_from_listing") else None
     put("buyer_broker_pct", "Buyer-Broker Compensation", bb, "Matches what the seller agreed to offer")
+    if t["buyer_broker_pct"] != o["buyer_broker_pct"]:  # a countered percent replaces a fee stated in dollars
+        t["buyer_broker_amount"] = None
     dep = why = None
     if o["deposit"] is not None and last.get("deposit"):
         if o["deposit"] < last["deposit"]:
@@ -2271,7 +2278,7 @@ def _sheet(t, o, L, S, costs, repair=0):
     repair line's label, so the net sheet reads the same across As Offered, Downside and Counter."""
     return net_sheet(t["price"], t["seller_concessions"], t["buyer_broker_pct"], t["home_warranty"], t["close"], L, S,
                      offer_costs(o, costs), repair, o.get("repair_label"), o.get("bb_tag"), o.get("rider_lines") or (),
-                     o.get("bb_from_listing", False))
+                     o.get("bb_from_listing", False), t.get("buyer_broker_amount"))
 
 
 COUNTER_FACTS = {"deposit": "deposit", "close": "closing_days", "inspection_days": "inspection_days",
