@@ -1250,7 +1250,8 @@ def market_section(st, R):
                   ("credit_amount", lambda: cells("median_seller_paid_when_paid", money))]
     rows = [[L["mk_" + stem], *f()] for stem, f in stems]
     supply = st.get("months_supply_at_recent_pace")
-    intro = t("line_market_intro", n=fmt.num(st["sold_all"]["n"]), first=fmt.date_short(w["first_close"]),
+    intro = t("line_market_intro" if st.get("listings_in_export", True) else "line_market_intro_sold_only",
+              n=fmt.num(st["sold_all"]["n"]), first=fmt.date_short(w["first_close"]),
               last=fmt.date_short(w["last_close"]), active=fmt.num(st["active_count"]),
               supply=t("line_market_supply", months=fmt.months(supply)) if supply is not None else "")
     cards = [{"key": stem, "label": L["deck_mk_" + stem], "values": r[1:]} for (stem, _), r in zip(stems, rows)

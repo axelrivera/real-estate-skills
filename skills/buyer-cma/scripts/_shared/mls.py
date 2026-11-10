@@ -354,16 +354,18 @@ def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=No
     counts = {}
     for h in homes:
         counts[h["status"]] = counts.get(h["status"], 0) + 1
+    # an export of sold rows only can't measure supply: None, never 0.0 (which would read as a tight market)
+    listed = any(h["status"] in ("ACTIVE", "PENDING") for h in homes)
 
     out = {
         "window": {"first_close": str(first), "last_close": str(last), "split_date": str(split), "as_of": str(end)},
         "sold_all": period_stats(sold, final), "sold_early": period_stats(early, final),
         "sold_recent": period_stats(recent, final), "final_list_in_export": final,
-        "active_count": len(actives),
+        "active_count": len(actives), "listings_in_export": listed,
         "active_share_with_price_cut": round(sum(h["current_price"] < h["original_list_price"] for h in cuts) / len(cuts), 3) if cuts else 0,
         # CMA-22: pendings count as sales in progress, and the pace runs to the as-of date, not the last close
         "months_supply_at_recent_pace": round(len(actives) / ((len(recent) + len(pendings)) / months_recent), 1)
-        if recent or pendings else None,
+        if listed and (recent or pendings) else None,
         "status_counts": counts,
     }
     types = {}

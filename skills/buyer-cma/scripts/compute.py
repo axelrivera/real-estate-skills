@@ -1032,7 +1032,8 @@ def market_section(st):
                                          else fmt.EMPTY for p in (early, recent)])
     supply = st.get("months_supply_at_recent_pace")
     n_all = st["sold_all"]["n"]
-    intro = t("line_market_intro", n=fmt.num(n_all), first=fmt.date_short(w["first_close"]),
+    intro = t("line_market_intro" if st.get("listings_in_export", True) else "line_market_intro_sold_only",
+              n=fmt.num(n_all), first=fmt.date_short(w["first_close"]),
               last=fmt.date_short(w["last_close"]), active=fmt.num(st["active_count"]),
               supply=t("line_market_supply", months=fmt.months(supply)) if supply is not None else "")
     intro = intro[:1].upper() + intro[1:]

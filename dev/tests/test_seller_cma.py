@@ -880,5 +880,18 @@ class ChatTemplate(unittest.TestCase):
             self.assertIn(field, text)
 
 
+
+class SoldOnlyExport(unittest.TestCase):
+    def test_market_line_without_listings(self):
+        """An export of sold rows only: the market line never says no homes are for sale, and shows no supply."""
+        mls = compute.mls
+        market = profiles.load_market(state="FL", county="Seminole")
+        export = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-spring-oaks.csv")
+        homes = [h for h in mls.load(export, market) if h["status"] == "SOLD"]
+        st = mls.market_stats(homes, {"address": "517 HICKORYWOOD AVE"}, split_date="2026-07-01")
+        intro = compute.market_section(st, {})["intro"]
+        self.assertIn("no homes for sale or under contract", intro)
+        self.assertNotIn("months of supply", intro)
+
 if __name__ == "__main__":
     unittest.main()

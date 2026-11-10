@@ -245,6 +245,17 @@ class SaleFlagsAndRanking(unittest.TestCase):
                  "days_on_market": 10}]
         self.assertEqual(mls.period_stats(sold)["median_sale_to_original_list"], 0.98)
 
+    def test_sold_only_export_has_no_supply(self):
+        """An export of sold rows only can't measure supply: None, never 0.0, so it never reads as a tight market (no
+        premium stance); the CMAs' market line says so (test_buyer_cma, test_seller_cma)."""
+        sold = [h for h in self.homes if h["status"] == "SOLD"]
+        s = mls.market_stats(sold, SUBJECT, split_date="2026-07-01")
+        self.assertIsNone(s["months_supply_at_recent_pace"])
+        self.assertFalse(s["listings_in_export"])
+        self.assertTrue(mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01")["listings_in_export"])
+        stats = {"months_supply": s["months_supply_at_recent_pace"], "sale_to_final_list_recent": 1.0}
+        self.assertEqual(cma.suggest_stance(stats)[0], "market")
+
     def test_months_supply_runs_to_as_of_with_pendings(self):
         s = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01")
         later = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01", as_of="2026-12-31")
