@@ -1400,7 +1400,9 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
 def payment_note(R, pay):
     """What the buyer payments assume: program, down, rate and its week, the tax basis, insurance, mortgage insurance and
     the homestead rule, in one note."""
-    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"])
+    rec = R["recommendation"]["list_price"]  # FHA's rate by the base loan's size: at the recommended price
+    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"],
+                                     finance.base_loan(rec, pay["loan_type"], pay["down_pct"]))
     mi = t("pay_note_mi", mi=fmt.pct(mi_rate, 2)) if mi_rate and not (
         pay["loan_type"] == "conventional" and pay["down_pct"] >= 0.20) else ""
     text = t("pay_note", program=pay["program"], down=pay["down_display"], rate=pay["rate_display"], basis=pay["tax_basis"],

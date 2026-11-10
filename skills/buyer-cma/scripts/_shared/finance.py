@@ -23,7 +23,7 @@ SINGLE_FAMILY = "single_family"
 # Agency guidelines as planning estimates (confirm limits, fees and overlays with the lender).
 LOAN_PROGRAMS = {
     "conventional": {"label": "Conventional", "min_down": 0.03, "upfront_fee": 0.0, "annual_mi": 0.005},
-    "fha": {"label": "FHA", "min_down": 0.035, "upfront_fee": 0.0175, "annual_mi": 0.0055},
+    "fha": {"label": "FHA", "min_down": 0.035, "upfront_fee": 0.0175},  # annual MIP by LTV and loan size: FHA_MIP
     "va": {"label": "VA", "min_down": 0.0, "upfront_fee": 0.0215, "annual_mi": 0.0},
     "usda": {"label": "USDA", "min_down": 0.0, "upfront_fee": 0.01, "annual_mi": 0.0035},
     "cash": {"label": "Cash", "min_down": 1.0, "upfront_fee": 0.0, "annual_mi": 0.0},
@@ -34,14 +34,19 @@ ALIASES = {"conv": "conventional"}
 PMI_BY_LTV = ((0.95, 0.0075), (0.90, 0.005), (0.85, 0.0035), (0.80, 0.002))  # (LTV above, annual rate)
 # VA funding fee (38 U.S.C. 3729): by down payment, first use and later use; waived for exempt veterans
 VA_FEE = ((0.10, 0.0125, 0.0125), (0.05, 0.015, 0.015), (0.0, 0.0215, 0.033))  # (down at least, first, later)
+# FHA annual MIP, terms over 15 years (HUD Mortgagee Letter 2023-05): (base loan up to, at 95% LTV or less, above 95%)
+FHA_MIP = ((726200, 0.0050, 0.0055), (float("inf"), 0.0070, 0.0075))
 
 
-def annual_mi_rate(name, down):
-    """Annual mortgage insurance as a share of the base loan: PMI by loan-to-value for conventional loans."""
+def annual_mi_rate(name, down, base=None):
+    """Annual mortgage insurance as a share of the base loan: PMI by loan-to-value for conventional loans; FHA's MIP
+    by loan-to-value and the base loan's size (`base`; without one, the tier most loans fall in)."""
     key = program(name)
+    ltv = 1 - down
+    if key == "fha":
+        return next(high if ltv > 0.95 + 1e-9 else low for up_to, low, high in FHA_MIP if (base or 0) <= up_to)
     if key != "conventional":
         return LOAN_PROGRAMS[key]["annual_mi"]
-    ltv = 1 - down
     return next((rate for above, rate in PMI_BY_LTV if ltv > above + 1e-9), 0.0)
 
 
@@ -474,7 +479,7 @@ def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, h
     key = program(name)
     base = base_loan(price, key, down)
     loan = loan_amount(price, key, down, va_later_use, va_exempt)
-    rate_mi = annual_mi_rate(key, down) if mi_rate is None else mi_rate
+    rate_mi = annual_mi_rate(key, down, base) if mi_rate is None else mi_rate
     mi = 0.0 if key == "cash" or (key == "conventional" and down >= 0.20) else base * rate_mi / 12
     pi = 0.0 if key == "cash" else pi_payment(loan, rate_pct)
     tax, ins = tax_annual / 12, insurance_annual / 12

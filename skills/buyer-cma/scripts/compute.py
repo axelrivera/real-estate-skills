@@ -1096,9 +1096,9 @@ def cost_notes(N, R, market, pay, tax_rows, insurance):
                     down=fmt.pct(conv[0], 2)))
     for key in ("fha", "va", "usda"):
         if any(p == key for p, _ in progs):
-            spec = finance.LOAN_PROGRAMS[key]
-            mi.append(t("note_mi_" + key, rate=fmt.pct(spec["annual_mi"], 2), upfront=fmt.pct(finance.upfront_fee(
-                key, min(d for p, d in progs if p == key)), 2)))
+            low = min(d for p, d in progs if p == key)  # FHA's rate by loan-to-value: the smallest down payment's
+            rate = finance.annual_mi_rate(key, low, finance.base_loan(pay["price"], key, low))
+            mi.append(t("note_mi_" + key, rate=fmt.pct(rate, 2), upfront=fmt.pct(finance.upfront_fee(key, low), 2)))
     if mi:
         N.add("mortgage_insurance", t("note_mi", parts=cma._and(mi)), "estimate")
     cs = R["costs"]

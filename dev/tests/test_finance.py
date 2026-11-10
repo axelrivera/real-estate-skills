@@ -298,6 +298,18 @@ class LoanPrograms(unittest.TestCase):
                          [0.0075, 0.005, 0.0035, 0.002, 0.0])
         self.assertEqual(f.annual_mi_rate("fha", 0.035), 0.0055)
 
+    def test_fha_mip_by_loan_to_value_and_size(self):
+        """HUD's annual MIP for terms over 15 years: 0.50% at 95% LTV or less, 0.55% above, on base loans up to
+        $726,200; 0.70% and 0.75% above it."""
+        self.assertEqual(f.annual_mi_rate("fha", 0.035, 386000), 0.0055)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05), 0.005)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05, 380000), 0.005)
+        self.assertEqual(f.annual_mi_rate("fha", 0.035, 800000), 0.0075)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05, 800000), 0.007)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05, 726200), 0.005)  # the tier runs up to and including $726,200
+        self.assertAlmostEqual(f.monthly_payment(400000, "fha", 0.05, 6.5, 0, 0)["mi"], 380000 * 0.005 / 12)
+        self.assertAlmostEqual(f.monthly_payment(400000, "fha", 0.035, 6.5, 0, 0)["mi"], 386000 * 0.0055 / 12)
+
     def test_loan_limits(self):
         lim = profiles.loan_limits()
         self.assertEqual((lim["year"], lim["conforming"]["baseline"], lim["fha"]["floor"]), (2026, 832750, 541287))
