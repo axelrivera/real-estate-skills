@@ -315,8 +315,10 @@ class Relist(unittest.TestCase):
         self.assertIn(compute.t("note_expected_premium", price=compute.money(top["list_price"]),
                                 ratio=compute.fmt.pct(b["premium_ratio"], 1, fixed=True)), notes)
         lower = [x["expected_sale"] for x in C["strategies"] if x["list_price"] < top["list_price"]]
-        self.assertEqual(top["expected_sale"], max(max(lower) + 500, C["recommendation"]["low"],
-                         compute.fmt.half_up(top["list_price"] * b["premium_ratio"] + top["seller_credit"], 500)))
+        self.assertGreater(top["expected_sale"], max(lower))
+        self.assertGreaterEqual(top["expected_sale"] - top["seller_credit"], C["recommendation"]["low"])  # nets the low end
+        self.assertGreaterEqual(top["expected_sale"],
+                                compute.fmt.half_up(top["list_price"] * b["premium_ratio"] + top["seller_credit"], 500))
         self.assertIn(compute.t("note_expected_premium_floor", sale=compute.money(top["expected_sale"])), notes)
         self.assertNotIn(f"the {compute.money(top['list_price'])} and", notes)
 

@@ -814,7 +814,8 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     range): it takes the recent sale-to-ORIGINAL-list when the export has original list prices, since a price above
     the market tends to sell only after the cuts the final-list ratio leaves out, else the market ratio. An option
     listed inside the supported range whose sale would land under the range is held at the range's low end (the comps,
-    already net of seller credits, say the home is worth at least that); an option listed under the range (even the
+    already net of seller credits, say the home is worth at least that: the sale net of its own credit is held there,
+    with the credit added back); an option listed under the range (even the
     competing-offer one, whose cap is the range's top) is not, and no other option moves. Never above its list price (except the competing-offer option, the last) or the top
     of the range. Then by list price a higher price expects at least $500 more than a lower one (two options held at
     the floor, or an agent's own figure or credit in between), and a lower one at least $500 less than a higher one's
@@ -839,10 +840,12 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     capped, floored = False, []
     for i in filled:
         x = strategies[i]
-        v = fmt.half_up(x["list_price"] * (premium_ratio if i == premium else ratio) + (x.get("seller_credit") or 0),
-                        EXPECTED_STEP)
-        if x["list_price"] >= low and v < low:  # listed inside the range: never less than the value the comps support
-            v = low
+        credit = x.get("seller_credit") or 0
+        v = fmt.half_up(x["list_price"] * (premium_ratio if i == premium else ratio) + credit, EXPECTED_STEP)
+        # listed inside the range: never less than the value the comps support, which is net of seller credits, so
+        # the sale net of this option's credit is what's held at the low end (its credit added back on top)
+        if x["list_price"] >= low and v - credit < low:
+            v = low + credit
             floored.append(i)
         capped |= v > cap[i]
         x["expected_sale"], x["expected_sale_source"] = min(v, cap[i]), "rule"
@@ -1325,6 +1328,8 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
             parts.append(t("note_expected_floor" if len(held) == 1 else "note_expected_floor_many",
                            prices=cma._and([money(strategies[i]["list_price"]) for i in held]),
                            low=money(R["recommendation"]["low"])))
+            if any(strategies[i].get("seller_credit") for i in held):  # held net of its credit (round 2 bug 9)
+                parts.append(L["note_expected_floor_credit"])
         if own:
             parts.append(t("note_expected_premium", price=money(strategies[pi]["list_price"]),
                            ratio=basis["premium_ratio_display"]))

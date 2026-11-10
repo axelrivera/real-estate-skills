@@ -345,6 +345,7 @@
  "note_expected_export_original": "Expected sales are estimates, not guarantees: each option's list price times {ratio}, what nearby homes sold since {since} got against their original asking price after seller-paid costs (the export has no final asking prices, and a final price is never above the original one), plus that option's seller credit, to the nearest $500.",
  "note_expected_floor": "At that ratio the {prices} option would sell under the supported range, which the comps (already net of seller credits) put this home's value inside, so its expected sale is held at the low end of the range, {low}.",
  "note_expected_floor_many": "At that ratio the {prices} options would sell under the supported range, which the comps (already net of seller credits) put this home's value inside, so their expected sales start at the low end of the range, {low}, each higher price $500 more.",
+ "note_expected_floor_credit": "A held figure adds back that option's seller credit, so it still nets the low end once the credit comes off.",
  "note_expected_premium": "The {price} option uses {ratio} instead, what recent nearby sales got against their original asking price after seller-paid costs, since a price above the market usually sells only after a cut.",
  "note_expected_premium_floor": "At that ratio it would sell under the supported range, so it expects {sale}: at least the low end of the range and more than any lower price.",
  "note_expected_limits": "None is above its list price or the top of the supported range.",
