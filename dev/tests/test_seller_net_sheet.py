@@ -334,5 +334,19 @@ class Page(unittest.TestCase):
         self.assertIn("<body class='font-bundled'>", render.build_html(compute.run(fixture("florida-two-prices.json")), {}))
 
 
+
+class CondoAssociation(unittest.TestCase):
+    def test_a_condo_has_an_association_unless_told_otherwise(self):
+        """Round 2 bug 13: every Florida condo has an association, so a condo with no hoa field gets the estoppel fee;
+        an explicit hoa false still wins."""
+        d = fixture("florida-one-price.json")
+        d["property"].update(property_type="condo")
+        for k in ("hoa", "hoa_monthly"):
+            d["property"].pop(k)
+        C = compute.run(d)
+        self.assertEqual(next(r for r in C["rows"] if r["key"] == "estoppel")["amounts"][0], -299)
+        d["property"]["hoa"] = False
+        self.assertNotIn("estoppel", [r["key"] for r in compute.run(d)["rows"]])
+
 if __name__ == "__main__":
     unittest.main()

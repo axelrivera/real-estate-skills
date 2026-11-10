@@ -272,8 +272,9 @@ def compute(R, market):
     except ValueError as e:
         raise NetSheetError(str(e).replace("The tax bill's due date", "costs.tax_bill_due_date")) from None
     hoa_monthly = _amount(p.get("hoa_monthly"), "property.hoa_monthly")
-    has_hoa = bool(p.get("hoa", bool(hoa_monthly)))
     kind = finance.property_type(p.get("property_type"))
+    # a condo always has an association (its estoppel or documents fee comes off the net) unless the agent says no
+    has_hoa = bool(p.get("hoa", bool(hoa_monthly) or kind == "condo"))
     types = L["property_types"]
 
     nets = []
