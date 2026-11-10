@@ -1522,12 +1522,12 @@ def analyze(B_in, market=None, cma=None):
     tgt = O["recommended"]["target"]["net_adj"]
     limits = profiles.loan_limits()  # OFR-11: jumbo and FHA limits
     BU0, P0 = B["buyer"], B["property"]
-    loan_notes = {k: finance.loan_limit_note(finance.loan_amount(t2["price"], BU0["financing"], BU0["down_pct"]),
+    loan_notes = {k: finance.loan_limit_note(finance.base_loan(t2["price"], BU0["financing"], BU0["down_pct"]),
                                              BU0["financing"], limits, P0.get("state"), P0.get("county")) for k, t2 in variants}
     if loan_notes.get("recommended"):
         A.add("buyer", "loan_limit", "check", loan_notes["recommended"], "high")
     engine_assumed = [tax_bill(B, costs, O, a) for a in R["assumptions"] if not a["scope"].startswith("offer")
-                      and a["scope"] != "seller" and a["field"] not in ("cma_low / cma_high", "state")]
+                      and a["scope"] != "seller" and a["field"] not in SELLER_ONLY_FIELDS]
     # a buyer fact the scorecard can't score without (the approval level), as the engine words it: said once
     engine_assumed += [{**a, "scope": "buyer"} for a in R["assumptions"] if a["scope"] == "offer recommended" and a.get("unscores")]
     res = {"B": B, "R": R, "O": O, "why": w, "lc_why": lc_why, "terms": dict(variants), "target": tgt, "overrides": list(ov),
@@ -1705,7 +1705,7 @@ def fha_over_limit(B, price, limits):
     BU, P = B["buyer"], B["property"]
     if BU["financing"] != "fha" or not limits:
         return False
-    loan = finance.loan_amount(price, "fha", BU["down_pct"])
+    loan = finance.base_loan(price, "fha", BU["down_pct"])  # the limit caps the base loan, not the financed premium
     own = ((limits.get("counties") or {}).get(P.get("state") or "") or {}).get(str(P.get("county") or "").removesuffix(" County"), {})
     return bool(own.get("fha") and loan > own["fha"] or loan > limits["fha"]["ceiling"])
 
@@ -1783,6 +1783,11 @@ def cash_first(res):
 def stronger_fits(r):
     """The Stronger option is inside every limit (reserve floor kept) and the listing agent would score it higher."""
     return r["framing"] in ("least_cash", "stronger_better")
+
+
+# engine assumptions about the listing side's own facts, never the buyer's report: the value range and state are asked
+# for in this skill's words, and last year's tax bill only moves the seller's proceeds
+SELLER_ONLY_FIELDS = ("cma_low / cma_high", "state", "prior_tax_bill_paid", "tax_bill_paid_as_prior")
 
 
 def tax_bill(B, costs, O, a):

@@ -772,9 +772,12 @@ def listing_history(R, homes, relist):
 # --- expected sales -----------------------------------------------------------------------------------------------------
 
 def stay_expected(R, homes, rp, median_adjusted, split):
-    """CMA-280: the Stay at Current Price option's expected sale, net of seller-paid costs: the current price times the
-    recent sale-to-original-list ratio of sales that sat at least as long as this listing has (all recent sales when
-    fewer than 3 did), or the median adjusted value if lower. None without an export. Returns (value, ratio, n)."""
+    """CMA-280: the Stay at Current Price option's expected sale, net of seller-paid costs: this listing's ORIGINAL price
+    times the recent sale-to-original-list ratio of sales that sat at least as long as this listing has (all recent
+    sales when fewer than 3 did), never above the current price or the median adjusted value. The ratio already holds
+    those sales' cuts, so it never applies to a price that's been cut (round 2 bug 8). The original price is the
+    reprice's, else the listing's own export row, else the current price. None without an export. Returns (value,
+    ratio, n)."""
     address = R["subject"].get("mls_address", R["subject"]["address"])
     sold = [h for h in homes if h["status"] == "SOLD" and h.get("original_list_price") and h.get("close_price")
             and not mls.same_address(h["address"], address) and (not split or (h.get("close_date") and h["close_date"] >= split))]
@@ -783,7 +786,10 @@ def stay_expected(R, homes, rp, median_adjusted, split):
     if not pool:
         return None, None, 0
     ratio = statistics.median((h["close_price"] - (h.get("seller_paid") or 0)) / h["original_list_price"] for h in pool)
-    return min(rp["current_price"] * ratio, median_adjusted), round(ratio, 4), len(pool)
+    current = rp["current_price"]
+    original = rp.get("original_price") or own_original(R, homes, ("ACTIVE", "PENDING"), current)
+    base = original if original and original > current else current
+    return min(base * ratio, current, median_adjusted), round(ratio, 4), len(pool)
 
 
 def stay_rule(R, homes, x, median_adjusted, split):
@@ -808,7 +814,8 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     range): it takes the recent sale-to-ORIGINAL-list when the export has original list prices, since a price above
     the market tends to sell only after the cuts the final-list ratio leaves out, else the market ratio. An option
     listed inside the supported range whose sale would land under the range is held at the range's low end (the comps,
-    already net of seller credits, say the home is worth at least that); an option listed under the range (even the
+    already net of seller credits, say the home is worth at least that: the sale net of its own credit is held there,
+    with the credit added back); an option listed under the range (even the
     competing-offer one, whose cap is the range's top) is not, and no other option moves. Never above its list price (except the competing-offer option, the last) or the top
     of the range. Then by list price a higher price expects at least $500 more than a lower one (two options held at
     the floor, or an agent's own figure or credit in between), and a lower one at least $500 less than a higher one's
@@ -833,10 +840,12 @@ def fill_expected_sales(R, strategies, stats, stay, competing):
     capped, floored = False, []
     for i in filled:
         x = strategies[i]
-        v = fmt.half_up(x["list_price"] * (premium_ratio if i == premium else ratio) + (x.get("seller_credit") or 0),
-                        EXPECTED_STEP)
-        if x["list_price"] >= low and v < low:  # listed inside the range: never less than the value the comps support
-            v = low
+        credit = x.get("seller_credit") or 0
+        v = fmt.half_up(x["list_price"] * (premium_ratio if i == premium else ratio) + credit, EXPECTED_STEP)
+        # listed inside the range: never less than the value the comps support, which is net of seller credits, so
+        # the sale net of this option's credit is what's held at the low end (its credit added back on top)
+        if x["list_price"] >= low and v - credit < low:
+            v = low + credit
             floored.append(i)
         capped |= v > cap[i]
         x["expected_sale"], x["expected_sale_source"] = min(v, cap[i]), "rule"
@@ -977,6 +986,11 @@ def net_sheet(R, market, strategies, closings, as_of, ri):
         if extra:  # a closing next year: this year's whole bill (assumed unpaid), plus next year's share to closing
             led.cost("tax_prior_year", t("net_tax_prior_year", year=str(as_of.year)), extra)
             next_year.append(i)
+        elif closing and not later:  # a report early in the year: last year's bill, when the agent says it's unpaid
+            owed = finance.prior_year_bill_owed(annual_tax, closing, market, finance.prior_paid_from(
+                costs.get("prior_tax_bill_paid"), bill_paid, closing, market))
+            if owed:
+                led.cost("tax_prior_year", t("net_tax_prior_year", year=str(closing.year - 1)), owed)
         if payoff:
             led.cost("payoff", L["net_payoff"], payoff)
         if holding:
@@ -1246,7 +1260,8 @@ def market_section(st, R):
                   ("credit_amount", lambda: cells("median_seller_paid_when_paid", money))]
     rows = [[L["mk_" + stem], *f()] for stem, f in stems]
     supply = st.get("months_supply_at_recent_pace")
-    intro = t("line_market_intro", n=fmt.num(st["sold_all"]["n"]), first=fmt.date_short(w["first_close"]),
+    intro = t("line_market_intro" if st.get("listings_in_export", True) else "line_market_intro_sold_only",
+              n=fmt.num(st["sold_all"]["n"]), first=fmt.date_short(w["first_close"]),
               last=fmt.date_short(w["last_close"]), active=fmt.num(st["active_count"]),
               supply=t("line_market_supply", months=fmt.months(supply)) if supply is not None else "")
     cards = [{"key": stem, "label": L["deck_mk_" + stem], "values": r[1:]} for (stem, _), r in zip(stems, rows)
@@ -1313,6 +1328,8 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
             parts.append(t("note_expected_floor" if len(held) == 1 else "note_expected_floor_many",
                            prices=cma._and([money(strategies[i]["list_price"]) for i in held]),
                            low=money(R["recommendation"]["low"])))
+            if any(strategies[i].get("seller_credit") for i in held):  # held net of its credit (round 2 bug 9)
+                parts.append(L["note_expected_floor_credit"])
         if own:
             parts.append(t("note_expected_premium", price=money(strategies[pi]["list_price"]),
                            ratio=basis["premium_ratio_display"]))
@@ -1363,7 +1380,17 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
                            year=str(as_of.year), next=str(as_of.year + 1)))
         if unpaid:
             parts.append(L["note_tax_unpaid"])
-        N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] else "info")
+        prior_open = [c["date"] for c in closings if c["date"] and c["date"].year == as_of.year
+                      and finance.prior_year_bill_open(c["date"], market, finance.prior_paid_from(
+                          costs.get("prior_tax_bill_paid"), bill_paid, c["date"], market))]
+        as_prior = any(c["date"] and c["date"].year == as_of.year and finance.bill_paid_means_prior(c["date"], market, bill_paid)
+                       for c in closings)
+        if as_prior:  # this year's bill isn't out yet: "paid" is about last year's
+            parts.append(t("note_tax_paid_as_prior", month=fmt.MONTHS[market.get("property_tax.bill_month") - 1]))
+        if prior_open:  # Florida: last year's bill is due March 31
+            due = finance.tax_due_date(prior_open[0], None, market.get("property_tax.prior_year_due"))
+            parts.append(t("note_tax_prior_open", due=fmt.date_short(due, year=False), year=str(as_of.year - 1)))
+        N.add("tax", " ".join(parts), "assumption" if unpaid or net["next_year"] or prior_open or as_prior else "info")
     late = goal_misses(R, closings)  # the seller's closing goal, said once for every option that closes after it
     if late:
         goal = fmt.date_short(_date(costs["expected_closing_date"], "expected_closing_date"))
@@ -1400,7 +1427,9 @@ def add_notes(N, R, market, net, strategies, closings, basis, pay, as_of, stay, 
 def payment_note(R, pay):
     """What the buyer payments assume: program, down, rate and its week, the tax basis, insurance, mortgage insurance and
     the homestead rule, in one note."""
-    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"])
+    rec = R["recommendation"]["list_price"]  # FHA's rate by the base loan's size: at the recommended price
+    mi_rate = finance.annual_mi_rate(pay["loan_type"], pay["down_pct"],
+                                     finance.base_loan(rec, pay["loan_type"], pay["down_pct"]))
     mi = t("pay_note_mi", mi=fmt.pct(mi_rate, 2)) if mi_rate and not (
         pay["loan_type"] == "conventional" and pay["down_pct"] >= 0.20) else ""
     text = t("pay_note", program=pay["program"], down=pay["down_display"], rate=pay["rate_display"], basis=pay["tax_basis"],

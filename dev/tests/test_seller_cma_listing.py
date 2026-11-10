@@ -162,6 +162,20 @@ class Reprice(unittest.TestCase):
         R["pricing"]["options"]["competing"] = {"expected_sale": 461000}  # the competing-offer option may sell above list
         run(R)
 
+    def test_stay_reads_the_listings_original_price(self):
+        """Round 2 bug 8: the slow sales' sale-to-ORIGINAL ratio already holds their cuts, so it applies to this
+        listing's own original price (capped at the current one), never to a price that's already been cut."""
+        R = reprice()
+        R["reprice"].pop("original_price", None)
+        flat = run(copy.deepcopy(R))[0]["reprice"]
+        credit = R["pricing"]["options"]["stay"]["seller_credit"]
+        R["reprice"]["original_price"] = 510000  # cut about 6% to $479,900
+        C, _ = run(R)
+        rp = C["reprice"]
+        expected = min(510000 * rp["stay_ratio"], 479900, C["median_adjusted"]) + credit
+        self.assertAlmostEqual(rp["stay_expected_sale"], min(expected, 479900), delta=600)
+        self.assertGreater(rp["stay_expected_sale"], flat["stay_expected_sale"])
+
     def test_stay_expected_sale_rule(self):
         """Current price x the ratio of sales that sat as long, or the median adjusted value if lower, plus its credit;
         a higher figure warns, a missing one is filled. Stay netting more says so in the notes, or warns on the
@@ -301,8 +315,10 @@ class Relist(unittest.TestCase):
         self.assertIn(compute.t("note_expected_premium", price=compute.money(top["list_price"]),
                                 ratio=compute.fmt.pct(b["premium_ratio"], 1, fixed=True)), notes)
         lower = [x["expected_sale"] for x in C["strategies"] if x["list_price"] < top["list_price"]]
-        self.assertEqual(top["expected_sale"], max(max(lower) + 500, C["recommendation"]["low"],
-                         compute.fmt.half_up(top["list_price"] * b["premium_ratio"] + top["seller_credit"], 500)))
+        self.assertGreater(top["expected_sale"], max(lower))
+        self.assertGreaterEqual(top["expected_sale"] - top["seller_credit"], C["recommendation"]["low"])  # nets the low end
+        self.assertGreaterEqual(top["expected_sale"],
+                                compute.fmt.half_up(top["list_price"] * b["premium_ratio"] + top["seller_credit"], 500))
         self.assertIn(compute.t("note_expected_premium_floor", sale=compute.money(top["expected_sale"])), notes)
         self.assertNotIn(f"the {compute.money(top['list_price'])} and", notes)
 

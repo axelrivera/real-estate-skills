@@ -32,10 +32,10 @@ MAX_SCENARIOS = 3  # three columns still fit on one page
 TAX_BILL_MONTH = 10  # when a market doesn't say (`property_tax.bill_month`): from October a year's bill may be out
 
 # Row groups in page order: (group key, line keys from finance.seller_net)
-GROUPS = (("brokerage", ("listing_fee", "buyer_broker_fee")),
+GROUPS = (("brokerage", ("listing_fee", "buyer_broker_fee", "brokerage_fee")),
           ("taxes", ("transfer_tax", "transfer_surtax")),
           ("title", ("owner_title", "title_fees", "estoppel")),
-          ("prorations", ("tax_proration",)),
+          ("prorations", ("tax_proration", "tax_prior_year")),
           ("concessions", ("credit", "other")))
 COST_KEYS = {k for _, keys in GROUPS for k in keys}
 SMALL_WORDS = {"a", "an", "and", "of", "on", "or", "the", "to", "for", "in"}
@@ -191,9 +191,10 @@ def title_fee_items(market, line):
     return [(title_case(k), v) for k, v in items]
 
 
-def column_ledger(x, net, market, pay_rows, label):
-    """One price's money as a finance.Ledger: the price, each cost (title fees itemized), then the payoffs. Every
-    line is rounded once; every total the page prints is a sum of these lines."""
+def column_ledger(x, net, market, pay_rows, label, prior=0, brokerage_fee=None):
+    """One price's money as a finance.Ledger: the price, each cost (title fees itemized), last year's tax bill when
+    it's stated unpaid (`prior`), a flat brokerage fee, then the payoffs. Every line is rounded once; every total the page prints is a sum
+    of these lines."""
     led = finance.Ledger()
     led.add("price", L["row_price"], x["price"])
     for ln in net["lines"]:
@@ -202,6 +203,10 @@ def column_ledger(x, net, market, pay_rows, label):
                 led.cost("title_fees", name, amount)
         else:
             led.cost(ln["key"], label(ln), ln["amount"], rate=ln.get("rate"))
+    if brokerage_fee:
+        led.cost("brokerage_fee", L["row_brokerage_fee"], brokerage_fee)
+    if prior:
+        led.cost("tax_prior_year", L["row_tax_prior_year"], prior)
     for r in pay_rows:
         led.cost("payoff", r["label"], r["amount"])
     return led
@@ -257,19 +262,29 @@ def compute(R, market):
     xs = scenarios(R)
     lf = finance.fraction(costs.get("listing_fee_pct"), "costs.listing_fee_pct")
     bf = finance.fraction(costs.get("buyer_broker_fee_pct"), "costs.buyer_broker_fee_pct")
+    # a commission in dollars stays those dollars at every price (never a share of one price applied to another)
+    flat = {"listing_fee": _amount(costs.get("listing_fee_amount"), "costs.listing_fee_amount"),
+            "buyer_broker_fee": _amount(costs.get("buyer_broker_fee_amount"), "costs.buyer_broker_fee_amount")}
+    for side, pct_given in (("listing_fee", lf), ("buyer_broker_fee", bf)):
+        if flat[side] is not None and pct_given is not None:
+            raise NetSheetError(f"costs.{side}_pct and costs.{side}_amount are both given: keep the one the listing "
+                                "agreement states (a percent, or a flat dollar amount).")
+    brokerage_fee = _amount(costs.get("brokerage_fee"), "costs.brokerage_fee")
     others = _items(costs.get("other"), "costs.other")
     pay_rows, payoff_known, payoff_est = payoffs(costs)
     payoff_total = sum(fmt.half_up(r["amount"]) for r in pay_rows)
     annual_tax = _amount(costs.get("annual_tax"), "costs.annual_tax")
     bill_paid = costs.get("current_tax_bill_paid")
+    prior_paid = costs.get("prior_tax_bill_paid")  # last year's bill, for a closing by its due date (Florida: Mar 31)
     due_date = costs.get("tax_bill_due_date")
     try:  # checked before the math: "10-15" or "2026-10-15"
         finance.tax_due_date(date.today(), None, due_date)
     except ValueError as e:
         raise NetSheetError(str(e).replace("The tax bill's due date", "costs.tax_bill_due_date")) from None
     hoa_monthly = _amount(p.get("hoa_monthly"), "property.hoa_monthly")
-    has_hoa = bool(p.get("hoa", bool(hoa_monthly)))
     kind = finance.property_type(p.get("property_type"))
+    # a condo always has an association (its estoppel or documents fee comes off the net) unless the agent says no
+    has_hoa = bool(p.get("hoa", bool(hoa_monthly) or kind == "condo"))
     types = L["property_types"]
 
     nets = []
@@ -280,7 +295,10 @@ def compute(R, market):
         if x["repairs"]:
             extra.append({"label": L["row_repairs"], "amount": x["repairs"]})
         nets.append(finance.seller_net(x["price"], market, credit=x["credit"], payoff=None,
-                                       listing_fee_pct=lf, buyer_broker_fee_pct=bf, has_hoa=has_hoa, other_costs=extra,
+                                       listing_fee_pct=lf if flat["listing_fee"] is None else flat["listing_fee"] / x["price"],
+                                       buyer_broker_fee_pct=bf if flat["buyer_broker_fee"] is None
+                                       else flat["buyer_broker_fee"] / x["price"],
+                                       has_hoa=has_hoa, other_costs=extra,
                                        annual_tax=annual_tax, closing=x["closing"], bill_paid=bill_paid,
                                        prop_type=p.get("property_type"), tax_due_date=due_date))
     first = nets[0]
@@ -296,12 +314,21 @@ def compute(R, market):
     def label(line):
         key, rate = line["key"], line.get("rate")
         if key in ("listing_fee", "buyer_broker_fee"):  # a default commission is a default: no label, no note
+            if flat[key] is not None:
+                return t("row_" + key + "_flat", amount=fmt.money(flat[key]))
             return t("row_" + key, pct=fmt.pct(rate, 2))
         if key == "tax_proration" and tax_mixed:  # one row, though one closing is charged and another credited
             return L["row_tax_mixed"]
         return line["label"]
 
-    ledgers = [column_ledger(x, n, market, pay_rows, label) for x, n in zip(xs, nets)]
+    # "paid" before this year's bill is out (Florida: a Jan-Oct closing) is about last year's bill (finance.bill_out)
+    as_prior = bool(annual_tax) and any(finance.bill_paid_means_prior(x["closing"], market, bill_paid) for x in xs)
+    paid_now = bool(bill_paid) and not as_prior  # this year's bill really is paid
+    priors_paid = [finance.prior_paid_from(prior_paid, bill_paid, x["closing"], market) for x in xs]
+    priors = [finance.prior_year_bill_owed(annual_tax, x["closing"], market, pp) for x, pp in zip(xs, priors_paid)]
+    prior_open = bool(annual_tax) and any(finance.prior_year_bill_open(x["closing"], market, pp)
+                                          for x, pp in zip(xs, priors_paid))
+    ledgers = [column_ledger(x, n, market, pay_rows, label, pr, brokerage_fee) for x, n, pr in zip(xs, nets, priors)]
 
     # Rows: one per line (key and label) across every column (a seller credit may exist in only one), as on the page
     rows = [{"kind": "price", "key": "price", "label": L["row_price"], "amounts": [led.amount("price") for led in ledgers]}]
@@ -376,8 +403,8 @@ def compute(R, market):
     elif payoff_known:
         facts.append(L["fact_no_mortgage"])
     if annual_tax:
-        facts.append(t("fact_taxes_paid" if bill_paid else "fact_taxes", amount=fmt.money(annual_tax)))
-    if lf is not None and bf is not None:
+        facts.append(t("fact_taxes_paid" if paid_now else "fact_taxes", amount=fmt.money(annual_tax)))
+    if lf is not None and bf is not None:  # a flat commission is on its own rows, in dollars
         facts.append(t("fact_commission", pct=fmt.pct(lf + bf, 2)))
 
     # Notes: one registry, each said once. Labels and facts never say Assumed or Estimate: it's said here.
@@ -404,7 +431,7 @@ def compute(R, market):
         due = fmt.date_short(due, year=False) if due else ""
         # one proration note (key "tax"), whichever way the bill falls; a mixed sheet adds the unpaid assumption once
         bill = basis.replace(" bill", "", 1)  # iteration 16 eval 4: "this year's tax bill ($3,900)", never "($3,900 bill)"
-        if bill_paid:
+        if paid_now:
             N.add("tax", t("note_tax_paid", basis=bill), "info")
         elif all(paid_assumed):
             N.add("tax", t("note_tax_bill_paid", basis=bill, due=due), "assumption")
@@ -416,6 +443,12 @@ def compute(R, market):
             N.add("tax", t("note_tax_unpaid", basis=basis), "assumption")
         else:
             N.add("tax", t("note_tax", basis=basis), "info")
+        if as_prior:
+            month = fmt.MONTHS[market.get("property_tax.bill_month") - 1]
+            N.add("tax_paid_as_prior", t("note_tax_paid_as_prior", month=month), "assumption")
+        if prior_open:
+            due = finance.tax_due_date(closing, None, market.get("property_tax.prior_year_due"))
+            N.add("tax_prior", t("note_tax_prior_open", due=fmt.date_short(due, year=False)), "assumption")
     elif market.get("property_tax.paid") == "arrears":
         missing_bits = [w for w, gone in (("the tax bill", not annual_tax), ("the closing date", not any(x["closing"] for x in xs)))
                         if gone]

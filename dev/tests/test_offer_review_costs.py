@@ -281,6 +281,34 @@ class PropertyTax(unittest.TestCase):
         data["offers"][0]["closing_date"] = "2026-10-30"  # before this year's bills go out
         self.assertFalse(review.analyze(data)["offers"][0]["ns"]["tax_bill_assumed"])
 
+    def test_prior_year_bill_on_jan_to_mar_closings(self):
+        """Florida bills are due March 31 of the next year: a January closing with no word on last year's bill gets a
+        med-impact assumption (the net assumes it paid); stated unpaid, the net charges it; April on, nothing."""
+        R = run(hand(closing_date="2027-01-15"), listing={"annual_tax": 7000})
+        a = fields(R)["prior_tax_bill_paid"]
+        self.assertEqual(a["impact"], "med")
+        self.assertIn("title company collects it", a["why"])
+        self.assertNotIn("\u2014", a["why"])
+        self.assertEqual(line(R["offers"][0]["ns"], "tax_prior"), 0)
+        self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-01-15"),
+                                                           listing={"annual_tax": 7000, "prior_tax_bill_paid": True})))
+        R = run(hand(closing_date="2027-01-15"), listing={"annual_tax": 7000, "prior_tax_bill_paid": False})
+        self.assertNotIn("prior_tax_bill_paid", fields(R))
+        self.assertEqual(line(R["offers"][0]["ns"], "tax_prior"), -7000)
+        self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-04-02"), listing={"annual_tax": 7000})))
+        tx = {"address": "1 Test St, Austin, TX 78701", "state": "TX", "county": "Travis", "annual_tax": 7000}
+        self.assertNotIn("prior_tax_bill_paid", fields(run(hand(closing_date="2027-01-15"), listing=tx)))
+
+    def test_current_bill_paid_before_bills_go_out(self):
+        """Marked paid on a February closing: this year's bill isn't out, so the seller is charged Jan 1 to closing,
+        "paid" is read as last year's bill (no prior-year assumption) and one low-impact assumption says so."""
+        R = run(hand(closing_date="2026-02-15"), listing={"annual_tax": 6000, "current_tax_bill_paid": True})
+        self.assertEqual(line(R["offers"][0]["ns"], "tax"), -710)
+        f = fields(R)
+        self.assertNotIn("prior_tax_bill_paid", f)
+        self.assertEqual(f["tax_bill_paid_as_prior"]["impact"], "low")
+        self.assertIn("last year's", f["tax_bill_paid_as_prior"]["why"])
+
     def test_tax_bill_assumption_is_per_offer(self):
         R = review.analyze(case05(listing={"highest_and_best_due": None}))  # A closes Nov 2, B Oct 28
         self.assertEqual(next(x for x in R["missing"] if x["field"] == "current_tax_bill_paid")["offers"], ["A"])
@@ -290,6 +318,31 @@ class PropertyTax(unittest.TestCase):
         self.assertIn("current_tax_bill_paid", listed("A"))
         self.assertNotIn("current_tax_bill_paid", listed("B"))
         self.assertIn("current_tax_bill_paid", [x["field"] for x in review.listed_assumptions(R, True)])
+
+
+class FlatBuyerBrokerFee(unittest.TestCase):
+    """A buyer-broker fee stated in dollars stays that many dollars in every column (As Offered, Downside, Counter),
+    whatever price the column uses; a counter that sets a percent replaces it."""
+
+    def setUp(self):
+        self.listing = {"list_price": 520000, "cma_low": 470000, "cma_high": 490000}
+
+    def bb(self, sheet):
+        return next((lab, v) for k, lab, v in sheet["lines"] if k == "bb")
+
+    def test_flat_fee_holds_in_every_column(self):
+        o = first(hand(price=520000, buyer_broker_amount=10000), listing=self.listing, seller={"offered_buyer_broker_pct": None})
+        self.assertEqual(o["downside_price"], 490000)
+        for col in ("ns", "ns_down", "ns_counter"):
+            label, amount = self.bb(o[col])
+            self.assertEqual(amount, -10000, col)
+            self.assertIn("$10,000", label, col)
+
+    def test_countered_percent_replaces_the_flat_fee(self):
+        o = first(hand(price=520000, buyer_broker_amount=10000), listing=self.listing, seller={"offered_buyer_broker_pct": 0.015})
+        self.assertEqual(o["counter_terms"]["buyer_broker_pct"], 0.015)
+        self.assertEqual(self.bb(o["ns_counter"])[1], -round(0.015 * o["counter_terms"]["price"]))
+        self.assertEqual(self.bb(o["ns"])[1], -10000)
 
 
 class RentBack(unittest.TestCase):

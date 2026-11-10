@@ -125,7 +125,7 @@
 
 **Notes:** {{notes, one line each; skip when empty}}
 
-<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = {{offers[].downside_note for the offer shown; in multi mode "if the appraisal and inspection go badly"}}. Estimates only; the title company's settlement statement governs. Commissions are negotiable and not set by law. Not legal advice.</sub>
+<sub>Net = after all costs and holding, {{"before mortgage payoff" when the data note says so}}. Downside = {{offers[].downside_note for the offer shown; in multi mode "if the appraisal and inspection go badly"}}. Estimates only, not legal, lending or tax advice; the title company's settlement statement governs. Commissions are negotiable and not set by law.</sub>
 
 {{the agent's disclaimers from their profile, verbatim, one line each, when there are any}}
 

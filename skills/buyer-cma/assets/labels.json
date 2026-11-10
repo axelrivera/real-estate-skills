@@ -204,6 +204,7 @@
 
  "h_market": "The Market Right Now",
  "line_market_intro": "{n} sales in the MLS records closed from {first} to {last}. {active} other homes are for sale now{supply}.",
+ "line_market_intro_sold_only": "{n} sales in the MLS records closed from {first} to {last}. The export has no homes for sale or under contract, so supply isn't measured.",
  "line_market_supply": ", {months} of supply at the recent pace of sales",
  "th_mk_sold": "Homes Sold",
  "th_mk_price": "Median Sale Price",

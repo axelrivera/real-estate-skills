@@ -86,6 +86,41 @@ class TaxProration(unittest.TestCase):
         with self.assertRaisesRegex(compute.NetSheetError, "tax_bill_due_date"):
             compute.run(d)
 
+    def test_prior_year_bill_on_jan_to_mar_closings(self):
+        """A closing by March 31 with no word on last year's Florida bill: an assumption in the notes; stated unpaid,
+        a line for it."""
+        d = fixture("florida-one-price.json")
+        d["closing_date"] = "2027-01-15"
+        C = compute.run(d)
+        self.assertTrue(any("title company collects it" in n for n in C["notes"]))
+        self.assertNotIn("tax_prior_year", [r["key"] for r in C["rows"]])
+        d["costs"]["prior_tax_bill_paid"] = False
+        C = compute.run(d)
+        self.assertFalse(any("title company collects it" in n for n in C["notes"]))
+        self.assertEqual(next(r for r in C["rows"] if r["key"] == "tax_prior_year")["amounts"][0], -6200)
+        d["closing_date"], d["costs"]["prior_tax_bill_paid"] = "2027-04-15", None
+        self.assertFalse(any("title company collects it" in n for n in compute.run(d)["notes"]))
+
+    def test_current_bill_paid_before_bills_go_out(self):
+        """$6,000 bill, closing Feb 15, marked paid: a $710 charge from Jan 1 (never a credit for a bill that isn't
+        out), a note that "paid" is taken as last year's bill, and no prior-year note."""
+        d = fixture("florida-one-price.json")
+        d["closing_date"], d["prepared_date"] = "2026-02-15", "2026-01-10"
+        d["costs"].update(annual_tax=6000, current_tax_bill_paid=True)
+        C = compute.run(d)
+        self.assertEqual(tax_row(C)["amounts"][0], -710)
+        self.assertTrue(any("taken as last year's" in n for n in C["notes"]))
+        self.assertFalse(any("title company collects it" in n for n in C["notes"]))
+
+    def test_reviewers_february_repro_names_last_years_bill(self):
+        """Round 2 bug 7: a February closing with no word on last year's bill says what an unpaid one costs."""
+        d = fixture("florida-one-price.json")
+        d["closing_date"], d["prepared_date"] = "2026-02-15", "2026-01-10"
+        d["costs"]["annual_tax"] = 6000
+        C = compute.run(d)
+        self.assertEqual(tax_row(C)["amounts"][0], -710)
+        self.assertTrue(any("title company collects it" in n for n in C["notes"]))
+
     def test_no_tax_bill_leaves_proration_out(self):
         d = fixture("florida-three-prices.json")
         del d["costs"]["annual_tax"]
@@ -298,6 +333,55 @@ class Page(unittest.TestCase):
     def test_bundled_font(self):
         self.assertIn("<body class='font-bundled'>", render.build_html(compute.run(fixture("florida-two-prices.json")), {}))
 
+
+
+class CondoAssociation(unittest.TestCase):
+    def test_a_condo_has_an_association_unless_told_otherwise(self):
+        """Round 2 bug 13: every Florida condo has an association, so a condo with no hoa field gets the estoppel fee;
+        an explicit hoa false still wins."""
+        d = fixture("florida-one-price.json")
+        d["property"].update(property_type="condo")
+        for k in ("hoa", "hoa_monthly"):
+            d["property"].pop(k)
+        C = compute.run(d)
+        self.assertEqual(next(r for r in C["rows"] if r["key"] == "estoppel")["amounts"][0], -299)
+        d["property"]["hoa"] = False
+        self.assertNotIn("estoppel", [r["key"] for r in compute.run(d)["rows"]])
+
+
+class FlatCommission(unittest.TestCase):
+    """Round 2 bug 15: a commission stated in dollars stays those dollars in every price column; a brokerage fee is
+    its own line in the brokerage group."""
+
+    def sheet(self, **costs):
+        d = fixture("florida-three-prices.json")
+        for k in ("listing_fee_pct", "buyer_broker_fee_pct"):
+            d["costs"].pop(k, None)
+        d["costs"].update(costs)
+        return d
+
+    def amounts(self, C, key):
+        return next(r for r in C["rows"] if r["key"] == key)["amounts"]
+
+    def test_flat_amounts_hold_in_every_column(self):
+        C = compute.run(self.sheet(listing_fee_amount=12000, buyer_broker_fee_amount=10000, brokerage_fee=395))
+        self.assertEqual(set(self.amounts(C, "listing_fee")), {-12000})
+        self.assertEqual(set(self.amounts(C, "buyer_broker_fee")), {-10000})
+        self.assertEqual(set(self.amounts(C, "brokerage_fee")), {-395})
+        labels = {r["key"]: r["label"] for r in C["rows"] if r["kind"] == "line"}
+        self.assertIn("$12,000", labels["listing_fee"])
+        self.assertIn("$10,000", labels["buyer_broker_fee"])
+        self.assertNotIn("commission_default", C.get("note_keys", []))
+
+    def test_mixed_percent_and_flat(self):
+        C = compute.run(self.sheet(listing_fee_pct=0.03, buyer_broker_fee_amount=10000))
+        prices = [c["price"] for c in C["columns"]]
+        self.assertEqual(self.amounts(C, "listing_fee"), [-round(p * 0.03) for p in prices])
+        self.assertEqual(set(self.amounts(C, "buyer_broker_fee")), {-10000})
+
+    def test_one_side_given_twice_stops(self):
+        with self.assertRaisesRegex(compute.NetSheetError, "listing_fee"):
+            compute.run(self.sheet(listing_fee_pct=0.03, listing_fee_amount=12000))
 
 if __name__ == "__main__":
     unittest.main()

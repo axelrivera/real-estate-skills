@@ -339,6 +339,7 @@ def prepare_listing(data, A, costs):
     if paid is None and L["annual_tax"]:
         A.add("listing", "tax_paid", "arrears", "How property tax is paid here wasn't given: assumed in arrears (seller credits the buyer from Jan 1)", "low")
     L["bill_paid"] = L.get("current_tax_bill_paid")  # this year's bill already paid by the seller (Florida: from November)
+    L["prior_bill_paid"] = L.get("prior_tax_bill_paid")  # last year's bill, for a closing by its due date (Florida: Mar 31)
     L["tax_bill_month"] = costs.get("property_tax.bill_month") or TAX_BILL_MONTH  # this year's bills go out (Florida: Nov 1)
     L["property_type"] = L.get("property_type")
     L["condo"] = finance.property_type(L["property_type"]) == "condo"  # CMA-5: condo rider, project approval, rescission
@@ -563,8 +564,8 @@ def apply_escalations(offers, L):
 
 def escalation_cash_need(o, price):
     """The cash a financed buyer brings at `price` when the escalated amount is paid in cash: the price less the loan
-    as written (deposits are part of it), plus an appraisal gap the buyer covers on a loan the appraisal caps."""
-    loan = o.get("loan_amount") or finance.loan_amount(o.get("price_base") or o["price"], o["financing"], o["down_pct"])
+    as written (deposits are part of it; the base loan, since a financed upfront fee never reaches the seller), plus an appraisal gap the buyer covers on a loan the appraisal caps."""
+    loan = o.get("loan_amount") or finance.base_loan(o.get("price_base") or o["price"], o["financing"], o["down_pct"])
     gap = (o.get("appraisal_gap") or 0) if not o.get("appraisal_protected") else 0
     return price - loan + gap
 
@@ -622,7 +623,9 @@ def escalation_terms(o):
 
 def approval_short(o, price):
     """How the pre-approval letter falls short at `price` ("to $494,000", "for a $444,600 loan"), or None: its price cap
-    below the price, or its loan cap below the loan at that price (the offer's down payment share)."""
+    below the price, or its loan cap below the loan at that price (the offer's down payment share). Without a stated
+    loan amount the loan includes any financed upfront fee (FHA, VA, USDA): a letter may state the base loan or the
+    total, and testing the larger figure is the cautious read for the seller."""
     if not price or not o.get("financed"):
         return None
     cap_price, cap_loan = o.get("approval_max_price"), o.get("approval_max_loan")
@@ -1037,16 +1040,20 @@ _LINE_KEYS = {"listing_fee": "listing", "buyer_broker_fee": "bb", "transfer_tax"
 
 
 def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repair_label=None, bb_tag=None, extra=(),
-              bb_from_listing=False):
+              bb_from_listing=False, bb_amount=None):
     """Seller net at `price`, itemized with stable keys on a finance.Ledger (`ledger`; `lines` are its rounded lines and
     `net` their sum; `holding` is rounded the same way and `net_adj` = net + holding). Market costs and the tax
     proration come from finance.
     `extra` are the offer's rider money lines, (key, label, amount), placed before the payoff (rider_money).
     `bb_from_listing`: the listing broker pays the buyer's broker from its fee, so the seller pays only the listing fee
-    (an assumed listing fee then covers both sides, the market's total)."""
+    (an assumed listing fee then covers both sides, the market's total).
+    `bb_amount`: a buyer-broker fee stated in dollars, the same dollars at any `price` (never a share of the offer's
+    price applied to another column's)."""
     # iteration 9 eval 1: the HOA fee only with a known HOA or a condo (as the seller net sheet does), never "in case"
     has_hoa = bool(L["hoa_monthly"]) or L["condo"]
     listing_pct = S["listing_fee_pct"]
+    if bb_amount and not bb_from_listing:
+        bb_pct = bb_amount / price
     if bb_from_listing:  # OFR-116: an assumed fee becomes the agreed (or market) total, never the listing fee + this ask
         listing_pct += (S.get("default_buyer_broker_pct") or 0) if S.get("listing_fee_assumed") else 0
         bb_pct = 0
@@ -1062,7 +1069,8 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
     labels = {
         "listing": (f"Listing Brokerage ({pct(listing_pct)}" + (", Pays the Buyer's Broker)" if bb_from_listing else ")"))
                    if listing_pct else "Listing Brokerage (Not Provided)",
-        "bb": (f"Buyer-Broker Compensation ({pct(bb_pct, 2)}" + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
+        "bb": (f"Buyer-Broker Compensation ({money(bb_amount) if bb_amount else pct(bb_pct, 2)}"
+               + (f", {bb_tag})" if bb_tag else ")")) if bb_pct
               else "Buyer-Broker Compensation (Paid by the Listing Broker)" if bb_from_listing else "Buyer-Broker Compensation",
         "transfer": transfer,
         # Labels never say Estimate or Assumed (local-costs.md): the report's assumptions and notes say so, once
@@ -1089,6 +1097,10 @@ def net_sheet(price, conc, bb_pct, warranty, close, L, S, costs, repair=0, repai
         led.cost(key, labels.get(key) or found[key][0], found.get(key, ("", 0))[1])
     led.cost("warranty", "Home Warranty", warranty)
     led.cost("tax", tax_label, tax)
+    prior_paid = finance.prior_paid_from(L["prior_bill_paid"], L["bill_paid"], close, costs)
+    prior = finance.prior_year_bill_owed(L["annual_tax"], close, costs, prior_paid) if L["tax_in_arrears"] else 0
+    if prior:  # stated unpaid: the title company collects last year's bill from the proceeds
+        led.cost("tax_prior", "Prior-Year Property Taxes", prior)
     for key, label, amount in extra:
         led.add(key, label, amount)
     led.cost("payoff", "Mortgage Payoff", S["payoff"])
@@ -1683,7 +1695,7 @@ def flags_for(o, L, S):
                    "if the appraisal is low (amendatory clause), so it shows intent only.",
             "Ask for proof of funds for the gap; don't count it in the net.", "fha_gap_intent")
     cap = finance.concession_cap(o["financing"], o["down_pct"])  # OFR-12
-    credit = round(o["buyer_broker_pct"] * o["price"]) if o.get("bb_credit") else 0  # Rider FF: a seller credit to the buyer
+    credit = (o.get("buyer_broker_amount") or round(o["buyer_broker_pct"] * o["price"])) if o.get("bb_credit") else 0  # Rider FF: a seller credit to the buyer
     if cap is not None and o["seller_concessions"] + credit > cap * o["price"] + 1:
         over = o["seller_concessions"] + credit - cap * o["price"]
         what = (f"Concessions ({money(o['seller_concessions'])}) plus the Rider FF broker credit ({money(credit)})" if credit
@@ -1694,7 +1706,7 @@ def flags_for(o, L, S):
             "Pay the buyer's broker under Rider GG (a separate compensation agreement) instead of a credit, or counter the "
             "concessions down; confirm with the buyer's lender how it counts the credit.", "concessions_cap")
     if o["financed"]:
-        note = finance.loan_limit_note(o.get("loan_amount") or finance.loan_amount(o["price"], o["financing"], o["down_pct"]),
+        note = finance.loan_limit_note(o.get("loan_amount") or finance.base_loan(o["price"], o["financing"], o["down_pct"]),
                                        o["financing"], L["loan_limits"], L.get("state"), L.get("county"))
         if note:  # OFR-11
             add("High" if "can't be FHA" in note else "Med", note, "Ask the buyer's agent for the lender's confirmation.",
@@ -2018,7 +2030,7 @@ def propose_counter(o, L, S):
     t = {"price": o["price"], "seller_concessions": o["seller_concessions"], "appraisal_gap": o["appraisal_gap"],
          "deposit": o["deposit"], "inspection_days": o["inspection_days"], "home_warranty": o["home_warranty"],
          "close": o["close"], "buyer_broker_pct": o["buyer_broker_pct"], "sale_contingency_days": o["sale_contingency_days"],
-         "loan_approval_days": o["loan_approval_days"]}
+         "loan_approval_days": o["loan_approval_days"], "buyer_broker_amount": o.get("buyer_broker_amount")}
     rows = []
 
     def put(key, term, value=None, why=None):
@@ -2105,6 +2117,8 @@ def propose_counter(o, L, S):
     ob = S["offered_buyer_broker_pct"]
     bb = ob if ob is not None and o["buyer_broker_pct"] > ob + 1e-9 and not o.get("bb_from_listing") else None
     put("buyer_broker_pct", "Buyer-Broker Compensation", bb, "Matches what the seller agreed to offer")
+    if t["buyer_broker_pct"] != o["buyer_broker_pct"]:  # a countered percent replaces a fee stated in dollars
+        t["buyer_broker_amount"] = None
     dep = why = None
     if o["deposit"] is not None and last.get("deposit"):
         if o["deposit"] < last["deposit"]:
@@ -2269,7 +2283,7 @@ def _sheet(t, o, L, S, costs, repair=0):
     repair line's label, so the net sheet reads the same across As Offered, Downside and Counter."""
     return net_sheet(t["price"], t["seller_concessions"], t["buyer_broker_pct"], t["home_warranty"], t["close"], L, S,
                      offer_costs(o, costs), repair, o.get("repair_label"), o.get("bb_tag"), o.get("rider_lines") or (),
-                     o.get("bb_from_listing", False))
+                     o.get("bb_from_listing", False), t.get("buyer_broker_amount"))
 
 
 COUNTER_FACTS = {"deposit": "deposit", "close": "closing_days", "inspection_days": "inspection_days",
@@ -2451,6 +2465,24 @@ def analyze(data, market=None, cma=None, seller_review=False):
               "the seller has paid this year's bill wasn't given. Assumed not paid (the seller credits the buyer from Jan 1); "
               "if it's paid, the buyer credits the seller instead", "med")
         A.items[-1]["offers"] = late  # OFR-344: a single review lists it only for an offer closing then
+    early = [o["id"] for o in offers if o["status"] in ACTIVE and finance.prior_year_bill_open(
+        o["close"], costs, finance.prior_paid_from(L["prior_bill_paid"], L["bill_paid"], o["close"], costs))]
+    if L["annual_tax"] and L["tax_in_arrears"] and early:  # Florida: last year's bill is due March 31
+        due = finance.tax_due_date(min(o["close"] for o in offers if o["id"] in early), None,
+                                   costs.get("property_tax.prior_year_due"))
+        A.add("listing", "prior_tax_bill_paid", True,
+              f"Closing by the day last year's tax bill is due ({fmt.MONTHS[due.month - 1]} {due.day}): whether the seller "
+              f"has paid it wasn't given. The net assumes it's paid; if it isn't, the title company collects it from the "
+              f"proceeds (about {money(L['annual_tax'])})", "med")
+        A.items[-1]["offers"] = early
+    before = [o["id"] for o in offers if o["status"] in ACTIVE
+              and finance.bill_paid_means_prior(o["close"], costs, L["bill_paid"])]
+    if L["annual_tax"] and L["tax_in_arrears"] and before:  # this year's bill isn't out yet: "paid" means last year's
+        month = fmt.MONTHS[costs.get("property_tax.bill_month") - 1]
+        A.add("listing", "tax_bill_paid_as_prior", True,
+              f"This year's tax bill was marked paid, but bills don't go out until {month} 1, so it's taken as last "
+              "year's bill: the seller is charged this year's taxes from Jan 1 to closing", "low")
+        A.items[-1]["offers"] = before
     _missing_market(costs, offers[0]["ns"], A)
     estoppel = next(((lab, -v) for k, lab, v in offers[0]["ns"]["lines"] if k == "estoppel" and v), None)
     if L["hoa_monthly"] is None and estoppel:  # a condo with its dues unknown: the fee is charged, so say so (once)

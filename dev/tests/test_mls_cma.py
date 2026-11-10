@@ -25,6 +25,28 @@ class Load(unittest.TestCase):
         self.assertEqual(str(h["close_date"]), "2026-04-24")
         self.assertEqual({h["status"] for h in homes}, {"SOLD", "ACTIVE", "PENDING", "EXPIRED"})
 
+    def test_dates_with_a_time_and_no_padding(self):
+        """Excel re-saves export dates as 4/24/2026 0:00: the time never drops the date."""
+        from datetime import date
+        for raw, want in (("4/24/2026 0:00", date(2026, 4, 24)), ("10/4/2025 0:00", date(2025, 10, 4)),
+                          ("12/3/2025 0:00", date(2025, 12, 3)), ("10/14/2025 0:00", date(2025, 10, 14)),
+                          ("2026-04-24T00:00:00", date(2026, 4, 24)), ("04/24/2026", date(2026, 4, 24)),
+                          ("4/24/26", date(2026, 4, 24)), ("2026-04-24", date(2026, 4, 24))):
+            self.assertEqual(mls._date(raw), want, raw)
+        self.assertIsNone(mls._date(""))
+        self.assertIsNone(mls._date("soon"))
+
+    def test_status_by_whole_phrase(self):
+        """RESO and agent-mapped statuses: Active Under Contract is under contract, never for sale; Coming Soon is
+        known and never for sale; the first word still reads Stellar's codes."""
+        for raw, want in (("Active Under Contract", "PENDING"), ("ActiveUnderContract", "PENDING"),
+                          ("active  under contract", "PENDING"), ("Active With Contract", "PENDING"),
+                          ("Under Contract", "PENDING"), ("Coming Soon", "COMING_SOON"), ("ComingSoon", "COMING_SOON"),
+                          ("SLD", "SOLD"), ("ACT", "ACTIVE"), ("PND", "PENDING"), ("Active", "ACTIVE"),
+                          ("Closed", "SOLD"), ("Sold - Cash", "SOLD"), ("", "UNKNOWN")):
+            self.assertEqual(mls.status_code(raw), want, raw)
+        self.assertEqual(mls.STATUS_LABEL["COMING_SOON"], "Coming soon")
+
     def test_missing_columns_and_unknown_mls(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "x.csv")
@@ -222,6 +244,17 @@ class SaleFlagsAndRanking(unittest.TestCase):
         sold = [{"close_price": 500000, "original_list_price": 500000, "seller_paid": 10000, "living_area": 2000,
                  "days_on_market": 10}]
         self.assertEqual(mls.period_stats(sold)["median_sale_to_original_list"], 0.98)
+
+    def test_sold_only_export_has_no_supply(self):
+        """An export of sold rows only can't measure supply: None, never 0.0, so it never reads as a tight market (no
+        premium stance); the CMAs' market line says so (test_buyer_cma, test_seller_cma)."""
+        sold = [h for h in self.homes if h["status"] == "SOLD"]
+        s = mls.market_stats(sold, SUBJECT, split_date="2026-07-01")
+        self.assertIsNone(s["months_supply_at_recent_pace"])
+        self.assertFalse(s["listings_in_export"])
+        self.assertTrue(mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01")["listings_in_export"])
+        stats = {"months_supply": s["months_supply_at_recent_pace"], "sale_to_final_list_recent": 1.0}
+        self.assertEqual(cma.suggest_stance(stats)[0], "market")
 
     def test_months_supply_runs_to_as_of_with_pendings(self):
         s = mls.market_stats(self.homes, SUBJECT, split_date="2026-07-01")

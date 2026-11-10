@@ -27,8 +27,12 @@ STATUS = {"SLD": "SOLD", "SOLD": "SOLD", "CLOSED": "SOLD", "ACT": "ACTIVE", "ACT
           "PND": "PENDING", "PNC": "PENDING", "PENDING": "PENDING", "UNDER": "PENDING", "CTG": "PENDING", "AWC": "PENDING", "EXP": "EXPIRED", "EXPIRED": "EXPIRED",
           "CAN": "CANCELED", "CANC": "CANCELED", "CANCELED": "CANCELED", "CANCELLED": "CANCELED",
           "WDN": "WITHDRAWN", "WITHDRAWN": "WITHDRAWN"}
+# Whole statuses read before the first word (RESO's and agent-mapped columns): "Active Under Contract" is under
+# contract, never for sale; "Coming Soon" isn't on the market yet. Spaces are ignored ("ActiveUnderContract").
+STATUS_PHRASE = {"ACTIVEUNDERCONTRACT": "PENDING", "ACTIVEWITHCONTRACT": "PENDING", "UNDERCONTRACT": "PENDING",
+                 "COMINGSOON": "COMING_SOON"}
 STATUS_LABEL = {"SOLD": "Sold", "ACTIVE": "For sale", "PENDING": "Under contract", "EXPIRED": "Expired",
-                "CANCELED": "Canceled", "WITHDRAWN": "Withdrawn"}
+                "CANCELED": "Canceled", "WITHDRAWN": "Withdrawn", "COMING_SOON": "Coming soon"}
 
 
 class ExportError(ValueError):
@@ -44,13 +48,29 @@ def _num(v):
 
 
 def _date(v):
+    """An export date, with or without a time after it ("4/24/2026 0:00" when Excel re-saves the file, or ISO
+    "2026-04-24T00:00:00"): only the date part is read."""
     s = str(v or "").strip()
+    s = s.split()[0].split("T")[0] if s else s
     for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y"):
         try:
-            return datetime.strptime(s[:10], fmt).date()
+            return datetime.strptime(s, fmt).date()
         except ValueError:
             continue
     return None
+
+
+def status_code(raw):
+    """An export status as SOLD, ACTIVE, PENDING...: the whole status first (STATUS_PHRASE), else its first word
+    (Stellar's SLD, ACT, PND), else that word as given; "UNKNOWN" when blank."""
+    text = str(raw or "").strip().upper()
+    if not text:
+        return "UNKNOWN"
+    whole = re.sub(r"[^A-Z]", "", text)
+    if whole in STATUS_PHRASE:
+        return STATUS_PHRASE[whole]
+    token = text.split()[0]
+    return STATUS.get(token, token)
 
 
 def columns_arg(value):
@@ -152,9 +172,8 @@ def load(path, market, columns=None, required=REQUIRED):
                 if k in rec:
                     rec[k] = _flag(rec[k])
             rec["address"] = str(rec.get("address", "")).strip()
-            token = str(rec.get("status", "")).split()[0].upper() if rec.get("status") else ""
             rec["status_raw"] = rec.get("status", "")
-            rec["status"] = STATUS.get(token, token or "UNKNOWN")
+            rec["status"] = status_code(rec["status_raw"])
             pool = _flag(rec.get("pool"))
             rec["private_pool"] = pool if pool is not None else "private" in str(rec.get("pool", "")).lower()
             rec["seller_paid"] = rec.pop("seller_paid_buyer_costs", None) or 0.0
@@ -335,16 +354,18 @@ def market_stats(homes, subject, split_date=None, exclude_address=None, as_of=No
     counts = {}
     for h in homes:
         counts[h["status"]] = counts.get(h["status"], 0) + 1
+    # an export of sold rows only can't measure supply: None, never 0.0 (which would read as a tight market)
+    listed = any(h["status"] in ("ACTIVE", "PENDING") for h in homes)
 
     out = {
         "window": {"first_close": str(first), "last_close": str(last), "split_date": str(split), "as_of": str(end)},
         "sold_all": period_stats(sold, final), "sold_early": period_stats(early, final),
         "sold_recent": period_stats(recent, final), "final_list_in_export": final,
-        "active_count": len(actives),
+        "active_count": len(actives), "listings_in_export": listed,
         "active_share_with_price_cut": round(sum(h["current_price"] < h["original_list_price"] for h in cuts) / len(cuts), 3) if cuts else 0,
         # CMA-22: pendings count as sales in progress, and the pace runs to the as-of date, not the last close
         "months_supply_at_recent_pace": round(len(actives) / ((len(recent) + len(pendings)) / months_recent), 1)
-        if recent or pendings else None,
+        if listed and (recent or pendings) else None,
         "status_counts": counts,
     }
     types = {}

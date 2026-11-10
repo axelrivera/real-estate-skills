@@ -65,6 +65,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-06",
     "deposit": 13000,
@@ -522,6 +523,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 10000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-10-23",
     "deposit": 15000,
@@ -960,6 +962,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.02,
     "close": "2026-10-14",
     "deposit": 40500,
@@ -1418,6 +1421,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 12000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-13",
     "deposit": 14000,
@@ -1927,6 +1931,7 @@
    "loan_approval_days": 21
   },
   "norms_source": "market",
+  "prior_bill_paid": null,
   "property_type": null,
   "repair_reserve_deal": false,
   "repair_reserve_pct": 0.007,
@@ -2035,6 +2040,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-06",
     "deposit": 13000,
@@ -2492,6 +2498,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 10000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-10-23",
     "deposit": 15000,
@@ -2930,6 +2937,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.02,
     "close": "2026-10-14",
     "deposit": 40500,
@@ -3388,6 +3396,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 12000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-13",
     "deposit": 14000,
@@ -3862,6 +3871,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 10000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-10-23",
     "deposit": 15000,
@@ -4300,6 +4310,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.02,
     "close": "2026-10-14",
     "deposit": 40500,
@@ -4758,6 +4769,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 12000,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-13",
     "deposit": 14000,
@@ -5249,6 +5261,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-11-06",
     "deposit": 13000,

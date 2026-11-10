@@ -108,10 +108,10 @@ lint-skills:
 # (the root has one), so the plugin manifest is validated by path.
 validate:
 	@command -v claude >/dev/null || { echo "The claude CLI isn't on PATH."; exit 1; }
+	@# --strict fails on any manifest warning by its exit code. The plugin directory (catalog) findings it also prints
+	@# (no icon, system files on disk) don't count: this plugin isn't submitted to the catalog.
 	@for m in .claude-plugin/plugin.json .; do \
-		out=$$(claude plugin validate $$m 2>&1); code=$$?; echo "$$out"; \
-		test $$code -eq 0 || exit 1; \
-		! echo "$$out" | grep -q '⚠' || { echo "Warnings in $$m: fix them."; exit 1; }; \
+		claude plugin validate --strict $$m || { echo "Warnings or errors in $$m: fix them."; exit 1; }; \
 	done
 
 py311:

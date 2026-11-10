@@ -47,6 +47,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-10-28",
     "deposit": 6000,
@@ -550,6 +551,7 @@
    "loan_approval_days": 30
   },
   "norms_source": "national",
+  "prior_bill_paid": null,
   "property_type": null,
   "repair_reserve_deal": false,
   "repair_reserve_pct": 0,
@@ -672,6 +674,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-10-28",
     "deposit": 6000,
@@ -1109,6 +1112,7 @@
    },
    "counter_terms": {
     "appraisal_gap": 0,
+    "buyer_broker_amount": null,
     "buyer_broker_pct": 0.025,
     "close": "2026-10-28",
     "deposit": 6000,

@@ -46,12 +46,12 @@
     "count": 1
    },
    "names_price": false,
-   "net": 160525,
-   "net_before_payoff": 461525,
+   "net": 160524,
+   "net_before_payoff": 461524,
    "payoff_total": 301000,
    "price": 499900,
    "short": false,
-   "total_costs": 38375
+   "total_costs": 38376
   },
   {
    "bar": {
@@ -77,7 +77,7 @@
  "commission_assumed": false,
  "comparisons": [
   {
-   "difference": -14164
+   "difference": -14165
   },
   {
    "difference": -10000
@@ -169,7 +169,7 @@
   {
    "amounts": [
     -2650,
-    -2574,
+    -2575,
     -2650
    ],
    "display": {
@@ -275,7 +275,7 @@
   {
    "amounts": [
     -39311,
-    -38375,
+    -38376,
     -49311
    ],
    "display": {
@@ -287,7 +287,7 @@
   {
    "amounts": [
     475689,
-    461525,
+    461524,
     465689
    ],
    "display": {
@@ -316,7 +316,7 @@
   {
    "amounts": [
     174689,
-    160525,
+    160524,
     164689
    ],
    "display": {

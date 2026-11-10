@@ -204,7 +204,11 @@ def compute(R, homes):
                           f"the last {lookback + 2} months.")
     sales.sort(key=lambda s: s[0])
 
-    first = date(sales[0][0].year, sales[0][0].month, 1)
+    # the export is short only when nothing in it (any row, in the window or not) reaches back to the window's start:
+    # a slow first few months is a season, not a missing stretch of data (round 2 bug 10)
+    dated = [d for h in homes for d in (h.get("contract_date"), h.get("close_date")) if d]
+    earliest = min(dated + [sales[0][0]])
+    first = date(earliest.year, earliest.month, 1)
     covered = months_between(first, end) if months_between(start, first) > 2 else lookback
     cover_start = add_months(end, -covered)
     occurs = [0] * 12

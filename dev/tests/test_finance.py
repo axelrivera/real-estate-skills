@@ -128,8 +128,11 @@ class Taxes(unittest.TestCase):
 class SellerSide(unittest.TestCase):
     def test_title_premium_florida(self):
         tiers = FL.get("closing_costs.owner_title.rate_tiers")
-        self.assertEqual(f.title_premium(474900, tiers), round(575 + 374900 * 5 / 1000))
+        self.assertEqual(f.title_premium(474900, tiers), 575 + 375 * 5)  # per $1,000 or fraction thereof
         self.assertEqual(f.title_premium(80000, tiers), 460)
+        self.assertEqual(f.title_premium(413500, tiers), 2145)  # $414,000: never $2,142 (truncated, half to even)
+        self.assertEqual(f.title_premium(414000, tiers), 2145)
+        self.assertEqual(f.title_premium(100100, tiers), 575 + 5)
 
     def test_seller_net_florida(self):
         n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True, listing_fee_pct=0.025, buyer_broker_fee_pct=0.025)
@@ -297,6 +300,48 @@ class LoanPrograms(unittest.TestCase):
         self.assertEqual([f.annual_mi_rate("conventional", d) for d in (0.03, 0.05, 0.10, 0.15, 0.20)],
                          [0.0075, 0.005, 0.0035, 0.002, 0.0])
         self.assertEqual(f.annual_mi_rate("fha", 0.035), 0.0055)
+
+    def test_fha_mip_by_loan_to_value_and_size(self):
+        """HUD's annual MIP for terms over 15 years: 0.50% at 95% LTV or less, 0.55% above, on base loans up to
+        $726,200; 0.70% and 0.75% above it."""
+        self.assertEqual(f.annual_mi_rate("fha", 0.035, 386000), 0.0055)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05), 0.005)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05, 380000), 0.005)
+        self.assertEqual(f.annual_mi_rate("fha", 0.035, 800000), 0.0075)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05, 800000), 0.007)
+        self.assertEqual(f.annual_mi_rate("fha", 0.05, 726200), 0.005)  # the tier runs up to and including $726,200
+        self.assertAlmostEqual(f.monthly_payment(400000, "fha", 0.05, 6.5, 0, 0)["mi"], 380000 * 0.005 / 12)
+        self.assertAlmostEqual(f.monthly_payment(400000, "fha", 0.035, 6.5, 0, 0)["mi"], 386000 * 0.0055 / 12)
+
+    def test_prior_year_bill_window(self):
+        """Florida's bill for last year is due March 31: a closing on or before it, with no word on the bill, may owe it
+        (an assumption); stated unpaid, it's owed; outside Florida (no prior_year_due) never."""
+        fl, ga = profiles.load_market(state="FL"), profiles.load_market(state="GA")
+        self.assertTrue(f.prior_year_bill_open(date(2027, 1, 15), fl))
+        self.assertTrue(f.prior_year_bill_open(date(2027, 3, 31), fl))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 4, 1), fl))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 1, 15), fl, prior_paid=True))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 1, 15), fl, prior_paid=False))
+        self.assertFalse(f.prior_year_bill_open(date(2027, 1, 15), ga))
+        self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 1, 15), fl, prior_paid=False), 7000)
+        self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 1, 15), fl), 0)
+        self.assertEqual(f.prior_year_bill_owed(7000, date(2027, 4, 15), fl, prior_paid=False), 0)
+
+    def test_current_bill_paid_before_bills_go_out(self):
+        """Florida's bills go out Nov 1: a February closing can't have paid this year's bill, so "paid" is read as
+        last year's and the proration charges Jan 1 to closing. Without a market bill month it passes through."""
+        fl, ga = profiles.load_market(state="FL"), profiles.load_market(state="GA")
+        p = f.tax_proration(6000, date(2026, 2, 15), fl, bill_paid=True)
+        self.assertEqual(p["amount"], 710)
+        self.assertEqual(p["label"], "Property Tax Proration (Jan 1 to Closing)")
+        self.assertLess(f.tax_proration(6000, date(2026, 11, 15), fl, bill_paid=True)["amount"], 0)  # a credit
+        self.assertIsNone(f.current_bill_paid(date(2026, 2, 15), fl, True))
+        self.assertTrue(f.current_bill_paid(date(2026, 11, 15), fl, True))
+        self.assertTrue(f.current_bill_paid(date(2026, 2, 15), ga, True))
+        self.assertTrue(f.prior_paid_from(None, True, date(2026, 2, 15), fl))
+        self.assertIsNone(f.prior_paid_from(None, False, date(2026, 2, 15), fl))  # never read as last year unpaid
+        self.assertFalse(f.prior_paid_from(False, True, date(2026, 2, 15), fl))  # the agent's own answer wins
+        self.assertIsNone(f.prior_paid_from(None, True, date(2026, 11, 15), fl))
 
     def test_loan_limits(self):
         lim = profiles.loan_limits()

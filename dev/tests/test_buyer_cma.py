@@ -964,5 +964,32 @@ class DotLabels(unittest.TestCase):
         self.assertIn("dot_labels", notes)
 
 
+
+class SoldOnlyExport(unittest.TestCase):
+    def test_market_line_without_listings(self):
+        """An export of sold rows only: the market line never says no homes are for sale, and shows no supply."""
+        mls = compute.mls
+        market = profiles.load_market(state="FL", county="Seminole")
+        export = os.path.join(ROOT, "dev", "fixtures", "buyer-cma", "export-spring-oaks.csv")
+        homes = [h for h in mls.load(export, market) if h["status"] == "SOLD"]
+        st = mls.market_stats(homes, {"address": "517 HICKORYWOOD AVE"}, split_date="2026-07-01")
+        intro = compute.market_section(st)["intro"]
+        self.assertIn("no homes for sale or under contract", intro)
+        self.assertNotIn("months of supply", intro)
+
+
+class PaymentAtOnePrice(unittest.TestCase):
+    def test_payment_table_uses_the_payment_price_throughout(self):
+        """Round 2 bug 12: a tax table at another purchase price never changes the payment table: its tax line, the
+        per-$10,000 figure and every total use the payment's own price."""
+        base = run()[1]["payments"]
+
+        def other_tax_price(R):
+            R["costs"]["taxes"]["purchase_price"] = 440000
+        moved = run(other_tax_price)[1]["payments"]
+        self.assertEqual(moved["per_10k"], base["per_10k"])
+        self.assertEqual([r["tax"] for r in moved["rows"]], [r["tax"] for r in base["rows"]])
+        self.assertEqual([r["total"] for r in moved["rows"]], [r["total"] for r in base["rows"]])
+
 if __name__ == "__main__":
     unittest.main()

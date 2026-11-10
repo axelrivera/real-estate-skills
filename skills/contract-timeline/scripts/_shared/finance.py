@@ -23,7 +23,7 @@ SINGLE_FAMILY = "single_family"
 # Agency guidelines as planning estimates (confirm limits, fees and overlays with the lender).
 LOAN_PROGRAMS = {
     "conventional": {"label": "Conventional", "min_down": 0.03, "upfront_fee": 0.0, "annual_mi": 0.005},
-    "fha": {"label": "FHA", "min_down": 0.035, "upfront_fee": 0.0175, "annual_mi": 0.0055},
+    "fha": {"label": "FHA", "min_down": 0.035, "upfront_fee": 0.0175},  # annual MIP by LTV and loan size: FHA_MIP
     "va": {"label": "VA", "min_down": 0.0, "upfront_fee": 0.0215, "annual_mi": 0.0},
     "usda": {"label": "USDA", "min_down": 0.0, "upfront_fee": 0.01, "annual_mi": 0.0035},
     "cash": {"label": "Cash", "min_down": 1.0, "upfront_fee": 0.0, "annual_mi": 0.0},
@@ -34,14 +34,19 @@ ALIASES = {"conv": "conventional"}
 PMI_BY_LTV = ((0.95, 0.0075), (0.90, 0.005), (0.85, 0.0035), (0.80, 0.002))  # (LTV above, annual rate)
 # VA funding fee (38 U.S.C. 3729): by down payment, first use and later use; waived for exempt veterans
 VA_FEE = ((0.10, 0.0125, 0.0125), (0.05, 0.015, 0.015), (0.0, 0.0215, 0.033))  # (down at least, first, later)
+# FHA annual MIP, terms over 15 years (HUD Mortgagee Letter 2023-05): (base loan up to, at 95% LTV or less, above 95%)
+FHA_MIP = ((726200, 0.0050, 0.0055), (float("inf"), 0.0070, 0.0075))
 
 
-def annual_mi_rate(name, down):
-    """Annual mortgage insurance as a share of the base loan: PMI by loan-to-value for conventional loans."""
+def annual_mi_rate(name, down, base=None):
+    """Annual mortgage insurance as a share of the base loan: PMI by loan-to-value for conventional loans; FHA's MIP
+    by loan-to-value and the base loan's size (`base`; without one, the tier most loans fall in)."""
     key = program(name)
+    ltv = 1 - down
+    if key == "fha":
+        return next(high if ltv > 0.95 + 1e-9 else low for up_to, low, high in FHA_MIP if (base or 0) <= up_to)
     if key != "conventional":
         return LOAN_PROGRAMS[key]["annual_mi"]
-    ltv = 1 - down
     return next((rate for above, rate in PMI_BY_LTV if ltv > above + 1e-9), 0.0)
 
 
@@ -81,12 +86,73 @@ def tax_due_date(closing, market=None, due_date=None):
     v = due_date if due_date not in (None, "") else (market.get("property_tax.due_date") if market is not None else None)
     if v in (None, "") or not closing:
         return None
+    return _month_day(v, closing.year)
+
+
+def _month_day(v, year):
+    """A month and day ("10-15", "2026-10-15" or a date) in `year`."""
     if isinstance(v, date):
-        return date(closing.year, v.month, v.day)
+        return date(year, v.month, v.day)
     m = re.match(r"^(?:\d{4}-)?(\d{1,2})-(\d{1,2})$", str(v).strip())
     if not m:
         raise ValueError(f"The tax bill's due date should look like 10-15 or 2026-10-15, not {v!r}.")
-    return date(closing.year, int(m.group(1)), int(m.group(2)))
+    return date(year, int(m.group(1)), int(m.group(2)))
+
+
+def _prior_year_window(closing, market):
+    """True when `closing` falls on or before the day last year's bill is due (`property_tax.prior_year_due`: Florida's
+    run from November to March 31), in a market that pays taxes in arrears."""
+    if not closing or market is None or market.get("property_tax.paid") == "advance":
+        return False
+    due = market.get("property_tax.prior_year_due")
+    return due not in (None, "") and closing <= _month_day(due, closing.year)
+
+
+def bill_out(closing, market=None):
+    """False when this year's tax bill can't exist yet at `closing`: taxes paid in arrears and a closing before the
+    month the market's bills go out (`property_tax.bill_month`; Florida Nov 1). True otherwise, and always in a market
+    that doesn't say when its bills go out."""
+    month = market.get("property_tax.bill_month") if market is not None else None
+    if not closing or not month or market.get("property_tax.paid") == "advance":
+        return True
+    return closing.month >= month
+
+
+def current_bill_paid(closing, market=None, bill_paid=None):
+    """The agent's `current_tax_bill_paid` as the proration reads it: None before this year's bill is out (bill_out),
+    since nobody can have paid it; as given otherwise."""
+    return bill_paid if bill_out(closing, market) else None
+
+
+def bill_paid_means_prior(closing, market=None, bill_paid=None):
+    """True when the agent marked this year's bill paid but it isn't out yet at `closing`: the answer is about last
+    year's bill (the report says so once)."""
+    return bool(bill_paid) and not bill_out(closing, market)
+
+
+def prior_paid_from(prior_paid, bill_paid, closing, market=None):
+    """Whether last year's bill is paid: the agent's `prior_tax_bill_paid`; else true when they marked this year's
+    bill paid before it's out (bill_paid_means_prior). A "not paid" answer about this year is never read as last
+    year's bill unpaid (that would charge a whole year's taxes on a guess). None when unknown."""
+    if prior_paid is not None:
+        return prior_paid
+    return True if bill_paid_means_prior(closing, market, bill_paid) else None
+
+
+def prior_year_bill_open(closing, market=None, prior_paid=None):
+    """True when a closing early in the year may still owe last year's whole bill and the agent hasn't said whether
+    it's paid (`prior_tax_bill_paid`): the net assumes it paid, and the report says once that if it isn't, the title
+    company collects it from the proceeds (an assumption, never a line)."""
+    return prior_paid is None and _prior_year_window(closing, market)
+
+
+def prior_year_bill_owed(annual_tax, closing, market=None, prior_paid=None):
+    """Last year's whole bill when the agent says it's unpaid (`prior_tax_bill_paid` false) and the closing falls on
+    or before its due date: the title company collects it from the seller's proceeds. 0 otherwise. The whole bill,
+    with no early-payment discount (none is left by then worth counting on)."""
+    if prior_paid is not False or not annual_tax or not _prior_year_window(closing, market):
+        return 0
+    return annual_tax
 
 
 def tax_bill_assumed_paid(closing, market=None, bill_paid=None, due_date=None):
@@ -113,6 +179,7 @@ def tax_proration(annual_tax, closing, market=None, bill_paid=None, due_date=Non
         return None
     if market is not None and market.get("property_tax.paid") == "advance":
         return None
+    bill_paid = current_bill_paid(closing, market, bill_paid)  # before this year's bill is out, nobody has paid it
     assumed_paid = tax_bill_assumed_paid(closing, market, bill_paid, due_date)
     discount = (market.get("property_tax.early_payment_discount") if market is not None else None) or 0
     year_days = (date(closing.year + 1, 1, 1) - date(closing.year, 1, 1)).days
@@ -262,7 +329,8 @@ def insurance_estimate(price, market=None, year_built=None, rate=None):
 
 
 def loan_limit_note(loan, name, limits, state=None, county=None):
-    """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `limits` is
+    """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `loan` is the base
+    loan (base_loan): the limits cap it, and FHA's upfront premium can be financed on top. `limits` is
     profiles.loan_limits(); county limits above the baseline come from its `counties` table."""
     key = program(name)
     if not loan or key not in ("conventional", "fha") or not limits:
@@ -453,11 +521,15 @@ def pi_payment(loan, annual_rate_pct, years=30):
     return loan / n if m == 0 else loan * m / (1 - (1 + m) ** -n)
 
 
+def base_loan(price, name, down):
+    """The loan before any financed upfront fee: what program limits (FHA, conforming) and loan-to-value read."""
+    return 0.0 if program(name) == "cash" else price * (1 - down)
+
+
 def loan_amount(price, name, down, va_later_use=False, va_exempt=False):
+    """The loan with its financed upfront fee: what the payment and the loan taxes read."""
     key = program(name)
-    if key == "cash":
-        return 0.0
-    return price * (1 - down) * (1 + upfront_fee(key, down, va_later_use, va_exempt))
+    return base_loan(price, key, down) * (1 + upfront_fee(key, down, va_later_use, va_exempt))
 
 
 def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, hoa_monthly=0.0, mi_rate=None,
@@ -467,9 +539,9 @@ def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, h
     `flood_annual` is a flood insurance quote; without one `flood` is None and the total leaves it out (the report
     says "get a quote", never $0: see flood_insurance)."""
     key = program(name)
-    base = price * (1 - down)
+    base = base_loan(price, key, down)
     loan = loan_amount(price, key, down, va_later_use, va_exempt)
-    rate_mi = annual_mi_rate(key, down) if mi_rate is None else mi_rate
+    rate_mi = annual_mi_rate(key, down, base) if mi_rate is None else mi_rate
     mi = 0.0 if key == "cash" or (key == "conventional" and down >= 0.20) else base * rate_mi / 12
     pi = 0.0 if key == "cash" else pi_payment(loan, rate_pct)
     tax, ins = tax_annual / 12, insurance_annual / 12
@@ -596,14 +668,17 @@ def millage_row(market, county, district):
 # --- seller side --------------------------------------------------------------
 
 def title_premium(price, tiers):
-    """Promulgated-style tiered premium: [{up_to, per_1000}], last up_to None."""
+    """Promulgated-style tiered premium: [{up_to, per_1000}], last up_to None. Charged per $1,000 or fraction
+    thereof (Florida's promulgated rates, F.A.C. 69O-186.003), so the price rounds up to the next $1,000 first; the
+    premium rounds half-up to the dollar."""
+    price = math.ceil(price / 1000) * 1000
     premium, lower = 0.0, 0
     for tier in tiers:
         upper = tier.get("up_to") or math.inf
         if price > lower:
             premium += (min(price, upper) - lower) * tier["per_1000"] / 1000
         lower = upper
-    return round(premium)
+    return fmt.half_up(premium)
 
 
 def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,

@@ -366,6 +366,9 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
     price, cash, homestead = pay["price"], R["costs"].get("buyer_cash"), R["costs"]["taxes"].get("homestead", True)
     flood = flood_line(R, market)
     tj = tax_rows[ji]
+    # the payment table is at the payment's price throughout (round 2 bug 12): its tax line too, never the tax
+    # table's purchase price, so its totals and the per-$10,000 figure agree
+    tax_at_price = tax_annual_at(price, market, tj, homestead) if tj["annual"] is not None else None
     tax_label = (t("pay_tax", short=tj["short"], homestead=homestead_label(homestead)) if tj["short"]
                  else t("pay_tax_one", homestead=homestead_label(homestead)))
     rows = []
@@ -378,7 +381,7 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
         except ValueError as e:
             raise ReportError(f"costs.payment.scenarios[{i}].type: {e}") from None
         sc["label"] = scenario_label(sc)
-        mled, r = monthly_ledger(price, prog, sc["down_pct"], pay["rate"], tj["annual"], insurance["annual"],
+        mled, r = monthly_ledger(price, prog, sc["down_pct"], pay["rate"], tax_at_price, insurance["annual"],
                                  hoa_cdd(R), flood["annual"], tax_label)
         cc, _, lender = buyer_closing_costs(R, market, price, prog, sc["down_pct"], r["loan"])
         cled = cash_ledger(r["cash_down"], cc, broker_fee_short(R, price))
@@ -403,8 +406,9 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
         other = tax_rows[1 - ji]
+        other_at_price = tax_annual_at(price, market, other, homestead)
         alt = {"short": other["short"],
-               "totals": [r["total"] - r["tax"] + fmt.half_up(other["annual"] / 12) for r in rows]}
+               "totals": [r["total"] - r["tax"] + fmt.half_up(other_at_price / 12) for r in rows]}
     # CMA-204: which tax the payment uses. Two jurisdictions mean the district isn't confirmed: the payment uses the
     # one at tax_jurisdiction_index (the higher bill by default), an estimate the notes say, as is a fallback-rate one.
     tax_basis = {"short": tj["short"], "unconfirmed": len(tax_rows) == 2, "estimated": bool(tj["estimated"]),
@@ -1032,7 +1036,8 @@ def market_section(st):
                                          else fmt.EMPTY for p in (early, recent)])
     supply = st.get("months_supply_at_recent_pace")
     n_all = st["sold_all"]["n"]
-    intro = t("line_market_intro", n=fmt.num(n_all), first=fmt.date_short(w["first_close"]),
+    intro = t("line_market_intro" if st.get("listings_in_export", True) else "line_market_intro_sold_only",
+              n=fmt.num(n_all), first=fmt.date_short(w["first_close"]),
               last=fmt.date_short(w["last_close"]), active=fmt.num(st["active_count"]),
               supply=t("line_market_supply", months=fmt.months(supply)) if supply is not None else "")
     intro = intro[:1].upper() + intro[1:]
@@ -1096,9 +1101,9 @@ def cost_notes(N, R, market, pay, tax_rows, insurance):
                     down=fmt.pct(conv[0], 2)))
     for key in ("fha", "va", "usda"):
         if any(p == key for p, _ in progs):
-            spec = finance.LOAN_PROGRAMS[key]
-            mi.append(t("note_mi_" + key, rate=fmt.pct(spec["annual_mi"], 2), upfront=fmt.pct(finance.upfront_fee(
-                key, min(d for p, d in progs if p == key)), 2)))
+            low = min(d for p, d in progs if p == key)  # FHA's rate by loan-to-value: the smallest down payment's
+            rate = finance.annual_mi_rate(key, low, finance.base_loan(pay["price"], key, low))
+            mi.append(t("note_mi_" + key, rate=fmt.pct(rate, 2), upfront=fmt.pct(finance.upfront_fee(key, low), 2)))
     if mi:
         N.add("mortgage_insurance", t("note_mi", parts=cma._and(mi)), "estimate")
     cs = R["costs"]
