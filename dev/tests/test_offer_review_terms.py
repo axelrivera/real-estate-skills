@@ -158,6 +158,14 @@ class QuickAnswer(unittest.TestCase):
         est = out["estimated_costs"]
         self.assertIn("owner's title policy $2,990 (0.5% of price, national estimate)", est)
         self.assertTrue(any(e.startswith("tax proration at 1.4% of list price (Texas average effective rate)") for e in est))
+        # the seller stated what they pay the buyer's broker: as given, never a "default commission"
+        self.assertFalse(any("default commission" in e for e in est), est)
+        out = review.result(review.analyze(single(  # nothing stated: the defaults are named as defaults
+            {"address": "8104 Shoal Creek Blvd, Austin, TX", "state": "TX", "list_price": 610000},
+            {"price": 598000, "financing": "conventional", "down_pct": 0.2, "deposit": 6000, "inspection_days": 7,
+             "closing_days": 35}, {"payoff": 214000})))
+        self.assertTrue(any(e.startswith("default commission (listing 2.5%, buyer's broker 2.5%)") for e in out["estimated_costs"]),
+                        out["estimated_costs"])
 
     def test_rider_gg_is_never_asked_about(self):
         """Owner decision (iteration 21): Rider GG's agreement is a formality, a window in the contingency timeline;

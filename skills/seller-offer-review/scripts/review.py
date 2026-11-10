@@ -440,7 +440,9 @@ def estimated_costs(R, offers, skip=()):
     out = []
     lines = {k: lab for o in offers for k, lab, v in o["ns"]["lines"] if v}
     shown = {f"offer {o['id']}" for o in offers}  # OFR-352: only the offers this answer covers
-    bb_assumed = any(a["field"] == "buyer_broker_pct" and shown.intersection(oe.scopes(a)) for a in R["missing"])
+    # only a default commission is "default": a share the seller stated (offered_buyer_broker_pct) is used as given
+    bb_assumed = any(a["field"] == "buyer_broker_pct" and a.get("default") and shown.intersection(oe.scopes(a))
+                     for a in R["missing"])
     by_listing = [o for o in offers if o.get("bb_from_listing")]
     if S["listing_fee_assumed"] and by_listing:
         # OFR-293: the net sheet charges the market's total on one line when the listing broker pays the buyer's broker
