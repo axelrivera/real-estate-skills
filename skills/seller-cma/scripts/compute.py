@@ -772,9 +772,12 @@ def listing_history(R, homes, relist):
 # --- expected sales -----------------------------------------------------------------------------------------------------
 
 def stay_expected(R, homes, rp, median_adjusted, split):
-    """CMA-280: the Stay at Current Price option's expected sale, net of seller-paid costs: the current price times the
-    recent sale-to-original-list ratio of sales that sat at least as long as this listing has (all recent sales when
-    fewer than 3 did), or the median adjusted value if lower. None without an export. Returns (value, ratio, n)."""
+    """CMA-280: the Stay at Current Price option's expected sale, net of seller-paid costs: this listing's ORIGINAL price
+    times the recent sale-to-original-list ratio of sales that sat at least as long as this listing has (all recent
+    sales when fewer than 3 did), never above the current price or the median adjusted value. The ratio already holds
+    those sales' cuts, so it never applies to a price that's been cut (round 2 bug 8). The original price is the
+    reprice's, else the listing's own export row, else the current price. None without an export. Returns (value,
+    ratio, n)."""
     address = R["subject"].get("mls_address", R["subject"]["address"])
     sold = [h for h in homes if h["status"] == "SOLD" and h.get("original_list_price") and h.get("close_price")
             and not mls.same_address(h["address"], address) and (not split or (h.get("close_date") and h["close_date"] >= split))]
@@ -783,7 +786,10 @@ def stay_expected(R, homes, rp, median_adjusted, split):
     if not pool:
         return None, None, 0
     ratio = statistics.median((h["close_price"] - (h.get("seller_paid") or 0)) / h["original_list_price"] for h in pool)
-    return min(rp["current_price"] * ratio, median_adjusted), round(ratio, 4), len(pool)
+    current = rp["current_price"]
+    original = rp.get("original_price") or own_original(R, homes, ("ACTIVE", "PENDING"), current)
+    base = original if original and original > current else current
+    return min(base * ratio, current, median_adjusted), round(ratio, 4), len(pool)
 
 
 def stay_rule(R, homes, x, median_adjusted, split):
