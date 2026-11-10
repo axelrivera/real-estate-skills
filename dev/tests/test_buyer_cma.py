@@ -977,5 +977,19 @@ class SoldOnlyExport(unittest.TestCase):
         self.assertIn("no homes for sale or under contract", intro)
         self.assertNotIn("months of supply", intro)
 
+
+class PaymentAtOnePrice(unittest.TestCase):
+    def test_payment_table_uses_the_payment_price_throughout(self):
+        """Round 2 bug 12: a tax table at another purchase price never changes the payment table: its tax line, the
+        per-$10,000 figure and every total use the payment's own price."""
+        base = run()[1]["payments"]
+
+        def other_tax_price(R):
+            R["costs"]["taxes"]["purchase_price"] = 440000
+        moved = run(other_tax_price)[1]["payments"]
+        self.assertEqual(moved["per_10k"], base["per_10k"])
+        self.assertEqual([r["tax"] for r in moved["rows"]], [r["tax"] for r in base["rows"]])
+        self.assertEqual([r["total"] for r in moved["rows"]], [r["total"] for r in base["rows"]])
+
 if __name__ == "__main__":
     unittest.main()

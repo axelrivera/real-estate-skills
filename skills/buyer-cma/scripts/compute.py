@@ -366,6 +366,9 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
     price, cash, homestead = pay["price"], R["costs"].get("buyer_cash"), R["costs"]["taxes"].get("homestead", True)
     flood = flood_line(R, market)
     tj = tax_rows[ji]
+    # the payment table is at the payment's price throughout (round 2 bug 12): its tax line too, never the tax
+    # table's purchase price, so its totals and the per-$10,000 figure agree
+    tax_at_price = tax_annual_at(price, market, tj, homestead) if tj["annual"] is not None else None
     tax_label = (t("pay_tax", short=tj["short"], homestead=homestead_label(homestead)) if tj["short"]
                  else t("pay_tax_one", homestead=homestead_label(homestead)))
     rows = []
@@ -378,7 +381,7 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
         except ValueError as e:
             raise ReportError(f"costs.payment.scenarios[{i}].type: {e}") from None
         sc["label"] = scenario_label(sc)
-        mled, r = monthly_ledger(price, prog, sc["down_pct"], pay["rate"], tj["annual"], insurance["annual"],
+        mled, r = monthly_ledger(price, prog, sc["down_pct"], pay["rate"], tax_at_price, insurance["annual"],
                                  hoa_cdd(R), flood["annual"], tax_label)
         cc, _, lender = buyer_closing_costs(R, market, price, prog, sc["down_pct"], r["loan"])
         cled = cash_ledger(r["cash_down"], cc, broker_fee_short(R, price))
@@ -403,8 +406,9 @@ def payments(R, market, tax_rows, ji, insurance, median_shown=None):
     alt = None
     if len(tax_rows) == 2 and tax_rows[1 - ji]["annual"] is not None:
         other = tax_rows[1 - ji]
+        other_at_price = tax_annual_at(price, market, other, homestead)
         alt = {"short": other["short"],
-               "totals": [r["total"] - r["tax"] + fmt.half_up(other["annual"] / 12) for r in rows]}
+               "totals": [r["total"] - r["tax"] + fmt.half_up(other_at_price / 12) for r in rows]}
     # CMA-204: which tax the payment uses. Two jurisdictions mean the district isn't confirmed: the payment uses the
     # one at tax_jurisdiction_index (the higher bill by default), an estimate the notes say, as is a fallback-rate one.
     tax_basis = {"short": tj["short"], "unconfirmed": len(tax_rows) == 2, "estimated": bool(tj["estimated"]),
