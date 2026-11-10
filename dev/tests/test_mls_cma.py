@@ -25,6 +25,17 @@ class Load(unittest.TestCase):
         self.assertEqual(str(h["close_date"]), "2026-04-24")
         self.assertEqual({h["status"] for h in homes}, {"SOLD", "ACTIVE", "PENDING", "EXPIRED"})
 
+    def test_dates_with_a_time_and_no_padding(self):
+        """Excel re-saves export dates as 4/24/2026 0:00: the time never drops the date."""
+        from datetime import date
+        for raw, want in (("4/24/2026 0:00", date(2026, 4, 24)), ("10/4/2025 0:00", date(2025, 10, 4)),
+                          ("12/3/2025 0:00", date(2025, 12, 3)), ("10/14/2025 0:00", date(2025, 10, 14)),
+                          ("2026-04-24T00:00:00", date(2026, 4, 24)), ("04/24/2026", date(2026, 4, 24)),
+                          ("4/24/26", date(2026, 4, 24)), ("2026-04-24", date(2026, 4, 24))):
+            self.assertEqual(mls._date(raw), want, raw)
+        self.assertIsNone(mls._date(""))
+        self.assertIsNone(mls._date("soon"))
+
     def test_missing_columns_and_unknown_mls(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "x.csv")

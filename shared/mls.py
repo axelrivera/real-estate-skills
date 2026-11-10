@@ -44,10 +44,13 @@ def _num(v):
 
 
 def _date(v):
+    """An export date, with or without a time after it ("4/24/2026 0:00" when Excel re-saves the file, or ISO
+    "2026-04-24T00:00:00"): only the date part is read."""
     s = str(v or "").strip()
+    s = s.split()[0].split("T")[0] if s else s
     for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y"):
         try:
-            return datetime.strptime(s[:10], fmt).date()
+            return datetime.strptime(s, fmt).date()
         except ValueError:
             continue
     return None
