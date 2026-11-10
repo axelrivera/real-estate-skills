@@ -262,7 +262,8 @@ def insurance_estimate(price, market=None, year_built=None, rate=None):
 
 
 def loan_limit_note(loan, name, limits, state=None, county=None):
-    """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `limits` is
+    """OFR-11: a sentence when the loan is over (or may be over) its program's limit, else None. `loan` is the base
+    loan (base_loan): the limits cap it, and FHA's upfront premium can be financed on top. `limits` is
     profiles.loan_limits(); county limits above the baseline come from its `counties` table."""
     key = program(name)
     if not loan or key not in ("conventional", "fha") or not limits:
@@ -453,11 +454,15 @@ def pi_payment(loan, annual_rate_pct, years=30):
     return loan / n if m == 0 else loan * m / (1 - (1 + m) ** -n)
 
 
+def base_loan(price, name, down):
+    """The loan before any financed upfront fee: what program limits (FHA, conforming) and loan-to-value read."""
+    return 0.0 if program(name) == "cash" else price * (1 - down)
+
+
 def loan_amount(price, name, down, va_later_use=False, va_exempt=False):
+    """The loan with its financed upfront fee: what the payment and the loan taxes read."""
     key = program(name)
-    if key == "cash":
-        return 0.0
-    return price * (1 - down) * (1 + upfront_fee(key, down, va_later_use, va_exempt))
+    return base_loan(price, key, down) * (1 + upfront_fee(key, down, va_later_use, va_exempt))
 
 
 def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, hoa_monthly=0.0, mi_rate=None,
@@ -467,7 +472,7 @@ def monthly_payment(price, name, down, rate_pct, tax_annual, insurance_annual, h
     `flood_annual` is a flood insurance quote; without one `flood` is None and the total leaves it out (the report
     says "get a quote", never $0: see flood_insurance)."""
     key = program(name)
-    base = price * (1 - down)
+    base = base_loan(price, key, down)
     loan = loan_amount(price, key, down, va_later_use, va_exempt)
     rate_mi = annual_mi_rate(key, down) if mi_rate is None else mi_rate
     mi = 0.0 if key == "cash" or (key == "conventional" and down >= 0.20) else base * rate_mi / 12

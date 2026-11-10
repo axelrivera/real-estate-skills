@@ -563,8 +563,8 @@ def apply_escalations(offers, L):
 
 def escalation_cash_need(o, price):
     """The cash a financed buyer brings at `price` when the escalated amount is paid in cash: the price less the loan
-    as written (deposits are part of it), plus an appraisal gap the buyer covers on a loan the appraisal caps."""
-    loan = o.get("loan_amount") or finance.loan_amount(o.get("price_base") or o["price"], o["financing"], o["down_pct"])
+    as written (deposits are part of it; the base loan, since a financed upfront fee never reaches the seller), plus an appraisal gap the buyer covers on a loan the appraisal caps."""
+    loan = o.get("loan_amount") or finance.base_loan(o.get("price_base") or o["price"], o["financing"], o["down_pct"])
     gap = (o.get("appraisal_gap") or 0) if not o.get("appraisal_protected") else 0
     return price - loan + gap
 
@@ -622,7 +622,9 @@ def escalation_terms(o):
 
 def approval_short(o, price):
     """How the pre-approval letter falls short at `price` ("to $494,000", "for a $444,600 loan"), or None: its price cap
-    below the price, or its loan cap below the loan at that price (the offer's down payment share)."""
+    below the price, or its loan cap below the loan at that price (the offer's down payment share). Without a stated
+    loan amount the loan includes any financed upfront fee (FHA, VA, USDA): a letter may state the base loan or the
+    total, and testing the larger figure is the cautious read for the seller."""
     if not price or not o.get("financed"):
         return None
     cap_price, cap_loan = o.get("approval_max_price"), o.get("approval_max_loan")
@@ -1694,7 +1696,7 @@ def flags_for(o, L, S):
             "Pay the buyer's broker under Rider GG (a separate compensation agreement) instead of a credit, or counter the "
             "concessions down; confirm with the buyer's lender how it counts the credit.", "concessions_cap")
     if o["financed"]:
-        note = finance.loan_limit_note(o.get("loan_amount") or finance.loan_amount(o["price"], o["financing"], o["down_pct"]),
+        note = finance.loan_limit_note(o.get("loan_amount") or finance.base_loan(o["price"], o["financing"], o["down_pct"]),
                                        o["financing"], L["loan_limits"], L.get("state"), L.get("county"))
         if note:  # OFR-11
             add("High" if "can't be FHA" in note else "Med", note, "Ask the buyer's agent for the lender's confirmation.",

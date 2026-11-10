@@ -1522,7 +1522,7 @@ def analyze(B_in, market=None, cma=None):
     tgt = O["recommended"]["target"]["net_adj"]
     limits = profiles.loan_limits()  # OFR-11: jumbo and FHA limits
     BU0, P0 = B["buyer"], B["property"]
-    loan_notes = {k: finance.loan_limit_note(finance.loan_amount(t2["price"], BU0["financing"], BU0["down_pct"]),
+    loan_notes = {k: finance.loan_limit_note(finance.base_loan(t2["price"], BU0["financing"], BU0["down_pct"]),
                                              BU0["financing"], limits, P0.get("state"), P0.get("county")) for k, t2 in variants}
     if loan_notes.get("recommended"):
         A.add("buyer", "loan_limit", "check", loan_notes["recommended"], "high")
@@ -1705,7 +1705,7 @@ def fha_over_limit(B, price, limits):
     BU, P = B["buyer"], B["property"]
     if BU["financing"] != "fha" or not limits:
         return False
-    loan = finance.loan_amount(price, "fha", BU["down_pct"])
+    loan = finance.base_loan(price, "fha", BU["down_pct"])  # the limit caps the base loan, not the financed premium
     own = ((limits.get("counties") or {}).get(P.get("state") or "") or {}).get(str(P.get("county") or "").removesuffix(" County"), {})
     return bool(own.get("fha") and loan > own["fha"] or loan > limits["fha"]["ceiling"])
 

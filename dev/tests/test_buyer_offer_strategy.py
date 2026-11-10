@@ -133,6 +133,21 @@ class Pricing(unittest.TestCase):
         why = next(a["why"] for a in run(d)["assumptions"] if a["field"] == "loan_limit")
         self.assertIn("$541,287", why)  # the 2026 FHA floor
 
+    def test_fha_limit_reads_the_base_loan(self):
+        """FHA limits cap the base loan; the 1.75% upfront premium is financed on top. $560,000 at 3.5% down is a
+        $540,400 base loan, under the $541,287 floor ($549,857 with the premium)."""
+        d = self.only_offer(financing="fha", down_pct=0.035)
+        d["property"].update(list_price=560000)
+        d["value"] = {"cma_low": 550000, "cma_high": 570000}
+        d["overrides"] = {"price": 560000}
+        r = run(d)
+        self.assertEqual(r["terms"]["recommended"]["price"], 560000)
+        self.assertNotIn("loan_limit", [a["field"] for a in r["assumptions"]])
+        B = {"buyer": {"financing": "fha", "down_pct": 0.035}, "property": {"state": "FL", "county": "Orange"}}
+        limits = strategy.profiles.loan_limits()
+        self.assertFalse(strategy.fha_over_limit(B, 1290000, limits))  # a $1,244,850 base loan, under the ceiling
+        self.assertTrue(strategy.fha_over_limit(B, 1300000, limits))   # $1,254,500
+
     def test_small_concession_ask_rounds_up_or_drops(self):
         """An ask under the minimum rounds up to it when the cash needs it, and drops to $0 when every limit holds; no
         option ever asks for less than the minimum."""

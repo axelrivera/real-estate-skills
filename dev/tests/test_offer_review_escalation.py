@@ -149,6 +149,16 @@ class EscalationFunding(unittest.TestCase):
         self.assertIn("$61,400", short["issue"])
         self.assertIn("escalation_cash_short", topics(offer_b(proof_of_funds=None)))  # no proof in the package
 
+    def test_cash_need_uses_the_base_loan(self):
+        """The loan as written is the base loan: an FHA buyer's financed upfront premium never pays the escalation.
+        $400,000 at 3.5% down is a $386,000 loan, so $24,000 at a $410,000 cap."""
+        o = {"financing": "fha", "down_pct": 0.035, "price": 400000, "price_base": 400000}
+        self.assertEqual(oe.escalation_cash_need(o, 410000), 24000)
+
+    def test_fha_limit_flag_reads_the_base_loan(self):
+        o = run(hand(price=560000, financing="fha", down_pct=0.035))["offers"][0]
+        self.assertFalse({"loan_limit", "loan_limit_fha"} & set(topics(o)))
+
     def test_financed_escalation_against_the_approval(self):
         f = topics(offer_b(escalation=FINANCED))["escalation_cap_over_approval"]  # letter to $494,000, cap $506,000
         self.assertEqual(f["sev"], "Med")
