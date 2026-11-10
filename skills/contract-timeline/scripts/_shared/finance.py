@@ -668,14 +668,17 @@ def millage_row(market, county, district):
 # --- seller side --------------------------------------------------------------
 
 def title_premium(price, tiers):
-    """Promulgated-style tiered premium: [{up_to, per_1000}], last up_to None."""
+    """Promulgated-style tiered premium: [{up_to, per_1000}], last up_to None. Charged per $1,000 or fraction
+    thereof (Florida's promulgated rates, F.A.C. 69O-186.003), so the price rounds up to the next $1,000 first; the
+    premium rounds half-up to the dollar."""
+    price = math.ceil(price / 1000) * 1000
     premium, lower = 0.0, 0
     for tier in tiers:
         upper = tier.get("up_to") or math.inf
         if price > lower:
             premium += (min(price, upper) - lower) * tier["per_1000"] / 1000
         lower = upper
-    return round(premium)
+    return fmt.half_up(premium)
 
 
 def seller_net(price, market, credit=0, payoff=None, listing_fee_pct=None, buyer_broker_fee_pct=None,

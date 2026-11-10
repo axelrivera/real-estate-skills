@@ -565,7 +565,7 @@
  },
  "net": {
   "after_holding": [
-   424690,
+   424687,
    424636,
    415497
   ],
@@ -646,7 +646,7 @@
    },
    {
     "amounts": [
-     -2412,
+     -2415,
      -2410,
      -2360
     ],
@@ -682,7 +682,7 @@
    },
    {
     "amounts": [
-     426294,
+     426291,
      425826,
      416446
     ],
@@ -706,7 +706,7 @@
    },
    {
     "amounts": [
-     424690,
+     424687,
      424636,
      415497
     ],
@@ -718,13 +718,13 @@
    }
   ],
   "totals": [
-   426294,
+   426291,
    425826,
    416446
   ]
  },
  "net_basis": "after_holding",
- "net_spread": 9193,
+ "net_spread": 9190,
  "note_keys": [
   "expected_sale",
   "option_time",
@@ -932,9 +932,9 @@
    "list_price": 475000,
    "months_to_contract": 1.61,
    "name": "Premium",
-   "net": 426294,
-   "net_after_holding": 424690,
-   "net_vs_recommended": 54,
+   "net": 426291,
+   "net_after_holding": 424687,
+   "net_vs_recommended": 51,
    "payment": 4128,
    "recommended": false,
    "role": "premium",

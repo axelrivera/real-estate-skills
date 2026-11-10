@@ -128,8 +128,11 @@ class Taxes(unittest.TestCase):
 class SellerSide(unittest.TestCase):
     def test_title_premium_florida(self):
         tiers = FL.get("closing_costs.owner_title.rate_tiers")
-        self.assertEqual(f.title_premium(474900, tiers), round(575 + 374900 * 5 / 1000))
+        self.assertEqual(f.title_premium(474900, tiers), 575 + 375 * 5)  # per $1,000 or fraction thereof
         self.assertEqual(f.title_premium(80000, tiers), 460)
+        self.assertEqual(f.title_premium(413500, tiers), 2145)  # $414,000: never $2,142 (truncated, half to even)
+        self.assertEqual(f.title_premium(414000, tiers), 2145)
+        self.assertEqual(f.title_premium(100100, tiers), 575 + 5)
 
     def test_seller_net_florida(self):
         n = f.seller_net(465000, FL, credit=10000, payoff=200000, has_hoa=True, listing_fee_pct=0.025, buyer_broker_fee_pct=0.025)
