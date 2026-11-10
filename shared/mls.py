@@ -27,8 +27,12 @@ STATUS = {"SLD": "SOLD", "SOLD": "SOLD", "CLOSED": "SOLD", "ACT": "ACTIVE", "ACT
           "PND": "PENDING", "PNC": "PENDING", "PENDING": "PENDING", "UNDER": "PENDING", "CTG": "PENDING", "AWC": "PENDING", "EXP": "EXPIRED", "EXPIRED": "EXPIRED",
           "CAN": "CANCELED", "CANC": "CANCELED", "CANCELED": "CANCELED", "CANCELLED": "CANCELED",
           "WDN": "WITHDRAWN", "WITHDRAWN": "WITHDRAWN"}
+# Whole statuses read before the first word (RESO's and agent-mapped columns): "Active Under Contract" is under
+# contract, never for sale; "Coming Soon" isn't on the market yet. Spaces are ignored ("ActiveUnderContract").
+STATUS_PHRASE = {"ACTIVEUNDERCONTRACT": "PENDING", "ACTIVEWITHCONTRACT": "PENDING", "UNDERCONTRACT": "PENDING",
+                 "COMINGSOON": "COMING_SOON"}
 STATUS_LABEL = {"SOLD": "Sold", "ACTIVE": "For sale", "PENDING": "Under contract", "EXPIRED": "Expired",
-                "CANCELED": "Canceled", "WITHDRAWN": "Withdrawn"}
+                "CANCELED": "Canceled", "WITHDRAWN": "Withdrawn", "COMING_SOON": "Coming soon"}
 
 
 class ExportError(ValueError):
@@ -54,6 +58,19 @@ def _date(v):
         except ValueError:
             continue
     return None
+
+
+def status_code(raw):
+    """An export status as SOLD, ACTIVE, PENDING...: the whole status first (STATUS_PHRASE), else its first word
+    (Stellar's SLD, ACT, PND), else that word as given; "UNKNOWN" when blank."""
+    text = str(raw or "").strip().upper()
+    if not text:
+        return "UNKNOWN"
+    whole = re.sub(r"[^A-Z]", "", text)
+    if whole in STATUS_PHRASE:
+        return STATUS_PHRASE[whole]
+    token = text.split()[0]
+    return STATUS.get(token, token)
 
 
 def columns_arg(value):
@@ -155,9 +172,8 @@ def load(path, market, columns=None, required=REQUIRED):
                 if k in rec:
                     rec[k] = _flag(rec[k])
             rec["address"] = str(rec.get("address", "")).strip()
-            token = str(rec.get("status", "")).split()[0].upper() if rec.get("status") else ""
             rec["status_raw"] = rec.get("status", "")
-            rec["status"] = STATUS.get(token, token or "UNKNOWN")
+            rec["status"] = status_code(rec["status_raw"])
             pool = _flag(rec.get("pool"))
             rec["private_pool"] = pool if pool is not None else "private" in str(rec.get("pool", "")).lower()
             rec["seller_paid"] = rec.pop("seller_paid_buyer_costs", None) or 0.0

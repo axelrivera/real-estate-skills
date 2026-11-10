@@ -36,6 +36,17 @@ class Load(unittest.TestCase):
         self.assertIsNone(mls._date(""))
         self.assertIsNone(mls._date("soon"))
 
+    def test_status_by_whole_phrase(self):
+        """RESO and agent-mapped statuses: Active Under Contract is under contract, never for sale; Coming Soon is
+        known and never for sale; the first word still reads Stellar's codes."""
+        for raw, want in (("Active Under Contract", "PENDING"), ("ActiveUnderContract", "PENDING"),
+                          ("active  under contract", "PENDING"), ("Active With Contract", "PENDING"),
+                          ("Under Contract", "PENDING"), ("Coming Soon", "COMING_SOON"), ("ComingSoon", "COMING_SOON"),
+                          ("SLD", "SOLD"), ("ACT", "ACTIVE"), ("PND", "PENDING"), ("Active", "ACTIVE"),
+                          ("Closed", "SOLD"), ("Sold - Cash", "SOLD"), ("", "UNKNOWN")):
+            self.assertEqual(mls.status_code(raw), want, raw)
+        self.assertEqual(mls.STATUS_LABEL["COMING_SOON"], "Coming soon")
+
     def test_missing_columns_and_unknown_mls(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "x.csv")
